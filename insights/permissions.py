@@ -8,7 +8,6 @@ import frappe
 import frappe.share
 
 from insights.insights.doctype.insights_team.insights_team import (
-    get_allowed_resources_for_user,
     get_teams,
     is_admin,
 )
@@ -74,52 +73,35 @@ class InsightsPermissions:
         if doc.doctype not in PERMISSION_DOCTYPES:
             return True
 
-        if doc.doctype in TEAM_BASED_PERMISSION_DOCTYPES and not self.team_permissions_enabled:
-            return True
-
         if self.is_admin:
             return True
 
-        if not doc.name and doc.doctype in TEAM_BASED_PERMISSION_DOCTYPES:
-            # for new_doc, let further permission checks handle it
+        is_new = not doc.name or doc.is_new()
+        if is_new and doc.doctype in ["Insights Data Source v3", "Insights Table v3"]:
+            # let further permission checks handle it
             return True
 
-        if doc.doctype == "Insights Data Source v3" or doc.doctype == "Insights Table v3":
-            allowed_docs = get_allowed_resources_for_user(doc.doctype, self.user)
-            return doc.name in allowed_docs
-
         if doc.doctype == "Insights Team":
-            user_teams = get_teams(self.user)
-            return doc.name in user_teams
+            return doc.name in self.user_teams
 
-        is_new = not doc.name or doc.is_new()
         is_owner = doc.owner == self.user
         access_type = "write" if ptype not in ["read", "share"] else ptype
 
-        if doc.doctype in [
-            "Insights Workbook",
-            "Insights Dashboard v3",
-            "Insights Chart v3",
-            "Insights Query v3",
-            "Insights Alert",
-        ]:
-            if is_new and hasattr(doc, "workbook") and doc.workbook:
-                # when creating a new query/chart/dashboard
-                # if it is linked to a workbook, check if user has access to the workbook
-                docs = self._build_permission_query("Insights Workbook", access_type)
-                return (
-                    docs.where(frappe.qb.DocType("Insights Workbook").name == doc.workbook)
-                    .limit(1)
-                    .run(pluck="name")
-                )
+        if is_new and hasattr(doc, "workbook") and doc.workbook:
+            # when creating a new query/chart/dashboard
+            # if it is linked to a workbook, check if user has access to the workbook
+            docs = self._build_permission_query("Insights Workbook", access_type)
+            return (
+                docs.where(frappe.qb.DocType("Insights Workbook").name == doc.workbook)
+                .limit(1)
+                .run(pluck="name")
+            )
 
-            if is_new or is_owner:
-                return True
+        if is_new or is_owner:
+            return True
 
-            docs = self._build_permission_query(doc.doctype, access_type)
-            return docs.where(frappe.qb.DocType(doc.doctype).name == doc.name).limit(1).run(pluck="name")
-
-        return False
+        docs = self._build_permission_query(doc.doctype, access_type)
+        return docs.where(frappe.qb.DocType(doc.doctype).name == doc.name).limit(1).run(pluck="name")
 
     def _build_permission_query(self, doctype, ptype):
         """Returns a query to get docs with `ptype`  permission"""
