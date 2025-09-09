@@ -197,13 +197,12 @@ class InsightsPermissions:
         )
 
     def _build_dashboard_permission_query(self, ptype):
-        DocShare = frappe.qb.DocType("DocShare")
         Dashboard = frappe.qb.DocType("Insights Dashboard v3")
-
         OwnedDashboards = (
             frappe.qb.from_(Dashboard).select(Dashboard.name).where(Dashboard.owner == self.user)
         )
 
+        DocShare = frappe.qb.DocType("DocShare")
         SharedDashboards = (
             frappe.qb.from_(DocShare)
             .select(DocShare.share_name)
@@ -378,15 +377,14 @@ class InsightsPermissions:
 
     def _build_resource_query(self, doctype):
         Resource = frappe.qb.DocType("Insights Resource Permission")
-        return (
-            frappe.qb.from_(Resource)
-            .select(Resource.resource_name.as_("name"))
-            .where(
-                (Resource.parent.isin(self.user_teams))
-                & (Resource.resource_type == doctype)
-                & (Resource.resource_name.isnotnull())
-            )
-        )
+
+        condition = (Resource.resource_type == doctype) & (Resource.resource_name.isnotnull())
+        if not self.user_teams:
+            condition = condition & (Resource.parent.isnotnull())
+        else:
+            condition = condition & (Resource.parent.isin(self.user_teams))
+
+        return frappe.qb.from_(Resource).select(Resource.resource_name.as_("name")).where(condition)
 
 
 def has_doc_permission(doc, ptype, user):
