@@ -87,8 +87,8 @@ watchEffect(() => {
 					</router-link>
 					<div class="flex items-center justify-between gap-2">
 						<div class="flex-1">
-							<div class="flex items-center gap-1">
-								<p class="truncate">
+							<div class="flex items-start gap-1">
+								<p class="whitespace-normal break-words leading-tight">
 									{{ dashboard.title }}
 								</p>
 							</div>
