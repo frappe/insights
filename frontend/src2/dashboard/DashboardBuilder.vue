@@ -69,7 +69,7 @@ const showShareDialog = ref(false)
 					<Button
 						v-if="!dashboard.editing"
 						variant="outline"
-						@click="() => dashboard.refresh()"
+						@click="() => dashboard.refresh(true)"
 						label="Refresh"
 					>
 						<template #prefix>
