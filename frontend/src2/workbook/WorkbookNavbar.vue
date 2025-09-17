@@ -34,8 +34,10 @@ const workbook = inject(workbookKey)!
 					</Tooltip>
 					<ContentEditable
 						class="rounded-sm font-medium !text-gray-800 focus:ring-2 focus:ring-gray-700 focus:ring-offset-4"
-						v-model="workbook.doc.title"
+						:modelValue="workbook.doc.title"
 						placeholder="Untitled Workbook"
+						@returned="workbook.doc.title = $event"
+						@blur="workbook.doc.title = $event"
 					></ContentEditable>
 				</div>
 			</div>
