@@ -42,7 +42,7 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 			]"
 		/>
 		<div class="flex items-center gap-2">
-			<Button variant="outline" @click="() => dashboard.refresh()" label="Refresh">
+			<Button variant="outline" @click="() => dashboard.refresh(true)" label="Refresh">
 				<template #prefix>
 					<RefreshCcw class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 				</template>
