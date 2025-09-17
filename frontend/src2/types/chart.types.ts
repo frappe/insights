@@ -90,6 +90,7 @@ export type NumberColumnOptions = {
 	decimal?: number
 	prefix?: string
 	suffix?: string
+	color?: string
 }
 
 export type DonutChartConfig = {
