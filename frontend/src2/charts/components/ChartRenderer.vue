@@ -18,6 +18,8 @@ import {
 	getLineChartOptions,
 	getMapChartOptions,
 } from '../helpers'
+import { FIELDTYPES } from '../../helpers/constants.ts'
+import { titleCase } from '../../helpers'
 import BaseChart from './BaseChart.vue'
 import DrillDown from './DrillDown.vue'
 import NumberChart from './NumberChart.vue'
@@ -101,9 +103,27 @@ function onChartElementClick(params: any) {
 		if (chart_type.value === 'Row') {
 			dataIndex = result.value.formattedRows.length - 1 - dataIndex
 		}
-		const row = result.value.formattedRows[dataIndex]
-		const column = result.value.columns.find((c) => c.name === params.seriesName)!
-		drillDownQuery.value = props.chart.dataQuery.getDrillDownQuery(column, row)
+
+		if (chart_type.value === 'Map') {
+			const config = props.chart.doc.config as MapChartConfig
+			const locationColumn = result.value.columns.find((c) =>
+				FIELDTYPES.DIMENSION.includes(c.type) &&
+				c.name === config.location_column?.column_name
+			)
+			if (locationColumn) {
+				const clickedLocation = params.name
+				const formattedRow = result.value.formattedRows.find((r) =>
+					titleCase(r[locationColumn.name]?.toString()) === titleCase(clickedLocation)
+				)
+				if (formattedRow) {
+					drillDownQuery.value = props.chart.dataQuery.getDrillDownQuery(locationColumn, formattedRow)
+				} 
+			} 
+		} else {
+			const row = result.value.formattedRows[dataIndex]
+			const column = result.value.columns.find((c) => c.name === params.seriesName)!
+			drillDownQuery.value = props.chart.dataQuery.getDrillDownQuery(column, row)
+		}
 	}
 	if (drillDownQuery.value) {
 		showDrillDown.value = true
@@ -120,21 +140,13 @@ function onNumberChartDrillDown(column: any, row: any) {
 
 <template>
 	<div class="relative h-full w-full">
-		<BaseChart
-			v-if="!loading && eChartOptions"
+		<BaseChart 
+			v-if="!loading && eChartOptions" 
 			class="rounded bg-white py-1 shadow"
-			:class="props.chart.doc.chart_type == 'Map' ? '[&>div:last-child]:p-4' : ''"
-			:title="props.chart.doc.title"
-			:options="eChartOptions"
-			:filteredCitiesGeoJSON="filteredCitiesGeoJSON"
-			:onClick="onChartElementClick"
-		/>
-		<NumberChart
-			v-else-if="!loading && chart_type == 'Number'"
-			:config="config as NumberChartConfig"
-			:result="result"
-			@drill-down="onNumberChartDrillDown"
-		/>
+			:class="props.chart.doc.chart_type == 'Map' ? '[&>div:last-child]:p-4' : ''" :title="props.chart.doc.title"
+			:options="eChartOptions" :filteredCitiesGeoJSON="filteredCitiesGeoJSON" :onClick="onChartElementClick" />
+		<NumberChart v-else-if="!loading && chart_type == 'Number'" :config="config as NumberChartConfig"
+			:result="result" @drill-down="onNumberChartDrillDown" />
 		<TableChart v-else-if="!loading && chart_type == 'Table'" :chart="props.chart" />
 
 		<div v-else class="flex h-full flex-1 flex-col items-center justify-center rounded border">
