@@ -6,6 +6,7 @@ import frappe
 import ibis
 import numpy as np
 import pandas as pd
+import sqlparse
 from frappe.utils.data import flt
 from frappe.utils.safe_exec import safe_eval, safe_exec
 from ibis import _
@@ -463,6 +464,8 @@ class IbisQueryBuilder:
 
         ds = frappe.get_doc("Insights Data Source v3", data_source)
         db = ds._get_ibis_backend()
+
+        raw_sql = sqlparse.format(sql=raw_sql, strip_comments=True)
 
         if ds.enable_stored_procedure_execution and raw_sql.strip().lower().startswith("exec"):
             current_date = date.today().strftime("%Y-%m-%d")  # Format: 'YYYY-MM-DD'
