@@ -44,8 +44,7 @@ export default defineConfig({
 		},
 	},
 	optimizeDeps: {
-		include: ['feather-icons','showdown','tailwind.config.js','highlight.js/lib/core'],
-		
+		include: ['feather-icons', 'showdown', 'tailwind.config.js', 'highlight.js/lib/core'],
 	},
 	define: {
 		// enable hydration mismatch details in production build

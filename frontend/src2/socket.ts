@@ -1,11 +1,17 @@
 import { io, Socket } from 'socket.io-client'
-import { socketio_port } from '../../../../sites/common_site_config.json'
+import { getCommonSiteConfig } from 'frappe-ui/vite/utils'
 
 let socket: Socket
 
 export function getSocket() {
 	if (socket) {
 		return socket
+	}
+
+	let socketio_port = 9000
+	const config = getCommonSiteConfig()
+	if (config) {
+		socketio_port = config.socketio_port || 9000
 	}
 
 	let host = window.location.hostname
