@@ -804,16 +804,7 @@ export function getMapChartOptions(config: MapChartConfig, result: QueryResult, 
 				borderWidth: 0.5,
 				borderColor: 'rgb(124, 124, 124)',
 			},
-			emphasis: {
-				itemStyle: {
-					color: 'rgb(68, 68, 68)',
-					borderWidth: 0.5,
-					borderColor: 'rgb(124, 124, 124)',
-				},
-				label: {
-					show: false,
-				}
-			},
+			emphasis: false,
 		}],
 	}
 
