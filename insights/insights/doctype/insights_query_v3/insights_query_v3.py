@@ -26,7 +26,7 @@ class InsightsQueryv3(Document):
     if TYPE_CHECKING:
         from frappe.types import DF
 
-        from insights.insights_v2.doctype.insights_query_variable.insights_query_variable import (
+        from insights.insights.doctype.insights_query_variable.insights_query_variable import (
             InsightsQueryVariable,
         )
 
