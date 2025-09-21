@@ -327,7 +327,7 @@ def get_data_source_table(data_source: str, table_name: str):
     check_table_permission(data_source, table_name)
     ds = frappe.get_doc("Insights Data Source v3", data_source)
     q = ds.get_ibis_table(table_name).head(100)
-    data, time_taken = execute_ibis_query(q, cache_expiry=24 * 60 * 60)
+    data, _time_taken = execute_ibis_query(q, cache_expiry=24 * 60 * 60)
 
     return {
         "table_name": table_name,

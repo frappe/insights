@@ -21,7 +21,10 @@ class InsightsDashboardv3(Document):
 
     if TYPE_CHECKING:
         from frappe.types import DF
-        from insights.insights.doctype.insights_dashboard_chart_v3.insights_dashboard_chart_v3 import InsightsDashboardChartv3
+
+        from insights.insights.doctype.insights_dashboard_chart_v3.insights_dashboard_chart_v3 import (
+            InsightsDashboardChartv3,
+        )
 
         is_public: DF.Check
         items: DF.JSON | None
@@ -73,11 +76,7 @@ class InsightsDashboardv3(Document):
     def set_linked_charts(self):
         self.set(
             "linked_charts",
-            [
-                {"chart": item["chart"]}
-                for item in frappe.parse_json(self.items)
-                if item["type"] == "chart"
-            ],
+            [{"chart": item["chart"]} for item in frappe.parse_json(self.items) if item["type"] == "chart"],
         )
 
     @frappe.whitelist()
@@ -100,11 +99,7 @@ class InsightsDashboardv3(Document):
             pattern = "^`([^`]+)`\\.`([^`]+)`$"
             for linked_column in linked_columns:
                 match = re.match(pattern, linked_column)
-                if (
-                    match
-                    and match.groups()[0] == query
-                    and match.groups()[1] == column_name
-                ):
+                if match and match.groups()[0] == query and match.groups()[1] == column_name:
                     return True
 
         raise frappe.PermissionError
@@ -185,9 +180,7 @@ class InsightsDashboardv3(Document):
 
     @frappe.whitelist()
     def update_access(self, data):
-        if not frappe.has_permission(
-            "Insights Dashboard v3", ptype="share", doc=self.name
-        ):
+        if not frappe.has_permission("Insights Dashboard v3", ptype="share", doc=self.name):
             frappe.throw("You do not have permission to share this dashboard")
 
         data = frappe.parse_json(data)

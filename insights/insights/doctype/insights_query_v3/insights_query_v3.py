@@ -123,7 +123,7 @@ class InsightsQueryv3(Document):
             ibis_query = self.build(active_operation_idx)
 
         count_query = ibis_query.aggregate(count=_.count())
-        count_results, time_taken = execute_ibis_query(
+        count_results, _time_taken = execute_ibis_query(
             count_query,
             cache_expiry=60 * 5,
             reference_doctype=self.doctype,
@@ -137,7 +137,7 @@ class InsightsQueryv3(Document):
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
 
-        results, time_taken = execute_ibis_query(
+        results, _time_taken = execute_ibis_query(
             ibis_query,
             cache=False,
             limit=10_00_000,
@@ -168,7 +168,7 @@ class InsightsQueryv3(Document):
             .distinct()
             .head(limit)
         )
-        result, time_taken = execute_ibis_query(
+        result, _time_taken = execute_ibis_query(
             values_query,
             cache_expiry=24 * 60 * 60,
             reference_doctype=self.doctype,

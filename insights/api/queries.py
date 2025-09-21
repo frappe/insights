@@ -127,12 +127,12 @@ def flatten_column_keys(pivoted_records: list[dict]):
     for row in pivoted_records:
         new_row = {}
         cols = list(row.keys())
-        if type(cols[0]) != tuple:
+        if not isinstance(cols[0], tuple):
             new_records.append(row)
             continue
         for keys in cols:
             first_key = keys[0]
-            new_keys = list(keys[1:]) + [first_key]
+            new_keys = [*list(keys[1:]), first_key]
             new_keys = [key for key in new_keys if key]
             new_key = "___".join(new_keys)
             new_row[new_key] = row[keys]

@@ -1,7 +1,6 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-import click
 import frappe
 
 
@@ -15,12 +14,7 @@ def execute():
         .run()
     )
     Query = frappe.qb.DocType("Insights Query")
-    (
-        frappe.qb.update(Query)
-        .set(Query.data_source, "Site DB")
-        .where(Query.data_source == "Demo Data")
-        .run()
-    )
+    (frappe.qb.update(Query).set(Query.data_source, "Site DB").where(Query.data_source == "Demo Data").run())
 
     frappe.delete_doc("Insights Data Source", "Demo Data")
     if not frappe.db.exists("Insights Data Source", "Site DB"):

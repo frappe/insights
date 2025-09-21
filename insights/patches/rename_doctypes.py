@@ -18,6 +18,4 @@ def execute():
                 frappe.rename_doc("DocType", oldname, newname, force=True)
             except Exception as e:
                 frappe.log_error(title=f"Insights: Error renaming DocType {oldname}")
-                click.echo(
-                    f"Error renaming {oldname} to {newname}: {str(e)}", color="orange"
-                )
+                click.echo(f"Error renaming {oldname} to {newname}: {e!s}", color="orange")

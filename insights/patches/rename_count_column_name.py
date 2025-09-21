@@ -1,5 +1,4 @@
 import frappe
-from pypika import Criterion
 
 
 def execute():

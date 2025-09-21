@@ -127,7 +127,7 @@ def convert_into_simple_filter(expression):
     if is_call_function(expression.get("function")):
         column = expression.get("arguments")[0].get("value")
         operator = get_operator_from_call_function(expression.get("function"))
-        label, value = make_value_from_call_function(expression)
+        _label, value = make_value_from_call_function(expression)
         return {"column": column, "operator": operator, "value": value}
 
 

@@ -6,21 +6,17 @@ import frappe
 
 
 def execute():
-    dashboards = frappe.get_all(
-        "Insights Dashboard Item", filters={"item_type": "Filter"}, pluck="parent"
-    )
+    dashboards = frappe.get_all("Insights Dashboard Item", filters={"item_type": "Filter"}, pluck="parent")
     for dashboard in dashboards:
         try:
             doc = frappe.get_doc("Insights Dashboard", dashboard)
-            chart = [item for item in doc.items if item.item_type == "Chart"][0]
-            data_source = frappe.db.get_value(
-                "Insights Query", chart.query, "data_source"
-            )
+            chart = next(item for item in doc.items if item.item_type == "Chart")
+            data_source = frappe.db.get_value("Insights Query", chart.query, "data_source")
             modified = False
             for item in doc.items:
                 if item.item_type == "Filter":
                     filter_links = frappe.parse_json(item.filter_links)
-                    filter_column = list(filter_links.values())[0]
+                    filter_column = next(iter(filter_links.values()))
                     filter_column["data_source"] = data_source
                     item.filter_column = frappe.as_json(filter_column)
                     modified = True

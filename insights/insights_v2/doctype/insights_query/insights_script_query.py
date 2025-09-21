@@ -100,7 +100,7 @@ class InsightsScriptQueryController:
 
         if all(isinstance(col, str) for col in results[0]):
             new_columns = [ResultColumn.from_args(col) for col in results[0]]
-            return [new_columns] + results[1:]
+            return [new_columns, *results[1:]]
 
         return results
 
