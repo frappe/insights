@@ -4,7 +4,7 @@
 
 import frappe
 
-from insights.insights.doctype.insights_data_source.sources.query_store import (
+from insights.insights_v2.doctype.insights_data_source.sources.query_store import (
     sync_query_store,
 )
 from insights.utils import InsightsDataSource, InsightsQuery, InsightsTable

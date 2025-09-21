@@ -11,7 +11,7 @@ from sqlalchemy import select as Select
 from sqlalchemy import table as Table
 from sqlalchemy.engine.base import Connection
 
-from insights.insights.query_builders.postgresql.builder import PostgresQueryBuilder
+from insights.insights_v2.query_builders.postgresql.builder import PostgresQueryBuilder
 
 from .base_database import BaseDatabase
 from .utils import create_insights_table, get_sqlalchemy_engine

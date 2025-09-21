@@ -9,7 +9,7 @@ from sqlalchemy import table as Table
 from sqlalchemy import text
 from sqlalchemy.engine.base import Connection
 
-from insights.insights.query_builders.sql_builder import SQLQueryBuilder
+from insights.insights_v2.query_builders.sql_builder import SQLQueryBuilder
 
 from .base_database import DatabaseCredentialsError, DatabaseParallelConnectionError
 from .mariadb import MARIADB_TO_GENERIC_TYPES, MariaDB

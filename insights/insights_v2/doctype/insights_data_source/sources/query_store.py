@@ -5,8 +5,8 @@ import frappe
 import pandas as pd
 from sqlalchemy import create_engine, text
 
-from insights.insights.doctype.insights_data_source.sources.sqlite import SQLiteDB
-from insights.insights.query_builders.sqlite.sqlite_query_builder import (
+from insights.insights_v2.doctype.insights_data_source.sources.sqlite import SQLiteDB
+from insights.insights_v2.query_builders.sqlite.sqlite_query_builder import (
     SQLiteQueryBuilder,
 )
 

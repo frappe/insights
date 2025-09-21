@@ -8,7 +8,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy import table as Table
 from sqlalchemy.engine.base import Connection
 
-from insights.insights.query_builders.sqlite.sqlite_query_builder import (
+from insights.insights_v2.query_builders.sqlite.sqlite_query_builder import (
     SQLiteQueryBuilder,
 )
 from insights.utils import detect_encoding

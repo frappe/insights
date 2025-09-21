@@ -1,7 +1,7 @@
 import click
 import frappe
 
-from insights.insights.doctype.insights_data_source.sources.frappe_db import FrappeDB
+from insights.insights_v2.doctype.insights_data_source.sources.frappe_db import FrappeDB
 
 
 def execute():

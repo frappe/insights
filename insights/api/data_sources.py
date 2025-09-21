@@ -8,7 +8,6 @@ from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     get_columns_from_schema,
     to_insights_type,
 )
-from insights.insights.doctype.insights_query.utils import infer_type_from_list
 from insights.insights.doctype.insights_table_link_v3.insights_table_link_v3 import (
     InsightsTableLinkv3,
 )
@@ -17,6 +16,7 @@ from insights.insights.doctype.insights_team.insights_team import (
     check_table_permission,
     get_permission_filter,
 )
+from insights.insights_v2.doctype.insights_query.utils import infer_type_from_list
 from insights.utils import InsightsTable, detect_encoding
 
 
@@ -58,9 +58,7 @@ def get_table_columns(data_source, table):
 @insights_whitelist()
 def get_table_name(data_source, table):
     check_table_permission(data_source, table)
-    return frappe.get_value(
-        "Insights Table", {"data_source": data_source, "table": table}, "name"
-    )
+    return frappe.get_value("Insights Table", {"data_source": data_source, "table": table}, "name")
 
 
 @insights_whitelist()
@@ -86,9 +84,7 @@ def get_tables(data_source=None, with_query_tables=False):
 
 
 @insights_whitelist()
-def create_table_link(
-    data_source, primary_table, foreign_table, primary_key, foreign_key
-):
+def create_table_link(data_source, primary_table, foreign_table, primary_key, foreign_key):
     check_table_permission(data_source, primary_table.get("value"))
     check_table_permission(data_source, foreign_table.get("value"))
 
@@ -232,15 +228,11 @@ def fetch_column_values(data_source, table, column, search_text=None):
 
 @insights_whitelist()
 def get_relation(data_source, table_one, table_two):
-    table_one_doc = InsightsTable.get_doc(
-        {"data_source": data_source, "table": table_one}
-    )
+    table_one_doc = InsightsTable.get_doc({"data_source": data_source, "table": table_one})
     if not table_one_doc:
         frappe.throw(f"Table {table_one} not found")
 
-    table_two_doc = InsightsTable.get_doc(
-        {"data_source": data_source, "table": table_two}
-    )
+    table_two_doc = InsightsTable.get_doc({"data_source": data_source, "table": table_two})
     if not table_two_doc:
         frappe.throw(f"Table {table_two} not found")
 

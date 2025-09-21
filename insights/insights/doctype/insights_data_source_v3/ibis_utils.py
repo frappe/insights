@@ -21,7 +21,7 @@ from insights.insights.doctype.insights_data_source_v3.data_warehouse import War
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
 )
-from insights.insights.query_builders.sql_functions import handle_timespan
+from insights.insights_v2.query_builders.sql_functions import handle_timespan
 from insights.utils import create_execution_log
 from insights.utils import deep_convert_dict_to_dict as _dict
 

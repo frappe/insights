@@ -22,7 +22,7 @@ class TestSQLBuilder(unittest.TestCase):
             "use_ssl": False,
         }
 
-        from insights.insights.doctype.insights_data_source.sources.frappe_db import (
+        from insights.insights_v2.doctype.insights_data_source.sources.frappe_db import (
             FrappeDB,
         )
 
@@ -58,7 +58,7 @@ class TestSQLBuilder(unittest.TestCase):
 
         from .sql_builder import get_date_range
 
-        nowdate_path = "insights.insights.query_builders.sql_builder.nowdate"
+        nowdate_path = "insights.insights_v2.query_builders.sql_builder.nowdate"
         with patch(nowdate_path, return_value="2022-11-26"):
             assertions_map = {
                 "Current Day": ["2022-11-26", "2022-11-26"],

@@ -1,6 +1,6 @@
 import frappe
 
-from insights.insights.doctype.insights_query.insights_legacy_query_utils import (
+from insights.insights_v2.doctype.insights_query.insights_legacy_query_utils import (
     convert_into_simple_filter,
     is_simple_filter,
 )

@@ -10,7 +10,7 @@ from sqlalchemy import text
 from sqlalchemy.engine.base import Connection
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
 
-from insights.insights.query_builders.sql_builder import SQLQueryBuilder
+from insights.insights_v2.query_builders.sql_builder import SQLQueryBuilder
 
 from .base_database import (
     BaseDatabase,

@@ -6,7 +6,7 @@ import re
 import frappe
 from sqlalchemy.sql import text
 
-from insights.insights.doctype.insights_table_import.insights_table_import import (
+from insights.insights_v2.doctype.insights_table_import.insights_table_import import (
     InsightsTableImport,
 )
 from insights.utils import ResultColumn

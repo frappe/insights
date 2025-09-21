@@ -4,13 +4,13 @@ from sqlalchemy import TextClause, select, table
 from sqlalchemy import column as sa_column
 from sqlalchemy.sql import and_
 
-from insights.insights.doctype.insights_query.utils import Column as AssistedQueryColumn
-from insights.insights.doctype.insights_query.utils import Filter as AssistedQueryFilter
-from insights.insights.doctype.insights_query.utils import Join as AssistedQueryJoin
-from insights.insights.doctype.insights_query.utils import Query as AssistedQuery
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     get_allowed_documents,
 )
+from insights.insights_v2.doctype.insights_query.utils import Column as AssistedQueryColumn
+from insights.insights_v2.doctype.insights_query.utils import Filter as AssistedQueryFilter
+from insights.insights_v2.doctype.insights_query.utils import Join as AssistedQueryJoin
+from insights.insights_v2.doctype.insights_query.utils import Query as AssistedQuery
 
 from .legacy_query_builder import LegacyQueryBuilder
 from .sql_functions import (

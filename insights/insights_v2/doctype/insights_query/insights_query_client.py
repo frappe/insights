@@ -5,10 +5,10 @@
 import frappe
 from frappe.utils import cint
 
-from insights.insights.doctype.insights_data_source.sources.query_store import (
+from insights.insights_v2.doctype.insights_data_source.sources.query_store import (
     remove_stored_query,
 )
-from insights.insights.doctype.insights_query.patches.migrate_old_query_to_new_query_structure import (
+from insights.insights_v2.doctype.insights_query.patches.migrate_old_query_to_new_query_structure import (
     convert_classic_to_assisted,
 )
 

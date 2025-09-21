@@ -9,11 +9,11 @@ from frappe.model.document import Document
 from frappe.utils.caching import redis_cache, site_cache
 
 from insights import notify
-from insights.insights.doctype.insights_query.insights_query import InsightsQuery
 from insights.insights.doctype.insights_team.insights_team import (
     check_table_permission,
     get_permission_filter,
 )
+from insights.insights_v2.doctype.insights_query.insights_query import InsightsQuery
 
 from .sources.base_database import BaseDatabase, DatabaseConnectionError
 from .sources.frappe_db import FrappeDB, SiteDB, is_frappe_db

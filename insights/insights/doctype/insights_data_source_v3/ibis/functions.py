@@ -7,7 +7,7 @@ import ibis.selectors as s
 from frappe.utils import now_datetime
 from ibis import _
 
-from insights.insights.query_builders.sql_functions import handle_timespan
+from insights.insights_v2.query_builders.sql_functions import handle_timespan
 
 
 # aggregate functions
