@@ -65,17 +65,17 @@ const dashboards = createResource({
 
 export function getQueriesColumn(query_names) {
 	return call(
-		'insights.insights.doctype.insights_dashboard.insights_dashboard.get_queries_column',
+		'insights.insights_v2.doctype.insights_dashboard.insights_dashboard.get_queries_column',
 		{
 			query_names,
-		}
+		},
 	)
 }
 export function getQueryColumns(query) {
 	return call(
-		'insights.insights.doctype.insights_dashboard.insights_dashboard.get_query_columns',
+		'insights.insights_v2.doctype.insights_dashboard.insights_dashboard.get_query_columns',
 		{
 			query,
-		}
+		},
 	)
 }
