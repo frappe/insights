@@ -4,7 +4,7 @@ export type ConditionalColor = 'red' | 'amber' | 'green'
 
 export type FormatGroupArgs = {
     formats: FormattingMode[];
-    columns?: string[]
+    columns: Column[]
 }
 
 export type ConditionalOperator =
@@ -55,7 +55,7 @@ export type color_scale = {
     mode: 'color_scale',
     column: Column,
     colorScale?: string,
-    value: number | any[] | undefined
+    value: number | undefined
 }
 
 // highlight cell rules
@@ -64,7 +64,7 @@ export type cell_rules = {
     column: Column,
     color?: string,
     operator?: ConditionalOperator,
-    value: number | any[] | undefined
+    value: number | undefined
 }
 
 export type text_rules = {
@@ -72,7 +72,7 @@ export type text_rules = {
     column: Column,
     color: string,
     operator: TextOperator,
-    value: string | RegExp | undefined
+    value: string | undefined
 }
 
 export type date_rules = {
@@ -113,7 +113,7 @@ export const garByPercentage = {
     20: "bg-[#A7D3AE] text-black",
     30: "bg-[#C5E2C9] text-black",
     40: "bg-[#CEE7D3] text-black",
-    50: "bg-[#EFC5C5] text-black",
+    50: "bg-[#EEF7EF] text-black",
     60: "bg-[#FBECEC] text-black",
     70: "bg-[#EFC5C5] text-black",
     80: "bg-[#EBB9B9] text-black",
@@ -274,20 +274,18 @@ export function applyDateRule(
 export function applyRankRule(
     value: any,
     rule: rank_rules,
-    allValues: any[]
+    allValues: number[]
 ): boolean {
     const numVal = useNumber(value);
     if (numVal === null) return false;
     // sort descending
     const numericValues = allValues
-        .map(v => useNumber(v))
-        .filter(v => v !== null)
-        .sort((a, b) => b! - a!);
+        .sort((a, b) => b - a);
 
     if (numericValues.length === 0) return false;
 
     const n = rule.value || 0;
-    const average = numericValues.reduce((sum, val) => sum + val!, 0) / numericValues.length;
+    const average = numericValues.reduce((sum, val) => sum + val, 0) / numericValues.length;
     // todo: use custom expression
     switch (rule.operator) {
         case 'top_n':

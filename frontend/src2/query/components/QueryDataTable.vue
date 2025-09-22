@@ -13,9 +13,6 @@ import { column } from '../helpers'
 import { Query } from '../query'
 import QueryAlertsDialog from './QueryAlertsDialog.vue'
 import AlertSetupDialog from './AlertSetupDialog.vue'
-import { useFormatStore } from '../../stores/formatStore'
-
-const formatStore = useFormatStore()
 
 const props = defineProps<{
 	query: Query
@@ -99,7 +96,6 @@ const currentAlertName = ref('')
 		:on-column-rename="props.enableColumnRename ? onRename : undefined"
 		:on-drilldown="props.enableDrillDown ? onDrillDown : undefined"
 		:enable-new-column="props.enableNewColumn"
-		:format-group="formatStore.conditionalFormatting"
 		v-bind="$attrs"
 	>
 		<template #header-prefix="{ column }">

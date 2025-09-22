@@ -32,7 +32,7 @@ const selectedFormatMode = ref<'cell_rules' | 'color_scale'>(
 )
 
 function applyFormatting() {
-	const group: FormatGroupArgs = { formats: [current], columns: [] }
+	const group: FormatGroupArgs = { formats: [current], columns: [current.column] }
 	emit('select', group)
 }
 
