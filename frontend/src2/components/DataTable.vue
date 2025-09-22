@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Button, FormControl, LoadingIndicator, Rating } from 'frappe-ui'
 import { ChevronLeft, ChevronRight, Download, Plus, Search, Table2Icon } from 'lucide-vue-next'
-import { computed, nextTick, reactive, ref, watch } from 'vue'
+import { computed, nextTick, reactive, ref} from 'vue'
 import { createHeaders, formatNumber, getShortNumber } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import {QueryResultColumn, QueryResultRow, SortDirection, SortOrder } from '../types/query.types'
@@ -273,14 +273,14 @@ const formattingRulesByColumn = computed(() => {
 	const columns = props.columns || []
 	if (!formatGroup?.formats?.length) return result
 
-	const  = (n: string) => n.split('__')[0]
+	const  sanitizeColumnName = (n: string) => n.split('__')[0]
 
 	formatGroup.formats.forEach((format) => {
 		const target = ('column' in format && format.column?.column_name) ? format.column.column_name : ''
 		if (!target) return
 
 		columns.forEach((col) => {
-			if (base(col.name) === target) {
+			if (sanitizeColumnName(col.name) === target) {
 				if (!result[col.name]) result[col.name] = []
 				result[col.name].push(format)
 			}
