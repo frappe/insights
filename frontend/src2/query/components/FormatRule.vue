@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { debounce } from 'frappe-ui'
 import { computed, inject, onMounted, Ref, ref, watch } from 'vue'
 import { flattenOptions } from '../../helpers'
 import { ColumnOption, GroupedColumnOption } from '../../types/query.types'
 import { column } from '../helpers'
-import useQuery from '../query'
 import {
 	FormattingMode,
 	ConditionalOperator,
@@ -16,7 +14,6 @@ import {
 	text_rules,
 	date_rules,
 	rank_rules,
-	FormatGroupArgs,
 } from './formatting_utils'
 import Autocomplete from '../../components/Autocomplete.vue'
 import FormControl from '../../components/FormControl.vue'
@@ -25,7 +22,7 @@ import RadioGroup from '../../components/ui/Radio.vue'
 import RadioGroupItem from '../../components/ui/RadioGroupItem.vue'
 const format = defineModel<FormattingMode>({ required: true })
 const props = defineProps<{
-	columnOptions: ColumnOption[] | GroupedColumnOption[]
+	columnOptions: ColumnOption[] | GroupedColumnOption[] 
 	formatMode: 'cell_rules' | 'color_scale'
 }>()
 
@@ -175,16 +172,6 @@ function onColumnChange(column_name: string) {
 		format.value = newFormat
 	}
 }
-
-const valueSelectorType = computed(() => {
-	if (!format.value.column.column_name || !columnType.value) {
-		return
-	} else if (format.value.mode === 'cell_rules') {
-		return 'number'
-	} else {
-		return 'select'
-	}
-})
 
 const columnType = computed(() => {
 	if (!props.columnOptions?.length) return
@@ -360,27 +347,6 @@ const isRankValueRule = computed(() => {
 	const op = (format.value as rank_rules).operator
 	return ['top_n', 'bottom_n', 'top_percent', 'bottom_percent'].includes(op)
 })
-
-const distinctColumnValues = ref<any[]>([])
-const fetchingValues = ref(false)
-const fetchColumnValues = debounce((searchTxt: string) => {
-	const options = flattenOptions(props.columnOptions) as ColumnOption[]
-	const option = options.find((c) => c.value === format.value!.column.column_name)
-	if (!option?.query) {
-		fetchingValues.value = false
-		return
-	}
-	const sep = '`'
-	const pattern = new RegExp(`${sep}([^${sep}]+)${sep}\\.${sep}([^${sep}]+)${sep}`)
-	const match = pattern.exec(format.value.column.column_name)
-	const column_name = match ? match[2] : format.value.column.column_name
-
-	fetchingValues.value = true
-	return useQuery(option.query)
-		.getDistinctColumnValues(column_name, searchTxt)
-		.then((values: string[]) => (distinctColumnValues.value = values))
-		.finally(() => (fetchingValues.value = false))
-}, 300)
 
 const isInvalidColumn = computed(() => {
 	return !!(
