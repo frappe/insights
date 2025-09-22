@@ -6,21 +6,9 @@ import { TableChartConfig } from '../../types/chart.types'
 import { SortDirection } from '../../types/query.types'
 import { Chart } from '../chart'
 import ChartTitle from './ChartTitle.vue'
-import { useFormatStore } from '../../stores/formatStore'
 
 const props = defineProps<{ chart: Chart }>()
-
 const tableConfig = computed(() => props.chart.doc.config as TableChartConfig)
-const formatStore = useFormatStore()
-
-watch(
-	() => tableConfig.value.conditional_formatting,
-	(newFormatting) => {
-		if (newFormatting) {
-			formatStore.setFormatting(newFormatting)
-		}
-	},
-)
 
 function onSortChange(column_name: string, sort_order: SortDirection) {
 	const existingOrder = props.chart.doc.config.order_by.find(
