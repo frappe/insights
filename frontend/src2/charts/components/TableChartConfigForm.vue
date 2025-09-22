@@ -1,17 +1,15 @@
 <script setup lang="ts">
-import { Badge, Button, FormControl } from 'frappe-ui'
 import { Plus, X } from 'lucide-vue-next'
-import { computed, inject, ref, watchEffect } from 'vue'
+import { Badge, Button, FormControl } from 'frappe-ui'
+import { computed, ref, watchEffect } from 'vue'
 import DraggableList from '../../components/DraggableList.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { FIELDTYPES } from '../../helpers/constants'
 import ConditonalFormattingDialog from '../../query/components/ConditonalFormattingDialog.vue'
 import DataTypeIcon from '../../query/components/DataTypeIcon.vue'
 import { FormatGroupArgs, FormattingMode } from '../../query/components/formatting_utils'
-import { useFormatStore } from '../../stores/formatStore'
 import { TableChartConfig } from '../../types/chart.types'
 import { ColumnOption, DimensionDataType, DimensionOption } from '../../types/query.types'
-import { Chart } from '../chart'
 import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
@@ -36,7 +34,7 @@ const config = defineModel<TableChartConfig>({
 const showFormatSelectorDialog = ref(false)
 const editingRuleIndex = ref<number | null>(null)
 const editingRule = ref<FormattingMode | null>(null)
-const formatStore = useFormatStore()
+
 
 watchEffect(() => {
 	if (!config.value.rows?.length) {
@@ -47,10 +45,6 @@ watchEffect(() => {
 	}
 	if (!config.value.values?.length) {
 		config.value.values = [{} as any]
-	}
-	// init format
-	if (config.value.conditional_formatting) {
-		formatStore.setFormatting(config.value.conditional_formatting)
 	}
 })
 
@@ -68,9 +62,14 @@ const measuresAsDimensions = computed<DimensionOption[]>(() =>
 
 const dimensions = computed(() => [...props.dimensions, ...measuresAsDimensions.value])
 
-const chart = inject<Chart>('chart')
-const resultColumnOptions = computed(() => chart?.dataQuery.result?.columnOptions || [])
+const measuresAndDimensions = computed(() => 
+{const measures =config.value.values.map((value) => ({query: '', label: value.measure_name, data_type: value.data_type, description: value.data_type, value: value.measure_name}))
+	const dimensions = config.value.columns.map((column) => ({query: '',label: column.column_name, data_type: column.data_type, value: column.column_name, description: column.data_type}))
+	const rows = config.value.rows.map((row) => ({query: '', label: row.column_name, data_type: row.data_type, value: row.column_name, description: row.data_type}))
+	return [...measures, ...dimensions, ...rows]
+	})
 
+const colOptions = computed(() => measuresAndDimensions.value as ColumnOption[] || [])
 function editRule(index: number) {
 	const ruleToEditValue = config.value.conditional_formatting?.formats[index]
 
@@ -87,13 +86,6 @@ function addNewRule() {
 	showFormatSelectorDialog.value = true
 }
 
-function removeRule(index: number) {
-	if (config.value.conditional_formatting?.formats) {
-		config.value.conditional_formatting.formats.splice(index, 1)
-		formatStore.setFormatting(config.value.conditional_formatting)
-	}
-}
-
 function handleFormatSelect(formatGroup: FormatGroupArgs) {
 	const newRule = formatGroup.formats[0]
 	if (newRule && newRule.column?.column_name) {
@@ -107,14 +99,13 @@ function handleFormatSelect(formatGroup: FormatGroupArgs) {
 			//add new rule
 			config.value.conditional_formatting.formats.push(newRule)
 		}
-		formatStore.setFormatting(config.value.conditional_formatting)
 		editingRuleIndex.value = null
 		editingRule.value = null
 	}
 }
 
 function getColumnType(column_name: string) {
-	const column = resultColumnOptions.value.find((column) => column.value === column_name)
+	const column = measuresAndDimensions.value.find((column) => column.data_type === column_name)
 	if (!column) {
 		return 'String'
 	}
@@ -260,7 +251,7 @@ function getColumnType(column_name: string) {
 	<ConditonalFormattingDialog
 		v-if="showFormatSelectorDialog"
 		v-model="showFormatSelectorDialog"
-		:column-options="resultColumnOptions"
+		:column-options="colOptions"
 		:initial-rule="editingRule"
 		:selector-key="editingRuleIndex ?? 'new'"
 		@select="handleFormatSelect"
