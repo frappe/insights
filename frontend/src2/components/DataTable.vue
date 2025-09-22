@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Download, Plus, Search, Table2Icon } from 'l
 import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { createHeaders, formatNumber, getShortNumber } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
-import { QueryResultColumn, QueryResultRow, SortDirection, SortOrder } from '../types/query.types'
+import {QueryResultColumn, QueryResultRow, SortDirection, SortOrder } from '../types/query.types'
 import DataTableColumn from './DataTableColumn.vue'
 import {
 	applyRule,
@@ -20,7 +20,6 @@ import {
 	garByPercentage,
 	ragByPercentage,
 } from '../query/components/formatting_utils'
-import { useFormatStore } from '../stores/formatStore'
 
 const props = defineProps<{
 	columns: QueryResultColumn[] | undefined
@@ -46,8 +45,8 @@ const props = defineProps<{
 const headers = computed(() => {
 	if (!props.columns?.length) return []
 	return createHeaders(props.columns)
+	
 })
-
 const columnsMeta = computed(() => {
 	if (!props.columns || !props.rows) return new Map()
 
@@ -255,7 +254,6 @@ const colorByValues = computed(() => {
 	uniqueValues = uniqueValues.sort((a, b) => a - b)
 	const max = uniqueValues[uniqueValues.length - 1]
 	const uniqueValuesNormalized = uniqueValues.map((val) => Math.round((val / max) * 100))
-
 	const _colorByValues: Record<number, string> = {}
 	uniqueValuesNormalized.forEach((percentVal, index) => {
 		for (const [percent, color] of Object.entries(colorByPercentage)) {
@@ -268,110 +266,30 @@ const colorByValues = computed(() => {
 
 	return _colorByValues
 })
-
-const formatStore = useFormatStore()
-
-watch(
-	() => props.formatGroup,
-	(newFormatGroup) => {
-		if (newFormatGroup) {
-			formatStore.setFormatting(newFormatGroup)
-		}
-	},
-	{ immediate: true },
-)
-
-// color scales for each measure
-const measureColorScales = computed(() => {
-	const rules = formatStore.conditionalFormatting?.formats || []
-	const scales: Record<string, { min: number; max: number; columns: string[] }> = {}
-
-	rules.forEach((format) => {
-		if (format.mode === 'color_scale' && format.column?.column_name) {
-			const measureName = format.column.column_name
-			const measureColumns: string[] = []
-
-			if (props.columns) {
-				props.columns.forEach((col) => {
-					const isNumericColumn = FIELDTYPES.NUMBER.includes(col.type)
-					const columnNameLower = measureName.toLowerCase()
-					const colNameLower = col.name.toLowerCase()
-
-					if (colNameLower.includes(columnNameLower) && isNumericColumn) {
-						measureColumns.push(col.name)
-					}
-				})
-			}
-
-			if (measureColumns.length > 0) {
-				// get all values from columns for this specific measure
-				let allValues: number[] = []
-				measureColumns.forEach((colName) => {
-					if (isNumberColumn(colName)) {
-						props.rows!.forEach((row) => {
-							const value = Number(row[colName])
-							if (!isNaN(value)) {
-								allValues.push(value)
-							}
-						})
-					}
-				})
-
-				if (allValues.length > 0) {
-					// calculate min max for this specific measure
-					const min = Math.min(...allValues)
-					const max = Math.max(...allValues)
-
-					scales[measureName] = {
-						min,
-						max,
-						columns: measureColumns,
-					}
-				}
-			}
-		}
-	})
-
-	return Object.keys(scales).length > 0 ? scales : null
-})
-
+	
 const formattingRulesByColumn = computed(() => {
-	const formatGroup = formatStore.conditionalFormatting
+	const formatGroup = props.formatGroup
 	const result: Record<string, FormattingMode[]> = {}
+	const columns = props.columns || []
+	if (!formatGroup?.formats?.length) return result
 
-	if (formatGroup?.formats?.length) {
-		formatGroup.formats.forEach((format) => {
-			if ('column' in format && format.column?.column_name) {
-				const columnName = format.column.column_name
+	const  = (n: string) => n.split('__')[0]
 
-				if (!result[columnName]) {
-					result[columnName] = []
-				}
-				result[columnName].push(format)
+	formatGroup.formats.forEach((format) => {
+		const target = ('column' in format && format.column?.column_name) ? format.column.column_name : ''
+		if (!target) return
 
-				if (props.columns) {
-					props.columns
-						.filter(
-							(col) =>
-								col.name.toLowerCase().includes(columnName.toLowerCase()) &&
-								FIELDTYPES.NUMBER.includes(col.type) &&
-								col.name !== columnName,
-						)
-						.forEach((col) => {
-							if (!result[col.name]) result[col.name] = []
-							if (!result[col.name].some((f) => f === format)) {
-								result[col.name].push(format)
-							}
-						})
-				}
+		columns.forEach((col) => {
+			if (base(col.name) === target) {
+				if (!result[col.name]) result[col.name] = []
+				result[col.name].push(format)
 			}
 		})
-	}
+	})
 
 	return result
 })
 
-// get tailwind class bg
 function getColorClass(colorName: string): string {
 	if (!colorName) return 'bg-gray-500'
 
@@ -387,24 +305,32 @@ function getColorClass(colorName: string): string {
 	}
 }
 
-function getCellStyleClass(colName: string, val: any): string {
-	// first check if we should apply default color scale
+const getColumnMinMax = (columnName: string) => {
+  const values = props.rows
+    ?.map(row => Number(row[columnName]))
+    .filter(val => !isNaN(val)) || []
+  
+  return {
+    min: Math.min(...values),
+    max: Math.max(...values)
+  }
+}
+
+function getDefaultColorScaleClass(colName: string, val: any): string {
 	if (props.enableColorScale && isNumberColumn(colName)) {
 		const numVal = Number(val)
-
 		if (!isNaN(numVal)) {
-			const colorByValue = colorByValues.value
-
+			const colorByValue = colorByValues.value as Record<number, string>
 			if (colorByValue && colorByValue[numVal]) {
 				return colorByValue[numVal]
 			}
 		}
 	}
+	return ''
+}
 
-	// get formatting rules for the given column
-	const rules = formattingRulesByColumn.value[colName]
 
-	if (!rules?.length) return ''
+function getHighlightClassFromRules(colName: string, val: any, rules: FormattingMode[]): string {
 	for (const format of rules) {
 		let isHighlighted = false
 		let colorClass = ''
@@ -447,68 +373,64 @@ function getCellStyleClass(colName: string, val: any): string {
 			return colorClass
 		}
 	}
+	return ''
+}
 
-	for (const format of rules) {
-		if (format.mode === 'color_scale') {
-			const numVal = Number(val)
-			if (isNaN(numVal)) {
-				continue
-			}
-			const measureScales = measureColorScales.value
-			if (!measureScales) {
-				continue
-			}
-			let columnMeasure: string | null = null
-			let columnScale: { min: number; max: number; columns: string[] } | null = null
+function getColorScaleClassFromFormat(colName: string, val: any, format: FormattingMode): string {
+	if (format.mode !== 'color_scale') return ''
+	const numVal = Number(val)
+	if (isNaN(numVal)) return ''
 
-			for (const [measureName, scale] of Object.entries(measureScales)) {
-				if (scale.columns.includes(colName)) {
-					columnMeasure = measureName
-					columnScale = scale
-					break
-				}
-			}
+	const { min, max } = getColumnMinMax(colName)
+	let percentile: number = 0
+	const normalizedValue = (numVal - min) / (max - min)
+	percentile = Math.round(normalizedValue * 100)
+	percentile = Math.max(0, Math.min(100, percentile))
 
-			if (!columnMeasure || !columnScale) {
-				continue
-			}
+	let colorScale: Record<string, string>
+	if (format.colorScale) {
+		format.colorScale == 'Red-Green' ? (colorScale = ragByPercentage) : (colorScale = garByPercentage)
+	} else {
+		colorScale = ragByPercentage
+	}
 
-			let percentile: number
-			if (columnScale.max === columnScale.min) {
-				percentile = 50
-			} else {
-				const normalizedValue =
-					(numVal - columnScale.min) / (columnScale.max - columnScale.min)
-				percentile = Math.round(normalizedValue * 100)
-				percentile = Math.max(0, Math.min(100, percentile))
-			}
+	const thresholds = Object.keys(colorScale)
+		.map(Number)
+		.sort((a, b) => a - b)
 
-			let colorScale: Record<string, string>
-
-			if (format.colorScale) {
-				format.colorScale == 'Red-Green'
-					? (colorScale = ragByPercentage)
-					: (colorScale = garByPercentage)
-			} else {
-				colorScale = ragByPercentage
-			}
-
-			const thresholds = Object.keys(colorScale)
-				.map(Number)
-				.sort((a, b) => a - b)
-
-			let selectedThreshold = thresholds[0]
-			for (const threshold of thresholds) {
-				if (percentile >= threshold) {
-					selectedThreshold = threshold
-				}
-			}
-			const thresholdKey = String(selectedThreshold)
-			const bgClass = colorScale[thresholdKey]?.trim() || 'bg-gray-300'
-
-			return `${bgClass}`
+	let selectedThreshold = thresholds[0]
+	for (const threshold of thresholds) {
+		if (percentile >= threshold) {
+			selectedThreshold = threshold
 		}
 	}
+	const thresholdKey = String(selectedThreshold)
+	const bgClass = colorScale[thresholdKey]?.trim() || 'bg-gray-300'
+	return `${bgClass}`
+}
+
+function getColorScaleClassFromRules(colName: string, val: any, rules: FormattingMode[]): string {
+	for (const format of rules) {
+		if (format.mode === 'color_scale') {
+			const cls = getColorScaleClassFromFormat(colName, val, format)
+			if (cls) return cls
+		}
+	}
+	return ''
+}
+
+function getCellStyleClass(colName: string, val: any): string {
+	const defaultScale = getDefaultColorScaleClass(colName, val)
+	if (defaultScale) return defaultScale
+
+	const rules = formattingRulesByColumn.value[colName]
+	if (!rules?.length) return ''
+
+	const highlight = getHighlightClassFromRules(colName, val, rules)
+	if (highlight) return highlight
+
+	const scale = getColorScaleClassFromRules(colName, val, rules)
+	if (scale) return scale
 
 	return ''
 }
