@@ -120,6 +120,7 @@ export function makeQuery(name: string) {
 
 	const result = ref({ ...EMPTY_RESULT })
 	const executing = ref(false)
+	const downloading = ref(false)
 	let lastExecutionArgs: {
 		operations: Operation[]
 		adhoc_filters?: AdhocFilters
@@ -472,15 +473,17 @@ export function makeQuery(name: string) {
 		activeOperationIdx.value = newOperations.length - 1
 	}
 
-	function downloadResults(format?: string, filename?: string) {
-		const _downloadResults = () => {
+	function downloadResults(format: string = 'csv', filename?: string) {
+		const _downloadResults =  () => {
+			downloading.value = true
 			return query
 				.call('download_results', {
+					format,
 					active_operation_idx: activeOperationIdx.value,
 					adhoc_filters: adhocFilters.value,
 				})
-				.then((csv_data: string) => {
-					if (!csv_data) {
+				.then( (data: string) => {
+					if (!data) {
 						createToast({
 							title: 'Download Failed',
 							message: 'No data found to download.',
@@ -489,85 +492,54 @@ export function makeQuery(name: string) {
 						return
 					}
 
-					const blob = new Blob([csv_data], { type: 'text/csv' })
-					const url = window.URL.createObjectURL(blob)
-					const a = document.createElement('a')
-					a.setAttribute('hidden', '')
-					a.setAttribute('href', url)
-					a.setAttribute('download', `${filename || query.doc.title || 'data'}.csv`)
-					document.body.appendChild(a)
-					a.click()
-					document.body.removeChild(a)
-				})
-		}
-		if (format && filename) {
-			_downloadResults()
-			return
-		}
-		confirmDialog({
-			title: 'Download Results',
-			message:
-				'This action will download the datatable results as a CSV file. Do you want to proceed?',
-			primaryActionLabel: 'Yes',
-			onSuccess: _downloadResults,
-		})
-	}
+					let blob: Blob
+					let extension: string
+					let mimeType: string
 
-	function downloadResultsExcel(format?: string, filename?: string) {
-		const _downloadResultsExcel = () => {
-			return query
-				.call('download_results_excel', {
-					active_operation_idx: activeOperationIdx.value,
-					adhoc_filters: adhocFilters.value,
-				})
-				.then((base64Excel: string) => {
-					if (!base64Excel) {
-						createToast({
-							title: 'Download Failed',
-							message: 'No data found to download.',
-							variant: 'warning',
-						})
-						return
+					if (format === 'excel') {
+						const binaryStr = atob(data)
+						const len = binaryStr.length
+						const bytes = new Uint8Array(len)
+						for (let i = 0; i < len; i++) {
+							bytes[i] = binaryStr.charCodeAt(i)
+						}
+						blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+						extension = 'xlsx'
+						mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+					} else {
+						blob = new Blob([data], { type: 'text/csv' })
+						extension = 'csv'
+						mimeType = 'text/csv'
 					}
-					const binaryStr = atob(base64Excel)
-					const len = binaryStr.length
-					const bytes = new Uint8Array(len)
-					for (let i = 0; i < len; i++) {
-						bytes[i] = binaryStr.charCodeAt(i)
-					}
-					const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+
 					const url = window.URL.createObjectURL(blob)
 					const a = document.createElement('a')
 					a.setAttribute('hidden', '')
 					a.setAttribute('href', url)
-					a.setAttribute('download', `${filename || query.doc.title || 'data'}.xlsx`)
+					a.setAttribute('download', `${filename || query.doc.title || 'data'}.${extension}`)
 					document.body.appendChild(a)
 					a.click()
 					document.body.removeChild(a)
 					window.URL.revokeObjectURL(url)
 				})
-		}
+				.catch((error: any) => {
+					createToast({
+						title: 'Download Failed',
+						message: error?.message || 'Failed to download file',
+						variant: 'error',
+					})
+					throw error
+				})
+				.finally(() => {
+					downloading.value = false
+				})
+		}	
 
-		if (format && filename) {
-			_downloadResultsExcel()
-			return
-		}
-
-		confirmDialog({
-			title: 'Download Results',
-			message:
-				'This action will download the datatable results as an Excel file. Do you want to proceed?',
-			primaryActionLabel: 'Yes',
-			onSuccess: _downloadResultsExcel,
-		})
+		_downloadResults()
 	}
 
 	function exportResults(format: string, filename: string) {
-		if (format === 'csv') {
-			downloadResults(format, filename)
-		} else if (format === 'excel') {
-			downloadResultsExcel(format, filename)
-		}
+		downloadResults(format, filename)
 	}
 
 	function getDistinctColumnValues(column: string, search_term: string = '', limit: number = 20) {
@@ -958,9 +930,8 @@ export function makeQuery(name: string) {
 		getDistinctColumnValues,
 		getColumnsForSelection,
 		downloadResults,
-		downloadResultsExcel,
 		exportResults,
-
+		downloading,
 		getSQLOperation,
 		setSQL,
 

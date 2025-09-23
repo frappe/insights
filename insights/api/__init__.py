@@ -145,14 +145,12 @@ def get_file_data(filename: str):
     con = ibis.duckdb.connect()
     if ext in ["xlsx"]:
         table = con.read_xlsx(file_path)
-        count = table.count().execute()
-        columns = get_columns_from_schema(table.schema())
-        rows = table.head(50).execute().fillna("").to_dict(orient="records")
     else:
         table = con.read_csv(file_path, table_name=file_name)
-        count = table.count().execute()
-        columns = get_columns_from_schema(table.schema())
-        rows = table.head(50).execute().fillna("").to_dict(orient="records")
+
+    count = table.count().execute()
+    columns = get_columns_from_schema(table.schema())
+    rows = table.head(50).execute().fillna("").to_dict(orient="records")
 
     return {
         "tablename": file_name,
@@ -251,7 +249,7 @@ def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
 
 def is_public_method(doctype: str, method: str):
     public_methods = {
-        "Insights Query v3": ["execute", "download_results", "download_results_excel"],
+        "Insights Query v3": ["execute", "download_results"],
         "Insights Dashboard v3": ["get_distinct_column_values"],
     }
 
