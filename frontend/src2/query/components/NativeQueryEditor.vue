@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useTimeAgo } from '@vueuse/core'
-import { MoreHorizontal, Play } from 'lucide-vue-next'
+import { MoreHorizontal, Play, Wand2 } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
 import Code from '../../components/Code.vue'
 import ContentEditable from '../../components/ContentEditable.vue'
@@ -9,6 +9,7 @@ import { wheneverChanges } from '../../helpers'
 import { Query } from '../query'
 import QueryDataTable from './QueryDataTable.vue'
 import DataSourceSelector from './source_selector/DataSourceSelector.vue'
+import { createToast } from '../../helpers/toasts'
 
 const query = inject<Query>('query')!
 query.autoExecute = false
@@ -21,7 +22,7 @@ function execute(force: boolean = false) {
 	if (!data_source.value) {
 		createToast({
 			title: 'Please select a data source first',
-			type: 'error',
+			variant: 'error',
 		})
 		return
 	}
@@ -32,6 +33,26 @@ function execute(force: boolean = false) {
 		},
 		force,
 	)
+}
+
+const formatting = ref(false)
+async function format() {
+	if (!sql.value.trim() || formatting.value) return
+
+	formatting.value = true
+	try {
+		sql.value = await query.formatSQL({
+			raw_sql: sql.value,
+			data_source: data_source.value,
+		})
+	} catch (error) {
+		createToast({
+			title: 'Failed to format SQL',
+			variant: 'error',
+		})
+	} finally {
+		formatting.value = false
+	}
 }
 
 const dataSourceSchema = ref<Record<string, any>>({})
@@ -109,6 +130,11 @@ const completions = computed(() => {
 							label: 'Force Execute',
 							icon: Play,
 							onClick: () => execute(true),
+						},
+						{
+							label: 'Format SQL',
+							icon: Wand2,
+							onClick: () => format(),
 						},
 					]"
 				/>
