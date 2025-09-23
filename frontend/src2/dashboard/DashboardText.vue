@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { TextEditor, TextEditorFixedMenu } from 'frappe-ui'
+import { TextEditor } from 'frappe-ui'
 import { inject, ref, unref } from 'vue'
 import { WorkbookDashboardText } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
@@ -15,7 +15,7 @@ const editedText = ref(unref(props.item.text))
 		<div v-html="props.item.text"></div>
 	</div>
 
-	<!-- <Dialog
+	<Dialog
 		v-if="dashboard.isEditingItem(props.item)"
 		:modelValue="dashboard.isEditingItem(props.item)"
 		@update:modelValue="!$event ? (dashboard.editingItemIndex = null) : true"
@@ -38,15 +38,9 @@ const editedText = ref(unref(props.item.text))
 				},
 			],
 		}"
-	> -->
-<template 
-v-if="dashboard.isEditingItem(props.item)"
-		:modelValue="dashboard.isEditingItem(props.item)"
-		@update:modelValue="!$event ? (dashboard.editingItemIndex = null) : true"
->
-			<div class="space-y-2" 
-			
-			>
+	>
+		<template #body-content>
+			<div class="space-y-2">
 				<span class="block text-sm leading-4 text-gray-700">Content</span>
 				<TextEditor
 					ref="textEditor"
@@ -55,29 +49,9 @@ v-if="dashboard.isEditingItem(props.item)"
 					editor-class="min-h-[8rem] h-auto prose-sm cursor-text bg-gray-100 rounded p-2"
 					@change="editedText = $event"
 					placeholder="Enter your text content here..."
-					>
-				<template #bottom>
-					<div class="mt-2 flex flex-col justify-between sm:flex-row sm:items-center">
-        <TextEditorFixedMenu
-          class="-ml-1 overflow-x-auto"
-          :buttons="[
-            'Paragraph',
-            ['Heading 2', 'Heading 3', 'Heading 4'],
-            'Separator',
-            'Bold',
-            'Italic',
-            'Separator',
-            'Bullet List',
-            'Numbered List',
-            'Separator',
-            'Link',
-            'Image',
-          ]"
-		  />
-		  </div>
-				</template>
-				</TextEditor>
+				/>
+				<p class="text-xs text-gray-500">Markdown supported</p>
 			</div>
 		</template>
-	<!-- </Dialog> -->
+	</Dialog>
 </template>

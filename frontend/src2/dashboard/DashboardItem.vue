@@ -11,7 +11,6 @@ import DashboardChart from './DashboardChart.vue'
 import DashboardFilter from './DashboardFilter.vue'
 import DashboardItemActions from './DashboardItemActions.vue'
 import DashboardText from './DashboardText.vue'
-import { TextEditor } from 'frappe-ui'
 
 const props = defineProps<{
 	index: number
@@ -36,26 +35,10 @@ const dashboard = inject('dashboard') as Dashboard
 				:item="(props.item as WorkbookDashboardChart)"
 			/>
 
-			<!-- <DashboardText
+			<DashboardText
 				v-else-if="props.item.type === 'text'"
 				:item="(props.item as WorkbookDashboardText)"
-			/> -->
-
-			<TextEditor
-			v-else-if="props.item.type === 'text'"
-			:item="(props.item as WorkbookDashboardText)"
-			<div class="p-2">
-  <TextEditor
-    editor-class="prose-sm min-h-[4rem] border rounded-b-lg border-t-0 p-2"
-    :content="'<p></p>'"
-    placeholder="Type something..."
-    @change="(val) => value = val"
-    :bubbleMenu="true"
-    :fixed-menu="true"
-  />
-
 			/>
-
 
 			<DashboardFilter
 				v-else-if="props.item.type === 'filter'"
