@@ -58,13 +58,6 @@ const eChartOptions = computed(() => {
 	}
 })
 
-const filteredCitiesGeoJSON = computed(() => {
-	if (chart_type.value === 'Map' && eChartOptions.value?.filteredCitiesGeoJSON) {
-		return eChartOptions.value.filteredCitiesGeoJSON
-	}
-	return null
-})
-
 const showDrillDown = ref(false)
 const drillDownQuery = ref<Query>()
 const selectedState = ref<string | undefined>(undefined)
@@ -82,16 +75,8 @@ function onChartElementClick(params: any) {
 			config.map_type === 'india' &&
 			config.india_region === 'states' &&
 			!selectedState.value
-		) {
-			if (config.city_column?.column_name) {
-				const newState = params.name.trim()
-				if (newState && newState !== selectedState.value) {
-					selectedState.value = newState
-					console.log(selectedState)
-				}
-				return
-			}
-		} else if (selectedState.value) {
+		) 
+		if (selectedState.value) {
 			selectedState.value = undefined
 			return
 		}
@@ -144,7 +129,7 @@ function onNumberChartDrillDown(column: any, row: any) {
 			v-if="!loading && eChartOptions" 
 			class="rounded bg-white py-1 shadow"
 			:class="props.chart.doc.chart_type == 'Map' ? '[&>div:last-child]:p-4' : ''" :title="props.chart.doc.title"
-			:options="eChartOptions" :filteredCitiesGeoJSON="filteredCitiesGeoJSON" :onClick="onChartElementClick" />
+			:options="eChartOptions" :onClick="onChartElementClick" />
 		<NumberChart v-else-if="!loading && chart_type == 'Number'" :config="config as NumberChartConfig"
 			:result="result" @drill-down="onNumberChartDrillDown" />
 		<TableChart v-else-if="!loading && chart_type == 'Table'" :chart="props.chart" />

@@ -27,11 +27,6 @@ const config = defineModel<MapChartConfig>({
 			measure_name: '',
 			aggregation: '',
 		},
-		city_column: {
-			column_name: '',
-			data_type: 'String',
-			dimension_name: '',
-		},
 		map_type: 'world',
 	}),
 })
@@ -49,11 +44,6 @@ const initializeConfig = () => {
 				data_type: 'Integer',
 				measure_name: '',
 				aggregation: '',
-			},
-			city_column: {
-				column_name: '',
-				data_type: 'String',
-				dimension_name: '',
 			},
 			map_type: 'world',
 			india_region: 'states',
@@ -74,13 +64,7 @@ const initializeConfig = () => {
 				aggregation: 'sum',
 			}
 		}
-		if (!config.value.city_column) {
-			config.value.city_column = {
-				column_name: '',
-				data_type: 'String',
-				dimension_name: '',
-			}
-		}
+		
 		if (!config.value.map_type) {
 			config.value.map_type = 'world'
 		}
@@ -134,14 +118,6 @@ const map_options = computed(() => [
 				:column-options="props.columnOptions"
 				label="Value"
 			/>
-
-			<template v-if="config.map_type === 'india'">
-				<DimensionPicker
-					v-model="config.city_column"
-					:options="discrete_dimensions"
-					label="City Column"
-				/>
-			</template>
 		</div>
 	</CollapsibleSection>
 </template>

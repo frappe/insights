@@ -5,11 +5,9 @@ import { wheneverChanges } from '../../helpers'
 import ChartTitle from './ChartTitle.vue'
 import indiaGeoJSON from '../../assets/maps_json/india.json'
 import countriesGeoJSON from '../../assets/maps_json/countries.json'
-import citiesGeoJSON from '../../assets/maps_json/INDIA_DISTRICTS.json'
 
 echarts.registerMap('india', indiaGeoJSON)
 echarts.registerMap('countries', countriesGeoJSON)
-echarts.registerMap('cities', citiesGeoJSON)
 
 const props = defineProps({
 	title: { type: String, required: false },

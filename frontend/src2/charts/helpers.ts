@@ -1,5 +1,4 @@
 import { graphic } from 'echarts/core'
-import citiesGeoJSON from '../assets/maps_json/INDIA_DISTRICTS.json'
 import { ellipsis, formatNumber, getShortNumber, getShortNumberWithRange } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import { getFormattedDate } from '../query/helpers'
@@ -17,6 +16,7 @@ import {
 } from '../types/chart.types'
 import { QueryResult, QueryResultColumn, QueryResultRow } from '../types/query.types'
 import { getColors, getGradientColors } from './colors'
+import { EMPTY_RESULT } from '../query/query'
 
 interface GeoJSONFeature {
 	type: string
@@ -642,12 +642,6 @@ function getMapChartData(
 
 	let aggregationColumn = locationColumn
 
-	if (selectedState && config?.city_column?.column_name) {
-		const cityColumn = columns.find((c) => c.name === config.city_column.column_name)
-		if (cityColumn) {
-			aggregationColumn = cityColumn
-		}
-	}
 
 	const valueByLocation = rows.reduce((queryResult, row) => {
 		// for breakout by state filter only the selected state
@@ -683,78 +677,21 @@ export function getMapChartOptions(config: MapChartConfig, result: QueryResult, 
 	}
 
 	let jsonUrl = config.geojson_url
-	let isCitiesView = false
-	let useFilteredCities = false
 
 	if (!jsonUrl) {
 		if (config.map_type === 'world') {
 			jsonUrl = 'countries'
 		} else if (config.map_type === 'india') {
-			// show filtered cities if city column is selected
-			if (config.india_region === 'cities' || selectedState) {
-				jsonUrl = selectedState ? 'filtered_cities' : 'cities'
-				isCitiesView = true
-				useFilteredCities = !!selectedState
-			} else {
-				jsonUrl = 'india'
-			}
-		} else {
 			jsonUrl = 'india'
-		}
+		} 
 	}
 	let locationColumn = columns.find((c) => FIELDTYPES.DIMENSION.includes(c.type))
 	if (!locationColumn) {
 		return
 	}
 
-	// if city column is selected then breakout by city
-	if (selectedState && config.city_column) {
-		const cityColumn = columns.find((c) => c.name === config.city_column?.column_name)
-		if (cityColumn) {
-			locationColumn = cityColumn
-		}
-	}
-	let filteredRows = rows
-	let filteredCitiesGeoJSON = citiesGeoJSON as GeoJSONData
 
-	if (selectedState && isCitiesView) {
-		const geoJSONData = citiesGeoJSON as GeoJSONData
-		if (geoJSONData && geoJSONData.features) {
-			try {
-				filteredCitiesGeoJSON = {
-					...geoJSONData,
-					features: geoJSONData.features.filter((feature: GeoJSONFeature, index: number) => {
-						const properties = feature.properties
-						if (!properties) {
-							return false
-						}
-
-						const stateName = properties.stname
-						const isInState = stateName?.toLowerCase() === selectedState?.toLowerCase()
-						return isInState
-					}).map((feature: GeoJSONFeature) => {
-						if (feature.properties) {
-							const normalizedDistrictName = normalizeCityName(feature.properties.dtname)
-							return {
-								...feature,
-								properties: {
-									...feature.properties,
-									dtname_normalized: normalizedDistrictName,
-									name: normalizedDistrictName
-								}
-							}
-						}
-						return feature
-					})
-				}
-			} catch (e) {
-				console.error('error', e)
-				filteredCitiesGeoJSON = geoJSONData
-			}
-		}
-	}
-
-	const data = getMapChartData(columns, filteredRows, config, selectedState)
+	const data = getMapChartData(columns,rows, config, selectedState)
 	const values = data.map((d) => d[1])
 	const min = values.length ? Math.min(...values) : 0
 	const max = values.length ? Math.max(...values) : 0
@@ -808,9 +745,6 @@ export function getMapChartOptions(config: MapChartConfig, result: QueryResult, 
 		}],
 	}
 
-	if (useFilteredCities) {
-		(options as any).filteredCitiesGeoJSON = filteredCitiesGeoJSON
-	}
 	return options
 }
 

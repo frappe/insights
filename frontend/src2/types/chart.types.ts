@@ -121,10 +121,9 @@ export type TableChartConfig = {
 export type MapChartConfig = {
 	location_column: Dimension
 	value_column: Measure
-	city_column: Dimension
 	geojson_url?: string
 	map_type?: 'world' | 'india'
-	india_region?: 'states' | 'cities'
+	india_region?: 'states' 
 }
 
 export type ChartConfig =
