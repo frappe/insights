@@ -87,6 +87,7 @@ const currentAlertName = ref('')
 		:rows="rows"
 		:enable-pagination="true"
 		:on-export="props.query.exportResults"
+		:downloading="props.query.downloading"
 		:sort-order="sortOrder"
 		:on-sort-change="props.enableSort ? onSortChange : undefined"
 		:on-column-rename="props.enableColumnRename ? onRename : undefined"
