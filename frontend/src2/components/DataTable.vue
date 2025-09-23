@@ -20,6 +20,7 @@ const props = defineProps<{
 	compactNumbers?: boolean
 	loading?: boolean
 	onExport?: Function
+	downloading?: boolean
 	sortOrder?: SortOrder
 	onSortChange?: (column_name: string, direction: SortDirection) => void
 	onColumnRename?: (column_name: string, new_name: string) => void
@@ -287,8 +288,6 @@ function openExportDialog() {
 
 function handleExport() {
 	if (!props.onExport) return
-
-	showExportDialog.value = false
 	if (exportFormat.value === 'csv') {
 		props.onExport('csv', exportFilename.value)
 	} else if (exportFormat.value === 'excel') {
@@ -569,40 +568,31 @@ function handleExport() {
 		<template #body-content>
 			<div class="space-y-4">
 				<div>
-					<label class="block text-sm font-medium text-gray-700 mb-2">Export Format</label>
 					<div class="space-y-2">
 						<label class="flex cursor-pointer items-center ">
-							<input
-								type="radio"
-								v-model="exportFormat"
-								value="csv"
-								class="mr-2 cursor-pointer rounded-md text-black focus:ring-0 focus:ring-offset-0 "
-							/>
-							<span class="text-sm">CSV</span>
-						</label>
-						<label class="flex items-center">
-							<input
-								type="radio"
-								v-model="exportFormat"
-								value="excel"
-								class="mr-2 cursor-pointer rounded-md text-black ring-0 focus:ring-0 focus:ring-offset-0"
-							/>
-							<span class="text-sm">Excel</span>
+							<FormControl
+							class="w-32"
+							type = "select"
+							label="Export Format"
+							:options="[
+								{ label: 'CSV', value: 'csv' },
+								{ label: 'Excel', value: 'excel' },
+							]"
+							v-model="exportFormat"
+						/>
+							
 						</label>
 					</div>
 				</div>
 	
 				<div class="flex items-center gap-2">
 					<FormControl
-						id="filename"
 						type="text"
+						label="Filename"
 						v-model="exportFilename"
 						placeholder="Enter filename"
 						class="w-44"
 					/>
-					<p class="text-md mt-1 text-gray-700">
-						{{ exportFormat === 'csv' ? '.csv' : '.xlsx' }} 
-					</p>
 				</div>
 			</div>
 		</template>
@@ -612,7 +602,7 @@ function handleExport() {
 				<Button variant="ghost" @click="showExportDialog = false">
 					Cancel
 				</Button>
-				<Button variant="solid" @click="handleExport">
+				<Button variant="solid" @click="handleExport" :loading="props.downloading"   >
 					Export
 				</Button>
 			</div>

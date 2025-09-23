@@ -18,11 +18,11 @@ const csvData = reactive({
 	totalRowCount: 0,
 })
 
-function uploadFileAndFetchData(file: File) {
+function uploadFile(file: File) {
 	fileUploaded.value = true
 	csvData.loading = true
 	csvData.file = file
-	return call('insights.api.get_csv_data', {
+	return call('insights.api.get_file_data', {
 		filename: file.name,
 	})
 		.then((data: any) => {
@@ -101,7 +101,7 @@ function resetFile() {
 				v-if="!fileUploaded"
 				:uploadArgs="{ private: true }"
 				:file-types="['.csv', '.xlsx', '.xls']"
-				@success="uploadFileAndFetchData"
+				@success="uploadFile"
 			>
 				<template #default="{ progress, uploading, openFileSelector }">
 					<div
