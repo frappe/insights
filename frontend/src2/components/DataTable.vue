@@ -329,11 +329,20 @@ function getDefaultColorScaleClass(colName: string, val: any): string {
 	return ''
 }
 
+function normalizeCellValue(colName: string, val: any) {
+        if (isNumberColumn(colName) && (val === null || val === undefined)) {
+            return 0
+        }
+        return val
+    }
 
 function getHighlightClassFromRules(colName: string, val: any, rules: FormattingMode[]): string {
+
 	for (const format of rules) {
 		let isHighlighted = false
 		let colorClass = ''
+
+        const normalizedValue = normalizeCellValue(colName, val)
 
 		if (format.mode === 'cell_rules' && format.operator && format.value !== undefined) {
 			const rule = {
@@ -344,26 +353,26 @@ function getHighlightClassFromRules(colName: string, val: any, rules: Formatting
 				mode: 'cell_rules',
 			} as unknown as cell_rules
 
-			if (applyRule(val, rule)) {
+            if (applyRule(normalizedValue, rule)) {
 				isHighlighted = true
 				colorClass = getColorClass(format.color as string)
 			}
 		} else if (format.mode === 'text_rules') {
 			const textRule = format as text_rules
-			if (applyTextRule(val, textRule)) {
+            if (applyTextRule(normalizedValue, textRule)) {
 				isHighlighted = true
 				colorClass = getColorClass(textRule.color)
 			}
 		} else if (format.mode === 'date_rules') {
 			const dateRule = format as date_rules
-			if (applyDateRule(val, dateRule)) {
+            if (applyDateRule(normalizedValue, dateRule)) {
 				isHighlighted = true
 				colorClass = getColorClass(dateRule.color)
 			}
 		} else if (format.mode === 'rank_rules') {
 			const rankRule = format as rank_rules
-			const allColumnValues = props.rows?.map((row) => row[colName]) || []
-			if (applyRankRule(val, rankRule, allColumnValues)) {
+            const allColumnValues = props.rows?.map((row) => normalizeCellValue(colName, row[colName])) || []
+            if (applyRankRule(normalizedValue, rankRule, allColumnValues)) {
 				isHighlighted = true
 				colorClass = getColorClass(rankRule.color)
 			}
