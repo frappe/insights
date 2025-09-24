@@ -3,59 +3,59 @@ import * as echarts from 'echarts'
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { wheneverChanges } from '../../helpers'
 import ChartTitle from './ChartTitle.vue'
-import indiaGeoJSON from '../../assets/maps_json/india.json'
-import countriesGeoJSON from '../../assets/maps_json/countries.json'
-
-echarts.registerMap('india', indiaGeoJSON)
-echarts.registerMap('countries', countriesGeoJSON)
 
 const props = defineProps({
 	title: { type: String, required: false },
 	subtitle: { type: String, required: false },
 	options: { type: Object, required: true },
 	onClick: { type: Function, required: false },
-	map: { type: String, required: false },
-	filteredCitiesGeoJSON: { type: Object, required: false },
 })
 
 let eChart = null
 const chartRef = ref(null)
-onMounted(() => {
-	eChart = echarts.init(chartRef.value, 'light', { renderer: 'canvas' })
+let resizeObserver = null
+	async function registerMap(mapName) {
+		if (!mapName) return
+    if (mapName === 'india') {
+        const mapJson = await import('../../assets/maps_json/india.json')
+        echarts.registerMap('india', mapJson.default)
+    } else if (mapName === 'world') {
+        const mapJson = await import('../../assets/maps_json/countries.json')
+        echarts.registerMap('world', mapJson.default)
+    }
+}
 
-	// register filtered cities map if provided
-	if (props.filteredCitiesGeoJSON) {
-		echarts.registerMap('filtered_cities', props.filteredCitiesGeoJSON)
-	}
+onBeforeUnmount(() => {
+    if (chartRef.value && resizeObserver) resizeObserver.unobserve(chartRef.value)
+})
 
-	Object.keys(props.options).length && eChart.setOption({ ...props.options })
+onMounted(async () => {
+    const series = props.options?.series?.[0]
+    const isMap = series && series.type === 'map'
+    const renderer = isMap ? 'canvas' : 'svg'
+	eChart = echarts.init(chartRef.value, 'light', { renderer })
+
+    if (isMap) {
+        await registerMap(series.map)
+    }
+    Object.keys(props.options).length && eChart.setOption({ ...props.options })
 	props.onClick && eChart.on('click', props.onClick)
 
-	const resizeObserver = new ResizeObserver(() => eChart.resize())
-	setTimeout(() => chartRef.value && resizeObserver.observe(chartRef.value), 1000)
-	onBeforeUnmount(() => chartRef.value && resizeObserver.unobserve(chartRef.value))
+    resizeObserver = new ResizeObserver(() => eChart.resize())
+    setTimeout(() => chartRef.value && resizeObserver && resizeObserver.observe(chartRef.value), 1000)
 })
 
 wheneverChanges(
-	() => props.options,
-	() => {
-		if (props.filteredCitiesGeoJSON) {
-			echarts.registerMap('filtered_cities', props.filteredCitiesGeoJSON)
-		}
-		if (eChart) {
-			eChart.setOption({ ...props.options })
-		}
-	},
-	{ deep: true }
-)
-
-wheneverChanges(
-	() => props.filteredCitiesGeoJSON,
-	() => {
-		if (props.filteredCitiesGeoJSON && eChart) {
-			echarts.registerMap('filtered_cities', props.filteredCitiesGeoJSON)
-		}
-	},
+	() => props.options,    
+	async () => {
+        if (!eChart) return
+        const series = props.options?.series?.[0]
+        const isMap = series && series.type === 'map'
+        if (isMap) {
+            await registerMap(series.map)
+        }
+        eChart.setOption({ ...props.options })
+    },
 	{ deep: true }
 )
 

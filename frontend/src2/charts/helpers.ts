@@ -641,15 +641,14 @@ function getMapChartData(
 	}
 
 	let aggregationColumn = locationColumn
+	const locationValueMap = new Map<string, number>()
 
-
-	const valueByLocation = rows.reduce((queryResult, row) => {
-		// for breakout by state filter only the selected state
+	for (const row of rows) {
 		if (selectedState && config?.location_column?.column_name) {
 			const rowState = toTitleCase(row[config.location_column.column_name])
 			const normalizedSelectedState = toTitleCase(selectedState)
 			if (rowState !== normalizedSelectedState) {
-				return queryResult
+				continue
 			}
 		}
 
@@ -657,13 +656,14 @@ function getMapChartData(
 		const normalizedLocation = selectedState ? normalizeCityName(rawLocation) : toTitleCase(rawLocation)
 		const value = row[measureColumn.name]
 
-		if (!queryResult[normalizedLocation]) queryResult[normalizedLocation] = 0
-		queryResult[normalizedLocation] = queryResult[normalizedLocation] + value
-		return queryResult
-	}, {} as Record<string, number>)
+		const currentValue = locationValueMap.get(normalizedLocation) || 0
+		locationValueMap.set(normalizedLocation, currentValue + value)
+	}
 
-	const sortedLocations = Object.keys(valueByLocation).sort((a, b) => valueByLocation[b] - valueByLocation[a])
-	const data = sortedLocations.map((location) => [location, valueByLocation[location]])
+	const data = Array.from(locationValueMap.entries())
+		.sort((a, b) => b[1] - a[1])
+		.map(([location, value]) => [location, value])
+
 	return data
 }
 
@@ -672,29 +672,23 @@ export function getMapChartOptions(config: MapChartConfig, result: QueryResult, 
 	const rows = result.rows
 
 	const measureColumn = columns.find((c) => FIELDTYPES.MEASURE.includes(c.type))
-	if (!measureColumn) {
-		return
+	const locationColumn = columns.find((c) => FIELDTYPES.DIMENSION.includes(c.type))
+
+	if (!measureColumn || !locationColumn) {
+		return null
 	}
 
-	let jsonUrl = config.geojson_url
-
-	if (!jsonUrl) {
+	let jsonUrl = ''
 		if (config.map_type === 'world') {
-			jsonUrl = 'countries'
+			jsonUrl = 'world'
 		} else if (config.map_type === 'india') {
 			jsonUrl = 'india'
-		} 
 	}
-	let locationColumn = columns.find((c) => FIELDTYPES.DIMENSION.includes(c.type))
-	if (!locationColumn) {
-		return
-	}
-
 
 	const data = getMapChartData(columns,rows, config, selectedState)
 	const values = data.map((d) => d[1])
-	const min = values.length ? Math.min(...values) : 0
-	const max = values.length ? Math.max(...values) : 0
+	const min = values.length ? Math.min(...values.filter(v => typeof v === 'number')) : 0
+	const max = values.length ? Math.max(...values.filter(v => typeof v === 'number')) : 0
 
 	const options: any = {
 		height: '100%',
