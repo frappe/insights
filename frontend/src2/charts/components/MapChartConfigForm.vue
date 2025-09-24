@@ -28,49 +28,44 @@ const config = defineModel<MapChartConfig>({
 			aggregation: '',
 		},
 		map_type: 'world',
+		india_region: 'states'
 	}),
+})
+
+const getDefaultConfig = () => ({
+	location_column: {
+		column_name: '',
+		data_type: 'String' as const,
+		dimension_name: '',
+	},
+	value_column: {
+		column_name: '',
+		data_type: 'Integer' as const,
+		measure_name: '',
+		aggregation: 'sum' as const,
+	},
+	map_type: 'world' as const,
+	india_region: 'states' as const,
 })
 
 const initializeConfig = () => {
 	if (!config.value) {
-		config.value = {
-			location_column: {
-				column_name: '',
-				data_type: 'String',
-				dimension_name: '',
-			},
-			value_column: {
-				column_name: '',
-				data_type: 'Integer',
-				measure_name: '',
-				aggregation: '',
-			},
-			map_type: 'world',
-			india_region: 'states',
-		}
-	} else {
-		if (!config.value.location_column) {
-			config.value.location_column = {
-				column_name: '',
-				data_type: 'String',
-				dimension_name: '',
-			}
-		}
-		if (!config.value.value_column) {
-			config.value.value_column = {
-				column_name: '',
-				data_type: 'Integer',
-				measure_name: '',
-				aggregation: 'sum',
-			}
-		}
-		
-		if (!config.value.map_type) {
-			config.value.map_type = 'world'
-		}
-		if (config.value.map_type === 'india' && !config.value.india_region) {
-			config.value.india_region = 'states'
-		}
+		config.value = getDefaultConfig()
+		return
+	}
+
+	const defaultConfig = getDefaultConfig()
+	config.value = {
+		...defaultConfig,
+		...config.value,
+		location_column: {
+			...defaultConfig.location_column,
+			...config.value.location_column,
+		},
+		value_column: {
+			...defaultConfig.value_column,
+			...config.value.value_column,
+		},
 	}
 }
 

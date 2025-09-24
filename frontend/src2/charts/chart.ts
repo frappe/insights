@@ -278,11 +278,6 @@ function makeChart(name: string) {
 	function addMapChartOperation(query: Query) {
 		const config = chart.doc.config as MapChartConfig
 		let dimensions = [config.location_column]
-
-		if (config.map_type === 'india' && config.city_column?.column_name) {
-			dimensions.push(config.city_column)
-		}
-
 		query.addSummarize({
 			measures: [config.value_column],
 			dimensions: dimensions

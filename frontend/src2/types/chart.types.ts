@@ -121,7 +121,6 @@ export type TableChartConfig = {
 export type MapChartConfig = {
 	location_column: Dimension
 	value_column: Measure
-	geojson_url?: string
 	map_type?: 'world' | 'india'
 	india_region?: 'states' 
 }
