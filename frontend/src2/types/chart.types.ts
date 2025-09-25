@@ -122,7 +122,6 @@ export type MapChartConfig = {
 	location_column: Dimension
 	value_column: Measure
 	map_type?: 'world' | 'india'
-	india_region?: 'states' 
 }
 
 export type ChartConfig =

@@ -28,7 +28,6 @@ const config = defineModel<MapChartConfig>({
 			aggregation: '',
 		},
 		map_type: 'world',
-		india_region: 'states'
 	}),
 })
 
@@ -45,7 +44,6 @@ const getDefaultConfig = () => ({
 		aggregation: 'sum' as const,
 	},
 	map_type: 'world' as const,
-	india_region: 'states' as const,
 })
 
 const initializeConfig = () => {
@@ -72,15 +70,6 @@ const initializeConfig = () => {
 onMounted(() => {
 	initializeConfig()
 })
-
-watch(
-	() => config.value?.map_type,
-	(newMapType) => {
-		if (newMapType === 'india' && !config.value.india_region) {
-			config.value.india_region = 'states'
-		}
-	},
-)
 
 const discrete_dimensions = computed(() =>
 	props.dimensions.filter((d) => FIELDTYPES.DISCRETE.includes(d.data_type)),
