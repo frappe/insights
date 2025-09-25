@@ -1,6 +1,13 @@
 import { useDebouncedRefHistory } from '@vueuse/core'
 import { computed, reactive, toRefs, watch } from 'vue'
-import { copy, copyToClipboard, getUniqueId, safeJSONParse, waitUntil, wheneverChanges } from '../helpers'
+import {
+	copy,
+	copyToClipboard,
+	getUniqueId,
+	safeJSONParse,
+	waitUntil,
+	wheneverChanges,
+} from '../helpers'
 import { GranularityType } from '../helpers/constants'
 import useDocumentResource from '../helpers/resource'
 import { column, count, query_table } from '../query/helpers'
@@ -280,7 +287,7 @@ function makeChart(name: string) {
 		let dimensions = [config.location_column]
 		query.addSummarize({
 			measures: [config.value_column],
-			dimensions: dimensions
+			dimensions: dimensions,
 		})
 	}
 
@@ -376,7 +383,7 @@ function makeChart(name: string) {
 	)
 
 	function copyChart() {
-		chart.call('export').then(data => {
+		chart.call('export').then((data) => {
 			copyToClipboard(JSON.stringify(data, null, 2))
 		})
 	}
@@ -456,11 +463,14 @@ function getChartResource(name: string) {
 		disableLocalStorage: true,
 		transform: transformChartDoc,
 	})
-	wheneverChanges(() => chart.doc.read_only, () => {
-		if (chart.doc.read_only) {
-			chart.autoSave = false
+	wheneverChanges(
+		() => chart.doc.read_only,
+		() => {
+			if (chart.doc.read_only) {
+				chart.autoSave = false
+			}
 		}
-	})
+	)
 	return chart
 }
 
@@ -471,9 +481,9 @@ function transformChartDoc(doc: any) {
 	doc.config.filters = doc.config.filters?.filters?.length
 		? doc.config.filters
 		: {
-			filters: [],
-			logical_operator: 'And',
-		}
+				filters: [],
+				logical_operator: 'And',
+		  }
 	doc.config.order_by = doc.config.order_by || []
 	doc.config.limit = doc.config.limit || 100
 
