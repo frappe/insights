@@ -192,6 +192,7 @@ export function guessPrecision(number: number) {
 	return Math.min(str.length - decimalIndex - 1, 2)
 }
 
+
 export function getShortNumber(number: number, precision = 0) {
 	const locale = session.user?.country == 'India' ? 'en-IN' : session.user?.locale
 	let formatted = new Intl.NumberFormat(locale || 'en-US', {
@@ -497,4 +498,19 @@ export function cachedCall(url: string, options?: any): Promise<any> {
 			callCache.delete(key)
 			throw err
 		})
+}
+
+export function toTitleCase(str: string): string {
+	if (!str) return str
+
+	return str
+		.replace(/&/g, 'and')
+		.toLowerCase()
+		.split(' ')
+		.map(word => {
+			if (word === 'and') return 'and'
+			return word.charAt(0).toUpperCase() + word.slice(1)
+		})
+		.join(' ')
+		.trim()
 }

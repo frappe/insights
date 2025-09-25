@@ -13,21 +13,50 @@ const props = defineProps({
 
 let eChart = null
 const chartRef = ref(null)
-onMounted(() => {
-	eChart = echarts.init(chartRef.value, 'light', { renderer: 'svg' })
-	Object.keys(props.options).length && eChart.setOption({ ...props.options })
+let resizeObserver = null
+
+onMounted(async () => {
+	const series = props.options?.series?.find((s) => s.type === 'map')
+	const isMap = series && series.type === 'map'
+	const renderer = isMap ? 'canvas' : 'svg'
+	eChart = echarts.init(chartRef.value, 'light', { renderer })
+
+	await setChartOptions()
 	props.onClick && eChart.on('click', props.onClick)
 
-	const resizeObserver = new ResizeObserver(() => eChart.resize())
-	setTimeout(() => chartRef.value && resizeObserver.observe(chartRef.value), 1000)
-	onBeforeUnmount(() => chartRef.value && resizeObserver.unobserve(chartRef.value))
+	resizeObserver = new ResizeObserver(() => eChart.resize())
+	setTimeout(
+		() => chartRef.value && resizeObserver && resizeObserver.observe(chartRef.value),
+		1000,
+	)
 })
 
-wheneverChanges(
-	() => props.options,
-	() => eChart.setOption({ ...props.options }),
-	{ deep: true }
-)
+onBeforeUnmount(() => {
+	if (chartRef.value && resizeObserver) resizeObserver.unobserve(chartRef.value)
+})
+
+wheneverChanges(() => props.options, setChartOptions, { deep: true })
+
+async function setChartOptions() {
+	if (!eChart) return
+	const series = props.options?.series?.find((s) => s.type === 'map')
+	const isMap = series && series.type === 'map'
+	if (isMap) {
+		await registerMap(series.map)
+	}
+	eChart.setOption({ ...props.options })
+}
+
+async function registerMap(mapName) {
+	if (!mapName) return
+	if (mapName === 'india') {
+		const mapJson = await import('../../assets/maps_json/india.json')
+		echarts.registerMap('india', mapJson.default)
+	} else if (mapName === 'world') {
+		const mapJson = await import('../../assets/maps_json/countries.json')
+		echarts.registerMap('world', mapJson.default)
+	}
+}
 
 defineExpose({ downloadChart })
 function downloadChart() {

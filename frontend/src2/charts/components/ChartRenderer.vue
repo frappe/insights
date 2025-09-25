@@ -7,6 +7,7 @@ import {
 	DonutChartConfig,
 	FunnelChartConfig,
 	LineChartConfig,
+	MapChartConfig,
 	NumberChartConfig,
 } from '../../types/chart.types'
 import { Chart } from '../chart'
@@ -15,7 +16,10 @@ import {
 	getDonutChartOptions,
 	getFunnelChartOptions,
 	getLineChartOptions,
+	getMapChartOptions,
 } from '../helpers'
+import { FIELDTYPES } from '../../helpers/constants.ts'
+import { titleCase } from '../../helpers'
 import BaseChart from './BaseChart.vue'
 import DrillDown from './DrillDown.vue'
 import NumberChart from './NumberChart.vue'
@@ -49,22 +53,55 @@ const eChartOptions = computed(() => {
 	if (chart_type.value === 'Funnel') {
 		return getFunnelChartOptions(config.value as FunnelChartConfig, result.value)
 	}
+	if (chart_type.value === 'Map') {
+		return getMapChartOptions(config.value as MapChartConfig, result.value)
+	}
 })
 
 const showDrillDown = ref(false)
 const drillDownQuery = ref<Query>()
-function onChartElementClick(params: any) {
-	if (params.componentType === 'series') {
-		let seriesIndex = params.seriesIndex
-		let dataIndex = params.dataIndex
-		if (chart_type.value === 'Row') {
-			dataIndex = result.value.formattedRows.length - 1 - dataIndex
-		}
-		const row = result.value.formattedRows[dataIndex]
-		const column = result.value.columns.find((c) => c.name === params.seriesName)!
-		drillDownQuery.value = props.chart.dataQuery.getDrillDownQuery(column, row)
+
+function handleMapChartClick(params: any) {
+	const config = props.chart.doc.config as MapChartConfig
+	const locationColumn = result.value.columns.find(
+		(c) =>
+			FIELDTYPES.DIMENSION.includes(c.type) && c.name === config.location_column?.column_name,
+	)
+
+	if (!locationColumn) return null
+
+	const clickedLocation = params.name
+	const formattedRow = result.value.formattedRows.find(
+		(r) => titleCase(r[locationColumn.name]?.toString()) === titleCase(clickedLocation),
+	)
+
+	return formattedRow
+		? props.chart.dataQuery.getDrillDownQuery(locationColumn, formattedRow)
+		: null
+}
+
+function handleGeneralChartClick(params: any) {
+	let dataIndex = params.dataIndex
+
+	// Adjust index for Row charts (they're displayed in reverse order)
+	if (chart_type.value === 'Row') {
+		dataIndex = result.value.formattedRows.length - 1 - dataIndex
 	}
-	if (drillDownQuery.value) {
+
+	const row = result.value.formattedRows[dataIndex]
+	const column = result.value.columns.find((c) => c.name === params.seriesName)
+
+	return column ? props.chart.dataQuery.getDrillDownQuery(column, row) : null
+}
+
+function onChartElementClick(params: any) {
+	if (params.componentType !== 'series') return
+
+	const query =
+		chart_type.value === 'Map' ? handleMapChartClick(params) : handleGeneralChartClick(params)
+
+	if (query) {
+		drillDownQuery.value = query
 		showDrillDown.value = true
 	}
 }
@@ -82,13 +119,14 @@ function onNumberChartDrillDown(column: any, row: any) {
 		<BaseChart
 			v-if="!loading && eChartOptions"
 			class="rounded bg-white py-1 shadow"
+			:class="props.chart.doc.chart_type == 'Map' ? '[&>div:last-child]:p-4' : ''"
 			:title="props.chart.doc.title"
 			:options="eChartOptions"
 			:onClick="onChartElementClick"
 		/>
 		<NumberChart
 			v-else-if="!loading && chart_type == 'Number'"
-			:config="(config as NumberChartConfig)"
+			:config="config as NumberChartConfig"
 			:result="result"
 			@drill-down="onNumberChartDrillDown"
 		/>
