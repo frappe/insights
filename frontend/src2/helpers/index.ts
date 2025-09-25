@@ -193,24 +193,24 @@ export function guessPrecision(number: number) {
 }
 export function getShortNumberWithRange(number: number, precision = 1.0, rangePercentage = 10) {
 	const locale = session.user?.country == 'India' ? 'en-IN' : session.user?.locale
-	
+
 	const formatter = new Intl.NumberFormat(locale || 'en-US', {
 		notation: 'compact',
 		maximumFractionDigits: precision,
 	})
-	
+
 	const rangeAmount = number * (rangePercentage / 100)
 	const lowerBound = number - rangeAmount
 	const upperBound = number + rangeAmount
-	
+
 	let formattedLower = formatter.format(lowerBound)
 	let formattedUpper = formatter.format(upperBound)
-	
+
 	if (locale == 'en-IN') {
 		formattedLower = formattedLower.replace('T', 'K')
 		formattedUpper = formattedUpper.replace('T', 'K')
 	}
-	
+
 	return `${formattedLower}-${formattedUpper}`
 }
 export function getShortNumber(number: number, precision = 0) {
@@ -518,4 +518,19 @@ export function cachedCall(url: string, options?: any): Promise<any> {
 			callCache.delete(key)
 			throw err
 		})
+}
+
+export function toTitleCase(str: string): string {
+	if (!str) return str
+
+	return str
+		.replace(/&/g, 'and')
+		.toLowerCase()
+		.split(' ')
+		.map(word => {
+			if (word === 'and') return 'and'
+			return word.charAt(0).toUpperCase() + word.slice(1)
+		})
+		.join(' ')
+		.trim()
 }

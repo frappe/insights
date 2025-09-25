@@ -1,5 +1,5 @@
 import { graphic } from 'echarts/core'
-import { ellipsis, formatNumber, getShortNumber, getShortNumberWithRange } from '../helpers'
+import { ellipsis, formatNumber, getShortNumber, toTitleCase } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import { getFormattedDate } from '../query/helpers'
 import {
@@ -601,34 +601,10 @@ export function getFunnelChartOptions(config: FunnelChartConfig, result: QueryRe
 	}
 }
 
-// fixes case mismatch issue
-function toTitleCase(str: string): string {
-	if (!str) return str
-
-	return str
-		.replace(/&/g, 'and')
-		.toLowerCase()
-		.split(' ')
-		.map(word => {
-			if (word === 'and') return 'and'
-			return word.charAt(0).toUpperCase() + word.slice(1)
-		})
-		.join(' ')
-		.trim()
-
-}
-
-function normalizeCityName(cityName: string): string {
-	if (!cityName) return cityName
-	let normalized = toTitleCase(cityName)
-	return normalized.trim()
-}
-
 function getMapChartData(
 	columns: QueryResultColumn[],
 	rows: QueryResultRow[],
-	config?: MapChartConfig,
-	selectedState?: string
+	config?: MapChartConfig
 ) {
 	const measureColumn = columns.find((c) => FIELDTYPES.MEASURE.includes(c.type))
 	if (!measureColumn) {
@@ -644,16 +620,8 @@ function getMapChartData(
 	const locationValueMap = new Map<string, number>()
 
 	for (const row of rows) {
-		if (selectedState && config?.location_column?.column_name) {
-			const rowState = toTitleCase(row[config.location_column.column_name])
-			const normalizedSelectedState = toTitleCase(selectedState)
-			if (rowState !== normalizedSelectedState) {
-				continue
-			}
-		}
-
 		const rawLocation = row[aggregationColumn.name]
-		const normalizedLocation = selectedState ? normalizeCityName(rawLocation) : toTitleCase(rawLocation)
+		const normalizedLocation = toTitleCase(rawLocation)
 		const value = row[measureColumn.name]
 
 		const currentValue = locationValueMap.get(normalizedLocation) || 0
@@ -667,7 +635,7 @@ function getMapChartData(
 	return data
 }
 
-export function getMapChartOptions(config: MapChartConfig, result: QueryResult, selectedState?: string) {
+export function getMapChartOptions(config: MapChartConfig, result: QueryResult) {
 	const columns = result.columns
 	const rows = result.rows
 
@@ -685,7 +653,7 @@ export function getMapChartOptions(config: MapChartConfig, result: QueryResult, 
 			jsonUrl = 'india'
 	}
 
-	const data = getMapChartData(columns,rows, config, selectedState)
+	const data = getMapChartData(columns, rows, config)
 	const values = data.map((d) => d[1])
 	const min = values.length ? Math.min(...values.filter(v => typeof v === 'number')) : 0
 	const max = values.length ? Math.max(...values.filter(v => typeof v === 'number')) : 0
