@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, watch, watchEffect } from 'vue'
 import { MapChartConfig } from '../../types/chart.types'
-import { DimensionOption, ColumnOption } from '../../types/query.types'
+import { DimensionOption, ColumnOption, Measure, Dimension } from '../../types/query.types'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
 import CollapsibleSection from './CollapsibleSection.vue'
@@ -13,54 +13,32 @@ const props = defineProps<{
 	columnOptions: ColumnOption[]
 }>()
 
-const getDefaultConfig = (): MapChartConfig => ({
-	location_column: {
-		column_name: '',
-		data_type: 'String' as const,
-		dimension_name: '',
-	},
-	value_column: {
-		column_name: '',
-		data_type: 'Integer' as const,
-		measure_name: '',
-		aggregation: 'sum' as const,
-	},
-	map_type: 'world' as const,
-})
-
 const config = defineModel<MapChartConfig>({
 	required: true,
-	default: getDefaultConfig,
+	default: () => ({
+		location_column: {},
+		value_column: {},
+		map_type: 'world',
+	}),
 })
 
-const initializeConfig = () => {
-	const defaultConfig = getDefaultConfig()
-	config.value = {
-		...defaultConfig,
-		...config.value,
-		location_column: {
-			...defaultConfig.location_column,
-			...config.value?.location_column,
-		},
-		value_column: {
-			...defaultConfig.value_column,
-			...config.value?.value_column,
-		},
+watchEffect(() => {
+	if (!config.value.location_column) {
+		config.value.location_column = {} as Dimension
 	}
-}
-
-onMounted(() => {
-	initializeConfig()
+	if (!config.value.value_column) {
+		config.value.value_column = {} as Measure
+	}
 })
 
 const discrete_dimensions = computed(() =>
 	props.dimensions.filter((d) => FIELDTYPES.DISCRETE.includes(d.data_type)),
 )
 
-const map_options = computed(() => [
+const map_options = [
 	{ label: 'World Map', value: 'world' },
 	{ label: 'India', value: 'india' },
-])
+]
 </script>
 
 <template>
