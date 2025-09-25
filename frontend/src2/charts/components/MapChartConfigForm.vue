@@ -13,25 +13,7 @@ const props = defineProps<{
 	columnOptions: ColumnOption[]
 }>()
 
-const config = defineModel<MapChartConfig>({
-	required: true,
-	default: () => ({
-		location_column: {
-			column_name: '',
-			data_type: 'String',
-			dimension_name: '',
-		},
-		value_column: {
-			column_name: '',
-			data_type: 'Integer',
-			measure_name: '',
-			aggregation: '',
-		},
-		map_type: 'world',
-	}),
-})
-
-const getDefaultConfig = () => ({
+const getDefaultConfig = (): MapChartConfig => ({
 	location_column: {
 		column_name: '',
 		data_type: 'String' as const,
@@ -46,23 +28,23 @@ const getDefaultConfig = () => ({
 	map_type: 'world' as const,
 })
 
-const initializeConfig = () => {
-	if (!config.value) {
-		config.value = getDefaultConfig()
-		return
-	}
+const config = defineModel<MapChartConfig>({
+	required: true,
+	default: getDefaultConfig,
+})
 
+const initializeConfig = () => {
 	const defaultConfig = getDefaultConfig()
 	config.value = {
 		...defaultConfig,
 		...config.value,
 		location_column: {
 			...defaultConfig.location_column,
-			...config.value.location_column,
+			...config.value?.location_column,
 		},
 		value_column: {
 			...defaultConfig.value_column,
-			...config.value.value_column,
+			...config.value?.value_column,
 		},
 	}
 }
