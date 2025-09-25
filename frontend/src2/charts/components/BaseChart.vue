@@ -14,6 +14,39 @@ const props = defineProps({
 let eChart = null
 const chartRef = ref(null)
 let resizeObserver = null
+
+onMounted(async () => {
+	const series = props.options?.series?.find((s) => s.type === 'map')
+	const isMap = series && series.type === 'map'
+	const renderer = isMap ? 'canvas' : 'svg'
+	eChart = echarts.init(chartRef.value, 'light', { renderer })
+
+	await setChartOptions()
+	props.onClick && eChart.on('click', props.onClick)
+
+	resizeObserver = new ResizeObserver(() => eChart.resize())
+	setTimeout(
+		() => chartRef.value && resizeObserver && resizeObserver.observe(chartRef.value),
+		1000,
+	)
+})
+
+onBeforeUnmount(() => {
+	if (chartRef.value && resizeObserver) resizeObserver.unobserve(chartRef.value)
+})
+
+wheneverChanges(() => props.options, setChartOptions, { deep: true })
+
+async function setChartOptions() {
+	if (!eChart) return
+	const series = props.options?.series?.find((s) => s.type === 'map')
+	const isMap = series && series.type === 'map'
+	if (isMap) {
+		await registerMap(series.map)
+	}
+	eChart.setOption({ ...props.options })
+}
+
 async function registerMap(mapName) {
 	if (!mapName) return
 	if (mapName === 'india') {
@@ -24,43 +57,6 @@ async function registerMap(mapName) {
 		echarts.registerMap('world', mapJson.default)
 	}
 }
-
-onBeforeUnmount(() => {
-	if (chartRef.value && resizeObserver) resizeObserver.unobserve(chartRef.value)
-})
-
-onMounted(async () => {
-	const series = props.options?.series?.find((s) => s.type === 'map')
-	const isMap = series && series.type === 'map'
-	const renderer = isMap ? 'canvas' : 'svg'
-	eChart = echarts.init(chartRef.value, 'light', { renderer })
-
-	if (isMap) {
-		await registerMap(series.map)
-	}
-	Object.keys(props.options).length && eChart.setOption({ ...props.options })
-	props.onClick && eChart.on('click', props.onClick)
-
-	resizeObserver = new ResizeObserver(() => eChart.resize())
-	setTimeout(
-		() => chartRef.value && resizeObserver && resizeObserver.observe(chartRef.value),
-		1000,
-	)
-})
-
-wheneverChanges(
-	() => props.options,
-	async () => {
-		if (!eChart) return
-		const series = props.options?.series?.[0]
-		const isMap = series && series.type === 'map'
-		if (isMap) {
-			await registerMap(series.map)
-		}
-		eChart.setOption({ ...props.options })
-	},
-	{ deep: true },
-)
 
 defineExpose({ downloadChart })
 function downloadChart() {
