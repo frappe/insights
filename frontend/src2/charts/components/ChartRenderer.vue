@@ -54,63 +54,54 @@ const eChartOptions = computed(() => {
 		return getFunnelChartOptions(config.value as FunnelChartConfig, result.value)
 	}
 	if (chart_type.value === 'Map') {
-		return getMapChartOptions(config.value as MapChartConfig, result.value, selectedState.value)
+		return getMapChartOptions(config.value as MapChartConfig, result.value)
 	}
 })
 
 const showDrillDown = ref(false)
 const drillDownQuery = ref<Query>()
-const selectedState = ref<string | undefined>(undefined)
+
+function handleMapChartClick(params: any) {
+	const config = props.chart.doc.config as MapChartConfig
+	const locationColumn = result.value.columns.find(
+		(c) =>
+			FIELDTYPES.DIMENSION.includes(c.type) && c.name === config.location_column?.column_name,
+	)
+
+	if (!locationColumn) return null
+
+	const clickedLocation = params.name
+	const formattedRow = result.value.formattedRows.find(
+		(r) => titleCase(r[locationColumn.name]?.toString()) === titleCase(clickedLocation),
+	)
+
+	return formattedRow
+		? props.chart.dataQuery.getDrillDownQuery(locationColumn, formattedRow)
+		: null
+}
+
+function handleGeneralChartClick(params: any) {
+	let dataIndex = params.dataIndex
+
+	// Adjust index for Row charts (they're displayed in reverse order)
+	if (chart_type.value === 'Row') {
+		dataIndex = result.value.formattedRows.length - 1 - dataIndex
+	}
+
+	const row = result.value.formattedRows[dataIndex]
+	const column = result.value.columns.find((c) => c.name === params.seriesName)
+
+	return column ? props.chart.dataQuery.getDrillDownQuery(column, row) : null
+}
 
 function onChartElementClick(params: any) {
-	if (chart_type.value === 'Map' && params.componentType === 'series') {
-		const config = props.chart.doc.config as MapChartConfig
+	if (params.componentType !== 'series') return
 
-		if (!params.name || typeof params.name !== 'string') {
-			console.warn('Invalid click parameters:', params)
-			return
-		}
+	const query =
+		chart_type.value === 'Map' ? handleMapChartClick(params) : handleGeneralChartClick(params)
 
-		if (
-			config.map_type === 'india' &&
-			config.india_region === 'states' &&
-			!selectedState.value
-		) 
-		if (selectedState.value) {
-			selectedState.value = undefined
-			return
-		}
-	}
-
-	if (params.componentType === 'series') {
-		let seriesIndex = params.seriesIndex
-		let dataIndex = params.dataIndex
-		if (chart_type.value === 'Row') {
-			dataIndex = result.value.formattedRows.length - 1 - dataIndex
-		}
-
-		if (chart_type.value === 'Map') {
-			const config = props.chart.doc.config as MapChartConfig
-			const locationColumn = result.value.columns.find((c) =>
-				FIELDTYPES.DIMENSION.includes(c.type) &&
-				c.name === config.location_column?.column_name
-			)
-			if (locationColumn) {
-				const clickedLocation = params.name
-				const formattedRow = result.value.formattedRows.find((r) =>
-					titleCase(r[locationColumn.name]?.toString()) === titleCase(clickedLocation)
-				)
-				if (formattedRow) {
-					drillDownQuery.value = props.chart.dataQuery.getDrillDownQuery(locationColumn, formattedRow)
-				} 
-			} 
-		} else {
-			const row = result.value.formattedRows[dataIndex]
-			const column = result.value.columns.find((c) => c.name === params.seriesName)!
-			drillDownQuery.value = props.chart.dataQuery.getDrillDownQuery(column, row)
-		}
-	}
-	if (drillDownQuery.value) {
+	if (query) {
+		drillDownQuery.value = query
 		showDrillDown.value = true
 	}
 }
@@ -125,13 +116,20 @@ function onNumberChartDrillDown(column: any, row: any) {
 
 <template>
 	<div class="relative h-full w-full">
-		<BaseChart 
-			v-if="!loading && eChartOptions" 
+		<BaseChart
+			v-if="!loading && eChartOptions"
 			class="rounded bg-white py-1 shadow"
-			:class="props.chart.doc.chart_type == 'Map' ? '[&>div:last-child]:p-4' : ''" :title="props.chart.doc.title"
-			:options="eChartOptions" :onClick="onChartElementClick" />
-		<NumberChart v-else-if="!loading && chart_type == 'Number'" :config="config as NumberChartConfig"
-			:result="result" @drill-down="onNumberChartDrillDown" />
+			:class="props.chart.doc.chart_type == 'Map' ? '[&>div:last-child]:p-4' : ''"
+			:title="props.chart.doc.title"
+			:options="eChartOptions"
+			:onClick="onChartElementClick"
+		/>
+		<NumberChart
+			v-else-if="!loading && chart_type == 'Number'"
+			:config="config as NumberChartConfig"
+			:result="result"
+			@drill-down="onNumberChartDrillDown"
+		/>
 		<TableChart v-else-if="!loading && chart_type == 'Table'" :chart="props.chart" />
 
 		<div v-else class="flex h-full flex-1 flex-col items-center justify-center rounded border">
