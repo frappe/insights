@@ -704,6 +704,7 @@ export function getMapChartOptions(config: MapChartConfig, result: QueryResult) 
 				borderColor: 'rgb(124, 124, 124)',
 			},
 			emphasis: false,
+			selectedMode: false,
 		}],
 	}
 
