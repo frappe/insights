@@ -372,9 +372,18 @@ class IbisQueryBuilder:
         return self.query.rename(**{new_name: old_name})
 
     def apply_remove(self, remove_args):
-        to_remove = {self.get_column(col) for col in remove_args.column_names}
-        to_remove = {col.get_name() for col in to_remove}
-        return self.query.drop(*to_remove)
+        # Get valid columns that exist in the query
+        valid_columns = []
+        for column_name in remove_args.column_names:
+            column = self.get_column(column_name, throw=False)
+            if column is not None:
+                valid_columns.append(column.get_name())
+
+        # If no valid columns to remove, return the original query
+        if not valid_columns:
+            return self.query
+
+        return self.query.drop(*valid_columns)
 
     def apply_cast(self, cast_args):
         col_name = self.get_column(cast_args.column.column_name).get_name()
