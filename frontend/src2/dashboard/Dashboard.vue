@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { Breadcrumbs, call } from 'frappe-ui'
 import { RefreshCcw } from 'lucide-vue-next'
-import { provide, ref } from 'vue'
+import {provide, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { downloadImage } from '../helpers'
+import { downloadImage, waitUntil } from '../helpers'
 import useDashboard from './dashboard'
 import DashboardItem from './DashboardItem.vue'
 import VueGridLayout from './VueGridLayout.vue'
@@ -23,6 +23,13 @@ const router = useRouter()
 function openWorkbook() {
 	router.push(`/workbook/${dashboard.doc.workbook}`)
 }
+const canOpenWorkbook = ref(false)
+await waitUntil(() => dashboard.isloaded)
+await call('frappe.client.has_permission',{
+		doctype: 'Insights Workbook',
+		docname: dashboard.doc.workbook,
+		ptype: 'read',
+	}).then((res:any) => canOpenWorkbook.value = res.has_permission)
 
 const dashboardContainer = ref<HTMLElement | null>(null)
 async function downloadDashboardImage() {
@@ -57,12 +64,13 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 						icon: 'download',
 						onClick: downloadDashboardImage,
 					},
-					{
+					 canOpenWorkbook ? {
 						label: 'Open Workbook',
 						variant: 'outline',
 						icon: 'external-link',
 						onClick: openWorkbook,
-					},
+					} : null
+					,
 				]"
 			/>
 		</div>
