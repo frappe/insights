@@ -1,6 +1,7 @@
 import { useDebouncedRefHistory } from '@vueuse/core'
 import { isEqual } from 'es-toolkit'
-import { dayjs } from 'frappe-ui'
+import { dayjs, call } from 'frappe-ui'
+import { Buffer } from 'buffer'
 import { computed, reactive, ref, toRefs, unref } from 'vue'
 import {
 	copy,
@@ -120,7 +121,8 @@ export function makeQuery(name: string) {
 
 	const result = ref({ ...EMPTY_RESULT })
 	const executing = ref(false)
-	const downloading = ref(false)
+    const downloading = ref(false)
+    const currentDownloadToken = ref<number | null>(null)
 	let lastExecutionArgs: {
 		operations: Operation[]
 		adhoc_filters?: AdhocFilters
@@ -473,37 +475,42 @@ export function makeQuery(name: string) {
 		activeOperationIdx.value = newOperations.length - 1
 	}
 
-	function downloadResults(format: string = 'csv', filename?: string) {
-		const _downloadResults =  () => {
-			downloading.value = true
-			return query
-				.call('download_results', {
-					format,
-					active_operation_idx: activeOperationIdx.value,
-					adhoc_filters: adhocFilters.value,
-				})
-				.then( (data: string) => {
-					if (!data) {
-						createToast({
-							title: 'Download Failed',
-							message: 'No data found to download.',
-							variant: 'warning',
-						})
-						return
-					}
+    function downloadResults(format: string = 'csv', filename?: string) {
+        const _downloadResults =  () => {
+            downloading.value = true
+            const token = Date.now() + Math.random()
+            currentDownloadToken.value = token
+            return call('insights.api.run_doc_method', {
+                method: 'download_results',
+                docs: {
+                    ...(query.doc || {}),
+                    __islocal: query.islocal,
+                },
+                args: {
+                    format,
+                    active_operation_idx: activeOperationIdx.value,
+                    adhoc_filters: adhocFilters.value,
+                },
+            })
+                .then((payload: any) => {
+                    if (currentDownloadToken.value !== token) return
+                    const data: string = payload?.message
+                    if (!data) {
+                        createToast({
+                            title: 'Download Failed',
+                            message: 'No data found to download.',
+                            variant: 'warning',
+                        })
+                        return
+                    }
 
 					let blob: Blob
 					let extension: string
 					let mimeType: string
 
-					if (format === 'excel') {
-						const binaryStr = atob(data)
-						const len = binaryStr.length
-						const bytes = new Uint8Array(len)
-						for (let i = 0; i < len; i++) {
-							bytes[i] = binaryStr.charCodeAt(i)
-						}
-						blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+                    if (format === 'excel') {
+                        const bytes = Buffer.from(data, 'base64')
+                        blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
 						extension = 'xlsx'
 						mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 					} else {
@@ -516,27 +523,41 @@ export function makeQuery(name: string) {
 					const a = document.createElement('a')
 					a.setAttribute('hidden', '')
 					a.setAttribute('href', url)
-					a.setAttribute('download', `${filename || query.doc.title || 'data'}.${extension}`)
+                    const finalFileName = `${filename || query.doc.title || 'data'}.${extension}`
+                    a.setAttribute('download', finalFileName)
 					document.body.appendChild(a)
 					a.click()
 					document.body.removeChild(a)
 					window.URL.revokeObjectURL(url)
+                    createToast({
+                        title: 'Export Successful',
+                        message: `File "${finalFileName}" exported successfully`,
+                        variant: 'success',
+                    })
 				})
-				.catch((error: any) => {
-					createToast({
-						title: 'Download Failed',
-						message: error?.message || 'Failed to download file',
-						variant: 'error',
-					})
-					throw error
-				})
-				.finally(() => {
-					downloading.value = false
-				})
+                .catch((error: any) => {
+                    if (currentDownloadToken.value !== token) return
+                    createToast({
+                        title: 'Download Failed',
+                        message: error?.message || 'Failed to download file',
+                        variant: 'error',
+                    })
+                })
+                .finally(() => {
+                    if (currentDownloadToken.value === token) {
+                        downloading.value = false
+                        currentDownloadToken.value = null
+                    }
+                })
 		}	
 
 		_downloadResults()
 	}
+
+    function cancelDownload() {
+        currentDownloadToken.value = null
+        downloading.value = false
+    }
 
 	function exportResults(format: string, filename: string) {
 		downloadResults(format, filename)
@@ -930,8 +951,9 @@ export function makeQuery(name: string) {
 		getDistinctColumnValues,
 		getColumnsForSelection,
 		downloadResults,
-		exportResults,
+        exportResults,
 		downloading,
+        cancelDownload,
 		getSQLOperation,
 		setSQL,
 
