@@ -100,7 +100,7 @@ function resetFile() {
 			<FileUploader
 				v-if="!fileUploaded"
 				:uploadArgs="{ private: true }"
-				:file-types="['.csv', '.xlsx', '.xls']"
+				:file-types="['.csv', '.xlsx']"
 				@success="uploadFile"
 			>
 				<template #default="{ progress, uploading, openFileSelector }">
