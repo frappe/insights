@@ -103,24 +103,35 @@ def contact_team(message_type, message_content, is_critical=False):
 
 def get_csv_file(filename: str):
     file = frappe.get_doc("File", filename)
+    file_name = file.file_name or ""
     parts = file.get_extension()
-    if "csv" not in parts[1]:
-        frappe.throw("Only CSV files are supported")
-    return file
+    extension = parts[-1] if parts else ""
+    extension = extension.lstrip(".")
+
+    if not extension or extension not in ["csv", "xlsx"]:
+        frappe.throw(
+            f"Only CSV and XLSX files are supported. Detected extension: '{extension}' from filename: '{file_name}'"
+        )
+    return file, extension
 
 
 @insights_whitelist()
 @validate_type
-def get_csv_data(filename: str):
+def get_file_data(filename: str):
     check_data_source_permission("uploads")
 
-    file = get_csv_file(filename)
+    file, ext = get_csv_file(filename)
     file_path = file.get_full_path()
     file_name = file.file_name.split(".")[0]
     file_name = frappe.scrub(file_name)
-    table = ibis.read_csv(file_path, table_name=file_name)
-    count = table.count().execute()
 
+    con = ibis.duckdb.connect()
+    if ext in ["xlsx"]:
+        table = con.read_xlsx(file_path)
+    else:
+        table = con.read_csv(file_path, table_name=file_name)
+
+    count = table.count().execute()
     columns = get_columns_from_schema(table.schema())
     rows = table.head(50).execute().fillna("").to_dict(orient="records")
 
@@ -137,7 +148,7 @@ def get_csv_data(filename: str):
 def import_csv_data(filename: str):
     check_data_source_permission("uploads")
 
-    file = get_csv_file(filename)
+    file, ext = get_csv_file(filename)
     file_path = file.get_full_path()
     table_name = file.file_name.split(".")[0]
     table_name = frappe.scrub(table_name)
@@ -156,8 +167,20 @@ def import_csv_data(filename: str):
     db = get_duckdb_connection(ds, read_only=False)
 
     try:
-        table = db.read_csv(file_path, table_name=table_name)
-        db.create_table(table_name, table, overwrite=True)
+        if ext in ["xlsx"]:
+            table = db.read_xlsx(file_path)
+            db.create_table(table_name, table, overwrite=True)
+        else:
+            table = db.read_csv(file_path, table_name=table_name)
+            db.create_table(table_name, table, overwrite=True)
+    except Exception as e:
+        frappe.log_error(e)
+        if ext in ["xlsx"]:
+            frappe.throw(
+                "Failed to read Excel data from uploaded file. Please ensure the file is a valid Excel format and try again."
+            )
+        else:
+            frappe.throw("Failed to read CSV data from uploaded file. Please try again.")
     finally:
         db.disconnect()
 

@@ -1,14 +1,15 @@
 # Copyright (c) 2025, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+import base64
 from contextlib import contextmanager
+from io import BytesIO
 
 import frappe
 import ibis
 import sqlparse
 from frappe.model.document import Document
 from ibis import _
-
 from insights.decorators import insights_whitelist
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     IbisQueryBuilder,
@@ -141,18 +142,24 @@ class InsightsQueryv3(Document):
         return int(total_count)
 
     @insights_whitelist()
-    def download_results(self, active_operation_idx=None, adhoc_filters=None):
+    def download_results(self, format="csv", active_operation_idx=None, adhoc_filters=None):
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
 
-        results, time_taken = execute_ibis_query(
+        results, _ = execute_ibis_query(
             ibis_query,
             cache=False,
             limit=10_00_000,
             reference_doctype=self.doctype,
             reference_name=self.name,
         )
-        return results.to_csv(index=False)
+        if format == "excel":
+            output = BytesIO()
+            results.to_excel(output, index=False, engine="openpyxl")
+            excel_data = output.getvalue()
+            return base64.b64encode(excel_data).decode("utf-8")
+        else:
+            return results.to_csv(index=False)
 
     @insights_whitelist()
     def get_distinct_column_values(

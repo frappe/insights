@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Button, FormControl, LoadingIndicator, Rating } from 'frappe-ui'
+import { Button, Dialog, FormControl, LoadingIndicator, Rating } from 'frappe-ui'
 import { ChevronLeft, ChevronRight, Download, Plus, Search, Table2Icon } from 'lucide-vue-next'
 import { computed, nextTick, reactive, ref} from 'vue'
 import { createHeaders, formatNumber, getShortNumber } from '../helpers'
@@ -33,8 +33,9 @@ const props = defineProps<{
 	replaceNullsWithZeros?: boolean
 	compactNumbers?: boolean
 	loading?: boolean
+  	onExport?: Function
+  	downloading?: boolean
 	formatGroup?: FormatGroupArgs
-	onExport?: Function
 	sortOrder?: SortOrder
 	onSortChange?: (column_name: string, direction: SortDirection) => void
 	onColumnRename?: (column_name: string, new_name: string) => void
@@ -465,6 +466,7 @@ function toggleNewColumn() {
 		}
 	})
 }
+
 </script>
 
 <template>
@@ -711,12 +713,7 @@ function toggleNewColumn() {
 								</Button>
 							</div>
 						</div>
-						<slot name="footer-right-actions"></slot>
-						<Button v-if="props.onExport" variant="ghost" @click="props.onExport">
-							<template #icon>
-								<Download class="h-4 w-4 text-gray-700" stroke-width="1.5" />
-							</template>
-						</Button>
+                        <slot name="footer-right-actions"></slot>
 					</div>
 				</slot>
 			</div>
@@ -730,10 +727,10 @@ function toggleNewColumn() {
 		</div>
 	</div>
 
-	<div
-		v-if="props.loading"
-		class="absolute top-10 z-10 flex h-[calc(100%-2rem)] w-full items-center justify-center rounded bg-white/30 backdrop-blur-sm"
-	>
-		<LoadingIndicator class="h-8 w-8 text-gray-700" />
-	</div>
+    <div
+        v-if="props.loading"
+        class="absolute top-10 z-10 flex h-[calc(100%-2rem)] w-full items-center justify-center rounded bg-white/30 backdrop-blur-sm"
+    >
+        <LoadingIndicator class="h-8 w-8 text-gray-700" />
+    </div>
 </template>
