@@ -33,8 +33,8 @@ const props = defineProps<{
 	replaceNullsWithZeros?: boolean
 	compactNumbers?: boolean
 	loading?: boolean
-  onExport?: Function
-  downloading?: boolean
+  	onExport?: Function
+  	downloading?: boolean
 	formatGroup?: FormatGroupArgs
 	sortOrder?: SortOrder
 	onSortChange?: (column_name: string, direction: SortDirection) => void
