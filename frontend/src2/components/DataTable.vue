@@ -19,8 +19,8 @@ const props = defineProps<{
 	replaceNullsWithZeros?: boolean
 	compactNumbers?: boolean
 	loading?: boolean
-	onExport?: Function
-	downloading?: boolean
+    onExport?: Function
+    downloading?: boolean
 	sortOrder?: SortOrder
 	onSortChange?: (column_name: string, direction: SortDirection) => void
 	onColumnRename?: (column_name: string, new_name: string) => void
@@ -273,27 +273,6 @@ function toggleNewColumn() {
 	})
 }
 
-const showExportDialog = ref(false)
-const exportFormat = ref('csv')
-const exportFilename = ref('data')
-
-function openExportDialog() {
-	if (!props.onExport) return
-
-	const now = new Date()
-	const timestamp = `${now.getDate()}_${now.getMonth()}_${now.getFullYear()}`
-	exportFilename.value = `export_${timestamp}`
-	showExportDialog.value = true
-}
-
-function handleExport() {
-	if (!props.onExport) return
-	if (exportFormat.value === 'csv') {
-		props.onExport('csv', exportFilename.value)
-	} else if (exportFormat.value === 'excel') {
-		props.onExport('excel', exportFilename.value)
-	}
-}
 </script>
 
 <template>
@@ -539,12 +518,7 @@ function handleExport() {
 								</Button>
 							</div>
 						</div>
-						<slot name="footer-right-actions"></slot>
-						<Button v-if="props.onExport" variant="ghost" @click="openExportDialog">
-							<template #icon>
-								<Download class="h-4 w-4 text-gray-700" stroke-width="1.5" />
-							</template>
-						</Button>
+                        <slot name="footer-right-actions"></slot>
 					</div>
 				</slot>
 			</div>
@@ -558,54 +532,10 @@ function handleExport() {
 		</div>
 	</div>
 
-	<div
-		v-if="props.loading"
-		class="absolute top-10 z-10 flex h-[calc(100%-2rem)] w-full items-center justify-center rounded bg-white/30 backdrop-blur-sm"
-	>
-		<LoadingIndicator class="h-8 w-8 text-gray-700" />
-	</div>
-	<Dialog v-model="showExportDialog" :options="{ title: 'Export Data', size: 'sm' }">
-		<template #body-content>
-			<div class="space-y-4">
-				<div>
-					<div class="space-y-2">
-						<label class="flex cursor-pointer items-center ">
-							<FormControl
-							class="w-32"
-							type = "select"
-							label="Export Format"
-							:options="[
-								{ label: 'CSV', value: 'csv' },
-								{ label: 'Excel', value: 'excel' },
-							]"
-							v-model="exportFormat"
-						/>
-							
-						</label>
-					</div>
-				</div>
-	
-				<div class="flex items-center gap-2">
-					<FormControl
-						type="text"
-						label="Filename"
-						v-model="exportFilename"
-						placeholder="Enter filename"
-						class="w-44"
-					/>
-				</div>
-			</div>
-		</template>
-
-		<template #actions>
-			<div class="flex justify-end gap-2">
-				<Button variant="ghost" @click="showExportDialog = false">
-					Cancel
-				</Button>
-				<Button variant="solid" @click="handleExport" :loading="props.downloading"   >
-					Export
-				</Button>
-			</div>
-		</template>
-	</Dialog>
+    <div
+        v-if="props.loading"
+        class="absolute top-10 z-10 flex h-[calc(100%-2rem)] w-full items-center justify-center rounded bg-white/30 backdrop-blur-sm"
+    >
+        <LoadingIndicator class="h-8 w-8 text-gray-700" />
+    </div>
 </template>
