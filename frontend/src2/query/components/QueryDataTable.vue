@@ -5,11 +5,16 @@ import { computed, ref, watch } from 'vue'
 import DrillDown from '../../charts/components/DrillDown.vue'
 import DataTable from '../../components/DataTable.vue'
 import ExportDialog from '../../components/ExportDialog.vue'
-import { QueryResultColumn, QueryResultRow, SortDirection } from '../../types/query.types'
+import {
+	QueryResultColumn,
+	QueryResultRow,
+	SortDirection,
+} from '../../types/query.types'
+
 import { column } from '../helpers'
 import { Query } from '../query'
-import AlertSetupDialog from './AlertSetupDialog.vue'
 import QueryAlertsDialog from './QueryAlertsDialog.vue'
+import AlertSetupDialog from './AlertSetupDialog.vue'
 
 const props = defineProps<{
 	query: Query
@@ -123,7 +128,6 @@ function onExport(format: 'csv' | 'excel', filename: string) {
 		:enable-new-column="props.enableNewColumn"
 		v-bind="$attrs"
 	>
-		<!-- pagination -->
 		<template #header-prefix="{ column }">
 			<slot name="header-prefix" :column="column" />
 		</template>
@@ -151,6 +155,13 @@ function onExport(format: 'csv' | 'excel', filename: string) {
 
         <template #footer-right-actions>
             <Button v-if="enableAlerts" variant="ghost" @click="showAlertsDialog = true">
+
+		<template #footer-right-actions>
+			<Button
+				v-if="enableAlerts"
+				variant="ghost"
+				@click="showAlertsDialog = true"
+			>
 				<template #icon>
 					<Bell class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 				</template>

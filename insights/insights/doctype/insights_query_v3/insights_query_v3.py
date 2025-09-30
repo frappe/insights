@@ -7,6 +7,7 @@ from io import BytesIO
 
 import frappe
 import ibis
+import sqlparse
 from frappe.model.document import Document
 from ibis import _
 from insights.decorators import insights_whitelist
@@ -117,6 +118,13 @@ class InsightsQueryv3(Document):
             "rows": results,
             "time_taken": time_taken,
         }
+
+    @insights_whitelist()
+    def format(self, raw_sql):
+        if not raw_sql or not self.is_native_query:
+            return raw_sql
+
+        return sqlparse.format(str(raw_sql), reindent=True, keyword_case="upper")
 
     @insights_whitelist()
     def get_count(self, active_operation_idx=None, adhoc_filters=None):

@@ -1,0 +1,23 @@
+name: Frontend Build CI
+
+on:
+  pull_request:
+    paths:
+      - 'frontend/**'
+
+jobs:
+  frontend-build-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies and build
+        run: |
+          yarn install
+          yarn build

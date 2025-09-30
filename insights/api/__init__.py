@@ -4,6 +4,7 @@
 import frappe
 import ibis
 from frappe.defaults import get_user_default, set_user_default
+from frappe.handler import is_valid_http_method, is_whitelisted
 from frappe.integrations.utils import make_post_request
 from frappe.monitor import add_data_to_monitor
 from frappe.rate_limiter import rate_limit
@@ -199,6 +200,24 @@ def get_doc(doctype: str, name: str | int):
         return frappe.get_doc(doctype, name).as_dict()
 
 
+def _execute_doc_method(doc, method: str, args: dict | None = None, ignore_permissions=False):
+    args = frappe.parse_json(args)
+    method_obj = getattr(doc, method)
+    fn = getattr(method_obj, "__func__", method_obj)
+
+    if not ignore_permissions:
+        doc.check_permission("read")
+        is_whitelisted(fn)
+        is_valid_http_method(fn)
+
+    new_kwargs = frappe.get_newargs(fn, args)
+    response = doc.run_method(method, **new_kwargs)
+    frappe.response.docs.append(doc)
+    frappe.response["message"] = response
+    add_data_to_monitor(methodname=method)
+    return response
+
+
 @frappe.whitelist(allow_guest=True)
 def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
     doc = frappe.parse_json(docs)
@@ -209,9 +228,10 @@ def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
         raise frappe.ValidationError("Invalid document")
 
     try:
-        from frappe.handler import run_doc_method as _run_doc_method
+        docs = frappe.parse_json(docs)
+        doc = frappe.get_doc(docs)
+        return _execute_doc_method(doc, method, args)
 
-        _run_doc_method(method, docs=doc, args=args)
     except frappe.PermissionError:
         if not is_public(doctype, name):
             raise frappe.PermissionError("You don't have permission to access this document")
@@ -219,15 +239,7 @@ def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
             raise frappe.PermissionError("You don't have permission to access this method")
 
         doc = frappe.get_doc(doctype, name)
-        fn = getattr(doc, method, None)
-        if not fn:
-            raise frappe.ValidationError(f"Invalid method: {method} for doctype: {doctype}")
-
-        args = args or {}
-        response = fn(**args)
-        frappe.response.docs.append(doc)
-        frappe.response["message"] = response
-        add_data_to_monitor(methodname=method)
+        return _execute_doc_method(doc, method, args, ignore_permissions=True)
 
 
 def is_public_method(doctype: str, method: str):

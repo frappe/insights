@@ -1,9 +1,10 @@
+import { FormatGroupArgs } from '../query/components/formatting_utils'
 import { Dimension, Measure } from './query.types'
 
 export const AXIS_CHARTS = ['Bar', 'Line', 'Row']
 export type AxisChartType = (typeof AXIS_CHARTS)[number]
 
-export const CHARTS = ['Number', ...AXIS_CHARTS, 'Donut', 'Funnel', 'Table']
+export const CHARTS = ['Number', ...AXIS_CHARTS, 'Donut', 'Funnel', 'Table', 'Map']
 export type ChartType = (typeof CHARTS)[number]
 
 export type AxisChartConfig = {
@@ -90,6 +91,7 @@ export type NumberColumnOptions = {
 	decimal?: number
 	prefix?: string
 	suffix?: string
+	color?: string
 }
 
 export type DonutChartConfig = {
@@ -116,6 +118,13 @@ export type TableChartConfig = {
 	compact_numbers?: boolean
 	enable_color_scale?: boolean
 	sticky_columns?: string[]
+	conditional_formatting?: FormatGroupArgs
+}
+
+export type MapChartConfig = {
+	location_column: Dimension
+	value_column: Measure
+	map_type?: 'world' | 'india'
 }
 
 export type ChartConfig =
@@ -125,3 +134,4 @@ export type ChartConfig =
 	| DonutChartConfig
 	| TableChartConfig
 	| FunnelChartConfig
+	| MapChartConfig

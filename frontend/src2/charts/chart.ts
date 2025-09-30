@@ -1,6 +1,13 @@
 import { useDebouncedRefHistory } from '@vueuse/core'
 import { computed, reactive, toRefs, watch } from 'vue'
-import { copy, copyToClipboard, getUniqueId, safeJSONParse, waitUntil, wheneverChanges } from '../helpers'
+import {
+	copy,
+	copyToClipboard,
+	getUniqueId,
+	safeJSONParse,
+	waitUntil,
+	wheneverChanges,
+} from '../helpers'
 import { GranularityType } from '../helpers/constants'
 import useDocumentResource from '../helpers/resource'
 import { column, count, query_table } from '../query/helpers'
@@ -10,10 +17,11 @@ import {
 	AxisChartConfig,
 	CHARTS,
 	DonutChartConfig,
+	MapChartConfig,
 	NumberChartConfig,
 	TableChartConfig,
 } from '../types/chart.types'
-import { AdhocFilters } from '../types/query.types'
+import { AdhocFilters, Dimension, Measure } from '../types/query.types'
 import { InsightsChartv3 } from '../types/workbook.types'
 import useWorkbook, { getLinkedQueries } from '../workbook/workbook'
 import { handleOldXAxisConfig, handleOldYAxisConfig, setDimensionNames } from './helpers'
@@ -148,6 +156,26 @@ function makeChart(name: string) {
 			}
 		}
 
+		if (chart.doc.chart_type === 'Map') {
+			const config = chart.doc.config as MapChartConfig
+			const hasLocation = config.location_column.column_name
+			const hasValue = config.value_column.measure_name
+
+			if (!hasLocation) {
+				messages.push({
+					variant: 'error',
+					message: 'Location column is required',
+				})
+			}
+
+			if (!hasValue) {
+				messages.push({
+					variant: 'error',
+					message: 'Value column is required',
+				})
+			}
+		}
+
 		return !messages.length
 	}
 
@@ -179,6 +207,10 @@ function makeChart(name: string) {
 
 		if (chart.doc.chart_type === 'Table') {
 			addTableChartOperation(query)
+		}
+
+		if (chart.doc.chart_type === 'Map') {
+			addMapChartOperation(query)
 		}
 	}
 
@@ -247,6 +279,15 @@ function makeChart(name: string) {
 		query.addSummarize({
 			measures: values,
 			dimensions: rows,
+		})
+	}
+
+	function addMapChartOperation(query: Query) {
+		const config = chart.doc.config as MapChartConfig
+		let dimensions = [config.location_column]
+		query.addSummarize({
+			measures: [config.value_column],
+			dimensions: dimensions,
 		})
 	}
 
@@ -342,7 +383,7 @@ function makeChart(name: string) {
 	)
 
 	function copyChart() {
-		chart.call('export').then(data => {
+		chart.call('export').then((data) => {
 			copyToClipboard(JSON.stringify(data, null, 2))
 		})
 	}
@@ -422,11 +463,14 @@ function getChartResource(name: string) {
 		disableLocalStorage: true,
 		transform: transformChartDoc,
 	})
-	wheneverChanges(() => chart.doc.read_only, () => {
-		if (chart.doc.read_only) {
-			chart.autoSave = false
+	wheneverChanges(
+		() => chart.doc.read_only,
+		() => {
+			if (chart.doc.read_only) {
+				chart.autoSave = false
+			}
 		}
-	})
+	)
 	return chart
 }
 

@@ -212,6 +212,24 @@ export function makeQuery(name: string) {
 			})
 	}
 
+    async function formatSQL(args: SQLArgs): Promise<string> {
+        if (!args.raw_sql.trim()) return args.raw_sql || ''
+
+        try {
+            const formattedSQL = await query.call('format', { raw_sql: args.raw_sql.trim() })
+            const sqlOp = getSQLOperation()
+            if (sqlOp) {
+                sqlOp.raw_sql = formattedSQL
+            } else {
+                console.warn('No SQL operation found for native query.')
+            }
+            return formattedSQL
+        } catch (error) {
+            console.error('Error formatting SQL:', error)
+            return args.raw_sql
+        }
+    }
+
 	function setActiveOperation(index: number) {
 		activeOperationIdx.value = index
 		activeEditIndex.value = -1
@@ -956,6 +974,7 @@ export function makeQuery(name: string) {
         cancelDownload,
 		getSQLOperation,
 		setSQL,
+		formatSQL,
 
 		getCodeOperation,
 		setCode,
