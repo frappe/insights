@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { LoadingIndicator } from 'frappe-ui'
-import { Bell, RefreshCw } from 'lucide-vue-next'
-import { computed, ref } from 'vue'
+import { LoadingIndicator, Button } from 'frappe-ui'
+import { Bell, RefreshCw, Download } from 'lucide-vue-next'
+import { computed, ref, watch } from 'vue'
 import DrillDown from '../../charts/components/DrillDown.vue'
 import DataTable from '../../components/DataTable.vue'
+import ExportDialog from '../../components/ExportDialog.vue'
 import { QueryResultColumn, QueryResultRow, SortDirection } from '../../types/query.types'
 import { column } from '../helpers'
 import { Query } from '../query'
@@ -78,6 +79,33 @@ function onDrillDown(column: QueryResultColumn, row: QueryResultRow) {
 
 const showAlertsDialog = ref(false)
 const currentAlertName = ref('')
+
+// Export dialog state
+const showExportDialog = ref(false)
+const exportDefaultName = computed(() => {
+    const now = new Date()
+    const ts = `${now.getDate()}_${now.getMonth()}_${now.getFullYear()}`
+    return `export_${ts}`
+})
+
+function openExport() {
+    if (!props.query?.exportResults) return
+    showExportDialog.value = true
+}
+
+// Auto-close dialog after export completes
+watch(
+	() => props.query.downloading,
+	(downloading, prev) => {
+		if (prev && !downloading) {
+			showExportDialog.value = false
+		}
+	}
+)
+
+function onExport(format: 'csv' | 'excel', filename: string) {
+    props.query.exportResults(format, filename)
+}
 </script>
 
 <template>
@@ -86,8 +114,8 @@ const currentAlertName = ref('')
 		:columns="columns"
 		:rows="rows"
 		:enable-pagination="true"
-		:on-export="props.query.exportResults"
-		:downloading="props.query.downloading"
+        :on-export="props.query.exportResults"
+        :downloading="props.query.downloading"
 		:sort-order="sortOrder"
 		:on-sort-change="props.enableSort ? onSortChange : undefined"
 		:on-column-rename="props.enableColumnRename ? onRename : undefined"
@@ -121,18 +149,30 @@ const currentAlertName = ref('')
 			</div>
 		</template>
 
-		<template #footer-right-actions>
-			<Button v-if="enableAlerts" variant="ghost" @click="showAlertsDialog = true">
+        <template #footer-right-actions>
+            <Button v-if="enableAlerts" variant="ghost" @click="showAlertsDialog = true">
 				<template #icon>
 					<Bell class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 				</template>
 			</Button>
+            <Button variant="ghost" @click="openExport">
+                <template #icon>
+                    <Download class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+                </template>
+            </Button>
 		</template>
 
 		<template v-if="props.enableNewColumn" #new-column-editor="slotArgs">
 			<slot name="new-column-editor" v-bind="slotArgs" />
 		</template>
 	</DataTable>
+    <ExportDialog
+        v-model="showExportDialog"
+        :downloading="props.query.downloading"
+        :default-filename="exportDefaultName"
+        @export="onExport"
+        @cancel="props.query.cancelDownload"
+    />
 
 	<DrillDown
 		v-if="drillDownQuery"
