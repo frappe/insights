@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { Breadcrumbs, call } from 'frappe-ui'
 import { RefreshCcw } from 'lucide-vue-next'
-import {provide, ref } from 'vue'
+import {computed, provide, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { downloadImage, waitUntil } from '../helpers'
+import { downloadImage, waitUntil, wheneverChanges } from '../helpers'
 import useDashboard from './dashboard'
 import DashboardItem from './DashboardItem.vue'
 import VueGridLayout from './VueGridLayout.vue'
@@ -23,13 +23,8 @@ const router = useRouter()
 function openWorkbook() {
 	router.push(`/workbook/${dashboard.doc.workbook}`)
 }
-const canOpenWorkbook = ref(false)
 await waitUntil(() => dashboard.isloaded)
-await call('frappe.client.has_permission',{
-		doctype: 'Insights Workbook',
-		docname: dashboard.doc.workbook,
-		ptype: 'read',
-	}).then((res:any) => canOpenWorkbook.value = res.has_permission)
+const canOpenWorkbook = ref(dashboard.doc.has_workbook_access)
 
 const dashboardContainer = ref<HTMLElement | null>(null)
 async function downloadDashboardImage() {
