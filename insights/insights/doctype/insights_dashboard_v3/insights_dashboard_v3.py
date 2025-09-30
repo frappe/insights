@@ -63,7 +63,9 @@ class InsightsDashboardv3(Document):
             access = self.get_acess_data()
             d.people_with_access = access[0]
             d.is_shared_with_organization = access[1]
-
+        d.has_workbook_access = frappe.has_permission(
+            "Insights Workbook", ptype="read", doc=self.workbook
+        )
         return d
 
     def before_save(self):
