@@ -105,6 +105,7 @@ def get_csv_file(filename: str):
     file_name = file.file_name or ""
     parts = file.get_extension()
     extension = parts[-1] if parts else ""
+    extension = extension.lstrip(".")
 
     if not extension or extension not in ["csv", "xlsx"]:
         frappe.throw(
