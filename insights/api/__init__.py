@@ -3,9 +3,6 @@
 
 import frappe
 import ibis
-import pandas as pd
-import tempfile
-import os
 from frappe.defaults import get_user_default, set_user_default
 from frappe.integrations.utils import make_post_request
 from frappe.monitor import add_data_to_monitor
@@ -104,32 +101,16 @@ def contact_team(message_type, message_content, is_critical=False):
 
 
 def get_csv_file(filename: str):
-    try:
-        file = frappe.get_doc("File", filename)
-    except Exception:
-        files = frappe.get_list("File", filters={"file_name": filename}, fields=["name"], limit_page_length=1)
-        if files:
-            file = frappe.get_doc("File", files[0].name)
-        else:
-            raise
-
+    file = frappe.get_doc("File", filename)
     file_name = file.file_name or ""
-    if "." in file_name:
-        ext = file_name.split(".")[-1].lower()
-    else:
-        parts = file.get_extension()
-        if isinstance(parts, list | tuple) and len(parts) > 1:
-            ext = parts[1].lower()
-        elif isinstance(parts, str):
-            ext = parts.lower()
-        else:
-            ext = ""
+    parts = file.get_extension()
+    extension = parts[-1] if parts else ""
 
-    if not ext or ext not in ["csv", "xlsx"]:
+    if not extension or extension not in ["csv", "xlsx"]:
         frappe.throw(
-            f"Only CSV, XLSX, and XLS files are supported. Detected extension: '{ext}' from filename: '{file_name}'"
+            f"Only CSV and XLSX files are supported. Detected extension: '{extension}' from filename: '{file_name}'"
         )
-    return file
+    return file, extension
 
 
 @insights_whitelist()
@@ -137,11 +118,11 @@ def get_csv_file(filename: str):
 def get_file_data(filename: str):
     check_data_source_permission("uploads")
 
-    file = get_csv_file(filename)
+    file, ext = get_csv_file(filename)
     file_path = file.get_full_path()
     file_name = file.file_name.split(".")[0]
     file_name = frappe.scrub(file_name)
-    ext = file.file_name.split(".")[-1].lower()
+
     con = ibis.duckdb.connect()
     if ext in ["xlsx"]:
         table = con.read_xlsx(file_path)
@@ -165,7 +146,7 @@ def get_file_data(filename: str):
 def import_csv_data(filename: str):
     check_data_source_permission("uploads")
 
-    file = get_csv_file(filename)
+    file, ext = get_csv_file(filename)
     file_path = file.get_full_path()
     table_name = file.file_name.split(".")[0]
     table_name = frappe.scrub(table_name)
@@ -184,19 +165,20 @@ def import_csv_data(filename: str):
     db = get_duckdb_connection(ds, read_only=False)
 
     try:
-        ext = file.file_name.split(".")[-1].lower()
         if ext in ["xlsx"]:
-            try:
-                table = db.read_xlsx(file_path)
-                db.create_table(table_name, table, overwrite=True)
-            except Exception as e:
-                frappe.log_error(e)
-                frappe.throw(
-                    "Failed to read Excel data from uploaded file. Please ensure the file is a valid Excel format and try again."
-                )
+            table = db.read_xlsx(file_path)
+            db.create_table(table_name, table, overwrite=True)
         else:
             table = db.read_csv(file_path, table_name=table_name)
             db.create_table(table_name, table, overwrite=True)
+    except Exception as e:
+        frappe.log_error(e)
+        if ext in ["xlsx"]:
+            frappe.throw(
+                "Failed to read Excel data from uploaded file. Please ensure the file is a valid Excel format and try again."
+            )
+        else:
+            frappe.throw("Failed to read CSV data from uploaded file. Please try again.")
     finally:
         db.disconnect()
 
