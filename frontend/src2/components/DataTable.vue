@@ -1,11 +1,25 @@
 <script setup lang="ts">
 import { Button, FormControl, LoadingIndicator, Rating } from 'frappe-ui'
 import { ChevronLeft, ChevronRight, Download, Plus, Search, Table2Icon } from 'lucide-vue-next'
-import { computed, nextTick, reactive, ref } from 'vue'
+import { computed, nextTick, reactive, ref} from 'vue'
 import { createHeaders, formatNumber, getShortNumber } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
-import { QueryResultColumn, QueryResultRow, SortDirection, SortOrder } from '../types/query.types'
+import {QueryResultColumn, QueryResultRow, SortDirection, SortOrder } from '../types/query.types'
 import DataTableColumn from './DataTableColumn.vue'
+import {
+	applyRule,
+	applyTextRule,
+	applyDateRule,
+	applyRankRule,
+	cell_rules,
+	text_rules,
+	date_rules,
+	rank_rules,
+	FormatGroupArgs,
+	FormattingMode,
+	garByPercentage,
+	ragByPercentage,
+} from '../query/components/formatting_utils'
 
 const props = defineProps<{
 	columns: QueryResultColumn[] | undefined
@@ -19,6 +33,7 @@ const props = defineProps<{
 	replaceNullsWithZeros?: boolean
 	compactNumbers?: boolean
 	loading?: boolean
+	formatGroup?: FormatGroupArgs
 	onExport?: Function
 	sortOrder?: SortOrder
 	onSortChange?: (column_name: string, direction: SortDirection) => void
@@ -30,16 +45,19 @@ const props = defineProps<{
 const headers = computed(() => {
 	if (!props.columns?.length) return []
 	return createHeaders(props.columns)
+	
 })
-
 const columnsMeta = computed(() => {
 	if (!props.columns || !props.rows) return new Map()
 
 	const meta = new Map()
 	props.columns.forEach((col) => {
 		const name = col.name
+		const hasColorScaleFormatting = formattingRulesByColumn.value[name]?.some(
+			(rule) => rule.mode === 'color_scale',
+		)
 		const metadata = {
-			isNumber: FIELDTYPES.NUMBER.includes(col.type),
+			isNumber: FIELDTYPES.NUMBER.includes(col.type) || hasColorScaleFormatting,
 			isStarRating: false,
 		}
 
@@ -236,7 +254,6 @@ const colorByValues = computed(() => {
 	uniqueValues = uniqueValues.sort((a, b) => a - b)
 	const max = uniqueValues[uniqueValues.length - 1]
 	const uniqueValuesNormalized = uniqueValues.map((val) => Math.round((val / max) * 100))
-
 	const _colorByValues: Record<number, string> = {}
 	uniqueValuesNormalized.forEach((percentVal, index) => {
 		for (const [percent, color] of Object.entries(colorByPercentage)) {
@@ -249,6 +266,183 @@ const colorByValues = computed(() => {
 
 	return _colorByValues
 })
+	
+const formattingRulesByColumn = computed(() => {
+	const formatGroup = props.formatGroup
+	const result: Record<string, FormattingMode[]> = {}
+	const columns = props.columns || []
+	if (!formatGroup?.formats?.length) return result
+
+	const  sanitizeColumnName = (n: string) => n.split('__')[0]
+
+	formatGroup.formats.forEach((format) => {
+		const target = ('column' in format && format.column?.column_name) ? format.column.column_name : ''
+		if (!target) return
+
+		columns.forEach((col) => {
+			if (sanitizeColumnName(col.name) === target) {
+				if (!result[col.name]) result[col.name] = []
+				result[col.name].push(format)
+			}
+		})
+	})
+
+	return result
+})
+
+function getColorClass(colorName: string): string {
+	if (!colorName) return 'bg-gray-500'
+
+	switch (colorName.toLowerCase()) {
+		case 'red':
+			return 'bg-[#d87373] text-white'
+		case 'green':
+			return 'bg-[#6DB678] text-white'
+		case 'amber':
+			return 'bg-[#F8D16E] text-black'
+		default:
+			return colorName.startsWith('bg-') ? colorName : 'bg-gray-500'
+	}
+}
+
+const getColumnMinMax = (columnName: string) => {
+  const values = props.rows
+    ?.map(row => Number(row[columnName]))
+    .filter(val => !isNaN(val)) || []
+  
+  return {
+    min: Math.min(...values),
+    max: Math.max(...values)
+  }
+}
+
+function getDefaultColorScaleClass(colName: string, val: any): string {
+	if (props.enableColorScale && isNumberColumn(colName)) {
+		const numVal = Number(val)
+		if (!isNaN(numVal)) {
+			const colorByValue = colorByValues.value as Record<number, string>
+			if (colorByValue && colorByValue[numVal]) {
+				return colorByValue[numVal]
+			}
+		}
+	}
+	return ''
+}
+
+function normalizeCellValue(colName: string, val: any) {
+        if (isNumberColumn(colName) && (val === null || val === undefined)) {
+            return 0
+        }
+        return val
+    }
+
+function getHighlightClassFromRules(colName: string, val: any, rules: FormattingMode[]): string {
+
+	for (const format of rules) {
+		let isHighlighted = false
+		let colorClass = ''
+
+        const normalizedValue = normalizeCellValue(colName, val)
+
+		if (format.mode === 'cell_rules' && format.operator && format.value !== undefined) {
+			const rule = {
+				column: colName,
+				operator: format.operator,
+				value: format.value,
+				color: format.color,
+				mode: 'cell_rules',
+			} as unknown as cell_rules
+
+            if (applyRule(normalizedValue, rule)) {
+				isHighlighted = true
+				colorClass = getColorClass(format.color as string)
+			}
+		} else if (format.mode === 'text_rules') {
+			const textRule = format as text_rules
+            if (applyTextRule(normalizedValue, textRule)) {
+				isHighlighted = true
+				colorClass = getColorClass(textRule.color)
+			}
+		} else if (format.mode === 'date_rules') {
+			const dateRule = format as date_rules
+            if (applyDateRule(normalizedValue, dateRule)) {
+				isHighlighted = true
+				colorClass = getColorClass(dateRule.color)
+			}
+		} else if (format.mode === 'rank_rules') {
+			const rankRule = format as rank_rules
+            const allColumnValues = props.rows?.map((row) => normalizeCellValue(colName, row[colName])) || []
+            if (applyRankRule(normalizedValue, rankRule, allColumnValues)) {
+				isHighlighted = true
+				colorClass = getColorClass(rankRule.color)
+			}
+		}
+
+		if (isHighlighted && colorClass) {
+			return colorClass
+		}
+	}
+	return ''
+}
+
+function getColorScaleClassFromFormat(colName: string, val: any, format: FormattingMode): string {
+	if (format.mode !== 'color_scale') return ''
+	const numVal = Number(val)
+	if (isNaN(numVal)) return ''
+
+	const { min, max } = getColumnMinMax(colName)
+	let percentile: number = 0
+	const normalizedValue = (numVal - min) / (max - min)
+	percentile = Math.round(normalizedValue * 100)
+	percentile = Math.max(0, Math.min(100, percentile))
+
+	let colorScale: Record<string, string>
+	if (format.colorScale) {
+		format.colorScale == 'Red-Green' ? (colorScale = ragByPercentage) : (colorScale = garByPercentage)
+	} else {
+		colorScale = ragByPercentage
+	}
+
+	const thresholds = Object.keys(colorScale)
+		.map(Number)
+		.sort((a, b) => a - b)
+
+	let selectedThreshold = thresholds[0]
+	for (const threshold of thresholds) {
+		if (percentile >= threshold) {
+			selectedThreshold = threshold
+		}
+	}
+	const thresholdKey = String(selectedThreshold)
+	const bgClass = colorScale[thresholdKey]?.trim() || 'bg-gray-300'
+	return `${bgClass}`
+}
+
+function getColorScaleClassFromRules(colName: string, val: any, rules: FormattingMode[]): string {
+	for (const format of rules) {
+		if (format.mode === 'color_scale') {
+			const cls = getColorScaleClassFromFormat(colName, val, format)
+			if (cls) return cls
+		}
+	}
+	return ''
+}
+
+function getCellStyleClass(colName: string, val: any): string {
+	const defaultScale = getDefaultColorScaleClass(colName, val)
+	if (defaultScale) return defaultScale
+
+	const rules = formattingRulesByColumn.value[colName]
+	if (!rules?.length) return ''
+
+	const highlight = getHighlightClassFromRules(colName, val, rules)
+	if (highlight) return highlight
+
+	const scale = getColorScaleClassFromRules(colName, val, rules)
+	if (scale) return scale
+
+	return ''
+}
 
 function _formatNumber(value: any) {
 	const isNull = value === null || value === undefined
@@ -414,6 +608,7 @@ function toggleNewColumn() {
 								isNumberColumn(col.name) && props.onDrilldown
 									? 'cursor-pointer'
 									: '',
+								getCellStyleClass(col.name, row[col.name]),
 								isStickyColumn(col.name) ? 'sticky z-1 bg-white' : '',
 							]"
 							:style="getStickyColumnStyle(col.name)"

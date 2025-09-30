@@ -4,11 +4,15 @@ import { Bell, RefreshCw } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import DrillDown from '../../charts/components/DrillDown.vue'
 import DataTable from '../../components/DataTable.vue'
-import { QueryResultColumn, QueryResultRow, SortDirection } from '../../types/query.types'
+import {
+	QueryResultColumn,
+	QueryResultRow,
+	SortDirection,
+} from '../../types/query.types'
 import { column } from '../helpers'
 import { Query } from '../query'
-import AlertSetupDialog from './AlertSetupDialog.vue'
 import QueryAlertsDialog from './QueryAlertsDialog.vue'
+import AlertSetupDialog from './AlertSetupDialog.vue'
 
 const props = defineProps<{
 	query: Query
@@ -94,7 +98,6 @@ const currentAlertName = ref('')
 		:enable-new-column="props.enableNewColumn"
 		v-bind="$attrs"
 	>
-		<!-- pagination -->
 		<template #header-prefix="{ column }">
 			<slot name="header-prefix" :column="column" />
 		</template>
@@ -121,7 +124,11 @@ const currentAlertName = ref('')
 		</template>
 
 		<template #footer-right-actions>
-			<Button v-if="enableAlerts" variant="ghost" @click="showAlertsDialog = true">
+			<Button
+				v-if="enableAlerts"
+				variant="ghost"
+				@click="showAlertsDialog = true"
+			>
 				<template #icon>
 					<Bell class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 				</template>
