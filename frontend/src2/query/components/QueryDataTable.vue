@@ -152,10 +152,6 @@ function onExport(format: 'csv' | 'excel', filename: string) {
 				rows
 			</div>
 		</template>
-
-        <template #footer-right-actions>
-            <Button v-if="enableAlerts" variant="ghost" @click="showAlertsDialog = true">
-
 		<template #footer-right-actions>
 			<Button
 				v-if="enableAlerts"
