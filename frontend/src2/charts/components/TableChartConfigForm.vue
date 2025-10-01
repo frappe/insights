@@ -62,12 +62,31 @@ const measuresAsDimensions = computed<DimensionOption[]>(() =>
 
 const dimensions = computed(() => [...props.dimensions, ...measuresAsDimensions.value])
 
-const measuresAndDimensions = computed(() => 
-{const measures =config.value.values.map((value) => ({query: '', label: value.measure_name, data_type: value.data_type, description: value.data_type, value: value.measure_name}))
-	const dimensions = config.value.columns.map((column) => ({query: '',label: column.column_name, data_type: column.data_type, value: column.column_name, description: column.data_type}))
-	const rows = config.value.rows.map((row) => ({query: '', label: row.column_name, data_type: row.data_type, value: row.column_name, description: row.data_type}))
+function toColumnOption(item: any, label: string, value: string, dataType: string) {
+	return {
+		query: '',
+		label: item[label],
+		data_type: item[dataType],
+		value: item[value],
+		description: item[dataType],
+	}
+}
+
+const measuresAndDimensions = computed(() => {
+	const measures = config.value.values
+		.filter((m) => m?.measure_name)
+		.map((m) => toColumnOption(m, 'measure_name', 'measure_name', 'data_type'))
+
+	const dimensions = config.value.columns
+		.filter((column) => column?.column_name)
+		.map((column) => toColumnOption(column, 'column_name', 'column_name', 'data_type'))
+
+	const rows = config.value.rows
+		.filter((row) => row?.column_name)
+		.map((row) => toColumnOption(row, 'column_name', 'column_name', 'data_type'))
+
 	return [...measures, ...dimensions, ...rows]
-	})
+})
 
 const colOptions = computed(() => measuresAndDimensions.value as ColumnOption[] || [])
 function editRule(index: number) {
