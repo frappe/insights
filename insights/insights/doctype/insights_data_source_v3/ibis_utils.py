@@ -589,6 +589,8 @@ class IbisQueryBuilder:
 
         frappe.flags.current_ibis_query = self.query
         context = frappe._dict()
+        context.pandas = frappe._dict()
+        context.pandas.DataFrame = SafePandasDataFrame
         context.q = self.query
         context.update(self.get_current_columns())
         context.update(get_functions())
