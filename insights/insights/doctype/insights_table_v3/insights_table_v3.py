@@ -39,7 +39,7 @@ class InsightsTablev3(Document):
             from insights.insights.doctype.insights_data_source_v3.ibis_utils import exec_with_return
 
             try:
-                table = self.get_ibis_table(self.data_source, self.table)
+                table = self.get_ibis_table(self.data_source, self.table, use_live_connection=True)
                 exec_with_return(self.before_import_script, {"table": table})
             except Exception as e:
                 frappe.throw(f"Error executing before import script: {e}")
