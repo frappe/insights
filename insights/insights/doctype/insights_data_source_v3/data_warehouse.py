@@ -272,6 +272,15 @@ class WarehouseTableImporter:
             
             if row_count == 0:
                 break
+            
+            # Get max primary key before dropping __row_number
+            max_primary_key = None
+            if self.primary_key in batch_data.columns:
+                max_primary_key = batch_data[self.primary_key].max()
+            
+            # Drop __row_number column if it exists (it was added for pagination)
+            if "__row_number" in batch_data.columns:
+                batch_data = batch_data.drop(columns=["__row_number"])
                 
             # Insert into warehouse database
             if batch_number == 0:
@@ -287,8 +296,7 @@ class WarehouseTableImporter:
             
             total_rows += row_count
             
-            if self.primary_key in batch_data.columns:
-                max_primary_key = batch_data[self.primary_key].max()
+            if max_primary_key is not None:
                 self.log.log_output(
                     f"Rows: {row_count}\nBookmark: {max_primary_key}",
                     commit=True,
@@ -299,7 +307,7 @@ class WarehouseTableImporter:
             if row_count < batch_size:
                 break
 
-            if self.primary_key in batch_data.columns:
+            if max_primary_key is not None:
                 remote_table = remote_table.filter(_[self.primary_key] > max_primary_key)
             
             batch_number += 1
