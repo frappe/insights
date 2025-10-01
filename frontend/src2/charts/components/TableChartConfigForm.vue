@@ -13,6 +13,7 @@ import { ColumnOption, DimensionDataType, DimensionOption } from '../../types/qu
 import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
+import { wheneverChanges } from '../../helpers'
 const props = defineProps<{
 	formatGroup?: FormatGroupArgs
 	dimensions: DimensionOption[]
@@ -82,13 +83,14 @@ const measuresAndDimensions = computed(() => {
 		.map((column) => toColumnOption(column, 'column_name', 'column_name', 'data_type'))
 
 	const rows = config.value.rows
-		.filter((row) => row?.column_name)
-		.map((row) => toColumnOption(row, 'column_name', 'column_name', 'data_type'))
+		.filter((row) => row?.dimension_name)
+		.map((row) => toColumnOption(row, 'dimension_name', 'dimension_name', 'data_type'))
 
 	return [...measures, ...dimensions, ...rows]
 })
 
 const colOptions = computed(() => measuresAndDimensions.value as ColumnOption[] || [])
+
 function editRule(index: number) {
 	const ruleToEditValue = config.value.conditional_formatting?.formats[index]
 
