@@ -40,11 +40,14 @@ class Warehouse:
 
 class WarehouseTable:
     def __init__(self, data_source: str, table_name: str):
+        from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
+
         self.warehouse = Warehouse()
         self.data_source = data_source
         self.table_name = table_name
         self.warehouse_table_name = get_warehouse_table_name(data_source, table_name)
         self.parquet_filepath = get_parquet_filepath(data_source, table_name)
+        self.table_doc_name = get_table_name(data_source, table_name)
 
         self.validate()
 
@@ -173,7 +176,12 @@ class WarehouseTableImporter:
 
     def prepare_settings(self) -> dict:
         self.settings.row_limit = (
-            frappe.db.get_single_value("Insights Settings", "max_records_to_sync") or 10_00_000
+            frappe.get_value("Insights Table v3", self.table.table_doc_name, "row_limit")
+            or frappe.db.get_single_value("Insights Settings", "max_records_to_sync")
+            or 10_00_000
+        )
+        self.settings.before_import_script = (
+            frappe.get_value("Insights Table v3", self.table.table_doc_name, "before_import_script") or ""
         )
         self.settings.memory_limit = (
             frappe.db.get_single_value("Insights Settings", "max_memory_usage") or 512
@@ -198,6 +206,13 @@ class WarehouseTableImporter:
         else:
             self.primary_key = "__row_number"
             self.remote_table = self.remote_table.mutate(__row_number=ibis.row_number())
+
+        if self.settings.before_import_script:
+            from .ibis_utils import exec_with_return
+
+            self.remote_table = exec_with_return(
+                self.settings.before_import_script, {"table": self.remote_table}
+            )
 
         self.remote_table = self.remote_table.limit(self.settings.row_limit)
         self.log.db_set("query", ibis.to_sql(self.remote_table), commit=True)
@@ -272,7 +287,7 @@ class WarehouseTableImporter:
             .to_records(index=False)[0]
         )
         self.log.log_output(
-            f"Rows: {metadata['count']}\n" f"Bookmark: {metadata['max_primary_key']}",
+            f"Rows: {metadata['count']}\nBookmark: {metadata['max_primary_key']}",
             commit=True,
         )
         ddb.disconnect()
@@ -290,7 +305,7 @@ class WarehouseTableImporter:
         self.log.parquet_file = path
         self.log.rows_imported = total_rows
         self.log.log_output(
-            f"Total Batches: {len(self.imported_batch_paths)}\n" f"Total Rows: {total_rows}",
+            f"Total Batches: {len(self.imported_batch_paths)}\nTotal Rows: {total_rows}",
             commit=True,
         )
         ddb.disconnect()
