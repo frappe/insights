@@ -53,7 +53,7 @@ async function registerMap(mapName) {
 		const mapJson = await import('../../assets/maps_json/india.json')
 		echarts.registerMap('india', mapJson.default)
 	} else if (mapName === 'world') {
-		const mapJson = await import('../../assets/maps_json/countries.json')
+		const mapJson = await import('../../assets/maps_json/world_map.json')
 		echarts.registerMap('world', mapJson.default)
 	}
 }
