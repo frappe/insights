@@ -1,6 +1,7 @@
 import { useDebouncedRefHistory } from '@vueuse/core'
 import { isEqual } from 'es-toolkit'
-import { dayjs } from 'frappe-ui'
+import { dayjs, call } from 'frappe-ui'
+import { Buffer } from 'buffer'
 import { computed, reactive, ref, toRefs, unref } from 'vue'
 import {
 	copy,
@@ -28,6 +29,7 @@ import {
 	FilterRule,
 	JoinArgs,
 	Measure,
+	Mutate,
 	MutateArgs,
 	Operation,
 	OrderByArgs,
@@ -119,6 +121,8 @@ export function makeQuery(name: string) {
 
 	const result = ref({ ...EMPTY_RESULT })
 	const executing = ref(false)
+    const downloading = ref(false)
+    const currentDownloadToken = ref<number | null>(null)
 	let lastExecutionArgs: {
 		operations: Operation[]
 		adhoc_filters?: AdhocFilters
@@ -207,6 +211,24 @@ export function makeQuery(name: string) {
 				fetchingCount.value = false
 			})
 	}
+
+    async function formatSQL(args: SQLArgs): Promise<string> {
+        if (!args.raw_sql.trim()) return args.raw_sql || ''
+
+        try {
+            const formattedSQL = await query.call('format', { raw_sql: args.raw_sql.trim() })
+            const sqlOp = getSQLOperation()
+            if (sqlOp) {
+                sqlOp.raw_sql = formattedSQL
+            } else {
+                console.warn('No SQL operation found for native query.')
+            }
+            return formattedSQL
+        } catch (error) {
+            console.error('Error formatting SQL:', error)
+            return args.raw_sql
+        }
+    }
 
 	function setActiveOperation(index: number) {
 		activeOperationIdx.value = index
@@ -366,6 +388,21 @@ export function makeQuery(name: string) {
 	}
 
 	function renameColumn(oldName: string, newName: string) {
+		// Check if there's a mutate operation with the old name
+		const existingMutateIdx = currentOperations.value.findIndex(
+			(op) => op.type === 'mutate' && op.new_name === oldName
+		)
+
+		if (existingMutateIdx !== -1) {
+			// Update the new_name property of the existing mutate operation
+			const mutateOp = query.doc.operations[existingMutateIdx] as Mutate
+			query.doc.operations[existingMutateIdx] = {
+				...mutateOp,
+				new_name: newName
+			}
+			return
+		}
+
 		const existingRenameIdx = currentOperations.value.findIndex(
 			(op) => op.type === 'rename' && op.new_name === oldName
 		)
@@ -417,6 +454,21 @@ export function makeQuery(name: string) {
 	}
 
 	function changeColumnType(column_name: string, newType: ColumnDataType) {
+		// Check if there's a mutate operation with the old name
+		const existingMutateIdx = currentOperations.value.findIndex(
+			(op) => op.type === 'mutate' && op.new_name === column_name
+		)
+
+		if (existingMutateIdx !== -1) {
+			// Update the new_name property of the existing mutate operation
+			const mutateOp = query.doc.operations[existingMutateIdx] as Mutate
+			query.doc.operations[existingMutateIdx] = {
+				...mutateOp,
+				data_type: newType
+			}
+			return
+		}
+
 		addOperation(
 			cast({
 				column: column(column_name),
@@ -441,42 +493,92 @@ export function makeQuery(name: string) {
 		activeOperationIdx.value = newOperations.length - 1
 	}
 
-	function downloadResults() {
-		const _downloadResults = () => {
-			return query
-				.call('download_results', {
-					active_operation_idx: activeOperationIdx.value,
-					adhoc_filters: adhocFilters.value,
-				})
-				.then((csv_data: string) => {
-					if (!csv_data) {
-						createToast({
-							title: 'Download Failed',
-							message: 'No data found to download.',
-							variant: 'warning',
-						})
-						return
+    function downloadResults(format: string = 'csv', filename?: string) {
+        const _downloadResults =  () => {
+            downloading.value = true
+            const token = Date.now() + Math.random()
+            currentDownloadToken.value = token
+            return call('insights.api.run_doc_method', {
+                method: 'download_results',
+                docs: {
+                    ...(query.doc || {}),
+                    __islocal: query.islocal,
+                },
+                args: {
+                    format,
+                    active_operation_idx: activeOperationIdx.value,
+                    adhoc_filters: adhocFilters.value,
+                },
+            })
+                .then((payload: any) => {
+                    if (currentDownloadToken.value !== token) return
+                    const data: string = payload?.message
+                    if (!data) {
+                        createToast({
+                            title: 'Download Failed',
+                            message: 'No data found to download.',
+                            variant: 'warning',
+                        })
+                        return
+                    }
+
+					let blob: Blob
+					let extension: string
+					let mimeType: string
+
+                    if (format === 'excel') {
+                        const bytes = Buffer.from(data, 'base64')
+                        blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+						extension = 'xlsx'
+						mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+					} else {
+						blob = new Blob([data], { type: 'text/csv' })
+						extension = 'csv'
+						mimeType = 'text/csv'
 					}
 
-					const blob = new Blob([csv_data], { type: 'text/csv' })
 					const url = window.URL.createObjectURL(blob)
 					const a = document.createElement('a')
 					a.setAttribute('hidden', '')
 					a.setAttribute('href', url)
-					a.setAttribute('download', `${query.doc.title || 'data'}.csv`)
+                    const finalFileName = `${filename || query.doc.title || 'data'}.${extension}`
+                    a.setAttribute('download', finalFileName)
 					document.body.appendChild(a)
 					a.click()
 					document.body.removeChild(a)
+					window.URL.revokeObjectURL(url)
+                    createToast({
+                        title: 'Export Successful',
+                        message: `File "${finalFileName}" exported successfully`,
+                        variant: 'success',
+                    })
 				})
-		}
+                .catch((error: any) => {
+                    if (currentDownloadToken.value !== token) return
+                    createToast({
+                        title: 'Download Failed',
+                        message: error?.message || 'Failed to download file',
+                        variant: 'error',
+                    })
+                })
+                .finally(() => {
+                    if (currentDownloadToken.value === token) {
+                        downloading.value = false
+                        currentDownloadToken.value = null
+                    }
+                })
+		}	
 
-		confirmDialog({
-			title: 'Download Results',
-			message:
-				'This action will download the datatable results as a CSV file. Do you want to proceed?',
-			primaryActionLabel: 'Yes',
-			onSuccess: _downloadResults,
-		})
+		_downloadResults()
+	}
+
+    function cancelDownload() {
+        currentDownloadToken.value = null
+        downloading.value = false
+    }
+
+	function exportResults(format: string, filename: string) {
+		downloadResults(format, filename)
 	}
 
 	function getDistinctColumnValues(column: string, search_term: string = '', limit: number = 20) {
@@ -867,9 +969,12 @@ export function makeQuery(name: string) {
 		getDistinctColumnValues,
 		getColumnsForSelection,
 		downloadResults,
-
+        exportResults,
+		downloading,
+        cancelDownload,
 		getSQLOperation,
 		setSQL,
+		formatSQL,
 
 		getCodeOperation,
 		setCode,

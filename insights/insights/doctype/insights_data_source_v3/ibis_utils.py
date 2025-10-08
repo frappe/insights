@@ -6,6 +6,7 @@ import frappe
 import ibis
 import numpy as np
 import pandas as pd
+import sqlparse
 from frappe.utils.data import flt
 from frappe.utils.safe_exec import safe_eval, safe_exec
 from ibis import _
@@ -371,9 +372,18 @@ class IbisQueryBuilder:
         return self.query.rename(**{new_name: old_name})
 
     def apply_remove(self, remove_args):
-        to_remove = {self.get_column(col) for col in remove_args.column_names}
-        to_remove = {col.get_name() for col in to_remove}
-        return self.query.drop(*to_remove)
+        # Get valid columns that exist in the query
+        valid_columns = []
+        for column_name in remove_args.column_names:
+            column = self.get_column(column_name, throw=False)
+            if column is not None:
+                valid_columns.append(column.get_name())
+
+        # If no valid columns to remove, return the original query
+        if not valid_columns:
+            return self.query
+
+        return self.query.drop(*valid_columns)
 
     def apply_cast(self, cast_args):
         col_name = self.get_column(cast_args.column.column_name).get_name()
@@ -389,13 +399,17 @@ class IbisQueryBuilder:
             "Datetime": "timestamp",
             "Time": "time",
             "Text": "string",
+            "JSON": "json",
+            "Array": "array<json>",
+            "Auto": "",
         }[data_type]
 
     def apply_mutate(self, mutate_args):
         new_name = sanitize_name(mutate_args.new_name)
-        dtype = self.get_ibis_dtype(mutate_args.data_type)
         new_column = self.evaluate_expression(mutate_args.expression.expression)
-        new_column = new_column.cast(dtype)
+        dtype = self.get_ibis_dtype(mutate_args.data_type)
+        if dtype:
+            new_column = new_column.cast(dtype)
         return self.query.mutate(**{new_name: new_column})
 
     def apply_summary(self, summarize_args):
@@ -459,6 +473,8 @@ class IbisQueryBuilder:
 
         ds = frappe.get_doc("Insights Data Source v3", data_source)
         db = ds._get_ibis_backend()
+
+        raw_sql = sqlparse.format(sql=raw_sql, strip_comments=True)
 
         if ds.enable_stored_procedure_execution and raw_sql.strip().lower().startswith("exec"):
             current_date = date.today().strftime("%Y-%m-%d")  # Format: 'YYYY-MM-DD'
@@ -573,6 +589,8 @@ class IbisQueryBuilder:
 
         frappe.flags.current_ibis_query = self.query
         context = frappe._dict()
+        context.pandas = frappe._dict()
+        context.pandas.DataFrame = SafePandasDataFrame
         context.q = self.query
         context.update(self.get_current_columns())
         context.update(get_functions())
@@ -595,7 +613,11 @@ def execute_ibis_query(
     reference_doctype=None,
     reference_name=None,
 ):
-    sql = ibis.to_sql(query)
+    try:
+        sql = ibis.to_sql(query)
+    except ibis.common.exceptions.OperationNotDefinedError:
+        # TODO: throw better error message
+        raise
 
     if cache:
         backends, _ = query._find_backends()
@@ -662,6 +684,10 @@ def to_insights_type(dtype: DataType):
         return "Date"
     if dtype.is_time():
         return "Time"
+    if dtype.is_json():
+        return "JSON"
+    if dtype.is_array():
+        return "Array"
     return "String"
 
 

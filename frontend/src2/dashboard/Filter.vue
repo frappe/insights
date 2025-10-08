@@ -69,6 +69,7 @@ function clearFilter() {
 				/>
 			</div>
 			<div id="value" class="!min-w-[200px] flex-1 flex-shrink-0">
+				<!-- todo: use date picker component -->
 				<DatePicker
 					v-if="valueSelectorType === 'date'"
 					:range="false"

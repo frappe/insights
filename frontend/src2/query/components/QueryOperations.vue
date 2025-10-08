@@ -288,11 +288,6 @@ const CustomOperationInfo = (props: any) => {
 							/>
 						</div>
 						<div
-							v-if="
-								query.activeOperationIdx === idx ||
-								(query.activeEditIndex === -1 &&
-									idx === query.doc.operations.length - 1)
-							"
 							class="absolute right-0 flex h-full flex-shrink-0 items-center bg-white opacity-0 transition-all group-hover:opacity-100"
 						>
 							<Button

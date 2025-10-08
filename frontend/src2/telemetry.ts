@@ -1,5 +1,5 @@
 import { call } from 'frappe-ui'
-import '../../../frappe/frappe/public/js/lib/posthog.js'
+import '../posthog.js'
 
 const posthog = {
 	init: (projectToken: string, options: any) => {},

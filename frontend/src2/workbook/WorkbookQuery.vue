@@ -3,7 +3,6 @@ import { inject, ref } from 'vue'
 import Query from '../query/Query.vue'
 import { workbookKey } from './workbook'
 import { useRouter } from 'vue-router'
-
 const props = defineProps<{ workbook_name?: string; query_name: string }>()
 
 const router = useRouter()

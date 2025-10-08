@@ -18,18 +18,27 @@ const csvData = reactive({
 	totalRowCount: 0,
 })
 
-function uploadFileAndFetchData(file: File) {
+function uploadFile(file: File) {
 	fileUploaded.value = true
 	csvData.loading = true
 	csvData.file = file
-	return call('insights.api.get_csv_data', {
+	return call('insights.api.get_file_data', {
 		filename: file.name,
 	})
 		.then((data: any) => {
-			csvData.tablename = data.tablename
+			csvData.tablename = data.tablename || file.name.split('.')[0] || 'imported_table'
 			csvData.columns = data.columns
 			csvData.rows = data.rows
 			csvData.totalRowCount = data.total_rows
+		})
+		.catch((error: any) => {
+			createToast({
+				title: 'Upload Failed',
+				message: error?.message || 'Failed to process uploaded file',
+				variant: 'error',
+			})
+			fileUploaded.value = false
+			throw error
 		})
 		.finally(() => {
 			csvData.loading = false
@@ -49,16 +58,23 @@ function importCSVData() {
 		filename: csvData.file.name,
 	})
 		.then(() => {
-			show.value = false
-			resetFile()
+			
+				createToast({
+					title: 'Table Imported',
+					message: `Table '${csvData.tablename}' imported successfully`,
+					variant: 'success',
+				})
+		})
+		.catch((error: any) => {
 			createToast({
-				title: 'Table Imported',
-				message: `Table '${csvData.tablename}' imported successfully`,
-				variant: 'success',
+				title: 'Import Failed',
+				message: error?.message || 'Failed to import table',
+				variant: 'error',
 			})
 		})
 		.finally(() => {
 			importing.value = false
+			show.value = false
 		})
 }
 
@@ -76,7 +92,7 @@ function resetFile() {
 	<Dialog
 		v-model="show"
 		:options="{
-			title: csvData.tablename ? 'Import Table' : 'Upload CSV File',
+			title: csvData.tablename ? 'Import Table' : 'Upload CSV/Excel File',
 			size: fileUploaded ? '4xl' : '',
 		}"
 	>
@@ -84,8 +100,8 @@ function resetFile() {
 			<FileUploader
 				v-if="!fileUploaded"
 				:uploadArgs="{ private: true }"
-				:file-types="['.csv']"
-				@success="uploadFileAndFetchData"
+				:file-types="['.csv', '.xlsx']"
+				@success="uploadFile"
 			>
 				<template #default="{ progress, uploading, openFileSelector }">
 					<div
@@ -99,7 +115,7 @@ function resetFile() {
 						/>
 						<div class="text-center">
 							<p v-if="!uploading" class="text-sm font-medium text-gray-800">
-								Select a CSV file to upload
+								Select a CSV or Excel file to upload
 							</p>
 							<p v-if="!uploading" class="mt-1 text-xs text-gray-600">
 								or drag and drop it here

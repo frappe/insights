@@ -12,6 +12,7 @@ import useDataSourceStore, { getDatabaseLogo } from './data_source'
 import { DataSourceListItem } from './data_source.types'
 import UploadCSVFileDialog from './UploadCSVFileDialog.vue'
 import ConnectDuckDBDialog from './ConnectDuckDBDialog.vue'
+import ConnectClickhouseDialog from './ConnectClickhouseDialog.vue'
 
 const dataSourceStore = useDataSourceStore()
 dataSourceStore.getSources()
@@ -22,13 +23,14 @@ const filteredDataSources = computed(() => {
 		return dataSourceStore.sources
 	}
 	return dataSourceStore.sources.filter((data_source) =>
-		data_source.title.toLowerCase().includes(searchQuery.value.toLowerCase())
+		data_source.title.toLowerCase().includes(searchQuery.value.toLowerCase()),
 	)
 })
 
 const showNewSourceDialog = ref(false)
 const showNewMariaDBDialog = ref(false)
 const showNewPostgreSQLDialog = ref(false)
+const showNewClickHouseDialog = ref(false)
 const showNewDuckDBDialog = ref(false)
 const showCSVFileUploadDialog = ref(false)
 
@@ -52,6 +54,15 @@ const sourceTypes = [
 		},
 	},
 	{
+		label: 'ClickHouse',
+		icon: getDatabaseLogo('ClickHouse'),
+		description: 'Connect to ClickHouse database',
+		onClick: () => {
+			showNewSourceDialog.value = false
+			showNewClickHouseDialog.value = true
+		},
+	},
+	{
 		label: 'DuckDB',
 		icon: getDatabaseLogo('DuckDB'),
 		description: 'Connect to DuckDB database',
@@ -61,9 +72,9 @@ const sourceTypes = [
 		},
 	},
 	{
-		label: 'Upload CSV',
+		label: 'Upload CSV or Excel',
 		icon: <CSVIcon class="h-8 w-8" />,
-		description: 'Upload a CSV file',
+		description: 'Upload a CSV or Excel file to create a new data source',
 		onClick: () => {
 			showNewSourceDialog.value = false
 			showCSVFileUploadDialog.value = true
@@ -160,6 +171,7 @@ document.title = 'Data Sources | Insights'
 
 	<ConnectMariaDBDialog v-model="showNewMariaDBDialog" />
 	<ConnectPostgreSQLDialog v-model="showNewPostgreSQLDialog" />
+	<ConnectClickhouseDialog v-model="showNewClickHouseDialog" />
 	<ConnectDuckDBDialog v-model="showNewDuckDBDialog" />
 	<UploadCSVFileDialog v-model="showCSVFileUploadDialog" />
 </template>

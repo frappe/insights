@@ -46,6 +46,7 @@ declare module 'vue' {
     ListFilter: typeof import('./src/components/ListFilter/ListFilter.vue')['default']
     ListPicker: typeof import('./src/components/Controls/ListPicker.vue')['default']
     LoginBox: typeof import('./src/components/LoginBox.vue')['default']
+    LucideChevronRight: typeof import('~icons/lucide/chevron-right')['default']
     NestedPopover: typeof import('./src/components/ListFilter/NestedPopover.vue')['default']
     NewDialogWithTypes: typeof import('./src/components/NewDialogWithTypes.vue')['default']
     PageBreadcrumbs: typeof import('./src/components/PageBreadcrumbs.vue')['default']

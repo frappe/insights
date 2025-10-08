@@ -93,8 +93,11 @@ function makeDashboard(name: string) {
 		editingItemIndex.value = dashboard.doc.items.length - 1
 	}
 
+	const grid_cols = 20 // for 5 columns
+	const filter_w = 4
+	const filter_h = 1
+
 	function addFilter() {
-		const maxY = getMaxY()
 		dashboard.doc.items.push({
 			type: 'filter',
 			filter_name: '',
@@ -103,16 +106,48 @@ function makeDashboard(name: string) {
 			layout: {
 				i: getUniqueId(),
 				x: 0,
-				y: maxY,
-				w: 4,
-				h: 1,
+				y: 0,
+				w: filter_w,
+				h: filter_h,
 			},
 		})
+		normalizeLayout()
 		editingItemIndex.value = dashboard.doc.items.length - 1
 	}
 
 	function removeItem(index: number) {
 		dashboard.doc.items.splice(index, 1)
+		normalizeLayout()
+	}
+
+	function normalizeLayout() {
+		const items = dashboard.doc.items
+		const filters = items.filter((item) => item.type === 'filter')
+		if (filters.length === 0) return
+
+		const perRow = Math.max(1, Math.floor(grid_cols / filter_w))
+
+		filters.forEach((item, idx) => {
+			const row = Math.floor(idx / perRow)
+			const colIndex = idx % perRow
+			item.layout.x = colIndex * filter_w
+			item.layout.y = row * filter_h
+			item.layout.w = filter_w
+			item.layout.h = filter_h
+		})
+
+		const filterRows = Math.ceil(filters.length / perRow)
+		const topRow = filterRows * filter_h
+
+		const otherItems = items.filter((item) => item.type !== 'filter')
+		if (otherItems.length === 0) return
+		const minY = Math.min(...otherItems.map((item) => item.layout.y))
+		const topRowHeight = topRow - minY
+
+		if (topRowHeight === 0) return
+		otherItems.forEach((item) => {
+			item.layout.y = Math.max(0, item.layout.y + topRowHeight)
+		})
 	}
 
 	function refresh(force = false) {
@@ -286,6 +321,7 @@ function makeDashboard(name: string) {
 		addText,
 		addFilter,
 		removeItem,
+		normalizeLayout,
 
 		refresh,
 		refreshChart,
@@ -316,6 +352,8 @@ const INITIAL_DOC: InsightsDashboardv3 = {
 	is_shared_with_organization: false,
 	people_with_access: [],
 	read_only: false,
+	vertical_compact: true,
+	has_workbook_access: false,
 }
 
 function getDashboardResource(name: string) {

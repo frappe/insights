@@ -103,6 +103,8 @@ export type InsightsDashboardv3 = {
 		user_image: string
 	}[]
 	read_only: boolean
+	vertical_compact: boolean
+	has_workbook_access: boolean
 }
 
 export type WorkbookDashboardItem =

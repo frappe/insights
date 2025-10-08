@@ -21,10 +21,7 @@ class InsightsDashboardv3(Document):
 
     if TYPE_CHECKING:
         from frappe.types import DF
-
-        from insights.insights.doctype.insights_dashboard_chart_v3.insights_dashboard_chart_v3 import (
-            InsightsDashboardChartv3,
-        )
+        from insights.insights.doctype.insights_dashboard_chart_v3.insights_dashboard_chart_v3 import InsightsDashboardChartv3
 
         is_public: DF.Check
         items: DF.JSON | None
@@ -33,6 +30,7 @@ class InsightsDashboardv3(Document):
         preview_image: DF.Data | None
         share_link: DF.Data | None
         title: DF.Data | None
+        vertical_compact_layout: DF.Check
         workbook: DF.Link
     # end: auto-generated types
 
@@ -65,7 +63,9 @@ class InsightsDashboardv3(Document):
             access = self.get_acess_data()
             d.people_with_access = access[0]
             d.is_shared_with_organization = access[1]
-
+        d.has_workbook_access = frappe.has_permission(
+            "Insights Workbook", ptype="read", doc=self.workbook
+        )
         return d
 
     def before_save(self):

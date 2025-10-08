@@ -100,15 +100,21 @@ export function getDatabaseLogo(database_type: DatabaseType, size: 'sm' | 'md' =
 	if (database_type === 'PostgreSQL') {
 		comp = defineAsyncComponent(() => import('../components/Icons/PostgreSQLIcon.vue'))
 	}
+	if (database_type === 'ClickHouse') {
+		comp = defineAsyncComponent(() => import('../components/Icons/ClickHouseIcon.vue'))
+	}
 	if (database_type === 'SQLite') {
 		comp = defineAsyncComponent(() => import('../components/Icons/SQLiteIcon.vue'))
 	}
 	if (database_type === 'DuckDB') {
 		comp = defineAsyncComponent(() => import('../components/Icons/DuckDBIcon.vue'))
 	}
+
+	let sizeClass = size === 'sm' ? 'size-5' : 'size-8'
+	if (size == 'sm' && database_type === 'ClickHouse') {
+		sizeClass = 'size-4'
+	}
 	return comp
-		? h(comp, {
-				class: size === 'sm' ? 'w-5 h-5' : 'w-8 h-8',
-		  })
+		? h(comp, { class: sizeClass })
 		: null
 }

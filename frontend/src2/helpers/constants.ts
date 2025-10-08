@@ -1,7 +1,7 @@
 import { defineAsyncComponent } from 'vue'
 
 const NumberTypes = ['Integer', 'Decimal']
-const TextTypes = ['Text', 'String']
+const TextTypes = ['Text', 'String', 'JSON', 'Array']
 const DateTypes = ['Date', 'Datetime', 'Time']
 
 export const FIELDTYPES = {
@@ -15,6 +15,7 @@ export const FIELDTYPES = {
 }
 
 export const COLUMN_TYPES = [
+	{ label: 'Auto', value: 'Auto' },
 	{ label: 'String', value: 'String' },
 	{ label: 'Text', value: 'Text' },
 	{ label: 'Integer', value: 'Integer' },
@@ -22,6 +23,8 @@ export const COLUMN_TYPES = [
 	{ label: 'Date', value: 'Date' },
 	{ label: 'Time', value: 'Time' },
 	{ label: 'Datetime', value: 'Datetime' },
+	{ label: 'JSON', value: 'JSON' },
+	{ label: 'Array', value: 'Array' },
 ] as const
 
 export const FILTER_TYPES = ['String', 'Number', 'Date'] as const

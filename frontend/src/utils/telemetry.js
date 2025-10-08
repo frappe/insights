@@ -1,6 +1,6 @@
 import { useStorage } from '@/vueuse/core'
 import { call } from 'frappe-ui'
-import '../../../frappe/public/js/lib/posthog.js'
+import '../../posthog.js'
 
 const APP = 'insights'
 const SITENAME = window.location.hostname

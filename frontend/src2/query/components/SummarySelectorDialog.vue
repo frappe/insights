@@ -10,7 +10,7 @@ import {
 	Measure,
 	SummarizeArgs,
 } from '../../types/query.types'
-import { getDimensions } from '../helpers'
+import { makeDimension } from '../helpers'
 import { Query } from '../query'
 
 const props = defineProps<{
@@ -24,13 +24,14 @@ const columnOptions = ref<ColumnOption[]>([])
 query.getColumnsForSelection().then((cols) => (columnOptions.value = cols))
 
 const dimensionOptions = computed<DimensionOption[]>(() => {
-	const _resultColumns = columnOptions.value.map((c) => ({ name: c.value, type: c.data_type }))
-	const _dimensions = getDimensions(_resultColumns)
-	return _dimensions.map((dimension) => ({
-		...dimension,
-		label: dimension.column_name,
-		value: dimension.column_name,
-	}))
+	return columnOptions.value
+		.map((o) => ({ name: o.value, type: o.data_type }))
+		.map(makeDimension)
+		.map((o) => ({
+			...o,
+			label: o.dimension_name,
+			value: o.column_name,
+		}))
 })
 
 const measures = ref<Measure[]>([])

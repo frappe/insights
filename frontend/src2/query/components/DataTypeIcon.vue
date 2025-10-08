@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import {
 	Baseline,
+	Braces,
+	Brackets,
 	Calendar,
 	CalendarClock,
 	Clock,
@@ -25,7 +27,13 @@ const icon = computed(() => {
 			return Clock
 		case 'Text':
 			return Type
+		case 'JSON':
+			return Braces
+		case 'Array':
+			return Brackets
 		case 'String':
+			return Baseline
+		case 'Auto':
 			return Baseline
 		default:
 			return ShieldQuestion

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { debounce } from 'frappe-ui'
 import { Combine } from 'lucide-vue-next'
-import { inject, provide } from 'vue'
+import { inject, provide, nextTick } from 'vue'
 import { wheneverChanges } from '../../helpers'
 import QueryBuilderToolbar from '../../query/components/QueryBuilderToolbar.vue'
 import QueryDataTable from '../../query/components/QueryDataTable.vue'
@@ -19,8 +19,7 @@ if (dashboard && chartName) {
 	const _adhocFilters = dashboard.getAdhocFilters(chartName)
 	if (_adhocFilters) {
 		props.query.adhocFilters = _adhocFilters
-		// FIX: the query is executed twice; when operations are added and when adhoc filters are set
-		props.query.execute()
+		// Temp fix: Do not execute query here, execute after dialog opens to ensure filters apply
 	}
 }
 
@@ -28,8 +27,10 @@ const show = defineModel()
 wheneverChanges(
 	show,
 	() => {
-		if (show.value && !props.query.result.executedSQL && !props.query.executing) {
-			props.query.execute()
+		if (show.value) {
+			nextTick(async () => {
+				await props.query.execute()
+			})
 		}
 	},
 	{ immediate: true },
