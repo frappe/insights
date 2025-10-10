@@ -251,6 +251,7 @@ def handle_timespan(column, timespan):
         "month",
         "quarter",
         "year",
+        "fiscal year",
     ]
     if not any(timespan.endswith(unit) for unit in units):
         raise Exception(f"Invalid timespan unit - {timespan}")
