@@ -82,7 +82,7 @@ export interface RelativeDateParts {
 
 export const SPAN_OPTIONS = ['Last', 'Current', 'Next']
 export const INTERVAL_TYPE_OPTIONS = [
-	'Day', 'Week', 'Month', 'Quarter', 'Year'
+	'Day', 'Week', 'Month', 'Quarter', 'Year', 'Fiscal Year'
 ]
 
 export type SourceArgs = { table: Table }
