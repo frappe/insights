@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, watchEffect } from 'vue'
+import { reactive, watchEffect } from 'vue'
 import { FormControl } from 'frappe-ui'
 import { RelativeDateParts, SPAN_OPTIONS, INTERVAL_TYPE_OPTIONS } from '../../types/query.types'
 
@@ -15,57 +15,33 @@ const parts = reactive<RelativeDateParts>({
 	includeCurrent: false,
 })
 
-function parseRelativeDate(dateString: string) {
-	const includeCurrentMatch = dateString.match(/\(include current\)$/)
-	const cleanValue = dateString.replace(/\s*\(include current\)$/, '')
-	let [span, interval, intervalType] = cleanValue.split(' ')
-
-	if (span === 'Current') {
-		intervalType = interval
-		interval = '1'
-	}
-
-	return {
-		span,
-		interval,
-		intervalType,
-		includeCurrent: !!includeCurrentMatch
-	}
-}
-
-function formatRelativeDate(dateParts: RelativeDateParts) {
-	const baseValue = dateParts.span === 'Current'
-		? `${dateParts.span} ${dateParts.intervalType}`
-		: `${dateParts.span} ${dateParts.interval} ${dateParts.intervalType}`
-
-	if (dateParts.includeCurrent && dateParts.span !== 'Current') {
-		return `${baseValue} (include current)`
-	}
-
-	return baseValue
-}
-
-function getCheckboxLabel(span: string, intervalType: string) {
-	if (span === 'Current') {
-		return `${intervalType} to Date`
-	}
-	if (span === 'Last' || span === 'Next') {
-		return `Include Current ${intervalType}`
-	}
-	return ''
-}
-
 if (relativeDate.value) {
-	Object.assign(parts, parseRelativeDate(relativeDate.value))
+	const includeCurrent = /\(include current\)$/.test(relativeDate.value)
+	const clean = relativeDate.value.replace(/\s*\(include current\)$/, '')
+	const tokens = clean.split(' ')
+	parts.span = tokens[0]
+	if (parts.span === 'Current') {
+		parts.interval = '1'
+		parts.intervalType = tokens.slice(1).join(' ')
+	} else {
+		parts.interval = tokens[1]
+		parts.intervalType = tokens.slice(2).join(' ')
+	}
+	parts.includeCurrent = includeCurrent
 }
 
 watchEffect(() => {
-	relativeDate.value = formatRelativeDate(parts)
+	if (parts.intervalType === 'Fiscal Year') parts.includeCurrent = false
+	const base = parts.span === 'Current'
+		? `${parts.span} ${parts.intervalType}`
+		: `${parts.span} ${parts.interval} ${parts.intervalType}`
+	relativeDate.value = parts.includeCurrent && parts.span !== 'Current'
+		? `${base} (include current)`
+		: base
 })
 
-const checkboxLabel = computed(() =>
-	getCheckboxLabel(parts.span, parts.intervalType)
-)
+const toggleLabel = (span: string, intervalType: string) =>
+	span === 'Current' ? `${intervalType} to Date` : `Include Current ${intervalType}`
 </script>
 
 <template>
@@ -93,7 +69,7 @@ const checkboxLabel = computed(() =>
 		<div v-if="parts.span !== 'Current' && parts.intervalType !== 'Fiscal Year'" class="flex items-center gap-2">
 			<Toggle size="sm" v-model="parts.includeCurrent" />
 			<span class="text-p-sm text-gray-600">
-				{{ checkboxLabel }}
+				{{ toggleLabel(parts.span, parts.intervalType) }}
 			</span>
 		</div>
 	</div>
