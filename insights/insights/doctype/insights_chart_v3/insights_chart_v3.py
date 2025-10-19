@@ -20,9 +20,11 @@ class InsightsChartv3(Document):
         chart_type: DF.Data | None
         config: DF.JSON | None
         data_query: DF.Link | None
+        folder: DF.Data | None
         is_public: DF.Check
         old_name: DF.Data | None
         query: DF.Link | None
+        sort_order: DF.Int
         title: DF.Data | None
         workbook: DF.Link
     # end: auto-generated types
@@ -88,6 +90,14 @@ def import_chart(chart, workbook):
     new_chart = frappe.new_doc("Insights Chart v3")
     new_chart.update(chart.doc)
     new_chart.workbook = workbook
+
+    if not hasattr(new_chart, 'sort_order') or new_chart.sort_order is None:
+        max_sort_order = frappe.db.get_value(
+            "Insights Chart v3",
+            filters={"workbook": workbook},
+            fieldname="max(sort_order)",
+        ) or -1
+        new_chart.sort_order = max_sort_order + 1
     new_chart.insert()
 
     if str(workbook) == str(chart.doc.workbook) or not chart.dependencies.queries:

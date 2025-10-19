@@ -27,17 +27,16 @@ class InsightsQueryv3(Document):
 
     if TYPE_CHECKING:
         from frappe.types import DF
+        from insights.insights.doctype.insights_query_variable.insights_query_variable import InsightsQueryVariable
 
-        from insights.insights.doctype.insights_query_variable.insights_query_variable import (
-            InsightsQueryVariable,
-        )
-
+        folder: DF.Data | None
         is_builder_query: DF.Check
         is_native_query: DF.Check
         is_script_query: DF.Check
         linked_queries: DF.JSON | None
         old_name: DF.Data | None
         operations: DF.JSON | None
+        sort_order: DF.Int
         title: DF.Data | None
         use_live_connection: DF.Check
         variables: DF.Table[InsightsQueryVariable]
@@ -248,6 +247,14 @@ def import_query(query, workbook):
     new_query = frappe.new_doc("Insights Query v3")
     new_query.update(query.doc)
     new_query.workbook = workbook
+
+    if not hasattr(new_query, 'sort_order') or new_query.sort_order is None:
+        max_sort_order = frappe.db.get_value(
+            "Insights Query v3",
+            filters={"workbook": workbook},
+            fieldname="max(sort_order)",
+        ) or -1
+        new_query.sort_order = max_sort_order + 1
     new_query.insert()
 
     if str(workbook) == str(query.doc.workbook) or not query.dependencies.queries:
