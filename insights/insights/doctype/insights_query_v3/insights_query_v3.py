@@ -59,8 +59,26 @@ class InsightsQueryv3(Document):
         for alert in frappe.get_all("Insights Alert", filters={"query": self.name}, pluck="name"):
             frappe.delete_doc("Insights Alert", alert, force=True, ignore_permissions=True)
 
+        # Clean up empty folders
+        if self.folder:
+            self.cleanup_empty_folder(self.folder)
+
     def before_save(self):
         self.set_linked_queries()
+
+    def cleanup_empty_folder(self, folder_name):
+        """Delete folder if it has no queries or charts"""
+        folder = frappe.get_doc("Insights Folder", folder_name)
+        folder_type = folder.type
+
+        # Check if any queries/charts still use this folder
+        if folder_type == "query":
+            has_items = frappe.db.exists("Insights Query v3", {"folder": folder_name})
+        else:
+            has_items = frappe.db.exists("Insights Chart v3", {"folder": folder_name})
+
+        if not has_items:
+            frappe.delete_doc("Insights Folder", folder_name, force=True, ignore_permissions=True)
 
     def set_linked_queries(self):
         operations = frappe.parse_json(self.operations)
