@@ -242,13 +242,13 @@ function allowDrop(event: DragEvent) {
 			</div>
 			<div v-if="!editingFolderName" class="flex gap-1">
 				<Button
-					class="h-fit p-1 mr-1"
+					class="h-fit p-0.5"
 					variant="ghost"
 					@click="workbook.addFolder(`Untitled`, section.type)"
 				>
 				<Folder class="h-4 w-4 text-gray-600" stroke-width="1.5" />
 				</Button>
-				<Button class="h-fit p-1 ml-1" variant="ghost" @click="section.add()">
+				<Button class="h-fit p-0.5" variant="ghost" @click="section.add()">
 					<Plus class="h-4 w-4 text-gray-600" stroke-width="1.5" />
 				</Button>
 			</div>
