@@ -20,9 +20,19 @@ export type WorkbookListItem = {
 	shared_with_organization?: boolean
 }
 
+export type WorkbookFolder = {
+	name: string
+	title: string
+	type: 'query' | 'chart'
+	sort_order: number
+	is_expanded: boolean
+}
+
 export type WorkbookQuery = {
 	name: string
 	title: string
+	folder?: string | null
+	sort_order: number
 	is_native_query?: boolean
 	is_script_query?: boolean
 	is_builder_query?: boolean
@@ -33,6 +43,8 @@ export type WorkbookChart = {
 	title: string
 	query: string
 	chart_type: ChartType
+	folder?: string | null
+	sort_order: number
 }
 
 export type WorkbookDashboard = {
@@ -45,6 +57,7 @@ export type InsightsWorkbook = {
 	name: string
 	owner: string
 	title: string
+	folders: WorkbookFolder[]
 	queries: WorkbookQuery[]
 	charts: WorkbookChart[]
 	dashboards: WorkbookDashboard[]
@@ -60,6 +73,8 @@ export type InsightsQueryv3 = {
 	operations: Operation[]
 	variables?: QueryVariable[]
 	use_live_connection?: boolean
+	sort_order: number
+	folder?: string | null
 	is_native_query?: boolean
 	is_script_query?: boolean
 	is_builder_query?: boolean
@@ -75,6 +90,8 @@ export type InsightsChartv3 = {
 	query: string
 	data_query: string
 	chart_type: ChartType
+	sort_order: number
+	folder?: string | null
 	is_public: boolean
 	operations: Operation[]
 	use_live_connection?: boolean

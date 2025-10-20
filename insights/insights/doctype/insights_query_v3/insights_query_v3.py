@@ -27,17 +27,16 @@ class InsightsQueryv3(Document):
 
     if TYPE_CHECKING:
         from frappe.types import DF
+        from insights.insights.doctype.insights_query_variable.insights_query_variable import InsightsQueryVariable
 
-        from insights.insights.doctype.insights_query_variable.insights_query_variable import (
-            InsightsQueryVariable,
-        )
-
+        folder: DF.Data | None
         is_builder_query: DF.Check
         is_native_query: DF.Check
         is_script_query: DF.Check
         linked_queries: DF.JSON | None
         old_name: DF.Data | None
         operations: DF.JSON | None
+        sort_order: DF.Int
         title: DF.Data | None
         use_live_connection: DF.Check
         variables: DF.Table[InsightsQueryVariable]
@@ -60,8 +59,26 @@ class InsightsQueryv3(Document):
         for alert in frappe.get_all("Insights Alert", filters={"query": self.name}, pluck="name"):
             frappe.delete_doc("Insights Alert", alert, force=True, ignore_permissions=True)
 
+        # Clean up empty folders
+        if self.folder:
+            self.cleanup_empty_folder(self.folder)
+
     def before_save(self):
         self.set_linked_queries()
+
+    def cleanup_empty_folder(self, folder_name):
+        """Delete folder if it has no queries or charts"""
+        folder = frappe.get_doc("Insights Folder", folder_name)
+        folder_type = folder.type
+
+        # Check if any queries/charts still use this folder
+        if folder_type == "query":
+            has_items = frappe.db.exists("Insights Query v3", {"folder": folder_name})
+        else:
+            has_items = frappe.db.exists("Insights Chart v3", {"folder": folder_name})
+
+        if not has_items:
+            frappe.delete_doc("Insights Folder", folder_name, force=True, ignore_permissions=True)
 
     def set_linked_queries(self):
         operations = frappe.parse_json(self.operations)
@@ -248,6 +265,14 @@ def import_query(query, workbook):
     new_query = frappe.new_doc("Insights Query v3")
     new_query.update(query.doc)
     new_query.workbook = workbook
+
+    if not hasattr(new_query, 'sort_order') or new_query.sort_order is None:
+        max_sort_order = frappe.db.get_value(
+            "Insights Query v3",
+            filters={"workbook": workbook},
+            fieldname="max(sort_order)",
+        ) or -1
+        new_query.sort_order = max_sort_order + 1
     new_query.insert()
 
     if str(workbook) == str(query.doc.workbook) or not query.dependencies.queries:
