@@ -45,6 +45,23 @@ class InsightsChartv3(Document):
     def on_trash(self):
         frappe.delete_doc("Insights Query v3", self.data_query, force=True, ignore_permissions=True)
 
+        # Clean up empty folders
+        if self.folder:
+            self.cleanup_empty_folder(self.folder)
+
+    def cleanup_empty_folder(self, folder_name):
+        """Delete folder if it has no queries or charts"""
+        folder = frappe.get_doc("Insights Folder", folder_name)
+        folder_type = folder.type
+
+        if folder_type == "query":
+            has_items = frappe.db.exists("Insights Query v3", {"folder": folder_name})
+        else:
+            has_items = frappe.db.exists("Insights Chart v3", {"folder": folder_name})
+
+        if not has_items:
+            frappe.delete_doc("Insights Folder", folder_name, force=True, ignore_permissions=True)
+
     def set_data_query(self):
         if self.data_query:
             return
