@@ -35,9 +35,25 @@ class InsightsWorkbook(Document):
             frappe.delete_doc("Insights Chart v3", c.name, force=True, ignore_permissions=True)
         for d in frappe.get_all("Insights Dashboard v3", {"workbook": self.name}):
             frappe.delete_doc("Insights Dashboard v3", d.name, force=True, ignore_permissions=True)
+        for f in frappe.get_all("Insights Folder", {"workbook": self.name}):
+            frappe.delete_doc("Insights Folder", f.name, force=True, ignore_permissions=True)
 
     def as_dict(self, *args, **kwargs):
         d = super().as_dict(*args, **kwargs)
+
+        d.folders = frappe.get_all(
+            "Insights Folder",
+            filters={"workbook": self.name},
+            fields=[
+                "name",
+                "title",
+                "type",
+                "sort_order",
+                "is_expanded",
+            ],
+            order_by="sort_order asc, creation asc",
+        )
+
         chart_queries = frappe.get_all(
             "Insights Chart v3",
             filters={"workbook": self.name},
@@ -52,11 +68,13 @@ class InsightsWorkbook(Document):
             fields=[
                 "name",
                 "title",
+                "folder",
+                "sort_order",
                 "is_native_query",
                 "is_builder_query",
                 "is_script_query",
             ],
-            order_by="creation asc",
+            order_by="sort_order asc, creation asc",
         )
         d.charts = frappe.get_all(
             "Insights Chart v3",
@@ -64,10 +82,12 @@ class InsightsWorkbook(Document):
             fields=[
                 "name",
                 "title",
+                "folder",
+                "sort_order",
                 "chart_type",
                 "query",
             ],
-            order_by="creation asc",
+            order_by="sort_order asc, creation asc",
         )
         d.dashboards = frappe.get_all(
             "Insights Dashboard v3",
@@ -75,6 +95,7 @@ class InsightsWorkbook(Document):
             fields=["name", "title"],
             order_by="creation asc",
         )
+        d.folders = frappe.as_json(d.folders)
         d.queries = frappe.as_json(d.queries)
         d.charts = frappe.as_json(d.charts)
         d.dashboards = frappe.as_json(d.dashboards)
@@ -109,25 +130,26 @@ class InsightsWorkbook(Document):
                 "title": self.title,
             },
             "dependencies": {
+                "folders": [],
                 "queries": {},
                 "charts": {},
                 "dashboards": {},
             },
         }
 
+        chart_queries = frappe.get_all("Insights Chart v3", {"workbook": self.name}, pluck="data_query")
         queries = frappe.get_all(
             "Insights Query v3",
             filters={
                 "workbook": self.name,
-                "name": [
-                    "not in",
-                    frappe.get_all("Insights Chart v3", {"workbook": self.name}, pluck="data_query"),
-                ],
+                "name": ["not in", chart_queries],
             },
             fields=[
                 "name",
                 "title",
                 "workbook",
+                "folder",
+                "sort_order",
                 "use_live_connection",
                 "is_script_query",
                 "is_builder_query",
@@ -147,6 +169,8 @@ class InsightsWorkbook(Document):
                 "name",
                 "title",
                 "workbook",
+                "folder",
+                "sort_order",
                 "query",
                 "chart_type",
                 "config",
@@ -156,6 +180,27 @@ class InsightsWorkbook(Document):
         for c in charts:
             c.config = frappe.parse_json(c.config)
             workbook["dependencies"]["charts"][c.name] = c
+
+        # Export only folders that have active queries or charts
+        query_folders = set([q.get("folder") for q in queries if q.get("folder")])
+        chart_folders = set([c.get("folder") for c in charts if c.get("folder")])
+        active_folders = query_folders | chart_folders
+
+        if active_folders:
+            workbook["dependencies"]["folders"] = frappe.get_all(
+                "Insights Folder",
+                filters={"workbook": self.name, "name": ["in", list(active_folders)]},
+                fields=[
+                    "name",
+                    "title",
+                    "type",
+                    "sort_order",
+                    "is_expanded",
+                ],
+                order_by="sort_order asc, creation asc",
+            )
+        else:
+            workbook["dependencies"]["folders"] = []
 
         dashboards = frappe.get_all(
             "Insights Dashboard v3",
@@ -204,12 +249,32 @@ def import_workbook(workbook):
 
     id_map = {}
 
+    # Copy folders first
+    for folder in workbook.dependencies.get("folders", []):
+        folder = deep_convert_dict_to_dict(folder)
+        old_folder_name = folder["name"]
+        new_folder = frappe.new_doc("Insights Folder")
+        new_folder.title = folder["title"]
+        new_folder.type = folder["type"]
+        new_folder.sort_order = folder["sort_order"]
+        new_folder.is_expanded = folder.get("is_expanded", 1)
+        new_folder.workbook = new_workbook.name
+        new_folder.insert()
+        id_map[old_folder_name] = new_folder.name
+
     # Copy queries, charts, and dashboards
+    query_sort_order = 0
     for name, query in workbook.dependencies.queries.items():
         query = deep_convert_dict_to_dict(query)
         new_query = frappe.new_doc("Insights Query v3")
         new_query.update(query)
         new_query.workbook = new_workbook.name
+        # map folder to new folder ID
+        if query.get("folder") and query.get("folder") in id_map:
+            new_query.folder = id_map[query.get("folder")]
+        if not hasattr(new_query, 'sort_order') or new_query.sort_order is None:
+            new_query.sort_order = query_sort_order
+            query_sort_order += 1
         new_query.insert()
         id_map[name] = new_query.name
 
@@ -239,6 +304,7 @@ def import_workbook(workbook):
                 update_modified=False,
             )
 
+    chart_sort_order = 0
     for name, chart in workbook.dependencies.charts.items():
         chart = deep_convert_dict_to_dict(chart)
         new_chart = frappe.new_doc("Insights Chart v3")
@@ -246,6 +312,12 @@ def import_workbook(workbook):
         new_chart.workbook = new_workbook.name
         if chart.query in id_map:
             new_chart.query = id_map[chart.query]
+        # map folder to new folder ID
+        if chart.get("folder") and chart.get("folder") in id_map:
+            new_chart.folder = id_map[chart.get("folder")]
+        if not hasattr(new_chart, 'sort_order') or new_chart.sort_order is None:
+            new_chart.sort_order = chart_sort_order
+            chart_sort_order += 1
         new_chart.insert()
         id_map[name] = new_chart.name
 
