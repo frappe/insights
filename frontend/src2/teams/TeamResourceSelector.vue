@@ -37,10 +37,6 @@ if (teamPermissions.value.length) {
 		.filter((p) => p.type === 'Source')
 		.map((p) => p.resource_name)
 
-	for (const ds of selectedDataSources.value) {
-		selectDataSource(ds, true)
-	}
-
 	const permittedTableNames = teamPermissions.value
 		.filter((p) => p.type === 'Table')
 		.map((p) => p.resource_name)
@@ -128,16 +124,7 @@ dataSourceStore.getSources().then((sources) => {
 	}, selectedTables.value)
 })
 
-const expandedDataSource = ref<string | null>(null)
-const expandedDataSourceTables = computed(() => {
-	if (!expandedDataSource.value) {
-		return []
-	}
-	return dataSourceTables.value[expandedDataSource.value] || []
-})
-
 const tableSearchQuery = ref('')
-const dataSourceTables = ref<Record<string, DataSourceTable[]>>({})
 function toggleExpandedDataSource(dataSource: string) {
 	if (expandedDataSource.value === dataSource) {
 		expandedDataSource.value = null
@@ -230,6 +217,18 @@ function toggleExpandedTable(table: string) {
 		expandedTable.value = table
 	}
 }
+
+function loadMoreTables(dataSource: string) {
+	if (!visibleTableLimit.value[dataSource]) {
+		visibleTableLimit.value[dataSource] = 50
+	}
+	visibleTableLimit.value[dataSource] += 50
+}
+
+function getVisibleTableLimit(dataSource: string) {
+	return visibleTableLimit.value[dataSource] || 50
+}
+
 </script>
 
 <template>
@@ -290,7 +289,7 @@ function toggleExpandedTable(table: string) {
 					.filter((t) =>
 						t.table_name.toLocaleLowerCase().includes(tableSearchQuery.toLowerCase())
 					)
-					.slice(0, 50)"
+					.slice(0, getVisibleTableLimit(data_source.name))"
 				:key="table.name"
 			>
 				<div class="flex flex-col gap-1">
@@ -345,8 +344,23 @@ function toggleExpandedTable(table: string) {
 					</div>
 				</div>
 			</div>
-			<div v-if="expandedDataSourceTables.length > 50" class="text-xs text-gray-600">
-				Showing only 50 of {{ expandedDataSourceTables.length }} tables
+			<div
+				v-if="
+					expandedDataSourceTables.length > getVisibleTableLimit(data_source.name)
+				"
+				class="flex items-center gap-2"
+			>
+				<p class="text-xs text-gray-600">
+					Showing {{ getVisibleTableLimit(data_source.name) }} of
+					{{ expandedDataSourceTables.length }} tables
+				</p>
+				<Button
+					variant="ghost"
+					@click="loadMoreTables(data_source.name)"
+					class="text-xs"
+				>
+					Load 50 More
+				</Button>
 			</div>
 			<div v-if="!expandedDataSourceTables.length" class="text-xs text-gray-600">
 				No tables found
