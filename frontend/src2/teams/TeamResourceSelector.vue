@@ -21,6 +21,17 @@ const selectedDataSources = ref<string[]>([])
 const selectedTables = ref<Record<string, string[]>>({})
 const tableRestrictions = ref<Record<string, string>>({})
 
+const expandedDataSource = ref<string | null>(null)
+const dataSourceTables = ref<Record<string, DataSourceTable[]>>({})
+const visibleTableLimit = ref<Record<string, number>>({})
+
+const expandedDataSourceTables = computed(() => {
+	if (!expandedDataSource.value) {
+		return []
+	}
+	return dataSourceTables.value[expandedDataSource.value] || []
+})
+
 if (teamPermissions.value.length) {
 	selectedDataSources.value = teamPermissions.value
 		.filter((p) => p.type === 'Source')
