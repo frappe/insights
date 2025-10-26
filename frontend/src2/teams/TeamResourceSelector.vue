@@ -46,27 +46,18 @@ if (teamPermissions.value.length) {
 		.map((p) => p.resource_name)
 
 	if (permittedTableNames.length) {
-		const tablesBySource: Record<string, string[]> = await call(
-			'insights.api.data_sources.get_data_sources_of_tables',
-			{ table_names: permittedTableNames }
-		)
-		selectedTables.value = tablesBySource
-		setTimeout(() => {
-			// wrap in setTimeout to avoid 'referenced before assignment' error
-			for (const data_source of Object.keys(tablesBySource)) {
-				if (!dataSourceTables.value[data_source]?.length) {
-					fetchTables(data_source)
+		call('insights.api.data_sources.get_data_sources_of_tables', {
+			table_names: permittedTableNames,
+		}).then((tablesBySource: Record<string, string[]>) => {
+			selectedTables.value = tablesBySource
+			for (const table of permittedTableNames) {
+				const tablePerm = teamPermissions.value.find((p) => p.resource_name === table)
+				const tableRestriction = tablePerm?.table_restrictions
+				if (tableRestriction) {
+					tableRestrictions.value[table] = tableRestriction
 				}
 			}
-		}, 0)
-
-		for (const table of permittedTableNames) {
-			const tablePerm = teamPermissions.value.find((p) => p.resource_name === table)
-			const tableRestriction = tablePerm?.table_restrictions
-			if (tableRestriction) {
-				tableRestrictions.value[table] = tableRestriction
-			}
-		}
+		})
 	}
 }
 
