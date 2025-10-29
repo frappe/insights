@@ -224,7 +224,7 @@ def delete_folder(folder_name, move_items_to_root=True):
 def toggle_folder_expanded(folder_name, is_expanded):
     """Toggle folder expanded state"""
     folder = frappe.get_doc("Insights Folder", folder_name)
-    if not frappe.has_permission("Insights Workbook", ptype="write or read", doc=folder.workbook):
+    if not frappe.has_permission("Insights Workbook", ptype="read", doc=folder.workbook):
         frappe.throw(_("You do not have permission to modify this workbook"))
 
     folder.db_set("is_expanded", is_expanded, update_modified=False)
