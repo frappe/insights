@@ -164,11 +164,12 @@ def create_folder(workbook, title, folder_type):
     if not frappe.has_permission("Insights Workbook", ptype="write", doc=workbook):
         frappe.throw(_("You do not have permission to modify this workbook"))
 
-    max_sort_order = frappe.db.get_value(
+    max_sort_order = frappe.db.get_all(
         "Insights Folder",
         filters={"workbook": workbook, "type": folder_type},
-        fieldname="max(sort_order)",
-    ) or -1
+        fields=["max(sort_order) as max_sort_order"],as_list=True,
+      )
+    max_sort_order = max_sort_order[0][0] if max_sort_order and max_sort_order[0][0] is not None else -1
 
     folder = frappe.new_doc("Insights Folder")
     folder.workbook = workbook
