@@ -49,7 +49,6 @@ class InsightsWorkbook(Document):
                 "title",
                 "type",
                 "sort_order",
-                "is_expanded",
             ],
             order_by="sort_order asc, creation asc",
         )
@@ -195,7 +194,6 @@ class InsightsWorkbook(Document):
                     "title",
                     "type",
                     "sort_order",
-                    "is_expanded",
                 ],
                 order_by="sort_order asc, creation asc",
             )
@@ -257,7 +255,6 @@ def import_workbook(workbook):
         new_folder.title = folder["title"]
         new_folder.type = folder["type"]
         new_folder.sort_order = folder["sort_order"]
-        new_folder.is_expanded = folder.get("is_expanded", 1)
         new_folder.workbook = new_workbook.name
         new_folder.insert()
         id_map[old_folder_name] = new_folder.name
