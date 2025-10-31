@@ -25,7 +25,6 @@ export type WorkbookFolder = {
 	title: string
 	type: 'query' | 'chart'
 	sort_order: number
-	is_expanded: boolean
 }
 
 export type WorkbookQuery = {

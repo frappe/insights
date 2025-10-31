@@ -46,9 +46,18 @@ const sortedFolders = computed(() => {
 	return [...folders.value].sort((a, b) => a.sort_order - b.sort_order)
 })
 
+const expandedFolders = ref<Set<string>>(new Set())
+
 function toggleFolder(folder: WorkbookFolder) {
-	workbook.toggleFolderExpanded(folder.name, !folder.is_expanded)
-	folder.is_expanded = !folder.is_expanded
+	if (expandedFolders.value.has(folder.name)) {
+		expandedFolders.value.delete(folder.name)
+	} else {
+		expandedFolders.value.add(folder.name)
+	}
+}
+
+function isFolderExpanded(folderName: string) {
+	return expandedFolders.value.has(folderName)
 }
 
 function removeFolder(folder: WorkbookFolder, event: Event) {
@@ -332,12 +341,12 @@ function allowDrop(event: DragEvent) {
 				>
 					<div class="flex items-center gap-1.5 overflow-hidden">
 						<ChevronRight
-							v-if="!folder.is_expanded && editingFolderName !== folder.name"
+							v-if="!isFolderExpanded(folder.name) && editingFolderName !== folder.name"
 							class="h-4 w-4 flex-shrink-0 text-gray-600"
 							stroke-width="1.5"
 						/>
 						<ChevronDown
-							v-else-if="folder.is_expanded && editingFolderName !== folder.name"
+							v-else-if="isFolderExpanded(folder.name) && editingFolderName !== folder.name"
 							class="h-4 w-4 flex-shrink-0 text-gray-600"
 							stroke-width="1.5"
 						/>
@@ -370,7 +379,7 @@ function allowDrop(event: DragEvent) {
 				</div>
 
 				<div
-					v-if="folder.is_expanded && folderItems[folder.name]"
+					v-if="isFolderExpanded(folder.name) && folderItems[folder.name]"
 					class="ml-3 rounded"
 					@dragenter="onDragEnterFolder($event, folder)"
 					@dragleave="onDragLeaveFolder"

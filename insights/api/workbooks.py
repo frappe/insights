@@ -176,7 +176,6 @@ def create_folder(workbook, title, folder_type):
     folder.title = title
     folder.type = folder_type
     folder.sort_order = max_sort_order + 1
-    folder.is_expanded = 1
     folder.insert()
 
     return folder.name
