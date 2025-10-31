@@ -164,11 +164,12 @@ def create_folder(workbook, title, folder_type):
     if not frappe.has_permission("Insights Workbook", ptype="write", doc=workbook):
         frappe.throw(_("You do not have permission to modify this workbook"))
 
-    max_sort_order = frappe.db.get_value(
+    max_sort_order = frappe.db.get_all(
         "Insights Folder",
         filters={"workbook": workbook, "type": folder_type},
-        fieldname="max(sort_order)",
-    ) or -1
+        fields=["max(sort_order) as max_sort_order"],as_list=True,
+      )
+    max_sort_order = max_sort_order[0][0] if max_sort_order and max_sort_order[0][0] is not None else -1
 
     folder = frappe.new_doc("Insights Folder")
     folder.workbook = workbook
@@ -217,6 +218,15 @@ def delete_folder(folder_name, move_items_to_root=True):
         )
 
     frappe.delete_doc("Insights Folder", folder_name)
+
+@insights_whitelist()
+def toggle_folder_expanded(folder_name, is_expanded):
+    """Toggle folder expanded state"""
+    folder = frappe.get_doc("Insights Folder", folder_name)
+    if not frappe.has_permission("Insights Workbook", ptype="read", doc=folder.workbook):
+        frappe.throw(_("You do not have permission to modify this workbook"))
+
+    folder.db_set("is_expanded", is_expanded, update_modified=False)
 
 @insights_whitelist()
 def move_item_to_folder(item_type, item_name, folder_name=None):
