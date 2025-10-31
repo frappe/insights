@@ -342,13 +342,6 @@ function makeWorkbook(name: string) {
 			.catch(showErrorToast)
 	}
 
-	async function toggleFolderExpanded(folderName: string, isExpanded: boolean) {
-		const method = 'insights.api.workbooks.toggle_folder_expanded'
-		return call(method, { folder_name: folderName, is_expanded: isExpanded }).catch(
-			showErrorToast
-		)
-	}
-
 	async function moveItemToFolder(
 		itemType: 'query' | 'chart',
 		itemName: string,
@@ -394,7 +387,6 @@ function makeWorkbook(name: string) {
 		addFolder,
 		removeFolder,
 		renameFolder,
-		toggleFolderExpanded,
 		moveItemToFolder,
 		updateSortOrder,
 
