@@ -682,7 +682,7 @@ export function getMapChartOptions(config: MapChartConfig, result: QueryResult) 
 				return getShortNumber(value, 1)
 			},
 			inRange: {
-				color: ['#c9e6ff', '#4aabff']
+				color: ['#edf7ff','#c9e6ff', '#92cdff','#6ebcff','#4aabff']
 			},
 		},
 		series: [{
