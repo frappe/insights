@@ -718,7 +718,7 @@ function mapPieces(values: number[]) {
 
 	const sortedValues = validValues.sort((a, b) => a - b)
 	const uniqueValues = [...new Set(sortedValues)]
-	const numClasses = 5
+	const numClasses = Math.min(5, uniqueValues.length)
 
 	const breaks = jenks(uniqueValues, numClasses)
 
