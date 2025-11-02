@@ -761,8 +761,6 @@ export function getMapChartOptions(config: MapChartConfig, result: QueryResult) 
 
 	const data = getMapChartData(columns, rows, config)
 	const values = data.map((d) => d[1])
-	const min = values.length ? Math.min(...values.filter(v => typeof v === 'number')) : 0
-	const max = values.length ? Math.max(...values.filter(v => typeof v === 'number')) : 0
 
 	const options: any = {
 		height: '100%',
@@ -781,14 +779,10 @@ export function getMapChartOptions(config: MapChartConfig, result: QueryResult) 
 		},
 		visualMap: {
 			type: 'piecewise',
-			min: min,
-			max: max,
+			pieces: mapPieces(values),
 			itemSymbol: 'circle',
-			formatter: (value: number) => {
-				return getShortNumber(value, 1)
-			},
 			inRange: {
-				color: ['#edf7ff','#c9e6ff', '#92cdff','#6ebcff','#4aabff']
+				color: ['#dbeeff','#b7ddff', '#92cdff','#6ebcff','#4aabff']
 			},
 		},
 		series: [{
