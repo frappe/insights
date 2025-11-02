@@ -635,6 +635,112 @@ function getMapChartData(
 	return data
 }
 
+function jenksMatrices(data: number[], nClasses: number) {
+
+	//initialize matrices
+	const mat1 = Array.from({ length: data.length + 1 }, () => Array(nClasses + 1).fill(0));
+	const mat2 = Array.from({ length: data.length + 1 }, () => Array(nClasses + 1).fill(0));
+
+	for (let i = 1; i <= nClasses; i++) {
+	  mat1[1][i] = 1;
+	  mat2[1][i] = 0;
+	  for (let j = 2; j <= data.length; j++) mat2[j][i] = Infinity;
+	}
+	return { mat1, mat2 };
+  }
+
+function jenksBreaks(data: number[], nClasses: number, mat1: number[][], mat2: number[][]) {
+
+	for (let l = 2; l <= data.length; l++) {
+	  let s1 = 0, s2 = 0, w = 0;
+	  for (let m = 1; m <= l; m++) {
+		const i3 = l - m + 1;
+		const val = data[i3 - 1];
+		s2 += val * val;
+		s1 += val;
+		w++;
+		const v = s2 - (s1 * s1) / w;
+		const i4 = i3 - 1;
+		if (i4 !== 0) {
+		  for (let j = 2; j <= nClasses; j++) {
+			if (mat2[l][j] >= v + mat2[i4][j - 1]) {
+			  mat1[l][j] = i3;
+			  mat2[l][j] = v + mat2[i4][j - 1];
+			}
+		  }
+		}
+	  }
+
+	  mat1[l][1] = 1;
+	  mat2[l][1] = s2 - (s1 * s1) / w;
+	}
+  }
+
+function jenks(data: number[], nClasses: number) {
+
+	data = data.slice().sort((a, b) => a - b);
+	const { mat1, mat2 } = jenksMatrices(data, nClasses);
+
+	jenksBreaks(data, nClasses, mat1, mat2);
+
+	const kClass = Array(nClasses + 1).fill(0);
+	kClass[nClasses] = data[data.length - 1];
+	let k = data.length, countNum = nClasses;
+	while (countNum >= 2) {
+	  const idx = mat1[k][countNum] - 2;
+	  kClass[countNum - 1] = data[idx];
+	  k = mat1[k][countNum] - 1;
+	  countNum--;
+	}
+	kClass[0] = data[0];
+	return kClass;
+  }
+
+// visual map pieces
+function mapPieces(values: number[]) {
+	if (values.length === 0) {
+		return [{ min: 0, max: 0, label: '0' }]
+	}
+
+	const validValues = values.filter(v => typeof v === 'number' && !isNaN(v) && v > 0)
+
+	if (validValues.length === 0) {
+		return [{ min: 0, max: 0, label: '0' }]
+	}
+
+	if (validValues.length === 1) {
+		return [{
+			min: 0,
+			max: validValues[0],
+			label: getShortNumber(validValues[0], 1)
+		}]
+	}
+
+	const sortedValues = validValues.sort((a, b) => a - b)
+	const uniqueValues = [...new Set(sortedValues)]
+	const numClasses = 5
+
+	const breaks = jenks(uniqueValues, numClasses)
+	console.log('breaks',breaks)
+	const pieces = []
+
+	// create pieces from the breaks
+	for (let i = 0; i < breaks.length - 1; i++) {
+		const rangeMax = breaks[i + 1]
+		const rangeMin = i === 0 ? 0 : breaks[i]
+
+			pieces.push({
+				gt: rangeMin,
+				lte: rangeMax,
+				label: getShortNumber(rangeMax, 1)
+			})
+
+	}
+	console.log(pieces)
+	return pieces.reverse()
+
+}
+
 export function getMapChartOptions(config: MapChartConfig, result: QueryResult) {
 	const columns = result.columns
 	const rows = result.rows
