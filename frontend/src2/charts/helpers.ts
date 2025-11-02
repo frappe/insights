@@ -721,7 +721,7 @@ function mapPieces(values: number[]) {
 	const numClasses = 5
 
 	const breaks = jenks(uniqueValues, numClasses)
-	console.log('breaks',breaks)
+
 	const pieces = []
 
 	// create pieces from the breaks
@@ -736,7 +736,7 @@ function mapPieces(values: number[]) {
 			})
 
 	}
-	console.log(pieces)
+
 	return pieces.reverse()
 
 }
