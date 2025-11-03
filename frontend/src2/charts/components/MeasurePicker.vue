@@ -55,6 +55,8 @@ const expressionMeasure = computed<ExpressionMeasure | undefined>({
 	},
 })
 
+const searchQuery = ref('')
+
 watchEffect(() => {
 	if (!columnMeasure.value && !expressionMeasure.value) {
 		resetMeasure()
@@ -105,6 +107,15 @@ const columnOptions = computed(() => {
 		}
 		return true
 	})
+})
+
+const filteredColumnOptions = computed(() => {
+	if (!searchQuery.value) return columnOptions.value
+	const query = searchQuery.value.toLowerCase()
+	
+	return columnOptions.value.filter((option) =>
+		option.label.toLowerCase().includes(query)
+	)
 })
 
 function getAggregationLabel(aggregation: AggregationType) {
@@ -177,6 +188,7 @@ const label = ref('')
 								<template v-if="!columnMeasure.aggregation">
 									<div
 										v-for="option in aggregationOptions"
+										:key="option.value"
 										class="flex h-7 flex-shrink-0 cursor-pointer items-center justify-between rounded px-2.5 text-base hover:bg-gray-100"
 										@click.prevent.stop="
 											columnMeasure.aggregation = option.value
@@ -193,8 +205,16 @@ const label = ref('')
 								</template>
 
 								<template v-if="columnMeasure.aggregation">
+									<div class="space-y-1 p-1">
+										<TextInput
+											v-model="searchQuery"
+											placeholder="Search..."
+											autocomplete="off"
+										/>
+									</div>
 									<div
-										v-for="option in columnOptions"
+										v-for="option in filteredColumnOptions"
+										:key="option.value"
 										class="flex h-7 flex-shrink-0 cursor-pointer items-center justify-between rounded px-2.5 text-base hover:bg-gray-100"
 										@click.prevent.stop="
 											() => {

@@ -3,7 +3,7 @@ name = "insights"
 authors = [
     { name = "Powerful Reporting Tool for Frappe Apps", email = "hello@frappe.io"}
 ]
-description = "Open Source ERP"
+description = "Open Source Business Intelligence Tool"
 requires-python = ">=3.10"
 readme = "README.md"
 dynamic = ["version"]
@@ -17,6 +17,7 @@ dependencies = [
     "ibis-framework[mysql]",
     "ibis-framework[sqlite]",
     "ibis-framework[clickhouse]",
+    "ibis-framework[postgres]",
     # "ibis-framework[mssql]",
     # "ibis-framework[bigquery]",
 ]

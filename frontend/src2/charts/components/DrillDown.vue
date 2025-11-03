@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { debounce } from 'frappe-ui'
 import { Combine } from 'lucide-vue-next'
-import { inject, provide, nextTick } from 'vue'
+import { inject, provide, ref, nextTick } from 'vue'
 import { wheneverChanges } from '../../helpers'
 import QueryBuilderToolbar from '../../query/components/QueryBuilderToolbar.vue'
 import QueryDataTable from '../../query/components/QueryDataTable.vue'
@@ -16,20 +16,23 @@ const props = defineProps<{ query: Query }>()
 const dashboard = inject<Dashboard>('dashboard')!
 const chartName = inject<string>('chartName', '')
 if (dashboard && chartName) {
-	const _adhocFilters = dashboard.getAdhocFilters(chartName)
-	if (_adhocFilters) {
-		props.query.adhocFilters = _adhocFilters
-		// Temp fix: Do not execute query here, execute after dialog opens to ensure filters apply
+	const adhocFilters = dashboard.getAdhocFilters(chartName)
+	if (adhocFilters) {
+		props.query.adhocFilters = adhocFilters
 	}
 }
 
-const show = defineModel()
+const show = defineModel<boolean>()
+const isQueryReady = ref(false)
+
 wheneverChanges(
 	show,
 	() => {
 		if (show.value) {
+			isQueryReady.value = false
 			nextTick(async () => {
-				await props.query.execute()
+				await props.query.execute(true)
+				isQueryReady.value = true
 			})
 		}
 	},
@@ -57,7 +60,10 @@ const groupBy = debounce(_groupBy, 50)
 		}"
 	>
 		<template #body-content>
-			<div class="relative flex h-[32rem] w-full flex-1 gap-4 overflow-hidden bg-white">
+			<div v-if="!isQueryReady" class="flex h-[32rem] w-full items-center justify-center">
+				<LoadingIndicator class="h-5 w-5 text-gray-600" />
+			</div>
+			<div v-else class="relative flex h-[32rem] w-full flex-1 gap-4 overflow-hidden bg-white">
 				<div class="flex h-full flex-1 flex-col gap-2 overflow-hidden p-0.5">
 					<QueryBuilderToolbar></QueryBuilderToolbar>
 					<div class="flex flex-1 overflow-hidden rounded border">
