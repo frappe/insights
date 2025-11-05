@@ -52,8 +52,7 @@ class InsightsPermissions:
         if doctype not in PERMISSION_DOCTYPES:
             return ""
 
-        # bypass checks for system management resources
-        if self.is_admin and doctype in TEAM_BASED_PERMISSION_DOCTYPES:
+        if self.is_admin:
             return ""
 
         if doctype == "Insights Team":
@@ -74,8 +73,7 @@ class InsightsPermissions:
         if doc.doctype not in PERMISSION_DOCTYPES:
             return True
 
-        # give admin access to system management resources (teams,tables,data sources)
-        if self.is_admin and doc.doctype in TEAM_BASED_PERMISSION_DOCTYPES:
+        if self.is_admin:
             return True
 
         is_new = not doc.name or doc.is_new()
@@ -84,9 +82,6 @@ class InsightsPermissions:
             return True
 
         if doc.doctype == "Insights Team":
-            #admins can manage all teams
-            if self.is_admin:
-                return True
             return doc.name in self.user_teams
 
         is_owner = doc.owner == self.user
