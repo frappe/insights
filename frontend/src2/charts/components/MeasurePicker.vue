@@ -205,7 +205,7 @@ const label = ref('')
 								</template>
 
 								<template v-if="columnMeasure.aggregation">
-									<div class="space-y-1 p-1">
+									<div class="sticky top-0 z-10 bg-white space-y-1 p-1">
 										<TextInput
 											v-model="searchQuery"
 											placeholder="Search..."
