@@ -100,6 +100,7 @@ export type DonutChartConfig = {
 	legend_position?: 'top' | 'bottom' | 'left' | 'right'
 	max_slices?: number
 	show_inline_labels?: boolean
+	show_total_in_center?: boolean
 }
 export type FunnelChartConfig = {
 	label_column: Dimension
