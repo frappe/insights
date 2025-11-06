@@ -6,6 +6,7 @@ import frappe
 import ibis
 import numpy as np
 import pandas as pd
+import sqlglot as sg
 import sqlparse
 from frappe.utils.data import flt
 from frappe.utils.safe_exec import safe_eval, safe_exec
@@ -475,6 +476,41 @@ class IbisQueryBuilder:
         db = ds._get_ibis_backend()
 
         raw_sql = sqlparse.format(sql=raw_sql, strip_comments=True)
+
+        check_permissions = frappe.db.get_single_value(
+            "Insights Settings", "enable_permissions"
+        ) or frappe.db.get_single_value("Insights Settings", "apply_user_permissions")
+
+        if check_permissions:
+            parsed = sg.parse_one(raw_sql, dialect=db.dialect)
+
+            tables = set()
+            for table_exp in parsed.find_all(sg.exp.Table):
+                tables.add(table_exp.name)
+
+            cte_aliases = set()
+            for cte_exp in parsed.find_all(sg.exp.CTE):
+                cte_aliases.add(cte_exp.alias)
+
+            tables = tables - cte_aliases
+
+            replace_map = {}
+            for table_name in tables:
+                t = InsightsTablev3.get_ibis_table(
+                    data_source,
+                    table_name,
+                    use_live_connection=True,
+                )
+                t_sql = ibis.to_sql(t)
+                replace_map[table_name] = t_sql
+
+            with_clauses = []
+            for table_name, table_sql in replace_map.items():
+                with_clauses.append(f"{table_name} AS ({table_sql})")
+
+            if with_clauses:
+                with_clause_sql = "WITH " + ", ".join(with_clauses)
+                raw_sql = with_clause_sql + " " + raw_sql
 
         if ds.enable_stored_procedure_execution and raw_sql.strip().lower().startswith("exec"):
             current_date = date.today().strftime("%Y-%m-%d")  # Format: 'YYYY-MM-DD'
