@@ -18,15 +18,30 @@ def get_frappedb_connection(data_source):
 
 
 def get_primary_data_source():
-    data_source = frappe.new_doc("Insights Data Source v3")
-    data_source.database_type = "PostgreSQL" if frappe.conf.db_type == "postgres" else "MariaDB"
-    data_source.host = frappe.conf.db_host
-    data_source.port = frappe.conf.db_port
-    data_source.database_name = frappe.conf.db_name
-    data_source.username = frappe.conf.db_name
-    data_source.password = frappe.conf.db_password
-    data_source.use_ssl = False
-    return data_source
+    site_db = frappe.get_doc("Insights Data Source v3", "Site DB")
+
+    # Set database type if not already set
+    if not site_db.database_type:
+        site_db.database_type = "PostgreSQL" if frappe.conf.db_type == "postgres" else "MariaDB"
+
+    # Use Site DB config if available, otherwise fall back to Frappe config
+    if not site_db.host or not site_db.port:
+        site_db.host = frappe.conf.db_host
+        site_db.port = frappe.conf.db_port
+
+    if not site_db.database_name:
+        site_db.database_name = frappe.conf.db_name
+
+    if not site_db.username:
+        site_db.username = frappe.conf.db_name
+
+    if not site_db.password:
+        site_db.password = frappe.conf.db_password
+
+    if site_db.use_ssl is None:
+        site_db.use_ssl = False
+
+    return site_db
 
 
 def get_replica_data_source():
