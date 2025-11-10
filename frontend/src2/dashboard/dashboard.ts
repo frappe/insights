@@ -125,19 +125,28 @@ function makeDashboard(name: string) {
 		const filters = items.filter((item) => item.type === 'filter')
 		if (filters.length === 0) return
 
-		const perRow = Math.max(1, Math.floor(grid_cols / filter_w))
+		let currentX = 0
+		let currentY = 0
 
-		filters.forEach((item, idx) => {
-			const row = Math.floor(idx / perRow)
-			const colIndex = idx % perRow
-			item.layout.x = colIndex * filter_w
-			item.layout.y = row * filter_h
-			item.layout.w = filter_w
+		filters.forEach((item) => {
+			const itemWidth = item.layout.w || filter_w
+
+			// if filter doesn't fit in current row then move to next row
+			if (currentX + itemWidth > grid_cols && currentX > 0) {
+				currentX = 0
+				currentY += filter_h
+			}
+
+			item.layout.x = currentX
+			item.layout.y = currentY
 			item.layout.h = filter_h
+
+			if (!item.layout.w) item.layout.w = filter_w
+
+			currentX += itemWidth
 		})
 
-		const filterRows = Math.ceil(filters.length / perRow)
-		const topRow = filterRows * filter_h
+		const topRow = currentY + filter_h
 
 		const otherItems = items.filter((item) => item.type !== 'filter')
 		if (otherItems.length === 0) return
