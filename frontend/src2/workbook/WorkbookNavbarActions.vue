@@ -8,6 +8,17 @@ import WorkbookShareDialog from './WorkbookShareDialog.vue'
 const workbook = inject(workbookKey) as Workbook
 
 const showShareDialog = ref(false)
+
+const restoreSnapshotActions = computed(() => {
+	if (!workbook) return []
+	return (
+		workbook.doc.snapshots?.map((snapshot) => ({
+			label: `Restore: ${snapshot.title || snapshot.name}`,
+			icon: 'rotate-ccw',
+			onClick: () => workbook.restoreSnapshot(snapshot.name),
+		})) || []
+	)
+})
 </script>
 
 <template>
@@ -22,27 +33,6 @@ const showShareDialog = ref(false)
 			</template>
 			Share
 		</Button>
-		<!-- <Button
-			v-show="!workbook.islocal && workbook.isdirty"
-			variant="outline"
-			@click="workbook.discard()"
-		>
-			<template #prefix>
-				<Undo2 class="h-4 w-4 text-gray-700" stroke-width="1.5" />
-			</template>
-			Discard
-		</Button>
-		<Button
-			v-show="workbook.islocal || workbook.isdirty"
-			variant="solid"
-			:loading="workbook.saving"
-			@click="workbook.save()"
-		>
-			<template #prefix>
-				<Check class="h-4 w-4 text-gray-100" stroke-width="1.5" />
-			</template>
-			Save
-		</Button> -->
 		<Dropdown
 			:button="{ icon: 'more-horizontal', variant: 'outline' }"
 			:options="[
@@ -53,6 +43,14 @@ const showShareDialog = ref(false)
 							onClick: () => workbook.duplicate(),
 					  }
 					: null,
+				!workbook.doc.read_only
+					? {
+							label: 'Save Snapshot',
+							icon: 'copy',
+							onClick: () => workbook.snapshot(),
+					  }
+					: null,
+				...restoreSnapshotActions,
 				{
 					label: 'Copy JSON',
 					icon: 'copy',

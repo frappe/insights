@@ -234,13 +234,45 @@ function makeWorkbook(name: string) {
 						message: 'Workbook duplicated successfully',
 						variant: 'success',
 					})
-					// FIX: debug why new workbook is not loaded
-					router.push(`/workbook/${name}`)
+					window.location.href = `/workbook/${name}`
 				})
 				.catch(showErrorToast)
 			},
 		})
 	}
+
+	function saveSnapshot() {
+		confirmDialog({
+			title: 'Save Snapshot',
+			message: 'Saving a snapshot will create a snapshot of this workbook that you can restore later. Do you want to continue?',
+			onSuccess: () => {
+				workbook.call('save_snapshot', {snapshot_name: `Snapshot ${new Date().toLocaleString()}`})
+				.then((name: any) => {
+					createToast({
+						message: 'Workbook snapshot saved successfully',
+						variant: 'success',
+					})
+					workbook.load()
+				})
+				.catch(showErrorToast)
+			},
+		})
+	}
+
+	function restoreSnapshot(name: string) {
+		confirmDialog({
+			title: 'Restore Snapshot',
+			message: 'Restoring a snapshot will overwrite the current state of this workbook with the selected snapshot. Do you want to continue?',
+			onSuccess: () => {
+				workbook.call('restore_snapshot', { snapshot_name: name })
+				.then(() => {
+					window.location.reload()
+				})
+				.catch(showErrorToast)
+			},
+		})
+	}
+
 
 	function importQuery(query: any) {
 		confirmDialog({
@@ -397,6 +429,9 @@ function makeWorkbook(name: string) {
 
 		copy: copyJSON,
 
+		saveSnapshot,
+		restoreSnapshot,
+
 		openInDesk() {
 			window.open(`/app/insights-workbook/${workbook.name}`, '_blank')
 		},
@@ -429,6 +464,7 @@ export function getWorkbookResource(name: string) {
 			doc.queries = safeJSONParse(doc.queries) || []
 			doc.charts = safeJSONParse(doc.charts) || []
 			doc.dashboards = safeJSONParse(doc.dashboards) || []
+			doc.snapshots = safeJSONParse(doc.snapshots) || []
 			return doc
 		},
 	})

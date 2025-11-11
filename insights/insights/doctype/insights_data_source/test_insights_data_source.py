@@ -1,13 +1,12 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import unittest
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
 from ibis import _
 
-from .insights_data_source import InsightsDataSource, build_ibis_query
+from .insights_data_source import InsightsDataSource
 
 
 class TestInsightsDataSource(FrappeTestCase):
