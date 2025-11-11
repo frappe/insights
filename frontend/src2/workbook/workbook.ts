@@ -397,6 +397,10 @@ function makeWorkbook(name: string) {
 
 		copy: copyJSON,
 
+		openInDesk() {
+			window.open(`/app/insights-workbook/${workbook.name}`, '_blank')
+		},
+
 		delete: deleteWorkbook,
 	})
 }
