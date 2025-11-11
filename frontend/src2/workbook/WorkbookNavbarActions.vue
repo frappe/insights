@@ -47,7 +47,7 @@ const restoreSnapshotActions = computed(() => {
 					? {
 							label: 'Save Snapshot',
 							icon: 'copy',
-							onClick: () => workbook.snapshot(),
+							onClick: () => workbook.saveSnapshot(),
 					  }
 					: null,
 				...restoreSnapshotActions,
