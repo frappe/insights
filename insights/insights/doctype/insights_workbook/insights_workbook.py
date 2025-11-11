@@ -29,6 +29,13 @@ class InsightsWorkbook(Document):
         self.title = self.title or f"Workbook {frappe.utils.cint(self.name)}"
 
     def on_trash(self):
+
+        try:
+            backup_data = frappe.as_json(self.export())
+            self.db_set("data_backup", backup_data)
+        except Exception as e:
+            frappe.log_error(f"Failed to backup workbook {self.name}: {str(e)}")
+
         for q in frappe.get_all("Insights Query v3", {"workbook": self.name}):
             frappe.delete_doc("Insights Query v3", q.name, force=True, ignore_permissions=True)
         for c in frappe.get_all("Insights Chart v3", {"workbook": self.name}):
