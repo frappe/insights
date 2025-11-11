@@ -165,6 +165,8 @@ scheduler_events = {
     ],
     "daily": [
         "insights.api.data_store.sync_tables",
+        "insights.api.workbook_snapshots.create_daily_snapshots",
+        "insights.api.workbook_snapshots.delete_old_snapshots",
     ],
     "hourly": [
         "insights.api.data_store.update_failed_sync_status",

@@ -51,6 +51,11 @@ export type WorkbookDashboard = {
 	title: string
 }
 
+export type WorkbookSnapshot = {
+	name: string
+	title: string
+}
+
 export type InsightsWorkbook = {
 	doctype: 'Insights Workbook'
 	name: string
@@ -60,6 +65,7 @@ export type InsightsWorkbook = {
 	queries: WorkbookQuery[]
 	charts: WorkbookChart[]
 	dashboards: WorkbookDashboard[]
+	snapshots?: WorkbookSnapshot[]
 	read_only: boolean
 }
 

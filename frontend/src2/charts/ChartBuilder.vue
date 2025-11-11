@@ -17,11 +17,13 @@ import ChartSortConfig from './components/ChartSortConfig.vue'
 import ChartTypeSelector from './components/ChartTypeSelector.vue'
 import CollapsibleSection from './components/CollapsibleSection.vue'
 import LazyTextInput from '../components/LazyTextInput.vue'
+import session from '../session'
 
 const props = defineProps<{ chart_name: string; queries: DropdownOption[] }>()
 
 const chart = useChart(props.chart_name)
 provide('chart', chart)
+// @ts-ignore
 window.chart = chart
 
 await waitUntil(() => chart.isloaded)
@@ -154,6 +156,16 @@ const showShareDialog = ref(false)
 							<Copy class="h-4 text-gray-700" stroke-width="1.5" />
 						</template>
 						Copy JSON
+					</Button>
+					<Button
+						v-if="session.user.has_desk_access"
+						class="w-full"
+						@click="chart.openInDesk"
+					>
+						<template #prefix>
+							<Copy class="h-4 text-gray-700" stroke-width="1.5" />
+						</template>
+						Open in Desk
 					</Button>
 				</div>
 			</CollapsibleSection>

@@ -6,7 +6,8 @@
  "engine": "InnoDB",
  "field_order": [
   "title",
-  "data_backup"
+  "data_backup",
+  "enable_snapshots"
  ],
  "fields": [
   {
@@ -22,6 +23,12 @@
    "hidden": 1,
    "label": "Data Backup",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_snapshots",
+   "fieldtype": "Check",
+   "label": "Enable Snapshots"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -39,7 +46,7 @@
    "link_fieldname": "workbook"
   }
  ],
- "modified": "2025-04-11 17:26:45.109680",
+ "modified": "2025-11-11 17:10:03.533950",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Workbook",
