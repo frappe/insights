@@ -21,6 +21,7 @@ class InsightsWorkbook(Document):
         from frappe.types import DF
 
         data_backup: DF.JSON | None
+        enable_snapshots: DF.Check
         name: DF.Int | None
         title: DF.Data
     # end: auto-generated types
@@ -255,17 +256,21 @@ class InsightsWorkbook(Document):
         if not self.has_permission("write"):
             frappe.throw("You do not have permission to save snapshots for this workbook")
 
-        # Export current workbook state
-        workbook_data = self.export()
+        snapshot = self.export()
 
-        # Create snapshot document
         snapshot = frappe.new_doc("Insights Workbook Snapshot")
         snapshot.workbook = self.name
         snapshot.title = snapshot_name or f"Snapshot {frappe.utils.now()}"
-        snapshot.snapshot = frappe.as_json(workbook_data)
-        snapshot.insert()
+        snapshot.snapshot = frappe.as_json(snapshot)
 
-        return snapshot.name
+        try:
+            snapshot.insert()
+            return snapshot.name
+        except frappe.ValidationError as e:
+            # If validation fails due to no changes, return None gracefully
+            if "No changes detected" in str(e):
+                return None
+            raise
 
     @frappe.whitelist()
     def get_snapshots(self):
