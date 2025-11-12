@@ -3,11 +3,12 @@ import { computed, inject, reactive, watch, watchEffect } from 'vue'
 import { copy, wheneverChanges } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import DataTypeIcon from '../query/components/DataTypeIcon.vue'
-import { ColumnDataType } from '../types/query.types'
+import { ColumnDataType, FilterGroup } from '../types/query.types'
 import { WorkbookDashboardFilter } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
 import DashboardFilterEditor from './DashboardFilterEditor.vue'
 import Filter from './Filter.vue'
+import { column, filter_group } from '../query/helpers'
 
 const dashboard = inject<Dashboard>('dashboard')!
 const props = defineProps<{ item: WorkbookDashboardFilter }>()
@@ -33,10 +34,54 @@ const sourceColumn = computed(() => {
 
 function stringValuesProvider(search: string) {
 	if (!sourceColumn.value) return Promise.resolve([])
+
+	const parentFilter = dashboard.getParentFilter(filter.filter_name)
+	const adhocFilters: Record<string, FilterGroup> = {}
+
+	const hasParentValue = parentFilter?.value !== null && 
+		parentFilter?.value !== undefined && 
+		parentFilter?.value !== '' &&
+		!(Array.isArray(parentFilter.value) && parentFilter.value.length === 0)
+
+	if (
+		hasParentValue &&
+		filter.depends_on &&
+		filter.relationship_column
+	) {
+		const relColumn = dashboard.getColumnFromFilterLink(filter.relationship_column)
+		if (relColumn && relColumn.query === sourceColumn.value.query) {
+			let operator: FilterOperator = '='
+			let value: FilterValue = parentFilter.value
+
+			if (Array.isArray(parentFilter.value)) {
+				operator = 'in'
+				value = parentFilter.value
+			} else if (parentFilter.operator === 'in' || parentFilter.operator === 'not_in') {
+				operator = parentFilter.operator
+				value = Array.isArray(parentFilter.value) ? parentFilter.value : [parentFilter.value]
+			} else {
+				operator = '='
+				value = parentFilter.value
+			}
+
+			adhocFilters[sourceColumn.value.query] = filter_group({
+				logical_operator: 'And',
+				filters: [
+					{
+						column: column(relColumn.column),
+						operator: operator,
+						value: value,
+					},
+				],
+			})
+		}
+	}
+
 	return dashboard.getDistinctColumnValues(
 		sourceColumn.value.query,
 		sourceColumn.value.column,
 		search,
+		Object.keys(adhocFilters).length > 0 ? adhocFilters : undefined,
 	)
 }
 
@@ -47,6 +92,32 @@ wheneverChanges(
 		dashboard.updateFilterState(filter.filter_name, filterState.operator, filterState.value)
 	},
 	{ deep: true },
+)
+
+watch(
+	() => {
+		if (!filter.depends_on) return null
+		return dashboard.filterStates[filter.depends_on]?.value
+	},
+	(newValue, oldValue) => {
+		if (oldValue !== null && newValue !== oldValue && filterState.value) {
+			filterState.value = undefined
+			filterState.operator = undefined
+		}
+	}
+)
+
+watch(
+	() => dashboard.filterStates[filter.filter_name],
+	(newState) => {
+		if (!newState && filterState.value) {
+			filterState.value = undefined
+			filterState.operator = undefined
+		} else if (newState && newState !== filterState) {
+			Object.assign(filterState, newState)
+		}
+	},
+	{ immediate: true }
 )
 
 const label = computed(() => {

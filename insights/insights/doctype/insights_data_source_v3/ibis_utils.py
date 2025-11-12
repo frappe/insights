@@ -319,6 +319,10 @@ class IbisQueryBuilder:
 
             filter_value = [start, end]
 
+        if filter_operator == "=" and isinstance(filter_value, (list, tuple)):
+            filter_operator = "in"
+            operator_fn = self.get_operator(filter_operator)
+
         right_value = right_column or filter_value
         return operator_fn(left, right_value)
 

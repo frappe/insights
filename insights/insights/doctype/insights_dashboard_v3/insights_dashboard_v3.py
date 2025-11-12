@@ -83,7 +83,9 @@ class InsightsDashboardv3(Document):
         )
 
     @frappe.whitelist()
-    def get_distinct_column_values(self, query, column_name, search_term=None):
+    def get_distinct_column_values(
+        self, query, column_name, search_term=None, adhoc_filters=None
+    ):
         is_guest = frappe.session.user == "Guest"
         if is_guest and not self.is_public:
             raise frappe.PermissionError
@@ -91,7 +93,9 @@ class InsightsDashboardv3(Document):
         self.check_linked_filters(query, column_name)
 
         doc = frappe.get_cached_doc("Insights Query v3", query)
-        return doc.get_distinct_column_values(column_name, search_term=search_term)
+        return doc.get_distinct_column_values(
+            column_name, search_term=search_term, adhoc_filters=adhoc_filters
+        )
 
     def check_linked_filters(self, query, column_name):
         items = frappe.parse_json(self.items)

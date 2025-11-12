@@ -76,10 +76,54 @@ function onFilterTypeChange() {
 	filter.links = {}
 }
 
+const availableParentFilters = computed(() => {
+	return dashboard.doc.items
+		.filter(
+			(item) =>
+				item.type === 'filter' &&
+				item.filter_name !== filter.filter_name &&
+				item.filter_name
+		)
+		.map((item) => ({
+			label: (item as WorkbookDashboardFilter).filter_name,
+			value: (item as WorkbookDashboardFilter).filter_name,
+		}))
+})
+
+const availableRelationshipColumns = computed(() => {
+	if (!filter.depends_on || !filter.links || Object.keys(filter.links).length === 0) {
+		return []
+	}
+
+	const firstChart = Object.keys(filter.links)[0]
+	if (!firstChart) return []
+
+	const chart = useChart(firstChart)
+	const dependentColumns = chart.getDependentQueryColumns()
+
+	return dependentColumns.map((group) => ({
+		...group,
+		items: group.items,
+	}))
+})
+
+const hasCircularDependency = computed(() => {
+	if (!filter.depends_on) return false
+	return dashboard.detectCircularDependency(filter.filter_name, filter.depends_on)
+})
+
+function onDependsOnChange() {
+	if (!filter.depends_on) {
+		filter.relationship_column = undefined
+	}
+}
+
 const editDisabled = computed(() => {
 	return (
 		!filter.filter_name ||
 		!filter.filter_type ||
+		hasCircularDependency.value ||
+		(filter.depends_on && !filter.relationship_column) ||
 		JSON.stringify(filter) === JSON.stringify(props.item)
 	)
 })
@@ -151,6 +195,36 @@ function saveEdit() {
 								@update:modelValue="filter.links[link.name] = $event.value"
 							/>
 						</div>
+					</div>
+				</div>
+				<div class="flex flex-col gap-2">
+					<FormControl
+						label="Depends on Filter"
+						v-model="filter.depends_on"
+						type="select"
+						:options="[{ label: 'None', value: '' }, ...availableParentFilters]"
+						@update:modelValue="onDependsOnChange"
+					/>
+					<div v-if="filter.depends_on" class="flex flex-col">
+						<div class="mb-1 text-p-sm text-gray-700">Relationship Column</div>
+						<Autocomplete
+							placeholder="Select relationship column"
+							:options="availableRelationshipColumns"
+							:modelValue="filter.relationship_column"
+							@update:modelValue="filter.relationship_column = $event?.value"
+						/>
+						<p
+							v-if="filter.depends_on && !filter.relationship_column"
+							class="mt-1 text-xs text-red-600"
+						>
+							Relationship column is required when depends on filter is set
+						</p>
+					</div>
+					<div v-if="hasCircularDependency" class="rounded bg-red-50 p-2">
+						<p class="text-sm text-red-600">
+							Circular dependency detected. This filter cannot depend on the selected
+							filter.
+						</p>
 					</div>
 				</div>
 			</div>

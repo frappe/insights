@@ -145,6 +145,8 @@ export type WorkbookDashboardFilter = {
 	filter_name: string
 	filter_type: FilterType
 	links: Record<string, string>
+	depends_on?: string
+	relationship_column?: string
 	default_operator?: FilterOperator
 	default_value?: FilterValue
 	layout: Layout
