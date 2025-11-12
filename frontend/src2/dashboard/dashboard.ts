@@ -207,12 +207,20 @@ function makeDashboard(name: string) {
 		)
 		if (!filter) return
 
+		const previousValue = filterStates.value[filter_name]?.value
+		const newValue = value
+
 		if (!operator) {
 			delete filterStates.value[filter_name]
+			clearDependentFilters(filter_name)
 		} else {
 			filterStates.value[filter_name] = {
 				operator,
 				value,
+			}
+
+			if (previousValue !== newValue) {
+				clearDependentFilters(filter_name)
 			}
 		}
 
@@ -245,11 +253,64 @@ function makeDashboard(name: string) {
 		}
 	}
 
-	function getDistinctColumnValues(query: string, column: string, search_term?: string) {
+	function detectCircularDependency(filterName: string, dependsOn: string): boolean {
+		if (filterName === dependsOn) return true
+
+		const visited = new Set<string>()
+		const stack = [dependsOn]
+
+		while (stack.length > 0) {
+			const current = stack.pop()!
+			if (visited.has(current)) continue
+			visited.add(current)
+
+			const filter = dashboard.doc.items.find(
+				(item) => item.type === 'filter' && item.filter_name === current
+			) as WorkbookDashboardFilter | undefined
+
+			if (filter?.depends_on) {
+				if (filter.depends_on === filterName) return true
+				stack.push(filter.depends_on)
+			}
+		}
+
+		return false
+	}
+
+	function getParentFilter(filterName: string): FilterState | null {
+		const filter = dashboard.doc.items.find(
+			(item) => item.type === 'filter' && item.filter_name === filterName
+		) as WorkbookDashboardFilter | undefined
+
+		if (!filter?.depends_on) return null
+
+		return filterStates.value[filter.depends_on] || null
+	}
+
+	function clearDependentFilters(parentFilterName: string) {
+		const dependentFilters = dashboard.doc.items.filter(
+			(item) =>
+				item.type === 'filter' &&
+				(item as WorkbookDashboardFilter).depends_on === parentFilterName
+		) as WorkbookDashboardFilter[]
+
+		dependentFilters.forEach((filter) => {
+			delete filterStates.value[filter.filter_name]
+			clearDependentFilters(filter.filter_name)
+		})
+	}
+
+	function getDistinctColumnValues(
+		query: string,
+		column: string,
+		search_term?: string,
+		adhoc_filters?: Record<string, FilterGroup>
+	) {
 		return dashboard.call('get_distinct_column_values', {
 			query: query,
 			column_name: column,
 			search_term,
+			adhoc_filters,
 		})
 	}
 
@@ -332,6 +393,9 @@ function makeDashboard(name: string) {
 		applyFilter,
 		getColumnFromFilterLink,
 
+		detectCircularDependency,
+		getParentFilter,
+		clearDependentFilters,
 		getDistinctColumnValues,
 		updateAccess,
 
