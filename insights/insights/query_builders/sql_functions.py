@@ -284,7 +284,8 @@ def get_descendants(node, tree, include_self=False):
 def get_current_date_range(unit):
     today = nowdate()
     if unit == "day":
-        return [today, today]
+        today_date = getdate(today)
+        return [today_date, today_date]
     if unit == "week":
         return [get_first_day_of_week(today), get_last_day_of_week(today)]
     if unit == "month":
