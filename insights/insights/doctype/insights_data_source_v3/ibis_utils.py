@@ -506,7 +506,7 @@ class IbisQueryBuilder:
 
             with_clauses = []
             for table_name, table_sql in replace_map.items():
-                with_clauses.append(f"{table_name} AS ({table_sql})")
+                with_clauses.append(f"`{table_name}` AS ({table_sql})")
 
             if with_clauses:
                 with_clause_sql = "WITH " + ", ".join(with_clauses)
