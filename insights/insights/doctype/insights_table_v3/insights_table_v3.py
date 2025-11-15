@@ -183,9 +183,12 @@ def get_allowed_documents(doctype):
                 )
                 condition = _cond if condition is None else condition | _cond
 
-        docs = docs_query.where(condition).run(pluck="name")
-        doc_count = frappe.db.count(doctype)
-        if doc_count == len(docs):
-            docs = "*"
+        if condition is not None:
+            docs = docs_query.where(condition).run(pluck="name")
+            doc_count = frappe.db.count(doctype)
+            if doc_count == len(docs):
+                docs = "*"
+        else:
+            docs = []
 
     return docs
