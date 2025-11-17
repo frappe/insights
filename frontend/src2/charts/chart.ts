@@ -19,9 +19,9 @@ import {
 	DonutChartConfig,
 	MapChartConfig,
 	NumberChartConfig,
+	BubbleChartConfig,
 	TableChartConfig,
 } from '../types/chart.types'
-import { AdhocFilters, Dimension, Measure } from '../types/query.types'
 import { InsightsChartv3 } from '../types/workbook.types'
 import useWorkbook, { getLinkedQueries } from '../workbook/workbook'
 import { handleOldXAxisConfig, handleOldYAxisConfig, setDimensionNames } from './helpers'
@@ -176,6 +176,22 @@ function makeChart(name: string) {
 			}
 		}
 
+		if (chart.doc.chart_type === 'Bubble') {
+			const config = chart.doc.config as BubbleChartConfig
+			if (!config.xAxis?.measure_name) {
+				messages.push({
+					variant: 'error',
+					message: 'X-axis is required',
+				})
+			}
+			if (!config.yAxis?.measure_name) {
+				messages.push({
+					variant: 'error',
+					message: 'Y-axis is required',
+				})
+			}
+		}
+
 		return !messages.length
 	}
 
@@ -211,6 +227,10 @@ function makeChart(name: string) {
 
 		if (chart.doc.chart_type === 'Map') {
 			addMapChartOperation(query)
+		}
+
+		if (chart.doc.chart_type === 'Bubble') {
+			addBubbleChartOperation(query)
 		}
 	}
 
@@ -287,6 +307,38 @@ function makeChart(name: string) {
 		let dimensions = [config.location_column]
 		query.addSummarize({
 			measures: [config.value_column],
+			dimensions: dimensions,
+		})
+	}
+
+	function addBubbleChartOperation(query: Query) {
+		const config = chart.doc.config as BubbleChartConfig
+
+		const dimensions: any[] = []
+		const measures: any[] = []
+
+		if (config.xAxis?.measure_name) {
+			measures.push(config.xAxis)
+		}
+
+		if (config.yAxis?.measure_name) {
+			measures.push(config.yAxis)
+		}
+
+		if (config.size_column?.measure_name) {
+			measures.push(config.size_column)
+		}
+
+		if (config.dimension?.column_name) {
+			dimensions.push(config.dimension)
+		}
+
+		if (config.quadrant_column?.column_name) {
+			dimensions.push(config.quadrant_column)
+		}
+
+		query.addSummarize({
+			measures: measures,
 			dimensions: dimensions,
 		})
 	}
