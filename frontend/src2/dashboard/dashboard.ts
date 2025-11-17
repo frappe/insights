@@ -254,11 +254,17 @@ function makeDashboard(name: string) {
 		}
 	}
 
-	function getDistinctColumnValues(query: string, column: string, search_term?: string) {
+	function getDistinctColumnValues(
+		query: string,
+		column: string,
+		search_term?: string,
+		adhocFilters?: Record<string, FilterGroup>
+	) {
 		return dashboard.call('get_distinct_column_values', {
 			query: query,
 			column_name: column,
 			search_term,
+			adhoc_filters: adhocFilters,
 		})
 	}
 
