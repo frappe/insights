@@ -3,6 +3,7 @@ import { computed, inject } from 'vue'
 import useQuery, { Query } from '../../query/query'
 import {
 	BarChartConfig,
+	BubbleChartConfig,
 	DonutChartConfig,
 	FunnelChartConfig,
 	LineChartConfig,
@@ -18,6 +19,7 @@ import FunnelChartConfigForm from './FunnelChartConfigForm.vue'
 import LineChartConfigForm from './LineChartConfigForm.vue'
 import MapChartConfigForm from './MapChartConfigForm.vue'
 import NumberChartConfigForm from './NumberChartConfigForm.vue'
+import BubbleChartConfigForm from './BubbleChartConfigForm.vue'
 import TableChartConfigForm from './TableChartConfigForm.vue'
 
 const props = defineProps<{ chart: Chart }>()
@@ -79,6 +81,12 @@ const columnOptions = computed(() => chartQuery.value.result?.columnOptions || [
 	<MapChartConfigForm
 		v-if="props.chart.doc.chart_type == 'Map'"
 		v-model="(props.chart.doc.config as MapChartConfig)"
+		:dimensions="dimensions"
+		:column-options="columnOptions"
+	/>
+	<BubbleChartConfigForm
+		v-if="props.chart.doc.chart_type == 'Bubble'"
+		v-model="(props.chart.doc.config as BubbleChartConfig)"
 		:dimensions="dimensions"
 		:column-options="columnOptions"
 	/>
