@@ -4,7 +4,7 @@ import { Dimension, Measure } from './query.types'
 export const AXIS_CHARTS = ['Bar', 'Line', 'Row']
 export type AxisChartType = (typeof AXIS_CHARTS)[number]
 
-export const CHARTS = ['Number', ...AXIS_CHARTS, 'Donut', 'Funnel', 'Table', 'Map', 'Scatter']
+export const CHARTS = ['Number', ...AXIS_CHARTS, 'Donut', 'Funnel', 'Table', 'Map', 'Bubble']
 export type ChartType = (typeof CHARTS)[number]
 
 export type AxisChartConfig = {
@@ -127,23 +127,16 @@ export type MapChartConfig = {
 	map_type?: 'world' | 'india'
 }
 
-export type ScatterPlotConfig = {
+export type BubbleChartConfig = {
 	xAxis: Measure
 	yAxis: Measure
 	size_column?: Measure
 	dimension?: Dimension
 	quadrant_column?: Dimension
 	show_data_labels?: boolean
-	show_x_axis_label?: boolean
+	show_quadrants?: boolean
 	xAxis_refLine?: number
 	yAxis_refLine?: number
-	show_quadrants?: boolean
-	quadrant_labels?: {
-		top_left?: string
-		top_right?: string
-		bottom_left?: string
-		bottom_right?: string
-	}
 }
 
 export type ChartConfig =
@@ -154,4 +147,4 @@ export type ChartConfig =
 	| TableChartConfig
 	| FunnelChartConfig
 	| MapChartConfig
-	| ScatterPlotConfig
+	| BubbleChartConfig
