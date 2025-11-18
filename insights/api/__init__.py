@@ -49,7 +49,9 @@ def get_user_info():
         },
     )
 
-    user = frappe.db.get_value("User", frappe.session.user, ["first_name", "last_name"], as_dict=1)
+    user = frappe.db.get_value(
+        "User", frappe.session.user, ["first_name", "last_name", "user_type"], as_dict=1
+    )
 
     return {
         "email": frappe.session.user,
@@ -62,6 +64,7 @@ def get_user_info():
         "locale": frappe.db.get_single_value("System Settings", "language"),
         "is_v2_instance": frappe.db.count("Insights Query") > 0,
         "default_version": get_user_default("insights_default_version", frappe.session.user),
+        "has_desk_access": user.get("user_type") == "System User",
     }
 
 

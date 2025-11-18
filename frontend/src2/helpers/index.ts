@@ -147,7 +147,7 @@ export function showErrorToast(err: Error, raise = true) {
 	if (raise) throw err
 }
 
-export function downloadImage(element: HTMLElement, filename: string, scale = 1, options = {}) {
+export function downloadImage(element: HTMLElement, filename: string, scale = 2, options = {}) {
 	return domtoimage
 		.toPng(element, {
 			height: element.scrollHeight * scale,
