@@ -502,6 +502,10 @@ class IbisQueryBuilder:
                     use_live_connection=True,
                 )
                 t_sql = ibis.to_sql(t)
+                # check if t_sql has any where clause, if not, then don't replace
+                t_parsed = sg.parse_one(t_sql, dialect=db.dialect)
+                if not t_parsed.find(sg.exp.Where):
+                    continue
                 replace_map[table_name] = t_sql
 
             with_clauses = []
