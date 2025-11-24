@@ -178,7 +178,6 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 							dashboard.doc.items.forEach((item, idx) => {
 								item.layout = newLayout[idx]
 							})
-							dashboard.normalizeLayout()
 						}
 					"
 				>
