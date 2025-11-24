@@ -152,8 +152,13 @@
   }
  ],
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2025-09-03 12:46:09.235531",
+ "links": [
+  {
+   "link_doctype": "Insights Table v3",
+   "link_fieldname": "data_source"
+  }
+ ],
+ "modified": "2025-11-21 18:21:35.918445",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Data Source v3",
