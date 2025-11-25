@@ -1,10 +1,7 @@
 {
     "private": true,
     "type": "module",
-    "aworkspaces": [
-        "frontend",
-        "frappe-ui"
-    ],
+    "aworkspaces": ["frontend", "frappe-ui"],
     "scripts": {
         "postinstall": "cd frontend && yarn install --check-files",
         "dev": "cd frontend && yarn dev",

@@ -1,5 +1,4 @@
 import { io } from 'socket.io-client'
-import { getCommonSiteConfig } from 'frappe-ui/vite/utils'
 
 export function initSocket() {
 	let socketio_port = window.socketio_port || 9000
