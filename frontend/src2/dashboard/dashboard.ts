@@ -98,7 +98,7 @@ function makeDashboard(name: string) {
 	const filter_h = 1
 
 	function addFilter() {
-		dashboard.doc.items.push({
+		const newFilter: WorkbookDashboardItem = {
 			type: 'filter',
 			filter_name: '',
 			filter_type: 'String',
@@ -110,14 +110,56 @@ function makeDashboard(name: string) {
 				w: filter_w,
 				h: filter_h,
 			},
-		})
-		normalizeLayout()
+		}
+		dashboard.doc.items.push(newFilter)
+		positionNewFilter(newFilter)
 		editingItemIndex.value = dashboard.doc.items.length - 1
+	}
+
+	function positionNewFilter(newFilter: WorkbookDashboardItem) {
+		const items = dashboard.doc.items
+		const existingFilters = items.filter(
+			(item) => item.type === 'filter' && item !== newFilter
+		)
+
+		if (existingFilters.length === 0) {
+			newFilter.layout.x = 0
+			newFilter.layout.y = 0
+			return
+		}
+
+		const topRowY = Math.min(...existingFilters.map((item) => item.layout.y))
+		const topRowFilters = existingFilters.filter((item) => item.layout.y === topRowY)
+		const rightmostX = Math.max(
+			...topRowFilters.map((item) => item.layout.x + (item.layout.w || filter_w)),
+			0
+		)
+
+		if (rightmostX + newFilter.layout.w <= grid_cols) {
+			newFilter.layout.x = rightmostX
+			newFilter.layout.y = topRowY
+		} else {
+			newFilter.layout.x = 0
+			newFilter.layout.y = 0
+
+			existingFilters.forEach((item) => {
+				item.layout.y += filter_h
+			})
+
+			const otherItems = items.filter((item) => item.type !== 'filter')
+			if (otherItems.length > 0) {
+				const minOtherY = Math.min(...otherItems.map((item) => item.layout.y))
+				if (minOtherY <= filter_h) {
+					otherItems.forEach((item) => {
+						item.layout.y = Math.max(0, item.layout.y + filter_h)
+					})
+				}
+			}
+		}
 	}
 
 	function removeItem(index: number) {
 		dashboard.doc.items.splice(index, 1)
-		normalizeLayout()
 	}
 
 	function normalizeLayout() {
@@ -254,11 +296,17 @@ function makeDashboard(name: string) {
 		}
 	}
 
-	function getDistinctColumnValues(query: string, column: string, search_term?: string) {
+	function getDistinctColumnValues(
+		query: string,
+		column: string,
+		search_term?: string,
+		adhocFilters?: Record<string, FilterGroup>
+	) {
 		return dashboard.call('get_distinct_column_values', {
 			query: query,
 			column_name: column,
 			search_term,
+			adhoc_filters: adhocFilters,
 		})
 	}
 
