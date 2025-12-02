@@ -300,16 +300,9 @@ function makeWorkbook(name: string) {
 	async function addFolder(title: string = 'New Folder', folderType: 'query' | 'chart') {
 		const method = 'insights.api.workbooks.create_folder'
 		return call(method, { workbook: workbook.name, title, folder_type: folderType })
-			.then((folder_name: string) => {
-				workbook.load().then(() => {
-					createToast({
-						message: 'Folder created',
-						variant: 'success',
-					})
-				})
-				return folder_name
-			})
-			.catch(showErrorToast)
+			.then(() => {
+				workbook.load()
+			}).catch(showErrorToast)
 	}
 
 	function removeFolder(folderName: string) {
@@ -318,10 +311,6 @@ function makeWorkbook(name: string) {
 			call(method, { folder_name: folderName, move_items_to_root: true })
 				.then(() => {
 					workbook.load()
-					createToast({
-						message: 'Folder deleted',
-						variant: 'success',
-					})
 				})
 				.catch(showErrorToast)
 		}
