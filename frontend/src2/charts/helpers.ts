@@ -166,11 +166,15 @@ function getDataZoom(show: boolean, swapAxes = false) {
 	}
 }
 
-export function getBarChartOptions(config: BarChartConfig, result: QueryResult, swapAxes = false) {
+export function getBarChartOptions(
+	config: BarChartConfig,
+	result: QueryResult,
+	swapAxes = false
+) {
 	const _columns = result.columns
 	const _rows = result.rows
 
-	const number_columns = _columns.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
+	const number_columns = _columns.filter(c => FIELDTYPES.NUMBER.includes(c.type))
 	const show_legend = number_columns.length > 1
 	const show_scrollbar = config.y_axis.show_scrollbar || false
 
@@ -185,9 +189,10 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 		min: config.y_axis.min,
 		max: config.y_axis.max,
 	})
+
 	const rightYAxis = getYAxis({ normalized: config.y_axis.normalize })
-	const hasRightAxis = config.y_axis.series.some((s) => s.align === 'Right')
-	const yAxis = !hasRightAxis ? [leftYAxis] : [leftYAxis, rightYAxis]
+	const hasRightAxis = config.y_axis.series.some(s => s.align === 'Right')
+	const yAxis = hasRightAxis ? [leftYAxis, rightYAxis] : [leftYAxis]
 
 	const sortedRows = xAxisIsDate
 		? _rows.sort((a, b) => {
@@ -198,29 +203,31 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 		: _rows
 
 	const total_per_x_value = _rows.reduce((acc, row) => {
-		const x_value = row[config.x_axis.dimension.dimension_name]
-		if (!acc[x_value]) acc[x_value] = 0
-		number_columns.forEach((m) => (acc[x_value] += row[m.name]))
+		const x_val = row[config.x_axis.dimension.dimension_name]
+		acc[x_val] ||= 0
+		number_columns.forEach(m => (acc[x_val] += row[m.name]))
 		return acc
 	}, {} as Record<string, number>)
 
 	const getSeriesData = (column: string) =>
 		sortedRows
-			.map((r) => {
-				const x_value = r[config.x_axis.dimension.dimension_name]
-				const y_value = r[column]
-				const normalize = config.y_axis.normalize
-				if (!normalize) {
-					return [x_value, y_value]
-				}
-
-				const total = total_per_x_value[x_value]
-				const normalized_value = total ? (y_value / total) * 100 : 0
-				return [x_value, normalized_value]
+			.map(r => {
+				const x_val = r[config.x_axis.dimension.dimension_name]
+				const y_val = r[column]
+				if (!config.y_axis.normalize) return [x_val, y_val]
+				const total = total_per_x_value[x_val]
+				return [x_val, total ? (y_val / total) * 100 : 0]
 			})
-			.map((d) => (swapAxes ? [d[1], d[0]] : d))
+			.map(d => (swapAxes ? [d[1], d[0]] : d))
 
 	const colors = getColors()
+
+	// Global label position
+	const globalLabelPosition =
+		config.y_axis.label_position &&
+		['top', 'inside', 'bottom'].includes(config.y_axis.label_position)
+			? config.y_axis.label_position
+			: 'top'
 
 	return {
 		animation: true,
@@ -230,49 +237,46 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 		xAxis: swapAxes ? yAxis : xAxis,
 		yAxis: swapAxes ? xAxis : yAxis,
 		dataZoom: getDataZoom(show_scrollbar, swapAxes),
+
 		series: number_columns.map((c, idx) => {
 			const serie = getSerie(config, c.name)
-			const is_right_axis = serie.align === 'Right'
-
-			const color = serie.color?.[0] || colors[idx]
 			const type = serie.type?.toLowerCase() || 'bar'
-			const stack = type === 'bar' && config.y_axis.stack ? 'stack' : undefined
-			const show_data_labels = serie.show_data_labels ?? config.y_axis.show_data_labels
+			const isRight = serie.align === 'Right'
+
 			const data = getSeriesData(c.name)
-			const name = config.split_by?.dimension?.column_name ? c.name : serie.measure.measure_name || c.name
+			const color = serie.color?.[0] || colors[idx]
+			const show_labels = serie.show_data_labels ?? config.y_axis.show_data_labels
 
-			const roundedCorners = swapAxes ? [0, 2, 2, 0] : [2, 2, 0, 0]
-			const isLast = idx === number_columns.length - 1
-
-			let labelPosition = 'inside'
-			if (type == 'line') {
-				labelPosition = 'top'
-			}
+			let labelPosition = globalLabelPosition
+			if (type === 'line') labelPosition = 'top'
 
 			return {
 				type,
-				stack: config.y_axis.overlap ? undefined : stack,
-				name,
+				name: config.split_by?.dimension?.column_name
+					? c.name
+					: serie.measure.measure_name || c.name,
 				data: swapAxes ? data.reverse() : data,
-				color: color,
+				color,
+				stack: type === 'bar' && config.y_axis.stack ? 'stack' : undefined,
 				label: {
-					show: show_data_labels,
+					show: show_labels,
 					position: labelPosition,
-					formatter: (params: any) => {
-						const _val = swapAxes ? params.value?.[0] : params.value?.[1]
-						return getShortNumber(_val, 1)
+					formatter: params => {
+						const val = swapAxes ? params.value?.[0] : params.value?.[1]
+						return getShortNumber(val, 1)
 					},
 					fontSize: 11,
 				},
 				barGap: config.y_axis.overlap ? '-100%' : undefined,
 				labelLayout: { hideOverlap: true },
-				yAxisIndex: is_right_axis ? 1 : 0,
+				yAxisIndex: isRight ? 1 : 0,
 				itemStyle: {
-					color: color,
-					borderRadius: roundedCorners,
+					color,
+					borderRadius: swapAxes ? [0, 2, 2, 0] : [2, 2, 0, 0],
 				},
 			}
 		}),
+
 		tooltip: getTooltip({
 			xAxisIsDate,
 			granularity,
