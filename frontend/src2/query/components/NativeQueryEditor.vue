@@ -10,6 +10,7 @@ import { Query } from '../query'
 import QueryDataTable from './QueryDataTable.vue'
 import DataSourceSelector from './source_selector/DataSourceSelector.vue'
 import { createToast } from '../../helpers/toasts'
+import SchemaExplorer from './SchemaExplorer.vue'
 
 const query = inject<Query>('query')!
 query.autoExecute = false
@@ -55,6 +56,13 @@ async function format() {
 	}
 }
 
+const codeEditor = ref<InstanceType<typeof Code> | null>(null)
+function insertTextIntoEditor(text: string) {
+	if (codeEditor.value) {
+		codeEditor.value.insertText(text)
+	}
+}
+
 const dataSourceSchema = ref<Record<string, any>>({})
 const dataSourceStore = useDataSourceStore()
 wheneverChanges(
@@ -81,7 +89,7 @@ const completions = computed(() => {
 	Object.entries(dataSourceSchema.value).forEach(([table, tableData]) => {
 		schema[table] = tableData.columns.map((column: any) => ({
 			label: column.label,
-			detail: column.label,
+			detail: column.type,
 		}))
 	})
 
@@ -89,7 +97,7 @@ const completions = computed(() => {
 		label: table,
 		detail: tableData.label,
 	}))
-
+	console.log({ schema, tables })
 	return {
 		schema,
 		tables,
@@ -98,7 +106,9 @@ const completions = computed(() => {
 </script>
 
 <template>
-	<div class="flex flex-1 flex-col gap-4 overflow-hidden p-4">
+	<div class="flex flex-1 gap-4 overflow-hidden p-4">
+
+		<div class="flex flex-1 flex-col gap-4 overflow-hidden">
 		<div class="relative flex h-[55%] w-full flex-col rounded border">
 			<div class="flex flex-shrink-0 items-center gap-1 border-b p-1">
 				<DataSourceSelector v-model="data_source" placeholder="Select a data source" />
@@ -110,6 +120,7 @@ const completions = computed(() => {
 			</div>
 			<div class="flex-1 overflow-hidden">
 				<Code
+					ref="codeEditor"
 					:key="completions.tables.length"
 					v-model="sql"
 					language="sql"
@@ -153,6 +164,10 @@ const completions = computed(() => {
 		</div>
 		<div class="relative flex w-full flex-1 flex-col overflow-hidden rounded border">
 			<QueryDataTable :query="query" :enable-alerts="true" />
+		</div>
+		</div>
+		<div class="w-64 flex-shrink-0">
+			<SchemaExplorer :schema="dataSourceSchema" @insert-text="insertTextIntoEditor" />
 		</div>
 	</div>
 </template>
