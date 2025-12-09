@@ -35,13 +35,12 @@ function toggleTable(tableName: string) {
 		expandedTables.value.add(tableName)
 	}
 }
-// todo: add `` in names
 function insertTableName(tableName: string) {
-	emit('insert-text', tableName)
+	emit('insert-text', `\`${tableName}\``)
 }
 
 function insertColumnName(tableName: string, columnName: string) {
-	emit('insert-text', `${tableName}.${columnName}`)
+	emit('insert-text', `\`${columnName}\``)
 }
 
 function getColumnIcon(type: string) {
@@ -148,8 +147,9 @@ const filteredSchema = computed(() => {
 								:is="getColumnIcon(column.detail || column.type)"
 								class="h-4 w-4 flex-shrink-0 text-gray-700"
 							/>
-							<span class="text-gray-700">{{ column.label }}</span>
-							<span class="ml-auto text-xs text-gray-500">{{ column.detail || column.type }}</span>
+
+							<span class="truncate text-gray-700 hover:text-blue-600">{{ column.label }}</span>
+							<span class="ml-auto flex-shrink-0 text-xs text-gray-500">{{ column.detail || column.type }}</span>
 						</button>
 					</div>
 				</div>
