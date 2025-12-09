@@ -39,7 +39,7 @@ function insertTableName(tableName: string) {
 	emit('insert-text', `\`${tableName}\``)
 }
 
-function insertColumnName(tableName: string, columnName: string) {
+function insertColumnName(columnName: string) {
 	emit('insert-text', `\`${columnName}\``)
 }
 
@@ -139,7 +139,7 @@ const filteredSchema = computed(() => {
 						<button
 							v-for="column in tableData.columns"
 							:key="column.label"
-							@click="insertColumnName(tableName, column.label)"
+							@click="insertColumnName(column.label)"
 							class="flex w-full items-center gap-2 px-4 py-1.5 text-left text-sm text-gray-600 hover:bg-gray-100 hover:text-blue-600"
 							:title="`${column.label} (${column.detail || column.type})`"
 						>
