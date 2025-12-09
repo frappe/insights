@@ -173,6 +173,13 @@ To setup the repository locally follow the steps mentioned below:
 
 4. Now, you can access the site on vite dev server at `http://insights.test:8080`
 
+## Compatibility matrix 
+
+| Insights Branch | Compatible Frappe Framework Version |
+|-----------------|-------------------------------------|
+| main            | version-14                          |
+| version-3       | version-15                          |
+| develop         | develop                             |
 
 ## Learn and connect
 
