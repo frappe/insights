@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronDown, ChevronRight, Search, Table2 , Calendar, HashIcon,Link, Image,Mail,TypeIcon} from 'lucide-vue-next'
+import { ChevronDown, ChevronRight, Search, Table2 , Calendar, HashIcon,SearchIcon,TypeIcon} from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
 interface Column {
@@ -89,19 +89,20 @@ const filteredSchema = computed(() => {
 </script>
 
 <template>
-	<div class="flex h-full flex-col overflow-hidden rounded border bg-white">
-		<div class="flex-shrink-0 border-b px-3 py-2 text-sm font-medium text-gray-700">
+	<div class="flex h-full flex-col overflow-hidden rounded border">
+		<div class="flex-shrink-0 border-b px-3 py-2.5 text-sm font-medium text-gray-700">
 			Tables
 		</div>
 		<div class="flex-shrink-0 border-b p-2">
 			<div class="relative">
-				<Search class="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-				<input
-					v-model="searchQuery"
-					type="text"
-					placeholder="Search tables and columns..."
-					class="w-full rounded border border-gray-300 py-1.5 pl-8 pr-3 text-sm focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-400"
-				/>
+				<FormControl
+				placeholder="Search Tables and Columns..."
+				v-model="searchQuery"
+				:debounce="300">
+				<template #prefix>
+					<SearchIcon class="h-4 w-4 text-gray-500" />
+				</template>
+			</FormControl>
 			</div>
 		</div>
 		<div class="flex-1 overflow-y-auto">
