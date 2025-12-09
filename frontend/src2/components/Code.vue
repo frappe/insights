@@ -137,5 +137,14 @@ defineExpose({
 		const _pos = Math.min(pos, code.value.length)
 		codeMirror.value.view.dispatch({ selection: { anchor: _pos, head: _pos } })
 	},
+	insertText: (text) => {
+		const view = codeMirror.value.view
+		const pos = view.state.selection.ranges[0].to
+		view.dispatch({
+			changes: { from: pos, insert: text },
+			selection: { anchor: pos + text.length, head: pos + text.length }
+		})
+		view.focus()
+	},
 })
 </script>
