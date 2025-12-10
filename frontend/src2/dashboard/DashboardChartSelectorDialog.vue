@@ -13,10 +13,11 @@ const dashboard = inject('dashboard') as Dashboard
 
 const searchQuery = ref('')
 const filteredCharts = computed(() => {
+	const query = searchQuery.value.toLowerCase()
 	if (!props.chartOptions.length) return []
-	if (!searchQuery.value) return props.chartOptions
+	if (!query) return props.chartOptions
 	return props.chartOptions.filter((chart) => {
-		return chart.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+		return chart.title.toLowerCase().includes(query)
 	})
 })
 
@@ -98,7 +99,7 @@ function confirmSelection() {
 				<div
 					class="flex h-[15rem] flex-col overflow-y-scroll rounded border p-0.5 text-base"
 				>
-					<template v-for="chart in filteredCharts">
+					<template v-for="chart in filteredCharts" :key="chart.name">
 						<div
 							class="flex h-7 flex-shrink-0 cursor-pointer items-center justify-between rounded px-2 hover:bg-gray-100"
 							@click="toggleChart(chart)"
