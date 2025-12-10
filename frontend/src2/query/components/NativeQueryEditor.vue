@@ -97,7 +97,7 @@ const completions = computed(() => {
 		label: table,
 		detail: tableData.label,
 	}))
-	console.log({ schema, tables })
+	
 	return {
 		schema,
 		tables,
