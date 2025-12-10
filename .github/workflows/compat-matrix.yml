@@ -1,9 +1,10 @@
 name: Frappe Compatibility Matrix
 
 on:
-  schedule:
-    # Daily at 02:00 UTC
-    - cron: "0 2 * * *"
+  push:
+    branches:
+      - main
+      - version-3
   workflow_dispatch:
 
 permissions:
@@ -15,8 +16,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        insights_branch: [main, version-3]
         frappe_branch: [version-14, version-15]
+        insights_branch: [${{ github.ref_name }}]
 
     name: Install (Insights=${{ matrix.insights_branch }}, Frappe=${{ matrix.frappe_branch }})
 
@@ -62,7 +63,6 @@ jobs:
             --skip-assets \
             --python "$(which python)" \
             "$BENCH_PATH"
-          # Match server-tests: adjust charset/collation on MariaDB
           mysql --host 127.0.0.1 --port 3306 -u root -p"$DB_ROOT_PASSWORD" -e "SET GLOBAL character_set_server = 'utf8mb4'"
           mysql --host 127.0.0.1 --port 3306 -u root -p"$DB_ROOT_PASSWORD" -e "SET GLOBAL collation_server = 'utf8mb4_unicode_ci'"
 
@@ -74,7 +74,7 @@ jobs:
           # Install the checked-out Insights code into the bench
           bench get-app insights "$GITHUB_WORKSPACE"
 
-          # Install core requirements (no --dev to keep it lighter, adjust if needed)
+          # Install requirements
           bench setup requirements
 
           # Create site and install Insights
