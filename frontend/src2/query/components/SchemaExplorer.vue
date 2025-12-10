@@ -128,10 +128,10 @@ const filteredSchema = computed(() => {
 								class="h-4 w-4 text-gray-500"
 							/>
 						</button>
-						<Table2 class="h-4 w-4text-gray-700" />
+						<Table2 class="h-4 w-4text-gray-700 flex flex-shrink-0" />
 						<button
 							@click="insertTableName(tableName)"
-							class="text-start font-medium text-gray-700 hover:text-blue-600"
+							class="truncate text-start font-medium text-gray-700 hover:text-blue-600"
 						>
 							{{ tableName }}
 						</button>
