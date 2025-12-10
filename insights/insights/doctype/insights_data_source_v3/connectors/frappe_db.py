@@ -29,6 +29,12 @@ def get_primary_data_source():
         site_db.host = frappe.conf.db_host
         site_db.port = frappe.conf.db_port
 
+    if not site_db.host:
+        site_db.host = "localhost"
+
+    if not site_db.port:
+        site_db.port = 5432 if site_db.database_type == "PostgreSQL" else 3306
+
     if not site_db.database_name:
         site_db.database_name = frappe.conf.db_name
 
