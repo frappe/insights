@@ -24,7 +24,7 @@ const icon = computed(() => {
 			return LineChart
 		case 'Row':
 			return BarChartHorizontal
-		case 'Scatter':
+		case 'Bubble':
 			return ScatterChart
 		case 'Area':
 			return AreaChart

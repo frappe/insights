@@ -9,6 +9,7 @@ import {
 	LineChartConfig,
 	MapChartConfig,
 	NumberChartConfig,
+	BubbleChartConfig,
 } from '../../types/chart.types'
 import { Chart } from '../chart'
 import {
@@ -17,6 +18,7 @@ import {
 	getFunnelChartOptions,
 	getLineChartOptions,
 	getMapChartOptions,
+	getBubbleChartOptions,
 } from '../helpers'
 import { FIELDTYPES } from '../../helpers/constants.ts'
 import { titleCase } from '../../helpers'
@@ -55,6 +57,9 @@ const eChartOptions = computed(() => {
 	}
 	if (chart_type.value === 'Map') {
 		return getMapChartOptions(config.value as MapChartConfig, result.value)
+	}
+	if (chart_type.value === 'Bubble') {
+		return getBubbleChartOptions(config.value as BubbleChartConfig, result.value)
 	}
 })
 

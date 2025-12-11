@@ -10,13 +10,13 @@ import {
 	FunnelChartConfig,
 	LineChartConfig,
 	MapChartConfig,
+	BubbleChartConfig,
 	Series,
 	SeriesLine,
 	XAxis,
 } from '../types/chart.types'
 import { QueryResult, QueryResultColumn, QueryResultRow } from '../types/query.types'
 import { getColors, getGradientColors } from './colors'
-import { EMPTY_RESULT } from '../query/query'
 
 interface GeoJSONFeature {
 	type: string
@@ -811,8 +811,190 @@ export function getMapChartOptions(config: MapChartConfig, result: QueryResult) 
 	return options
 }
 
+export function getBubbleChartOptions(config: BubbleChartConfig, result: QueryResult) {
+	const _rows = result.rows
+
+	const xColumnName = config.xAxis?.measure_name
+	const yColumnName = config.yAxis?.measure_name
+
+	if (!xColumnName || !yColumnName) {
+		return null
+	}
+
+	const colors = getColors()
+	const sizeColumnName = config.size_column?.measure_name
+	const nameColumnName = config.dimension?.dimension_name || config.dimension?.column_name
+	const groupByColumnName = config.quadrant_column?.dimension_name || config.quadrant_column?.column_name
+	const show_data_labels = config.show_data_labels || false
+
+	const scatterData = _rows.map((row) => {
+		const xValue = row[xColumnName]
+		const yValue = row[yColumnName]
+		const sizeValue = sizeColumnName ? row[sizeColumnName] : undefined
+		const nameValue = nameColumnName ? row[nameColumnName] : undefined
+		const groupValue = groupByColumnName ? row[groupByColumnName] : undefined
+		return [xValue, yValue, sizeValue, nameValue, groupValue]
+	})
+
+	const seriesMap = new Map<string, any[]>()
+	scatterData.forEach((dataPoint) => {
+		const groupValue = dataPoint[4]
+		if (!seriesMap.has(groupValue)) {
+			seriesMap.set(groupValue, [])
+		}
+		seriesMap.get(groupValue)!.push(dataPoint)
+	})
+
+	// calculate symbol size
+	let symbolSizeConfig: any = 10
+	if (sizeColumnName) {
+		const allSizes = _rows.map((r) => r[sizeColumnName]).filter((val) => val != null && !isNaN(val))
+		if (allSizes.length > 0) {
+			const minSize = Math.min(...allSizes)
+			const maxSize = Math.max(...allSizes)
+			const sizeRange = maxSize - minSize
+
+			symbolSizeConfig = (value: any[]) => {
+				const size = value[2]
+				if (size === undefined || size === null || isNaN(size)) return 10
+				if (sizeRange === 0) return 20
+				const normalized = (size - minSize) / sizeRange
+				return 10 + normalized * 25
+			}
+		}
+	}
+
+	const show_legend = !!groupByColumnName && seriesMap.size > 1
+	const series = Array.from(seriesMap.entries()).map(([groupName, data], idx) => {
+		const color = colors[idx % colors.length]
+
+		const seriesConfig: any = {
+			name: groupName,
+			type: 'scatter',
+			data: data,
+			symbolSize: symbolSizeConfig,
+			itemStyle: {
+				color: color,
+			},
+			label: {
+				show: show_data_labels,
+				position: 'top',
+				fontSize: 11,
+				formatter: (params: any) => {
+					if (nameColumnName && params.data[3]) {
+						return params.data[3]
+					}
+					const yVal = params.data[1]
+					return isNaN(yVal) ? yVal : getShortNumber(yVal, 1)
+				},
+			},
+			labelLayout: { hideOverlap: true },
+			emphasis: {
+				itemStyle: {
+					borderWidth: 6,
+					borderCap: 'round',
+					borderJoin: 'round',
+				},
+			},
+		}
+
+		if (idx === 0 && config.show_quadrants) {
+			const markLines: any[] = []
+			if (config.xAxis_refLine !== undefined && config.xAxis_refLine !== null) {
+				markLines.push({
+					xAxis: config.xAxis_refLine,
+					lineStyle: { type: 'dashed', width: 1.5 },
+				})
+			}
+			if (config.yAxis_refLine !== undefined && config.yAxis_refLine !== null) {
+				markLines.push({
+					yAxis: config.yAxis_refLine,
+					lineStyle: { type: 'dashed', width: 1.5 },
+				})
+			}
+			if (markLines.length > 0) {
+				seriesConfig.markLine = {
+					silent: true,
+					symbol: 'none',
+					data: markLines,
+				}
+			}
+		}
+
+		return seriesConfig
+	})
+
+	const xColumnLabel = result.columnOptions.find((c) => c.value === xColumnName)?.label || xColumnName
+	const yColumnLabel = result.columnOptions.find((c) => c.value === yColumnName)?.label || yColumnName
+
+	const xAxis = {
+		...getYAxis(),
+		name: xColumnLabel,
+		nameLocation: 'middle',
+		nameGap: 25,
+	}
+
+	const yAxis = {
+		...getYAxis(),
+		name: yColumnLabel,
+		nameLocation: 'middle',
+		nameGap: 35,
+	}
+
+	const titles: any[] = []
+
+	return {
+		animation: true,
+		animationDuration: 700,
+		color: colors,
+		title: titles,
+		grid: getGrid({ show_legend }),
+		xAxis,
+		yAxis,
+		series,
+		tooltip: {
+			trigger: 'item',
+			confine: true,
+			appendToBody: false,
+			formatter: (params: any) => {
+				const xVal = params.value[0]
+				const yVal = params.value[1]
+				const sizeVal = params.value[2]
+				const name = params.value[3] || params.seriesName
+				const formattedX = isNaN(xVal) ? xVal : formatNumber(xVal)
+				const formattedY = isNaN(yVal) ? yVal : formatNumber(yVal)
+
+				let html = `
+					<div class="flex flex-col gap-1">
+						<div class="font-bold">${name}</div>
+						<div class="flex items-center justify-between gap-5">
+							<div>${xColumnLabel}:</div>
+							<div class="font-bold">${formattedX}</div>
+						</div>
+						<div class="flex items-center justify-between gap-5">
+							<div>${yColumnLabel}:</div>
+							<div class="font-bold">${formattedY}</div>
+						</div>`
+
+				if (sizeVal !== undefined && sizeVal !== null) {
+					const formattedSize = isNaN(sizeVal) ? sizeVal : formatNumber(sizeVal)
+					html += `
+						<div class="flex items-center justify-between gap-5">
+							<div>${sizeColumnName}:</div>
+							<div class="font-bold">${formattedSize}</div>
+						</div>`
+				}
+
+				html += `</div>`
+				return html
+			},
+		},
+		legend: getLegend(show_legend),
+	}
+}
+
 function getGrid(options: any = {}) {
-	let bottom = options.show_legend ? 36 : 22;
+	let bottom = options.show_legend ? 45 : 22;
 	if (options.show_scrollbar && !options.swapAxes) {
 		bottom += 30;
 	}
