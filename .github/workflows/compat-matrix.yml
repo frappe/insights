@@ -16,10 +16,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        frappe_branch: ["version-14", "version-15"]
-        insights_branch: [${{ github.ref_name }}]
+        frappe_branch: [version-14, version-15]
 
-    name: Install (Insights=${{ matrix.insights_branch }}, Frappe=${{ matrix.frappe_branch }})
+    name: Install (Insights=${{ github.ref_name }}, Frappe=${{ matrix.frappe_branch }})
 
     services:
       mariadb:
@@ -44,7 +43,7 @@ jobs:
       - name: Checkout Insights (branch under test)
         uses: actions/checkout@v4
         with:
-          ref: ${{ matrix.insights_branch }}
+          ref: ${{ github.ref_name }}
 
       - name: Setup Python
         uses: actions/setup-python@v5
