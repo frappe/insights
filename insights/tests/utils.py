@@ -2,9 +2,9 @@
 # See license.txt
 
 import frappe
+from frappe.utils.install import complete_setup_wizard
 
 from insights.insights.doctype.insights_query.insights_query import InsightsQuery
-from insights.www.insights import check_setup_complete
 
 
 def before_tests():
@@ -15,30 +15,10 @@ def before_tests():
     frappe.db.commit()
 
 
-def complete_setup_wizard():
-    frappe.clear_cache()
-    from frappe.desk.page.setup_wizard.setup_wizard import setup_complete
-    setup_complete = check_setup_complete()
-    if not setup_complete:
-        setup_complete(
-            {
-                "language": "English",
-                "email": "test@erpnext.com",
-                "full_name": "Test User",
-                "password": "test",
-                "country": "United States",
-                "timezone": "America/New_York",
-                "currency": "USD",
-            }
-        )
-
-
 def delete_all_records():
     frappe.db.delete("Version", {"ref_doctype": ("like", "Insights%")})
     frappe.db.delete("View Log", {"reference_doctype": ("like", "Insights%")})
-    for doctype in frappe.get_all(
-        "DocType", filters={"module": "Insights", "issingle": 0}, pluck="name"
-    ):
+    for doctype in frappe.get_all("DocType", filters={"module": "Insights", "issingle": 0}, pluck="name"):
         frappe.db.delete(doctype)
 
 
