@@ -81,3 +81,8 @@ jobs:
             --db-root-password "$DB_ROOT_PASSWORD" \
             --admin-password "$ADMIN_PASSWORD"
           bench --site "$SITE_NAME" install-app insights
+
+      - name: Run basic workflow test
+        working-directory: ${{ env.BENCH_PATH }}
+        run: |
+          bench --site "$SITE_NAME" run-tests --app insights --module insights.tests.test_basic_workflow
