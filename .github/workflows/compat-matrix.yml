@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        frappe_branch: [version-14, version-15]
+        frappe_branch: ["version-14", "version-15"]
         insights_branch: [${{ github.ref_name }}]
 
     name: Install (Insights=${{ matrix.insights_branch }}, Frappe=${{ matrix.frappe_branch }})
