@@ -186,12 +186,12 @@ def infer_type_from_list(values):
     inferred_types = [infer_type(v) for v in values]
     if "String" in inferred_types:
         return "String"
+    elif "Datetime" in inferred_types:
+        return "Datetime"
     elif "Decimal" in inferred_types:
         return "Decimal"
     elif "Integer" in inferred_types:
         return "Integer"
-    elif "Datetime" in inferred_types:
-        return "Datetime"
     else:
         return "String"
 
