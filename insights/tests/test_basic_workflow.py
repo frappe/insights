@@ -10,6 +10,10 @@ class TestBasicWorkflow(unittest.TestCase):
         frappe.db.rollback()
 
     def test_query_execution(self):
+        ds = frappe.get_all("Insights Data Source v3", pluck="name")
+        self.assertTrue(len(ds) > 0, "No Data Sources found")
+        self.assertIn("Site DB", ds, "Site DB Data Source not found")
+
         w = frappe.new_doc("Insights Workbook")
         w.title = "Basic Workflow Test"
         w.insert()
