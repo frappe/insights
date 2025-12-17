@@ -6,9 +6,6 @@ from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 i
 
 
 class TestBasicWorkflow(unittest.TestCase):
-    def tearDown(self):
-        frappe.db.rollback()
-
     def test_query_execution(self):
         ds = frappe.get_all("Insights Data Source v3", pluck="name")
         self.assertTrue(len(ds) > 0, "No Data Sources found")
