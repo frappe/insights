@@ -4,7 +4,7 @@
 	"version": "0.0.0",
 	"type": "module",
 	"engines": {
-		"node": ">=18.17.0"
+		"node": ">=18"
 	},
 	"scripts": {
 		"dev": "vite",
@@ -43,6 +43,7 @@
 		"vuedraggable": "^4.1.0"
 	},
 	"devDependencies": {
+		"@iconify/utils": "2.3.0",
 		"@playwright/test": "^1.32.1",
 		"@tailwindcss/container-queries": "^0.1.1",
 		"@vitejs/plugin-vue": "^4.2.3",
@@ -58,5 +59,8 @@
 		"typescript": "^5.5.2",
 		"vite": "^4.4.6",
 		"vue-tsc": "^2.0.21"
+	},
+	"resolutions": {
+		"@iconify/utils": "^2.3.0"
 	}
 }
