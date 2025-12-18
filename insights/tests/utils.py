@@ -1,6 +1,8 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
+import json
+
 import frappe
 from frappe.utils.install import complete_setup_wizard
 
@@ -29,10 +31,15 @@ def create_query_store():
 
 
 def create_site_db():
-    site_db = frappe.new_doc("Insights Data Source")
-    site_db.title = "Site DB"
-    site_db.is_site_db = 1
-    site_db.save()
+    data_source_fixture_path = frappe.get_app_path("insights", "fixtures", "insights_data_source.json")
+    with open(data_source_fixture_path) as f:
+        site_db = json.load(f)[0]
+        frappe.get_doc(site_db).insert()
+
+    data_source_fixture_path = frappe.get_app_path("insights", "fixtures", "insights_data_source_v3.json")
+    with open(data_source_fixture_path) as f:
+        site_db = json.load(f)[0]
+        frappe.get_doc(site_db).insert()
 
 
 def create_sqlite_db():
