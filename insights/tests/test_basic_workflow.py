@@ -47,7 +47,7 @@ class TestBasicWorkflow(unittest.TestCase):
             }
         )
         query.save()
-        query.fetch_results()
+        res = query.fetch_results()
         query.save()
 
-        self.assertTrue(query.results_row_count == 5, "Query did not return expected number of rows")
+        self.assertEqual(res[1][0], 5, "Todo count does not match expected value")
