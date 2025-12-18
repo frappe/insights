@@ -82,7 +82,3 @@ jobs:
             --admin-password "$ADMIN_PASSWORD"
           bench --site "$SITE_NAME" install-app insights
           bench --site "$SITE_NAME" run-tests --app insights --module insights.tests.test_basic_workflow
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: ${{ failure() }}
