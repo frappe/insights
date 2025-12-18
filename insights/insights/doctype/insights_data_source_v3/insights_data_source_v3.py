@@ -191,8 +191,6 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
                 exc=DataSourceConnectionError,
             )
 
-        print(f"Connected to {self.name} ({self.title})")
-
         if self.database_type == "MariaDB":
             db.raw_sql("SET SESSION time_zone='+00:00'")
             db.raw_sql("SET collation_connection = 'utf8mb4_unicode_ci'")
