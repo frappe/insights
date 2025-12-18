@@ -1,10 +1,9 @@
 name: Frappe Compatibility Matrix
 
 on:
-  push:
-    branches:
-      - main
-      - version-3
+  schedule:
+    # Daily at 02:00 AM UTC
+    - cron: '0 2 * * *'
   workflow_dispatch:
 
 permissions:
@@ -16,9 +15,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        insights_branch: [main, version-3]
         frappe_branch: [version-14, version-15]
 
-    name: Install (Insights=${{ github.ref_name }}, Frappe=${{ matrix.frappe_branch }})
+    name: Install (Insights=${{ matrix.insights_branch }}, Frappe=${{ matrix.frappe_branch }})
 
     services:
       mariadb:
@@ -40,10 +40,10 @@ jobs:
       ADMIN_PASSWORD: admin
 
     steps:
-      - name: Checkout Insights (branch under test)
+      - name: Checkout Insights
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ matrix.insights_branch }}
 
       - name: Setup Python
         uses: actions/setup-python@v5
