@@ -49,12 +49,16 @@ async function setChartOptions() {
 
 async function registerMap(mapName) {
 	if (!mapName) return
-	if (mapName === 'india') {
-		const mapJson = await import('../../assets/maps_json/india.json')
-		echarts.registerMap('india', mapJson.default)
-	} else if (mapName === 'world') {
-		const mapJson = await import('../../assets/maps_json/world_map.json')
-		echarts.registerMap('world', mapJson.default)
+	try {
+		const mapPath =
+			mapName === 'india'
+				? '/assets/insights/maps/india.json'
+				: '/assets/insights/maps/world_map.json'
+		const response = await fetch(mapPath)
+		const mapJson = await response.json()
+		echarts.registerMap(mapName, mapJson)
+	} catch (error) {
+		console.log(`Error loading map ${mapName}:`, error)
 	}
 }
 
