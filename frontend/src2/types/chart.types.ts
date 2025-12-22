@@ -125,6 +125,10 @@ export type MapChartConfig = {
 	location_column: Dimension
 	value_column: Measure
 	map_type?: 'world' | 'india'
+	region_mappings?: {
+		world?: Record<string, string>
+		india?: Record<string, string>
+	}
 }
 
 export type BubbleChartConfig = {
@@ -148,3 +152,23 @@ export type ChartConfig =
 	| FunnelChartConfig
 	| MapChartConfig
 	| BubbleChartConfig
+
+export interface Suggestion {
+		region: string
+		similarity: number
+	}
+
+export interface Region {
+		user_region: string
+		mapped_to?: string
+		suggestions?: Suggestion[]
+	}
+
+export interface MappingData {
+		total: number
+		resolved: number
+		unresolved: number
+		unresolved_list: Region[]
+		manual_mappings: Record<string, string>
+		available_regions: string[]
+	}
