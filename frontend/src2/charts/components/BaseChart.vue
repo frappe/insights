@@ -58,7 +58,7 @@ async function registerMap(mapName) {
 		const mapJson = await response.json()
 		echarts.registerMap(mapName, mapJson)
 	} catch (error) {
-		console.log(`Error loading map ${mapName}:`, error)
+		console.error(`Error loading map ${mapName}:`, error)
 	}
 }
 

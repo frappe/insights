@@ -32,7 +32,6 @@ async function loadData() {
 	if (!props.userRegions?.length) return
 
 	loading.value = true
-	console.log('regions:', props.userRegions)
 	try {
 		const [mappingResponse, regionsResponse] = await Promise.all([
 			call('insights.api.maps.find_unresolved_regions', {
