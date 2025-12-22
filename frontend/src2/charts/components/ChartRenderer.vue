@@ -118,13 +118,22 @@ function handleMapChartClick(params:any) {
 	if (!locationColumn.value) return null
 
 	const clickedLocation = params.name
-	const formattedRow = result.value.formattedRows.find(
-		(r) => titleCase(r[locationColumn.name]?.toString()) === titleCase(clickedLocation),
-	)
+	const normalizedClick = titleCase(clickedLocation)
 
-	return formattedRow
-		? props.chart.dataQuery.getDrillDownQuery(locationColumn, formattedRow)
-		: null
+	const { index, reverseMap } = locationRowIndex.value
+	// Lookup directly
+	let matchedRow = index.get(normalizedClick)
+
+	if (!matchedRow) {
+		const originalUserVal = reverseMap.get(normalizedClick)
+		if (originalUserVal) {
+			matchedRow = index.get(titleCase(originalUserVal))
+		}
+	}
+
+	if (!matchedRow) return null
+
+	return props.chart.dataQuery.getDrillDownQuery(locationColumn.value, matchedRow)
 }
 
 function handleGeneralChartClick(params: any) {
