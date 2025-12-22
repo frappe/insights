@@ -616,16 +616,19 @@ function getMapChartData(
 		throw new Error('No location column found')
 	}
 
+	// Get region mappings from config
+	const regionMappings = config?.region_mappings?.[config.map_type || 'world'] || {}
+
 	let aggregationColumn = locationColumn
 	const locationValueMap = new Map<string, number>()
 
 	for (const row of rows) {
 		const rawLocation = row[aggregationColumn.name]
-		const normalizedLocation = toTitleCase(rawLocation)
+		const mappedLocation = regionMappings[rawLocation] || toTitleCase(rawLocation)
 		const value = row[measureColumn.name]
 
-		const currentValue = locationValueMap.get(normalizedLocation) || 0
-		locationValueMap.set(normalizedLocation, currentValue + value)
+		const currentValue = locationValueMap.get(mappedLocation) || 0
+		locationValueMap.set(mappedLocation, currentValue + value)
 	}
 
 	const data = Array.from(locationValueMap.entries())
