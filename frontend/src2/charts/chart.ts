@@ -52,7 +52,11 @@ function makeChart(name: string) {
 		if (!chart.isloaded) return {} as Query
 		return useQuery(chart.doc.data_query)
 	})
-	async function refresh(force?: boolean) {
+	async function refresh(force?: boolean, reload?: boolean) {
+		if (reload) {
+			await chart.load()
+		}
+
 		await waitUntil(
 			() => chart.isloaded && dataQuery.value.isloaded && useQuery(chart.doc.query).isloaded
 		)
@@ -69,6 +73,7 @@ function makeChart(name: string) {
 
 		const shouldExecute =
 			force ||
+			reload ||
 			!dataQuery.value.result.executedSQL ||
 			dataQuery.value.adhocFilters ||
 			JSON.stringify(query.doc.operations) !== JSON.stringify(dataQuery.value.doc.operations)
