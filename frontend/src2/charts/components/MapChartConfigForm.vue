@@ -89,27 +89,15 @@ const canCheckRegions = computed(() => {
 		config.value.map_type &&
 		config.value.location_column?.dimension_name &&
 		userRegions.value.length > 0
-	console.log('canCheckRegions:', canCheck, {
-		chartName: props.chartName,
-		mapType: config.value.map_type,
-		locationColumn: config.value.location_column?.dimension_name,
-		userRegionsLength: userRegions.value.length,
-	})
+
 	return canCheck
 })
 
 async function checkUnresolvedRegions() {
 	if (!canCheckRegions.value) {
-		console.log('Cannot check regions:', {
-			chartName: props.chartName,
-			mapType: config.value.map_type,
-			locationColumn: config.value.location_column?.dimension_name,
-			userRegionsLength: userRegions.value.length,
-		})
 		return
 	}
 
-	console.log('Checking unresolved regions...')
 	loadingUnresolved.value = true
 	try {
 		const response = await call('insights.api.maps.find_unresolved_regions', {
@@ -117,7 +105,6 @@ async function checkUnresolvedRegions() {
 			user_regions: userRegions.value,
 			chart_name: props.chartName,
 		})
-		console.log('Unresolved regions response:', response)
 		unresolvedCount.value = response.unresolved_count
 	} catch (error) {
 		console.error('Failed to check unresolved regions:', error)

@@ -46,7 +46,7 @@ const props = defineProps<{
 const headers = computed(() => {
 	if (!props.columns?.length) return []
 	return createHeaders(props.columns)
-	
+
 })
 const columnsMeta = computed(() => {
 	if (!props.columns || !props.rows) return new Map()
@@ -267,7 +267,7 @@ const colorByValues = computed(() => {
 
 	return _colorByValues
 })
-	
+
 const formattingRulesByColumn = computed(() => {
 	const formatGroup = props.formatGroup
 	const result: Record<string, FormattingMode[]> = {}
@@ -310,7 +310,7 @@ const getColumnMinMax = (columnName: string) => {
   const values = props.rows
     ?.map(row => Number(row[columnName]))
     .filter(val => !isNaN(val)) || []
-  
+
   return {
     min: Math.min(...values),
     max: Math.max(...values)
