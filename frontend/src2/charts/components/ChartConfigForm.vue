@@ -39,6 +39,8 @@ const dimensions = computed<DimensionOption[]>(() => {
 })
 
 const columnOptions = computed(() => chartQuery.value.result?.columnOptions || [])
+const queryResult = computed(() => chartQuery.value.result)
+
 </script>
 
 <template>
@@ -83,6 +85,10 @@ const columnOptions = computed(() => chartQuery.value.result?.columnOptions || [
 		v-model="(props.chart.doc.config as MapChartConfig)"
 		:dimensions="dimensions"
 		:column-options="columnOptions"
+		:chart-name="props.chart.doc.name"
+		:query-name="props.chart.doc.query"
+		:query-result="queryResult"
+		@mappingsSaved="() => props.chart.refresh(true,true)"
 	/>
 	<BubbleChartConfigForm
 		v-if="props.chart.doc.chart_type == 'Bubble'"
