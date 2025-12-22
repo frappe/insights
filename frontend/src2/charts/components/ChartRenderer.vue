@@ -66,14 +66,56 @@ const eChartOptions = computed(() => {
 const showDrillDown = ref(false)
 const drillDownQuery = ref<Query>()
 
-function handleMapChartClick(params: any) {
-	const config = props.chart.doc.config as MapChartConfig
-	const locationColumn = result.value.columns.find(
-		(c) =>
-			FIELDTYPES.DIMENSION.includes(c.type) && c.name === config.location_column?.column_name,
-	)
+const mapConfig = computed(() => props.chart.doc.config as MapChartConfig)
 
-	if (!locationColumn) return null
+// If columns don't change we shouldn't search for this on every click
+const locationColumn = computed(() => {
+	return result.value.columns.find(
+		(c) =>
+			FIELDTYPES.DIMENSION.includes(c.type) &&
+			c.name === mapConfig.value.location_column?.column_name
+	)
+})
+
+// Runs only when data changes
+const locationRowIndex = computed(() => {
+	const index = new Map<string, any>()
+	const col = locationColumn.value
+
+	if (!col) return { index, reverseMap: new Map<string, string>() }
+
+	// computed mappings for faster acess
+	const mappings = mapConfig.value.region_mappings?.[mapConfig.value.map_type || 'world'] || {}
+	const reverseMap = new Map<string, string>()
+
+	for (const [userValue, mappedRegion] of Object.entries(mappings)) {
+		reverseMap.set(titleCase(mappedRegion as string), userValue)
+	}
+
+	// Index the rows
+	result.value.formattedRows.forEach((row) => {
+		const rawValue = row[col.name]?.toString()
+		if (!rawValue) return
+
+		const normalizedRowValue = titleCase(rawValue)
+		//	case 1: Index by Direct Match (Auto-mapped)
+		// Key: "United States" -> Row(United States)
+		index.set(normalizedRowValue, row)
+
+		//case 2: Index by config mapping
+		// If this row is "usa" and config maps == "usa" -> "United States"
+		// we also want the key "United States" to point to this row
+		const mappedName = mappings[rawValue]
+		if (mappedName) {
+			index.set(titleCase(mappedName as string), row)
+		}
+	})
+
+	return { index, reverseMap }
+})
+
+function handleMapChartClick(params:any) {
+	if (!locationColumn.value) return null
 
 	const clickedLocation = params.name
 	const formattedRow = result.value.formattedRows.find(
