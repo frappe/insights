@@ -11,7 +11,8 @@
 		"serve": "vite preview",
 		"build": "vite build -l warn --base=/assets/insights/frontend/ && yarn copy-html-entry && yarn copy-html-entry2",
 		"copy-html-entry": "cp ../insights/public/frontend/index.html ../insights/www/insights.html",
-		"copy-html-entry2": "cp ../insights/public/frontend/index_v2.html ../insights/www/insights_v2.html"
+		"copy-html-entry2": "cp ../insights/public/frontend/index_v2.html ../insights/www/insights_v2.html",
+		"postinstall": "patch-package"
 	},
 	"dependencies": {
 		"@codemirror/lang-javascript": "^6.0.2",
@@ -51,6 +52,7 @@
 		"autoprefixer": "^10.4.7",
 		"eslint": "^8.19.0",
 		"eslint-plugin-vue": "^9.1.1",
+		"patch-package": "^8.0.1",
 		"postcss": "^8.4.14",
 		"prettier": "2.8.4",
 		"sass": "^1.54.9",
