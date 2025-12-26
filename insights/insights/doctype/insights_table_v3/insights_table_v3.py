@@ -163,8 +163,8 @@ def get_allowed_documents(doctype):
             distinct=True,
         )
 
-        doctype_perms = get_valid_perms()
-        parent_doctypes = [p.parent for p in doctype_perms if p.read and p.parent in parent_doctypes]
+        # FIX: check permission of the parent and not the child table
+        parent_doctypes = [p for p in parent_doctypes if frappe.has_permission(p, "read")]
 
         parent_docs_by_doctype = {
             parent_doctype: get_allowed_documents(parent_doctype) for parent_doctype in parent_doctypes
