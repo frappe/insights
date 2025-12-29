@@ -269,16 +269,19 @@ def check_table_permission(data_source, table, user=None, raise_error=True):
     table_name = get_table_name(data_source, table)
     allowed_tables = get_allowed_resources_for_user("Insights Table v3", user)
 
-    if table_name not in allowed_tables:
-        if raise_error:
-            frappe.throw(
-                "You do not have permission to access this table",
-                exc=frappe.PermissionError,
-            )
-        else:
-            return False
+    if table_name in allowed_tables:
+        return True
 
-    return True
+    permitted_tables = getattr(frappe.flags, "permitted_dashboard_tables", None)
+    if permitted_tables and table_name in permitted_tables:
+        return True
+
+    if raise_error:
+        frappe.throw(
+            "You do not have permission to access this table",
+            exc=frappe.PermissionError,
+        )
+    return False
 
 
 def get_table_restrictions(data_source, table, user=None):
