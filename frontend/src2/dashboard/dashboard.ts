@@ -210,7 +210,7 @@ function makeDashboard(name: string) {
 	function refreshChart(chart_name: string, force = false) {
 		const chart = useChart(chart_name)
 		chart.dataQuery.adhocFilters = getAdhocFilters(chart_name)
-		chart.refresh(force)
+		chart.refresh(force, false, dashboard.doc.name)
 	}
 
 	function getAdhocFilters(chart_name: string) {
@@ -307,6 +307,7 @@ function makeDashboard(name: string) {
 			column_name: column,
 			search_term,
 			adhoc_filters: adhocFilters,
+			dashboard_name: dashboard.doc.name
 		})
 	}
 
