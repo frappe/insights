@@ -52,7 +52,7 @@ function makeChart(name: string) {
 		if (!chart.isloaded) return {} as Query
 		return useQuery(chart.doc.data_query)
 	})
-	async function refresh(force?: boolean, reload?: boolean) {
+	async function refresh(force?: boolean, reload?: boolean, dashboard_name?: string) {
 		if (reload) {
 			await chart.load()
 		}
@@ -61,10 +61,19 @@ function makeChart(name: string) {
 			() => chart.isloaded && dataQuery.value.isloaded && useQuery(chart.doc.query).isloaded
 		)
 
+		if (dashboard_name) {
+			dataQuery.value.dashboardName = dashboard_name
+		}
+
 		const isValid = validateConfig()
 		if (!isValid) return
 
 		const query = useQuery('new-query-' + getUniqueId())
+
+		if (dataQuery.value.dashboardName) {
+			query.dashboardName = dataQuery.value.dashboardName
+		}
+		
 		addSourceOperation(query)
 		addFilterOperation(query)
 		addChartOperation(query)
@@ -84,7 +93,10 @@ function makeChart(name: string) {
 
 		dataQuery.value.setOperations(copy(query.doc.operations))
 		dataQuery.value.doc.use_live_connection = query.doc.use_live_connection
-		return dataQuery.value.execute(force)
+		if (query.dashboardName) {
+			dataQuery.value.dashboardName = query.dashboardName
+		}
+		return dataQuery.value.execute(force, query.dashboardName)
 	}
 
 	function validateConfig() {
