@@ -5,12 +5,12 @@ cd ~ || exit
 echo "Setting Up Bench..."
 
 pip install frappe-bench
-bench -v init frappe-bench --skip-assets --skip-redis-config-generation --python "$(which python)" --frappe-branch "${BASE_BRANCH}" --shallow-clone
+bench -v init frappe-bench --skip-assets --skip-redis-config-generation --python "$(which python)" --frappe-branch "${BASE_BRANCH}"
 
 cd ./frappe-bench || exit
 
 echo "Get Insights..."
-bench get-app insights "${GITHUB_WORKSPACE}" --skip-assets --no-remote --ignore-deps
+bench get-app insights "${GITHUB_WORKSPACE}" --skip-assets 
 
 echo "Generating POT file..."
 bench generate-pot-file --app insights
