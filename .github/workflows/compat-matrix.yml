@@ -65,7 +65,7 @@ jobs:
           mysql --host 127.0.0.1 --port 3306 -u root -p"$DB_ROOT_PASSWORD" -e "SET GLOBAL character_set_server = 'utf8mb4'"
           mysql --host 127.0.0.1 --port 3306 -u root -p"$DB_ROOT_PASSWORD" -e "SET GLOBAL collation_server = 'utf8mb4_unicode_ci'"
 
-      - name: Install Insights and create site
+      - name: Create Site, Install Insights, and Run Tests
         working-directory: ${{ env.BENCH_PATH }}
         env:
           CI: "Yes"

@@ -10,7 +10,7 @@ bench -v init frappe-bench --skip-assets --skip-redis-config-generation --python
 cd ./frappe-bench || exit
 
 echo "Get Insights..."
-bench get-app --skip-assets insights "${GITHUB_WORKSPACE}"
+bench get-app insights "${GITHUB_WORKSPACE}" --skip-assets
 
 echo "Generating POT file..."
 bench generate-pot-file --app insights
@@ -22,7 +22,7 @@ git config user.email "developers@erpnext.com"
 git config user.name "frappe-pr-bot"
 
 echo "Setting the correct git remote..."
-git remote set-url upstream https://github.com/frappe/insights.git
+git remote set-url upstream "https://x-access-token:${GH_TOKEN}@github.com/frappe/insights.git"
 
 echo "Creating a new branch..."
 isodate=$(date -u +"%Y-%m-%d")
@@ -33,7 +33,6 @@ echo "Commiting changes..."
 git add insights/locale/main.pot
 git commit -m "chore: update POT file"
 
-gh auth setup-git
 git push -u upstream "${branch_name}"
 
 echo "Creating a PR..."
