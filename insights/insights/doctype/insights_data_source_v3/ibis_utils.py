@@ -454,6 +454,24 @@ class IbisQueryBuilder:
             names = self.query.select(names_from).order_by(names_from).distinct().limit(max_names).execute()
             names = names.fillna("null").values
 
+            # If we've limited the number of distinct column values, bucket the
+            # remaining values into an "Others" group so charts show the rest.
+            # This currently supports the common case of a single pivot column.
+            if len(names) == max_names and len(columns) == 1:
+                selected_names = [str(v) for v in names.flatten()]
+
+                col_name = columns[0].get_name()
+                col_expr = getattr(self.query, col_name)
+
+                # replace values not in selected_names with 'Others'
+                # use ibis.case() since ibis.where isn't available on the module
+                others_expr = ibis.cases((col_expr.isin(selected_names), col_expr), else_="Others")
+                self.query = self.query.mutate(**{col_name: others_expr})
+
+                # ensure the pivot names include the 'Others' bucket
+                names = list(map(str, selected_names))
+                names.append("Others")
+
             return self.query.pivot_wider(
                 id_cols=[row.get_name() for row in rows],
                 names_from=names_from,
