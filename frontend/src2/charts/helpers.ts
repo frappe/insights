@@ -468,7 +468,52 @@ export function getDonutChartOptions(config: DonutChartConfig, result: QueryResu
 				return `${formatNumber(value, 2)} (${percent.toFixed(0)}%)`
 			},
 		},
+		graphic: getTotalGraphic(
+			total,
+			legend_position,
+			show_inline_labels,
+			config.show_total_in_center ?? false
+		),
 	}
+}
+
+function getTotalGraphic(
+	total: number,
+	legend_position: DonutChartConfig['legend_position'],
+	show_inline_labels: boolean,
+	show: boolean
+) {
+	const GRAPHIC_POSITION = {
+		bottom: { left: 'center', top: '42%' },
+		top: { left: 'center', top: '50%' },
+		left: { left: '62%', top: 'middle' },
+		right: { left: '28%', top: 'middle' },
+		inline: { left: 'center', top: 'middle' },
+	} as const
+
+	const position = show_inline_labels
+		? GRAPHIC_POSITION.inline
+		: GRAPHIC_POSITION[legend_position || 'bottom']
+
+	return [
+		{
+			type: 'text',
+			left: position.left,
+			top: position.top,
+			silent: true,
+			style: {
+				text: `${formatNumber(total, 2)}\nTOTAL`,
+				fontSize: 20,
+				fontWeight: 'bold',
+				textAlign: 'center',
+				textVerticalAlign: 'middle',
+				lineHeight: 24,
+				fill: '#333',
+			},
+			invisible: !show,
+			z: 100,
+		},
+	]
 }
 
 function getDonutChartData(
