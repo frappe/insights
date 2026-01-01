@@ -7,6 +7,8 @@
  "field_order": [
   "table",
   "label",
+  "is_view",
+  "view_script",
   "column_break_3",
   "data_source",
   "last_synced_on",
@@ -66,11 +68,23 @@
    "fieldtype": "Code",
    "label": "Before Import Script",
    "options": "Python"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_view",
+   "fieldtype": "Check",
+   "label": "Is View",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "view_script",
+   "fieldtype": "Code",
+   "label": "View Script"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-01 12:49:40.113177",
+ "modified": "2025-10-29 17:07:51.547198",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Table v3",

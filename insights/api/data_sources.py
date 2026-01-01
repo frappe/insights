@@ -58,9 +58,7 @@ def get_table_columns(data_source, table):
 @insights_whitelist()
 def get_table_name(data_source, table):
     check_table_permission(data_source, table)
-    return frappe.get_value(
-        "Insights Table", {"data_source": data_source, "table": table}, "name"
-    )
+    return frappe.get_value("Insights Table", {"data_source": data_source, "table": table}, "name")
 
 
 @insights_whitelist()
@@ -86,9 +84,7 @@ def get_tables(data_source=None, with_query_tables=False):
 
 
 @insights_whitelist()
-def create_table_link(
-    data_source, primary_table, foreign_table, primary_key, foreign_key
-):
+def create_table_link(data_source, primary_table, foreign_table, primary_key, foreign_key):
     check_table_permission(data_source, primary_table.get("value"))
     check_table_permission(data_source, foreign_table.get("value"))
 
@@ -232,15 +228,11 @@ def fetch_column_values(data_source, table, column, search_text=None):
 
 @insights_whitelist()
 def get_relation(data_source, table_one, table_two):
-    table_one_doc = InsightsTable.get_doc(
-        {"data_source": data_source, "table": table_one}
-    )
+    table_one_doc = InsightsTable.get_doc({"data_source": data_source, "table": table_one})
     if not table_one_doc:
         frappe.throw(f"Table {table_one} not found")
 
-    table_two_doc = InsightsTable.get_doc(
-        {"data_source": data_source, "table": table_two}
-    )
+    table_two_doc = InsightsTable.get_doc({"data_source": data_source, "table": table_two})
     if not table_two_doc:
         frappe.throw(f"Table {table_two} not found")
 
@@ -333,9 +325,16 @@ def get_data_source_tables(data_source=None, search_term=None, limit=100):
 @validate_type
 def get_data_source_table(data_source: str, table_name: str):
     check_table_permission(data_source, table_name)
-    ds = frappe.get_doc("Insights Data Source v3", data_source)
-    q = ds.get_ibis_table(table_name).head(100)
-    data, time_taken = execute_ibis_query(q, cache_expiry=24 * 60 * 60)
+    doc = frappe.get_doc(
+        "Insights Table v3",
+        {
+            "data_source": data_source,
+            "table": table_name,
+        },
+    )
+    t = doc.get_ibis_table(data_source, table_name)
+    q = t.head(100)
+    data, _ = execute_ibis_query(q, cache_expiry=24 * 60 * 60)
 
     return {
         "table_name": table_name,
