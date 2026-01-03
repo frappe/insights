@@ -155,3 +155,22 @@ def get_code_completions(code: str):
     return {
         "current_function": current_function,
     }
+
+
+@frappe.whitelist()
+def get_function_description(funcName: str):
+    functions_dict = get_functions()
+    func_obj = functions_dict.get(funcName)
+
+    if not func_obj:
+        return None
+
+    docstring = getattr(func_obj, "__doc__", "") or ""
+    print(docstring)
+
+    if "def " in docstring:
+        lines = docstring.split("\n", 1)
+        definition = lines[0].replace("def ", "").strip()
+        description = lines[1].strip()if len(lines) > 1 else ""
+
+    return {"name": funcName, "definition": definition, "description": description}
