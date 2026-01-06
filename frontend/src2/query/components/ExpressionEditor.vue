@@ -5,6 +5,15 @@ import Code from '../../components/Code.vue'
 import { cachedCall } from '../../helpers'
 import { DropdownOption } from '../../types/query.types'
 
+type FunctionSignature = {
+	name: string
+	definition: string
+	description: string
+	current_param: string
+	current_param_description: string
+	params: { name: string; description: string }[]
+}
+
 const props = defineProps<{
 	columnOptions: DropdownOption[]
 	placeholder?: string
