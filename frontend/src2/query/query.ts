@@ -129,7 +129,13 @@ export function makeQuery(name: string) {
 	}
 
 	const adhocFilters = ref<AdhocFilters>()
-	async function execute(force: boolean = false) {
+	const dashboardName = ref<string>()
+	async function execute(force: boolean = false, dashboard_name?: string) {
+
+		if (dashboard_name) {
+			dashboardName.value = dashboard_name
+		}
+
 		if (!query.islocal) {
 			await waitUntil(() => query.isloaded)
 		}
@@ -156,6 +162,7 @@ export function makeQuery(name: string) {
 				active_operation_idx: activeOperationIdx.value,
 				adhoc_filters: adhocFilters.value,
 				force,
+				dashboard_name: dashboardName.value,
 			})
 			.then((response: any) => {
 				if (!response) return
@@ -567,7 +574,7 @@ export function makeQuery(name: string) {
                         currentDownloadToken.value = null
                     }
                 })
-		}	
+		}
 
 		_downloadResults()
 	}
@@ -593,6 +600,7 @@ export function makeQuery(name: string) {
 			column_name: column,
 			search_term,
 			limit,
+			dashboard_name: dashboardName.value
 		})
 	}
 
@@ -700,6 +708,11 @@ export function makeQuery(name: string) {
 		const drill_down_query = useQuery('new-query-' + getUniqueId())
 		drill_down_query.doc.title = 'Drill Down'
 		drill_down_query.doc.use_live_connection = query.doc.use_live_connection
+
+		if (dashboardName.value) {
+			drill_down_query.dashboardName = dashboardName.value
+		}
+
 		drill_down_query.autoExecute = true
 
 		let filters: FilterArgs[] = []
@@ -821,6 +834,11 @@ export function makeQuery(name: string) {
 	) {
 		const drill_down_query = useQuery('new-query-' + getUniqueId())
 		drill_down_query.doc.title = 'Drill Down'
+
+		if (dashboardName.value) {
+			drill_down_query.dashboardName = dashboardName.value
+		}
+
 		drill_down_query.autoExecute = true
 		drill_down_query.doc.workbook = query.doc.workbook
 		drill_down_query.doc.use_live_connection = query.doc.use_live_connection
@@ -937,6 +955,7 @@ export function makeQuery(name: string) {
 		currentOperations,
 		activeEditOperation,
 		adhocFilters,
+		dashboardName,
 
 		autoExecute,
 		executing,

@@ -108,7 +108,21 @@ class InsightsQueryv3(Document):
         return ibis_query
 
     @frappe.whitelist()
-    def execute(self, active_operation_idx=None, adhoc_filters=None, force=False):
+    def execute(self, active_operation_idx=None, adhoc_filters=None, force=False, dashboard_name=None):
+        if dashboard_name:
+            from insights.permissions import InsightsPermissions
+            permissions = InsightsPermissions()
+            allowed_tables = permissions.get_dashboard_query_tables(
+                dashboard_name,
+                query_name=self.name
+            )
+            if allowed_tables:
+                frappe.flags.permitted_dashboard_tables = allowed_tables
+            else:
+                return
+        else:
+            return
+
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
 
@@ -186,7 +200,21 @@ class InsightsQueryv3(Document):
         search_term=None,
         limit=20,
         adhoc_filters=None,
+        dashboard_name=None,
     ):
+
+        if dashboard_name:
+            from insights.permissions import InsightsPermissions
+            permissions = InsightsPermissions()
+            allowed_tables = permissions.get_dashboard_query_tables(
+                dashboard_name=dashboard_name,
+                query_name=self.name
+            )
+            if allowed_tables:
+                frappe.flags.permitted_dashboard_tables = allowed_tables
+            else:
+                return
+
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
 

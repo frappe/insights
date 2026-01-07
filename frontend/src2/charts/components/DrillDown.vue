@@ -31,7 +31,11 @@ wheneverChanges(
 		if (show.value) {
 			isQueryReady.value = false
 			nextTick(async () => {
-				await props.query.execute(true)
+				const dashboardName = dashboard?.doc?.name
+				if (dashboardName) {
+					props.query.dashboardName = dashboardName
+				}
+				await props.query.execute(true, dashboardName)
 				isQueryReady.value = true
 			})
 		}

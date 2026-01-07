@@ -6,6 +6,8 @@ from functools import cached_property
 
 import frappe
 import frappe.share
+from frappe import parse_json
+from frappe.utils.caching import redis_cache
 
 from insights.insights.doctype.insights_team.insights_team import (
     get_teams,
@@ -101,7 +103,8 @@ class InsightsPermissions:
             return True
 
         docs = self._build_permission_query(doc.doctype, access_type)
-        return docs.where(frappe.qb.DocType(doc.doctype).name == doc.name).limit(1).run(pluck="name")
+        result = bool(docs.where(frappe.qb.DocType(doc.doctype).name == doc.name).limit(1).run(pluck="name"))
+        return result
 
     def _build_permission_query(self, doctype, ptype):
         """Returns a query to get docs with `ptype`  permission"""
@@ -385,6 +388,147 @@ class InsightsPermissions:
             condition = condition & (Resource.parent.isin(self.user_teams))
 
         return frappe.qb.from_(Resource).select(Resource.resource_name.as_("name")).where(condition)
+
+    def get_dashboard_query_tables(self, dashboard_name, *args, **kwargs):
+        # return early if no read permission
+        if not frappe.has_permission("Insights Dashboard v3", doc=dashboard_name, ptype="read"):
+            return []
+
+        return self._get_dashboard_tables_cached(dashboard_name)
+
+    @redis_cache(ttl=3600, shared=True)
+    def _get_dashboard_tables_cached(self, dashboard_name):
+        return self._get_dashboard_tables(dashboard_name)
+
+    def _get_dashboard_tables(self, dashboard_name):
+        """Returns list of tables used in Dashboard queries"""
+        try:
+            Dashboard = frappe.qb.DocType("Insights Dashboard v3")
+
+            dashboard_data = (
+                frappe.qb.from_(Dashboard)
+                .select(Dashboard.items)
+                .where(Dashboard.name == dashboard_name)
+                .run(as_dict=True)
+            )
+
+            if not dashboard_data:
+                return []
+            # get dashboard json
+            json = dashboard_data[0].get("items")
+            if not json:
+                return []
+            print(f"json{json}")
+            items = parse_json(json)
+
+            chart_names = [
+                item.get("chart") for item in items if item.get("type") == "chart" and item.get("chart")
+            ]
+
+            if not chart_names:
+                return []
+
+            # get dependent queries
+            Chart = frappe.qb.DocType("Insights Chart v3")
+            queries = (
+                frappe.qb.from_(Chart)
+                .select(Chart.data_query, Chart.query)
+                .where(Chart.name.isin(chart_names))
+                .run(as_dict=True)
+            )
+
+            query_names = set()
+            for q in queries:
+                if q.get("data_query"):
+                    query_names.add(q.get("data_query"))
+                if q.get("query"):
+                    query_names.add(q.get("query"))
+            print(f"query_names: {query_names}")
+            if not query_names:
+                return []
+
+            return self._get_tables_from_queries(list(query_names))
+
+        except Exception:
+            frappe.log_error(f"Error resolving tables for dashboard {dashboard_name}")
+            return []
+
+    def _get_tables_from_queries(self, query_names, visited=None):
+
+        # Fix: check for visited to avoid infinite recursion
+        # because of circular dependences
+        if visited is None:
+            visited = set()
+
+        query_names = [q for q in query_names if q not in visited]
+        if not query_names:
+            return []
+
+        visited.update(query_names)
+
+        # fetch all query operations to extract table info
+        Query = frappe.qb.DocType("Insights Query v3")
+        query_operations = (
+            frappe.qb.from_(Query)
+            .select(Query.operations)
+            .where(Query.name.isin(query_names))
+            .run(pluck=True)
+        )
+
+        sources = set()
+        nested_queries = []
+
+        for operations_json in query_operations:
+            print(f"operations_json: {operations_json}")
+            if not operations_json:
+                continue
+            operations = parse_json(operations_json)
+            if not isinstance(operations, list):
+                continue
+
+            for operation in operations:
+                if operation.get("type") != "source":
+                    continue
+
+                table_info = operation.get("table", {})
+                _type = table_info.get("type")
+                if _type == "table":
+                    t_name = table_info.get("table_name")
+                    d_source = table_info.get("data_source")
+                    print(f"name {t_name},source {d_source}")
+                    if t_name and d_source:
+                        sources.add((t_name, d_source))
+
+                elif _type == "query":
+                    nested = table_info.get("query_name")
+                    print(f"nested: {nested}")
+                    if nested:
+                        nested_queries.append(nested)
+
+        table_list = []
+
+        if sources:
+            Table = frappe.qb.DocType("Insights Table v3")
+            # Logic: (Table='A' & Source='1') | (Table='B' & Source='2')
+            conditions = None
+            for table_name, data_source in sources:
+                rule = (Table.table == table_name) & (Table.data_source == data_source)
+                if conditions is None:
+                    conditions = rule
+                else:
+                    conditions |= rule
+
+            if conditions:
+                table_list = frappe.qb.from_(Table).select(Table.name).where(conditions).run(pluck=True)
+
+        if nested_queries:
+            # we call the function again with new new names
+            # and results are merged into our final list
+            nested_tables = self._get_tables_from_queries(nested_queries, visited)
+            table_list.extend(nested_tables)
+
+        result = list(set(table_list))
+        return result
 
 
 def has_doc_permission(doc, ptype, user):
