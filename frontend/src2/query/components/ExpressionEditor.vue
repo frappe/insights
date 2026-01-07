@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { debounce } from 'frappe-ui'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import Code from '../../components/Code.vue'
 import { cachedCall } from '../../helpers'
 import { DropdownOption } from '../../types/query.types'
@@ -24,12 +24,20 @@ const expression = defineModel<string>({
 	required: true,
 })
 
+const emit = defineEmits<{
+	functionSignatureUpdate: [signature: FunctionSignature | undefined]
+}>()
+
 const functionList = ref<string[]>([])
 cachedCall('insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_list').then(
 	(res: any) => {
 		functionList.value = res
 	},
 )
+
+const columnNames = computed(() => {
+	return props.columnOptions.map((c) => c.value)
+})
 
 function getCompletions(context: any, syntaxTree: any) {
 	const word = context.matchBefore(/\w+/)
@@ -86,18 +94,12 @@ onMounted(() => {
 	dialogElement.children[0]?.classList.add('rounded-xl')
 })
 
-type FunctionSignature = {
-	name: string
-	definition: string
-	description: string
-	current_param: string
-	current_param_description: string
-	params: { name: string; description: string }[]
-}
 const currentFunctionSignature = ref<FunctionSignature>()
+const columnTypesMap = ref<Record<string, string>>({})
 const fetchCompletions = debounce(() => {
 	if (!codeEditor.value) {
 		currentFunctionSignature.value = undefined
+		emit('functionSignatureUpdate', undefined)
 		return
 	}
 
@@ -111,29 +113,78 @@ const fetchCompletions = debounce(() => {
 		'insights.insights.doctype.insights_data_source_v3.ibis.utils.get_code_completions',
 		{
 			code,
+			column_options: JSON.stringify(props.columnOptions),
 		},
 	)
 		.then((res: any) => {
 			currentFunctionSignature.value = res.current_function
+			columnTypesMap.value = res.column_types || {}
 			// if there is a current_param, then we need to update the definition
 			// add <b> & underline tags before and after the current_param value in the definition
 			if (currentFunctionSignature.value?.current_param) {
 				const current_param = res.current_function.current_param
+				const current_param_type = res.current_function.current_param_type
 				const definition = res.current_function.definition
 				const current_param_index = definition.indexOf(current_param)
 				if (current_param_index !== -1) {
+					let paramDisplay = current_param
+					if (current_param_type) {
+						paramDisplay = `${current_param} (${current_param_type})`
+					}
 					const updated_definition =
 						definition.slice(0, current_param_index) +
-						`<b><u>${current_param}</u></b>` +
+						`<b><u>${paramDisplay}</u></b>` +
 						definition.slice(current_param_index + current_param.length)
 					currentFunctionSignature.value.definition = updated_definition
 				}
 			}
+			emit('functionSignatureUpdate', currentFunctionSignature.value)
 		})
 		.catch((e: any) => {
 			console.error(e)
 		})
 }, 1000)
+
+type ValidationError = {
+	line: number
+	column: number
+	message: string
+	hint?: string
+}
+const validationState = ref<'idle' | 'validating' | 'valid' | 'error'>('idle')
+const validationErrors = ref<ValidationError[]>([])
+
+const validateExpression = debounce(() => {
+	if (!expression.value || !expression.value.trim()) {
+		validationState.value = 'idle'
+		validationErrors.value = []
+		return
+	}
+
+	validationState.value = 'validating'
+
+	cachedCall(
+		'insights.insights.doctype.insights_data_source_v3.ibis.utils.validate_expression',
+		{
+			expression: expression.value,
+			column_options: JSON.stringify(props.columnOptions),
+		},
+	)
+		.then((res: any) => {
+			if (res.is_valid) {
+				validationState.value = 'valid'
+				validationErrors.value = []
+			} else {
+				validationState.value = 'error'
+				validationErrors.value = res.errors || []
+			}
+		})
+		.catch((e: any) => {
+			console.error('Validation error:', e)
+			validationState.value = 'idle'
+			validationErrors.value = []
+		})
+}, 500)
 
 function setSignatureElementPosition() {
 	setTimeout(() => {
