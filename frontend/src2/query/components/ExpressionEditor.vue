@@ -4,6 +4,7 @@ import { computed, onMounted, ref } from 'vue'
 import Code from '../../components/Code.vue'
 import { cachedCall } from '../../helpers'
 import { DropdownOption } from '../../types/query.types'
+import { Check, X, Info } from 'lucide-vue-next'
 
 type FunctionSignature = {
 	name: string
@@ -32,7 +33,7 @@ const functionList = ref<string[]>([])
 cachedCall('insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_list').then(
 	(res: any) => {
 		functionList.value = res
-	},
+	}
 )
 
 const columnNames = computed(() => {
@@ -114,7 +115,7 @@ const fetchCompletions = debounce(() => {
 		{
 			code,
 			column_options: JSON.stringify(props.columnOptions),
-		},
+		}
 	)
 		.then((res: any) => {
 			currentFunctionSignature.value = res.current_function
@@ -163,13 +164,10 @@ const validateExpression = debounce(() => {
 
 	validationState.value = 'validating'
 
-	cachedCall(
-		'insights.insights.doctype.insights_data_source_v3.ibis.utils.validate_expression',
-		{
-			expression: expression.value,
-			column_options: JSON.stringify(props.columnOptions),
-		},
-	)
+	cachedCall('insights.insights.doctype.insights_data_source_v3.ibis.utils.validate_expression', {
+		expression: expression.value,
+		column_options: JSON.stringify(props.columnOptions),
+	})
 		.then((res: any) => {
 			if (res.is_valid) {
 				validationState.value = 'valid'
@@ -219,38 +217,70 @@ function setSignatureElementPosition() {
 </script>
 
 <template>
-	<div
-		ref="codeContainer"
-		class="relative flex h-[14rem] w-full rounded border text-base items-center bg-white"
-	>
-		<Code
-			ref="codeEditor"
-			language="python"
-			class="column-expression"
-			v-model="expression"
-			:placeholder="placeholder"
-			:completions="getCompletions"
-			:hide-line-numbers="props.hideLineNumbers"
-			:multi-line="props.multiLine"
-			@view-update="() => (fetchCompletions(), setSignatureElementPosition())"
-		></Code>
-
+	<div class="flex flex-col gap-2">
+		<div ref="codeContainer" class="relative flex h-[14rem] w-full text-base items-cente">
+			<div class="absolute top-2 right-2 z-20">
+				<LoadingIndicator
+					v-if="validationState === 'validating'"
+					class="h-5 w-5 text-gray-500"
+				/>
+				<Check v-else-if="validationState === 'valid'" class="h-5 w-5 text-green-500" />
+				<X v-else-if="validationState === 'error'" class="h-5 w-5 text-red-500" />
+			</div>
+			<Code
+				ref="codeEditor"
+				language="python"
+				class="column-expression"
+				v-model="expression"
+				:placeholder="placeholder"
+				:completions="getCompletions"
+				:hide-line-numbers="props.hideLineNumbers"
+				:multi-line="props.multiLine"
+				:column-names="columnNames"
+				@view-update="
+					() => (fetchCompletions(), setSignatureElementPosition(), validateExpression())
+				"
+			>
+			</Code>
+			<div
+				ref="signatureElement"
+				v-show="currentFunctionSignature"
+				class="absolute z-10 flex h-fit max-h-[14rem] w-[25rem] flex-col gap-2 overflow-y-auto rounded-lg bg-white px-2.5 py-1.5 shadow-md transition-all"
+			>
+				<template v-if="currentFunctionSignature">
+					<p
+						v-if="currentFunctionSignature.definition"
+						v-html="currentFunctionSignature.definition"
+						class="font-mono text-p-sm text-gray-800"
+					></p>
+					<hr v-if="currentFunctionSignature.definition" />
+					<div class="whitespace-pre-wrap font-mono text-p-sm text-gray-800">
+						{{ currentFunctionSignature.description }}
+					</div>
+				</template>
+			</div>
+		</div>
 		<div
-			ref="signatureElement"
-			v-show="currentFunctionSignature"
-			class="absolute z-10 flex h-fit max-h-[14rem] w-[25rem] flex-col gap-2 overflow-y-auto rounded-lg bg-white px-2.5 py-1.5 shadow-md transition-all"
+			v-if="validationErrors.length"
+			class="max-h-[10%] rounded border border-red-200 bg-red-50 px-3 py-2"
 		>
-			<template v-if="currentFunctionSignature">
-				<p
-					v-if="currentFunctionSignature.definition"
-					v-html="currentFunctionSignature.definition"
-					class="font-mono text-p-sm text-gray-800"
-				></p>
-				<hr v-if="currentFunctionSignature.definition" />
-				<div class="whitespace-pre-wrap font-mono text-p-sm text-gray-800">
-					{{ currentFunctionSignature.description }}
+			<div class="flex items-start gap-2 text-sm text-red-800">
+				<Info class="mt-0.5 h-4 w-4 flex-shrink-0" />
+				<div class="flex-1">
+					<div
+						v-for="(error, index) in validationErrors"
+						:key="index"
+						class="mb-2 last:mb-0"
+					>
+						<div class="font-medium">
+							Line {{ error.line }}, Col {{ error.column }}: {{ error.message }}
+						</div>
+						<div v-if="error.hint" class="mt-1 text-red-600">
+							{{ error.hint }}
+						</div>
+					</div>
 				</div>
-			</template>
+			</div>
 		</div>
 	</div>
 </template>
