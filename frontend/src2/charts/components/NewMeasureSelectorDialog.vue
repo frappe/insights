@@ -105,3 +105,9 @@ function resetNewMeasure() {
 		</template>
 	</Dialog>
 </template>
+
+<style>
+div[data-headlessui-state] {
+	border-radius: 0.75rem;
+}
+</style>
