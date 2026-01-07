@@ -1,3 +1,7 @@
+import ast
+import json
+import re
+
 import frappe
 import ibis
 from ibis import selectors as s
@@ -111,7 +115,7 @@ def get_function_list():
 
 
 @frappe.whitelist()
-def get_code_completions(code: str):
+def get_code_completions(code: str, column_options=None):
     import_statement = """from insights.insights.doctype.insights_data_source_v3.ibis.functions import *\nfrom ibis import selectors as s"""
     code = f"{import_statement}\n\n{code}"
 
@@ -119,6 +123,16 @@ def get_code_completions(code: str):
     line_pos = code.count("\n", 0, cursor_pos)
     column_pos = cursor_pos - code.rfind("\n", 0, cursor_pos) - 1
     code = code.replace("|", "")
+
+    column_types = {}
+    if column_options:
+        try:
+            columns = json.loads(column_options)
+            column_types = {
+                col.get("value"): col.get("data_type", "Unknown") for col in columns if col.get("value")
+            }
+        except (json.JSONDecodeError, TypeError):
+            pass
 
     current_function = None
 
@@ -152,8 +166,13 @@ def get_code_completions(code: str):
             current_function["current_param"] = current_param.name
             current_function["current_param_description"] = current_param.description
 
+            # add column type if the current parameter is a column
+            if current_param.name in column_types:
+                current_function["current_param_type"] = column_types[current_param.name]
+
     return {
         "current_function": current_function,
+        "column_types": column_types,
     }
 
 
@@ -171,6 +190,192 @@ def get_function_description(funcName: str):
     if "def " in docstring:
         lines = docstring.split("\n", 1)
         definition = lines[0].replace("def ", "").strip()
-        description = lines[1].strip()if len(lines) > 1 else ""
+        description = lines[1].strip() if len(lines) > 1 else ""
 
     return {"name": funcName, "definition": definition, "description": description}
+
+
+def parse_column_metadata(column_options: str):
+    columns = frappe.parse_json(column_options) or []
+    meta = [col for col in columns if col.get("value")]
+    return meta
+
+
+def create_error(line: int, column: int, message: str):
+    return {"line": line, "column": column, "message": message}
+
+
+def get_ibis_dtype(columns: list[dict]):
+    type_mapping = {
+        "String": "string",
+        "Integer": "int64",
+        "Decimal": "float64",
+        "Date": "date",
+        "Datetime": "timestamp",
+        "Time": "time",
+        "Text": "string",
+        "JSON": "json",
+        "Array": "array<json>",
+        "Auto": "",
+    }
+    return {
+        col.get("value"): type_mapping.get(col.get("description"))
+        for col in columns
+        if col.get("value") and col.get("description")
+    }
+
+
+def find_similar_names(name: str, names: set[str]):
+    name_lower = name.lower()
+    return [c for c in names if name_lower in c.lower() or c.lower() in name_lower]
+
+
+def validate_syntax(expression: str):
+    try:
+        ast.parse(expression)
+        return {"is_valid": True, "errors": []}
+    except SyntaxError as e:
+        error = create_error(line=e.lineno or 1, column=e.offset or 0, message=f"Syntax error: {e.msg}")
+        return {"is_valid": False, "errors": [error]}
+
+
+def is_function(node, tree):
+    for parent in ast.walk(tree):
+        for child in ast.iter_child_nodes(parent):
+            if child == node:
+                return isinstance(parent, ast.Call) and parent.func == node
+    return False
+
+
+def is_LHS(node, tree):
+    for parent in ast.walk(tree):
+        if isinstance(parent, ast.Assign):
+            for target in parent.targets:
+                if target == node or (isinstance(target, ast.Name) and target.id == node.id):
+                    return True
+    return False
+
+
+def validate_function_name(node, available_functions: set[str]):
+    func_name = node.func.id
+    if func_name in available_functions:
+        return None
+
+    suggestions = find_similar_names(func_name, available_functions)
+    suggestion_text = f"Did you mean: {', '.join(suggestions[:2])}?" if suggestions else ""
+
+    return create_error(
+        line=node.lineno,
+        column=node.col_offset,
+        message=f"Unknown function '{func_name}'. {suggestion_text}".strip(),
+    )
+
+
+def validate_variable_name(node, tree, available_functions: set[str], available_columns: set[str]):
+    var_name = node.id
+
+    if var_name in available_functions or var_name in available_columns:
+        return None
+
+    if is_function(node, tree):
+        return None
+
+    # IMP: Skip validation if the variable is on the LHS of an assignment
+    if is_LHS(node, tree):
+        return None
+
+    suggestions = find_similar_names(var_name, available_columns)
+    suggestion_text = f"Did you mean: {', '.join(suggestions[:2])}?" if suggestions else ""
+
+    return create_error(
+        line=node.lineno,
+        column=node.col_offset,
+        message=f"Column '{var_name}' not found. {suggestion_text}".strip(),
+    )
+
+
+def validate_names(tree, columns: list[dict]):
+    functions = get_functions()
+    available_functions = set(functions.keys())
+    available_columns = {col.get("value") for col in columns}
+
+    errors = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+            error = validate_function_name(node, available_functions)
+            if error:
+                errors.append(error)
+
+        if isinstance(node, ast.Name):
+            error = validate_variable_name(node, tree, available_functions, available_columns)
+            if error:
+                errors.append(error)
+
+    return {"is_valid": len(errors) == 0, "errors": errors}
+
+
+def eval_script(table, schema: dict[str, str]):
+    script = get_functions()
+    for col_name in schema:
+        script[col_name] = getattr(table, col_name)
+    return script
+
+
+# Functions that are not supported by certain column types like `DateColumn.sum()`
+def handle_attribute_error(error: AttributeError):
+    error_msg = str(error)
+    match = re.search(r"'(\w+)Column' object has no attribute '(\w+)'", error_msg)
+
+    if match:
+        column_type = match.group(1)
+        method_name = match.group(2)
+        message = f"Type error: {column_type} columns do not support {method_name}()"
+    else:
+        message = f"Type error: {error_msg}"
+
+    return create_error(line=1, column=0, message=message)
+
+
+def validate_types(expression: str, columns: list[dict]):
+    schema = get_ibis_dtype(columns)
+    if not schema:
+        return {"is_valid": True, "errors": []}
+
+    try:
+        validation_table = ibis.table(schema, name="validation_table")
+        eval_context = eval_script(validation_table, schema)
+        eval(expression, {"__builtins__": {}}, eval_context)
+        return {"is_valid": True, "errors": []}
+
+    except AttributeError as e:
+        error = handle_attribute_error(e)
+        return {"is_valid": False, "errors": [error]}
+
+    except TypeError as e:
+        error = create_error(line=1, column=0, message=f"Type error: {str(e)}")
+        return {"is_valid": False, "errors": [error]}
+
+    except Exception as e:
+        frappe.log_error(f"Unexpected validation error: {str(e)}")
+        return {"is_valid": True, "errors": []}
+
+
+@frappe.whitelist()
+def validate_expression(expression: str, column_options: str):
+    """Main function to validate expression/syntax"""
+
+    if not expression.strip():
+        return {"is_valid": True, "errors": []}
+
+    columns = parse_column_metadata(column_options)
+    syntax_result = validate_syntax(expression)
+    if not syntax_result["is_valid"]:
+        return syntax_result
+
+    tree = ast.parse(expression)
+    name_result = validate_names(tree, columns)
+    if not name_result["is_valid"]:
+        return name_result
+
+    type_result = validate_types(expression, columns)
+    return type_result
