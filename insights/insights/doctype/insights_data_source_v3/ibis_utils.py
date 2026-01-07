@@ -788,9 +788,9 @@ def exec_with_return(
     if isinstance(last_node, ast.Expr):
         output_expression = ast.unparse(last_node)
     elif isinstance(last_node, ast.Assign):
-        output_expression = ast.unparse(last_node.targets[0])
+        output_expression = ast.unparse(last_node.value)
     elif isinstance(last_node, ast.AnnAssign | ast.AugAssign):
-        output_expression = ast.unparse(last_node.target)
+        output_expression = ast.unparse(last_node.value)
 
     _globals = _globals or {}
     _locals = _locals or {}
