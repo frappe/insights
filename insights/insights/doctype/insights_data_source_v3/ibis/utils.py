@@ -185,7 +185,6 @@ def get_function_description(funcName: str):
         return None
 
     docstring = getattr(func_obj, "__doc__", "") or ""
-    print(docstring)
 
     if "def " in docstring:
         lines = docstring.split("\n", 1)
