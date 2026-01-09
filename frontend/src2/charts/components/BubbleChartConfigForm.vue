@@ -51,7 +51,7 @@ const xLogScaleModel = computed({
 	<CollapsibleSection title="X Axis">
 		<div class="flex flex-col gap-3 pt-1">
 			<MeasurePicker
-				label="X Axis"
+				label="Series"
 				v-model="config.xAxis"
 				:column-options="props.columnOptions"
 			/>
@@ -61,7 +61,7 @@ const xLogScaleModel = computed({
 	<CollapsibleSection title="Y Axis">
 		<div class="flex flex-col gap-3 pt-1">
 			<MeasurePicker
-				label="Y Axis"
+				label="Series"
 				v-model="config.yAxis"
 				:column-options="props.columnOptions"
 			/>
