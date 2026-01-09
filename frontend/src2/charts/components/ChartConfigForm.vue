@@ -40,60 +40,63 @@ const dimensions = computed<DimensionOption[]>(() => {
 
 const columnOptions = computed(() => chartQuery.value.result?.columnOptions || [])
 const queryResult = computed(() => chartQuery.value.result)
-
 </script>
 
 <template>
 	<NumberChartConfigForm
 		v-if="props.chart.doc.chart_type == 'Number'"
-		v-model="(props.chart.doc.config as NumberChartConfig)"
+		v-model="props.chart.doc.config as NumberChartConfig"
 		:dimensions="dimensions"
 		:column-options="columnOptions"
 	/>
 	<DonutChartConfigForm
 		v-if="props.chart.doc.chart_type == 'Donut'"
-		v-model="(props.chart.doc.config as DonutChartConfig)"
+		v-model="props.chart.doc.config as DonutChartConfig"
 		:dimensions="dimensions"
 		:column-options="columnOptions"
 	/>
 	<FunnelChartConfigForm
 		v-if="props.chart.doc.chart_type == 'Funnel'"
-		v-model="(props.chart.doc.config as FunnelChartConfig)"
+		v-model="props.chart.doc.config as FunnelChartConfig"
 		:dimensions="dimensions"
 		:column-options="columnOptions"
 	/>
 	<TableChartConfigForm
 		v-if="props.chart.doc.chart_type == 'Table'"
-		v-model="(props.chart.doc.config as TableChartConfig)"
+		v-model="props.chart.doc.config as TableChartConfig"
 		:dimensions="dimensions"
 		:column-options="columnOptions"
 	/>
 	<BarChartConfigForm
 		v-if="props.chart.doc.chart_type == 'Bar' || props.chart.doc.chart_type == 'Row'"
-		v-model="(props.chart.doc.config as BarChartConfig)"
+		v-model="props.chart.doc.config as BarChartConfig"
 		:dimensions="dimensions"
 		:column-options="columnOptions"
+		v-model:log-scale="props.chart.isYLogScale"
 	/>
 	<LineChartConfigForm
 		v-if="props.chart.doc.chart_type == 'Line'"
-		v-model="(props.chart.doc.config as LineChartConfig)"
+		v-model="props.chart.doc.config as LineChartConfig"
 		:dimensions="dimensions"
 		:column-options="columnOptions"
+		v-model:log-scale="props.chart.isYLogScale"
 	/>
 	<MapChartConfigForm
 		v-if="props.chart.doc.chart_type == 'Map'"
-		v-model="(props.chart.doc.config as MapChartConfig)"
+		v-model="props.chart.doc.config as MapChartConfig"
 		:dimensions="dimensions"
 		:column-options="columnOptions"
 		:chart-name="props.chart.doc.name"
 		:query-name="props.chart.doc.query"
 		:query-result="queryResult"
-		@mappingsSaved="() => props.chart.refresh(true,true)"
+		@mappingsSaved="() => props.chart.refresh(true, true)"
 	/>
 	<BubbleChartConfigForm
 		v-if="props.chart.doc.chart_type == 'Bubble'"
-		v-model="(props.chart.doc.config as BubbleChartConfig)"
+		v-model="props.chart.doc.config as BubbleChartConfig"
 		:dimensions="dimensions"
 		:column-options="columnOptions"
+		v-model:y-log-scale="props.chart.isYLogScale"
+		v-model:x-log-scale="props.chart.isXLogScale"
 	/>
 </template>
