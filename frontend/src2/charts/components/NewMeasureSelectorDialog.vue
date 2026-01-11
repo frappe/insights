@@ -146,6 +146,25 @@ function updateDocumentationFromEditor(currentFunction: any) {
 				</div>
 
 				<div class="flex flex-col gap-3">
+
+					<div class="flex gap-2">
+						<FormControl
+							type="text"
+							class="flex-1"
+							label="Measure Name"
+							autocomplete="off"
+							placeholder="Measure Name"
+							v-model="newMeasure.name"
+						/>
+						<FormControl
+							type="select"
+							class="flex-1"
+							label="Data Type"
+							autocomplete="off"
+							:options="columnTypes"
+							v-model="newMeasure.type"
+						/>
+					</div>
 					<ExpressionEditor
 						v-model="newMeasure.expression"
 						:column-options="props.columnOptions"
@@ -164,7 +183,7 @@ function updateDocumentationFromEditor(currentFunction: any) {
 							</li>
 						</ul>
 					</div>
-					<CollapsibleSection title="Functions" :collapsed="true">
+					<CollapsibleSection title="Available Functions" :collapsed="true">
 						<div class="flex h-[12rem] gap-4 border-t pt-4">
 							<div class="w-[30%] flex flex-col border-r pr-4">
 								<h4 class="mb-2 text-sm text-gray-600">Functions</h4>
@@ -172,9 +191,9 @@ function updateDocumentationFromEditor(currentFunction: any) {
 									v-model="searchTerm"
 									type="text"
 									placeholder="Search functions"
-									class="w-full rounded-sm text-sm"
+									class="w-full rounded-sm text-sm mb-1 "
 								/>
-								<div class="flex-1 overflow-y-auto">
+								<div class="flex-1 overflow-y-auto ">
 									<div
 										v-if="filteredFunctions.length === 0"
 										class="flex h-full w-full items-center justify-center"
@@ -186,7 +205,7 @@ function updateDocumentationFromEditor(currentFunction: any) {
 										:key="fn"
 										@click="selectFunction(fn)"
 										:class="[
-											'cursor-pointer rounded-sm px-2 py-1.5 text-sm',
+											'cursor-pointer rounded px-2 py-1.5 text-sm',
 											selectedFunction === fn
 												? 'bg-blue-50 text-blue-700'
 												: 'hover:bg-gray-50 text-gray-700',
@@ -242,24 +261,7 @@ function updateDocumentationFromEditor(currentFunction: any) {
 						</div>
 					</CollapsibleSection>
 
-					<div class="flex gap-2">
-						<FormControl
-							type="text"
-							class="flex-1"
-							label="Measure Name"
-							autocomplete="off"
-							placeholder="Measure Name"
-							v-model="newMeasure.name"
-						/>
-						<FormControl
-							type="select"
-							class="flex-1"
-							label="Data Type"
-							autocomplete="off"
-							:options="columnTypes"
-							v-model="newMeasure.type"
-						/>
-					</div>
+
 				</div>
 
 				<div class="mt-4 flex items-center justify-end gap-2">
