@@ -104,13 +104,13 @@ const language =
 	props.language === 'javascript'
 		? javascript()
 		: props.language === 'python'
-		  ? python()
-		  : sql({
-					dialect: MySQL,
-					upperCaseKeywords: true,
-					schema: props.schema,
-					tables: props.tables,
-		    })
+		? python()
+		: sql({
+				dialect: MySQL,
+				upperCaseKeywords: true,
+				schema: props.schema,
+				tables: props.tables,
+		  })
 
 const columnHighlighter = ViewPlugin.fromClass(
 	class {
@@ -204,7 +204,7 @@ defineExpose({
 		const pos = view.state.selection.ranges[0].to
 		view.dispatch({
 			changes: { from: pos, insert: text },
-			selection: { anchor: pos + text.length, head: pos + text.length }
+			selection: { anchor: pos + text.length, head: pos + text.length },
 		})
 		view.focus()
 	},
@@ -213,14 +213,13 @@ defineExpose({
 
 <style scoped>
 :deep(.cm-column-highlight) {
-	background-color: #DEDEDE;
+	background-color: #dedede;
 	border-radius: 2px;
 	padding: 1px 2px;
 }
-:deep(.cm-scroller){
+:deep(.cm-scroller) {
 	background-color: #ffffff;
 	border-radius: 4px;
-	border: 1px solid #EDEDED;
-
+	border: 1px solid #ededed;
 }
 </style>
