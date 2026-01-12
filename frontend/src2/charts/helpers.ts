@@ -868,7 +868,7 @@ export function getBubbleChartOptions(config: BubbleChartConfig, result: QueryRe
 			}
 		}
 	}
-
+	const show_scrollbar = config.yAxis.show_scrollbar || false
 	const show_legend = !!groupByColumnName && seriesMap.size > 1
 	const series = Array.from(seriesMap.entries()).map(([groupName, data], idx) => {
 		const color = colors[idx % colors.length]
@@ -877,6 +877,7 @@ export function getBubbleChartOptions(config: BubbleChartConfig, result: QueryRe
 			name: groupName,
 			type: 'scatter',
 			data: data,
+			grid: getGrid({ show_legend, show_scrollbar }),
 			symbolSize: symbolSizeConfig,
 			itemStyle: {
 				color: color,
@@ -945,7 +946,7 @@ export function getBubbleChartOptions(config: BubbleChartConfig, result: QueryRe
 		nameLocation: 'middle',
 		nameGap: 35,
 	}
-	const show_scrollbar = config.yAxis.show_scrollbar || false
+
 	const titles: any[] = []
 
 	return {
@@ -953,7 +954,7 @@ export function getBubbleChartOptions(config: BubbleChartConfig, result: QueryRe
 		animationDuration: 700,
 		color: colors,
 		title: titles,
-		grid: getGrid({ show_legend }),
+		grid: getGrid({ show_legend,show_scrollbar }),
 		xAxis,
 		yAxis,
 		series,
@@ -995,7 +996,7 @@ export function getBubbleChartOptions(config: BubbleChartConfig, result: QueryRe
 				return html
 			},
 		},
-		legend: getLegend(show_legend),
+		legend: getLegend(show_legend,show_scrollbar),
 	}
 }
 
