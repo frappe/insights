@@ -218,7 +218,7 @@ function setSignatureElementPosition() {
 
 <template>
 	<div class="flex flex-col gap-2">
-		<div ref="codeContainer" class="relative flex h-[14rem] w-full text-base items-cente">
+		<div ref="codeContainer" class="relative flex h-[14rem] w-full text-base ">
 			<div class="absolute top-2 right-2 z-20">
 				<LoadingIndicator
 					v-if="validationState === 'validating'"
@@ -264,8 +264,8 @@ function setSignatureElementPosition() {
 			v-if="validationErrors.length"
 			class="max-h-[10%] rounded border border-red-200 bg-red-50 px-3 py-2"
 		>
-			<div class="flex items-start gap-2 text-sm text-red-800">
-				<Info class="mt-0.5 h-4 w-4 flex-shrink-0" />
+			<div class="flex items-center gap-2 text-sm text-red-800">
+				<Info class="h-4 w-4 flex-shrink-0" />
 				<div class="flex-1">
 					<div
 						v-for="(error, index) in validationErrors"
