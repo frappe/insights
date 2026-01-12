@@ -213,12 +213,12 @@ defineExpose({
 
 <style scoped>
 :deep(.cm-column-highlight) {
-	background-color: #c8c8c8;
+	background-color: #cdcdcd;
 	border-radius: 2px;
 	padding: 1px 2px;
 }
 :deep(.cm-scroller){
-	background-color: #f0f0f0;
+	background-color: #f3f3f3;
 	border-radius: 4px;
 }
 </style>
