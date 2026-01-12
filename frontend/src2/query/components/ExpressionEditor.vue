@@ -4,8 +4,7 @@ import { computed, onMounted, ref } from 'vue'
 import Code from '../../components/Code.vue'
 import { cachedCall } from '../../helpers'
 import { DropdownOption } from '../../types/query.types'
-import { Check, X, Info } from 'lucide-vue-next'
-
+import { Info, CheckCircle } from 'lucide-vue-next'
 type FunctionSignature = {
 	name: string
 	definition: string
@@ -218,15 +217,7 @@ function setSignatureElementPosition() {
 
 <template>
 	<div class="flex flex-col gap-2">
-		<div ref="codeContainer" class="relative flex h-[14rem] w-full text-base ">
-			<div class="absolute top-2 right-2 z-20">
-				<LoadingIndicator
-					v-if="validationState === 'validating'"
-					class="h-5 w-5 text-gray-500"
-				/>
-				<Check v-else-if="validationState === 'valid'" class="h-5 w-5 text-green-500" />
-				<X v-else-if="validationState === 'error'" class="h-5 w-5 text-red-500" />
-			</div>
+		<div ref="codeContainer" class="relative flex h-[14rem] w-full text-base">
 			<Code
 				ref="codeEditor"
 				language="python"
@@ -260,23 +251,38 @@ function setSignatureElementPosition() {
 				</template>
 			</div>
 		</div>
-		<div
-			v-if="validationErrors.length"
-			class="max-h-[10%] rounded border border-red-200 bg-red-50 px-3 py-2"
-		>
-			<div class="flex items-center gap-2 text-sm text-red-800">
-				<Info class="h-4 w-4 flex-shrink-0" />
-				<div class="flex-1">
-					<div
-						v-for="(error, index) in validationErrors"
-						:key="index"
-						class="mb-2 last:mb-0"
-					>
-						<div class="font-medium">
-							Line {{ error.line }}, Col {{ error.column }}: {{ error.message }}
-						</div>
-						<div v-if="error.hint" class="mt-1 text-red-600">
-							{{ error.hint }}
+		<div class="border-b">
+			<div
+				v-if="validationState === 'validating'"
+				class="flex items-center gap-4 max-h-[10%] px-3 py-2"
+			>
+				<LoadingIndicator class="h-4 w-4 text-gray-500" />
+			</div>
+			<div
+				v-if="validationState === 'valid'"
+				class="flex items-center gap-4 max-h-[10%] px-3 py-2"
+			>
+				<CheckCircle class="h-4 w-4 text-[#7c7c7c]" />
+				<div class="text-sm font-medium text-gray-700">Valid Syntax</div>
+			</div>
+			<div
+				v-if="validationErrors.length"
+				class="flex items-center gap-4 max-h-[10%] px-3 py-2"
+			>
+				<div class="flex items-center gap-2 text-sm text-red-800 font-medium">
+					<Info class="h-4 w-4 flex-shrink-0" />
+					<div class="flex-1">
+						<div
+							v-for="(error, index) in validationErrors"
+							:key="index"
+							class="mb-2 last:mb-0"
+						>
+							<div class="text-sm text-[#7c7c7c] font-medium">
+								Line {{ error.line }}, Col {{ error.column }}: {{ error.message }}
+							</div>
+							<div v-if="error.hint" class="mt-1 text-[#7c7c7c] font-medium">
+								{{ error.hint }}
+							</div>
 						</div>
 					</div>
 				</div>
