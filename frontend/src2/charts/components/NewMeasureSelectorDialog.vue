@@ -7,6 +7,7 @@ import { ColumnOption, ExpressionMeasure, MeasureDataType } from '../../types/qu
 import { cachedCall } from '../../helpers'
 import CollapsibleSection from './CollapsibleSection.vue'
 import { TextInput } from 'frappe-ui'
+import { SearchIcon } from 'lucide-vue-next'
 
 const props = defineProps<{
 	measure?: ExpressionMeasure
@@ -146,7 +147,6 @@ function updateDocumentationFromEditor(currentFunction: any) {
 				</div>
 
 				<div class="flex flex-col gap-3">
-
 					<div class="flex gap-2">
 						<FormControl
 							type="text"
@@ -184,16 +184,20 @@ function updateDocumentationFromEditor(currentFunction: any) {
 						</ul>
 					</div>
 					<CollapsibleSection title="Available Functions" :collapsed="true">
-						<div class="flex h-[12rem] gap-4 border-t pt-4">
-							<div class="w-[30%] flex flex-col border-r pr-4">
+						<div class="flex h-[12rem] gap-4">
+							<div class="w-[33%] flex flex-col border-r pr-4">
 								<h4 class="mb-2 text-sm text-gray-600">Functions</h4>
 								<TextInput
 									v-model="searchTerm"
 									type="text"
-									placeholder="Search functions"
-									class="w-full rounded-sm text-sm mb-1 "
-								/>
-								<div class="flex-1 overflow-y-auto ">
+									placeholder="Search Functions"
+									class="w-full text-sm mb-1"
+								>
+									<template #prefix>
+										<SearchIcon class="h-4 w-4 text-gray-600" />
+									</template>
+								</TextInput>
+								<div class="flex-1 overflow-y-auto">
 									<div
 										v-if="filteredFunctions.length === 0"
 										class="flex h-full w-full items-center justify-center"
@@ -260,8 +264,6 @@ function updateDocumentationFromEditor(currentFunction: any) {
 							</div>
 						</div>
 					</CollapsibleSection>
-
-
 				</div>
 
 				<div class="mt-4 flex items-center justify-end gap-2">
