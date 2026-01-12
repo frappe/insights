@@ -183,8 +183,7 @@ function updateDocumentationFromEditor(currentFunction: any) {
 							</li>
 						</ul>
 					</div>
-					<CollapsibleSection title="Available Functions" :collapsed="true">
-						<div class="flex h-[12rem] gap-4">
+						<div class="flex h-[8rem] gap-4">
 							<div class="w-[33%] flex flex-col border-r pr-4">
 								<h4 class="mb-2 text-sm text-gray-600">Functions</h4>
 								<TextInput
@@ -263,7 +262,6 @@ function updateDocumentationFromEditor(currentFunction: any) {
 								</div>
 							</div>
 						</div>
-					</CollapsibleSection>
 				</div>
 
 				<div class="mt-4 flex items-center justify-end gap-2">
