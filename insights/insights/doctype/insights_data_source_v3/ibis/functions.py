@@ -326,6 +326,19 @@ def case(condition: ir.BooleanValue, value: ir.Value, *args: tuple[ir.BooleanVal
         return case.end()
 
 
+def cases(*branches: tuple[ir.BooleanValue, ir.Value], else_=None):
+    """
+    def cases(*branches, else_=None)
+
+    Create a multi-branch if-else expression using condition-value pairs. Equivalent to a SQL CASE statement.
+
+    Examples:
+    - cases((age < 18, 'Minor'), (age < 65, 'Adult'), else_='Senior')
+    - cases((status == 'Active', 1), (status == 'Inactive', 0), else_=-1)
+    """
+    return ibis.cases(*branches, else_=else_)
+
+
 # number Functions
 def abs(column: ir.NumericColumn):
     """
