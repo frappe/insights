@@ -175,7 +175,7 @@ function updateDocumentationFromEditor(currentFunction: any) {
 						class="mt-2 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-800"
 					>
 						<div class="font-medium">Validation Errors</div>
-						<ul class="mt-1 list-disc pl-5">
+						<ul class="mt-1 pl-5">
 							<li v-for="(err, idx) in validationErrors" :key="idx">
 								<span v-if="err.line !== undefined"
 									>Lin {{ err.line }}, Col {{ err.column }}: </span
@@ -183,7 +183,7 @@ function updateDocumentationFromEditor(currentFunction: any) {
 							</li>
 						</ul>
 					</div>
-						<div class="flex h-[8rem] gap-4">
+						<div class="flex h-[9rem] gap-4">
 							<div class="w-[33%] flex flex-col border-r pr-4">
 								<h4 class="mb-2 text-sm text-gray-600">Functions</h4>
 								<TextInput
