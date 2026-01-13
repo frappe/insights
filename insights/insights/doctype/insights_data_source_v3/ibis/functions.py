@@ -527,6 +527,29 @@ def length(column: ir.StringColumn):
     """
     return column.length()
 
+# we can auto detect max_split but will need to execute the query
+# keeping it explicit for now
+def textsplit(column: ir.StringColumn, delimiter: str, max_splits: int):
+    """
+    def textsplit(column, delimiter, max_splits)
+
+    Split text into multiple columns using a delimiter.
+
+    Examples:
+    - textsplit(address, ',', 4)
+    - textsplit(email, '@', 2)
+    """
+    query = frappe.flags.current_ibis_query
+    if query is None:
+        frappe.throw("Query not found")
+
+    column_name = column.get_name() if hasattr(column, "get_name") else str(column)
+
+    for i in range(max_splits):
+        query = query.mutate(**{f"{column_name}_split_{i + 1}": column.split(delimiter)[i]})
+
+    return query
+
 
 # date functions
 def year(column: ir.DateValue):
