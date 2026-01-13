@@ -69,16 +69,17 @@ wheneverChanges(
 	</div>
 
 	<Dialog
-		v-if="chart"
-		v-model="showExpandedChartDialog"
-		:options="{
-			size: '6xl',
-		}"
-	>
-		<template #body>
-			<div class="h-[75vh] w-full">
-				<ChartRenderer v-if="chart" :chart="chart" />
-			</div>
-		</template>
-	</Dialog>
+			v-if="chart"
+			v-model="showExpandedChartDialog"
+			:options="{
+				size: '8xl',
+				title: chart?.doc.title,
+			}"
+		>
+			<template #body-content>
+				<div class="h-[75vh] w-full">
+					<ChartRenderer v-if="chart" :chart="chart" />
+				</div>
+			</template>
+		</Dialog>
 </template>
