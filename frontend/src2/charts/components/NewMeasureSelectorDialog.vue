@@ -137,11 +137,11 @@ function updateDocumentationFromEditor(currentFunction: any) {
 		:modelValue="Boolean(showDialog)"
 		@after-leave="resetNewMeasure"
 		@close="!newMeasure.expression && (showDialog = false)"
-		:options="{ size: 'xl' }"
+		:options="{ size: '2xl' }"
 	>
 		<template #body>
-			<div class="min-w-[30rem] flex flex-col gap-3 px-4 pb-6 pt-5">
-				<div class="flex items-center justify-between pb-4">
+			<div class="min-w-[30rem] flex flex-col px-4 pb-4 pt-3">
+				<div class="flex justify-between pb-2">
 					<h3 class="text-2xl font-semibold leading-6 text-gray-900">Create Measure</h3>
 					<Button variant="ghost" @click="showDialog = false" icon="x" size="md" />
 				</div>
@@ -185,7 +185,6 @@ function updateDocumentationFromEditor(currentFunction: any) {
 					</div>
 						<div class="flex h-[9rem] gap-4">
 							<div class="w-[33%] flex flex-col border-r pr-4">
-								<h4 class="mb-2 text-sm text-gray-600">Functions</h4>
 								<TextInput
 									v-model="searchTerm"
 									type="text"
