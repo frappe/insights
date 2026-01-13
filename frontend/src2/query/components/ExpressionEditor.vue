@@ -251,7 +251,7 @@ function setSignatureElementPosition() {
 				</template>
 			</div>
 		</div>
-		<div class="border-b">
+		<div>
 			<div
 				v-if="validationState === 'validating'"
 				class="flex items-center gap-4 max-h-[10%] px-3 py-2"
@@ -260,16 +260,16 @@ function setSignatureElementPosition() {
 			</div>
 			<div
 				v-if="validationState === 'valid'"
-				class="flex items-center gap-4 max-h-[10%] px-3 py-2"
+				class="flex items-center gap-2 max-h-[10%] px-3 py-2"
 			>
-				<CheckCircle class="h-4 w-4 text-[#7c7c7c]" />
-				<div class="text-sm font-medium text-gray-700">Valid Syntax</div>
+				<CheckCircle class="h-4 w-4 text-sm text-[#7c7c7c]" />
+				<div class="text-sm text-[#7c7c7c] font-medium">Valid Syntax</div>
 			</div>
 			<div
 				v-if="validationErrors.length"
 				class="flex items-center gap-4 max-h-[10%] px-3 py-2"
 			>
-				<div class="flex items-center gap-2 text-sm text-red-800 font-medium">
+				<div class="flex items-center gap-2 text-red-800">
 					<Info class="h-4 w-4 flex-shrink-0" />
 					<div class="flex-1">
 						<div
