@@ -102,10 +102,11 @@ type FunctionSignature = {
 	params: { name: string; description: string }[]
 }
 const functionDoc = ref<FunctionSignature | null>(null)
-
+const columns = props.columnOptions.map((c) => c.label)
 cachedCall('insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_list').then(
 	(res: any) => {
-		functionList.value = res
+		const result = [...res,...columns]
+		functionList.value = result
 	}
 )
 
@@ -183,12 +184,12 @@ function updateDocumentationFromEditor(currentFunction: any) {
 							</li>
 						</ul>
 					</div>
-						<div class="flex h-[9rem] gap-4">
+						<div class="flex h-[12rem] gap-4">
 							<div class="w-[33%] flex flex-col border-r pr-4">
 								<TextInput
 									v-model="searchTerm"
 									type="text"
-									placeholder="Search Functions"
+									placeholder="Search"
 									class="w-full text-sm mb-1"
 								>
 									<template #prefix>
