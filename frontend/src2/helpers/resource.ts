@@ -1,10 +1,8 @@
 import { useStorage, watchDebounced } from '@vueuse/core'
 import { isEqual } from 'es-toolkit'
 import { call } from 'frappe-ui'
-import { onDocUpdate } from 'frappe-ui/src/resources/realtime'
 import { computed, reactive, ref, UnwrapRef } from 'vue'
 import { confirmDialog } from '../helpers/confirm_dialog'
-import { getSocket } from '../socket'
 import { copy, showErrorToast, waitUntil, watchToggle } from './index'
 // import json_diff from 'https://cdn.jsdelivr.net/npm/json-diff@1.0.6/+esm'
 
@@ -221,12 +219,12 @@ export default function useDocumentResource<T extends Document>(
 	}
 
 	const setupRealtimeUpdates = () => {
-		const socket = getSocket()
-		onDocUpdate(socket, doctype, (name: string) => {
-			if (String(name) === String(docname.value)) {
-				loadDoc()
-			}
-		})
+		// const socket = getSocket()
+		// onDocUpdate(socket, doctype, (name: string) => {
+		// 	if (String(name) === String(docname.value)) {
+		// 		loadDoc()
+		// 	}
+		// })
 	}
 
 	loadDoc().then(setupLocalStorage).then(setupAutoSave)

@@ -1,5 +1,4 @@
 <script setup>
-import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import JoinFullIcon from '@/components/Icons/JoinFullIcon.vue'
 import JoinInnerIcon from '@/components/Icons/JoinInnerIcon.vue'
 import JoinLeftIcon from '@/components/Icons/JoinLeftIcon.vue'
@@ -24,7 +23,7 @@ whenever(
 		dataSource = useDataSource(assistedQuery.data_source)
 		dataSource.fetchTables()
 	},
-	{ immediate: true }
+	{ immediate: true },
 )
 
 const joins = computed(() => assistedQuery.joins)

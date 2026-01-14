@@ -18,7 +18,7 @@ const editedText = ref(unref(props.item.text))
 	<Dialog
 		v-if="dashboard.isEditingItem(props.item)"
 		:modelValue="dashboard.isEditingItem(props.item)"
-		@update:modelValue="!$event ? (dashboard.editingItemIndex = null) : true"
+		@update:modelValue="!$event ? (dashboard.editingItemIndex = undefined) : true"
 		:options="{
 			title: 'Edit Text',
 			actions: [
@@ -29,12 +29,12 @@ const editedText = ref(unref(props.item.text))
 						!editedText || editedText.trim() === '' || editedText === props.item.text,
 					onClick: () => {
 						props.item.text = editedText
-						dashboard.editingItemIndex = null
+						dashboard.editingItemIndex = undefined
 					},
 				},
 				{
 					label: 'Cancel',
-					onClick: () => (dashboard.editingItemIndex = null),
+					onClick: () => (dashboard.editingItemIndex = undefined),
 				},
 			],
 		}"

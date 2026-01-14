@@ -45,6 +45,7 @@ const showShareDialog = ref(false)
 		</Button> -->
 		<Dropdown
 			:button="{ icon: 'more-horizontal', variant: 'outline' }"
+			placement="right"
 			:options="[
 				!workbook.doc.read_only
 					? {
