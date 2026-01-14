@@ -13,7 +13,7 @@ const emit = defineEmits({ select: (measure: ExpressionMeasure) => true })
 const showDialog = defineModel()
 
 const columnTypes = COLUMN_TYPES.map((t) => t.value).filter((t) =>
-	FIELDTYPES.NUMBER.includes(t)
+	FIELDTYPES.NUMBER.includes(t),
 ) as MeasureDataType[]
 
 const newMeasure = ref(
@@ -27,7 +27,7 @@ const newMeasure = ref(
 				name: 'new_measure',
 				type: columnTypes[0],
 				expression: '',
-		  }
+		  },
 )
 
 const isValid = computed(() => {
@@ -56,50 +56,44 @@ function resetNewMeasure() {
 <template>
 	<Dialog
 		:modelValue="Boolean(showDialog)"
+		:options="{ title: 'Create Measure' }"
 		@after-leave="resetNewMeasure"
 		@close="!newMeasure.expression && (showDialog = false)"
 	>
-		<template #body>
-			<div class="bg-white px-4 pb-6 pt-5 sm:px-6">
-				<div class="flex items-center justify-between pb-4">
-					<h3 class="text-2xl font-semibold leading-6 text-gray-900">Create Measure</h3>
-					<Button variant="ghost" @click="showDialog = false" icon="x" size="md">
-					</Button>
-				</div>
-				<div class="flex flex-col gap-2">
-					<ExpressionEditor
-						v-model="newMeasure.expression"
-						:column-options="props.columnOptions"
+		<template #body-content>
+			<div class="flex flex-col gap-2">
+				<ExpressionEditor
+					v-model="newMeasure.expression"
+					:column-options="props.columnOptions"
+				/>
+				<div class="flex gap-2">
+					<FormControl
+						type="text"
+						class="flex-1"
+						label="Measure Name"
+						autocomplete="off"
+						placeholder="Measure Name"
+						v-model="newMeasure.name"
 					/>
-					<div class="flex gap-2">
-						<FormControl
-							type="text"
-							class="flex-1"
-							label="Measure Name"
-							autocomplete="off"
-							placeholder="Measure Name"
-							v-model="newMeasure.name"
-						/>
-						<FormControl
-							type="select"
-							class="flex-1"
-							label="Data Type"
-							autocomplete="off"
-							:options="columnTypes"
-							v-model="newMeasure.type"
-						/>
-					</div>
+					<FormControl
+						type="select"
+						class="flex-1"
+						label="Data Type"
+						autocomplete="off"
+						:options="columnTypes"
+						v-model="newMeasure.type"
+					/>
 				</div>
-				<div class="mt-2 flex items-center justify-between gap-2">
-					<div></div>
-					<div class="flex items-center gap-2">
-						<Button
-							label="Confirm"
-							variant="solid"
-							:disabled="!isValid"
-							@click="confirmCalculation"
-						/>
-					</div>
+			</div>
+			<div class="mt-2 flex items-center justify-between gap-2">
+				<div></div>
+				<div class="flex items-center gap-2">
+					<Button
+						label="Confirm"
+						variant="solid"
+						:disabled="!isValid"
+						@click="confirmCalculation"
+					/>
 				</div>
 			</div>
 		</template>

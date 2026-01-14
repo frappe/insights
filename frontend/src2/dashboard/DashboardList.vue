@@ -67,7 +67,7 @@ watchEffect(() => {
 							v-if="dashboard.preview_image"
 							:src="dashboard.preview_image"
 							onerror="this.src = ''"
-							class="z-10 object-cover opacity-80"
+							class="object-cover opacity-80"
 						/>
 						<div
 							v-else

@@ -1,5 +1,4 @@
-@import 'frappe-ui/src/fonts/Inter/inter.css';
-@import 'frappe-ui/src/style.css';
+@import 'frappe-ui/style.css';
 @import './styles/codemirror.css';
 
 body {
@@ -8,6 +7,14 @@ body {
 
 .tnum {
 	font-feature-settings: 'tnum';
+}
+
+.dialog-overlay {
+	z-index: 100;
+}
+
+[data-reka-popper-content-wrapper] {
+	z-index: 100 !important;
 }
 
 @layer components {
