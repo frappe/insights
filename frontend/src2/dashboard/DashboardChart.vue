@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { AlertTriangle, Maximize } from 'lucide-vue-next'
-import { computed, inject, ref, provide } from 'vue'
+import Button from 'frappe-ui/src/components/Button/Button.vue'
+import { AlertTriangle, Maximize, XIcon } from 'lucide-vue-next'
+import { computed, inject, provide, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import useChart from '../charts/chart'
 import ChartRenderer from '../charts/components/ChartRenderer.vue'
@@ -72,12 +73,20 @@ wheneverChanges(
 		v-if="chart"
 		v-model="showExpandedChartDialog"
 		:options="{
-			size: '6xl',
+			size: '7xl',
+			title: chart?.doc.title,
 		}"
 	>
 		<template #body>
 			<div class="h-[75vh] w-full">
 				<ChartRenderer v-if="chart" :chart="chart" />
+				<div class="absolute top-2 right-2">
+					<Button variant="ghost" @click="showExpandedChartDialog = false">
+						<template #icon>
+							<XIcon class="size-4 text-gray-700" />
+						</template>
+					</Button>
+				</div>
 			</div>
 		</template>
 	</Dialog>
