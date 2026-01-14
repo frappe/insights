@@ -7,6 +7,7 @@ import ibis.selectors as s
 from frappe.utils import now_datetime
 from ibis import _
 
+from insights.insights.doctype.insights_query.utils import infer_type_from_list
 from insights.insights.query_builders.sql_functions import handle_timespan
 
 
@@ -550,6 +551,44 @@ def textsplit(column: ir.StringColumn, delimiter: str, max_splits: int):
 
     return query
 
+
+
+def json_extract(column: ir.StringColumn, *field_names: str):
+    """
+    def json_extract(column, *field_names)
+
+    Extract fields from a JSON column into separate columns with auto-detected types.
+
+    Examples:
+    - json_extract(column, 'column1', 'column2')
+    - json_extract(api_response, 'id', 'name', 'lat', 'lon')
+    """
+    query = frappe.flags.current_ibis_query
+    if query is None:
+        frappe.throw("Query not found")
+
+    json_column = column.cast("json")
+
+    # cast JSON values to string and remove quotes
+    clean_columns = {
+        field: json_column[field].cast("string").re_replace(r'^"|"$', '')
+        for field in field_names
+    }
+
+    # sample 50 rows to infer data types
+    data = query.select(**clean_columns).limit(50).execute()
+
+    for field in field_names:
+        clean_col = clean_columns[field]
+        values = data[field].tolist()
+
+        if values:
+            inferred_type = infer_type_from_list(values)
+            clean_col = clean_col.try_cast(inferred_type)
+
+        query = query.mutate({field: clean_col})
+
+    return query
 
 # date functions
 def year(column: ir.DateValue):
