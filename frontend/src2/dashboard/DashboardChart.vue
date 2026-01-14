@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import Button from 'frappe-ui/src/components/Button/Button.vue'
 import { AlertTriangle, Maximize, XIcon } from 'lucide-vue-next'
-import { computed, inject, ref, provide } from 'vue'
+import { computed, inject, provide, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import useChart from '../charts/chart'
 import ChartRenderer from '../charts/components/ChartRenderer.vue'
@@ -8,7 +9,6 @@ import { waitUntil, wheneverChanges } from '../helpers'
 import { WorkbookDashboardChart } from '../types/workbook.types'
 import { workbookKey } from '../workbook/workbook'
 import { Dashboard } from './dashboard'
-import Button from 'frappe-ui/src/components/Button/Button.vue'
 
 const props = defineProps<{ item: WorkbookDashboardChart }>()
 const dashboard = inject<Dashboard>('dashboard')!
@@ -80,7 +80,7 @@ wheneverChanges(
 		<template #body>
 			<div class="h-[75vh] w-full">
 				<ChartRenderer v-if="chart" :chart="chart" />
-				<div class="absolute top-3 right-3">
+				<div class="absolute top-2 right-2">
 					<Button variant="ghost" @click="showExpandedChartDialog = false">
 						<template #icon>
 							<XIcon class="size-4 text-gray-700" />
