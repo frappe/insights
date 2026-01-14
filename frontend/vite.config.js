@@ -19,6 +19,13 @@ export default defineConfig({
 		allowedHosts: true,
 	},
 	esbuild: { loader: 'tsx' },
+	css: {
+    	preprocessorOptions: {
+      		scss: {
+        		api: 'modern-compiler' // or "modern"
+      		}
+    	}
+  	},
 	resolve: {
 		alias: {
 			// https://github.com/vitejs/vite/discussions/16730#discussioncomment-13048825
