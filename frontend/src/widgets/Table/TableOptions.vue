@@ -1,6 +1,4 @@
 <script setup>
-import Autocomplete from '@/components/Controls/Autocomplete.vue'
-
 import DraggableList from '@/components/DraggableList.vue'
 import DraggableListItemMenu from '@/components/DraggableListItemMenu.vue'
 import { computed } from 'vue'

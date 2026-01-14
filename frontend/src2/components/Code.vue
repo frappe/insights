@@ -13,6 +13,7 @@
 		@focus="emit('focus')"
 		@blur="emit('blur')"
 		@ready="codeMirror = $event"
+		:class="$attrs.class"
 	/>
 </template>
 
@@ -142,7 +143,7 @@ defineExpose({
 		const pos = view.state.selection.ranges[0].to
 		view.dispatch({
 			changes: { from: pos, insert: text },
-			selection: { anchor: pos + text.length, head: pos + text.length }
+			selection: { anchor: pos + text.length, head: pos + text.length },
 		})
 		view.focus()
 	},

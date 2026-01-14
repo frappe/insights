@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { DatePicker } from 'frappe-ui'
 import { computed, onMounted, watch } from 'vue'
-import Autocomplete from '../../components/Autocomplete.vue'
 import FormControl from '../../components/FormControl.vue'
 import RadioGroup from '../../components/ui/Radio.vue'
 import RadioGroupItem from '../../components/ui/RadioGroupItem.vue'
