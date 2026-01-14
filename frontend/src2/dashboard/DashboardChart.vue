@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { AlertTriangle, Maximize } from 'lucide-vue-next'
+import { AlertTriangle, Maximize, XIcon } from 'lucide-vue-next'
 import { computed, inject, ref, provide } from 'vue'
 import { useRouter } from 'vue-router'
 import useChart from '../charts/chart'
@@ -8,6 +8,7 @@ import { waitUntil, wheneverChanges } from '../helpers'
 import { WorkbookDashboardChart } from '../types/workbook.types'
 import { workbookKey } from '../workbook/workbook'
 import { Dashboard } from './dashboard'
+import Button from 'frappe-ui/src/components/Button/Button.vue'
 
 const props = defineProps<{ item: WorkbookDashboardChart }>()
 const dashboard = inject<Dashboard>('dashboard')!
@@ -69,17 +70,24 @@ wheneverChanges(
 	</div>
 
 	<Dialog
-			v-if="chart"
-			v-model="showExpandedChartDialog"
-			:options="{
-				size: '8xl',
-				title: chart?.doc.title,
-			}"
-		>
-			<template #body-content>
-				<div class="h-[75vh] w-full">
-					<ChartRenderer v-if="chart" :chart="chart" />
+		v-if="chart"
+		v-model="showExpandedChartDialog"
+		:options="{
+			size: '7xl',
+			title: chart?.doc.title,
+		}"
+	>
+		<template #body>
+			<div class="h-[75vh] w-full">
+				<ChartRenderer v-if="chart" :chart="chart" />
+				<div class="absolute top-3 right-3">
+					<Button variant="ghost" @click="showExpandedChartDialog = false">
+						<template #icon>
+							<XIcon class="size-4 text-gray-700" />
+						</template>
+					</Button>
 				</div>
-			</template>
-		</Dialog>
+			</div>
+		</template>
+	</Dialog>
 </template>
