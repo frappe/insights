@@ -10,6 +10,7 @@ import ibis
 import sqlparse
 from frappe.model.document import Document
 from ibis import _
+
 from insights.decorators import insights_whitelist
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     IbisQueryBuilder,
@@ -27,7 +28,10 @@ class InsightsQueryv3(Document):
 
     if TYPE_CHECKING:
         from frappe.types import DF
-        from insights.insights.doctype.insights_query_variable.insights_query_variable import InsightsQueryVariable
+
+        from insights.insights.doctype.insights_query_variable.insights_query_variable import (
+            InsightsQueryVariable,
+        )
 
         folder: DF.Data | None
         is_builder_query: DF.Check
@@ -257,6 +261,13 @@ class InsightsQueryv3(Document):
 
         return query
 
+    @insights_whitelist()
+    def duplicate(self):
+        new_query = frappe.copy_doc(self)
+        new_query.title = f"{self.title} (Copy)"
+        new_query.insert()
+        return new_query.name
+
 
 def import_query(query, workbook):
     query = frappe.parse_json(query)
@@ -266,12 +277,15 @@ def import_query(query, workbook):
     new_query.update(query.doc)
     new_query.workbook = workbook
 
-    if not hasattr(new_query, 'sort_order') or new_query.sort_order is None:
-        max_sort_order = frappe.db.get_value(
-            "Insights Query v3",
-            filters={"workbook": workbook},
-            fieldname="max(sort_order)",
-        ) or -1
+    if not hasattr(new_query, "sort_order") or new_query.sort_order is None:
+        max_sort_order = (
+            frappe.db.get_value(
+                "Insights Query v3",
+                filters={"workbook": workbook},
+                fieldname="max(sort_order)",
+            )
+            or -1
+        )
         new_query.sort_order = max_sort_order + 1
     new_query.insert()
 

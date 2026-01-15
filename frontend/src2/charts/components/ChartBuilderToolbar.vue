@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { useTimeAgo } from '@vueuse/core'
+import { Dropdown } from 'frappe-ui'
 import {
 	Copy,
+	CopyPlus,
 	ExternalLink,
 	ImageDown,
 	MoreHorizontal,
@@ -9,8 +11,7 @@ import {
 	Share2,
 	XIcon,
 } from 'lucide-vue-next'
-import { Dropdown } from 'frappe-ui'
-import { h, ref } from 'vue'
+import { h } from 'vue'
 import session from '../../session'
 
 const props = defineProps<{
@@ -32,6 +33,11 @@ const moreActions = [
 		icon: h(Share2, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
 		onClick: () => props.onShare(),
 		condition: () => !props.chart.doc.read_only,
+	},
+	{
+		label: 'Duplicate Chart',
+		icon: h(CopyPlus, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
+		onClick: () => props.chart.duplicate(),
 	},
 	{
 		label: 'Reset Options',

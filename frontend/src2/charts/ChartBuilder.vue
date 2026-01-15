@@ -3,6 +3,7 @@ import { useMagicKeys, watchDebounced, whenever } from '@vueuse/core'
 import { Badge } from 'frappe-ui'
 import { onBeforeUnmount, provide, ref } from 'vue'
 import InlineFormControlLabel from '../components/InlineFormControlLabel.vue'
+import LazyTextInput from '../components/LazyTextInput.vue'
 import { downloadImage, waitUntil } from '../helpers'
 import { DropdownOption } from '../types/query.types'
 import useChart from './chart'
@@ -16,7 +17,6 @@ import ChartShareDialog from './components/ChartShareDialog.vue'
 import ChartSortConfig from './components/ChartSortConfig.vue'
 import ChartTypeSelector from './components/ChartTypeSelector.vue'
 import CollapsibleSection from './components/CollapsibleSection.vue'
-import LazyTextInput from '../components/LazyTextInput.vue'
 
 const props = defineProps<{ chart_name: string; queries: DropdownOption[] }>()
 
@@ -99,7 +99,7 @@ const showShareDialog = ref(false)
 
 			<ChartConfigForm v-if="chart.doc.query" :chart="chart" />
 
-			<CollapsibleSection title="Filters">
+			<CollapsibleSection title="Filters" collapsed>
 				<template #title-suffix v-if="chart.doc.config.filters?.filters.length">
 					<Badge size="sm" theme="orange" type="info" class="mt-0.5">
 						<span class="tnum"> {{ chart.doc.config.filters.filters.length }}</span>
@@ -108,7 +108,7 @@ const showShareDialog = ref(false)
 				<ChartFilterConfig v-model="chart.doc.config.filters" />
 			</CollapsibleSection>
 
-			<CollapsibleSection title="Sort">
+			<CollapsibleSection title="Sort" collapsed>
 				<template #title-suffix v-if="chart.doc.config.order_by?.length">
 					<Badge size="sm" theme="orange" type="info" class="mt-0.5">
 						<span class="tnum"> {{ chart.doc.config.order_by?.length }}</span>
@@ -120,7 +120,7 @@ const showShareDialog = ref(false)
 				/>
 			</CollapsibleSection>
 
-			<CollapsibleSection title="Limit">
+			<CollapsibleSection title="Limit" collapsed>
 				<FormControl v-model="chart.doc.config.limit" type="number" />
 			</CollapsibleSection>
 		</div>
