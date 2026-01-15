@@ -570,12 +570,18 @@ def json_extract(column: ir.StringColumn, *field_names: str):
     json_column = column.cast("json")
 
     # cast JSON values to string and remove quotes
-    clean_columns = {
-        field: json_column[field].cast("string").re_replace(r'^"|"$', '')
-        for field in field_names
-    }
+    clean_columns = {}
+    for field in field_names:
+        clean_col = json_column[field].cast("string")
+        # manually remove quotes for better compatibility
+        clean_col = ibis.cases(
+            (clean_col.startswith('"') & clean_col.endswith('"'), clean_col.substr(1, clean_col.length() - 2)),
+            (clean_col.startswith('"'), clean_col.substr(1)),
+            (clean_col.endswith('"'), clean_col.substr(0, clean_col.length() - 1)),
+            else_=clean_col
+        )
+        clean_columns[field] = clean_col
 
-    # sample 50 rows to infer data types
     data = query.select(**clean_columns).limit(50).execute()
 
     for field in field_names:
