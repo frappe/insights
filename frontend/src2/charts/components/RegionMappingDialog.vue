@@ -20,12 +20,14 @@ const loading = ref(false)
 const saving = ref(false)
 const data = ref<MappingData | null>(null)
 const localMappings = ref<Record<string, string>>({})
+const searchQuery = ref('')
 
 watch(
 	() => props.modelValue,
 	async (open) => {
 		if (open) await loadData()
-	}
+	},
+	{ immediate: true }
 )
 
 async function loadData() {
@@ -125,20 +127,6 @@ const hasChanges = computed(() => {
 	return Object.entries(current).some(([region, mapped]) => original[region] !== mapped)
 })
 
-const stats = computed(() => {
-	if (!data.value) return { total: 0, resolved: 0, unresolved: 0 }
-
-	const exactMatches = data.value.resolved - Object.keys(data.value.manual_mappings).length
-	const manualCount = Object.keys(localMappings.value).length
-	const resolved = exactMatches + manualCount
-
-	return {
-		total: data.value.total,
-		resolved,
-		unresolved: data.value.total - resolved,
-	}
-})
-
 const unresolvedRegions = computed(() => {
 	if (!data.value) return []
 
@@ -158,7 +146,10 @@ const unresolvedRegions = computed(() => {
 		}
 	})
 
-	return regions
+	const filteredRegions = regions.filter((region) =>
+		region.user_region.toLowerCase().includes(searchQuery.value.toLowerCase())
+	)
+	return filteredRegions
 })
 
 const manualMappings = computed(() => {
@@ -226,7 +217,13 @@ function getOptions(region: Region) {
 							</span>
 							<h3 class="text-sm font-medium text-gray-900">Unresolved</h3>
 						</div>
-						<div v-if="unresolvedRegions.length > 0" class="max-h-[220px] overflow-y-auto rounded-md border bg-white">
+						<div class="h-[15rem] overflow-y-auto rounded-md border bg-white">
+							<TextInput
+								v-model="searchQuery"
+								placeholder="Search locations"
+								class="w-1/3 p-2"
+								variant="subtle"
+							/>
 							<div class="flex flex-col divide-y">
 								<div
 									v-for="region in unresolvedRegions"
