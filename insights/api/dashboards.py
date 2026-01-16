@@ -90,6 +90,7 @@ def get_dashboards(search_term=None, limit=50):
             "modified",
             "preview_image",
             "items",
+            "_liked_by",
         ],
         order_by="creation desc",
         limit=limit,
@@ -106,6 +107,10 @@ def get_dashboards(search_term=None, limit=50):
                 "reference_name": dashboard.name,
             },
         )
+        if dashboard._liked_by:
+            dashboard["is_favourite"] = frappe.session.user in frappe.as_json(
+                dashboard._liked_by
+            )
         del dashboard["items"]
 
     return dashboards
