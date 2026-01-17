@@ -24,25 +24,44 @@ class InsightsTablev3(Document):
 
         before_import_script: DF.Code | None
         data_source: DF.Link
+        is_view: DF.Check
         label: DF.Data
         last_synced_on: DF.Datetime | None
         row_limit: DF.Int
         stored: DF.Check
         table: DF.Data
+        view_script: DF.Code | None
     # end: auto-generated types
 
     def autoname(self):
         self.name = get_table_name(self.data_source, self.table)
 
     def validate(self):
+        if self.is_view and not self.view_script:
+            frappe.throw("View Script is required for views")
+
         if self.before_import_script:
             from insights.insights.doctype.insights_data_source_v3.ibis_utils import exec_with_return
 
             try:
-                table = self.get_ibis_table(self.data_source, self.table, use_live_connection=True)
+                ds = frappe.get_doc("Insights Data Source v3", self.data_source)
+                table = ds.get_ibis_table(self.table)
                 exec_with_return(self.before_import_script, {"table": table})
             except Exception as e:
                 frappe.throw(f"Error executing before import script: {e}")
+
+        if self.view_script:
+            from insights.insights.doctype.insights_data_source_v3.ibis_utils import exec_with_return
+
+            try:
+                exec_with_return(
+                    self.view_script,
+                    {
+                        "get_table": lambda table_name: _get_table(self.data_source, table_name),
+                    },
+                )
+            except Exception as e:
+                frappe.throw(f"Error executing view script: {e}")
 
     @staticmethod
     def bulk_create(data_source: str, tables: list[str]):
@@ -83,16 +102,33 @@ class InsightsTablev3(Document):
 
         check_table_permission(data_source, table_name)
 
+        doc_name = get_table_name(data_source, table_name)
+        is_view = frappe.db.get_value("Insights Table v3", doc_name, "is_view", cache=True)
+
         if not use_live_connection:
             wt = Warehouse().get_table(data_source, table_name)
             t = wt.get_ibis_table(import_if_not_exists=True)
-        else:
+        elif not is_view:
             ds = InsightsDataSourcev3.get_doc(data_source)
             t = ds.get_ibis_table(table_name)
+        else:
+            doc = frappe.get_doc("Insights Table v3", get_table_name(data_source, table_name))
+            t = doc._build_view()
 
         t = apply_table_restrictions(t, data_source, table_name)
         t = apply_user_permissions(t, data_source, table_name)
         return t
+
+    def _build_view(self):
+        from insights.insights.doctype.insights_data_source_v3.ibis_utils import exec_with_return
+
+        view_table = exec_with_return(
+            self.view_script,
+            {
+                "get_table": lambda table_name: _get_table(self.data_source, table_name),
+            },
+        )
+        return view_table
 
     @frappe.whitelist()
     def import_to_warehouse(self):
@@ -103,6 +139,11 @@ class InsightsTablev3(Document):
 
 def get_table_name(data_source, table):
     return md5((data_source + table).encode()).hexdigest()[:10]
+
+
+def _get_table(data_source, table_name):
+    ds = frappe.get_doc("Insights Data Source v3", data_source)
+    return ds.get_ibis_table(table_name)
 
 
 def apply_user_permissions(t, data_source, table_name):

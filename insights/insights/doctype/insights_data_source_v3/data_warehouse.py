@@ -3,8 +3,6 @@ import os
 import frappe
 import frappe.utils
 import ibis
-import ibis.backends
-import ibis.backends.duckdb
 from frappe.query_builder.functions import IfNull
 from frappe.utils import get_files_path
 from frappe.utils.background_jobs import is_job_enqueued
@@ -79,8 +77,19 @@ class WarehouseTable:
         return self.warehouse.db.table(self.warehouse_table_name)
 
     def get_remote_table(self) -> Expr:
-        ds = InsightsDataSourcev3.get_doc(self.data_source)
-        return ds.get_ibis_table(self.table_name)
+        from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
+
+        doc_name = get_table_name(self.data_source, self.table_name)
+        is_view = frappe.db.get_value("Insights Table v3", doc_name, "is_view", cache=True)
+
+        if not is_view:
+            ds = InsightsDataSourcev3.get_doc(self.data_source)
+            t = ds.get_ibis_table(self.table_name)
+        else:
+            doc = frappe.get_doc("Insights Table v3", doc_name)
+            t = doc._build_view()
+
+        return t
 
     def enqueue_import(self):
         importer = WarehouseTableImporter(self)
@@ -116,7 +125,7 @@ class WarehouseTableImporter:
 
         if is_job_enqueued(job_id) or self.import_in_progress():
             create_toast(
-                f"Import for {frappe.bold(self.table.table_name)} is in progress."
+                f"Import for {frappe.bold(self.table.table_name)} is in progress. "
                 "You may not see the results till the import is completed.",
                 title="Import In Progress",
                 type="info",
