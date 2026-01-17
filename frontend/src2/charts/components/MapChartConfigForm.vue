@@ -12,11 +12,12 @@ import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
 import CollapsibleSection from './CollapsibleSection.vue'
 import RegionMappingDialog from './RegionMappingDialog.vue'
-import { FormControl, Button, Badge } from 'frappe-ui'
+import { FormControl, Button } from 'frappe-ui'
 import { FIELDTYPES } from '../../helpers/constants'
 import { call } from 'frappe-ui'
-import useQuery from '../../query/query'
 import { InfoIcon } from 'lucide-vue-next'
+import useChart from '../chart'
+import { watchDebounced } from '@vueuse/core'
 
 const props = defineProps<{
 	dimensions: DimensionOption[]
@@ -58,29 +59,29 @@ const unresolvedCount = ref<number | null>(null)
 const loadingUnresolved = ref(false)
 
 const userRegions = ref<string[]>([])
+const {dataQuery}  = useChart(props.chartName!)
 
-watch(
-	() => config.value.location_column?.dimension_name,
-	async (columnName) => {
-		if (!columnName || !props.queryName) {
-			userRegions.value = []
-			return
-		}
+watchDebounced(
+    [
+        () => config.value.location_column?.dimension_name,
+        () => dataQuery.result?.rows
+    ],
+    ([columnName, rows]) => {
+        if (!columnName || !props.queryName || !rows || rows.length === 0) {
+            userRegions.value = []
+            return
+        }
 
-		try {
-			const chartQuery = useQuery(props.queryName)
-			if (!chartQuery) {
-				console.warn('No query found')
-				return
-			}
-			const distinctValues = await chartQuery.getDistinctColumnValues(columnName, '', 500)
-			userRegions.value = distinctValues.map((val: any) => String(val)).filter(Boolean)
-		} catch (error) {
-			console.error(error)
-			userRegions.value = []
-		}
-	},
-	{ immediate: true }
+        try {
+            const mappedRegions = rows.map((row) => row[columnName])
+            userRegions.value = mappedRegions
+
+        } catch (error) {
+            console.error(error)
+            userRegions.value = []
+        }
+    },
+    { debounce:500, immediate: true }
 )
 
 const canCheckRegions = computed(() => {
@@ -155,10 +156,9 @@ watch(
 				/>
 
 				<div class="flex flex-col gap-1">
-					<div class="flex items-center gap-1">
+					<div class="flex justify-start items-center">
 						<label class="text-xs text-gray-600">Region Column</label>
 						<Button
-							v-if="canCheckRegions"
 							variant="ghost"
 							:icon="InfoIcon"
 							@click="openRegionMappingDialog"

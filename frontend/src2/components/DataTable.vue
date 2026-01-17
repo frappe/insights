@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { Button, Dialog, FormControl, LoadingIndicator, Rating } from 'frappe-ui'
 import { ChevronLeft, ChevronRight, Download, Plus, Search, Table2Icon } from 'lucide-vue-next'
-import { computed, nextTick, reactive, ref} from 'vue'
+import { computed, nextTick, reactive, ref } from 'vue'
 import { createHeaders, formatNumber, getShortNumber } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
-import {QueryResultColumn, QueryResultRow, SortDirection, SortOrder } from '../types/query.types'
+import { QueryResultColumn, QueryResultRow, SortDirection, SortOrder } from '../types/query.types'
 import DataTableColumn from './DataTableColumn.vue'
 import {
 	applyRule,
@@ -33,8 +33,8 @@ const props = defineProps<{
 	replaceNullsWithZeros?: boolean
 	compactNumbers?: boolean
 	loading?: boolean
-  	onExport?: Function
-  	downloading?: boolean
+	onExport?: Function
+	downloading?: boolean
 	formatGroup?: FormatGroupArgs
 	sortOrder?: SortOrder
 	onSortChange?: (column_name: string, direction: SortDirection) => void
@@ -46,7 +46,6 @@ const props = defineProps<{
 const headers = computed(() => {
 	if (!props.columns?.length) return []
 	return createHeaders(props.columns)
-
 })
 const columnsMeta = computed(() => {
 	if (!props.columns || !props.rows) return new Map()
@@ -274,10 +273,11 @@ const formattingRulesByColumn = computed(() => {
 	const columns = props.columns || []
 	if (!formatGroup?.formats?.length) return result
 
-	const  sanitizeColumnName = (n: string) => n.split('__')[0]
+	const sanitizeColumnName = (n: string) => n.split('__')[0]
 
 	formatGroup.formats.forEach((format) => {
-		const target = ('column' in format && format.column?.column_name) ? format.column.column_name : ''
+		const target =
+			'column' in format && format.column?.column_name ? format.column.column_name : ''
 		if (!target) return
 
 		columns.forEach((col) => {
@@ -307,14 +307,13 @@ function getColorClass(colorName: string): string {
 }
 
 const getColumnMinMax = (columnName: string) => {
-  const values = props.rows
-    ?.map(row => Number(row[columnName]))
-    .filter(val => !isNaN(val)) || []
+	const values =
+		props.rows?.map((row) => Number(row[columnName])).filter((val) => !isNaN(val)) || []
 
-  return {
-    min: Math.min(...values),
-    max: Math.max(...values)
-  }
+	return {
+		min: Math.min(...values),
+		max: Math.max(...values),
+	}
 }
 
 function getDefaultColorScaleClass(colName: string, val: any): string {
@@ -331,19 +330,18 @@ function getDefaultColorScaleClass(colName: string, val: any): string {
 }
 
 function normalizeCellValue(colName: string, val: any) {
-        if (isNumberColumn(colName) && (val === null || val === undefined)) {
-            return 0
-        }
-        return val
-    }
+	if (isNumberColumn(colName) && (val === null || val === undefined)) {
+		return 0
+	}
+	return val
+}
 
 function getHighlightClassFromRules(colName: string, val: any, rules: FormattingMode[]): string {
-
 	for (const format of rules) {
 		let isHighlighted = false
 		let colorClass = ''
 
-        const normalizedValue = normalizeCellValue(colName, val)
+		const normalizedValue = normalizeCellValue(colName, val)
 
 		if (format.mode === 'cell_rules' && format.operator && format.value !== undefined) {
 			const rule = {
@@ -354,26 +352,27 @@ function getHighlightClassFromRules(colName: string, val: any, rules: Formatting
 				mode: 'cell_rules',
 			} as unknown as cell_rules
 
-            if (applyRule(normalizedValue, rule)) {
+			if (applyRule(normalizedValue, rule)) {
 				isHighlighted = true
 				colorClass = getColorClass(format.color as string)
 			}
 		} else if (format.mode === 'text_rules') {
 			const textRule = format as text_rules
-            if (applyTextRule(normalizedValue, textRule)) {
+			if (applyTextRule(normalizedValue, textRule)) {
 				isHighlighted = true
 				colorClass = getColorClass(textRule.color)
 			}
 		} else if (format.mode === 'date_rules') {
 			const dateRule = format as date_rules
-            if (applyDateRule(normalizedValue, dateRule)) {
+			if (applyDateRule(normalizedValue, dateRule)) {
 				isHighlighted = true
 				colorClass = getColorClass(dateRule.color)
 			}
 		} else if (format.mode === 'rank_rules') {
 			const rankRule = format as rank_rules
-            const allColumnValues = props.rows?.map((row) => normalizeCellValue(colName, row[colName])) || []
-            if (applyRankRule(normalizedValue, rankRule, allColumnValues)) {
+			const allColumnValues =
+				props.rows?.map((row) => normalizeCellValue(colName, row[colName])) || []
+			if (applyRankRule(normalizedValue, rankRule, allColumnValues)) {
 				isHighlighted = true
 				colorClass = getColorClass(rankRule.color)
 			}
@@ -399,7 +398,9 @@ function getColorScaleClassFromFormat(colName: string, val: any, format: Formatt
 
 	let colorScale: Record<string, string>
 	if (format.colorScale) {
-		format.colorScale == 'Red-Green' ? (colorScale = ragByPercentage) : (colorScale = garByPercentage)
+		format.colorScale == 'Red-Green'
+			? (colorScale = ragByPercentage)
+			: (colorScale = garByPercentage)
 	} else {
 		colorScale = ragByPercentage
 	}
@@ -466,7 +467,6 @@ function toggleNewColumn() {
 		}
 	})
 }
-
 </script>
 
 <template>
@@ -479,7 +479,7 @@ function toggleNewColumn() {
 				<thead ref="$header" class="sticky top-0 z-10 bg-gray-50">
 					<tr v-for="headerRow in headers">
 						<td
-							class="sticky left-0 z-10 h-8 whitespace-nowrap border-b border-r bg-gray-50 px-3"
+							class="sticky left-0 h-8 whitespace-nowrap border-b border-r bg-gray-50 px-3"
 							data-column-name="__index"
 							width="1px"
 						></td>
@@ -491,7 +491,7 @@ function toggleNewColumn() {
 								header.isLast && isNumberColumn(header.column.name)
 									? 'text-right'
 									: 'text-left',
-								isStickyColumn(header.column.name) ? 'sticky z-10 bg-gray-50' : '',
+								isStickyColumn(header.column.name) ? 'sticky bg-gray-50' : '',
 							]"
 							:style="getStickyColumnStyle(header.column.name)"
 							:colspan="header.colspan"
@@ -556,14 +556,14 @@ function toggleNewColumn() {
 
 					<tr v-if="props.showFilterRow">
 						<td
-							class="sticky left-0 z-10 h-8 whitespace-nowrap border-b border-r bg-gray-50 px-3"
+							class="sticky left-0 h-8 whitespace-nowrap border-b border-r bg-gray-50 px-3"
 							width="1px"
 						></td>
 						<td
 							v-for="(column, idx) in props.columns"
 							:key="idx"
 							class="h-8 border-b border-r p-1"
-							:class="isStickyColumn(column.name) ? 'sticky z-10 bg-gray-50' : ''"
+							:class="isStickyColumn(column.name) ? 'sticky bg-gray-50' : ''"
 							:style="getStickyColumnStyle(column.name)"
 						>
 							<FormControl
@@ -592,7 +592,7 @@ function toggleNewColumn() {
 						:key="idx"
 					>
 						<td
-							class="tnum z-1 sticky left-0 h-8 whitespace-nowrap border-b border-r bg-white px-3 text-right text-xs"
+							class="tnum sticky left-0 h-8 whitespace-nowrap border-b border-r bg-white px-3 text-right text-xs"
 							width="1px"
 							height="30px"
 						>
@@ -611,7 +611,7 @@ function toggleNewColumn() {
 									? 'cursor-pointer'
 									: '',
 								getCellStyleClass(col.name, row[col.name]),
-								isStickyColumn(col.name) ? 'sticky z-1 bg-white' : '',
+								isStickyColumn(col.name) ? 'sticky bg-white' : '',
 							]"
 							:style="getStickyColumnStyle(col.name)"
 							height="30px"
@@ -646,7 +646,7 @@ function toggleNewColumn() {
 
 					<tr
 						v-if="props.showColumnTotals && totalPerColumn"
-						class="sticky bottom-0 z-10 border-b bg-white"
+						class="sticky bottom-0 border-b bg-white"
 					>
 						<td class="h-8 whitespace-nowrap border-r border-t px-3"></td>
 						<td
@@ -654,7 +654,7 @@ function toggleNewColumn() {
 							class="h-8 truncate border-r border-t px-3 font-bold text-gray-800"
 							:class="[
 								isNumberColumn(col.name) ? 'tnum text-right' : 'text-left',
-								isStickyColumn(col.name) ? 'sticky z-10 bg-white' : '',
+								isStickyColumn(col.name) ? 'sticky bg-white' : '',
 							]"
 							:style="getStickyColumnStyle(col.name)"
 						>
@@ -713,7 +713,7 @@ function toggleNewColumn() {
 								</Button>
 							</div>
 						</div>
-                        <slot name="footer-right-actions"></slot>
+						<slot name="footer-right-actions"></slot>
 					</div>
 				</slot>
 			</div>
@@ -727,10 +727,10 @@ function toggleNewColumn() {
 		</div>
 	</div>
 
-    <div
-        v-if="props.loading"
-        class="absolute top-10 z-10 flex h-[calc(100%-2rem)] w-full items-center justify-center rounded bg-white/30 backdrop-blur-sm"
-    >
-        <LoadingIndicator class="h-8 w-8 text-gray-700" />
-    </div>
+	<div
+		v-if="props.loading"
+		class="absolute top-10 flex h-[calc(100%-2rem)] w-full items-center justify-center rounded bg-white/30 backdrop-blur-sm"
+	>
+		<LoadingIndicator class="h-8 w-8 text-gray-700" />
+	</div>
 </template>

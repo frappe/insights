@@ -301,7 +301,7 @@ function setSignatureElementPosition() {
 	}
 	.cm-tooltip-autocomplete {
 		position: absolute !important;
-		z-index: 1000 !important;
+		z-index: 50 !important;
 	}
 }
 </style>

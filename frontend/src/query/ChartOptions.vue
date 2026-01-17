@@ -1,5 +1,4 @@
 <script setup>
-import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import widgets from '@/widgets/widgets'
 import { inject } from 'vue'
 

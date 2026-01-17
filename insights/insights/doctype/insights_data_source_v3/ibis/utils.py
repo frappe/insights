@@ -33,7 +33,6 @@ def get_functions():
     allowed_ibis_attributes = (
         "array",
         "asc",
-        "case",
         "cases",
         "coalesce",
         "cross_join",

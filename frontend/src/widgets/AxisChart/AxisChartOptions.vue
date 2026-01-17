@@ -1,5 +1,4 @@
 <script setup>
-import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import ColorPalette from '@/components/Controls/ColorPalette.vue'
 import DraggableList from '@/components/DraggableList.vue'
 import DraggableListItemMenu from '@/components/DraggableListItemMenu.vue'

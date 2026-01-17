@@ -1,7 +1,7 @@
 import { areDeeplyEqual, safeJSONParse } from '@/utils'
 import widgets from '@/widgets/widgets'
 import { createResource } from 'frappe-ui'
-import { getLocal, saveLocal } from 'frappe-ui/src/resources/local'
+import { getLocal, saveLocal } from 'frappe-ui'
 import { reactive } from 'vue'
 
 export default function usePublicDashboard(public_key) {

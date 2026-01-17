@@ -80,7 +80,7 @@ function updatePermissions() {
 	<Dialog
 		v-model="show"
 		:options="{
-			title: 'Manage Access',
+			title: 'Manage Workbook Access',
 			actions: [
 				{
 					label: 'Save',

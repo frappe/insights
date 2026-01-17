@@ -21,7 +21,7 @@ const activeQueryName = computed(() => {
 <template>
 	<div
 		v-if="workbook"
-		class="relative z-[1] flex h-full w-[17rem] flex-shrink-0 flex-col overflow-y-auto bg-white"
+		class="relative flex h-full w-[17rem] flex-shrink-0 flex-col overflow-y-auto bg-white"
 	>
 		<WorkbookSidebarFolders
 			v-bind="{

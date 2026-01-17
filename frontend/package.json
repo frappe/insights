@@ -11,8 +11,7 @@
 		"serve": "vite preview",
 		"build": "vite build -l warn --base=/assets/insights/frontend/ && yarn copy-html-entry && yarn copy-html-entry2",
 		"copy-html-entry": "cp ../insights/public/frontend/index.html ../insights/www/insights.html",
-		"copy-html-entry2": "cp ../insights/public/frontend/index_v2.html ../insights/www/insights_v2.html",
-		"postinstall": "patch-package"
+		"copy-html-entry2": "cp ../insights/public/frontend/index_v2.html ../insights/www/insights_v2.html"
 	},
 	"dependencies": {
 		"@codemirror/lang-javascript": "^6.0.2",
@@ -21,8 +20,6 @@
 		"@formkit/auto-animate": "^0.8.1",
 		"@headlessui/vue": "^1.7.17",
 		"@tanstack/vue-table": "^8.10.7",
-		"@tiptap/suggestion": "^2.0.3",
-		"@tiptap/vue-3": "^2.1.16",
 		"@types/vue-router": "^2.0.0",
 		"@vue-flow/core": "^1.23.0",
 		"@vueuse/core": "^10.7.2",
@@ -32,7 +29,7 @@
 		"echarts": "^5.5.0",
 		"es-toolkit": "^1.34.1",
 		"feather-icons": "^4.28.0",
-		"frappe-ui": "0.1.142",
+		"frappe-ui": "0.1.256",
 		"grid-layout-plus": "^1.0.2",
 		"lucide-vue-next": "^0.484.0",
 		"pinia": "^2.0.30",

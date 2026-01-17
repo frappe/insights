@@ -17,7 +17,7 @@ const emit = defineEmits({ select: (measure: ExpressionMeasure) => true })
 const showDialog = defineModel()
 
 const columnTypes = COLUMN_TYPES.map((t) => t.value).filter((t) =>
-	FIELDTYPES.NUMBER.includes(t)
+	FIELDTYPES.NUMBER.includes(t),
 ) as MeasureDataType[]
 
 const newMeasure = ref(
@@ -31,7 +31,7 @@ const newMeasure = ref(
 				name: 'new_measure',
 				type: columnTypes[0],
 				expression: '',
-		  }
+		  },
 )
 
 const isValid = computed(() => {
@@ -136,11 +136,12 @@ function updateDocumentationFromEditor(currentFunction: any) {
 <template>
 	<Dialog
 		:modelValue="Boolean(showDialog)"
+		:options="{ title: 'Create Measure',size:'2xl'
+		 }"
 		@after-leave="resetNewMeasure"
 		@close="!newMeasure.expression && (showDialog = false)"
-		:options="{ size: '2xl' }"
 	>
-		<template #body>
+		<template #body-content>
 			<div class="min-w-[30rem] flex flex-col px-4 pb-4 pt-3">
 				<div class="flex justify-between pb-2">
 					<h3 class="text-2xl font-semibold leading-6 text-gray-900">Create Measure</h3>

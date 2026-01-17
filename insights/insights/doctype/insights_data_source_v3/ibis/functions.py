@@ -7,6 +7,7 @@ import ibis.selectors as s
 from frappe.utils import now_datetime
 from ibis import _
 
+from insights.insights.doctype.insights_query.utils import infer_type_from_list
 from insights.insights.query_builders.sql_functions import handle_timespan
 
 
@@ -303,7 +304,7 @@ def if_else(condition: ir.BooleanValue, true_value: ir.Value, false_value: ir.Va
     Examples:
     - if_else(status == 'Active', 1, 0)
     """
-    return ibis.case().when(condition, true_value).else_(false_value).end()
+    return ibis.cases((condition, true_value), else_=false_value)
 
 
 def case(condition: ir.BooleanValue, value: ir.Value, *args: tuple[ir.BooleanValue, ir.Value]):
@@ -316,14 +317,27 @@ def case(condition: ir.BooleanValue, value: ir.Value, *args: tuple[ir.BooleanVal
     - case(age > 18, 'Eligible', 'Not Eligible')
     - case(age > 30, 'Above 30', age > 20, 'Above 20')
     """
-    case = ibis.case().when(condition, value)
+    branches = [(condition, value)]
     for i in range(0, len(args) - 1, 2):
-        case = case.when(args[i], args[i + 1])
+        branches.append((args[i], args[i + 1]))
 
     if len(args) % 2 == 1:
-        return case.else_(args[-1]).end()
+        return ibis.cases(*branches, else_=args[-1])
     else:
-        return case.end()
+        return ibis.cases(*branches)
+
+
+def cases(*branches: tuple[ir.BooleanValue, ir.Value], else_=None):
+    """
+    def cases(*branches, else_=None)
+
+    Create a multi-branch if-else expression using condition-value pairs. Equivalent to a SQL CASE statement.
+
+    Examples:
+    - cases((age < 18, 'Minor'), (age < 65, 'Adult'), else_='Senior')
+    - cases((status == 'Active', 1), (status == 'Inactive', 0), else_=-1)
+    """
+    return ibis.cases(*branches, else_=else_)
 
 
 # number Functions
@@ -513,6 +527,77 @@ def length(column: ir.StringColumn):
     - length(column)
     """
     return column.length()
+
+
+# we can auto detect max_split but will need to execute the query
+# keeping it explicit for now
+def textsplit(column: ir.StringColumn, delimiter: str, max_splits: int):
+    """
+    def textsplit(column, delimiter, max_splits)
+
+    Split text into multiple columns using a delimiter.
+
+    Examples:
+    - textsplit(address, ',', 4)
+    - textsplit(email, '@', 2)
+    """
+    query = frappe.flags.current_ibis_query
+    if query is None:
+        frappe.throw("Query not found")
+
+    column_name = column.get_name() if hasattr(column, "get_name") else str(column)
+
+    for i in range(max_splits):
+        query = query.mutate(**{f"{column_name}_split_{i + 1}": column.split(delimiter)[i]})
+
+    return query
+
+
+def json_extract(column: ir.StringColumn, *field_names: str):
+    """
+    def json_extract(column, *field_names)
+
+    Extract fields from a JSON column into separate columns with auto-detected types.
+
+    Examples:
+    - json_extract(column, 'column1', 'column2')
+    - json_extract(api_response, 'id', 'name', 'lat', 'lon')
+    """
+    query = frappe.flags.current_ibis_query
+    if query is None:
+        frappe.throw("Query not found")
+
+    json_column = column.cast("json")
+
+    # cast JSON values to string and remove quotes
+    clean_columns = {}
+    for field in field_names:
+        clean_col = json_column[field].cast("string")
+        # manually remove quotes for better compatibility
+        clean_col = ibis.cases(
+            (
+                clean_col.startswith('"') & clean_col.endswith('"'),
+                clean_col.substr(1, clean_col.length() - 2),
+            ),
+            (clean_col.startswith('"'), clean_col.substr(1)),
+            (clean_col.endswith('"'), clean_col.substr(0, clean_col.length() - 1)),
+            else_=clean_col,
+        )
+        clean_columns[field] = clean_col
+
+    data = query.select(**clean_columns).limit(50).execute()
+
+    for field in field_names:
+        clean_col = clean_columns[field]
+        values = data[field].tolist()
+
+        if values:
+            inferred_type = infer_type_from_list(values)
+            clean_col = clean_col.try_cast(inferred_type)
+
+        query = query.mutate({field: clean_col})
+
+    return query
 
 
 # date functions
@@ -1056,14 +1141,14 @@ def create_buckets(column: ir.Column, num_buckets: int):
     for i in range(0, len(values), bucket_size):
         buckets.append(values[i : i + bucket_size])
 
-    case = ibis.case()
+    branches = []
     for bucket in buckets:
         min_val = bucket[0]
         max_val = bucket[-1]
         label = f"{min_val}-{max_val}"
-        case = case.when(is_in(column, *bucket), label)
+        branches.append((is_in(column, *bucket), label))
 
-    return case.else_(None).end()
+    return ibis.cases(*branches, else_=None)
 
 
 def week_start(column: ir.DateValue):

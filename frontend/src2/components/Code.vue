@@ -13,6 +13,7 @@
 		@focus="emit('focus')"
 		@blur="emit('blur')"
 		@ready="codeMirror = $event"
+		:class="$attrs.class"
 	/>
 </template>
 
