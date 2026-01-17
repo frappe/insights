@@ -82,7 +82,6 @@ function getFunctionMatches(word: string) {
 
 const codeEditor = ref<any>(null)
 const codeContainer = ref<HTMLElement | null>(null)
-const signatureElement = ref<HTMLElement | null>(null)
 
 onMounted(() => {
 	// fix clipping of tooltip & signature element because of dialog styling
@@ -182,37 +181,6 @@ const validateExpression = debounce(() => {
 			validationErrors.value = []
 		})
 }, 500)
-
-function setSignatureElementPosition() {
-	setTimeout(() => {
-		const containerRect = codeContainer.value?.getBoundingClientRect()
-		const tooltipElement = codeContainer.value?.querySelector('.cm-tooltip-autocomplete')
-		const cursorElement = codeContainer.value?.querySelector('.cm-cursor.cm-cursor-primary')
-
-		if (!containerRect) return
-		if (!signatureElement.value) return
-
-		let left = 0,
-			top = 0
-
-		if (tooltipElement) {
-			const tooltipRect = tooltipElement.getBoundingClientRect()
-			left = tooltipRect.left - containerRect.left
-			top = tooltipRect.top + tooltipRect.height - containerRect.top + 10
-		} else if (cursorElement) {
-			const cursorRect = cursorElement?.getBoundingClientRect()
-			left = cursorRect.left - containerRect.left
-			top = cursorRect.top - containerRect.top + 20
-		}
-
-		if (left <= 0 || top <= 0) {
-			return
-		}
-
-		signatureElement.value.style.left = `${left}px`
-		signatureElement.value.style.top = `${top}px`
-	}, 100)
-}
 </script>
 
 <template>
@@ -229,27 +197,10 @@ function setSignatureElementPosition() {
 				:multi-line="props.multiLine"
 				:column-names="columnNames"
 				@view-update="
-					() => (fetchCompletions(), setSignatureElementPosition(), validateExpression())
+					() => (fetchCompletions(), validateExpression())
 				"
 			>
 			</Code>
-			<div
-				ref="signatureElement"
-				v-show="currentFunctionSignature"
-				class="absolute z-10 flex h-fit max-h-[14rem] w-[25rem] flex-col gap-2 overflow-y-auto rounded-lg bg-white px-2.5 py-1.5 shadow-md transition-all"
-			>
-				<template v-if="currentFunctionSignature">
-					<p
-						v-if="currentFunctionSignature.definition"
-						v-html="currentFunctionSignature.definition"
-						class="font-mono text-p-sm text-gray-800"
-					></p>
-					<hr v-if="currentFunctionSignature.definition" />
-					<div class="whitespace-pre-wrap font-mono text-p-sm text-gray-800">
-						{{ currentFunctionSignature.description }}
-					</div>
-				</template>
-			</div>
 		</div>
 		<div>
 			<div
