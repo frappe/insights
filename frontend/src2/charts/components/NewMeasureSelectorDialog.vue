@@ -5,7 +5,6 @@ import ExpressionEditor from '../../query/components/ExpressionEditor.vue'
 import { expression } from '../../query/helpers'
 import { ColumnOption, ExpressionMeasure, MeasureDataType } from '../../types/query.types'
 import { cachedCall } from '../../helpers'
-import CollapsibleSection from './CollapsibleSection.vue'
 import { TextInput } from 'frappe-ui'
 import { SearchIcon } from 'lucide-vue-next'
 
@@ -141,7 +140,7 @@ function updateDocumentationFromEditor(currentFunction: any) {
 		@after-leave="resetNewMeasure"
 		@close="!newMeasure.expression && (showDialog = false)"
 	>
-		<template #body-content>
+		<template #body>
 			<div class="min-w-[30rem] flex flex-col px-4 pb-4 pt-3">
 				<div class="flex justify-between pb-2">
 					<h3 class="text-2xl font-semibold leading-6 text-gray-900">Create Measure</h3>
@@ -279,7 +278,7 @@ function updateDocumentationFromEditor(currentFunction: any) {
 </template>
 
 <style>
-div[data-headlessui-state] {
+div[data-dismissable-layer] {
 	border-radius: 0.75rem;
 }
 </style>
