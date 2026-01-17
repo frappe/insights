@@ -304,7 +304,7 @@ def if_else(condition: ir.BooleanValue, true_value: ir.Value, false_value: ir.Va
     Examples:
     - if_else(status == 'Active', 1, 0)
     """
-    return ibis.case().when(condition, true_value).else_(false_value).end()
+    return ibis.cases((condition, true_value), else_=false_value)
 
 
 def case(condition: ir.BooleanValue, value: ir.Value, *args: tuple[ir.BooleanValue, ir.Value]):
@@ -317,14 +317,14 @@ def case(condition: ir.BooleanValue, value: ir.Value, *args: tuple[ir.BooleanVal
     - case(age > 18, 'Eligible', 'Not Eligible')
     - case(age > 30, 'Above 30', age > 20, 'Above 20')
     """
-    case = ibis.case().when(condition, value)
+    branches = [(condition, value)]
     for i in range(0, len(args) - 1, 2):
-        case = case.when(args[i], args[i + 1])
+        branches.append((args[i], args[i + 1]))
 
     if len(args) % 2 == 1:
-        return case.else_(args[-1]).end()
+        return ibis.cases(*branches, else_=args[-1])
     else:
-        return case.end()
+        return ibis.cases(*branches)
 
 
 def cases(*branches: tuple[ir.BooleanValue, ir.Value], else_=None):
@@ -528,6 +528,7 @@ def length(column: ir.StringColumn):
     """
     return column.length()
 
+
 # we can auto detect max_split but will need to execute the query
 # keeping it explicit for now
 def textsplit(column: ir.StringColumn, delimiter: str, max_splits: int):
@@ -552,7 +553,6 @@ def textsplit(column: ir.StringColumn, delimiter: str, max_splits: int):
     return query
 
 
-
 def json_extract(column: ir.StringColumn, *field_names: str):
     """
     def json_extract(column, *field_names)
@@ -575,10 +575,13 @@ def json_extract(column: ir.StringColumn, *field_names: str):
         clean_col = json_column[field].cast("string")
         # manually remove quotes for better compatibility
         clean_col = ibis.cases(
-            (clean_col.startswith('"') & clean_col.endswith('"'), clean_col.substr(1, clean_col.length() - 2)),
+            (
+                clean_col.startswith('"') & clean_col.endswith('"'),
+                clean_col.substr(1, clean_col.length() - 2),
+            ),
             (clean_col.startswith('"'), clean_col.substr(1)),
             (clean_col.endswith('"'), clean_col.substr(0, clean_col.length() - 1)),
-            else_=clean_col
+            else_=clean_col,
         )
         clean_columns[field] = clean_col
 
@@ -595,6 +598,7 @@ def json_extract(column: ir.StringColumn, *field_names: str):
         query = query.mutate({field: clean_col})
 
     return query
+
 
 # date functions
 def year(column: ir.DateValue):
@@ -1137,14 +1141,14 @@ def create_buckets(column: ir.Column, num_buckets: int):
     for i in range(0, len(values), bucket_size):
         buckets.append(values[i : i + bucket_size])
 
-    case = ibis.case()
+    branches = []
     for bucket in buckets:
         min_val = bucket[0]
         max_val = bucket[-1]
         label = f"{min_val}-{max_val}"
-        case = case.when(is_in(column, *bucket), label)
+        branches.append((is_in(column, *bucket), label))
 
-    return case.else_(None).end()
+    return ibis.cases(*branches, else_=None)
 
 
 def week_start(column: ir.DateValue):
