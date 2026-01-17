@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useTimeAgo } from '@vueuse/core'
-import { Copy, MoreHorizontal, PlayIcon, Scroll } from 'lucide-vue-next'
+import { Copy, CopyPlus, MoreHorizontal, PlayIcon, Scroll } from 'lucide-vue-next'
 import { h, inject, ref } from 'vue'
 import { Query } from '../query'
 import ViewSQLDialog from './ViewSQLDialog.vue'
@@ -16,14 +16,14 @@ const moreActions = [
 		onClick: () => (showViewSQLDialog.value = true),
 	},
 	{
-		label: 'Copy JSON',
-		icon: h(Copy, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
-		onClick: () => query.copy(),
+		label: 'Duplicate Query',
+		icon: h(CopyPlus, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
+		onClick: () => query.duplicate(),
 	},
 	{
-		label: 'Force Execute',
-		icon: h(PlayIcon, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
-		onClick: () => query.execute(undefined, true),
+		label: 'Copy Query',
+		icon: h(Copy, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
+		onClick: () => query.copy(),
 	},
 ]
 </script>
@@ -47,7 +47,7 @@ const moreActions = [
 			<Button
 				variant="ghost"
 				label="Execute"
-				@click="() => query.execute()"
+				@click="() => query.execute(true)"
 				class="!h-6 !gap-1.5 bg-white !px-2 text-xs shadow"
 			>
 				<template #prefix>

@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import { useStorage, useWindowSize } from '@vueuse/core'
 import { Edit3, RefreshCcw, Share2 } from 'lucide-vue-next'
-import { inject, provide, ref, watchEffect } from 'vue'
+import { computed, provide, ref, watchEffect } from 'vue'
 import ContentEditable from '../components/ContentEditable.vue'
-import { safeJSONParse, waitUntil, wheneverChanges } from '../helpers'
+import { safeJSONParse, waitUntil } from '../helpers'
 import { WorkbookChart, WorkbookQuery } from '../types/workbook.types'
-import { workbookKey } from '../workbook/workbook'
 import useDashboard from './dashboard'
 import DashboardChartSelectorDialog from './DashboardChartSelectorDialog.vue'
 import DashboardItem from './DashboardItem.vue'
@@ -19,6 +19,17 @@ const props = defineProps<{
 
 const dashboard = useDashboard(props.dashboard_name)
 provide('dashboard', dashboard)
+
+const { width } = useWindowSize()
+const isMobile = computed(() => width.value < 1058)
+
+watchEffect(() => {
+	if (dashboard.editing || isMobile.value) {
+		dashboard.autoSave = false
+	} else {
+		dashboard.autoSave = true
+	}
+})
 
 await waitUntil(() => dashboard.isloaded)
 
@@ -44,13 +55,7 @@ function onDrop(event: DragEvent) {
 
 const showShareDialog = ref(false)
 
-watchEffect(() => {
-	if (dashboard.editing) {
-		dashboard.autoSave = false
-	} else {
-		dashboard.autoSave = true
-	}
-})
+const verticalCompact = useStorage('dashboard_vertical_compact', true)
 </script>
 
 <template>
@@ -66,7 +71,7 @@ watchEffect(() => {
 					<Button
 						v-if="!dashboard.editing"
 						variant="outline"
-						@click="() => dashboard.refresh()"
+						@click="() => dashboard.refresh(true)"
 						label="Refresh"
 					>
 						<template #prefix>
@@ -121,10 +126,41 @@ watchEffect(() => {
 						v-if="dashboard.editing"
 						variant="solid"
 						icon-left="check"
-						@click="dashboard.editing = false"
+						@click="
+							() => {
+								dashboard.save()
+								dashboard.editing = false
+							}
+						"
 					>
 						Done
 					</Button>
+					<Dropdown
+						:button="{ icon: 'more-horizontal', variant: 'outline' }"
+						:options="[
+							{
+								label: 'Force Refresh',
+								icon: RefreshCcw,
+								onClick: () => dashboard.refresh(true),
+							},
+							dashboard.editing
+								? {
+										label: 'Compact Layout',
+										icon: verticalCompact ? 'check-square' : 'square',
+										onClick: () => (verticalCompact = !verticalCompact),
+								  }
+								: null,
+							dashboard.editing
+								? {
+										label: 'Reset Layout',
+										icon: 'refresh-ccw',
+										onClick: () => (
+											dashboard.discard(), (dashboard.editing = false)
+										),
+								  }
+								: null,
+						]"
+					/>
 				</div>
 			</div>
 			<div class="flex-1 overflow-y-auto p-2 pt-0" @dragover="onDragOver" @drop="onDrop">
@@ -134,9 +170,11 @@ watchEffect(() => {
 					:class="[dashboard.editing ? 'mb-[20rem] !select-none' : '']"
 					:cols="20"
 					:disabled="!dashboard.editing"
+					:verticalCompact="verticalCompact"
 					:modelValue="dashboard.doc.items.map((item) => item.layout)"
 					@update:modelValue="
 						(newLayout) => {
+							if (!newLayout) return
 							dashboard.doc.items.forEach((item, idx) => {
 								item.layout = newLayout[idx]
 							})

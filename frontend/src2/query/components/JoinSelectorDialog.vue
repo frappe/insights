@@ -7,9 +7,8 @@ import { joinTypes } from '../../helpers/constants'
 import { JoinArgs } from '../../types/query.types'
 import { workbookKey } from '../../workbook/workbook'
 import { column, expression, query_table, table } from '../helpers'
-import useQuery, { Query } from '../query'
 import InlineExpression from './InlineExpression.vue'
-import { handleOldProps, useTableColumnOptions, useTableOptions } from './join_utils'
+import { handleOldProps, useTableColumnOptions, useTableOptions,useQueryColumnOptions } from './join_utils'
 
 const props = defineProps<{ join?: JoinArgs }>()
 const emit = defineEmits({
@@ -133,8 +132,9 @@ async function autoMatchColumns() {
 	}
 }
 
-const workbook = inject(workbookKey)!
+const workbook = inject(workbookKey, null)
 const queryTableOptions = computed(() => {
+	if (!workbook) return []
 	const linkedQueries = workbook.getLinkedQueries(query.doc.name)
 	return workbook.doc.queries
 		.filter((q) => q.name !== query.doc.name && !linkedQueries.includes(q.name))
@@ -161,11 +161,12 @@ const groupedTableOptions = computed(() => {
 	]
 })
 
-const queryTableColumnOptions = computed(() => {
-	if (join.table.type !== 'query') return []
-	const query = useQuery(join.table.query_name)
-	return query.result.columnOptions
+const rightQueryName = computed(() => {
+	return join.table.type === 'query' ? join.table.query_name : ''
 })
+
+// get options by queryName
+const queryTableColumnOptions = useQueryColumnOptions(rightQueryName)
 
 const showJoinConditionEditor = computed(() => 'join_expression' in join.join_condition)
 function toggleJoinConditionEditor() {
@@ -271,10 +272,10 @@ function reset() {
 									<Autocomplete
 										label="Right Column"
 										placeholder="Column"
-										:loading="rightTableColumnOptions.loading"
+										:loading="rightTableColumnOptions.loading || queryTableColumnOptions.loading"
 										:options="[
 											...rightTableColumnOptions.options,
-											...queryTableColumnOptions,
+											...queryTableColumnOptions.options,
 										]"
 										:modelValue="join.join_condition.right_column.column_name"
 										@update:modelValue="
@@ -337,10 +338,10 @@ function reset() {
 						<Autocomplete
 							:multiple="true"
 							placeholder="Columns"
-							:loading="rightTableColumnOptions.loading"
+							:loading="rightTableColumnOptions.loading || queryTableColumnOptions.loading"
 							:options="[
 								...rightTableColumnOptions.options,
-								...queryTableColumnOptions,
+								...queryTableColumnOptions.options,
 							]"
 							:modelValue="join.select_columns?.map((c) => c.column_name)"
 							@update:modelValue="

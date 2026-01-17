@@ -117,6 +117,7 @@ function saveEdit() {
 						class="flex-1 flex-shrink-0"
 						label="Label"
 						v-model="filter.filter_name"
+						placeholder="Enter filter label..."
 						autocomplete="off"
 					/>
 					<FormControl

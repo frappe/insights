@@ -22,15 +22,27 @@ class InsightsTablev3(Document):
     if TYPE_CHECKING:
         from frappe.types import DF
 
+        before_import_script: DF.Code | None
         data_source: DF.Link
         label: DF.Data
         last_synced_on: DF.Datetime | None
+        row_limit: DF.Int
         stored: DF.Check
         table: DF.Data
     # end: auto-generated types
 
     def autoname(self):
         self.name = get_table_name(self.data_source, self.table)
+
+    def validate(self):
+        if self.before_import_script:
+            from insights.insights.doctype.insights_data_source_v3.ibis_utils import exec_with_return
+
+            try:
+                table = self.get_ibis_table(self.data_source, self.table, use_live_connection=True)
+                exec_with_return(self.before_import_script, {"table": table})
+            except Exception as e:
+                frappe.throw(f"Error executing before import script: {e}")
 
     @staticmethod
     def bulk_create(data_source: str, tables: list[str]):
@@ -94,20 +106,14 @@ def get_table_name(data_source, table):
 
 
 def apply_user_permissions(t, data_source, table_name):
-    if not frappe.db.get_single_value(
-        "Insights Settings", "apply_user_permissions", cache=True
-    ):
+    if not frappe.db.get_single_value("Insights Settings", "apply_user_permissions", cache=True):
         return t
 
-    if not frappe.db.get_value(
-        "Insights Data Source v3", data_source, "is_site_db", cache=True
-    ):
+    if not frappe.db.get_value("Insights Data Source v3", data_source, "is_site_db", cache=True):
         return t
 
     if table_name == "tabSingles":
-        single_doctypes = frappe.get_all(
-            "DocType", filters={"issingle": 1}, pluck="name"
-        )
+        single_doctypes = frappe.get_all("DocType", filters={"issingle": 1}, pluck="name")
         allowed_doctypes = get_valid_perms()
         allowed_doctypes = [p.parent for p in allowed_doctypes if p.read]
         allowed_single_doctypes = set(single_doctypes) & set(allowed_doctypes)
@@ -157,14 +163,11 @@ def get_allowed_documents(doctype):
             distinct=True,
         )
 
-        doctype_perms = get_valid_perms()
-        parent_doctypes = [
-            p.parent for p in doctype_perms if p.read and p.parent in parent_doctypes
-        ]
+        # FIX: check permission of the parent and not the child table
+        parent_doctypes = [p for p in parent_doctypes if frappe.has_permission(p, "read")]
 
         parent_docs_by_doctype = {
-            parent_doctype: get_allowed_documents(parent_doctype)
-            for parent_doctype in parent_doctypes
+            parent_doctype: get_allowed_documents(parent_doctype) for parent_doctype in parent_doctypes
         }
 
         CHILD_DOCTYPE = frappe.qb.DocType(child_doctype)
@@ -180,9 +183,12 @@ def get_allowed_documents(doctype):
                 )
                 condition = _cond if condition is None else condition | _cond
 
-        docs = docs_query.where(condition).run(pluck="name")
-        doc_count = frappe.db.count(doctype)
-        if doc_count == len(docs):
-            docs = "*"
+        if condition is not None:
+            docs = docs_query.where(condition).run(pluck="name")
+            doc_count = frappe.db.count(doctype)
+            if doc_count == len(docs):
+                docs = "*"
+        else:
+            docs = []
 
     return docs

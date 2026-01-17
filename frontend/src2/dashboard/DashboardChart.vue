@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { AlertTriangle, Maximize } from 'lucide-vue-next'
-import { computed, inject, ref, provide } from 'vue'
+import { Button } from 'frappe-ui'
+import { AlertTriangle, Maximize, XIcon } from 'lucide-vue-next'
+import { computed, inject, provide, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import useChart from '../charts/chart'
 import ChartRenderer from '../charts/components/ChartRenderer.vue'
@@ -18,6 +19,8 @@ const chart = computed(() => {
 })
 
 if (props.item.chart) {
+	provide('chartName', props.item.chart)
+
 	waitUntil(() => Boolean(chart.value?.isloaded)).then(() => {
 		if (!chart.value?.dataQuery.result.executedSQL) {
 			dashboard.refreshChart(props.item.chart)
@@ -29,7 +32,7 @@ if (props.item.chart) {
 			{
 				deep: true,
 				debounce: 500,
-			}
+			},
 		)
 	})
 }
@@ -45,7 +48,7 @@ wheneverChanges(
 		if (editing) {
 			router.push(`/workbook/${workbook.doc.name}/chart/${props.item.chart}`)
 		}
-	}
+	},
 )
 </script>
 
@@ -61,7 +64,7 @@ wheneverChanges(
 		v-if="chart && chart.doc.chart_type !== 'Number'"
 		class="absolute top-1.5 right-1.5 p-2 opacity-0 transition-opacity group-hover:opacity-100"
 	>
-		<Button variant="ghost" class="!h-7 !w-7" @click="showExpandedChartDialog = true">
+		<Button variant="ghost" @click="showExpandedChartDialog = true">
 			<Maximize class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
 		</Button>
 	</div>
@@ -70,12 +73,20 @@ wheneverChanges(
 		v-if="chart"
 		v-model="showExpandedChartDialog"
 		:options="{
-			size: '6xl',
+			size: '7xl',
+			title: chart?.doc.title,
 		}"
 	>
 		<template #body>
 			<div class="h-[75vh] w-full">
 				<ChartRenderer v-if="chart" :chart="chart" />
+				<div class="absolute top-2 right-2">
+					<Button variant="ghost" @click="showExpandedChartDialog = false">
+						<template #icon>
+							<XIcon class="size-4 text-gray-700" />
+						</template>
+					</Button>
+				</div>
 			</div>
 		</template>
 	</Dialog>

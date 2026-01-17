@@ -41,6 +41,9 @@ export type ColumnDataType =
 	| 'Datetime'
 	| 'Time'
 	| 'Text'
+	| 'JSON'
+	| 'Array'
+	| 'Auto'
 export type MeasureDataType = 'String' | 'Integer' | 'Decimal'
 export type DimensionDataType = 'String' | 'Date' | 'Datetime' | 'Time'
 export const aggregations = ['sum', 'count', 'avg', 'min', 'max', 'count_distinct']
@@ -69,6 +72,18 @@ export type Expression = {
 	type: 'expression'
 	expression: string
 }
+
+export interface RelativeDateParts {
+	span: string
+	interval: string
+	intervalType: string
+	includeCurrent: boolean
+}
+
+export const SPAN_OPTIONS = ['Last', 'Current', 'Next']
+export const INTERVAL_TYPE_OPTIONS = [
+	'Day', 'Week', 'Month', 'Quarter', 'Year', 'Fiscal Year'
+]
 
 export type SourceArgs = { table: Table }
 export type Source = { type: 'source' } & SourceArgs

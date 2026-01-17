@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import QueryDataTable from '../../query/components/QueryDataTable.vue'
 import { column } from '../../query/helpers'
 import { TableChartConfig } from '../../types/chart.types'
@@ -8,19 +8,18 @@ import { Chart } from '../chart'
 import ChartTitle from './ChartTitle.vue'
 
 const props = defineProps<{ chart: Chart }>()
-
 const tableConfig = computed(() => props.chart.doc.config as TableChartConfig)
 
 function onSortChange(column_name: string, sort_order: SortDirection) {
 	const existingOrder = props.chart.doc.config.order_by.find(
-		(order) => order.column.column_name === column_name
+		(order) => order.column.column_name === column_name,
 	)
 	if (existingOrder) {
 		if (sort_order) {
 			existingOrder.direction = sort_order
 		} else {
 			props.chart.doc.config.order_by = props.chart.doc.config.order_by.filter(
-				(order) => order.column.column_name !== column_name
+				(order) => order.column.column_name !== column_name,
 			)
 		}
 	} else {
@@ -41,10 +40,14 @@ function onSortChange(column_name: string, sort_order: SortDirection) {
 			:show-filter-row="tableConfig.show_filter_row"
 			:show-column-totals="tableConfig.show_column_totals"
 			:show-row-totals="tableConfig.show_row_totals"
+			:compact-numbers="tableConfig.compact_numbers"
 			:enable-color-scale="tableConfig.enable_color_scale"
+			:format-group="tableConfig.conditional_formatting"
 			:enable-sort="true"
 			:enable-drill-down="true"
 			:on-sort-change="onSortChange"
+			:sticky-columns="tableConfig.sticky_columns"
+			:replace-nulls-with-zeros="true"
 		></QueryDataTable>
 	</div>
 </template>

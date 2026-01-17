@@ -239,7 +239,10 @@ class Functions:
 def handle_timespan(column, timespan):
     if isinstance(timespan, list):
         timespan = " ".join(timespan)
-    timespan = timespan.lower()  # "last 7 days"
+    include_current = "(include current)" in timespan.lower()
+
+    timespan = timespan.lower()
+    timespan = timespan.replace("(include current)", "").strip()
     timespan = timespan[:-1] if timespan.endswith("s") else timespan  # "last 7 day"
 
     units = [
@@ -253,7 +256,7 @@ def handle_timespan(column, timespan):
     if not any(timespan.endswith(unit) for unit in units):
         raise Exception(f"Invalid timespan unit - {timespan}")
 
-    dates = get_date_range(timespan)
+    dates = get_date_range(timespan, include_current=include_current)
     if not dates:
         raise Exception(f"Invalid timespan {timespan}")
     dates_str = add_start_and_end_time(dates)
@@ -281,7 +284,8 @@ def get_descendants(node, tree, include_self=False):
 def get_current_date_range(unit):
     today = nowdate()
     if unit == "day":
-        return [today, today]
+        today_date = getdate(today)
+        return [today_date, today_date]
     if unit == "week":
         return [get_first_day_of_week(today), get_last_day_of_week(today)]
     if unit == "month":

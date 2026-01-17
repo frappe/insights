@@ -50,7 +50,9 @@ function setDraggedItem(event: DragEvent, row: any) {
 					class="flex h-7.5 items-center justify-between rounded pl-1.5 text-sm"
 				>
 					<div class="flex gap-1.5 overflow-hidden">
-						<slot name="item-icon" :item="row" />
+						<div class="flex-shrink-0">
+							<slot name="item-icon" :item="row" />
+						</div>
 						<p class="truncate">{{ row.title }}</p>
 					</div>
 					<button

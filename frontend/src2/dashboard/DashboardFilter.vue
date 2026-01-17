@@ -33,10 +33,15 @@ const sourceColumn = computed(() => {
 
 function stringValuesProvider(search: string) {
 	if (!sourceColumn.value) return Promise.resolve([])
+
+	const firstLinkedChart = Object.keys(filter.links)?.[0]
+	const adhocFilters = firstLinkedChart ? dashboard.getAdhocFilters(firstLinkedChart) : undefined
+
 	return dashboard.getDistinctColumnValues(
 		sourceColumn.value.query,
 		sourceColumn.value.column,
-		search
+		search,
+		adhocFilters,
 	)
 }
 
@@ -46,7 +51,7 @@ wheneverChanges(
 	() => {
 		dashboard.updateFilterState(filter.filter_name, filterState.operator, filterState.value)
 	},
-	{ deep: true }
+	{ deep: true },
 )
 
 const label = computed(() => {
@@ -73,12 +78,12 @@ const label = computed(() => {
 					<template #prefix>
 						<DataTypeIcon
 							v-if="filter.filter_type"
-							:column-type="(FILTER_TYPES[filter.filter_type][0] as ColumnDataType)"
+							:column-type="FILTER_TYPES[filter.filter_type][0] as ColumnDataType"
 							class="h-4 w-4 flex-shrink-0"
 							stroke-width="1.5"
 						/>
 					</template>
-					{{ label || 'Filter' }}
+					{{ label }}
 				</Button>
 			</template>
 			<template #body-main="{ togglePopover, isOpen }">

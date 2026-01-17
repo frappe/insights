@@ -17,18 +17,70 @@ def get_frappedb_connection(data_source):
         return get_mariadb_connection(data_source)
 
 
+def get_primary_data_source():
+    site_db = frappe.get_doc("Insights Data Source v3", "Site DB")
+
+    # Set database type if not already set
+    if not site_db.database_type:
+        site_db.database_type = "PostgreSQL" if frappe.conf.db_type == "postgres" else "MariaDB"
+
+    # Use Site DB config if available, otherwise fall back to Frappe config
+    if not site_db.host or not site_db.port:
+        site_db.host = frappe.conf.db_host
+        site_db.port = frappe.conf.db_port
+
+    if not site_db.host:
+        site_db.host = "localhost"
+
+    if not site_db.port:
+        site_db.port = 5432 if site_db.database_type == "PostgreSQL" else 3306
+
+    if not site_db.database_name:
+        site_db.database_name = frappe.conf.db_name
+
+    if not site_db.username:
+        site_db.username = frappe.conf.db_name
+
+    if not site_db.password:
+        site_db.password = frappe.conf.db_password
+
+    if site_db.use_ssl is None:
+        site_db.use_ssl = False
+
+    return site_db
+
+
+def get_replica_data_source():
+    data_source = get_primary_data_source()
+
+    if frappe.conf.replica_host:
+        data_source.host = frappe.conf.replica_host
+    if frappe.conf.replica_db_port:
+        data_source.port = frappe.conf.replica_db_port
+    if frappe.conf.replica_db_name:
+        data_source.database_name = frappe.conf.replica_db_name
+
+    if frappe.conf.different_credentials_for_replica:
+        data_source.username = (
+            frappe.conf.replica_db_user or frappe.conf.replica_db_name or frappe.conf.db_name
+        )
+        data_source.password = frappe.conf.replica_db_password or frappe.conf.db_password
+
+    return data_source
+
+
 def get_sitedb_connection():
-    data_source = frappe.new_doc("Insights Data Source v3")
-    data_source.database_type = (
-        "PostgreSQL" if frappe.conf.db_type == "postgres" else "MariaDB"
-    )
-    data_source.host = frappe.conf.db_host
-    data_source.port = frappe.conf.db_port
-    data_source.database_name = frappe.conf.db_name
-    data_source.username = frappe.conf.db_name
-    data_source.password = frappe.conf.db_password
-    data_source.use_ssl = False
-    return get_frappedb_connection(data_source)
+    # If replica is configured, try replica connection first
+    if frappe.conf.read_from_replica:
+        try:
+            replica = get_replica_data_source()
+            return get_frappedb_connection(replica)
+        except Exception:
+            # If replica fails, fall back to primary
+            pass
+
+    primary = get_primary_data_source()
+    return get_frappedb_connection(primary)
 
 
 def is_frappe_db(data_source):

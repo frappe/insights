@@ -8,6 +8,8 @@
   "workbook",
   "query",
   "data_query",
+  "sort_order",
+  "folder",
   "column_break_mgwd",
   "chart_type",
   "is_public",
@@ -79,11 +81,23 @@
    "fieldtype": "Data",
    "label": "Old Name",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "sort_order",
+   "fieldtype": "Int",
+   "label": "sort_order",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "folder",
+   "fieldtype": "Data",
+   "label": "folder"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-03-14 16:25:02.809832",
+ "modified": "2025-10-18 02:38:53.314449",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Chart v3",
@@ -114,6 +128,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "search_fields": "workbook, query",
  "show_title_field_in_link": 1,
  "sort_field": "creation",

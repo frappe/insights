@@ -1,5 +1,5 @@
 import { graphic } from 'echarts/core'
-import { ellipsis, formatNumber, getShortNumber } from '../helpers'
+import { ellipsis, formatNumber, getShortNumber, toTitleCase } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import { getFormattedDate } from '../query/helpers'
 import {
@@ -9,12 +9,29 @@ import {
 	DonutChartConfig,
 	FunnelChartConfig,
 	LineChartConfig,
+	MapChartConfig,
+	BubbleChartConfig,
 	Series,
 	SeriesLine,
 	XAxis,
 } from '../types/chart.types'
 import { QueryResult, QueryResultColumn, QueryResultRow } from '../types/query.types'
 import { getColors, getGradientColors } from './colors'
+
+interface GeoJSONFeature {
+	type: string
+	id?: string
+	properties?: {
+		NAME_2?: string
+		[key: string]: any
+	}
+	geometry: any
+}
+
+interface GeoJSONData {
+	type: string
+	features: GeoJSONFeature[]
+}
 
 // eslint-disable-next-line no-unused-vars
 export function guessChart(columns: QueryResultColumn[], rows: QueryResultRow[]) {
@@ -39,6 +56,7 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 
 	const number_columns = _columns.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
 	const show_legend = number_columns.length > 1
+	const show_scrollbar = config.y_axis.show_scrollbar || false
 
 	const xAxis = getXAxis(config.x_axis)
 	const xAxisIsDate = FIELDTYPES.DATE.includes(config.x_axis.dimension.data_type)
@@ -71,7 +89,8 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 	return {
 		animation: true,
 		animationDuration: 700,
-		grid: getGrid({ show_legend }),
+		dataZoom: getDataZoom(show_scrollbar),
+		grid: getGrid({ show_legend, show_scrollbar }),
 		color: colors,
 		xAxis,
 		yAxis,
@@ -118,7 +137,7 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 			xAxisIsDate,
 			granularity,
 		}),
-		legend: getLegend(show_legend),
+		legend: getLegend(show_legend, show_scrollbar),
 	}
 }
 
@@ -132,12 +151,28 @@ function getAreaStyle(color: string) {
 	}
 }
 
+function getDataZoom(show: boolean, swapAxes = false) {
+	return {
+		show,
+		orient: swapAxes ? 'vertical' : 'horizontal',
+		type: 'slider',
+		zoomLock: false,
+		bottom: swapAxes ? "20%" : "4%",
+		height: swapAxes ? "80%" : 15,
+		width: swapAxes ? 15 : "90%",
+		left: swapAxes ? null : "5%",
+		right: swapAxes ? 10 : null,
+		handleSize: 25,
+	}
+}
+
 export function getBarChartOptions(config: BarChartConfig, result: QueryResult, swapAxes = false) {
 	const _columns = result.columns
 	const _rows = result.rows
 
 	const number_columns = _columns.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
 	const show_legend = number_columns.length > 1
+	const show_scrollbar = config.y_axis.show_scrollbar || false
 
 	const xAxis = getXAxis(config.x_axis)
 	const xAxisIsDate = FIELDTYPES.DATE.includes(config.x_axis.dimension.data_type)
@@ -191,9 +226,10 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 		animation: true,
 		animationDuration: 700,
 		color: colors,
-		grid: getGrid({ show_legend }),
+		grid: getGrid({ show_legend, show_scrollbar, swapAxes }),
 		xAxis: swapAxes ? yAxis : xAxis,
 		yAxis: swapAxes ? xAxis : yAxis,
+		dataZoom: getDataZoom(show_scrollbar, swapAxes),
 		series: number_columns.map((c, idx) => {
 			const serie = getSerie(config, c.name)
 			const is_right_axis = serie.align === 'Right'
@@ -202,7 +238,6 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 			const type = serie.type?.toLowerCase() || 'bar'
 			const stack = type === 'bar' && config.y_axis.stack ? 'stack' : undefined
 			const show_data_labels = serie.show_data_labels ?? config.y_axis.show_data_labels
-
 			const data = getSeriesData(c.name)
 			const name = config.split_by?.dimension?.column_name ? c.name : serie.measure.measure_name || c.name
 
@@ -243,7 +278,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 			granularity,
 			xySwapped: swapAxes,
 		}),
-		legend: getLegend(show_legend),
+		legend: getLegend(show_legend, show_scrollbar, swapAxes),
 	}
 }
 
@@ -287,6 +322,9 @@ function getXAxis(x_axis: XAxis) {
 		axisLabel: {
 			show: true,
 			rotate: rotation,
+			width: 100,
+			overflow: 'truncate',
+			ellipsis: '...',
 		},
 	}
 }
@@ -367,8 +405,10 @@ export function getDonutChartOptions(config: DonutChartConfig, result: QueryResu
 		top = 'middle'
 		padding = [30, 0, 30, 0]
 	}
+
 	if (show_inline_labels) {
 		center = ['50%', '50%']
+		radius = ['45%', '75%']
 	}
 
 	return {
@@ -416,7 +456,9 @@ export function getDonutChartOptions(config: DonutChartConfig, result: QueryResu
 						return `${ellipsis(name, 20)} (${percentage.toFixed(0)}%)`
 					},
 			  }
-			: null,
+			: {
+					show: false,
+			  },
 		tooltip: {
 			trigger: 'item',
 			confine: true,
@@ -443,7 +485,6 @@ function getDonutChartData(
 	if (!labelColumn) {
 		throw new Error('No label column found')
 	}
-
 	const valueByLabel = rows.reduce((acc, row) => {
 		const label = row[labelColumn.name]
 		const value = row[measureColumn.name]
@@ -461,7 +502,6 @@ function getDonutChartData(
 	if (othersTotal) {
 		topData.push(['Others', othersTotal])
 	}
-
 	return topData
 }
 
@@ -561,12 +601,412 @@ export function getFunnelChartOptions(config: FunnelChartConfig, result: QueryRe
 	}
 }
 
+function getMapChartData(
+	columns: QueryResultColumn[],
+	rows: QueryResultRow[],
+	config?: MapChartConfig
+) {
+	const measureColumn = columns.find((c) => FIELDTYPES.MEASURE.includes(c.type))
+	if (!measureColumn) {
+		throw new Error('No measure column found')
+	}
+
+	const locationColumn = columns.find((c) => FIELDTYPES.DIMENSION.includes(c.type))
+	if (!locationColumn) {
+		throw new Error('No location column found')
+	}
+
+	// Get region mappings from config
+	const regionMappings = config?.region_mappings?.[config.map_type || 'world'] || {}
+
+	let aggregationColumn = locationColumn
+	const locationValueMap = new Map<string, number>()
+
+	for (const row of rows) {
+		const rawLocation = row[aggregationColumn.name]
+		const mappedLocation = regionMappings[rawLocation] || toTitleCase(rawLocation)
+		const value = row[measureColumn.name]
+
+		const currentValue = locationValueMap.get(mappedLocation) || 0
+		locationValueMap.set(mappedLocation, currentValue + value)
+	}
+
+	const data = Array.from(locationValueMap.entries())
+		.sort((a, b) => b[1] - a[1])
+		.map(([location, value]) => [location, value])
+
+	return data
+}
+
+function jenksMatrices(data: number[], nClasses: number) {
+
+	//initialize matrices
+	const mat1 = Array.from({ length: data.length + 1 }, () => Array(nClasses + 1).fill(0));
+	const mat2 = Array.from({ length: data.length + 1 }, () => Array(nClasses + 1).fill(0));
+
+	for (let i = 1; i <= nClasses; i++) {
+	  mat1[1][i] = 1;
+	  mat2[1][i] = 0;
+	  for (let j = 2; j <= data.length; j++) mat2[j][i] = Infinity;
+	}
+	return { mat1, mat2 };
+  }
+
+function jenksBreaks(data: number[], nClasses: number, mat1: number[][], mat2: number[][]) {
+
+	for (let l = 2; l <= data.length; l++) {
+	  let s1 = 0, s2 = 0, w = 0;
+	  for (let m = 1; m <= l; m++) {
+		const i3 = l - m + 1;
+		const val = data[i3 - 1];
+		s2 += val * val;
+		s1 += val;
+		w++;
+		const v = s2 - (s1 * s1) / w;
+		const i4 = i3 - 1;
+		if (i4 !== 0) {
+		  for (let j = 2; j <= nClasses; j++) {
+			if (mat2[l][j] >= v + mat2[i4][j - 1]) {
+			  mat1[l][j] = i3;
+			  mat2[l][j] = v + mat2[i4][j - 1];
+			}
+		  }
+		}
+	  }
+
+	  mat1[l][1] = 1;
+	  mat2[l][1] = s2 - (s1 * s1) / w;
+	}
+  }
+
+function jenks(data: number[], nClasses: number) {
+
+	data = data.slice().sort((a, b) => a - b);
+	const { mat1, mat2 } = jenksMatrices(data, nClasses);
+
+	jenksBreaks(data, nClasses, mat1, mat2);
+
+	const kClass = Array(nClasses + 1).fill(0);
+	kClass[nClasses] = data[data.length - 1];
+	let k = data.length, countNum = nClasses;
+	while (countNum >= 2) {
+	  const idx = mat1[k][countNum] - 2;
+	  kClass[countNum - 1] = data[idx];
+	  k = mat1[k][countNum] - 1;
+	  countNum--;
+	}
+	kClass[0] = data[0];
+	return kClass;
+  }
+
+// visual map pieces
+function mapPieces(values: number[]) {
+	if (values.length === 0) {
+		return [{ min: 0, max: 0, label: '0' }]
+	}
+
+	const validValues = values.filter(v => typeof v === 'number' && !isNaN(v) && v > 0)
+
+	if (validValues.length === 0) {
+		return [{ min: 0, max: 0, label: '0' }]
+	}
+
+	if (validValues.length === 1) {
+		return [{
+			min: 0,
+			max: validValues[0],
+			label: getShortNumber(validValues[0], 1)
+		}]
+	}
+
+	const sortedValues = validValues.sort((a, b) => a - b)
+	const uniqueValues = [...new Set(sortedValues)]
+	const numClasses = Math.min(5, uniqueValues.length)
+
+	const breaks = jenks(uniqueValues, numClasses)
+
+	const pieces = []
+
+	// create pieces from the breaks
+	for (let i = 0; i < breaks.length - 1; i++) {
+		const rangeMax = breaks[i + 1]
+		const rangeMin = i === 0 ? 0 : breaks[i]
+
+			pieces.push({
+				gt: rangeMin,
+				lte: rangeMax,
+				label: getShortNumber(rangeMax, 1)
+			})
+
+	}
+
+	return pieces.reverse()
+
+}
+
+export function getMapChartOptions(config: MapChartConfig, result: QueryResult) {
+	const columns = result.columns
+	const rows = result.rows
+
+	const measureColumn = columns.find((c) => FIELDTYPES.MEASURE.includes(c.type))
+	const locationColumn = columns.find((c) => FIELDTYPES.DIMENSION.includes(c.type))
+
+	if (!measureColumn || !locationColumn) {
+		return null
+	}
+
+	let jsonUrl = ''
+		if (config.map_type === 'world') {
+			jsonUrl = 'world'
+		} else if (config.map_type === 'india') {
+			jsonUrl = 'india'
+	}
+
+	const data = getMapChartData(columns, rows, config)
+	const values = data.map((d) => d[1])
+
+	const options: any = {
+		height: '100%',
+		animation: true,
+		animationDuration: 300,
+		tooltip: {
+			trigger: 'item',
+			formatter: (params: any) => {
+				// eg. Maharashtra: 1,23,456
+				const value = params.value ? getShortNumber(params.value, 2) : '0'
+				return `<div class="flex items-center justify-between gap-5">
+					<div>${params.name}</div>
+					<div class="font-bold">${value}</div>
+				</div>`
+			}
+		},
+		visualMap: {
+			type: 'piecewise',
+			pieces: mapPieces(values),
+			itemSymbol: 'circle',
+			inRange: {
+				color: ['#dbeeff','#b7ddff', '#92cdff','#6ebcff','#4aabff']
+			},
+		},
+		series: [{
+			name: measureColumn.name,
+			type: 'map',
+			map: jsonUrl,
+			projection: {
+					project: (point: [number, number]) => [point[0] / 180 * Math.PI, -Math.log(Math.tan((Math.PI / 2 + point[1] / 180 * Math.PI) / 2))],
+					unproject: (point: [number, number]) => [point[0] * 180 / Math.PI, 2 * 180 / Math.PI * Math.atan(Math.exp(point[1])) - 90]
+			},
+			data: data.map((d) => ({
+				name: d[0],
+				value: d[1]
+			})),
+			itemStyle: {
+				color: 'rgb(68, 68, 68)',
+				areaColor: 'rgb(243, 243, 243)',
+				borderWidth: 0.5,
+				borderColor: 'rgb(124, 124, 124)',
+			},
+			emphasis: false,
+			selectedMode: false,
+		}],
+	}
+
+	return options
+}
+
+export function getBubbleChartOptions(config: BubbleChartConfig, result: QueryResult) {
+	const _rows = result.rows
+
+	const xColumnName = config.xAxis?.measure_name
+	const yColumnName = config.yAxis?.measure_name
+
+	if (!xColumnName || !yColumnName) {
+		return null
+	}
+
+	const colors = getColors()
+	const sizeColumnName = config.size_column?.measure_name
+	const nameColumnName = config.dimension?.dimension_name || config.dimension?.column_name
+	const groupByColumnName = config.quadrant_column?.dimension_name || config.quadrant_column?.column_name
+	const show_data_labels = config.show_data_labels || false
+
+	const scatterData = _rows.map((row) => {
+		const xValue = row[xColumnName]
+		const yValue = row[yColumnName]
+		const sizeValue = sizeColumnName ? row[sizeColumnName] : undefined
+		const nameValue = nameColumnName ? row[nameColumnName] : undefined
+		const groupValue = groupByColumnName ? row[groupByColumnName] : undefined
+		return [xValue, yValue, sizeValue, nameValue, groupValue]
+	})
+
+	const seriesMap = new Map<string, any[]>()
+	scatterData.forEach((dataPoint) => {
+		const groupValue = dataPoint[4]
+		if (!seriesMap.has(groupValue)) {
+			seriesMap.set(groupValue, [])
+		}
+		seriesMap.get(groupValue)!.push(dataPoint)
+	})
+
+	// calculate symbol size
+	let symbolSizeConfig: any = 10
+	if (sizeColumnName) {
+		const allSizes = _rows.map((r) => r[sizeColumnName]).filter((val) => val != null && !isNaN(val))
+		if (allSizes.length > 0) {
+			const minSize = Math.min(...allSizes)
+			const maxSize = Math.max(...allSizes)
+			const sizeRange = maxSize - minSize
+
+			symbolSizeConfig = (value: any[]) => {
+				const size = value[2]
+				if (size === undefined || size === null || isNaN(size)) return 10
+				if (sizeRange === 0) return 20
+				const normalized = (size - minSize) / sizeRange
+				return 10 + normalized * 25
+			}
+		}
+	}
+
+	const show_legend = !!groupByColumnName && seriesMap.size > 1
+	const series = Array.from(seriesMap.entries()).map(([groupName, data], idx) => {
+		const color = colors[idx % colors.length]
+
+		const seriesConfig: any = {
+			name: groupName,
+			type: 'scatter',
+			data: data,
+			symbolSize: symbolSizeConfig,
+			itemStyle: {
+				color: color,
+			},
+			label: {
+				show: show_data_labels,
+				position: 'top',
+				fontSize: 11,
+				formatter: (params: any) => {
+					if (nameColumnName && params.data[3]) {
+						return params.data[3]
+					}
+					const yVal = params.data[1]
+					return isNaN(yVal) ? yVal : getShortNumber(yVal, 1)
+				},
+			},
+			labelLayout: { hideOverlap: true },
+			emphasis: {
+				itemStyle: {
+					borderWidth: 6,
+					borderCap: 'round',
+					borderJoin: 'round',
+				},
+			},
+		}
+
+		if (idx === 0 && config.show_quadrants) {
+			const markLines: any[] = []
+			if (config.xAxis_refLine !== undefined && config.xAxis_refLine !== null) {
+				markLines.push({
+					xAxis: config.xAxis_refLine,
+					lineStyle: { type: 'dashed', width: 1.5 },
+				})
+			}
+			if (config.yAxis_refLine !== undefined && config.yAxis_refLine !== null) {
+				markLines.push({
+					yAxis: config.yAxis_refLine,
+					lineStyle: { type: 'dashed', width: 1.5 },
+				})
+			}
+			if (markLines.length > 0) {
+				seriesConfig.markLine = {
+					silent: true,
+					symbol: 'none',
+					data: markLines,
+				}
+			}
+		}
+
+		return seriesConfig
+	})
+
+	const xColumnLabel = result.columnOptions.find((c) => c.value === xColumnName)?.label || xColumnName
+	const yColumnLabel = result.columnOptions.find((c) => c.value === yColumnName)?.label || yColumnName
+
+	const xAxis = {
+		...getYAxis(),
+		name: xColumnLabel,
+		nameLocation: 'middle',
+		nameGap: 25,
+	}
+
+	const yAxis = {
+		...getYAxis(),
+		name: yColumnLabel,
+		nameLocation: 'middle',
+		nameGap: 35,
+	}
+
+	const titles: any[] = []
+
+	return {
+		animation: true,
+		animationDuration: 700,
+		color: colors,
+		title: titles,
+		grid: getGrid({ show_legend }),
+		xAxis,
+		yAxis,
+		series,
+		tooltip: {
+			trigger: 'item',
+			confine: true,
+			appendToBody: false,
+			formatter: (params: any) => {
+				const xVal = params.value[0]
+				const yVal = params.value[1]
+				const sizeVal = params.value[2]
+				const name = params.value[3] || params.seriesName
+				const formattedX = isNaN(xVal) ? xVal : formatNumber(xVal)
+				const formattedY = isNaN(yVal) ? yVal : formatNumber(yVal)
+
+				let html = `
+					<div class="flex flex-col gap-1">
+						<div class="font-bold">${name}</div>
+						<div class="flex items-center justify-between gap-5">
+							<div>${xColumnLabel}:</div>
+							<div class="font-bold">${formattedX}</div>
+						</div>
+						<div class="flex items-center justify-between gap-5">
+							<div>${yColumnLabel}:</div>
+							<div class="font-bold">${formattedY}</div>
+						</div>`
+
+				if (sizeVal !== undefined && sizeVal !== null) {
+					const formattedSize = isNaN(sizeVal) ? sizeVal : formatNumber(sizeVal)
+					html += `
+						<div class="flex items-center justify-between gap-5">
+							<div>${sizeColumnName}:</div>
+							<div class="font-bold">${formattedSize}</div>
+						</div>`
+				}
+
+				html += `</div>`
+				return html
+			},
+		},
+		legend: getLegend(show_legend),
+	}
+}
+
 function getGrid(options: any = {}) {
+	let bottom = options.show_legend ? 45 : 22;
+	if (options.show_scrollbar && !options.swapAxes) {
+		bottom += 30;
+	}
+
 	return {
 		top: 18,
 		left: 30,
 		right: 30,
-		bottom: options.show_legend ? 36 : 22,
+		bottom: bottom,
 		containLabel: true,
 	}
 }
@@ -622,13 +1062,18 @@ function getTooltip(options: any = {}) {
 	}
 }
 
-function getLegend(show_legend = true) {
+function getLegend(show_legend = true, show_scrollbar = false, swap_axes = false) {
+	let bottom: string | number = 'bottom';
+	if (show_scrollbar && !swap_axes) {
+		bottom = 32;
+	}
+
 	return {
 		show: show_legend,
 		icon: 'circle',
 		type: 'scroll',
 		orient: 'horizontal',
-		bottom: 'bottom',
+		bottom,
 		itemGap: 16,
 		padding: [10, 30],
 		textStyle: { padding: [0, 0, 0, -4] },

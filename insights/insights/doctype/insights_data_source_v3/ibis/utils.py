@@ -1,4 +1,5 @@
 import frappe
+import ibis
 from ibis import selectors as s
 from jedi import Script
 
@@ -24,6 +25,71 @@ def get_functions():
 
     context["s"] = selectors
     context["selectors"] = selectors
+
+    allowed_ibis_attributes = (
+        "array",
+        "asc",
+        "case",
+        "cases",
+        "coalesce",
+        "cross_join",
+        "cume_dist",
+        "cumulative_window",
+        "date",
+        "dense_rank",
+        "desc",
+        "difference",
+        "dtype",
+        "following",
+        "greatest",
+        "ifelse",
+        "infer_dtype",
+        "infer_schema",
+        "intersect",
+        "interval",
+        "join",
+        "least",
+        "literal",
+        "map",
+        "memtable",
+        "now",
+        "ntile",
+        "null",
+        "and_",
+        "or_",
+        "param",
+        "parse_sql",
+        "percent_rank",
+        "pi",
+        "preceding",
+        "random",
+        "range",
+        "range_window",
+        "rank",
+        "read_csv",
+        "read_delta",
+        "read_json",
+        "read_parquet",
+        "row_number",
+        "rows_window",
+        "schema",
+        "selectors",
+        "struct",
+        "table",
+        "time",
+        "timestamp",
+        "to_sql",
+        "today",
+        "trailing_range_window",
+        "trailing_window",
+        "union",
+        "uuid",
+        "watermark",
+        "window",
+    )
+    context.ibis = frappe._dict()
+    for attr in allowed_ibis_attributes:
+        context.ibis[attr] = getattr(ibis, attr)
 
     return context
 
@@ -79,10 +145,7 @@ def get_code_completions(code: str):
             "name": sig.name,
             "definition": definition,
             "description": description,
-            "params": [
-                {"name": param.name, "description": param.description}
-                for param in sig.params
-            ],
+            "params": [{"name": param.name, "description": param.description} for param in sig.params],
         }
         if sig.index is not None:
             current_param = sig.params[sig.index]

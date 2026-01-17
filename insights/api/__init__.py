@@ -2,14 +2,14 @@
 # For license information, please see license.txt
 
 import frappe
-import frappe.client
 import ibis
 from frappe.defaults import get_user_default, set_user_default
+from frappe.handler import is_valid_http_method, is_whitelisted
 from frappe.integrations.utils import make_post_request
 from frappe.monitor import add_data_to_monitor
 from frappe.rate_limiter import rate_limit
 
-from insights.api.shared import check_public_access
+from insights.api.shared import is_public
 from insights.decorators import insights_whitelist, validate_type
 from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import (
     get_duckdb_connection,
@@ -49,7 +49,9 @@ def get_user_info():
         },
     )
 
-    user = frappe.db.get_value("User", frappe.session.user, ["first_name", "last_name"], as_dict=1)
+    user = frappe.db.get_value(
+        "User", frappe.session.user, ["first_name", "last_name", "user_type"], as_dict=1
+    )
 
     return {
         "email": frappe.session.user,
@@ -62,6 +64,7 @@ def get_user_info():
         "locale": frappe.db.get_single_value("System Settings", "language"),
         "is_v2_instance": frappe.db.count("Insights Query") > 0,
         "default_version": get_user_default("insights_default_version", frappe.session.user),
+        "has_desk_access": user.get("user_type") == "System User",
     }
 
 
@@ -103,24 +106,35 @@ def contact_team(message_type, message_content, is_critical=False):
 
 def get_csv_file(filename: str):
     file = frappe.get_doc("File", filename)
+    file_name = file.file_name or ""
     parts = file.get_extension()
-    if "csv" not in parts[1]:
-        frappe.throw("Only CSV files are supported")
-    return file
+    extension = parts[-1] if parts else ""
+    extension = extension.lstrip(".")
+
+    if not extension or extension not in ["csv", "xlsx"]:
+        frappe.throw(
+            f"Only CSV and XLSX files are supported. Detected extension: '{extension}' from filename: '{file_name}'"
+        )
+    return file, extension
 
 
 @insights_whitelist()
 @validate_type
-def get_csv_data(filename: str):
+def get_file_data(filename: str):
     check_data_source_permission("uploads")
 
-    file = get_csv_file(filename)
+    file, ext = get_csv_file(filename)
     file_path = file.get_full_path()
     file_name = file.file_name.split(".")[0]
     file_name = frappe.scrub(file_name)
-    table = ibis.read_csv(file_path, table_name=file_name)
-    count = table.count().execute().item()
 
+    con = ibis.duckdb.connect()
+    if ext in ["xlsx"]:
+        table = con.read_xlsx(file_path)
+    else:
+        table = con.read_csv(file_path, table_name=file_name)
+
+    count = table.count().execute()
     columns = get_columns_from_schema(table.schema())
     rows = table.head(50).execute().fillna("").to_dict(orient="records")
 
@@ -137,7 +151,7 @@ def get_csv_data(filename: str):
 def import_csv_data(filename: str):
     check_data_source_permission("uploads")
 
-    file = get_csv_file(filename)
+    file, ext = get_csv_file(filename)
     file_path = file.get_full_path()
     table_name = file.file_name.split(".")[0]
     table_name = frappe.scrub(table_name)
@@ -156,8 +170,20 @@ def import_csv_data(filename: str):
     db = get_duckdb_connection(ds, read_only=False)
 
     try:
-        table = db.read_csv(file_path, table_name=table_name)
-        db.create_table(table_name, table, overwrite=True)
+        if ext in ["xlsx"]:
+            table = db.read_xlsx(file_path)
+            db.create_table(table_name, table, overwrite=True)
+        else:
+            table = db.read_csv(file_path, table_name=table_name)
+            db.create_table(table_name, table, overwrite=True)
+    except Exception as e:
+        frappe.log_error(e)
+        if ext in ["xlsx"]:
+            frappe.throw(
+                "Failed to read Excel data from uploaded file. Please ensure the file is a valid Excel format and try again."
+            )
+        else:
+            frappe.throw("Failed to read CSV data from uploaded file. Please try again.")
     finally:
         db.disconnect()
 
@@ -167,23 +193,36 @@ def import_csv_data(filename: str):
 @frappe.whitelist(allow_guest=True)
 @validate_type
 def get_doc(doctype: str, name: str | int):
-    from frappe.client import get as _get_doc
+    try:
+        from frappe.client import get as _get_doc
 
-    if frappe.session.user != "Guest":
         return _get_doc(doctype, name)
+    except frappe.PermissionError:
+        if not is_public(doctype, name):
+            raise
+        return frappe.get_doc(doctype, name).as_dict()
 
-    check_public_access(doctype, name)
 
-    return frappe.get_doc(doctype, name).as_dict()
+def _execute_doc_method(doc, method: str, args: dict | None = None, ignore_permissions=False):
+    args = frappe.parse_json(args)
+    method_obj = getattr(doc, method)
+    fn = getattr(method_obj, "__func__", method_obj)
+
+    if not ignore_permissions:
+        doc.check_permission("read")
+        is_whitelisted(fn)
+        is_valid_http_method(fn)
+
+    new_kwargs = frappe.get_newargs(fn, args)
+    response = doc.run_method(method, **new_kwargs)
+    frappe.response.docs.append(doc)
+    frappe.response["message"] = response
+    add_data_to_monitor(methodname=method)
+    return response
 
 
 @frappe.whitelist(allow_guest=True)
 def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
-    from frappe.handler import run_doc_method as _run_doc_method
-
-    if frappe.session.user != "Guest":
-        return _run_doc_method(method, docs=docs, args=args)
-
     doc = frappe.parse_json(docs)
     doctype = doc.get("doctype")
     name = doc.get("name")
@@ -191,20 +230,28 @@ def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
     if not doctype or not name:
         raise frappe.ValidationError("Invalid document")
 
-    doc = frappe.get_doc(doctype, name)
-    check_public_access(doctype, name)
+    try:
+        docs = frappe.parse_json(docs)
+        doc = frappe.get_doc(docs)
+        return _execute_doc_method(doc, method, args)
 
-    args = args or {}
+    except frappe.PermissionError:
+        if not is_public(doctype, name):
+            raise frappe.PermissionError("You don't have permission to access this document")
+        if not is_public_method(doctype, method):
+            raise frappe.PermissionError("You don't have permission to access this method")
 
-    response = None
-    if doctype == "Insights Query v3" and method in ("execute", "download_results"):
-        response = doc.execute(**args)
-    elif doctype == "Insights Dashboard v3" and method == "get_distinct_column_values":
-        response = doc.get_distinct_column_values(**args)
-    else:
-        raise frappe.PermissionError("You don't have permission to access this document")
+        doc = frappe.get_doc(doctype, name)
+        return _execute_doc_method(doc, method, args, ignore_permissions=True)
 
-    frappe.response.docs.append(doc)
-    frappe.response["message"] = response
 
-    add_data_to_monitor(methodname=method)
+def is_public_method(doctype: str, method: str):
+    public_methods = {
+        "Insights Query v3": ["execute", "download_results"],
+        "Insights Dashboard v3": ["get_distinct_column_values"],
+    }
+
+    if doctype in public_methods and method in public_methods[doctype]:
+        return True
+
+    return False

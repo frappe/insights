@@ -147,7 +147,7 @@ export function showErrorToast(err: Error, raise = true) {
 	if (raise) throw err
 }
 
-export function downloadImage(element: HTMLElement, filename: string, scale = 1, options = {}) {
+export function downloadImage(element: HTMLElement, filename: string, scale = 2, options = {}) {
 	return domtoimage
 		.toPng(element, {
 			height: element.scrollHeight * scale,
@@ -191,6 +191,7 @@ export function guessPrecision(number: number) {
 	if (decimalIndex === -1) return 0
 	return Math.min(str.length - decimalIndex - 1, 2)
 }
+
 
 export function getShortNumber(number: number, precision = 0) {
 	const locale = session.user?.country == 'India' ? 'en-IN' : session.user?.locale
@@ -497,4 +498,19 @@ export function cachedCall(url: string, options?: any): Promise<any> {
 			callCache.delete(key)
 			throw err
 		})
+}
+
+export function toTitleCase(str: string): string {
+	if (!str) return str
+
+	return str
+		.replace(/&/g, 'and')
+		.toLowerCase()
+		.split(' ')
+		.map(word => {
+			if (word === 'and') return 'and'
+			return word.charAt(0).toUpperCase() + word.slice(1)
+		})
+		.join(' ')
+		.trim()
 }

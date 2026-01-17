@@ -128,6 +128,17 @@ export function getFormattedRows(result: QueryResult, operations: Operation[]) {
 				const granularity = getGranularity(column.name) as GranularityType
 				formattedRow[column.name] = getFormattedDate(row[column.name], granularity)
 			}
+
+			if (FIELDTYPES.TEXT.includes(column.type) && typeof row[column.name] === 'string' && row[column.name]) {
+				const htmlTagRegex = /<[^>]*>/g
+				if (htmlTagRegex.test(row[column.name])) {
+					htmlTagRegex.lastIndex = 0
+					formattedRow[column.name] = row[column.name]
+						.replace(htmlTagRegex, '')
+						.replace(/\s+/g, ' ')
+						.trim()
+				}
+			}
 		})
 		return formattedRow
 	})

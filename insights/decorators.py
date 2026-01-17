@@ -14,8 +14,6 @@ def check_role(role):
     def decorator(function):
         @wraps(function)
         def wrapper(*args, **kwargs):
-            if is_admin(frappe.session.user):
-                return function(*args, **kwargs)
 
             perm_disabled = not frappe.db.get_single_value(
                 "Insights Settings", "enable_permissions"
@@ -23,11 +21,16 @@ def check_role(role):
             if perm_disabled and role in ["Insights Admin", "Insights User"]:
                 return function(*args, **kwargs)
 
-            if not frappe.db.get_value(
+            has_required_role = frappe.db.get_value(
                 "Has Role",
                 {"parent": frappe.session.user, "role": role},
                 cache=not frappe.flags.in_test,
-            ):
+            )
+
+            if role == "Insights User" and is_admin(frappe.session.user):
+                has_required_role = True
+
+            if not has_required_role:
                 frappe.throw(
                     frappe._("You do not have permission to access this resource"),
                     frappe.PermissionError,

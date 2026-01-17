@@ -52,7 +52,6 @@ function makeDashboard(name: string) {
 	const filters = ref<Record<string, FilterArgs[]>>({})
 	const filterStates = ref<Record<string, FilterState>>({})
 
-
 	function addChart(charts: WorkbookChart[]) {
 		const maxY = getMaxY()
 		charts.forEach((chart) => {
@@ -82,7 +81,7 @@ function makeDashboard(name: string) {
 		const maxY = getMaxY()
 		dashboard.doc.items.push({
 			type: 'text',
-			text: 'Enter text here',
+			text: '',
 			layout: {
 				i: getUniqueId(),
 				x: 0,
@@ -94,39 +93,124 @@ function makeDashboard(name: string) {
 		editingItemIndex.value = dashboard.doc.items.length - 1
 	}
 
+	const grid_cols = 20 // for 5 columns
+	const filter_w = 4
+	const filter_h = 1
+
 	function addFilter() {
-		const maxY = getMaxY()
-		dashboard.doc.items.push({
+		const newFilter: WorkbookDashboardItem = {
 			type: 'filter',
-			filter_name: 'Filter',
+			filter_name: '',
 			filter_type: 'String',
 			links: {},
 			layout: {
 				i: getUniqueId(),
 				x: 0,
-				y: maxY,
-				w: 4,
-				h: 1,
+				y: 0,
+				w: filter_w,
+				h: filter_h,
 			},
-		})
+		}
+		dashboard.doc.items.push(newFilter)
+		positionNewFilter(newFilter)
 		editingItemIndex.value = dashboard.doc.items.length - 1
+	}
+
+	function positionNewFilter(newFilter: WorkbookDashboardItem) {
+		const items = dashboard.doc.items
+		const existingFilters = items.filter(
+			(item) => item.type === 'filter' && item !== newFilter
+		)
+
+		if (existingFilters.length === 0) {
+			newFilter.layout.x = 0
+			newFilter.layout.y = 0
+			return
+		}
+
+		const topRowY = Math.min(...existingFilters.map((item) => item.layout.y))
+		const topRowFilters = existingFilters.filter((item) => item.layout.y === topRowY)
+		const rightmostX = Math.max(
+			...topRowFilters.map((item) => item.layout.x + (item.layout.w || filter_w)),
+			0
+		)
+
+		if (rightmostX + newFilter.layout.w <= grid_cols) {
+			newFilter.layout.x = rightmostX
+			newFilter.layout.y = topRowY
+		} else {
+			newFilter.layout.x = 0
+			newFilter.layout.y = 0
+
+			existingFilters.forEach((item) => {
+				item.layout.y += filter_h
+			})
+
+			const otherItems = items.filter((item) => item.type !== 'filter')
+			if (otherItems.length > 0) {
+				const minOtherY = Math.min(...otherItems.map((item) => item.layout.y))
+				if (minOtherY <= filter_h) {
+					otherItems.forEach((item) => {
+						item.layout.y = Math.max(0, item.layout.y + filter_h)
+					})
+				}
+			}
+		}
 	}
 
 	function removeItem(index: number) {
 		dashboard.doc.items.splice(index, 1)
 	}
 
-	function refresh() {
-		dashboard.doc.items
-			.filter((item) => item.type === 'chart')
-			.forEach((item) => refreshChart(item.chart))
+	function normalizeLayout() {
+		const items = dashboard.doc.items
+		const filters = items.filter((item) => item.type === 'filter')
+		if (filters.length === 0) return
+
+		let currentX = 0
+		let currentY = 0
+
+		filters.forEach((item) => {
+			const itemWidth = item.layout.w || filter_w
+
+			// if filter doesn't fit in current row then move to next row
+			if (currentX + itemWidth > grid_cols && currentX > 0) {
+				currentX = 0
+				currentY += filter_h
+			}
+
+			item.layout.x = currentX
+			item.layout.y = currentY
+			item.layout.h = filter_h
+
+			if (!item.layout.w) item.layout.w = filter_w
+
+			currentX += itemWidth
+		})
+
+		const topRow = currentY + filter_h
+
+		const otherItems = items.filter((item) => item.type !== 'filter')
+		if (otherItems.length === 0) return
+		const minY = Math.min(...otherItems.map((item) => item.layout.y))
+		const topRowHeight = topRow - minY
+
+		if (topRowHeight === 0) return
+		otherItems.forEach((item) => {
+			item.layout.y = Math.max(0, item.layout.y + topRowHeight)
+		})
 	}
 
-	function refreshChart(chart_name: string) {
+	function refresh(force = false) {
+		dashboard.doc.items
+			.filter((item) => item.type === 'chart')
+			.forEach((item) => refreshChart(item.chart, force))
+	}
+
+	function refreshChart(chart_name: string, force = false) {
 		const chart = useChart(chart_name)
-		chart.refresh({
-			adhocFilters: getAdhocFilters(chart_name),
-		})
+		chart.dataQuery.adhocFilters = getAdhocFilters(chart_name)
+		chart.refresh(force)
 	}
 
 	function getAdhocFilters(chart_name: string) {
@@ -165,7 +249,6 @@ function makeDashboard(name: string) {
 				addFilterToQuery(linkedColumn.query, filter)
 			}
 		})
-
 		return filtersByQuery
 	}
 
@@ -213,11 +296,17 @@ function makeDashboard(name: string) {
 		}
 	}
 
-	function getDistinctColumnValues(query: string, column: string, search_term?: string) {
+	function getDistinctColumnValues(
+		query: string,
+		column: string,
+		search_term?: string,
+		adhocFilters?: Record<string, FilterGroup>
+	) {
 		return dashboard.call('get_distinct_column_values', {
 			query: query,
 			column_name: column,
 			search_term,
+			adhoc_filters: adhocFilters,
 		})
 	}
 
@@ -289,9 +378,12 @@ function makeDashboard(name: string) {
 		addText,
 		addFilter,
 		removeItem,
+		normalizeLayout,
 
 		refresh,
 		refreshChart,
+
+		getAdhocFilters,
 
 		updateFilterState,
 		applyFilter,
@@ -317,6 +409,8 @@ const INITIAL_DOC: InsightsDashboardv3 = {
 	is_shared_with_organization: false,
 	people_with_access: [],
 	read_only: false,
+	vertical_compact: true,
+	has_workbook_access: false,
 }
 
 function getDashboardResource(name: string) {

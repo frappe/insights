@@ -21,41 +21,39 @@ const selectedDataSources = ref<string[]>([])
 const selectedTables = ref<Record<string, string[]>>({})
 const tableRestrictions = ref<Record<string, string>>({})
 
+const expandedDataSource = ref<string | null>(null)
+const dataSourceTables = ref<Record<string, DataSourceTable[]>>({})
+const visibleTableLimit = ref<Record<string, number>>({})
+
+const expandedDataSourceTables = computed(() => {
+	if (!expandedDataSource.value) {
+		return []
+	}
+	return dataSourceTables.value[expandedDataSource.value] || []
+})
+
 if (teamPermissions.value.length) {
 	selectedDataSources.value = teamPermissions.value
 		.filter((p) => p.type === 'Source')
 		.map((p) => p.resource_name)
-
-	for (const ds of selectedDataSources.value) {
-		selectDataSource(ds, true)
-	}
 
 	const permittedTableNames = teamPermissions.value
 		.filter((p) => p.type === 'Table')
 		.map((p) => p.resource_name)
 
 	if (permittedTableNames.length) {
-		const tablesBySource: Record<string, string[]> = await call(
-			'insights.api.data_sources.get_data_sources_of_tables',
-			{ table_names: permittedTableNames }
-		)
-		selectedTables.value = tablesBySource
-		setTimeout(() => {
-			// wrap in setTimeout to avoid 'referenced before assignment' error
-			for (const data_source of Object.keys(tablesBySource)) {
-				if (!dataSourceTables.value[data_source]?.length) {
-					fetchTables(data_source)
+		call('insights.api.data_sources.get_data_sources_of_tables', {
+			table_names: permittedTableNames,
+		}).then((tablesBySource: Record<string, string[]>) => {
+			selectedTables.value = tablesBySource
+			for (const table of permittedTableNames) {
+				const tablePerm = teamPermissions.value.find((p) => p.resource_name === table)
+				const tableRestriction = tablePerm?.table_restrictions
+				if (tableRestriction) {
+					tableRestrictions.value[table] = tableRestriction
 				}
 			}
-		}, 0)
-
-		for (const table of permittedTableNames) {
-			const tablePerm = teamPermissions.value.find((p) => p.resource_name === table)
-			const tableRestriction = tablePerm?.table_restrictions
-			if (tableRestriction) {
-				tableRestrictions.value[table] = tableRestriction
-			}
-		}
+		})
 	}
 }
 
@@ -79,7 +77,7 @@ watchDebounced(
 						table_restrictions: tableRestrictions.value[table] || '',
 					}
 				})
-			}
+			},
 		)
 		const newPermissions = [...dataSourcesPerms, ...tablePerms]
 		const hasResourcesChanged =
@@ -87,13 +85,13 @@ watchDebounced(
 				newPermissions
 					.map((p) => p.resource_name)
 					.filter(Boolean)
-					.sort()
+					.sort(),
 			) !==
 			JSON.stringify(
 				teamPermissions.value
 					.map((p) => p.resource_name)
 					.filter(Boolean)
-					.sort()
+					.sort(),
 			)
 
 		const hasRestrictionsChanged =
@@ -101,20 +99,20 @@ watchDebounced(
 				newPermissions
 					.map((p) => p.table_restrictions)
 					.filter(Boolean)
-					.sort()
+					.sort(),
 			) !==
 			JSON.stringify(
 				teamPermissions.value
 					.map((p) => p.table_restrictions)
 					.filter(Boolean)
-					.sort()
+					.sort(),
 			)
 
 		if (hasResourcesChanged || hasRestrictionsChanged) {
 			teamPermissions.value = newPermissions
 		}
 	},
-	{ debounce: 300, deep: true }
+	{ debounce: 300, deep: true },
 )
 
 const dataSources = ref<DataSourceListItem[]>([])
@@ -126,16 +124,7 @@ dataSourceStore.getSources().then((sources) => {
 	}, selectedTables.value)
 })
 
-const expandedDataSource = ref<string | null>(null)
-const expandedDataSourceTables = computed(() => {
-	if (!expandedDataSource.value) {
-		return []
-	}
-	return dataSourceTables.value[expandedDataSource.value] || []
-})
-
 const tableSearchQuery = ref('')
-const dataSourceTables = ref<Record<string, DataSourceTable[]>>({})
 function toggleExpandedDataSource(dataSource: string) {
 	if (expandedDataSource.value === dataSource) {
 		expandedDataSource.value = null
@@ -192,7 +181,7 @@ function selectTable(dataSource: string, table: string, selected: boolean) {
 		selectedTables.value[dataSource].push(table)
 	} else {
 		selectedTables.value[dataSource] = selectedTables.value[dataSource].filter(
-			(t) => t !== table
+			(t) => t !== table,
 		)
 	}
 }
@@ -206,7 +195,7 @@ wheneverChanges(
 			return
 		}
 		const table = dataSourceTables.value[expandedDataSource.value].find(
-			(t) => t.name === expandedTable.value
+			(t) => t.name === expandedTable.value,
 		)
 		if (!table) {
 			return
@@ -218,7 +207,7 @@ wheneverChanges(
 				description: 'type',
 			})
 		})
-	}
+	},
 )
 function toggleExpandedTable(table: string) {
 	if (expandedTable.value === table) {
@@ -227,6 +216,17 @@ function toggleExpandedTable(table: string) {
 		tableRestrictions.value[table] = tableRestrictions.value[table] || ''
 		expandedTable.value = table
 	}
+}
+
+function loadMoreTables(dataSource: string) {
+	if (!visibleTableLimit.value[dataSource]) {
+		visibleTableLimit.value[dataSource] = 50
+	}
+	visibleTableLimit.value[dataSource] += 50
+}
+
+function getVisibleTableLimit(dataSource: string) {
+	return visibleTableLimit.value[dataSource] || 50
 }
 </script>
 
@@ -286,9 +286,9 @@ function toggleExpandedTable(table: string) {
 			<div
 				v-for="table in expandedDataSourceTables
 					.filter((t) =>
-						t.table_name.toLocaleLowerCase().includes(tableSearchQuery.toLowerCase())
+						t.table_name.toLocaleLowerCase().includes(tableSearchQuery.toLowerCase()),
 					)
-					.slice(0, 50)"
+					.slice(0, getVisibleTableLimit(data_source.name))"
 				:key="table.name"
 			>
 				<div class="flex flex-col gap-1">
@@ -304,7 +304,7 @@ function toggleExpandedTable(table: string) {
 								selectTable(
 									data_source.name,
 									table.name,
-									!isTableSelected(data_source.name, table.name)
+									!isTableSelected(data_source.name, table.name),
 								)
 							"
 						>
@@ -327,8 +327,8 @@ function toggleExpandedTable(table: string) {
 									expandedTable === table.name
 										? 'Hide'
 										: tableRestrictions[table.name]
-										? 'Edit Filters'
-										: 'Set Filters'
+										  ? 'Edit Filters'
+										  : 'Set Filters'
 								}}
 							</p>
 						</div>
@@ -343,8 +343,17 @@ function toggleExpandedTable(table: string) {
 					</div>
 				</div>
 			</div>
-			<div v-if="expandedDataSourceTables.length > 50" class="text-xs text-gray-600">
-				Showing only 50 of {{ expandedDataSourceTables.length }} tables
+			<div
+				v-if="expandedDataSourceTables.length > getVisibleTableLimit(data_source.name)"
+				class="flex items-center gap-2"
+			>
+				<p class="text-xs text-gray-600">
+					Showing {{ getVisibleTableLimit(data_source.name) }} of
+					{{ expandedDataSourceTables.length }} tables
+				</p>
+				<Button variant="ghost" @click="loadMoreTables(data_source.name)" class="text-xs">
+					Load 50 More
+				</Button>
 			</div>
 			<div v-if="!expandedDataSourceTables.length" class="text-xs text-gray-600">
 				No tables found

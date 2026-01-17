@@ -1,20 +1,23 @@
 <script setup lang="tsx">
-import { MoreHorizontal } from 'lucide-vue-next'
-import { inject } from 'vue'
+import { Check, MoreHorizontal, X } from 'lucide-vue-next'
+import { inject, ref } from 'vue'
 import {
 	ColumnDataType,
 	FilterOperator,
 	FilterValue,
+	MutateArgs,
 	QueryResultColumn,
 	SortDirection,
 } from '../../types/query.types'
-import { column as _column } from '../helpers'
+import { column as _column, expression } from '../helpers'
 import { Query } from '../query'
 import ColumnFilter from './ColumnFilter.vue'
 import ColumnRemove from './ColumnRemove.vue'
 import ColumnSort from './ColumnSort.vue'
 import ColumnTypeChange from './ColumnTypeChange.vue'
 import QueryDataTable from './QueryDataTable.vue'
+import ExpressionEditor from './ExpressionEditor.vue'
+import { copy } from '../../helpers'
 
 const query = inject('query') as Query
 
@@ -41,7 +44,7 @@ function onSort(column: QueryResultColumn, sort_order: SortDirection) {
 function onFilter(
 	column: QueryResultColumn,
 	filter_operator: FilterOperator,
-	filter_value: FilterValue
+	filter_value: FilterValue,
 ) {
 	query.addFilterGroup({
 		logical_operator: 'And',
@@ -54,13 +57,34 @@ function onFilter(
 		],
 	})
 }
+
+const emptyColumn = {
+	expression: expression(''),
+	data_type: 'Auto' as ColumnDataType,
+	new_name: 'new_column',
+}
+
+const newColumn = ref<MutateArgs>(copy(emptyColumn))
+
+function addNewColumn() {
+	query.addMutate(newColumn.value)
+	newColumn.value = copy(emptyColumn)
+}
 </script>
 
 <template>
 	<div class="relative flex w-full flex-1 flex-col overflow-hidden rounded shadow">
-		<QueryDataTable :query="query" :enable-column-rename="true" :enable-alerts="true">
+		<QueryDataTable
+			:query="query"
+			:enable-column-rename="true"
+			:enable-alerts="true"
+			:enable-new-column="true"
+		>
 			<template #header-prefix="{ column }">
-				<ColumnTypeChange :column="column" @typeChange="onTypeChange(column, $event)" />
+				<ColumnTypeChange
+					:model-value="column.type"
+					@update:model-value="onTypeChange(column, $event)"
+				/>
 			</template>
 
 			<template #header-suffix="{ column }">
@@ -99,6 +123,31 @@ function onFilter(
 							</div>
 						</template>
 					</Popover>
+				</div>
+			</template>
+
+			<template #new-column-editor="{ toggle }">
+				<div class="flex h-full min-w-64 w-auto items-center gap-1 pl-0.5">
+					<ColumnTypeChange v-model="newColumn.data_type" />
+					<ExpressionEditor
+						class="inline-expression h-fit max-h-[10rem] text-sm flex-1"
+						v-model="newColumn.expression.expression"
+						:column-options="query.result.columnOptions"
+						language="python"
+						:placeholder="''"
+						:hide-line-numbers="true"
+						:multi-line="false"
+					/>
+					<Button variant="ghost" class="flex-shrink-0" @click="addNewColumn(), toggle()">
+						<template #icon>
+							<Check class="size-4 text-gray-700" :stroke-width="1.5" />
+						</template>
+					</Button>
+					<Button variant="ghost" class="flex-shrink-0" @click="toggle">
+						<template #icon>
+							<X class="size-4 text-gray-700" :stroke-width="1.5" />
+						</template>
+					</Button>
 				</div>
 			</template>
 		</QueryDataTable>

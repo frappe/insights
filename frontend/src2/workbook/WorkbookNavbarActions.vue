@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Share2 } from 'lucide-vue-next'
-import { inject, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
+import session from '../session'
 import { Workbook, workbookKey } from './workbook'
 import WorkbookShareDialog from './WorkbookShareDialog.vue'
 
@@ -44,6 +45,7 @@ const showShareDialog = ref(false)
 		</Button> -->
 		<Dropdown
 			:button="{ icon: 'more-horizontal', variant: 'outline' }"
+			placement="right"
 			:options="[
 				!workbook.doc.read_only
 					? {
@@ -62,6 +64,13 @@ const showShareDialog = ref(false)
 							label: 'Delete',
 							icon: 'trash-2',
 							onClick: () => workbook.delete(),
+					  }
+					: null,
+				session.user.has_desk_access
+					? {
+							label: 'Open in Desk',
+							icon: 'external-link',
+							onClick: () => workbook.openInDesk(),
 					  }
 					: null,
 			]"

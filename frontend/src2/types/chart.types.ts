@@ -1,9 +1,10 @@
+import { FormatGroupArgs } from '../query/components/formatting_utils'
 import { Dimension, Measure } from './query.types'
 
 export const AXIS_CHARTS = ['Bar', 'Line', 'Row']
 export type AxisChartType = (typeof AXIS_CHARTS)[number]
 
-export const CHARTS = ['Number', ...AXIS_CHARTS, 'Donut', 'Funnel', 'Table']
+export const CHARTS = ['Number', ...AXIS_CHARTS, 'Donut', 'Funnel', 'Table', 'Map', 'Bubble']
 export type ChartType = (typeof CHARTS)[number]
 
 export type AxisChartConfig = {
@@ -29,6 +30,7 @@ export type YAxis = {
 	axis_label?: string
 	show_axis_label?: boolean
 	show_data_labels?: boolean
+	show_scrollbar?: boolean
 }
 export type Series = {
 	name?: string
@@ -43,6 +45,7 @@ export type YAxisLine = Series & {
 	smooth?: boolean
 	show_data_points?: boolean
 	show_area?: boolean
+
 }
 export type SeriesLine = Series & {
 	type: 'line'
@@ -88,6 +91,7 @@ export type NumberColumnOptions = {
 	decimal?: number
 	prefix?: string
 	suffix?: string
+	color?: string
 }
 
 export type DonutChartConfig = {
@@ -111,7 +115,32 @@ export type TableChartConfig = {
 	show_filter_row?: boolean
 	show_row_totals?: boolean
 	show_column_totals?: boolean
+	compact_numbers?: boolean
 	enable_color_scale?: boolean
+	sticky_columns?: string[]
+	conditional_formatting?: FormatGroupArgs
+}
+
+export type MapChartConfig = {
+	location_column: Dimension
+	value_column: Measure
+	map_type?: 'world' | 'india'
+	region_mappings?: {
+		world?: Record<string, string>
+		india?: Record<string, string>
+	}
+}
+
+export type BubbleChartConfig = {
+	xAxis: Measure
+	yAxis: Measure
+	size_column?: Measure
+	dimension?: Dimension
+	quadrant_column?: Dimension
+	show_data_labels?: boolean
+	show_quadrants?: boolean
+	xAxis_refLine?: number
+	yAxis_refLine?: number
 }
 
 export type ChartConfig =
@@ -121,3 +150,25 @@ export type ChartConfig =
 	| DonutChartConfig
 	| TableChartConfig
 	| FunnelChartConfig
+	| MapChartConfig
+	| BubbleChartConfig
+
+export interface Suggestion {
+		region: string
+		similarity: number
+	}
+
+export interface Region {
+		user_region: string
+		mapped_to?: string
+		suggestions?: Suggestion[]
+	}
+
+export interface MappingData {
+		total: number
+		resolved: number
+		unresolved: number
+		unresolved_list: Region[]
+		manual_mappings: Record<string, string>
+		available_regions: string[]
+	}

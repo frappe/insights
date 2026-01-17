@@ -1,4 +1,5 @@
 <template>
+	<p v-if="props.hideLineNumbers" class="font-mono text-gray-600 pl-2">=</p>
 	<codemirror
 		:tab-size="2"
 		:disabled="readOnly"
@@ -12,6 +13,7 @@
 		@focus="emit('focus')"
 		@blur="emit('blur')"
 		@ready="codeMirror = $event"
+		:class="$attrs.class"
 	/>
 </template>
 
@@ -64,6 +66,10 @@ const props = defineProps({
 		type: Boolean,
 		default: false,
 	},
+	multiLine: {
+		type: Boolean,
+		default: true,
+	},
 })
 const emit = defineEmits(['inputChange', 'viewUpdate', 'focus', 'blur'])
 
@@ -95,15 +101,18 @@ const language =
 	props.language === 'javascript'
 		? javascript()
 		: props.language === 'python'
-		? python()
-		: sql({
-				dialect: MySQL,
-				upperCaseKeywords: true,
-				schema: props.schema,
-				tables: props.tables,
-		  })
+		  ? python()
+		  : sql({
+					dialect: MySQL,
+					upperCaseKeywords: true,
+					schema: props.schema,
+					tables: props.tables,
+		    })
 
-const extensions = [language, closeBrackets(), EditorView.lineWrapping, tomorrow]
+const extensions = [language, closeBrackets(), tomorrow]
+if (props.multiLine) {
+	extensions.push(EditorView.lineWrapping)
+}
 const autocompletionOptions = {
 	activateOnTyping: true,
 	closeOnBlur: false,
@@ -128,6 +137,15 @@ defineExpose({
 	setCursorPos: (pos) => {
 		const _pos = Math.min(pos, code.value.length)
 		codeMirror.value.view.dispatch({ selection: { anchor: _pos, head: _pos } })
+	},
+	insertText: (text) => {
+		const view = codeMirror.value.view
+		const pos = view.state.selection.ranges[0].to
+		view.dispatch({
+			changes: { from: pos, insert: text },
+			selection: { anchor: pos + text.length, head: pos + text.length },
+		})
+		view.focus()
 	},
 })
 </script>

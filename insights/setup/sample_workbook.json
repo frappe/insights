@@ -92,7 +92,7 @@
           {
             "data_type": "Decimal",
             "expression": {
-              "expression": "p = q.price\nfv = q.freight_value\nr = p + fv\nr\n\n# asdf",
+              "expression": "price * freight_value",
               "type": "expression"
             },
             "new_name": "order_value",

@@ -1,10 +1,13 @@
 # Copyright (c) 2025, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+import base64
 from contextlib import contextmanager
+from io import BytesIO
 
 import frappe
 import ibis
+import sqlparse
 from frappe.model.document import Document
 from ibis import _
 
@@ -26,14 +29,21 @@ class InsightsQueryv3(Document):
     if TYPE_CHECKING:
         from frappe.types import DF
 
+        from insights.insights.doctype.insights_query_variable.insights_query_variable import (
+            InsightsQueryVariable,
+        )
+
+        folder: DF.Data | None
         is_builder_query: DF.Check
         is_native_query: DF.Check
         is_script_query: DF.Check
         linked_queries: DF.JSON | None
         old_name: DF.Data | None
         operations: DF.JSON | None
+        sort_order: DF.Int
         title: DF.Data | None
         use_live_connection: DF.Check
+        variables: DF.Table[InsightsQueryVariable]
         workbook: DF.Link
     # end: auto-generated types
 
@@ -53,8 +63,26 @@ class InsightsQueryv3(Document):
         for alert in frappe.get_all("Insights Alert", filters={"query": self.name}, pluck="name"):
             frappe.delete_doc("Insights Alert", alert, force=True, ignore_permissions=True)
 
+        # Clean up empty folders
+        if self.folder:
+            self.cleanup_empty_folder(self.folder)
+
     def before_save(self):
         self.set_linked_queries()
+
+    def cleanup_empty_folder(self, folder_name):
+        """Delete folder if it has no queries or charts"""
+        folder = frappe.get_doc("Insights Folder", folder_name)
+        folder_type = folder.type
+
+        # Check if any queries/charts still use this folder
+        if folder_type == "query":
+            has_items = frappe.db.exists("Insights Query v3", {"folder": folder_name})
+        else:
+            has_items = frappe.db.exists("Insights Chart v3", {"folder": folder_name})
+
+        if not has_items:
+            frappe.delete_doc("Insights Folder", folder_name, force=True, ignore_permissions=True)
 
     def set_linked_queries(self):
         operations = frappe.parse_json(self.operations)
@@ -113,8 +141,17 @@ class InsightsQueryv3(Document):
         }
 
     @insights_whitelist()
-    def get_count(self, active_operation_idx=None):
-        ibis_query = self.build(active_operation_idx)
+    def format(self, raw_sql):
+        if not raw_sql or not self.is_native_query:
+            return raw_sql
+
+        return sqlparse.format(str(raw_sql), reindent=True, keyword_case="upper")
+
+    @insights_whitelist()
+    def get_count(self, active_operation_idx=None, adhoc_filters=None):
+        with set_adhoc_filters(adhoc_filters):
+            ibis_query = self.build(active_operation_idx)
+
         count_query = ibis_query.aggregate(count=_.count())
         count_results, time_taken = execute_ibis_query(
             count_query,
@@ -126,20 +163,37 @@ class InsightsQueryv3(Document):
         return int(total_count)
 
     @insights_whitelist()
-    def download_results(self, active_operation_idx=None):
-        ibis_query = self.build(active_operation_idx)
-        results, time_taken = execute_ibis_query(
+    def download_results(self, format="csv", active_operation_idx=None, adhoc_filters=None):
+        with set_adhoc_filters(adhoc_filters):
+            ibis_query = self.build(active_operation_idx)
+
+        results, _ = execute_ibis_query(
             ibis_query,
             cache=False,
             limit=10_00_000,
             reference_doctype=self.doctype,
             reference_name=self.name,
         )
-        return results.to_csv(index=False)
+        if format == "excel":
+            output = BytesIO()
+            results.to_excel(output, index=False, engine="openpyxl")
+            excel_data = output.getvalue()
+            return base64.b64encode(excel_data).decode("utf-8")
+        else:
+            return results.to_csv(index=False)
 
     @insights_whitelist()
-    def get_distinct_column_values(self, column_name, active_operation_idx=None, search_term=None, limit=20):
-        ibis_query = self.build(active_operation_idx)
+    def get_distinct_column_values(
+        self,
+        column_name,
+        active_operation_idx=None,
+        search_term=None,
+        limit=20,
+        adhoc_filters=None,
+    ):
+        with set_adhoc_filters(adhoc_filters):
+            ibis_query = self.build(active_operation_idx)
+
         values_query = (
             ibis_query.select(column_name)
             .filter(
@@ -207,6 +261,13 @@ class InsightsQueryv3(Document):
 
         return query
 
+    @insights_whitelist()
+    def duplicate(self):
+        new_query = frappe.copy_doc(self)
+        new_query.title = f"{self.title} (Copy)"
+        new_query.insert()
+        return new_query.name
+
 
 def import_query(query, workbook):
     query = frappe.parse_json(query)
@@ -215,6 +276,17 @@ def import_query(query, workbook):
     new_query = frappe.new_doc("Insights Query v3")
     new_query.update(query.doc)
     new_query.workbook = workbook
+
+    if not hasattr(new_query, "sort_order") or new_query.sort_order is None:
+        max_sort_order = (
+            frappe.db.get_value(
+                "Insights Query v3",
+                filters={"workbook": workbook},
+                fieldname="max(sort_order)",
+            )
+            or -1
+        )
+        new_query.sort_order = max_sort_order + 1
     new_query.insert()
 
     if str(workbook) == str(query.doc.workbook) or not query.dependencies.queries:
@@ -254,6 +326,6 @@ def import_query(query, workbook):
 
 @contextmanager
 def set_adhoc_filters(filters):
-    frappe.local.insights_adhoc_filters = filters or {}
+    frappe.local.insights_adhoc_filters = filters or getattr(frappe.local, "insights_adhoc_filters", {})
     yield
     frappe.local.insights_adhoc_filters = None

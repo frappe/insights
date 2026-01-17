@@ -1,11 +1,25 @@
 <script setup lang="ts">
-import { Rating } from 'frappe-ui'
-import { ChevronLeft, ChevronRight, Download, Search, Table2Icon } from 'lucide-vue-next'
-import { computed, reactive, ref } from 'vue'
-import { createHeaders, formatNumber } from '../helpers'
+import { Button, Dialog, FormControl, LoadingIndicator, Rating } from 'frappe-ui'
+import { ChevronLeft, ChevronRight, Download, Plus, Search, Table2Icon } from 'lucide-vue-next'
+import { computed, nextTick, reactive, ref } from 'vue'
+import { createHeaders, formatNumber, getShortNumber } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import { QueryResultColumn, QueryResultRow, SortDirection, SortOrder } from '../types/query.types'
 import DataTableColumn from './DataTableColumn.vue'
+import {
+	applyRule,
+	applyTextRule,
+	applyDateRule,
+	applyRankRule,
+	cell_rules,
+	text_rules,
+	date_rules,
+	rank_rules,
+	FormatGroupArgs,
+	FormattingMode,
+	garByPercentage,
+	ragByPercentage,
+} from '../query/components/formatting_utils'
 
 const props = defineProps<{
 	columns: QueryResultColumn[] | undefined
@@ -15,27 +29,35 @@ const props = defineProps<{
 	showFilterRow?: boolean
 	enablePagination?: boolean
 	enableColorScale?: boolean
+	enableNewColumn?: boolean
+	replaceNullsWithZeros?: boolean
+	compactNumbers?: boolean
 	loading?: boolean
 	onExport?: Function
+	downloading?: boolean
+	formatGroup?: FormatGroupArgs
 	sortOrder?: SortOrder
 	onSortChange?: (column_name: string, direction: SortDirection) => void
 	onColumnRename?: (column_name: string, new_name: string) => void
 	onDrilldown?: (column: QueryResultColumn, row: QueryResultRow) => void
+	stickyColumns?: string[] // List of column names to make sticky
 }>()
 
 const headers = computed(() => {
 	if (!props.columns?.length) return []
 	return createHeaders(props.columns)
 })
-
 const columnsMeta = computed(() => {
 	if (!props.columns || !props.rows) return new Map()
 
 	const meta = new Map()
 	props.columns.forEach((col) => {
 		const name = col.name
+		const hasColorScaleFormatting = formattingRulesByColumn.value[name]?.some(
+			(rule) => rule.mode === 'color_scale',
+		)
 		const metadata = {
-			isNumber: FIELDTYPES.NUMBER.includes(col.type),
+			isNumber: FIELDTYPES.NUMBER.includes(col.type) || hasColorScaleFormatting,
 			isStarRating: false,
 		}
 
@@ -57,6 +79,47 @@ const columnsMeta = computed(() => {
 const isNumberColumn = (col: string) => columnsMeta.value.get(col)?.isNumber
 const isStarRating = (col: string) => columnsMeta.value.get(col)?.isStarRating
 const isUrl = (value: any): boolean => typeof value === 'string' && value.startsWith('http')
+
+const $header = ref<HTMLElement>()
+function getColumnWidth(column: string) {
+	const cell = $header.value?.querySelector(`td[data-column-name="${column}"]`)
+	if (cell && 'offsetWidth' in cell) {
+		console.log(`Width of column ${column}:`, cell.offsetWidth)
+		return cell.offsetWidth as number
+	}
+	return 200
+}
+
+const stickyColumnPositions = computed(() => {
+	const columns = props.columns || []
+	const stickyColumns = props.stickyColumns || []
+	const positions: Record<string, string> = {}
+
+	const indexColumnWidth = getColumnWidth('__index')
+
+	let cumulativeWidth = indexColumnWidth
+
+	const orderedStickyColumns = columns.filter((col) => stickyColumns.includes(col.name))
+
+	orderedStickyColumns.forEach((col, index) => {
+		positions[col.name] = `${cumulativeWidth}px`
+		const headerWidth = getColumnWidth(col.name)
+		cumulativeWidth += headerWidth
+	})
+
+	return positions
+})
+
+const isStickyColumn = (column: string) => {
+	return props.stickyColumns?.includes(column)
+}
+
+const getStickyColumnStyle = (column: string) => {
+	if (!isStickyColumn(column)) return {}
+	return {
+		left: stickyColumnPositions.value[column] || '48px',
+	}
+}
 
 const filterPerColumn = ref<Record<string, string>>({})
 const visibleRows = computed(() => {
@@ -191,7 +254,6 @@ const colorByValues = computed(() => {
 	uniqueValues = uniqueValues.sort((a, b) => a - b)
 	const max = uniqueValues[uniqueValues.length - 1]
 	const uniqueValuesNormalized = uniqueValues.map((val) => Math.round((val / max) * 100))
-
 	const _colorByValues: Record<number, string> = {}
 	uniqueValuesNormalized.forEach((percentVal, index) => {
 		for (const [percent, color] of Object.entries(colorByPercentage)) {
@@ -204,6 +266,207 @@ const colorByValues = computed(() => {
 
 	return _colorByValues
 })
+
+const formattingRulesByColumn = computed(() => {
+	const formatGroup = props.formatGroup
+	const result: Record<string, FormattingMode[]> = {}
+	const columns = props.columns || []
+	if (!formatGroup?.formats?.length) return result
+
+	const sanitizeColumnName = (n: string) => n.split('__')[0]
+
+	formatGroup.formats.forEach((format) => {
+		const target =
+			'column' in format && format.column?.column_name ? format.column.column_name : ''
+		if (!target) return
+
+		columns.forEach((col) => {
+			if (sanitizeColumnName(col.name) === target) {
+				if (!result[col.name]) result[col.name] = []
+				result[col.name].push(format)
+			}
+		})
+	})
+
+	return result
+})
+
+function getColorClass(colorName: string): string {
+	if (!colorName) return 'bg-gray-500'
+
+	switch (colorName.toLowerCase()) {
+		case 'red':
+			return 'bg-[#d87373] text-white'
+		case 'green':
+			return 'bg-[#6DB678] text-white'
+		case 'amber':
+			return 'bg-[#F8D16E] text-black'
+		default:
+			return colorName.startsWith('bg-') ? colorName : 'bg-gray-500'
+	}
+}
+
+const getColumnMinMax = (columnName: string) => {
+	const values =
+		props.rows?.map((row) => Number(row[columnName])).filter((val) => !isNaN(val)) || []
+
+	return {
+		min: Math.min(...values),
+		max: Math.max(...values),
+	}
+}
+
+function getDefaultColorScaleClass(colName: string, val: any): string {
+	if (props.enableColorScale && isNumberColumn(colName)) {
+		const numVal = Number(val)
+		if (!isNaN(numVal)) {
+			const colorByValue = colorByValues.value as Record<number, string>
+			if (colorByValue && colorByValue[numVal]) {
+				return colorByValue[numVal]
+			}
+		}
+	}
+	return ''
+}
+
+function normalizeCellValue(colName: string, val: any) {
+	if (isNumberColumn(colName) && (val === null || val === undefined)) {
+		return 0
+	}
+	return val
+}
+
+function getHighlightClassFromRules(colName: string, val: any, rules: FormattingMode[]): string {
+	for (const format of rules) {
+		let isHighlighted = false
+		let colorClass = ''
+
+		const normalizedValue = normalizeCellValue(colName, val)
+
+		if (format.mode === 'cell_rules' && format.operator && format.value !== undefined) {
+			const rule = {
+				column: colName,
+				operator: format.operator,
+				value: format.value,
+				color: format.color,
+				mode: 'cell_rules',
+			} as unknown as cell_rules
+
+			if (applyRule(normalizedValue, rule)) {
+				isHighlighted = true
+				colorClass = getColorClass(format.color as string)
+			}
+		} else if (format.mode === 'text_rules') {
+			const textRule = format as text_rules
+			if (applyTextRule(normalizedValue, textRule)) {
+				isHighlighted = true
+				colorClass = getColorClass(textRule.color)
+			}
+		} else if (format.mode === 'date_rules') {
+			const dateRule = format as date_rules
+			if (applyDateRule(normalizedValue, dateRule)) {
+				isHighlighted = true
+				colorClass = getColorClass(dateRule.color)
+			}
+		} else if (format.mode === 'rank_rules') {
+			const rankRule = format as rank_rules
+			const allColumnValues =
+				props.rows?.map((row) => normalizeCellValue(colName, row[colName])) || []
+			if (applyRankRule(normalizedValue, rankRule, allColumnValues)) {
+				isHighlighted = true
+				colorClass = getColorClass(rankRule.color)
+			}
+		}
+
+		if (isHighlighted && colorClass) {
+			return colorClass
+		}
+	}
+	return ''
+}
+
+function getColorScaleClassFromFormat(colName: string, val: any, format: FormattingMode): string {
+	if (format.mode !== 'color_scale') return ''
+	const numVal = Number(val)
+	if (isNaN(numVal)) return ''
+
+	const { min, max } = getColumnMinMax(colName)
+	let percentile: number = 0
+	const normalizedValue = (numVal - min) / (max - min)
+	percentile = Math.round(normalizedValue * 100)
+	percentile = Math.max(0, Math.min(100, percentile))
+
+	let colorScale: Record<string, string>
+	if (format.colorScale) {
+		format.colorScale == 'Red-Green'
+			? (colorScale = ragByPercentage)
+			: (colorScale = garByPercentage)
+	} else {
+		colorScale = ragByPercentage
+	}
+
+	const thresholds = Object.keys(colorScale)
+		.map(Number)
+		.sort((a, b) => a - b)
+
+	let selectedThreshold = thresholds[0]
+	for (const threshold of thresholds) {
+		if (percentile >= threshold) {
+			selectedThreshold = threshold
+		}
+	}
+	const thresholdKey = String(selectedThreshold)
+	const bgClass = colorScale[thresholdKey]?.trim() || 'bg-gray-300'
+	return `${bgClass}`
+}
+
+function getColorScaleClassFromRules(colName: string, val: any, rules: FormattingMode[]): string {
+	for (const format of rules) {
+		if (format.mode === 'color_scale') {
+			const cls = getColorScaleClassFromFormat(colName, val, format)
+			if (cls) return cls
+		}
+	}
+	return ''
+}
+
+function getCellStyleClass(colName: string, val: any): string {
+	const defaultScale = getDefaultColorScaleClass(colName, val)
+	if (defaultScale) return defaultScale
+
+	const rules = formattingRulesByColumn.value[colName]
+	if (!rules?.length) return ''
+
+	const highlight = getHighlightClassFromRules(colName, val, rules)
+	if (highlight) return highlight
+
+	const scale = getColorScaleClassFromRules(colName, val, rules)
+	if (scale) return scale
+
+	return ''
+}
+
+function _formatNumber(value: any) {
+	const isNull = value === null || value === undefined
+	if (isNull) {
+		return props.replaceNullsWithZeros ? 0 : 'null'
+	}
+	return props.compactNumbers ? getShortNumber(value) : formatNumber(value)
+}
+
+const showNewColumn = ref(false)
+function toggleNewColumn() {
+	showNewColumn.value = !showNewColumn.value
+	// scroll towards the far right of the datatable
+	nextTick(() => {
+		if ($header.value) {
+			const lastColumn = $header.value.querySelector('tr:last-child')
+			if (lastColumn) {
+				lastColumn.scrollIntoView({ behavior: 'smooth', inline: 'end' })
+			}
+		}
+	})
+}
 </script>
 
 <template>
@@ -213,10 +476,11 @@ const colorByValues = computed(() => {
 	>
 		<div class="w-full flex-1 overflow-y-auto">
 			<table class="relative h-full w-full border-separate border-spacing-0">
-				<thead class="sticky top-0 z-10 bg-gray-50">
+				<thead ref="$header" class="sticky top-0 z-10 bg-gray-50">
 					<tr v-for="headerRow in headers">
 						<td
-							class="sticky left-0 z-10 h-8 whitespace-nowrap border-b border-r bg-gray-50 px-3"
+							class="sticky left-0 h-8 whitespace-nowrap border-b border-r bg-gray-50 px-3"
+							data-column-name="__index"
 							width="1px"
 						></td>
 						<td
@@ -227,8 +491,11 @@ const colorByValues = computed(() => {
 								header.isLast && isNumberColumn(header.column.name)
 									? 'text-right'
 									: 'text-left',
+								isStickyColumn(header.column.name) ? 'sticky bg-gray-50' : '',
 							]"
+							:style="getStickyColumnStyle(header.column.name)"
 							:colspan="header.colspan"
+							:data-column-name="header.column.name"
 						>
 							<DataTableColumn
 								v-if="header.isLast"
@@ -260,6 +527,24 @@ const colorByValues = computed(() => {
 							</div>
 						</td>
 
+						<td v-if="props.enableNewColumn" class="h-8 border-b border-r">
+							<Button
+								v-if="!showNewColumn"
+								variant="ghost"
+								class="!min-w-10 !w-full"
+								@click="toggleNewColumn"
+							>
+								<template #icon>
+									<Plus class="size-4 text-gray-700" :stroke-width="1.5" />
+								</template>
+							</Button>
+							<slot
+								v-if="showNewColumn"
+								name="new-column-editor"
+								:toggle="toggleNewColumn"
+							/>
+						</td>
+
 						<td
 							v-if="props.showRowTotals"
 							class="h-8 border-b border-r px-3 text-right"
@@ -271,13 +556,15 @@ const colorByValues = computed(() => {
 
 					<tr v-if="props.showFilterRow">
 						<td
-							class="sticky left-0 z-10 h-8 whitespace-nowrap border-b border-r bg-gray-50 px-3"
+							class="sticky left-0 h-8 whitespace-nowrap border-b border-r bg-gray-50 px-3"
 							width="1px"
 						></td>
 						<td
 							v-for="(column, idx) in props.columns"
 							:key="idx"
 							class="h-8 border-b border-r p-1"
+							:class="isStickyColumn(column.name) ? 'sticky bg-gray-50' : ''"
+							:style="getStickyColumnStyle(column.name)"
 						>
 							<FormControl
 								type="text"
@@ -305,7 +592,7 @@ const colorByValues = computed(() => {
 						:key="idx"
 					>
 						<td
-							class="tnum z-1 sticky left-0 h-8 whitespace-nowrap border-b border-r bg-white px-3 text-right text-xs"
+							class="tnum sticky left-0 h-8 whitespace-nowrap border-b border-r bg-white px-3 text-right text-xs"
 							width="1px"
 							height="30px"
 						>
@@ -323,7 +610,10 @@ const colorByValues = computed(() => {
 								isNumberColumn(col.name) && props.onDrilldown
 									? 'cursor-pointer'
 									: '',
+								getCellStyleClass(col.name, row[col.name]),
+								isStickyColumn(col.name) ? 'sticky bg-white' : '',
 							]"
+							:style="getStickyColumnStyle(col.name)"
 							height="30px"
 							@dblclick="isNumberColumn(col.name) && props.onDrilldown?.(col, row)"
 						>
@@ -331,7 +621,7 @@ const colorByValues = computed(() => {
 								<Rating :modelValue="row[col.name] * 5" :readonly="true" />
 							</template>
 							<template v-else-if="isNumberColumn(col.name)">
-								{{ formatNumber(row[col.name]) }}
+								{{ _formatNumber(row[col.name]) }}
 							</template>
 							<template v-else-if="isUrl(row[col.name])">
 								<a :href="row[col.name]" target="_blank" class="underline">
@@ -344,27 +634,33 @@ const colorByValues = computed(() => {
 							</template>
 						</td>
 
+						<td v-if="props.enableNewColumn" class="h-8 border-b border-r px-3"></td>
+
 						<td
 							v-if="props.showRowTotals && totalPerRow"
 							class="tnum h-8 border-b border-r px-3 text-right font-bold"
 						>
-							{{ formatNumber(totalPerRow[idx]) }}
+							{{ _formatNumber(totalPerRow[idx]) }}
 						</td>
 					</tr>
 
 					<tr
 						v-if="props.showColumnTotals && totalPerColumn"
-						class="sticky bottom-0 z-10 border-b bg-white"
+						class="sticky bottom-0 border-b bg-white"
 					>
 						<td class="h-8 whitespace-nowrap border-r border-t px-3"></td>
 						<td
 							v-for="col in props.columns"
 							class="h-8 truncate border-r border-t px-3 font-bold text-gray-800"
-							:class="isNumberColumn(col.name) ? 'tnum text-right' : 'text-left'"
+							:class="[
+								isNumberColumn(col.name) ? 'tnum text-right' : 'text-left',
+								isStickyColumn(col.name) ? 'sticky bg-white' : '',
+							]"
+							:style="getStickyColumnStyle(col.name)"
 						>
 							{{
 								isNumberColumn(col.name)
-									? formatNumber(totalPerColumn[col.name])
+									? _formatNumber(totalPerColumn[col.name])
 									: ''
 							}}
 						</td>
@@ -373,7 +669,7 @@ const colorByValues = computed(() => {
 							v-if="props.showRowTotals && totalColumnTotal"
 							class="tnum h-8 border-r border-t px-3 text-right font-bold"
 						>
-							{{ formatNumber(totalColumnTotal) }}
+							{{ _formatNumber(totalColumnTotal) }}
 						</td>
 					</tr>
 
@@ -418,11 +714,6 @@ const colorByValues = computed(() => {
 							</div>
 						</div>
 						<slot name="footer-right-actions"></slot>
-						<Button v-if="props.onExport" variant="ghost" @click="props.onExport">
-							<template #icon>
-								<Download class="h-4 w-4 text-gray-700" stroke-width="1.5" />
-							</template>
-						</Button>
 					</div>
 				</slot>
 			</div>
@@ -438,7 +729,7 @@ const colorByValues = computed(() => {
 
 	<div
 		v-if="props.loading"
-		class="absolute top-10 z-10 flex h-[calc(100%-2rem)] w-full items-center justify-center rounded bg-white/30 backdrop-blur-sm"
+		class="absolute top-10 flex h-[calc(100%-2rem)] w-full items-center justify-center rounded bg-white/30 backdrop-blur-sm"
 	>
 		<LoadingIndicator class="h-8 w-8 text-gray-700" />
 	</div>

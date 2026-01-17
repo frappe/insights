@@ -24,7 +24,7 @@ watchEffect(() => {
 	if (!split_by.value.dimension) {
 		split_by.value.dimension = {} as DimensionOption
 	}
-	if (!split_by.value.max_split_values) {
+	if (split_by.value.max_split_values == undefined) {
 		split_by.value.max_split_values = 10
 	}
 })
@@ -56,10 +56,10 @@ const dimension = computed({
 				v-if="dimension?.column_name"
 				type="number"
 				label="Max Split Values"
-				placeholder="10"
+				placeholder="Split Values"
 				autocomplete="off"
-				:modelValue="split_by.max_split_values || 10"
-				@update:modelValue="split_by.max_split_values = $event || 10"
+				:modelValue="split_by.max_split_values"
+				@update:modelValue="split_by.max_split_values = $event"
 			/>
 		</div>
 	</CollapsibleSection>

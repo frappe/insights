@@ -1,43 +1,23 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
+import json
+
 import frappe
+from frappe.utils.install import complete_setup_wizard
 
 from insights.insights.doctype.insights_query.insights_query import InsightsQuery
 
 
 def before_tests():
-    delete_all_records()
-    create_site_db()
-    create_sqlite_db()
     complete_setup_wizard()
     frappe.db.commit()
-
-
-def complete_setup_wizard():
-    frappe.clear_cache()
-    from frappe.desk.page.setup_wizard.setup_wizard import setup_complete
-
-    if not frappe.db.get_single_value("System Settings", "setup_complete"):
-        setup_complete(
-            {
-                "language": "English",
-                "email": "test@erpnext.com",
-                "full_name": "Test User",
-                "password": "test",
-                "country": "United States",
-                "timezone": "America/New_York",
-                "currency": "USD",
-            }
-        )
 
 
 def delete_all_records():
     frappe.db.delete("Version", {"ref_doctype": ("like", "Insights%")})
     frappe.db.delete("View Log", {"reference_doctype": ("like", "Insights%")})
-    for doctype in frappe.get_all(
-        "DocType", filters={"module": "Insights", "issingle": 0}, pluck="name"
-    ):
+    for doctype in frappe.get_all("DocType", filters={"module": "Insights", "issingle": 0}, pluck="name"):
         frappe.db.delete(doctype)
 
 
@@ -48,10 +28,15 @@ def create_query_store():
 
 
 def create_site_db():
-    site_db = frappe.new_doc("Insights Data Source")
-    site_db.title = "Site DB"
-    site_db.is_site_db = 1
-    site_db.save()
+    data_source_fixture_path = frappe.get_app_path("insights", "fixtures", "insights_data_source.json")
+    with open(data_source_fixture_path) as f:
+        site_db = json.load(f)[0]
+        frappe.get_doc(site_db).insert()
+
+    data_source_fixture_path = frappe.get_app_path("insights", "fixtures", "insights_data_source_v3.json")
+    with open(data_source_fixture_path) as f:
+        site_db = json.load(f)[0]
+        frappe.get_doc(site_db).insert()
 
 
 def create_sqlite_db():

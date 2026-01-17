@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { Breadcrumbs, call } from 'frappe-ui'
 import { RefreshCcw } from 'lucide-vue-next'
-import { provide, ref } from 'vue'
+import {computed, provide, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { downloadImage } from '../helpers'
+import { downloadImage, waitUntil, wheneverChanges } from '../helpers'
 import useDashboard from './dashboard'
 import DashboardItem from './DashboardItem.vue'
 import VueGridLayout from './VueGridLayout.vue'
+import { useStorage } from '@vueuse/core'
 
 const props = defineProps<{ name: string }>()
 
@@ -22,12 +23,16 @@ const router = useRouter()
 function openWorkbook() {
 	router.push(`/workbook/${dashboard.doc.workbook}`)
 }
+await waitUntil(() => dashboard.isloaded)
+const canOpenWorkbook = ref(dashboard.doc.has_workbook_access)
 
 const dashboardContainer = ref<HTMLElement | null>(null)
 async function downloadDashboardImage() {
 	if (!dashboardContainer.value) return
 	await downloadImage(dashboardContainer.value, `${dashboard.doc.title}.png`)
 }
+
+const verticalCompact = useStorage('dashboard_vertical_compact', true)
 </script>
 
 <template>
@@ -39,7 +44,7 @@ async function downloadDashboardImage() {
 			]"
 		/>
 		<div class="flex items-center gap-2">
-			<Button variant="outline" @click="() => dashboard.refresh()" label="Refresh">
+			<Button variant="outline" @click="() => dashboard.refresh(true)" label="Refresh">
 				<template #prefix>
 					<RefreshCcw class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 				</template>
@@ -54,12 +59,13 @@ async function downloadDashboardImage() {
 						icon: 'download',
 						onClick: downloadDashboardImage,
 					},
-					{
+					 canOpenWorkbook ? {
 						label: 'Open Workbook',
 						variant: 'outline',
 						icon: 'external-link',
 						onClick: openWorkbook,
-					},
+					} : null
+					,
 				]"
 			/>
 		</div>
@@ -72,6 +78,7 @@ async function downloadDashboardImage() {
 				class="h-fit w-full"
 				:cols="20"
 				:disabled="true"
+				:verticalCompact="verticalCompact"
 				:modelValue="dashboard.doc.items.map((item) => item.layout)"
 			>
 				<template #item="{ index }">

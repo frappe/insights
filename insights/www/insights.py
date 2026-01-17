@@ -13,10 +13,10 @@ no_cache = 1
 
 
 def get_context(context):
-    if not frappe.db.get_single_value("System Settings", "setup_complete"):
+    setup_complete = check_setup_complete()
+    if not setup_complete:
         frappe.local.flags.redirect_location = "/app/setup-wizard"
         raise frappe.Redirect
-
     is_v2_site = frappe.db.count("Insights Query", cache=True) > 0
     if not is_v2_site:
         continue_to_v3(context)
@@ -44,19 +44,13 @@ def get_context(context):
         return
 
     # go to v2 if user has not visited v3 yet
-    has_visited_v3 = (
-        get_user_default("insights_has_visited_v3", frappe.session.user) == "1"
-    )
+    has_visited_v3 = get_user_default("insights_has_visited_v3", frappe.session.user) == "1"
     if not has_visited_v3:
         redirect_to_v2()
         return
 
-    is_v3_default = (
-        get_user_default("insights_default_version", frappe.session.user) == "v3"
-    )
-    is_v2_default = (
-        get_user_default("insights_default_version", frappe.session.user) == "v2"
-    )
+    is_v3_default = get_user_default("insights_default_version", frappe.session.user) == "v3"
+    is_v2_default = get_user_default("insights_default_version", frappe.session.user) == "v2"
 
     if is_v3_default:
         continue_to_v3(context)
@@ -80,6 +74,7 @@ def continue_to_v3(context):
         "csrf_token": csrf_token,
         "site_name": frappe.local.site,
         "is_fc_site": is_fc_site(),
+        "socketio_port": frappe.conf.get("socketio_port"),
     }
     track_active_site(is_v3=True)
 
@@ -91,3 +86,10 @@ def redirect_to_v2():
         path = "/insights_v2"
     frappe.local.flags.redirect_location = path
     raise frappe.Redirect
+
+
+def check_setup_complete():
+    try:
+        return frappe.is_setup_complete()
+    except AttributeError:
+        return frappe.db.get_single_value("System Settings", "setup_complete")

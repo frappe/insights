@@ -11,12 +11,14 @@ const editedText = ref(unref(props.item.text))
 </script>
 
 <template>
-	<div v-html="props.item.text" class="prose w-full text-gray-700"></div>
+	<div class="prose w-full text-gray-700 h-full flex items-center">
+		<div v-html="props.item.text"></div>
+	</div>
 
 	<Dialog
 		v-if="dashboard.isEditingItem(props.item)"
 		:modelValue="dashboard.isEditingItem(props.item)"
-		@update:modelValue="!$event ? (dashboard.editingItemIndex = null) : true"
+		@update:modelValue="!$event ? (dashboard.editingItemIndex = undefined) : true"
 		:options="{
 			title: 'Edit Text',
 			actions: [
@@ -27,12 +29,12 @@ const editedText = ref(unref(props.item.text))
 						!editedText || editedText.trim() === '' || editedText === props.item.text,
 					onClick: () => {
 						props.item.text = editedText
-						dashboard.editingItemIndex = null
+						dashboard.editingItemIndex = undefined
 					},
 				},
 				{
 					label: 'Cancel',
-					onClick: () => (dashboard.editingItemIndex = null),
+					onClick: () => (dashboard.editingItemIndex = undefined),
 				},
 			],
 		}"
@@ -46,6 +48,7 @@ const editedText = ref(unref(props.item.text))
 					:content="editedText"
 					editor-class="min-h-[8rem] h-auto prose-sm cursor-text bg-gray-100 rounded p-2"
 					@change="editedText = $event"
+					placeholder="Enter your text content here..."
 				/>
 				<p class="text-xs text-gray-500">Markdown supported</p>
 			</div>

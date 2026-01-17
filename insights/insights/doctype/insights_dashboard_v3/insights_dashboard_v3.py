@@ -33,6 +33,7 @@ class InsightsDashboardv3(Document):
         preview_image: DF.Data | None
         share_link: DF.Data | None
         title: DF.Data | None
+        vertical_compact_layout: DF.Check
         workbook: DF.Link
     # end: auto-generated types
 
@@ -65,7 +66,7 @@ class InsightsDashboardv3(Document):
             access = self.get_acess_data()
             d.people_with_access = access[0]
             d.is_shared_with_organization = access[1]
-
+        d.has_workbook_access = frappe.has_permission("Insights Workbook", ptype="read", doc=self.workbook)
         return d
 
     def before_save(self):
@@ -75,15 +76,11 @@ class InsightsDashboardv3(Document):
     def set_linked_charts(self):
         self.set(
             "linked_charts",
-            [
-                {"chart": item["chart"]}
-                for item in frappe.parse_json(self.items)
-                if item["type"] == "chart"
-            ],
+            [{"chart": item["chart"]} for item in frappe.parse_json(self.items) if item["type"] == "chart"],
         )
 
     @frappe.whitelist()
-    def get_distinct_column_values(self, query, column_name, search_term=None):
+    def get_distinct_column_values(self, query, column_name, search_term=None, adhoc_filters=None):
         is_guest = frappe.session.user == "Guest"
         if is_guest and not self.is_public:
             raise frappe.PermissionError
@@ -91,7 +88,9 @@ class InsightsDashboardv3(Document):
         self.check_linked_filters(query, column_name)
 
         doc = frappe.get_cached_doc("Insights Query v3", query)
-        return doc.get_distinct_column_values(column_name, search_term=search_term)
+        return doc.get_distinct_column_values(
+            column_name, search_term=search_term, adhoc_filters=adhoc_filters
+        )
 
     def check_linked_filters(self, query, column_name):
         items = frappe.parse_json(self.items)
@@ -102,11 +101,7 @@ class InsightsDashboardv3(Document):
             pattern = "^`([^`]+)`\\.`([^`]+)`$"
             for linked_column in linked_columns:
                 match = re.match(pattern, linked_column)
-                if (
-                    match
-                    and match.groups()[0] == query
-                    and match.groups()[1] == column_name
-                ):
+                if match and match.groups()[0] == query and match.groups()[1] == column_name:
                     return True
 
         raise frappe.PermissionError
@@ -187,9 +182,7 @@ class InsightsDashboardv3(Document):
 
     @frappe.whitelist()
     def update_access(self, data):
-        if not frappe.has_permission(
-            "Insights Dashboard v3", ptype="share", doc=self.name
-        ):
+        if not frappe.has_permission("Insights Dashboard v3", ptype="share", doc=self.name):
             frappe.throw("You do not have permission to share this dashboard")
 
         data = frappe.parse_json(data)

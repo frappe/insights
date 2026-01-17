@@ -1,30 +1,37 @@
 <script setup lang="ts">
-import { watchDebounced } from '@vueuse/core'
 import { Breadcrumbs, ListView } from 'frappe-ui'
 import { PlusIcon, SearchIcon } from 'lucide-vue-next'
-import { ref, watchEffect } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { getDatabaseLogo } from '../data_source/data_source'
 import useDataStore, { DataStoreTable } from './data_store'
 import ImportTableDialog from './ImportTableDialog.vue'
 import session from '../session'
 
-const dataStore = useDataStore()
-
-const searchQuery = ref('')
-const filteredTables = ref(dataStore.tables['__all'])
-watchDebounced(
-	searchQuery,
-	() => {
-		dataStore.getTables(undefined, searchQuery.value).then((tables) => {
-			filteredTables.value = tables
-		})
-	},
-	{ debounce: 300, immediate: true }
-)
+onMounted(() => {
+	dataStore.getTables()
+})
 
 const showImportTableDialog = ref(false)
 
-const listOptions = ref({
+const dataStore = useDataStore()
+const searchQuery = ref('')
+const tables = computed(() => dataStore.tables['__all'] || [])
+const normalizedSearchQuery = computed(() => searchQuery.value.toLowerCase().trim())
+
+const filteredTables = computed(() => {
+	const allTables = tables.value
+	const query = normalizedSearchQuery.value
+
+	if (!query) return allTables
+
+	return allTables.filter((table: DataStoreTable) => {
+		return (
+			table.table_name.toLowerCase().includes(query)
+		)
+	})
+})
+
+const listOptions = computed(() => ({
 	columns: [
 		{
 			label: 'Table Name',
@@ -43,7 +50,7 @@ const listOptions = ref({
 			key: 'last_synced_from_now',
 		},
 	],
-	rows: filteredTables,
+	rows: filteredTables.value,
 	rowKey: 'name',
 	options: {
 		showTooltip: false,
@@ -61,11 +68,8 @@ const listOptions = ref({
 				: undefined,
 		},
 	},
-})
+}))
 
-watchEffect(() => {
-	document.title = 'Data Store | Insights'
-})
 </script>
 
 <template>

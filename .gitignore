@@ -2,7 +2,6 @@
 *.py~
 *.comp.js
 *.DS_Store
-locale
 .wnf-lang-status
 *.swp
 *.egg-info
@@ -59,10 +58,6 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
-
-# Translations
-*.mo
-*.pot
 
 # Django stuff:
 *.log

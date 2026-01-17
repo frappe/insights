@@ -27,7 +27,7 @@ const config = defineModel<NumberChartConfig>({
 })
 
 const date_dimensions = computed(() =>
-	props.dimensions.filter((d) => FIELDTYPES.DATE.includes(d.data_type))
+	props.dimensions.filter((d) => FIELDTYPES.DATE.includes(d.data_type)),
 )
 
 watchEffect(() => {
@@ -107,6 +107,15 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 											type="number"
 										/>
 									</InlineFormControlLabel>
+									<InlineFormControlLabel label="Color">
+										<ColorInput
+											:model-value="getNumberOption(index, 'color')"
+											@update:model-value="
+												setNumberOption(index, 'color', $event)
+											"
+											placement="left-start"
+										/>
+									</InlineFormControlLabel>
 
 									<Toggle
 										label="Show short numbers"
@@ -131,7 +140,7 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 			<DimensionPicker
 				label="Date"
 				:options="date_dimensions"
-				:model-value="(config.date_column as Dimension)"
+				:model-value="config.date_column as Dimension"
 				@update:model-value="config.date_column = $event || {}"
 			/>
 

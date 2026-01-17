@@ -1,4 +1,5 @@
 {
+
   "name": "insights",
   "version": "1.0.0-dev",
   "description": "Open Source Business Intelligence Tool",
@@ -78,4 +79,17 @@
     "node": ">=18.0.0",
     "npm": ">=9.0.0"
   }
+
+    "private": true,
+    "type": "module",
+    "aworkspaces": [
+        "frontend",
+        "frappe-ui"
+    ],
+    "scripts": {
+        "postinstall": "cd frontend && yarn install --check-files",
+        "dev": "cd frontend && yarn dev",
+        "build": "cd frontend && yarn build",
+        "test": "cd frontend && yarn test"
+    }
 }

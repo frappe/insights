@@ -17,6 +17,7 @@ from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
 )
 
 from .connectors.bigquery import get_bigquery_connection
+from .connectors.clickhouse import get_clickhouse_connection
 from .connectors.duckdb import get_duckdb_connection
 from .connectors.frappe_db import (
     get_frappedb_connection,
@@ -50,20 +51,21 @@ class InsightsDataSourceDocument:
         ):
             frappe.throw("Only one site database can be configured")
 
-    def on_update(self: "InsightsDataSourcev3"):
+    def on_update(self):
         if self.is_site_db:
             self.db_set("is_frappe_db", 1)
             self.db_set("status", "Active")
+
+            if frappe.conf.db_type == "postgres":
+                self.db_set("database_type", "PostgreSQL")
+
             with db_connections():
                 self.update_table_list()
+
             return
 
         credentials_changed = self.has_credentials_changed()
-        if (
-            not self.is_site_db
-            and credentials_changed
-            and self.database_type in ["MariaDB", "PostgreSQL"]
-        ):
+        if not self.is_site_db and credentials_changed and self.database_type in ["MariaDB", "PostgreSQL"]:
             self.db_set("is_frappe_db", is_frappe_db(self))
 
         self.status = "Active" if self.test_connection() else "Inactive"
@@ -77,15 +79,17 @@ class InsightsDataSourceDocument:
         if not doc_before:
             return True
         if self.database_type in ["SQLite", "DuckDB"]:
-            return self.database_name != doc_before.database_name
+            changed = self.database_name != doc_before.database_name
+            if self.database_type == "DuckDB":
+                changed = changed or self.http_headers != doc_before.http_headers
+            return changed
         elif self.database_type == "BigQuery":
             return (
                 self.bigquery_project_id != doc_before.bigquery_project_id
                 or self.bigquery_dataset_id != doc_before.bigquery_dataset_id
-                or self.bigquery_service_account_key
-                != doc_before.bigquery_service_account_key
+                or self.bigquery_service_account_key != doc_before.bigquery_service_account_key
             )
-        elif self.database_type in ["MariaDB", "PostgreSQL"]:
+        elif self.database_type in ["MariaDB", "PostgreSQL", "ClickHouse", "MSSQL"]:
             return (
                 self.database_name != doc_before.database_name
                 or self.schema != doc_before.schema
@@ -158,11 +162,11 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         bigquery_service_account_key: DF.JSON | None
         connection_string: DF.Text | None
         database_name: DF.Data | None
-        database_type: DF.Literal[
-            "MariaDB", "PostgreSQL", "SQLite", "DuckDB", "BigQuery"
-        ]
+        database_type: DF.Literal["MariaDB", "PostgreSQL", "SQLite", "DuckDB", "BigQuery", "ClickHouse"]
         enable_stored_procedure_execution: DF.Check
         host: DF.Data | None
+        http_headers: DF.JSON | None
+        is_ducklake: DF.Check
         is_frappe_db: DF.Check
         is_site_db: DF.Check
         password: DF.Password | None
@@ -187,18 +191,17 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
                 exc=DataSourceConnectionError,
             )
 
-        print(f"Connected to {self.name} ({self.title})")
-
         if self.database_type == "MariaDB":
             db.raw_sql("SET SESSION time_zone='+00:00'")
             db.raw_sql("SET collation_connection = 'utf8mb4_unicode_ci'")
             MAX_STATEMENT_TIMEOUT = (
-                frappe.db.get_single_value(
-                    "Insights Settings", "max_execution_time", cache=True
-                )
-                or 180
+                frappe.db.get_single_value("Insights Settings", "max_execution_time", cache=True) or 180
             )
-            db.raw_sql(f"SET MAX_STATEMENT_TIME={MAX_STATEMENT_TIMEOUT}")
+            ## Todo: Permanent fix for this
+            try:
+                db.raw_sql(f"SET MAX_STATEMENT_TIME={MAX_STATEMENT_TIMEOUT}")
+            except Exception:
+                pass
 
         frappe.local.insights_db_connections[self.name] = db
         return db
@@ -220,6 +223,8 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             return get_bigquery_connection(self)
         if self.database_type == "MSSQL":
             return get_mssql_connection(self)
+        if self.database_type == "ClickHouse":
+            return get_clickhouse_connection(self)
 
         frappe.throw(f"Unsupported database type: {self.database_type}")
 
@@ -230,11 +235,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         if self.is_site_db:
             database_name = frappe.conf.db_name
 
-        if (
-            not database_name
-            or self.database_type == "DuckDB"
-            or self.database_type == "SQLite"
-        ):
+        if not database_name or self.database_type == "DuckDB" or self.database_type == "SQLite":
             return db.list_tables()
 
         if self.database_type == "PostgreSQL":
@@ -251,9 +252,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         if not contains_special_chars:
             return db.list_tables()
 
-        quoted_db_name = (
-            f"{db.dialect.QUOTE_START}{database_name}{db.dialect.QUOTE_END}"
-        )
+        quoted_db_name = f"{db.dialect.QUOTE_START}{database_name}{db.dialect.QUOTE_END}"
         return db.list_tables(database=quoted_db_name)
 
     def test_connection(self, raise_exception=False):
