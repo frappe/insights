@@ -528,6 +528,7 @@ def length(column: ir.StringColumn):
     """
     return column.length()
 
+
 # we can auto detect max_split but will need to execute the query
 # keeping it explicit for now
 def textsplit(column: ir.StringColumn, delimiter: str, max_splits: int):
@@ -552,7 +553,6 @@ def textsplit(column: ir.StringColumn, delimiter: str, max_splits: int):
     return query
 
 
-
 def json_extract(column: ir.StringColumn, *field_names: str):
     """
     def json_extract(column, *field_names)
@@ -575,10 +575,13 @@ def json_extract(column: ir.StringColumn, *field_names: str):
         clean_col = json_column[field].cast("string")
         # manually remove quotes for better compatibility
         clean_col = ibis.cases(
-            (clean_col.startswith('"') & clean_col.endswith('"'), clean_col.substr(1, clean_col.length() - 2)),
+            (
+                clean_col.startswith('"') & clean_col.endswith('"'),
+                clean_col.substr(1, clean_col.length() - 2),
+            ),
             (clean_col.startswith('"'), clean_col.substr(1)),
             (clean_col.endswith('"'), clean_col.substr(0, clean_col.length() - 1)),
-            else_=clean_col
+            else_=clean_col,
         )
         clean_columns[field] = clean_col
 
@@ -595,6 +598,7 @@ def json_extract(column: ir.StringColumn, *field_names: str):
         query = query.mutate({field: clean_col})
 
     return query
+
 
 # date functions
 def year(column: ir.DateValue):
