@@ -1,4 +1,85 @@
 {
+
+  "name": "insights",
+  "version": "1.0.0-dev",
+  "description": "Open Source Business Intelligence Tool",
+  "main": "insights/public/js/insights.bundle.js",
+  "homepage": "https://frappe.io/insights",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alazab-group/insights.git"
+  },
+  "license": "AGPL-3.0",
+  "dependencies": {
+    "@babel/core": "^7.23.5",
+    "@babel/preset-env": "^7.23.5",
+    "@fortawesome/fontawesome-free": "^6.5.0",
+    "bootstrap": "^4.6.2",
+    "chart.js": "^4.4.0",
+    "codemirror": "^5.65.16",
+    "cropperjs": "^1.6.1",
+    "dayjs": "^1.11.10",
+    "dropzone": "^5.9.3",
+    "frappe-gantt": "^0.6.1",
+    "jquery": "^3.7.1",
+    "jquery-ui": "^1.13.2",
+    "leaflet": "^1.9.4",
+    "lodash": "^4.17.21",
+    "popper.js": "^1.16.1",
+    "quill": "^1.3.7",
+    "socket.io-client": "^4.7.4",
+    "sortablejs": "^1.15.1",
+    "summernote": "^0.8.20",
+    "vue": "^3.3.8",
+    "vue-router": "^4.2.5",
+    "pinia": "^2.1.7",
+    "@vueuse/core": "^10.5.0",
+    "tailwindcss": "^3.3.6",
+    "@headlessui/vue": "^1.7.16",
+    "@heroicons/vue": "^2.0.18",
+    "plotly.js": "^2.27.1",
+    "d3": "^7.8.5",
+    "echarts": "^5.4.3",
+    "ag-grid-vue3": "^31.0.1",
+    "ag-grid-community": "^31.0.1",
+    "papaparse": "^5.4.1",
+    "file-saver": "^2.0.5",
+    "jszip": "^3.10.1"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.23.4",
+    "@rollup/plugin-babel": "^6.0.4",
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-multi-entry": "^6.0.1",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-replace": "^5.0.5",
+    "@rollup/plugin-terser": "^0.4.4",
+    "chokidar": "^3.5.3",
+    "postcss": "^8.4.32",
+    "rollup": "^4.6.1",
+    "rollup-plugin-postcss": "^4.0.2",
+    "sass": "^1.69.5",
+    "autoprefixer": "^10.4.16"
+  },
+  "scripts": {
+    "build": "rollup -c",
+    "watch": "rollup -c -w",
+    "production": "NODE_ENV=production rollup -c",
+    "docker:build": "NODE_ENV=production npm run build",
+    "docker:watch": "npm run watch",
+    "docker:start": "npm run production && supervisord -c /etc/supervisor/supervisord.conf",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not ie <= 11"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+
     "private": true,
     "type": "module",
     "aworkspaces": [
