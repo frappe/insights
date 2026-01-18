@@ -50,6 +50,11 @@ jobs:
         with:
           python-version: ${{ matrix.frappe_branch == 'version-16' && '3.14' || '3.10' }}
 
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.frappe_branch == 'version-16' && '24' || '20' }}
+
       - name: Install bench
         run: |
           pip install frappe-bench
