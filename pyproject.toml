@@ -8,8 +8,8 @@ requires-python = ">=3.10"
 readme = "README.md"
 dynamic = ["version"]
 dependencies = [
-    "pandas~=2.2.2",
-    "SQLAlchemy==2.0.22",
+    "pandas~=2.3.3",
+    "SQLAlchemy==2.0.41",
     "python-telegram-bot==12.8",
 ]
 
