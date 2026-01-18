@@ -53,7 +53,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: ${{ matrix.frappe_branch == 'version-16' && '24' || '20' }}
+          node-version: ${{ matrix.frappe_branch == 'version-16' && '24' || '18' }}
 
       - name: Install bench
         run: |
