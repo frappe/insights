@@ -23,6 +23,7 @@ import { javascript } from '@codemirror/lang-javascript'
 import { python } from '@codemirror/lang-python'
 import { MySQL, sql } from '@codemirror/lang-sql'
 import { syntaxTree } from '@codemirror/language'
+import { linter } from '@codemirror/lint'
 import { Decoration, EditorView, ViewPlugin } from '@codemirror/view'
 import { onMounted, ref, watch } from 'vue'
 import { Codemirror } from 'vue-codemirror'
@@ -71,6 +72,10 @@ const props = defineProps({
 		default: true,
 	},
 	columnNames: {
+		type: Array,
+		default: () => [],
+	},
+	validationErrors: {
 		type: Array,
 		default: () => [],
 	},
@@ -166,7 +171,27 @@ const columnHighlighter = ViewPlugin.fromClass(
 	}
 )
 
-const extensions = [language, closeBrackets(), tomorrow]
+const validationLinter = linter((view) => {
+	const diagnostics = []
+
+	for (const error of props.validationErrors) {
+		if (!error.line) continue
+			const line = view.state.doc.line(error.line)
+			const from = error.column ? line.from + error.column - 1 : line.from
+			const to = error.column ? from + 1 : line.to
+
+			diagnostics.push({
+				from: Math.max(0, from),
+				to: Math.min(view.state.doc.length, to),
+				severity: 'error',
+				message: error.message + (error.hint ? `\n${error.hint}` : ''),
+			})
+	}
+	return diagnostics
+})
+
+const extensions = [language, closeBrackets(),tomorrow, validationLinter]
+
 if (props.multiLine) {
 	extensions.push(EditorView.lineWrapping)
 }
