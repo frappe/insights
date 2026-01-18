@@ -54,6 +54,91 @@ function makeChart(name: string) {
 		if (!chart.isloaded) return {} as Query
 		return useQuery(chart.doc.data_query)
 	})
+
+	const isYLogScale = computed<boolean>({
+		get() {
+			const chartType = chart.doc.chart_type
+			if (chartType === "Bubble") {
+				const config = chart.doc.config as BubbleChartConfig
+				return !!(config && config.yAxis && config.yAxis.type === 'log')
+			}
+			else if (AXIS_CHARTS.includes(chartType)) {
+				const config = chart.doc.config as AxisChartConfig
+				return !!(config && config.y_axis && config.y_axis.type === 'log')
+			}
+			else {
+				return false
+			}
+
+		},
+		set(val: boolean) {
+			const chartType = chart.doc.chart_type
+			if (chartType === "Bubble") {
+				const config = chart.doc.config as BubbleChartConfig
+				chart.doc.config = {
+					...chart.doc.config,
+					yAxis: {
+						...(config.yAxis ?? {}),
+						type: val ? 'log' : 'value',
+					},
+				}
+			}
+			else if (AXIS_CHARTS.includes(chartType)) {
+				const config = chart.doc.config as AxisChartConfig
+				chart.doc.config = {
+					...chart.doc.config,
+					y_axis: {
+						...(config.y_axis ?? {}),
+						type: val ? 'log' : 'value',
+					},
+				}
+			} else {
+				// do nothing for other chart types
+			}
+		},
+	})
+	const isXLogScale = computed<boolean>({
+		get() {
+			const chartType = chart.doc.chart_type
+			if (chartType === "Bubble") {
+				const config = chart.doc.config as BubbleChartConfig
+				return !!(config && config.xAxis && config.xAxis.type === 'log')
+			}
+			else if (AXIS_CHARTS.includes(chartType)) {
+				const config = chart.doc.config as AxisChartConfig
+				return !!(config && config.x_axis && config.x_axis.type === 'log')
+			}
+			else {
+				return false
+			}
+
+		},
+		set(val: boolean) {
+			const chartType = chart.doc.chart_type
+			if (chartType === "Bubble") {
+				const config = chart.doc.config as BubbleChartConfig
+				chart.doc.config = {
+					...chart.doc.config,
+					xAxis: {
+						...(config.xAxis ?? {}),
+						type: val ? 'log' : 'value',
+					},
+				}
+			}
+			else if (AXIS_CHARTS.includes(chartType)) {
+				const config = chart.doc.config as AxisChartConfig
+				chart.doc.config = {
+					...chart.doc.config,
+					x_axis: {
+						...(config.x_axis ?? {}),
+						type: val ? 'log' : 'value',
+					},
+				}
+			} else {
+				// do nothing for other chart types
+			}
+		},
+	})
 	async function refresh(force?: boolean, reload?: boolean) {
 		if (reload) {
 			await chart.load()
@@ -495,7 +580,8 @@ function makeChart(name: string) {
 		...toRefs(chart),
 
 		dataQuery,
-
+		isYLogScale,
+		isXLogScale,
 		refresh,
 		updateGranularity,
 		resetConfig,
@@ -557,9 +643,9 @@ function transformChartDoc(doc: any) {
 	doc.config.filters = doc.config.filters?.filters?.length
 		? doc.config.filters
 		: {
-				filters: [],
-				logical_operator: 'And',
-		  }
+			filters: [],
+			logical_operator: 'And',
+		}
 	doc.config.order_by = doc.config.order_by || []
 	doc.config.limit = doc.config.limit || 100
 

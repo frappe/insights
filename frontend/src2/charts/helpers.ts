@@ -64,8 +64,8 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 		? getGranularity(config.x_axis.dimension.dimension_name, config)
 		: null
 
-	const leftYAxis = getYAxis({ min: config.y_axis.min, max: config.y_axis.max })
-	const rightYAxis = getYAxis()
+	const leftYAxis = getYAxis({ min: config.y_axis.min, max: config.y_axis.max, log_type: config.y_axis.type })
+	const rightYAxis = getYAxis({ log_type: config.y_axis.type })
 	const hasRightAxis = config.y_axis.series.some((s) => s.align === 'Right')
 	const yAxis = !hasRightAxis ? [leftYAxis] : [leftYAxis, rightYAxis]
 
@@ -184,8 +184,9 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 		normalized: config.y_axis.normalize,
 		min: config.y_axis.min,
 		max: config.y_axis.max,
+		log_type:config.y_axis.type
 	})
-	const rightYAxis = getYAxis({ normalized: config.y_axis.normalize })
+	const rightYAxis = getYAxis({ normalized: config.y_axis.normalize, log_type: config.y_axis.type })
 	const hasRightAxis = config.y_axis.series.some((s) => s.align === 'Right')
 	const yAxis = !hasRightAxis ? [leftYAxis] : [leftYAxis, rightYAxis]
 
@@ -334,11 +335,12 @@ type YAxisCustomizeOptions = {
 	normalized?: boolean
 	min?: number
 	max?: number
+	log_type?:string
 }
 function getYAxis(options: YAxisCustomizeOptions = {}) {
 	return {
 		show: true,
-		type: 'value',
+		type: options.log_type || 'value',
 		z: 2,
 		scale: false,
 		alignTicks: true,
@@ -866,7 +868,7 @@ export function getBubbleChartOptions(config: BubbleChartConfig, result: QueryRe
 			}
 		}
 	}
-
+	const show_scrollbar = config.yAxis.show_scrollbar || false
 	const show_legend = !!groupByColumnName && seriesMap.size > 1
 	const series = Array.from(seriesMap.entries()).map(([groupName, data], idx) => {
 		const color = colors[idx % colors.length]
@@ -875,6 +877,7 @@ export function getBubbleChartOptions(config: BubbleChartConfig, result: QueryRe
 			name: groupName,
 			type: 'scatter',
 			data: data,
+			grid: getGrid({ show_legend, show_scrollbar }),
 			symbolSize: symbolSizeConfig,
 			itemStyle: {
 				color: color,
@@ -931,14 +934,14 @@ export function getBubbleChartOptions(config: BubbleChartConfig, result: QueryRe
 	const yColumnLabel = result.columnOptions.find((c) => c.value === yColumnName)?.label || yColumnName
 
 	const xAxis = {
-		...getYAxis(),
+		...getYAxis({ log_type: config.xAxis.type }),
 		name: xColumnLabel,
 		nameLocation: 'middle',
 		nameGap: 25,
 	}
 
 	const yAxis = {
-		...getYAxis(),
+		...getYAxis({ log_type: config.yAxis.type }),
 		name: yColumnLabel,
 		nameLocation: 'middle',
 		nameGap: 35,
@@ -951,10 +954,11 @@ export function getBubbleChartOptions(config: BubbleChartConfig, result: QueryRe
 		animationDuration: 700,
 		color: colors,
 		title: titles,
-		grid: getGrid({ show_legend }),
+		grid: getGrid({ show_legend,show_scrollbar }),
 		xAxis,
 		yAxis,
 		series,
+		dataZoom: getDataZoom(show_scrollbar, false),
 		tooltip: {
 			trigger: 'item',
 			confine: true,
@@ -992,7 +996,7 @@ export function getBubbleChartOptions(config: BubbleChartConfig, result: QueryRe
 				return html
 			},
 		},
-		legend: getLegend(show_legend),
+		legend: getLegend(show_legend,show_scrollbar),
 	}
 }
 
