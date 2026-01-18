@@ -3,9 +3,7 @@
 from datetime import datetime
 
 import frappe
-import telegram
 from croniter import croniter
-from frappe.integrations.utils import make_post_request
 from frappe.model.document import Document
 from frappe.utils import validate_email_address
 from frappe.utils.data import get_datetime, get_datetime_str, now_datetime
@@ -120,6 +118,7 @@ class Telegram:
             self.chat_id = chat_id
 
     def send(self, message):
+        import telegram
         try:
             text = message[: telegram.MAX_MESSAGE_LENGTH]
             parse_mode = telegram.ParseMode.MARKDOWN
@@ -130,4 +129,5 @@ class Telegram:
 
     @property
     def bot(self):
+        import telegram
         return telegram.Bot(token=self.token)
