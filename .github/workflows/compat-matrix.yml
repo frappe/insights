@@ -15,8 +15,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        insights_branch: [main, version-3]
-        frappe_branch: [version-14, version-15]
+        insights_branch: [main, version-3, develop]
+        frappe_branch: [version-15, version-16]
 
     name: Install (Insights=${{ matrix.insights_branch }}, Frappe=${{ matrix.frappe_branch }})
 
