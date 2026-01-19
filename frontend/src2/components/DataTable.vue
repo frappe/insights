@@ -268,27 +268,42 @@ const colorByValues = computed(() => {
 })
 
 const formattingRulesByColumn = computed(() => {
-	const formatGroup = props.formatGroup
-	const result: Record<string, FormattingMode[]> = {}
-	const columns = props.columns || []
-	if (!formatGroup?.formats?.length) return result
+    const { formats } = props.formatGroup || {}
+    const columns = props.columns || []
+    const result: Record<string, FormattingMode[]> = {}
 
-	const sanitizeColumnName = (n: string) => n.split('__')[0]
+    if (!formats?.length) return result
 
-	formatGroup.formats.forEach((format) => {
-		const target =
-			'column' in format && format.column?.column_name ? format.column.column_name : ''
-		if (!target) return
+    // get the measure part of a pivot column
+    const getMeasureName = (name: string) => name.includes('___') ? name.split('___').pop() : name
 
-		columns.forEach((col) => {
-			if (sanitizeColumnName(col.name) === target) {
-				if (!result[col.name]) result[col.name] = []
-				result[col.name].push(format)
-			}
-		})
-	})
+    formats.forEach((format) => {
+        const target = 'column' in format ? format.column?.column_name : null
+        if (!target) return
 
-	return result
+        // get matches (direct or pivot suffix)
+        const matchedColumns = columns.filter(col => {
+            const measureName = getMeasureName(col.name)
+            return measureName === target || col.name.endsWith(`___${target}`)
+        })
+
+        if (matchedColumns.length > 0) {
+            matchedColumns.forEach(col => {
+                (result[col.name] ??= []).push(format)
+            })
+        } else {
+            // Only apply to numeric value columns
+            // We skip index 0 since its the dimension/row header
+            columns.forEach((col, idx) => {
+                const isNumeric = FIELDTYPES.NUMBER.includes(col.type)
+                if (idx > 0 && isNumeric) {
+                    (result[col.name] ??= []).push(format)
+                }
+            })
+        }
+    })
+
+    return result
 })
 
 function getColorClass(colorName: string): string {
