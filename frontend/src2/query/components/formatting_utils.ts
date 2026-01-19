@@ -55,6 +55,7 @@ export type color_scale = {
     mode: 'color_scale',
     column: Column,
     colorScale?: string,
+    scaleScope?: 'global' | 'local',
     value: number | undefined
 }
 
