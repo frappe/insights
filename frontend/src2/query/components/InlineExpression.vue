@@ -21,16 +21,16 @@ const modelValue = defineModel<Expression>({
 	</div>
 </template>
 
-<style lang="scss">
+<style>
 .inline-expression {
-	.cm-content {
+	& .cm-content {
 		padding: 0 !important;
 		line-height: 26px !important;
 	}
-	.cm-placeholder {
+	& .cm-placeholder {
 		line-height: 26px !important;
 	}
-	.cm-gutters {
+	& .cm-gutters {
 		line-height: 26px !important;
 	}
 }

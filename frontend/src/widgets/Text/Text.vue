@@ -25,7 +25,7 @@ const dashboard = inject('dashboard')
 	</template>
 </template>
 
-<style lang="scss">
+<style>
 .prose-sm {
 	& > h1,
 	& > h2,
