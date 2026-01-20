@@ -20,13 +20,13 @@ export default defineConfig({
 	},
 	esbuild: { loader: 'ts' },
 	css: {
-    preprocessorOptions: {
-        scss: {
-          api: 'modern-compiler', // or "modern"
-          silenceDeprecations: ["legacy-js-api"],
-        },
-    },
-  },
+		preprocessorOptions: {
+			scss: {
+				api: 'modern-compiler', // or "modern"
+				silenceDeprecations: ['legacy-js-api'],
+			},
+		},
+	},
 	resolve: {
 		alias: {
 			// https://github.com/vitejs/vite/discussions/16730#discussioncomment-13048825
