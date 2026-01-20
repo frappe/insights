@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { call } from 'frappe-ui'
-import { Dialog, Button, Badge, Autocomplete, LoadingIndicator } from 'frappe-ui'
+import { Dialog, Button, Autocomplete, LoadingIndicator, TextInput } from 'frappe-ui'
 import { MappingData, Region } from '../../types/chart.types'
 import { Trash2Icon } from 'lucide-vue-next'
 const props = defineProps<{
@@ -20,12 +20,14 @@ const loading = ref(false)
 const saving = ref(false)
 const data = ref<MappingData | null>(null)
 const localMappings = ref<Record<string, string>>({})
+const searchQuery = ref('')
 
 watch(
 	() => props.modelValue,
 	async (open) => {
 		if (open) await loadData()
-	}
+	},
+	{ immediate: true }
 )
 
 async function loadData() {
@@ -125,20 +127,6 @@ const hasChanges = computed(() => {
 	return Object.entries(current).some(([region, mapped]) => original[region] !== mapped)
 })
 
-const stats = computed(() => {
-	if (!data.value) return { total: 0, resolved: 0, unresolved: 0 }
-
-	const exactMatches = data.value.resolved - Object.keys(data.value.manual_mappings).length
-	const manualCount = Object.keys(localMappings.value).length
-	const resolved = exactMatches + manualCount
-
-	return {
-		total: data.value.total,
-		resolved,
-		unresolved: data.value.total - resolved,
-	}
-})
-
 const unresolvedRegions = computed(() => {
 	if (!data.value) return []
 
@@ -158,7 +146,10 @@ const unresolvedRegions = computed(() => {
 		}
 	})
 
-	return regions
+	const filteredRegions = regions.filter((region) =>
+		region.user_region.toLowerCase().includes(searchQuery.value.toLowerCase())
+	)
+	return filteredRegions
 })
 
 const manualMappings = computed(() => {
@@ -204,29 +195,31 @@ function getOptions(region: Region) {
 	>
 		<template #body-content>
 			<!-- Loading State -->
-			<div v-if="loading" class="flex max-h-[500px] items-center justify-center">
+			<div v-if="loading" class="flex h-[28rem] items-center justify-center">
 				<div class="flex flex-col items-center gap-3">
 					<LoadingIndicator class="h-5 w-5 text-gray-400" />
-					<span class="text-sm text-gray-500">Loading mappings...</span>
+					<span class="text-sm text-gray-500">Loading</span>
 				</div>
 			</div>
 
-			<div v-else-if="data" class="flex max-h-[500px] flex-col gap-6">
-
+			<div v-else-if="data" class="flex h-[28rem] flex-col gap-6">
 				<!-- Scrollable Content Area -->
 				<div class="flex min-h-0 flex-1 flex-col gap-4">
 					<!-- Unresolved Regions -->
 					<div class="flex flex-col">
-						<div v-if="unresolvedRegions.length === 0" class="mb-4 rounded-md bg-green-50 p-3 text-sm text-green-700">
-							All regions have been resolved
-						</div>
-						<div v-if="unresolvedRegions.length > 0" class="mb-2 flex items-center gap-2">
-							<span class="text-sm font-semibold text-orange-600">
+						<div class="mb-2 flex items-center gap-2">
+							<h3 class="text-sm font-medium text-gray-700">
 								{{ unresolvedRegions.length }}
-							</span>
-							<h3 class="text-sm font-medium text-gray-900">Unresolved</h3>
+							</h3>
+							<h3 class="text-sm font-bold text-gray-900">Unresolved Locations</h3>
 						</div>
-						<div v-if="unresolvedRegions.length > 0" class="max-h-[220px] overflow-y-auto rounded-md border bg-white">
+						<div class="h-[15rem] overflow-y-auto rounded-md border bg-white">
+							<TextInput
+								v-model="searchQuery"
+								placeholder="Search locations"
+								class="w-1/3 p-2"
+								variant="subtle"
+							/>
 							<div class="flex flex-col divide-y">
 								<div
 									v-for="region in unresolvedRegions"
@@ -255,14 +248,20 @@ function getOptions(region: Region) {
 					<!-- Resolved Regions -->
 					<div class="flex flex-col">
 						<div class="mb-2 flex items-center gap-2">
-							<span class="text-sm text-green-600 font-semibold">
+							<h3 class="text-sm font-medium text-gray-700">
 								{{ manualMappings.length }}
-							</span>
+							</h3>
 							<h3 class="text-sm font-medium text-gray-900">Resolved</h3>
 						</div>
 
-						<div v-if="manualMappings.length > 0" class="max-h-[200px] overflow-y-auto rounded-md border bg-white">
-							<div class="flex flex-col divide-y">
+						<div class="h-[10rem] overflow-y-auto rounded-md border bg-white">
+							<div class="flex flex-col divide-y h-full">
+								<div
+									v-if="manualMappings.length === 0"
+									class="flex items-center justify-center flex-1 text-sm text-gray-500"
+								>
+									No Locations Resolved
+								</div>
 								<div
 									v-for="mapping in manualMappings"
 									:key="mapping.user_region"
@@ -291,7 +290,7 @@ function getOptions(region: Region) {
 									<Button
 										variant="icon"
 										@click="removeMapping(mapping.user_region)"
-										class ="text-red-600 "
+										class="text-red-600"
 										:icon="Trash2Icon"
 									>
 									</Button>

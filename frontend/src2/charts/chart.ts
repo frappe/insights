@@ -10,16 +10,18 @@ import {
 } from '../helpers'
 import { GranularityType } from '../helpers/constants'
 import useDocumentResource from '../helpers/resource'
+import { createToast } from '../helpers/toasts'
 import { column, count, query_table } from '../query/helpers'
 import useQuery, { Query } from '../query/query'
+import router from '../router'
 import {
 	AXIS_CHARTS,
 	AxisChartConfig,
+	BubbleChartConfig,
 	CHARTS,
 	DonutChartConfig,
 	MapChartConfig,
 	NumberChartConfig,
-	BubbleChartConfig,
 	TableChartConfig,
 } from '../types/chart.types'
 import { InsightsChartv3 } from '../types/workbook.types'
@@ -445,6 +447,20 @@ function makeChart(name: string) {
 		})
 	}
 
+	function duplicateChart() {
+		const workbook = useWorkbook(chart.doc.workbook)
+		return chart
+			.call('duplicate')
+			.then((newChartName: string) => {
+				createToast({
+					title: 'Chart duplicated',
+					variant: 'success',
+				})
+				router.push(`/workbook/${chart.doc.workbook}/chart/${newChartName}`)
+			})
+			.then(workbook.load)
+	}
+
 	const history = useDebouncedRefHistory(
 		// @ts-ignore
 		computed({
@@ -490,6 +506,7 @@ function makeChart(name: string) {
 		getDependentQueryColumns,
 
 		copy: copyChart,
+		duplicate: duplicateChart,
 		openInDesk: () => window.open(`/app/insights-chart-v3/${chart.doc.name}`, '_blank'),
 
 		history,

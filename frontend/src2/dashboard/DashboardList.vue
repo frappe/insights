@@ -1,14 +1,19 @@
 <script setup lang="tsx">
 import { Breadcrumbs } from 'frappe-ui'
-import { BarChart2, Clock, Eye, MoreVertical, RefreshCw, SearchIcon } from 'lucide-vue-next'
-import { ref, watchEffect } from 'vue'
+import { SearchIcon } from 'lucide-vue-next'
+import { computed, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import useDashboardStore, { DashboardListItem } from './dashboards'
+import DashboardCard from './DashboardCard.vue'
 
 const store = useDashboardStore()
 const searchQuery = ref('')
 watchEffect(() => {
 	store.fetchDashboards(searchQuery.value)
+})
+
+const favorites = computed(() => {
+	return store.dashboards.filter((d) => d.is_favourite)
 })
 
 const router = useRouter()
@@ -26,6 +31,10 @@ const dropdownOptions = (dashboard: DashboardListItem) => {
 			onClick: () => store.updatePreviewImage(dashboard.name),
 		},
 	]
+}
+
+const toggleFavorite = (dashboard: DashboardListItem) => {
+	store.toggleLike(dashboard.name, !dashboard.is_favourite)
 }
 
 watchEffect(() => {
@@ -47,85 +56,37 @@ watchEffect(() => {
 				</template>
 			</FormControl>
 		</div>
-
+		<!-- favourite dashboards -->
 		<div class="h-full w-full">
-			<!-- Dashboard Cards -->
-			<div
-				v-if="store.dashboards.length"
-				class="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-			>
-				<div
-					v-for="dashboard in store.dashboards"
-					:key="dashboard.name"
-					class="group relative flex w-full cursor-pointer flex-col gap-2 rounded bg-white"
-				>
-					<router-link
-						:to="`/dashboards/${dashboard.name}`"
-						class="flex h-[150px] overflow-hidden rounded shadow transition-transform duration-200 group-hover:scale-[1.01]"
-					>
-						<img
-							v-if="dashboard.preview_image"
-							:src="dashboard.preview_image"
-							onerror="this.src = ''"
-							class="z-10 object-cover opacity-80"
-						/>
-						<div
-							v-else
-							class="flex h-full w-full items-center justify-center bg-gray-50/70"
-						>
-							<Button
-								variant="ghost"
-								@click.prevent.stop="store.updatePreviewImage(dashboard.name)"
-								:loading="store.updatingPreviewImage[dashboard.name]"
-							>
-								<template #prefix>
-									<RefreshCw class="h-3.5 w-3.5 text-gray-500" />
-								</template>
-								<span class="text-gray-500">Load Preview</span>
-							</Button>
-						</div>
-					</router-link>
-					<div class="flex items-center justify-between gap-2">
-						<div class="flex-1 min-w-0">
-							<div class="flex items-start gap-1">
-								<p class="truncate text-sm" :title="dashboard.title">
-									{{ dashboard.title }}
-								</p>
-							</div>
-							<div class="mt-1.5 flex gap-2">
-								<div class="flex items-center gap-1">
-									<Eye class="h-3 w-3 text-gray-600" stroke-width="1.5" />
-									<span class="text-xs text-gray-600">
-										{{ dashboard.views }}
-									</span>
-								</div>
-								<div class="flex items-center gap-1">
-									<BarChart2 class="h-3 w-3 text-gray-600" stroke-width="1.5" />
-									<span class="text-xs text-gray-600">
-										{{ dashboard.charts }}
-									</span>
-								</div>
-								<div class="flex items-center gap-1">
-									<Clock class="h-3 w-3 text-gray-600" stroke-width="1.5" />
-									<span class="text-xs text-gray-600">
-										{{ dashboard.modified_from_now }}
-									</span>
-								</div>
-							</div>
-						</div>
-						<div class="flex flex-shrink-0 items-center">
-							<Dropdown :options="dropdownOptions(dashboard)">
-								<Button variant="ghost">
-									<template #icon>
-										<MoreVertical
-											class="h-4 w-4 text-gray-700"
-											stroke-width="1.5"
-										/>
-									</template>
-								</Button>
-							</Dropdown>
-						</div>
-					</div>
+			<div v-if="favorites.length > 0" class="mb-8">
+				<h2 class="mb-4 text-lg font-semibold text-gray-700">Favorites</h2>
+				<div class="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+					<DashboardCard
+						v-for="dashboard in favorites"
+						:key="'fav-' + dashboard.name"
+						:dashboard="dashboard"
+						:dropdown-options="dropdownOptions(dashboard)"
+						:preview-loading="store.updatingPreviewImage[dashboard.name]"
+						@toggle-favorite="toggleFavorite(dashboard)"
+						@update-preview="store.updatePreviewImage(dashboard.name)"
+					/>
+				</div>
+			</div>
+			<!-- all dashboards -->
+			<div v-if="store.dashboards.length">
+				<h2 v-if="favorites.length > 0" class="mb-4 text-lg font-semibold text-gray-700">
+					All Dashboards
+				</h2>
+				<div class="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+					<DashboardCard
+						v-for="dashboard in store.dashboards"
+						:key="dashboard.name"
+						:dashboard="dashboard"
+						:dropdown-options="dropdownOptions(dashboard)"
+						:preview-loading="store.updatingPreviewImage[dashboard.name]"
+						@toggle-favorite="toggleFavorite(dashboard)"
+						@update-preview="store.updatePreviewImage(dashboard.name)"
+					/>
 				</div>
 			</div>
 

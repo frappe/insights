@@ -15,6 +15,7 @@ export type DashboardListItem = {
 	modified_from_now: string
 	preview_image: string
 	views: number
+	is_favourite: boolean
 }
 
 const dashboards = ref<DashboardListItem[]>([])
@@ -53,6 +54,15 @@ async function updatePreviewImage(dashboard_name: string) {
 		})
 }
 
+async function toggleLike(dashboard_name: string, add: boolean) {
+	return call('frappe.desk.like.toggle_like', {
+		doctype: 'Insights Dashboard v3',
+		name: dashboard_name,
+		add: add ? 'Yes' : 'No',
+	})
+		.then(() => fetchDashboards())
+}
+
 export default function useDashboardStore() {
 	if (!dashboards.value.length) {
 		fetchDashboards()
@@ -65,5 +75,7 @@ export default function useDashboardStore() {
 
 		updatePreviewImage,
 		updatingPreviewImage,
+
+		toggleLike,
 	})
 }
