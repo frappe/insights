@@ -10,6 +10,7 @@
   "enable_permissions",
   "enable_data_store",
   "apply_user_permissions",
+  "grant_table_access_on_dashboard_share",
   "allowed_origins",
   "max_records_to_sync",
   "max_memory_usage",
@@ -137,6 +138,12 @@
    "label": "Apply User Permissions"
   },
   {
+   "default": "0",
+   "fieldname": "grant_table_access_on_dashboard_share",
+   "fieldtype": "Check",
+   "label": "Grant Table Access on Dashboard Share"
+  },
+  {
    "fieldname": "max_execution_time",
    "fieldtype": "Int",
    "label": "Max Execution Time (Seconds)"
@@ -145,7 +152,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-01-14 13:17:25.798141",
+ "modified": "2026-01-19 8:11:40.298156",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",
