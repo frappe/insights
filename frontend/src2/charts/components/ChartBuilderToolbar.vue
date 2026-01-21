@@ -56,7 +56,7 @@ const moreActions = [
 		onClick: () => props.chart.openInDesk(),
 		condition: () => session.user.has_desk_access,
 	},
-].filter((action) => !action.condition || action.condition())
+].filter((action) => !action.condition || action.condition() || !!action.condition)
 </script>
 
 <template>
