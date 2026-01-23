@@ -163,6 +163,19 @@ def get_allowed_documents(doctype):
             distinct=True,
         )
 
+        custom_parent_doctypes = frappe.get_all(
+            "Custom Field",
+            filters={
+                "fieldtype": ["in", ["Table", "Table MultiSelect"]],
+                "options": child_doctype,
+            },
+            pluck="dt",
+            distinct=True,
+        )
+
+        # Combine and deduplicate parent doctypes
+        parent_doctypes = list(set(parent_doctypes + custom_parent_doctypes))
+
         # FIX: check permission of the parent and not the child table
         parent_doctypes = [p for p in parent_doctypes if frappe.has_permission(p, "read")]
 
