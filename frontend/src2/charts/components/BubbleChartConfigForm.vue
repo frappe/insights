@@ -9,8 +9,6 @@ import { computed } from 'vue'
 const props = defineProps<{
 	dimensions: DimensionOption[]
 	columnOptions: ColumnOption[]
-	yLogScale: boolean
-	xLogScale: boolean
 }>()
 
 const config = defineModel<BubbleChartConfig>({
@@ -35,16 +33,6 @@ if (!config.value.yAxis) {
 if (!config.value.size_column) {
 	config.value.size_column = {} as Measure
 }
-const emit = defineEmits(['update:yLogScale', 'update:xLogScale'])
-
-const yLogScaleModel = computed({
-	get: () => props.yLogScale,
-	set: (val: boolean) => emit('update:yLogScale', val),
-})
-const xLogScaleModel = computed({
-	get: () => props.xLogScale,
-	set: (val: boolean) => emit('update:xLogScale', val),
-})
 </script>
 
 <template>
@@ -54,8 +42,8 @@ const xLogScaleModel = computed({
 				label="Series"
 				v-model="config.xAxis"
 				:column-options="props.columnOptions"
+				:show-log-scale="true"
 			/>
-			<Toggle v-model="xLogScaleModel" label="Log Scale" />
 		</div>
 	</CollapsibleSection>
 	<CollapsibleSection title="Y Axis">
@@ -64,8 +52,8 @@ const xLogScaleModel = computed({
 				label="Series"
 				v-model="config.yAxis"
 				:column-options="props.columnOptions"
+				:show-log-scale="true"
 			/>
-			<Toggle v-model="yLogScaleModel" label="Log Scale" />
 		</div>
 	</CollapsibleSection>
 

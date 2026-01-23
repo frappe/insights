@@ -1,6 +1,7 @@
 import { FormatGroupArgs } from '../query/components/formatting_utils'
-import { Dimension, Measure, AxisScaleType } from './query.types'
+import { Dimension, Measure } from './query.types'
 
+export type AxisScaleType = "value" | "log"
 export const AXIS_CHARTS = ['Bar', 'Line', 'Row']
 export type AxisChartType = (typeof AXIS_CHARTS)[number]
 
@@ -16,7 +17,7 @@ export type AxisChartConfig = {
 export type XAxis = {
 	dimension: Dimension
 	label_rotation?: number
-	type?: AxisScaleType
+	log_scale?: boolean
 }
 
 export type SplitBy = {
@@ -32,7 +33,7 @@ export type YAxis = {
 	show_axis_label?: boolean
 	show_data_labels?: boolean
 	show_scrollbar?: boolean
-	type?: AxisScaleType
+	log_scale?: boolean
 }
 export type Series = {
 	name?: string

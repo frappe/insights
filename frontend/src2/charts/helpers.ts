@@ -64,8 +64,8 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 		? getGranularity(config.x_axis.dimension.dimension_name, config)
 		: null
 
-	const leftYAxis = getYAxis({ min: config.y_axis.min, max: config.y_axis.max, log_type: config.y_axis.type })
-	const rightYAxis = getYAxis({ log_type: config.y_axis.type })
+	const leftYAxis = getYAxis({ min: config.y_axis.min, max: config.y_axis.max, log_type: config.y_axis.log_scale ? 'log' : 'value' })
+	const rightYAxis = getYAxis({ log_type:config.y_axis.log_scale ? 'log' : 'value' })
 	const hasRightAxis = config.y_axis.series.some((s) => s.align === 'Right')
 	const yAxis = !hasRightAxis ? [leftYAxis] : [leftYAxis, rightYAxis]
 
@@ -85,7 +85,7 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 		})
 
 	const colors = getColors()
-
+	console.log(config)
 	return {
 		animation: true,
 		animationDuration: 700,
@@ -184,9 +184,9 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 		normalized: config.y_axis.normalize,
 		min: config.y_axis.min,
 		max: config.y_axis.max,
-		log_type:config.y_axis.type
+		log_type: config.y_axis.log_scale ? 'log' : 'value'
 	})
-	const rightYAxis = getYAxis({ normalized: config.y_axis.normalize, log_type: config.y_axis.type })
+	const rightYAxis = getYAxis({ normalized: config.y_axis.normalize, log_type: config.y_axis.log_scale ? 'log' : 'value' })
 	const hasRightAxis = config.y_axis.series.some((s) => s.align === 'Right')
 	const yAxis = !hasRightAxis ? [leftYAxis] : [leftYAxis, rightYAxis]
 
@@ -934,14 +934,14 @@ export function getBubbleChartOptions(config: BubbleChartConfig, result: QueryRe
 	const yColumnLabel = result.columnOptions.find((c) => c.value === yColumnName)?.label || yColumnName
 
 	const xAxis = {
-		...getYAxis({ log_type: config.xAxis.type }),
+		...getYAxis({ log_type: config.xAxis.log_scale ? 'log' : 'value' }),
 		name: xColumnLabel,
 		nameLocation: 'middle',
 		nameGap: 25,
 	}
 
 	const yAxis = {
-		...getYAxis({ log_type: config.yAxis.type }),
+		...getYAxis({ log_type: config.yAxis.log_scale ? 'log' : 'value' }),
 		name: yColumnLabel,
 		nameLocation: 'middle',
 		nameGap: 35,

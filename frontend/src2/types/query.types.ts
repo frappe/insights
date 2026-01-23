@@ -1,7 +1,7 @@
 import { GranularityType } from "../helpers/constants";
 
 export type TableArgs = { type: 'table'; data_source: string; table_name: string }
-export type AxisScaleType ="value" |"log"
+
 export type QueryTableArgs = {
 	type: 'query'
 	workbook: string
@@ -19,15 +19,16 @@ export type ColumnMeasure = {
 	column_name: string
 	data_type: MeasureDataType
 	aggregation: AggregationType
-	type?: AxisScaleType
+	log_scale?: boolean
 	show_scrollbar?: boolean
 }
 export type ExpressionMeasure = {
 	measure_name: string
 	expression: Expression
 	data_type: MeasureDataType
-	type?: AxisScaleType
 	show_scrollbar?: boolean
+	log_scale?: boolean
+
 }
 export type MeasureOption = Measure & { label: string; value: string }
 export type Dimension = {

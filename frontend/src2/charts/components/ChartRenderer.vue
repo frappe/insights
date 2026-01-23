@@ -47,6 +47,7 @@ const eChartOptions = computed(() => {
 		)
 	}
 	if (chart_type.value === 'Line') {
+		console.log('Line Chart Config:', config.value)
 		return getLineChartOptions(config.value as LineChartConfig, result.value)
 	}
 	if (chart_type.value === 'Donut') {
@@ -73,7 +74,7 @@ const locationColumn = computed(() => {
 	return result.value.columns.find(
 		(c) =>
 			FIELDTYPES.DIMENSION.includes(c.type) &&
-			c.name === mapConfig.value.location_column?.column_name
+			c.name === mapConfig.value.location_column?.column_name,
 	)
 })
 
@@ -114,7 +115,7 @@ const locationRowIndex = computed(() => {
 	return { index, reverseMap }
 })
 
-function handleMapChartClick(params:any) {
+function handleMapChartClick(params: any) {
 	if (!locationColumn.value) return null
 
 	const clickedLocation = params.name

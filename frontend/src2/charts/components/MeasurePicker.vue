@@ -19,6 +19,7 @@ const emit = defineEmits({ remove: () => true })
 const props = defineProps<{
 	label?: string
 	columnOptions: ColumnOption[]
+	showLogScale?: boolean
 }>()
 
 const measure = defineModel<Measure>({
@@ -112,10 +113,8 @@ const columnOptions = computed(() => {
 const filteredColumnOptions = computed(() => {
 	if (!searchQuery.value) return columnOptions.value
 	const query = searchQuery.value.toLowerCase()
-	
-	return columnOptions.value.filter((option) =>
-		option.label.toLowerCase().includes(query)
-	)
+
+	return columnOptions.value.filter((option) => option.label.toLowerCase().includes(query))
 })
 
 function getAggregationLabel(aggregation: AggregationType) {
@@ -218,8 +217,10 @@ const label = ref('')
 										class="flex h-7 flex-shrink-0 cursor-pointer items-center justify-between rounded px-2.5 text-base hover:bg-gray-100"
 										@click.prevent.stop="
 											() => {
-												(measure as ColumnMeasure).column_name = option.value
-												measure.data_type = option.data_type as MeasureDataType
+												;(measure as ColumnMeasure).column_name =
+													option.value
+												measure.data_type =
+													option.data_type as MeasureDataType
 												togglePopover()
 											}
 										"
@@ -298,13 +299,13 @@ const label = ref('')
 			</template>
 		</Button>
 	</div>
-
+	<Toggle v-if="props.showLogScale" label="Log Scale" v-model="measure.log_scale" />
 	<NewMeasureSelectorDialog
 		v-if="showMeasureDialog"
 		:model-value="Boolean(showMeasureDialog)"
 		@update:model-value="!$event && (showMeasureDialog = false)"
 		:column-options="props.columnOptions"
-		:measure="(measure as ExpressionMeasure)"
+		:measure="measure as ExpressionMeasure"
 		@select="updateMeasure"
 	/>
 </template>

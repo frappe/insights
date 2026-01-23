@@ -9,7 +9,6 @@ import YAxisConfig from './YAxisConfig.vue'
 const props = defineProps<{
 	dimensions: DimensionOption[]
 	columnOptions: ColumnOption[]
-	logScale: boolean
 }>()
 
 const config = defineModel<BarChartConfig>({
@@ -42,18 +41,15 @@ watchEffect(() => {
 		config.value.y_axis.stack = false
 	}
 })
-const emit = defineEmits(['update:logScale'])
-
-const logScaleModel = computed({
-	get: () => props.logScale,
-	set: (val: boolean) => emit('update:logScale', val),
-})
 </script>
 
 <template>
 	<XAxisConfig v-model="config.x_axis" :dimensions="props.dimensions"></XAxisConfig>
-
-	<YAxisConfig v-model="config.y_axis" :column-options="props.columnOptions">
+	<YAxisConfig
+		v-model="config.y_axis"
+		:column-options="props.columnOptions"
+		:show-log-scale="true"
+	>
 		<template #y-axis-settings="{ y_axis }">
 			<Toggle label="Stack" v-model="(y_axis as YAxisBar).stack" :disabled="hasAxisSplit" />
 			<Toggle
@@ -62,7 +58,6 @@ const logScaleModel = computed({
 				:disabled="hasAxisSplit"
 			/>
 			<Toggle label="Normalize" v-model="(y_axis as YAxisBar).normalize" />
-			<Toggle v-model="logScaleModel" label="Log Scale" />
 		</template>
 	</YAxisConfig>
 

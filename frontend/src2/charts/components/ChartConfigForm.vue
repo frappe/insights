@@ -72,14 +72,12 @@ const queryResult = computed(() => chartQuery.value.result)
 		v-model="props.chart.doc.config as BarChartConfig"
 		:dimensions="dimensions"
 		:column-options="columnOptions"
-		v-model:log-scale="props.chart.isYLogScale"
 	/>
 	<LineChartConfigForm
 		v-if="props.chart.doc.chart_type == 'Line'"
 		v-model="props.chart.doc.config as LineChartConfig"
 		:dimensions="dimensions"
 		:column-options="columnOptions"
-		v-model:log-scale="props.chart.isYLogScale"
 	/>
 	<MapChartConfigForm
 		v-if="props.chart.doc.chart_type == 'Map'"
@@ -96,7 +94,5 @@ const queryResult = computed(() => chartQuery.value.result)
 		v-model="props.chart.doc.config as BubbleChartConfig"
 		:dimensions="dimensions"
 		:column-options="columnOptions"
-		v-model:y-log-scale="props.chart.isYLogScale"
-		v-model:x-log-scale="props.chart.isXLogScale"
 	/>
 </template>
