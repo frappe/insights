@@ -19,6 +19,7 @@ dependencies = [
     "ibis-framework[sqlite]",
     "ibis-framework[clickhouse]",
     "ibis-framework[postgres]",
+    "croniter",
     # "ibis-framework[mssql]",
     # "ibis-framework[bigquery]",
 ]

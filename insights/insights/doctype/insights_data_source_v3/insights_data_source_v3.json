@@ -6,23 +6,36 @@
  "engine": "InnoDB",
  "field_order": [
   "title",
-  "status",
+  "type",
   "database_type",
+  "column_break_khqs",
+  "status",
+  "api_configuration_section",
+  "api_base_url",
+  "api_authentication_type",
+  "column_break_api",
+  "api_token",
+  "api_username",
+  "api_password",
+  "api_custom_headers",
+  "section_break_mbxa",
+  "database_name",
+  "schema",
   "host",
   "port",
   "use_ssl",
+  "is_ducklake",
   "is_site_db",
   "is_frappe_db",
   "enable_stored_procedure_execution",
-  "is_ducklake",
   "column_break_pfsa",
-  "database_name",
-  "schema",
   "username",
   "password",
+  "bigquery_configuration_section",
   "bigquery_project_id",
   "bigquery_dataset_id",
   "bigquery_service_account_key",
+  "section_break_rccm",
   "http_headers",
   "section_break_ajvs",
   "connection_string"
@@ -42,6 +55,7 @@
    "options": "Inactive\nActive"
   },
   {
+   "depends_on": "eval: doc.type == 'Database'",
    "fieldname": "database_type",
    "fieldtype": "Select",
    "label": "Database Type",
@@ -73,6 +87,7 @@
   },
   {
    "default": "0",
+   "depends_on": "is_frappe_db",
    "fieldname": "is_frappe_db",
    "fieldtype": "Check",
    "label": "Is Frappe Database",
@@ -127,6 +142,7 @@
   },
   {
    "default": "0",
+   "depends_on": "eval:[\"MariaDB\", \"PostgreSQL\", \"MSSQL\"].includes(doc.database_type)",
    "fieldname": "enable_stored_procedure_execution",
    "fieldtype": "Check",
    "label": "Enable Stored Procedure Execution"
@@ -138,17 +154,92 @@
    "label": "Schema"
   },
   {
-   "depends_on": "eval: doc.database_type == 'DuckDB'",
+   "depends_on": "eval:doc.database_type == 'DuckDB' && doc.database_name?.includes(\"http\")",
    "fieldname": "http_headers",
    "fieldtype": "JSON",
    "label": "HTTP Headers"
   },
   {
    "default": "0",
-   "depends_on": "eval: doc.database_type == 'DuckDB'",
+   "depends_on": "eval:doc.database_type == 'DuckDB'",
    "fieldname": "is_ducklake",
    "fieldtype": "Check",
    "label": "Is DuckLake"
+  },
+  {
+   "fieldname": "column_break_khqs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval: doc.type == 'Database'",
+   "fieldname": "section_break_mbxa",
+   "fieldtype": "Section Break"
+  },
+  {
+   "depends_on": "eval:doc.database_type == 'BigQuery'",
+   "fieldname": "bigquery_configuration_section",
+   "fieldtype": "Section Break",
+   "label": "BigQuery Configuration"
+  },
+  {
+   "fieldname": "section_break_rccm",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "type",
+   "fieldtype": "Select",
+   "label": "Type",
+   "options": "Database\nAPI"
+  },
+  {
+   "depends_on": "eval:doc.type=='API'",
+   "fieldname": "api_configuration_section",
+   "fieldtype": "Section Break",
+   "label": "API Configuration"
+  },
+  {
+   "depends_on": "eval:doc.type=='API'",
+   "fieldname": "api_base_url",
+   "fieldtype": "Data",
+   "label": "Base URL",
+   "mandatory_depends_on": "eval:doc.type=='API'"
+  },
+  {
+   "depends_on": "eval:doc.type=='API'",
+   "fieldname": "api_authentication_type",
+   "fieldtype": "Select",
+   "label": "Authentication Type",
+   "options": "None\nAPI Key / Bearer Token\nBasic Authentication"
+  },
+  {
+   "depends_on": "eval:doc.type=='API'",
+   "fieldname": "column_break_api",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.type=='API' && doc.api_authentication_type=='API Key / Bearer Token'",
+   "fieldname": "api_token",
+   "fieldtype": "Password",
+   "label": "API Token"
+  },
+  {
+   "depends_on": "eval:doc.type=='API' && doc.api_authentication_type=='Basic Authentication'",
+   "fieldname": "api_username",
+   "fieldtype": "Data",
+   "label": "API Username"
+  },
+  {
+   "depends_on": "eval:doc.type=='API' && doc.api_authentication_type=='Basic Authentication'",
+   "fieldname": "api_password",
+   "fieldtype": "Password",
+   "label": "API Password"
+  },
+  {
+   "depends_on": "eval:doc.type=='API'",
+   "description": "Custom headers for API requests (non-sensitive data only)",
+   "fieldname": "api_custom_headers",
+   "fieldtype": "JSON",
+   "label": "Custom Headers"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -158,7 +249,7 @@
    "link_fieldname": "data_source"
   }
  ],
- "modified": "2025-11-21 18:21:35.918445",
+ "modified": "2026-01-25 16:08:09.203422",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Data Source v3",

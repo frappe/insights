@@ -1,0 +1,153 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:title",
+ "creation": "2026-01-22 12:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "title",
+  "data_source",
+  "table_name",
+  "schedule",
+  "column_break_3",
+  "state",
+  "section_break_4",
+  "script",
+  "section_break_8",
+  "secrets",
+  "section_break_10",
+  "last_run",
+  "last_status",
+  "column_break_13",
+  "last_log"
+ ],
+ "fields": [
+  {
+   "default": "0",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "data_source",
+   "fieldtype": "Link",
+   "label": "Data Source",
+   "options": "Insights Data Source v3",
+   "reqd": 1
+  },
+  {
+   "fieldname": "table_name",
+   "fieldtype": "Data",
+   "label": "Table Name",
+   "reqd": 1
+  },
+  {
+   "description": "Cron expression to schedule the script. Note: The scheduler checks for jobs every hour.",
+   "fieldname": "schedule",
+   "fieldtype": "Data",
+   "label": "Schedule (Cron)"
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Persistent state storage for the script",
+   "fieldname": "state",
+   "fieldtype": "Code",
+   "label": "State (JSON)",
+   "options": "JSON"
+  },
+  {
+   "fieldname": "section_break_4",
+   "fieldtype": "Section Break"
+  },
+  {
+   "description": "Write Python code to fetch and transform data. Available globals:<br>\u2022 client: API client for the selected data source<br>\u2022 table: Write data to warehouse. Methods: insert(data, overwrite=False)<br>\u2022 state: Persist data between runs. Methods: get(key, default=None), set(key, value), delete(key), clear()<br>\u2022 secrets: Access secret keys. Methods: get(key)<br>\u2022 log(message): Log execution messages",
+   "fieldname": "script",
+   "fieldtype": "Code",
+   "label": "Script",
+   "options": "Python",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_8",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "secrets",
+   "fieldtype": "Table",
+   "label": "Secrets",
+   "options": "Insights Secret Key"
+  },
+  {
+   "fieldname": "section_break_10",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "last_run",
+   "fieldtype": "Datetime",
+   "label": "Last Run",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_status",
+   "fieldtype": "Data",
+   "label": "Last Status",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_13",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "last_log",
+   "fieldtype": "Link",
+   "label": "Last Log",
+   "options": "Insights Table Import Log",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [
+  {
+   "link_doctype": "Insights Table Import Log",
+   "link_fieldname": "import_job"
+  }
+ ],
+ "modified": "2026-01-25 16:29:30.711648",
+ "modified_by": "Administrator",
+ "module": "Insights",
+ "name": "Insights Table Import Job",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

@@ -17,9 +17,11 @@
   "row_size",
   "batch_size",
   "rows_imported",
+  "import_job",
   "section_break_vxpp",
   "query",
-  "output"
+  "output",
+  "error"
  ],
  "fields": [
   {
@@ -42,14 +44,13 @@
    "fieldname": "query",
    "fieldtype": "Code",
    "in_list_view": 1,
-   "label": "Query",
-   "read_only": 1,
-   "reqd": 1
+   "label": "Import Query",
+   "read_only": 1
   },
   {
    "fieldname": "output",
-   "fieldtype": "Long Text",
-   "label": "Output",
+   "fieldtype": "Code",
+   "label": "Log",
    "read_only": 1
   },
   {
@@ -116,7 +117,7 @@
   {
    "fieldname": "time_taken",
    "fieldtype": "Int",
-   "label": "Time Taken (Seconds)",
+   "label": "Duration (Seconds)",
    "non_negative": 1,
    "read_only": 1
   },
@@ -125,13 +126,25 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "In Progress\nCompleted\nFailed",
+   "options": "In Progress\nCompleted\nFailed\nQueued",
    "read_only": 1
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Code",
+   "label": "Error",
+   "read_only": 1
+  },
+  {
+   "fieldname": "import_job",
+   "fieldtype": "Link",
+   "label": "Import Job",
+   "options": "Insights Table Import Job"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-11-26 22:36:30.872683",
+ "modified": "2026-01-25 16:29:15.148157",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Table Import Log",
@@ -157,6 +170,7 @@
    "share": 1
   }
  ],
+ "row_format": "Dynamic",
  "search_fields": "data_source, table_name",
  "show_title_field_in_link": 1,
  "sort_field": "creation",

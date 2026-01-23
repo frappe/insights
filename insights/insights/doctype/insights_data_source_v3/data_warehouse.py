@@ -1,17 +1,19 @@
 import os
+from collections.abc import Generator
+from contextlib import contextmanager, suppress
 
 import frappe
 import frappe.utils
 import ibis
-import ibis.backends
-import ibis.backends.duckdb
+from duckdb import CatalogException
 from frappe.query_builder.functions import IfNull
 from frappe.utils import get_files_path
 from frappe.utils.background_jobs import is_job_enqueued
-from ibis import BaseBackend, _
+from ibis import _
+from ibis.backends.duckdb import Backend as DuckDBBackend
 from ibis.expr.types import Expr
 
-from insights import create_toast
+import insights
 from insights.utils import InsightsDataSourcev3, InsightsTablev3
 
 WAREHOUSE_DB_NAME = "insights.duckdb"
@@ -19,20 +21,64 @@ WAREHOUSE_DB_NAME = "insights.duckdb"
 
 class Warehouse:
     def __init__(self):
-        self.warehouse_path = get_warehouse_folder_path()
-        self.db_path = os.path.join(self.warehouse_path, WAREHOUSE_DB_NAME)
+        pass
+
+    def get_folder_path(self) -> str:
+        path = os.path.realpath(get_files_path(is_private=1))
+        path = os.path.join(path, "insights_data_warehouse")
+        if not os.path.exists(path):
+            os.makedirs(path)
+        return path
+
+    def get_db_path(self) -> str:
+        return os.path.join(os.path.realpath(self.get_folder_path()), WAREHOUSE_DB_NAME)
+
+    def get_connection(self, schema: str | None = None, read_only: bool = True) -> DuckDBBackend:
+        path = self.get_db_path()
+
+        if not os.path.exists(path):
+            db = ibis.duckdb.connect(path)
+            db.disconnect()
+
+        db = ibis.duckdb.connect(path, read_only=read_only)
+
+        if schema:
+            db.raw_sql(f"USE '{schema}'")
+
+        return db
+
+    def create_schema(self, schema: str):
+        with self.get_write_connection() as db:
+            with suppress(CatalogException):
+                db.create_database(schema)
 
     @property
-    def db(self) -> BaseBackend:
-        if not os.path.exists(self.db_path):
-            ddb = ibis.duckdb.connect(self.db_path)
-            ddb.disconnect()
+    def db(self) -> DuckDBBackend:
+        if WAREHOUSE_DB_NAME not in insights.db_connections:
+            ddb = self.get_connection(read_only=True)
+            insights.db_connections[WAREHOUSE_DB_NAME] = ddb
 
+<<<<<<< HEAD
         if WAREHOUSE_DB_NAME not in frappe.local.insights_db_connections:
             ddb = ibis.duckdb.connect(self.db_path, read_only=True, enable_external_access=False)
             frappe.local.insights_db_connections[WAREHOUSE_DB_NAME] = ddb
+=======
+        return insights.db_connections[WAREHOUSE_DB_NAME]
+>>>>>>> da484a19 (feat: table import jobs for api data)
 
-        return frappe.local.insights_db_connections[WAREHOUSE_DB_NAME]
+    @contextmanager
+    def get_write_connection(
+        self, schema: str | None = None, timeout: int = 30
+    ) -> Generator[DuckDBBackend, None, None]:
+        from frappe.utils.synchronization import filelock
+
+        with filelock("insights_warehouse_write", timeout=timeout):
+            db = self.get_connection(schema=schema, read_only=False)
+            try:
+                yield db
+            finally:
+                with suppress(Exception):
+                    db.disconnect()
 
     def get_table(self, data_source: str, table_name: str) -> "WarehouseTable":
         return WarehouseTable(data_source, table_name)
@@ -42,14 +88,25 @@ class WarehouseTable:
     def __init__(self, data_source: str, table_name: str):
         from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 
-        self.warehouse = Warehouse()
         self.data_source = data_source
         self.table_name = table_name
-        self.warehouse_table_name = get_warehouse_table_name(data_source, table_name)
-        self.parquet_filepath = get_parquet_filepath(data_source, table_name)
+        self.warehouse_table_name = self.format_table_name(data_source, table_name)
+        self.parquet_filepath = self.get_parquet_path(data_source, table_name)
         self.table_doc_name = get_table_name(data_source, table_name)
 
         self.validate()
+
+    @staticmethod
+    def format_table_name(data_source: str, table_name: str) -> str:
+        """Format a warehouse table name from data source and table name."""
+        return f"{frappe.scrub(data_source)}.{frappe.scrub(table_name)}"
+
+    @staticmethod
+    def get_parquet_path(data_source: str, table_name: str) -> str:
+        """Get the parquet file path for a table."""
+        warehouse_path = insights.warehouse.get_folder_path()
+        warehouse_table = WarehouseTable.format_table_name(data_source, table_name)
+        return os.path.join(warehouse_path, f"{warehouse_table}.parquet")
 
     def validate(self):
         if not self.data_source:
@@ -62,7 +119,7 @@ class WarehouseTable:
             if import_if_not_exists:
                 self.enqueue_import()
                 remote_table = self.get_remote_table()
-                return self.warehouse.db.create_table(
+                return insights.warehouse.db.create_table(
                     self.warehouse_table_name,
                     schema=remote_table.schema(),
                     temp=True,
@@ -74,9 +131,11 @@ class WarehouseTable:
                 )
 
         if os.path.exists(self.parquet_filepath):
-            return self.warehouse.db.read_parquet(self.parquet_filepath, table_name=self.warehouse_table_name)
+            return insights.warehouse.db.read_parquet(
+                self.parquet_filepath, table_name=self.warehouse_table_name
+            )
 
-        return self.warehouse.db.table(self.warehouse_table_name)
+        return insights.warehouse.db.table(self.warehouse_table_name)
 
     def get_remote_table(self) -> Expr:
         ds = InsightsDataSourcev3.get_doc(self.data_source)
@@ -115,7 +174,7 @@ class WarehouseTableImporter:
         job_id = f"import_{frappe.scrub(self.table.data_source)}_{frappe.scrub(self.table.table_name)}"
 
         if is_job_enqueued(job_id) or self.import_in_progress():
-            create_toast(
+            insights.create_toast(
                 f"Import for {frappe.bold(self.table.table_name)} is in progress."
                 "You may not see the results till the import is completed.",
                 title="Import In Progress",
@@ -146,7 +205,7 @@ class WarehouseTableImporter:
             self.start_batch_import()
             self.update_log()
 
-        create_toast(
+        insights.create_toast(
             f"Imported {frappe.bold(self.table.table_name)} to the data store. "
             "Please refresh the query to see the updated data.",
             title="Import Completed",
@@ -167,7 +226,7 @@ class WarehouseTableImporter:
             commit=True,
         )
 
-        create_toast(
+        insights.create_toast(
             f"Importing {frappe.bold(self.table.table_name)} to the data store. "
             "You may not see the results till the import is completed.",
             title="Import Started",
@@ -219,7 +278,7 @@ class WarehouseTableImporter:
 
     def start_batch_import(self):
         self.warehouse_table_name = self.table.warehouse_table_name
-        self.warehouse_folder = get_warehouse_folder_path()
+        self.warehouse_folder = insights.warehouse.get_folder_path()
         self.imported_batch_paths = []
 
         try:
@@ -346,21 +405,3 @@ def _start_table_import(data_source: str, table_name: str):
     table = WarehouseTable(data_source, table_name)
     importer = WarehouseTableImporter(table)
     importer.start_import()
-
-
-def get_warehouse_folder_path() -> str:
-    path = os.path.realpath(get_files_path(is_private=1))
-    path = os.path.join(path, "insights_data_warehouse")
-    if not os.path.exists(path):
-        os.makedirs(path)
-    return path
-
-
-def get_warehouse_table_name(data_source: str, table_name: str) -> str:
-    return f"{frappe.scrub(data_source)}.{frappe.scrub(table_name)}"
-
-
-def get_parquet_filepath(data_source: str, table_name: str) -> str:
-    warehouse_path = get_warehouse_folder_path()
-    warehouse_table = get_warehouse_table_name(data_source, table_name)
-    return os.path.join(warehouse_path, f"{warehouse_table}.parquet")
