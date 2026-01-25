@@ -140,6 +140,7 @@ class WarehouseTableImporter:
     def __init__(self, table: WarehouseTable):
         self.table = table
         self.remote_table = None
+        self.remote_table_schema = None
         self.primary_key = ""
         self.warehouse_table_name = ""
 
@@ -257,6 +258,7 @@ class WarehouseTableImporter:
             )
 
         self.remote_table = self.remote_table.limit(self.settings.row_limit)
+        self.remote_table_schema = self.remote_table.schema()
         self.log.db_set("query", ibis.to_sql(self.remote_table), commit=True)
 
     def start_batch_import(self):
@@ -310,8 +312,10 @@ class WarehouseTableImporter:
             total_rows += batch_count
 
             if batch_number == 0:
-                # Create table with first batch
-                db.create_table(self.warehouse_table_name, batch_df, overwrite=True)
+                # Create table with first batch using explicit schema
+                db.create_table(
+                    self.warehouse_table_name, batch_df, schema=self.remote_table_schema, overwrite=True
+                )
             else:
                 # Insert subsequent batches
                 db.insert(self.warehouse_table_name, batch_df)
