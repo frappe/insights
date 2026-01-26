@@ -3,7 +3,7 @@
 
 frappe.ui.form.on("Insights Table Import Job", {
 	refresh(frm) {
-		frm.add_custom_button(__("Execute"), () => {
+		frm.add_custom_button(__("Enqueue"), () => {
 			frm.call("enqueue");
 		});
 	},
