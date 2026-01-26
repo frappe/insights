@@ -89,7 +89,8 @@ class TableImportJobRun:
         self.log = None
         self.start_time = None
         self.rows_written = 0
-        self.db_connection = None
+        self.db_ctx_manager = None
+        self.db = None
 
     def execute(self):
         try:
@@ -160,22 +161,22 @@ class TableImportJobRun:
 
     def _start_transaction(self):
         self._log("Starting database transaction...")
-        self.db_connection = insights.warehouse.get_write_connection()
-        self.db_connection.__enter__()
-        self.db_connection.raw_sql("BEGIN TRANSACTION;")
+        self.db_ctx_manager = insights.warehouse.get_write_connection(schema=self.data_source.schema)
+        self.db = self.db_ctx_manager.__enter__()
+        self.db.raw_sql("BEGIN TRANSACTION;")
         self._log("Database transaction started")
 
     def _commit_transaction(self):
-        if self.db_connection:
+        if self.db:
             self._log("Committing database transaction...")
-            self.db_connection.raw_sql("COMMIT;")
+            self.db.raw_sql("COMMIT;")
             self._log("Database transaction committed successfully")
 
     def _rollback_transaction(self):
-        if self.db_connection:
+        if self.db:
             try:
                 self._log("Rolling back database transaction due to error...")
-                self.db_connection.raw_sql("ROLLBACK;")
+                self.db.raw_sql("ROLLBACK;")
                 self._log("Database transaction rolled back successfully")
             except Exception as rollback_error:
                 frappe.log_error(
@@ -239,15 +240,11 @@ class TableImportJobRun:
             )
 
     def _cleanup(self):
-        if self.db_connection:
-            try:
-                self.db_connection.__exit__(None, None, None)
-                self.db_connection = None
-            except Exception as e:
-                frappe.log_error(
-                    title=f"Error closing database connection for job: {self.job.name}",
-                    message=str(e),
-                )
+        if self.db:
+            self._log("Closing database connection...")
+            self.db_ctx_manager.__exit__(None, None, None)
+            self.db = None
+            self._log("Database connection closed")
 
     def _log(self, message: str, commit: bool = True):
         self.log.log_output(f"[{now()}] {message}", commit=commit)
@@ -280,15 +277,14 @@ class JobTable:
             self._run._log(f"Writing {row_count} rows to table '{self.name}' in {mode} mode...")
 
             # Use the shared connection from the run (transactional)
-            db = self._run.db_connection
-            if not db:
+            if not self._run.db:
                 raise RuntimeError("No database connection available. Transaction not started.")
 
             exact_match_pattern = rf"^{self.name}$"
-            if mode == "replace" or not db.list_tables(like=exact_match_pattern):
-                db.create_table(self.name, df, overwrite=True)
+            if mode == "replace" or not self._run.db.list_tables(like=exact_match_pattern):
+                self._run.db.create_table(self.name, df, overwrite=True)
             elif mode == "append":
-                db.insert(self.name, df)
+                self._run.db.insert(self.name, df)
             else:
                 raise ValueError(f"Unsupported mode: {mode}")
 
