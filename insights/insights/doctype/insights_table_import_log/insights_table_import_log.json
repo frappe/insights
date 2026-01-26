@@ -126,7 +126,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "In Progress\nCompleted\nFailed\nQueued",
+   "options": "In Progress\nCompleted\nFailed",
    "read_only": 1
   },
   {
@@ -144,7 +144,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-25 16:29:15.148157",
+ "modified": "2026-01-26 16:56:02.417567",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Table Import Log",
