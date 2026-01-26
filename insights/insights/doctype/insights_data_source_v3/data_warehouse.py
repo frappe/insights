@@ -16,22 +16,19 @@ from ibis.expr.types import Expr
 import insights
 from insights.utils import InsightsDataSourcev3, InsightsTablev3
 
-WAREHOUSE_DB_NAME = "insights.duckdb"
+WAREHOUSE_DB_NAME = "insights"
 
 
 class Warehouse:
     def __init__(self):
         pass
 
-    def get_folder_path(self) -> str:
-        path = os.path.realpath(get_files_path(is_private=1))
-        path = os.path.join(path, "insights_data_warehouse")
-        if not os.path.exists(path):
-            os.makedirs(path)
-        return path
-
     def get_db_path(self) -> str:
-        return os.path.join(os.path.realpath(self.get_folder_path()), WAREHOUSE_DB_NAME)
+        folder_path = os.path.realpath(get_files_path(is_private=1))
+        folder_path = os.path.join(folder_path, "insights_data_warehouse")
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+        return os.path.join(os.path.realpath(folder_path), f"{WAREHOUSE_DB_NAME}.duckdb")
 
     def get_connection(self, schema: str | None = None, read_only: bool = True) -> DuckDBBackend:
         path = self.get_db_path()
