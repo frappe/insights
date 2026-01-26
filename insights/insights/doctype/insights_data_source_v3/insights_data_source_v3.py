@@ -232,7 +232,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         schema: DF.Data | None
         status: DF.Literal["Inactive", "Active"]
         title: DF.Data
-        type: DF.Literal["Database", "API"]
+        type: DF.Literal["Database", "REST API"]
         use_ssl: DF.Check
         username: DF.Data | None
     # end: auto-generated types
