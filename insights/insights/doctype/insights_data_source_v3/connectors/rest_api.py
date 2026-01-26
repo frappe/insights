@@ -9,9 +9,6 @@ class RestAPIClient:
         self.base_url = data_source.api_base_url
         self.headers = frappe.parse_json(data_source.api_custom_headers) or {}
         self.auth_type = data_source.api_authentication_type
-        self.username = data_source.api_username
-        self._password = data_source.get_password("api_password")
-        self._token = data_source.get_password("api_token")
 
         self.session = self._create_session()
 
@@ -24,9 +21,12 @@ class RestAPIClient:
         if self.auth_type == "None":
             pass  # No authentication needed
         elif self.auth_type == "API Key / Bearer Token":
-            session.headers.update({"Authorization": f"Bearer {self._token}"})
+            token = self.data_source.get_password("api_token")
+            session.headers.update({"Authorization": f"Bearer {token}"})
         elif self.auth_type == "Basic Authentication":
-            session.auth = (self.username, self._password)
+            username = self.data_source.api_username
+            password = self.data_source.get_password("api_password")
+            session.auth = (username, password)
 
         return session
 

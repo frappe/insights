@@ -166,6 +166,15 @@ class InsightsDataSourceDocument:
         if not self.api_base_url:
             frappe.throw("Base URL is mandatory for API Data Source")
 
+        if self.api_authentication_type == "API Key / Bearer Token" and not self.api_token:
+            frappe.throw("API Token is mandatory for the selected Authentication Type")
+
+        if self.api_authentication_type == "Basic Authentication":
+            mandatory = ("api_username", "api_password")
+            for field in mandatory:
+                if not self.get(field):
+                    frappe.throw(f"{field} is mandatory for the selected Authentication Type")
+
     def validate_database_name(self):
         mandatory = ("database_name",)
         for field in mandatory:
@@ -315,6 +324,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         quoted_db_name = f"{db.dialect.QUOTE_START}{database_name}{db.dialect.QUOTE_END}"
         return db.list_tables(database=quoted_db_name)
 
+    @frappe.whitelist()
     def test_connection(self, raise_exception=False):
         if self.type == "API":
             return self.test_api_connection(raise_exception)
