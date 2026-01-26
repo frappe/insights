@@ -105,6 +105,7 @@ class TableImportJobRun:
         self.rows_written = 0
         self.db_ctx_manager = None
         self.db = None
+        self.last_log_time = None
 
     def execute(self):
         try:
@@ -226,12 +227,14 @@ class TableImportJobRun:
         try:
             duration = time.monotonic() - self.start_time
 
+            traceback = frappe.as_unicode(frappe.get_traceback(with_context=True))
+
             self.log.db_set(
                 {
                     "ended_at": now(),
                     "status": "Failed",
                     "time_taken": round(duration, 3),
-                    "error": str(error),
+                    "error": traceback,
                 },
                 commit=True,
             )
@@ -261,7 +264,15 @@ class TableImportJobRun:
             self._log("Database connection closed")
 
     def _log(self, message: str, commit: bool = True):
-        self.log.log_output(f"[{now()}] {message}", commit=commit)
+        if self.last_log_time is None:
+            self.last_log_time = time.monotonic()
+            elapsed = 0.0
+        else:
+            current_time = time.monotonic()
+            elapsed = current_time - self.last_log_time
+            self.last_log_time = current_time
+
+        self.log.log_output(f"[{now()}] [{elapsed:.1f}s] {message}", commit=commit)
 
 
 class JobTable:
