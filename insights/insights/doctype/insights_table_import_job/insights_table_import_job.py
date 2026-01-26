@@ -3,11 +3,12 @@
 
 import json
 import time
+from datetime import datetime
 from typing import Any
 
 import frappe
 import pandas as pd
-from croniter import croniter
+from frappe.core.doctype.scheduled_job_type.scheduled_job_type import parse_cron
 from frappe.model.document import Document
 from frappe.utils import get_datetime, now, now_datetime
 from frappe.utils.password import get_decrypted_password
@@ -58,6 +59,21 @@ class InsightsTableImportJob(Document):
 
     def on_update(self):
         self.table_name = frappe.scrub(self.table_name)
+
+    def is_event_due(self, current_time=None):
+        if not self.schedule:
+            return False
+        return self.get_next_execution() <= (current_time or now_datetime())
+
+    def get_next_execution(self):
+        """Calculate next execution time based on cron schedule and last run"""
+        if not self.schedule:
+            return None
+
+        last_run = get_datetime(self.last_run or self.creation)
+
+        next_execution = parse_cron(self.schedule).get_next(datetime, start_time=last_run)
+        return next_execution
 
     @frappe.whitelist()
     def enqueue(self):
@@ -314,7 +330,7 @@ class JobState:
         try:
             return json.loads(state_json)
         except json.JSONDecodeError:
-            frappe.logger().warning(f"Invalid state JSON for job {self._job.name}, resetting to empty dict")
+            frappe.log_error(title=f"Invalid state JSON for job {self._job.name}")
             return {}
 
     def _save_state(self):
@@ -361,71 +377,25 @@ class JobSecrets:
 
 
 def run_scheduled_imports():
+    """Run all scheduled import jobs that are due"""
     jobs = frappe.get_all(
         "Insights Table Import Job",
-        filters={"enabled": 1},
-        fields=["name", "schedule", "last_run"],
+        filters={"enabled": 1, "schedule": ["is", "set"]},
+        fields=["name"],
     )
 
     current_time = now_datetime()
 
-    for job in jobs:
-        if not job.schedule:
-            continue
-
+    for job_data in jobs:
         try:
-            if is_job_due(job.schedule, job.last_run, current_time):
-                frappe.logger().info(f"Enqueueing table import job: {job.name}")
+            job = frappe.get_doc("Insights Table Import Job", job_data.name)
+            if job.is_event_due(current_time):
                 enqueue_table_import_job(job.name)
         except Exception as e:
             frappe.log_error(
-                title=f"Error scheduling table import job: {job.name}",
+                title=f"Error scheduling table import job: {job_data.name}",
                 message=str(e),
             )
-
-
-def is_job_due(cron_expression: str, last_run: str | None, current_time) -> bool:
-    """
-    Check if a job is due to run based on its cron schedule.
-
-    Args:
-            cron_expression: Cron expression (e.g., "0 */6 * * *")
-            last_run: Last run datetime string
-            current_time: Current datetime
-
-    Returns:
-            True if job should run now
-    """
-    try:
-        croniter(cron_expression)
-    except Exception:
-        frappe.logger().warning(f"Invalid cron expression: {cron_expression}")
-        return False
-
-    # If never run, check if we're past the most recent scheduled time
-    if not last_run:
-        cron = croniter(cron_expression, current_time)
-        # Get the most recent scheduled time before now
-        prev_scheduled_dt = cron.get_prev(return_datetime=True)
-        # Run if the most recent schedule was within the last hour (scheduler interval)
-        # This prevents running on every check
-        time_since_scheduled = (current_time - prev_scheduled_dt).total_seconds()
-        return 0 <= time_since_scheduled <= 3600  # Within last hour
-
-    # Get last run datetime
-    last_run_dt = get_datetime(last_run)
-
-    # Handle edge case: last_run is in the future (clock skew)
-    if last_run_dt > current_time:
-        frappe.logger().warning(f"Last run time {last_run_dt} is in the future. Skipping execution.")
-        return False
-
-    # Get next scheduled time after last run
-    cron = croniter(cron_expression, last_run_dt)
-    next_scheduled_dt = cron.get_next(return_datetime=True)
-
-    # If next scheduled time has passed, it's due
-    return next_scheduled_dt <= current_time
 
 
 def dump(obj):
