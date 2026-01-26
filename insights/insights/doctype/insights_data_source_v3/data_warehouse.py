@@ -407,7 +407,7 @@ def enqueue_warehouse_table_import(data_source: str, table_name: str):
         data_source=data_source,
         table_name=table_name,
         queue="long",
-        timeout=6000,
+        timeout=30 * 60,
         job_id=job_id,
     )
 

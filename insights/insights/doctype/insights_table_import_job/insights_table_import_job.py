@@ -17,8 +17,6 @@ import insights
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import SafePandasDataFrame
 from insights.utils import InsightsDataSourcev3
 
-MAX_EXECUTION_TIME = 900
-
 
 class InsightsTableImportJob(Document):
     # begin: auto-generated types
@@ -72,7 +70,7 @@ def enqueue_table_import_job(import_job_name: str):
         "insights.insights.doctype.insights_table_import_job.insights_table_import_job.execute_table_import_job",
         import_job_name=import_job_name,
         queue="long",
-        timeout=MAX_EXECUTION_TIME + 60,
+        timeout=30 * 60,
         job_id=f"insights_table_import_job:{import_job_name}",
     )
 
