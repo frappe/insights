@@ -55,9 +55,3 @@ class RestAPIClient:
 
     def post(self, endpoint, data=None, json=None):
         return self.request("POST", endpoint, data=data, json=json)
-
-    def put(self, *args, **kwargs):
-        raise NotImplementedError("Data Source of type API does not support PUT requests.")
-
-    def delete(self, *args, **kwargs):
-        raise NotImplementedError("Data Source of type API does not support DELETE requests.")
