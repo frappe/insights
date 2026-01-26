@@ -67,18 +67,18 @@ class InsightsTableImportJob(Document):
         frappe.msgprint(f"Job '{self.title}' has been queued for execution.")
 
 
-def enqueue_table_import_job(job_name: str):
+def enqueue_table_import_job(import_job_name: str):
     frappe.enqueue(
         "insights.insights.doctype.insights_table_import_job.insights_table_import_job.execute_table_import_job",
-        job_name=job_name,
+        import_job_name=import_job_name,
         queue="long",
         timeout=MAX_EXECUTION_TIME + 60,
-        job_id=f"insights_table_import_job:{job_name}",
+        job_id=f"insights_table_import_job:{import_job_name}",
     )
 
 
-def execute_table_import_job(job_name: str):
-    run = TableImportJobRun(job_name)
+def execute_table_import_job(import_job_name: str):
+    run = TableImportJobRun(import_job_name)
     run.execute()
 
 
