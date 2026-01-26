@@ -129,7 +129,7 @@ class WarehouseTable:
         return ds.get_ibis_table(self.table_name)
 
     def enqueue_import(self):
-        if frappe.db.get_value("Insights Data Source v3", self.data_source, "type") == "API":
+        if frappe.db.get_value("Insights Data Source v3", self.data_source, "type") == "REST API":
             frappe.throw("Import not supported for API data sources")
 
         importer = WarehouseTableImporter(self)
