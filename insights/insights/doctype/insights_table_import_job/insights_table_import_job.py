@@ -13,9 +13,11 @@ from frappe.utils import get_datetime, now, now_datetime
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.safe_exec import safe_exec
 
+import insights
+from insights.insights.doctype.insights_data_source_v3.ibis_utils import SafePandasDataFrame
 from insights.utils import InsightsDataSourcev3
 
-MAX_EXECUTION_TIME = 900  # Balance between allowing complex ETL jobs and preventing runaway processes
+MAX_EXECUTION_TIME = 900
 
 
 class InsightsTableImportJob(Document):
@@ -87,13 +89,17 @@ class TableImportJobRun:
         self.log = None
         self.start_time = None
         self.rows_written = 0
+        self.db_connection = None
 
     def execute(self):
         try:
             self._prepare_execution()
+            self._start_transaction()
             self._run_script()
+            self._commit_transaction()
             self._mark_success()
         except Exception as e:
+            self._rollback_transaction()
             self._mark_failure(e)
             raise
         finally:
@@ -101,7 +107,6 @@ class TableImportJobRun:
 
     def _prepare_execution(self):
         self.start_time = time.monotonic()
-
         self.data_source = InsightsDataSourcev3.get_doc(self.job.data_source)
 
         # Create log immediately so users can see execution status even if job fails early
@@ -133,6 +138,11 @@ class TableImportJobRun:
             "state": JobState(self.job),
             "secrets": JobSecrets(self.job),
             "log": self._log,
+            "pandas": frappe._dict(
+                {
+                    "DataFrame": SafePandasDataFrame,
+                }
+            ),
         }
 
         _locals = {}
@@ -148,8 +158,32 @@ class TableImportJobRun:
 
         self._log("Script executed successfully")
 
+    def _start_transaction(self):
+        self._log("Starting database transaction...")
+        self.db_connection = insights.warehouse.get_write_connection()
+        self.db_connection.__enter__()
+        self.db_connection.raw_sql("BEGIN TRANSACTION;")
+        self._log("Database transaction started")
+
+    def _commit_transaction(self):
+        if self.db_connection:
+            self._log("Committing database transaction...")
+            self.db_connection.raw_sql("COMMIT;")
+            self._log("Database transaction committed successfully")
+
+    def _rollback_transaction(self):
+        if self.db_connection:
+            try:
+                self._log("Rolling back database transaction due to error...")
+                self.db_connection.raw_sql("ROLLBACK;")
+                self._log("Database transaction rolled back successfully")
+            except Exception as rollback_error:
+                frappe.log_error(
+                    title=f"Error rolling back transaction for job: {self.job.name}",
+                    message=str(rollback_error),
+                )
+
     def _mark_success(self):
-        """Persist success state and metadata for audit trail and monitoring."""
         duration = time.monotonic() - self.start_time
 
         self.log.db_set(
@@ -164,7 +198,6 @@ class TableImportJobRun:
 
         self._log(f"Execution completed. Total rows written: {self.rows_written}")
 
-        # Update parent to show latest status without requiring full page reload
         self.job.db_set(
             {
                 "last_run": now(),
@@ -175,7 +208,6 @@ class TableImportJobRun:
         )
 
     def _mark_failure(self, error: Exception):
-        """Ensures failures are logged even if error handling itself fails."""
         try:
             duration = time.monotonic() - self.start_time
 
@@ -191,7 +223,6 @@ class TableImportJobRun:
 
             self._log(f"Execution failed: {error!s}")
 
-            # Update parent even on failure so users don't see stale "Running" status
             self.job.db_set(
                 {
                     "last_run": now(),
@@ -208,8 +239,15 @@ class TableImportJobRun:
             )
 
     def _cleanup(self):
-        """Placeholder for future cleanup needs; connections auto-close via context managers."""
-        pass
+        if self.db_connection:
+            try:
+                self.db_connection.__exit__(None, None, None)
+                self.db_connection = None
+            except Exception as e:
+                frappe.log_error(
+                    title=f"Error closing database connection for job: {self.job.name}",
+                    message=str(e),
+                )
 
     def _log(self, message: str, commit: bool = True):
         self.log.log_output(f"[{now()}] {message}", commit=commit)
@@ -229,8 +267,6 @@ class JobTable:
         raise NotImplementedError("Upsert mode is not yet supported")
 
     def _write(self, data: Any, mode: str) -> int:
-        import insights
-
         try:
             if mode not in ["append", "replace"]:
                 raise ValueError("Mode must be 'append' or 'replace'")
@@ -243,19 +279,22 @@ class JobTable:
             row_count = len(df)
             self._run._log(f"Writing {row_count} rows to table '{self.name}' in {mode} mode...")
 
-            schema = self._run.data_source.schema
-            with insights.warehouse.get_write_connection(schema=schema, timeout=60) as db:
-                exact_match_pattern = rf"^{self.name}$"
-                if mode == "replace" or not db.list_tables(like=exact_match_pattern):
-                    db.create_table(self.name, df, overwrite=True)
-                elif mode == "append":
-                    db.insert(self.name, df)
-                else:
-                    raise ValueError(f"Unsupported mode: {mode}")
+            # Use the shared connection from the run (transactional)
+            db = self._run.db_connection
+            if not db:
+                raise RuntimeError("No database connection available. Transaction not started.")
 
-                self._run._log(f"Successfully wrote {row_count} rows to table '{self.name}'")
-                self._run.rows_written += row_count
-                return row_count
+            exact_match_pattern = rf"^{self.name}$"
+            if mode == "replace" or not db.list_tables(like=exact_match_pattern):
+                db.create_table(self.name, df, overwrite=True)
+            elif mode == "append":
+                db.insert(self.name, df)
+            else:
+                raise ValueError(f"Unsupported mode: {mode}")
+
+            self._run._log(f"Successfully wrote {row_count} rows to table '{self.name}'")
+            self._run.rows_written += row_count
+            return row_count
 
         except Exception as e:
             error_msg = f"Error writing to table '{self.name}': {e!s}"
