@@ -4,11 +4,12 @@
 import json
 import time
 from datetime import datetime
+from functools import lru_cache
 from typing import Any
 
 import frappe
 import pandas as pd
-from frappe.core.doctype.scheduled_job_type.scheduled_job_type import parse_cron
+from croniter import croniter
 from frappe.model.document import Document
 from frappe.utils import get_datetime, now, now_datetime
 from frappe.utils.password import get_decrypted_password
@@ -17,6 +18,8 @@ from frappe.utils.safe_exec import safe_exec
 import insights
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import SafePandasDataFrame
 from insights.utils import InsightsDataSourcev3
+
+parse_cron = lru_cache(croniter)
 
 
 class InsightsTableImportJob(Document):
@@ -51,9 +54,7 @@ class InsightsTableImportJob(Document):
         """Validate that the cron expression is valid if provided."""
         if self.schedule:
             try:
-                from croniter import croniter
-
-                croniter(self.schedule)
+                parse_cron(self.schedule)
             except Exception as e:
                 frappe.throw(f"Invalid cron expression: {e!s}")
 
