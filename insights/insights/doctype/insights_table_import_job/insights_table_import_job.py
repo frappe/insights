@@ -8,6 +8,7 @@ from functools import lru_cache
 from typing import Any
 
 import frappe
+import ibis
 import pandas as pd
 from croniter import croniter
 from frappe.model.document import Document
@@ -15,7 +16,7 @@ from frappe.utils import get_datetime, now, now_datetime
 from frappe.utils.password import get_decrypted_password
 from frappe.utils.safe_exec import safe_exec
 
-import insights
+from insights.insights.doctype.insights_data_source_v3.data_warehouse import WarehouseTableWriter
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import SafePandasDataFrame
 from insights.utils import InsightsDataSourcev3
 
@@ -104,23 +105,19 @@ class TableImportJobRun:
         self.log = None
         self.start_time = None
         self.rows_written = 0
-        self.db_ctx_manager = None
-        self.db = None
         self.last_log_time = None
+        self._table_writer: TableWriter | None = None
 
     def execute(self):
         try:
             self._prepare_execution()
-            self._start_transaction()
             self._run_script()
-            self._commit_transaction()
+            self._commit_table()
             self._mark_success()
         except Exception as e:
-            self._rollback_transaction()
+            self._rollback_table()
             self._mark_failure(e)
             raise
-        finally:
-            self._cleanup()
 
     def _prepare_execution(self):
         self.start_time = time.monotonic()
@@ -141,6 +138,9 @@ class TableImportJobRun:
         self.log.insert(ignore_permissions=True)
         frappe.db.commit()
 
+        # Create the table writer for writing data
+        self._table_writer = TableWriter(self)
+
         self._log("Execution started")
 
     def _run_script(self):
@@ -149,9 +149,17 @@ class TableImportJobRun:
         if not code or not code.strip():
             raise ValueError("Script is empty")
 
+        # Create a restricted table interface that only exposes insert()
+        table_interface = frappe._dict(
+            {
+                "insert": self._table_writer.insert,
+                "name": self._table_writer.name,
+            }
+        )
+
         _globals = {
             "client": self.data_source.get_api_client(),
-            "table": JobTable(self),
+            "table": table_interface,
             "state": JobState(self.job),
             "secrets": JobSecrets(self.job),
             "log": self._log,
@@ -175,28 +183,21 @@ class TableImportJobRun:
 
         self._log("Script executed successfully")
 
-    def _start_transaction(self):
-        self._log("Starting database transaction...")
-        self.db_ctx_manager = insights.warehouse.get_write_connection(schema=self.data_source.schema)
-        self.db = self.db_ctx_manager.__enter__()
-        self.db.raw_sql("BEGIN TRANSACTION;")
-        self._log("Database transaction started")
+    def _commit_table(self):
+        if self._table_writer:
+            self._log("Committing table writes...")
+            self.rows_written = self._table_writer.commit()
+            self._log(f"Table writes committed. Total rows: {self.rows_written}")
 
-    def _commit_transaction(self):
-        if self.db:
-            self._log("Committing database transaction...")
-            self.db.raw_sql("COMMIT;")
-            self._log("Database transaction committed successfully")
-
-    def _rollback_transaction(self):
-        if self.db:
+    def _rollback_table(self):
+        if self._table_writer:
             try:
-                self._log("Rolling back database transaction due to error...")
-                self.db.raw_sql("ROLLBACK;")
-                self._log("Database transaction rolled back successfully")
+                self._log("Rolling back table writes due to error...")
+                self._table_writer.rollback()
+                self._log("Table writes rolled back successfully")
             except Exception as rollback_error:
                 frappe.log_error(
-                    title=f"Error rolling back transaction for job: {self.job.name}",
+                    title=f"Error rolling back table writes for job: {self.job.name}",
                     message=str(rollback_error),
                 )
 
@@ -213,7 +214,7 @@ class TableImportJobRun:
             commit=True,
         )
 
-        self._log(f"Execution completed. Total rows written: {self.rows_written}")
+        self._log(f"Execution completed successfully. Total rows written: {self.rows_written}")
 
         self.job.db_set(
             {
@@ -257,13 +258,6 @@ class TableImportJobRun:
                 message=str(e),
             )
 
-    def _cleanup(self):
-        if self.db:
-            self._log("Closing database connection...")
-            self.db_ctx_manager.__exit__(None, None, None)
-            self.db = None
-            self._log("Database connection closed")
-
     def _log(self, message: str, commit: bool = True):
         if self.last_log_time is None:
             self.last_log_time = time.monotonic()
@@ -276,52 +270,115 @@ class TableImportJobRun:
         self.log.log_output(f"[{now()}] [{elapsed:.1f}s] {message}", commit=commit)
 
 
-class JobTable:
+class TableWriter:
+    """Handles table writes for import jobs using WarehouseTableWriter.
+
+    The writer is lazily initialized on first insert. Schema is inferred from
+    the first DataFrame. Supports append and replace modes.
+    """
+
     def __init__(self, run: TableImportJobRun):
         self._run = run
         self._job = run.job
-
         self.name = run.job.table_name
+        self.database = run.data_source.schema
 
-    def insert(self, data: pd.DataFrame | list[dict], overwrite: bool = False):
-        return self._write(data, "replace" if overwrite else "append")
+        # Lazy-initialized writer and schema
+        self._writer: WarehouseTableWriter | None = None
+        self._schema: ibis.Schema | None = None
+        self._mode: str | None = None  # 'append' or 'replace'
 
-    def upsert(self, data: pd.DataFrame | list[dict]):
-        raise NotImplementedError("Upsert mode is not yet supported")
+    def insert(self, data: pd.DataFrame | list[dict], overwrite: bool = False) -> int:
+        """Insert data into the table.
 
-    def _write(self, data: Any, mode: str) -> int:
+        Args:
+            data: DataFrame or list of dicts to insert
+            overwrite: If True, replaces existing data. If False, appends.
+
+        Returns:
+            Number of rows written in this batch
+        """
+        mode = "replace" if overwrite else "append"
+
         try:
-            if mode not in ["append", "replace"]:
-                raise ValueError("Mode must be 'append' or 'replace'")
-
             df = self._convert_to_dataframe(data)
             if df.empty:
                 self._run._log(f"Warning: No data to write to table '{self.name}'")
                 return 0
 
             row_count = len(df)
-            self._run._log(f"Writing {row_count} rows to table '{self.name}' in {mode} mode...")
 
-            # Use the shared connection from the run (transactional)
-            if not self._run.db:
-                raise RuntimeError("No database connection available. Transaction not started.")
+            # Handle mode changes
+            if self._mode is not None and mode == "replace":
+                # User called insert(overwrite=True) after previous inserts
+                # Reset the writer to start fresh
+                self._run._log(f"Overwrite requested. Resetting previous writes to table '{self.name}'")
+                self._reset_writer()
 
-            exact_match_pattern = rf"^{self.name}$"
-            if mode == "replace" or not self._run.db.list_tables(like=exact_match_pattern):
-                self._run.db.create_table(self.name, df, overwrite=True)
-            elif mode == "append":
-                self._run.db.insert(self.name, df)
-            else:
-                raise ValueError(f"Unsupported mode: {mode}")
+            # Initialize writer on first insert or after reset
+            if self._writer is None:
+                self._init_writer(df, mode)
 
-            self._run._log(f"Successfully wrote {row_count} rows to table '{self.name}'")
-            self._run.rows_written += row_count
+            self._run._log(
+                f"Writing {row_count} rows to table '{self.name}' (batch {self._writer.batch_count + 1})..."
+            )
+            self._writer.insert(df)
+            self._run._log(f"Successfully queued {row_count} rows")
+
             return row_count
 
         except Exception as e:
             error_msg = f"Error writing to table '{self.name}': {e!s}"
             self._run._log(error_msg)
             raise Exception(error_msg) from e
+
+    def commit(self) -> int:
+        if self._writer is None:
+            self._run._log(f"No data to commit for table '{self.name}'")
+            return 0
+
+        try:
+            total_rows = self._writer.commit()
+            return total_rows
+        finally:
+            self._writer.__exit__(None, None, None)
+            self._writer = None
+            self._schema = None
+            self._mode = None
+
+    def rollback(self):
+        if self._writer is not None:
+            try:
+                self._writer.rollback()
+            finally:
+                self._writer.__exit__(Exception, None, None)
+                self._writer = None
+                self._schema = None
+                self._mode = None
+
+    def _init_writer(self, df: pd.DataFrame, mode: str):
+        """Initialize the writer with schema inferred from the first DataFrame."""
+        # Infer schema from DataFrame
+        self._schema = ibis.memtable(df).schema()
+        self._mode = mode
+
+        self._run._log(f"Initializing table writer for '{self.name}' in {mode} mode")
+        self._writer = WarehouseTableWriter(
+            self.name,
+            database=self.database,
+            table_schema=self._schema,
+            mode=mode,
+            log_fn=self._run._log,
+        )
+        self._writer.__enter__()
+
+    def _reset_writer(self):
+        """Reset the writer, discarding any pending writes."""
+        if self._writer is not None:
+            self._writer.rollback()
+            self._writer = None
+            self._schema = None
+            self._mode = None
 
     def _convert_to_dataframe(self, data: Any) -> pd.DataFrame:
         if isinstance(data, pd.DataFrame):

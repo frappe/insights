@@ -1,13 +1,18 @@
 import os
+import shutil
+import tempfile
+import time
 from collections.abc import Generator
 from contextlib import contextmanager, suppress
+from pathlib import Path
 
 import frappe
 import frappe.utils
 import ibis
+import pandas as pd
 from duckdb import CatalogException
 from frappe.query_builder.functions import IfNull
-from frappe.utils import get_files_path
+from frappe.utils import get_files_path, now
 from frappe.utils.background_jobs import is_job_enqueued
 from ibis import _
 from ibis.backends.duckdb import Backend as DuckDBBackend
@@ -30,7 +35,7 @@ class Warehouse:
             os.makedirs(folder_path)
         return os.path.join(os.path.realpath(folder_path), f"{WAREHOUSE_DB_NAME}.duckdb")
 
-    def get_connection(self, schema: str | None = None, read_only: bool = True) -> DuckDBBackend:
+    def get_connection(self, database: str | None = None, read_only: bool = True) -> DuckDBBackend:
         path = self.get_db_path()
 
         if not os.path.exists(path):
@@ -39,15 +44,15 @@ class Warehouse:
 
         db = ibis.duckdb.connect(path, read_only=read_only)
 
-        if schema:
-            db.raw_sql(f"USE '{schema}'")
+        if database:
+            db.raw_sql(f"USE '{database}'")
 
         return db
 
-    def create_schema(self, schema: str):
+    def create_database(self, database: str):
         with self.get_write_connection() as db:
             with suppress(CatalogException):
-                db.create_database(schema)
+                db.create_database(database)
 
     @property
     def db(self) -> DuckDBBackend:
@@ -59,20 +64,162 @@ class Warehouse:
 
     @contextmanager
     def get_write_connection(
-        self, schema: str | None = None, timeout: int = 30
+        self, database: str | None = None, timeout: int = 30
     ) -> Generator[DuckDBBackend, None, None]:
         from frappe.utils.synchronization import filelock
 
         with filelock("insights_warehouse_write", timeout=timeout):
-            db = self.get_connection(schema=schema, read_only=False)
+            db = self.get_connection(database, read_only=False)
             try:
                 yield db
             finally:
-                with suppress(Exception):
-                    db.disconnect()
+                db.disconnect()
 
     def get_table(self, data_source: str, table_name: str) -> "WarehouseTable":
         return WarehouseTable(data_source, table_name)
+
+    def get_table_writer(
+        self, table_name: str, schema: ibis.Schema, mode: str = "replace", log_fn=None
+    ) -> "WarehouseTableWriter":
+        """Create a table writer for batch inserts with automatic cleanup.
+
+        Usage:
+            with warehouse.get_table_writer("table", schema) as writer:
+                writer.insert(df1)
+                writer.insert(df2)
+            # On successful exit, data is committed to warehouse
+            # On exception, temp files are cleaned up automatically
+        """
+        return WarehouseTableWriter(table_name, table_schema=schema, mode=mode, log_fn=log_fn)
+
+
+class WarehouseTableWriter:
+    """Handles batch inserts to warehouse tables using temporary parquet files.
+
+    This class abstracts the complexity of batch imports by:
+    - Writing each batch to a temporary parquet file
+    - On commit, reading all parquet files and inserting into DuckDB
+    - On rollback/failure, cleaning up all temporary files
+
+    The writer only acquires a write connection during the final commit phase,
+    minimizing lock contention for long-running imports.
+    """
+
+    def __init__(
+        self,
+        table_name: str,
+        table_schema: ibis.Schema,
+        database: str = "main",
+        mode: str = "replace",
+        log_fn=None,
+    ):
+        self.database = database
+        self.table_name = table_name
+        self.table_schema = table_schema
+        self.mode = mode  # 'replace' or 'append'
+        self._log = log_fn or (lambda *args, **kwargs: None)
+
+        self._temp_dir: Path | None = None
+        self._parquet_files: list[Path] = []
+        self._committed = False
+        self._batch_count = 0
+
+    def __enter__(self) -> "WarehouseTableWriter":
+        self._temp_dir = Path(tempfile.mkdtemp(prefix="insights_import_"))
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is None and not self._committed:
+            # Normal exit without explicit commit - auto commit
+            self.commit()
+        else:
+            # Exception occurred or already committed - cleanup
+            self.rollback()
+        return False
+
+    def insert(self, data: pd.DataFrame) -> None:
+        if self._temp_dir is None:
+            raise RuntimeError("WarehouseTableWriter must be used as a context manager")
+
+        if len(data) == 0:
+            return
+
+        parquet_path = self._temp_dir / f"batch_{self._batch_count + 1}.parquet"
+        self._log(f"Writing batch {self._batch_count + 1}")
+        ibis.memtable(data, schema=self.table_schema).to_parquet(parquet_path)
+        self._log(f"Wrote {len(data)} rows")
+        self._parquet_files.append(parquet_path)
+        self._batch_count += 1
+
+    def commit(self) -> int:
+        if self._committed:
+            return 0
+
+        if not self._parquet_files:
+            self._committed = True
+            self._cleanup_temp_dir()
+            return 0
+
+        total_rows = 0
+        try:
+            with insights.warehouse.get_write_connection(self.database) as db:
+                parquet_glob = str(self._temp_dir / "*.parquet")
+                self._log(f"Committing {len(self._parquet_files)} parquet files to '{self.table_name}'")
+
+                table_exists = self._table_exists(db)
+
+                if self.mode == "append" and table_exists:
+                    # Append to existing table
+                    db.raw_sql(
+                        f"""
+                        INSERT INTO '{self.table_name}'
+                        SELECT * FROM read_parquet('{parquet_glob}')
+                        """
+                    )
+                else:
+                    # Replace table (or create if doesn't exist)
+                    db.raw_sql(
+                        f"""
+                        CREATE OR REPLACE TABLE '{self.table_name}' AS
+                        SELECT * FROM read_parquet('{parquet_glob}')
+                        """
+                    )
+                self._log("Commit completed.")
+
+                total_rows = db.raw_sql(f"SELECT COUNT(*) FROM '{self.table_name}'").fetchone()[0]
+                total_rows = int(total_rows)
+
+            self._committed = True
+        finally:
+            self._cleanup_temp_dir()
+
+        return total_rows
+
+    def _table_exists(self, db: DuckDBBackend) -> bool:
+        """Check if the table exists in the database."""
+        try:
+            db.raw_sql(f"SELECT 1 FROM '{self.table_name}' LIMIT 0")
+            return True
+        except Exception:
+            return False
+
+    def rollback(self) -> None:
+        """Rollback and cleanup all temporary files."""
+        self._log("Rolling back and cleaning up temporary files")
+        self._cleanup_temp_dir()
+
+    def _cleanup_temp_dir(self) -> None:
+        """Remove the temporary directory and all parquet files."""
+        if self._temp_dir and self._temp_dir.exists():
+            with suppress(Exception):
+                shutil.rmtree(self._temp_dir)
+        self._temp_dir = None
+        self._parquet_files = []
+
+    @property
+    def batch_count(self) -> int:
+        """Number of batches inserted so far."""
+        return self._batch_count
 
 
 class WarehouseTable:
@@ -136,6 +283,7 @@ class WarehouseTableImporter:
         self.warehouse_table_name = ""
 
         self.log = None
+        self.last_log_time = None
         self.settings = frappe._dict()
 
     def import_in_progress(self):
@@ -249,7 +397,11 @@ class WarehouseTableImporter:
             )
 
         self.remote_table = self.remote_table.limit(self.settings.row_limit)
-        self.remote_table_schema = self.remote_table.schema()
+        if self.primary_key != "__row_number":
+            self.remote_table_schema = self.remote_table.schema()
+        else:
+            self.remote_table_schema = self.remote_table.drop("__row_number").schema()
+
         self.log.db_set("query", ibis.to_sql(self.remote_table), commit=True)
 
     def start_batch_import(self):
@@ -257,20 +409,17 @@ class WarehouseTableImporter:
 
         try:
             batch_size = self.calculate_batch_size()
-            with insights.warehouse.get_write_connection() as db:
-                db.raw_sql("BEGIN TRANSACTION")
-                try:
-                    self.process_batches(batch_size, db)
-                    db.raw_sql("COMMIT")
-                except Exception:
-                    db.raw_sql("ROLLBACK")
-                    raise
+            with insights.warehouse.get_table_writer(
+                self.warehouse_table_name, self.remote_table_schema, log_fn=self._log
+            ) as writer:
+                total_rows = self.process_batches(batch_size, writer)
+                self.log.rows_imported = total_rows
             self.update_insights_table()
             self.log.status = "Completed"
-            self.log.log_output("Import completed successfully.", commit=True)
+            self._log("Import completed successfully.", commit=True)
         except Exception as e:
             self.log.status = "Failed"
-            self.log.log_output(f"Error: \n{e}", commit=True)
+            self._log(f"Error: \n{e}", commit=True)
             raise e
 
     def calculate_batch_size(self) -> int:
@@ -288,30 +437,26 @@ class WarehouseTableImporter:
         )
         return batch_size
 
-    def process_batches(self, batch_size: int, db: DuckDBBackend):
+    def process_batches(self, batch_size: int, writer: WarehouseTableWriter) -> int:
         remote_table = self.remote_table.order_by(self.primary_key)
         batch_number = 0
         total_rows = 0
 
         while True:
-            self.log.log_output(f"Processing batch: {batch_number + 1}", commit=True)
+            self._log(f"Processing batch: {batch_number + 1}", commit=True)
             batch = remote_table.head(batch_size)
-            self.log.log_output(f"Batch Query: \n{ibis.to_sql(batch)}", commit=True)
+            self._log(f"Batch Query: \n{ibis.to_sql(batch)}", commit=True)
 
             batch_df = batch.execute()
             batch_count = len(batch_df)
             total_rows += batch_count
 
-            if batch_number == 0:
-                # Create table with first batch using explicit schema
-                db.create_table(
-                    self.warehouse_table_name, batch_df, schema=self.remote_table_schema, overwrite=True
-                )
-            else:
-                # Insert subsequent batches
-                db.insert(self.warehouse_table_name, batch_df)
+            if self.primary_key == "__row_number":
+                batch_df = batch_df.drop(columns=["__row_number"])
 
-            self.log.log_output(
+            writer.insert(batch_df)
+
+            self._log(
                 f"Rows: {batch_count}\nTotal Rows: {total_rows}",
                 commit=True,
             )
@@ -320,15 +465,15 @@ class WarehouseTableImporter:
                 break
 
             max_primary_key = batch_df[self.primary_key].max()
-            self.log.log_output(f"Bookmark: {max_primary_key}", commit=True)
+            self._log(f"Bookmark: {max_primary_key}", commit=True)
             remote_table = remote_table.filter(_[self.primary_key] > max_primary_key)
             batch_number += 1
 
-        self.log.rows_imported = total_rows
-        self.log.log_output(
+        self._log(
             f"Total Batches: {batch_number + 1}\nTotal Rows: {total_rows}",
             commit=True,
         )
+        return total_rows
 
     def update_log(self):
         self.log.db_set(
@@ -350,6 +495,17 @@ class WarehouseTableImporter:
         t.last_synced_on = frappe.utils.now()
         t.save()
 
+    def _log(self, message: str, commit: bool = True):
+        if self.last_log_time is None:
+            self.last_log_time = time.monotonic()
+            elapsed = 0.0
+        else:
+            current_time = time.monotonic()
+            elapsed = current_time - self.last_log_time
+            self.last_log_time = current_time
+
+        self.log.log_output(f"[{now()}] [{elapsed:.1f}s] {message}", commit=commit)
+
 
 def enqueue_warehouse_table_import(data_source: str, table_name: str):
     job_id = f"import_{frappe.scrub(data_source)}_{frappe.scrub(table_name)}"
@@ -360,6 +516,7 @@ def enqueue_warehouse_table_import(data_source: str, table_name: str):
         queue="long",
         timeout=30 * 60,
         job_id=job_id,
+        deduplicate=True,
     )
 
 
