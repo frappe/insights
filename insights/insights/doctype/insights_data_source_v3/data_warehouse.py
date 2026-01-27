@@ -186,7 +186,7 @@ class WarehouseTableWriter:
                     )
                 self._log("Commit completed.")
 
-                total_rows = db.raw_sql(f"SELECT COUNT(*) FROM '{self.table_name}'").fetchone()[0]
+                total_rows = db.raw_sql(f"SELECT COUNT(*) FROM read_parquet('{parquet_glob}')").fetchone()[0]
                 total_rows = int(total_rows)
 
             self._committed = True
