@@ -169,21 +169,12 @@ class WarehouseTableWriter:
                 table_exists = self._table_exists(db)
 
                 if self.mode == "append" and table_exists:
-                    # Append to existing table
-                    db.raw_sql(
-                        f"""
-                        INSERT INTO '{self.table_name}'
-                        SELECT * FROM read_parquet('{parquet_glob}')
-                        """
-                    )
+                    p = db.read_parquet(parquet_glob, table_name=self.table_name)
+                    db.insert(self.table_name, p)
                 else:
-                    # Replace table (or create if doesn't exist)
-                    db.raw_sql(
-                        f"""
-                        CREATE OR REPLACE TABLE '{self.table_name}' AS
-                        SELECT * FROM read_parquet('{parquet_glob}')
-                        """
-                    )
+                    p = db.read_parquet(parquet_glob, table_name=self.table_name)
+                    db.create_table(self.table_name, p, schema=self.table_schema, overwrite=True)
+
                 self._log("Commit completed.")
 
                 total_rows = db.raw_sql(f"SELECT COUNT(*) FROM read_parquet('{parquet_glob}')").fetchone()[0]
@@ -196,10 +187,8 @@ class WarehouseTableWriter:
         return total_rows
 
     def _table_exists(self, db: DuckDBBackend) -> bool:
-        """Check if the table exists in the database."""
         try:
-            db.raw_sql(f"SELECT 1 FROM '{self.table_name}' LIMIT 0")
-            return True
+            return db.list_tables(like=f"^{self.table_name}$")
         except Exception:
             return False
 
@@ -451,13 +440,13 @@ class WarehouseTableImporter:
             batch_count = len(batch_df)
             total_rows += batch_count
 
+            df = batch_df
             if self.primary_key == "__row_number":
-                batch_df = batch_df.drop(columns=["__row_number"])
-
-            writer.insert(batch_df)
+                df = batch_df.drop(columns="__row_number")
+            writer.insert(df)
 
             self._log(
-                f"Rows: {batch_count}\nTotal Rows: {total_rows}",
+                f"Rows: {batch_count} Total Rows: {total_rows}",
                 commit=True,
             )
 
@@ -470,7 +459,7 @@ class WarehouseTableImporter:
             batch_number += 1
 
         self._log(
-            f"Total Batches: {batch_number + 1}\nTotal Rows: {total_rows}",
+            f"Total Batches: {batch_number + 1} Total Rows: {total_rows}",
             commit=True,
         )
         return total_rows
@@ -504,6 +493,7 @@ class WarehouseTableImporter:
             elapsed = current_time - self.last_log_time
             self.last_log_time = current_time
 
+        print(f"[{now()}] [{elapsed:.1f}s] {message}")
         self.log.log_output(f"[{now()}] [{elapsed:.1f}s] {message}", commit=commit)
 
 
@@ -517,6 +507,7 @@ def enqueue_warehouse_table_import(data_source: str, table_name: str):
         timeout=30 * 60,
         job_id=job_id,
         deduplicate=True,
+        now=True,
     )
 
 
