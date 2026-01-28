@@ -146,7 +146,7 @@ class WarehouseTableWriter:
 
         parquet_path = self._temp_dir / f"batch_{self._batch_count + 1}.parquet"
         self._log(f"Writing batch {self._batch_count + 1}")
-        ibis.memtable(data, schema=self.table_schema).to_parquet(parquet_path)
+        ibis.memtable(data).to_parquet(parquet_path)
         self._log(f"Wrote {len(data)} rows")
         self._parquet_files.append(parquet_path)
         self._batch_count += 1
