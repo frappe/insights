@@ -169,10 +169,10 @@ class WarehouseTableWriter:
                 table_exists = self._table_exists(db)
 
                 if self.mode == "append" and table_exists:
-                    p = db.read_parquet(parquet_glob, table_name=self.table_name)
+                    p = db.read_parquet(parquet_glob, table_name=self.table_name, union_by_name=True)
                     db.insert(self.table_name, p)
                 else:
-                    p = db.read_parquet(parquet_glob, table_name=self.table_name)
+                    p = db.read_parquet(parquet_glob, table_name=self.table_name, union_by_name=True)
                     db.create_table(self.table_name, p, schema=self.table_schema, overwrite=True)
 
                 self._log("Commit completed.")
