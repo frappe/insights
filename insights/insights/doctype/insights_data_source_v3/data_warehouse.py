@@ -507,7 +507,6 @@ def enqueue_warehouse_table_import(data_source: str, table_name: str):
         timeout=30 * 60,
         job_id=job_id,
         deduplicate=True,
-        now=True,
     )
 
 
