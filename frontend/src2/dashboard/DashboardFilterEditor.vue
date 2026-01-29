@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { IconPicker } from 'frappe-ui/icons'
 import { computed, inject, reactive } from 'vue'
 import useChart from '../charts/chart'
 import { copy } from '../helpers'
@@ -6,7 +7,6 @@ import { FIELDTYPES } from '../helpers/constants'
 import { ColumnOption } from '../types/query.types'
 import { WorkbookDashboardFilter } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
-import IconSelector from '../components/IconSelector.vue'
 
 const dashboard = inject<Dashboard>('dashboard')!
 const props = defineProps<{ item: WorkbookDashboardFilter }>()
@@ -114,16 +114,16 @@ function saveEdit() {
 		<template #body-content>
 			<div class="flex flex-col gap-4">
 				<div class="flex gap-4">
-					<div class="flex flex-col gap-2 flex-1">
+					<div class="flex flex-col gap-4 flex-1">
 						<FormControl
 							label="Label"
 							v-model="filter.filter_name"
 							placeholder="Enter filter label..."
 							autocomplete="off"
 						/>
-						<div class="flex flex-col gap-2">
-							<div class="text-p-sm text-gray-700">Icon</div>
-							<IconSelector v-model="filter.icon" :columns="8" size="sm" />
+						<div class="flex flex-col gap-1.5">
+							<label class="block text-xs text-ink-gray-5"> Icon </label>
+							<IconPicker v-model="filter.icon" />
 						</div>
 					</div>
 					<FormControl
