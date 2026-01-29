@@ -82,6 +82,16 @@ class InsightsTableImportJob(Document):
         enqueue_table_import_job(self.name)
         frappe.msgprint(f"Job '{self.title}' has been queued for execution.")
 
+    @frappe.whitelist()
+    def bulk_enqueue(self, run_count: int):
+        """Queue the job to run multiple times sequentially."""
+        run_count = int(run_count)
+        if run_count < 1 or run_count > 100:
+            frappe.throw("Run count must be between 1 and 100")
+
+        bulk_enqueue_runs(self.name, run_count)
+        frappe.msgprint(f"Queued {run_count} runs for '{self.title}'")
+
 
 def enqueue_table_import_job(import_job_name: str):
     frappe.enqueue(
@@ -96,6 +106,28 @@ def enqueue_table_import_job(import_job_name: str):
 def execute_table_import_job(import_job_name: str):
     run = TableImportJobRun(import_job_name)
     run.execute()
+
+
+def bulk_enqueue_runs(import_job_name: str, run_count: int):
+    """Enqueue a chain of sequential job runs."""
+    frappe.enqueue(
+        "insights.insights.doctype.insights_table_import_job.insights_table_import_job.bulk_execute_runs",
+        import_job_name=import_job_name,
+        run_count=run_count,
+        queue="long",
+        timeout=run_count * 30 * 60,  # 30 min per run
+        job_id=f"insights_bulk_enqueue:{import_job_name}",
+    )
+
+
+def bulk_execute_runs(import_job_name: str, run_count: int):
+    """Execute the job N times sequentially."""
+    for i in range(run_count):
+        frappe.publish_realtime(
+            "bulk_enqueue_progress",
+            {"job": import_job_name, "current": i + 1, "total": run_count},
+        )
+        execute_table_import_job(import_job_name)
 
 
 class TableImportJobRun:
