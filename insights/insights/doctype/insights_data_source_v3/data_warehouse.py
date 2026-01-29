@@ -129,12 +129,14 @@ class WarehouseTableWriter:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type is None and not self._committed:
-            # Normal exit without explicit commit - auto commit
-            self.commit()
-        else:
-            # Exception occurred or already committed - cleanup
+        if exc_type is not None:
             self.rollback()
+            return False
+
+        if not self._committed:
+            self.commit()
+
+        self._cleanup_temp_dir()
         return False
 
     def insert(self, data: pd.DataFrame | Expr) -> Expr:
