@@ -137,19 +137,21 @@ class WarehouseTableWriter:
             self.rollback()
         return False
 
-    def insert(self, data: pd.DataFrame) -> None:
+    def insert(self, data: pd.DataFrame | Expr) -> Expr:
         if self._temp_dir is None:
             raise RuntimeError("WarehouseTableWriter must be used as a context manager")
 
-        if len(data) == 0:
-            return
+        if isinstance(data, pd.DataFrame):
+            data = ibis.memtable(data)
 
         parquet_path = self._temp_dir / f"batch_{self._batch_count + 1}.parquet"
         self._log(f"Writing batch {self._batch_count + 1}")
-        ibis.memtable(data).to_parquet(parquet_path)
-        self._log(f"Wrote {len(data)} rows")
+        data.to_parquet(parquet_path)
+
         self._parquet_files.append(parquet_path)
         self._batch_count += 1
+
+        return ibis.read_parquet(parquet_path)
 
     def commit(self) -> int:
         if self._committed:
@@ -163,21 +165,19 @@ class WarehouseTableWriter:
         total_rows = 0
         try:
             with insights.warehouse.get_write_connection(self.database) as db:
-                parquet_glob = str(self._temp_dir / "*.parquet")
                 self._log(f"Committing {len(self._parquet_files)} parquet files to '{self.table_name}'")
 
-                table_exists = self._table_exists(db)
+                parquet_glob = str(self._temp_dir / "*.parquet")
+                merged = db.read_parquet(parquet_glob)
 
-                if self.mode == "append" and table_exists:
-                    p = db.read_parquet(parquet_glob, table_name=self.table_name, union_by_name=True)
-                    db.insert(self.table_name, p)
+                if self.mode == "append" and self._table_exists(db):
+                    db.insert(self.table_name, merged)
                 else:
-                    p = db.read_parquet(parquet_glob, table_name=self.table_name, union_by_name=True)
-                    db.create_table(self.table_name, p, schema=self.table_schema, overwrite=True)
+                    db.create_table(self.table_name, merged, schema=self.table_schema, overwrite=True)
 
                 self._log("Commit completed.")
 
-                total_rows = db.raw_sql(f"SELECT COUNT(*) FROM read_parquet('{parquet_glob}')").fetchone()[0]
+                total_rows = merged.count().execute()
                 total_rows = int(total_rows)
 
             self._committed = True
@@ -204,6 +204,7 @@ class WarehouseTableWriter:
                 shutil.rmtree(self._temp_dir)
         self._temp_dir = None
         self._parquet_files = []
+        self._log("Temporary files cleaned up.")
 
     @property
     def batch_count(self) -> int:
@@ -405,10 +406,10 @@ class WarehouseTableImporter:
                 self.log.rows_imported = total_rows
             self.update_insights_table()
             self.log.status = "Completed"
-            self._log("Import completed successfully.", commit=True)
+            self._log("Import completed successfully.")
         except Exception as e:
             self.log.status = "Failed"
-            self._log(f"Error: \n{e}", commit=True)
+            self._log(f"Error: \n{e}")
             raise e
 
     def calculate_batch_size(self) -> int:
@@ -432,36 +433,36 @@ class WarehouseTableImporter:
         total_rows = 0
 
         while True:
-            self._log(f"Processing batch: {batch_number + 1}", commit=True)
+            self._log(f"Processing batch: {batch_number + 1}")
             batch = remote_table.head(batch_size)
-            self._log(f"Batch Query: \n{ibis.to_sql(batch)}", commit=True)
+            self._log(f"Batch Query: \n{ibis.to_sql(batch)}")
 
-            batch_df = batch.execute()
-            batch_count = len(batch_df)
+            if hasattr(batch, "__row_number"):
+                batch = writer.insert(batch.drop("__row_number"))
+            else:
+                batch = writer.insert(batch)
+
+            meta = (
+                batch.aggregate(
+                    count=_.count(),
+                    max_primary_key=_[self.primary_key].max(),
+                )
+                .execute()
+                .to_records(index=False)[0]
+            )
+            batch_count = int(meta["count"])
             total_rows += batch_count
 
-            df = batch_df
-            if self.primary_key == "__row_number":
-                df = batch_df.drop(columns="__row_number")
-            writer.insert(df)
-
-            self._log(
-                f"Rows: {batch_count} Total Rows: {total_rows}",
-                commit=True,
-            )
+            self._log(f"Rows: {batch_count} Total Rows: {total_rows}")
 
             if batch_count < batch_size:
                 break
 
-            max_primary_key = batch_df[self.primary_key].max()
-            self._log(f"Bookmark: {max_primary_key}", commit=True)
-            remote_table = remote_table.filter(_[self.primary_key] > max_primary_key)
+            self._log(f"Bookmark: {meta['max_primary_key']}")
+            remote_table = remote_table.filter(_[self.primary_key] > meta["max_primary_key"])
             batch_number += 1
 
-        self._log(
-            f"Total Batches: {batch_number + 1} Total Rows: {total_rows}",
-            commit=True,
-        )
+        self._log(f"Total Batches: {batch_number + 1} Total Rows: {total_rows}")
         return total_rows
 
     def update_log(self):
@@ -507,6 +508,7 @@ def enqueue_warehouse_table_import(data_source: str, table_name: str):
         timeout=30 * 60,
         job_id=job_id,
         deduplicate=True,
+        now=True,
     )
 
 
