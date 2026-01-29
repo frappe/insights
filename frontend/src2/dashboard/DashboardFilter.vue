@@ -34,10 +34,15 @@ const sourceColumn = computed(() => {
 
 function stringValuesProvider(search: string) {
 	if (!sourceColumn.value) return Promise.resolve([])
+
+	const firstLinkedChart = Object.keys(filter.links)?.[0]
+	const adhocFilters = firstLinkedChart ? dashboard.getAdhocFilters(firstLinkedChart) : undefined
+
 	return dashboard.getDistinctColumnValues(
 		sourceColumn.value.query,
 		sourceColumn.value.column,
 		search,
+		adhocFilters,
 	)
 }
 

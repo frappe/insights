@@ -19,4 +19,5 @@ def get_context(context):
     frappe.db.commit()
     context.csrf_token = csrf_token
     context.site_name = frappe.local.site
+    context.socketio_port = frappe.conf.get("socketio_port")
     track_active_site()

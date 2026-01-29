@@ -13,6 +13,7 @@ type SessionUser = {
 	locale: string
 	is_v2_instance: boolean
 	default_version: 'v3' | 'v2' | ''
+	has_desk_access?: boolean
 }
 
 const emptyUser: SessionUser = {
@@ -62,6 +63,7 @@ async function fetchSessionInfo() {
 		is_admin: Boolean(userInfo.is_admin),
 		is_user: Boolean(userInfo.is_user),
 		is_v2_instance: Boolean(userInfo.is_v2_instance),
+		has_desk_access: Boolean(userInfo.has_desk_access),
 	})
 }
 

@@ -1,11 +1,14 @@
 import ast
 import time
+from contextlib import contextmanager
 from datetime import date
 
 import frappe
 import ibis
 import numpy as np
 import pandas as pd
+import sqlglot as sg
+import sqlparse
 from frappe.utils.data import flt
 from frappe.utils.safe_exec import safe_eval, safe_exec
 from ibis import _
@@ -14,9 +17,9 @@ from ibis.expr.operations.relations import DatabaseTable, Field
 from ibis.expr.types import Expr
 from ibis.expr.types import Table as IbisQuery
 
+import insights
 from insights import create_toast
 from insights.cache_utils import make_digest
-from insights.insights.doctype.insights_data_source_v3.data_warehouse import Warehouse
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
 )
@@ -135,9 +138,9 @@ class IbisQueryBuilder:
 
     def get_column(self, column_name, throw=True):
         if column_name in self.query.columns:
-            return getattr(self.query, column_name)
+            return self.query[column_name]
         if sanitize_name(column_name) in self.query.columns:
-            return getattr(self.query, sanitize_name(column_name))
+            return self.query[sanitize_name(column_name)]
         if throw:
             frappe.throw(f"Column {column_name} does not exist in the table")
 
@@ -371,9 +374,18 @@ class IbisQueryBuilder:
         return self.query.rename(**{new_name: old_name})
 
     def apply_remove(self, remove_args):
-        to_remove = {self.get_column(col) for col in remove_args.column_names}
-        to_remove = {col.get_name() for col in to_remove}
-        return self.query.drop(*to_remove)
+        # Get valid columns that exist in the query
+        valid_columns = []
+        for column_name in remove_args.column_names:
+            column = self.get_column(column_name, throw=False)
+            if column is not None:
+                valid_columns.append(column.get_name())
+
+        # If no valid columns to remove, return the original query
+        if not valid_columns:
+            return self.query
+
+        return self.query.drop(*valid_columns)
 
     def apply_cast(self, cast_args):
         col_name = self.get_column(cast_args.column.column_name).get_name()
@@ -443,6 +455,24 @@ class IbisQueryBuilder:
             names = self.query.select(names_from).order_by(names_from).distinct().limit(max_names).execute()
             names = names.fillna("null").values
 
+            # If we've limited the number of distinct column values, bucket the
+            # remaining values into an "Others" group so charts show the rest.
+            # This currently supports the common case of a single pivot column.
+            if len(names) == max_names and len(columns) == 1:
+                selected_names = [str(v) for v in names.flatten()]
+
+                col_name = columns[0].get_name()
+                col_expr = getattr(self.query, col_name)
+
+                # replace values not in selected_names with 'Others'
+                # use ibis.case() since ibis.where isn't available on the module
+                others_expr = ibis.cases((col_expr.isin(selected_names), col_expr), else_="Others")
+                self.query = self.query.mutate(**{col_name: others_expr})
+
+                # ensure the pivot names include the 'Others' bucket
+                names = list(map(str, selected_names))
+                names.append("Others")
+
             return self.query.pivot_wider(
                 id_cols=[row.get_name() for row in rows],
                 names_from=names_from,
@@ -464,7 +494,54 @@ class IbisQueryBuilder:
         ds = frappe.get_doc("Insights Data Source v3", data_source)
         db = ds._get_ibis_backend()
 
-        if ds.enable_stored_procedure_execution and raw_sql.strip().lower().startswith("exec"):
+        raw_sql = sqlparse.format(sql=raw_sql, strip_comments=True)
+
+        check_permissions = frappe.db.get_single_value(
+            "Insights Settings", "enable_permissions"
+        ) or frappe.db.get_single_value("Insights Settings", "apply_user_permissions")
+
+        if check_permissions:
+            parsed = sg.parse_one(raw_sql, dialect=db.dialect)
+
+            tables = set()
+            for table_exp in parsed.find_all(sg.exp.Table):
+                tables.add(table_exp.name)
+
+            cte_aliases = set()
+            for cte_exp in parsed.find_all(sg.exp.CTE):
+                cte_aliases.add(cte_exp.alias)
+
+            tables = tables - cte_aliases
+
+            replace_map = {}
+            for table_name in tables:
+                t = InsightsTablev3.get_ibis_table(
+                    data_source,
+                    table_name,
+                    use_live_connection=True,
+                )
+                t_sql = ibis.to_sql(t)
+                # check if t_sql has any where clause, if not, then don't replace
+                t_parsed = sg.parse_one(t_sql, dialect=db.dialect)
+                if not t_parsed.find(sg.exp.Where):
+                    continue
+                replace_map[table_name] = t_sql
+
+            with_clauses = []
+            for table_name, table_sql in replace_map.items():
+                quoted_table_name = sg.to_identifier(table_name)
+                with_clauses.append(f"{quoted_table_name} AS ({table_sql})")
+
+            if with_clauses:
+                with_clause_sql = "WITH " + ", ".join(with_clauses)
+                raw_sql = with_clause_sql + " " + raw_sql
+
+        supports_stored_procedure = ds.database_type in ["PostgreSQL", "MSSQL", "MariaDB"]
+        if (
+            supports_stored_procedure
+            and ds.enable_stored_procedure_execution
+            and raw_sql.strip().lower().startswith("exec")
+        ):
             current_date = date.today().strftime("%Y-%m-%d")  # Format: 'YYYY-MM-DD'
             raw_sql = raw_sql.replace("@Today", f"'{current_date}'")
 
@@ -504,7 +581,7 @@ class IbisQueryBuilder:
             results = get_code_results(code, variables=variables)
             cache_results(digest, results, cache_expiry=60 * 5)
 
-        return Warehouse().db.create_table(
+        return insights.warehouse.db.create_table(
             digest,
             results,
             temp=True,
@@ -577,6 +654,8 @@ class IbisQueryBuilder:
 
         frappe.flags.current_ibis_query = self.query
         context = frappe._dict()
+        context.pandas = frappe._dict()
+        context.pandas.DataFrame = SafePandasDataFrame
         context.q = self.query
         context.update(self.get_current_columns())
         context.update(get_functions())
@@ -715,9 +794,9 @@ def exec_with_return(
     if isinstance(last_node, ast.Expr):
         output_expression = ast.unparse(last_node)
     elif isinstance(last_node, ast.Assign):
-        output_expression = ast.unparse(last_node.targets[0])
+        output_expression = ast.unparse(last_node.value)
     elif isinstance(last_node, ast.AnnAssign | ast.AugAssign):
-        output_expression = ast.unparse(last_node.target)
+        output_expression = ast.unparse(last_node.value)
 
     _globals = _globals or {}
     _locals = _locals or {}
@@ -725,7 +804,8 @@ def exec_with_return(
     tree.body.pop()  # remove the last expression
     _script = ast.unparse(tree)
     if _script.strip():
-        safe_exec(_script, _globals, _locals, restrict_commit_rollback=True)
+        with ensure_rollback():
+            safe_exec(_script, _globals, _locals, restrict_commit_rollback=True)
         return safe_eval(output_expression, _globals, _locals)
     else:
         return safe_eval(output_expression, _globals, _locals)
@@ -783,12 +863,14 @@ def get_code_results(code: str, variables=None):
                 variable_context[var.get("variable_name")] = var.get("variable_value")
 
     _locals = {"results": results, **variable_context}
-    _, _locals = safe_exec(
-        code,
-        _globals={"pandas": pandas},
-        _locals=_locals,
-        restrict_commit_rollback=True,
-    )
+    with ensure_rollback():
+        _, _locals = safe_exec(
+            code,
+            _globals={"pandas": pandas},
+            _locals=_locals,
+            restrict_commit_rollback=True,
+        )
+
     results = _locals["results"]
     if results is None or len(results) == 0:
         results = [{"error": "No results"}]
@@ -806,3 +888,13 @@ def get_code_results(code: str, variables=None):
         results = pd.DataFrame(results)
 
     return results
+
+
+@contextmanager
+def ensure_rollback():
+    save_point = frappe.generate_hash(length=12)
+    try:
+        frappe.db.savepoint(save_point)
+        yield
+    finally:
+        frappe.db.rollback(save_point=save_point)

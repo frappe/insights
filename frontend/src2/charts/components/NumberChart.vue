@@ -51,6 +51,7 @@ const cards = computed(() => {
 		const prefix = getNumberOption(idx, 'prefix')
 		const suffix = getNumberOption(idx, 'suffix')
 		const decimal = getNumberOption(idx, 'decimal')
+		const color = getNumberOption(idx, 'color')
 		const shorten_numbers = getNumberOption(idx, 'shorten_numbers')
 
 		return {
@@ -62,6 +63,7 @@ const cards = computed(() => {
 			percentDelta: getFormattedValue(percentDelta, decimal, shorten_numbers),
 			prefix,
 			suffix,
+			color,
 		}
 	})
 })
@@ -102,6 +104,7 @@ function onDoubleClick(measure_name: string) {
 					percentDelta,
 					prefix,
 					suffix,
+					color,
 				} in cards"
 				:key="measure_name"
 				class="flex max-h-[140px] items-center gap-2 overflow-hidden rounded bg-white px-6 pt-5 shadow cursor-pointer"
@@ -112,7 +115,10 @@ function onDoubleClick(measure_name: string) {
 					<span class="truncate text-sm font-medium">
 						{{ measure_name }}
 					</span>
-					<div class="flex-1 flex-shrink-0 truncate text-[24px] font-semibold leading-10">
+					<div
+						class="flex-1 flex-shrink-0 truncate text-[24px] font-semibold leading-10"
+						:style="color && typeof color === 'string' ? { color: color } : {}"
+					>
 						{{ prefix }}{{ currentValue }}{{ suffix }}
 					</div>
 					<div

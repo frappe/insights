@@ -72,9 +72,9 @@ const sourceTypes = [
 		},
 	},
 	{
-		label: 'Upload CSV',
+		label: 'Upload CSV or Excel',
 		icon: <CSVIcon class="h-8 w-8" />,
-		description: 'Upload a CSV file',
+		description: 'Upload a CSV or Excel file to create a new data source',
 		onClick: () => {
 			showNewSourceDialog.value = false
 			showCSVFileUploadDialog.value = true

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import QueryDataTable from '../../query/components/QueryDataTable.vue'
 import { column } from '../../query/helpers'
 import { TableChartConfig } from '../../types/chart.types'
@@ -8,7 +8,6 @@ import { Chart } from '../chart'
 import ChartTitle from './ChartTitle.vue'
 
 const props = defineProps<{ chart: Chart }>()
-
 const tableConfig = computed(() => props.chart.doc.config as TableChartConfig)
 
 function onSortChange(column_name: string, sort_order: SortDirection) {
@@ -43,6 +42,7 @@ function onSortChange(column_name: string, sort_order: SortDirection) {
 			:show-row-totals="tableConfig.show_row_totals"
 			:compact-numbers="tableConfig.compact_numbers"
 			:enable-color-scale="tableConfig.enable_color_scale"
+			:format-group="tableConfig.conditional_formatting"
 			:enable-sort="true"
 			:enable-drill-down="true"
 			:on-sort-change="onSortChange"

@@ -138,7 +138,7 @@ You need Docker, docker-compose and git setup on your machine. Refer [Docker doc
 3. The site [http://insights.localhost:8000/insights](http://insights.localhost:8000/insights) should now be available. The default credentials are:
    - Username: Administrator
    - Password: admin
-  
+
 4. If you need to stop the containers after use and persist the data
    ````
    docker compose stop
@@ -173,6 +173,15 @@ To setup the repository locally follow the steps mentioned below:
 
 4. Now, you can access the site on vite dev server at `http://insights.test:8080`
 
+## Compatibility Matrix
+
+| Insights Branch | Frappe Framework Version            | Node Version |
+|-----------------|-------------------------------------|--------------|
+| main            | version-14, version-15              | v18+         |
+| version-3       | version-14, version-15              | v18+         |
+| develop         | develop                             | v18+         |
+
+> Note: Frappe v14 supports Node v14 and above, but Insights requires Node v18 and above. So, while using Insights with Frappe v14, please ensure that Node v18+ is installed.
 
 ## Learn and connect
 

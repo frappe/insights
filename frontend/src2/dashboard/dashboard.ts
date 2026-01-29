@@ -98,7 +98,7 @@ function makeDashboard(name: string) {
 	const filter_h = 1
 
 	function addFilter() {
-		dashboard.doc.items.push({
+		const newFilter: WorkbookDashboardItem = {
 			type: 'filter',
 			filter_name: '',
 			filter_type: 'String',
@@ -110,14 +110,56 @@ function makeDashboard(name: string) {
 				w: filter_w,
 				h: filter_h,
 			},
-		})
-		normalizeLayout()
+		}
+		dashboard.doc.items.push(newFilter)
+		positionNewFilter(newFilter)
 		editingItemIndex.value = dashboard.doc.items.length - 1
+	}
+
+	function positionNewFilter(newFilter: WorkbookDashboardItem) {
+		const items = dashboard.doc.items
+		const existingFilters = items.filter(
+			(item) => item.type === 'filter' && item !== newFilter
+		)
+
+		if (existingFilters.length === 0) {
+			newFilter.layout.x = 0
+			newFilter.layout.y = 0
+			return
+		}
+
+		const topRowY = Math.min(...existingFilters.map((item) => item.layout.y))
+		const topRowFilters = existingFilters.filter((item) => item.layout.y === topRowY)
+		const rightmostX = Math.max(
+			...topRowFilters.map((item) => item.layout.x + (item.layout.w || filter_w)),
+			0
+		)
+
+		if (rightmostX + newFilter.layout.w <= grid_cols) {
+			newFilter.layout.x = rightmostX
+			newFilter.layout.y = topRowY
+		} else {
+			newFilter.layout.x = 0
+			newFilter.layout.y = 0
+
+			existingFilters.forEach((item) => {
+				item.layout.y += filter_h
+			})
+
+			const otherItems = items.filter((item) => item.type !== 'filter')
+			if (otherItems.length > 0) {
+				const minOtherY = Math.min(...otherItems.map((item) => item.layout.y))
+				if (minOtherY <= filter_h) {
+					otherItems.forEach((item) => {
+						item.layout.y = Math.max(0, item.layout.y + filter_h)
+					})
+				}
+			}
+		}
 	}
 
 	function removeItem(index: number) {
 		dashboard.doc.items.splice(index, 1)
-		normalizeLayout()
 	}
 
 	function normalizeLayout() {
@@ -125,19 +167,28 @@ function makeDashboard(name: string) {
 		const filters = items.filter((item) => item.type === 'filter')
 		if (filters.length === 0) return
 
-		const perRow = Math.max(1, Math.floor(grid_cols / filter_w))
+		let currentX = 0
+		let currentY = 0
 
-		filters.forEach((item, idx) => {
-			const row = Math.floor(idx / perRow)
-			const colIndex = idx % perRow
-			item.layout.x = colIndex * filter_w
-			item.layout.y = row * filter_h
-			item.layout.w = filter_w
+		filters.forEach((item) => {
+			const itemWidth = item.layout.w || filter_w
+
+			// if filter doesn't fit in current row then move to next row
+			if (currentX + itemWidth > grid_cols && currentX > 0) {
+				currentX = 0
+				currentY += filter_h
+			}
+
+			item.layout.x = currentX
+			item.layout.y = currentY
 			item.layout.h = filter_h
+
+			if (!item.layout.w) item.layout.w = filter_w
+
+			currentX += itemWidth
 		})
 
-		const filterRows = Math.ceil(filters.length / perRow)
-		const topRow = filterRows * filter_h
+		const topRow = currentY + filter_h
 
 		const otherItems = items.filter((item) => item.type !== 'filter')
 		if (otherItems.length === 0) return
@@ -245,11 +296,17 @@ function makeDashboard(name: string) {
 		}
 	}
 
-	function getDistinctColumnValues(query: string, column: string, search_term?: string) {
+	function getDistinctColumnValues(
+		query: string,
+		column: string,
+		search_term?: string,
+		adhocFilters?: Record<string, FilterGroup>
+	) {
 		return dashboard.call('get_distinct_column_values', {
 			query: query,
 			column_name: column,
 			search_term,
+			adhoc_filters: adhocFilters,
 		})
 	}
 
@@ -353,6 +410,7 @@ const INITIAL_DOC: InsightsDashboardv3 = {
 	people_with_access: [],
 	read_only: false,
 	vertical_compact: true,
+	has_workbook_access: false,
 }
 
 function getDashboardResource(name: string) {

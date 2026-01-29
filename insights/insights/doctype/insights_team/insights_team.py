@@ -48,6 +48,8 @@ class InsightsTeam(Document):
             if d.resource_type not in [
                 "Insights Data Source v3",
                 "Insights Table v3",
+                "Insights Dashboard v3",
+                "Insights Chart v3",
             ]:
                 frappe.throw(f"Invalid resource type: {d.resource_type}")
 
@@ -84,17 +86,11 @@ class InsightsTeam(Document):
 
     def get_sources(self):
         return [
-            d.resource_name
-            for d in self.team_permissions
-            if d.resource_type == "Insights Data Source v3"
+            d.resource_name for d in self.team_permissions if d.resource_type == "Insights Data Source v3"
         ]
 
     def get_tables(self):
-        return [
-            d.resource_name
-            for d in self.team_permissions
-            if d.resource_type == "Insights Table v3"
-        ]
+        return [d.resource_name for d in self.team_permissions if d.resource_type == "Insights Table v3"]
 
     def get_allowed_resources(self, resource_type):
         if not self.team_permissions:
@@ -127,9 +123,7 @@ class InsightsTeam(Document):
             distinct=True,
         )
 
-        unrestricted_sources = list(
-            set(allowed_sources) - set(sources_of_allowed_tables)
-        )
+        unrestricted_sources = list(set(allowed_sources) - set(sources_of_allowed_tables))
         allowed_tables_of_unrestricted_sources = frappe.get_all(
             "Insights Table v3",
             filters={"data_source": ["in", unrestricted_sources]},
@@ -146,9 +140,7 @@ def update_admin_team(user, method=None):
 
         roles = user.get("roles", [])
         is_user = next((True for role in roles if role.role == "Insights User"), False)
-        is_admin = next(
-            (True for role in roles if role.role == "Insights Admin"), False
-        )
+        is_admin = next((True for role in roles if role.role == "Insights Admin"), False)
         if not is_user and not is_admin:
             return
 
@@ -212,9 +204,7 @@ def get_allowed_resources_for_user(resource_type, user=None):
 
 @site_cache(ttl=60 * 60 * 24)
 def _get_allowed_resources_for_user(resource_type, user):
-    permsisions_disabled = not frappe.db.get_single_value(
-        "Insights Settings", "enable_permissions"
-    )
+    permsisions_disabled = not frappe.db.get_single_value("Insights Settings", "enable_permissions")
     if permsisions_disabled or is_admin(user):
         return frappe.get_all(resource_type, pluck="name")
 

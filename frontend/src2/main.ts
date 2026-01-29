@@ -6,6 +6,7 @@ import App from './App.vue'
 import { registerControllers, registerGlobalComponents } from './globals.ts'
 import './index.css'
 import router from './router.ts'
+import { translationPlugin } from './translation.ts'
 
 setConfig('resourceFetcher', frappeRequest)
 
@@ -29,3 +30,4 @@ registerGlobalComponents(app)
 registerControllers(app)
 
 app.mount('#app')
+app.use(translationPlugin);

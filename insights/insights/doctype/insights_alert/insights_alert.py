@@ -159,10 +159,14 @@ class InsightsAlert(Document):
 def send_alerts():
     alerts = frappe.get_all("Insights Alert", filters={"disabled": 0})
     for alert in alerts:
-        alert_doc = frappe.get_cached_doc("Insights Alert", alert.name)
-        if alert_doc.is_event_due():
-            alert_doc.send_alert()
+        try:
+            alert_doc = frappe.get_cached_doc("Insights Alert", alert.name)
+            if alert_doc.is_event_due():
+                alert_doc.send_alert()
             frappe.db.commit()
+        except Exception:
+            frappe.db.rollback()
+            frappe.log_error(title=f"Failed to send alert: {alert.name}")
 
 
 class TelegramAlert:

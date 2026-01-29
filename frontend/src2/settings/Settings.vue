@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Building2, CircleUser, DatabaseZap, KeyRound, SettingsIcon, Users } from 'lucide-vue-next'
-import { defineAsyncComponent, ref } from 'vue'
+import { defineAsyncComponent, shallowRef } from 'vue'
 import TabbedSidebarLayout, { Tab, TabGroup } from '../components/TabbedSidebarLayout.vue'
 
 const showDialog = defineModel({ required: true, default: false })
@@ -46,7 +46,7 @@ const tabGroups: TabGroup[] = [
 		],
 	},
 ]
-const activeTab = ref<Tab>(tabGroups[0].tabs[0])
+const activeTab = shallowRef<Tab>(tabGroups[0].tabs[0])
 </script>
 
 <template>

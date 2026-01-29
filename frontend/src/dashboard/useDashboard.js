@@ -4,7 +4,7 @@ import { areDeeplyEqual, safeJSONParse } from '@/utils'
 import { createToast } from '@/utils/toasts'
 import widgets from '@/widgets/widgets'
 import { createDocumentResource, debounce } from 'frappe-ui'
-import { getLocal, saveLocal } from 'frappe-ui/src/resources/local'
+import { getLocal, saveLocal } from 'frappe-ui'
 import { reactive } from 'vue'
 
 const session = sessionStore()

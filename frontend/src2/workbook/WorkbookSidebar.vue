@@ -3,6 +3,7 @@ import { Braces, LayoutPanelTop, ScrollText, Table2 } from 'lucide-vue-next'
 import { computed, inject } from 'vue'
 import { useRoute } from 'vue-router'
 import WorkbookSidebarListSection from './WorkbookSidebarListSection.vue'
+import WorkbookSidebarFolders from './WorkbookSidebarFolders.vue'
 import { workbookKey } from './workbook'
 import ChartIcon from '../charts/components/ChartIcon.vue'
 
@@ -20,14 +21,15 @@ const activeQueryName = computed(() => {
 <template>
 	<div
 		v-if="workbook"
-		class="relative z-[1] flex h-full w-[17rem] flex-shrink-0 flex-col overflow-y-auto bg-white"
+		class="relative flex h-full w-[17rem] flex-shrink-0 flex-col overflow-y-auto bg-white"
 	>
-		<WorkbookSidebarListSection
+		<WorkbookSidebarFolders
 			v-bind="{
 				title: 'Queries',
 				emptyMessage: 'No queries',
 				items: workbook.doc.queries,
 				itemKey: 'name',
+				type: 'query',
 				add: workbook.addQuery,
 				remove: (query) => workbook.removeQuery(query.name),
 				isActive: (query) => workbook.isActiveTab('query', query.name),
@@ -47,14 +49,15 @@ const activeQueryName = computed(() => {
 				/>
 				<Table2 v-else class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 			</template>
-		</WorkbookSidebarListSection>
+		</WorkbookSidebarFolders>
 
-		<WorkbookSidebarListSection
+		<WorkbookSidebarFolders
 			v-bind="{
 				title: 'Charts',
 				emptyMessage: 'No charts',
 				items: workbook.doc.charts,
 				itemKey: 'name',
+				type: 'chart',
 				add: () => workbook.addChart(activeQueryName),
 				remove: (chart) => workbook.removeChart(chart.name),
 				isActive: (chart) => workbook.isActiveTab('chart', chart.name),
@@ -64,7 +67,7 @@ const activeQueryName = computed(() => {
 			<template #item-icon="{ item }">
 				<ChartIcon :chart-type="item.chart_type" />
 			</template>
-		</WorkbookSidebarListSection>
+		</WorkbookSidebarFolders>
 
 		<WorkbookSidebarListSection
 			v-bind="{

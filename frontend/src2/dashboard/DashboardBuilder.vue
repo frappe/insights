@@ -71,7 +71,7 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 					<Button
 						v-if="!dashboard.editing"
 						variant="outline"
-						@click="() => dashboard.refresh()"
+						@click="() => dashboard.refresh(true)"
 						label="Refresh"
 					>
 						<template #prefix>
@@ -178,7 +178,6 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 							dashboard.doc.items.forEach((item, idx) => {
 								item.layout = newLayout[idx]
 							})
-							dashboard.normalizeLayout()
 						}
 					"
 				>

@@ -20,9 +20,11 @@ class InsightsChartv3(Document):
         chart_type: DF.Data | None
         config: DF.JSON | None
         data_query: DF.Link | None
+        folder: DF.Data | None
         is_public: DF.Check
         old_name: DF.Data | None
         query: DF.Link | None
+        sort_order: DF.Int
         title: DF.Data | None
         workbook: DF.Link
     # end: auto-generated types
@@ -42,6 +44,23 @@ class InsightsChartv3(Document):
 
     def on_trash(self):
         frappe.delete_doc("Insights Query v3", self.data_query, force=True, ignore_permissions=True)
+
+        # Clean up empty folders
+        if self.folder:
+            self.cleanup_empty_folder(self.folder)
+
+    def cleanup_empty_folder(self, folder_name):
+        """Delete folder if it has no queries or charts"""
+        folder = frappe.get_doc("Insights Folder", folder_name)
+        folder_type = folder.type
+
+        if folder_type == "query":
+            has_items = frappe.db.exists("Insights Query v3", {"folder": folder_name})
+        else:
+            has_items = frappe.db.exists("Insights Chart v3", {"folder": folder_name})
+
+        if not has_items:
+            frappe.delete_doc("Insights Folder", folder_name, force=True, ignore_permissions=True)
 
     def set_data_query(self):
         if self.data_query:
@@ -80,6 +99,14 @@ class InsightsChartv3(Document):
 
         return chart
 
+    @frappe.whitelist()
+    def duplicate(self):
+        new_chart = frappe.copy_doc(self)
+        new_chart.title = f"{self.title} (Copy)"
+        new_chart.data_query = None
+        new_chart.insert()
+        return new_chart.name
+
 
 def import_chart(chart, workbook):
     chart = frappe.parse_json(chart)
@@ -88,6 +115,17 @@ def import_chart(chart, workbook):
     new_chart = frappe.new_doc("Insights Chart v3")
     new_chart.update(chart.doc)
     new_chart.workbook = workbook
+
+    if not hasattr(new_chart, "sort_order") or new_chart.sort_order is None:
+        max_sort_order = (
+            frappe.db.get_value(
+                "Insights Chart v3",
+                filters={"workbook": workbook},
+                fieldname="max(sort_order)",
+            )
+            or -1
+        )
+        new_chart.sort_order = max_sort_order + 1
     new_chart.insert()
 
     if str(workbook) == str(chart.doc.workbook) or not chart.dependencies.queries:

@@ -73,6 +73,18 @@ export type Expression = {
 	expression: string
 }
 
+export interface RelativeDateParts {
+	span: string
+	interval: string
+	intervalType: string
+	includeCurrent: boolean
+}
+
+export const SPAN_OPTIONS = ['Last', 'Current', 'Next']
+export const INTERVAL_TYPE_OPTIONS = [
+	'Day', 'Week', 'Month', 'Quarter', 'Year', 'Fiscal Year'
+]
+
 export type SourceArgs = { table: Table }
 export type Source = { type: 'source' } & SourceArgs
 

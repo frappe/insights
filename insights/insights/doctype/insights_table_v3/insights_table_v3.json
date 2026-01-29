@@ -10,7 +10,9 @@
   "column_break_3",
   "data_source",
   "last_synced_on",
-  "stored"
+  "row_limit",
+  "stored",
+  "before_import_script"
  ],
  "fields": [
   {
@@ -53,11 +55,22 @@
    "fieldtype": "Check",
    "label": "Stored",
    "read_only": 1
+  },
+  {
+   "fieldname": "row_limit",
+   "fieldtype": "Int",
+   "label": "Row Limit"
+  },
+  {
+   "fieldname": "before_import_script",
+   "fieldtype": "Code",
+   "label": "Before Import Script",
+   "options": "Python"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-10-27 15:25:38.258981",
+ "modified": "2025-10-01 12:49:40.113177",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Table v3",
@@ -85,6 +98,7 @@
    "share": 1
   }
  ],
+ "row_format": "Dynamic",
  "search_fields": "label, data_source",
  "show_title_field_in_link": 1,
  "sort_field": "modified",
