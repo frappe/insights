@@ -86,7 +86,8 @@ class InsightsTablev3(Document):
 
         check_table_permission(data_source, table_name)
 
-        if not use_live_connection:
+        ds_type = frappe.db.get_value("Insights Data Source v3", data_source, "type", cache=True)
+        if not use_live_connection and ds_type != "REST API":
             wt = insights.warehouse.get_table(data_source, table_name)
             t = wt.get_ibis_table(import_if_not_exists=True)
         else:
