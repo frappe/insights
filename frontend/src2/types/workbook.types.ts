@@ -147,6 +147,7 @@ export type WorkbookDashboardFilter = {
 	links: Record<string, string>
 	default_operator?: FilterOperator
 	default_value?: FilterValue
+	icon?: string
 	layout: Layout
 }
 export type WorkbookDashboardText = {
