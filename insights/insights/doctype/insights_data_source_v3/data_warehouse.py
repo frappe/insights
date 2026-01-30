@@ -378,8 +378,7 @@ class WarehouseTableImporter:
             self.primary_key = "timestamp"
             self.remote_table = self.remote_table.order_by(ibis.desc("timestamp"))
         else:
-            self.primary_key = "__row_number"
-            self.remote_table = self.remote_table.mutate(__row_number=ibis.row_number())
+            self.primary_key = ""
 
         if self.settings.before_import_script:
             from .ibis_utils import exec_with_return
@@ -389,10 +388,7 @@ class WarehouseTableImporter:
             )
 
         self.remote_table = self.remote_table.limit(self.settings.row_limit)
-        if self.primary_key != "__row_number":
-            self.remote_table_schema = self.remote_table.schema()
-        else:
-            self.remote_table_schema = self.remote_table.drop("__row_number").schema()
+        self.remote_table_schema = self.remote_table.schema()
 
         self.log.db_set("query", ibis.to_sql(self.remote_table), commit=True)
 
@@ -430,7 +426,10 @@ class WarehouseTableImporter:
         return batch_size
 
     def process_batches(self, batch_size: int, writer: WarehouseTableWriter) -> int:
-        remote_table = self.remote_table.order_by(self.primary_key)
+        remote_table = self.remote_table
+        if self.primary_key:
+            remote_table = remote_table.order_by(self.primary_key)
+
         batch_number = 0
         total_rows = 0
 
@@ -439,29 +438,19 @@ class WarehouseTableImporter:
             batch = remote_table.head(batch_size)
             self._log(f"Batch Query: \n{ibis.to_sql(batch)}")
 
-            if hasattr(batch, "__row_number"):
-                batch = writer.insert(batch.drop("__row_number"))
-            else:
-                batch = writer.insert(batch)
+            batch = writer.insert(batch)
 
-            meta = (
-                batch.aggregate(
-                    count=_.count(),
-                    max_primary_key=_[self.primary_key].max(),
-                )
-                .execute()
-                .to_records(index=False)[0]
-            )
-            batch_count = int(meta["count"])
-            total_rows += batch_count
+            batch_count = batch.count().execute()
+            total_rows += int(batch_count)
 
             self._log(f"Rows: {batch_count} Total Rows: {total_rows}")
 
-            if batch_count < batch_size:
+            if batch_count < batch_size or not self.primary_key:
                 break
 
-            self._log(f"Bookmark: {meta['max_primary_key']}")
-            remote_table = remote_table.filter(_[self.primary_key] > meta["max_primary_key"])
+            max_pk = batch[self.primary_key].max().execute()
+            self._log(f"Bookmark: {max_pk}")
+            remote_table = remote_table.filter(_[self.primary_key] > max_pk)
             batch_number += 1
 
         self._log(f"Total Batches: {batch_number + 1} Total Rows: {total_rows}")
