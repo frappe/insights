@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { IconPicker } from 'frappe-ui/icons'
 import { computed, inject, reactive } from 'vue'
 import useChart from '../charts/chart'
 import { copy } from '../helpers'
@@ -85,7 +86,7 @@ const editDisabled = computed(() => {
 })
 
 function saveEdit() {
-	dashboard.editingItemIndex = null
+	dashboard.editingItemIndex = undefined
 	Object.assign(props.item, filter)
 }
 </script>
@@ -93,7 +94,7 @@ function saveEdit() {
 <template>
 	<Dialog
 		:modelValue="dashboard.isEditingItem(props.item)"
-		@update:modelValue="!$event ? (dashboard.editingItemIndex = null) : true"
+		@update:modelValue="!$event ? (dashboard.editingItemIndex = undefined) : true"
 		:options="{
 			title: 'Edit Filter',
 			actions: [
@@ -105,7 +106,7 @@ function saveEdit() {
 				},
 				{
 					label: 'Cancel',
-					onClick: () => (dashboard.editingItemIndex = null),
+					onClick: () => (dashboard.editingItemIndex = undefined),
 				},
 			],
 		}"
@@ -113,13 +114,18 @@ function saveEdit() {
 		<template #body-content>
 			<div class="flex flex-col gap-4">
 				<div class="flex gap-4">
-					<FormControl
-						class="flex-1 flex-shrink-0"
-						label="Label"
-						v-model="filter.filter_name"
-						placeholder="Enter filter label..."
-						autocomplete="off"
-					/>
+					<div class="flex flex-col gap-4 flex-1">
+						<FormControl
+							label="Label"
+							v-model="filter.filter_name"
+							placeholder="Enter filter label..."
+							autocomplete="off"
+						/>
+						<div class="flex flex-col gap-1.5">
+							<label class="block text-xs text-ink-gray-5"> Icon </label>
+							<IconPicker v-model="filter.icon" />
+						</div>
+					</div>
 					<FormControl
 						class="flex-1 flex-shrink-0"
 						v-model="filter.filter_type"

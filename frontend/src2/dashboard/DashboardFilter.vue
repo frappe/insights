@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, inject, reactive, watch, watchEffect } from 'vue'
+import { Icon } from 'frappe-ui/icons'
+import { computed, inject, reactive, watchEffect } from 'vue'
 import { copy, wheneverChanges } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import DataTypeIcon from '../query/components/DataTypeIcon.vue'
@@ -76,8 +77,13 @@ const label = computed(() => {
 					@click="togglePopover"
 				>
 					<template #prefix>
+						<Icon
+							v-if="filter.icon"
+							:name="filter.icon"
+							class="h-4 w-4 flex-shrink-0"
+						/>
 						<DataTypeIcon
-							v-if="filter.filter_type"
+							v-else-if="filter.filter_type"
 							:column-type="FILTER_TYPES[filter.filter_type][0] as ColumnDataType"
 							class="h-4 w-4 flex-shrink-0"
 							stroke-width="1.5"
