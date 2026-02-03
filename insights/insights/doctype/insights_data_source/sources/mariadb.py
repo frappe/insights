@@ -105,7 +105,7 @@ class MariaDB(BaseDatabase):
             host=host,
             port=port,
             ssl=use_ssl,
-            ssl_verify_cert=use_ssl,
+            ssl_verify_cert=False,
             charset="utf8mb4",
             use_unicode=True,
             connect_args={"connect_timeout": 1},
