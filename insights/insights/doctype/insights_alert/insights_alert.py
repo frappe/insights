@@ -56,7 +56,13 @@ class InsightsAlert(Document):
 
     def has_query_permission(self):
         if not frappe.has_permission("Insights Query v3", "read", self.query):
+<<<<<<< HEAD
             frappe.throw("You do not have permission to access this query")
+=======
+            frappe.throw(
+                "You do not have permission to access this query"
+            )
+>>>>>>> 31bf03f8 (fix: check query perms for alerts)
 
     @frappe.whitelist()
     def send_alert(self, force=False):

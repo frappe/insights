@@ -20,7 +20,11 @@ PERMISSION_DOCTYPES = [
     "Insights Query v3",
     "Insights Chart v3",
     "Insights Dashboard v3",
+<<<<<<< HEAD
     "Insights Alert",
+=======
+    "Insights Alert"
+>>>>>>> 31bf03f8 (fix: check query perms for alerts)
 ]
 
 # if team permissions are not enabled,
