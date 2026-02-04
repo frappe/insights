@@ -59,10 +59,10 @@ class InsightsDataSourceDocument:
         existing_doc = frappe.get_doc("Insights Data Source v3", "Site DB")
         if not (
             existing_doc.host
-            and existing_doc.port
-            and existing_doc.database_name
-            and existing_doc.username
-            and existing_doc.password
+            or existing_doc.port
+            or existing_doc.database_name
+            or existing_doc.username
+            or existing_doc.password
         ):
             return
 
