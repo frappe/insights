@@ -25,3 +25,10 @@ pull_request_rules:
                   - version-3-hotfix
               assignees:
                   - "{{ author }}"
+
+    - name: Auto-delete backport branches
+      conditions:
+          - merged
+          - head~=^mergify/bp/.*
+      actions:
+          delete_head_branch:
