@@ -55,19 +55,30 @@ class InsightsDataSourceDocument:
         if not frappe.flags.in_migrate or not self.is_site_db:
             return
 
+        if not frappe.db.exists("Insights Data Source v3", "Site DB"):
+            return
+
+        existing_doc = frappe.get_doc("Insights Data Source v3", "Site DB")
+        if not (
+            existing_doc.host
+            and existing_doc.port
+            and existing_doc.database_name
+            and existing_doc.username
+            and existing_doc.password
+        ):
+            return
+
         # TODO: better way to handle this?
         # preserve customized site db credentials
-        if frappe.db.exists("Insights Data Source v3", "Site DB"):
-            existing_doc = frappe.get_doc("Insights Data Source v3", "Site DB")
-            self.update(
-                {
-                    "host": existing_doc.host,
-                    "port": existing_doc.port,
-                    "database_name": existing_doc.database_name,
-                    "username": existing_doc.username,
-                    "password": existing_doc.get_password("password"),
-                }
-            )
+        self.update(
+            {
+                "host": existing_doc.host,
+                "port": existing_doc.port,
+                "database_name": existing_doc.database_name,
+                "username": existing_doc.username,
+                "password": existing_doc.get_password("password", raise_exception=False),
+            }
+        )
 
     def on_update(self):
         if self.is_site_db:
