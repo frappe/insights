@@ -1,17 +1,11 @@
 {
   "branches": [
-    "main"
+    "version-3"
   ],
   "plugins": [
     "@semantic-release/commit-analyzer",
     {
-      "preset": "angular",
-      "releaseRules": [
-        {
-          "breaking": true,
-          "release": false
-        }
-      ]
+      "preset": "conventionalcommits"
     },
     [
       "@semantic-release/exec",
