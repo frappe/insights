@@ -5,6 +5,7 @@
     "is_frappe_db": 1,
     "name": "Site DB",
     "title": "Site DB",
+    "type": "Database",
     "status": "Active",
     "database_type": "MariaDB",
     "owner": "Administrator",

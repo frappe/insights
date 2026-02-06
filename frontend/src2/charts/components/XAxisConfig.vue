@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { watchEffect } from 'vue'
-import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { AxisChartConfig } from '../../types/chart.types'
 import { Dimension, DimensionOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
 
-const props = defineProps<{ dimensions: DimensionOption[] }>()
+const props = defineProps<{ dimensions: DimensionOption[], showRotateLabels?: boolean}>()
 const x_axis = defineModel<AxisChartConfig['x_axis']>({
 	required: true,
 	default: () => ({}),
@@ -35,6 +34,7 @@ watchEffect(() => {
 				@remove="x_axis.dimension = {} as Dimension"
 			/>
 			<FormControl
+				v-if="props.showRotateLabels"
 				label="Rotate Values"
 				type="select"
 				v-model="x_axis.label_rotation"

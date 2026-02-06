@@ -54,6 +54,12 @@ class InsightsDashboard(Document):
 
     @frappe.whitelist()
     def fetch_chart_data(self, item_id, query_name=None, filters=None):
+
+        if query_name:
+            if not frappe.has_permission("Insights Query", "read", query_name):
+                frappe.throw("You are not permitted to access this query")
+                return
+
         row = next((row for row in self.items if row.item_id == item_id), None)
         if not row and not query_name:
             return frappe.throw("Item not found")
@@ -136,6 +142,11 @@ def get_query_columns(query):
 
 
 def get_dashboard_public_key(name):
+
+    is_public = frappe.db.get_value("Insights Dashboard", name, "is_public")
+    if not is_public:
+        frappe.throw("Dashboard is not public")
+
     existing_key = frappe.db.get_value(
         "Insights Dashboard", name, "public_key", cache=True
     )

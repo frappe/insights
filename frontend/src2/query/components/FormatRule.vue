@@ -1,28 +1,27 @@
 <script setup lang="ts">
-import { computed, inject, onMounted, Ref, ref, watch } from 'vue'
+import { DatePicker } from 'frappe-ui'
+import { computed, onMounted, watch } from 'vue'
+import FormControl from '../../components/FormControl.vue'
+import RadioGroup from '../../components/ui/Radio.vue'
+import RadioGroupItem from '../../components/ui/RadioGroupItem.vue'
 import { flattenOptions } from '../../helpers'
 import { ColumnOption, GroupedColumnOption } from '../../types/query.types'
 import { column } from '../helpers'
 import {
-	FormattingMode,
-	ConditionalOperator,
-	TextOperator,
-	DateOperator,
-	RankOperator,
 	cell_rules,
 	color_scale,
-	text_rules,
+	ConditionalOperator,
 	date_rules,
+	DateOperator,
+	FormattingMode,
 	rank_rules,
+	RankOperator,
+	text_rules,
+	TextOperator,
 } from './formatting_utils'
-import Autocomplete from '../../components/Autocomplete.vue'
-import FormControl from '../../components/FormControl.vue'
-import DatePicker from 'frappe-ui/src/components/DatePicker/DatePicker.vue'
-import RadioGroup from '../../components/ui/Radio.vue'
-import RadioGroupItem from '../../components/ui/RadioGroupItem.vue'
 const format = defineModel<FormattingMode>({ required: true })
 const props = defineProps<{
-	columnOptions: ColumnOption[] | GroupedColumnOption[] 
+	columnOptions: ColumnOption[] | GroupedColumnOption[]
 	formatMode: 'cell_rules' | 'color_scale'
 }>()
 
@@ -46,6 +45,7 @@ watch(
 				mode: 'color_scale',
 				column: currentColumn,
 				colorScale: colorScaleOptions[0].value,
+				scaleScope: 'global',
 				value: undefined,
 			}
 			format.value = newFormat
@@ -167,6 +167,7 @@ function onColumnChange(column_name: string) {
 			mode: 'color_scale',
 			column: column(column_name),
 			colorScale: colorScaleOptions[0].value,
+			scaleScope: 'global',
 			value: undefined,
 		}
 		format.value = newFormat
@@ -299,6 +300,12 @@ function onColorScaleChange(newColor: string) {
 	}
 }
 
+function onScaleScopeChange(newScope: 'global' | 'local') {
+	if (props.formatMode === 'color_scale' && format.value.mode === 'color_scale') {
+		format.value.scaleScope = newScope
+	}
+}
+
 function onHighlightColorChange(newColor: string) {
 	if (format.value.mode === 'cell_rules') {
 		;(format.value as cell_rules).color = newColor
@@ -369,7 +376,7 @@ const isInvalidColumn = computed(() => {
 	</div>
 
 	<template v-if="!isInvalidColumn">
-		<div v-if="props.formatMode === 'color_scale'" class="w-full">
+		<div v-if="props.formatMode === 'color_scale'" class="w-full flex flex-col gap-4">
 			<div>
 				<h3 class="text-sm text-gray-600 mb-3">Color</h3>
 				<RadioGroup
@@ -397,6 +404,30 @@ const isInvalidColumn = computed(() => {
 								<div class="w-1/2 bg-red-300"></div>
 								<div class="w-1/2 bg-red-400"></div>
 							</div>
+						</div>
+					</RadioGroupItem>
+				</RadioGroup>
+			</div>
+
+			<div>
+				<div class="flex items-center gap-2 mb-3">
+					<h3 class="text-sm text-gray-600">Scale Scope</h3>
+				</div>
+				<RadioGroup
+					name="scale-scope"
+					:modelValue="(format as color_scale).scaleScope || 'global'"
+					@update:modelValue="onScaleScopeChange($event)"
+				>
+					<RadioGroupItem value="global" class="[&_label]:w-full">
+						<div class="flex flex-col gap-0.5">
+							<span class="text-sm font-medium">Global</span>
+							<span class="text-xs text-gray-500">Compare across all formatted columns</span>
+						</div>
+					</RadioGroupItem>
+					<RadioGroupItem value="local" class="[&_label]:w-full">
+						<div class="flex flex-col gap-0.5">
+							<span class="text-sm font-medium">Local</span>
+							<span class="text-xs text-gray-500">Compare within each column independently</span>
 						</div>
 					</RadioGroupItem>
 				</RadioGroup>

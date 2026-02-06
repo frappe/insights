@@ -13,10 +13,11 @@ const dashboard = inject('dashboard') as Dashboard
 
 const searchQuery = ref('')
 const filteredCharts = computed(() => {
+	const query = searchQuery.value.toLowerCase()
 	if (!props.chartOptions.length) return []
-	if (!searchQuery.value) return props.chartOptions
+	if (!query) return props.chartOptions
 	return props.chartOptions.filter((chart) => {
-		return chart.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+		return chart.title.toLowerCase().includes(query)
 	})
 })
 
@@ -96,19 +97,19 @@ function confirmSelection() {
 					</Button>
 				</div>
 				<div
-					class="flex h-[15rem] flex-col overflow-y-scroll rounded border p-0.5 text-base"
+					class="flex h-[15rem] flex-col overflow-y-scroll rounded border p-0.5 text-base gap-1 py-2"
 				>
-					<template v-for="chart in filteredCharts">
+					<template v-for="chart in filteredCharts" :key="chart.name">
 						<div
-							class="flex h-7 flex-shrink-0 cursor-pointer items-center justify-between rounded px-2 hover:bg-gray-100"
+							class="flex h-7 flex-shrink-0 cursor-pointer items-center justify-between rounded px-2 p-4 hover:bg-gray-100"
 							@click="toggleChart(chart)"
 						>
-							<div class="flex items-center gap-1.5">
-								<ChartIcon :chartType="chart.chart_type" />
+							<div class="flex items-center gap-2 py-4">
+								<ChartIcon :chartType="chart.chart_type" class="flex flex-shrink-0"/>
 								<span>{{ chart.title || chart.name }}</span>
 							</div>
 							<component
-								class="h-4 w-4"
+								class="h-4 w-4 flex flex-shrink-0"
 								stroke-width="1.5"
 								:is="isSelected(chart) ? CheckSquare : SquareIcon"
 								:class="isSelected(chart) ? 'text-gray-900' : 'text-gray-600'"

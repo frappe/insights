@@ -51,13 +51,6 @@ wheneverChanges(() => props.options, setChartOptions, { deep: true })
 async function setChartOptions() {
     if (!eChart) return
 
-    const mapSeries = props.options?.series?.find(s => s.type === 'map')
-    if (mapSeries) {
-        await registerMap(mapSeries.map)
-    }
-
-    eChart.setOption({ ...props.options })
-}
 
 // Load map JSON file when required
 async function registerMap(mapName) {

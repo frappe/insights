@@ -17,10 +17,12 @@ class InsightsTableImportLog(Document):
         batch_size: DF.Int
         data_source: DF.Data
         ended_at: DF.Datetime | None
+        error: DF.Code | None
+        import_job: DF.Link | None
         memory_limit: DF.Int
-        output: DF.LongText | None
+        output: DF.Code | None
         parquet_file: DF.Text | None
-        query: DF.Code
+        query: DF.Code | None
         row_limit: DF.Int
         row_size: DF.Float
         rows_imported: DF.Int
@@ -33,7 +35,7 @@ class InsightsTableImportLog(Document):
     def log_output(self, message: str, commit: bool = False):
         if not self.output:
             self.output = ""
-        self.output += message + "\n\n"
+        self.output += message + "\n"
         self.db_update()
         commit and frappe.db.commit()
 

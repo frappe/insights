@@ -77,7 +77,7 @@ watchDebounced(
 						table_restrictions: tableRestrictions.value[table] || '',
 					}
 				})
-			}
+			},
 		)
 		const newPermissions = [...dataSourcesPerms, ...tablePerms]
 		const hasResourcesChanged =
@@ -85,13 +85,13 @@ watchDebounced(
 				newPermissions
 					.map((p) => p.resource_name)
 					.filter(Boolean)
-					.sort()
+					.sort(),
 			) !==
 			JSON.stringify(
 				teamPermissions.value
 					.map((p) => p.resource_name)
 					.filter(Boolean)
-					.sort()
+					.sort(),
 			)
 
 		const hasRestrictionsChanged =
@@ -99,20 +99,20 @@ watchDebounced(
 				newPermissions
 					.map((p) => p.table_restrictions)
 					.filter(Boolean)
-					.sort()
+					.sort(),
 			) !==
 			JSON.stringify(
 				teamPermissions.value
 					.map((p) => p.table_restrictions)
 					.filter(Boolean)
-					.sort()
+					.sort(),
 			)
 
 		if (hasResourcesChanged || hasRestrictionsChanged) {
 			teamPermissions.value = newPermissions
 		}
 	},
-	{ debounce: 300, deep: true }
+	{ debounce: 300, deep: true },
 )
 
 const dataSources = ref<DataSourceListItem[]>([])
@@ -181,7 +181,7 @@ function selectTable(dataSource: string, table: string, selected: boolean) {
 		selectedTables.value[dataSource].push(table)
 	} else {
 		selectedTables.value[dataSource] = selectedTables.value[dataSource].filter(
-			(t) => t !== table
+			(t) => t !== table,
 		)
 	}
 }
@@ -195,7 +195,7 @@ wheneverChanges(
 			return
 		}
 		const table = dataSourceTables.value[expandedDataSource.value].find(
-			(t) => t.name === expandedTable.value
+			(t) => t.name === expandedTable.value,
 		)
 		if (!table) {
 			return
@@ -207,7 +207,7 @@ wheneverChanges(
 				description: 'type',
 			})
 		})
-	}
+	},
 )
 function toggleExpandedTable(table: string) {
 	if (expandedTable.value === table) {
@@ -228,7 +228,6 @@ function loadMoreTables(dataSource: string) {
 function getVisibleTableLimit(dataSource: string) {
 	return visibleTableLimit.value[dataSource] || 50
 }
-
 </script>
 
 <template>
@@ -287,7 +286,7 @@ function getVisibleTableLimit(dataSource: string) {
 			<div
 				v-for="table in expandedDataSourceTables
 					.filter((t) =>
-						t.table_name.toLocaleLowerCase().includes(tableSearchQuery.toLowerCase())
+						t.table_name.toLocaleLowerCase().includes(tableSearchQuery.toLowerCase()),
 					)
 					.slice(0, getVisibleTableLimit(data_source.name))"
 				:key="table.name"
@@ -305,7 +304,7 @@ function getVisibleTableLimit(dataSource: string) {
 								selectTable(
 									data_source.name,
 									table.name,
-									!isTableSelected(data_source.name, table.name)
+									!isTableSelected(data_source.name, table.name),
 								)
 							"
 						>
@@ -328,8 +327,8 @@ function getVisibleTableLimit(dataSource: string) {
 									expandedTable === table.name
 										? 'Hide'
 										: tableRestrictions[table.name]
-										? 'Edit Filters'
-										: 'Set Filters'
+										  ? 'Edit Filters'
+										  : 'Set Filters'
 								}}
 							</p>
 						</div>
@@ -339,26 +338,21 @@ function getVisibleTableLimit(dataSource: string) {
 							:column-options="expandedTableColumns"
 							v-model="tableRestrictions[table.name]"
 							placeholder="eg. country == 'India'"
+							:show-output="false"
 							class="h-fit max-h-[10rem] min-h-[2.5rem] text-sm"
 						/>
 					</div>
 				</div>
 			</div>
 			<div
-				v-if="
-					expandedDataSourceTables.length > getVisibleTableLimit(data_source.name)
-				"
+				v-if="expandedDataSourceTables.length > getVisibleTableLimit(data_source.name)"
 				class="flex items-center gap-2"
 			>
 				<p class="text-xs text-gray-600">
 					Showing {{ getVisibleTableLimit(data_source.name) }} of
 					{{ expandedDataSourceTables.length }} tables
 				</p>
-				<Button
-					variant="ghost"
-					@click="loadMoreTables(data_source.name)"
-					class="text-xs"
-				>
+				<Button variant="ghost" @click="loadMoreTables(data_source.name)" class="text-xs">
 					Load 50 More
 				</Button>
 			</div>

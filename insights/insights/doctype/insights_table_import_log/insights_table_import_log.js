@@ -9,6 +9,11 @@ frappe.ui.form.on("Insights Table Import Log", {
 					frm.reload_doc();
 				});
 			});
+
+			// refresh every 5 seconds
+			setTimeout(() => {
+				frm.reload_doc();
+			}, 5000);
 		}
 	},
 });

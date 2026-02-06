@@ -6,6 +6,8 @@ import App from './App.vue'
 import { registerControllers, registerGlobalComponents } from './globals.ts'
 import './index.css'
 import router from './router.ts'
+import { translationPlugin } from './translation.ts'
+import { spritePlugin } from 'frappe-ui/icons'
 
 setConfig('resourceFetcher', frappeRequest)
 
@@ -14,6 +16,7 @@ const pinia = createPinia()
 
 app.use(pinia)
 app.use(router)
+app.use(spritePlugin)
 app.component('grid-layout', GridLayout)
 app.component('grid-item', GridItem)
 
@@ -29,3 +32,4 @@ registerGlobalComponents(app)
 registerControllers(app)
 
 app.mount('#app')
+app.use(translationPlugin);

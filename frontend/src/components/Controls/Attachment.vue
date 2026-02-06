@@ -27,7 +27,7 @@
 </template>
 
 <script setup>
-import FileUploadHandler from 'frappe-ui/src/utils/fileUploadHandler'
+import { FileUploadHandler } from 'frappe-ui'
 import { computed, ref } from 'vue'
 
 const emit = defineEmits(['update:modelValue'])

@@ -58,9 +58,7 @@ def get_table_columns(data_source, table):
 @insights_whitelist()
 def get_table_name(data_source, table):
     check_table_permission(data_source, table)
-    return frappe.get_value(
-        "Insights Table", {"data_source": data_source, "table": table}, "name"
-    )
+    return frappe.get_value("Insights Table", {"data_source": data_source, "table": table}, "name")
 
 
 @insights_whitelist()
@@ -86,9 +84,7 @@ def get_tables(data_source=None, with_query_tables=False):
 
 
 @insights_whitelist()
-def create_table_link(
-    data_source, primary_table, foreign_table, primary_key, foreign_key
-):
+def create_table_link(data_source, primary_table, foreign_table, primary_key, foreign_key):
     check_table_permission(data_source, primary_table.get("value"))
     check_table_permission(data_source, foreign_table.get("value"))
 
@@ -232,15 +228,11 @@ def fetch_column_values(data_source, table, column, search_text=None):
 
 @insights_whitelist()
 def get_relation(data_source, table_one, table_two):
-    table_one_doc = InsightsTable.get_doc(
-        {"data_source": data_source, "table": table_one}
-    )
+    table_one_doc = InsightsTable.get_doc({"data_source": data_source, "table": table_one})
     if not table_one_doc:
         frappe.throw(f"Table {table_one} not found")
 
-    table_two_doc = InsightsTable.get_doc(
-        {"data_source": data_source, "table": table_two}
-    )
+    table_two_doc = InsightsTable.get_doc({"data_source": data_source, "table": table_two})
     if not table_two_doc:
         frappe.throw(f"Table {table_two} not found")
 
@@ -465,7 +457,10 @@ def get_schema(data_source: str):
             "data_source": data_source,
             "columns": [],
         }
-        _table = ds.get_ibis_table(table_name)
+        try:
+            _table = ds.get_ibis_table(table_name)
+        except Exception:
+            continue
         for column, datatype in _table.schema().items():
             schema[table_name]["columns"].append(
                 frappe._dict(

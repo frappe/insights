@@ -1,5 +1,7 @@
 import ast
+import re
 import time
+from contextlib import contextmanager
 from datetime import date
 
 import frappe
@@ -16,9 +18,9 @@ from ibis.expr.operations.relations import DatabaseTable, Field
 from ibis.expr.types import Expr
 from ibis.expr.types import Table as IbisQuery
 
+import insights
 from insights import create_toast
 from insights.cache_utils import make_digest
-from insights.insights.doctype.insights_data_source_v3.data_warehouse import Warehouse
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
 )
@@ -60,7 +62,12 @@ class IbisQueryBuilder:
                 and adhoc_filters.get("type") == "filter_group"
                 and adhoc_filters.get("filters")
             ):
-                operations.append(adhoc_filters)
+                # Filter out expression-based filters, keep only rule-based filters
+                adhoc_filters["filters"] = [
+                    f for f in adhoc_filters["filters"] if not f.get("expression", {}).get("type")
+                ]
+                if adhoc_filters["filters"]:
+                    operations.append(adhoc_filters)
 
         self.operations = operations
 
@@ -137,9 +144,9 @@ class IbisQueryBuilder:
 
     def get_column(self, column_name, throw=True):
         if column_name in self.query.columns:
-            return getattr(self.query, column_name)
+            return self.query[column_name]
         if sanitize_name(column_name) in self.query.columns:
-            return getattr(self.query, sanitize_name(column_name))
+            return self.query[sanitize_name(column_name)]
         if throw:
             frappe.throw(f"Column {column_name} does not exist in the table")
 
@@ -454,6 +461,24 @@ class IbisQueryBuilder:
             names = self.query.select(names_from).order_by(names_from).distinct().limit(max_names).execute()
             names = names.fillna("null").values
 
+            # If we've limited the number of distinct column values, bucket the
+            # remaining values into an "Others" group so charts show the rest.
+            # This currently supports the common case of a single pivot column.
+            if len(names) == max_names and len(columns) == 1:
+                selected_names = [str(v) for v in names.flatten()]
+
+                col_name = columns[0].get_name()
+                col_expr = getattr(self.query, col_name)
+
+                # replace values not in selected_names with 'Others'
+                # use ibis.case() since ibis.where isn't available on the module
+                others_expr = ibis.cases((col_expr.isin(selected_names), col_expr), else_="Others")
+                self.query = self.query.mutate(**{col_name: others_expr})
+
+                # ensure the pivot names include the 'Others' bucket
+                names = list(map(str, selected_names))
+                names.append("Others")
+
             return self.query.pivot_wider(
                 id_cols=[row.get_name() for row in rows],
                 names_from=names_from,
@@ -514,10 +539,29 @@ class IbisQueryBuilder:
                 with_clauses.append(f"{quoted_table_name} AS ({table_sql})")
 
             if with_clauses:
-                with_clause_sql = "WITH " + ", ".join(with_clauses)
-                raw_sql = with_clause_sql + " " + raw_sql
+                with_clause_sql = ", ".join(with_clauses)
+                # Check if raw_sql already starts with WITH clause
+                raw_sql_stripped = raw_sql.strip()
+                if raw_sql_stripped.lower().startswith("with"):
+                    # Insert new CTEs after the WITH keyword and before existing CTEs
+                    # Use regex to handle both uppercase and lowercase "with"
+                    raw_sql = re.sub(
+                        r"(\bwith\b)",
+                        f"WITH {with_clause_sql},",
+                        raw_sql_stripped,
+                        count=1,
+                        flags=re.IGNORECASE,
+                    )
+                else:
+                    # Prepend WITH clause if it doesn't exist
+                    raw_sql = f"WITH {with_clause_sql} {raw_sql_stripped}"
 
-        if ds.enable_stored_procedure_execution and raw_sql.strip().lower().startswith("exec"):
+        supports_stored_procedure = ds.database_type in ["PostgreSQL", "MSSQL", "MariaDB"]
+        if (
+            supports_stored_procedure
+            and ds.enable_stored_procedure_execution
+            and raw_sql.strip().lower().startswith("exec")
+        ):
             current_date = date.today().strftime("%Y-%m-%d")  # Format: 'YYYY-MM-DD'
             raw_sql = raw_sql.replace("@Today", f"'{current_date}'")
 
@@ -557,7 +601,7 @@ class IbisQueryBuilder:
             results = get_code_results(code, variables=variables)
             cache_results(digest, results, cache_expiry=60 * 5)
 
-        return Warehouse().db.create_table(
+        return insights.warehouse.db.create_table(
             digest,
             results,
             temp=True,
@@ -770,9 +814,9 @@ def exec_with_return(
     if isinstance(last_node, ast.Expr):
         output_expression = ast.unparse(last_node)
     elif isinstance(last_node, ast.Assign):
-        output_expression = ast.unparse(last_node.targets[0])
+        output_expression = ast.unparse(last_node.value)
     elif isinstance(last_node, ast.AnnAssign | ast.AugAssign):
-        output_expression = ast.unparse(last_node.target)
+        output_expression = ast.unparse(last_node.value)
 
     _globals = _globals or {}
     _locals = _locals or {}
@@ -780,7 +824,8 @@ def exec_with_return(
     tree.body.pop()  # remove the last expression
     _script = ast.unparse(tree)
     if _script.strip():
-        safe_exec(_script, _globals, _locals, restrict_commit_rollback=True)
+        with ensure_rollback():
+            safe_exec(_script, _globals, _locals, restrict_commit_rollback=True)
         return safe_eval(output_expression, _globals, _locals)
     else:
         return safe_eval(output_expression, _globals, _locals)
@@ -838,12 +883,14 @@ def get_code_results(code: str, variables=None):
                 variable_context[var.get("variable_name")] = var.get("variable_value")
 
     _locals = {"results": results, **variable_context}
-    _, _locals = safe_exec(
-        code,
-        _globals={"pandas": pandas},
-        _locals=_locals,
-        restrict_commit_rollback=True,
-    )
+    with ensure_rollback():
+        _, _locals = safe_exec(
+            code,
+            _globals={"pandas": pandas},
+            _locals=_locals,
+            restrict_commit_rollback=True,
+        )
+
     results = _locals["results"]
     if results is None or len(results) == 0:
         results = [{"error": "No results"}]
@@ -861,3 +908,13 @@ def get_code_results(code: str, variables=None):
         results = pd.DataFrame(results)
 
     return results
+
+
+@contextmanager
+def ensure_rollback():
+    hash = frappe.generate_hash(length=4)
+    try:
+        frappe.db.savepoint(f"save_point_{hash}")
+        yield
+    finally:
+        frappe.db.rollback(save_point=f"save_point_{hash}")
