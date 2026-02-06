@@ -5,7 +5,11 @@ import { Dimension, DimensionOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
 
-const props = defineProps<{ dimensions: DimensionOption[], showRotateLabels?: boolean}>()
+const props = defineProps<{
+	dimensions: DimensionOption[]
+	showRotateLabels?: boolean
+	showLogScale?: boolean
+}>()
 const x_axis = defineModel<AxisChartConfig['x_axis']>({
 	required: true,
 	default: () => ({}),
@@ -47,6 +51,7 @@ watchEffect(() => {
 					{ label: '90°', value: 90 },
 				]"
 			/>
+			<Toggle v-if="props.showLogScale" label="Log Scale" v-model="x_axis.log_scale" />
 			<!-- <Toggle label="Show Axis Title" />
 			<InlineFormControlLabel v-if="false" label="Axis Title Text">
 				<FormControl />

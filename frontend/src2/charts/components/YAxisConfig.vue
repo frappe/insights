@@ -11,7 +11,7 @@ import { ColumnOption, MeasureOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import MeasurePicker from './MeasurePicker.vue'
 
-const props = defineProps<{ columnOptions: ColumnOption[] }>()
+const props = defineProps<{ columnOptions: ColumnOption[]; showLogScale?: boolean }>()
 const y_axis = defineModel<AxisChartConfig['y_axis']>({
 	required: true,
 	default: () => ({
@@ -97,6 +97,7 @@ const updateColor = debounce((color: string, idx: number) => {
 			<Toggle label="Show Data Labels" v-model="y_axis.show_data_labels" />
 			<Toggle label="Show Axis Label" v-model="y_axis.show_axis_label" />
 			<Toggle label="Show Scrollbar" v-model="y_axis.show_scrollbar" />
+			<Toggle v-if="props.showLogScale" label="Log Scale" v-model="y_axis.log_scale" />
 			<FormControl
 				v-if="y_axis.show_axis_label"
 				v-model="y_axis.axis_label"

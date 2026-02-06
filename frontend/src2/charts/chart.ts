@@ -54,6 +54,7 @@ function makeChart(name: string) {
 		if (!chart.isloaded) return {} as Query
 		return useQuery(chart.doc.data_query)
 	})
+
 	async function refresh(force?: boolean, reload?: boolean) {
 		if (reload) {
 			await chart.load()
@@ -495,7 +496,6 @@ function makeChart(name: string) {
 		...toRefs(chart),
 
 		dataQuery,
-
 		refresh,
 		updateGranularity,
 		resetConfig,
@@ -557,9 +557,9 @@ function transformChartDoc(doc: any) {
 	doc.config.filters = doc.config.filters?.filters?.length
 		? doc.config.filters
 		: {
-				filters: [],
-				logical_operator: 'And',
-		  }
+			filters: [],
+			logical_operator: 'And',
+		}
 	doc.config.order_by = doc.config.order_by || []
 	doc.config.limit = doc.config.limit || 100
 

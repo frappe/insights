@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { LineChartConfig, SeriesLine, YAxisLine } from '../../types/chart.types'
 import { ColumnOption, DimensionOption } from '../../types/query.types'
 import SplitByConfig from './SplitByConfig.vue'
@@ -23,7 +24,11 @@ const config = defineModel<LineChartConfig>({
 <template>
 	<XAxisConfig v-model="config.x_axis" :dimensions="props.dimensions"></XAxisConfig>
 
-	<YAxisConfig v-model="config.y_axis" :column-options="props.columnOptions">
+	<YAxisConfig
+		v-model="config.y_axis"
+		:column-options="props.columnOptions"
+		:show-log-scale="true"
+	>
 		<template #y-axis-settings="{ y_axis }">
 			<Toggle label="Curved Lines" v-model="(y_axis as YAxisLine).smooth" />
 			<Toggle label="Show Area" v-model="(y_axis as YAxisLine).show_area" />

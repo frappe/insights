@@ -19,6 +19,7 @@ const emit = defineEmits({ remove: () => true })
 const props = defineProps<{
 	label?: string
 	columnOptions: ColumnOption[]
+	showLogScale?: boolean
 }>()
 
 const measure = defineModel<Measure>({
@@ -298,7 +299,7 @@ const label = ref('')
 			</template>
 		</Button>
 	</div>
-
+	<Toggle v-if="props.showLogScale" label="Log Scale" v-model="measure.log_scale" />
 	<NewMeasureSelectorDialog
 		v-if="showMeasureDialog"
 		:model-value="Boolean(showMeasureDialog)"
