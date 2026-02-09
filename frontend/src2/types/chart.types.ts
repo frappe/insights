@@ -31,6 +31,9 @@ export type YAxis = {
 	show_axis_label?: boolean
 	show_data_labels?: boolean
 	show_scrollbar?: boolean
+
+	// 🆕 NEW FIELD — global label position for bar chart labels
+	label_position?: 'top' | 'inside' | 'bottom'
 }
 export type Series = {
 	name?: string
