@@ -11,7 +11,6 @@ import sqlparse
 from frappe.model.document import Document
 from ibis import _
 
-from insights.cache_utils import make_digest
 from insights.decorators import insights_whitelist
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     IbisQueryBuilder,
