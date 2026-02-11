@@ -23,7 +23,7 @@
 					@click="onConfirm"
 					:loading="isLoading"
 				>
-					{{ primaryActionLabel || 'Confirm' }}
+					{{ primaryActionLabel || __('Confirm') }}
 				</Button>
 			</div>
 		</template>

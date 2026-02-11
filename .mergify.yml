@@ -1,0 +1,34 @@
+pull_request_rules:
+    - name: Auto-close PRs on stable branch
+      conditions:
+          - and:
+                - and:
+                      - author!=nextchamp-saqib
+                      - author!=shahzeelahmed
+                      - author!=frappe-pr-bot
+                      - author!=mergify[bot]
+                - or:
+                      - base=main
+                      - base=version-3
+      actions:
+          close:
+          comment:
+              message: |
+                  @{{author}}, thanks for the contribution, but we do not accept pull requests on a stable branch. Please raise PR on develop branch.
+
+    - name: backport to version-3-hotfix
+      conditions:
+          - label="backport version-3-hotfix"
+      actions:
+          backport:
+              branches:
+                  - version-3-hotfix
+              assignees:
+                  - "{{ author }}"
+
+    - name: Auto-delete backport branches
+      conditions:
+          - merged
+          - head~=^mergify/bp/.*
+      actions:
+          delete_head_branch:

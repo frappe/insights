@@ -1,4 +1,5 @@
 import ast
+import re
 import time
 from contextlib import contextmanager
 from datetime import date
@@ -538,8 +539,22 @@ class IbisQueryBuilder:
                 with_clauses.append(f"{quoted_table_name} AS ({table_sql})")
 
             if with_clauses:
-                with_clause_sql = "WITH " + ", ".join(with_clauses)
-                raw_sql = with_clause_sql + " " + raw_sql
+                with_clause_sql = ", ".join(with_clauses)
+                # Check if raw_sql already starts with WITH clause
+                raw_sql_stripped = raw_sql.strip()
+                if raw_sql_stripped.lower().startswith("with"):
+                    # Insert new CTEs after the WITH keyword and before existing CTEs
+                    # Use regex to handle both uppercase and lowercase "with"
+                    raw_sql = re.sub(
+                        r"(\bwith\b)",
+                        f"WITH {with_clause_sql},",
+                        raw_sql_stripped,
+                        count=1,
+                        flags=re.IGNORECASE,
+                    )
+                else:
+                    # Prepend WITH clause if it doesn't exist
+                    raw_sql = f"WITH {with_clause_sql} {raw_sql_stripped}"
 
         supports_stored_procedure = ds.database_type in ["PostgreSQL", "MSSQL", "MariaDB"]
         if (

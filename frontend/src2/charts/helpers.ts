@@ -70,7 +70,7 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 	const yAxis = !hasRightAxis ? [leftYAxis] : [leftYAxis, rightYAxis]
 
 	const sortedRows = xAxisIsDate
-		? _rows.sort((a, b) => {
+		? [..._rows].sort((a, b) => {
 				const a_date = new Date(a[config.x_axis.dimension.dimension_name])
 				const b_date = new Date(b[config.x_axis.dimension.dimension_name])
 				return a_date.getTime() - b_date.getTime()
@@ -190,7 +190,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 	const yAxis = !hasRightAxis ? [leftYAxis] : [leftYAxis, rightYAxis]
 
 	const sortedRows = xAxisIsDate
-		? _rows.sort((a, b) => {
+		? [..._rows].sort((a, b) => {
 				const a_date = new Date(a[config.x_axis.dimension.dimension_name])
 				const b_date = new Date(b[config.x_axis.dimension.dimension_name])
 				return a_date.getTime() - b_date.getTime()

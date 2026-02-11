@@ -97,7 +97,7 @@ const completions = computed(() => {
 		label: table,
 		detail: tableData.label,
 	}))
-	
+
 	return {
 		schema,
 		tables,
@@ -107,64 +107,58 @@ const completions = computed(() => {
 
 <template>
 	<div class="flex flex-1 gap-4 overflow-hidden p-4">
-
 		<div class="flex flex-1 flex-col gap-4 overflow-hidden">
-		<div class="relative flex h-[55%] w-full flex-col rounded border">
-			<div class="flex flex-shrink-0 items-center gap-1 border-b p-1">
-				<DataSourceSelector v-model="data_source" placeholder="Select a data source" />
-				<ContentEditable
-					class="flex h-7 cursor-text items-center justify-center rounded bg-white px-2 text-base text-gray-800 focus-visible:ring-1 focus-visible:ring-gray-600"
-					v-model="query.doc.title"
-					placeholder="Untitled Dashboard"
-				></ContentEditable>
-			</div>
-			<div class="flex-1 overflow-hidden">
-				<Code
-					ref="codeEditor"
-					:key="completions.tables.length"
-					v-model="sql"
-					language="sql"
-					:schema="completions.schema"
-					:tables="completions.tables"
-				/>
-			</div>
-			<div class="flex flex-shrink-0 gap-1 border-t p-1">
-				<Button @click="execute(false)" label="Execute">
-					<template #prefix>
-						<Play class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
-					</template>
-				</Button>
-				<Dropdown
+			<div class="relative flex h-[55%] w-full flex-col rounded border">
+				<div class="flex flex-shrink-0 items-center gap-1 border-b p-1">
+					<DataSourceSelector v-model="data_source" placeholder="Select a data source" />
+					<ContentEditable
+						class="flex h-7 cursor-text items-center justify-center rounded bg-white px-2 text-base text-gray-800 focus-visible:ring-1 focus-visible:ring-gray-600"
+						v-model="query.doc.title"
+						placeholder="Untitled Dashboard"
+					></ContentEditable>
+				</div>
+				<div class="flex-1 overflow-hidden">
+					<Code
+						ref="codeEditor"
+						:key="completions.tables.length"
+						v-model="sql"
+						language="sql"
+						:schema="completions.schema"
+						:tables="completions.tables"
+					/>
+				</div>
+				<div class="flex flex-shrink-0 gap-1 border-t p-1">
+					<Button @click="execute(true)" label="Execute">
+						<template #prefix>
+							<Play class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
+						</template>
+					</Button>
+					<!-- <Dropdown
 					:button="{ icon: MoreHorizontal }"
 					:options="[
-						{
-							label: 'Force Execute',
-							icon: Play,
-							onClick: () => execute(true),
-						},
 						{
 							label: 'Format SQL',
 							icon: Wand2,
 							onClick: () => format(),
 						},
 					]"
-				/>
+				/> -->
+				</div>
 			</div>
-		</div>
-		<div
-			v-show="query.result.executedSQL"
-			class="tnum flex flex-shrink-0 items-center gap-2 text-sm text-gray-600"
-		>
-			<div class="h-2 w-2 rounded-full bg-green-500"></div>
-			<div>
-				<span v-if="query.result.timeTaken == -1"> Fetched from cache </span>
-				<span v-else> Fetched in {{ query.result.timeTaken }}s </span>
-				<span> {{ useTimeAgo(query.result.lastExecutedAt).value }} </span>
+			<div
+				v-show="query.result.executedSQL"
+				class="tnum flex flex-shrink-0 items-center gap-2 text-sm text-gray-600"
+			>
+				<div class="h-2 w-2 rounded-full bg-green-500"></div>
+				<div>
+					<span v-if="query.result.timeTaken == -1"> Fetched from cache </span>
+					<span v-else> Fetched in {{ query.result.timeTaken }}s </span>
+					<span> {{ useTimeAgo(query.result.lastExecutedAt).value }} </span>
+				</div>
 			</div>
-		</div>
-		<div class="relative flex w-full flex-1 flex-col overflow-hidden rounded border">
-			<QueryDataTable :query="query" :enable-alerts="true" />
-		</div>
+			<div class="relative flex w-full flex-1 flex-col overflow-hidden rounded border">
+				<QueryDataTable :query="query" :enable-alerts="true" />
+			</div>
 		</div>
 		<div class="w-64 flex-shrink-0">
 			<SchemaExplorer :schema="dataSourceSchema" @insert-text="insertTextIntoEditor" />

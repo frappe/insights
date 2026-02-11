@@ -27,7 +27,7 @@
 						: 'ml-2 w-auto truncate opacity-100'
 				"
 			>
-				{{ label }}
+				{{ label}}
 			</span>
 		</div>
 	</button>
