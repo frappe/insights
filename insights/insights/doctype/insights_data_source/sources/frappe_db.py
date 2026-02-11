@@ -316,7 +316,7 @@ class SiteDB(FrappeDB):
             host=credentials["host"],
             port=credentials["port"],
             ssl=False,
-            ssl_verify_cert=True,
+            ssl_verify_cert=False,
             charset="utf8mb4",
             use_unicode=True,
         )
