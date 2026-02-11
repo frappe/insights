@@ -211,7 +211,7 @@ class FrappeDB(MariaDB):
             host=host,
             port=port,
             ssl=use_ssl,
-            ssl_verify_cert=True,
+            ssl_verify_cert=False,
             charset="utf8mb4",
             use_unicode=True,
             connect_args={"connect_timeout": 1, "read_timeout": 1, "write_timeout": 1},
