@@ -8,6 +8,7 @@ import { ColumnOption } from '../types/query.types'
 import { WorkbookDashboardFilter } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
 import { __ } from '../translation'
+import { Switch } from 'frappe-ui'
 
 const dashboard = inject<Dashboard>('dashboard')!
 const props = defineProps<{ item: WorkbookDashboardFilter }>()
@@ -143,11 +144,11 @@ function saveEdit() {
 						:key="link.name"
 						class="flex h-8 w-full items-center gap-2"
 					>
-						<Toggle
+						<Switch
 							size="sm"
 							:modelValue="enabledLinks.includes(link.name)"
 							@update:modelValue="toggleLink(link.name)"
-						></Toggle>
+						></Switch>
 						<p class="flex-1 truncate text-base">{{ link.title }}</p>
 						<div v-if="enabledLinks.includes(link.name)" class="ml-auto flex-shrink-0">
 							<Autocomplete
