@@ -93,9 +93,9 @@ function toggleSort() {
 				class="flex cursor-pointer items-center justify-between gap-2 rounded px-1 py-1.5 text-base hover:bg-gray-100"
 				@click.prevent.stop="toggleValue(value)"
 			>
-				<component
-					:is="selectedValues.includes(value) ? CheckSquare : Square"
-					class="h-4 w-4 text-gray-600"
+				<Checkbox
+					class="cursor-pointer duration-300"
+					:modelValue="selectedValues.includes(value)"
 				/>
 				<span class="flex-1 truncate"> {{ value }} </span>
 			</div>
