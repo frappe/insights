@@ -79,6 +79,42 @@ function onFilterTypeChange() {
 	filter.links = {}
 }
 
+const defaultOperatorOptions = computed(() => getOperatorOptions(filter.filter_type))
+
+const defaultValueSelectorType = computed(() => {
+	if (!filter.default_operator) return
+	return getValueSelectorType(filter.default_operator, filter.filter_type)
+})
+
+function onDefaultOperatorChange(operator: FilterOperator) {
+	const oldType = defaultValueSelectorType.value
+	filter.default_operator = operator
+	if (oldType !== getValueSelectorType(operator, filter.filter_type)) {
+		filter.default_value = undefined
+	}
+}
+
+function clearDefault() {
+	filter.default_operator = undefined
+	filter.default_value = undefined
+}
+
+const sourceColumn = computed(() => {
+	const firstChart = Object.keys(filter.links)[0]
+	if (!firstChart) return
+	const linkedColumn = filter.links[firstChart]
+	return dashboard.getColumnFromFilterLink(linkedColumn)
+})
+
+function defaultValuesProvider(search: string) {
+	if (!sourceColumn.value) return Promise.resolve([])
+	return dashboard.getDistinctColumnValues(
+		sourceColumn.value.query,
+		sourceColumn.value.column,
+		search
+	)
+}
+
 const editDisabled = computed(() => {
 	return (
 		!filter.filter_name ||
