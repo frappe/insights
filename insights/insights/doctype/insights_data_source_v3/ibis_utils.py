@@ -35,8 +35,16 @@ from . import lock_monitor
 # RedLock constants
 QUERY_LOCK_PREFIX = "insights_query_lock:"
 SEMAPHORE_KEY = "insights_query_semaphore"
-MAX_CONCURRENT_QUERIES = 16
+DEFAULT_MAX_CONCURRENT_QUERIES = 6
 LOCK_TIMEOUT = 180
+
+
+def get_max_concurrent_queries():
+    value = (
+        frappe.db.get_single_value("Insights Settings", "max_concurrent_queries")
+        or DEFAULT_MAX_CONCURRENT_QUERIES
+    )
+    return max(6, min(18, int(value)))
 
 
 def try_acquire_lock(lock_key, query_name: str = None) -> bool:
@@ -70,7 +78,7 @@ def try_acquire_semaphore(query_name: str = None):
 
         redis.expire(SEMAPHORE_KEY, LOCK_TIMEOUT)
 
-        if current > MAX_CONCURRENT_QUERIES:
+        if current > get_max_concurrent_queries():
             redis.decr(SEMAPHORE_KEY)
             lock_monitor.log_queue_full(query_name)
             return None
@@ -110,7 +118,10 @@ def get_pending_query_result(cache_key):
 
     if has_cached_results(cache_key):
         result = get_cached_results(cache_key)
-        return {"status": "completed", "result": result,}
+        return {
+            "status": "completed",
+            "result": result,
+        }
 
     return {"status": "not_found"}
 
@@ -802,9 +813,7 @@ def execute_ibis_query(
         query = query.limit(limit)
 
     if use_lock:
-        return execute_with_lock(
-            query, sql, cache_key, cache, cache_expiry, force, reference_name
-        )
+        return execute_with_lock(query, sql, cache_key, cache, cache_expiry, force, reference_name)
     else:
         return execute_query(query, sql, cache_key, cache, cache_expiry, reference_name)
 
