@@ -136,7 +136,7 @@ export function makeQuery(name: string) {
 	const POLL_INTERVAL = 2000 // 2 seconds
 	const MAX_POLL_ATTEMPTS = 60
 	const QUEUE_RETRY_DELAY = 3000
-	const MAX_QUEUE_RETRIES = 10
+	const MAX_QUEUE_RETRIES = 30
 
 	async function execute(force: boolean = false, retryCount: number = 0): Promise<any> {
 		if (!query.islocal) {
@@ -169,7 +169,7 @@ export function makeQuery(name: string) {
 				adhoc_filters: adhocFilters.value,
 				force,
 			})
-			.then((response:any) => {
+			.then(async (response:any) => {
 				if (!response) return
 
 				if (response.status === 'pending') {
@@ -214,7 +214,7 @@ export function makeQuery(name: string) {
 						})
 					}
 
-					new Promise((resolve) => setTimeout(resolve, QUEUE_RETRY_DELAY))
+					await new Promise((resolve) => setTimeout(resolve, QUEUE_RETRY_DELAY))
 					return execute(force, retryCount + 1)
 				}
 
