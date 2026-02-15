@@ -931,6 +931,27 @@ export function makeQuery(name: string) {
 		}
 	)
 
+	const importingTables = ref(false)
+	async function refreshStoredTables() {
+		importingTables.value = true
+		try {
+			const response = await query.call('refresh_stored_tables')
+			createToast({
+				title: 'Import Started',
+				message: response?.message || 'Importing tables to data store',
+				variant: 'success',
+			})
+		} catch (error: any) {
+			createToast({
+				title: 'Import Failed',
+				message: error?.message || 'Failed to import tables to data store',
+				variant: 'error',
+			})
+		} finally {
+			importingTables.value = false
+		}
+	}
+
 	const autoExecute = ref(false)
 	watchToggle(currentOperations, () => autoExecute.value && execute(), {
 		immediate: true,
@@ -972,6 +993,8 @@ export function makeQuery(name: string) {
 
 		execute,
 		fetchResultCount,
+		refreshStoredTables,
+		importingTables,
 
 		setOperations,
 		setActiveOperation,
