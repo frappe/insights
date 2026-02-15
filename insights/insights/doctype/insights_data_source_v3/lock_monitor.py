@@ -1,11 +1,12 @@
 import frappe
 
+# Redis keys for monitoring
 LOCK_STATS_KEY = "insights:lock_stats"
 LOCK_EVENTS_KEY = "insights:lock_events"
 
 
 def log_lock_acquired(lock_key: str, query_name: str = None):
-    """Log when a lock is successfully acquired"""
+    """Log when a lock is successfully acquired."""
     try:
         redis = frappe.cache()
         redis.hincrby(LOCK_STATS_KEY, "locks_acquired", 1)
@@ -17,7 +18,7 @@ def log_lock_acquired(lock_key: str, query_name: str = None):
 
 
 def log_lock_released(lock_key: str, query_name: str = None):
-    """Log when a lock is released"""
+    """Log when a lock is released."""
     try:
         redis = frappe.cache()
         redis.hincrby(LOCK_STATS_KEY, "locks_released", 1)
@@ -29,7 +30,7 @@ def log_lock_released(lock_key: str, query_name: str = None):
 
 
 def log_lock_contention(lock_key: str, query_name: str = None):
-    """Log when a lock acquisition fails"""
+    """Log when a lock acquisition fails (contention)."""
     try:
         redis = frappe.cache()
         redis.hincrby(LOCK_STATS_KEY, "lock_contentions", 1)
@@ -46,10 +47,10 @@ def log_lock_contention(lock_key: str, query_name: str = None):
 
 
 def log_semaphore_acquired(slot: int):
+    """Log when a semaphore slot is acquired."""
     try:
         redis = frappe.cache()
         redis.hincrby(LOCK_STATS_KEY, "semaphore_acquired", 1)
-
         current_max = int(redis.hget(LOCK_STATS_KEY, "semaphore_max") or 0)
         if slot > current_max:
             redis.hset(LOCK_STATS_KEY, "semaphore_max", slot)
@@ -58,6 +59,7 @@ def log_semaphore_acquired(slot: int):
 
 
 def log_semaphore_released():
+    """Log when a semaphore slot is released."""
     try:
         redis = frappe.cache()
         redis.hincrby(LOCK_STATS_KEY, "semaphore_released", 1)
@@ -66,17 +68,19 @@ def log_semaphore_released():
 
 
 def log_queue_full(query_name: str = None):
+    """Log when query is rejected due to full queue."""
     try:
         redis = frappe.cache()
         redis.hincrby(LOCK_STATS_KEY, "queue_full_count", 1)
 
-        from .ibis_utils import MAX_CONCURRENT_QUERIES
-        _create_lock_log("queue_full", None, query_name, MAX_CONCURRENT_QUERIES)
+        from .ibis_utils import get_max_concurrent_queries
+        _create_lock_log("queue_full", None, query_name, get_max_concurrent_queries())
     except Exception:
         pass
 
 
 def _create_lock_log(event_type: str, lock_key: str = None, query_name: str = None, semaphore_count: int = None):
+    """Create a database log entry for lock events."""
     try:
         from insights.insights.doctype.insights_lock_log.insights_lock_log import create_lock_log
         create_lock_log(event_type, lock_key, query_name, semaphore_count)
@@ -98,6 +102,7 @@ def log_query_execution(query_name: str, time_taken: float, from_cache: bool = F
 
 
 def _log_event(event_type: str, lock_key: str, query_name: str = None):
+    """Log detailed event for debugging."""
     try:
         import time
 
@@ -117,6 +122,7 @@ def _log_event(event_type: str, lock_key: str, query_name: str = None):
 
 
 def get_lock_stats():
+    """Get current lock statistics."""
     try:
         redis = frappe.cache()
         stats = redis.hgetall(LOCK_STATS_KEY) or {}
@@ -133,6 +139,7 @@ def get_lock_stats():
 
 
 def get_recent_events(limit: int = 20):
+    """Get recent lock events for debugging."""
     try:
         redis = frappe.cache()
         events = redis.lrange(LOCK_EVENTS_KEY, 0, limit - 1) or []
@@ -142,6 +149,7 @@ def get_recent_events(limit: int = 20):
 
 
 def get_current_semaphore_usage():
+    """Get current semaphore counter value."""
     try:
         from .ibis_utils import SEMAPHORE_KEY
 
@@ -151,12 +159,3 @@ def get_current_semaphore_usage():
     except Exception:
         return 0
 
-
-def reset_stats():
-    frappe.only_for("System Manager")
-    try:
-        redis = frappe.cache()
-        redis.delete(LOCK_STATS_KEY)
-        redis.delete(LOCK_EVENTS_KEY)
-    except Exception:
-        pass

@@ -1,12 +1,13 @@
 {
  "actions": [],
- "allow_rename": 0,
+ "autoname": "format:LOCK-{#####}",
  "creation": "2026-02-07 13:02:01.204400",
  "default_view": "List",
  "doctype": "DocType",
  "document_type": "System",
  "engine": "MyISAM",
  "field_order": [
+  "lock_section",
   "event_type",
   "column_break_main",
   "query",
@@ -74,16 +75,20 @@
    "fieldname": "section_break_context",
    "fieldtype": "Section Break",
    "label": "Context"
+  },
+  {
+   "fieldname": "lock_section",
+   "fieldtype": "Section Break",
+   "label": "Lock"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-02-07 12:00:00.000000",
+ "modified": "2026-02-09 11:36:33.112117",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Lock Log",
  "naming_rule": "Expression (old style)",
- "autoname": "format:LOCK-{#####}",
  "owner": "Administrator",
  "permissions": [
   {
@@ -96,6 +101,7 @@
    "share": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],

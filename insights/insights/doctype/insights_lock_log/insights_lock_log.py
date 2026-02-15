@@ -6,6 +6,21 @@ from frappe.model.document import Document
 
 
 class InsightsLockLog(Document):
+    # begin: auto-generated types
+    # This code is auto-generated. Do not modify anything in this block.
+
+    from typing import TYPE_CHECKING
+
+    if TYPE_CHECKING:
+        from frappe.types import DF
+
+        event_type: DF.Literal["lock_contention", "queue_full"]
+        lock_key: DF.Data | None
+        query: DF.Data | None
+        semaphore_count: DF.Int
+        user: DF.Link | None
+    # end: auto-generated types
+
     pass
 
 
