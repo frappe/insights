@@ -8,7 +8,7 @@ import { ColumnOption } from '../types/query.types'
 import { WorkbookDashboardFilter } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
 import { __ } from '../translation'
-import { Switch } from 'frappe-ui'
+import { Switch, Tabs } from 'frappe-ui'
 
 const dashboard = inject<Dashboard>('dashboard')!
 const props = defineProps<{ item: WorkbookDashboardFilter }>()
@@ -17,6 +17,24 @@ const filter = reactive(copy(props.item))
 if (!filter.links) {
 	filter.links = {}
 }
+
+const tabIndex = ref(0)
+onMounted(() => {
+	requestAnimationFrame(() => {
+		nextTick(() => (tabIndex.value = 0))
+	})
+})
+
+const tabs = [
+	{
+		label: 'Setup',
+		value: 'setup',
+	},
+	{
+		label: 'Config',
+		value: 'config',
+	},
+]
 
 const charts = computed(() => {
 	return dashboard.doc.items
