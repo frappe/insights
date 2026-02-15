@@ -502,6 +502,7 @@ class IbisQueryBuilder:
 
         raw_sql = sqlparse.format(sql=raw_sql, strip_comments=True)
 
+        # TODO: apply user permissions by default
         check_permissions = frappe.db.get_single_value(
             "Insights Settings", "enable_permissions"
         ) or frappe.db.get_single_value("Insights Settings", "apply_user_permissions")
