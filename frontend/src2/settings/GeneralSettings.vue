@@ -53,6 +53,19 @@ settings.load()
 			/>
 		</SettingItem>
 
+		<SettingItem
+			label="Max Concurrent Queries"
+			description="Maximum number of queries that can run at the same time. Default is 6 Maximum is 18"
+		>
+			<FormControl
+				class="w-28"
+				type="number"
+				v-model.number="settings.doc.max_concurrent_queries"
+				:min="6"
+				:max="18"
+			/>
+		</SettingItem>
+
 		<div class="flex justify-end">
 			<Button
 				label="Update"
