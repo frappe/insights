@@ -12,6 +12,8 @@ function makeSettings() {
 	const _settings = useDocumentResource<InsightsSettings>(doctype, doctype, {
 		initialDoc: {
 			name: '',
+			doctype,
+			owner: '',
 			enable_permissions: false,
 			allowed_origins: '',
 			max_records_to_sync: 10_00_000,
@@ -38,6 +40,8 @@ type Settings = ReturnType<typeof makeSettings>
 
 type InsightsSettings = {
 	name: string
+	doctype: string
+	owner: string
 	enable_permissions: boolean
 	allowed_origins: string
 	max_records_to_sync: number
