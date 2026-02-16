@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { watchDebounced } from '@vueuse/core'
-import { LoadingIndicator } from 'frappe-ui'
+import { LoadingIndicator, Checkbox } from 'frappe-ui'
 import { ArrowDownAZ, ArrowUpAZ, CheckSquare, SearchIcon, Square } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
@@ -30,24 +30,28 @@ watchDebounced(
 )
 
 const sortedValues = computed(() => {
-  const values = [...distinctColumnValues.value];
-  const order = sortOrder.value === 'asc' ? 1 : -1;
-  
-  return values.sort((a, b) => {
-    const stringA = String(a);
-    const stringB = String(b);
-    
-    // try numeric comparison first
-    const numA = Number(stringA);
-    const numB = Number(stringB);
-    
-    if (!isNaN(numA) && !isNaN(numB) && stringA.trim() && stringB.trim()) {
-      return (numA - numB) * order;
-    }
-    
-    return stringA.toLowerCase().localeCompare(stringB.toLowerCase(), undefined, { numeric: true }) * order;
-  });
-});
+	const values = [...distinctColumnValues.value]
+	const order = sortOrder.value === 'asc' ? 1 : -1
+
+	return values.sort((a, b) => {
+		const stringA = String(a)
+		const stringB = String(b)
+
+		// try numeric comparison first
+		const numA = Number(stringA)
+		const numB = Number(stringB)
+
+		if (!isNaN(numA) && !isNaN(numB) && stringA.trim() && stringB.trim()) {
+			return (numA - numB) * order
+		}
+
+		return (
+			stringA
+				.toLowerCase()
+				.localeCompare(stringB.toLowerCase(), undefined, { numeric: true }) * order
+		)
+	})
+})
 
 function toggleValue(value: string) {
 	if (selectedValues.value.includes(value)) {
