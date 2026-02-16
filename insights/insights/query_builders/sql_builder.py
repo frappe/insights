@@ -8,9 +8,6 @@ from insights.insights.doctype.insights_query.utils import Column as AssistedQue
 from insights.insights.doctype.insights_query.utils import Filter as AssistedQueryFilter
 from insights.insights.doctype.insights_query.utils import Join as AssistedQueryJoin
 from insights.insights.doctype.insights_query.utils import Query as AssistedQuery
-from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
-    get_allowed_documents,
-)
 
 from .legacy_query_builder import LegacyQueryBuilder
 from .sql_functions import (
@@ -233,3 +230,77 @@ class SQLQueryBuilder:
             dialect=self.engine.dialect,
             compile_kwargs={"literal_binds": True},
         )
+
+
+def get_allowed_documents(doctype):
+    docs = []
+
+    istable = frappe.get_meta(doctype).istable
+
+    if not istable and frappe.has_permission(doctype):
+        docs = frappe.get_list(doctype, pluck="name")
+        doc_count = frappe.db.count(doctype)
+        if doc_count == len(docs):
+            docs = "*"
+
+    if istable:
+        # For child tables:
+        # 1. Find all the parent doctypes of the child table
+        # 2. Filter the parent doctypes where user has read permission
+        # 3. Find all the allowed documents of the parent doctypes
+        # 4. Filter child table where `parent` is in allowed documents
+
+        child_doctype = doctype
+        parent_doctypes = frappe.get_all(
+            "DocField",
+            filters={
+                "parenttype": "DocType",
+                "fieldtype": ["in", ["Table", "Table MultiSelect"]],
+                "options": child_doctype,
+            },
+            pluck="parent",
+            distinct=True,
+        )
+
+        custom_parent_doctypes = frappe.get_all(
+            "Custom Field",
+            filters={
+                "fieldtype": ["in", ["Table", "Table MultiSelect"]],
+                "options": child_doctype,
+            },
+            pluck="dt",
+            distinct=True,
+        )
+
+        # Combine and deduplicate parent doctypes
+        parent_doctypes = list(set(parent_doctypes + custom_parent_doctypes))
+
+        # FIX: check permission of the parent and not the child table
+        parent_doctypes = [p for p in parent_doctypes if frappe.has_permission(p, "read")]
+
+        parent_docs_by_doctype = {
+            parent_doctype: get_allowed_documents(parent_doctype) for parent_doctype in parent_doctypes
+        }
+
+        CHILD_DOCTYPE = frappe.qb.DocType(child_doctype)
+        docs_query = frappe.qb.from_(CHILD_DOCTYPE).select(CHILD_DOCTYPE.name)
+        condition = None
+        for parent_doctype, parent_docs in parent_docs_by_doctype.items():
+            if parent_docs == "*":
+                _cond = CHILD_DOCTYPE.parenttype == parent_doctype
+                condition = _cond if condition is None else condition | _cond
+            elif parent_docs:
+                _cond = (CHILD_DOCTYPE.parenttype == parent_doctype) & (
+                    CHILD_DOCTYPE.parent.isin(parent_docs)
+                )
+                condition = _cond if condition is None else condition | _cond
+
+        if condition is not None:
+            docs = docs_query.where(condition).run(pluck="name")
+            doc_count = frappe.db.count(doctype)
+            if doc_count == len(docs):
+                docs = "*"
+        else:
+            docs = []
+
+    return docs
