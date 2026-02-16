@@ -471,3 +471,45 @@ def get_schema(data_source: str):
             )
 
     return schema
+
+
+@insights_whitelist()
+def get_warehouse_schema():
+    import insights
+    from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
+        WarehouseTable,
+    )
+
+    tables = frappe.get_list(
+        "Insights Table v3",
+        filters={"stored": 1},
+        fields=["table", "label", "data_source"],
+    )
+
+    schema = {}
+    for table in tables:
+        warehouse_name = WarehouseTable.format_table_name(table.data_source, table.table)
+
+        try:
+            t = insights.warehouse.db.table(warehouse_name)
+        except Exception:
+            continue
+
+        columns = []
+        for col_name, col_type in t.schema().items():
+            columns.append(
+                frappe._dict(
+                    column=col_name,
+                    label=col_name,
+                    type=to_insights_type(col_type),
+                )
+            )
+
+        schema[warehouse_name] = {
+            "table": warehouse_name,
+            "label": table.label,
+            "data_source": table.data_source,
+            "columns": columns,
+        }
+
+    return schema
