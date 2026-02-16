@@ -493,13 +493,6 @@ class IbisQueryBuilder:
     def apply_custom_operation(self, operation):
         return self.evaluate_expression(operation.expression.expression)
 
-    SQLGLOT_DIALECT_MAP = {
-        "MariaDB": "mysql",
-        "PostgreSQL": "postgres",
-        "SQLite": "sqlite",
-        "DuckDB": "duckdb",
-    }
-
     def apply_sql(self, sql_args):
         data_source = sql_args.data_source
         raw_sql = sql_args.raw_sql
@@ -507,7 +500,7 @@ class IbisQueryBuilder:
         raw_sql = sqlparse.format(sql=raw_sql, strip_comments=True)
 
         if not self.use_live_connection:
-            return self.use_sql_warehouse(raw_sql, data_source)
+            return self.apply_sql_to_warehouse(raw_sql)
 
         ds = frappe.get_doc("Insights Data Source v3", data_source)
         db = ds._get_ibis_backend()
@@ -596,48 +589,13 @@ class IbisQueryBuilder:
 
         return results
 
-    def use_sql_warehouse(self, raw_sql, data_source):
-        ds = frappe.get_doc("Insights Data Source v3", data_source)
-        source_dialect = self.SQLGLOT_DIALECT_MAP.get(ds.database_type, "mysql")
-
-        parsed = sg.parse_one(raw_sql, dialect=source_dialect)
-
-        # get CTEs from the tables used and exclude them
-        tables = {t.name for t in parsed.find_all(sg.exp.Table)}
-        cte_aliases = {c.alias for c in parsed.find_all(sg.exp.CTE)}
-        tables = tables - cte_aliases
-
-        InsightsTablev3.bulk_create(data_source, list(tables))
-
-        replace_map = {}
-        for table_name in tables:
-            t = InsightsTablev3.get_ibis_table(data_source, table_name, use_live_connection=False)
-            replace_map[table_name] = ibis.to_sql(t)
-
-        transpiled_sql = sg.transpile(raw_sql, read=source_dialect, write="duckdb")[0]
-
-        # We inject our warehouse CTEs after the 'WITH' keyword
-        # FIX: When combining two sets of CTEs we cant have two WITH keywords in one query
-        if replace_map:
-            with_clauses = []
-            for name, sql in replace_map.items():
-                quoted_name = sg.to_identifier(name)
-                with_clauses.append(f"{quoted_name} AS ({sql})")
-
-            with_clause_sql = ", ".join(with_clauses)
-            transpiled_stripped = transpiled_sql.strip()
-            if transpiled_stripped.upper().startswith("WITH"):
-                transpiled_sql = re.sub(
-                    r"(\bWITH\b)",
-                    f"WITH {with_clause_sql},",
-                    transpiled_stripped,
-                    count=1,
-                    flags=re.IGNORECASE,
-                )
-            else:
-                transpiled_sql = f"WITH {with_clause_sql} {transpiled_stripped}"
-
-        return insights.warehouse.db.sql(transpiled_sql)
+    def apply_sql_to_warehouse(self, raw_sql):
+        if not raw_sql.strip().lower().startswith(("select", "with")):
+            frappe.throw(
+                "SQL query must start with a SELECT or WITH statement",
+                title="Invalid SQL Query",
+            )
+        return insights.warehouse.db.sql(raw_sql)
 
     def apply_code(self, code_args):
         code = code_args.code
