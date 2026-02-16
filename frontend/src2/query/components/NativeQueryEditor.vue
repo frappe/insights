@@ -6,15 +6,34 @@ import Code from '../../components/Code.vue'
 import ContentEditable from '../../components/ContentEditable.vue'
 import useDataSourceStore from '../../data_source/data_source'
 import { wheneverChanges } from '../../helpers'
+import { confirmDialog } from '../../helpers/confirm_dialog'
 import { Query } from '../query'
+import useSettings from '../../settings/settings'
 import QueryDataTable from './QueryDataTable.vue'
 import DataSourceSelector from './source_selector/DataSourceSelector.vue'
 import { createToast } from '../../helpers/toasts'
 import SchemaExplorer from './SchemaExplorer.vue'
+import { Switch } from 'frappe-ui'
 
 const query = inject<Query>('query')!
 query.autoExecute = false
 query.execute()
+
+const settings = useSettings()
+function toggleDataStore(enable: boolean) {
+	const title = enable ? 'Enable Data Store' : 'Disable Data Store'
+	const message = enable
+		? 'Enabling data store use the cached table data for faster queries, but may not be up-to-date. It will also allow you to combine data from multiple sources. Cached data is updated every day.'
+		: 'Disabling data store will use the live connection to the database for queries. This will ensure that you are always querying the most up-to-date data but may be slower.'
+
+	confirmDialog({
+		title,
+		message,
+		onSuccess() {
+			query.doc.use_live_connection = !enable
+		},
+	})
+}
 
 const operation = query.getSQLOperation()
 const data_source = ref(operation ? operation.data_source : '')
@@ -32,7 +51,7 @@ function execute(force: boolean = false) {
 			raw_sql: sql.value,
 			data_source: data_source.value,
 		},
-		force,
+		force
 	)
 }
 
@@ -76,7 +95,7 @@ wheneverChanges(
 			dataSourceSchema.value = schema
 		})
 	},
-	{ immediate: true },
+	{ immediate: true }
 )
 const completions = computed(() => {
 	if (!Object.keys(dataSourceSchema.value).length)
@@ -109,13 +128,34 @@ const completions = computed(() => {
 	<div class="flex flex-1 gap-4 overflow-hidden p-4">
 		<div class="flex flex-1 flex-col gap-4 overflow-hidden">
 			<div class="relative flex h-[55%] w-full flex-col rounded border">
-				<div class="flex flex-shrink-0 items-center gap-1 border-b p-1">
-					<DataSourceSelector v-model="data_source" placeholder="Select a data source" />
-					<ContentEditable
-						class="flex h-7 cursor-text items-center justify-center rounded bg-white px-2 text-base text-gray-800 focus-visible:ring-1 focus-visible:ring-gray-600"
-						v-model="query.doc.title"
-						placeholder="Untitled Dashboard"
-					></ContentEditable>
+				<div class="flex flex-shrink-0 items-center border-b h-10 px-3 gap-4 bg-white">
+					<div class="flex-shrink-0">
+						<DataSourceSelector
+							v-model="data_source"
+							placeholder="Select a data source"
+							class="!w-48"
+						/>
+					</div>
+
+					<div class="flex-1 flex justify-center">
+						<ContentEditable
+							class="w-fit min-w-[12rem] h-8 cursor-text rounded-md bg-gray-50/50 px-4 text-sm font-medium text-gray-700 text-center flex items-center justify-center transition-colors hover:bg-gray-50 focus-visible:ring-1 focus-visible:ring-gray-300"
+							v-model="query.doc.title"
+							placeholder="new query"
+						></ContentEditable>
+					</div>
+
+					<div
+						v-if="settings.doc.enable_data_store"
+						class="flex flex-shrink-0 items-center gap-3"
+					>
+						<span class="text-xs text-gray-600"> Enable Data Store </span>
+						<Switch
+							:modelValue="!query.doc.use_live_connection"
+							@update:modelValue="toggleDataStore"
+							size="sm"
+						/>
+					</div>
 				</div>
 				<div class="flex-1 overflow-hidden">
 					<Code
