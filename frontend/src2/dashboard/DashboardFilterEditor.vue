@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { IconPicker } from 'frappe-ui/icons'
-import { computed, inject, reactive } from 'vue'
+import { computed, inject, nextTick, onMounted, reactive, ref } from 'vue'
 import useChart from '../charts/chart'
 import { copy } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
-import { ColumnOption } from '../types/query.types'
+import { ColumnOption, FilterOperator } from '../types/query.types'
 import { WorkbookDashboardFilter } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
 import { __ } from '../translation'
 import { Switch, Tabs } from 'frappe-ui'
+import { getOperatorOptions } from '@/utils'
+import { getValueSelectorType } from '../query/components/filter_utils'
 
 const dashboard = inject<Dashboard>('dashboard')!
 const props = defineProps<{ item: WorkbookDashboardFilter }>()
