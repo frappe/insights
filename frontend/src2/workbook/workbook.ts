@@ -236,7 +236,7 @@ function makeWorkbook(name: string) {
 							message: 'Workbook duplicated successfully',
 							variant: 'success',
 						})
-						window.location.href = `/workbook/${name}`
+						window.location.href = `/insights/workbook/${name}`
 					})
 					.catch(showErrorToast)
 			},
