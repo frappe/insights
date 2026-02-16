@@ -228,11 +228,22 @@ function makeWorkbook(name: string) {
 			title: 'Duplicate Workbook',
 			message: 'Duplicating this workbook will create a new workbook and copy all queries, charts and dashboards to it. Do you want to continue?',
 			onSuccess: () => {
+<<<<<<< HEAD
 				workbook.call('duplicate')
 				.then((name: any) => {
 					createToast({
 						message: 'Workbook duplicated successfully',
 						variant: 'success',
+=======
+				workbook
+					.call('duplicate')
+					.then((name: any) => {
+						createToast({
+							message: 'Workbook duplicated successfully',
+							variant: 'success',
+						})
+						window.location.href = `/insights/workbook/${name}`
+>>>>>>> 8fcf96c5 (fix: redirect to workbook after duplication (#797))
 					})
 					// FIX: debug why new workbook is not loaded
 					router.push(`/workbook/${name}`)
