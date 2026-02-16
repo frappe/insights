@@ -42,7 +42,7 @@ class Warehouse:
             db = ibis.duckdb.connect(path)
             db.disconnect()
 
-        db = ibis.duckdb.connect(path, read_only=read_only)
+        db = ibis.duckdb.connect(path, read_only=read_only, enable_external_access=False)
 
         if database:
             db.raw_sql(f"USE '{database}'")

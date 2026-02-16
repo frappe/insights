@@ -37,6 +37,7 @@ def get_http_duckdb_connection(data_source, name, db_name):
     attach_url = f"ducklake:{db_name}" if data_source.is_ducklake else db_name
     db.attach(attach_url, name, read_only=True)
     db.raw_sql(f"USE '{name}'")
+    db.raw_sql("SET enable_external_access=false")
     return db
 
 
