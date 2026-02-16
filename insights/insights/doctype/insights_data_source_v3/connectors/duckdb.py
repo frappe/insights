@@ -32,9 +32,24 @@ def get_local_duckdb_connection(db_name, read_only=True):
         db = ibis.duckdb.connect(path)
         db.disconnect()
 
-    return ibis.duckdb.connect(path, read_only=read_only)
+    return ibis.duckdb.connect(path, read_only=read_only, enable_external_access=False)
 
 
+<<<<<<< HEAD
+=======
+def get_http_duckdb_connection(data_source, name, db_name):
+    """Connect to a remote DuckDB via HTTP or DuckLake."""
+    db = ibis.duckdb.connect()
+    sql = get_http_secret(data_source, name, db_name)
+    sql and db.raw_sql(sql)
+    attach_url = f"ducklake:{db_name}" if data_source.is_ducklake else db_name
+    db.attach(attach_url, name, read_only=True)
+    db.raw_sql(f"USE '{name}'")
+    db.raw_sql("SET enable_external_access=false")
+    return db
+
+
+>>>>>>> bb0396c3 (fix: disable external access (#800))
 def get_http_secret(data_source, name, db_name):
     headers = data_source.get("http_headers") or {}
     if not headers:

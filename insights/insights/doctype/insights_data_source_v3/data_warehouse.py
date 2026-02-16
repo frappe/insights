@@ -19,8 +19,38 @@ WAREHOUSE_DB_NAME = "insights.duckdb"
 
 class Warehouse:
     def __init__(self):
+<<<<<<< HEAD
         self.warehouse_path = get_warehouse_folder_path()
         self.db_path = os.path.join(self.warehouse_path, WAREHOUSE_DB_NAME)
+=======
+        pass
+
+    def get_db_path(self) -> str:
+        folder_path = os.path.realpath(get_files_path(is_private=1))
+        folder_path = os.path.join(folder_path, "insights_data_warehouse")
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+        return os.path.join(os.path.realpath(folder_path), f"{WAREHOUSE_DB_NAME}.duckdb")
+
+    def get_connection(self, database: str | None = None, read_only: bool = True) -> DuckDBBackend:
+        path = self.get_db_path()
+
+        if not os.path.exists(path):
+            db = ibis.duckdb.connect(path)
+            db.disconnect()
+
+        db = ibis.duckdb.connect(path, read_only=read_only, enable_external_access=False)
+
+        if database:
+            db.raw_sql(f"USE '{database}'")
+
+        return db
+
+    def create_database(self, database: str):
+        with self.get_write_connection() as db:
+            with suppress(CatalogException):
+                db.create_database(database)
+>>>>>>> bb0396c3 (fix: disable external access (#800))
 
     @property
     def db(self) -> BaseBackend:
