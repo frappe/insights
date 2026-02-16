@@ -1,39 +1,20 @@
 <script setup lang="ts">
 import { useTimeAgo } from '@vueuse/core'
-import { MoreHorizontal, Play, Wand2 } from 'lucide-vue-next'
+import { Play } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
 import Code from '../../components/Code.vue'
 import ContentEditable from '../../components/ContentEditable.vue'
-import useDataSourceStore from '../../data_source/data_source'
 import { wheneverChanges } from '../../helpers'
-import { confirmDialog } from '../../helpers/confirm_dialog'
 import { Query } from '../query'
-import useSettings from '../../settings/settings'
 import QueryDataTable from './QueryDataTable.vue'
 import DataSourceSelector from './source_selector/DataSourceSelector.vue'
 import { createToast } from '../../helpers/toasts'
 import SchemaExplorer from './SchemaExplorer.vue'
-import { Switch } from 'frappe-ui'
+import { call } from 'frappe-ui'
 
 const query = inject<Query>('query')!
 query.autoExecute = false
 query.execute()
-
-const settings = useSettings()
-function toggleDataStore(enable: boolean) {
-	const title = enable ? 'Enable Data Store' : 'Disable Data Store'
-	const message = enable
-		? 'Enabling data store use the cached table data for faster queries, but may not be up-to-date. It will also allow you to combine data from multiple sources. Cached data is updated every day.'
-		: 'Disabling data store will use the live connection to the database for queries. This will ensure that you are always querying the most up-to-date data but may be slower.'
-
-	confirmDialog({
-		title,
-		message,
-		onSuccess() {
-			query.doc.use_live_connection = !enable
-		},
-	})
-}
 
 const operation = query.getSQLOperation()
 const data_source = ref(operation ? operation.data_source : '')
@@ -83,15 +64,26 @@ function insertTextIntoEditor(text: string) {
 }
 
 const dataSourceSchema = ref<Record<string, any>>({})
-const dataSourceStore = useDataSourceStore()
+const isWarehouse = computed(() => data_source.value === 'warehouse_tables')
+
 wheneverChanges(
-	data_source,
+	() => `${data_source.value}`,
 	() => {
 		if (!data_source.value) {
 			dataSourceSchema.value = {}
 			return
 		}
-		dataSourceStore.getSchema(data_source.value).then((schema: any) => {
+		query.doc.use_live_connection = !isWarehouse.value
+
+		const schemaSource = isWarehouse.value
+			? 'insights.api.data_sources.get_warehouse_schema'
+			: 'insights.api.data_sources.get_schema'
+
+		const params = isWarehouse.value
+			? {}
+			: { data_source: data_source.value }
+
+		call(schemaSource, params).then((schema: any) => {
 			dataSourceSchema.value = schema
 		})
 	},
@@ -144,18 +136,6 @@ const completions = computed(() => {
 							placeholder="new query"
 						></ContentEditable>
 					</div>
-
-					<div
-						v-if="settings.doc.enable_data_store"
-						class="flex flex-shrink-0 items-center gap-3"
-					>
-						<span class="text-xs text-gray-600"> Enable Data Store </span>
-						<Switch
-							:modelValue="!query.doc.use_live_connection"
-							@update:modelValue="toggleDataStore"
-							size="sm"
-						/>
-					</div>
 				</div>
 				<div class="flex-1 overflow-hidden">
 					<Code
@@ -173,16 +153,6 @@ const completions = computed(() => {
 							<Play class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
 						</template>
 					</Button>
-					<!-- <Dropdown
-					:button="{ icon: MoreHorizontal }"
-					:options="[
-						{
-							label: 'Format SQL',
-							icon: Wand2,
-							onClick: () => format(),
-						},
-					]"
-				/> -->
 				</div>
 			</div>
 			<div
@@ -201,7 +171,7 @@ const completions = computed(() => {
 			</div>
 		</div>
 		<div class="w-64 flex-shrink-0">
-			<SchemaExplorer :schema="dataSourceSchema" @insert-text="insertTextIntoEditor" />
+			<SchemaExplorer :schema="dataSourceSchema" :useDoubleQuotes="isWarehouse" @insert-text="insertTextIntoEditor" />
 		</div>
 	</div>
 </template>

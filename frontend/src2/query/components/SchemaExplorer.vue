@@ -17,6 +17,7 @@ interface TableSchema {
 
 interface Props {
 	schema: TableSchema
+	useDoubleQuotes?: boolean
 }
 
 interface Emits {
@@ -35,12 +36,19 @@ function toggleTable(tableName: string) {
 		expandedTables.value.add(tableName)
 	}
 }
+function quoteType(name: string) {
+	if (props.useDoubleQuotes) {
+		return `"${name}",`
+	}
+	return `\`${name}\``
+}
+
 function insertTableName(tableName: string) {
-	emit('insert-text', `\`${tableName}\``)
+	emit('insert-text', quoteType(tableName))
 }
 
 function insertColumnName(columnName: string) {
-	emit('insert-text', `\`${columnName}\`\,`)
+	emit('insert-text', `${quoteType(columnName)},`)
 }
 
 function getColumnIcon(type: string) {
