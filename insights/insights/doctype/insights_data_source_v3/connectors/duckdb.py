@@ -26,7 +26,7 @@ def get_local_duckdb_connection(db_name, read_only=True):
         db = ibis.duckdb.connect(path)
         db.disconnect()
 
-    return ibis.duckdb.connect(path, read_only=read_only)
+    return ibis.duckdb.connect(path, read_only=read_only, enable_external_access=False)
 
 
 def get_http_duckdb_connection(data_source, name, db_name):
@@ -37,6 +37,7 @@ def get_http_duckdb_connection(data_source, name, db_name):
     attach_url = f"ducklake:{db_name}" if data_source.is_ducklake else db_name
     db.attach(attach_url, name, read_only=True)
     db.raw_sql(f"USE '{name}'")
+    db.raw_sql("SET enable_external_access=false")
     return db
 
 
