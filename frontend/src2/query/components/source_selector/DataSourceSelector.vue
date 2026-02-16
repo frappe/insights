@@ -2,6 +2,7 @@
 import { ChevronDown, Database, ListFilter } from 'lucide-vue-next'
 import { computed } from 'vue'
 import useDataSourceStore from '../../../data_source/data_source'
+import useSettings from '../../../settings/settings'
 
 const currentSourceName = defineModel()
 const props = defineProps({
@@ -12,14 +13,29 @@ const props = defineProps({
 })
 
 const dataSourceStore = useDataSourceStore()
+const settings = useSettings()
+
 const currentSource = computed(() => {
+	if (currentSourceName.value === 'warehouse_tables') {
+		return { name: 'warehouse_tables', title: 'Warehouse Tables' }
+	}
 	return dataSourceStore.sources.find((source) => source.name === currentSourceName.value)
 })
+
 const dataSourceOptions = computed(() => {
-	return dataSourceStore.sources.map((source) => ({
+	const options = dataSourceStore.sources.map((source) => ({
 		label: source.title,
 		value: source.name,
 	}))
+
+	if (settings.doc.enable_data_store) {
+		options.push({
+			label: 'Warehouse Tables',
+			value: 'warehouse_tables',
+		})
+	}
+
+	return options
 })
 </script>
 
