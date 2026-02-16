@@ -109,6 +109,9 @@ def apply_user_permissions(t, data_source, table_name):
     if not frappe.db.get_value("Insights Data Source v3", data_source, "is_site_db", cache=True):
         return t
 
+    if not frappe.db.get_single_value("Insights Settings", "apply_user_permissions", cache=True):
+        return t
+
     if table_name == "tabSingles":
         single_doctypes = frappe.get_all("DocType", filters={"issingle": 1}, pluck="name")
         allowed_doctypes = get_valid_perms()
