@@ -2,9 +2,8 @@
 import ChartTitle from '@/components/Charts/ChartTitle.vue'
 import TanstackTable from '@/components/Table/TanstackTable.vue'
 import { watchDebounced } from '@vueuse/core'
-import { call } from 'frappe-ui'
 import { computed, ref, watch } from 'vue'
-import { convertToNestedObject, convertToTanstackColumns } from './utils'
+import { convertToNestedObject, convertToTanstackColumns, pivotData } from './utils'
 
 const props = defineProps({
 	data: { type: Object, required: true },
@@ -33,12 +32,8 @@ watchDebounced(
 )
 
 function reloadPivotData() {
-	call('insights.api.queries.pivot', {
-		data: _data.value,
-		indexes: indexColumns.value,
-		columns: pivotColumns.value,
-		values: valueColumns.value,
-	}).then((data) => (pivotedData.value = sortIndexKeys(data)))
+	const result = pivotData(_data.value, indexColumns.value, pivotColumns.value, valueColumns.value)
+	pivotedData.value = sortIndexKeys(result)
 }
 
 function sortIndexKeys(data) {

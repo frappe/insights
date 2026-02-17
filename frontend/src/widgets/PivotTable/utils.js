@@ -1,6 +1,42 @@
 import { getFormattedCell } from '@/components/Table/utils'
 import { formatNumber } from '@/utils'
 import { createColumnHelper } from '@tanstack/vue-table'
+// pivot data based on columns and values
+export function pivotData(data, indexes = [], columns = [], values = []) {
+	if (!data?.length || !(indexes.length + columns.length + values.length)) return []
+
+	const rows = {}
+	// go through each row and apply pivot logic
+	for (const row of data) {
+		const idx = indexes.map((k) => row[k] ?? '').join('___')
+		if (!rows[idx]) {
+			rows[idx] = Object.fromEntries(indexes.map((k) => [k, row[k]]))
+		}
+		const pivotRow = rows[idx]
+
+		// covers flatten_column_keys (value name last, ___ separator)
+		// if we pivot by "Category" and "Sub-category" and then at "Sales" this joins them into a single string
+		// Electronics___Smartphones___Sales
+		const colParts = columns.map((k) => row[k]).filter((v) => v != null && v !== '')
+		for (const valCol of values) {
+			// move value name to last position
+			const flatKey = [...colParts, valCol].join('___')
+			const num = Number(row[valCol])
+			// group by index and sum values
+			pivotRow[flatKey] = (pivotRow[flatKey] || 0) + (Number.isFinite(num) ? num : 1)
+		}
+	}
+	// fill missing column with 0
+	const pivotedRows = Object.values(rows)
+	const allKeys = new Set(pivotedRows.flatMap(Object.keys))
+	for (const row of pivotedRows) {
+		for (const key of allKeys) {
+			if (!(key in row)) row[key] = 0
+		}
+	}
+	return pivotedRows
+}
+
 /**
  * A recursive function to convert a flat dict to a nested dict
  * Input: {
