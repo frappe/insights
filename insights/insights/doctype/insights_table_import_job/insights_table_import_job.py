@@ -435,7 +435,7 @@ class JobState:
             return {}
 
     def _save_state(self):
-        self._job.db_set("state", dump(self._state), commit=True)
+        self._job.db_set("state", dump(self._state))
 
     def get(self, key: str, default=None):
         return self._state.get(key, default)
