@@ -15,12 +15,12 @@ def setup_complete():
 
 
 @insights_whitelist()
-def update_erpnext_source_title(title):
+def update_erpnext_source_title(title: str):
     frappe.db.set_value("Insights Data Source", "Site DB", "title", title)
 
 
 @insights_whitelist()
-def setup_sample_data(dataset):
+def setup_sample_data(dataset: str):
     factory = DemoDataFactory()
     factory.run()
     # import_demo_queries_and_dashboards()
@@ -55,7 +55,7 @@ def import_demo_queries_and_dashboards():
 
 
 @insights_whitelist()
-def submit_survey_responses(responses):
+def submit_survey_responses(responses: str):
     responses = frappe.parse_json(responses)
 
     try:
@@ -103,13 +103,13 @@ def get_new_datasource(db):
 
 
 @insights_whitelist()
-def test_database_connection(database):
+def test_database_connection(database: dict):
     data_source = get_new_datasource(database)
     return data_source.test_connection(raise_exception=True)
 
 
 @insights_whitelist()
-def add_database(database):
+def add_database(database: dict):
     data_source = get_new_datasource(database)
     data_source.save()
     data_source.enqueue_sync_tables()

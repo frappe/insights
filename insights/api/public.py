@@ -6,7 +6,7 @@ from insights.decorators import insights_whitelist
 
 
 @insights_whitelist()
-def get_public_key(resource_type, resource_name):
+def get_public_key(resource_type: str, resource_name: str):
     from insights.insights.doctype.insights_chart.insights_chart import (
         get_chart_public_key,
     )

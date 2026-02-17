@@ -6,7 +6,7 @@ from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_ta
 
 @insights_whitelist()
 @validate_type
-def get_data_store_tables(data_source=None, search_term=None, limit=100):
+def get_data_store_tables(data_source: str | None = None, search_term: str | None = None, limit: int = 100):
     Table = frappe.qb.DocType("Insights Table v3")
     DataSource = frappe.qb.DocType("Insights Data Source v3")
 
