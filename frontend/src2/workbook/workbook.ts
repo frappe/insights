@@ -54,7 +54,6 @@ function makeWorkbook(name: string) {
 	}
 
 	async function addQuery() {
-		if (workbook.islocal) await workbook.save()
 		const query = newQuery()
 		query.doc.title = 'Query ' + (workbook.doc.queries.length + 1)
 		query.doc.workbook = workbook.doc.name
@@ -91,8 +90,7 @@ function makeWorkbook(name: string) {
 		})
 	}
 
-	async function addChart(query_name?: string) {
-		if (workbook.islocal) await workbook.save()
+	function addChart(query_name?: string) {
 		const chart = newChart()
 		chart.doc.title = 'Chart ' + (workbook.doc.charts.length + 1)
 		chart.doc.workbook = workbook.doc.name
@@ -132,8 +130,7 @@ function makeWorkbook(name: string) {
 		})
 	}
 
-	async function addDashboard() {
-		if (workbook.islocal) await workbook.save()
+	function addDashboard() {
 		const dashboard = newDashboard()
 		dashboard.doc.title = 'Dashboard ' + (workbook.doc.dashboards.length + 1)
 		dashboard.doc.workbook = workbook.doc.name
