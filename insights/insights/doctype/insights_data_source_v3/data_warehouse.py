@@ -19,8 +19,43 @@ WAREHOUSE_DB_NAME = "insights.duckdb"
 
 class Warehouse:
     def __init__(self):
+<<<<<<< HEAD
         self.warehouse_path = get_warehouse_folder_path()
         self.db_path = os.path.join(self.warehouse_path, WAREHOUSE_DB_NAME)
+=======
+        pass
+
+    def get_db_path(self) -> str:
+        folder_path = os.path.realpath(get_files_path(is_private=1))
+        folder_path = os.path.join(folder_path, "insights_data_warehouse")
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+        return os.path.join(os.path.realpath(folder_path), f"{WAREHOUSE_DB_NAME}.duckdb")
+
+    def get_connection(self, database: str | None = None, read_only: bool = True) -> DuckDBBackend:
+        path = self.get_db_path()
+
+        if not os.path.exists(path):
+            db = ibis.duckdb.connect(path)
+            db.disconnect()
+
+        db = ibis.duckdb.connect(path, read_only=read_only)
+
+        # allow temp directory access to enable batch imports using parquet files
+        tmp_dir = Path(tempfile.gettempdir())
+        db.raw_sql(f"SET allowed_directories = ['{tmp_dir}']")
+        db.raw_sql("SET enable_external_access = false")
+
+        if database:
+            db.raw_sql(f"USE '{database}'")
+
+        return db
+
+    def create_database(self, database: str):
+        with self.get_write_connection() as db:
+            with suppress(CatalogException):
+                db.create_database(database)
+>>>>>>> 4f25e7a5 (fix: allow temp directory access when importing to warehouse (#806))
 
     @property
     def db(self) -> BaseBackend:
@@ -37,6 +72,144 @@ class Warehouse:
     def get_table(self, data_source: str, table_name: str) -> "WarehouseTable":
         return WarehouseTable(data_source, table_name)
 
+<<<<<<< HEAD
+=======
+    def get_table_writer(
+        self, table_name: str, schema: ibis.Schema, mode: str = "replace", log_fn=None
+    ) -> "WarehouseTableWriter":
+        """Create a table writer for batch inserts with automatic cleanup.
+
+        Usage:
+            with warehouse.get_table_writer("table", schema) as writer:
+                writer.insert(df1)
+                writer.insert(df2)
+            # On successful exit, data is committed to warehouse
+            # On exception, temp files are cleaned up automatically
+        """
+        return WarehouseTableWriter(table_name, table_schema=schema, mode=mode, log_fn=log_fn)
+
+
+class WarehouseTableWriter:
+    """Handles batch inserts to warehouse tables using temporary parquet files.
+
+    This class abstracts the complexity of batch imports by:
+    - Writing each batch to a temporary parquet file
+    - On commit, reading all parquet files and inserting into DuckDB
+    - On rollback/failure, cleaning up all temporary files
+
+    The writer only acquires a write connection during the final commit phase,
+    minimizing lock contention for long-running imports.
+    """
+
+    def __init__(
+        self,
+        table_name: str,
+        table_schema: ibis.Schema,
+        database: str = "main",
+        mode: str = "replace",
+        log_fn=None,
+    ):
+        self.database = database
+        self.table_name = table_name
+        self.table_schema = table_schema
+        self.mode = mode  # 'replace' or 'append'
+        self._log = log_fn or (lambda *args, **kwargs: None)
+
+        self._temp_dir: Path | None = None
+        self._parquet_files: list[Path] = []
+        self._committed = False
+        self._batch_count = 0
+
+    def __enter__(self) -> "WarehouseTableWriter":
+        self._temp_dir = Path(tempfile.mkdtemp(prefix="insights_import_"))
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is not None:
+            self.rollback()
+            return False
+
+        if not self._committed:
+            self.commit()
+
+        self._cleanup_temp_dir()
+        return False
+
+    def insert(self, data: pd.DataFrame | Expr) -> Expr:
+        if self._temp_dir is None:
+            raise RuntimeError("WarehouseTableWriter must be used as a context manager")
+
+        # switch to memory backend for writing to temp directory
+        data = ibis.memtable(data)
+
+        parquet_path = self._temp_dir / f"batch_{self._batch_count + 1}.parquet"
+        self._log(f"Writing batch {self._batch_count + 1}")
+        data.to_parquet(parquet_path)
+
+        self._parquet_files.append(parquet_path)
+        self._batch_count += 1
+
+        return ibis.read_parquet(parquet_path)
+
+    def commit(self) -> int:
+        if self._committed:
+            return 0
+
+        if not self._parquet_files:
+            self._committed = True
+            self._cleanup_temp_dir()
+            return 0
+
+        total_rows = 0
+        try:
+            with insights.warehouse.get_write_connection(self.database) as db:
+                self._log(f"Committing {len(self._parquet_files)} parquet files to '{self.table_name}'")
+
+                parquet_glob = str(self._temp_dir / "*.parquet")
+                merged = db.read_parquet(parquet_glob)
+
+                if self.mode == "append" and self._table_exists(db):
+                    db.insert(self.table_name, merged)
+                else:
+                    db.create_table(self.table_name, merged, schema=self.table_schema, overwrite=True)
+
+                self._log("Commit completed.")
+
+                total_rows = merged.count().execute()
+                total_rows = int(total_rows)
+
+            self._committed = True
+        finally:
+            self._cleanup_temp_dir()
+
+        return total_rows
+
+    def _table_exists(self, db: DuckDBBackend) -> bool:
+        try:
+            return db.list_tables(like=f"^{self.table_name}$")
+        except Exception:
+            return False
+
+    def rollback(self) -> None:
+        """Rollback and cleanup all temporary files."""
+        self._log("Rolling back and cleaning up temporary files")
+        self._cleanup_temp_dir()
+
+    def _cleanup_temp_dir(self) -> None:
+        """Remove the temporary directory and all parquet files."""
+        if self._temp_dir and self._temp_dir.exists():
+            with suppress(Exception):
+                shutil.rmtree(self._temp_dir)
+        self._temp_dir = None
+        self._parquet_files = []
+        self._log("Temporary files cleaned up.")
+
+    @property
+    def batch_count(self) -> int:
+        """Number of batches inserted so far."""
+        return self._batch_count
+
+>>>>>>> 4f25e7a5 (fix: allow temp directory access when importing to warehouse (#806))
 
 class WarehouseTable:
     def __init__(self, data_source: str, table_name: str):
