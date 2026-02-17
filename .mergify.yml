@@ -26,9 +26,8 @@ pull_request_rules:
               assignees:
                   - "{{ author }}"
 
-    - name: Auto-delete backport branches
+    - name: Auto-delete merged branches
       conditions:
           - merged
-          - head~=^mergify/bp/.*
       actions:
           delete_head_branch:
