@@ -63,7 +63,7 @@
    "label": "Query Result Limit"
   },
   {
-   "default": "0",
+   "default": "1",
    "fieldname": "enable_permissions",
    "fieldtype": "Check",
    "label": "Enable Permissions"
