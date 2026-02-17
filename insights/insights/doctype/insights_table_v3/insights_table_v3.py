@@ -80,6 +80,7 @@ class InsightsTablev3(Document):
             check_table_permission,
         )
 
+        # TODO: replace with frappe.has_permission()
         check_table_permission(data_source, table_name)
 
         ds_type = frappe.db.get_value("Insights Data Source v3", data_source, "type", cache=True)
