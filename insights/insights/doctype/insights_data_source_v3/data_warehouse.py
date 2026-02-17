@@ -42,7 +42,12 @@ class Warehouse:
             db = ibis.duckdb.connect(path)
             db.disconnect()
 
-        db = ibis.duckdb.connect(path, read_only=read_only, enable_external_access=False)
+        db = ibis.duckdb.connect(path, read_only=read_only)
+
+        # allow temp directory access to enable batch imports using parquet files
+        tmp_dir = Path(tempfile.gettempdir())
+        db.raw_sql(f"SET allowed_directories = ['{tmp_dir}']")
+        db.raw_sql("SET enable_external_access = false")
 
         if database:
             db.raw_sql(f"USE '{database}'")
@@ -143,8 +148,8 @@ class WarehouseTableWriter:
         if self._temp_dir is None:
             raise RuntimeError("WarehouseTableWriter must be used as a context manager")
 
-        if isinstance(data, pd.DataFrame):
-            data = ibis.memtable(data)
+        # switch to memory backend for writing to temp directory
+        data = ibis.memtable(data)
 
         parquet_path = self._temp_dir / f"batch_{self._batch_count + 1}.parquet"
         self._log(f"Writing batch {self._batch_count + 1}")
