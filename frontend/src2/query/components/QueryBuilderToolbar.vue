@@ -4,6 +4,7 @@ import { Copy, CopyPlus, MoreHorizontal, PlayIcon, RefreshCw, Scroll } from 'luc
 import { computed, h, inject, ref } from 'vue'
 import { Query } from '../query'
 import ViewSQLDialog from './ViewSQLDialog.vue'
+import session from '../../session'
 
 const query = inject('query') as Query
 
@@ -12,7 +13,7 @@ const showViewSQLDialog = ref(false)
 const moreActions = computed(() => {
 	const actions = []
 
-	if (!query.doc.use_live_connection) {
+	if (!query.doc.use_live_connection && session.user.is_admin) {
 		actions.push({
 			label: 'Refresh Stored Tables',
 			icon: h(RefreshCw, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
