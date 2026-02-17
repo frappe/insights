@@ -20,7 +20,7 @@ PERMISSION_DOCTYPES = [
     "Insights Query v3",
     "Insights Chart v3",
     "Insights Dashboard v3",
-    "Insights Alert"
+    "Insights Alert",
 ]
 
 # if team permissions are not enabled,
@@ -126,7 +126,7 @@ class InsightsPermissions:
     def _build_source_permission_query(self, ptype):
         # if team permissions are not enabled, all data sources are accessible
         if not self.team_permissions_enabled:
-            return
+            return frappe.qb.from_(frappe.qb.DocType("Insights Data Source v3")).select("name")
 
         # if team permissions are enabled, allow data sources of allowed tables
         Table = frappe.qb.DocType("Insights Table v3")
@@ -144,7 +144,7 @@ class InsightsPermissions:
     def _build_table_permission_query(self, ptype):
         # if team permissions are not enabled, all tables are accessible
         if not self.team_permissions_enabled:
-            return
+            return frappe.qb.from_(frappe.qb.DocType("Insights Table v3")).select("name")
 
         # if team permissions are enabled,
         # tables linked to user's teams are accessible
