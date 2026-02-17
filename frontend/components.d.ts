@@ -10,7 +10,6 @@ declare module 'vue' {
   export interface GlobalComponents {
     AppShell: typeof import('./src/components/AppShell.vue')['default']
     Attachment: typeof import('./src/components/Controls/Attachment.vue')['default']
-    Autocomplete: typeof import('./src/components/Controls/Autocomplete.vue')['default']
     BaseChart: typeof import('./src/components/Charts/BaseChart.vue')['default']
     BasePage: typeof import('./src/components/BasePage.vue')['default']
     Breadcrumbs: typeof import('./src/components/Breadcrumbs.vue')['default']
@@ -50,7 +49,6 @@ declare module 'vue' {
     NewDialogWithTypes: typeof import('./src/components/NewDialogWithTypes.vue')['default']
     PageBreadcrumbs: typeof import('./src/components/PageBreadcrumbs.vue')['default']
     PageTitle: typeof import('./src/components/PageTitle.vue')['default']
-    Popover: typeof import('./src/components/Popover.vue')['default']
     PublicShareDialog: typeof import('./src/components/PublicShareDialog.vue')['default']
     ResizeableInput: typeof import('./src/components/ResizeableInput.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
