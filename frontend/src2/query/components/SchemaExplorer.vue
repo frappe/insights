@@ -38,7 +38,7 @@ function toggleTable(tableName: string) {
 }
 function quoteType(name: string) {
 	if (props.useDoubleQuotes) {
-		return `"${name}",`
+		return `"${name}"`
 	}
 	return `\`${name}\``
 }
