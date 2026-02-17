@@ -319,6 +319,8 @@ class InsightsQueryv3(Document):
     @insights_whitelist()
     def refresh_stored_tables(self):
         """Import all source tables used in this query to the data store"""
+        frappe.only_for("Insights Admin")
+
         source_tables = self.get_source_tables()
         if not source_tables:
             frappe.throw("No tables found in the query to import")
