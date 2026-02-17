@@ -100,7 +100,9 @@ class BaseDatabase(Database):
     def build_query(self, query):
         """Used to update the sql in insights query"""
         query_str = self.query_builder.build(query)
-        query_str = self.process_subquery(query_str) if not query.is_native_query else query_str
+        query_str = (
+            self.process_subquery(query_str) if not query.is_native_query else query_str
+        )
         return query_str
 
     def run_query(self, query):
@@ -150,9 +152,13 @@ class BaseDatabase(Database):
         return query
 
     def process_subquery(self, sql):
-        allow_subquery = frappe.db.get_single_value("Insights Settings", "allow_subquery")
+        allow_subquery = frappe.db.get_single_value(
+            "Insights Settings", "allow_subquery"
+        )
         if allow_subquery:
-            sql = replace_query_tables_with_cte(sql, self.data_source, self.engine.dialect)
+            sql = replace_query_tables_with_cte(
+                sql, self.data_source, self.engine.dialect
+            )
         return sql
 
     def escape_special_characters(self, sql):
@@ -192,6 +198,17 @@ class BaseDatabase(Database):
         return add_limit_to_sql(sql, max_rows)
 
     def validate_native_sql(self, query):
-        select_or_with = str(query).strip().lower().startswith(("select", "with"))
-        if not select_or_with:
-            frappe.throw("Only SELECT and WITH queries are allowed")
+        """
+        'WITH cte AS (SELECT 1) SELECT * FROM cte' -> valid
+        'WITH cte AS (SELECT 1) UPDATE t SET x = 1' -> invalid
+        """
+        import sqlparse
+
+        parsed_sql = sqlparse.parse(str(query).strip())
+
+        if not parsed_sql:
+            frappe.throw("Empty query")
+        for statement in parsed_sql:
+            stmt_type = statement.get_type()
+            if stmt_type not in ("SELECT",):
+                frappe.throw("Only SELECT queries are allowed")
