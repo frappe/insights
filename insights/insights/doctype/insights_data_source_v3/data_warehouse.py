@@ -44,15 +44,24 @@ class Warehouse:
 
         db = ibis.duckdb.connect(path, read_only=read_only)
 
-        # allow temp directory access to enable batch imports using parquet files
-        tmp_dir = Path(tempfile.gettempdir())
-        db.raw_sql(f"SET allowed_directories = ['{tmp_dir}']")
-        db.raw_sql("SET enable_external_access = false")
+        if not read_only:
+            self._configure_temp_directory_access(db)
 
         if database:
             db.raw_sql(f"USE '{database}'")
 
         return db
+
+    def _configure_temp_directory_access(self, db: DuckDBBackend) -> None:
+        tmp_dir = str(Path(tempfile.gettempdir())).replace("'", "''")
+
+        # Some environments start with external access already disabled.
+        # Best effort: try enabling it first, then configure directory allowlist.
+        with suppress(Exception):
+            db.raw_sql("SET enable_external_access = true")
+
+        db.raw_sql(f"SET allowed_directories = ['{tmp_dir}']")
+        db.raw_sql("SET enable_external_access = false")
 
     def create_database(self, database: str):
         with self.get_write_connection() as db:
