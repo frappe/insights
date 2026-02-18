@@ -6,11 +6,11 @@ import Code from '../../components/Code.vue'
 import ContentEditable from '../../components/ContentEditable.vue'
 import useDataSourceStore from '../../data_source/data_source'
 import { wheneverChanges } from '../../helpers'
+import { createToast } from '../../helpers/toasts'
 import { Query } from '../query'
 import QueryDataTable from './QueryDataTable.vue'
-import DataSourceSelector from './source_selector/DataSourceSelector.vue'
-import { createToast } from '../../helpers/toasts'
 import SchemaExplorer from './SchemaExplorer.vue'
+import DataSourceSelector from './source_selector/DataSourceSelector.vue'
 
 const query = inject<Query>('query')!
 query.autoExecute = false
@@ -133,16 +133,16 @@ const completions = computed(() => {
 							<Play class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
 						</template>
 					</Button>
-					<!-- <Dropdown
-					:button="{ icon: MoreHorizontal }"
-					:options="[
-						{
-							label: 'Format SQL',
-							icon: Wand2,
-							onClick: () => format(),
-						},
-					]"
-				/> -->
+					<Dropdown
+						:button="{ icon: MoreHorizontal }"
+						:options="[
+							{
+								label: 'Format SQL',
+								icon: Wand2,
+								onClick: () => format(),
+							},
+						]"
+					/>
 				</div>
 			</div>
 			<div
