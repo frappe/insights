@@ -223,6 +223,11 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         if self.database_type == "MariaDB":
             db.raw_sql("SET SESSION time_zone='+00:00'")
             db.raw_sql("SET collation_connection = 'utf8mb4_unicode_ci'")
+            try:
+                db.raw_sql("SET SESSION tx_read_only = TRUE")
+            except Exception:
+                db.raw_sql("SET SESSION TRANSACTION_READ_ONLY = 1")
+
             MAX_STATEMENT_TIMEOUT = (
                 frappe.db.get_single_value("Insights Settings", "max_execution_time", cache=True) or 180
             )
