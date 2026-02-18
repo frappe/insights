@@ -272,7 +272,12 @@ class WarehouseTableImporter:
         batch_file_name = f"{self.warehouse_table_name}_{batch_number}.parquet"
         path = os.path.join(self.warehouse_folder, batch_file_name)
         self.log.log_output(f"Batch Query: \n{ibis.to_sql(batch)}", commit=True)
-        batch.to_parquet(path, compression="snappy")
+
+        # Materialize batch as in-memory data first
+        # to avoid `file system operations are disabled`
+        # for duckdb tables with external access disabled
+        data = ibis.memtable(batch, schema=batch.schema())
+        data.to_parquet(path, compression="snappy")
         return path
 
     def get_batch_metadata(self, path: str) -> dict:
