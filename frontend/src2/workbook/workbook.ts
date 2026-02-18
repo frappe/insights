@@ -234,8 +234,7 @@ function makeWorkbook(name: string) {
 						message: 'Workbook duplicated successfully',
 						variant: 'success',
 					})
-					// FIX: debug why new workbook is not loaded
-					router.push(`/workbook/${name}`)
+					window.location.href = `/insights/workbook/${name}`
 				})
 				.catch(showErrorToast)
 			},
