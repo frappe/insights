@@ -497,10 +497,13 @@ class IbisQueryBuilder:
         data_source = sql_args.data_source
         raw_sql = sql_args.raw_sql
 
+        raw_sql = sqlparse.format(sql=raw_sql, strip_comments=True)
+
+        if not self.use_live_connection:
+            return self.apply_sql_to_warehouse(raw_sql)
+
         ds = frappe.get_doc("Insights Data Source v3", data_source)
         db = ds._get_ibis_backend()
-
-        raw_sql = sqlparse.format(sql=raw_sql, strip_comments=True)
 
         # TODO: apply user permissions by default
         check_permissions = frappe.db.get_single_value(
@@ -585,6 +588,14 @@ class IbisQueryBuilder:
             )
 
         return results
+
+    def apply_sql_to_warehouse(self, raw_sql):
+        if not raw_sql.strip().lower().startswith(("select", "with")):
+            frappe.throw(
+                "SQL query must start with a SELECT or WITH statement",
+                title="Invalid SQL Query",
+            )
+        return insights.warehouse.db.sql(raw_sql)
 
     def apply_code(self, code_args):
         code = code_args.code

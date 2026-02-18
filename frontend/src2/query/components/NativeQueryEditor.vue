@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { useTimeAgo } from '@vueuse/core'
-import { MoreHorizontal, Play, Wand2 } from 'lucide-vue-next'
+import { Play } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
 import Code from '../../components/Code.vue'
 import ContentEditable from '../../components/ContentEditable.vue'
-import useDataSourceStore from '../../data_source/data_source'
 import { wheneverChanges } from '../../helpers'
 import { Query } from '../query'
 import QueryDataTable from './QueryDataTable.vue'
 import DataSourceSelector from './source_selector/DataSourceSelector.vue'
 import { createToast } from '../../helpers/toasts'
 import SchemaExplorer from './SchemaExplorer.vue'
+import { call } from 'frappe-ui'
 
 const query = inject<Query>('query')!
 query.autoExecute = false
@@ -32,7 +32,7 @@ function execute(force: boolean = false) {
 			raw_sql: sql.value,
 			data_source: data_source.value,
 		},
-		force,
+		force
 	)
 }
 
@@ -64,19 +64,30 @@ function insertTextIntoEditor(text: string) {
 }
 
 const dataSourceSchema = ref<Record<string, any>>({})
-const dataSourceStore = useDataSourceStore()
+const isWarehouse = computed(() => data_source.value === 'warehouse_tables')
+
 wheneverChanges(
-	data_source,
+	() => `${data_source.value}`,
 	() => {
 		if (!data_source.value) {
 			dataSourceSchema.value = {}
 			return
 		}
-		dataSourceStore.getSchema(data_source.value).then((schema: any) => {
+		query.doc.use_live_connection = !isWarehouse.value
+
+		const schemaSource = isWarehouse.value
+			? 'insights.api.data_sources.get_warehouse_schema'
+			: 'insights.api.data_sources.get_schema'
+
+		const params = isWarehouse.value
+			? {}
+			: { data_source: data_source.value }
+
+		call(schemaSource, params).then((schema: any) => {
 			dataSourceSchema.value = schema
 		})
 	},
-	{ immediate: true },
+	{ immediate: true }
 )
 const completions = computed(() => {
 	if (!Object.keys(dataSourceSchema.value).length)
@@ -109,13 +120,22 @@ const completions = computed(() => {
 	<div class="flex flex-1 gap-4 overflow-hidden p-4">
 		<div class="flex flex-1 flex-col gap-4 overflow-hidden">
 			<div class="relative flex h-[55%] w-full flex-col rounded border">
-				<div class="flex flex-shrink-0 items-center gap-1 border-b p-1">
-					<DataSourceSelector v-model="data_source" placeholder="Select a data source" />
-					<ContentEditable
-						class="flex h-7 cursor-text items-center justify-center rounded bg-white px-2 text-base text-gray-800 focus-visible:ring-1 focus-visible:ring-gray-600"
-						v-model="query.doc.title"
-						placeholder="Untitled Dashboard"
-					></ContentEditable>
+				<div class="flex flex-shrink-0 items-center border-b h-10 px-3 gap-4 bg-white">
+					<div class="flex-shrink-0">
+						<DataSourceSelector
+							v-model="data_source"
+							placeholder="Select a data source"
+							class="!w-48"
+						/>
+					</div>
+
+					<div class="flex-1 flex justify-center">
+						<ContentEditable
+							class="w-fit min-w-[12rem] h-8 cursor-text rounded-md bg-gray-50/50 px-4 text-sm font-medium text-gray-700 text-center flex items-center justify-center transition-colors hover:bg-gray-50 focus-visible:ring-1 focus-visible:ring-gray-300"
+							v-model="query.doc.title"
+							placeholder="new query"
+						></ContentEditable>
+					</div>
 				</div>
 				<div class="flex-1 overflow-hidden">
 					<Code
@@ -133,16 +153,6 @@ const completions = computed(() => {
 							<Play class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
 						</template>
 					</Button>
-					<!-- <Dropdown
-					:button="{ icon: MoreHorizontal }"
-					:options="[
-						{
-							label: 'Format SQL',
-							icon: Wand2,
-							onClick: () => format(),
-						},
-					]"
-				/> -->
 				</div>
 			</div>
 			<div
@@ -161,7 +171,7 @@ const completions = computed(() => {
 			</div>
 		</div>
 		<div class="w-64 flex-shrink-0">
-			<SchemaExplorer :schema="dataSourceSchema" @insert-text="insertTextIntoEditor" />
+			<SchemaExplorer :schema="dataSourceSchema" :useDoubleQuotes="isWarehouse" @insert-text="insertTextIntoEditor" />
 		</div>
 	</div>
 </template>
