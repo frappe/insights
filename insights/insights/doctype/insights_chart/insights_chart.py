@@ -9,7 +9,10 @@ class InsightsChart(Document):
     pass
 
 
-def get_chart_public_key(name):
+def get_chart_public_key(name:str):
+
+    if not frappe.db.exists("Insights Chart", name):
+        frappe.throw("Chart not found")
 
     is_public = frappe.db.get_value("Insights Chart", name, "is_public")
     if not is_public:

@@ -1,8 +1,6 @@
 # Copyright (c) 2023, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 from datetime import datetime
-import re
-
 import frappe
 from croniter import croniter
 from frappe.model.document import Document
@@ -72,11 +70,11 @@ class InsightsAlert(Document):
             frappe.throw("You do not have permission to access this query")
 
     def evaluate_message(self):
-        rows_pattern = r"{{\s*rows\s*}}"
-        message_md = re.sub(rows_pattern, "{{ datatable }}", self.message)
 
-        context = self.get_message_context()
-        message_md = render_template_restricted(message_md, context)
+        query = frappe.get_doc("Insights Query", self.query)
+        context = query.as_dict()
+
+        message_md = render_template_restricted(self.message, context)
         if self.channel == "Telegram":
             return message_md
 

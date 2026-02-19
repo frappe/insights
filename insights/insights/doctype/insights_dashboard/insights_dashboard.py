@@ -58,9 +58,9 @@ class InsightsDashboard(Document):
         notify(**{"type": "success", "title": "Cache Cleared"})
 
     @frappe.whitelist()
-    def fetch_chart_data(self, item_id, query_name=None, filters=None):
+    def fetch_chart_data(self, item_id, query_name:str = None, filters=None):
 
-        if query_name:
+        if query_name and not self.is_public:
             if not frappe.has_permission("Insights Query", "read", query_name):
                 frappe.throw("You are not permitted to access this query")
                 return
@@ -145,7 +145,10 @@ def get_query_columns(query):
     return frappe.get_cached_doc("Insights Query", query).fetch_columns()
 
 
-def get_dashboard_public_key(name):
+def get_dashboard_public_key(name: str):
+
+    if not frappe.db.exists("Insights Dashboard", name):
+        frappe.throw("Dashboard not found")
 
     is_public = frappe.db.get_value("Insights Dashboard", name, "is_public")
     if not is_public:
