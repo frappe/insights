@@ -34,7 +34,7 @@ function isExpressionColumn(column) {
 function onColumnSelect(column) {
 	if (!column) return
 	const columnAlreadyExists = columns.value.find(
-		(c) => c.table === column.table && c.column === column.column && c.label === column.label
+		(c) => c.table === column.table && c.column === column.column && c.label === column.label,
 	)
 	if (columnAlreadyExists) {
 		return
@@ -80,6 +80,7 @@ function onColumnSort(e) {
 			info="Select the columns you want to see in the results."
 		>
 			<Autocomplete
+				class="!w-fit"
 				:modelValue="columns"
 				bodyClasses="w-[18rem]"
 				@update:modelValue="onColumnSelect"
