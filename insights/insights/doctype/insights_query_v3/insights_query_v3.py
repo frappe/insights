@@ -108,7 +108,7 @@ class InsightsQueryv3(Document):
         return ibis_query
 
     @frappe.whitelist()
-    def execute(self, active_operation_idx=None, adhoc_filters=None, force=False):
+    def execute(self, active_operation_idx: int | None = None, adhoc_filters: dict | None = None, force: bool = False):
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
 
@@ -137,14 +137,14 @@ class InsightsQueryv3(Document):
         }
 
     @insights_whitelist()
-    def format(self, raw_sql):
+    def format(self, raw_sql: str):
         if not raw_sql or not self.is_native_query:
             return raw_sql
 
         return sqlparse.format(str(raw_sql), reindent=True, keyword_case="upper")
 
     @insights_whitelist()
-    def get_count(self, active_operation_idx=None, adhoc_filters=None):
+    def get_count(self, active_operation_idx: int | None = None, adhoc_filters: dict | None = None):
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
 
@@ -159,7 +159,7 @@ class InsightsQueryv3(Document):
         return int(total_count)
 
     @insights_whitelist()
-    def download_results(self, format="csv", active_operation_idx=None, adhoc_filters=None):
+    def download_results(self, format: str = "csv", active_operation_idx: int | None = None, adhoc_filters: dict | None = None):
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
 
@@ -181,11 +181,11 @@ class InsightsQueryv3(Document):
     @insights_whitelist()
     def get_distinct_column_values(
         self,
-        column_name,
-        active_operation_idx=None,
-        search_term=None,
-        limit=20,
-        adhoc_filters=None,
+        column_name: str,
+        active_operation_idx: int | None = None,
+        search_term: str | None = None,
+        limit: int = 20,
+        adhoc_filters: dict | None = None,
     ):
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
@@ -209,7 +209,7 @@ class InsightsQueryv3(Document):
         return result[column_name].tolist()
 
     @insights_whitelist()
-    def get_columns_for_selection(self, active_operation_idx=None):
+    def get_columns_for_selection(self, active_operation_idx: int | None = None):
         ibis_query = self.build(active_operation_idx)
         columns = get_columns_from_schema(ibis_query.schema())
         return columns
