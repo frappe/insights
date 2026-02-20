@@ -13,7 +13,7 @@ from insights.insights.doctype.insights_team.insights_team import is_admin
 
 
 @insights_whitelist()
-def get_users(search_term=None):
+def get_users(search_term: str | None = None):
     """Returns full_name, email, type, teams, last_active"""
 
     perm_enabled = frappe.db.get_single_value("Insights Settings", "enable_permissions")
@@ -74,7 +74,7 @@ def get_users(search_term=None):
 
 
 @insights_whitelist()
-def get_teams(search_term=None):
+def get_teams(search_term: str | None = None):
     teams = frappe.get_list(
         "Insights Team",
         filters={
@@ -196,7 +196,7 @@ def update_team(team: dict):
 
 
 @insights_whitelist()
-def add_insights_user(user):
+def add_insights_user(user: str):
     raise NotImplementedError
 
 
