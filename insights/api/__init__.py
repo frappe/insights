@@ -69,7 +69,7 @@ def get_user_info():
 
 
 @insights_whitelist()
-def update_default_version(version):
+def update_default_version(version: str):
     if get_user_default("insights_has_visited_v3", frappe.session.user) != "1":
         set_user_default("insights_has_visited_v3", "1", frappe.session.user)
 
