@@ -728,9 +728,10 @@ def execute_ibis_query(
                 title="Query execution time exceeded the limit.",
                 message=f"Query: {sql}",
             )
+            max_time = frappe.db.get_single_value("Insights Settings", "max_execution_time") or 180
             frappe.throw(
                 title="Query Timeout",
-                msg="Query execution time exceeded the limit. Please try again with a smaller timespan or a more specific filter.",
+                msg=f"Query execution time exceeded the limit of {max_time} seconds. Please try again with a smaller timespan or a more specific filter.",
             )
         raise e
 
