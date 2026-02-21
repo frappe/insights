@@ -527,6 +527,12 @@ class IbisQueryBuilder:
                     use_live_connection=True,
                 )
                 t_sql = ibis.to_sql(t)
+
+                # NOTE: This currently works because `apply_sql` uses live connections,
+                # If this flow ever starts using warehouse-backed tables,
+                # this WHERE-based check will be insufficient
+                # check insights_table_v3.py -> apply_user_permissions()
+
                 # check if t_sql has any where clause, if not, then don't replace
                 t_parsed = sg.parse_one(t_sql, dialect=db.dialect)
                 if not t_parsed.find(sg.exp.Where):
