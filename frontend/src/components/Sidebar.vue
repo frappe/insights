@@ -135,8 +135,6 @@
 		</div>
 	</div>
 
-	<HelpDialog v-model="showHelpDialog" />
-
 	<Dialog
 		v-model="showSwitchToV3Dialog"
 		:options="{
@@ -178,7 +176,6 @@
 <script setup>
 import { Avatar } from 'frappe-ui'
 
-import HelpDialog from '@/components/HelpDialog.vue'
 import sessionStore from '@/stores/sessionStore'
 import settingsStore from '@/stores/settingsStore'
 import {
