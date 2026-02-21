@@ -1,17 +1,23 @@
 # Copyright (c) 2023, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 from datetime import datetime
-
 import frappe
 from croniter import croniter
 from frappe.model.document import Document
-from frappe.utils import validate_email_address
+from frappe.utils import validate_email_address, md_to_html
 from frappe.utils.data import get_datetime, get_datetime_str, now_datetime
 from pandas import DataFrame
 
 
 class InsightsAlert(Document):
     def validate(self):
+
+        if self.disabled:
+            return
+
+        if self.query:
+            self.has_query_permission()
+
         try:
             self.evaluate_condition(for_validate=True)
         except Exception as e:
@@ -45,7 +51,9 @@ class InsightsAlert(Document):
 
     def evaluate_condition(self, for_validate=False):
         query = frappe.get_doc("Insights Query", self.query)
-        results = query.fetch_results() if not for_validate else query.retrieve_results()
+        results = (
+            query.fetch_results() if not for_validate else query.retrieve_results()
+        )
 
         if not results:
             return False
@@ -53,18 +61,26 @@ class InsightsAlert(Document):
         column_names = [d.get("label") for d in results[0]]
         results = DataFrame(results[1:], columns=column_names)
 
-        return frappe.safe_eval(self.condition, eval_locals=frappe._dict(results=results, any=any))
+        return frappe.safe_eval(
+            self.condition, eval_locals=frappe._dict(results=results, any=any)
+        )
+
+    def has_query_permission(self):
+        if not frappe.has_permission("Insights Query", "read", self.query):
+            frappe.throw("You do not have permission to access this query")
 
     def evaluate_message(self):
-        query = frappe.get_doc("Insights Query", self.query)
-        query_dict = query.as_dict()
-        # query_dict.results = f"""<div class="results">{query.get_formatted_results(as_html=True)}</div>"""
-        message = frappe.render_template(self.message, context=query_dict)
-        if self.channel == "Telegram":
-            return message
 
+        query = frappe.get_doc("Insights Query", self.query)
+        context = query.as_dict()
+
+        message_md = render_template_restricted(self.message, context)
+        if self.channel == "Telegram":
+            return message_md
+
+        message_html = md_to_html(message_md)
         return frappe.render_template(
-            "insights/templates/alert.html", context=frappe._dict(message=message)
+            "insights/templates/alert.html", context=frappe._dict(message=message_html)
         )
 
     def get_recipients(self):
@@ -108,9 +124,34 @@ def send_alerts():
             frappe.db.commit()
 
 
+def render_template_restricted(template: str, context: dict) -> str:
+    """Render a Jinja template with a restricted sandbox environment.
+
+    Only allows access to explicitly passed context variables and basic filters.
+    Does not expose frappe utilities or other globals.
+
+    Uses the same sandboxed environment as frappe.render_template but without
+    the get_safe_globals() that would expose frappe internals.
+    """
+    from frappe.utils.jinja import _get_jenv
+
+    base_jenv = _get_jenv()
+
+    # Create an overlay to avoid modifying the cached instance
+    jenv = base_jenv.overlay()
+
+    # Copy filters but do NOT add get_safe_globals() or jinja hooks
+    jenv.filters = base_jenv.filters.copy()
+
+    compiled_template = jenv.from_string(template)
+    return compiled_template.render(context)
+
+
 class Telegram:
     def __init__(self, chat_id: str = None):
-        self.token = frappe.get_single("Insights Settings").get_password("telegram_api_token")
+        self.token = frappe.get_single("Insights Settings").get_password(
+            "telegram_api_token"
+        )
         if not self.token:
             frappe.throw("Telegram Bot Token not set in Insights Settings")
 
@@ -119,10 +160,13 @@ class Telegram:
 
     def send(self, message):
         import telegram
+
         try:
             text = message[: telegram.MAX_MESSAGE_LENGTH]
             parse_mode = telegram.ParseMode.MARKDOWN
-            return self.bot.send_message(chat_id=self.chat_id, text=text, parse_mode=parse_mode)
+            return self.bot.send_message(
+                chat_id=self.chat_id, text=text, parse_mode=parse_mode
+            )
         except Exception:
             frappe.log_error("Telegram Bot Error")
             raise
@@ -130,4 +174,5 @@ class Telegram:
     @property
     def bot(self):
         import telegram
+
         return telegram.Bot(token=self.token)

@@ -58,7 +58,12 @@ class InsightsDashboard(Document):
         notify(**{"type": "success", "title": "Cache Cleared"})
 
     @frappe.whitelist()
-    def fetch_chart_data(self, item_id, query_name=None, filters=None):
+    def fetch_chart_data(self, item_id, query_name:str = None, filters=None):
+
+        if query_name and not self.is_public:
+            if not frappe.has_permission("Insights Query", "read", query_name):
+                frappe.throw("You are not permitted to access this query")
+                return
         row = next((row for row in self.items if row.item_id == item_id), None)
         if not row and not query_name:
             return frappe.throw("Item not found")
@@ -84,7 +89,9 @@ class InsightsDashboard(Document):
             "Insights Settings", "query_result_expiry"
         )
         query_result_expiry_in_seconds = query_result_expiry * 60
-        frappe.cache().set_value(key, new_results, expires_in_sec=query_result_expiry_in_seconds)
+        frappe.cache().set_value(
+            key, new_results, expires_in_sec=query_result_expiry_in_seconds
+        )
         return new_results
 
 
@@ -138,8 +145,18 @@ def get_query_columns(query):
     return frappe.get_cached_doc("Insights Query", query).fetch_columns()
 
 
-def get_dashboard_public_key(name):
-    existing_key = frappe.db.get_value("Insights Dashboard", name, "public_key", cache=True)
+def get_dashboard_public_key(name: str):
+
+    if not frappe.db.exists("Insights Dashboard", name):
+        frappe.throw("Dashboard not found")
+
+    is_public = frappe.db.get_value("Insights Dashboard", name, "is_public")
+    if not is_public:
+        frappe.throw("Dashboard is not public")
+
+    existing_key = frappe.db.get_value(
+        "Insights Dashboard", name, "public_key", cache=True
+    )
     if existing_key:
         return existing_key
 

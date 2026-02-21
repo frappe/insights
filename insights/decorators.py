@@ -14,17 +14,12 @@ def check_role(role):
             if frappe.session.user == "Administrator":
                 return function(*args, **kwargs)
 
-            perm_disabled = not frappe.db.get_single_value(
-                "Insights Settings", "enable_permissions"
-            )
-            if perm_disabled and role in ["Insights Admin", "Insights User"]:
-                return function(*args, **kwargs)
+            user_roles = frappe.get_roles(frappe.session.user)
+            has_required_role = role in user_roles
+            if role == "Insights User" and "Insights Admin" in user_roles:
+                has_required_role = True
 
-            if not frappe.db.get_value(
-                "Has Role",
-                {"parent": frappe.session.user, "role": role},
-                cache=not frappe.flags.in_test,
-            ):
+            if not has_required_role:
                 frappe.throw(
                     frappe._("You do not have permission to access this resource"),
                     frappe.PermissionError,
