@@ -76,34 +76,6 @@ def update_default_version(version: str):
     set_user_default("insights_default_version", version, frappe.session.user)
 
 
-@frappe.whitelist()
-@rate_limit(limit=10, seconds=60 * 60)
-def contact_team(message_type, message_content, is_critical=False):
-    if not message_type or not message_content:
-        frappe.throw("Message Type and Content are required")
-
-    message_title = {
-        "Feedback": "Feedback from Insights User",
-        "Bug": "Bug Report from Insights User",
-        "Question": "Question from Insights User",
-    }.get(message_type)
-
-    if not message_title:
-        frappe.throw("Invalid Message Type")
-
-    try:
-        make_post_request(
-            "https://frappeinsights.com/api/method/contact-team",
-            data={
-                "message_title": message_title,
-                "message_content": message_content,
-            },
-        )
-    except Exception as e:
-        frappe.log_error(e)
-        frappe.throw("Something went wrong. Please try again later.")
-
-
 def get_csv_file(filename: str):
     file = frappe.get_doc("File", filename)
     file_name = file.file_name or ""
