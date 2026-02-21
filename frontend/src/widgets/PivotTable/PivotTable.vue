@@ -3,7 +3,7 @@ import ChartTitle from '@/components/Charts/ChartTitle.vue'
 import TanstackTable from '@/components/Table/TanstackTable.vue'
 import { watchDebounced } from '@vueuse/core'
 import { call } from 'frappe-ui'
-import { computed, ref, watch } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
 import { convertToNestedObject, convertToTanstackColumns } from './utils'
 
 const props = defineProps({
@@ -17,6 +17,7 @@ watch(_data, reloadPivotData, { deep: true })
 const indexColumns = computed(() => props.options.rows?.map((column) => column.value) || [])
 const pivotColumns = computed(() => props.options.columns?.map((column) => column.value) || [])
 const valueColumns = computed(() => props.options.values?.map((column) => column.value) || [])
+const dashboard = inject('dashboard', null)
 
 const pivotedData = ref([])
 watchDebounced(
@@ -29,15 +30,17 @@ watchDebounced(
 		deep: true,
 		immediate: true,
 		debounce: 500,
-	}
+	},
 )
 
 function reloadPivotData() {
+	const publicKey = dashboard?.isPublic ? dashboard?.doc?.public_key : undefined
 	call('insights.api.queries.pivot', {
 		data: _data.value,
 		indexes: indexColumns.value,
 		columns: pivotColumns.value,
 		values: valueColumns.value,
+		...(publicKey ? { public_key: publicKey } : {}),
 	}).then((data) => (pivotedData.value = sortIndexKeys(data)))
 }
 

@@ -91,7 +91,20 @@ def pivot(
     indexes: list[str] | None = None,
     columns: list[str] | None = None,
     values: list[str] | None = None,
+    public_key: str | None = None,
 ):
+    if frappe.session.user == "Guest" or public_key:
+        if not isinstance(public_key, str) or not public_key.strip():
+            frappe.throw("Public Key is required")
+
+        if not frappe.db.exists(
+            "Insights Dashboard",
+            {"public_key": public_key, "is_public": 1},
+        ):
+            frappe.throw("Invalid Public Key")
+    else:
+        check_role("Insights User")
+
     indexes = indexes or []
     columns = columns or []
     values = values or []
@@ -133,12 +146,12 @@ def flatten_column_keys(pivoted_records: list[dict]):
     for row in pivoted_records:
         new_row = {}
         cols = list(row.keys())
-        if type(cols[0]) != tuple:
+        if not isinstance(cols[0], tuple):
             new_records.append(row)
             continue
         for keys in cols:
             first_key = keys[0]
-            new_keys = list(keys[1:]) + [first_key]
+            new_keys = [*list(keys[1:]), first_key]
             new_keys = [key for key in new_keys if key]
             new_key = "___".join(new_keys)
             new_row[new_key] = row[keys]
