@@ -49,3 +49,8 @@ insights.insights.doctype.insights_chart.patches.convert_bar_to_row_chart
 insights.insights.doctype.insights_data_source_v3.patches.copy_data_sources #v4
 insights.insights.doctype.insights_table_v3.patches.force_sync_tables #5
 insights.patches.enable_data_store
+<<<<<<< HEAD
+=======
+insights.insights.doctype.insights_data_source_v3.patches.set_type
+execute:frappe.db.set_single_value("Insights Settings", "apply_user_permissions", 1)
+>>>>>>> 7ef2858c (fix: apply user permissions on data source tables in warehouse)
