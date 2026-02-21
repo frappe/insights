@@ -7,27 +7,17 @@ from functools import wraps
 
 import frappe
 
-from insights.insights.doctype.insights_team.insights_team import is_admin
-
 
 def check_role(role):
     def decorator(function):
         @wraps(function)
         def wrapper(*args, **kwargs):
-
-            perm_disabled = not frappe.db.get_single_value(
-                "Insights Settings", "enable_permissions"
-            )
-            if perm_disabled and role in ["Insights Admin", "Insights User"]:
+            if frappe.session.user == "Administrator":
                 return function(*args, **kwargs)
 
-            has_required_role = frappe.db.get_value(
-                "Has Role",
-                {"parent": frappe.session.user, "role": role},
-                cache=not frappe.flags.in_test,
-            )
-
-            if role == "Insights User" and is_admin(frappe.session.user):
+            user_roles = frappe.get_roles(frappe.session.user)
+            has_required_role = role in user_roles
+            if role == "Insights User" and "Insights Admin" in user_roles:
                 has_required_role = True
 
             if not has_required_role:
@@ -130,9 +120,7 @@ def validate_type(func):
     def wrapper(*args, **kwargs):
         sig = inspect.signature(func)
         annotated_types = {
-            k: v.annotation
-            for k, v in sig.parameters.items()
-            if v.annotation != inspect._empty
+            k: v.annotation for k, v in sig.parameters.items() if v.annotation != inspect._empty
         }
         bound_args = sig.bind(*args, **kwargs)
         bound_args.apply_defaults()
