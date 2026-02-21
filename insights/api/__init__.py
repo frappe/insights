@@ -5,9 +5,7 @@ import frappe
 import ibis
 from frappe.defaults import get_user_default, set_user_default
 from frappe.handler import is_valid_http_method, is_whitelisted
-from frappe.integrations.utils import make_post_request
 from frappe.monitor import add_data_to_monitor
-from frappe.rate_limiter import rate_limit
 
 from insights.api.shared import is_public
 from insights.decorators import insights_whitelist, validate_type
