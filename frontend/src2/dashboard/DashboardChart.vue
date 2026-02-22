@@ -1,12 +1,7 @@
 <script setup lang="ts">
-<<<<<<< HEAD
-import { AlertTriangle, Maximize } from 'lucide-vue-next'
-import { computed, inject, ref, provide } from 'vue'
-=======
 import { Button } from 'frappe-ui'
-import { AlertTriangle, Maximize, XIcon } from 'lucide-vue-next'
+import { AlertTriangle, Maximize } from 'lucide-vue-next'
 import { computed, inject, provide, ref } from 'vue'
->>>>>>> f82fbb26 (feat: update frappe-ui to v0.1.256 (#717))
 import { useRouter } from 'vue-router'
 import useChart from '../charts/chart'
 import ChartRenderer from '../charts/components/ChartRenderer.vue'
