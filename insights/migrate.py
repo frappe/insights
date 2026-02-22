@@ -21,16 +21,3 @@ def create_admin_team():
                 "team_members": [{"user": "Administrator"}],
             }
         ).insert(ignore_permissions=True)
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-
-def enable_permissions_by_default():
-    settings = frappe.get_single("Insights Settings")
-    if not settings.enable_permissions:
-        settings.enable_permissions = 1
-        settings.save(ignore_permissions=True)
->>>>>>> 2de27f32 (fix: enable permissions by default after migration)
-=======
->>>>>>> c4ef014e (fix: revert changes)

@@ -55,17 +55,7 @@ class InsightsAlert(Document):
 
     def has_query_permission(self):
         if not frappe.has_permission("Insights Query v3", "read", self.query):
-<<<<<<< HEAD
-<<<<<<< HEAD
             frappe.throw("You do not have permission to access this query")
-=======
-            frappe.throw(
-                "You do not have permission to access this query"
-            )
->>>>>>> 31bf03f8 (fix: check query perms for alerts)
-=======
-            frappe.throw("You do not have permission to access this query")
->>>>>>> 70661f3c (fix: create restricted rendering function)
 
     @frappe.whitelist()
     def send_alert(self, force=False):
@@ -106,15 +96,7 @@ class InsightsAlert(Document):
         message_md = re.sub(rows_pattern, "{{ datatable }}", self.message)
 
         context = self.get_message_context()
-<<<<<<< HEAD
-<<<<<<< HEAD
         message_md = render_template_restricted(message_md, context)
-=======
-        message_md = Template(message_md).render(context)
->>>>>>> 2c92eeee (fix: use jinja2 template to prevent access to frappe object in template)
-=======
-        message_md = render_template_restricted(message_md, context)
->>>>>>> 70661f3c (fix: create restricted rendering function)
         if self.channel == "Telegram":
             return message_md
 
