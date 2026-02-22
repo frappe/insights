@@ -11,10 +11,10 @@ import {
 	Tooltip,
 	LoadingIndicator,
 	FormControl,
+	Popover,
+	Autocomplete,
 } from 'frappe-ui'
 import Checkbox from '@/components/Controls/Checkbox.vue'
-import Autocomplete from '@/components/Controls/Autocomplete.vue'
-import Popover from '@/components/Popover.vue'
 
 import utils from './utils'
 import { createToast } from './utils/toasts'

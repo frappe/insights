@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Button from 'frappe-ui/src/components/Button/Button.vue'
+import { Button } from 'frappe-ui'
 import { AlertTriangle, Maximize, XIcon } from 'lucide-vue-next'
 import { computed, inject, provide, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -64,7 +64,7 @@ wheneverChanges(
 		v-if="chart && chart.doc.chart_type !== 'Number'"
 		class="absolute top-1.5 right-1.5 p-2 opacity-0 transition-opacity group-hover:opacity-100"
 	>
-		<Button variant="ghost" class="!h-7 !w-7" @click="showExpandedChartDialog = true">
+		<Button variant="ghost" @click="showExpandedChartDialog = true">
 			<Maximize class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
 		</Button>
 	</div>

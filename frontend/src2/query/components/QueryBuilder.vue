@@ -34,9 +34,7 @@ onBeforeUnmount(() => {
 				<QueryBuilderTable></QueryBuilderTable>
 			</template>
 		</div>
-		<div
-			class="relative z-[1] flex h-full w-[19rem] flex-shrink-0 flex-col overflow-y-auto bg-white"
-		>
+		<div class="relative flex h-full w-[19rem] flex-shrink-0 flex-col overflow-y-auto bg-white">
 			<QueryInfo />
 			<QueryOperations />
 		</div>
