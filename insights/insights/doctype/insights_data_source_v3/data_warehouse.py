@@ -1,38 +1,75 @@
 import os
+from collections.abc import Generator
+from contextlib import contextmanager, suppress
 
 import frappe
 import frappe.utils
 import ibis
-import ibis.backends
-import ibis.backends.duckdb
+from duckdb import CatalogException
 from frappe.query_builder.functions import IfNull
 from frappe.utils import get_files_path
 from frappe.utils.background_jobs import is_job_enqueued
-from ibis import BaseBackend, _
+from ibis import _
+from ibis.backends.duckdb import Backend as DuckDBBackend
 from ibis.expr.types import Expr
 
-from insights import create_toast
+import insights
 from insights.utils import InsightsDataSourcev3, InsightsTablev3
 
-WAREHOUSE_DB_NAME = "insights.duckdb"
+WAREHOUSE_DB_NAME = "insights"
 
 
 class Warehouse:
     def __init__(self):
-        self.warehouse_path = get_warehouse_folder_path()
-        self.db_path = os.path.join(self.warehouse_path, WAREHOUSE_DB_NAME)
+        pass
+
+    def get_db_path(self) -> str:
+        folder_path = os.path.realpath(get_files_path(is_private=1))
+        folder_path = os.path.join(folder_path, "insights_data_warehouse")
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+        return os.path.join(os.path.realpath(folder_path), f"{WAREHOUSE_DB_NAME}.duckdb")
+
+    def get_connection(self, schema: str | None = None, read_only: bool = True) -> DuckDBBackend:
+        path = self.get_db_path()
+
+        if not os.path.exists(path):
+            db = ibis.duckdb.connect(path)
+            db.disconnect()
+
+        db = ibis.duckdb.connect(path, read_only=read_only)
+
+        if schema:
+            db.raw_sql(f"USE '{schema}'")
+
+        return db
+
+    def create_schema(self, schema: str):
+        with self.get_write_connection() as db:
+            with suppress(CatalogException):
+                db.create_database(schema)
 
     @property
-    def db(self) -> BaseBackend:
-        if not os.path.exists(self.db_path):
-            ddb = ibis.duckdb.connect(self.db_path)
-            ddb.disconnect()
+    def db(self) -> DuckDBBackend:
+        if WAREHOUSE_DB_NAME not in insights.db_connections:
+            ddb = self.get_connection(read_only=True)
+            insights.db_connections[WAREHOUSE_DB_NAME] = ddb
 
-        if WAREHOUSE_DB_NAME not in frappe.local.insights_db_connections:
-            ddb = ibis.duckdb.connect(self.db_path, read_only=True, enable_external_access=False)
-            frappe.local.insights_db_connections[WAREHOUSE_DB_NAME] = ddb
+        return insights.db_connections[WAREHOUSE_DB_NAME]
 
-        return frappe.local.insights_db_connections[WAREHOUSE_DB_NAME]
+    @contextmanager
+    def get_write_connection(
+        self, schema: str | None = None, timeout: int = 30
+    ) -> Generator[DuckDBBackend, None, None]:
+        from frappe.utils.synchronization import filelock
+
+        with filelock("insights_warehouse_write", timeout=timeout):
+            db = self.get_connection(schema=schema, read_only=False)
+            try:
+                yield db
+            finally:
+                with suppress(Exception):
+                    db.disconnect()
 
     def get_table(self, data_source: str, table_name: str) -> "WarehouseTable":
         return WarehouseTable(data_source, table_name)
@@ -42,14 +79,17 @@ class WarehouseTable:
     def __init__(self, data_source: str, table_name: str):
         from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 
-        self.warehouse = Warehouse()
         self.data_source = data_source
         self.table_name = table_name
-        self.warehouse_table_name = get_warehouse_table_name(data_source, table_name)
-        self.parquet_filepath = get_parquet_filepath(data_source, table_name)
+        self.warehouse_table_name = self.format_table_name(data_source, table_name)
         self.table_doc_name = get_table_name(data_source, table_name)
 
         self.validate()
+
+    @staticmethod
+    def format_table_name(data_source: str, table_name: str) -> str:
+        """Format a warehouse table name from data source and table name."""
+        return f"{frappe.scrub(data_source)}.{frappe.scrub(table_name)}"
 
     def validate(self):
         if not self.data_source:
@@ -58,11 +98,13 @@ class WarehouseTable:
             frappe.throw("Table Name is required.")
 
     def get_ibis_table(self, import_if_not_exists: bool = True) -> Expr:
-        if not os.path.exists(self.parquet_filepath):
+        try:
+            return insights.warehouse.db.table(self.warehouse_table_name)
+        except Exception:
             if import_if_not_exists:
                 self.enqueue_import()
                 remote_table = self.get_remote_table()
-                return self.warehouse.db.create_table(
+                return insights.warehouse.db.create_table(
                     self.warehouse_table_name,
                     schema=remote_table.schema(),
                     temp=True,
@@ -73,16 +115,14 @@ class WarehouseTable:
                     f"{self.table_name} of {self.data_source} is not imported to the data warehouse."
                 )
 
-        if os.path.exists(self.parquet_filepath):
-            return self.warehouse.db.read_parquet(self.parquet_filepath, table_name=self.warehouse_table_name)
-
-        return self.warehouse.db.table(self.warehouse_table_name)
-
     def get_remote_table(self) -> Expr:
         ds = InsightsDataSourcev3.get_doc(self.data_source)
         return ds.get_ibis_table(self.table_name)
 
     def enqueue_import(self):
+        if frappe.db.get_value("Insights Data Source v3", self.data_source, "type") == "REST API":
+            frappe.throw("Import not supported for API data sources")
+
         importer = WarehouseTableImporter(self)
         importer.enqueue_import()
 
@@ -91,10 +131,9 @@ class WarehouseTableImporter:
     def __init__(self, table: WarehouseTable):
         self.table = table
         self.remote_table = None
+        self.remote_table_schema = None
         self.primary_key = ""
         self.warehouse_table_name = ""
-        self.warehouse_folder = ""
-        self.imported_batch_paths = []
 
         self.log = None
         self.settings = frappe._dict()
@@ -115,7 +154,7 @@ class WarehouseTableImporter:
         job_id = f"import_{frappe.scrub(self.table.data_source)}_{frappe.scrub(self.table.table_name)}"
 
         if is_job_enqueued(job_id) or self.import_in_progress():
-            create_toast(
+            insights.create_toast(
                 f"Import for {frappe.bold(self.table.table_name)} is in progress."
                 "You may not see the results till the import is completed.",
                 title="Import In Progress",
@@ -124,14 +163,9 @@ class WarehouseTableImporter:
             )
             return
 
-        frappe.enqueue(
-            method="frappe.call",
-            fn="insights.insights.doctype.insights_data_source_v3.data_warehouse._start_table_import",
+        enqueue_warehouse_table_import(
             data_source=self.table.data_source,
             table_name=self.table.table_name,
-            queue="long",
-            timeout=6000,
-            job_id=job_id,
         )
 
     def start_import(self):
@@ -146,7 +180,7 @@ class WarehouseTableImporter:
             self.start_batch_import()
             self.update_log()
 
-        create_toast(
+        insights.create_toast(
             f"Imported {frappe.bold(self.table.table_name)} to the data store. "
             "Please refresh the query to see the updated data.",
             title="Import Completed",
@@ -167,7 +201,7 @@ class WarehouseTableImporter:
             commit=True,
         )
 
-        create_toast(
+        insights.create_toast(
             f"Importing {frappe.bold(self.table.table_name)} to the data store. "
             "You may not see the results till the import is completed.",
             title="Import Started",
@@ -215,17 +249,22 @@ class WarehouseTableImporter:
             )
 
         self.remote_table = self.remote_table.limit(self.settings.row_limit)
+        self.remote_table_schema = self.remote_table.schema()
         self.log.db_set("query", ibis.to_sql(self.remote_table), commit=True)
 
     def start_batch_import(self):
         self.warehouse_table_name = self.table.warehouse_table_name
-        self.warehouse_folder = get_warehouse_folder_path()
-        self.imported_batch_paths = []
 
         try:
             batch_size = self.calculate_batch_size()
-            self.process_batches(batch_size)
-            self.merge_batches()
+            with insights.warehouse.get_write_connection() as db:
+                db.raw_sql("BEGIN TRANSACTION")
+                try:
+                    self.process_batches(batch_size, db)
+                    db.raw_sql("COMMIT")
+                except Exception:
+                    db.raw_sql("ROLLBACK")
+                    raise
             self.update_insights_table()
             self.log.status = "Completed"
             self.log.log_output("Import completed successfully.", commit=True)
@@ -233,8 +272,6 @@ class WarehouseTableImporter:
             self.log.status = "Failed"
             self.log.log_output(f"Error: \n{e}", commit=True)
             raise e
-        finally:
-            self._cleanup()
 
     def calculate_batch_size(self) -> int:
         sample_size = 10
@@ -251,69 +288,47 @@ class WarehouseTableImporter:
         )
         return batch_size
 
-    def process_batches(self, batch_size: int):
+    def process_batches(self, batch_size: int, db: DuckDBBackend):
         remote_table = self.remote_table.order_by(self.primary_key)
         batch_number = 0
+        total_rows = 0
 
         while True:
             self.log.log_output(f"Processing batch: {batch_number + 1}", commit=True)
             batch = remote_table.head(batch_size)
-            path = self.create_parquet_file(batch, batch_number)
-            self.imported_batch_paths.append(path)
+            self.log.log_output(f"Batch Query: \n{ibis.to_sql(batch)}", commit=True)
 
-            metadata = self.get_batch_metadata(path)
-            if metadata["count"] < batch_size:
+            batch_df = batch.execute()
+            batch_count = len(batch_df)
+            total_rows += batch_count
+
+            if batch_number == 0:
+                # Create table with first batch using explicit schema
+                db.create_table(
+                    self.warehouse_table_name, batch_df, schema=self.remote_table_schema, overwrite=True
+                )
+            else:
+                # Insert subsequent batches
+                db.insert(self.warehouse_table_name, batch_df)
+
+            self.log.log_output(
+                f"Rows: {batch_count}\nTotal Rows: {total_rows}",
+                commit=True,
+            )
+
+            if batch_count < batch_size:
                 break
 
-            remote_table = remote_table.filter(_[self.primary_key] > metadata["max_primary_key"])
+            max_primary_key = batch_df[self.primary_key].max()
+            self.log.log_output(f"Bookmark: {max_primary_key}", commit=True)
+            remote_table = remote_table.filter(_[self.primary_key] > max_primary_key)
             batch_number += 1
 
-    def create_parquet_file(self, batch: Expr, batch_number: int) -> str:
-        batch_file_name = f"{self.warehouse_table_name}_{batch_number}.parquet"
-        path = os.path.join(self.warehouse_folder, batch_file_name)
-        self.log.log_output(f"Batch Query: \n{ibis.to_sql(batch)}", commit=True)
-
-        # Materialize batch as in-memory data first
-        # to avoid `file system operations are disabled`
-        # for duckdb tables with external access disabled
-        data = ibis.memtable(batch, schema=batch.schema())
-        data.to_parquet(path, compression="snappy")
-        return path
-
-    def get_batch_metadata(self, path: str) -> dict:
-        ddb = ibis.duckdb.connect(":memory:")
-        batch = ddb.read_parquet(path)
-        metadata = (
-            batch.aggregate(
-                count=_.count(),
-                max_primary_key=_[self.primary_key].max(),
-            )
-            .execute()
-            .to_records(index=False)[0]
-        )
-        self.log.log_output(
-            f"Rows: {metadata['count']}\nBookmark: {metadata['max_primary_key']}",
-            commit=True,
-        )
-        ddb.disconnect()
-        return metadata
-
-    def merge_batches(self):
-        ddb = ibis.duckdb.connect(":memory:")
-        merged = ddb.read_parquet(self.imported_batch_paths, table_name=self.warehouse_table_name)
-        path = os.path.join(self.warehouse_folder, f"{self.warehouse_table_name}.parquet")
-        if hasattr(merged, "__row_number"):
-            merged = merged.drop("__row_number")
-        merged.to_parquet(path, compression="snappy")
-
-        total_rows = int(merged.count().execute())
-        self.log.parquet_file = path
         self.log.rows_imported = total_rows
         self.log.log_output(
-            f"Total Batches: {len(self.imported_batch_paths)}\nTotal Rows: {total_rows}",
+            f"Total Batches: {batch_number + 1}\nTotal Rows: {total_rows}",
             commit=True,
         )
-        ddb.disconnect()
 
     def update_log(self):
         self.log.db_set(
@@ -335,32 +350,20 @@ class WarehouseTableImporter:
         t.last_synced_on = frappe.utils.now()
         t.save()
 
-    def _cleanup(self):
-        for path in self.imported_batch_paths:
-            if os.path.exists(path):
-                os.remove(path)
+
+def enqueue_warehouse_table_import(data_source: str, table_name: str):
+    job_id = f"import_{frappe.scrub(data_source)}_{frappe.scrub(table_name)}"
+    frappe.enqueue(
+        "insights.insights.doctype.insights_data_source_v3.data_warehouse.execute_warehouse_table_import",
+        data_source=data_source,
+        table_name=table_name,
+        queue="long",
+        timeout=30 * 60,
+        job_id=job_id,
+    )
 
 
-# called by background job
-def _start_table_import(data_source: str, table_name: str):
+def execute_warehouse_table_import(data_source: str, table_name: str):
     table = WarehouseTable(data_source, table_name)
     importer = WarehouseTableImporter(table)
     importer.start_import()
-
-
-def get_warehouse_folder_path() -> str:
-    path = os.path.realpath(get_files_path(is_private=1))
-    path = os.path.join(path, "insights_data_warehouse")
-    if not os.path.exists(path):
-        os.makedirs(path)
-    return path
-
-
-def get_warehouse_table_name(data_source: str, table_name: str) -> str:
-    return f"{frappe.scrub(data_source)}.{frappe.scrub(table_name)}"
-
-
-def get_parquet_filepath(data_source: str, table_name: str) -> str:
-    warehouse_path = get_warehouse_folder_path()
-    warehouse_table = get_warehouse_table_name(data_source, table_name)
-    return os.path.join(warehouse_path, f"{warehouse_table}.parquet")
