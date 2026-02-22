@@ -236,11 +236,7 @@ function makeWorkbook(name: string) {
 							message: 'Workbook duplicated successfully',
 							variant: 'success',
 						})
-<<<<<<< HEAD
 						window.location.href = `/insights/workbook/${name}`
-=======
-						window.location.href = `/workbook/${name}`
->>>>>>> ea64d4b1 (fix: load duplicated workbook)
 					})
 					.catch(showErrorToast)
 			},
