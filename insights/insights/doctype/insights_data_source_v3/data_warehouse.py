@@ -55,13 +55,7 @@ class Warehouse:
             ddb = self.get_connection(read_only=True)
             insights.db_connections[WAREHOUSE_DB_NAME] = ddb
 
-<<<<<<< HEAD
-        if WAREHOUSE_DB_NAME not in frappe.local.insights_db_connections:
-            ddb = ibis.duckdb.connect(self.db_path, read_only=True, enable_external_access=False)
-            frappe.local.insights_db_connections[WAREHOUSE_DB_NAME] = ddb
-=======
         return insights.db_connections[WAREHOUSE_DB_NAME]
->>>>>>> da484a19 (feat: table import jobs for api data)
 
     @contextmanager
     def get_write_connection(
@@ -330,49 +324,6 @@ class WarehouseTableImporter:
             remote_table = remote_table.filter(_[self.primary_key] > max_primary_key)
             batch_number += 1
 
-<<<<<<< HEAD
-    def create_parquet_file(self, batch: Expr, batch_number: int) -> str:
-        batch_file_name = f"{self.warehouse_table_name}_{batch_number}.parquet"
-        path = os.path.join(self.warehouse_folder, batch_file_name)
-        self.log.log_output(f"Batch Query: \n{ibis.to_sql(batch)}", commit=True)
-
-        # Materialize batch as in-memory data first
-        # to avoid `file system operations are disabled`
-        # for duckdb tables with external access disabled
-        data = ibis.memtable(batch, schema=batch.schema())
-        data.to_parquet(path, compression="snappy")
-        return path
-
-    def get_batch_metadata(self, path: str) -> dict:
-        ddb = ibis.duckdb.connect(":memory:")
-        batch = ddb.read_parquet(path)
-        metadata = (
-            batch.aggregate(
-                count=_.count(),
-                max_primary_key=_[self.primary_key].max(),
-            )
-            .execute()
-            .to_records(index=False)[0]
-        )
-        self.log.log_output(
-            f"Rows: {metadata['count']}\nBookmark: {metadata['max_primary_key']}",
-            commit=True,
-        )
-        ddb.disconnect()
-        return metadata
-
-    def merge_batches(self):
-        ddb = ibis.duckdb.connect(":memory:")
-        merged = ddb.read_parquet(self.imported_batch_paths, table_name=self.warehouse_table_name)
-        path = os.path.join(self.warehouse_folder, f"{self.warehouse_table_name}.parquet")
-        if hasattr(merged, "__row_number"):
-            merged = merged.drop("__row_number")
-        merged.to_parquet(path, compression="snappy")
-
-        total_rows = int(merged.count().execute())
-        self.log.parquet_file = path
-=======
->>>>>>> c8e18d27 (refactor: import to duckdb directly instead of creating parquet files)
         self.log.rows_imported = total_rows
         self.log.log_output(
             f"Total Batches: {batch_number + 1}\nTotal Rows: {total_rows}",
