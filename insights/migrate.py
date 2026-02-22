@@ -21,4 +21,3 @@ def create_admin_team():
                 "team_members": [{"user": "Administrator"}],
             }
         ).insert(ignore_permissions=True)
-
