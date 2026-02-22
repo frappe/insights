@@ -112,10 +112,8 @@ const columnOptions = computed(() => {
 const filteredColumnOptions = computed(() => {
 	if (!searchQuery.value) return columnOptions.value
 	const query = searchQuery.value.toLowerCase()
-	
-	return columnOptions.value.filter((option) =>
-		option.label.toLowerCase().includes(query)
-	)
+
+	return columnOptions.value.filter((option) => option.label.toLowerCase().includes(query))
 })
 
 function getAggregationLabel(aggregation: AggregationType) {
@@ -205,7 +203,7 @@ const label = ref('')
 								</template>
 
 								<template v-if="columnMeasure.aggregation">
-									<div class="sticky top-0 z-10 bg-white space-y-1 p-1">
+									<div class="sticky top-0 bg-white space-y-1 p-1">
 										<TextInput
 											v-model="searchQuery"
 											placeholder="Search..."
@@ -218,8 +216,10 @@ const label = ref('')
 										class="flex h-7 flex-shrink-0 cursor-pointer items-center justify-between rounded px-2.5 text-base hover:bg-gray-100"
 										@click.prevent.stop="
 											() => {
-												(measure as ColumnMeasure).column_name = option.value
-												measure.data_type = option.data_type as MeasureDataType
+												;(measure as ColumnMeasure).column_name =
+													option.value
+												measure.data_type =
+													option.data_type as MeasureDataType
 												togglePopover()
 											}
 										"
@@ -304,7 +304,7 @@ const label = ref('')
 		:model-value="Boolean(showMeasureDialog)"
 		@update:model-value="!$event && (showMeasureDialog = false)"
 		:column-options="props.columnOptions"
-		:measure="(measure as ExpressionMeasure)"
+		:measure="measure as ExpressionMeasure"
 		@select="updateMeasure"
 	/>
 </template>

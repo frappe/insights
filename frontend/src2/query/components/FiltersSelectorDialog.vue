@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { ColumnOption, FilterGroupArgs, GroupedColumnOption } from '../../types/query.types'
 import FiltersSelector from './FiltersSelector.vue'
 
@@ -13,14 +14,18 @@ const showDialog = defineModel()
 </script>
 
 <template>
-	<Dialog v-model="showDialog" :options="{ size: '2xl' }">
-		<template #body>
+	<Dialog
+		v-model="showDialog"
+		:disableOutsideClickToClose="true"
+		:options="{ size: '2xl', title: 'Filter' }"
+		@close="showDialog = false"
+	>
+		<template #body-content>
 			<FiltersSelector
 				:filterGroup="props.filterGroup"
 				:columnOptions="props.columnOptions"
 				:disableLogicalOperator="props.disableLogicalOperator"
 				:disableExpressions="props.disableExpressions"
-				@close="showDialog = false"
 				@select="
 					(args) => {
 						emit('select', args)

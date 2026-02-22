@@ -14,14 +14,7 @@ def get_duckdb_connection(data_source, read_only=True):
     db_name = data_source.database_name
 
     if db_name.startswith("http"):
-        db = ibis.duckdb.connect()
-        sql = get_http_secret(data_source, name, db_name)
-        sql and db.raw_sql(sql)
-        attach_url = f"ducklake:{db_name}" if data_source.is_ducklake else db_name
-        db.attach(attach_url, name, read_only=True)
-        db.raw_sql(f"USE {name}")
-        db.raw_sql("SET enable_external_access=false")
-        return db
+        return get_http_duckdb_connection(data_source, name, db_name)
 
     return get_local_duckdb_connection(db_name, read_only=read_only)
 
@@ -34,6 +27,18 @@ def get_local_duckdb_connection(db_name, read_only=True):
         db.disconnect()
 
     return ibis.duckdb.connect(path, read_only=read_only, enable_external_access=False)
+
+
+def get_http_duckdb_connection(data_source, name, db_name):
+    """Connect to a remote DuckDB via HTTP or DuckLake."""
+    db = ibis.duckdb.connect()
+    sql = get_http_secret(data_source, name, db_name)
+    sql and db.raw_sql(sql)
+    attach_url = f"ducklake:{db_name}" if data_source.is_ducklake else db_name
+    db.attach(attach_url, name, read_only=True)
+    db.raw_sql(f"USE '{name}'")
+    db.raw_sql("SET enable_external_access=false")
+    return db
 
 
 def get_http_secret(data_source, name, db_name):

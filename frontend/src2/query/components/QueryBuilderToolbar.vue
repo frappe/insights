@@ -1,26 +1,46 @@
 <script setup lang="ts">
 import { useTimeAgo } from '@vueuse/core'
-import { Copy, MoreHorizontal, PlayIcon, Scroll } from 'lucide-vue-next'
-import { h, inject, ref } from 'vue'
+import { Copy, CopyPlus, MoreHorizontal, PlayIcon, RefreshCw, Scroll } from 'lucide-vue-next'
+import { computed, h, inject, ref } from 'vue'
 import { Query } from '../query'
 import ViewSQLDialog from './ViewSQLDialog.vue'
+import session from '../../session'
 
 const query = inject('query') as Query
 
 const showViewSQLDialog = ref(false)
 
-const moreActions = [
-	{
-		label: 'View SQL',
-		icon: h(Scroll, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
-		onClick: () => (showViewSQLDialog.value = true),
-	},
-	{
-		label: 'Copy Query',
-		icon: h(Copy, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
-		onClick: () => query.copy(),
-	},
-]
+const moreActions = computed(() => {
+	const actions = []
+
+	if (!query.doc.use_live_connection && session.user.is_admin) {
+		actions.push({
+			label: 'Refresh Stored Tables',
+			icon: h(RefreshCw, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
+			onClick: query.refreshStoredTables,
+		})
+	}
+
+	actions.push(
+		{
+			label: 'View SQL',
+			icon: h(Scroll, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
+			onClick: () => (showViewSQLDialog.value = true),
+		},
+		{
+			label: 'Duplicate Query',
+			icon: h(CopyPlus, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
+			onClick: () => query.duplicate(),
+		},
+		{
+			label: 'Copy Query',
+			icon: h(Copy, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
+			onClick: () => query.copy(),
+		},
+	)
+
+	return actions
+})
 </script>
 
 <template>

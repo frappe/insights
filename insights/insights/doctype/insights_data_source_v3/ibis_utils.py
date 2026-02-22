@@ -18,9 +18,9 @@ from ibis.expr.operations.relations import DatabaseTable, Field
 from ibis.expr.types import Expr
 from ibis.expr.types import Table as IbisQuery
 
+import insights
 from insights import create_toast
 from insights.cache_utils import make_digest
-from insights.insights.doctype.insights_data_source_v3.data_warehouse import Warehouse
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
 )
@@ -502,6 +502,7 @@ class IbisQueryBuilder:
 
         raw_sql = sqlparse.format(sql=raw_sql, strip_comments=True)
 
+        # TODO: apply user permissions by default
         check_permissions = frappe.db.get_single_value(
             "Insights Settings", "enable_permissions"
         ) or frappe.db.get_single_value("Insights Settings", "apply_user_permissions")
@@ -527,6 +528,12 @@ class IbisQueryBuilder:
                     use_live_connection=True,
                 )
                 t_sql = ibis.to_sql(t)
+
+                # NOTE: This currently works because `apply_sql` uses live connections,
+                # If this flow ever starts using warehouse-backed tables,
+                # this WHERE-based check will be insufficient
+                # check insights_table_v3.py -> apply_user_permissions()
+
                 # check if t_sql has any where clause, if not, then don't replace
                 t_parsed = sg.parse_one(t_sql, dialect=db.dialect)
                 if not t_parsed.find(sg.exp.Where):
@@ -556,7 +563,12 @@ class IbisQueryBuilder:
                     # Prepend WITH clause if it doesn't exist
                     raw_sql = f"WITH {with_clause_sql} {raw_sql_stripped}"
 
-        if ds.enable_stored_procedure_execution and raw_sql.strip().lower().startswith("exec"):
+        supports_stored_procedure = ds.database_type in ["PostgreSQL", "MSSQL", "MariaDB"]
+        if (
+            supports_stored_procedure
+            and ds.enable_stored_procedure_execution
+            and raw_sql.strip().lower().startswith("exec")
+        ):
             current_date = date.today().strftime("%Y-%m-%d")  # Format: 'YYYY-MM-DD'
             raw_sql = raw_sql.replace("@Today", f"'{current_date}'")
 
@@ -596,7 +608,7 @@ class IbisQueryBuilder:
             results = get_code_results(code, variables=variables)
             cache_results(digest, results, cache_expiry=60 * 5)
 
-        return Warehouse().db.create_table(
+        return insights.warehouse.db.create_table(
             digest,
             results,
             temp=True,
@@ -722,9 +734,10 @@ def execute_ibis_query(
                 title="Query execution time exceeded the limit.",
                 message=f"Query: {sql}",
             )
+            max_time = frappe.db.get_single_value("Insights Settings", "max_execution_time") or 180
             frappe.throw(
                 title="Query Timeout",
-                msg="Query execution time exceeded the limit. Please try again with a smaller timespan or a more specific filter.",
+                msg=f"Query execution time exceeded the limit of {max_time} seconds. Please try again with a smaller timespan or a more specific filter.",
             )
         raise e
 

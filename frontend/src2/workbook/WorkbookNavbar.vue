@@ -10,9 +10,7 @@ const workbook = inject(workbookKey)!
 </script>
 
 <template>
-	<div
-		class="sticky top-0 z-10 flex h-11 w-full flex-shrink-0 items-center gap-3 bg-white px-3 shadow-sm"
-	>
+	<div class="flex h-11 w-full flex-shrink-0 items-center gap-3 bg-white px-3 shadow-sm">
 		<div class="relative flex flex-1 items-center">
 			<div class="absolute left-0">
 				<slot name="left">

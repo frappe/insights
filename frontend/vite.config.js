@@ -18,7 +18,15 @@ export default defineConfig({
 	server: {
 		allowedHosts: true,
 	},
-	esbuild: { loader: 'tsx' },
+	esbuild: { loader: 'ts' },
+	css: {
+		preprocessorOptions: {
+			scss: {
+				api: 'modern-compiler', // or "modern"
+				silenceDeprecations: ['legacy-js-api'],
+			},
+		},
+	},
 	resolve: {
 		alias: {
 			// https://github.com/vitejs/vite/discussions/16730#discussioncomment-13048825
@@ -44,6 +52,12 @@ export default defineConfig({
 		},
 	},
 	optimizeDeps: {
+		esbuildOptions: {
+			loader: {
+				'.ts': 'ts',
+				'.tsx': 'tsx',
+			},
+		},
 		include: ['feather-icons', 'showdown', 'tailwind.config.js', 'highlight.js/lib/core'],
 	},
 	define: {

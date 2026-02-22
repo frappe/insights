@@ -1,6 +1,4 @@
 <script setup>
-import Autocomplete from '@/components/Controls/Autocomplete.vue'
-
 import DraggableList from '@/components/DraggableList.vue'
 import DraggableListItemMenu from '@/components/DraggableListItemMenu.vue'
 import { computed } from 'vue'
@@ -57,6 +55,7 @@ function updateColumns(columnOptions) {
 		<div class="mb-1 flex items-center justify-between">
 			<label class="block text-xs text-gray-600">Columns</label>
 			<Autocomplete
+				class="!w-fit"
 				:multiple="true"
 				:options="columnOptions"
 				:modelValue="options.columns"

@@ -1,6 +1,5 @@
 <script setup>
 import Attachment from '@/components/Controls/Attachment.vue'
-import Autocomplete from '@/components/Controls/Autocomplete.vue'
 import useDataSourceStore from '@/stores/dataSourceStore'
 import { FileUploader, createResource } from 'frappe-ui'
 import { computed, reactive, ref, watch } from 'vue'
@@ -41,7 +40,7 @@ const importDisabled = computed(
 		!table.label ||
 		!table.file ||
 		columns.length === 0 ||
-		importingTable.value
+		importingTable.value,
 )
 watch(
 	() => table.file,
@@ -49,7 +48,7 @@ watch(
 		table.label = newFile ? newFile.file_name?.replace(/\.[^/.]+$/, '') : ''
 		table.name = newFile ? scrubName(table.label) : ''
 		newFile ? getColumns.submit({ filename: newFile.name }) : (getColumns.data = [])
-	}
+	},
 )
 function scrubName(name) {
 	return name?.toLocaleLowerCase().replace(/[^a-zA-Z0-9]/g, '_')
