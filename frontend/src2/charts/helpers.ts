@@ -55,7 +55,6 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 	const _rows = result.rows
 
 	const number_columns = _columns.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
-	const show_legend = number_columns.length > 1
 	const show_scrollbar = config.y_axis.show_scrollbar || false
 
 	const xAxis = getXAxis(config.x_axis)
@@ -86,6 +85,57 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 
 	const colors = getColors()
 
+	const chartSeries = number_columns.map((c, idx) => {
+		const serie = getSerie(config, c.name) as SeriesLine
+
+		const is_right_axis = serie.align === 'Right'
+		const type = serie.type?.toLowerCase() || 'line'
+		const smooth = serie.smooth ?? config.y_axis.smooth
+		const show_data_points = serie.show_data_points ?? config.y_axis.show_data_points
+		const show_area = serie.show_area ?? config.y_axis.show_area
+		const show_data_labels = serie.show_data_labels ?? config.y_axis.show_data_labels
+		const color = serie.color?.[0] || colors[idx]
+		const name = config.split_by?.dimension?.column_name ? c.name : serie.measure.measure_name || c.name
+		const hide_from_chart = serie.hide_from_chart || false
+
+		let labelPosition = 'top'
+		if (type === 'bar') {
+			labelPosition = 'inside'
+		}
+
+		return {
+			type,
+			name,
+			data: getSeriesData(c.name),
+			color: color,
+			yAxisIndex: is_right_axis ? 1 : 0,
+			smooth: smooth ? 0.4 : false,
+			smoothMonotone: 'x',
+			showSymbol: hide_from_chart ? false : (show_data_points || show_data_labels),
+			label: {
+				fontSize: 11,
+				show: hide_from_chart ? false : show_data_labels,
+				position: labelPosition,
+				formatter: (params: any) => {
+					return getShortNumber(params.value?.[1], 1)
+				},
+			},
+			labelLayout: { hideOverlap: true },
+			itemStyle: { color: color },
+			areaStyle: show_area ? getAreaStyle(color) : undefined,
+			...(hide_from_chart ? {
+				lineStyle: { opacity: 0 },
+				itemStyle: { color: color, opacity: 0 },
+				areaStyle: undefined,
+				emphasis: { disabled: true },
+			} : {}),
+			_hide_from_chart: hide_from_chart,
+		}
+	})
+
+	const legendData = chartSeries.filter((s) => !s._hide_from_chart).map((s) => s.name)
+	const show_legend = legendData.length > 1
+
 	return {
 		animation: true,
 		animationDuration: 700,
@@ -94,50 +144,12 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 		color: colors,
 		xAxis,
 		yAxis,
-		series: number_columns.map((c, idx) => {
-			const serie = getSerie(config, c.name) as SeriesLine
-
-			const is_right_axis = serie.align === 'Right'
-			const type = serie.type?.toLowerCase() || 'line'
-			const smooth = serie.smooth ?? config.y_axis.smooth
-			const show_data_points = serie.show_data_points ?? config.y_axis.show_data_points
-			const show_area = serie.show_area ?? config.y_axis.show_area
-			const show_data_labels = serie.show_data_labels ?? config.y_axis.show_data_labels
-			const color = serie.color?.[0] || colors[idx]
-			const name = config.split_by?.dimension?.column_name ? c.name : serie.measure.measure_name || c.name
-
-			let labelPosition = 'top'
-			if (type === 'bar') {
-				labelPosition = 'inside'
-			}
-
-			return {
-				type,
-				name,
-				data: getSeriesData(c.name),
-				color: color,
-				yAxisIndex: is_right_axis ? 1 : 0,
-				smooth: smooth ? 0.4 : false,
-				smoothMonotone: 'x',
-				showSymbol: show_data_points || show_data_labels,
-				label: {
-					fontSize: 11,
-					show: show_data_labels,
-					position: labelPosition,
-					formatter: (params: any) => {
-						return getShortNumber(params.value?.[1], 1)
-					},
-				},
-				labelLayout: { hideOverlap: true },
-				itemStyle: { color: color },
-				areaStyle: show_area ? getAreaStyle(color) : undefined,
-			}
-		}),
+		series: chartSeries,
 		tooltip: getTooltip({
 			xAxisIsDate,
 			granularity,
 		}),
-		legend: getLegend(show_legend, show_scrollbar),
+		legend: { ...getLegend(show_legend, show_scrollbar), data: legendData },
 	}
 }
 
@@ -171,7 +183,6 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 	const _rows = result.rows
 
 	const number_columns = _columns.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
-	const show_legend = number_columns.length > 1
 	const show_scrollbar = config.y_axis.show_scrollbar || false
 
 	const xAxis = getXAxis(config.x_axis)
@@ -222,6 +233,58 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 
 	const colors = getColors()
 
+	const chartSeries = number_columns.map((c, idx) => {
+		const serie = getSerie(config, c.name)
+		const is_right_axis = serie.align === 'Right'
+
+		const color = serie.color?.[0] || colors[idx]
+		const type = serie.type?.toLowerCase() || 'bar'
+		const stack = type === 'bar' && config.y_axis.stack ? 'stack' : undefined
+		const show_data_labels = serie.show_data_labels ?? config.y_axis.show_data_labels
+		const data = getSeriesData(c.name)
+		const name = config.split_by?.dimension?.column_name ? c.name : serie.measure.measure_name || c.name
+		const hide_from_chart = serie.hide_from_chart || false
+
+		const roundedCorners = swapAxes ? [0, 2, 2, 0] : [2, 2, 0, 0]
+		const isLast = idx === number_columns.length - 1
+
+		let labelPosition = 'inside'
+		if (type == 'line') {
+			labelPosition = 'top'
+		}
+
+		return {
+			type,
+			stack: config.y_axis.overlap ? undefined : stack,
+			name,
+			data: swapAxes ? data.reverse() : data,
+			color: color,
+			label: {
+				show: hide_from_chart ? false : show_data_labels,
+				position: labelPosition,
+				formatter: (params: any) => {
+					const _val = swapAxes ? params.value?.[0] : params.value?.[1]
+					return getShortNumber(_val, 1)
+				},
+				fontSize: 11,
+			},
+			barGap: config.y_axis.overlap ? '-100%' : undefined,
+			labelLayout: { hideOverlap: true },
+			yAxisIndex: is_right_axis ? 1 : 0,
+			lineStyle: hide_from_chart ? { opacity: 0 } : undefined,
+			itemStyle: {
+				color: color,
+				opacity: hide_from_chart ? 0 : 1,
+				borderRadius: roundedCorners,
+			},
+			emphasis: hide_from_chart ? { disabled: true } : undefined,
+			_hide_from_chart: hide_from_chart,
+		}
+	})
+
+	const legendData = chartSeries.filter((s) => !s._hide_from_chart).map((s) => s.name)
+	const show_legend = legendData.length > 1
+
 	return {
 		animation: true,
 		animationDuration: 700,
@@ -230,55 +293,13 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 		xAxis: swapAxes ? yAxis : xAxis,
 		yAxis: swapAxes ? xAxis : yAxis,
 		dataZoom: getDataZoom(show_scrollbar, swapAxes),
-		series: number_columns.map((c, idx) => {
-			const serie = getSerie(config, c.name)
-			const is_right_axis = serie.align === 'Right'
-
-			const color = serie.color?.[0] || colors[idx]
-			const type = serie.type?.toLowerCase() || 'bar'
-			const stack = type === 'bar' && config.y_axis.stack ? 'stack' : undefined
-			const show_data_labels = serie.show_data_labels ?? config.y_axis.show_data_labels
-			const data = getSeriesData(c.name)
-			const name = config.split_by?.dimension?.column_name ? c.name : serie.measure.measure_name || c.name
-
-			const roundedCorners = swapAxes ? [0, 2, 2, 0] : [2, 2, 0, 0]
-			const isLast = idx === number_columns.length - 1
-
-			let labelPosition = 'inside'
-			if (type == 'line') {
-				labelPosition = 'top'
-			}
-
-			return {
-				type,
-				stack: config.y_axis.overlap ? undefined : stack,
-				name,
-				data: swapAxes ? data.reverse() : data,
-				color: color,
-				label: {
-					show: show_data_labels,
-					position: labelPosition,
-					formatter: (params: any) => {
-						const _val = swapAxes ? params.value?.[0] : params.value?.[1]
-						return getShortNumber(_val, 1)
-					},
-					fontSize: 11,
-				},
-				barGap: config.y_axis.overlap ? '-100%' : undefined,
-				labelLayout: { hideOverlap: true },
-				yAxisIndex: is_right_axis ? 1 : 0,
-				itemStyle: {
-					color: color,
-					borderRadius: roundedCorners,
-				},
-			}
-		}),
+		series: chartSeries,
 		tooltip: getTooltip({
 			xAxisIsDate,
 			granularity,
 			xySwapped: swapAxes,
 		}),
-		legend: getLegend(show_legend, show_scrollbar, swapAxes),
+		legend: { ...getLegend(show_legend, show_scrollbar, swapAxes), data: legendData },
 	}
 }
 

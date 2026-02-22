@@ -102,6 +102,51 @@ class InsightsQueryv3(Document):
                 linked_queries.append(operation.get("table").get("query_name"))
         self.linked_queries = linked_queries
 
+    def get_source_tables(self, visited=None):
+        """Recursively collect all leaf table references from this query and its dependencies."""
+        if visited is None:
+            visited = set()
+
+        # Prevent infinite recursion from circular dependencies
+        if self.name in visited:
+            return []
+        visited.add(self.name)
+
+        source_tables = []
+        operations = frappe.parse_json(self.operations)
+
+        if not operations:
+            return source_tables
+
+        # Collect direct table references from this query's operations
+        for operation in operations:
+            if operation.get("type") in ["source", "join", "union"]:
+                table = operation.get("table")
+                if table and table.get("type") == "table":
+                    table_info = {
+                        "data_source": table.get("data_source"),
+                        "table_name": table.get("table_name"),
+                    }
+                    if table_info not in source_tables:
+                        source_tables.append(table_info)
+
+        # Recursively collect tables from linked queries
+        linked_queries = frappe.parse_json(self.linked_queries)
+        if linked_queries:
+            for query_name in linked_queries:
+                if query_name not in visited:
+                    try:
+                        linked_query = frappe.get_doc("Insights Query v3", query_name)
+                        linked_tables = linked_query.get_source_tables(visited)
+                        for table_info in linked_tables:
+                            if table_info not in source_tables:
+                                source_tables.append(table_info)
+                    except Exception:
+                        # Skip if linked query doesn't exist or can't be loaded
+                        continue
+
+        return source_tables
+
     def build(self, active_operation_idx=None, use_live_connection=None):
         builder = IbisQueryBuilder(self, active_operation_idx)
         builder.use_live_connection = (
@@ -270,6 +315,28 @@ class InsightsQueryv3(Document):
         new_query.title = f"{self.title} (Copy)"
         new_query.insert()
         return new_query.name
+
+    @insights_whitelist()
+    def refresh_stored_tables(self):
+        """Import all source tables used in this query to the data store"""
+        source_tables = self.get_source_tables()
+        if not source_tables:
+            frappe.throw("No tables found in the query to import")
+
+        imported_count = 0
+        for table in source_tables:
+            data_source = table.get("data_source")
+            table_name = table.get("table_name")
+            if data_source and table_name:
+                from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
+
+                table_doc_name = get_table_name(data_source, table_name)
+                if frappe.db.exists("Insights Table v3", table_doc_name):
+                    table_doc = frappe.get_doc("Insights Table v3", table_doc_name)
+                    table_doc.import_to_warehouse()
+                    imported_count += 1
+
+        return {"message": f"Importing {imported_count} table(s) to data store", "count": imported_count}
 
 
 def import_query(query, workbook):

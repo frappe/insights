@@ -39,6 +39,7 @@ export type Series = {
 	type?: 'line' | 'bar'
 	align?: 'Left' | 'Right'
 	show_data_labels?: boolean
+	hide_from_chart?: boolean
 }
 export type YAxisLine = Series & {
 	series: SeriesLine[]
