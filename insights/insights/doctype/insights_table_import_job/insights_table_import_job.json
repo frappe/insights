@@ -66,6 +66,7 @@
    "fieldname": "state",
    "fieldtype": "Code",
    "label": "State (JSON)",
+   "no_copy": 1,
    "options": "JSON"
   },
   {
@@ -88,6 +89,7 @@
    "fieldname": "secrets",
    "fieldtype": "Table",
    "label": "Secrets",
+   "no_copy": 1,
    "options": "Insights Secret Key"
   },
   {
@@ -98,12 +100,14 @@
    "fieldname": "last_run",
    "fieldtype": "Datetime",
    "label": "Last Run",
+   "no_copy": 1,
    "read_only": 1
   },
   {
    "fieldname": "last_status",
    "fieldtype": "Data",
    "label": "Last Status",
+   "no_copy": 1,
    "read_only": 1
   },
   {
@@ -114,6 +118,7 @@
    "fieldname": "last_log",
    "fieldtype": "Link",
    "label": "Last Log",
+   "no_copy": 1,
    "options": "Insights Table Import Log",
    "read_only": 1
   }
@@ -125,7 +130,7 @@
    "link_fieldname": "import_job"
   }
  ],
- "modified": "2026-01-25 16:29:30.711648",
+ "modified": "2026-01-29 13:16:15.575743",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Table Import Job",

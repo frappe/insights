@@ -72,6 +72,9 @@ class InsightsQueryv3(Document):
 
     def cleanup_empty_folder(self, folder_name):
         """Delete folder if it has no queries or charts"""
+        if not frappe.db.exists("Insights Folder", folder_name):
+            return
+
         folder = frappe.get_doc("Insights Folder", folder_name)
         folder_type = folder.type
 
@@ -316,6 +319,8 @@ class InsightsQueryv3(Document):
     @insights_whitelist()
     def refresh_stored_tables(self):
         """Import all source tables used in this query to the data store"""
+        frappe.only_for("Insights Admin")
+
         source_tables = self.get_source_tables()
         if not source_tables:
             frappe.throw("No tables found in the query to import")

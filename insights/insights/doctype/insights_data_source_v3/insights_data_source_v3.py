@@ -87,7 +87,7 @@ class InsightsDataSourceDocument:
                     "schema": self.name.replace(".", "_"),
                 }
             )
-            insights.warehouse.create_schema(self.schema)
+            insights.warehouse.create_database(self.schema)
 
         if self.is_site_db:
             self.db_set("is_frappe_db", 1)
@@ -276,7 +276,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         if self.is_frappe_db:
             return get_frappedb_connection(self)
         if self.type == "REST API":
-            return insights.warehouse.get_connection(schema=self.schema)
+            return insights.warehouse.get_connection(self.schema)
         if self.database_type == "MariaDB":
             return get_mariadb_connection(self)
         if self.database_type == "PostgreSQL":
