@@ -15,8 +15,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        insights_branch: [main, version-3]
-        frappe_branch: [version-14, version-15]
+        insights_branch: [main, version-3, develop]
+        frappe_branch: [version-15, version-16]
 
     name: Install (Insights=${{ matrix.insights_branch }}, Frappe=${{ matrix.frappe_branch }})
 
@@ -48,7 +48,12 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: ${{ matrix.frappe_branch == 'version-16' && '3.14' || '3.10' }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.frappe_branch == 'version-16' && '24' || '18' }}
 
       - name: Install bench
         run: |

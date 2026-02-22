@@ -16,6 +16,7 @@ const showDialog = defineModel()
 <template>
 	<Dialog
 		v-model="showDialog"
+		:disableOutsideClickToClose="true"
 		:options="{ size: '2xl', title: 'Filter' }"
 		@close="showDialog = false"
 	>

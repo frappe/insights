@@ -99,6 +99,14 @@ class InsightsChartv3(Document):
 
         return chart
 
+    @frappe.whitelist()
+    def duplicate(self):
+        new_chart = frappe.copy_doc(self)
+        new_chart.title = f"{self.title} (Copy)"
+        new_chart.data_query = None
+        new_chart.insert()
+        return new_chart.name
+
 
 def import_chart(chart, workbook):
     chart = frappe.parse_json(chart)
@@ -108,12 +116,15 @@ def import_chart(chart, workbook):
     new_chart.update(chart.doc)
     new_chart.workbook = workbook
 
-    if not hasattr(new_chart, 'sort_order') or new_chart.sort_order is None:
-        max_sort_order = frappe.db.get_value(
-            "Insights Chart v3",
-            filters={"workbook": workbook},
-            fieldname="max(sort_order)",
-        ) or -1
+    if not hasattr(new_chart, "sort_order") or new_chart.sort_order is None:
+        max_sort_order = (
+            frappe.db.get_value(
+                "Insights Chart v3",
+                filters={"workbook": workbook},
+                fieldname="max(sort_order)",
+            )
+            or -1
+        )
         new_chart.sort_order = max_sort_order + 1
     new_chart.insert()
 

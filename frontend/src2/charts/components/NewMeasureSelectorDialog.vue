@@ -56,9 +56,10 @@ function resetNewMeasure() {
 <template>
 	<Dialog
 		:modelValue="Boolean(showDialog)"
+		:disableOutsideClickToClose="true"
 		:options="{ title: 'Create Measure' }"
 		@after-leave="resetNewMeasure"
-		@close="!newMeasure.expression && (showDialog = false)"
+		@close="showDialog = false"
 	>
 		<template #body-content>
 			<div class="flex flex-col gap-2">

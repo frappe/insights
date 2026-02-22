@@ -18,8 +18,14 @@ export default defineConfig({
 	server: {
 		allowedHosts: true,
 	},
-	esbuild: {
-		loader: 'ts',
+	esbuild: { loader: 'ts' },
+	css: {
+		preprocessorOptions: {
+			scss: {
+				api: 'modern-compiler', // or "modern"
+				silenceDeprecations: ['legacy-js-api'],
+			},
+		},
 	},
 	resolve: {
 		alias: {

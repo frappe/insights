@@ -1,7 +1,7 @@
 import { useDebouncedRefHistory } from '@vueuse/core'
-import { isEqual } from 'es-toolkit'
-import { dayjs, call } from 'frappe-ui'
 import { Buffer } from 'buffer'
+import { isEqual } from 'es-toolkit'
+import { call, dayjs } from 'frappe-ui'
 import { computed, reactive, ref, toRefs, unref } from 'vue'
 import {
 	copy,
@@ -16,6 +16,7 @@ import { confirmDialog } from '../helpers/confirm_dialog'
 import { FIELDTYPES } from '../helpers/constants'
 import useDocumentResource from '../helpers/resource'
 import { createToast } from '../helpers/toasts'
+import router from '../router'
 import session from '../session'
 import {
 	AdhocFilters,
@@ -43,7 +44,7 @@ import {
 	SQLArgs,
 	Summarize,
 	SummarizeArgs,
-	UnionArgs
+	UnionArgs,
 } from '../types/query.types'
 import { InsightsQueryv3, QueryVariable } from '../types/workbook.types'
 import useWorkbook from '../workbook/workbook'
@@ -121,8 +122,8 @@ export function makeQuery(name: string) {
 
 	const result = ref({ ...EMPTY_RESULT })
 	const executing = ref(false)
-    const downloading = ref(false)
-    const currentDownloadToken = ref<number | null>(null)
+	const downloading = ref(false)
+	const currentDownloadToken = ref<number | null>(null)
 	let lastExecutionArgs: {
 		operations: Operation[]
 		adhoc_filters?: AdhocFilters
@@ -144,7 +145,7 @@ export function makeQuery(name: string) {
 			lastExecutionArgs &&
 			isEqual(lastExecutionArgs, {
 				operations: currentOperations.value,
-				adhoc_filters: adhocFilters.value
+				adhoc_filters: adhocFilters.value,
 			})
 		) {
 			return Promise.resolve()
@@ -212,23 +213,23 @@ export function makeQuery(name: string) {
 			})
 	}
 
-    async function formatSQL(args: SQLArgs): Promise<string> {
-        if (!args.raw_sql.trim()) return args.raw_sql || ''
+	async function formatSQL(args: SQLArgs): Promise<string> {
+		if (!args.raw_sql.trim()) return args.raw_sql || ''
 
-        try {
-            const formattedSQL = await query.call('format', { raw_sql: args.raw_sql.trim() })
-            const sqlOp = getSQLOperation()
-            if (sqlOp) {
-                sqlOp.raw_sql = formattedSQL
-            } else {
-                console.warn('No SQL operation found for native query.')
-            }
-            return formattedSQL
-        } catch (error) {
-            console.error('Error formatting SQL:', error)
-            return args.raw_sql
-        }
-    }
+		try {
+			const formattedSQL = await query.call('format', { raw_sql: args.raw_sql.trim() })
+			const sqlOp = getSQLOperation()
+			if (sqlOp) {
+				sqlOp.raw_sql = formattedSQL
+			} else {
+				console.warn('No SQL operation found for native query.')
+			}
+			return formattedSQL
+		} catch (error) {
+			console.error('Error formatting SQL:', error)
+			return args.raw_sql
+		}
+	}
 
 	function setActiveOperation(index: number) {
 		activeOperationIdx.value = index
@@ -398,7 +399,7 @@ export function makeQuery(name: string) {
 			const mutateOp = query.doc.operations[existingMutateIdx] as Mutate
 			query.doc.operations[existingMutateIdx] = {
 				...mutateOp,
-				new_name: newName
+				new_name: newName,
 			}
 			return
 		}
@@ -464,7 +465,7 @@ export function makeQuery(name: string) {
 			const mutateOp = query.doc.operations[existingMutateIdx] as Mutate
 			query.doc.operations[existingMutateIdx] = {
 				...mutateOp,
-				data_type: newType
+				data_type: newType,
 			}
 			return
 		}
@@ -493,42 +494,44 @@ export function makeQuery(name: string) {
 		activeOperationIdx.value = newOperations.length - 1
 	}
 
-    function downloadResults(format: string = 'csv', filename?: string) {
-        const _downloadResults =  () => {
-            downloading.value = true
-            const token = Date.now() + Math.random()
-            currentDownloadToken.value = token
-            return call('insights.api.run_doc_method', {
-                method: 'download_results',
-                docs: {
-                    ...(query.doc || {}),
-                    __islocal: query.islocal,
-                },
-                args: {
-                    format,
-                    active_operation_idx: activeOperationIdx.value,
-                    adhoc_filters: adhocFilters.value,
-                },
-            })
-                .then((payload: any) => {
-                    if (currentDownloadToken.value !== token) return
-                    const data: string = payload?.message
-                    if (!data) {
-                        createToast({
-                            title: 'Download Failed',
-                            message: 'No data found to download.',
-                            variant: 'warning',
-                        })
-                        return
-                    }
+	function downloadResults(format: string = 'csv', filename?: string) {
+		const _downloadResults = () => {
+			downloading.value = true
+			const token = Date.now() + Math.random()
+			currentDownloadToken.value = token
+			return call('insights.api.run_doc_method', {
+				method: 'download_results',
+				docs: {
+					...(query.doc || {}),
+					__islocal: query.islocal,
+				},
+				args: {
+					format,
+					active_operation_idx: activeOperationIdx.value,
+					adhoc_filters: adhocFilters.value,
+				},
+			})
+				.then((payload: any) => {
+					if (currentDownloadToken.value !== token) return
+					const data: string = payload?.message
+					if (!data) {
+						createToast({
+							title: 'Download Failed',
+							message: 'No data found to download.',
+							variant: 'warning',
+						})
+						return
+					}
 
 					let blob: Blob
 					let extension: string
 					let mimeType: string
 
-                    if (format === 'excel') {
-                        const bytes = Buffer.from(data, 'base64')
-                        blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+					if (format === 'excel') {
+						const bytes = Buffer.from(data, 'base64')
+						blob = new Blob([bytes], {
+							type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+						})
 						extension = 'xlsx'
 						mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 					} else {
@@ -541,41 +544,41 @@ export function makeQuery(name: string) {
 					const a = document.createElement('a')
 					a.setAttribute('hidden', '')
 					a.setAttribute('href', url)
-                    const finalFileName = `${filename || query.doc.title || 'data'}.${extension}`
-                    a.setAttribute('download', finalFileName)
+					const finalFileName = `${filename || query.doc.title || 'data'}.${extension}`
+					a.setAttribute('download', finalFileName)
 					document.body.appendChild(a)
 					a.click()
 					document.body.removeChild(a)
 					window.URL.revokeObjectURL(url)
-                    createToast({
-                        title: 'Export Successful',
-                        message: `File "${finalFileName}" exported successfully`,
-                        variant: 'success',
-                    })
+					createToast({
+						title: 'Export Successful',
+						message: `File "${finalFileName}" exported successfully`,
+						variant: 'success',
+					})
 				})
-                .catch((error: any) => {
-                    if (currentDownloadToken.value !== token) return
-                    createToast({
-                        title: 'Download Failed',
-                        message: error?.message || 'Failed to download file',
-                        variant: 'error',
-                    })
-                })
-                .finally(() => {
-                    if (currentDownloadToken.value === token) {
-                        downloading.value = false
-                        currentDownloadToken.value = null
-                    }
-                })
-		}	
+				.catch((error: any) => {
+					if (currentDownloadToken.value !== token) return
+					createToast({
+						title: 'Download Failed',
+						message: error?.message || 'Failed to download file',
+						variant: 'error',
+					})
+				})
+				.finally(() => {
+					if (currentDownloadToken.value === token) {
+						downloading.value = false
+						currentDownloadToken.value = null
+					}
+				})
+		}
 
 		_downloadResults()
 	}
 
-    function cancelDownload() {
-        currentDownloadToken.value = null
-        downloading.value = false
-    }
+	function cancelDownload() {
+		currentDownloadToken.value = null
+		downloading.value = false
+	}
 
 	function exportResults(format: string, filename: string) {
 		downloadResults(format, filename)
@@ -661,7 +664,8 @@ export function makeQuery(name: string) {
 		if (!query.doc.is_script_query) return Promise.resolve()
 
 		query.doc.variables = variables
-		return query.save()
+		return query
+			.save()
 			.then(() => {
 				createToast({
 					title: 'Variables Updated',
@@ -713,7 +717,9 @@ export function makeQuery(name: string) {
 			filters = getDrillDownQueryForPivot(operations, sliceIdx, col, currRow)
 		}
 
-		const lastSummarizeIdx = reversedOperations.findIndex((op: Operation) => op.type === 'summarize')
+		const lastSummarizeIdx = reversedOperations.findIndex(
+			(op: Operation) => op.type === 'summarize'
+		)
 		if (lastSummarizeIdx !== -1) {
 			sliceIdx = reversedOperations.length - lastSummarizeIdx - 1
 			filters = getDrillDownQueryForSummarize(operations, sliceIdx, col, currRow)
@@ -728,7 +734,6 @@ export function makeQuery(name: string) {
 		return drill_down_query
 	}
 
-
 	function getFiltersForDimension(dim: Dimension, value: string) {
 		const filters: FilterRule[] = []
 
@@ -741,21 +746,21 @@ export function makeQuery(name: string) {
 		}
 
 		if (FIELDTYPES.DATE.includes(dim.data_type)) {
-			const start = dayjs(value);
+			const start = dayjs(value)
 
 			filters.push({
 				column: column(dim.column_name),
 				operator: '>=',
 				value: start.format('YYYY-MM-DD HH:mm:ss'),
-			});
+			})
 
 			if (dim.granularity) {
-				const end = start.clone().add(1, dim.granularity);
+				const end = start.clone().add(1, dim.granularity)
 				filters.push({
 					column: column(dim.column_name),
 					operator: '<',
 					value: end.format('YYYY-MM-DD HH:mm:ss'),
-				});
+				})
 			}
 		}
 
@@ -763,7 +768,11 @@ export function makeQuery(name: string) {
 	}
 
 	function getFiltersForMeasure(measure: Measure, columnName: string) {
-		if (measure.measure_name !== columnName || 'expression' in measure === false || !measure.expression) {
+		if (
+			measure.measure_name !== columnName ||
+			'expression' in measure === false ||
+			!measure.expression
+		) {
 			return []
 		}
 
@@ -784,9 +793,11 @@ export function makeQuery(name: string) {
 			const match = exp.match(pattern)
 			if (match) {
 				const condition = match[1].trim()
-				return [{
-					expression: expression(condition),
-				}]
+				return [
+					{
+						expression: expression(condition),
+					},
+				]
 			}
 		}
 
@@ -799,7 +810,6 @@ export function makeQuery(name: string) {
 		col: QueryResultColumn,
 		row: QueryResultRow
 	) {
-
 		const filters: FilterArgs[] = []
 		const summarizeOperation = operations[summarizeIdx] as Summarize
 		summarizeOperation.dimensions.forEach((c) => {
@@ -845,7 +855,10 @@ export function makeQuery(name: string) {
 
 		// if there are more than one value then there are two headers in the pivot table
 		// the last one displays the measure name, so we get the current measure name from pivotColumnValues
-		const selectedValueColumn = pivotOperation.values.length == 1 ? pivotOperation.values[0].measure_name : pivotColumnValues.at(-1) as string
+		const selectedValueColumn =
+			pivotOperation.values.length == 1
+				? pivotOperation.values[0].measure_name
+				: (pivotColumnValues.at(-1) as string)
 		pivotOperation.values.forEach((m) => {
 			return filters.push(...getFiltersForMeasure(m, selectedValueColumn))
 		})
@@ -876,9 +889,23 @@ export function makeQuery(name: string) {
 	}
 
 	function copyQuery() {
-		query.call('export').then(data => {
+		query.call('export').then((data) => {
 			copyToClipboard(JSON.stringify(data, null, 2))
 		})
+	}
+
+	function duplicateQuery() {
+		const workbook = useWorkbook(query.doc.workbook)
+		return query
+			.call('duplicate')
+			.then((newQueryName: string) => {
+				createToast({
+					title: 'Query duplicated',
+					variant: 'success',
+				})
+				router.push(`/workbook/${query.doc.workbook}/query/${newQueryName}`)
+			})
+			.then(workbook.load)
 	}
 
 	const history = useDebouncedRefHistory(
@@ -969,9 +996,9 @@ export function makeQuery(name: string) {
 		getDistinctColumnValues,
 		getColumnsForSelection,
 		downloadResults,
-        exportResults,
+		exportResults,
 		downloading,
-        cancelDownload,
+		cancelDownload,
 		getSQLOperation,
 		setSQL,
 		formatSQL,
@@ -987,6 +1014,7 @@ export function makeQuery(name: string) {
 
 		getDrillDownQuery,
 		copy: copyQuery,
+		duplicate: duplicateQuery,
 
 		history,
 		canUndo() {
@@ -1019,6 +1047,7 @@ const INITIAL_DOC: InsightsQueryv3 = {
 	workbook: '',
 	operations: [],
 	read_only: false,
+	sort_order: 0,
 }
 
 function getQueryResource(name: string) {
