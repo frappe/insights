@@ -274,8 +274,9 @@ const formattingRulesByColumn = computed(() => {
 
     if (!formats?.length) return result
 
-    // get the measure part of a pivot column
-    const getMeasureName = (name: string) => name.includes('___') ? name.split('___').pop() : name
+    // ibis generates pivot columns as {measure}___{dim_value1}___{dim_value2}...
+    // so the measure name is always the first part
+    const getMeasureName = (name: string) => name.includes('___') ? name.split('___')[0] : name
 
     formats.forEach((format) => {
         const target = 'column' in format ? format.column?.column_name : null
