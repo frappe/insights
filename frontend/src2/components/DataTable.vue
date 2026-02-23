@@ -295,10 +295,16 @@ const formattingRulesByColumn = computed(() => {
 
 	const sanitizeColumnName = (n: string) => n.split('__')[0]
 
+<<<<<<< HEAD
 	formatGroup.formats.forEach((format) => {
 		const target =
 			'column' in format && format.column?.column_name ? format.column.column_name : ''
 		if (!target) return
+=======
+    // ibis generates pivot columns as {measure}___{dim_value1}___{dim_value2}...
+    // so the measure name is always the first part
+    const getMeasureName = (name: string) => name.includes('___') ? name.split('___')[0] : name
+>>>>>>> c95eae59 (fix: get correct measure name)
 
 		columns.forEach((col) => {
 			if (sanitizeColumnName(col.name) === target) {
