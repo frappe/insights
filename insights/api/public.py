@@ -51,7 +51,11 @@ def get_public_chart(public_key: str):
 
 
 @frappe.whitelist(allow_guest=True)
-def get_public_dashboard_chart_data(public_key: str, item_id: str, filters=None):
+def get_public_dashboard_chart_data(
+    public_key: str,
+    item_id: str,
+    filters: dict | None = None,
+):
     if not public_key or not isinstance(public_key, str):
         frappe.throw("Public Key is required")
 
