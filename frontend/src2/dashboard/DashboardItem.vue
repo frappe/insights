@@ -23,7 +23,7 @@ const dashboard = inject('dashboard') as Dashboard
 <template>
 	<div class="group relative flex h-full w-full p-2">
 		<div
-			class="flex h-full w-full items-center justify-center"
+			class="flex h-full w-full items-center justify-start"
 			:class="
 				dashboard.editing
 					? 'pointer-events-none  [&>div:first-child]:rounded [&>div:first-child]:group-hover:outline [&>div:first-child]:group-hover:outline-gray-400'
