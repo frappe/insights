@@ -1,6 +1,6 @@
 import frappe
 
-from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import ( after_request)
+from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import after_request
 
 def execute():
     """
@@ -9,7 +9,7 @@ def execute():
      The new name will be a reproducible hash of the data_source and table name
     """
 
-    data_sources = frappe.get_all( "Insights Data Source v3", filters={"status": "Active"}, pluck="name")
+    data_sources = frappe.get_all("Insights Data Source v3", filters={"status": "Active"}, pluck="name")
 
     doctype_doc = frappe.get_doc("DocType", "Insights Table v3")
     doctype_doc.setup_autoincrement_and_sequence()
