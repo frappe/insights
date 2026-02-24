@@ -34,8 +34,6 @@ async function fetchDashboards(search_term?: string, limit: number = 50) {
 		call('insights.api.dashboards.get_dashboards', { search_term, limit }),
 		call('insights.api.dashboards.get_dashboards',{get_favorites: true}),
 	])
-	console.log('dashboards', regular)
-	console.log('dashboards', fav)
 
 	dashboards.value = regular.map(mapTimeAgo)
 	favorites.value = fav.map(mapTimeAgo)
