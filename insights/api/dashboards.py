@@ -12,9 +12,7 @@ def get_dashboard_list():
     )
     for dashboard in dashboards:
         if dashboard._liked_by:
-            dashboard["is_favourite"] = frappe.session.user in frappe.as_json(
-                dashboard._liked_by
-            )
+            dashboard["is_favourite"] = frappe.session.user in frappe.as_json(dashboard._liked_by)
         dashboard["charts"] = frappe.get_all(
             "Insights Dashboard Item",
             filters={
@@ -82,7 +80,7 @@ def get_dashboards(search_term: str | None = None, limit: int = 50, get_favorite
             "name": ["like", f"%{search_term}%" if search_term else "%"],
             "title": ["like", f"%{search_term}%" if search_term else "%"],
         },
-        filters=  {"_liked_by": ["like", f"%{frappe.session.user}%"]} if get_favorites else {},
+        filters={"_liked_by": ["like", f"%{frappe.session.user}%"]} if get_favorites else {},
         fields=[
             "name",
             "title",
@@ -109,9 +107,7 @@ def get_dashboards(search_term: str | None = None, limit: int = 50, get_favorite
             },
         )
         if dashboard._liked_by:
-            dashboard["is_favourite"] = frappe.session.user in frappe.as_json(
-                dashboard._liked_by
-            )
+            dashboard["is_favourite"] = frappe.session.user in frappe.as_json(dashboard._liked_by)
         del dashboard["items"]
 
     return dashboards
