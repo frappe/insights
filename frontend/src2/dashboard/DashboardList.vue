@@ -12,9 +12,7 @@ watchEffect(() => {
 	store.fetchDashboards(searchQuery.value)
 })
 
-const favorites = computed(() => {
-	return store.dashboards.filter((d) => d.is_favourite)
-})
+const favorites = computed(() => store.favorites)
 
 const router = useRouter()
 const dropdownOptions = (dashboard: DashboardListItem) => {
