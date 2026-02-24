@@ -29,14 +29,15 @@ const mapTimeAgo = (dashboard: any) => ({
 })
 async function fetchDashboards(search_term?: string, limit: number = 50) {
 	loading.value = true
-	const regular = await call('insights.api.dashboards.get_dashboards', { search_term, limit })
-	dashboards.value = regular.map(mapTimeAgo)
-	loading.value = false
-}
 
-async function fetchFavorites() {
-	const fav = await call('insights.api.dashboards.get_dashboards', { get_favorites: true })
+	const [regular, fav] = await Promise.all([
+		call('insights.api.dashboards.get_dashboards', { search_term, limit }),
+		call('insights.api.dashboards.get_dashboards', { get_favorites: true }),
+	])
+
+	dashboards.value = regular.map(mapTimeAgo)
 	favorites.value = fav.map(mapTimeAgo)
+	loading.value = false
 }
 
 const updatingPreviewImage = ref<Record<string, boolean>>({})
@@ -62,14 +63,12 @@ async function toggleLike(dashboard_name: string, add: boolean) {
 		doctype: 'Insights Dashboard v3',
 		name: dashboard_name,
 		add: add ? 'Yes' : 'No',
-	})
-		.then(() => fetchFavorites())
+	}).then(() => fetchDashboards())
 }
 
 export default function useDashboardStore() {
-	if (!dashboards.value.length && !loading.value) {
+	if (!dashboards.value.length) {
 		fetchDashboards()
-		fetchFavorites()
 	}
 
 	return reactive({
