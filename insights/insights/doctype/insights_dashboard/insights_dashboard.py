@@ -53,8 +53,9 @@ class InsightsDashboard(Document):
         notify(**{"type": "success", "title": "Cache Cleared"})
 
     @frappe.whitelist()
-    def fetch_chart_data(self, item_id, query_name=None, filters=None):
-
+    def fetch_chart_data(
+        self, item_id: str | int, query_name: str | None = None, filters: dict | None = None
+    ):
         if query_name:
             if not frappe.has_permission("Insights Query", "read", query_name):
                 frappe.throw("You are not permitted to access this query")
@@ -81,18 +82,14 @@ class InsightsDashboard(Document):
         # TODO: if 3 charts with same query results is fetched, it will be fetched 3 times
         new_results = query.fetch_results(additional_filters=additional_filters)
 
-        query_result_expiry = frappe.db.get_single_value(
-            "Insights Settings", "query_result_expiry"
-        )
+        query_result_expiry = frappe.db.get_single_value("Insights Settings", "query_result_expiry")
         query_result_expiry_in_seconds = query_result_expiry * 60
-        frappe.cache().set_value(
-            key, new_results, expires_in_sec=query_result_expiry_in_seconds
-        )
+        frappe.cache().set_value(key, new_results, expires_in_sec=query_result_expiry_in_seconds)
         return new_results
 
 
 @frappe.whitelist()
-def get_queries_column(query_names):
+def get_queries_column(query_names: list[str]):
     # TODO: handle permissions
     table_by_datasource = {}
     for query_name in list(set(query_names)):
@@ -136,20 +133,17 @@ def get_queries_column(query_names):
 
 
 @frappe.whitelist()
-def get_query_columns(query):
+def get_query_columns(query: str):
     # TODO: handle permissions
     return frappe.get_cached_doc("Insights Query", query).fetch_columns()
 
 
 def get_dashboard_public_key(name):
-
     is_public = frappe.db.get_value("Insights Dashboard", name, "is_public")
     if not is_public:
         frappe.throw("Dashboard is not public")
 
-    existing_key = frappe.db.get_value(
-        "Insights Dashboard", name, "public_key", cache=True
-    )
+    existing_key = frappe.db.get_value("Insights Dashboard", name, "public_key", cache=True)
     if existing_key:
         return existing_key
 
@@ -159,7 +153,7 @@ def get_dashboard_public_key(name):
 
 
 @frappe.whitelist()
-def get_dashboard_file(filename):
+def get_dashboard_file(filename: str):
     file = frappe.get_doc("File", filename)
     dashboard = file.get_content()
     dashboard = frappe.parse_json(dashboard)

@@ -42,7 +42,7 @@ class InsightsSettings(Document):
             sync_site_tables()
 
     @frappe.whitelist()
-    def update_settings(self, settings):
+    def update_settings(self, settings: dict | str):
         settings = frappe.parse_json(settings)
         if hasattr(settings, "auto_execute_query"):
             self.auto_execute_query = settings.auto_execute_query
@@ -76,9 +76,7 @@ def sync_site_tables():
 
 
 def create_site_db_data_source():
-    data_source_fixture_path = frappe.get_app_path(
-        "insights", "fixtures", "insights_data_source.json"
-    )
-    with open(data_source_fixture_path, "r") as f:
+    data_source_fixture_path = frappe.get_app_path("insights", "fixtures", "insights_data_source.json")
+    with open(data_source_fixture_path) as f:
         site_db = json.load(f)[0]
         frappe.get_doc(site_db).insert()

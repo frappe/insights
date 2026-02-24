@@ -10,7 +10,7 @@ from frappe.model.document import Document
 
 class InsightsQueryChart(Document):
     @frappe.whitelist()
-    def update_doc(self, doc):
+    def update_doc(self, doc: dict | str):
         doc = _dict(doc)
         self.title = doc.title
         self.type = doc.type
@@ -18,7 +18,7 @@ class InsightsQueryChart(Document):
         self.save()
 
     @frappe.whitelist()
-    def add_to_dashboard(self, dashboard):
+    def add_to_dashboard(self, dashboard: str):
         dashboard_doc = frappe.get_doc("Insights Dashboard", dashboard)
         dashboard_doc.add_item(
             {
