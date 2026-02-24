@@ -154,4 +154,3 @@ def get_code_completions(code: str):
     return {
         "current_function": current_function,
     }
-
