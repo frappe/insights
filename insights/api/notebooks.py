@@ -12,7 +12,7 @@ def get_notebooks():
 
 
 @frappe.whitelist()
-def create_notebook(title):
+def create_notebook(title: str):
     notebook = frappe.new_doc("Insights Notebook")
     notebook.title = title
     notebook.save()
@@ -20,7 +20,7 @@ def create_notebook(title):
 
 
 @frappe.whitelist()
-def create_notebook_page(notebook):
+def create_notebook_page(notebook: str):
     notebook_page = frappe.new_doc("Insights Notebook Page")
     notebook_page.notebook = notebook
     notebook_page.title = "Untitled"
@@ -29,7 +29,7 @@ def create_notebook_page(notebook):
 
 
 @frappe.whitelist()
-def get_notebook_pages(notebook):
+def get_notebook_pages(notebook: str):
     return frappe.get_list(
         "Insights Notebook Page",
         filters={"notebook": notebook},
