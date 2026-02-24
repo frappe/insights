@@ -1,4 +1,4 @@
-import { get, useTimeAgo } from '@vueuse/core'
+import { useTimeAgo } from '@vueuse/core'
 import { call } from 'frappe-ui'
 import { reactive, ref } from 'vue'
 import { createInfoToast, createSuccessToast } from '../helpers/toasts'
@@ -29,15 +29,14 @@ const mapTimeAgo = (dashboard: any) => ({
 })
 async function fetchDashboards(search_term?: string, limit: number = 50) {
 	loading.value = true
-
-	const [regular, fav] = await Promise.all([
-		call('insights.api.dashboards.get_dashboards', { search_term, limit }),
-		call('insights.api.dashboards.get_dashboards',{get_favorites: true}),
-	])
-
+	const regular = await call('insights.api.dashboards.get_dashboards', { search_term, limit })
 	dashboards.value = regular.map(mapTimeAgo)
-	favorites.value = fav.map(mapTimeAgo)
 	loading.value = false
+}
+
+async function fetchFavorites() {
+	const fav = await call('insights.api.dashboards.get_dashboards', { get_favorites: true })
+	favorites.value = fav.map(mapTimeAgo)
 }
 
 const updatingPreviewImage = ref<Record<string, boolean>>({})
@@ -64,12 +63,13 @@ async function toggleLike(dashboard_name: string, add: boolean) {
 		name: dashboard_name,
 		add: add ? 'Yes' : 'No',
 	})
-		.then(() => fetchDashboards())
+		.then(() => fetchFavorites())
 }
 
 export default function useDashboardStore() {
-	if (!dashboards.value.length) {
+	if (!dashboards.value.length && !loading.value) {
 		fetchDashboards()
+		fetchFavorites()
 	}
 
 	return reactive({
