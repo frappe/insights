@@ -1,4 +1,4 @@
-import { get, useTimeAgo } from '@vueuse/core'
+import { useTimeAgo } from '@vueuse/core'
 import { call } from 'frappe-ui'
 import { reactive, ref } from 'vue'
 import { createInfoToast, createSuccessToast } from '../helpers/toasts'
@@ -32,7 +32,7 @@ async function fetchDashboards(search_term?: string, limit: number = 50) {
 
 	const [regular, fav] = await Promise.all([
 		call('insights.api.dashboards.get_dashboards', { search_term, limit }),
-		call('insights.api.dashboards.get_dashboards',{get_favorites: true}),
+		call('insights.api.dashboards.get_dashboards', { get_favorites: true }),
 	])
 
 	dashboards.value = regular.map(mapTimeAgo)
@@ -63,8 +63,7 @@ async function toggleLike(dashboard_name: string, add: boolean) {
 		doctype: 'Insights Dashboard v3',
 		name: dashboard_name,
 		add: add ? 'Yes' : 'No',
-	})
-		.then(() => fetchDashboards())
+	}).then(() => fetchDashboards())
 }
 
 export default function useDashboardStore() {
