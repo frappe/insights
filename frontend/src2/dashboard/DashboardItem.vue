@@ -32,17 +32,17 @@ const dashboard = inject('dashboard') as Dashboard
 		>
 			<DashboardChart
 				v-if="props.item.type == 'chart'"
-				:item="(props.item as WorkbookDashboardChart)"
+				:item="props.item as WorkbookDashboardChart"
 			/>
 
 			<DashboardText
 				v-else-if="props.item.type === 'text'"
-				:item="(props.item as WorkbookDashboardText)"
+				:item="props.item as WorkbookDashboardText"
 			/>
 
 			<DashboardFilter
 				v-else-if="props.item.type === 'filter'"
-				:item="(props.item as WorkbookDashboardFilter)"
+				:item="props.item as WorkbookDashboardFilter"
 			/>
 		</div>
 		<DashboardItemActions
