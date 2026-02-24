@@ -117,7 +117,7 @@ def get_function_list():
 
 
 @frappe.whitelist()
-def get_code_completions(code: str, column_options=None):
+def get_code_completions(code: str, column_options: str | None = None):
     import_statement = """from insights.insights.doctype.insights_data_source_v3.ibis.functions import *\nfrom ibis import selectors as s"""
     code = f"{import_statement}\n\n{code}"
 
@@ -202,7 +202,7 @@ def parse_column_metadata(column_options: str):
     return meta
 
 
-def create_error(line: int, column: int, message: str, hint: str = None):
+def create_error(line: int, column: int, message: str, hint: str | None = None):
     error = {"line": line, "column": column, "message": message}
     if hint:
         error["hint"] = hint
@@ -348,9 +348,7 @@ def handle_attribute_error(error: AttributeError, line: int = 1):
         if isinstance(obj, ir.Scalar):
             if has_method_on_col:
                 message = f"Type error: Cannot call aggregation '{attr_name}()' on a scalar value."
-                hint = (
-                    f"Hint: '{attr_name}' expects a column but you are applying it to a single value "
-                )
+                hint = f"Hint: '{attr_name}' expects a column but you are applying it to a single value "
             else:
                 message = f"Type error: '{dtype}' data does not support '{attr_name}()'."
 
@@ -358,6 +356,7 @@ def handle_attribute_error(error: AttributeError, line: int = 1):
             message = f"Type error: '{dtype}' columns do not support '{attr_name}()'."
 
     return create_error(line=line, column=0, message=message, hint=hint)
+
 
 def validate_types(expression: str, columns: list[dict]):
     schema = get_ibis_dtype(columns)
@@ -371,7 +370,7 @@ def validate_types(expression: str, columns: list[dict]):
         return {"is_valid": True, "errors": []}
 
     except (AttributeError, TypeError) as e:
-        _,_,tb = sys.exc_info()
+        _, _, tb = sys.exc_info()
         line = get_error_line(tb)
         error_msg = str(e)
 
@@ -392,10 +391,11 @@ def validate_types(expression: str, columns: list[dict]):
         return {"is_valid": False, "errors": [create_error(line, 0, f"Type error: {error_msg}")]}
 
     except Exception as e:
-        _,_,tb = sys.exc_info()
+        _, _, tb = sys.exc_info()
         line = get_error_line(tb)
-        frappe.log_error(f"Unexpected validation error: {str(e)}")
-        return {"is_valid": False, "errors": [create_error(line, 0, f"Error: {str(e)}")]}
+        frappe.log_error(f"Unexpected validation error: {e!s}")
+        return {"is_valid": False, "errors": [create_error(line, 0, f"Error: {e!s}")]}
+
 
 def get_error_line(tb) -> int:
     if tb:
@@ -403,6 +403,8 @@ def get_error_line(tb) -> int:
             if frame.filename == "<string>":
                 return frame.lineno
     return 1
+
+
 @frappe.whitelist()
 def validate_expression(expression: str, column_options: str):
     """Main function to validate expression/syntax"""

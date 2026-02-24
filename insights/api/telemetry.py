@@ -49,7 +49,7 @@ def get_credentials():
 
 
 @frappe.whitelist(allow_guest=True)
-def track_active_site(is_v3=False):
+def track_active_site(is_v3: bool = False):
     if (
         frappe.conf.developer_mode
         or not should_track_active_status()
