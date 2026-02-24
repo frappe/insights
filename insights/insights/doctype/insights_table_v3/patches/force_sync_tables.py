@@ -2,7 +2,6 @@ import frappe
 
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
     after_request,
-    before_request,
 )
 
 
@@ -20,7 +19,6 @@ def execute():
     doctype_doc = frappe.get_doc("DocType", "Insights Table v3")
     doctype_doc.setup_autoincrement_and_sequence()
 
-    before_request()
 
     for source in data_sources:
         doc = frappe.get_doc("Insights Data Source v3", source)
