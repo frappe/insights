@@ -11,6 +11,7 @@ import sqlparse
 from frappe.model.document import Document
 from ibis import _
 
+from insights.api.telemetry import capture_event
 from insights.decorators import insights_whitelist
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     IbisQueryBuilder,
@@ -160,7 +161,9 @@ class InsightsQueryv3(Document):
         return ibis_query
 
     @frappe.whitelist()
-    def execute(self, active_operation_idx: int | None = None, adhoc_filters: dict | None = None, force: bool = False):
+    def execute(
+        self, active_operation_idx: int | None = None, adhoc_filters: dict | None = None, force: bool = False
+    ):
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
 
@@ -181,6 +184,7 @@ class InsightsQueryv3(Document):
         results = results.to_dict(orient="records")
 
         columns = get_columns_from_schema(ibis_query.schema())
+        capture_event("query_executed")
         return {
             "sql": ibis.to_sql(ibis_query),
             "columns": columns,
@@ -211,7 +215,9 @@ class InsightsQueryv3(Document):
         return int(total_count)
 
     @insights_whitelist()
-    def download_results(self, format: str = "csv", active_operation_idx: int | None = None, adhoc_filters: dict | None = None):
+    def download_results(
+        self, format: str = "csv", active_operation_idx: int | None = None, adhoc_filters: dict | None = None
+    ):
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
 
