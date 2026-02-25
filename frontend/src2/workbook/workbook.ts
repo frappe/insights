@@ -17,9 +17,10 @@ import { createToast } from '../helpers/toasts'
 import useQuery, { newQuery } from '../query/query'
 import router from '../router'
 import session from '../session'
+import { capture } from '../telemetry'
 import type {
 	InsightsWorkbook,
-	WorkbookSharePermission as WorkbookUserPermission
+	WorkbookSharePermission as WorkbookUserPermission,
 } from '../types/workbook.types'
 
 const workbooks = new Map<string, Workbook>()
@@ -107,6 +108,7 @@ function makeWorkbook(name: string) {
 				sort_order: chart.doc.sort_order,
 				folder: null,
 			})
+			capture('chart_created')
 			setActiveTab('chart', chart.doc.name)
 		})
 	}
@@ -139,6 +141,7 @@ function makeWorkbook(name: string) {
 				name: dashboard.doc.name,
 				title: dashboard.doc.title,
 			})
+			capture('dashboard_created')
 			setActiveTab('dashboard', dashboard.doc.name)
 		})
 	}
