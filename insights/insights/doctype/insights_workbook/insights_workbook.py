@@ -8,6 +8,7 @@ from frappe.model.document import Document
 from frappe.query_builder import Interval
 from frappe.query_builder.functions import Now
 
+from insights.api.telemetry import capture_event
 from insights.utils import deep_convert_dict_to_dict
 
 
@@ -46,6 +47,8 @@ class InsightsWorkbook(Document):
             frappe.delete_doc("Insights Folder", f.name, force=True, ignore_permissions=True)
 
     def after_insert(self):
+        capture_event("workbook_created")
+
         # If this is a restored workbook (has data_backup) then restore child documents
         if not self.data_backup:
             # This is a normal new workbook and not a restored one(skip restore)
@@ -89,7 +92,7 @@ class InsightsWorkbook(Document):
             if query.get("folder") and query.get("folder") in id_map:
                 new_query.folder = id_map[query.get("folder")]
 
-            if not hasattr(new_query, 'sort_order') or new_query.sort_order is None:
+            if not hasattr(new_query, "sort_order") or new_query.sort_order is None:
                 new_query.sort_order = query_sort_order
                 query_sort_order += 1
 
@@ -130,7 +133,7 @@ class InsightsWorkbook(Document):
             if chart.get("folder") and chart.get("folder") in id_map:
                 new_chart.folder = id_map[chart.get("folder")]
 
-            if not hasattr(new_chart, 'sort_order') or new_chart.sort_order is None:
+            if not hasattr(new_chart, "sort_order") or new_chart.sort_order is None:
                 new_chart.sort_order = chart_sort_order
                 chart_sort_order += 1
 
@@ -375,6 +378,9 @@ def import_workbook(workbook):
     new_workbook = frappe.new_doc("Insights Workbook")
     new_workbook.title = workbook["doc"]["title"]
     new_workbook.insert()
-    new_workbook.restore_workbook_contents(workbook, new_workbook.name,)
+    new_workbook.restore_workbook_contents(
+        workbook,
+        new_workbook.name,
+    )
 
     return new_workbook.name
