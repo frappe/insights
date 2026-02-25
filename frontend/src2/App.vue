@@ -32,7 +32,6 @@ import { dialogs } from './helpers/confirm_dialog'
 import { attachRealtimeListener, waitUntil } from './helpers/index.ts'
 import { createToast } from './helpers/toasts.ts'
 import session from './session'
-import telemetry from './telemetry.ts'
 import router from '@/router.ts'
 
 const route = useRoute()
@@ -43,9 +42,6 @@ watchEffect(() => {
 })
 
 const isGuestView = computed(() => route.meta.isGuestView || !session.isLoggedIn)
-waitUntil(() => session.isLoggedIn).then(() => {
-	telemetry.init()
-})
 
 attachRealtimeListener('insights_notification', (data: any) => {
 	if (data.user == session.user.email) {
