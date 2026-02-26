@@ -1,4 +1,5 @@
-import { useTelemetry } from 'frappe-ui'
+//@ts-ignore
+import { useTelemetry } from 'frappe-ui/frappe'
 import '../posthog.js'
 
 interface CaptureOptions {
