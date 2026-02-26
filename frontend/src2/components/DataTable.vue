@@ -56,7 +56,7 @@ const columnsMeta = computed(() => {
 	props.columns.forEach((col) => {
 		const name = col.name
 		const hasColorScaleFormatting = formattingRulesByColumn.value[name]?.some(
-			(rule) => rule.mode === 'color_scale',
+			(rule) => rule.mode === 'color_scale'
 		)
 		const metadata = {
 			isNumber: FIELDTYPES.NUMBER.includes(col.type) || hasColorScaleFormatting,
@@ -288,6 +288,7 @@ const colorByValues = computed(() => {
 })
 
 const formattingRulesByColumn = computed(() => {
+<<<<<<< HEAD
 	const formatGroup = props.formatGroup
 	const result: Record<string, FormattingMode[]> = {}
 	const columns = props.columns || []
@@ -314,6 +315,44 @@ const formattingRulesByColumn = computed(() => {
 		})
 	})
 
+=======
+	const { formats } = props.formatGroup || {}
+	const columns = props.columns || []
+	const result: Record<string, FormattingMode[]> = {}
+
+	if (!formats?.length) return result
+
+	// ibis generates pivot columns as {measure}___{dim_value1}___{dim_value2}...
+	// so the measure name is always the first part
+	const getMeasureName = (name: string) => (name.includes('___') ? name.split('___')[0] : name)
+
+	formats.forEach((format) => {
+		const target = 'column' in format ? format.column?.column_name : null
+		if (!target) return
+
+		// get matches (direct or pivot suffix)
+		const matchedColumns = columns.filter((col) => {
+			const measureName = getMeasureName(col.name)
+			return measureName === target || col.name.endsWith(`___${target}`)
+		})
+
+		if (matchedColumns.length > 0) {
+			matchedColumns.forEach((col) => {
+				;(result[col.name] ??= []).push(format)
+			})
+		} else {
+			// Only apply to numeric value columns
+			// We skip index 0 since its the dimension/row header
+			columns.forEach((col, idx) => {
+				const isNumeric = FIELDTYPES.NUMBER.includes(col.type)
+				if (idx > 0 && isNumeric) {
+					;(result[col.name] ??= []).push(format)
+				}
+			})
+		}
+	})
+
+>>>>>>> a84f8ce7 (chore: fix formatting)
 	return result
 })
 
@@ -333,8 +372,68 @@ function getColorClass(colorName: string): string {
 }
 
 const getColumnMinMax = (columnName: string) => {
+<<<<<<< HEAD
 	const values =
 		props.rows?.map((row) => Number(row[columnName])).filter((val) => !isNaN(val)) || []
+=======
+	const colorScaleFormats = formattingRulesByColumn.value[columnName]?.filter(
+		(rule) => rule.mode === 'color_scale'
+	)
+
+	if (!colorScaleFormats?.length) {
+		const values =
+			props.rows?.map((row) => Number(row[columnName])).filter((val) => !isNaN(val)) || []
+		return {
+			min: Math.min(...values),
+			max: Math.max(...values),
+		}
+	}
+
+	const scaleScope = colorScaleFormats[0].scaleScope || 'global'
+	let columnsToConsider = [columnName]
+
+	if (scaleScope === 'global') {
+		// Find all columns that have the same color_scale format applied
+		const allFormattedColumns = Object.keys(formattingRulesByColumn.value).filter((col) => {
+			return formattingRulesByColumn.value[col]?.some((rule) => rule.mode === 'color_scale')
+		})
+
+		// Calculate global min/max across all columns to ensure consistent scaling.
+		// this works on:
+		// multi-value pivot:  [Status]___[Measure] (eg: Draft___sum_of_mrr)
+		// single-pivot: [Dimension] (eg: Paid, Unpaid)
+		// multi-pivot:  [Dim1]___[Dim2] (eg: INR___Draft, USD___Paid)
+		if (allFormattedColumns.length > 1) {
+			if (columnName.includes('___')) {
+				const parts = columnName.split('___')
+				const measureName = parts[parts.length - 1]
+
+				const hasMultiValuePivot = allFormattedColumns.some((col) =>
+					col.endsWith('___' + measureName)
+				)
+
+				if (hasMultiValuePivot) {
+					// multi-value pivot: only include columns ending with the same measure
+					columnsToConsider = allFormattedColumns.filter((col) =>
+						col.endsWith('___' + measureName)
+					)
+				} else {
+					// multi-column pivot: all formatted columns represent the same measure
+					columnsToConsider = allFormattedColumns
+				}
+			} else {
+				columnsToConsider = allFormattedColumns
+			}
+		}
+	}
+
+	const values: number[] = []
+	columnsToConsider.forEach((col) => {
+		const colValues =
+			props.rows?.map((row) => Number(row[col])).filter((val) => !isNaN(val)) || []
+		values.push(...colValues)
+	})
+>>>>>>> a84f8ce7 (chore: fix formatting)
 
 	return {
 		min: Math.min(...values),
