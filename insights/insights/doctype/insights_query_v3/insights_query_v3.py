@@ -184,7 +184,6 @@ class InsightsQueryv3(Document):
         results = results.to_dict(orient="records")
 
         columns = get_columns_from_schema(ibis_query.schema())
-        capture_event("query_executed")
         return {
             "sql": ibis.to_sql(ibis_query),
             "columns": columns,
