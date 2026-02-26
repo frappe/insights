@@ -10,6 +10,7 @@ from frappe.model.document import Document
 from frappe.query_builder import Interval
 from frappe.query_builder.functions import Now
 
+from insights.api.telemetry import capture_event
 from insights.utils import DocShare, File
 
 
@@ -235,6 +236,11 @@ class InsightsDashboardv3(Document):
                 frappe.delete_doc("DocShare", share.name, ignore_permissions=True)
 
         self.db_set("is_public", is_public)
+
+        if people_with_access:
+            capture_event("dashboard_shared_with_user")
+        if is_public:
+            capture_event("dashboard_set_public")
 
 
 def get_page_preview(url: str, headers: dict | None = None) -> bytes:

@@ -8,6 +8,7 @@ from frappe.model.document import Document
 from frappe.query_builder import Interval
 from frappe.query_builder.functions import Now
 
+from insights.api.telemetry import capture_event
 from insights.utils import deep_convert_dict_to_dict
 
 
@@ -45,6 +46,8 @@ class InsightsWorkbook(Document):
             frappe.delete_doc("Insights Folder", f.name, force=True, ignore_permissions=True)
 
     def after_insert(self):
+        capture_event("workbook_created")
+
         # If this is a restored workbook (has data_backup) then restore child documents
         if not self.data_backup:
             # This is a normal new workbook and not a restored one(skip restore)
