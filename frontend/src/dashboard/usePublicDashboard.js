@@ -112,7 +112,7 @@ export default function usePublicDashboard(public_key) {
 			public_key,
 			item_id: itemId,
 			query_name: queryName,
-			filters,
+			filters: filters?.length ? filters : undefined,
 		})
 	}
 

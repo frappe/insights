@@ -186,7 +186,7 @@ export default function useDashboard(name) {
 		return resource.fetch_chart_data.submit({
 			item_id: itemId,
 			query_name: queryName,
-			filters,
+			filters: filters?.length ? filters : undefined,
 		})
 	}
 
