@@ -54,7 +54,7 @@ class InsightsDashboard(Document):
 
     @frappe.whitelist()
     def fetch_chart_data(
-        self, item_id: str | int, query_name: str | None = None, filters: dict | None = None
+        self, item_id: str | int, query_name: str | None = None, filters: list | None = None
     ):
         if query_name:
             if not frappe.has_permission("Insights Query", "read", query_name):
