@@ -1,4 +1,6 @@
 import { call } from 'frappe-ui'
+// @ts-ignore
+import { useTelemetry } from 'frappe-ui/frappe'
 import { computed, InjectionKey, reactive, toRefs } from 'vue'
 import useChart, { newChart } from '../charts/chart'
 import useDashboard, { newDashboard } from '../dashboard/dashboard'
@@ -17,7 +19,6 @@ import { createToast } from '../helpers/toasts'
 import useQuery, { newQuery } from '../query/query'
 import router from '../router'
 import session from '../session'
-import { capture } from '../telemetry'
 import type {
 	InsightsWorkbook,
 	WorkbookSharePermission as WorkbookUserPermission,
@@ -36,6 +37,7 @@ export default function useWorkbook(name: string) {
 }
 
 function makeWorkbook(name: string) {
+	const { capture } = useTelemetry()
 	const workbook = getWorkbookResource(name)
 
 	// getLinkedQueries expects the query to be loaded

@@ -11,7 +11,6 @@ import sqlparse
 from frappe.model.document import Document
 from ibis import _
 
-from insights.api.telemetry import capture_event
 from insights.decorators import insights_whitelist
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     IbisQueryBuilder,
@@ -184,7 +183,6 @@ class InsightsQueryv3(Document):
         results = results.to_dict(orient="records")
 
         columns = get_columns_from_schema(ibis_query.schema())
-        capture_event("query_executed")
         return {
             "sql": ibis.to_sql(ibis_query),
             "columns": columns,
