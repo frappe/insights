@@ -34,9 +34,13 @@ def get_setup_stages(args=None):
 def setup_demo_data(args):
     if frappe.flags.in_test or os.environ.get("CI"):
         return
-    factory = DemoDataFactory()
-    factory.run()
-    frappe.db.commit()
+
+    try:
+        factory = DemoDataFactory()
+        factory.run()
+        frappe.db.commit()
+    except Exception:
+        frappe.log_error("Insights: Demo Data Setup Failed")
 
 
 def wrap_up(args):
