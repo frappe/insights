@@ -86,6 +86,11 @@ class DemoDataFactory:
         if frappe.flags.in_test or os.environ.get("CI"):
             return
 
+        if os.path.exists(self.db_file_path) and os.path.getsize(self.db_file_path) > 0:
+            # If the file already exists and is not empty, skip the download process and proceed directly to the parsing stage.
+            frappe.logger().info(f"Insights: Found existing demo data at {self.db_file_path}, skipping download.")
+            return
+
         import requests
 
         try:
