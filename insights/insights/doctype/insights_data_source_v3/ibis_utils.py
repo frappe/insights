@@ -30,7 +30,6 @@ from insights.utils import deep_convert_dict_to_dict as _dict
 
 from .ibis.functions import quarter_start, week_start
 from .ibis.utils import get_functions
-from . import lock_monitor
 
 # RedLock constants
 QUERY_LOCK_PREFIX = "insights_query_lock:"
@@ -47,26 +46,21 @@ def get_max_concurrent_queries():
     return max(6, min(18, int(value)))
 
 
-def try_acquire_lock(lock_key, query_name: str = None) -> bool:
+def try_acquire_lock(lock_key) -> bool:
     try:
         cache = frappe.cache()
         acquired = cache.set(lock_key, "1", ex=LOCK_TIMEOUT, nx=True)
         acquired = bool(acquired)
-
-        if acquired:
-            lock_monitor.log_lock_acquired(lock_key, query_name)
-        else:
-            lock_monitor.log_lock_contention(lock_key, query_name)
 
         return acquired
     except Exception:
         return True
 
 
-def release_lock(lock_key, query_name: str = None):
+def release_lock(lock_key,):
+
     try:
         frappe.cache().delete(lock_key)
-        lock_monitor.log_lock_released(lock_key, query_name)
     except Exception:
         pass
 
@@ -80,10 +74,8 @@ def try_acquire_semaphore(query_name: str = None):
 
         if current > get_max_concurrent_queries():
             redis.decr(SEMAPHORE_KEY)
-            lock_monitor.log_queue_full(query_name)
             return None
 
-        lock_monitor.log_semaphore_acquired(current)
         return current
     except Exception:
         return 0
@@ -96,7 +88,7 @@ def release_semaphore():
 
         if current < 0:
             redis.set(SEMAPHORE_KEY, 0)
-        lock_monitor.log_semaphore_released()
+
     except Exception:
         pass
 

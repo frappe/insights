@@ -256,24 +256,3 @@ def is_public_method(doctype: str, method: str):
 
     return False
 
-
-# Lock monitoring API
-@frappe.whitelist()
-def get_lock_stats():
-    frappe.only_for(["System Manager", "Insights Admin"])
-
-    from insights.insights.doctype.insights_data_source_v3 import lock_monitor
-
-    return {
-        "stats": lock_monitor.get_lock_stats(),
-        "current_semaphore": lock_monitor.get_current_semaphore_usage(),
-        "recent_events": lock_monitor.get_recent_events(20) if frappe.conf.get("insights_debug_locks") else [],
-    }
-
-
-@frappe.whitelist()
-def reset_lock_stats():
-    from insights.insights.doctype.insights_data_source_v3 import lock_monitor
-
-    lock_monitor.reset_stats()
-    return {"success": True}
