@@ -49,18 +49,17 @@ def get_max_concurrent_queries():
 def try_acquire_lock(lock_key) -> bool:
     try:
         cache = frappe.cache()
-        acquired = cache.set(lock_key, "1", ex=LOCK_TIMEOUT, nx=True)
-        acquired = bool(acquired)
-
-        return acquired
+        key = cache.make_key(lock_key)
+        return bool(cache.set(key, "1", ex=LOCK_TIMEOUT, nx=True))
     except Exception:
-        return True
+        return False
 
 
-def release_lock(lock_key,):
-
+def release_lock(lock_key):
     try:
-        frappe.cache().delete(lock_key)
+        cache = frappe.cache()
+        key = cache.make_key(lock_key)
+        cache.delete(key)
     except Exception:
         pass
 
