@@ -1,11 +1,11 @@
 import { io, Socket } from 'socket.io-client'
-import { socketio_port } from '../../../../sites/common_site_config.json'
 
 let socket: Socket
 
 declare global {
 	interface Window {
 		site_name: string
+		socketio_port: number
 	}
 }
 
@@ -14,7 +14,7 @@ export function getSocket() {
 		return socket
 	}
 
-	let socket_port = socketio_port || 9000
+	let socket_port = window.socketio_port || 9000
 	let host = window.location.hostname
 	let siteName = import.meta.env.DEV ? host : window.site_name
 	let port = window.location.port ? `:${socket_port}` : ''
