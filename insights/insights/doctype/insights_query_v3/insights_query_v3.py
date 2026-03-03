@@ -2,7 +2,6 @@
 # For license information, please see license.txt
 
 import base64
-import json
 from contextlib import contextmanager
 from io import BytesIO
 
@@ -18,11 +17,11 @@ from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     IbisQueryBuilder,
     execute_ibis_query,
     get_columns_from_schema,
-    try_acquire_lock,
-    release_lock,
-    try_acquire_semaphore,
-    release_semaphore,
     is_query_executing,
+    release_lock,
+    release_semaphore,
+    try_acquire_lock,
+    try_acquire_semaphore,
 )
 from insights.utils import deep_convert_dict_to_dict
 
@@ -76,34 +75,9 @@ class InsightsQueryv3(Document):
 
     def before_save(self):
         self.set_linked_queries()
-        self._update_query_hash_if_needed()
-
-    def _update_query_hash_if_needed(self):
-        if self.is_new() or self.has_value_changed("operations"):
-            self.query_hash = self._compute_query_hash()
-
-    def _compute_query_hash(self):
-        if not self.operations:
-            return make_digest("empty")
-
-        try:
-            operations = frappe.parse_json(self.operations)
-            normalized = json.dumps(operations, sort_keys=True, separators=(",", ":"))
-            return make_digest(normalized)
-        except (json.JSONDecodeError, TypeError):
-            return make_digest(self.operations)
 
     def _get_execution_lock_key(self):
-        if not self.query_hash:
-            self.query_hash = self._compute_query_hash()
-            try:
-                frappe.db.set_value(
-                    self.doctype, self.name, "query_hash", self.query_hash, update_modified=False
-                )
-            except Exception:
-                pass
-
-        return f"insights_query_exec:{self.name}:{self.query_hash}"
+        return f"insights_query_exec:{self.name}"
 
     def cleanup_empty_folder(self, folder_name):
         """Delete folder if it has no queries or charts"""
@@ -147,7 +121,7 @@ class InsightsQueryv3(Document):
         return ibis_query
 
     @frappe.whitelist()
-    def execute(self, active_operation_idx=None, adhoc_filters=None, force=False):
+    def execute(self, active_operation_idx=None, adhoc_filters=None, force=False, dashboard=None):
         lock_key = self._get_execution_lock_key()
 
         # before creating a db connection, check if query is executing
@@ -157,14 +131,14 @@ class InsightsQueryv3(Document):
                 "cache_key": lock_key,
             }
 
-        if not try_acquire_lock(lock_key, query_name=self.name):
+        if not try_acquire_lock(lock_key):
             return {
                 "status": "pending",
                 "cache_key": lock_key,
             }
 
         try:
-            slot = try_acquire_semaphore(query_name=self.name)
+            slot = try_acquire_semaphore()
             if slot is None:
                 return {"status": "queue_full"}
 
@@ -196,12 +170,16 @@ class InsightsQueryv3(Document):
                 columns = get_columns_from_schema(ibis_query.schema())
                 sql = ibis.to_sql(ibis_query)
 
-                self._cache_execution_result(lock_key, {
-                    "sql": sql,
-                    "columns": columns,
-                    "rows": rows,
-                    "time_taken": time_taken,
-                })
+                self._cache_execution_result(
+                    lock_key,
+                    {
+                        "sql": sql,
+                        "columns": columns,
+                        "rows": rows,
+                        "time_taken": time_taken,
+                    },
+                )
+                self._publish_query_complete(lock_key, dashboard)
 
                 return {
                     "sql": sql,
@@ -213,7 +191,17 @@ class InsightsQueryv3(Document):
             finally:
                 release_semaphore()
         finally:
-            release_lock(lock_key, query_name=self.name)
+            release_lock(lock_key)
+
+    def _publish_query_complete(self, lock_key, dashboard=None):
+        if not dashboard:
+            return
+        frappe.publish_realtime(
+            "insights_query_complete",
+            {"cache_key": lock_key},
+            doctype="Insights Dashboard v3",
+            docname=dashboard,
+        )
 
     def _cache_execution_result(self, lock_key, result, cache_expiry=600):
         cache_key = f"insights:exec_result:{lock_key}"
@@ -225,7 +213,6 @@ class InsightsQueryv3(Document):
         if data:
             return frappe.parse_json(data)
         return None
-
 
     # Check if a pending query has executed and return results
     # Used for polling when another process is executing the same query
