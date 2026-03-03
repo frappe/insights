@@ -127,6 +127,9 @@ def apply_user_permissions(t: Table, data_source, table_name):
             return t
         return t.filter(t.doctype.isin(allowed_single_doctypes))
 
+    if not table_name.startswith("tab"):
+        return t
+
     permission_query = get_permission_query_for_table(table_name)
     if not permission_query:
         return t.filter(False)
