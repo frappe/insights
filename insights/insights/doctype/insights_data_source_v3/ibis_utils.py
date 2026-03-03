@@ -65,15 +65,15 @@ def release_lock(lock_key,):
         pass
 
 
-def try_acquire_semaphore(query_name: str = None):
+def try_acquire_semaphore():
     try:
-        redis = frappe.cache()
-        current = redis.incr(SEMAPHORE_KEY)
-
-        redis.expire(SEMAPHORE_KEY, LOCK_TIMEOUT)
+        cache = frappe.cache()
+        key = cache.make_key(SEMAPHORE_KEY)
+        current = cache.incr(key)
+        cache.expire(key, LOCK_TIMEOUT)
 
         if current > get_max_concurrent_queries():
-            redis.decr(SEMAPHORE_KEY)
+            cache.decr(key)
             return None
 
         return current
@@ -83,8 +83,9 @@ def try_acquire_semaphore(query_name: str = None):
 
 def release_semaphore():
     try:
-        redis = frappe.cache()
-        current = redis.decr(SEMAPHORE_KEY)
+        cache = frappe.cache()
+        key = cache.make_key(SEMAPHORE_KEY)
+        current = cache.decr(key)
 
         if current < 0:
             redis.set(SEMAPHORE_KEY, 0)
@@ -95,7 +96,9 @@ def release_semaphore():
 
 def is_query_executing(lock_key):
     try:
-        return frappe.cache().get(lock_key) is not None
+        cache = frappe.cache()
+        key = cache.make_key(lock_key)
+        return cache.get(key) is not None
     except Exception:
         return False
 
