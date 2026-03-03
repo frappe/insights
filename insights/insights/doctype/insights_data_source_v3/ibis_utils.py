@@ -87,7 +87,7 @@ def release_semaphore():
         current = cache.decr(key)
 
         if current < 0:
-            redis.set(SEMAPHORE_KEY, 0)
+            cache.set(key, 0)
 
     except Exception:
         pass

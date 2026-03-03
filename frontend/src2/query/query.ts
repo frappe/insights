@@ -3,6 +3,7 @@ import { Buffer } from 'buffer'
 import { isEqual } from 'es-toolkit'
 import { call, dayjs } from 'frappe-ui'
 import { computed, reactive, ref, toRefs, unref } from 'vue'
+import { getSocket } from '../socket'
 import {
 	copy,
 	copyToClipboard,
@@ -130,11 +131,12 @@ export function makeQuery(name: string) {
 	}
 
 	const adhocFilters = ref<AdhocFilters>()
+	// set before execute
+	// to get realtime completion events to the correct dashboard doc room
+	const dashboardName = ref<string>()
 	const pendingCacheKey = ref<string | null>(null)
 
-	// polling constants on client side to free up workers
-	const POLL_INTERVAL = 2000 // 2 seconds
-	const MAX_POLL_ATTEMPTS = 60
+	const REALTIME_TIMEOUT = 120_000
 	const QUEUE_RETRY_DELAY = 3000
 	const MAX_QUEUE_RETRIES = 30
 
@@ -168,8 +170,9 @@ export function makeQuery(name: string) {
 				active_operation_idx: activeOperationIdx.value,
 				adhoc_filters: adhocFilters.value,
 				force,
+				dashboard: dashboardName.value,
 			})
-			.then(async (response:any) => {
+			.then(async (response: any) => {
 				if (!response) return
 
 				if (response.status === 'pending') {
@@ -184,14 +187,6 @@ export function makeQuery(name: string) {
 						data_type: column.type,
 					}))
 
-					// if (retryCount === 0) {
-					// 	createToast({
-					// 		title: 'Query In Progress',
-					// 		message: 'This query is being executed elsewhere',
-					// 		variant: 'info',
-					// 	})
-					// }
-
 					return pollForResults(response.cache_key)
 				}
 
@@ -204,14 +199,6 @@ export function makeQuery(name: string) {
 							variant: 'info',
 						})
 						return
-					}
-
-					if (retryCount === 0) {
-						createToast({
-							title: 'Query Queued',
-							message: 'Server is busy, Your query will run shortly',
-							variant: 'info',
-						})
 					}
 
 					await new Promise((resolve) => setTimeout(resolve, QUEUE_RETRY_DELAY))
@@ -253,51 +240,56 @@ export function makeQuery(name: string) {
 		result.value.lastExecutedAt = new Date()
 	}
 
-	async function pollForResults(cacheKey: string) {
-		let attempts = 0
+	// listens for `insights_query_complete` on the socket
+	// and fetches cached result
+	function pollForResults(cacheKey: string) {
+		return new Promise<void>((resolve) => {
+			const sock = getSocket()
 
-		while (attempts < MAX_POLL_ATTEMPTS && pendingCacheKey.value === cacheKey) {
-			await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL))
-			attempts++
-
-			try {
-				const response = await query.call('check_pending_result', { cache_key: cacheKey })
-
-				if (response.status === 'completed') {
-					populateResults(response)
-					pendingCacheKey.value = null
-					executing.value = false
-					return
-				}
-
-				if (response.status === 'not_found') {
+			const timeout = setTimeout(() => {
+				cleanup()
+				if (pendingCacheKey.value === cacheKey) {
 					pendingCacheKey.value = null
 					executing.value = false
 					createToast({
-						title: 'Query Failed',
-						message: 'Query execution failed, Please try again.',
-						variant: 'error',
+						title: 'Query Timeout',
+						message: 'The query is taking too long. Please try again later',
+						variant: 'warning',
 					})
-					return
 				}
+				resolve()
+			}, REALTIME_TIMEOUT)
 
-				//continue polling
-			} catch (error) {
-				pendingCacheKey.value = null
-				executing.value = false
-				return
+			function socket_handler(data: any) {
+				if (data?.cache_key !== cacheKey || pendingCacheKey.value !== cacheKey) return
+				cleanup()
+				query
+					.call('check_pending_result', { cache_key: cacheKey })
+					.then((response: any) => {
+						if (response.status === 'completed') {
+							populateResults(response)
+						} else {
+							createToast({
+								title: 'Query Failed',
+								message: 'Query execution failed. Please try again.',
+								variant: 'error',
+							})
+						}
+					})
+					.finally(() => {
+						pendingCacheKey.value = null
+						executing.value = false
+						resolve()
+					})
 			}
-		}
 
-		if (pendingCacheKey.value === cacheKey) {
-			pendingCacheKey.value = null
-			executing.value = false
-			createToast({
-				title: 'Query Timeout',
-				message: 'The query is taking too long. Please try again later',
-				variant: 'warning',
-			})
-		}
+			function cleanup() {
+				sock.off('insights_query_complete', socket_handler)
+				clearTimeout(timeout)
+			}
+
+			sock.on('insights_query_complete', socket_handler)
+		})
 	}
 
 	const fetchingCount = ref(false)
@@ -1076,6 +1068,7 @@ export function makeQuery(name: string) {
 		currentOperations,
 		activeEditOperation,
 		adhocFilters,
+		dashboardName,
 
 		autoExecute,
 		executing,
