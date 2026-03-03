@@ -161,15 +161,72 @@ class InsightsPermissions:
             .where(AllowedSources.name.isnotnull())
         )
 
-        return (
-            frappe.qb.from_(Table)
-            .select(Table.name)
-            .left_join(AllowedTables)
-            .on(Table.name == AllowedTables.name)
-            .left_join(TablesOfAllowedSources)
-            .on(Table.name == TablesOfAllowedSources.name)
-            .where(AllowedTables.name.isnotnull() | TablesOfAllowedSources.name.isnotnull())
+        conditions = [
+            AllowedTables.name.isnotnull(),
+            TablesOfAllowedSources.name.isnotnull(),
+        ]
+
+        grant_table_access = frappe.db.get_single_value("Insights Settings", "grant_table_access_on_dashboard_share")
+        if grant_table_access:
+            AllowedQueries = self._build_query_permission_query(ptype)
+            TablesUsedInAllowedQueries = self._get_tables_used_in_queries(AllowedQueries)
+            conditions.append(TablesUsedInAllowedQueries.name.isnotnull())
+
+            query = (
+                frappe.qb.from_(Table)
+                .select(Table.name)
+                .left_join(AllowedTables)
+                .on(Table.name == AllowedTables.name)
+                .left_join(TablesOfAllowedSources)
+                .on(Table.name == TablesOfAllowedSources.name)
+                .left_join(TablesUsedInAllowedQueries)
+                .on(Table.name == TablesUsedInAllowedQueries.name)
+                .where(frappe.qb.or_(*conditions))
+            )
+        else:
+            query = (
+                frappe.qb.from_(Table)
+                .select(Table.name)
+                .left_join(AllowedTables)
+                .on(Table.name == AllowedTables.name)
+                .left_join(TablesOfAllowedSources)
+                .on(Table.name == TablesOfAllowedSources.name)
+                .where(AllowedTables.name.isnotnull() | TablesOfAllowedSources.name.isnotnull())
+            )
+
+        return query
+
+    def _get_tables_used_in_queries(self, AllowedQueries):
+        Query = frappe.qb.DocType("Insights Query v3")
+
+        allowed_queries = (
+            frappe.qb.from_(Query)
+            .select(Query.name, Query.operations)
+            .left_join(AllowedQueries)
+            .on(Query.name == AllowedQueries.name)
+            .where(AllowedQueries.name.isnotnull())
+            .run(as_dict=True)
         )
+
+        table_names = set()
+        for query in allowed_queries:
+            operations = frappe.parse_json(query.operations) or []
+            for op in operations:
+                if op.get("type") in ("source", "join") and op.get("table", {}).get("type") == "table":
+                    from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
+                    table = get_table_name(op["table"]["data_source"], op["table"]["table_name"])
+                    if table:
+                        table_names.add(table)
+
+        Table = frappe.qb.DocType("Insights Table v3")
+        if table_names:
+            return (
+                frappe.qb.from_(Table)
+                .select(Table.name.as_("name"))
+                .where(Table.name.isin(list(table_names)))
+            )
+        else:
+            return []
 
     def _build_workbook_permission_query(self, ptype):
         DocShare = frappe.qb.DocType("DocShare")

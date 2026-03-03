@@ -22,6 +22,7 @@ function makeSettings() {
 			week_starts_on: 'Monday',
 			enable_data_store: false,
 			apply_user_permissions: false,
+			grant_table_access_on_dashboard_share: false,
 		},
 		disableLocalStorage: true,
 	})
@@ -50,4 +51,5 @@ type InsightsSettings = {
 	week_starts_on: string
 	enable_data_store: boolean
 	apply_user_permissions: boolean
+	grant_table_access_on_dashboard_share: boolean
 }

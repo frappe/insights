@@ -95,6 +95,13 @@ const editTeam = ref<Team | null>(null)
 			<Toggle v-model="settings.doc.apply_user_permissions" />
 		</SettingItem>
 
+		<SettingItem
+			label="Auto-grant Table Access on Dashboard Share"
+			description="Automatically give users access to underlying tables when a dashboard is shared with them."
+		>
+			<Toggle v-model="settings.doc.grant_table_access_on_dashboard_share" />
+		</SettingItem>
+
 		<div class="flex w-full flex-1 flex-col gap-3 overflow-auto">
 			<SettingItem
 				label="Teams"

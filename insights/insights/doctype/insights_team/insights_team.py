@@ -208,14 +208,23 @@ def _get_allowed_resources_for_user(resource_type, user):
     if permsisions_disabled or is_admin(user):
         return frappe.get_all(resource_type, pluck="name")
 
-    teams = get_teams(user)
-    if not teams:
-        return []
-
     resources = []
+    teams = get_teams(user)
     for team in teams:
         team = frappe.get_cached_doc("Insights Team", team)
         resources.extend(team.get_allowed_resources(resource_type))
+
+    # also get resources shared directly via DocShare
+    shared_resources = frappe.get_all(
+        "DocShare",
+        filters={
+            "share_doctype": resource_type,
+            "user": user,
+            "read": 1,
+        },
+        pluck="share_name",
+    )
+    resources.extend(shared_resources)
 
     return list(set(resources))
 
