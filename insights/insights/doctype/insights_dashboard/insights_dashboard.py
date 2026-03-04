@@ -11,6 +11,7 @@ from frappe.model.document import Document
 from insights import notify
 from insights.api.permissions import is_private
 from insights.cache_utils import make_digest
+from insights.decorators import insights_whitelist
 
 from .utils import guess_layout_for_chart
 
@@ -88,9 +89,8 @@ class InsightsDashboard(Document):
         return new_results
 
 
-@frappe.whitelist()
+@insights_whitelist()
 def get_queries_column(query_names: list[str]):
-    # TODO: handle permissions
     table_by_datasource = {}
     for query_name in list(set(query_names)):
         # TODO: to further optimize, store the used tables in the query on save
@@ -132,9 +132,10 @@ def get_queries_column(query_names: list[str]):
     return columns
 
 
-@frappe.whitelist()
+@insights_whitelist()
 def get_query_columns(query: str):
-    # TODO: handle permissions
+    if not frappe.has_permission("Insights Query", "read", query):
+        frappe.throw("Not permitted", frappe.PermissionError)
     return frappe.get_cached_doc("Insights Query", query).fetch_columns()
 
 
@@ -152,7 +153,7 @@ def get_dashboard_public_key(name):
     return public_key
 
 
-@frappe.whitelist()
+@insights_whitelist()
 def get_dashboard_file(filename: str):
     file = frappe.get_doc("File", filename)
     dashboard = file.get_content()

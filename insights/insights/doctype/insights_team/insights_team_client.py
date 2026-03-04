@@ -5,7 +5,7 @@ import frappe
 from frappe.utils.user import get_users_with_role
 
 from insights import notify
-from insights.decorators import check_permission, check_role
+from insights.decorators import check_permission, check_role, insights_whitelist
 
 
 class InsightsTeamClient:
@@ -281,8 +281,9 @@ def get_teams():
     return list(teams.values())
 
 
-@frappe.whitelist()
+@insights_whitelist()
 def add_new_team(team_name: str):
+    frappe.only_for("Insights Admin")
     doc = frappe.new_doc("Insights Team")
     doc.team_name = team_name
     doc.save()
