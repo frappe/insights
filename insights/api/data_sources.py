@@ -84,7 +84,9 @@ def get_tables(data_source: str | None = None, with_query_tables: bool = False):
 
 
 @insights_whitelist()
-def create_table_link(data_source: str, primary_table: dict, foreign_table: dict, primary_key: str, foreign_key: str):
+def create_table_link(
+    data_source: str, primary_table: dict, foreign_table: dict, primary_key: str, foreign_key: str
+):
     check_table_permission(data_source, primary_table.get("value"))
     check_table_permission(data_source, foreign_table.get("value"))
 
@@ -154,7 +156,9 @@ def create_data_source_for_csv():
 
 
 @insights_whitelist()
-def import_csv(table_label: str, table_name: str, filename: str, if_exists: str, columns: list, data_source: str):
+def import_csv(
+    table_label: str, table_name: str, filename: str, if_exists: str, columns: list, data_source: str
+):
     create_data_source_for_csv()
 
     table_import = frappe.new_doc("Insights Table Import")
@@ -402,16 +406,14 @@ def make_data_source(data_source):
     return ds
 
 
-@insights_whitelist()
+@insights_whitelist(role="Insights Admin")
 def test_connection(data_source: dict):
-    frappe.only_for("Insights Admin")
     ds = make_data_source(data_source)
     return ds.test_connection(raise_exception=True)
 
 
-@insights_whitelist()
+@insights_whitelist(role="Insights Admin")
 def create_data_source(data_source: dict):
-    frappe.only_for("Insights Admin")
     ds = make_data_source(data_source)
     ds.save()
     return ds.name

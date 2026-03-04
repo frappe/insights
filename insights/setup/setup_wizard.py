@@ -63,9 +63,8 @@ def login_as_first_user(args):
         frappe.local.login_manager.login_as(args.get("email"))
 
 
-@insights_whitelist()
+@insights_whitelist(role="Insights Admin")
 def enable_setup_wizard_complete():
-    frappe.only_for("Insights Admin")
     frappe.db.set_value(
         "Installed Application",
         {"app_name": "insights"},
