@@ -125,39 +125,29 @@ def get_teams(search_term: str | None = None):
     )
 
     for team in teams:
-        team.team_members = [
-            {"user": member.user} for member in members if member.parent == team.name
-        ]
+        team.team_members = [{"user": member.user} for member in members if member.parent == team.name]
         team.team_permissions = [
-            permission
-            for permission in source_permissions
-            if permission.parent == team.name
+            permission for permission in source_permissions if permission.parent == team.name
         ]
         team.team_permissions += [
-            permission
-            for permission in table_permissions
-            if permission.parent == team.name
+            permission for permission in table_permissions if permission.parent == team.name
         ]
 
     return teams
 
 
-@insights_whitelist()
+@insights_whitelist(role="Insights Admin")
 @validate_type
 def create_team(team_name: str):
-    frappe.only_for("Insights Admin")
-
     team = frappe.new_doc("Insights Team")
     team.team_name = team_name
     team.insert()
     return team
 
 
-@insights_whitelist()
+@insights_whitelist(role="Insights Admin")
 @validate_type
 def update_team(team: dict):
-    frappe.only_for("Insights Admin")
-
     team = frappe._dict(team)
     doc = frappe.get_doc("Insights Team", team.name)
     if team.name != "Admin" and doc.team_name != team.team_name:
@@ -220,11 +210,9 @@ def accept_invitation(key: str):
         frappe.local.response["location"] = "/insights"
 
 
-@insights_whitelist()
+@insights_whitelist(role="Insights Admin")
 @validate_type
 def invite_users(emails: str):
-    frappe.only_for("Insights Admin")
-
     if not emails:
         return
 
@@ -251,6 +239,9 @@ def invite_users(emails: str):
 
 @insights_whitelist()
 def update_user(email: str, fields: dict):
+    if frappe.session.user != email and not is_admin(frappe.session.user):
+        frappe.throw("Not permitted to update another user's profile", frappe.PermissionError)
+
     first_name, last_name = fields.get("first_name"), fields.get("last_name")
 
     user = frappe.get_doc("User", email)

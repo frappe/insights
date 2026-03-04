@@ -7,6 +7,7 @@ import os
 import frappe
 from frappe import _
 
+from insights.decorators import insights_whitelist
 from insights.setup.demo import DemoDataFactory
 
 
@@ -62,7 +63,7 @@ def login_as_first_user(args):
         frappe.local.login_manager.login_as(args.get("email"))
 
 
-@frappe.whitelist()
+@insights_whitelist(role="Insights Admin")
 def enable_setup_wizard_complete():
     frappe.db.set_value(
         "Installed Application",
