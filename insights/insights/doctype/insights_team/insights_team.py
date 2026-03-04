@@ -194,7 +194,9 @@ def admin_team_members():
 
 
 def is_admin(user):
-    return user == "Administrator" or user in admin_team_members()
+    return (
+        user == "Administrator" or user in admin_team_members() or "System Manager" in frappe.get_roles(user)
+    )
 
 
 def get_allowed_resources_for_user(resource_type, user=None):
