@@ -281,9 +281,8 @@ def get_teams():
     return list(teams.values())
 
 
-@insights_whitelist()
+@insights_whitelist(role="Insights Admin")
 def add_new_team(team_name: str):
-    frappe.only_for("Insights Admin")
     doc = frappe.new_doc("Insights Team")
     doc.team_name = team_name
     doc.save()
