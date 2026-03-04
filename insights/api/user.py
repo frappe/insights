@@ -136,22 +136,18 @@ def get_teams(search_term: str | None = None):
     return teams
 
 
-@insights_whitelist()
+@insights_whitelist(role="Insights Admin")
 @validate_type
 def create_team(team_name: str):
-    frappe.only_for("Insights Admin")
-
     team = frappe.new_doc("Insights Team")
     team.team_name = team_name
     team.insert()
     return team
 
 
-@insights_whitelist()
+@insights_whitelist(role="Insights Admin")
 @validate_type
 def update_team(team: dict):
-    frappe.only_for("Insights Admin")
-
     team = frappe._dict(team)
     doc = frappe.get_doc("Insights Team", team.name)
     if team.name != "Admin" and doc.team_name != team.team_name:
@@ -214,11 +210,9 @@ def accept_invitation(key: str):
         frappe.local.response["location"] = "/insights"
 
 
-@insights_whitelist()
+@insights_whitelist(role="Insights Admin")
 @validate_type
 def invite_users(emails: str):
-    frappe.only_for("Insights Admin")
-
     if not emails:
         return
 

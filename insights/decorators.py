@@ -139,22 +139,26 @@ def validate_type(func):
     return wrapper
 
 
-def insights_whitelist(*args, **kwargs):
+def insights_whitelist(*args, role="Insights User", **kwargs):
     # usage:
     # @insights_whitelist()
     # def my_function():
     #     pass
     #
+    # @insights_whitelist(role="Insights Admin")
+    # def admin_function():
+    #     pass
+    #
     # what it does:
     # @frappe.whitelist()
-    # @check_role("Insights User")
+    # @check_role(role)
     # def my_function():
     #     pass
 
     def decorator(function):
         @wraps(function)
         @frappe.whitelist(*args, **kwargs)
-        @check_role("Insights User")
+        @check_role(role)
         def wrapper(*args, **kwargs):
             return function(*args, **kwargs)
 
