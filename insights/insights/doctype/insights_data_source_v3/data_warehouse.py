@@ -409,6 +409,10 @@ class WarehouseTableImporter:
         self.log.db_set("query", ibis.to_sql(self.remote_table), commit=True)
 
     def apply_limit(self, table: Expr) -> Expr:
+<<<<<<< HEAD
+=======
+
+>>>>>>> da16f18c (perf: apply row limit on import query)
         if not self.primary_key:
             return table.limit(self.settings.row_limit)
 
