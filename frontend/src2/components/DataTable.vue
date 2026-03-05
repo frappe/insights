@@ -67,7 +67,16 @@ const columnsMeta = computed(() => {
 })
 
 const isNumberColumn = (col: string) => columnsMeta.value.get(col)?.isNumber
-const isUrl = (value: any): boolean => typeof value === 'string' && value.startsWith('http')
+const isUrl = (value: any): boolean => {
+	if (typeof value !== 'string') return false
+
+	try {
+		const url = new URL(value.trim())
+		return url.protocol === 'http:' || url.protocol === 'https:'
+	} catch {
+		return false
+	}
+}
 
 const $header = ref<HTMLElement>()
 function getColumnWidth(column: string) {
