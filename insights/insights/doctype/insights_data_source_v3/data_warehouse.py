@@ -409,7 +409,6 @@ class WarehouseTableImporter:
         self.log.db_set("query", ibis.to_sql(self.remote_table), commit=True)
 
     def apply_limit(self, table: Expr) -> Expr:
-
         if not self.primary_key:
             return table.limit(self.settings.row_limit)
 
