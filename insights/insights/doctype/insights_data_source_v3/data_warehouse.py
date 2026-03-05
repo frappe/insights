@@ -410,9 +410,12 @@ class WarehouseTableImporter:
 
     def apply_limit(self, table: Expr) -> Expr:
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 
 >>>>>>> da16f18c (perf: apply row limit on import query)
+=======
+>>>>>>> a7f69fc4 (chore: formatting)
         if not self.primary_key:
             return table.limit(self.settings.row_limit)
 
