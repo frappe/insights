@@ -425,7 +425,7 @@ class WarehouseTableImporter:
         if len(cutoff_row) == 0:
             return table
 
-        cutoff_value = cutoff_row[pk].value[0]
+        cutoff_value = cutoff_row[pk].iloc[0]
         self._log(f"Row limit cutoff: {pk} >= {cutoff_value}")
 
         # replace LIMIT with WHERE clause
