@@ -391,10 +391,8 @@ class WarehouseTableImporter:
 
         if hasattr(self.remote_table, "creation"):
             self.primary_key = "creation"
-            self.remote_table = self.remote_table.order_by(ibis.desc("creation"))
         elif hasattr(self.remote_table, "timestamp"):
             self.primary_key = "timestamp"
-            self.remote_table = self.remote_table.order_by(ibis.desc("timestamp"))
         else:
             self.primary_key = ""
 
@@ -405,10 +403,34 @@ class WarehouseTableImporter:
                 self.settings.before_import_script, {"table": self.remote_table}
             )
 
-        self.remote_table = self.remote_table.limit(self.settings.row_limit)
+        self.remote_table = self.apply_limit(self.remote_table)
         self.remote_table_schema = self.remote_table.schema()
 
         self.log.db_set("query", ibis.to_sql(self.remote_table), commit=True)
+
+    def apply_limit(self, table: Expr) -> Expr:
+
+        if not self.primary_key:
+            return table.limit(self.settings.row_limit)
+
+        pk = self.primary_key
+        cutoff_row = (
+            table.order_by(ibis.desc(pk))
+            # OFFSET to the Nth row
+            # Only selects the pk column so the query is a covering index scan
+            .limit(1, offset=self.settings.row_limit - 1)
+            .select(pk)
+            .execute()
+        )
+
+        if len(cutoff_row) == 0:
+            return table
+
+        cutoff_value = cutoff_row[pk].value[0]
+        self._log(f"Row limit cutoff: {pk} >= {cutoff_value}")
+
+        # replace LIMIT with WHERE clause
+        return table.filter(_[pk] >= cutoff_value)
 
     def start_batch_import(self):
         self.warehouse_table_name = self.table.warehouse_table_name
