@@ -524,7 +524,6 @@ class WarehouseTableImporter:
             elapsed = current_time - self.last_log_time
             self.last_log_time = current_time
 
-        print(f"[{now()}] [{elapsed:.1f}s] {message}")
         self.log.log_output(f"[{now()}] [{elapsed:.1f}s] {message}", commit=commit)
 
 
