@@ -69,9 +69,11 @@ def _get_region_mappings(chart_name: str, map_type: str) -> dict:
 
 def save_chart_config(chart_name: str, config: dict):
     """Save chart config"""
+    if not frappe.has_permission("Insights Chart v3", "write", chart_name):
+        frappe.throw("Not permitted to modify this chart", frappe.PermissionError)
     chart = frappe.get_doc("Insights Chart v3", chart_name)
     chart.config = config
-    chart.save(ignore_permissions=True)
+    chart.save()
 
 
 @insights_whitelist()
@@ -95,7 +97,7 @@ def find_unresolved_regions(map_type: str, user_regions: list, chart_name: str) 
         if not region:
             continue
 
-		# Normalize regions
+        # Normalize regions
         region_str = str(region).strip()
         region_norm = normalize(region_str)
 

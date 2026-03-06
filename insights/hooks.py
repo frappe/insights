@@ -8,6 +8,7 @@ app_email = "hello@frappe.io"
 app_license = "GNU GPLv3"
 
 export_python_type_annotations = True
+require_type_annotated_api_methods = True
 
 
 add_to_apps_screen = [

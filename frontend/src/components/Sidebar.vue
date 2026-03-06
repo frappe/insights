@@ -56,6 +56,22 @@
 			</div>
 
 			<div class="mt-auto flex flex-col items-center gap-2 text-base text-gray-600">
+				<Tooltip placement="right" :hoverDelay="0.1">
+					<template #body>
+						<div
+							class="w-fit rounded border border-gray-100 bg-gray-800 px-2 py-1 text-xs text-white shadow-xl"
+						>
+							v2 is being discontinued
+						</div>
+					</template>
+					<Button
+						variant="ghost"
+						class="!text-amber-700 hover:!bg-amber-50"
+						@click="showSwitchToV3Dialog = true"
+					>
+						<AlertTriangle class="h-4" />
+					</Button>
+				</Tooltip>
 				<Button variant="ghost" @click="open('https://docs.frappeinsights.com')">
 					<BookOpen class="h-4 text-gray-600" />
 				</Button>
@@ -85,7 +101,7 @@
 							  }
 							: null,
 						{
-							label: 'Switch to Insights v3',
+							label: 'Open Insights v3',
 							icon: 'grid',
 							onClick: () => (showSwitchToV3Dialog = true),
 						},
@@ -119,15 +135,13 @@
 		</div>
 	</div>
 
-	<HelpDialog v-model="showHelpDialog" />
-
 	<Dialog
 		v-model="showSwitchToV3Dialog"
 		:options="{
-			title: 'Insights v3 ✨',
+			title: 'Insights v2 is being discontinued',
 			actions: [
 				{
-					label: 'Continue',
+					label: 'Open Insights v3',
 					variant: 'solid',
 					onClick: openInsightsV3,
 				},
@@ -135,22 +149,26 @@
 		}"
 	>
 		<template #body-content>
-			<div class="prose prose-sm mb-4">
+			<div class="space-y-3 text-sm leading-relaxed text-gray-700">
 				<p>
-					Switch to the newest version of Insights, built from the ground up for a better
-					experience.
+					You are currently using Insights v2. A newer version — Insights v3 — is
+					available with a better experience and ongoing improvements. This interface will
+					be removed on <strong>April 2, 2026</strong>.
 				</p>
 				<p>
-					You can always switch back to this version by clicking the "Switch to Insights
-					v2" button in the new version.
+					You'll need to recreate your important dashboards and queries in v3. Automatic
+					migration from v2 to v3 isn't possible because the two versions are built
+					differently. Your existing work in v2 stays untouched until the removal date.
 				</p>
 			</div>
-			<FormControl
-				type="checkbox"
-				label="Set Insights v3 as default"
-				:modelValue="session.user.default_version === 'v3'"
-				@update:modelValue="session.user.default_version = $event ? 'v3' : ''"
-			/>
+			<div class="mt-4">
+				<FormControl
+					type="checkbox"
+					label="Always open Insights v3 by default"
+					:modelValue="session.user.default_version === 'v3'"
+					@update:modelValue="session.user.default_version = $event ? 'v3' : ''"
+				/>
+			</div>
 		</template>
 	</Dialog>
 </template>
@@ -158,10 +176,10 @@
 <script setup>
 import { Avatar } from 'frappe-ui'
 
-import HelpDialog from '@/components/HelpDialog.vue'
 import sessionStore from '@/stores/sessionStore'
 import settingsStore from '@/stores/settingsStore'
 import {
+	AlertTriangle,
 	Book,
 	BookOpen,
 	Database,
@@ -242,7 +260,7 @@ function openInsightsV3() {
 			// if default version is v2, then /insights always redirects to /insights_v2
 			// so it is not possible to switch to v3 from v2
 			// so we need to remove the default_version
-			session.user.default_version === 'v2' ? '' : session.user.default_version
+			session.user.default_version === 'v2' ? '' : session.user.default_version,
 		)
 		.then(() => {
 			window.location.href = '/insights'

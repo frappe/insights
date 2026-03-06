@@ -1,4 +1,6 @@
 import { reactive, ref, toRefs } from 'vue'
+// @ts-ignore
+import { useTelemetry } from 'frappe-ui/frappe'
 import useChart from '../charts/chart'
 import {
 	getUniqueId,
@@ -40,6 +42,7 @@ export type FilterState = {
 }
 
 function makeDashboard(name: string) {
+	const { capture } = useTelemetry()
 	const dashboard = getDashboardResource(name)
 
 	const editing = ref(false)
@@ -69,6 +72,7 @@ function makeDashboard(name: string) {
 				})
 			}
 		})
+		capture('dashboard_chart_added')
 	}
 
 	function getMaxY() {
@@ -226,9 +230,13 @@ function makeDashboard(name: string) {
 		chart.refresh(force)
 	}
 
-	function getAdhocFilters(chart_name: string) {
+	function getAdhocFilters(chart_name: string, exclude_filter_name?: string) {
 		const filtersApplied = dashboard.doc.items.filter(
-			(item) => item.type === 'filter' && 'links' in item && item.links[chart_name]
+			(item) =>
+				item.type === 'filter' &&
+				'links' in item &&
+				item.links[chart_name] &&
+				(!exclude_filter_name || item.filter_name !== exclude_filter_name)
 		)
 
 		if (filtersApplied.length === 0) return

@@ -213,14 +213,18 @@ function getOptions(region: Region) {
 							</h3>
 							<h3 class="text-sm font-bold text-gray-900">Unresolved Locations</h3>
 						</div>
-						<div class="h-[15rem] overflow-y-auto rounded-md border bg-white">
-							<TextInput
-								v-model="searchQuery"
-								placeholder="Search locations"
-								class="w-1/3 p-2"
-								variant="subtle"
-							/>
-							<div class="flex flex-col divide-y">
+						<div
+							class="h-[15rem] flex flex-col overflow-hidden rounded-md border bg-white"
+						>
+							<div class="z-10 bg-white">
+								<TextInput
+									v-model="searchQuery"
+									placeholder="Search locations"
+									class="w-1/3 p-2"
+									variant="subtle"
+								/>
+							</div>
+							<div class="flex flex-col divide-y overflow-y-auto">
 								<div
 									v-for="region in unresolvedRegions"
 									:key="region.user_region"

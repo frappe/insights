@@ -27,7 +27,7 @@
 					>
 						<div class="text-base font-medium leading-none text-gray-900">Insights</div>
 						<div class="mt-1 text-sm leading-none text-gray-700">
-							{{ session.user.full_name }}
+							{{ __(session.user.full_name) }}
 						</div>
 					</div>
 					<div
@@ -47,10 +47,10 @@
 		<Dialog
 			v-model="showSwitchToV2Dialog"
 			:options="{
-				title: 'Switch to Insights v2',
+				title: __('Switch to Insights v2'),
 				actions: [
 					{
-						label: 'Continue',
+						label: __('Continue'),
 						variant: 'solid',
 						onClick: openInsightsV2,
 					},
@@ -63,7 +63,7 @@
 				</div>
 				<FormControl
 					type="checkbox"
-					label="Set Insights v2 as default"
+					:label="__('Set Insights v2 as default')"
 					:modelValue="session.user.default_version === 'v2'"
 					@update:modelValue="session.user.default_version = $event ? 'v2' : ''"
 				/>
@@ -73,7 +73,7 @@
 		<Dialog
 			v-model="showLoginToFCDialog"
 			:options="{
-				title: 'Login to Frappe Cloud?',
+				title: __('Login to Frappe Cloud?'),
 				message: 'Are you sure you want to login to your Frappe Cloud dashboard?',
 				actions: [
 					{
@@ -99,6 +99,7 @@ import { showErrorToast, waitUntil } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import session from '../session'
 import FrappeCloudIcon from './Icons/FrappeCloudIcon.vue'
+import { __ } from '../translation'
 
 const props = defineProps<{ isCollapsed?: boolean }>()
 
@@ -107,17 +108,17 @@ const showLoginToFCDialog = ref(false)
 
 const userDropdownOptions = ref([
 	{
-		label: 'Documentation',
+		label: __('Documentation'),
 		icon: h(HelpCircle),
 		onClick: () => window.open('https://docs.frappe.io/insights', '_blank'),
 	},
 	{
-		label: 'Join Telegram Group',
+		label: __('Join Telegram Group'),
 		icon: h(MessageCircle),
 		onClick: () => window.open('https://t.me/frappeinsights', '_blank'),
 	},
 	{
-		label: 'Log out',
+		label: __('Log out'),
 		icon: h(LogOut),
 		onClick: () =>
 			confirmDialog({
@@ -149,7 +150,7 @@ waitUntil(() => session.initialized).then(() => {
 if (window.is_fc_site) {
 	userDropdownOptions.value.splice(userDropdownOptions.value.length - 1, 0, {
 		icon: h(FrappeCloudIcon),
-		label: 'Login to Frappe Cloud',
+		label: __('Login to Frappe Cloud'),
 		onClick: () => (showLoginToFCDialog.value = true),
 	})
 }

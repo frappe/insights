@@ -7,6 +7,7 @@ import os
 import frappe
 from frappe import _
 
+from insights.decorators import insights_whitelist
 from insights.setup.demo import DemoDataFactory
 
 
@@ -34,9 +35,13 @@ def get_setup_stages(args=None):
 def setup_demo_data(args):
     if frappe.flags.in_test or os.environ.get("CI"):
         return
-    factory = DemoDataFactory()
-    factory.run()
-    frappe.db.commit()
+
+    try:
+        factory = DemoDataFactory()
+        factory.run()
+        frappe.db.commit()
+    except Exception:
+        frappe.log_error("Insights: Demo Data Setup Failed")
 
 
 def wrap_up(args):
@@ -58,7 +63,7 @@ def login_as_first_user(args):
         frappe.local.login_manager.login_as(args.get("email"))
 
 
-@frappe.whitelist()
+@insights_whitelist(role="Insights Admin")
 def enable_setup_wizard_complete():
     frappe.db.set_value(
         "Installed Application",

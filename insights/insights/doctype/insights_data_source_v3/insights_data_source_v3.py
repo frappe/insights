@@ -10,6 +10,7 @@ from frappe.model.document import Document
 from ibis import BaseBackend
 
 import insights
+from insights.api.telemetry import capture_event
 from insights.insights.doctype.insights_table_link_v3.insights_table_link_v3 import (
     InsightsTableLinkv3,
 )
@@ -77,6 +78,10 @@ class InsightsDataSourceDocument:
                 "password": existing_doc.get_password("password", raise_exception=False),
             }
         )
+
+    def after_insert(self):
+        if not self.is_site_db:
+            capture_event("data_source_created")
 
     def on_update(self):
         if self.type == "REST API":
@@ -253,6 +258,11 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         if self.database_type == "MariaDB":
             db.raw_sql("SET SESSION time_zone='+00:00'")
             db.raw_sql("SET collation_connection = 'utf8mb4_unicode_ci'")
+            try:
+                db.raw_sql("SET SESSION tx_read_only = TRUE")
+            except Exception:
+                db.raw_sql("SET SESSION TRANSACTION_READ_ONLY = 1")
+
             MAX_STATEMENT_TIMEOUT = (
                 frappe.db.get_single_value("Insights Settings", "max_execution_time", cache=True) or 180
             )
@@ -320,7 +330,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         return db.list_tables(database=quoted_db_name)
 
     @frappe.whitelist()
-    def test_connection(self, raise_exception=False):
+    def test_connection(self, raise_exception: bool = False):
         if self.type == "REST API":
             return self.test_api_connection(raise_exception)
 

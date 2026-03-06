@@ -5,9 +5,7 @@ import frappe
 import ibis
 from frappe.defaults import get_user_default, set_user_default
 from frappe.handler import is_valid_http_method, is_whitelisted
-from frappe.integrations.utils import make_post_request
 from frappe.monitor import add_data_to_monitor
-from frappe.rate_limiter import rate_limit
 
 from insights.api.shared import is_public
 from insights.decorators import insights_whitelist, validate_type
@@ -69,39 +67,11 @@ def get_user_info():
 
 
 @insights_whitelist()
-def update_default_version(version):
+def update_default_version(version: str):
     if get_user_default("insights_has_visited_v3", frappe.session.user) != "1":
         set_user_default("insights_has_visited_v3", "1", frappe.session.user)
 
     set_user_default("insights_default_version", version, frappe.session.user)
-
-
-@frappe.whitelist()
-@rate_limit(limit=10, seconds=60 * 60)
-def contact_team(message_type, message_content, is_critical=False):
-    if not message_type or not message_content:
-        frappe.throw("Message Type and Content are required")
-
-    message_title = {
-        "Feedback": "Feedback from Insights User",
-        "Bug": "Bug Report from Insights User",
-        "Question": "Question from Insights User",
-    }.get(message_type)
-
-    if not message_title:
-        frappe.throw("Invalid Message Type")
-
-    try:
-        make_post_request(
-            "https://frappeinsights.com/api/method/contact-team",
-            data={
-                "message_title": message_title,
-                "message_content": message_content,
-            },
-        )
-    except Exception as e:
-        frappe.log_error(e)
-        frappe.throw("Something went wrong. Please try again later.")
 
 
 def get_csv_file(filename: str):

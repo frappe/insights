@@ -6,7 +6,7 @@ from insights.utils import DocShare
 
 
 @insights_whitelist()
-def get_workbooks(search_term=None, limit=100):
+def get_workbooks(search_term: str | None = None, limit: int = 100):
     workbooks = frappe.get_list(
         "Insights Workbook",
         or_filters={
@@ -67,14 +67,14 @@ def get_workbooks(search_term=None, limit=100):
 
 
 @insights_whitelist()
-def import_workbook(workbook):
+def import_workbook(workbook: dict):
     from insights.insights.doctype.insights_workbook.insights_workbook import import_workbook
 
     return import_workbook(workbook)
 
 
 @insights_whitelist()
-def get_share_permissions(workbook_name):
+def get_share_permissions(workbook_name:str):
     if not frappe.has_permission("Insights Workbook", ptype="share", doc=workbook_name):
         frappe.throw(_("You do not have permission to share this workbook"))
 
@@ -127,7 +127,7 @@ def get_share_permissions(workbook_name):
 
 
 @insights_whitelist()
-def update_share_permissions(workbook_name, user_permissions, organization_access: str | None = None):
+def update_share_permissions(workbook_name:str, user_permissions: dict, organization_access: str | None = None):
     if not frappe.has_permission("Insights Workbook", ptype="share", doc=workbook_name):
         frappe.throw(_("You do not have permission to share this workbook"))
 
@@ -159,7 +159,7 @@ def update_share_permissions(workbook_name, user_permissions, organization_acces
 # folder Management APIs
 
 @insights_whitelist()
-def create_folder(workbook, title, folder_type):
+def create_folder(workbook: str, title: str, folder_type: str):
     """Create a new folder in workbook"""
     if not frappe.has_permission("Insights Workbook", ptype="write", doc=workbook):
         frappe.throw(_("You do not have permission to modify this workbook"))
@@ -179,7 +179,7 @@ def create_folder(workbook, title, folder_type):
     return folder.name
 
 @insights_whitelist()
-def rename_folder(folder_name, new_title):
+def rename_folder(folder_name: str, new_title: str):
     """Rename a folder"""
     folder = frappe.get_doc("Insights Folder", folder_name)
     if not frappe.has_permission("Insights Workbook", ptype="write", doc=folder.workbook):
@@ -191,7 +191,7 @@ def rename_folder(folder_name, new_title):
     return folder.name
 
 @insights_whitelist()
-def delete_folder(folder_name, move_items_to_root=True):
+def delete_folder(folder_name: str, move_items_to_root: bool = True):
     """Delete folder and move items to root"""
     folder = frappe.get_doc("Insights Folder", folder_name)
     if not frappe.has_permission("Insights Workbook", ptype="write", doc=folder.workbook):
@@ -218,7 +218,7 @@ def delete_folder(folder_name, move_items_to_root=True):
     frappe.delete_doc("Insights Folder", folder_name)
 
 @insights_whitelist()
-def toggle_folder_expanded(folder_name, is_expanded):
+def toggle_folder_expanded(folder_name: str, is_expanded: bool):
     """Toggle folder expanded state"""
     folder = frappe.get_doc("Insights Folder", folder_name)
     if not frappe.has_permission("Insights Workbook", ptype="read", doc=folder.workbook):
@@ -227,7 +227,7 @@ def toggle_folder_expanded(folder_name, is_expanded):
     folder.db_set("is_expanded", is_expanded, update_modified=False)
 
 @insights_whitelist()
-def move_item_to_folder(item_type, item_name, folder_name=None):
+def move_item_to_folder(item_type: str, item_name: str, folder_name: str | None = None):
     """Move a query/chart to a folder"""
     doctype = "Insights Query v3" if item_type == "query" else "Insights Chart v3"
     item = frappe.get_doc(doctype, item_name)
@@ -244,7 +244,7 @@ def move_item_to_folder(item_type, item_name, folder_name=None):
 
 
 @insights_whitelist()
-def update_sort_orders(workbook, items):
+def update_sort_orders(workbook: str, items: list):
     """Bulk update sort orders"""
     if not frappe.has_permission("Insights Workbook", ptype="write", doc=workbook):
         frappe.throw(_("You do not have permission to modify this workbook"))

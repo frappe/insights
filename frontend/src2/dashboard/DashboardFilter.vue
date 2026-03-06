@@ -36,7 +36,9 @@ function stringValuesProvider(search: string) {
 	if (!sourceColumn.value) return Promise.resolve([])
 
 	const firstLinkedChart = Object.keys(filter.links)?.[0]
-	const adhocFilters = firstLinkedChart ? dashboard.getAdhocFilters(firstLinkedChart) : undefined
+	const adhocFilters = firstLinkedChart
+		? dashboard.getAdhocFilters(firstLinkedChart, filter.filter_name)
+		: undefined
 
 	return dashboard.getDistinctColumnValues(
 		sourceColumn.value.query,

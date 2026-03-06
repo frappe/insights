@@ -16,6 +16,7 @@ from frappe.utils import get_files_path, now
 from frappe.utils.background_jobs import is_job_enqueued
 from ibis import _
 from ibis.backends.duckdb import Backend as DuckDBBackend
+from ibis.common.exceptions import TableNotFound
 from ibis.expr.types import Expr
 
 import insights
@@ -44,10 +45,24 @@ class Warehouse:
 
         db = ibis.duckdb.connect(path, read_only=read_only)
 
+        if not read_only:
+            self._configure_temp_directory_access(db)
+
         if database:
             db.raw_sql(f"USE '{database}'")
 
         return db
+
+    def _configure_temp_directory_access(self, db: DuckDBBackend) -> None:
+        tmp_dir = str(Path(tempfile.gettempdir())).replace("'", "''")
+
+        # Some environments start with external access already disabled.
+        # Best effort: try enabling it first, then configure directory allowlist.
+        with suppress(Exception):
+            db.raw_sql("SET enable_external_access = true")
+
+        db.raw_sql(f"SET allowed_directories = ['{tmp_dir}']")
+        db.raw_sql("SET enable_external_access = false")
 
     def create_database(self, database: str):
         with self.get_write_connection() as db:
@@ -143,8 +158,8 @@ class WarehouseTableWriter:
         if self._temp_dir is None:
             raise RuntimeError("WarehouseTableWriter must be used as a context manager")
 
-        if isinstance(data, pd.DataFrame):
-            data = ibis.memtable(data)
+        # switch to memory backend for writing to temp directory
+        data = ibis.memtable(data)
 
         parquet_path = self._temp_dir / f"batch_{self._batch_count + 1}.parquet"
         self._log(f"Writing batch {self._batch_count + 1}")
@@ -239,7 +254,7 @@ class WarehouseTable:
     def get_ibis_table(self, import_if_not_exists: bool = True) -> Expr:
         try:
             return insights.warehouse.db.table(self.warehouse_table_name)
-        except Exception:
+        except TableNotFound:
             if import_if_not_exists:
                 self.enqueue_import()
                 remote_table = self.get_remote_table()
@@ -253,6 +268,9 @@ class WarehouseTable:
                 frappe.throw(
                     f"{self.table_name} of {self.data_source} is not imported to the data warehouse."
                 )
+        except Exception as e:
+            frappe.log_error(e)
+            frappe.throw("Error accessing the data warehouse. Please try again.")
 
     def get_remote_table(self) -> Expr:
         ds = InsightsDataSourcev3.get_doc(self.data_source)
@@ -373,10 +391,8 @@ class WarehouseTableImporter:
 
         if hasattr(self.remote_table, "creation"):
             self.primary_key = "creation"
-            self.remote_table = self.remote_table.order_by(ibis.desc("creation"))
         elif hasattr(self.remote_table, "timestamp"):
             self.primary_key = "timestamp"
-            self.remote_table = self.remote_table.order_by(ibis.desc("timestamp"))
         else:
             self.primary_key = ""
 
@@ -387,10 +403,33 @@ class WarehouseTableImporter:
                 self.settings.before_import_script, {"table": self.remote_table}
             )
 
-        self.remote_table = self.remote_table.limit(self.settings.row_limit)
+        self.remote_table = self.apply_limit(self.remote_table)
         self.remote_table_schema = self.remote_table.schema()
 
         self.log.db_set("query", ibis.to_sql(self.remote_table), commit=True)
+
+    def apply_limit(self, table: Expr) -> Expr:
+        if not self.primary_key:
+            return table.limit(self.settings.row_limit)
+
+        pk = self.primary_key
+        cutoff_row = (
+            table.order_by(ibis.desc(pk))
+            # OFFSET to the Nth row
+            # Only selects the pk column so the query is a covering index scan
+            .limit(1, offset=self.settings.row_limit - 1)
+            .select(pk)
+            .execute()
+        )
+
+        if len(cutoff_row) == 0:
+            return table
+
+        cutoff_value = cutoff_row[pk].iloc[0]
+        self._log(f"Row limit cutoff: {pk} >= {cutoff_value}")
+
+        # replace LIMIT with WHERE clause
+        return table.filter(_[pk] >= cutoff_value)
 
     def start_batch_import(self):
         self.warehouse_table_name = self.table.warehouse_table_name
@@ -485,7 +524,6 @@ class WarehouseTableImporter:
             elapsed = current_time - self.last_log_time
             self.last_log_time = current_time
 
-        print(f"[{now()}] [{elapsed:.1f}s] {message}")
         self.log.log_output(f"[{now()}] [{elapsed:.1f}s] {message}", commit=commit)
 
 

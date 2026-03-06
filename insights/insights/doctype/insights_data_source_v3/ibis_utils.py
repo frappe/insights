@@ -590,6 +590,7 @@ class IbisQueryBuilder:
 
         raw_sql = sqlparse.format(sql=raw_sql, strip_comments=True)
 
+        # TODO: apply user permissions by default
         check_permissions = frappe.db.get_single_value(
             "Insights Settings", "enable_permissions"
         ) or frappe.db.get_single_value("Insights Settings", "apply_user_permissions")
@@ -599,11 +600,13 @@ class IbisQueryBuilder:
 
             tables = set()
             for table_exp in parsed.find_all(sg.exp.Table):
-                tables.add(table_exp.name)
+                if table_exp.name:
+                    tables.add(table_exp.name)
 
             cte_aliases = set()
             for cte_exp in parsed.find_all(sg.exp.CTE):
-                cte_aliases.add(cte_exp.alias)
+                if cte_exp.alias:
+                    cte_aliases.add(cte_exp.alias)
 
             tables = tables - cte_aliases
 
@@ -615,6 +618,12 @@ class IbisQueryBuilder:
                     use_live_connection=True,
                 )
                 t_sql = ibis.to_sql(t)
+
+                # NOTE: This currently works because `apply_sql` uses live connections,
+                # If this flow ever starts using warehouse-backed tables,
+                # this WHERE-based check will be insufficient
+                # check insights_table_v3.py -> apply_user_permissions()
+
                 # check if t_sql has any where clause, if not, then don't replace
                 t_parsed = sg.parse_one(t_sql, dialect=db.dialect)
                 if not t_parsed.find(sg.exp.Where):
@@ -846,9 +855,10 @@ def execute_query(query, sql, cache_key, cache, cache_expiry, reference_name):
                 title="Query execution time exceeded the limit.",
                 message=f"Query: {sql}",
             )
+            max_time = frappe.db.get_single_value("Insights Settings", "max_execution_time") or 180
             frappe.throw(
                 title="Query Timeout",
-                msg="Query execution time exceeded the limit. Please try again with a smaller timespan or a more specific filter.",
+                msg=f"Query execution time exceeded the limit of {max_time} seconds. Please try again with a smaller timespan or a more specific filter.",
             )
         raise e
 

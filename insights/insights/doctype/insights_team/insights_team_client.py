@@ -5,7 +5,7 @@ import frappe
 from frappe.utils.user import get_users_with_role
 
 from insights import notify
-from insights.decorators import check_permission, check_role
+from insights.decorators import check_permission, check_role, insights_whitelist
 
 
 class InsightsTeamClient:
@@ -15,16 +15,12 @@ class InsightsTeamClient:
 
         resources = []
         for resource in self.team_permissions:
-            title_field = (
-                "label" if resource.resource_type == "Insights Table" else "title"
-            )
+            title_field = "label" if resource.resource_type == "Insights Table" else "title"
             resources.append(
                 {
                     "type": resource.resource_type,
                     "name": resource.resource_name,
-                    "title": frappe.db.get_value(
-                        resource.resource_type, resource.resource_name, title_field
-                    ),
+                    "title": frappe.db.get_value(resource.resource_type, resource.resource_name, title_field),
                 }
             )
 
@@ -34,7 +30,7 @@ class InsightsTeamClient:
         }
 
     @frappe.whitelist()
-    def search_team_members(self, query):
+    def search_team_members(self, query: str | None = None):
         # get all users who are not in the team
         members = [m.user for m in self.team_members]
         insights_users = get_users_with_role("Insights User")
@@ -47,9 +43,7 @@ class InsightsTeamClient:
 
         conditions = (User.name.isin(insights_users)) & (User.enabled == 1)
         if query:
-            conditions &= (User.full_name.like(f"%{query}%")) | (
-                User.email.like(f"%{query}%")
-            )
+            conditions &= (User.full_name.like(f"%{query}%")) | (User.email.like(f"%{query}%"))
 
         return (
             frappe.qb.from_(User)
@@ -59,23 +53,19 @@ class InsightsTeamClient:
         )
 
     @frappe.whitelist()
-    def search_team_resources(self, resource_type, query):
+    def search_team_resources(self, resource_type: str, query: str | None = None):
         resources = []
 
         if resource_type == "Insights Data Source":
             InsightsDataSource = frappe.qb.DocType("Insights Data Source")
             exclude_sources = [
-                r.resource_name
-                for r in self.team_permissions
-                if r.resource_type == "Insights Data Source"
+                r.resource_name for r in self.team_permissions if r.resource_type == "Insights Data Source"
             ]
             conditions = InsightsDataSource.title.like(f"%{query}%") | (
                 InsightsDataSource.database_type.like(f"%{query}%")
             )
             if exclude_sources:
-                conditions = conditions & (
-                    InsightsDataSource.name.notin(exclude_sources)
-                )
+                conditions = conditions & (InsightsDataSource.name.notin(exclude_sources))
             data_sources = (
                 frappe.qb.from_(InsightsDataSource)
                 .select(
@@ -102,9 +92,7 @@ class InsightsTeamClient:
             # get all tables
             InsightsTable = frappe.qb.DocType("Insights Table")
             exclude_tables = [
-                r.resource_name
-                for r in self.team_permissions
-                if r.resource_type == "Insights Table"
+                r.resource_name for r in self.team_permissions if r.resource_type == "Insights Table"
             ]
             conditions = InsightsTable.label.like(f"%{query}%") | (
                 InsightsTable.data_source.like(f"%{query}%")
@@ -135,9 +123,7 @@ class InsightsTeamClient:
         if resource_type == "Insights Query":
             InsightsQuery = frappe.qb.DocType("Insights Query")
             exclude_queries = [
-                r.resource_name
-                for r in self.team_permissions
-                if r.resource_type == "Insights Query"
+                r.resource_name for r in self.team_permissions if r.resource_type == "Insights Query"
             ]
             conditions = InsightsQuery.title.like(f"%{query}%") | (
                 InsightsQuery.data_source.like(f"%{query}%")
@@ -169,15 +155,11 @@ class InsightsTeamClient:
         if resource_type == "Insights Dashboard":
             InsightsDashboard = frappe.qb.DocType("Insights Dashboard")
             exclude_dashboards = [
-                r.resource_name
-                for r in self.team_permissions
-                if r.resource_type == "Insights Dashboard"
+                r.resource_name for r in self.team_permissions if r.resource_type == "Insights Dashboard"
             ]
             conditions = InsightsDashboard.title.like(f"%{query}%")
             if exclude_dashboards:
-                conditions = conditions & (
-                    InsightsDashboard.name.notin(exclude_dashboards)
-                )
+                conditions = conditions & (InsightsDashboard.name.notin(exclude_dashboards))
             dashboards = (
                 frappe.qb.from_(InsightsDashboard)
                 .select(InsightsDashboard.name, InsightsDashboard.title)
@@ -198,18 +180,18 @@ class InsightsTeamClient:
         return resources
 
     @frappe.whitelist()
-    def add_team_member(self, user):
+    def add_team_member(self, user: str):
         self.append("team_members", {"user": user})
         self.save()
 
     @frappe.whitelist()
-    def add_team_members(self, users):
+    def add_team_members(self, users: list[str]):
         for user in users:
             self.append("team_members", {"user": user})
         self.save()
 
     @frappe.whitelist()
-    def remove_team_member(self, user):
+    def remove_team_member(self, user: str):
         for member in self.team_members:
             if member.user == user:
                 self.remove(member)
@@ -217,7 +199,7 @@ class InsightsTeamClient:
         self.save()
 
     @frappe.whitelist()
-    def add_team_resource(self, resource):
+    def add_team_resource(self, resource: dict):
         resource = frappe._dict(resource)
         self.append(
             "team_permissions",
@@ -226,7 +208,7 @@ class InsightsTeamClient:
         self.save()
 
     @frappe.whitelist()
-    def add_team_resources(self, resources):
+    def add_team_resources(self, resources: list[dict]):
         for resource in resources:
             resource = frappe._dict(resource)
             self.append(
@@ -236,13 +218,10 @@ class InsightsTeamClient:
         self.save()
 
     @frappe.whitelist()
-    def remove_team_resource(self, resource):
+    def remove_team_resource(self, resource: dict):
         resource = frappe._dict(resource)
         for permission in self.team_permissions:
-            if (
-                permission.resource_type == resource.type
-                and permission.resource_name == resource.name
-            ):
+            if permission.resource_type == resource.type and permission.resource_name == resource.name:
                 self.remove(permission)
                 break
         self.save()
@@ -302,8 +281,8 @@ def get_teams():
     return list(teams.values())
 
 
-@frappe.whitelist()
-def add_new_team(team_name):
+@insights_whitelist(role="Insights Admin")
+def add_new_team(team_name: str):
     doc = frappe.new_doc("Insights Team")
     doc.team_name = team_name
     doc.save()

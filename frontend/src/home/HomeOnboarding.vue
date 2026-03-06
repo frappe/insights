@@ -1,142 +1,108 @@
 <script setup>
-import { useStorage } from '@vueuse/core'
-import { computed, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import ProgressRing from './ProgressRing.vue'
+import sessionStore from '@/stores/sessionStore'
+import { AlertTriangle } from 'lucide-vue-next'
+import { ref } from 'vue'
 
-const router = useRouter()
-const showOnboarding = ref(false)
-const steps = reactive([
-	{
-		title: 'Connect Your Data',
-		name: 'connect_data',
-		description:
-			"Insights needs access to your data to start analyzing it. Don't worry, we do not store your data.",
-		primary_button: {
-			label: 'Create Data Source',
-			action: () => router.push('/data-source#new'),
-		},
-	},
-	{
-		title: 'Build Your First Query',
-		name: 'build_query',
-		description:
-			"Let's introduce you to the query builder, where you'll be spending most of your time building queries.",
-		primary_button: {
-			label: 'Build Query',
-			action: () => router.push('/query#new'),
-		},
-	},
-	{
-		title: 'Create Your First Dashboard',
-		name: 'create_dashboard',
-		description:
-			'Organize your visualizations meaningfully by creating a dashboard for you and your team.',
-		primary_button: {
-			label: 'Create Dashboard',
-			action: () => router.push('/dashboard#new'),
-		},
-	},
-	{
-		title: 'All set! 🎉',
-		name: 'all_set',
-		description: 'You are all set to use Insights. We hope you enjoy using it!',
-		primary_button: {
-			label: 'Close',
-			action: () => completeOnboarding(),
-		},
-	},
-])
+const session = sessionStore()
+const showDetailsDialog = ref(false)
 
-const initialOnboardingStatus = steps.reduce((acc, step) => ({ [step.name]: false }), {})
-const onboarding = useStorage('insights:onboardingStatus', initialOnboardingStatus)
+const removalDate = 'April 6, 2026'
 
-const currentStep = computed(() => {
-	return steps.findIndex((step) => !onboarding.value[step.name])
-})
-function skipCurrentStep() {
-	onboarding.value = { ...onboarding.value, [steps[currentStep.value].name]: true }
-}
-function completeOnboarding() {
-	onboarding.value = { ...onboarding.value, all_set: true }
-	showOnboarding.value = false
+function switchToV3() {
+	session
+		.updateDefaultVersion(
+			session.user.default_version === 'v2' ? '' : session.user.default_version,
+		)
+		.then(() => {
+			window.location.href = '/insights'
+		})
 }
 </script>
 
 <template>
-	<div v-if="!onboarding.all_set && currentStep < steps.length">
-		<div class="flex items-center justify-between rounded bg-gray-50 px-4 py-3">
-			<div class="flex items-center space-x-2">
-				<ProgressRing
-					class="text-gray-900"
-					:progress="(currentStep / steps.length) * 100"
-					:progressLabel="currentStep"
-				/>
-				<div>
-					<div class="text-lg font-bold text-gray-900">Get Started with Insights</div>
-					<div class="mt-1 text-gray-600">
-						Follow through a couple of steps to get yourself familiar with Insights.
-					</div>
-				</div>
+	<div class="rounded-lg border border-amber-200 bg-amber-50/60 p-3.5 shadow-sm">
+		<div class="flex items-start gap-2.5">
+			<AlertTriangle class="mt-0.5 h-4.5 w-4.5 flex-shrink-0 text-amber-700" />
+			<div class="min-w-0 flex-1">
+				<h2 class="text-p-base font-semibold text-gray-900">
+					Insights v2 is being discontinued
+				</h2>
+				<p class="mt-1 text-p-sm text-gray-700">
+					You are currently using Insights v2. A newer version (Insights v3) is available.
+					This interface will be removed on {{ removalDate }}.
+				</p>
 			</div>
-			<div class="flex justify-end space-x-2">
-				<Button variant="outline" iconLeft="x" @click="completeOnboarding"> Skip </Button>
-				<Button variant="solid" iconRight="arrow-right" @click="showOnboarding = true">
-					{{ steps.length - currentStep }} step(s) left
-				</Button>
+			<div class="ml-2 flex-shrink-0 self-center">
+				<Button variant="outline" @click="showDetailsDialog = true">Learn more</Button>
 			</div>
 		</div>
 	</div>
 
 	<Dialog
-		v-if="!onboarding.all_set && currentStep < steps.length"
-		v-model="showOnboarding"
+		v-model="showDetailsDialog"
 		:options="{
-			title: steps[currentStep].title,
-			size: '2xl',
+			title: 'Insights v2 is being discontinued',
+			size: 'lg',
 		}"
 	>
 		<template #body-content>
-			<div class="flex flex-col items-center justify-center space-y-4">
-				<div
-					v-if="steps[currentStep].name !== 'all_set'"
-					:key="steps[currentStep].name"
-					class="flex w-full items-center justify-center overflow-hidden rounded shadow-md"
-				>
-					<video autoplay loop muted class="h-full w-full">
-						<source
-							v-if="steps[currentStep].name === 'connect_data'"
-							src="../assets/add-data-source-new.mp4"
-							type="video/mp4"
-						/>
-						<source
-							v-if="steps[currentStep].name === 'build_query'"
-							src="../assets/build-first-query-new.mp4"
-							type="video/mp4"
-						/>
-						<source
-							v-if="steps[currentStep].name === 'create_dashboard'"
-							src="../assets/create-first-dashboard-new.mp4"
-							type="video/mp4"
-						/>
-						Your browser does not support the video tag.
-					</video>
+			<div class="space-y-4 text-sm leading-relaxed text-gray-700">
+				<div>
+					<h3 class="mb-1.5 text-sm font-semibold text-gray-900">What's happening?</h3>
+					<p>
+						You are currently using Insights v2. This version will be permanently
+						removed on
+						<strong>{{ removalDate }}</strong
+						>. Insights v3 is already available with a better experience and ongoing
+						improvements.
+					</p>
+					<p class="mt-2">
+						New features and improvements for v2 have already stopped. Only critical
+						security fixes are being provided, and those will stop soon too.
+					</p>
 				</div>
-				<div class="">
-					{{ steps[currentStep].description }}
+
+				<div>
+					<h3 class="mb-1.5 text-sm font-semibold text-gray-900">
+						What do you need to do?
+					</h3>
+					<p>
+						Open Insights v3 in a new tab and recreate your important dashboards and
+						queries there. Start with the ones your team uses every day.
+					</p>
+					<p class="mt-2">
+						Automatic migration from v2 to v3 isn't possible because the two versions
+						are built differently. An automated transfer would likely break your
+						dashboards and queries anyway. Your existing work in v2 stays untouched
+						until the removal date, so you can refer to it while you migrate.
+					</p>
 				</div>
-				<div class="flex w-full justify-end space-x-2">
-					<Button
-						v-if="steps[currentStep].name !== 'all_set'"
-						variant="ghost"
-						@click="skipCurrentStep"
-					>
-						Skip
-					</Button>
-					<Button variant="solid" @click="steps[currentStep].primary_button.action">
-						{{ steps[currentStep].primary_button.label }}
-					</Button>
+
+				<div>
+					<h3 class="mb-1.5 text-sm font-semibold text-gray-900">Need help?</h3>
+					<p>
+						Join the
+						<a
+							href="https://t.me/frappeinsights"
+							target="_blank"
+							class="text-blue-600 underline hover:text-blue-700"
+							>Telegram community</a
+						>
+						for migration support, or
+						<a
+							href="https://frappecloud.com/support"
+							target="_blank"
+							class="text-blue-600 underline hover:text-blue-700"
+							>create a support ticket</a
+						>
+						if you're on Frappe Cloud.
+					</p>
 				</div>
+			</div>
+
+			<div class="mt-5 flex justify-end gap-2">
+				<Button variant="subtle" @click="showDetailsDialog = false">Close</Button>
+				<Button variant="solid" @click="switchToV3">Open Insights v3</Button>
 			</div>
 		</template>
 	</Dialog>

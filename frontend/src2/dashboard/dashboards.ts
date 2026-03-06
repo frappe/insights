@@ -19,21 +19,25 @@ export type DashboardListItem = {
 }
 
 const dashboards = ref<DashboardListItem[]>([])
+const favorites = ref<DashboardListItem[]>([])
 
 const loading = ref(false)
+const mapTimeAgo = (dashboard: any) => ({
+	...dashboard,
+	created_from_now: useTimeAgo(dashboard.creation),
+	modified_from_now: useTimeAgo(dashboard.modified),
+})
 async function fetchDashboards(search_term?: string, limit: number = 50) {
 	loading.value = true
-	dashboards.value = await call('insights.api.dashboards.get_dashboards', {
-		search_term,
-		limit,
-	})
-	dashboards.value = dashboards.value.map((dashboard: any) => ({
-		...dashboard,
-		created_from_now: useTimeAgo(dashboard.creation),
-		modified_from_now: useTimeAgo(dashboard.modified),
-	}))
+
+	const [regular, fav] = await Promise.all([
+		call('insights.api.dashboards.get_dashboards', { search_term, limit }),
+		call('insights.api.dashboards.get_dashboards', { get_favorites: true }),
+	])
+
+	dashboards.value = regular.map(mapTimeAgo)
+	favorites.value = fav.map(mapTimeAgo)
 	loading.value = false
-	return dashboards.value
 }
 
 const updatingPreviewImage = ref<Record<string, boolean>>({})
@@ -59,8 +63,7 @@ async function toggleLike(dashboard_name: string, add: boolean) {
 		doctype: 'Insights Dashboard v3',
 		name: dashboard_name,
 		add: add ? 'Yes' : 'No',
-	})
-		.then(() => fetchDashboards())
+	}).then(() => fetchDashboards())
 }
 
 export default function useDashboardStore() {
@@ -70,6 +73,7 @@ export default function useDashboardStore() {
 
 	return reactive({
 		dashboards,
+		favorites,
 		loading,
 		fetchDashboards,
 

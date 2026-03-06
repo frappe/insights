@@ -1,14 +1,16 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-from contextlib import suppress
 
 import frappe
 from frappe.utils.data import date_diff
-from frappe.utils.telemetry import POSTHOG_HOST_FIELD, POSTHOG_PROJECT_FIELD
-from posthog import Posthog
+from frappe.utils.telemetry import POSTHOG_HOST_FIELD, POSTHOG_PROJECT_FIELD, capture
 
 from insights.decorators import insights_whitelist
+
+
+def capture_event(event: str):
+    return capture(event, "insights")
 
 
 @frappe.whitelist()
@@ -40,7 +42,7 @@ def get_posthog_settings():
     }
 
 
-@frappe.whitelist()
+@insights_whitelist()
 def get_credentials():
     return {
         "posthog_project_id": frappe.conf.get(POSTHOG_PROJECT_FIELD),
@@ -49,7 +51,7 @@ def get_credentials():
 
 
 @frappe.whitelist(allow_guest=True)
-def track_active_site(is_v3=False):
+def track_active_site(is_v3: bool = False):
     if (
         frappe.conf.developer_mode
         or not should_track_active_status()
@@ -59,21 +61,6 @@ def track_active_site(is_v3=False):
 
     capture_event("insights_v3_active_site" if is_v3 else "insights_active_site")
     frappe.cache().set_value("last_active_at", frappe.utils.now_datetime())
-
-
-def capture_event(event_name, properties=None):
-    project_id = frappe.conf.get(POSTHOG_PROJECT_FIELD)
-    host = frappe.conf.get(POSTHOG_HOST_FIELD)
-    if not project_id or not host:
-        return
-
-    with suppress(Exception):
-        ph = Posthog(project_id, host=host)
-        ph.capture(
-            distinct_id=frappe.local.site,
-            event=event_name,
-            properties=properties,
-        )
 
 
 def should_track_active_status():

@@ -1,4 +1,6 @@
 import { call } from 'frappe-ui'
+// @ts-ignore
+import { useTelemetry } from 'frappe-ui/frappe'
 import { computed, InjectionKey, reactive, toRefs } from 'vue'
 import useChart, { newChart } from '../charts/chart'
 import useDashboard, { newDashboard } from '../dashboard/dashboard'
@@ -19,7 +21,7 @@ import router from '../router'
 import session from '../session'
 import type {
 	InsightsWorkbook,
-	WorkbookSharePermission as WorkbookUserPermission
+	WorkbookSharePermission as WorkbookUserPermission,
 } from '../types/workbook.types'
 
 const workbooks = new Map<string, Workbook>()
@@ -35,6 +37,7 @@ export default function useWorkbook(name: string) {
 }
 
 function makeWorkbook(name: string) {
+	const { capture } = useTelemetry()
 	const workbook = getWorkbookResource(name)
 
 	// getLinkedQueries expects the query to be loaded
@@ -107,6 +110,7 @@ function makeWorkbook(name: string) {
 				sort_order: chart.doc.sort_order,
 				folder: null,
 			})
+			capture('chart_created')
 			setActiveTab('chart', chart.doc.name)
 		})
 	}
@@ -139,6 +143,7 @@ function makeWorkbook(name: string) {
 				name: dashboard.doc.name,
 				title: dashboard.doc.title,
 			})
+			capture('dashboard_created')
 			setActiveTab('dashboard', dashboard.doc.name)
 		})
 	}
@@ -236,8 +241,7 @@ function makeWorkbook(name: string) {
 							message: 'Workbook duplicated successfully',
 							variant: 'success',
 						})
-						// FIX: debug why new workbook is not loaded
-						router.push(`/workbook/${name}`)
+						window.location.href = `/insights/workbook/${name}`
 					})
 					.catch(showErrorToast)
 			},
