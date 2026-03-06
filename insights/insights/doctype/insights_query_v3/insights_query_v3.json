@@ -18,8 +18,7 @@
   "variables",
   "section_break_oujt",
   "linked_queries",
-  "old_name",
-  "query_hash"
+  "old_name"
  ],
  "fields": [
   {
@@ -109,11 +108,6 @@
    "fieldname": "folder",
    "fieldtype": "Data",
    "label": "folder"
-  },
-  {
-   "fieldname": "query_hash",
-   "fieldtype": "Data",
-   "label": "Query Hash"
   }
  ],
  "index_web_pages_for_search": 1,
