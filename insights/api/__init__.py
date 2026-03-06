@@ -225,4 +225,3 @@ def is_public_method(doctype: str, method: str):
         return True
 
     return False
-

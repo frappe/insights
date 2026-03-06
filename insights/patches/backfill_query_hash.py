@@ -6,7 +6,6 @@ from insights.cache_utils import make_digest
 
 
 def execute():
-
     if not frappe.db.exists("DocType", "Insights Query v3"):
         return
 

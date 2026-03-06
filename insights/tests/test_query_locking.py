@@ -89,7 +89,7 @@ class TestQueryLocking(unittest.TestCase):
         max_queries = get_max_concurrent_queries()
         acquired_slots = []
 
-        for i in range(max_queries):
+        for _i in range(max_queries):
             slot = try_acquire_semaphore()
             if slot is not None:
                 acquired_slots.append(slot)
@@ -100,7 +100,6 @@ class TestQueryLocking(unittest.TestCase):
             release_semaphore()
 
     def test_semaphore_release(self):
-
         max_queries = get_max_concurrent_queries()
 
         for _ in range(max_queries):

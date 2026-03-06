@@ -104,7 +104,6 @@ def is_query_executing(lock_key):
 
 # for frontend
 def get_pending_query_result(cache_key):
-
     # fix: check if query is still executing first
     # fixes issue where we check cache before its written
     if is_query_executing(cache_key):
@@ -822,7 +821,6 @@ def execute_ibis_query(
 
 
 def execute_with_lock(query, sql, cache_key, cache, cache_expiry, force, reference_name):
-
     lock_key = f"{QUERY_LOCK_PREFIX}{cache_key}"
     # another process is executing this query
     # return immediately, frontend will poll for results
