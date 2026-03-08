@@ -3,6 +3,7 @@ import re
 import time
 from contextlib import contextmanager
 from datetime import date
+from typing import Literal
 
 import frappe
 import ibis
@@ -43,23 +44,22 @@ def get_max_concurrent_queries():
         frappe.db.get_single_value("Insights Settings", "max_concurrent_queries")
         or DEFAULT_MAX_CONCURRENT_QUERIES
     )
-    return max(6, min(18, int(value)))
+    return max(2, min(18, int(value)))
 
 
-def try_acquire_lock(lock_key) -> bool:
+def try_acquire_lock(key) -> bool:
     try:
-        cache = frappe.cache()
-        key = cache.make_key(lock_key)
-        return bool(cache.set(key, "1", ex=LOCK_TIMEOUT, nx=True))
+        key = frappe.cache.make_key(f"{QUERY_LOCK_PREFIX}{key}")
+        result = bool(frappe.cache.set(key, "1", ex=LOCK_TIMEOUT, nx=True))
+        return result
     except Exception:
         return False
 
 
-def release_lock(lock_key):
+def release_lock(key):
     try:
-        cache = frappe.cache()
-        key = cache.make_key(lock_key)
-        cache.delete(key)
+        key = frappe.cache.make_key(f"{QUERY_LOCK_PREFIX}{key}")
+        frappe.cache.delete(key)
     except Exception:
         pass
 
@@ -93,11 +93,11 @@ def release_semaphore():
         pass
 
 
-def is_query_executing(lock_key):
+def is_query_executing(key):
     try:
-        cache = frappe.cache()
-        key = cache.make_key(lock_key)
-        return cache.get(key) is not None
+        key = frappe.cache.make_key(f"{QUERY_LOCK_PREFIX}{key}")
+        t = frappe.cache.get(key) is not None
+        return t
     except Exception:
         return False
 
@@ -828,6 +828,22 @@ class IbisQueryBuilder:
         return {col: getattr(self.query, col) for col in self.query.schema().names}
 
 
+def generate_query_key(query: IbisQuery):
+    sql = ibis.to_sql(query)
+    backends, _ = query._find_backends()
+    backend_id = backends[0].db_identity if backends else None
+    return make_digest(sql, backend_id), sql
+
+
+class QueryExecutionResponse(frappe._dict):
+    key: str
+    status: Literal["pending", "completed", "error", "queue_full"]
+    sql: str
+    columns: list[dict]
+    data: pd.DataFrame | None
+    time_taken: float
+
+
 def execute_ibis_query(
     query: IbisQuery,
     limit=100,
@@ -837,81 +853,89 @@ def execute_ibis_query(
     reference_doctype=None,
     reference_name=None,
     use_lock=True,
-):
-    try:
-        sql = ibis.to_sql(query)
-    except ibis.common.exceptions.OperationNotDefinedError:
-        # TODO: throw better error message
-        raise
-
-    backends, _ = query._find_backends()
-    backend_id = backends[0].db_identity if backends else None
-    cache_key = make_digest(sql, backend_id)
-
-    # fix: check cache first
-    if cache and has_cached_results(cache_key) and not force:
-        return get_cached_results(cache_key), None
-
+) -> QueryExecutionResponse:
     if hasattr(query, "limit") and limit:
         limit = int(limit or 100)
         limit = min(max(limit, 1), 10_00_000)
         query = query.limit(limit)
 
-    if use_lock:
-        return execute_with_lock(query, sql, cache_key, cache, cache_expiry, force, reference_name)
-    else:
-        return execute_query(query, sql, cache_key, cache, cache_expiry, reference_name)
+    key, sql = generate_query_key(query)
+    columns = get_columns_from_schema(query.schema())
 
+    if cache and has_cached_results(key) and not force:
+        df = get_cached_results(key)
+        return QueryExecutionResponse(
+            key=key,
+            status="completed",
+            data=df,
+            sql=sql,
+            time_taken=0,
+            columns=columns,
+        )
 
-def execute_with_lock(query, sql, cache_key, cache, cache_expiry, force, reference_name):
-    lock_key = f"{QUERY_LOCK_PREFIX}{cache_key}"
-    # another process is executing this query
-    # return immediately, frontend will poll for results
-    if not try_acquire_lock(lock_key):
-        return {"status": "pending", "cache_key": cache_key}, None
+    if not try_acquire_lock(key):
+        return QueryExecutionResponse(
+            key=key,
+            status="pending",
+            # sql=sql,
+            # columns=columns,
+            data=None,
+            time_taken=0,
+        )
 
     slot = try_acquire_semaphore()
-    # too many concurrent queries
-    # release lock and return
     if slot is None:
-        release_lock(lock_key)
-        return {"status": "queue_full"}, None
+        # too many concurrent queries
+        release_lock(key)
+        return QueryExecutionResponse(
+            key=key,
+            status="queue_full",
+            # sql=sql,
+            # columns=columns,
+            data=None,
+            time_taken=0,
+        )
 
     try:
-        result, time_taken = execute_query(query, sql, cache_key, cache, cache_expiry, reference_name)
-        return result, time_taken
+        df, time_taken = _execute_query(query, sql, reference_doctype, reference_name)
+
+        if cache:
+            cache_results(key, df, cache_expiry)
+
+        return QueryExecutionResponse(
+            key=key,
+            status="completed",
+            data=df,
+            sql=sql,
+            time_taken=time_taken,
+            columns=columns,
+        )
     finally:
-        release_lock(lock_key)
+        release_lock(key)
         release_semaphore()
 
 
-def execute_query(query, sql, cache_key, cache, cache_expiry, reference_name):
+def _execute_query(query: IbisQuery, sql, reference_doctype, reference_name) -> tuple[pd.DataFrame, float]:
     start = time.monotonic()
 
     try:
-        result = query.execute()
+        df = query.execute()
+        if isinstance(df, pd.DataFrame):
+            df = df.replace({pd.NaT: None, np.nan: None})
     except Exception as e:
         if "max_statement_time" in str(e):
-            frappe.log_error(
-                title="Query execution time exceeded the limit.",
-                message=f"Query: {sql}",
-            )
+            frappe.log_error("Query execution time exceeded the limit.")
             max_time = frappe.db.get_single_value("Insights Settings", "max_execution_time") or 180
             frappe.throw(
                 title="Query Timeout",
-                msg=f"Query execution time exceeded the limit of {max_time} seconds. Please try again with a smaller timespan or a more specific filter.",
+                msg=f"Query execution time exceeded the limit of {max_time} seconds. Please try again with a more specific filter.",
             )
         raise e
 
     time_taken = flt(time.monotonic() - start, 3)
     create_execution_log(sql, time_taken, reference_name)
 
-    if isinstance(result, pd.DataFrame):
-        result = result.replace({pd.NaT: None, np.nan: None})
-        if cache:
-            cache_results(cache_key, result, cache_expiry)
-
-    return result, time_taken
+    return df, time_taken
 
 
 def get_columns_from_schema(schema: ibis.Schema):

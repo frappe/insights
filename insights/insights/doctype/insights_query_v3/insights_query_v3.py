@@ -6,7 +6,6 @@ from contextlib import contextmanager
 from io import BytesIO
 
 import frappe
-import ibis
 import sqlparse
 from frappe.model.document import Document
 from ibis import _
@@ -16,11 +15,6 @@ from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     IbisQueryBuilder,
     execute_ibis_query,
     get_columns_from_schema,
-    is_query_executing,
-    release_lock,
-    release_semaphore,
-    try_acquire_lock,
-    try_acquire_semaphore,
 )
 from insights.utils import deep_convert_dict_to_dict
 
@@ -168,118 +162,43 @@ class InsightsQueryv3(Document):
         return ibis_query
 
     @frappe.whitelist()
-    def execute(self, active_operation_idx=None, adhoc_filters=None, force=False, dashboard=None):
-        lock_key = self._get_execution_lock_key()
+    def execute(
+        self,
+        active_operation_idx: int | None = None,
+        adhoc_filters: dict | None = None,
+        force: bool = False,
+        dashboard: str | None = None,
+    ):
+        with set_adhoc_filters(adhoc_filters):
+            ibis_query = self.build(active_operation_idx)
 
-        # before creating a db connection, check if query is executing
-        if not force and is_query_executing(lock_key):
-            return {
-                "status": "pending",
-                "cache_key": lock_key,
-            }
+        response = execute_ibis_query(
+            ibis_query,
+            force=force,
+            reference_doctype=self.doctype,
+            reference_name=self.name,
+        )
 
-        if not try_acquire_lock(lock_key):
-            return {
-                "status": "pending",
-                "cache_key": lock_key,
-            }
+        if response.status == "completed":
+            self._publish_query_complete(response.key, dashboard)
+            response.data = response.data.to_dict(orient="records")
+        elif response.status == "pending":
+            pass
+        elif response.status == "queue_full":
+            pass
 
-        try:
-            slot = try_acquire_semaphore()
-            if slot is None:
-                return {"status": "queue_full"}
+        return response
 
-            try:
-                with set_adhoc_filters(adhoc_filters):
-                    ibis_query = self.build(active_operation_idx)
-
-                limit = 100
-                for op in frappe.parse_json(self.operations):
-                    if op.get("limit"):
-                        limit = op.get("limit")
-                        break
-
-                results, time_taken = execute_ibis_query(
-                    ibis_query,
-                    limit,
-                    force=force,
-                    cache_expiry=60 * 10,
-                    reference_doctype=self.doctype,
-                    reference_name=self.name,
-                    use_lock=False,
-                )
-
-                if hasattr(results, "to_dict"):
-                    rows = results.to_dict(orient="records")
-                else:
-                    rows = results
-
-                columns = get_columns_from_schema(ibis_query.schema())
-                sql = ibis.to_sql(ibis_query)
-
-                self._cache_execution_result(
-                    lock_key,
-                    {
-                        "sql": sql,
-                        "columns": columns,
-                        "rows": rows,
-                        "time_taken": time_taken,
-                    },
-                )
-                self._publish_query_complete(lock_key, dashboard)
-
-                return {
-                    "sql": sql,
-                    "columns": columns,
-                    "rows": rows,
-                    "time_taken": time_taken,
-                }
-
-            finally:
-                release_semaphore()
-        finally:
-            release_lock(lock_key)
-
-    def _publish_query_complete(self, lock_key, dashboard=None):
+    def _publish_query_complete(self, key, dashboard=None):
         if not dashboard:
             return
+        # TODO: this doesn't just emits into the dashboard room
         frappe.publish_realtime(
             "insights_query_complete",
-            {"cache_key": lock_key},
+            {"key": key},
             doctype="Insights Dashboard v3",
             docname=dashboard,
         )
-
-    def _cache_execution_result(self, lock_key, result, cache_expiry=600):
-        cache_key = f"insights:exec_result:{lock_key}"
-        frappe.cache().set_value(cache_key, frappe.as_json(result), expires_in_sec=cache_expiry)
-
-    def _get_cached_execution_result(self, lock_key):
-        cache_key = f"insights:exec_result:{lock_key}"
-        data = frappe.cache().get_value(cache_key)
-        if data:
-            return frappe.parse_json(data)
-        return None
-
-    # Check if a pending query has executed and return results
-    # Used for polling when another process is executing the same query
-    @insights_whitelist()
-    def check_pending_result(self, cache_key):
-        # Check if query is still executing
-        if is_query_executing(cache_key):
-            return {"status": "pending"}
-
-        cached_result = self._get_cached_execution_result(cache_key)
-        if cached_result:
-            return {
-                "status": "completed",
-                "sql": cached_result.get("sql"),
-                "columns": cached_result.get("columns"),
-                "rows": cached_result.get("rows"),
-                "time_taken": cached_result.get("time_taken"),
-            }
-
-        return {"status": "not_found"}
 
     @insights_whitelist()
     def format(self, raw_sql: str):

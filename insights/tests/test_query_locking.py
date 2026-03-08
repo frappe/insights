@@ -28,7 +28,7 @@ from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
 class TestQueryLocking(unittest.TestCase):
     def setUp(self):
         self.test_cache_key = f"test_lock_{frappe.generate_hash(length=8)}"
-        self.lock_key = f"{QUERY_LOCK_PREFIX}{self.test_cache_key}"
+        self.lock_key = self.test_cache_key
         self.cleanup_test_keys()
 
     def tearDown(self):
@@ -196,7 +196,7 @@ class TestQueryLocking(unittest.TestCase):
             )
 
         self.assertFalse(
-            is_query_executing(f"{QUERY_LOCK_PREFIX}{self.test_cache_key}"),
+            is_query_executing(self.test_cache_key),
             "Lock should be released after execution",
         )
 
@@ -217,7 +217,7 @@ class TestQueryLocking(unittest.TestCase):
                 )
 
         self.assertFalse(
-            is_query_executing(f"{QUERY_LOCK_PREFIX}{self.test_cache_key}"),
+            is_query_executing(self.test_cache_key),
             "Lock should be released even after error",
         )
 

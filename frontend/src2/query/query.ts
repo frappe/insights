@@ -159,7 +159,7 @@ export function makeQuery(name: string) {
 	// set before execute
 	// to get realtime completion events to the correct dashboard doc room
 	const dashboardName = ref<string>()
-	const pendingCacheKey = ref<string | null>(null)
+	const pendingExecutionKey = ref<string | null>(null)
 
 	const REALTIME_TIMEOUT = 120_000
 	const QUEUE_RETRY_DELAY = 3000
@@ -188,7 +188,7 @@ export function makeQuery(name: string) {
 		}
 
 		executing.value = true
-		pendingCacheKey.value = null
+		pendingExecutionKey.value = null
 
 		return query
 			.call('execute', {
@@ -201,18 +201,14 @@ export function makeQuery(name: string) {
 				if (!response) return
 
 				if (response.status === 'pending') {
-					pendingCacheKey.value = response.cache_key
-					result.value.executedSQL = response.sql
-					result.value.columns = response.columns || []
-					result.value.columnOptions = result.value.columns.map((column) => ({
-						label: column.name,
-						value: column.name,
-						description: column.type,
-						query: query.doc.name,
-						data_type: column.type,
-					}))
-
-					return pollForResults(response.cache_key)
+					pendingExecutionKey.value = response.key
+					populateResults(response)
+					const completed = await waitForSocketEvent(response.key)
+					if (completed) {
+						pendingExecutionKey.value = null
+						return execute(false, retryCount)
+					}
+					return
 				}
 
 				if (response.status === 'queue_full') {
@@ -236,7 +232,7 @@ export function makeQuery(name: string) {
 				result.value = { ...EMPTY_RESULT }
 			})
 			.finally(() => {
-				if (!pendingCacheKey.value) {
+				if (!pendingExecutionKey.value) {
 					executing.value = false
 				}
 				if (retryCount === 0) {
@@ -249,11 +245,8 @@ export function makeQuery(name: string) {
 	}
 
 	function populateResults(response: any) {
-		result.value.executedSQL = response.sql || result.value.executedSQL
-		result.value.columns = response.columns || result.value.columns
-		result.value.rows = response.rows
-		result.value.totalRowCount = 0
-		result.value.formattedRows = getFormattedRows(result.value, query.doc.operations)
+		result.value.executedSQL = response.sql
+		result.value.columns = response.columns
 
 		const aggregationPrefixes = aggregations.map((a) => `${a}_`)
 		const isMeasureColumn = (name: string) =>
@@ -270,20 +263,26 @@ export function makeQuery(name: string) {
 				is_measure: isMeasureColumn(column.name),
 			}
 		})
-		result.value.timeTaken = response.time_taken
+
+		if (response.data?.length >= 0) {
+			result.value.timeTaken = response.time_taken
+			result.value.rows = response.data
+			result.value.totalRowCount = 0
+			result.value.formattedRows = getFormattedRows(result.value, query.doc.operations)
+		}
 		result.value.lastExecutedAt = new Date()
 	}
 
-	// listens for `insights_query_complete` on the socket
-	// and fetches cached result
-	function pollForResults(cacheKey: string) {
-		return new Promise<void>((resolve) => {
+	// waits for `insights_query_complete` socket event
+	// returns true if the event fired, false if timed out
+	function waitForSocketEvent(key: string): Promise<boolean> {
+		return new Promise<boolean>((resolve) => {
 			const sock = getSocket()
 
 			const timeout = setTimeout(() => {
 				cleanup()
-				if (pendingCacheKey.value === cacheKey) {
-					pendingCacheKey.value = null
+				if (pendingExecutionKey.value === key) {
+					pendingExecutionKey.value = null
 					executing.value = false
 					createToast({
 						title: 'Query Timeout',
@@ -291,38 +290,21 @@ export function makeQuery(name: string) {
 						variant: 'warning',
 					})
 				}
-				resolve()
+				resolve(false)
 			}, REALTIME_TIMEOUT)
 
-			function socket_handler(data: any) {
-				if (data?.cache_key !== cacheKey || pendingCacheKey.value !== cacheKey) return
+			function handler(data: any) {
+				if (data?.key !== key || pendingExecutionKey.value !== key) return
 				cleanup()
-				query
-					.call('check_pending_result', { cache_key: cacheKey })
-					.then((response: any) => {
-						if (response.status === 'completed') {
-							populateResults(response)
-						} else {
-							createToast({
-								title: 'Query Failed',
-								message: 'Query execution failed. Please try again.',
-								variant: 'error',
-							})
-						}
-					})
-					.finally(() => {
-						pendingCacheKey.value = null
-						executing.value = false
-						resolve()
-					})
+				resolve(true)
 			}
 
 			function cleanup() {
-				sock.off('insights_query_complete', socket_handler)
+				sock.off('insights_query_complete', handler)
 				clearTimeout(timeout)
 			}
 
-			sock.on('insights_query_complete', socket_handler)
+			sock.on('insights_query_complete', handler)
 		})
 	}
 
