@@ -5,6 +5,7 @@
 		</div>
 
 		<div class="flex h-full flex-1 flex-col overflow-auto">
+			<DemoDataBanner />
 			<Suspense>
 				<RouterView />
 			</Suspense>
@@ -28,6 +29,7 @@ import { computed, ref, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import { Toaster } from 'vue-sonner'
 import AppSidebar from './components/AppSidebar.vue'
+import DemoDataBanner from './components/DemoDataBanner.vue'
 import { dialogs } from './helpers/confirm_dialog'
 import { attachRealtimeListener, waitUntil } from './helpers/index.ts'
 import { createToast } from './helpers/toasts.ts'
