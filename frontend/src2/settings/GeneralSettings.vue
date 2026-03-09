@@ -1,11 +1,52 @@
 <script setup lang="ts">
-import Checkbox from '../components/Checkbox.vue'
+import { call } from 'frappe-ui'
+import { ref, watch } from 'vue'
+import { createToast } from '../helpers/toasts'
 import DatePickerControl from '../query/components/DatePickerControl.vue'
+import session from '../session'
 import SettingItem from './SettingItem.vue'
 import useSettings from './settings'
 
 const settings = useSettings()
 settings.load()
+
+const hasDemoData = ref(true)
+const demoLoading = ref(false)
+
+async function checkDemoData() {
+	try {
+		hasDemoData.value = await call('insights.setup.setup_wizard.check_demo_data_exists')
+	} catch {
+		hasDemoData.value = true
+	}
+}
+
+watch(
+	() => session.initialized,
+	(val) => val && checkDemoData(),
+	{ immediate: true }
+)
+
+async function setupDemoData() {
+	demoLoading.value = true
+	try {
+		await call('insights.setup.setup_wizard.setup_demo_data')
+		hasDemoData.value = true
+		createToast({
+			title: 'Demo Data Ready',
+			message: 'Sample data and workbook have been set up successfully',
+			variant: 'success',
+		})
+	} catch {
+		createToast({
+			title: 'Setup Failed',
+			message: 'Failed to setup demo data',
+			variant: 'error',
+		})
+	} finally {
+		demoLoading.value = false
+	}
+}
 </script>
 
 <template>
@@ -50,6 +91,20 @@ settings.load()
 					'Friday',
 					'Saturday',
 				]"
+			/>
+		</SettingItem>
+
+		<SettingItem
+			v-if="session.user.is_admin && !hasDemoData"
+			label="Demo Data"
+			description="Set up sample data and a pre-built workbook to explore Insights features."
+		>
+			<Button
+				variant="solid"
+				size="sm"
+				label="Setup Demo Data"
+				:loading="demoLoading"
+				@click="setupDemoData"
 			/>
 		</SettingItem>
 
