@@ -82,5 +82,3 @@ def redirect_to_v2():
         path = "/insights_v2"
     frappe.local.flags.redirect_location = path
     raise frappe.Redirect
-
-

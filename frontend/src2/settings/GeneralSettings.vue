@@ -24,7 +24,7 @@ async function checkDemoData() {
 watch(
 	() => session.initialized,
 	(val) => val && checkDemoData(),
-	{ immediate: true }
+	{ immediate: true },
 )
 
 async function setupDemoData() {
