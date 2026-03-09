@@ -878,7 +878,7 @@ def get_code_results(code: str, variables=None):
     pandas.json_normalize = pd.json_normalize
 
     results = []
-    frappe.debug_log = []
+    frappe.local.debug_log = []
 
     variable_context = {}
     if variables:
