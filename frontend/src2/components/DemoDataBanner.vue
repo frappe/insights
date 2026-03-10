@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { useStorage } from '@vueuse/core'
 import { call } from 'frappe-ui'
-import { X } from 'lucide-vue-next'
+import { Sparkle, Sparkles, X } from 'lucide-vue-next'
 import { ref, watch } from 'vue'
 import session from '../session'
 import { createToast } from '../helpers/toasts'
+import { S } from 'vue-router/dist/router-CWoNjPRp.mjs'
 
 const dismissed = useStorage('insights:demo-banner-dismissed', false)
 const loading = ref(false)
@@ -55,12 +56,11 @@ function dismiss() {
 
 <template>
 	<div
-		v-if="show && session.user.is_admin"
 		class="flex flex-col gap-3 rounded-lg bg-white px-3 py-2.5 text-sm shadow-sm"
 	>
 		<div class="flex items-start justify-between">
 			<div class="flex flex-col gap-1">
-				<div class="font-medium text-gray-900">Try demo data</div>
+				<div class="font-medium text-p-base text-gray-900">Try demo data</div>
 				<div class="text-p-xs text-gray-600">
 					Explore with sample data and a pre-built workbook
 				</div>
@@ -74,6 +74,9 @@ function dismiss() {
 			</button>
 		</div>
 		<Button label="Setup Demo Data" variant="subtle" :loading="loading" @click="setupDemoData">
+			<template #prefix>
+				<Sparkles class="h-3.5 w-3.5" />
+			</template>
 		</Button>
 	</div>
 </template>
