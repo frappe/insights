@@ -58,7 +58,7 @@ class InsightsAlert(Document):
             frappe.throw("You do not have permission to access this query")
 
     @frappe.whitelist()
-    def send_alert(self, force=False):
+    def send_alert(self, force: bool = False):
         results = self.evaluate_condition()
         if not results and not force:
             return

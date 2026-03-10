@@ -80,7 +80,9 @@ class InsightsDashboardv3(Document):
         )
 
     @frappe.whitelist()
-    def get_distinct_column_values(self, query, column_name, search_term=None, adhoc_filters=None):
+    def get_distinct_column_values(
+        self, query: str, column_name: str, search_term: str | None = None, adhoc_filters: dict | None = None
+    ):
         is_guest = frappe.session.user == "Guest"
         if is_guest and not self.is_public:
             raise frappe.PermissionError
@@ -181,7 +183,7 @@ class InsightsDashboardv3(Document):
         return people_with_access, org_access
 
     @frappe.whitelist()
-    def update_access(self, data):
+    def update_access(self, data: dict | str):
         if not frappe.has_permission("Insights Dashboard v3", ptype="share", doc=self.name):
             frappe.throw("You do not have permission to share this dashboard")
 

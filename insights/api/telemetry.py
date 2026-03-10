@@ -40,7 +40,7 @@ def get_posthog_settings():
     }
 
 
-@frappe.whitelist()
+@insights_whitelist()
 def get_credentials():
     return {
         "posthog_project_id": frappe.conf.get(POSTHOG_PROJECT_FIELD),
@@ -49,7 +49,7 @@ def get_credentials():
 
 
 @frappe.whitelist(allow_guest=True)
-def track_active_site(is_v3=False):
+def track_active_site(is_v3: bool = False):
     if (
         frappe.conf.developer_mode
         or not should_track_active_status()

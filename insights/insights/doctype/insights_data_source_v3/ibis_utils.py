@@ -512,11 +512,13 @@ class IbisQueryBuilder:
 
             tables = set()
             for table_exp in parsed.find_all(sg.exp.Table):
-                tables.add(table_exp.name)
+                if table_exp.name:
+                    tables.add(table_exp.name)
 
             cte_aliases = set()
             for cte_exp in parsed.find_all(sg.exp.CTE):
-                cte_aliases.add(cte_exp.alias)
+                if cte_exp.alias:
+                    cte_aliases.add(cte_exp.alias)
 
             tables = tables - cte_aliases
 
@@ -876,7 +878,7 @@ def get_code_results(code: str, variables=None):
     pandas.json_normalize = pd.json_normalize
 
     results = []
-    frappe.debug_log = []
+    frappe.local.debug_log = []
 
     variable_context = {}
     if variables:

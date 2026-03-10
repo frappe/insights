@@ -14,12 +14,12 @@ def setup_complete():
     return bool(frappe.get_single("Insights Settings").setup_complete)
 
 
-@insights_whitelist()
+@insights_whitelist(role="Insights Admin")
 def update_erpnext_source_title(title: str):
     frappe.db.set_value("Insights Data Source", "Site DB", "title", title)
 
 
-@insights_whitelist()
+@insights_whitelist(role="Insights Admin")
 def setup_sample_data(dataset: str):
     factory = DemoDataFactory()
     factory.run()
@@ -27,9 +27,7 @@ def setup_sample_data(dataset: str):
 
 
 def import_demo_queries_and_dashboards():
-    demo_dashboard_exists = frappe.db.exists(
-        "Insights Dashboard", {"title": "eCommerce"}
-    )
+    demo_dashboard_exists = frappe.db.exists("Insights Dashboard", {"title": "eCommerce"})
     if demo_dashboard_exists:
         return
     try:
@@ -102,20 +100,20 @@ def get_new_datasource(db):
     return data_source
 
 
-@insights_whitelist()
+@insights_whitelist(role="Insights Admin")
 def test_database_connection(database: dict):
     data_source = get_new_datasource(database)
     return data_source.test_connection(raise_exception=True)
 
 
-@insights_whitelist()
+@insights_whitelist(role="Insights Admin")
 def add_database(database: dict):
     data_source = get_new_datasource(database)
     data_source.save()
     data_source.enqueue_sync_tables()
 
 
-@insights_whitelist()
+@insights_whitelist(role="Insights Admin")
 def complete_setup():
     settings = frappe.get_single("Insights Settings")
     settings.setup_complete = 1

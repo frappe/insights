@@ -75,7 +75,7 @@ def create_chart():
 
 @frappe.whitelist(allow_guest=True)
 def pivot(
-    data,
+    data: list[dict],
     indexes: list[str] | None = None,
     columns: list[str] | None = None,
     values: list[str] | None = None,

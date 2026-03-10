@@ -8,6 +8,7 @@ app_email = "hello@frappe.io"
 app_license = "GNU GPLv3"
 
 export_python_type_annotations = True
+require_type_annotated_api_methods = True
 
 
 add_to_apps_screen = [
@@ -73,11 +74,6 @@ add_to_apps_screen = [
 # 	"methods": "insights.utils.jinja_methods",
 # 	"filters": "insights.utils.jinja_filters"
 # }
-
-# Setup
-# ------------
-setup_wizard_requires = "assets/insights/js/setup_wizard.js"
-setup_wizard_stages = "insights.setup.setup_wizard.get_setup_stages"
 
 # Installation
 # ------------

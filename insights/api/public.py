@@ -24,7 +24,7 @@ def get_public_key(resource_type: str, resource_name: str):
 
 
 @frappe.whitelist(allow_guest=True)
-def get_public_dashboard(public_key):
+def get_public_dashboard(public_key: str):
     if not public_key or not isinstance(public_key, str):
         frappe.throw("Public Key is required")
 
@@ -36,7 +36,7 @@ def get_public_dashboard(public_key):
 
 
 @frappe.whitelist(allow_guest=True)
-def get_public_chart(public_key):
+def get_public_chart(public_key: str):
     if not public_key or not isinstance(public_key, str):
         frappe.throw("Public Key is required")
 
@@ -51,7 +51,11 @@ def get_public_chart(public_key):
 
 
 @frappe.whitelist(allow_guest=True)
-def get_public_dashboard_chart_data(public_key, item_id, filters=None):
+def get_public_dashboard_chart_data(
+    public_key: str,
+    item_id: str,
+    filters: list | None = None,
+):
     if not public_key or not isinstance(public_key, str):
         frappe.throw("Public Key is required")
 
@@ -66,13 +70,11 @@ def get_public_dashboard_chart_data(public_key, item_id, filters=None):
 
 @frappe.whitelist(allow_guest=True)
 @redis_cache()
-def fetch_column_values_public(public_key, item_id, search_text=None):
+def fetch_column_values_public(public_key: str, item_id: str, search_text: str | None = None):
     if not public_key or not isinstance(public_key, str):
         frappe.throw("Public Key is required")
 
-    dashboard_name = frappe.db.exists(
-        "Insights Dashboard", {"public_key": public_key, "is_public": 1}
-    )
+    dashboard_name = frappe.db.exists("Insights Dashboard", {"public_key": public_key, "is_public": 1})
     if not dashboard_name:
         frappe.throw("Invalid Public Key")
 

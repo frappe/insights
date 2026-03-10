@@ -29,12 +29,11 @@ class InsightsWorkbook(Document):
         self.title = self.title or f"Workbook {frappe.utils.cint(self.name)}"
 
     def on_trash(self):
-
         try:
             backup_data = frappe.as_json(self.export())
             self.db_set("data_backup", backup_data)
         except Exception as e:
-            frappe.log_error(f"Failed to backup workbook {self.name}: {str(e)}")
+            frappe.log_error(f"Failed to backup workbook {self.name}: {e!s}")
 
         for q in frappe.get_all("Insights Query v3", {"workbook": self.name}):
             frappe.delete_doc("Insights Query v3", q.name, force=True, ignore_permissions=True)
@@ -89,7 +88,7 @@ class InsightsWorkbook(Document):
             if query.get("folder") and query.get("folder") in id_map:
                 new_query.folder = id_map[query.get("folder")]
 
-            if not hasattr(new_query, 'sort_order') or new_query.sort_order is None:
+            if not hasattr(new_query, "sort_order") or new_query.sort_order is None:
                 new_query.sort_order = query_sort_order
                 query_sort_order += 1
 
@@ -130,7 +129,7 @@ class InsightsWorkbook(Document):
             if chart.get("folder") and chart.get("folder") in id_map:
                 new_chart.folder = id_map[chart.get("folder")]
 
-            if not hasattr(new_chart, 'sort_order') or new_chart.sort_order is None:
+            if not hasattr(new_chart, "sort_order") or new_chart.sort_order is None:
                 new_chart.sort_order = chart_sort_order
                 chart_sort_order += 1
 
@@ -355,13 +354,13 @@ class InsightsWorkbook(Document):
         return import_workbook(workbook)
 
     @frappe.whitelist()
-    def import_query(self, query):
+    def import_query(self, query: dict | str):
         from insights.insights.doctype.insights_query_v3.insights_query_v3 import import_query
 
         return import_query(query, self.name)
 
     @frappe.whitelist()
-    def import_chart(self, chart):
+    def import_chart(self, chart: dict | str):
         from insights.insights.doctype.insights_chart_v3.insights_chart_v3 import import_chart
 
         return import_chart(chart, self.name)
@@ -375,6 +374,9 @@ def import_workbook(workbook):
     new_workbook = frappe.new_doc("Insights Workbook")
     new_workbook.title = workbook["doc"]["title"]
     new_workbook.insert()
-    new_workbook.restore_workbook_contents(workbook, new_workbook.name,)
+    new_workbook.restore_workbook_contents(
+        workbook,
+        new_workbook.name,
+    )
 
     return new_workbook.name
