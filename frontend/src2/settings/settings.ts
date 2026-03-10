@@ -18,6 +18,7 @@ function makeSettings() {
 			allowed_origins: '',
 			max_records_to_sync: 10_00_000,
 			max_memory_usage: 512,
+			max_concurrent_queries: 6,
 			fiscal_year_start: '2024-04-01',
 			week_starts_on: 'Monday',
 			enable_data_store: false,
@@ -46,6 +47,7 @@ type InsightsSettings = {
 	allowed_origins: string
 	max_records_to_sync: number
 	max_memory_usage: number
+	max_concurrent_queries: number
 	fiscal_year_start: string
 	week_starts_on: string
 	enable_data_store: boolean

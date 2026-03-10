@@ -3,6 +3,7 @@ import { Buffer } from 'buffer'
 import { isEqual } from 'es-toolkit'
 import { call, dayjs } from 'frappe-ui'
 import { computed, reactive, ref, toRefs, unref } from 'vue'
+import { getSocket } from '../socket'
 import {
 	copy,
 	copyToClipboard,
@@ -130,7 +131,16 @@ export function makeQuery(name: string) {
 	}
 
 	const adhocFilters = ref<AdhocFilters>()
-	async function execute(force: boolean = false) {
+	// set before execute
+	// to get realtime completion events to the correct dashboard doc room
+	const dashboardName = ref<string>()
+	const pendingCacheKey = ref<string | null>(null)
+
+	const REALTIME_TIMEOUT = 120_000
+	const QUEUE_RETRY_DELAY = 3000
+	const MAX_QUEUE_RETRIES = 30
+
+	async function execute(force: boolean = false, retryCount: number = 0): Promise<any> {
 		if (!query.islocal) {
 			await waitUntil(() => query.isloaded)
 		}
@@ -142,6 +152,7 @@ export function makeQuery(name: string) {
 
 		if (
 			!force &&
+			retryCount === 0 &&
 			lastExecutionArgs &&
 			isEqual(lastExecutionArgs, {
 				operations: currentOperations.value,
@@ -152,40 +163,133 @@ export function makeQuery(name: string) {
 		}
 
 		executing.value = true
+		pendingCacheKey.value = null
+
 		return query
 			.call('execute', {
 				active_operation_idx: activeOperationIdx.value,
 				adhoc_filters: adhocFilters.value,
 				force,
+				dashboard: dashboardName.value,
 			})
-			.then((response: any) => {
+			.then(async (response: any) => {
 				if (!response) return
 
-				result.value.executedSQL = response.sql
-				result.value.columns = response.columns
-				result.value.rows = response.rows
-				result.value.totalRowCount = 0
-				result.value.formattedRows = getFormattedRows(result.value, query.doc.operations)
-				result.value.columnOptions = result.value.columns.map((column) => ({
-					label: column.name,
-					value: column.name,
-					description: column.type,
-					query: query.doc.name,
-					data_type: column.type,
-				}))
-				result.value.timeTaken = response.time_taken
-				result.value.lastExecutedAt = new Date()
+				if (response.status === 'pending') {
+					pendingCacheKey.value = response.cache_key
+					result.value.executedSQL = response.sql
+					result.value.columns = response.columns || []
+					result.value.columnOptions = result.value.columns.map((column) => ({
+						label: column.name,
+						value: column.name,
+						description: column.type,
+						query: query.doc.name,
+						data_type: column.type,
+					}))
+
+					return pollForResults(response.cache_key)
+				}
+
+				if (response.status === 'queue_full') {
+					if (retryCount >= MAX_QUEUE_RETRIES) {
+						executing.value = false
+						createToast({
+							title: 'Query Queue Full',
+							message: 'Too many queries running, Please try again later',
+							variant: 'info',
+						})
+						return
+					}
+
+					await new Promise((resolve) => setTimeout(resolve, QUEUE_RETRY_DELAY))
+					return execute(force, retryCount + 1)
+				}
+
+				populateResults(response)
 			})
 			.catch(() => {
 				result.value = { ...EMPTY_RESULT }
 			})
 			.finally(() => {
-				executing.value = false
-				lastExecutionArgs = {
-					operations: currentOperations.value,
-					adhoc_filters: adhocFilters.value,
+				if (!pendingCacheKey.value) {
+					executing.value = false
+				}
+				if (retryCount === 0) {
+					lastExecutionArgs = {
+						operations: currentOperations.value,
+						adhoc_filters: adhocFilters.value,
+					}
 				}
 			})
+	}
+
+	function populateResults(response: any) {
+		result.value.executedSQL = response.sql || result.value.executedSQL
+		result.value.columns = response.columns || result.value.columns
+		result.value.rows = response.rows
+		result.value.totalRowCount = 0
+		result.value.formattedRows = getFormattedRows(result.value, query.doc.operations)
+		result.value.columnOptions = result.value.columns.map((column) => ({
+			label: column.name,
+			value: column.name,
+			description: column.type,
+			query: query.doc.name,
+			data_type: column.type,
+		}))
+		result.value.timeTaken = response.time_taken
+		result.value.lastExecutedAt = new Date()
+	}
+
+	// listens for `insights_query_complete` on the socket
+	// and fetches cached result
+	function pollForResults(cacheKey: string) {
+		return new Promise<void>((resolve) => {
+			const sock = getSocket()
+
+			const timeout = setTimeout(() => {
+				cleanup()
+				if (pendingCacheKey.value === cacheKey) {
+					pendingCacheKey.value = null
+					executing.value = false
+					createToast({
+						title: 'Query Timeout',
+						message: 'The query is taking too long. Please try again later',
+						variant: 'warning',
+					})
+				}
+				resolve()
+			}, REALTIME_TIMEOUT)
+
+			function socket_handler(data: any) {
+				if (data?.cache_key !== cacheKey || pendingCacheKey.value !== cacheKey) return
+				cleanup()
+				query
+					.call('check_pending_result', { cache_key: cacheKey })
+					.then((response: any) => {
+						if (response.status === 'completed') {
+							populateResults(response)
+						} else {
+							createToast({
+								title: 'Query Failed',
+								message: 'Query execution failed. Please try again.',
+								variant: 'error',
+							})
+						}
+					})
+					.finally(() => {
+						pendingCacheKey.value = null
+						executing.value = false
+						resolve()
+					})
+			}
+
+			function cleanup() {
+				sock.off('insights_query_complete', socket_handler)
+				clearTimeout(timeout)
+			}
+
+			sock.on('insights_query_complete', socket_handler)
+		})
 	}
 
 	const fetchingCount = ref(false)
@@ -985,6 +1089,7 @@ export function makeQuery(name: string) {
 		currentOperations,
 		activeEditOperation,
 		adhocFilters,
+		dashboardName,
 
 		autoExecute,
 		executing,

@@ -11,6 +11,7 @@ import {
 	wheneverChanges,
 } from '../helpers'
 import useDocumentResource from '../helpers/resource'
+import { getSocket } from '../socket'
 import { isFilterValid } from '../query/components/filter_utils'
 import { column, filter_group } from '../query/helpers'
 import session from '../session'
@@ -51,16 +52,13 @@ function makeDashboard(name: string) {
 		return editing.value && editingItemIndex.value === dashboard.doc.items.indexOf(item)
 	}
 
-
 	const filters = ref<Record<string, FilterArgs[]>>({})
 	const filterStates = ref<Record<string, FilterState>>({})
 
 	function addChart(charts: WorkbookChart[]) {
 		const maxY = getMaxY()
 		charts.forEach((chart) => {
-			if (
-				!dashboard.doc.items.some((item) => item.type === 'chart' && item.chart === chart.name)
-			) {
+			if (!dashboard.doc.items.some((item) => item.type === 'chart' && item.chart === chart.name)) {
 				dashboard.doc.items.push({
 					type: 'chart',
 					chart: chart.name,
@@ -122,9 +120,7 @@ function makeDashboard(name: string) {
 
 	function positionNewFilter(newFilter: WorkbookDashboardItem) {
 		const items = dashboard.doc.items
-		const existingFilters = items.filter(
-			(item) => item.type === 'filter' && item !== newFilter
-		)
+		const existingFilters = items.filter((item) => item.type === 'filter' && item !== newFilter)
 
 		if (existingFilters.length === 0) {
 			newFilter.layout.x = 0
@@ -205,6 +201,22 @@ function makeDashboard(name: string) {
 		})
 	}
 
+	function subscribeToDashboardRoom() {
+		const socket = getSocket()
+
+		socket.emit('doc_subscribe', 'Insights Dashboard v3', name)
+		socket.on('connect', () => {
+			socket.emit('doc_subscribe', 'Insights Dashboard v3', name)
+		})
+	}
+
+	function unsubscribeFromDashboardRoom() {
+		const socket = getSocket()
+		socket.emit('doc_unsubscribe', 'Insights Dashboard v3', name)
+	}
+
+	subscribeToDashboardRoom()
+
 	function refresh(force = false) {
 		dashboard.doc.items
 			.filter((item) => item.type === 'chart')
@@ -214,6 +226,7 @@ function makeDashboard(name: string) {
 	function refreshChart(chart_name: string, force = false) {
 		const chart = useChart(chart_name)
 		chart.dataQuery.adhocFilters = getAdhocFilters(chart_name)
+		chart.dataQuery.dashboardName = name
 		chart.refresh(force)
 	}
 
@@ -336,7 +349,6 @@ function makeDashboard(name: string) {
 			.then(() => dashboard.load())
 	}
 
-
 	const defaultFilters = dashboard.doc.items.reduce((acc, item) => {
 		if (item.type != 'filter') return acc
 
@@ -401,6 +413,7 @@ function makeDashboard(name: string) {
 		updateAccess,
 
 		getShareLink,
+		unsubscribeFromDashboardRoom,
 	})
 }
 
@@ -433,13 +446,16 @@ function getDashboardResource(name: string) {
 		},
 	})
 	if (session.isLoggedIn) {
-		dashboard.onAfterLoad(() => dashboard.call('track_view').catch(() => { }))
+		dashboard.onAfterLoad(() => dashboard.call('track_view').catch(() => {}))
 	}
-	wheneverChanges(() => dashboard.doc.read_only, () => {
-		if (dashboard.doc.read_only) {
-			dashboard.autoSave = false
+	wheneverChanges(
+		() => dashboard.doc.read_only,
+		() => {
+			if (dashboard.doc.read_only) {
+				dashboard.autoSave = false
+			}
 		}
-	})
+	)
 	return dashboard
 }
 

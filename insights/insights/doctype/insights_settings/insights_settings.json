@@ -25,7 +25,8 @@
   "allow_subquery",
   "auto_execute_query",
   "query_result_expiry",
-  "query_result_limit"
+  "query_result_limit",
+  "max_concurrent_queries"
  ],
  "fields": [
   {
@@ -140,12 +141,19 @@
    "fieldname": "max_execution_time",
    "fieldtype": "Int",
    "label": "Max Execution Time (Seconds)"
+  },
+  {
+   "default": "6",
+   "fieldname": "max_concurrent_queries",
+   "fieldtype": "Int",
+   "label": "Max Concurrent Queries",
+   "non_negative": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-01-14 13:17:25.798141",
+ "modified": "2026-02-14 10:11:05.771022",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",

@@ -31,6 +31,93 @@ from insights.utils import deep_convert_dict_to_dict as _dict
 from .ibis.functions import quarter_start, week_start
 from .ibis.utils import get_functions
 
+# RedLock constants
+QUERY_LOCK_PREFIX = "insights_query_lock:"
+SEMAPHORE_KEY = "insights_query_semaphore"
+DEFAULT_MAX_CONCURRENT_QUERIES = 6
+LOCK_TIMEOUT = 180
+
+
+def get_max_concurrent_queries():
+    value = (
+        frappe.db.get_single_value("Insights Settings", "max_concurrent_queries")
+        or DEFAULT_MAX_CONCURRENT_QUERIES
+    )
+    return max(6, min(18, int(value)))
+
+
+def try_acquire_lock(lock_key) -> bool:
+    try:
+        cache = frappe.cache()
+        key = cache.make_key(lock_key)
+        return bool(cache.set(key, "1", ex=LOCK_TIMEOUT, nx=True))
+    except Exception:
+        return False
+
+
+def release_lock(lock_key):
+    try:
+        cache = frappe.cache()
+        key = cache.make_key(lock_key)
+        cache.delete(key)
+    except Exception:
+        pass
+
+
+def try_acquire_semaphore():
+    try:
+        cache = frappe.cache()
+        key = cache.make_key(SEMAPHORE_KEY)
+        current = cache.incr(key)
+        cache.expire(key, LOCK_TIMEOUT)
+
+        if current > get_max_concurrent_queries():
+            cache.decr(key)
+            return None
+
+        return current
+    except Exception:
+        return 0
+
+
+def release_semaphore():
+    try:
+        cache = frappe.cache()
+        key = cache.make_key(SEMAPHORE_KEY)
+        current = cache.decr(key)
+
+        if current < 0:
+            cache.set(key, 0)
+
+    except Exception:
+        pass
+
+
+def is_query_executing(lock_key):
+    try:
+        cache = frappe.cache()
+        key = cache.make_key(lock_key)
+        return cache.get(key) is not None
+    except Exception:
+        return False
+
+
+# for frontend
+def get_pending_query_result(cache_key):
+    # fix: check if query is still executing first
+    # fixes issue where we check cache before its written
+    if is_query_executing(cache_key):
+        return {"status": "pending"}
+
+    if has_cached_results(cache_key):
+        result = get_cached_results(cache_key)
+        return {
+            "status": "completed",
+            "result": result,
+        }
+
+    return {"status": "not_found"}
+
 
 class IbisQueryBuilder:
     def __init__(self, doc, active_operation_idx=None):
@@ -706,6 +793,7 @@ def execute_ibis_query(
     cache_expiry=3600,
     reference_doctype=None,
     reference_name=None,
+    use_lock=True,
 ):
     try:
         sql = ibis.to_sql(query)
@@ -713,19 +801,48 @@ def execute_ibis_query(
         # TODO: throw better error message
         raise
 
-    if cache:
-        backends, _ = query._find_backends()
-        backend_id = backends[0].db_identity if backends else None
-        cache_key = make_digest(sql, backend_id)
+    backends, _ = query._find_backends()
+    backend_id = backends[0].db_identity if backends else None
+    cache_key = make_digest(sql, backend_id)
 
-        if has_cached_results(cache_key) and not force:
-            return get_cached_results(cache_key), -1
+    # fix: check cache first
+    if cache and has_cached_results(cache_key) and not force:
+        return get_cached_results(cache_key), None
 
     if hasattr(query, "limit") and limit:
         limit = int(limit or 100)
         limit = min(max(limit, 1), 10_00_000)
         query = query.limit(limit)
 
+    if use_lock:
+        return execute_with_lock(query, sql, cache_key, cache, cache_expiry, force, reference_name)
+    else:
+        return execute_query(query, sql, cache_key, cache, cache_expiry, reference_name)
+
+
+def execute_with_lock(query, sql, cache_key, cache, cache_expiry, force, reference_name):
+    lock_key = f"{QUERY_LOCK_PREFIX}{cache_key}"
+    # another process is executing this query
+    # return immediately, frontend will poll for results
+    if not try_acquire_lock(lock_key):
+        return {"status": "pending", "cache_key": cache_key}, None
+
+    slot = try_acquire_semaphore()
+    # too many concurrent queries
+    # release lock and return
+    if slot is None:
+        release_lock(lock_key)
+        return {"status": "queue_full"}, None
+
+    try:
+        result, time_taken = execute_query(query, sql, cache_key, cache, cache_expiry, reference_name)
+        return result, time_taken
+    finally:
+        release_lock(lock_key)
+        release_semaphore()
+
+
+def execute_query(query, sql, cache_key, cache, cache_expiry, reference_name):
     start = time.monotonic()
 
     try:

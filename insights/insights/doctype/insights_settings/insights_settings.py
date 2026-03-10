@@ -24,6 +24,7 @@ class InsightsSettings(Document):
         enable_data_store: DF.Check
         enable_permissions: DF.Check
         fiscal_year_start: DF.Date | None
+        max_concurrent_queries: DF.Int
         max_execution_time: DF.Int
         max_memory_usage: DF.Int
         max_records_to_sync: DF.Int
@@ -52,6 +53,8 @@ class InsightsSettings(Document):
             self.query_result_limit = settings.query_result_limit
         if hasattr(settings, "allow_subquery"):
             self.allow_subquery = settings.allow_subquery
+        if hasattr(settings, "max_concurrent_queries"):
+            self.max_concurrent_queries = settings.max_concurrent_queries
         if hasattr(settings, "telegram_api_token"):
             self.telegram_api_token = settings.telegram_api_token
         self.save()
