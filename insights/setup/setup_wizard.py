@@ -15,7 +15,7 @@ def check_demo_data_exists() -> bool:
         db_connections,
     )
 
-    if not frappe.db.exists("Insights Data Source v3", "demo_data"):
+    if not frappe.db.exists("Insights Data Source v3", "demo_data", cache=True):
         return False
 
     with db_connections():
