@@ -23,7 +23,7 @@ async function checkDemoData() {
 watch(
 	() => session.initialized,
 	(val) => val && checkDemoData(),
-	{ immediate: true },
+	{ immediate: true }
 )
 
 async function setupDemoData() {
@@ -61,7 +61,7 @@ function dismiss() {
 		<div class="flex items-start justify-between">
 			<div class="flex flex-col gap-1">
 				<div class="font-medium text-gray-900">Try demo data</div>
-				<div class="text-xs text-gray-600">
+				<div class="text-p-xs text-gray-600">
 					Explore with sample data and a pre-built workbook
 				</div>
 			</div>
@@ -74,9 +74,6 @@ function dismiss() {
 			</button>
 		</div>
 		<Button label="Setup Demo Data" variant="subtle" :loading="loading" @click="setupDemoData">
-			<template #prefix>
-				<Sparkles class="h-3.5 w-3.5" />
-			</template>
 		</Button>
 	</div>
 </template>
