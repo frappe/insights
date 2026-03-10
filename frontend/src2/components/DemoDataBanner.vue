@@ -24,7 +24,7 @@ async function checkDemoData() {
 watch(
 	() => session.initialized,
 	(val) => val && checkDemoData(),
-	{ immediate: true }
+	{ immediate: true },
 )
 
 async function setupDemoData() {
@@ -56,6 +56,7 @@ function dismiss() {
 
 <template>
 	<div
+		v-if="show && session.user.is_admin"
 		class="flex flex-col gap-3 rounded-lg bg-white px-3 py-2.5 text-sm shadow-sm"
 	>
 		<div class="flex items-start justify-between">
