@@ -27,7 +27,7 @@
 					>
 						<div class="text-base font-medium leading-none text-gray-900">Insights</div>
 						<div class="mt-1 text-sm leading-none text-gray-700">
-							{{ __(session.user.full_name) }}
+							{{session.user.full_name == 'Administrator' ? __(session.user.full_name) : session.user.full_name }}
 						</div>
 					</div>
 					<div
