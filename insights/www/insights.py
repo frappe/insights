@@ -13,10 +13,6 @@ no_cache = 1
 
 
 def get_context(context):
-    setup_complete = check_setup_complete()
-    if not setup_complete:
-        frappe.local.flags.redirect_location = "/app/setup-wizard"
-        raise frappe.Redirect
     is_v2_site = frappe.db.count("Insights Query", cache=True) > 0
     if not is_v2_site:
         continue_to_v3(context)
@@ -86,10 +82,3 @@ def redirect_to_v2():
         path = "/insights_v2"
     frappe.local.flags.redirect_location = path
     raise frappe.Redirect
-
-
-def check_setup_complete():
-    try:
-        return frappe.is_setup_complete()
-    except AttributeError:
-        return frappe.db.get_single_value("System Settings", "setup_complete")
