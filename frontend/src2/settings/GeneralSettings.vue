@@ -100,7 +100,7 @@ async function setupDemoData() {
 			description="Set up sample data and a pre-built workbook to explore Insights features."
 		>
 			<Button
-				variant="solid"
+				variant="subtle"
 				size="sm"
 				label="Setup Demo Data"
 				:loading="demoLoading"

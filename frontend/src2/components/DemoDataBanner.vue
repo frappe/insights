@@ -56,22 +56,27 @@ function dismiss() {
 <template>
 	<div
 		v-if="show && session.user.is_admin"
-		class="flex items-center justify-between gap-3 border-b px-4 py-2.5 text-sm"
+		class="flex flex-col gap-3 rounded-lg bg-white px-3 py-2.5 text-sm shadow-sm"
 	>
-		<span class="text-gray-800">
-			Get started quickly with sample data and a pre-built workbook.
-		</span>
-		<div class="flex items-center gap-2">
-			<Button
-				variant="solid"
-				size="sm"
-				label="Setup Demo Data"
-				:loading="loading"
-				@click="setupDemoData"
-			/>
-			<button v-if="!loading" class="rounded p-0.5 text-gray-600" @click="dismiss">
-				<X class="h-4 w-4" />
+		<div class="flex items-start justify-between">
+			<div class="flex flex-col gap-1">
+				<div class="font-medium text-gray-900">Try demo data</div>
+				<div class="text-xs text-gray-600">
+					Explore with sample data and a pre-built workbook
+				</div>
+			</div>
+			<button
+				v-if="!loading"
+				class="mt-0.5 shrink-0 rounded p-0.5 text-gray-500 hover:text-gray-700"
+				@click="dismiss"
+			>
+				<X class="h-3.5 w-3.5" />
 			</button>
 		</div>
+		<Button label="Setup Demo Data" variant="subtle" :loading="loading" @click="setupDemoData">
+			<template #prefix>
+				<Sparkles class="h-3.5 w-3.5" />
+			</template>
+		</Button>
 	</div>
 </template>
