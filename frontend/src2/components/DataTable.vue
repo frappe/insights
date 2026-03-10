@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Button, Dialog, FormControl, LoadingIndicator, Rating } from 'frappe-ui'
+import { Button, Dialog, FormControl, LoadingIndicator } from 'frappe-ui'
 import { ChevronLeft, ChevronRight, Download, Plus, Search, Table2Icon } from 'lucide-vue-next'
 import { computed, nextTick, reactive, ref } from 'vue'
 import { createHeaders, formatNumber, getShortNumber } from '../helpers'
@@ -47,6 +47,7 @@ const headers = computed(() => {
 	if (!props.columns?.length) return []
 	return createHeaders(props.columns)
 })
+
 const columnsMeta = computed(() => {
 	if (!props.columns || !props.rows) return new Map()
 
@@ -58,17 +59,6 @@ const columnsMeta = computed(() => {
 		)
 		const metadata = {
 			isNumber: FIELDTYPES.NUMBER.includes(col.type) || hasColorScaleFormatting,
-			isStarRating: false,
-		}
-
-		const values = props.rows!.map((row) => row[name])
-
-		// Check if it's a star rating column
-		if (
-			metadata.isNumber &&
-			(col.name.toLowerCase().includes('rating') || col.name.toLowerCase().includes('stars'))
-		) {
-			metadata.isStarRating = values.every((val) => val >= 0 && val <= 1)
 		}
 
 		meta.set(name, metadata)
@@ -77,8 +67,16 @@ const columnsMeta = computed(() => {
 })
 
 const isNumberColumn = (col: string) => columnsMeta.value.get(col)?.isNumber
-const isStarRating = (col: string) => columnsMeta.value.get(col)?.isStarRating
-const isUrl = (value: any): boolean => typeof value === 'string' && value.startsWith('http')
+const isUrl = (value: any): boolean => {
+	if (typeof value !== 'string') return false
+
+	try {
+		const url = new URL(value.trim())
+		return url.protocol === 'http:' || url.protocol === 'https:'
+	} catch {
+		return false
+	}
+}
 
 const $header = ref<HTMLElement>()
 function getColumnWidth(column: string) {
@@ -688,10 +686,7 @@ function toggleNewColumn() {
 							height="30px"
 							@dblclick="isNumberColumn(col.name) && props.onDrilldown?.(col, row)"
 						>
-							<template v-if="isStarRating(col.name)">
-								<Rating :modelValue="row[col.name] * 5" :readonly="true" />
-							</template>
-							<template v-else-if="isNumberColumn(col.name)">
+							<template v-if="isNumberColumn(col.name)">
 								{{ _formatNumber(row[col.name]) }}
 							</template>
 							<template v-else-if="isUrl(row[col.name])">
