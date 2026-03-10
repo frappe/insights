@@ -73,10 +73,10 @@ class DemoDataFactory:
 
     def demo_data_exists(self):
         tables = get_data_source_tables(self.data_source.name)
-        tables_exists = len(tables) == 8
+        tables_exists = len(tables) >= 8
 
         links_count = frappe.db.count("Insights Table Link v3", {"data_source": self.data_source.name})
-        links_exists = links_count == 8
+        links_exists = links_count >= 8
 
         sample_workbook_exists = frappe.db.exists("Insights Workbook", {"title": "Order Analysis"})
 

@@ -14,6 +14,7 @@ type SessionUser = {
 	is_v2_instance: boolean
 	default_version: 'v3' | 'v2' | ''
 	has_desk_access?: boolean
+	has_demo_data: boolean
 }
 
 const emptyUser: SessionUser = {
@@ -28,6 +29,7 @@ const emptyUser: SessionUser = {
 	locale: 'en-US',
 	is_v2_instance: false,
 	default_version: '',
+	has_demo_data: false,
 }
 
 const session = reactive({
@@ -64,6 +66,7 @@ async function fetchSessionInfo() {
 		is_user: Boolean(userInfo.is_user),
 		is_v2_instance: Boolean(userInfo.is_v2_instance),
 		has_desk_access: Boolean(userInfo.has_desk_access),
+		has_demo_data: Boolean(userInfo.has_demo_data),
 	})
 }
 
