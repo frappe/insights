@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-03-10 01:25+0000\n"
-"PO-Revision-Date: 2026-03-10 08:57\n"
+"PO-Revision-Date: 2026-03-11 08:57\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Swedish\n"
 "MIME-Version: 1.0\n"
@@ -139,7 +139,7 @@ msgstr "Autentisering Typ"
 #. Label of the auto_execute_query (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Auto Execute Query"
-msgstr ""
+msgstr "Automatisk Exekvera Fråga"
 
 #. Description of the 'Vertical Compact Layout' (Check) field in DocType
 #. 'Insights Dashboard v3'
@@ -205,17 +205,17 @@ msgstr "Mass Kö"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:49
 msgid "Bulk Enqueue Import Job"
-msgstr ""
+msgstr "Mass Kö Import Jobb"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:24
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:34
 msgid "Bulk Enqueue Progress"
-msgstr ""
+msgstr "Mass Kö Förlopp"
 
 #. Label of the query_result_expiry (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Cache Query Results For (Minutes)"
-msgstr ""
+msgstr "Cache Fråga Resultat för (Minuter)"
 
 #. Label of the cardinality (Select) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
@@ -271,7 +271,7 @@ msgstr "Kolumner"
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Comma seperated URLs to whitelist for embedding charts & dashboards"
-msgstr ""
+msgstr "Kommaseparerade URL: er till vitlistan för att bädda in diagram & översikt paneler"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import
 #. Log'
@@ -327,7 +327,7 @@ msgstr "Cron Format"
 #. Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Cron expression to schedule the script. Note: The scheduler checks for jobs every hour."
-msgstr ""
+msgstr "Cron uttryck för att schemalägga skript. Obs: Schemaläggare söker efter jobb varje timme."
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Query Transform'
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
@@ -485,7 +485,7 @@ msgstr "Aktivera Behörigheter"
 #. 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Enable Stored Procedure Execution"
-msgstr "Aktivera Lagrad Procedur Utförande"
+msgstr "Aktivera Lagrad Procedur Exekvering"
 
 #. Label of the enabled (Check) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
@@ -512,12 +512,12 @@ msgstr "Fel"
 #. Option for the 'Status' (Select) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Execution Failed"
-msgstr "Körning Misslyckades"
+msgstr "Exekvering Misslyckades"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Execution Successful"
-msgstr "Körning Lyckades"
+msgstr "Exekvering Lyckades"
 
 #. Label of the execution_time (Float) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -685,177 +685,177 @@ msgstr "Inaktiv"
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
 msgid "Insights Admin"
-msgstr ""
+msgstr "Insikter Administratör"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Insights Alert"
-msgstr ""
+msgstr "Insikter Avisering"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_chart/insights_chart.json
 msgid "Insights Chart"
-msgstr ""
+msgstr "Insikter Diagram"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
 msgid "Insights Chart v3"
-msgstr ""
+msgstr "Insikter Diagram v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_dashboard/insights_dashboard.json
 msgid "Insights Dashboard"
-msgstr ""
+msgstr "Insikter Översikt Panel"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_dashboard_chart_v3/insights_dashboard_chart_v3.json
 msgid "Insights Dashboard Chart v3"
-msgstr ""
+msgstr "Insikter Översikt Panel Diagram v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_dashboard_item/insights_dashboard_item.json
 msgid "Insights Dashboard Item"
-msgstr ""
+msgstr "Insikter Översikt Panel Artikel"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Insights Dashboard v3"
-msgstr ""
+msgstr "Insikter Översikt Panel v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 msgid "Insights Data Source"
-msgstr ""
+msgstr "Insikter Data Källa"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Insights Data Source v3"
-msgstr ""
+msgstr "Insikter Data Källa v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_folder/insights_folder.json
 msgid "Insights Folder"
-msgstr ""
+msgstr "Insikter Mapp"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_notebook/insights_notebook.json
 msgid "Insights Notebook"
-msgstr ""
+msgstr "Insikter Anteckningsbok"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_notebook_page/insights_notebook_page.json
 msgid "Insights Notebook Page"
-msgstr ""
+msgstr "Insikter Anteckningsbok Sida"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Insights Query"
-msgstr ""
+msgstr "Insikter Fråga"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_chart/insights_query_chart.json
 msgid "Insights Query Chart"
-msgstr ""
+msgstr "Insikter Fråga Diagram"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "Insights Query Column"
-msgstr ""
+msgstr "Insikter Fråga Kolumn"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_execution_log/insights_query_execution_log.json
 msgid "Insights Query Execution Log"
-msgstr ""
+msgstr "Insikter Fråga Exekvering Logg"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_result/insights_query_result.json
 msgid "Insights Query Result"
-msgstr ""
+msgstr "Insikter Fråga Resultat"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_table/insights_query_table.json
 msgid "Insights Query Table"
-msgstr ""
+msgstr "Insikter Fråga Tabell"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
 msgid "Insights Query Transform"
-msgstr ""
+msgstr "Insikter Fråga Omvandling"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_variable/insights_query_variable.json
 msgid "Insights Query Variable"
-msgstr ""
+msgstr "Insikter Fråga Variabel"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Insights Query v3"
-msgstr ""
+msgstr "Insikter Fråga v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_resource_permission/insights_resource_permission.json
 msgid "Insights Resource Permission"
-msgstr ""
+msgstr "Insikter Resurs Behörighet"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_secret_key/insights_secret_key.json
 msgid "Insights Secret Key"
-msgstr ""
+msgstr "Insikter Hemlig Nyckel"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Insights Settings"
-msgstr ""
+msgstr "Insikter Inställningar"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table/insights_table.json
 msgid "Insights Table"
-msgstr ""
+msgstr "Insikter Tabell"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Insights Table Column"
-msgstr ""
+msgstr "Insikter Tabell Kolumn"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Insights Table Import"
-msgstr ""
+msgstr "Insikter Tabell Import"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Insights Table Import Job"
-msgstr ""
+msgstr "Insikter Tabell Import Jobb"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Insights Table Import Log"
-msgstr ""
+msgstr "Insikter Tabell Import Logg"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "Insights Table Link"
-msgstr ""
+msgstr "Insikter Tabell Länk"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
 msgid "Insights Table Link v3"
-msgstr ""
+msgstr "Insikter Tabell Länk v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Insights Table v3"
-msgstr ""
+msgstr "Insikter Tabell v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_team/insights_team.json
 msgid "Insights Team"
-msgstr ""
+msgstr "Insikter Team"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_team_member/insights_team_member.json
 msgid "Insights Team Member"
-msgstr ""
+msgstr "Insikter Team Medlem"
 
 #. Name of a role
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -882,17 +882,17 @@ msgstr ""
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
 msgid "Insights User"
-msgstr ""
+msgstr "Insikter Användare"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Insights User Invitation"
-msgstr ""
+msgstr "Insikter Användare Inbjudan"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
 msgid "Insights Workbook"
-msgstr ""
+msgstr "Insikter Arbetsbok"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -938,14 +938,14 @@ msgstr "Är Uttryck"
 #. Label of the is_frappe_db (Check) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Is Frappe Database"
-msgstr ""
+msgstr "Är Frappe Databas"
 
 #. Label of the is_native_query (Check) field in DocType 'Insights Query'
 #. Label of the is_native_query (Check) field in DocType 'Insights Query v3'
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Is Native Query"
-msgstr ""
+msgstr "Är Nativ Fråga"
 
 #. Label of the is_public (Check) field in DocType 'Insights Chart'
 #. Label of the is_public (Check) field in DocType 'Insights Chart v3'
@@ -961,24 +961,24 @@ msgstr "Är Publik"
 #. Label of the is_query_based (Check) field in DocType 'Insights Table'
 #: insights/insights/doctype/insights_table/insights_table.json
 msgid "Is Query Based"
-msgstr ""
+msgstr "Är Fråga Baserad"
 
 #. Label of the is_saved_as_table (Check) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Is Saved as Table"
-msgstr ""
+msgstr "Är Sparad som Tabell"
 
 #. Label of the is_script_query (Check) field in DocType 'Insights Query'
 #. Label of the is_script_query (Check) field in DocType 'Insights Query v3'
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Is Script Query"
-msgstr ""
+msgstr "Är Skript Fråga"
 
 #. Label of the is_site_db (Check) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Is Site Database"
-msgstr ""
+msgstr "Är Webbplats Databas"
 
 #. Label of the items (Table) field in DocType 'Insights Dashboard'
 #. Label of the items (JSON) field in DocType 'Insights Dashboard v3'
@@ -999,7 +999,7 @@ msgstr "Anslut"
 
 #: frontend/src2/components/UserDropdown.vue:116
 msgid "Join Telegram Group"
-msgstr ""
+msgstr "Anslut till Telegram Grupp"
 
 #. Label of the key (Data) field in DocType 'Insights Secret Key'
 #. Label of the key (Data) field in DocType 'Insights User Invitation'
@@ -1022,7 +1022,7 @@ msgstr "Etikett"
 #. Label of the last_execution (Datetime) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Last Executed On"
-msgstr ""
+msgstr "Senaste Exekvering"
 
 #. Label of the last_execution (Datetime) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -1032,7 +1032,7 @@ msgstr "Senaste Körning"
 #. Label of the last_log (Link) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Last Log"
-msgstr ""
+msgstr "Senaste Logg"
 
 #. Label of the last_run (Datetime) field in DocType 'Insights Table Import
 #. Job'
@@ -1043,7 +1043,7 @@ msgstr "Sista Körning"
 #. Label of the last_status (Data) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Last Status"
-msgstr ""
+msgstr "Senaste Status"
 
 #. Label of the last_synced_on (Datetime) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
@@ -1053,12 +1053,12 @@ msgstr "Senast Synkroniserad"
 #. Label of the left_column (Data) field in DocType 'Insights Table Link v3'
 #: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
 msgid "Left Column"
-msgstr ""
+msgstr "Vänster Kolumn"
 
 #. Label of the left_table (Data) field in DocType 'Insights Table Link v3'
 #: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
 msgid "Left Table"
-msgstr ""
+msgstr "Vänster Tabell"
 
 #. Label of the tab_break_tvwi (Tab Break) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
@@ -1129,22 +1129,22 @@ msgstr "Ange som Misslyckad"
 #. Label of the max_execution_time (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Max Execution Time (Seconds)"
-msgstr ""
+msgstr "Maximal Exekvering Tid (Sekunder)"
 
 #. Label of the max_memory_usage (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Max Memory Usage"
-msgstr ""
+msgstr "Maximal Minnes Användning"
 
 #. Label of the max_records_to_sync (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Max Records To Sync"
-msgstr ""
+msgstr "Maximalt antal poster att synkronisera"
 
 #. Label of the memory_limit (Int) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Memory Limit (MB)"
-msgstr ""
+msgstr "Minnesgräns (MB)"
 
 #. Label of the message (Markdown Editor) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -1280,13 +1280,13 @@ msgstr "Pågående"
 #. Option for the 'Status' (Select) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Pending Execution"
-msgstr ""
+msgstr "Väntande Exekvering"
 
 #. Description of the 'State (JSON)' (Code) field in DocType 'Insights Table
 #. Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Persistent state storage for the script"
-msgstr ""
+msgstr "Permanent tillstånd lagring för skript"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Query Transform'
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
@@ -1354,7 +1354,7 @@ msgstr "Dataförfråga"
 #. Label of the query_result_limit (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Query Result Limit"
-msgstr ""
+msgstr "Frågeresultat Gräns"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
@@ -1424,7 +1424,7 @@ msgstr "Rad Begränsning"
 #. Label of the row_size (Float) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Row Size (KB)"
-msgstr ""
+msgstr "Rad Storlek (KB)"
 
 #. Label of the rows (Int) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
@@ -1435,7 +1435,7 @@ msgstr "Rader"
 #. Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Rows Imported"
-msgstr ""
+msgstr "Rader Importerade"
 
 #: insights/insights/doctype/insights_query/insights_query.js:7
 msgid "Run"
@@ -1443,7 +1443,7 @@ msgstr "Kör"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:37
 msgid "Run {0} of {1}"
-msgstr ""
+msgstr "Kör {0} av {1}"
 
 #. Label of the sql (Code) field in DocType 'Insights Query'
 #. Label of the sql (Code) field in DocType 'Insights Query Execution Log'
@@ -1504,15 +1504,15 @@ msgstr "Skicka Avisering"
 
 #: insights/insights/doctype/insights_alert/insights_alert.js:7
 msgid "Sending Alert..."
-msgstr ""
+msgstr "Skickar Avisering..."
 
 #: frontend/src2/components/UserDropdown.vue:66
 msgid "Set Insights v2 as default"
-msgstr ""
+msgstr "Ange Insikter v2 som standard"
 
 #: insights/setup/setup_wizard.py:17
 msgid "Setting up demo data"
-msgstr ""
+msgstr "Konfigurerar demo data"
 
 #: frontend/src2/components/AppSidebar.vue:93
 msgid "Settings"
@@ -1526,12 +1526,12 @@ msgstr "Konfigurering Klar"
 #. Label of the share_link (Data) field in DocType 'Insights Dashboard v3'
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Share Link"
-msgstr ""
+msgstr "Delning Länk"
 
 #. Label of the is_site_db (Check) field in DocType 'Insights Data Source'
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 msgid "Site Database"
-msgstr ""
+msgstr "Webbplats Databas"
 
 #. Label of the sort_order (Int) field in DocType 'Insights Folder'
 #: insights/insights/doctype/insights_folder/insights_folder.json
@@ -1556,12 +1556,12 @@ msgstr "Startade"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:27
 msgid "Starting..."
-msgstr ""
+msgstr "Startar..."
 
 #. Label of the state (Code) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "State (JSON)"
-msgstr ""
+msgstr "Tillstånd (JSON)"
 
 #. Label of the status (Select) field in DocType 'Insights Data Source'
 #. Label of the status (Select) field in DocType 'Insights Data Source v3'
@@ -1583,12 +1583,12 @@ msgstr "Status"
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Stored"
-msgstr ""
+msgstr "Lagrad"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "String"
-msgstr ""
+msgstr "Sträng"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
@@ -1603,7 +1603,7 @@ msgstr "Söndag"
 
 #: frontend/src2/components/UserDropdown.vue:50
 msgid "Switch to Insights v2"
-msgstr ""
+msgstr "Växla till Insikter v2"
 
 #. Name of a role
 #: insights/insights/doctype/insights_chart/insights_chart.json
@@ -1638,7 +1638,7 @@ msgstr "Tabell"
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Table Label"
-msgstr ""
+msgstr "Tabell Etikett"
 
 #. Label of the table_name (Data) field in DocType 'Insights Table Import'
 #. Label of the table_name (Data) field in DocType 'Insights Table Import Job'
@@ -1647,18 +1647,18 @@ msgstr ""
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Table Name"
-msgstr ""
+msgstr "Tabell Namn"
 
 #. Label of the table_restrictions (Data) field in DocType 'Insights Resource
 #. Permission'
 #: insights/insights/doctype/insights_resource_permission/insights_resource_permission.json
 msgid "Table Restrictions"
-msgstr ""
+msgstr "Tabell Begränsningar"
 
 #. Label of the tables (Table) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Tables"
-msgstr ""
+msgstr "Tabeller"
 
 #. Label of the team_members (Table) field in DocType 'Insights Team'
 #: insights/insights/doctype/insights_team/insights_team.json
@@ -1673,23 +1673,23 @@ msgstr "Team Namn"
 #. Label of the team_permissions (Table) field in DocType 'Insights Team'
 #: insights/insights/doctype/insights_team/insights_team.json
 msgid "Team Permissions"
-msgstr ""
+msgstr "Team Behörigheter"
 
 #. Option for the 'Channel' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Telegram"
-msgstr ""
+msgstr "Telegram"
 
 #. Label of the telegram_api_token (Password) field in DocType 'Insights
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Telegram API Token"
-msgstr ""
+msgstr "Telegram API Token"
 
 #. Label of the telegram_chat_id (Data) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Telegram Chat ID"
-msgstr ""
+msgstr "Telegram Chatt ID"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -1711,7 +1711,7 @@ msgstr "Tid"
 #. Log'
 #: insights/insights/doctype/insights_query_execution_log/insights_query_execution_log.json
 msgid "Time Taken (Seconds)"
-msgstr ""
+msgstr "Tid Tagen (Sekunder)"
 
 #. Label of the title (Data) field in DocType 'Insights Alert'
 #. Label of the title (Data) field in DocType 'Insights Chart v3'
@@ -1748,17 +1748,17 @@ msgstr "Benämning"
 #. Label of the transform_tab (Tab Break) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Transform"
-msgstr ""
+msgstr "Omvandla"
 
 #. Label of the transforms (Table) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Transforms"
-msgstr ""
+msgstr "Omvandlar"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Query Transform'
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
 msgid "Transpose"
-msgstr ""
+msgstr "Transponera"
 
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
@@ -1792,7 +1792,7 @@ msgstr "Avpivotera"
 #. v3'
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Use Live Connection"
-msgstr ""
+msgstr "Använd Realtid Anslutning"
 
 #. Label of the use_ssl (Check) field in DocType 'Insights Data Source'
 #. Label of the use_ssl (Check) field in DocType 'Insights Data Source v3'
@@ -1886,7 +1886,7 @@ msgstr "Slutför"
 #. Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Write Python code to fetch and transform data. Available globals:<br>• client: API client for the selected data source<br>• table: Write data to warehouse. Methods: insert(data, overwrite=False)<br>• state: Persist data between runs. Methods: get(key, default=None), set(key, value), delete(key), clear()<br>• secrets: Access secret keys. Methods: get(key)<br>• log(message): Log execution messages"
-msgstr ""
+msgstr "Skriv Python kod för att hämta och omvandla data. Tillgängliga globaler:<br>• klient: API klient för vald datakälla<br>• tabell: Skriv data till lager. Metoder: insert(data, overwrite=False)<br>• state: Fortsätta data mellan körningar. Metoder: get(key, default=Inone), set(key, value), delete(key), clear()<br>• hemligheter: Access hemliga nycklar. Metoder: get(key)<br>• log(message): Log exekvering meddelanden"
 
 #: insights/decorators.py:26
 msgid "You do not have permission to access this resource"
