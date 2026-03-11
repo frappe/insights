@@ -408,6 +408,8 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         if self.database_type == "PostgreSQL" and "." in table_name:
             schema, table = table_name.split(".")
             return remote_db.table(table, database=schema)
+        if self.type == "REST API":
+            return remote_db.table(table_name, database=self.schema)
         return remote_db.table(table_name)
 
 
