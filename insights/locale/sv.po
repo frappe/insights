@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-03-10 01:25+0000\n"
-"PO-Revision-Date: 2026-03-11 08:57\n"
+"PO-Revision-Date: 2026-03-12 09:16\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Swedish\n"
 "MIME-Version: 1.0\n"
@@ -685,177 +685,177 @@ msgstr "Inaktiv"
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
 msgid "Insights Admin"
-msgstr "Insikter Administratör"
+msgstr "Administratör"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Insights Alert"
-msgstr "Insikter Avisering"
+msgstr "Avisering"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_chart/insights_chart.json
 msgid "Insights Chart"
-msgstr "Insikter Diagram"
+msgstr "Diagram"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
 msgid "Insights Chart v3"
-msgstr "Insikter Diagram v3"
+msgstr "Diagram v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_dashboard/insights_dashboard.json
 msgid "Insights Dashboard"
-msgstr "Insikter Översikt Panel"
+msgstr "Översikt Panel"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_dashboard_chart_v3/insights_dashboard_chart_v3.json
 msgid "Insights Dashboard Chart v3"
-msgstr "Insikter Översikt Panel Diagram v3"
+msgstr "Översikt Panel Diagram v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_dashboard_item/insights_dashboard_item.json
 msgid "Insights Dashboard Item"
-msgstr "Insikter Översikt Panel Artikel"
+msgstr "Översikt Panel Artikel"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Insights Dashboard v3"
-msgstr "Insikter Översikt Panel v3"
+msgstr "Översikt Panel v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 msgid "Insights Data Source"
-msgstr "Insikter Data Källa"
+msgstr "Data Källa"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Insights Data Source v3"
-msgstr "Insikter Data Källa v3"
+msgstr "Data Källa v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_folder/insights_folder.json
 msgid "Insights Folder"
-msgstr "Insikter Mapp"
+msgstr "Mapp"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_notebook/insights_notebook.json
 msgid "Insights Notebook"
-msgstr "Insikter Anteckningsbok"
+msgstr "Anteckningsbok"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_notebook_page/insights_notebook_page.json
 msgid "Insights Notebook Page"
-msgstr "Insikter Anteckningsbok Sida"
+msgstr "Anteckningsbok Sida"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Insights Query"
-msgstr "Insikter Fråga"
+msgstr "Fråga"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_chart/insights_query_chart.json
 msgid "Insights Query Chart"
-msgstr "Insikter Fråga Diagram"
+msgstr "Fråga Diagram"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "Insights Query Column"
-msgstr "Insikter Fråga Kolumn"
+msgstr "Fråga Kolumn"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_execution_log/insights_query_execution_log.json
 msgid "Insights Query Execution Log"
-msgstr "Insikter Fråga Exekvering Logg"
+msgstr "Fråga Exekvering Logg"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_result/insights_query_result.json
 msgid "Insights Query Result"
-msgstr "Insikter Fråga Resultat"
+msgstr "Fråga Resultat"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_table/insights_query_table.json
 msgid "Insights Query Table"
-msgstr "Insikter Fråga Tabell"
+msgstr "Fråga Tabell"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
 msgid "Insights Query Transform"
-msgstr "Insikter Fråga Omvandling"
+msgstr "Fråga Transformering"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_variable/insights_query_variable.json
 msgid "Insights Query Variable"
-msgstr "Insikter Fråga Variabel"
+msgstr "Fråga Variabel"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Insights Query v3"
-msgstr "Insikter Fråga v3"
+msgstr "Fråga v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_resource_permission/insights_resource_permission.json
 msgid "Insights Resource Permission"
-msgstr "Insikter Resurs Behörighet"
+msgstr "Resurs Behörighet"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_secret_key/insights_secret_key.json
 msgid "Insights Secret Key"
-msgstr "Insikter Hemlig Nyckel"
+msgstr "Hemlig Nyckel"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Insights Settings"
-msgstr "Insikter Inställningar"
+msgstr "Inställningar"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table/insights_table.json
 msgid "Insights Table"
-msgstr "Insikter Tabell"
+msgstr "Tabell"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Insights Table Column"
-msgstr "Insikter Tabell Kolumn"
+msgstr "Tabell Kolumn"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Insights Table Import"
-msgstr "Insikter Tabell Import"
+msgstr "Tabell Import"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Insights Table Import Job"
-msgstr "Insikter Tabell Import Jobb"
+msgstr "Tabell Import Jobb"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Insights Table Import Log"
-msgstr "Insikter Tabell Import Logg"
+msgstr "Tabell Import Logg"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "Insights Table Link"
-msgstr "Insikter Tabell Länk"
+msgstr "Tabell Länk"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
 msgid "Insights Table Link v3"
-msgstr "Insikter Tabell Länk v3"
+msgstr "Tabell Länk v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Insights Table v3"
-msgstr "Insikter Tabell v3"
+msgstr "Tabell v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_team/insights_team.json
 msgid "Insights Team"
-msgstr "Insikter Team"
+msgstr "Team"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_team_member/insights_team_member.json
 msgid "Insights Team Member"
-msgstr "Insikter Team Medlem"
+msgstr "Team Medlem"
 
 #. Name of a role
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -882,17 +882,17 @@ msgstr "Insikter Team Medlem"
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
 msgid "Insights User"
-msgstr "Insikter Användare"
+msgstr "Användare"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Insights User Invitation"
-msgstr "Insikter Användare Inbjudan"
+msgstr "Användare Inbjudan"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
 msgid "Insights Workbook"
-msgstr "Insikter Arbetsbok"
+msgstr "Arbetsbok"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -1508,7 +1508,7 @@ msgstr "Skickar Avisering..."
 
 #: frontend/src2/components/UserDropdown.vue:66
 msgid "Set Insights v2 as default"
-msgstr "Ange Insikter v2 som standard"
+msgstr "Ange v2 som standard"
 
 #: insights/setup/setup_wizard.py:17
 msgid "Setting up demo data"
@@ -1603,7 +1603,7 @@ msgstr "Söndag"
 
 #: frontend/src2/components/UserDropdown.vue:50
 msgid "Switch to Insights v2"
-msgstr "Växla till Insikter v2"
+msgstr "Växla till v2"
 
 #. Name of a role
 #: insights/insights/doctype/insights_chart/insights_chart.json
