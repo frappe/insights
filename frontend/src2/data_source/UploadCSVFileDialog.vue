@@ -62,14 +62,14 @@ function importCSVData() {
 			
 				createToast({
 					title: __('Table Imported'),
-					message: `Table '${csvData.tablename}' imported successfully`,
+					message: __(`Table '{0}' imported successfully`, csvData.tablename),
 					variant: 'success',
 				})
 		})
 		.catch((error: any) => {
 			createToast({
 				title: __('Import Failed'),
-				message: error?.message || 'Failed to import table',
+				message: error?.message || __('Failed to import table'),
 				variant: 'error',
 			})
 		})

@@ -232,8 +232,9 @@ function makeWorkbook(name: string) {
 	function duplicate() {
 		confirmDialog({
 			title: __('Duplicate Workbook'),
-			message:
+			message: __(
 				'Duplicating this workbook will create a new workbook and copy all queries, charts and dashboards to it. Do you want to continue?',
+			),
 			onSuccess: () => {
 				workbook
 					.call('duplicate')

@@ -68,7 +68,7 @@ function updateAlert() {
 	return alert.save().then(() => {
 		createToast({
 			title: isNew ? __('Alert Created') : __('Alert Updated'),
-			message: `Alert "${alert.doc.title}" has been ${isNew ? 'created' : 'updated'}.`,
+			message: isNew ? __(`Alert "{0}" has been created.`, alert.doc.title) : __(`Alert "{0}" has been updated.`, alert.doc.title),
 			variant: 'success',
 		})
 		show.value = false
@@ -83,7 +83,7 @@ function testSendAlert() {
 	return alert.call('test_alert').then(() => {
 		createToast({
 			title: __('Alert Sent'),
-			message: `Alert "${alert.doc.title}" has been sent.`,
+			message: __(`Alert "{0}" has been sent.`, alert.doc.title),
 			variant: 'success',
 		})
 	})
@@ -94,9 +94,9 @@ function toggleAlert() {
 	return alert.save().then(() => {
 		createToast({
 			title: alert.doc.disabled ? __('Alert Disabled') : __('Alert Enabled'),
-			message: `Alert "${alert.doc.title}" has been ${
-				alert.doc.disabled ? 'disabled' : 'enabled'
-			}.`,
+			message: alert.doc.disabled
+				? __(`Alert "{0}" has been disabled.`, alert.doc.title)
+				: __(`Alert "{0}" has been enabled.`, alert.doc.title),
 			variant: 'success',
 		})
 	})
@@ -141,7 +141,7 @@ function toggleAlert() {
 							type="text"
 							:label="__('Alert Name')"
 							v-model="alert.doc.title"
-							placeholder="e.g. Low Inventory"
+							:placeholder="__('e.g. Low Inventory')"
 						/>
 						<FormControl
 							type="select"
@@ -160,7 +160,7 @@ function toggleAlert() {
 							type="text"
 							:label="__('Cron')"
 							v-model="alert.doc.cron_format"
-							placeholder="e.g. 0 0 12 * * ?"
+							:placeholder="__('e.g. 0 0 12 * * ?')"
 						/>
 					</div>
 					<div class="flex flex-1 flex-col gap-3">
@@ -178,14 +178,14 @@ function toggleAlert() {
 							type="text"
 							:label="__('Recipients')"
 							v-model="alert.doc.recipients"
-							placeholder="e.g. john@example.com, henry@example.com"
+							:placeholder="__('e.g. john@example.com, henry@example.com')"
 						/>
 						<FormControl
 							v-if="alert.doc.channel === 'Telegram'"
 							type="text"
 							:label="__('Telegram Chat ID')"
 							v-model="alert.doc.telegram_chat_id"
-							placeholder="e.g. 123456789"
+							:placeholder="__('e.g. 123456789')"
 						/>
 					</div>
 				</div>

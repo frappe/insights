@@ -117,12 +117,12 @@ async function getTableLinks(
 async function updateTableLinks(data_source: string) {
 	createToast({
 		title: __('Updating table links'),
-		message: `Updating table links for ${data_source}. This may take a while.`,
+		message: __('Updating table links for {0}. This may take a while.', data_source),
 		variant: 'info',
 	})
 	return call('insights.api.data_sources.update_table_links', { data_source }).then(() => {
 		createToast({
-			message: `Table links updated for ${data_source}`,
+			message: __('Table links updated for {0}', data_source),
 			variant: 'success',
 		})
 	})

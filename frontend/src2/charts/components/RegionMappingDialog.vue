@@ -311,7 +311,7 @@ function getOptions(region: Region) {
 			<div class="flex justify-end gap-2">
 				<Button :label="__('Cancel')" @click="emit('update:modelValue', false)" />
 				<Button
-					label="Save Changes"
+					:label="__('Save Changes')"
 					variant="solid"
 					:loading="saving"
 					:disabled="!hasChanges"
