@@ -83,6 +83,7 @@ function resetNewMeasure() {
 
 <template>
 	<Dialog
+		:options="{ size: '2xl' }"
 		:modelValue="Boolean(showDialog)"
 		:disableOutsideClickToClose="true"
 		@after-leave="resetNewMeasure"

@@ -236,7 +236,7 @@ function setSignatureElementPosition() {
 
 <template>
 	<div class="flex flex-col gap-2 w-full">
-		<div ref="codeContainer" class="relative flex h-[10rem] w-full text-base">
+		<div ref="codeContainer" class="relative flex h-[14rem] w-full text-base">
 			<Code
 				ref="codeEditor"
 				language="python"
