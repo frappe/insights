@@ -8,6 +8,7 @@ import useUserStore from '../users/users'
 import ManageTeamDialog from './ManageTeamDialog.vue'
 import useTeamStore, { Team } from './teams'
 import CreateTeamDialog from './CreateTeamDialog.vue'
+import { __ } from '../translation'
 
 const userStore = useUserStore()
 const teamStore = useTeamStore()
@@ -26,11 +27,11 @@ const filteredTeams = computed(() => {
 const listOptions = ref({
 	columns: [
 		{
-			label: 'Team',
+			label: __('Team'),
 			key: 'team_name',
 		},
 		{
-			label: 'Owner',
+			label: __('Owner'),
 			key: 'owner',
 			getLabel(props: any) {
 				const team = props.row as Team
@@ -44,7 +45,7 @@ const listOptions = ref({
 			},
 		},
 		{
-			label: 'Creation',
+			label: __('Creation'),
 			key: 'creation_from_now',
 		},
 	],
@@ -57,11 +58,11 @@ const listOptions = ref({
 			showEditTeamDialog.value = true
 		},
 		emptyState: {
-			title: 'No teams.',
-			description: 'No teams to display.',
+			title: __('No teams.'),
+			description: __('No teams to display.'),
 			button: session.user.is_admin
 				? {
-						label: 'Create Team',
+						label: __('Create Team'),
 						variant: 'solid',
 						onClick: () => (showCreateTeamDialog.value = true),
 				  }
@@ -79,7 +80,7 @@ document.title = 'Teams | Insights'
 
 <template>
 	<header class="flex h-12 items-center justify-between border-b py-2.5 pl-5 pr-2">
-		<Breadcrumbs :items="[{ label: 'Teams', route: '/teams' }]" />
+		<Breadcrumbs :items="[{ label: __('Teams'), route: '/teams' }]" />
 		<div class="flex items-center gap-2">
 			<Button
 				v-if="session.user.is_admin"
@@ -96,7 +97,7 @@ document.title = 'Teams | Insights'
 
 	<div class="mb-4 flex h-full flex-col gap-3 overflow-auto px-5 py-3">
 		<div class="flex gap-2 overflow-visible py-1">
-			<FormControl placeholder="Search" v-model="searchQuery" :debounce="300">
+			<FormControl :placeholder="__('Search')" v-model="searchQuery" :debounce="300">
 				<template #prefix>
 					<SearchIcon class="h-4 w-4 text-gray-500" />
 				</template>

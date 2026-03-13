@@ -4,6 +4,7 @@ import { computed, inject, ref } from 'vue'
 import ChartIcon from '../charts/components/ChartIcon.vue'
 import { copy } from '../helpers'
 import { WorkbookChart } from '../types/workbook.types'
+import { __ } from '../translation'
 import { Dashboard } from './dashboard'
 
 const showDialog = defineModel()
@@ -60,16 +61,16 @@ function confirmSelection() {
 		v-model="showDialog"
 		:options="{
 			size: 'sm',
-			title: 'Select Charts',
+			title: __('Select Charts'),
 			actions: [
 				{
-					label: 'Add',
+					label: __('Add'),
 					variant: 'solid',
 					disabled: areNoneSelected,
 					onClick: confirmSelection,
 				},
 				{
-					label: 'Cancel',
+					label: __('Cancel'),
 					onClick: () => (showDialog = false),
 				},
 			],
@@ -81,7 +82,7 @@ function confirmSelection() {
 					<FormControl
 						class="flex-1"
 						autocomplete="off"
-						placeholder="Search by name"
+						:placeholder="__('Search by name')"
 						v-model="searchQuery"
 					>
 						<template #prefix>
@@ -91,8 +92,8 @@ function confirmSelection() {
 					<Button @click="toggleSelectAll">
 						{{
 							areAllSelected
-								? `Deselect All (${selectedCharts.length})`
-								: `Select All (${selectedCharts.length})`
+								? __(`Deselect All ({0})`, String(selectedCharts.length))
+								: __(`Select All ({0})`, String(selectedCharts.length))
 						}}
 					</Button>
 				</div>

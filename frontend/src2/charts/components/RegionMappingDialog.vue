@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { __ } from '../../translation'
 import { call } from 'frappe-ui'
 import { Dialog, Button, Autocomplete, LoadingIndicator, TextInput } from 'frappe-ui'
 import { MappingData, Region } from '../../types/chart.types'
@@ -190,7 +191,7 @@ function getOptions(region: Region) {
 <template>
 	<Dialog
 		:modelValue="modelValue"
-		:options="{ title: 'Resolve Locations', size: '2xl' }"
+		:options="{ title: __('Resolve Locations'), size: '2xl' }"
 		@update:modelValue="emit('update:modelValue', $event)"
 	>
 		<template #body-content>
@@ -308,7 +309,7 @@ function getOptions(region: Region) {
 
 		<template #actions>
 			<div class="flex justify-end gap-2">
-				<Button label="Cancel" @click="emit('update:modelValue', false)" />
+				<Button :label="__('Cancel')" @click="emit('update:modelValue', false)" />
 				<Button
 					label="Save Changes"
 					variant="solid"

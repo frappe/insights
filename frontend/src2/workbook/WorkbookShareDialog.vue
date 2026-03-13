@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Building2 } from 'lucide-vue-next'
+import { __ } from '../translation'
 import { computed, inject, ref } from 'vue'
 import UserSelector from '../components/UserSelector.vue'
 import { createToast } from '../helpers/toasts'
@@ -24,10 +25,10 @@ function shareWorkbook() {
 type PermissionMap = Record<string, ShareAccess>
 const permissionMap = ref<PermissionMap>({})
 const accessOptions = (user_email: string) => [
-	{ label: 'Can Edit', value: 'edit', onClick: () => (permissionMap.value[user_email] = 'edit') },
-	{ label: 'Can View', value: 'view', onClick: () => (permissionMap.value[user_email] = 'view') },
+	{ label: __('Can Edit'), value: 'edit', onClick: () => (permissionMap.value[user_email] = 'edit') },
+	{ label: __('Can View'), value: 'view', onClick: () => (permissionMap.value[user_email] = 'view') },
 	{
-		label: 'Remove',
+		label: __('Remove'),
 		value: 'remove',
 		onClick: () => (permissionMap.value[user_email] = undefined),
 	},
@@ -70,7 +71,7 @@ function updatePermissions() {
 	})
 	show.value = false
 	createToast({
-		title: 'Permissions updated',
+		title: __('Permissions updated'),
 		variant: 'success',
 	})
 }
@@ -80,10 +81,10 @@ function updatePermissions() {
 	<Dialog
 		v-model="show"
 		:options="{
-			title: 'Manage Workbook Access',
+			title: __('Manage Workbook Access'),
 			actions: [
 				{
-					label: 'Save',
+					label: __('Save'),
 					variant: 'solid',
 					disabled: saveDisabled,
 					onClick: updatePermissions,
@@ -108,21 +109,21 @@ function updatePermissions() {
 					<Dropdown
 						:options="[
 							{
-								label: 'Disabled',
+								label: __('Disabled'),
 								onClick: () => (organizationAccess = undefined),
 							},
 							{
-								label: 'Can View',
+								label: __('Can View'),
 								onClick: () => (organizationAccess = 'view'),
 							},
 							{
-								label: 'Can Edit',
+								label: __('Can Edit'),
 								onClick: () => (organizationAccess = 'edit'),
 							},
 						]"
 						:button="{
 							iconRight: 'chevron-down',
-							label: organizationAccess ? `Can ${organizationAccess}` : 'Disabled',
+							label: organizationAccess ? __(`Can {0}`, organizationAccess) : __('Disabled'),
 						}"
 					/>
 				</div>
@@ -169,7 +170,7 @@ function updatePermissions() {
 							:button="{
 								iconRight: 'chevron-down',
 								variant: 'ghost',
-								label: user.access === 'edit' ? 'Can Edit' : 'Can View',
+								label: user.access === 'edit' ? __('Can Edit') : __('Can View'),
 							}"
 						/>
 						<Button

@@ -1,5 +1,6 @@
 <script setup lang="tsx">
 import { watchDebounced } from '@vueuse/core'
+import { __ } from '../translation'
 import { Avatar, ListView } from 'frappe-ui'
 import { Plus } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
@@ -41,7 +42,7 @@ const filteredTeams = computed(() => {
 const listOptions = ref({
 	columns: [
 		{
-			label: 'Team Name',
+			label: __('Team Name'),
 			key: 'team_name',
 			prefix(props: any) {
 				const team = props.row as Team
@@ -59,11 +60,11 @@ const listOptions = ref({
 			showEditTeamDialog.value = true
 		},
 		emptyState: {
-			title: 'No teams.',
-			description: 'No teams to display.',
+			title: __('No teams.'),
+			description: __('No teams to display.'),
 			button: session.user.is_admin
 				? {
-						label: 'Create Team',
+						label: __('Create Team'),
 						variant: 'solid',
 						onClick: () => (showCreateTeamDialog.value = true),
 				  }

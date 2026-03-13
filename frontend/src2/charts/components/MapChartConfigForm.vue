@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch, watchEffect } from 'vue'
+import { __ } from '../../translation'
 import { MapChartConfig } from '../../types/chart.types'
 import {
 	DimensionOption,
@@ -50,8 +51,8 @@ const discrete_dimensions = computed(() =>
 )
 
 const map_options = [
-	{ label: 'World Map', value: 'world' },
-	{ label: 'India', value: 'india' },
+	{ label: __('World Map'), value: 'world' },
+	{ label: __('India'), value: 'india' },
 ]
 
 const showRegionMappingDialog = ref(false)

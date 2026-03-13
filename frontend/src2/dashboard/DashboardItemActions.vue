@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { inject } from 'vue'
 import { Dashboard } from './dashboard'
+import { __ } from '../translation'
 
 const emit = defineEmits({ edit: () => true })
 const props = defineProps<{ itemIndex: number }>()
@@ -10,12 +11,12 @@ const dashboard = inject('dashboard') as Dashboard
 const actions = [
 	{
 		icon: 'edit',
-		label: 'Edit',
+		label: __('Edit'),
 		onClick: () => (dashboard.editingItemIndex = props.itemIndex),
 	},
 	{
 		icon: 'trash',
-		label: 'Delete',
+		label: __('Delete'),
 		onClick: () => dashboard.removeItem(props.itemIndex),
 	},
 ]

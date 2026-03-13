@@ -6,6 +6,7 @@ import { computed, ref, watch } from 'vue'
 import IndicatorIcon from '../components/Icons/IndicatorIcon.vue'
 import session from '../session'
 import useUserStore, { User } from './users'
+import { __ } from '../translation'
 
 const userStore = useUserStore()
 userStore.getUsers()
@@ -25,7 +26,7 @@ const filteredUsers = computed(() => {
 const listOptions = ref({
 	columns: [
 		{
-			label: 'User',
+			label: __('User'),
 			key: 'full_name',
 			prefix: (props: any) => {
 				const user = props.row as User
@@ -33,16 +34,16 @@ const listOptions = ref({
 			},
 		},
 		{
-			label: 'Status',
+			label: __('Status'),
 			key: 'enabled',
 			getLabel: (props: any) => {
 				const user = props.row as User
 				if (user.invitation_status) {
 					return user.invitation_status === 'Pending'
-						? 'Invitation Sent'
-						: 'Invitation Expired'
+						? __('Invitation Sent')
+						: __('Invitation Expired')
 				}
-				return props.row.enabled ? 'Enabled' : 'Disabled'
+				return props.row.enabled ? __('Enabled') : __('Disabled')
 			},
 			prefix: (props: any) => {
 				let color
@@ -57,11 +58,11 @@ const listOptions = ref({
 			},
 		},
 		{
-			label: 'Email',
+			label: __('Email'),
 			key: 'email',
 		},
 		{
-			label: 'Last Active',
+			label: __('Last Active'),
 			key: 'last_active',
 			getLabel: (props: any) => {
 				if (!props.row.last_active) {
@@ -76,11 +77,11 @@ const listOptions = ref({
 	options: {
 		showTooltip: false,
 		emptyState: {
-			title: 'No users.',
-			description: 'No users to display.',
+			title: __('No users.'),
+			description: __('No users to display.'),
 			button: session.user.is_admin
 				? {
-						label: 'Invite User',
+						label: __('Invite User'),
 						variant: 'solid',
 						onClick: () => (showInviteUserDialog.value = true),
 				  }
@@ -142,7 +143,7 @@ document.title = 'Users | Insights'
 
 <template>
 	<header class="flex h-12 items-center justify-between border-b py-2.5 pl-5 pr-2">
-		<Breadcrumbs :items="[{ label: 'Users', route: '/users' }]" />
+		<Breadcrumbs :items="[{ label: __('Users'), route: '/users' }]" />
 		<div class="flex items-center gap-2">
 			<Button
 				v-if="session.user.is_admin"
@@ -159,7 +160,7 @@ document.title = 'Users | Insights'
 
 	<div class="mb-4 flex h-full flex-col gap-3 overflow-auto px-5 py-3">
 		<div class="flex gap-2 overflow-visible py-1">
-			<FormControl placeholder="Search" v-model="searchQuery" :debounce="300">
+			<FormControl :placeholder="__('Search')" v-model="searchQuery" :debounce="300">
 				<template #prefix>
 					<SearchIcon class="h-4 w-4 text-gray-500" />
 				</template>
@@ -171,10 +172,10 @@ document.title = 'Users | Insights'
 	<Dialog
 		v-model="showInviteUserDialog"
 		:options="{
-			title: 'Invite User',
+			title: __('Invite User'),
 			actions: [
 				{
-					label: 'Send Invitation',
+					label: __('Send Invitation'),
 					variant: 'solid',
 					disabled: !areAllEmailsValid,
 					loading: userStore.sendingInvitation,

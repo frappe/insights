@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, watchEffect } from 'vue'
+import { __ } from '../../translation'
 import { FIELDTYPES } from '../../helpers/constants'
 import { FunnelChartConfig } from '../../types/chart.types'
 import { ColumnOption, Dimension, DimensionOption, Measure } from '../../types/query.types'
@@ -52,9 +53,9 @@ const discrete_dimensions = computed(() =>
 				label="Label Position"
 				type="select"
 				:options="[
-					{ label: 'Left', value: 'left' },
-					{ label: 'Right', value: 'right' },
-					{ label: 'Alternate', value: 'alternate' },
+					{ label: __('Left'), value: 'left' },
+					{ label: __('Right'), value: 'right' },
+					{ label: __('Alternate'), value: 'alternate' },
 				]"
 			/>
 		</div>

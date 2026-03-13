@@ -7,6 +7,7 @@ import { FIELDTYPES } from '../helpers/constants'
 import { ColumnOption } from '../types/query.types'
 import { WorkbookDashboardFilter } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
+import { __ } from '../translation'
 
 const dashboard = inject<Dashboard>('dashboard')!
 const props = defineProps<{ item: WorkbookDashboardFilter }>()
@@ -96,16 +97,16 @@ function saveEdit() {
 		:modelValue="dashboard.isEditingItem(props.item)"
 		@update:modelValue="!$event ? (dashboard.editingItemIndex = undefined) : true"
 		:options="{
-			title: 'Edit Filter',
+			title: __('Edit Filter'),
 			actions: [
 				{
-					label: 'Save',
+					label: __('Save'),
 					variant: 'solid',
 					disabled: editDisabled,
 					onClick: saveEdit,
 				},
 				{
-					label: 'Cancel',
+					label: __('Cancel'),
 					onClick: () => (dashboard.editingItemIndex = undefined),
 				},
 			],
@@ -116,9 +117,9 @@ function saveEdit() {
 				<div class="flex gap-4">
 					<div class="flex flex-col gap-4 flex-1">
 						<FormControl
-							label="Label"
+							:label="__('Label')"
 							v-model="filter.filter_name"
-							placeholder="Enter filter label..."
+							:placeholder="__('Enter filter label...')"
 							autocomplete="off"
 						/>
 						<div class="flex flex-col gap-1.5">
@@ -129,7 +130,7 @@ function saveEdit() {
 					<FormControl
 						class="flex-1 flex-shrink-0"
 						v-model="filter.filter_type"
-						label="Type"
+						:label="__('Type')"
 						type="select"
 						:options="Object.keys(FILTER_TYPES)"
 						@update:modelValue="onFilterTypeChange"
@@ -151,7 +152,7 @@ function saveEdit() {
 						<div v-if="enabledLinks.includes(link.name)" class="ml-auto flex-shrink-0">
 							<Autocomplete
 								class="min-w-[10rem]"
-								placeholder="Select a column"
+								:placeholder="__('Select a column')"
 								:options="link.columns"
 								:modelValue="filter.links[link.name]"
 								@update:modelValue="filter.links[link.name] = $event.value"

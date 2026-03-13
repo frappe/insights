@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { __ } from '../../translation'
 import { COLUMN_TYPES, FIELDTYPES } from '../../helpers/constants'
 import ExpressionEditor from '../../query/components/ExpressionEditor.vue'
 import { expression } from '../../query/helpers'
@@ -55,7 +56,7 @@ async function confirmCalculation() {
 
 		if (!res || !res.is_valid) {
 			validationState.value = 'invalid'
-			validationErrors.value = res?.errors || [{ message: 'Validation failed' }]
+			validationErrors.value = res?.errors || [{ message: __('Validation failed') }]
 			return
 		}
 
@@ -70,7 +71,7 @@ async function confirmCalculation() {
 	} catch (e) {
 		console.error(e)
 		validationState.value = 'unknown'
-		validationErrors.value = [{ message: 'Unexpected validation error' }]
+		validationErrors.value = [{ message: __('Unexpected validation error') }]
 	}
 }
 
@@ -152,7 +153,7 @@ function updateDocumentationFromEditor(currentFunction: any) {
 	<Dialog
 		:modelValue="Boolean(showDialog)"
 		:disableOutsideClickToClose="true"
-		:options="{ title: 'Create Measure', size: '2xl' }"
+		:options="{ title: __('Create Measure'), size: '2xl' }"
 		@after-leave="resetNewMeasure"
 		@close="showDialog = false"
 	>
