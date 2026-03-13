@@ -6,6 +6,7 @@ import { computed, ref, watch } from 'vue'
 import IndicatorIcon from '../components/Icons/IndicatorIcon.vue'
 import session from '../session'
 import useUserStore, { User } from '../users/users'
+import { __ } from '../translation'
 
 const userStore = useUserStore()
 userStore.getUsers()
@@ -25,7 +26,7 @@ const filteredUsers = computed(() => {
 const listOptions = ref({
 	columns: [
 		{
-			label: 'User',
+			label: __('User'),
 			key: 'full_name',
 			prefix: (props: any) => {
 				const user = props.row as User
@@ -33,14 +34,14 @@ const listOptions = ref({
 			},
 		},
 		{
-			label: 'Status',
+			label: __('Status'),
 			key: 'enabled',
 			getLabel: (props: any) => {
 				const user = props.row as User
 				if (user.invitation_status) {
 					return user.invitation_status === 'Pending'
-						? 'Invitation Sent'
-						: 'Invitation Expired'
+						? __('Invitation Sent')
+						: __('Invitation Expired')
 				}
 				return props.row.enabled ? 'Enabled' : 'Disabled'
 			},
@@ -57,7 +58,7 @@ const listOptions = ref({
 			},
 		},
 		{
-			label: 'Email',
+			label: __('Email'),
 			key: 'email',
 		},
 		// {
@@ -77,11 +78,11 @@ const listOptions = ref({
 		selectable: false,
 		showTooltip: false,
 		emptyState: {
-			title: 'No users.',
-			description: 'No users to display.',
+			title: __('No users.'),
+			description: __('No users to display.'),
 			button: session.user.is_admin
 				? {
-						label: 'Invite User',
+						label: __('Invite User'),
 						variant: 'solid',
 						onClick: () => (showInviteUserDialog.value = true),
 				  }
@@ -141,7 +142,7 @@ function sendInvitation() {
 
 <template>
 	<div class="flex h-full w-full flex-col gap-3 overflow-x-hidden overflow-y-scroll p-8 px-10">
-		<h1 class="flex-shrink-0 text-xl font-semibold">Users</h1>
+		<h1 class="flex-shrink-0 text-xl font-semibold">{{ __('Users') }}</h1>
 
 		<div class="flex w-full flex-1 flex-col gap-3 overflow-auto">
 			<div class="flex justify-between gap-2 overflow-visible py-1">
@@ -153,7 +154,7 @@ function sendInvitation() {
 
 				<Button
 					v-if="session.user.is_admin"
-					label="Invite User"
+					:label="__('Invite User')"
 					variant="outline"
 					@click="showInviteUserDialog = true"
 				>
@@ -169,11 +170,11 @@ function sendInvitation() {
 	<Dialog
 		v-model="showInviteUserDialog"
 		:options="{
-			title: 'Invite User',
+			title: __('Invite User'),
 			size: 'sm',
 			actions: [
 				{
-					label: 'Send Invitation',
+					label: __('Send Invitation'),
 					variant: 'solid',
 					disabled: !areAllEmailsValid,
 					loading: userStore.sendingInvitation,
@@ -204,7 +205,7 @@ function sendInvitation() {
 						<input
 							type="text"
 							autocomplete="off"
-							placeholder="Enter email address"
+							:placeholder="__('Enter email address')"
 							v-model="emailsTxt"
 							@keydown.enter.capture.stop="extractEmails(`${emailsTxt} `)"
 							class="h-7 w-full rounded border-none bg-gray-100 py-1.5 pl-2 pr-2 text-base text-gray-800 placeholder-gray-500 transition-colors focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"

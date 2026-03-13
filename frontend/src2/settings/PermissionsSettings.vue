@@ -11,6 +11,7 @@ import ManageTeamDialog from '../teams/ManageTeamDialog.vue'
 import useTeamStore, { Team } from '../teams/teams'
 import SettingItem from './SettingItem.vue'
 import useSettings from './settings'
+import { __ } from '../translation'
 
 const teamStore = useTeamStore()
 teamStore.getTeams()
@@ -41,7 +42,7 @@ const filteredTeams = computed(() => {
 const listOptions = ref({
 	columns: [
 		{
-			label: 'Team Name',
+			label: __('Team Name'),
 			key: 'team_name',
 			prefix(props: any) {
 				const team = props.row as Team
@@ -59,11 +60,11 @@ const listOptions = ref({
 			showEditTeamDialog.value = true
 		},
 		emptyState: {
-			title: 'No teams.',
-			description: 'No teams to display.',
+			title: __('No teams.'),
+			description: __('No teams to display.'),
 			button: session.user.is_admin
 				? {
-						label: 'Create Team',
+						label: __('Create Team'),
 						variant: 'solid',
 						onClick: () => (showCreateTeamDialog.value = true),
 				  }
@@ -79,31 +80,31 @@ const editTeam = ref<Team | null>(null)
 
 <template>
 	<div class="flex w-full flex-col gap-6 overflow-y-scroll p-8 px-10">
-		<h1 class="text-xl font-semibold">Permissions</h1>
+		<h1 class="text-xl font-semibold">{{ __('Permissions') }}</h1>
 
 		<SettingItem
-			label="Enable"
-			description="Enable permissions to restrict access to data sources & tables based on teams and users."
+			:label="__('Enable')"
+			:description="__('Enable permissions to restrict access to data sources & tables based on teams and users.')"
 		>
 			<Toggle v-model="settings.doc.enable_permissions" />
 		</SettingItem>
 
 		<SettingItem
-			label="Apply User Permissions"
-			description="Apply restrictions based on roles and user permissions defined on this site. Only applicable for site data source."
+			:label="__('Apply User Permissions')"
+			:description="__('Apply restrictions based on roles and user permissions defined on this site. Only applicable for site data source.')"
 		>
 			<Toggle v-model="settings.doc.apply_user_permissions" />
 		</SettingItem>
 
 		<div class="flex w-full flex-1 flex-col gap-3 overflow-auto">
 			<SettingItem
-				label="Teams"
-				description="Create teams to group users and manage permissions."
+				:label="__('Teams')"
+				:description="__('Create teams to group users and manage permissions.')"
 			>
 				<Button
 					v-if="session.user.is_admin"
 					class="self-end"
-					label="New Team"
+					:label="__('New Team')"
 					variant="outline"
 					@click="showCreateTeamDialog = true"
 				>

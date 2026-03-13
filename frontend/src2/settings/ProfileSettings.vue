@@ -3,6 +3,7 @@ import { Avatar } from 'frappe-ui'
 import session from '../session'
 import { computed, ref } from 'vue'
 import useUserStore from '../users/users'
+import { __ } from '../translation'
 
 const user = ref({ ...session.user })
 
@@ -31,7 +32,7 @@ function update() {
 
 <template>
 	<div class="flex w-full flex-col gap-6 p-8 px-10">
-		<h1 class="text-xl font-semibold">Profile</h1>
+		<h1 class="text-xl font-semibold">{{ __('Profile') }}</h1>
 		<div class="flex items-start gap-4">
 			<div class="relative flex flex-col items-center justify-between gap-2">
 				<Avatar class="!h-15 !w-15" :image="user.user_image" :label="user.full_name" />
@@ -45,14 +46,14 @@ function update() {
 			<div class="flex gap-6">
 				<FormControl
 					v-model="user.first_name"
-					label="First Name"
+					:label="__('First Name')"
 					autocomplete="off"
 					class="flex-1"
 				/>
 				<FormControl
 					autocomplete="off"
 					class="flex-1"
-					label="Last Name"
+					:label="__('Last Name')"
 					v-model="user.last_name"
 				/>
 			</div>
@@ -60,21 +61,21 @@ function update() {
 				<FormControl
 					autocomplete="off"
 					class="flex-1"
-					label="Email"
+					:label="__('Email')"
 					:modelValue="user.email"
 					:disabled="true"
 				/>
 				<FormControl
 					autocomplete="off"
 					class="flex-1"
-					label="New Password"
+					:label="__('New Password')"
 					type="password"
 					disabled
 				/>
 			</div>
 			<div class="flex justify-end">
 				<Button
-					label="Update"
+					:label="__('Update')"
 					variant="solid"
 					:loading="userStore.updatingUser"
 					:disabled="updateDisabled"
