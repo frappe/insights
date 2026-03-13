@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Building2 } from 'lucide-vue-next'
+import { __ } from '../translation'
 import { computed, inject, ref } from 'vue'
 import UserSelector from '../components/UserSelector.vue'
 import { createToast } from '../helpers/toasts'
@@ -123,7 +124,9 @@ function updatePermissions() {
 						]"
 						:button="{
 							iconRight: 'chevron-down',
-							label: organizationAccess ? `Can ${organizationAccess}` : 'Disabled',
+							label: organizationAccess
+								? __(`Can {0}`, organizationAccess)
+								: __('Disabled'),
 						}"
 					/>
 				</div>
@@ -170,7 +173,7 @@ function updatePermissions() {
 							:button="{
 								iconRight: 'chevron-down',
 								variant: 'ghost',
-								label: user.access === 'edit' ? 'Can Edit' : 'Can View',
+								label: user.access === 'edit' ? __('Can Edit') : __('Can View'),
 							}"
 						/>
 						<Button

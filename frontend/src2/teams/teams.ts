@@ -1,4 +1,5 @@
 import { useTimeAgo } from '@vueuse/core'
+import { __ } from '../translation'
 import { call } from 'frappe-ui'
 import { reactive, ref } from 'vue'
 import { showErrorToast } from '../helpers'
@@ -52,7 +53,7 @@ async function createTeam(team_name: string) {
 		.then(() => {
 			getTeams()
 			createToast({
-				message: 'Team created',
+				message: __('Team created'),
 				variant: 'success',
 			})
 		})
@@ -71,7 +72,7 @@ async function updateTeam(team: Team) {
 		.then(() => {
 			getTeams()
 			createToast({
-				message: 'Team updated',
+				message: __('Team updated'),
 				variant: 'success',
 			})
 		})

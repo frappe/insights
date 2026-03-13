@@ -19,7 +19,7 @@ const filteredUsers = computed(() => {
 	return userStore.users.filter(
 		(user) =>
 			user.full_name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-			user.email.toLowerCase().includes(searchQuery.value.toLowerCase())
+			user.email.toLowerCase().includes(searchQuery.value.toLowerCase()),
 	)
 })
 
@@ -43,7 +43,7 @@ const listOptions = ref({
 						? __('Invitation Sent')
 						: __('Invitation Expired')
 				}
-				return props.row.enabled ? 'Enabled' : 'Disabled'
+				return props.row.enabled ? __('Enabled') : __('Disabled')
 			},
 			prefix: (props: any) => {
 				let color
@@ -146,7 +146,7 @@ function sendInvitation() {
 
 		<div class="flex w-full flex-1 flex-col gap-3 overflow-auto">
 			<div class="flex justify-between gap-2 overflow-visible py-1">
-				<FormControl placeholder="Search" :debounce="300">
+				<FormControl :placeholder="__('Search')" :debounce="300">
 					<template #prefix>
 						<SearchIcon class="h-4 w-4 text-gray-500" />
 					</template>

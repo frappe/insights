@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { FileUploader, call } from 'frappe-ui'
+import { __ } from '../translation'
 import { FileUp } from 'lucide-vue-next'
 import { computed, reactive, ref } from 'vue'
 import DataTable from '../components/DataTable.vue'
@@ -33,8 +34,8 @@ function uploadFile(file: File) {
 		})
 		.catch((error: any) => {
 			createToast({
-				title: 'Upload Failed',
-				message: error?.message || 'Failed to process uploaded file',
+				title: __('Upload Failed'),
+				message: error?.message || __('Failed to process uploaded file'),
 				variant: 'error',
 			})
 			fileUploaded.value = false
@@ -58,17 +59,16 @@ function importCSVData() {
 		filename: csvData.file.name,
 	})
 		.then(() => {
-			
-				createToast({
-					title: 'Table Imported',
-					message: `Table '${csvData.tablename}' imported successfully`,
-					variant: 'success',
-				})
+			createToast({
+				title: __('Table Imported'),
+				message: __(`Table '{0}' imported successfully`, csvData.tablename),
+				variant: 'success',
+			})
 		})
 		.catch((error: any) => {
 			createToast({
-				title: 'Import Failed',
-				message: error?.message || 'Failed to import table',
+				title: __('Import Failed'),
+				message: error?.message || __('Failed to import table'),
 				variant: 'error',
 			})
 		})
@@ -92,7 +92,7 @@ function resetFile() {
 	<Dialog
 		v-model="show"
 		:options="{
-			title: csvData.tablename ? 'Import Table' : 'Upload CSV/Excel File',
+			title: csvData.tablename ? __('Import Table') : __('Upload CSV/Excel File'),
 			size: fileUploaded ? '4xl' : '',
 		}"
 	>

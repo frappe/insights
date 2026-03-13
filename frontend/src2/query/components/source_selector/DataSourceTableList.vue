@@ -20,7 +20,7 @@ const tableSearchQuery = ref(selectedTable.value?.table_name || '')
 wheneverChanges(
 	() => [tableSearchQuery.value, props.data_source],
 	() => tableStore.getTables(props.data_source, tableSearchQuery.value),
-	{ debounce: 300, immediate: true }
+	{ debounce: 300, immediate: true },
 )
 
 const listColumns = [
@@ -59,7 +59,7 @@ const emptyState = computed(() => {
 		description: __('Sync tables from your data source to get started'),
 		button: {
 			variant: 'outline',
-			label: 'Refresh Tables',
+			label: __('Refresh Tables'),
 			onClick: () => tableStore.updateDataSourceTables(props.data_source),
 		},
 	}

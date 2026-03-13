@@ -1,5 +1,6 @@
 <script setup lang="tsx">
 import { watchDebounced } from '@vueuse/core'
+import { __ } from '../translation'
 import { Avatar, ListView } from 'frappe-ui'
 import { Plus } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
@@ -26,7 +27,7 @@ watchDebounced(
 			settings.save()
 		}
 	},
-	{ debounce: 500, deep: true }
+	{ debounce: 500, deep: true },
 )
 
 const searchQuery = ref('')
@@ -35,7 +36,7 @@ const filteredTeams = computed(() => {
 		return teamStore.teams
 	}
 	return teamStore.teams.filter((team) =>
-		team.team_name.toLowerCase().includes(searchQuery.value.toLowerCase())
+		team.team_name.toLowerCase().includes(searchQuery.value.toLowerCase()),
 	)
 })
 
