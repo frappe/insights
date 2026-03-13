@@ -307,6 +307,19 @@ def if_else(condition: ir.BooleanValue, true_value: ir.Value, false_value: ir.Va
     return ibis.cases((condition, true_value), else_=false_value)
 
 
+def one_if(condition: ir.BooleanValue):
+    """
+    def one_if(condition)
+
+    Convert a boolean condition to 1 or 0.
+
+    Examples:
+    - one_if(status == 'Active')
+    - one_if(age > 18)
+    """
+    return if_else(condition, 1, 0)
+
+
 def case(condition: ir.BooleanValue, value: ir.Value, *args: tuple[ir.BooleanValue, ir.Value]):
     """
     def case(condition, value, *args)
