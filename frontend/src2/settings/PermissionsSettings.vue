@@ -11,6 +11,7 @@ import ManageTeamDialog from '../teams/ManageTeamDialog.vue'
 import useTeamStore, { Team } from '../teams/teams'
 import SettingItem from './SettingItem.vue'
 import useSettings from './settings'
+import { __ } from '../translation'
 
 const teamStore = useTeamStore()
 teamStore.getTeams()

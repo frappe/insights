@@ -6,6 +6,7 @@ import DatePickerControl from '../query/components/DatePickerControl.vue'
 import session from '../session'
 import SettingItem from './SettingItem.vue'
 import useSettings from './settings'
+import { __ } from '../translation'
 
 const settings = useSettings()
 settings.load()
@@ -67,13 +68,13 @@ async function setupDemoData() {
 				type="select"
 				v-model="settings.doc.week_starts_on"
 				:options="[
-					'Sunday',
-					'Monday',
-					'Tuesday',
-					'Wednesday',
-					'Thursday',
-					'Friday',
-					'Saturday',
+					__('Sunday'),
+					__('Monday'),
+					__('Tuesday'),
+					__('Wednesday'),
+					__('Thursday'),
+					__('Friday'),
+					__('Saturday'),
 				]"
 			/>
 		</SettingItem>
