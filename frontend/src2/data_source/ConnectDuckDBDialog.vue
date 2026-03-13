@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import Form from '../components/Form.vue'
 import useDataSourceStore from './data_source'
 import { DuckDBDataSource } from './data_source.types'
+import { __ } from '../translation'
 
 const show = defineModel({
 	default: false,
@@ -18,13 +19,13 @@ const form = ref()
 const fields = [
 	{
 		name: 'title',
-		label: 'Title',
+		label: __('Title'),
 		type: 'text',
 		placeholder: 'My Database',
 		required: true,
 	},
 	{
-		label: 'File URL',
+		label: __('File URL'),
 		name: 'database_name',
 		type: 'text',
 		placeholder: 'https://example.com/file.duckdb',
@@ -43,7 +44,7 @@ const sources = useDataSourceStore()
 const connected = ref<boolean | null>(null)
 const connectButton = computed(() => {
 	const _button = {
-		label: 'Connect',
+		label: __('Connect'),
 		disabled:
 			form.value?.hasRequiredFields === false || !isValidFileURL.value || sources.testing,
 		loading: sources.testing,
@@ -73,7 +74,7 @@ const connectButton = computed(() => {
 
 const submitButton = computed(() => {
 	return {
-		label: 'Add Data Source',
+		label: __('Add Data Source'),
 		disabled:
 			form.value?.hasRequiredFields === false ||
 			!isValidFileURL.value ||
@@ -91,7 +92,7 @@ const submitButton = computed(() => {
 </script>
 
 <template>
-	<Dialog v-model="show" :options="{ title: 'Connect to DuckDB' }">
+	<Dialog v-model="show" :options="{ title: __('Connect to DuckDB') }">
 		<template #body-content>
 			<Form
 				ref="form"
