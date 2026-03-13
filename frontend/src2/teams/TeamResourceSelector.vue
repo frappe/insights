@@ -202,7 +202,7 @@ wheneverChanges(
 		}
 		tableStore.getTableColumns(expandedDataSource.value, table.table_name).then((columns) => {
 			expandedTableColumns.value = toOptions(columns, {
-				label: 'name',
+				label: __('name'),
 				value: 'name',
 				description: 'type',
 			})
