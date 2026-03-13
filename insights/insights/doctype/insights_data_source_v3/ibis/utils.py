@@ -296,6 +296,12 @@ def validate_names(tree, columns: list[dict]):
     available_functions = set(functions.keys())
     available_columns = {col.get("value") for col in columns}
 
+    # treat locally assigned variables as valid names so that reusing them
+    assigned_vars = {
+        node.id for node in ast.walk(tree) if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store)
+    }
+    available_columns = available_columns | assigned_vars
+
     errors = []
     for node in ast.walk(tree):
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
