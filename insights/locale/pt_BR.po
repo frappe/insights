@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-03-10 01:25+0000\n"
-"PO-Revision-Date: 2026-03-12 09:16\n"
+"PO-Revision-Date: 2026-03-13 09:40\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Portuguese, Brazilian\n"
 "MIME-Version: 1.0\n"
@@ -1386,7 +1386,7 @@ msgstr ""
 #. Label of the result_name (Data) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Result"
-msgstr ""
+msgstr "Resultado"
 
 #. Label of the results_row_count (Int) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
