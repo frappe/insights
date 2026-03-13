@@ -4,6 +4,7 @@ import { inject } from 'vue'
 import { useRouter } from 'vue-router'
 import ChartIcon from '../charts/components/ChartIcon.vue'
 import { workbookKey } from './workbook'
+import { __ } from '../translation'
 
 const router = useRouter()
 const workbook = inject(workbookKey)
@@ -58,9 +59,9 @@ const workbook = inject(workbookKey)
 		<Dropdown
 			class="ml-1.5"
 			:options="[
-				{ label: 'New Query', onClick: workbook.addQuery },
-				{ label: 'New Chart', onClick: workbook.addChart },
-				{ label: 'New Dashboard', onClick: workbook.addDashboard },
+				{ label: __('New Query'), onClick: workbook.addQuery },
+				{ label: __('New Chart'), onClick: workbook.addChart },
+				{ label: __('New Dashboard'), onClick: workbook.addDashboard },
 			]"
 		>
 			<Button variant="ghost" icon="plus"> </Button>
