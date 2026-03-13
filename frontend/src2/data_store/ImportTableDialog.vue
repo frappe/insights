@@ -4,6 +4,7 @@ import { getDataSourceOptions } from '../data_source/data_source'
 import { getRowCount, getTableOptions, getTables } from '../data_source/tables'
 import { formatNumber } from '../helpers'
 import useDataStore from './data_store'
+import { __ } from '../translation'
 
 const show = defineModel({
 	default: false,
@@ -55,7 +56,7 @@ function importTable() {
 </script>
 
 <template>
-	<Dialog v-model="show" :options="{ title: 'Import Table', size: 'md' }">
+	<Dialog v-model="show" :options="{ title: __('Import Table'), size: 'md' }">
 		<template #body-content>
 			<div class="flex w-full flex-col gap-2">
 				<div class="flex flex-col gap-4">
@@ -89,7 +90,7 @@ function importTable() {
 				<div class="flex w-full justify-end gap-2 pt-2">
 					<Button label="Cancel" variant="outline" @click="cancelImport" />
 					<Button
-						label="Import"
+						:label="__('Import')"
 						variant="solid"
 						:disabled="importDisabled"
 						:loading="dataStore.importingTable"
