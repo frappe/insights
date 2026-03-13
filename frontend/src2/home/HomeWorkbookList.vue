@@ -4,6 +4,7 @@ import { ArrowUpRight, Book } from 'lucide-vue-next'
 import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import dayjs from '../helpers/dayjs'
+import { __ } from '../translation'
 
 const router = useRouter()
 
@@ -32,7 +33,7 @@ watch(searchQuery, (query) => {
 			<div class="rounded bg-gray-100 p-1">
 				<Book class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 			</div>
-			<div class="text-lg">Workbooks</div>
+			<div class="text-lg">{{ __('Workbooks') }}</div>
 		</div>
 		<div class="mt-3 flex-1 overflow-hidden p-1">
 			<!-- list of recent records -->
@@ -62,9 +63,9 @@ watch(searchQuery, (query) => {
 			<!-- empty state -->
 			<div v-else class="flex h-full w-full items-center justify-center">
 				<div class="flex flex-col items-center space-y-2">
-					<div class="text-lg text-gray-600">No workbooks created</div>
+					<div class="text-lg text-gray-600">{{ __('No workbooks created') }}</div>
 					<div class="text-sm text-gray-600">
-						Your workbooks will appear here. Create a new workbook to get started.
+						{{ __('Your workbooks will appear here. Create a new workbook to get started.') }}
 					</div>
 				</div>
 			</div>
