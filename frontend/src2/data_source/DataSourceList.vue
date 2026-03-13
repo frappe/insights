@@ -155,7 +155,7 @@ document.title = __('Data Sources | Insights')
 
 	<div class="mb-4 flex h-full flex-col gap-3 overflow-auto px-5 py-3">
 		<div class="flex gap-2 overflow-visible py-1">
-			<FormControl placeholder="Search by Title" v-model="searchQuery" :debounce="300">
+			<FormControl :placeholder="__('Search by Title')" v-model="searchQuery" :debounce="300">
 				<template #prefix>
 					<SearchIcon class="h-4 w-4 text-gray-500" />
 				</template>

@@ -21,7 +21,7 @@ const fields = [
 		name: 'title',
 		label: __('Title'),
 		type: 'text',
-		placeholder: 'My Database',
+		placeholder: __('My Database'),
 		required: true,
 	},
 	{
@@ -30,7 +30,7 @@ const fields = [
 		type: 'text',
 		placeholder: 'https://example.com/file.duckdb',
 		required: true,
-		description: 'Enter the URL of the DuckDB file',
+		description: __('Enter the URL of the DuckDB file'),
 	},
 ]
 
