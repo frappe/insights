@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import useTeamStore from './teams'
+import { __ } from '../translation'
 
 const show = defineModel()
 const teamStore = useTeamStore()
@@ -11,10 +12,10 @@ const newTeamName = ref('')
 	<Dialog
 		v-model="show"
 		:options="{
-			title: 'Create Team',
+			title: __('Create Team'),
 			actions: [
 				{
-					label: 'Create',
+					label: __('Create'),
 					variant: 'solid',
 					disabled: !newTeamName || teamStore.creatingTeam,
 					loading: teamStore.creatingTeam,

@@ -6,6 +6,7 @@ import { copy } from '../helpers'
 import useUserStore from '../users/users'
 import TeamResourceSelector from './TeamResourceSelector.vue'
 import useTeamStore, { Team } from './teams'
+import { __ } from '../translation'
 
 const props = defineProps<{ team: Team }>()
 const show = defineModel()
@@ -59,10 +60,10 @@ const activeTab = ref('Members')
 		v-if="currentTeam"
 		v-model="show"
 		:options="{
-			title: 'Manage Team',
+			title: __('Manage Team'),
 			actions: [
 				{
-					label: 'Done',
+					label: __('Done'),
 					variant: 'solid',
 					disabled: !teamModified || teamStore.updatingTeam,
 					loading: teamStore.updatingTeam,
@@ -79,7 +80,7 @@ const activeTab = ref('Members')
 		<template #body-content>
 			<div class="-mb-5 flex h-[25rem] flex-col gap-4 text-base">
 				<FormControl
-					label="Team Name"
+					:label="__('Team Name')"
 					v-model="currentTeam.team_name"
 					:disabled="currentTeam.name === 'Admin'"
 					autocomplete="off"
@@ -100,7 +101,7 @@ const activeTab = ref('Members')
 					<div class="flex w-full flex-shrink-0 gap-2">
 						<div class="flex-1">
 							<UserSelector
-								placeholder="Add members"
+								:placeholder="__('Add members')"
 								v-model="newMemberEmail"
 								:hide-users="currentTeam.team_members.map((u) => u.user)"
 							/>
@@ -108,7 +109,7 @@ const activeTab = ref('Members')
 						<Button
 							class="flex-shrink-0"
 							variant="solid"
-							label="Add"
+							:label="__('Add')"
 							:disabled="!newMemberEmail"
 							@click="addMember"
 						></Button>
@@ -151,7 +152,7 @@ const activeTab = ref('Members')
 							v-else
 							class="rounded border border-dashed border-gray-300 px-32 py-6 text-center text-sm text-gray-500"
 						>
-							This team does not have any members
+							{{ __('This team does not have any members') }}
 						</div>
 					</div>
 				</div>
@@ -165,8 +166,7 @@ const activeTab = ref('Members')
 						v-if="currentTeam.name == 'Admin'"
 						class="rounded bg-gray-50 p-2 text-p-sm text-gray-600"
 					>
-						Admin team has access to all the data sources and tables. Members of this
-						team are allowed to manage teams, users, and other admin settings
+						{{ __('Admin team has access to all the data sources and tables. Members of this team are allowed to manage teams, users, and other admin settings') }}
 					</div>
 
 					<Suspense v-else>
