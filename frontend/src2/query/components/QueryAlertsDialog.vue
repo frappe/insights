@@ -5,6 +5,7 @@ import { Plus, SearchIcon } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import IndicatorIcon from '../../components/Icons/IndicatorIcon.vue'
 import { getUniqueId } from '../../helpers'
+import { __ } from '../../translation'
 import useAlertStore from '../alert'
 import { Query } from '../query'
 
@@ -26,21 +27,21 @@ const filteredAlerts = computed(() => {
 	return alertStore.alerts.filter(
 		(alert: any) =>
 			alert.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-			alert.owner.toLowerCase().includes(searchQuery.value.toLowerCase())
+			alert.owner.toLowerCase().includes(searchQuery.value.toLowerCase()),
 	)
 })
 
 const listOptions = ref({
 	columns: [
 		{
-			label: 'Title',
+			label: __('Title'),
 			key: 'title',
 		},
 		{
-			label: 'Status',
+			label: __('Status'),
 			key: 'disabled',
 			getLabel: (props: any) => {
-				return props.row.disabled ? 'Disabled' : 'Enabled'
+				return props.row.disabled ? __('Disabled') : __('Enabled')
 			},
 			prefix: (props: any) => {
 				const color = props.row.disabled ? 'text-gray-500' : 'text-green-500'
@@ -48,11 +49,11 @@ const listOptions = ref({
 			},
 		},
 		{
-			label: 'Created By',
+			label: __('Created By'),
 			key: 'owner',
 		},
 		{
-			label: 'Last Execution',
+			label: __('Last Execution'),
 			key: 'last_execution',
 			getLabel: (props: any) => {
 				if (!props.row.last_execution) {
@@ -72,10 +73,10 @@ const listOptions = ref({
 			show.value = false
 		},
 		emptyState: {
-			title: 'No alerts',
-			description: 'Set up alerts to get notified when a condition is met',
+			title: __('No alerts'),
+			description: __('Set up alerts to get notified when a condition is met'),
 			button: {
-				label: 'New Alert',
+				label: __('New Alert'),
 				variant: 'solid',
 				onClick: () => {
 					emit('set-current-alert-name', 'new-alert-' + getUniqueId())
@@ -91,20 +92,20 @@ const listOptions = ref({
 	<Dialog
 		v-model="show"
 		:options="{
-			title: 'Alerts',
+			title: __('Alerts'),
 			size: '2xl',
 		}"
 	>
 		<template #body-content>
 			<div class="flex h-[30rem] w-full flex-1 flex-col gap-3 overflow-auto text-base">
 				<div class="flex justify-between gap-2 overflow-visible py-1">
-					<FormControl placeholder="Search" v-model="searchQuery" :debounce="300">
+					<FormControl :placeholder="__('Search')" v-model="searchQuery" :debounce="300">
 						<template #prefix>
 							<SearchIcon class="h-4 w-4 text-gray-500" />
 						</template>
 					</FormControl>
 					<Button
-						label="New Alert"
+						:label="__('New Alert')"
 						variant="outline"
 						@click="
 							() => {

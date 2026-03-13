@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { wheneverChanges } from '../../helpers'
+import { __ } from '../../translation'
 import dayjs from '../../helpers/dayjs'
 import { ChevronDown, ChevronRight } from 'lucide-vue-next'
 import { ref } from 'vue'
@@ -49,12 +50,12 @@ const thisYearValue = `${getValue(yearStart)} - ${getValue(yearEnd)}`
 const thisFYValue = `${getValue(fiscalYearStart)} - ${getValue(fiscalYearEnd)}`
 
 const predefinedRanges = [
-	{ label: 'Today', value: 'Day', description: todayValue },
-	{ label: 'This Week', value: 'Week', description: thisWeekValue },
-	{ label: 'This Month', value: 'Month', description: thisMonthValue },
-	{ label: 'This Quarter', value: 'Quarter', description: thisQuarterValue },
-	{ label: 'This Year', value: 'Year', description: thisYearValue },
-	{ label: 'This FY', value: 'Fiscal Year', description: thisFYValue },
+	{ label: __('Today'), value: 'Day', description: todayValue },
+	{ label: __('This Week'), value: 'Week', description: thisWeekValue },
+	{ label: __('This Month'), value: 'Month', description: thisMonthValue },
+	{ label: __('This Quarter'), value: 'Quarter', description: thisQuarterValue },
+	{ label: __('This Year'), value: 'Year', description: thisYearValue },
+	{ label: __('This FY'), value: 'Fiscal Year', description: thisFYValue },
 	// last 7 days
 	// last 30 days
 	// last 90 days

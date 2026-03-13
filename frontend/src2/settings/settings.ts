@@ -1,4 +1,5 @@
 import useDocumentResource from '../helpers/resource'
+import { __ } from '../translation'
 import { createToast } from '../helpers/toasts'
 import { __ } from '../translation'
 

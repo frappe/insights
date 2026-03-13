@@ -2,6 +2,7 @@
 import { Plus } from 'lucide-vue-next'
 import { inject, ref, watch } from 'vue'
 import { Operation } from '../../types/query.types'
+import { __ } from '../../translation'
 import { query_operation_types } from '../helpers'
 import { Query } from '../query'
 import ColumnsSelectorDialog from './ColumnsSelectorDialog.vue'
@@ -26,50 +27,50 @@ const showCustomScriptDialog = ref(false)
 
 const operationButtons = [
 	{
-		label: 'Select Source',
-		description: 'Select a table or query to start building your query',
+		label: __('Select Source'),
+		description: __('Select a table or query to start building your query'),
 		icon: query_operation_types.source.icon,
 		onClick: () => (showSourceSelectorDialog.value = true),
 	},
 	{
-		label: 'Choose Columns',
-		description: 'Show or hide columns from the table',
+		label: __('Choose Columns'),
+		description: __('Show or hide columns from the table'),
 		icon: query_operation_types.select.icon,
 		onClick: () => (showColumnsSelectorDialog.value = true),
 	},
 	{
-		label: 'Filter Rows',
-		description: 'Filter rows based on columns or expressions',
+		label: __('Filter Rows'),
+		description: __('Filter rows based on columns or expressions'),
 		icon: query_operation_types.filter.icon,
 		onClick: () => (showFiltersSelectorDialog.value = true),
 	},
 	{
-		label: 'Join Table',
-		description: 'Join this table with another table or query',
+		label: __('Join Table'),
+		description: __('Join this table with another table or query'),
 		icon: query_operation_types.join.icon,
 		onClick: () => (showJoinSelectorDialog.value = true),
 	},
 	{
-		label: 'Append Table',
-		description: 'Append this table with another table or query',
+		label: __('Append Table'),
+		description: __('Append this table with another table or query'),
 		icon: query_operation_types.union.icon,
 		onClick: () => (showUnionSelectorDialog.value = true),
 	},
 	{
-		label: 'Add New Column',
-		description: 'Add a new column based on existing columns',
+		label: __('Add New Column'),
+		description: __('Add a new column based on existing columns'),
 		icon: query_operation_types.mutate.icon,
 		onClick: () => (showNewColumnSelectorDialog.value = true),
 	},
 	{
-		label: 'Group & Summarize',
-		description: 'Group rows by columns and summarize the data',
+		label: __('Group & Summarize'),
+		description: __('Group rows by columns and summarize the data'),
 		icon: query_operation_types.summarize.icon,
 		onClick: () => (showSummarySelectorDialog.value = true),
 	},
 	{
-		label: 'Custom Operation',
-		description: 'Apply a custom operation using python script',
+		label: __('Custom Operation'),
+		description: __('Apply a custom operation using python script'),
 		icon: query_operation_types.custom_operation.icon,
 		onClick: () => (showCustomScriptDialog.value = true),
 	},
@@ -107,7 +108,7 @@ watch(
 			default:
 				break
 		}
-	}
+	},
 )
 </script>
 
@@ -117,7 +118,7 @@ watch(
 			<div class="group relative flex cursor-pointer items-center gap-2">
 				<Button
 					variant="outline"
-					label="Add Operation"
+					:label="__('Add Operation')"
 					class="-ml-[14px] !h-6 !gap-1.5 bg-white !px-2 text-p-xs"
 					@click="togglePopover"
 				>
@@ -130,7 +131,7 @@ watch(
 		<template #body-main="{ togglePopover, isOpen }">
 			<div v-if="isOpen" class="flex flex-col p-1.5">
 				<span class="flex h-6 items-center px-2 text-p-xs text-gray-500">
-					Select an operation
+					{{ __('Select an operation') }}
 				</span>
 				<div class="grid grid-cols-2">
 					<Button

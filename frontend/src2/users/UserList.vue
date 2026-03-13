@@ -19,7 +19,7 @@ const filteredUsers = computed(() => {
 	return userStore.users.filter(
 		(user) =>
 			user.full_name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-			user.email.toLowerCase().includes(searchQuery.value.toLowerCase())
+			user.email.toLowerCase().includes(searchQuery.value.toLowerCase()),
 	)
 })
 
@@ -43,7 +43,7 @@ const listOptions = ref({
 						? __('Invitation Sent')
 						: __('Invitation Expired')
 				}
-				return props.row.enabled ? 'Enabled' : 'Disabled'
+				return props.row.enabled ? __('Enabled') : __('Disabled')
 			},
 			prefix: (props: any) => {
 				let color
@@ -143,7 +143,7 @@ document.title = 'Users | Insights'
 
 <template>
 	<header class="flex h-12 items-center justify-between border-b py-2.5 pl-5 pr-2">
-		<Breadcrumbs :items="[{ label: 'Users', route: '/users' }]" />
+		<Breadcrumbs :items="[{ label: __('Users'), route: '/users' }]" />
 		<div class="flex items-center gap-2">
 			<Button
 				v-if="session.user.is_admin"

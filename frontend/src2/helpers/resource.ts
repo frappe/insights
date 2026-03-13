@@ -1,4 +1,5 @@
 import { useStorage, watchDebounced } from '@vueuse/core'
+import { __ } from '../translation'
 import { isEqual } from 'es-toolkit'
 import { call } from 'frappe-ui'
 import { computed, reactive, ref, UnwrapRef } from 'vue'
@@ -257,8 +258,8 @@ export default function useDocumentResource<T extends Document>(
 
 		discard() {
 			confirmDialog({
-				title: 'Discard Changes',
-				message: 'Are you sure you want to discard changes?',
+				title: __('Discard Changes'),
+				message: __('Are you sure you want to discard changes?'),
 				onSuccess: () => loadDoc(),
 			})
 		},

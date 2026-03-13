@@ -74,7 +74,7 @@ const fields = [
 		placeholder: '**********',
 		required: true,
 	},
-	{ label: 'Use secure connection (SSL)?', name: 'use_ssl', type: 'checkbox' },
+	{ label: __('Use secure connection (SSL)?'), name: 'use_ssl', type: 'checkbox' },
 ]
 
 const sources = useDataSourceStore()
@@ -82,7 +82,7 @@ const sources = useDataSourceStore()
 const connected = ref<boolean | null>(null)
 const connectButton = computed(() => {
 	const _button = {
-		label: 'Connect',
+		label: __('Connect'),
 		disabled: form.value?.hasRequiredFields === false,
 		loading: sources.testing,
 		variant: 'subtle',

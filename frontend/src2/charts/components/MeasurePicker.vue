@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { TextInput } from 'frappe-ui'
+import { __ } from '../../translation'
 import { Check, ChevronLeft, Edit, Plus, Settings, XIcon } from 'lucide-vue-next'
 import { computed, ref, watchEffect } from 'vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
@@ -88,12 +89,12 @@ function updateMeasure(measureExpression: ExpressionMeasure) {
 }
 
 const aggregationOptions: { label: string; value: AggregationType }[] = [
-	{ label: 'Count of...', value: 'count' },
-	{ label: 'Sum of...', value: 'sum' },
-	{ label: 'Average of...', value: 'avg' },
-	{ label: 'Minimum of...', value: 'min' },
-	{ label: 'Maximum of...', value: 'max' },
-	{ label: 'Unique Count of...', value: 'count_distinct' },
+	{ label: __('Count of...'), value: 'count' },
+	{ label: __('Sum of...'), value: 'sum' },
+	{ label: __('Average of...'), value: 'avg' },
+	{ label: __('Minimum of...'), value: 'min' },
+	{ label: __('Maximum of...'), value: 'max' },
+	{ label: __('Unique Count of...'), value: 'count_distinct' },
 ]
 
 const columnOptions = computed(() => {

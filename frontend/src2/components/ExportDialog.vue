@@ -6,28 +6,28 @@ import { __ } from '../translation'
 const show = defineModel<boolean>({ default: false })
 
 const props = defineProps<{
-  downloading?: boolean
-  defaultFilename?: string
+	downloading?: boolean
+	defaultFilename?: string
 }>()
 
 const emit = defineEmits<{
-  (e: 'export', format: 'csv' | 'excel', filename: string): void
-  (e: 'cancel'): void
+	(e: 'export', format: 'csv' | 'excel', filename: string): void
+	(e: 'cancel'): void
 }>()
 
 const format = ref<'csv' | 'excel'>('csv')
 const filename = ref('data')
 
 watch(
-  () => props.defaultFilename,
-  (val) => {
-    if (val) filename.value = val
-  },
-  { immediate: true }
+	() => props.defaultFilename,
+	(val) => {
+		if (val) filename.value = val
+	},
+	{ immediate: true },
 )
 
 function submit() {
-  emit('export', format.value, filename.value)
+	emit('export', format.value, filename.value)
 }
 </script>
 
@@ -71,7 +71,5 @@ function submit() {
       </div>
     </template>
   </Dialog>
-  
+
 </template>
-
-

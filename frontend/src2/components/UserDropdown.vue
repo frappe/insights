@@ -78,10 +78,10 @@
 			v-model="showLoginToFCDialog"
 			:options="{
 				title: __('Login to Frappe Cloud?'),
-				message: 'Are you sure you want to login to your Frappe Cloud dashboard?',
+				message: __('Are you sure you want to login to your Frappe Cloud dashboard?'),
 				actions: [
 					{
-						label: 'Confirm',
+						label: __('Confirm'),
 						variant: 'solid',
 						loading: loggingInToFC,
 						onClick() {
@@ -137,7 +137,7 @@ const userDropdownOptions = ref([
 waitUntil(() => session.initialized).then(() => {
 	if (session.user.is_v2_instance) {
 		userDropdownOptions.value.splice(userDropdownOptions.value.length - 2, 0, {
-			label: 'Switch to Insights v2',
+			label: __('Switch to Insights v2'),
 			icon: h(ToggleRight),
 			onClick: () => (showSwitchToV2Dialog.value = true),
 		})

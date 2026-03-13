@@ -40,7 +40,7 @@ const listOptions = ref({
 			title: __('No Tables Found'),
 			description: __('No tables found for the selected data source.'),
 			button: {
-				label: 'Refresh',
+				label: __('Refresh'),
 				iconLeft: 'refresh-ccw',
 				variant: 'outline',
 				loading: tableStore.updatingDataSourceTables,

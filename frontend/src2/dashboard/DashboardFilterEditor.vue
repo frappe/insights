@@ -152,7 +152,7 @@ function saveEdit() {
 						<div v-if="enabledLinks.includes(link.name)" class="ml-auto flex-shrink-0">
 							<Autocomplete
 								class="min-w-[10rem]"
-								placeholder="Select a column"
+								:placeholder="__('Select a column')"
 								:options="link.columns"
 								:modelValue="filter.links[link.name]"
 								@update:modelValue="filter.links[link.name] = $event.value"

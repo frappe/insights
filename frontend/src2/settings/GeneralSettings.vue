@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { call } from 'frappe-ui'
+import { __ } from '../translation'
 import { ref } from 'vue'
 import { createToast } from '../helpers/toasts'
 import DatePickerControl from '../query/components/DatePickerControl.vue'

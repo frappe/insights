@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Share2 } from 'lucide-vue-next'
+import { __ } from '../translation'
 import { computed, inject, ref } from 'vue'
 import session from '../session'
 import { Workbook, workbookKey } from './workbook'

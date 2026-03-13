@@ -4,6 +4,7 @@ import { computed, inject, ref } from 'vue'
 import ChartIcon from '../charts/components/ChartIcon.vue'
 import { copy } from '../helpers'
 import { WorkbookChart } from '../types/workbook.types'
+import { __ } from '../translation'
 import { Dashboard } from './dashboard'
 import { __ } from '../translation'
 
@@ -25,9 +26,9 @@ const filteredCharts = computed(() => {
 const selectedCharts = ref<WorkbookChart[]>(
 	copy(
 		props.chartOptions.filter((chart) =>
-			dashboard.doc.items.some((item) => item.type === 'chart' && item.chart === chart.name)
-		)
-	)
+			dashboard.doc.items.some((item) => item.type === 'chart' && item.chart === chart.name),
+		),
+	),
 )
 function isSelected(chart: WorkbookChart) {
 	return selectedCharts.value.find((c) => c && c.name === chart.name)
@@ -92,8 +93,8 @@ function confirmSelection() {
 					<Button @click="toggleSelectAll">
 						{{
 							areAllSelected
-								? `Deselect All (${selectedCharts.length})`
-								: `Select All (${selectedCharts.length})`
+								? __(`Deselect All ({0})`, String(selectedCharts.length))
+								: __(`Select All ({0})`, String(selectedCharts.length))
 						}}
 					</Button>
 				</div>
@@ -106,7 +107,10 @@ function confirmSelection() {
 							@click="toggleChart(chart)"
 						>
 							<div class="flex items-center gap-2 py-4">
-								<ChartIcon :chartType="chart.chart_type" class="flex flex-shrink-0"/>
+								<ChartIcon
+									:chartType="chart.chart_type"
+									class="flex flex-shrink-0"
+								/>
 								<span>{{ chart.title || chart.name }}</span>
 							</div>
 							<component

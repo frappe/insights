@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { LayoutPanelTop, Table2, XIcon } from 'lucide-vue-next'
+import { __ } from '../translation'
 import { inject } from 'vue'
 import { useRouter } from 'vue-router'
 import ChartIcon from '../charts/components/ChartIcon.vue'
