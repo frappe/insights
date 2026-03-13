@@ -5,6 +5,7 @@ import { computed, h, inject, ref } from 'vue'
 import { QueryTableArgs } from '../../../types/query.types'
 import { Workbook, workbookKey } from '../../../workbook/workbook'
 import { Query } from '../../query'
+import { __ } from '../../../translation'
 
 const workbook = inject<Workbook>(workbookKey)!
 const currentQuery = inject<Query>('query')!
@@ -28,13 +29,13 @@ const queries = computed(() => {
 
 const listColumns = [
 	{
-		label: 'Title',
+		label: __('Title'),
 		key: 'title',
 		width: 2,
 		prefix: () => h(Table2Icon, { class: 'h-4 w-4 text-gray-600' }),
 	},
 	{
-		label: 'Source',
+		label: __('Source'),
 		key: 'source',
 		width: 1,
 		getLabel: (props: any) => props.row.operations?.[0]?.table?.table_name,
@@ -55,11 +56,11 @@ const listColumns = [
 
 <template>
 	<div class="flex h-full flex-col gap-2 overflow-auto p-8 px-10">
-		<h1 class="text-xl font-semibold">Queries</h1>
+		<h1 class="text-xl font-semibold">{{ __('Queries') }}</h1>
 		<div class="flex justify-between overflow-visible py-1">
 			<div class="flex gap-2">
 				<FormControl
-					placeholder="Search by Title"
+					:placeholder="__('Search by Title')"
 					v-model="querySearchTxt"
 					autocomplete="off"
 				>
@@ -86,7 +87,7 @@ const listColumns = [
 					}
 				},
 				emptyState: {
-					title: 'No Queries Found'
+					title: __('No Queries Found')
 				},
 			}"
 		>

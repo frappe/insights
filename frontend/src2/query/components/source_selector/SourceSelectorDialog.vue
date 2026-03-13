@@ -9,6 +9,7 @@ import { Workbook, workbookKey } from '../../../workbook/workbook'
 import { query_table, table } from '../../helpers'
 import DataSourceTableList from './DataSourceTableList.vue'
 import WorkbookQueryList from './WorkbookQueryList.vue'
+import { __ } from '../../../translation'
 
 const emit = defineEmits({ select: (source: SourceArgs) => true })
 const props = defineProps<{ source?: SourceArgs }>()
@@ -27,7 +28,7 @@ const selectedTable = ref<TableArgs>(
 const dataSourceStore = useDataSourceStore()
 const tabGroups = ref<TabGroup[]>([
 	{
-		groupLabel: 'Data Sources',
+		groupLabel: __('Data Sources'),
 		tabs: [],
 	},
 ])
@@ -82,7 +83,7 @@ const selectedQuery = ref<QueryTableArgs>(
 const workbook = inject<Workbook>(workbookKey)!
 if (workbook.doc.queries.length > 1) {
 	tabGroups.value.push({
-		groupLabel: 'Workbook',
+		groupLabel: __('Workbook'),
 		tabs: [
 			{
 				label: 'Queries',
@@ -128,7 +129,7 @@ function onConfirm() {
 				<div class="absolute bottom-3 right-3 flex gap-2">
 					<Button @click="showDialog = false"> Close </Button>
 					<Button variant="solid" :disabled="confirmDisabled" @click="onConfirm">
-						Confirm
+						{{ __('Confirm') }}
 					</Button>
 				</div>
 			</div>
