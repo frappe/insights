@@ -6,6 +6,7 @@ import useTableStore from '../../../data_source/tables'
 import { wheneverChanges } from '../../../helpers'
 import { TableArgs } from '../../../types/query.types'
 import useDataSourceStore from '../../../data_source/data_source'
+import { __ } from '../../../translation'
 
 const props = defineProps<{ data_source: string }>()
 const dataSourceStore = useDataSourceStore()
@@ -24,13 +25,13 @@ wheneverChanges(
 
 const listColumns = [
 	{
-		label: 'Table',
+		label: __('Table'),
 		key: 'table_name',
 		width: 2,
 		prefix: () => h(Table2Icon, { class: 'h-4 w-4 text-gray-600' }),
 	},
 	{
-		label: 'Data Source',
+		label: __('Data Source'),
 		key: 'data_source',
 		width: 1,
 	},
@@ -48,14 +49,14 @@ const listColumns = [
 const emptyState = computed(() => {
 	if (tableStore.updatingDataSourceTables) {
 		return {
-			title: 'Refreshing Tables',
-			description: 'Please wait while we refresh the tables from your data source',
+			title: __('Refreshing Tables'),
+			description: __('Please wait while we refresh the tables from your data source'),
 		}
 	}
 
 	return {
-		title: 'No Tables Found',
-		description: 'Sync tables from your data source to get started',
+		title: __('No Tables Found'),
+		description: __('Sync tables from your data source to get started'),
 		button: {
 			variant: 'outline',
 			label: 'Refresh Tables',
@@ -71,7 +72,7 @@ const emptyState = computed(() => {
 		<div class="flex justify-between overflow-visible py-1">
 			<div class="flex gap-2">
 				<FormControl
-					placeholder="Search by Title"
+					:placeholder="__('Search by Title')"
 					v-model="tableSearchQuery"
 					autocomplete="off"
 				>
@@ -83,7 +84,7 @@ const emptyState = computed(() => {
 			<div>
 				<Button
 					variant="outline"
-					label="Refresh Tables"
+					:label="__('Refresh Tables')"
 					:loading="tableStore.updatingDataSourceTables"
 					@click="tableStore.updateDataSourceTables(props.data_source)"
 				>
