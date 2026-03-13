@@ -2,6 +2,7 @@
 import { Plus } from 'lucide-vue-next'
 import { computed } from 'vue'
 import type { QueryVariable } from '../types/workbook.types'
+import { __ } from '../translation'
 
 interface Props {
 	show: boolean
@@ -62,9 +63,7 @@ function saveVariables() {
 				</div>
 
 				<p class="mb-5 text-p-base text-gray-600">
-					Variables are used to store sensitive information such as API keys and
-					credentials. They can be referenced and combined in your script just like any
-					other variable. For eg.
+					{{ __('Variables are used to store sensitive information such as API keys and credentials. They can be referenced and combined in your script just like any other variable. For eg.') }}
 					<br />
 					<code class="rounded bg-gray-100 px-1 my-1 py-0.5 text-p-sm text-gray-800">
 						formatted_api_key = f'token {api_key}:{api_secret}'
@@ -113,7 +112,7 @@ function saveVariables() {
 						</div>
 
 						<div v-if="variables.length === 0" class="flex justify-center py-8">
-							<span class="text-p-sm text-gray-400">No variables added</span>
+							<span class="text-p-sm text-gray-400">{{ __('No variables added') }}</span>
 						</div>
 					</div>
 
@@ -122,9 +121,9 @@ function saveVariables() {
 							<template #prefix>
 								<Plus class="h-4 w-4" />
 							</template>
-							Add Variable
+							{{ __('Add Variable') }}
 						</Button>
-						<Button variant="solid" @click="saveVariables"> Save Variables </Button>
+						<Button variant="solid" @click="saveVariables"> {{ __('Save Variables') }} </Button>
 					</div>
 				</div>
 			</div>

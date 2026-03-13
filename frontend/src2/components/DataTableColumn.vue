@@ -3,6 +3,8 @@ import { ArrowDownWideNarrow, ArrowUpDown, ArrowUpNarrowWide, XIcon } from 'luci
 import { h, ref, watchEffect } from 'vue'
 import { SortDirection } from '../types/query.types'
 import ContentEditable from './ContentEditable.vue'
+import { __ } from '../translation'
+
 
 const props = defineProps<{
 	label: string
@@ -16,17 +18,17 @@ watchEffect(() => (_label.value = props.label))
 
 const sortOptions = [
 	{
-		label: 'Sort Ascending',
+		label: __('Sort Ascending'),
 		icon: h(ArrowUpNarrowWide, { class: 'h-4 w-4 text-gray-700', strokeWidth: 1.5 }),
 		onClick: () => props.onSortChange?.('asc'),
 	},
 	{
-		label: 'Sort Descending',
+		label: __('Sort Descending'),
 		icon: h(ArrowDownWideNarrow, { class: 'h-4 w-4 text-gray-700', strokeWidth: 1.5 }),
 		onClick: () => props.onSortChange?.('desc'),
 	},
 	{
-		label: 'Remove Sort',
+		label: __('Remove Sort'),
 		icon: h(XIcon, { class: 'h-4 w-4 text-gray-700', strokeWidth: 1.5 }),
 		onClick: () => props.onSortChange?.(''),
 	},
@@ -38,7 +40,7 @@ const sortOptions = [
 		<slot name="prefix" />
 		<ContentEditable
 			v-model="_label"
-			placeholder="Column"
+			:placeholder="__('Column')"
 			class="flex h-6 items-center whitespace-nowrap rounded-sm px-0.5 text-sm font-medium first:ml-2 focus:ring-1 focus:ring-gray-700 focus:ring-offset-1"
 			:disabled="!props.onRename"
 			@returned="props.onRename?.(_label)"
