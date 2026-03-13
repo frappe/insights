@@ -14,7 +14,7 @@ settings.load()
 
 		<SettingItem
 			:label="__('Enable')"
-			:description="__('Enable the data store to store database tables into a duckdb database for faster & cross-database queries.')'"
+			:description="__('Enable the data store to store database tables into a duckdb database for faster & cross-database queries.')"
 		>
 			<Toggle v-model="settings.doc.enable_data_store" />
 		</SettingItem>
