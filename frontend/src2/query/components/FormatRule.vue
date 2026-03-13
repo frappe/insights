@@ -7,6 +7,7 @@ import RadioGroupItem from '../../components/ui/RadioGroupItem.vue'
 import { flattenOptions } from '../../helpers'
 import { ColumnOption, GroupedColumnOption } from '../../types/query.types'
 import { column } from '../helpers'
+import { __ } from '../../translation'
 import {
 	cell_rules,
 	color_scale,
@@ -153,61 +154,61 @@ const availableColumns = computed(() => {
 })
 
 const highlightColorOptions = [
-	{ label: 'Red', value: 'red' },
-	{ label: 'Green', value: 'green' },
-	{ label: 'Amber', value: 'amber' },
+	{ label: __('Red'), value: 'red' },
+	{ label: __('Green'), value: 'green' },
+	{ label: __('Amber'), value: 'amber' },
 ]
 
 const operatorOptions = [
-	{ label: 'equals', value: '=' as ConditionalOperator },
-	{ label: 'not equals', value: '!=' as ConditionalOperator },
-	{ label: 'greater than', value: '>' as ConditionalOperator },
-	{ label: 'greater than or equals', value: '>=' as ConditionalOperator },
-	{ label: 'less than', value: '<' as ConditionalOperator },
-	{ label: 'less than or equals', value: '<=' as ConditionalOperator },
+	{ label: __('equals'), value: '=' as ConditionalOperator },
+	{ label: __('not equals'), value: '!=' as ConditionalOperator },
+	{ label: __('greater than'), value: '>' as ConditionalOperator },
+	{ label: __('greater than or equals'), value: '>=' as ConditionalOperator },
+	{ label: __('less than'), value: '<' as ConditionalOperator },
+	{ label: __('less than or equals'), value: '<=' as ConditionalOperator },
 ]
 
 const textOperatorOptions = [
-	{ label: 'contains', value: 'contains' as TextOperator },
-	{ label: 'does not contain', value: 'not_contains' as TextOperator },
-	{ label: 'starts with', value: 'starts_with' as TextOperator },
-	{ label: 'ends with', value: 'ends_with' as TextOperator },
-	{ label: 'equals', value: 'equals_text' as TextOperator },
-	{ label: 'does not equal', value: 'not_equals_text' as TextOperator },
-	{ label: 'is empty', value: 'is_empty' as TextOperator },
-	{ label: 'is not empty', value: 'is_not_empty' as TextOperator },
+	{ label: __('contains'), value: 'contains' as TextOperator },
+	{ label: __('does not contain'), value: 'not_contains' as TextOperator },
+	{ label: __('starts with'), value: 'starts_with' as TextOperator },
+	{ label: __('ends with'), value: 'ends_with' as TextOperator },
+	{ label: __('equals'), value: 'equals_text' as TextOperator },
+	{ label: __('does not equal'), value: 'not_equals_text' as TextOperator },
+	{ label: __('is empty'), value: 'is_empty' as TextOperator },
+	{ label: __('is not empty'), value: 'is_not_empty' as TextOperator },
 ]
 
 const dateOperatorOptions = [
-	{ label: 'is today', value: 'is_today' as DateOperator },
-	{ label: 'is yesterday', value: 'is_yesterday' as DateOperator },
-	{ label: 'is tomorrow', value: 'is_tomorrow' as DateOperator },
-	{ label: 'is this week', value: 'is_this_week' as DateOperator },
-	{ label: 'is last week', value: 'is_last_week' as DateOperator },
-	{ label: 'is this month', value: 'is_this_month' as DateOperator },
-	{ label: 'is last month', value: 'is_last_month' as DateOperator },
-	{ label: 'is this year', value: 'is_this_year' as DateOperator },
-	{ label: 'before date', value: 'date_before' as DateOperator },
-	{ label: 'after date', value: 'date_after' as DateOperator },
-	{ label: 'between dates', value: 'date_between' as DateOperator },
+	{ label: __('is today'), value: 'is_today' as DateOperator },
+	{ label: __('is yesterday'), value: 'is_yesterday' as DateOperator },
+	{ label: __('is tomorrow'), value: 'is_tomorrow' as DateOperator },
+	{ label: __('is this week'), value: 'is_this_week' as DateOperator },
+	{ label: __('is last week'), value: 'is_last_week' as DateOperator },
+	{ label: __('is this month'), value: 'is_this_month' as DateOperator },
+	{ label: __('is last month'), value: 'is_last_month' as DateOperator },
+	{ label: __('is this year'), value: 'is_this_year' as DateOperator },
+	{ label: __('before date'), value: 'date_before' as DateOperator },
+	{ label: __('after date'), value: 'date_after' as DateOperator },
+	{ label: __('between dates'), value: 'date_between' as DateOperator },
 ]
 
 const rankOperatorOptions = [
-	{ label: 'Top N values', value: 'top_n' as RankOperator },
-	{ label: 'Bottom N values', value: 'bottom_n' as RankOperator },
-	{ label: 'Top N percent', value: 'top_percent' as RankOperator },
-	{ label: 'Bottom N percent', value: 'bottom_percent' as RankOperator },
-	{ label: 'Above average', value: 'above_average' as RankOperator },
-	{ label: 'Below average', value: 'below_average' as RankOperator },
+	{ label: __('Top N values'), value: 'top_n' as RankOperator },
+	{ label: __('Bottom N values'), value: 'bottom_n' as RankOperator },
+	{ label: __('Top N percent'), value: 'top_percent' as RankOperator },
+	{ label: __('Bottom N percent'), value: 'bottom_percent' as RankOperator },
+	{ label: __('Above average'), value: 'above_average' as RankOperator },
+	{ label: __('Below average'), value: 'below_average' as RankOperator },
 ]
 
 const colorScaleOptions = [
 	{
-		label: 'Red-Green',
+		label: __('Red-Green'),
 		value: 'Red-Green',
 	},
 	{
-		label: 'Green-Red',
+		label: __('Green-Red'),
 		value: 'Green-Red',
 	},
 ]
@@ -218,17 +219,17 @@ const ruleTypeOptions = computed(() => {
 
 	if (['Decimal', 'Number', 'Integer'].includes(columnType.value || '')) {
 		options.push(
-			{ label: 'Value Rules', value: 'cell_rules' },
-			{ label: 'Ranking Rules', value: 'rank_rules' },
+			{ label: __('Value Rules'), value: 'cell_rules' },
+			{ label: __('Ranking Rules'), value: 'rank_rules' },
 		)
 	}
 
 	if (['String', 'Text'].includes(columnType.value || '')) {
-		options.push({ label: 'Text Rules', value: 'text_rules' })
+		options.push({ label: __('Text Rules'), value: 'text_rules' })
 	}
 
 	if (['Date', 'Datetime', 'Time'].includes(columnType.value || '')) {
-		options.push({ label: 'Date Rules', value: 'date_rules' })
+		options.push({ label: __('Date Rules'), value: 'date_rules' })
 	}
 
 	return options
@@ -317,7 +318,7 @@ const isInvalidColumn = computed(() => {
 	<div class="flex flex-col gap-1.5 relative">
 		<Autocomplete
 			:label="'Column'"
-			placeholder="Column"
+			:placeholder="__('Column')"
 			:modelValue="format.column?.column_name"
 			:options="availableColumns"
 			@update:modelValue="onColumnChange(typeof $event === 'string' ? $event : $event?.value)"
@@ -358,6 +359,37 @@ const isInvalidColumn = computed(() => {
 					</RadioGroupItem>
 				</RadioGroup>
 			</div>
+<<<<<<< HEAD
+=======
+
+			<div>
+				<div class="flex items-center gap-2 mb-3">
+					<h3 class="text-sm text-gray-600">Scale Scope</h3>
+				</div>
+				<RadioGroup
+					name="scale-scope"
+					:modelValue="(format as color_scale).scaleScope || 'global'"
+					@update:modelValue="onScaleScopeChange($event)"
+				>
+					<RadioGroupItem value="global" class="[&_label]:w-full">
+						<div class="flex flex-col gap-0.5">
+							<span class="text-sm font-medium">Global</span>
+							<span class="text-xs text-gray-500"
+								>Compare across all formatted columns</span
+							>
+						</div>
+					</RadioGroupItem>
+					<RadioGroupItem value="local" class="[&_label]:w-full">
+						<div class="flex flex-col gap-0.5">
+							<span class="text-sm font-medium">Local</span>
+							<span class="text-xs text-gray-500"
+								>Compare within each column independently</span
+							>
+						</div>
+					</RadioGroupItem>
+				</RadioGroup>
+			</div>
+>>>>>>> 3144968c (fix: translate strings in src2 folder (#927))
 		</div>
 
 		<div v-else class="flex flex-col gap-3">
@@ -365,7 +397,7 @@ const isInvalidColumn = computed(() => {
 				<FormControl
 					type="select"
 					:label="'Rule Type'"
-					placeholder="Rule Type"
+					:placeholder="__('Rule Type')"
 					:modelValue="format.mode"
 					:options="ruleTypeOptions"
 					@update:modelValue="onRuleTypeChange($event)"
@@ -376,7 +408,7 @@ const isInvalidColumn = computed(() => {
 				<FormControl
 					type="select"
 					:label="'Condition'"
-					placeholder="Operator"
+					:placeholder="__('Operator')"
 					:modelValue="(format as cell_rules).operator"
 					:options="operatorOptions"
 					@update:modelValue="onOperatorChange($event)"
@@ -385,7 +417,7 @@ const isInvalidColumn = computed(() => {
 					type="number"
 					:label="'Compare to'"
 					:modelValue="(format as cell_rules).value"
-					placeholder="Value"
+					:placeholder="__('Value')"
 					@update:modelValue="format.value = Number($event)"
 				/>
 			</template>
@@ -393,7 +425,7 @@ const isInvalidColumn = computed(() => {
 			<template v-if="isTextRule">
 				<FormControl
 					type="select"
-					label="Condition"
+					:label="__('Condition')"
 					:modelValue="(format as text_rules).operator"
 					:options="textOperatorOptions"
 					@update:modelValue="onOperatorChange($event)"
@@ -403,7 +435,7 @@ const isInvalidColumn = computed(() => {
 						type="text"
 						:label="'Text Value'"
 						:modelValue="(format as text_rules).value"
-						placeholder="Enter text"
+						:placeholder="__('Enter text')"
 						@update:modelValue="format.value = $event"
 					/>
 				</template>
@@ -412,7 +444,7 @@ const isInvalidColumn = computed(() => {
 			<template v-if="isDateRule">
 				<FormControl
 					type="select"
-					label="Condition"
+					:label="__('Condition')"
 					:modelValue="(format as date_rules).operator"
 					:options="dateOperatorOptions"
 					@update:modelValue="onOperatorChange($event)"
@@ -438,7 +470,7 @@ const isInvalidColumn = computed(() => {
 			<template v-if="isRankRule">
 				<FormControl
 					type="select"
-					placeholder="Ranking Condition"
+					:placeholder="__('Ranking Condition')"
 					:label="'Rule'"
 					:modelValue="(format as rank_rules).operator"
 					:options="rankOperatorOptions"
@@ -462,7 +494,7 @@ const isInvalidColumn = computed(() => {
 			<FormControl
 				type="select"
 				:label="'Color'"
-				placeholder="Color"
+				:placeholder="__('Color')"
 				:modelValue="currentColor"
 				:options="highlightColorOptions"
 				@update:modelValue="onHighlightColorChange($event)"

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { __ } from '../translation'
 import Switch from '../components/Switch.vue'
 import UserSelector from '../components/UserSelector.vue'
 import { copy } from '../helpers'
@@ -21,7 +22,7 @@ watch(
 			userStore.getUsers()
 		}
 	},
-	{ immediate: true }
+	{ immediate: true },
 )
 
 const teamModified = computed(() => {
@@ -47,7 +48,7 @@ function removeMember(userEmail: string) {
 		return
 	}
 	currentTeam.value.team_members = currentTeam.value.team_members.filter(
-		(u) => u.user !== userEmail
+		(u) => u.user !== userEmail,
 	)
 }
 
@@ -59,10 +60,10 @@ const activeTab = ref('Members')
 		v-if="currentTeam"
 		v-model="show"
 		:options="{
-			title: 'Manage Team',
+			title: __('Manage Team'),
 			actions: [
 				{
-					label: 'Done',
+					label: __('Done'),
 					variant: 'solid',
 					disabled: !teamModified || teamStore.updatingTeam,
 					loading: teamStore.updatingTeam,
@@ -115,10 +116,7 @@ const activeTab = ref('Members')
 					</div>
 
 					<div class="flex flex-1 flex-col gap-1 overflow-y-auto">
-						<div
-							v-if="userStore.loading"
-							class="flex items-center justify-center py-8"
-						>
+						<div v-if="userStore.loading" class="flex items-center justify-center py-8">
 							<LoadingIndicator class="h-6 w-6 text-gray-600" />
 						</div>
 						<div

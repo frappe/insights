@@ -116,7 +116,7 @@ const submitButton = computed(() => {
 </script>
 
 <template>
-	<Dialog v-model="show" :options="{ title: 'Connect to ClickHouse' }">
+	<Dialog v-model="show" :options="{ title: __('Connect to ClickHouse') }">
 		<template #body-content>
 			<Form
 				ref="form"

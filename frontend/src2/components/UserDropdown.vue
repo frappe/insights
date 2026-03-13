@@ -73,11 +73,16 @@
 		<Dialog
 			v-model="showLoginToFCDialog"
 			:options="{
+<<<<<<< HEAD
 				title: 'Login to Frappe Cloud?',
 				message: 'Are you sure you want to login to your Frappe Cloud dashboard?',
+=======
+				title: __('Login to Frappe Cloud?'),
+				message: __('Are you sure you want to login to your Frappe Cloud dashboard?'),
+>>>>>>> 3144968c (fix: translate strings in src2 folder (#927))
 				actions: [
 					{
-						label: 'Confirm',
+						label: __('Confirm'),
 						variant: 'solid',
 						loading: loggingInToFC,
 						onClick() {
@@ -121,8 +126,8 @@ const userDropdownOptions = ref([
 		icon: h(LogOut),
 		onClick: () =>
 			confirmDialog({
-				title: 'Log out',
-				message: 'Are you sure you want to log out?',
+				title: __('Log out'),
+				message: __('Are you sure you want to log out?'),
 				onSuccess: session.logout,
 			}),
 	},
@@ -131,7 +136,7 @@ const userDropdownOptions = ref([
 waitUntil(() => session.initialized).then(() => {
 	if (session.user.is_v2_instance) {
 		userDropdownOptions.value.splice(userDropdownOptions.value.length - 2, 0, {
-			label: 'Switch to Insights v2',
+			label: __('Switch to Insights v2'),
 			icon: h(ToggleRight),
 			onClick: () => (showSwitchToV2Dialog.value = true),
 		})
@@ -139,7 +144,7 @@ waitUntil(() => session.initialized).then(() => {
 
 	if (session.user.is_admin) {
 		userDropdownOptions.value.splice(userDropdownOptions.value.length - 2, 0, {
-			label: 'Switch to Desk',
+			label: __('Switch to Desk'),
 			icon: h(ToggleRight),
 			onClick: () => window.open('/app', '_blank'),
 		})

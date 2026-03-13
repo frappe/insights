@@ -4,6 +4,7 @@ import { computed, reactive } from 'vue'
 import { copy, flattenOptions } from '../../helpers'
 import { ColumnOption, FilterGroupArgs, GroupedColumnOption } from '../../types/query.types'
 import { column, expression } from '../helpers'
+import { __ } from '../../translation'
 import ExpressionEditor from './ExpressionEditor.vue'
 import FilterRule from './FilterRule.vue'
 import { getFilterType, isFilterExpressionValid, isFilterValid } from './filter_utils'
@@ -109,20 +110,20 @@ const areFiltersUpdated = computed(() => {
 				:options="[
 					!props.disableExpressions
 						? {
-								label: 'Convert to Expression',
+								label: __('Convert to Expression'),
 								onClick: () => {
 									filterGroup.filters[i] = { expression: expression('') }
 								},
 						  }
 						: null,
 					{
-						label: 'Duplicate',
+						label: __('Duplicate'),
 						onClick: () => {
 							filterGroup.filters.splice(i + 1, 0, copy(filterGroup.filters[i]))
 						},
 					},
 					{
-						label: 'Remove',
+						label: __('Remove'),
 						onClick: () => filterGroup.filters.splice(i, 1),
 					},
 				]"
@@ -130,18 +131,18 @@ const areFiltersUpdated = computed(() => {
 		</div>
 	</div>
 	<div v-else class="mb-3 flex h-7 items-center px-0 text-sm text-gray-600">
-		Empty - Click 'Add Filter' to add a filter
+		{{ __("Empty - Click 'Add Filter' to add a filter") }}
 	</div>
 	<div class="mt-2 flex items-center justify-between gap-2">
-		<Button @click="addFilter" label="Add Filter">
+		<Button @click="addFilter" :label="__('Add Filter')">
 			<template #prefix>
 				<PlusIcon class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 			</template>
 		</Button>
 		<div class="flex items-center gap-2">
-			<Button label="Clear" variant="outline" @click="filterGroup.filters = []" />
+			<Button :label="__('Clear')" variant="outline" @click="filterGroup.filters = []" />
 			<Button
-				label="Apply Filters"
+				:label="__('Apply Filters')"
 				variant="solid"
 				:disabled="!areAllFiltersValid || !areFiltersUpdated"
 				@click="emit('select', filterGroup)"
