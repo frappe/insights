@@ -1233,8 +1233,13 @@ def fiscal_year_start(column: ir.DateValue):
     - fiscal_year_start(order_date)
     """
 
-    fiscal_year_start_month = 4
-    fiscal_year_start_day = 1
+    fy_start = frappe.db.get_single_value("Insights Settings", "fiscal_year_start")
+    if not fy_start:
+        from datetime import date
+
+        fy_start = date(date.today().year - 1, 4, 1)
+    fiscal_year_start_month = fy_start.month
+    fiscal_year_start_day = fy_start.day
 
     year = column.year()
     month = column.month()
