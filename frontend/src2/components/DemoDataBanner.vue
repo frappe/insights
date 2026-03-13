@@ -5,6 +5,7 @@ import { Sparkles, X } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { createToast } from '../helpers/toasts'
 import session from '../session'
+import { __ } from '../translation'
 
 const dismissed = useStorage('insights:demo-banner-dismissed', false)
 const loading = ref(false)
@@ -22,14 +23,14 @@ async function setupDemoData() {
 		await call('insights.setup.setup_wizard.setup_demo_data')
 		session.user.has_demo_data = true
 		createToast({
-			title: 'Demo Data Ready',
-			message: 'Sample data with workbook has been set up successfully',
+			title: __('Demo Data Ready'),
+			message: __('Sample data with workbook has been set up successfully'),
 			variant: 'success',
 		})
 	} catch {
 		createToast({
-			title: 'Setup Failed',
-			message: 'Failed to setup demo data',
+			title: __('Setup Failed'),
+			message: __('Failed to setup demo data'),
 			variant: 'error',
 		})
 	} finally {
@@ -46,9 +47,9 @@ function dismiss() {
 	<div v-if="show" class="flex flex-col gap-3 rounded-lg bg-white px-3 py-2.5 text-sm shadow-sm">
 		<div class="flex items-start justify-between">
 			<div class="flex flex-col gap-1">
-				<div class="font-medium text-p-base text-gray-900">Try demo data</div>
+				<div class="font-medium text-p-base text-gray-900">{{ __('Try demo data') }}</div>
 				<div class="text-p-xs text-gray-600">
-					Explore with sample data and a pre-built workbook
+					{{ __('Explore with sample data and a pre-built workbook') }}
 				</div>
 			</div>
 			<button
