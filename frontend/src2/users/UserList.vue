@@ -6,6 +6,7 @@ import { computed, ref, watch } from 'vue'
 import IndicatorIcon from '../components/Icons/IndicatorIcon.vue'
 import session from '../session'
 import useUserStore, { User } from './users'
+import { __ } from '../translation'
 
 const userStore = useUserStore()
 userStore.getUsers()
@@ -25,7 +26,7 @@ const filteredUsers = computed(() => {
 const listOptions = ref({
 	columns: [
 		{
-			label: 'User',
+			label: __('User'),
 			key: 'full_name',
 			prefix: (props: any) => {
 				const user = props.row as User
@@ -33,14 +34,14 @@ const listOptions = ref({
 			},
 		},
 		{
-			label: 'Status',
+			label: __('Status'),
 			key: 'enabled',
 			getLabel: (props: any) => {
 				const user = props.row as User
 				if (user.invitation_status) {
 					return user.invitation_status === 'Pending'
-						? 'Invitation Sent'
-						: 'Invitation Expired'
+						? __('Invitation Sent')
+						: __('Invitation Expired')
 				}
 				return props.row.enabled ? 'Enabled' : 'Disabled'
 			},
@@ -57,11 +58,11 @@ const listOptions = ref({
 			},
 		},
 		{
-			label: 'Email',
+			label: __('Email'),
 			key: 'email',
 		},
 		{
-			label: 'Last Active',
+			label: __('Last Active'),
 			key: 'last_active',
 			getLabel: (props: any) => {
 				if (!props.row.last_active) {
@@ -76,11 +77,11 @@ const listOptions = ref({
 	options: {
 		showTooltip: false,
 		emptyState: {
-			title: 'No users.',
-			description: 'No users to display.',
+			title: __('No users.'),
+			description: __('No users to display.'),
 			button: session.user.is_admin
 				? {
-						label: 'Invite User',
+						label: __('Invite User'),
 						variant: 'solid',
 						onClick: () => (showInviteUserDialog.value = true),
 				  }
@@ -146,7 +147,7 @@ document.title = 'Users | Insights'
 		<div class="flex items-center gap-2">
 			<Button
 				v-if="session.user.is_admin"
-				label="Invite User"
+				:label="__('Invite User')"
 				variant="solid"
 				@click="showInviteUserDialog = true"
 			>
@@ -171,10 +172,10 @@ document.title = 'Users | Insights'
 	<Dialog
 		v-model="showInviteUserDialog"
 		:options="{
-			title: 'Invite User',
+			title: __('Invite User'),
 			actions: [
 				{
-					label: 'Send Invitation',
+					label: __('Send Invitation'),
 					variant: 'solid',
 					disabled: !areAllEmailsValid,
 					loading: userStore.sendingInvitation,
@@ -205,7 +206,7 @@ document.title = 'Users | Insights'
 						<input
 							type="text"
 							autocomplete="off"
-							placeholder="Enter email address"
+							:placeholder="__('Enter email address')"
 							v-model="emailsTxt"
 							@keydown.enter.capture.stop="extractEmails(`${emailsTxt} `)"
 							class="h-7 w-full rounded border-none bg-gray-100 py-1.5 pl-2 pr-2 text-base text-gray-800 placeholder-gray-500 transition-colors focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
