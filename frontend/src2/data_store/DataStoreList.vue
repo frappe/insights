@@ -26,9 +26,7 @@ const filteredTables = computed(() => {
 	if (!query) return allTables
 
 	return allTables.filter((table: DataStoreTable) => {
-		return (
-			table.table_name.toLowerCase().includes(query)
-		)
+		return table.table_name.toLowerCase().includes(query)
 	})
 })
 
@@ -70,7 +68,6 @@ const listOptions = computed(() => ({
 		},
 	},
 }))
-
 </script>
 
 <template>

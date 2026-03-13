@@ -41,7 +41,7 @@ const confirmDisabled = computed(
 	() =>
 		selectedColumns.value.length === 0 ||
 		selectedColumns.value.map((c) => c.name).join() ===
-			query.result.columns.map((c) => c.name).join()
+			query.result.columns.map((c) => c.name).join(),
 )
 function confirmSelection() {
 	emit('select', {

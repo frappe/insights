@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Breadcrumbs, call } from 'frappe-ui'
 import { RefreshCcw } from 'lucide-vue-next'
-import {computed, provide, ref } from 'vue'
+import { computed, provide, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { downloadImage, waitUntil, wheneverChanges } from '../helpers'
 import useDashboard from './dashboard'
@@ -60,13 +60,14 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 						icon: 'download',
 						onClick: downloadDashboardImage,
 					},
-					 canOpenWorkbook ? {
-						label: __('Open Workbook'),
-						variant: 'outline',
-						icon: 'external-link',
-						onClick: openWorkbook,
-					} : null
-					,
+					canOpenWorkbook
+						? {
+								label: __('Open Workbook'),
+								variant: 'outline',
+								icon: 'external-link',
+								onClick: openWorkbook,
+						  }
+						: null,
 				]"
 			/>
 		</div>

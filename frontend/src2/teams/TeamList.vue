@@ -20,7 +20,7 @@ const filteredTeams = computed(() => {
 		return teamStore.teams
 	}
 	return teamStore.teams.filter((team) =>
-		team.team_name.toLowerCase().includes(searchQuery.value.toLowerCase())
+		team.team_name.toLowerCase().includes(searchQuery.value.toLowerCase()),
 	)
 })
 

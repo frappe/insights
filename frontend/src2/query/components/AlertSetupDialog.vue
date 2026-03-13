@@ -38,7 +38,7 @@ wheneverChanges(
 		alert.doc.custom_condition = 0
 		alert.doc.condition = `q['${filterCondition.left}'] ${filterCondition.operator} ${filterCondition.right}`
 	},
-	{ deep: true }
+	{ deep: true },
 )
 
 const isValidAlert = computed(() => {
@@ -68,7 +68,9 @@ function updateAlert() {
 	return alert.save().then(() => {
 		createToast({
 			title: isNew ? __('Alert Created') : __('Alert Updated'),
-			message: isNew ? __(`Alert "{0}" has been created.`, alert.doc.title) : __(`Alert "{0}" has been updated.`, alert.doc.title),
+			message: isNew
+				? __(`Alert "{0}" has been created.`, alert.doc.title)
+				: __(`Alert "{0}" has been updated.`, alert.doc.title),
 			variant: 'success',
 		})
 		show.value = false
@@ -191,7 +193,9 @@ function toggleAlert() {
 				</div>
 
 				<div class="flex flex-col">
-					<label class="mb-1.5 block text-xs text-ink-gray-5">{{ __('Send alert when') }}</label>
+					<label class="mb-1.5 block text-xs text-ink-gray-5">{{
+						__('Send alert when')
+					}}</label>
 					<div class="flex gap-4" v-if="!alert.doc.custom_condition">
 						<FormControl
 							type="select"
@@ -243,7 +247,11 @@ Thanks,
 					/>
 
 					<div class="mt-2 text-p-sm text-gray-600">
-						{{ __('You can use markdown to format the message. Use double asterisks (**) for bold text. You can use the following fields in the message:') }}
+						{{
+							__(
+								'You can use markdown to format the message. Use double asterisks (**) for bold text. You can use the following fields in the message:',
+							)
+						}}
 
 						<div
 							v-html="

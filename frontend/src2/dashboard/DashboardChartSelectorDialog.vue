@@ -25,9 +25,9 @@ const filteredCharts = computed(() => {
 const selectedCharts = ref<WorkbookChart[]>(
 	copy(
 		props.chartOptions.filter((chart) =>
-			dashboard.doc.items.some((item) => item.type === 'chart' && item.chart === chart.name)
-		)
-	)
+			dashboard.doc.items.some((item) => item.type === 'chart' && item.chart === chart.name),
+		),
+	),
 )
 function isSelected(chart: WorkbookChart) {
 	return selectedCharts.value.find((c) => c && c.name === chart.name)
@@ -106,7 +106,10 @@ function confirmSelection() {
 							@click="toggleChart(chart)"
 						>
 							<div class="flex items-center gap-2 py-4">
-								<ChartIcon :chartType="chart.chart_type" class="flex flex-shrink-0"/>
+								<ChartIcon
+									:chartType="chart.chart_type"
+									class="flex flex-shrink-0"
+								/>
 								<span>{{ chart.title || chart.name }}</span>
 							</div>
 							<component

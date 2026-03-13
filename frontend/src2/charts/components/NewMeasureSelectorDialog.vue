@@ -17,7 +17,7 @@ const emit = defineEmits({ select: (measure: ExpressionMeasure) => true })
 const showDialog = defineModel()
 
 const columnTypes = COLUMN_TYPES.map((t) => t.value).filter((t) =>
-	FIELDTYPES.NUMBER.includes(t)
+	FIELDTYPES.NUMBER.includes(t),
 ) as MeasureDataType[]
 
 const newMeasure = ref(
@@ -31,7 +31,7 @@ const newMeasure = ref(
 				name: 'new_measure',
 				type: columnTypes[0],
 				expression: '',
-		  }
+		  },
 )
 
 const isValid = computed(() => {
@@ -51,7 +51,7 @@ async function confirmCalculation() {
 			{
 				expression: newMeasure.value.expression,
 				column_options: JSON.stringify(props.columnOptions),
-			}
+			},
 		)
 
 		if (!res || !res.is_valid) {
@@ -123,7 +123,7 @@ cachedCall('insights.insights.doctype.insights_data_source_v3.ibis.utils.get_fun
 			type: 'function' as const,
 		}))
 		functionList.value = [...functionItems, ...columnItems]
-	}
+	},
 )
 
 function selectFunction(item: FunctionListItem) {
@@ -131,7 +131,7 @@ function selectFunction(item: FunctionListItem) {
 
 	cachedCall(
 		'insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_description',
-		{ funcName: item.name }
+		{ funcName: item.name },
 	)
 		.then((res: any) => {
 			if (res) {
@@ -185,7 +185,7 @@ function updateDocumentationFromEditor(currentFunction: any) {
 					</div>
 					<ExpressionEditor
 						v-model="newMeasure.expression"
-						class= "column-expression"
+						class="column-expression"
 						:column-options="props.columnOptions"
 						@function-signature-update="updateDocumentationFromEditor"
 					/>
@@ -268,7 +268,7 @@ div[data-dismissable-layer] {
 	border-radius: 0.75rem;
 }
 .column-expression {
-	.cm-column-highlight{
+	.cm-column-highlight {
 		background-color: #ededed !important;
 		border-radius: 2px !important;
 		padding: 1px 2px !important;
@@ -280,5 +280,4 @@ div[data-dismissable-layer] {
 		border: 1px solid #ededed !important;
 	}
 }
-
 </style>

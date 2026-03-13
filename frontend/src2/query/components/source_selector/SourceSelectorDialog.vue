@@ -122,7 +122,7 @@ function onConfirm() {
 		<template #body>
 			<div class="relative flex pb-10" :style="{ height: 'calc(100vh - 12rem)' }">
 				<TabbedSidebarLayout
-					title=__("Pick Starting Data")
+					:title="__('Pick Starting Data')"
 					:tabs="tabGroups"
 					v-model:activeTab="activeTab"
 				/>

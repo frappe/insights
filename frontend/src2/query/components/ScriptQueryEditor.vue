@@ -76,7 +76,9 @@ function handleSaveVariables(variables: any[]) {
 						v-if="showLogs"
 						class="flex h-full w-[30rem] flex-shrink-0 flex-col overflow-hidden bg-gray-50 p-3"
 					>
-						<div class="font-mono text-sm uppercase text-gray-600">{{ __('Logs') }}</div>
+						<div class="font-mono text-sm uppercase text-gray-600">
+							{{ __('Logs') }}
+						</div>
 						<div class="mt-2 flex w-full flex-col gap-2 overflow-y-auto font-mono">
 							<div v-for="(log, index) in scriptLogs" :key="index" class="flex gap-2">
 								<div class="text-gray-400">[{{ index + 1 }}]</div>

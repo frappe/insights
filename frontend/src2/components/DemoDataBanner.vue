@@ -60,7 +60,12 @@ function dismiss() {
 				<X class="h-3.5 w-3.5" />
 			</button>
 		</div>
-		<Button :label="__('Setup Demo Data')" variant="subtle" :loading="loading" @click="setupDemoData">
+		<Button
+			:label="__('Setup Demo Data')"
+			variant="subtle"
+			:loading="loading"
+			@click="setupDemoData"
+		>
 			<template #prefix>
 				<Sparkles class="h-3.5 w-3.5" />
 			</template>

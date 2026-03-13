@@ -19,7 +19,7 @@ const filteredUsers = computed(() => {
 	return userStore.users.filter(
 		(user) =>
 			user.full_name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-			user.email.toLowerCase().includes(searchQuery.value.toLowerCase())
+			user.email.toLowerCase().includes(searchQuery.value.toLowerCase()),
 	)
 })
 

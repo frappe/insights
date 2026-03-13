@@ -53,8 +53,8 @@ const sortOptions = [
 							!props.sortOrder
 								? ArrowUpDown
 								: props.sortOrder === 'asc'
-								? ArrowUpNarrowWide
-								: ArrowDownWideNarrow
+								  ? ArrowUpNarrowWide
+								  : ArrowDownWideNarrow
 						"
 						class="h-3.5 w-3.5 text-gray-700"
 						stroke-width="1.5"

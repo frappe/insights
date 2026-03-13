@@ -108,7 +108,7 @@ watch(
 			default:
 				break
 		}
-	}
+	},
 )
 </script>
 

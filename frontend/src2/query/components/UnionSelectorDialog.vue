@@ -19,7 +19,7 @@ const union = reactive<UnionArgs>(
 		: {
 				table: table({}),
 				distinct: false,
-		  }
+		  },
 )
 const selectedTableOption = computed({
 	get() {
@@ -112,7 +112,9 @@ function reset() {
 			<div class="rounded-lg bg-white px-4 pb-6 pt-5 sm:px-6">
 				<!-- Title & Close -->
 				<div class="flex items-center justify-between pb-4">
-					<h3 class="text-2xl font-semibold leading-6 text-gray-900">{{ __('Append Rows') }}</h3>
+					<h3 class="text-2xl font-semibold leading-6 text-gray-900">
+						{{ __('Append Rows') }}
+					</h3>
 					<Button variant="ghost" @click="showDialog = false" icon="x" size="md">
 					</Button>
 				</div>
@@ -120,7 +122,9 @@ function reset() {
 				<!-- Fields -->
 				<div class="flex w-full flex-col gap-3 overflow-auto p-0.5 text-base">
 					<div>
-						<label class="mb-1 block text-xs text-gray-600">{{ __('Select Table') }}</label>
+						<label class="mb-1 block text-xs text-gray-600">{{
+							__('Select Table')
+						}}</label>
 						<Autocomplete
 							:placeholder="__('Table')"
 							v-model="selectedTableOption"
@@ -146,7 +150,12 @@ function reset() {
 				<!-- Actions -->
 				<div class="mt-4 flex justify-end gap-2">
 					<Button variant="outline" :label="__('Cancel')" @click="showDialog = false" />
-					<Button variant="solid" :label="__('Confirm')" :disabled="!isValid" @click="confirm" />
+					<Button
+						variant="solid"
+						:label="__('Confirm')"
+						:disabled="!isValid"
+						@click="confirm"
+					/>
 				</div>
 			</div>
 		</template>

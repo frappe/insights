@@ -9,7 +9,12 @@ import { workbookKey } from '../../workbook/workbook'
 import { column, expression, query_table, table } from '../helpers'
 import InlineExpression from './InlineExpression.vue'
 import { __ } from '../../translation'
-import { handleOldProps, useTableColumnOptions, useTableOptions,useQueryColumnOptions } from './join_utils'
+import {
+	handleOldProps,
+	useTableColumnOptions,
+	useTableOptions,
+	useQueryColumnOptions,
+} from './join_utils'
 
 const props = defineProps<{ join?: JoinArgs }>()
 const emit = defineEmits({
@@ -32,7 +37,7 @@ const join = reactive<JoinArgs>(
 					right_column: column(''),
 				},
 				select_columns: [],
-		  }
+		  },
 )
 const selectedTable = computed({
 	get() {
@@ -97,7 +102,7 @@ watch(
 		) {
 			autoMatchColumns()
 		}
-	}
+	},
 )
 
 const tableStore = useTableStore()
@@ -231,7 +236,9 @@ function reset() {
 			<div class="rounded-lg bg-white px-4 pb-6 pt-5 sm:px-6">
 				<!-- Title & Close -->
 				<div class="flex items-center justify-between pb-4">
-					<h3 class="text-2xl font-semibold leading-6 text-gray-900">{{ __('Join Table') }}</h3>
+					<h3 class="text-2xl font-semibold leading-6 text-gray-900">
+						{{ __('Join Table') }}
+					</h3>
 					<Button variant="ghost" @click="showDialog = false" icon="x" size="md">
 					</Button>
 				</div>
@@ -273,7 +280,10 @@ function reset() {
 									<Autocomplete
 										:label="__('Right Column')"
 										:placeholder="__('Column')"
-										:loading="rightTableColumnOptions.loading || queryTableColumnOptions.loading"
+										:loading="
+											rightTableColumnOptions.loading ||
+											queryTableColumnOptions.loading
+										"
 										:options="[
 											...rightTableColumnOptions.options,
 											...queryTableColumnOptions.options,
@@ -307,7 +317,9 @@ function reset() {
 						</div>
 					</div>
 					<div>
-						<label class="mb-1 block text-xs text-gray-600">{{ __('Select Join Type') }}</label>
+						<label class="mb-1 block text-xs text-gray-600">{{
+							__('Select Join Type')
+						}}</label>
 						<div class="flex gap-2">
 							<div
 								v-for="joinType in joinTypes"
@@ -333,13 +345,15 @@ function reset() {
 						</div>
 					</div>
 					<div>
-						<label class="mb-1 block text-xs text-gray-600"
-							>{{ __('Select Columns to Add') }}</label
-						>
+						<label class="mb-1 block text-xs text-gray-600">{{
+							__('Select Columns to Add')
+						}}</label>
 						<Autocomplete
 							:multiple="true"
 							:placeholder="__('Columns')"
-							:loading="rightTableColumnOptions.loading || queryTableColumnOptions.loading"
+							:loading="
+								rightTableColumnOptions.loading || queryTableColumnOptions.loading
+							"
 							:options="[
 								...rightTableColumnOptions.options,
 								...queryTableColumnOptions.options,
@@ -355,7 +369,12 @@ function reset() {
 				<!-- Actions -->
 				<div class="mt-4 flex justify-end gap-2">
 					<Button variant="outline" :label="__('Cancel')" @click="showDialog = false" />
-					<Button variant="solid" :label="__('Confirm')" :disabled="!isValid" @click="confirm" />
+					<Button
+						variant="solid"
+						:label="__('Confirm')"
+						:disabled="!isValid"
+						@click="confirm"
+					/>
 				</div>
 			</div>
 		</template>

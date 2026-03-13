@@ -31,7 +31,7 @@ watchEffect(() => {
 })
 
 const discrete_dimensions = computed(() =>
-	props.dimensions.filter((d) => FIELDTYPES.DISCRETE.includes(d.data_type))
+	props.dimensions.filter((d) => FIELDTYPES.DISCRETE.includes(d.data_type)),
 )
 </script>
 

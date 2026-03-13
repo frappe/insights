@@ -59,12 +59,11 @@ function importCSVData() {
 		filename: csvData.file.name,
 	})
 		.then(() => {
-			
-				createToast({
-					title: __('Table Imported'),
-					message: __(`Table '{0}' imported successfully`, csvData.tablename),
-					variant: 'success',
-				})
+			createToast({
+				title: __('Table Imported'),
+				message: __(`Table '{0}' imported successfully`, csvData.tablename),
+				variant: 'success',
+			})
 		})
 		.catch((error: any) => {
 			createToast({

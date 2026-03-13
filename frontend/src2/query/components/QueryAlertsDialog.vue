@@ -27,7 +27,7 @@ const filteredAlerts = computed(() => {
 	return alertStore.alerts.filter(
 		(alert: any) =>
 			alert.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-			alert.owner.toLowerCase().includes(searchQuery.value.toLowerCase())
+			alert.owner.toLowerCase().includes(searchQuery.value.toLowerCase()),
 	)
 })
 
