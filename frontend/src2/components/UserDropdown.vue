@@ -127,8 +127,8 @@ const userDropdownOptions = ref([
 		icon: h(LogOut),
 		onClick: () =>
 			confirmDialog({
-				title: 'Log out',
-				message: 'Are you sure you want to log out?',
+				title: __('Log out'),
+				message: __('Are you sure you want to log out?'),
 				onSuccess: session.logout,
 			}),
 	},
@@ -145,7 +145,7 @@ waitUntil(() => session.initialized).then(() => {
 
 	if (session.user.is_admin) {
 		userDropdownOptions.value.splice(userDropdownOptions.value.length - 2, 0, {
-			label: 'Switch to Desk',
+			label: __('Switch to Desk'),
 			icon: h(ToggleRight),
 			onClick: () => window.open('/app', '_blank'),
 		})

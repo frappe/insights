@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Button, Dialog, FormControl } from 'frappe-ui'
 import { ref, watch } from 'vue'
+import { __ } from '../translation'
 
 const show = defineModel<boolean>({ default: false })
 
@@ -31,7 +32,7 @@ function submit() {
 </script>
 
 <template>
-  <Dialog v-model="show" :options="{ title: 'Export Data', size: 'sm' }">
+  <Dialog v-model="show" :options="{ title: __('Export Data'), size: 'sm' }">
     <template #body-content>
       <div class="space-y-4">
         <div>
@@ -40,7 +41,7 @@ function submit() {
               <FormControl
                 class="w-32"
                 type="select"
-                label="Export Format"
+                :label="__('Export Format')"
                 :options="[
                   { label: 'CSV', value: 'csv' },
                   { label: 'Excel', value: 'excel' },
@@ -54,9 +55,9 @@ function submit() {
         <div class="flex items-center gap-2">
           <FormControl
             type="text"
-            label="Filename"
+            :label="__('Filename')"
             v-model="filename"
-            placeholder="Enter filename"
+            :placeholder="__('Enter filename')"
             class="w-44"
           />
         </div>
@@ -65,8 +66,8 @@ function submit() {
 
     <template #actions>
       <div class="flex justify-end gap-2">
-        <Button variant="ghost" @click="() => { emit('cancel'); show = false }">Cancel</Button>
-        <Button variant="solid" @click="submit" :loading="props.downloading">Export</Button>
+        <Button variant="ghost" @click="() => { emit('cancel'); show = false }">{{ __('Cancel') }}</Button>
+        <Button variant="solid" @click="submit" :loading="props.downloading">{{ __('Export') }}</Button>
       </div>
     </template>
   </Dialog>
