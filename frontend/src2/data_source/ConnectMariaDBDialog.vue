@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import Form from '../components/Form.vue'
 import useDataSourceStore from './data_source'
 import { MariaDBDataSource } from './data_source.types'
+import { __ } from '../translation'
 
 const show = defineModel({
 	default: false,
@@ -23,13 +24,13 @@ const form = ref()
 const fields = [
 	{
 		name: 'title',
-		label: 'Title',
+		label: __('Title'),
 		type: 'text',
 		placeholder: 'My Database',
 		required: true,
 	},
 	{
-		label: 'Host',
+		label: __('Host'),
 		name: 'host',
 		type: 'text',
 		placeholder: 'localhost',
@@ -37,7 +38,7 @@ const fields = [
 		defaultValue: 'localhost',
 	},
 	{
-		label: 'Port',
+		label: __('Port'),
 		name: 'port',
 		type: 'number',
 		placeholder: '3306',
@@ -45,27 +46,27 @@ const fields = [
 		defaultValue: 3306,
 	},
 	{
-		label: 'Database Name',
+		label: __('Database Name'),
 		name: 'database_name',
 		type: 'text',
 		placeholder: 'DB_1267891',
 		required: true,
 	},
 	{
-		label: 'Username',
+		label: __('Username'),
 		name: 'username',
 		type: 'text',
 		placeholder: 'read_only_user',
 		required: true,
 	},
 	{
-		label: 'Password',
+		label: __('Password'),
 		name: 'password',
 		type: 'password',
 		placeholder: '**********',
 		required: true,
 	},
-	{ label: 'Use secure connection (SSL)?', name: 'use_ssl', type: 'checkbox' },
+	{ label: __('Use secure connection (SSL)?'), name: 'use_ssl', type: 'checkbox' },
 ]
 
 const sources = useDataSourceStore()
@@ -73,7 +74,7 @@ const sources = useDataSourceStore()
 const connected = ref<boolean | null>(null)
 const connectButton = computed(() => {
 	const _button = {
-		label: 'Connect',
+		label: __('Connect'),
 		disabled: form.value?.hasRequiredFields === false || sources.testing || sources.creating,
 		loading: sources.testing,
 		variant: 'subtle',
@@ -102,7 +103,7 @@ const connectButton = computed(() => {
 
 const submitButton = computed(() => {
 	return {
-		label: 'Add Data Source',
+		label: __('Add Data Source'),
 		disabled: form.value?.hasRequiredFields === false || !connected.value || sources.creating,
 		loading: sources.creating,
 		variant: connected.value ? 'solid' : 'subtle',
@@ -116,7 +117,7 @@ const submitButton = computed(() => {
 </script>
 
 <template>
-	<Dialog v-model="show" :options="{ title: 'Connect to MariaDB' }">
+	<Dialog v-model="show" :options="{ title: __('Connect to MariaDB') }">
 		<template #body-content>
 			<Form
 				ref="form"
