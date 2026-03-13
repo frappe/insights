@@ -1,5 +1,4 @@
 <template>
-	<p v-if="props.hideLineNumbers" class="font-mono text-gray-600 pl-2">=</p>
 	<codemirror
 		:tab-size="2"
 		:disabled="readOnly"
@@ -110,13 +109,13 @@ const language =
 	props.language === 'javascript'
 		? javascript()
 		: props.language === 'python'
-		? python()
-		: sql({
-				dialect: MySQL,
-				upperCaseKeywords: true,
-				schema: props.schema,
-				tables: props.tables,
-		  })
+		  ? python()
+		  : sql({
+					dialect: MySQL,
+					upperCaseKeywords: true,
+					schema: props.schema,
+					tables: props.tables,
+		    })
 
 const columnHighlighter = ViewPlugin.fromClass(
 	class {
@@ -157,7 +156,7 @@ const columnHighlighter = ViewPlugin.fromClass(
 						decorations.push(
 							Decoration.mark({
 								class: 'cm-column-highlight',
-							}).range(from, to)
+							}).range(from, to),
 						)
 					}
 				}
@@ -168,7 +167,7 @@ const columnHighlighter = ViewPlugin.fromClass(
 	},
 	{
 		decorations: (v) => v.decorations,
-	}
+	},
 )
 
 const validationLinter = linter((view) => {
@@ -176,21 +175,21 @@ const validationLinter = linter((view) => {
 
 	for (const error of props.validationErrors) {
 		if (!error.line) continue
-			const line = view.state.doc.line(error.line)
-			const from = error.column ? line.from + error.column - 1 : line.from
-			const to = error.column ? from + 1 : line.to
+		const line = view.state.doc.line(error.line)
+		const from = error.column ? line.from + error.column - 1 : line.from
+		const to = error.column ? from + 1 : line.to
 
-			diagnostics.push({
-				from: Math.max(0, from),
-				to: Math.min(view.state.doc.length, to),
-				severity: 'error',
-				message: error.message + (error.hint ? `\n${error.hint}` : ''),
-			})
+		diagnostics.push({
+			from: Math.max(0, from),
+			to: Math.min(view.state.doc.length, to),
+			severity: 'error',
+			message: error.message + (error.hint ? `\n${error.hint}` : ''),
+		})
 	}
 	return diagnostics
 })
 
-const extensions = [language, closeBrackets(),tomorrow, validationLinter]
+const extensions = [language, closeBrackets(), tomorrow, validationLinter]
 
 if (props.multiLine) {
 	extensions.push(EditorView.lineWrapping)
@@ -236,5 +235,3 @@ defineExpose({
 	},
 })
 </script>
-
-
