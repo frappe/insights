@@ -148,7 +148,12 @@ export function getFormattedRows(result: QueryResult, operations: Operation[]) {
 export function getFormattedDate(date: string, granularity: GranularityType) {
 	if (!date) return ''
 
-	const dayjsFormat: Record<GranularityType, string> = {
+	if (granularity === 'fiscal_year') {
+		const d = dayjs(date)
+		return `FY ${d.format('YYYY')}-${d.add(1, 'year').format('YY')}`
+	}
+
+	const dayjsFormat: Record<string, string> = {
 		second: 'MMMM D, YYYY h:mm:ss A',
 		minute: 'MMMM D, YYYY h:mm A',
 		hour: 'MMMM D, YYYY h:00 A',
