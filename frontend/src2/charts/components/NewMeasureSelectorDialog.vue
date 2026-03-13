@@ -145,13 +145,13 @@ div[data-dismissable-layer] {
 .column-expression {
 	.cm-column-highlight {
 		background-color: #ededed !important;
-		border-radius: 2px !important;
+		border-radius: 0.5rem !important;
 		padding: 1px 2px !important;
 		border: 1px solid #dedede !important;
 	}
 	.cm-scroller {
 		background-color: #ffffff !important;
-		border-radius: 4px !important;
+		border-radius: 0.5rem !important;
 		border: 1px solid #ededed !important;
 	}
 }
