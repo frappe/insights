@@ -34,7 +34,7 @@ const functionList = ref<string[]>([])
 cachedCall('insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_list').then(
 	(res: any) => {
 		functionList.value = res
-	}
+	},
 )
 
 const columnNames = computed(() => {
@@ -84,6 +84,7 @@ function getFunctionMatches(word: string) {
 
 const codeEditor = ref<any>(null)
 const codeContainer = ref<HTMLElement | null>(null)
+const signatureElement = ref<HTMLElement | null>(null)
 
 onMounted(() => {
 	// fix clipping of tooltip & signature element because of dialog styling
@@ -119,7 +120,7 @@ const fetchCompletions = debounce(() => {
 		{
 			code,
 			column_options: JSON.stringify(props.columnOptions),
-		}
+		},
 	)
 		.then((res: any) => {
 			currentFunctionSignature.value = res.current_function
@@ -148,7 +149,7 @@ const fetchCompletions = debounce(() => {
 		.catch((e: any) => {
 			console.error(e)
 		})
-}, 1000)
+}, 500)
 
 type ValidationError = {
 	line: number
@@ -200,6 +201,37 @@ const validateExpression = debounce(() => {
 			}
 		})
 }, 500)
+
+function setSignatureElementPosition() {
+	setTimeout(() => {
+		const containerRect = codeContainer.value?.getBoundingClientRect()
+		const tooltipElement = codeContainer.value?.querySelector('.cm-tooltip-autocomplete')
+		const cursorElement = codeContainer.value?.querySelector('.cm-cursor.cm-cursor-primary')
+
+		if (!containerRect) return
+		if (!signatureElement.value) return
+
+		let left = 0,
+			top = 0
+
+		if (tooltipElement) {
+			const tooltipRect = tooltipElement.getBoundingClientRect()
+			left = tooltipRect.left - containerRect.left
+			top = tooltipRect.top + tooltipRect.height - containerRect.top + 10
+		} else if (cursorElement) {
+			const cursorRect = cursorElement?.getBoundingClientRect()
+			left = cursorRect.left - containerRect.left
+			top = cursorRect.top - containerRect.top + 20
+		}
+
+		if (left <= 0 || top <= 0) {
+			return
+		}
+
+		signatureElement.value.style.left = `${left}px`
+		signatureElement.value.style.top = `${top}px`
+	}, 100)
+}
 </script>
 
 <template>
@@ -217,12 +249,35 @@ const validateExpression = debounce(() => {
 				:multi-line="props.multiLine"
 				:column-names="columnNames"
 				:validation-errors="validationErrors"
-				@view-update="fetchCompletions"
+				@view-update="
+					() => {
+						fetchCompletions()
+						setSignatureElementPosition()
+					}
+				"
 				@input-change="validateExpression"
 			>
 			</Code>
+
+			<div
+				ref="signatureElement"
+				v-show="currentFunctionSignature"
+				class="absolute z-10 flex h-fit max-h-[14rem] w-[25rem] flex-col gap-2 overflow-y-auto rounded-lg bg-white px-2.5 py-1.5 shadow-md transition-all"
+			>
+				<template v-if="currentFunctionSignature">
+					<p
+						v-if="currentFunctionSignature.definition"
+						v-html="currentFunctionSignature.definition"
+						class="font-mono text-p-sm text-gray-800"
+					></p>
+					<hr v-if="currentFunctionSignature.definition" />
+					<div class="whitespace-pre-wrap font-mono text-p-sm text-gray-800">
+						{{ currentFunctionSignature.description }}
+					</div>
+				</template>
+			</div>
 		</div>
-		<div v-if="showOutput" class="min-h-[2.5rem] ">
+		<div v-if="showOutput" class="min-h-[2.5rem]">
 			<transition name="fade" mode="out-in">
 				<div class="flex items-center gap-4 max-h-[10%] px-3 py-2 border-t border-b">
 					<template v-if="validationState === 'validating'">
