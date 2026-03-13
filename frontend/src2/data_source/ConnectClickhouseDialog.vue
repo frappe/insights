@@ -26,7 +26,7 @@ const fields = [
 		name: 'title',
 		label: __('Title'),
 		type: 'text',
-		placeholder: 'My Database',
+		placeholder: __('My Database'),
 		required: true,
 	},
 	{
@@ -56,7 +56,7 @@ const fields = [
 		label: __('Username'),
 		name: 'username',
 		type: 'text',
-		placeholder: 'read_only_user',
+		placeholder: __('read_only_user'),
 		required: true,
 	},
 	{
@@ -117,7 +117,7 @@ const submitButton = computed(() => {
 </script>
 
 <template>
-	<Dialog v-model="show" :options="{ title: 'Connect to ClickHouse' }">
+	<Dialog v-model="show" :options="{ title: __('Connect to ClickHouse') }">
 		<template #body-content>
 			<Form
 				ref="form"
