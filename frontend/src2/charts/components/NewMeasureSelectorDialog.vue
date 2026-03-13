@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { cachedCall } from '../../helpers'
 import { COLUMN_TYPES, FIELDTYPES } from '../../helpers/constants'
 import ExpressionEditor from '../../query/components/ExpressionEditor.vue'
 import { expression } from '../../query/helpers'
+import { __ } from '../../translation'
 import { ColumnOption, ExpressionMeasure, MeasureDataType } from '../../types/query.types'
-import { cachedCall } from '../../helpers'
 
 const props = defineProps<{
 	measure?: ExpressionMeasure
@@ -53,7 +54,7 @@ async function confirmCalculation() {
 
 		if (!res || !res.is_valid) {
 			validationState.value = 'invalid'
-			validationErrors.value = res?.errors || [{ message: 'Validation failed' }]
+			validationErrors.value = res?.errors || [{ message: __('Validation failed') }]
 			return
 		}
 
@@ -68,7 +69,7 @@ async function confirmCalculation() {
 	} catch (e) {
 		console.error(e)
 		validationState.value = 'unknown'
-		validationErrors.value = [{ message: 'Unexpected validation error' }]
+		validationErrors.value = [{ message: __('Unexpected validation error') }]
 	}
 }
 
@@ -92,7 +93,9 @@ function resetNewMeasure() {
 		<template #body>
 			<div class="bg-white px-4 pb-6 pt-5 sm:px-6">
 				<div class="flex items-center justify-between pb-4">
-					<h3 class="text-2xl font-semibold leading-6 text-gray-900">Create Measure</h3>
+					<h3 class="text-2xl font-semibold leading-6 text-gray-900">
+						{{ __('Create Measure') }}
+					</h3>
 					<Button variant="ghost" @click="showDialog = false" icon="x" size="md" />
 				</div>
 
@@ -106,7 +109,7 @@ function resetNewMeasure() {
 						<FormControl
 							type="text"
 							class="flex-1"
-							label="Measure Name"
+							:label="__('Measure Name')"
 							autocomplete="off"
 							placeholder="Measure Name"
 							v-model="newMeasure.name"
@@ -114,7 +117,7 @@ function resetNewMeasure() {
 						<FormControl
 							type="select"
 							class="flex-1"
-							label="Data Type"
+							:label="__('Data Type')"
 							autocomplete="off"
 							:options="columnTypes"
 							v-model="newMeasure.type"
@@ -126,7 +129,7 @@ function resetNewMeasure() {
 					<div></div>
 					<div class="flex items-center gap-2">
 						<Button
-							label="Confirm"
+							:label="__('Confirm')"
 							variant="solid"
 							:disabled="!isValid || validationState === 'validating'"
 							@click="confirmCalculation"

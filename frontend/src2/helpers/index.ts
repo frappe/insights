@@ -1,4 +1,5 @@
 import { watchDebounced } from '@vueuse/core'
+import { __ } from '../translation'
 import domtoimage from 'dom-to-image'
 import { isEqual } from 'es-toolkit'
 import { call, debounce } from 'frappe-ui'
@@ -141,7 +142,7 @@ export function getErrorMessage(err: any) {
 export function showErrorToast(err: Error, raise = true) {
 	createToast({
 		variant: 'error',
-		title: 'Error',
+		title: __('Error'),
 		message: getErrorMessage(err),
 	})
 	if (raise) throw err
@@ -246,7 +247,7 @@ export function safeJSONParse(str: string, defaultValue = null) {
 		console.error(e)
 		console.groupEnd()
 		createToast({
-			message: 'Error parsing JSON',
+			message: __('Error parsing JSON'),
 			variant: 'error',
 		})
 		return defaultValue
@@ -258,7 +259,7 @@ export function copyToClipboard(text: string) {
 		navigator.clipboard.writeText(text)
 		createToast({
 			variant: 'success',
-			title: 'Copied to clipboard',
+			title: __('Copied to clipboard'),
 		})
 	} else {
 		// try to use execCommand
@@ -272,12 +273,12 @@ export function copyToClipboard(text: string) {
 			document.execCommand('copy')
 			createToast({
 				variant: 'success',
-				title: 'Copied to clipboard',
+				title: __('Copied to clipboard'),
 			})
 		} catch (err) {
 			createToast({
 				variant: 'error',
-				title: 'Copy to clipboard not supported',
+				title: __('Copy to clipboard not supported'),
 			})
 		} finally {
 			document.body.removeChild(textArea)

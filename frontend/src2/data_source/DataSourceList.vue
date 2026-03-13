@@ -13,6 +13,7 @@ import { DataSourceListItem } from './data_source.types'
 import UploadCSVFileDialog from './UploadCSVFileDialog.vue'
 import ConnectDuckDBDialog from './ConnectDuckDBDialog.vue'
 import ConnectClickhouseDialog from './ConnectClickhouseDialog.vue'
+import { __ } from '../translation'
 
 const dataSourceStore = useDataSourceStore()
 dataSourceStore.getSources()
@@ -36,45 +37,45 @@ const showCSVFileUploadDialog = ref(false)
 
 const sourceTypes = [
 	{
-		label: 'MariaDB',
+		label: __('MariaDB'),
 		icon: getDatabaseLogo('MariaDB'),
-		description: 'Connect to MariaDB database',
+		description: __('Connect to MariaDB database'),
 		onClick: () => {
 			showNewSourceDialog.value = false
 			showNewMariaDBDialog.value = true
 		},
 	},
 	{
-		label: 'PostgreSQL',
+		label: __('PostgreSQL'),
 		icon: getDatabaseLogo('PostgreSQL'),
-		description: 'Connect to PostgreSQL database',
+		description: __('Connect to PostgreSQL database'),
 		onClick: () => {
 			showNewSourceDialog.value = false
 			showNewPostgreSQLDialog.value = true
 		},
 	},
 	{
-		label: 'ClickHouse',
+		label: __('ClickHouse'),
 		icon: getDatabaseLogo('ClickHouse'),
-		description: 'Connect to ClickHouse database',
+		description: __('Connect to ClickHouse database'),
 		onClick: () => {
 			showNewSourceDialog.value = false
 			showNewClickHouseDialog.value = true
 		},
 	},
 	{
-		label: 'DuckDB',
+		label: __('DuckDB'),
 		icon: getDatabaseLogo('DuckDB'),
-		description: 'Connect to DuckDB database',
+		description: __('Connect to DuckDB database'),
 		onClick: () => {
 			showNewSourceDialog.value = false
 			showNewDuckDBDialog.value = true
 		},
 	},
 	{
-		label: 'Upload CSV or Excel',
+		label: __('Upload CSV or Excel'),
 		icon: <CSVIcon class="h-8 w-8" />,
-		description: 'Upload a CSV or Excel file to create a new data source',
+		description: __('Upload a CSV or Excel file to create a new data source'),
 		onClick: () => {
 			showNewSourceDialog.value = false
 			showCSVFileUploadDialog.value = true
@@ -86,7 +87,7 @@ const userStore = useUserStore()
 const listOptions = ref({
 	columns: [
 		{
-			label: 'Title',
+			label: __('Title'),
 			key: 'title',
 			prefix: (props: any) => {
 				const data_source = props.row as DataSourceListItem
@@ -94,7 +95,7 @@ const listOptions = ref({
 			},
 		},
 		{
-			label: 'Status',
+			label: __('Status'),
 			key: 'status',
 			prefix: (props: any) => {
 				const color = props.row.status == 'Inactive' ? 'text-gray-500' : 'text-green-500'
@@ -102,7 +103,7 @@ const listOptions = ref({
 			},
 		},
 		{
-			label: 'Owner',
+			label: __('Owner'),
 			key: 'owner',
 			getLabel(props: any) {
 				const data_source = props.row as DataSourceListItem
@@ -115,8 +116,8 @@ const listOptions = ref({
 				return <Avatar size="md" label={data_source.owner} image={imageUrl} />
 			},
 		},
-		{ label: 'Created', key: 'created_from_now' },
-		{ label: 'Modified', key: 'modified_from_now' },
+		{ label: __('Created'), key: 'created_from_now' },
+		{ label: __('Modified'), key: 'modified_from_now' },
 	],
 	rows: filteredDataSources,
 	rowKey: 'name',
@@ -126,10 +127,10 @@ const listOptions = ref({
 			path: `/data-source/${data_source.name}`,
 		}),
 		emptyState: {
-			title: 'No data sources.',
-			description: 'No data sources to display.',
+			title: __('No data sources.'),
+			description: __('No data sources to display.'),
 			button: {
-				label: 'New Data Source',
+				label: __('New Data Source'),
 				variant: 'solid',
 				onClick: () => (showNewSourceDialog.value = true),
 			},
@@ -137,14 +138,14 @@ const listOptions = ref({
 	},
 })
 
-document.title = 'Data Sources | Insights'
+document.title = __('Data Sources | Insights')
 </script>
 
 <template>
 	<header class="flex h-12 items-center justify-between border-b py-2.5 pl-5 pr-2">
-		<Breadcrumbs :items="[{ label: 'Data Sources', route: '/data-source' }]" />
+		<Breadcrumbs :items="[{ label: __('Data Sources'), route: '/data-source' }]" />
 		<div class="flex items-center gap-2">
-			<Button label="New Data Source" variant="solid" @click="showNewSourceDialog = true">
+			<Button :label="__('New Data Source')" variant="solid" @click="showNewSourceDialog = true">
 				<template #prefix>
 					<PlusIcon class="w-4" />
 				</template>
@@ -166,7 +167,7 @@ document.title = 'Data Sources | Insights'
 	<SelectTypeDialog
 		v-model="showNewSourceDialog"
 		:types="sourceTypes"
-		title="Select a data source"
+		:title="__('Select a data source')"
 	/>
 
 	<ConnectMariaDBDialog v-model="showNewMariaDBDialog" />

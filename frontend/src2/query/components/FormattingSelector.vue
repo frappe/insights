@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
+import { __ } from '../../translation'
 import { ColumnOption, GroupedColumnOption } from '../../types/query.types'
 import { column } from '../helpers'
 import FormatRule from './FormatRule.vue'
@@ -55,8 +56,8 @@ const hasChanged = computed(() => {
 				v-model="selectedFormatMode"
 				label="Format Type"
 				:options="[
-					{ label: 'Highlight Cell', value: 'cell_rules' },
-					{ label: 'Color Scale', value: 'color_scale' },
+					{ label: __('Highlight Cell'), value: 'cell_rules' },
+					{ label: __('Color Scale'), value: 'color_scale' },
 				]"
 			>
 			</FormControl>
