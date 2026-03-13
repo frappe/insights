@@ -1,4 +1,5 @@
 import useDocumentResource from '../helpers/resource'
+import { __ } from '../translation'
 import { createToast } from '../helpers/toasts'
 
 let settings = undefined as Settings | undefined
@@ -27,8 +28,8 @@ function makeSettings() {
 	})
 	_settings.onAfterSave(() =>
 		createToast({
-			title: 'Settings Updated',
-			message: 'Your settings have been updated successfully',
+			title: __('Settings Updated'),
+			message: __('Your settings have been updated successfully'),
 			variant: 'success',
 		})
 	)

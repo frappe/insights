@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Share2 } from 'lucide-vue-next'
+import { __ } from '../translation'
 import { computed, inject, ref } from 'vue'
 import session from '../session'
 import { Workbook, workbookKey } from './workbook'
@@ -49,26 +50,26 @@ const showShareDialog = ref(false)
 			:options="[
 				!workbook.doc.read_only
 					? {
-							label: 'Duplicate',
+							label: __('Duplicate'),
 							icon: 'copy',
 							onClick: () => workbook.duplicate(),
 					  }
 					: null,
 				{
-					label: 'Copy JSON',
+					label: __('Copy JSON'),
 					icon: 'copy',
 					onClick: () => workbook.copy(),
 				},
 				!workbook.islocal
 					? {
-							label: 'Delete',
+							label: __('Delete'),
 							icon: 'trash-2',
 							onClick: () => workbook.delete(),
 					  }
 					: null,
 				session.user.has_desk_access
 					? {
-							label: 'Open in Desk',
+							label: __('Open in Desk'),
 							icon: 'external-link',
 							onClick: () => workbook.openInDesk(),
 					  }

@@ -6,6 +6,7 @@ import { computed, ref, watch } from 'vue'
 import IndicatorIcon from '../components/Icons/IndicatorIcon.vue'
 import session from '../session'
 import useUserStore, { User } from '../users/users'
+import { __ } from '../translation'
 
 const userStore = useUserStore()
 userStore.getUsers()
@@ -18,14 +19,14 @@ const filteredUsers = computed(() => {
 	return userStore.users.filter(
 		(user) =>
 			user.full_name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-			user.email.toLowerCase().includes(searchQuery.value.toLowerCase())
+			user.email.toLowerCase().includes(searchQuery.value.toLowerCase()),
 	)
 })
 
 const listOptions = ref({
 	columns: [
 		{
-			label: 'User',
+			label: __('User'),
 			key: 'full_name',
 			prefix: (props: any) => {
 				const user = props.row as User
@@ -33,16 +34,16 @@ const listOptions = ref({
 			},
 		},
 		{
-			label: 'Status',
+			label: __('Status'),
 			key: 'enabled',
 			getLabel: (props: any) => {
 				const user = props.row as User
 				if (user.invitation_status) {
 					return user.invitation_status === 'Pending'
-						? 'Invitation Sent'
-						: 'Invitation Expired'
+						? __('Invitation Sent')
+						: __('Invitation Expired')
 				}
-				return props.row.enabled ? 'Enabled' : 'Disabled'
+				return props.row.enabled ? __('Enabled') : __('Disabled')
 			},
 			prefix: (props: any) => {
 				let color
@@ -57,7 +58,7 @@ const listOptions = ref({
 			},
 		},
 		{
-			label: 'Email',
+			label: __('Email'),
 			key: 'email',
 		},
 		// {
@@ -77,11 +78,11 @@ const listOptions = ref({
 		selectable: false,
 		showTooltip: false,
 		emptyState: {
-			title: 'No users.',
-			description: 'No users to display.',
+			title: __('No users.'),
+			description: __('No users to display.'),
 			button: session.user.is_admin
 				? {
-						label: 'Invite User',
+						label: __('Invite User'),
 						variant: 'solid',
 						onClick: () => (showInviteUserDialog.value = true),
 				  }
@@ -145,7 +146,7 @@ function sendInvitation() {
 
 		<div class="flex w-full flex-1 flex-col gap-3 overflow-auto">
 			<div class="flex justify-between gap-2 overflow-visible py-1">
-				<FormControl placeholder="Search" :debounce="300">
+				<FormControl :placeholder="__('Search')" :debounce="300">
 					<template #prefix>
 						<SearchIcon class="h-4 w-4 text-gray-500" />
 					</template>
@@ -169,11 +170,11 @@ function sendInvitation() {
 	<Dialog
 		v-model="showInviteUserDialog"
 		:options="{
-			title: 'Invite User',
+			title: __('Invite User'),
 			size: 'sm',
 			actions: [
 				{
-					label: 'Send Invitation',
+					label: __('Send Invitation'),
 					variant: 'solid',
 					disabled: !areAllEmailsValid,
 					loading: userStore.sendingInvitation,

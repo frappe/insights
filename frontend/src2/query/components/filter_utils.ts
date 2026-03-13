@@ -1,4 +1,5 @@
 import { FIELDTYPES, FilterType } from '../../helpers/constants'
+import { __ } from '../../translation'
 import {
 	ColumnDataType,
 	FilterExpression,
@@ -9,37 +10,37 @@ import {
 export function getOperatorOptions(filterType: FilterType) {
 	const options = [] as { label: string; value: FilterOperator }[]
 	if (filterType === 'String') {
-		options.push({ label: 'is', value: 'in' }) // value selector
-		options.push({ label: 'is not', value: 'not_in' }) // value selector
-		options.push({ label: 'contains', value: 'contains' }) // text
-		options.push({ label: 'does not contain', value: 'not_contains' }) // text
-		options.push({ label: 'starts with', value: 'starts_with' }) // text
-		options.push({ label: 'ends with', value: 'ends_with' }) // text
-		options.push({ label: 'is set', value: 'is_set' }) // no value
-		options.push({ label: 'is not set', value: 'is_not_set' }) // no value
+		options.push({ label: __('is'), value: 'in' }) // value selector
+		options.push({ label: __('is not'), value: 'not_in' }) // value selector
+		options.push({ label: __('contains'), value: 'contains' }) // text
+		options.push({ label: __('does not contain'), value: 'not_contains' }) // text
+		options.push({ label: __('starts with'), value: 'starts_with' }) // text
+		options.push({ label: __('ends with'), value: 'ends_with' }) // text
+		options.push({ label: __('is set'), value: 'is_set' }) // no value
+		options.push({ label: __('is not set'), value: 'is_not_set' }) // no value
 	}
 	if (filterType === 'Number') {
-		options.push({ label: 'equals', value: '=' })
-		options.push({ label: 'not equals', value: '!=' })
-		options.push({ label: 'greater than', value: '>' })
-		options.push({ label: 'greater than or equals', value: '>=' })
-		options.push({ label: 'less than', value: '<' })
-		options.push({ label: 'less than or equals', value: '<=' })
-		options.push({ label: 'between', value: 'between' })
-		options.push({ label: 'is set', value: 'is_set' })
-		options.push({ label: 'is not set', value: 'is_not_set' })
+		options.push({ label: __('equals'), value: '=' })
+		options.push({ label: __('not equals'), value: '!=' })
+		options.push({ label: __('greater than'), value: '>' })
+		options.push({ label: __('greater than or equals'), value: '>=' })
+		options.push({ label: __('less than'), value: '<' })
+		options.push({ label: __('less than or equals'), value: '<=' })
+		options.push({ label: __('between'), value: 'between' })
+		options.push({ label: __('is set'), value: 'is_set' })
+		options.push({ label: __('is not set'), value: 'is_not_set' })
 	}
 	if (filterType === 'Date') {
-		options.push({ label: 'equals', value: '=' })
-		options.push({ label: 'not equals', value: '!=' })
-		options.push({ label: 'greater than', value: '>' })
-		options.push({ label: 'greater than or equals', value: '>=' })
-		options.push({ label: 'less than', value: '<' })
-		options.push({ label: 'less than or equals', value: '<=' })
-		options.push({ label: 'between', value: 'between' })
-		options.push({ label: 'within', value: 'within' })
-		options.push({ label: 'is set', value: 'is_set' })
-		options.push({ label: 'is not set', value: 'is_not_set' })
+		options.push({ label: __('equals'), value: '=' })
+		options.push({ label: __('not equals'), value: '!=' })
+		options.push({ label: __('greater than'), value: '>' })
+		options.push({ label: __('greater than or equals'), value: '>=' })
+		options.push({ label: __('less than'), value: '<' })
+		options.push({ label: __('less than or equals'), value: '<=' })
+		options.push({ label: __('between'), value: 'between' })
+		options.push({ label: __('within'), value: 'within' })
+		options.push({ label: __('is set'), value: 'is_set' })
+		options.push({ label: __('is not set'), value: 'is_not_set' })
 	}
 	return options
 }

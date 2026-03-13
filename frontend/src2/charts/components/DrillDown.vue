@@ -10,6 +10,7 @@ import { count, makeDimension } from '../../query/helpers'
 import { Query } from '../../query/query'
 import { QueryResultColumn } from '../../types/query.types'
 import { Dashboard } from '../../dashboard/dashboard'
+import { __ } from '../../translation'
 
 const props = defineProps<{ query: Query }>()
 
@@ -55,7 +56,7 @@ const groupBy = debounce(_groupBy, 50)
 	<Dialog
 		v-model="show"
 		:options="{
-			title: 'Drill Down',
+			title: __('Drill Down'),
 			size: '5xl',
 		}"
 	>

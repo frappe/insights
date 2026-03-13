@@ -16,6 +16,7 @@ import { confirmDialog } from '../helpers/confirm_dialog'
 import { FIELDTYPES } from '../helpers/constants'
 import useDocumentResource from '../helpers/resource'
 import { createToast } from '../helpers/toasts'
+import { __ } from '../translation'
 import router from '../router'
 import session from '../session'
 import {
@@ -273,8 +274,8 @@ export function makeQuery(name: string) {
 			return
 		}
 		confirmDialog({
-			title: 'Change Source',
-			message: 'Changing the source will clear the current operations. Please confirm.',
+			title: __('Change Source'),
+			message: __('Changing the source will clear the current operations. Please confirm.'),
 			onSuccess: _setSource,
 		})
 	}
@@ -516,8 +517,8 @@ export function makeQuery(name: string) {
 					const data: string = payload?.message
 					if (!data) {
 						createToast({
-							title: 'Download Failed',
-							message: 'No data found to download.',
+							title: __('Download Failed'),
+							message: __('No data found to download.'),
 							variant: 'warning',
 						})
 						return
@@ -551,16 +552,16 @@ export function makeQuery(name: string) {
 					document.body.removeChild(a)
 					window.URL.revokeObjectURL(url)
 					createToast({
-						title: 'Export Successful',
-						message: `File "${finalFileName}" exported successfully`,
+						title: __('Export Successful'),
+						message: __(`File "{0}" exported successfully`, finalFileName),
 						variant: 'success',
 					})
 				})
 				.catch((error: any) => {
 					if (currentDownloadToken.value !== token) return
 					createToast({
-						title: 'Download Failed',
-						message: error?.message || 'Failed to download file',
+						title: __('Download Failed'),
+						message: error?.message || __('Failed to download file'),
 						variant: 'error',
 					})
 				})
@@ -668,15 +669,15 @@ export function makeQuery(name: string) {
 			.save()
 			.then(() => {
 				createToast({
-					title: 'Variables Updated',
-					message: 'Script variables have been saved securely.',
+					title: __('Variables Updated'),
+					message: __('Script variables have been saved securely.'),
 					variant: 'success',
 				})
 			})
 			.catch((error) => {
 				createToast({
-					title: 'Failed to Update Variables',
-					message: error.message || 'An error occurred while saving variables.',
+					title: __('Failed to Update Variables'),
+					message: error.message || __('An error occurred while saving variables.'),
 					variant: 'error',
 				})
 				throw error
@@ -691,7 +692,7 @@ export function makeQuery(name: string) {
 		const error = validateDrillDown(col, row)
 		if (error) {
 			createToast({
-				title: 'Failed to drill down',
+				title: __('Failed to drill down'),
 				message: error,
 				variant: 'warning',
 			})
@@ -900,7 +901,7 @@ export function makeQuery(name: string) {
 			.call('duplicate')
 			.then((newQueryName: string) => {
 				createToast({
-					title: 'Query duplicated',
+					title: __('Query duplicated'),
 					variant: 'success',
 				})
 				router.push(`/workbook/${query.doc.workbook}/query/${newQueryName}`)
@@ -937,14 +938,14 @@ export function makeQuery(name: string) {
 		try {
 			const response = await query.call('refresh_stored_tables')
 			createToast({
-				title: 'Import Started',
-				message: response?.message || 'Importing tables to data store',
+				title: __('Import Started'),
+				message: response?.message || __('Importing tables to data store'),
 				variant: 'success',
 			})
 		} catch (error: any) {
 			createToast({
-				title: 'Import Failed',
-				message: error?.message || 'Failed to import tables to data store',
+				title: __('Import Failed'),
+				message: error?.message || __('Failed to import tables to data store'),
 				variant: 'error',
 			})
 		} finally {
