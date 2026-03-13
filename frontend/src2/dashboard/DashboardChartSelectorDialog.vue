@@ -5,6 +5,7 @@ import ChartIcon from '../charts/components/ChartIcon.vue'
 import { copy } from '../helpers'
 import { WorkbookChart } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
+import { __ } from '../translation'
 
 const showDialog = defineModel()
 const props = defineProps<{ chartOptions: WorkbookChart[] }>()
@@ -60,16 +61,16 @@ function confirmSelection() {
 		v-model="showDialog"
 		:options="{
 			size: 'sm',
-			title: 'Select Charts',
+			title: __('Select Charts'),
 			actions: [
 				{
-					label: 'Add',
+					label: __('Add'),
 					variant: 'solid',
 					disabled: areNoneSelected,
 					onClick: confirmSelection,
 				},
 				{
-					label: 'Cancel',
+					label: __('Cancel'),
 					onClick: () => (showDialog = false),
 				},
 			],
@@ -81,7 +82,7 @@ function confirmSelection() {
 					<FormControl
 						class="flex-1"
 						autocomplete="off"
-						placeholder="Search by name"
+						:placeholder="__('Search by name')"
 						v-model="searchQuery"
 					>
 						<template #prefix>

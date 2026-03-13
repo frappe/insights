@@ -8,6 +8,7 @@ import useDashboard from './dashboard'
 import DashboardItem from './DashboardItem.vue'
 import VueGridLayout from './VueGridLayout.vue'
 import { useStorage } from '@vueuse/core'
+import { __ } from '../translation'
 
 const props = defineProps<{ name: string }>()
 
@@ -54,13 +55,13 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 				:button="{ icon: 'more-vertical', variant: 'outline' }"
 				:options="[
 					{
-						label: 'Export as PNG',
+						label: __('Export as PNG'),
 						variant: 'outline',
 						icon: 'download',
 						onClick: downloadDashboardImage,
 					},
 					 canOpenWorkbook ? {
-						label: 'Open Workbook',
+						label: __('Open Workbook'),
 						variant: 'outline',
 						icon: 'external-link',
 						onClick: openWorkbook,

@@ -60,7 +60,7 @@ const listOptions = computed(() => ({
 			description: __('No tables found in the data store.'),
 			button: session.user.is_admin
 				? {
-						label: 'Import Table',
+						label: __('Import Table'),
 						iconLeft: 'plus',
 						variant: 'solid',
 						loading: false,

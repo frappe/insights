@@ -7,6 +7,7 @@ import { FIELDTYPES } from '../helpers/constants'
 import { ColumnOption } from '../types/query.types'
 import { WorkbookDashboardFilter } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
+import { __ } from '../translation'
 
 const dashboard = inject<Dashboard>('dashboard')!
 const props = defineProps<{ item: WorkbookDashboardFilter }>()
@@ -96,16 +97,16 @@ function saveEdit() {
 		:modelValue="dashboard.isEditingItem(props.item)"
 		@update:modelValue="!$event ? (dashboard.editingItemIndex = undefined) : true"
 		:options="{
-			title: 'Edit Filter',
+			title: __('Edit Filter'),
 			actions: [
 				{
-					label: 'Save',
+					label: __('Save'),
 					variant: 'solid',
 					disabled: editDisabled,
 					onClick: saveEdit,
 				},
 				{
-					label: 'Cancel',
+					label: __('Cancel'),
 					onClick: () => (dashboard.editingItemIndex = undefined),
 				},
 			],
@@ -116,27 +117,27 @@ function saveEdit() {
 				<div class="flex gap-4">
 					<div class="flex flex-col gap-4 flex-1">
 						<FormControl
-							label="Label"
+							:label="__('Label')"
 							v-model="filter.filter_name"
-							placeholder="Enter filter label..."
+							:placeholder="__('Enter filter label...')"
 							autocomplete="off"
 						/>
 						<div class="flex flex-col gap-1.5">
-							<label class="block text-xs text-ink-gray-5"> Icon </label>
+							<label class="block text-xs text-ink-gray-5">{{ __('Icon') }}</label>
 							<IconPicker v-model="filter.icon" />
 						</div>
 					</div>
 					<FormControl
 						class="flex-1 flex-shrink-0"
 						v-model="filter.filter_type"
-						label="Type"
+						:label="__('Type')"
 						type="select"
 						:options="Object.keys(FILTER_TYPES)"
 						@update:modelValue="onFilterTypeChange"
 					/>
 				</div>
 				<div class="flex flex-col">
-					<div class="mb-1 text-p-sm text-gray-700">Linked Charts</div>
+					<div class="mb-1 text-p-sm text-gray-700">{{ __('Linked Charts') }}</div>
 					<div
 						v-for="link in linkOptions"
 						:key="link.name"
