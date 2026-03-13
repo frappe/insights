@@ -55,9 +55,9 @@ const sourceTypes = [
 		},
 	},
 	{
-		label: 'ClickHouse',
+		label: __('ClickHouse'),
 		icon: getDatabaseLogo('ClickHouse'),
-		description: 'Connect to ClickHouse database',
+		description: __('Connect to ClickHouse database'),
 		onClick: () => {
 			showNewSourceDialog.value = false
 			showNewClickHouseDialog.value = true
