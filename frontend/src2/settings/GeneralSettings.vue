@@ -68,13 +68,13 @@ async function setupDemoData() {
 				type="select"
 				v-model="settings.doc.week_starts_on"
 				:options="[
-					__('Sunday'),
-					__('Monday'),
-					__('Tuesday'),
-					__('Wednesday'),
-					__('Thursday'),
-					__('Friday'),
-					__('Saturday'),
+					'Sunday',
+					'Monday',
+					'Tuesday',
+					'Wednesday',
+					'Thursday',
+					'Friday',
+					'Saturday',
 				]"
 			/>
 		</SettingItem>
