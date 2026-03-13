@@ -22,7 +22,7 @@ const selectedTable = ref<TableArgs>(
 				type: 'table',
 				data_source: '',
 				table_name: '',
-		  }
+		  },
 )
 
 const dataSourceStore = useDataSourceStore()
@@ -46,7 +46,7 @@ wheneverChanges(
 			workbook: '',
 			query_name: '',
 		}
-	}
+	},
 )
 
 dataSourceStore.getSources().then(() => {
@@ -78,7 +78,7 @@ const selectedQuery = ref<QueryTableArgs>(
 				type: 'query',
 				workbook: '',
 				query_name: '',
-		  }
+		  },
 )
 const workbook = inject<Workbook>(workbookKey)!
 if (workbook.doc.queries.length > 1) {
@@ -111,7 +111,7 @@ function onConfirm() {
 			  }
 			: {
 					table: table(selectedTable.value),
-			  }
+			  },
 	)
 	showDialog.value = false
 }
