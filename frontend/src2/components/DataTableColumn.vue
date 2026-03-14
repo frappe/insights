@@ -4,7 +4,6 @@ import { h, ref, watchEffect } from 'vue'
 import { SortDirection } from '../types/query.types'
 import { __ } from '../translation'
 import ContentEditable from './ContentEditable.vue'
-import { __ } from '../translation'
 
 
 const props = defineProps<{
