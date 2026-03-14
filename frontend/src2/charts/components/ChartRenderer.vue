@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ChartSectionEmptySvg from '@/query/ChartSectionEmptySvg.vue'
+import ChartSectionEmptySvg from './ChartSectionEmptySvg.vue'
 import { computed, ref } from 'vue'
 import { EMPTY_RESULT, Query } from '../../query/query'
 import {
@@ -73,7 +73,7 @@ const locationColumn = computed(() => {
 	return result.value.columns.find(
 		(c) =>
 			FIELDTYPES.DIMENSION.includes(c.type) &&
-			c.name === mapConfig.value.location_column?.column_name
+			c.name === mapConfig.value.location_column?.column_name,
 	)
 })
 
@@ -114,7 +114,7 @@ const locationRowIndex = computed(() => {
 	return { index, reverseMap }
 })
 
-function handleMapChartClick(params:any) {
+function handleMapChartClick(params: any) {
 	if (!locationColumn.value) return null
 
 	const clickedLocation = params.name

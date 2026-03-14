@@ -10,36 +10,6 @@ from frappe.model.base_document import BaseDocument
 from frappe.website.page_renderers.template_page import TemplatePage
 
 
-class ResultColumn:
-    label: str
-    type: str | list[str]
-    options: dict = {}
-
-    @staticmethod
-    def from_args(label, type="String", options=None) -> "ResultColumn":
-        return frappe._dict(
-            {
-                "label": label or "Unnamed",
-                "type": type or "String",
-                "options": options or {},
-            }
-        )
-
-    @classmethod
-    def from_dict(cls, data: dict) -> "ResultColumn":
-        return frappe._dict(
-            label=data.get("alias") or data.get("label") or "Unnamed",
-            type=data.get("type") or "String",
-            options=data.get("format_option")
-            or data.get("options")
-            or data.get("format_options"),
-        )
-
-    @classmethod
-    def from_dicts(cls, data: list[dict]) -> list["ResultColumn"]:
-        return [cls.from_dict(d) for d in data]
-
-
 class DoctypeBase(BaseDocument):
     doctype: str
 
@@ -80,26 +50,6 @@ class DoctypeBase(BaseDocument):
     @classmethod
     def delete_doc(cls, name):
         return frappe.delete_doc(cls.doctype, name)
-
-
-class InsightsChart(DoctypeBase):
-    doctype = "Insights Chart"
-
-
-class InsightsTable(DoctypeBase):
-    doctype = "Insights Table"
-
-
-class InsightsQuery(DoctypeBase):
-    doctype = "Insights Query"
-
-
-class InsightsDataSource(DoctypeBase):
-    doctype = "Insights Data Source"
-
-
-class InsightsQueryResult(DoctypeBase):
-    doctype = "Insights Query Result"
 
 
 class InsightsDataSourcev3(DoctypeBase):
@@ -200,7 +150,6 @@ class InsightsPageRenderer(TemplatePage):
             path = self.path
 
         embed_urls = [
-            "/insights_v2/public",
             "/insights/public",
             "/insights/shared",
         ]
@@ -214,9 +163,7 @@ class InsightsPageRenderer(TemplatePage):
         return super().render()
 
     def set_headers(self):
-        allowed_origins = frappe.db.get_single_value(
-            "Insights Settings", "allowed_origins"
-        )
+        allowed_origins = frappe.db.get_single_value("Insights Settings", "allowed_origins")
         if not allowed_origins:
             return
 
@@ -224,6 +171,4 @@ class InsightsPageRenderer(TemplatePage):
         allowed_origins = allowed_origins.split(",") if allowed_origins else []
         allowed_origins = [origin.strip() for origin in allowed_origins]
         allowed_origins = " ".join(allowed_origins)
-        self.headers[
-            "Content-Security-Policy"
-        ] = f"frame-ancestors 'self' {allowed_origins}"
+        self.headers["Content-Security-Policy"] = f"frame-ancestors 'self' {allowed_origins}"

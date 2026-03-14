@@ -6,8 +6,6 @@ import json
 import frappe
 from frappe.utils.install import complete_setup_wizard
 
-from insights.insights.doctype.insights_query.insights_query import InsightsQuery
-
 
 def before_tests():
     complete_setup_wizard()
@@ -21,18 +19,7 @@ def delete_all_records():
         frappe.db.delete(doctype)
 
 
-def create_query_store():
-    query_store = frappe.new_doc("Insights Data Source")
-    query_store.title = "Query Store"
-    query_store.save()
-
-
 def create_site_db():
-    data_source_fixture_path = frappe.get_app_path("insights", "fixtures", "insights_data_source.json")
-    with open(data_source_fixture_path) as f:
-        site_db = json.load(f)[0]
-        frappe.get_doc(site_db).insert()
-
     data_source_fixture_path = frappe.get_app_path("insights", "fixtures", "insights_data_source_v3.json")
     with open(data_source_fixture_path) as f:
         site_db = json.load(f)[0]
@@ -40,7 +27,7 @@ def create_site_db():
 
 
 def create_sqlite_db():
-    db = frappe.new_doc("Insights Data Source")
+    db = frappe.new_doc("Insights Data Source v3")
     db.title = "Test SQLite DB"
     db.database_type = "SQLite"
     db.database_name = "test_sqlite_db"
@@ -49,7 +36,6 @@ def create_sqlite_db():
 
 
 def import_todo_table(db):
-    # need to create todo table for test_insights_query.py
     import pandas as pd
 
     data = [
@@ -85,8 +71,8 @@ def import_todo_table(db):
     )
 
 
-def create_insights_query(title=None, data_source=None) -> InsightsQuery:
-    query = frappe.new_doc("Insights Query")
+def create_insights_query(title=None, data_source=None):
+    query = frappe.new_doc("Insights Query v3")
     query.title = title or "Test Query"
     query.data_source = data_source or "Site DB"
     query.save()

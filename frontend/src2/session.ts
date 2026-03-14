@@ -39,7 +39,6 @@ const session = reactive({
 	isAuthorized: computed(() => false),
 	initialize,
 	fetchSessionInfo,
-	updateDefaultVersion,
 	login,
 	logout,
 	resetSession,
@@ -68,11 +67,6 @@ async function fetchSessionInfo() {
 		has_desk_access: Boolean(userInfo.has_desk_access),
 		has_demo_data: Boolean(userInfo.has_demo_data),
 	})
-}
-
-function updateDefaultVersion(version: SessionUser['default_version']) {
-	session.user.default_version = version
-	return call('insights.api.update_default_version', { version })
 }
 
 async function login(email: string, password: string) {
