@@ -2,7 +2,6 @@
 import { ref } from 'vue'
 import { __ } from '../translation'
 import useTeamStore from './teams'
-import { __ } from '../translation'
 
 const show = defineModel()
 const teamStore = useTeamStore()
