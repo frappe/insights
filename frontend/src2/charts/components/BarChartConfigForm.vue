@@ -48,13 +48,17 @@ watchEffect(() => {
 
 	<YAxisConfig v-model="config.y_axis" :column-options="props.columnOptions">
 		<template #y-axis-settings="{ y_axis }">
-			<Toggle label="Stack" v-model="(y_axis as YAxisBar).stack" :disabled="hasAxisSplit" />
 			<Toggle
-				label="Overlap"
+				:label="__('Stack')"
+				v-model="(y_axis as YAxisBar).stack"
+				:disabled="hasAxisSplit"
+			/>
+			<Toggle
+				:label="__('Overlap')"
 				v-model="(y_axis as YAxisBar).overlap"
 				:disabled="hasAxisSplit"
 			/>
-			<Toggle label="Normalize" v-model="(y_axis as YAxisBar).normalize" />
+			<Toggle :label="__('Normalize')" v-model="(y_axis as YAxisBar).normalize" />
 		</template>
 	</YAxisConfig>
 

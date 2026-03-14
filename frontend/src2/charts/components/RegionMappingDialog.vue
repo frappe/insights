@@ -212,7 +212,9 @@ function getOptions(region: Region) {
 							<h3 class="text-sm font-medium text-gray-700">
 								{{ unresolvedRegions.length }}
 							</h3>
-							<h3 class="text-sm font-bold text-gray-900">Unresolved Locations</h3>
+							<h3 class="text-sm font-bold text-gray-900">
+								{{ __('Unresolved Locations') }}
+							</h3>
 						</div>
 						<div
 							class="h-[15rem] flex flex-col overflow-hidden rounded-md border bg-white"
@@ -256,7 +258,7 @@ function getOptions(region: Region) {
 							<h3 class="text-sm font-medium text-gray-700">
 								{{ manualMappings.length }}
 							</h3>
-							<h3 class="text-sm font-medium text-gray-900">Resolved</h3>
+							<h3 class="text-sm font-medium text-gray-900">{{ __('Resolved') }}</h3>
 						</div>
 
 						<div class="h-[10rem] overflow-y-auto rounded-md border bg-white">
@@ -265,7 +267,7 @@ function getOptions(region: Region) {
 									v-if="manualMappings.length === 0"
 									class="flex items-center justify-center flex-1 text-sm text-gray-500"
 								>
-									No Locations Resolved
+									{{ __('No Locations Resolved') }}
 								</div>
 								<div
 									v-for="mapping in manualMappings"

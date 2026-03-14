@@ -3,6 +3,7 @@ import { DatabaseZap } from 'lucide-vue-next'
 import { inject, ref } from 'vue'
 import { Query } from '../query'
 import SourceSelectorDialog from './source_selector/SourceSelectorDialog.vue'
+import { __ } from '../../translation'
 
 const query = inject('query') as Query
 const showSourceSelectorDialog = ref(true)
@@ -17,14 +18,14 @@ const showSourceSelectorDialog = ref(true)
 				<div class="rounded-full bg-orange-50 p-3">
 					<DatabaseZap class="h-5 w-5 text-orange-500/70" stroke-width="1.5" />
 				</div>
-				<p class="font-medium">No Table Selected</p>
+				<p class="font-medium">{{ __('No Table Selected') }}</p>
 				<span class="text-sm leading-4 text-gray-600">
-					Select a source table to start building your query.
+					{{ __('Select a source table to start building your query.') }}
 					<br />
-					You can also select a query as a source.
+					{{ __('You can also select a query as a source.') }}
 				</span>
 				<Button class="mt-2" variant="outline" @click="showSourceSelectorDialog = true">
-					Open Selector
+					{{ __('Open Selector') }}
 				</Button>
 			</div>
 		</div>

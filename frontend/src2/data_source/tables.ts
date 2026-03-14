@@ -77,14 +77,14 @@ const updatingDataSourceTables = ref(false)
 async function updateDataSourceTables(data_source: string) {
 	updatingDataSourceTables.value = true
 	createToast({
-		message: `Updating tables for ${data_source}`,
+		message: __('Updating tables for "{0}"', data_source),
 		variant: 'info',
 	})
 	return call('insights.api.data_sources.update_data_source_tables', { data_source })
 		.then(() => {
 			getTables(data_source)
 			createToast({
-				message: `Tables updated for ${data_source}`,
+				message: __('Tables updated for "{0}"', data_source),
 				variant: 'success',
 			})
 		})

@@ -4,6 +4,7 @@ import { SplitBy } from '../../types/chart.types'
 import { DimensionOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
+import { __ } from '../../translation'
 
 const props = defineProps<{
 	dimensions: DimensionOption[]
@@ -42,10 +43,10 @@ const dimension = computed({
 </script>
 
 <template>
-	<CollapsibleSection title="Split Series">
+	<CollapsibleSection :title="__('Split Series')">
 		<div class="flex flex-col gap-3 pt-1">
 			<DimensionPicker
-				label="Split By"
+				:label="__('Split By')"
 				:options="props.dimensions"
 				:modelValue="dimension"
 				@update:modelValue="dimension = $event || {}"
@@ -55,7 +56,7 @@ const dimension = computed({
 			<FormControl
 				v-if="dimension?.column_name"
 				type="number"
-				label="Max Split Values"
+				:label="__('Max Split Values')"
 				placeholder="Split Values"
 				autocomplete="off"
 				:modelValue="split_by.max_split_values"

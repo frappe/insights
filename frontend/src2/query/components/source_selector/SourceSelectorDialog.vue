@@ -28,7 +28,7 @@ const selectedTable = ref<TableArgs>(
 const dataSourceStore = useDataSourceStore()
 const tabGroups = ref<TabGroup[]>([
 	{
-		groupLabel: 'Data Sources',
+		groupLabel: __('Data Sources'),
 		tabs: [],
 	},
 ])

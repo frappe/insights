@@ -10,6 +10,7 @@ import { AxisChartConfig } from '../../types/chart.types'
 import { ColumnOption, MeasureOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import MeasurePicker from './MeasurePicker.vue'
+import { __ } from '../../translation'
 
 const props = defineProps<{ columnOptions: ColumnOption[] }>()
 const y_axis = defineModel<AxisChartConfig['y_axis']>({
@@ -39,10 +40,10 @@ const updateColor = debounce((color: string, idx: number) => {
 </script>
 
 <template>
-	<CollapsibleSection title="Y Axis">
+	<CollapsibleSection :title="__('Y Axis')">
 		<div class="flex flex-col gap-3 pt-1">
 			<div>
-				<p class="mb-1.5 text-xs text-gray-600">Series</p>
+				<p class="mb-1.5 text-xs text-gray-600">{{ __('Series') }}</p>
 				<div>
 					<DraggableList v-model:items="y_axis.series" group="series">
 						<template #item="{ item, index }">
@@ -53,21 +54,21 @@ const updateColor = debounce((color: string, idx: number) => {
 								@remove="y_axis.series.splice(index, 1)"
 							>
 								<template #config-fields>
-									<InlineFormControlLabel label="Type">
+									<InlineFormControlLabel :label="__('Type')">
 										<FormControl
 											type="select"
 											v-model="item.type"
 											:options="['Line', 'Bar']"
 										/>
 									</InlineFormControlLabel>
-									<InlineFormControlLabel label="Align">
+									<InlineFormControlLabel :label="__('Align')">
 										<FormControl
 											type="select"
 											v-model="item.align"
 											:options="['Left', 'Right']"
 										/>
 									</InlineFormControlLabel>
-									<InlineFormControlLabel label="Color">
+									<InlineFormControlLabel :label="__('Color')">
 										<ColorInput
 											:model-value="item.color?.[0]"
 											@update:model-value="updateColor($event, index)"
@@ -75,11 +76,11 @@ const updateColor = debounce((color: string, idx: number) => {
 										/>
 									</InlineFormControlLabel>
 									<Toggle
-										label="Show Data Labels"
+										:label="__('Show Data Labels')"
 										v-model="item.show_data_labels"
 									/>
 									<Toggle
-										label="Hide from Chart"
+										:label="__('Hide from Chart')"
 										v-model="item.hide_from_chart"
 									/>
 
@@ -92,25 +93,25 @@ const updateColor = debounce((color: string, idx: number) => {
 						class="mt-1.5 text-left text-xs text-gray-600 hover:underline"
 						@click="addSeries"
 					>
-						+ Add series
+						{{ __('+ Add series') }}
 					</button>
 				</div>
 			</div>
 
 			<slot name="y-axis-settings" :y_axis="y_axis" />
-			<Toggle label="Show Data Labels" v-model="y_axis.show_data_labels" />
-			<Toggle label="Show Axis Label" v-model="y_axis.show_axis_label" />
-			<Toggle label="Show Scrollbar" v-model="y_axis.show_scrollbar" />
+			<Toggle :label="__('Show Data Labels')" v-model="y_axis.show_data_labels" />
+			<Toggle :label="__('Show Axis Label')" v-model="y_axis.show_axis_label" />
+			<Toggle :label="__('Show Scrollbar')" v-model="y_axis.show_scrollbar" />
 			<FormControl
 				v-if="y_axis.show_axis_label"
 				v-model="y_axis.axis_label"
-				label="Axis Label"
+				:label="__('Axis Label')"
 			/>
 
-			<InlineFormControlLabel label="Y-Min" class="w-1/2">
+			<InlineFormControlLabel :label="__('Y-Min')" class="w-1/2">
 				<FormControl type="number" v-model="y_axis.min" placeholder="Min" />
 			</InlineFormControlLabel>
-			<InlineFormControlLabel label="Y-Max" class="w-1/2">
+			<InlineFormControlLabel :label="__('Y-Max')" class="w-1/2">
 				<FormControl type="number" v-model="y_axis.max" placeholder="Max" />
 			</InlineFormControlLabel>
 		</div>

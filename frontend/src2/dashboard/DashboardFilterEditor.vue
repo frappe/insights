@@ -123,7 +123,7 @@ function saveEdit() {
 							autocomplete="off"
 						/>
 						<div class="flex flex-col gap-1.5">
-							<label class="block text-xs text-ink-gray-5"> Icon </label>
+							<label class="block text-xs text-ink-gray-5">{{ __('Icon') }}</label>
 							<IconPicker v-model="filter.icon" />
 						</div>
 					</div>
@@ -137,7 +137,7 @@ function saveEdit() {
 					/>
 				</div>
 				<div class="flex flex-col">
-					<div class="mb-1 text-p-sm text-gray-700">Linked Charts</div>
+					<div class="mb-1 text-p-sm text-gray-700">{{ __('Linked Charts') }}</div>
 					<div
 						v-for="link in linkOptions"
 						:key="link.name"

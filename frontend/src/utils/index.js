@@ -238,7 +238,7 @@ export function updateDocumentTitle(meta) {
 				return
 			}
 		},
-		{ immediate: true, deep: true }
+		{ immediate: true, deep: true },
 	)
 }
 
@@ -336,7 +336,7 @@ export function copyToClipboard(text) {
 		navigator.clipboard.writeText(text)
 		createToast({
 			variant: 'success',
-			title: 'Copied to clipboard',
+			title: __('Copied to clipboard'),
 		})
 	} else {
 		// try to use execCommand
@@ -350,7 +350,7 @@ export function copyToClipboard(text) {
 			document.execCommand('copy')
 			createToast({
 				variant: 'success',
-				title: 'Copied to clipboard',
+				title: __('Copied to clipboard'),
 			})
 		} catch (err) {
 			createToast({

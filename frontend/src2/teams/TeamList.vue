@@ -75,7 +75,7 @@ const showCreateTeamDialog = ref(false)
 const showEditTeamDialog = ref(false)
 const editTeam = ref<Team | null>(null)
 
-document.title = 'Teams | Insights'
+document.title = __('Teams | Insights')
 </script>
 
 <template>
@@ -84,7 +84,7 @@ document.title = 'Teams | Insights'
 		<div class="flex items-center gap-2">
 			<Button
 				v-if="session.user.is_admin"
-				label="Create Team"
+				:label="__('Create Team')"
 				variant="solid"
 				@click="showCreateTeamDialog = true"
 			>

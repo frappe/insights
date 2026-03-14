@@ -94,11 +94,11 @@ const generalAccess = computed({
 		<template #body-content>
 			<div class="flex flex-col gap-4">
 				<div class="flex flex-col gap-2">
-					<span class="text-sm text-gray-600">General Access</span>
+					<span class="text-sm text-gray-600">{{ __('General Access') }}</span>
 					<div class="flex gap-2">
 						<div class="flex-1">
 							<Autocomplete
-								placeholder="Select an option"
+								:placeholder="__('Select an option')"
 								:hide-search="true"
 								v-model="generalAccess"
 								:options="[
@@ -118,10 +118,10 @@ const generalAccess = computed({
 							>
 							</Autocomplete>
 						</div>
-						<Tooltip text="Copy Link" :hoverDelay="0.1">
+						<Tooltip text="__('Copy Link')" :hoverDelay="0.1">
 							<Button icon="link-2" @click="copyToClipboard(shareLink)"> </Button>
 						</Tooltip>
-						<Tooltip text="Copy Embed" :hoverDelay="0.1">
+						<Tooltip text="__('Copy Embed')" :hoverDelay="0.1">
 							<Button icon="code" @click="copyToClipboard(iFrameLink)"> </Button>
 						</Tooltip>
 					</div>
@@ -134,7 +134,7 @@ const generalAccess = computed({
 						<div class="flex-1">
 							<UserSelector
 								v-model="selectedUserEmail"
-								placeholder="Search by name or email"
+								:placeholder="__('Search by name or email')"
 								:hide-users="peopleWithAccess.map((u) => u.email)"
 							/>
 						</div>
@@ -146,17 +146,17 @@ const generalAccess = computed({
 							@click="addSharedUser"
 						></Button>
 					</div>
-					<span class="mb-2 text-sm text-gray-600">People with access</span>
+					<span class="mb-2 text-sm text-gray-600">{{ __('People with access') }}</span>
 					<div class="flex flex-col gap-1 overflow-y-auto">
 						<div class="flex w-full items-center gap-2 py-1">
 							<Avatar size="xl" label="You" :image="session.user.user_image" />
 							<div class="flex flex-1 flex-col">
-								<div class="leading-5">You</div>
+								<div class="leading-5">{{ __('You') }}</div>
 								<div class="text-xs text-gray-600">
 									{{ session.user.email }}
 								</div>
 							</div>
-							<Badge size="lg" theme="orange">Owner</Badge>
+							<Badge size="lg" theme="orange">{{ __('Owner') }}</Badge>
 						</div>
 						<div
 							v-for="user in peopleWithAccess"

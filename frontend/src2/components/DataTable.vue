@@ -3,6 +3,7 @@ import { Button, Dialog, FormControl, LoadingIndicator } from 'frappe-ui'
 import { ChevronLeft, ChevronRight, Download, Plus, Search, Table2Icon } from 'lucide-vue-next'
 import { computed, nextTick, reactive, ref } from 'vue'
 import { createHeaders, formatNumber, getShortNumber } from '../helpers'
+import { __ } from '../translation'
 import { FIELDTYPES } from '../helpers/constants'
 import { QueryResultColumn, QueryResultRow, SortDirection, SortOrder } from '../types/query.types'
 import DataTableColumn from './DataTableColumn.vue'
@@ -55,7 +56,7 @@ const columnsMeta = computed(() => {
 	props.columns.forEach((col) => {
 		const name = col.name
 		const hasColorScaleFormatting = formattingRulesByColumn.value[name]?.some(
-			(rule) => rule.mode === 'color_scale'
+			(rule) => rule.mode === 'color_scale',
 		)
 		const metadata = {
 			isNumber: FIELDTYPES.NUMBER.includes(col.type) || hasColorScaleFormatting,
@@ -322,7 +323,7 @@ function getColorClass(colorName: string): string {
 
 const getColumnMinMax = (columnName: string) => {
 	const colorScaleFormats = formattingRulesByColumn.value[columnName]?.filter(
-		(rule) => rule.mode === 'color_scale'
+		(rule) => rule.mode === 'color_scale',
 	)
 
 	if (!colorScaleFormats?.length) {
@@ -354,13 +355,13 @@ const getColumnMinMax = (columnName: string) => {
 				const measureName = parts[parts.length - 1]
 
 				const hasMultiValuePivot = allFormattedColumns.some((col) =>
-					col.endsWith('___' + measureName)
+					col.endsWith('___' + measureName),
 				)
 
 				if (hasMultiValuePivot) {
 					// multi-value pivot: only include columns ending with the same measure
 					columnsToConsider = allFormattedColumns.filter((col) =>
-						col.endsWith('___' + measureName)
+						col.endsWith('___' + measureName),
 					)
 				} else {
 					// multi-column pivot: all formatted columns represent the same measure
@@ -789,7 +790,7 @@ function toggleNewColumn() {
 	<div v-else class="flex h-full w-full items-center justify-center">
 		<div class="flex flex-col items-center gap-2">
 			<Table2Icon class="h-16 w-16 text-gray-300" stroke-width="1.5" />
-			<p class="text-center text-gray-500">No data to display.</p>
+			<p class="text-center text-gray-500">{{ __('No data to display.') }}</p>
 		</div>
 	</div>
 

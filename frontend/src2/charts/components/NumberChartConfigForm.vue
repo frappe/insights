@@ -10,6 +10,7 @@ import { ColumnOption, Dimension, DimensionOption, MeasureOption } from '../../t
 import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
+import { __ } from '../../translation'
 
 const props = defineProps<{
 	dimensions: DimensionOption[]
@@ -65,10 +66,10 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 </script>
 
 <template>
-	<CollapsibleSection title="Options">
+	<CollapsibleSection :title="__('Options')">
 		<div class="flex flex-col gap-3 pt-1">
 			<div>
-				<p class="mb-1.5 text-xs text-gray-600">Columns</p>
+				<p class="mb-1.5 text-xs text-gray-600">{{ __('Columns') }}</p>
 				<div>
 					<DraggableList v-model:items="config.number_columns" group="numbers">
 						<template #item="{ item, index }">
@@ -79,7 +80,7 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 								@remove="config.number_columns.splice(index, 1)"
 							>
 								<template #config-fields>
-									<InlineFormControlLabel label="Prefix">
+									<InlineFormControlLabel :label="__('Prefix')">
 										<FormControl
 											autocomplete="off"
 											:modelValue="getNumberOption(index, 'prefix')"
@@ -88,7 +89,7 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 											"
 										/>
 									</InlineFormControlLabel>
-									<InlineFormControlLabel label="Suffix">
+									<InlineFormControlLabel :label="__('Suffix')">
 										<FormControl
 											autocomplete="off"
 											:modelValue="getNumberOption(index, 'suffix')"
@@ -97,7 +98,7 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 											"
 										/>
 									</InlineFormControlLabel>
-									<InlineFormControlLabel label="Decimal">
+									<InlineFormControlLabel :label="__('Decimal')">
 										<FormControl
 											autocomplete="off"
 											:modelValue="getNumberOption(index, 'decimal')"
@@ -107,7 +108,7 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 											type="number"
 										/>
 									</InlineFormControlLabel>
-									<InlineFormControlLabel label="Color">
+									<InlineFormControlLabel :label="__('Color')">
 										<ColorInput
 											:model-value="getNumberOption(index, 'color')"
 											@update:model-value="
@@ -118,7 +119,7 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 									</InlineFormControlLabel>
 
 									<Toggle
-										label="Show short numbers"
+										:label="__('Show short numbers')"
 										:modelValue="getNumberOption(index, 'shorten_numbers')"
 										@update:modelValue="
 											setNumberOption(index, 'shorten_numbers', $event)
@@ -132,45 +133,49 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 						class="mt-1.5 text-left text-xs text-gray-600 hover:underline"
 						@click="config.number_columns.push({} as any)"
 					>
-						+ Add column
+						{{ __('+ Add column') }}
 					</button>
 				</div>
 			</div>
 
 			<DimensionPicker
-				label="Date"
+				:label="__('Date')"
 				:options="date_dimensions"
 				:model-value="config.date_column as Dimension"
 				@update:model-value="config.date_column = $event || {}"
 			/>
 
-			<InlineFormControlLabel label="Prefix">
+			<InlineFormControlLabel :label="__('Prefix')">
 				<FormControl v-model="config.prefix" autocomplete="off" />
 			</InlineFormControlLabel>
-			<InlineFormControlLabel label="Suffix">
+			<InlineFormControlLabel :label="__('Suffix')">
 				<FormControl v-model="config.suffix" autocomplete="off" />
 			</InlineFormControlLabel>
-			<InlineFormControlLabel label="Decimal">
+			<InlineFormControlLabel :label="__('Decimal')">
 				<FormControl v-model="config.decimal" type="number" autocomplete="off" />
 			</InlineFormControlLabel>
 
-			<Toggle label="Show short numbers" v-model="config.shorten_numbers" />
+			<Toggle :label="__('Show short numbers')" v-model="config.shorten_numbers" />
 
 			<Toggle
 				v-if="config.date_column?.column_name"
-				label="Show comparison"
+				:label="__('Show comparison')"
 				v-model="config.comparison"
 			/>
 
 			<Toggle
 				v-if="config.comparison"
-				label="Negative is better"
+				:label="__('Negative is better')"
 				v-model="config.negative_is_better"
 			/>
 
-			<Toggle v-if="config.comparison" label="Show sparkline" v-model="config.sparkline" />
+			<Toggle
+				v-if="config.comparison"
+				:label="__('Show sparkline')"
+				v-model="config.sparkline"
+			/>
 
-			<InlineFormControlLabel v-if="config.sparkline" label="Color">
+			<InlineFormControlLabel v-if="config.sparkline" :label="__('Color')">
 				<ColorInput
 					:model-value="config.sparkline_color"
 					@update:model-value="updateColor($event)"

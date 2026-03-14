@@ -39,19 +39,19 @@ const discrete_dimensions = computed(() =>
 	<CollapsibleSection title="Options">
 		<div class="flex flex-col gap-3 pt-1">
 			<DimensionPicker
-				label="Label"
+				:label="__('Label')"
 				v-model="config.label_column"
 				:options="discrete_dimensions"
 			/>
 			<MeasurePicker
-				label="Value"
+				:label="__('Value')"
 				v-model="config.value_column"
 				:column-options="props.columnOptions"
 			/>
 			<FormControl
 				v-if="!config.show_inline_labels"
 				v-model="config.legend_position"
-				label="Legend Position"
+				:label="__('Legend Position')"
 				type="select"
 				:options="[
 					{ label: __('Top'), value: 'top' },
@@ -60,8 +60,13 @@ const discrete_dimensions = computed(() =>
 					{ label: __('Right'), value: 'right' },
 				]"
 			/>
-			<FormControl v-model="config.max_slices" label="Max Slices" type="number" min="1" />
-			<Toggle v-model="config.show_inline_labels" label="Inline Labels" />
+			<FormControl
+				v-model="config.max_slices"
+				:label="__('Max Slices')"
+				type="number"
+				min="1"
+			/>
+			<Toggle v-model="config.show_inline_labels" :label="__('Inline Labels')" />
 		</div>
 	</CollapsibleSection>
 </template>

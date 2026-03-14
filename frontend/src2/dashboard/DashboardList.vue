@@ -37,13 +37,13 @@ const toggleFavorite = (dashboard: DashboardListItem) => {
 }
 
 watchEffect(() => {
-	document.title = 'Dashboards | Insights'
+	document.title = __('Dashboards | Insights')
 })
 </script>
 
 <template>
 	<header class="flex h-12 items-center justify-between border-b py-2.5 pl-5 pr-2">
-		<Breadcrumbs :items="[{ label: 'Dashboards', route: '/dashboards' }]" />
+		<Breadcrumbs :items="[{ label: __('Dashboards'), route: '/dashboards' }]" />
 		<div class="flex items-center gap-2"></div>
 	</header>
 
@@ -74,7 +74,7 @@ watchEffect(() => {
 			<!-- all dashboards -->
 			<div v-if="store.dashboards.length">
 				<h2 v-if="favorites.length > 0" class="mb-4 text-lg font-semibold text-gray-700">
-					All Dashboards
+					{{ __('All Dashboards') }}
 				</h2>
 				<div class="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 					<DashboardCard

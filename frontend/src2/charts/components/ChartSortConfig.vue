@@ -4,6 +4,7 @@ import { computed } from 'vue'
 import DraggableList from '../../components/DraggableList.vue'
 import { column } from '../../query/helpers'
 import { ColumnOption, OrderByArgs } from '../../types/query.types'
+import { __ } from '../../translation'
 
 const props = defineProps<{ columnOptions: ColumnOption[] }>()
 const sortColumns = defineModel<OrderByArgs[]>({
@@ -112,7 +113,7 @@ function moveSortColumn(from: number, to: number) {
 					<template #prefix>
 						<Plus class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 					</template>
-					Add Sort
+					{{ __('Add Sort') }}
 				</Button>
 			</template>
 		</Autocomplete>
