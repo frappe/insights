@@ -145,7 +145,11 @@ document.title = __('Data Sources | Insights')
 	<header class="flex h-12 items-center justify-between border-b py-2.5 pl-5 pr-2">
 		<Breadcrumbs :items="[{ label: __('Data Sources'), route: '/data-source' }]" />
 		<div class="flex items-center gap-2">
-			<Button :label="__('New Data Source')" variant="solid" @click="showNewSourceDialog = true">
+			<Button
+				:label="__('New Data Source')"
+				variant="solid"
+				@click="showNewSourceDialog = true"
+			>
 				<template #prefix>
 					<PlusIcon class="w-4" />
 				</template>
@@ -155,7 +159,7 @@ document.title = __('Data Sources | Insights')
 
 	<div class="mb-4 flex h-full flex-col gap-3 overflow-auto px-5 py-3">
 		<div class="flex gap-2 overflow-visible py-1">
-			<FormControl placeholder="Search by Title" v-model="searchQuery" :debounce="300">
+			<FormControl :placeholder="__('Search by Title')" v-model="searchQuery" :debounce="300">
 				<template #prefix>
 					<SearchIcon class="h-4 w-4 text-gray-500" />
 				</template>

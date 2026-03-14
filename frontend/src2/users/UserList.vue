@@ -147,7 +147,7 @@ document.title = 'Users | Insights'
 		<div class="flex items-center gap-2">
 			<Button
 				v-if="session.user.is_admin"
-				label="Invite User"
+				:label="__('Invite User')"
 				variant="solid"
 				@click="showInviteUserDialog = true"
 			>
@@ -206,7 +206,7 @@ document.title = 'Users | Insights'
 						<input
 							type="text"
 							autocomplete="off"
-							placeholder="Enter email address"
+							:placeholder="__('Enter email address')"
 							v-model="emailsTxt"
 							@keydown.enter.capture.stop="extractEmails(`${emailsTxt} `)"
 							class="h-7 w-full rounded border-none bg-gray-100 py-1.5 pl-2 pr-2 text-base text-gray-800 placeholder-gray-500 transition-colors focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"

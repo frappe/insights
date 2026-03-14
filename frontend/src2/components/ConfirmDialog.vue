@@ -16,7 +16,7 @@
 		</template>
 		<template #actions>
 			<div class="flex items-center justify-end space-x-2">
-				<Button @click="show = false">Cancel</Button>
+				<Button @click="show = false">{{ __('Cancel')}}</Button>
 				<Button
 					variant="solid"
 					:theme="$props.theme"

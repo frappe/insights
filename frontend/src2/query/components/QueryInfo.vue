@@ -5,6 +5,7 @@ import { confirmDialog } from '../../helpers/confirm_dialog'
 import { Query } from '../query'
 import useSettings from '../../settings/settings'
 import LazyTextInput from '../../components/LazyTextInput.vue'
+import { __ } from '../../translation'
 
 const query = inject('query') as Query
 const settings = useSettings()
@@ -28,15 +29,15 @@ function toggleLiveConnection(enable: boolean) {
 	<div class="flex flex-col px-3.5 pt-3">
 		<div class="mb-1 flex h-6 items-center justify-between">
 			<div class="flex items-center gap-1">
-				<div class="text-sm font-medium">Details</div>
+				<div class="text-sm font-medium">{{ __('Details') }}</div>
 			</div>
 			<div></div>
 		</div>
 		<div class="flex flex-shrink-0 flex-col gap-2.5 border-b px-0.5 pb-3">
-			<InlineFormControlLabel label="Query Title">
+			<InlineFormControlLabel :label="__('Query Title')">
 				<LazyTextInput
 					type="text"
-					placeholder="Title"
+					:placeholder="__('Title')"
 					v-model="query.doc.title"
 				/>
 			</InlineFormControlLabel>

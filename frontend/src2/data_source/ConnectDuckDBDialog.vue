@@ -21,7 +21,7 @@ const fields = [
 		name: 'title',
 		label: __('Title'),
 		type: 'text',
-		placeholder: 'My Database',
+		placeholder: __('My Database'),
 		required: true,
 	},
 	{

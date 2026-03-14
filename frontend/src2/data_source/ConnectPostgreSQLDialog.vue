@@ -27,7 +27,7 @@ const fields = [
 		name: 'title',
 		label: __('Title'),
 		type: 'text',
-		placeholder: 'My Database',
+		placeholder: __('My Database'),
 		required: true,
 	},
 	{
@@ -64,7 +64,7 @@ const fields = [
 		label: __('Username'),
 		name: 'username',
 		type: 'text',
-		placeholder: 'read_only_user',
+		placeholder: __('read_only_user'),
 		required: true,
 	},
 	{

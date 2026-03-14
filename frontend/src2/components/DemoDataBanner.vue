@@ -49,7 +49,7 @@ function dismiss() {
 			<div class="flex flex-col gap-1">
 				<div class="font-medium text-p-base text-gray-900">{{ __('Try demo data') }}</div>
 				<div class="text-p-xs text-gray-600">
-					Explore with sample data and a pre-built workbook
+					{{ __('Explore with sample data and a pre-built workbook') }}
 				</div>
 			</div>
 			<button
