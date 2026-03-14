@@ -5,8 +5,6 @@ import { SortDirection } from '../types/query.types'
 import { __ } from '../translation'
 import ContentEditable from './ContentEditable.vue'
 
-
-
 const props = defineProps<{
 	label: string
 	sortOrder?: SortDirection
