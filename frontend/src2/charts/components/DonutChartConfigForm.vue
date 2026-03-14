@@ -60,7 +60,11 @@ const discrete_dimensions = computed(() =>
 					{ label: __('Right'), value: 'right' },
 				]"
 			/>
-			<FormControl v-model="config.max_slices" :label="__('Max Slices')" type="number" min="1" />
+			<FormControl
+				v-model="config.max_slices"
+				:label="__('Max Slices')"
+				type="number" min="1"
+			/>
 			<Toggle v-model="config.show_inline_labels" :label="__('Inline Labels')" />
 		</div>
 	</CollapsibleSection>

@@ -99,7 +99,10 @@ function selectDimension(option?: DimensionOption) {
 						/>
 					</InlineFormControlLabel>
 
-					<InlineFormControlLabel v-if="isDate(dimension.data_type)" :label="__('Granularity')">
+					<InlineFormControlLabel
+						v-if="isDate(dimension.data_type)"
+						:label="__('Granularity')"
+					>
 						<FormControl
 							type="select"
 							v-model="dimension.granularity"

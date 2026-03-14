@@ -56,7 +56,7 @@ const columnsMeta = computed(() => {
 	props.columns.forEach((col) => {
 		const name = col.name
 		const hasColorScaleFormatting = formattingRulesByColumn.value[name]?.some(
-			(rule) => rule.mode === 'color_scale'
+			(rule) => rule.mode === 'color_scale',
 		)
 		const metadata = {
 			isNumber: FIELDTYPES.NUMBER.includes(col.type) || hasColorScaleFormatting,
@@ -323,7 +323,7 @@ function getColorClass(colorName: string): string {
 
 const getColumnMinMax = (columnName: string) => {
 	const colorScaleFormats = formattingRulesByColumn.value[columnName]?.filter(
-		(rule) => rule.mode === 'color_scale'
+		(rule) => rule.mode === 'color_scale',
 	)
 
 	if (!colorScaleFormats?.length) {
@@ -355,13 +355,13 @@ const getColumnMinMax = (columnName: string) => {
 				const measureName = parts[parts.length - 1]
 
 				const hasMultiValuePivot = allFormattedColumns.some((col) =>
-					col.endsWith('___' + measureName)
+					col.endsWith('___' + measureName),
 				)
 
 				if (hasMultiValuePivot) {
 					// multi-value pivot: only include columns ending with the same measure
 					columnsToConsider = allFormattedColumns.filter((col) =>
-						col.endsWith('___' + measureName)
+						col.endsWith('___' + measureName),
 					)
 				} else {
 					// multi-column pivot: all formatted columns represent the same measure

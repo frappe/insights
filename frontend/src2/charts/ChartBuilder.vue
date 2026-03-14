@@ -92,7 +92,11 @@ const showShareDialog = ref(false)
 					<ChartTypeSelector v-model="chart.doc.chart_type" />
 					<ChartQuerySelector v-model="chart.doc.query" :queries="props.queries" />
 					<InlineFormControlLabel :label="__('Title')">
-						<LazyTextInput type="text" :placeholder="__('Title')" v-model="chart.doc.title" />
+						<LazyTextInput
+							type="text"
+							:placeholder="__('Title')"
+							v-model="chart.doc.title"
+						/>
 					</InlineFormControlLabel>
 				</div>
 			</CollapsibleSection>

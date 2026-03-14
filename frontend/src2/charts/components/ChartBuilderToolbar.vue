@@ -69,8 +69,12 @@ const moreActions = [
 			>
 				<div class="h-2 w-2 rounded-full bg-green-500"></div>
 				<div>
-					<span v-if="chart.dataQuery.result.timeTaken == -1"> {{ __('Fetched from cache') }} </span>
-					<span v-else> {{ __('Fetched in') }} {{ chart.dataQuery.result.timeTaken }}s </span>
+					<span v-if="chart.dataQuery.result.timeTaken == -1">
+						{{ __('Fetched from cache') }}
+					</span>
+					<span v-else>
+						{{ __('Fetched in') }} {{ chart.dataQuery.result.timeTaken }}s
+					</span>
 					<span> {{ useTimeAgo(chart.dataQuery.result.lastExecutedAt).value }} </span>
 				</div>
 			</div>

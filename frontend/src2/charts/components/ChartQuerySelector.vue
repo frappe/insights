@@ -22,7 +22,7 @@ wheneverChanges(
 			}
 		}
 	},
-	{ immediate: true }
+	{ immediate: true },
 )
 </script>
 

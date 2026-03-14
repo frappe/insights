@@ -422,17 +422,17 @@ const isInvalidColumn = computed(() => {
 					<RadioGroupItem value="global" class="[&_label]:w-full">
 						<div class="flex flex-col gap-0.5">
 							<span class="text-sm font-medium">{{ __('Global') }}</span>
-							<span class="text-xs text-gray-500"
-								>{{ __('Compare across all formatted columns') }}</span
-							>
+							<span class="text-xs text-gray-500">{{
+								__('Compare across all formatted columns')
+							}}</span>
 						</div>
 					</RadioGroupItem>
 					<RadioGroupItem value="local" class="[&_label]:w-full">
 						<div class="flex flex-col gap-0.5">
 							<span class="text-sm font-medium">{{ __('Local') }}</span>
-							<span class="text-xs text-gray-500"
-								>{{ __('Compare within each column independently') }}</span
-							>
+							<span class="text-xs text-gray-500">{{
+								__('Compare within each column independently')
+							}}</span>
 						</div>
 					</RadioGroupItem>
 				</RadioGroup>

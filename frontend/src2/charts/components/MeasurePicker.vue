@@ -150,7 +150,9 @@ const label = ref('')
 								<span v-if="measure.measure_name">
 									{{ measure.measure_name }}
 								</span>
-								<span v-else class="text-gray-500"> {{ __('Select a column') }} </span>
+								<span v-else class="text-gray-500">
+									{{ __('Select a column') }}
+								</span>
 							</div>
 						</button>
 					</div>

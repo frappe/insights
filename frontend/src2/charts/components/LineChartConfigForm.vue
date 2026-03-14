@@ -28,12 +28,18 @@ const config = defineModel<LineChartConfig>({
 		<template #y-axis-settings="{ y_axis }">
 			<Toggle :label="__('Curved Lines')" v-model="(y_axis as YAxisLine).smooth" />
 			<Toggle :label="__('Show Area')" v-model="(y_axis as YAxisLine).show_area" />
-			<Toggle :label="__('Show Data Points')" v-model="(y_axis as YAxisLine).show_data_points" />
+			<Toggle
+				:label="__('Show Data Points')"
+				v-model="(y_axis as YAxisLine).show_data_points"
+			/>
 		</template>
 		<template #series-settings="{ series }">
 			<Toggle :label="__('Curved Lines')" v-model="(series as SeriesLine).smooth" />
 			<Toggle :label="__('Show Area')" v-model="(series as SeriesLine).show_area" />
-			<Toggle :label="__('Show Data Points')" v-model="(series as SeriesLine).show_data_points" />
+			<Toggle
+				:label="__('Show Data Points')"
+				v-model="(series as SeriesLine).show_data_points"
+			/>
 		</template>
 	</YAxisConfig>
 

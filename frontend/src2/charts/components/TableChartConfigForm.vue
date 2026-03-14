@@ -59,7 +59,7 @@ const measuresAsDimensions = computed<DimensionOption[]>(() =>
 			dimension_name: o.label,
 			label: o.label,
 			value: o.value,
-		}))
+		})),
 )
 
 const dimensions = computed(() => [...props.dimensions, ...measuresAsDimensions.value])
@@ -286,7 +286,7 @@ function toggleStickyColumn(column_name: string, is_sticky: boolean) {
 				<template #prefix>
 					<Plus class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 				</template>
-				{{ __('Add Rule')}}
+				{{ __('Add Rule') }}
 			</Button>
 		</div>
 	</CollapsibleSection>

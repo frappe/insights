@@ -113,7 +113,7 @@ function moveSortColumn(from: number, to: number) {
 					<template #prefix>
 						<Plus class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 					</template>
-					{{ __('Add Sort')}}
+					{{ __('Add Sort') }}
 				</Button>
 			</template>
 		</Autocomplete>
