@@ -82,5 +82,4 @@ function submit() {
 			</div>
 		</template>
 	</Dialog>
-
 </template>
