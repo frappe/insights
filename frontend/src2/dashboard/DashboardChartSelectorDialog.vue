@@ -5,7 +5,6 @@ import ChartIcon from '../charts/components/ChartIcon.vue'
 import { copy } from '../helpers'
 import { WorkbookChart } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
-import { __ } from '../translation'
 
 const showDialog = defineModel()
 const props = defineProps<{ chartOptions: WorkbookChart[] }>()
