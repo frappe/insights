@@ -33,7 +33,6 @@ if (!config.value.yAxis) {
 if (!config.value.size_column) {
 	config.value.size_column = {} as Measure
 }
-
 </script>
 
 <template>
