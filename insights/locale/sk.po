@@ -1,0 +1,395 @@
+# Translations template for Insights.
+# Copyright (C) 2026 Frappe Technologies Pvt. Ltd.
+# This file is distributed under the same license as the Insights project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Insights VERSION\n"
+"Report-Msgid-Bugs-To: hello@frappe.io\n"
+"POT-Creation-Date: 2026-03-10 01:25+0000\n"
+"PO-Revision-Date: 2026-03-12 22:51+0100\n"
+"Last-Translator: \n"
+"Language-Team: hello@frappe.io\n"
+"Language: sk\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+"X-Generator: Poedit 3.9\n"
+
+
+msgid "Data Sources"
+msgstr "Zdroje dát"
+
+msgid "Data Source"
+msgstr "Zdroj dát"
+
+msgid "Modified"
+msgstr "Zmenené"
+
+msgid "New Data Source"
+msgstr "Nový zdroj dát"
+
+msgid "Select a data source"
+msgstr "Vybrať zdroj dát"
+
+msgid "New Workbook"
+msgstr "Nový zošit"
+
+msgid "Workbooks"
+msgstr "Zošity"
+
+msgid "Share"
+msgstr "Zdieľať"
+
+msgid "Access"
+msgstr "Prístup"
+
+msgid "Fiscal Year Start"
+msgstr "Začiatok fiškálneho roka"
+
+msgid "Set up sample data and a pre-built workbook to explore Insights features."
+msgstr "Nastavte ukážkové dáta a predpripravený zošit, aby ste mohli preskúmať funkcie Insights."
+
+msgid "Set the start of the fiscal year for the organization. This will be used to calculate quarterly and yearly data."
+msgstr "Nastavte začiatok fiškálneho roka pre organizáciu. Tento údaj sa použije na výpočet štvrťročných a ročných dát."
+
+msgid "Week Starts On"
+msgstr "Pracovný týždeň začína"
+
+msgid "Set the start of the week for the organization. This will be used to calculate weekly data."
+msgstr "Nastavte začiatok týždňa pre organizáciu. Tento údaj sa použije na výpočet týždenných dát."
+
+msgid "Appears in the top left corner of the application and in the browser tab next to the page title. Recommended size: 32x32px in PNG format."
+msgstr "Zobrazuje sa v ľavom hornom rohu aplikácie a na karte prehliadača vedľa názvu stránky. Odporúčaná veľkosť: 32 × 32 px vo formáte PNG."
+
+msgid "Search by Title"
+msgstr "Hľadať podľa názvu"
+
+msgid "Search by name"
+msgstr "Hľadať podľa mena"
+
+msgid "Search"
+msgstr "Hľadať"
+
+msgid "Setup Demo Data"
+msgstr "Nastaviť demo dáta"
+
+msgid "Invite User"
+msgstr "Pozvať používateľa"
+
+msgid "Only you have access to this workbook"
+msgstr "K tomuto zošitu máte prístup iba vy"
+
+msgid "All users in your organization can :access this workbook"
+msgstr "Všetci používatelia vo vašej organizácii môžu tento zošit :access"
+
+msgid "Enter email address"
+msgstr "Zadajte e-mailovú adresu"
+
+msgid "Send Invitation"
+msgstr "Poslať pozvánku"
+
+msgid "Teams"
+msgstr "Tímy"
+
+msgid "New Team"
+msgstr "Nový tím"
+
+msgid "Team Name"
+msgstr "Názov tímu"
+
+msgid "Create Team"
+msgstr "Vytvoriť tím"
+
+msgid "Team Name"
+msgstr "Názov tímu"
+
+msgid "Create teams to group users and manage permissions."
+msgstr "Vytvárajte tímy na zoskupovanie používateľov a správu oprávnení."
+
+msgid "Apply User Permissions"
+msgstr "Nastaviť oprávnenia"
+
+msgid "Enable permissions to restrict access to data sources & tables based on teams and users."
+msgstr "Povolením oprávnení obmedzíte prístup k dátovým zdrojom a tabuľkám na základe tímov a používateľov."
+
+msgid "Apply restrictions based on roles and user permissions defined on this site. Only applicable for site data source."
+msgstr "Uplatniť obmedzenia podľa rolí a oprávnení definovaných na tejto stránke. Vzťahuje sa len na lokálne dátové zdroje."
+
+msgid "Memory Limit"
+msgstr "Limit pamäte"
+
+msgid "Row Limit"
+msgstr "Limit riadkov"
+
+msgid "Enable the data store to store database tables into a duckdb database for faster & cross-database queries."
+msgstr "Povoliť dátovému úloisku ukladať databázové tabuľky do databázy DuckDB pre rýchlejšie dopyty a dopyty naprieč databázami."
+
+msgid "Set the maximum number of rows per table that will be imported into the data store. Default is 10,00,000"
+msgstr "Nastavte maximálny počet riadkov na tabuľku, ktoré sa importujú do dátového úloiska. Predvolená hodnota je 1 000 000."
+
+msgid "Set the maximum memory usage while importing tables into the data store. Default is 512MB"
+msgstr "Nastavte maximálne využitie pamäte pri importe tabuliek do dátového úloiska. Predvolená hodnota je 512 MB."
+
+msgid "Use secure connection (SSL)?"
+msgstr "Použiť SSL pripojenie?"
+
+msgid "Connect"
+msgstr "Pripojiť"
+
+msgid "Add Data Source"
+msgstr "Pridať zdroj dát"
+
+msgid "Connect to MariaDB"
+msgstr "Pripojiť k MariaDB"
+
+msgid "Connect to DuckDB"
+msgstr "Pripojiť k DuckDB"
+
+msgid "Connect to ClickHouse"
+msgstr "Pripojiť k ClickHouse"
+
+msgid "Connect to PostgreSQL"
+msgstr "Pripojiť k PostgreSQL"
+
+msgid "read_only_user"
+msgstr "Používateľ (len na čítanie)"
+
+msgid "Enter the URL of the DuckDB file"
+msgstr "Pripojiť k PostgreSQL"
+
+msgid "Export as PNG"
+msgstr "Exportovať as PNG"
+
+msgid "Open Workbook"
+msgstr "Otvoriť zošit"
+
+msgid "Reset Layout"
+msgstr "Resetovať rozloženie"
+
+msgid "Compact Layout"
+msgstr "Kompaktné zobrazenie"
+
+msgid "Force Refresh"
+msgstr "1. Vynútiť obnovenie"
+
+msgid "Done"
+msgstr "Hotovo"
+
+msgid "Load Preview"
+msgstr "Zobraziť náhľad"
+
+msgid "Chart not found"
+msgstr "Graf sa nenašiel"
+
+msgid "Select Charts"
+msgstr "Výber grafov"
+
+msgid "Linked Charts"
+msgstr "Prepojené grafy"
+
+msgid "Type"
+msgstr "Typ"
+
+msgid "Icon"
+msgstr "Ikona"
+
+msgid "Enter filter label..."
+msgstr "Zadajte názov filtra..."
+
+msgid "Edit Filter"
+msgstr "Upraviť filter"
+
+msgid "No Dashboards"
+msgstr "Nenašli sa žiadne nástenky"
+
+msgid "Create a dashboard in your workbook to view it here."
+msgstr "Upraviť filter"
+
+msgid "All Dashboards"
+msgstr "Všetky nástenky"
+
+msgid "Favorites"
+msgstr "Obľúbené"
+
+msgid "Dashboards"
+msgstr "Nástenky"
+
+msgid "Refresh Preview"
+msgstr "Obnoviť náhľad"
+
+msgid "Open Workbook"
+msgstr "Otvoriť zošit"
+
+msgid "Dashboard Access Updated"
+msgstr "Prístup k nástenke upravený"
+
+msgid "Share Dashboard"
+msgstr "Zdieľať nástenku"
+
+msgid "General Access"
+msgstr "Všeobecný prístup"
+
+msgid "Select an option"
+msgstr "Vybrať možnosť"
+
+msgid "Anyone with the link can view"
+msgstr "Zobraziť môže ktokoľvek s odkazom"
+
+msgid "Anyone in the organization can view"
+msgstr "Prístup pre celú organizáciu"
+
+msgid "Specific people can view"
+msgstr "Zobraziť môžu len vybraní ľudia"
+
+msgid "Search by name or email"
+msgstr "Hľadať podľa mena alebo e-mailu"
+
+msgid "People with access"
+msgstr "Používatelia s prístupom"
+
+msgid "You"
+msgstr "Ty"
+
+msgid "Owner"
+msgstr "Vlastník"
+
+msgid "Enter your text content here..."
+msgstr "Sem zadajte svoj text..."
+
+msgid "Edit Text"
+msgstr "Upraviť text"
+
+msgid "Content"
+msgstr "Obsah"
+
+msgid "Column"
+msgstr "Stĺpec"
+
+msgid "Demo Data Ready"
+msgstr "Demo dáta sú pripravené"
+
+msgid "Sample data with workbook has been set up successfully"
+msgstr "Ukážkové dáta so zošitom boli úspešne nastavené."
+
+msgid "Setup Failed"
+msgstr "Nastavenie zlyhalo"
+
+msgid "Failed to setup demo data"
+msgstr "Inštalácia demo dát zlyhala"
+
+msgid "Explore with sample data and a pre-built workbook"
+msgstr "Preskúmajte aplikáciu s ukážkovými dátami a hotovým zošitom"
+
+msgid "Try demo data"
+msgstr "Skúsiť demo dáta"
+
+msgid "Export Data"
+msgstr "Exportovať údaje"
+
+msgid "Export Format"
+msgstr "Exportovať formát"
+
+msgid "Filename"
+msgstr "Názov súboru"
+
+msgid "Enter filename"
+msgstr "Zadať názov súboru"
+
+msgid "Are you sure you want to log out?"
+msgstr "Skutočne sa chcete odhlásiť?"
+
+msgid "Switch to Desk"
+msgstr "Prepnúť na plochu"
+
+msgid "Open in Desk"
+msgstr "Otvoriť na ploche"
+
+msgid "Variables are used to store sensitive information such as API keys and credentials. They can be referenced and combined in your script just like any other variable. For eg."
+msgstr "Premenné slúžia na ukladanie citlivých údajov (API kľúče, prihlasovacie údaje). Môžete ich v skripte ľubovoľne používať a kombinovať. Napr.:"
+
+msgid "No variables added"
+msgstr "Žiadna premenná sa nenašla"
+
+msgid "Add Variable"
+msgstr "Pridať premennú"
+
+msgid "Save Variables"
+msgstr "Uložiť premennú"
+
+msgid "Refreshing Tables"
+msgstr "Aktualizácia tabuliek"
+
+msgid "Refresh Tables"
+msgstr "Obnoviť tabuľky"
+
+msgid "Please wait while we refresh the tables from your data source"
+msgstr "Počkajte, prosím, kým obnovíme tabuľky z vášho dátového zdroja.
+
+msgid "No Tables Found"
+msgstr "Žiadne tabuľky sa nenašli"
+
+msgid "Sync tables from your data source to get started"
+msgstr "Ak chcete začať, zosynchronizujte tabuľky zo svojho dátového zdroja."
+
+msgid "Table"
+msgstr "Tabuľka"
+
+msgid "No Queries Found"
+msgstr "Nenašli sa žiadne dopyty"
+
+msgid "Queries"
+msgstr "Dopyty"
+
+msgid "Updating table links for {0}. This may take a while."
+msgstr "Aktualizujú sa prepojenia tabuľky pre {0}. Môže to chvíľu trvať."
+
+msgid "Updating table links"
+msgstr "Akualizujem prepojenia na tabuľky"
+
+msgid "Table links updated for {0}"
+msgstr "Prepojenia sú aktualizované pre {0}"
+
+msgid "Explore with sample data and a pre-built workbook"
+msgstr "Preskúmajte aplikáciu s ukážkovými dátami a hotovým zošitom"
+
+msgid "Dashboards | Insights"
+msgstr "Nástenky"
+
+msgid "Can View"
+msgstr "Pozerať"
+
+msgid "Can Edit"
+msgstr "Upravovať"
+
+msgid "Disabled"
+msgstr "Vypnutý"
+
+msgid "Organization Access"
+msgstr "Organizačný prístup"
+
+msgid "Manage Workbook Access"
+msgstr "Nastaviť prístup k zošitu"
+
+msgid "No Table Selected"
+msgstr "Nie je vybraná žiadna tabuľka"
+
+msgid "Select a source table to start building your query."
+msgstr "Vyberte zdrojovú tabuľku a začnite vytvárať svoj dopyt."
+
+msgid "You can also select a query as a source."
+msgstr "Ako zdroj si môžete vybrať aj dopyt."
+
+msgid "Open Selector"
+msgstr "Otvoriť selektor"
+
+msgid "Details"
+msgstr "Podrobnosti"
+
+msgid "Query Title"
+msgstr "Názov dopytu"
+
+msgid "Title"
+msgstr "Názov"
