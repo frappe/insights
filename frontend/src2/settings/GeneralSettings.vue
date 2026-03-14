@@ -7,7 +7,6 @@ import DatePickerControl from '../query/components/DatePickerControl.vue'
 import session from '../session'
 import SettingItem from './SettingItem.vue'
 import useSettings from './settings'
-import { __ } from '../translation'
 
 const settings = useSettings()
 settings.load()
