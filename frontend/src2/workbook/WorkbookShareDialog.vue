@@ -8,7 +8,6 @@ import session from '../session'
 import { ShareAccess, WorkbookSharePermission } from '../types/workbook.types'
 import useUserStore from '../users/users'
 import { Workbook, workbookKey } from './workbook'
-import { __ } from '../translation'
 
 const show = defineModel()
 const originalOrganizationAccess = ref<'view' | 'edit'>()
