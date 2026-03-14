@@ -145,7 +145,7 @@ document.title = __('Data Sources | Insights')
 	<header class="flex h-12 items-center justify-between border-b py-2.5 pl-5 pr-2">
 		<Breadcrumbs :items="[{ label: __('Data Sources'), route: '/data-source' }]" />
 		<div class="flex items-center gap-2">
-			<Button 
+			<Button
 				:label="__('New Data Source')"
 				variant="solid"
 				@click="showNewSourceDialog = true"
