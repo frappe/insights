@@ -20,7 +20,7 @@ const showShareDialog = ref(false)
 			<template #prefix>
 				<Share2 class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 			</template>
-			{{  __('Share') }}
+			{{ __('Share') }}
 		</Button>
 		<!-- <Button
 			v-show="!workbook.islocal && workbook.isdirty"

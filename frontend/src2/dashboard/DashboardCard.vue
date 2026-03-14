@@ -31,10 +31,7 @@ const emit = defineEmits<{
 				onerror="this.src = ''"
 				class="object-cover opacity-80"
 			/>
-			<div
-				v-else
-				class="flex h-full w-full items-center justify-center bg-gray-50/70"
-			>
+			<div v-else class="flex h-full w-full items-center justify-center bg-gray-50/70">
 				<Button
 					variant="ghost"
 					@click.prevent.stop="emit('update-preview')"
