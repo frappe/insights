@@ -105,7 +105,9 @@ function updatePermissions() {
 				<div class="flex items-center gap-3 rounded border px-3 py-2">
 					<Building2 class="h-6 w-6 text-blue-500" stroke-width="1.5" />
 					<div class="flex flex-1 flex-col">
-						<div class="font-medium leading-5 text-gray-800">Organization Access</div>
+							<div class="font-medium leading-5 text-gray-800">
+							{{ __('Organization Access') }}
+						</div>
 						<div class="text-sm text-gray-700">
 							{{
 								organizationAccess
@@ -142,7 +144,7 @@ function updatePermissions() {
 					<div class="flex-1">
 						<UserSelector
 							v-model="selectedUserEmail"
-							placeholder="Search by name or email"
+							:placeholder="__('Search by name or email')"
 							:hide-users="
 								userPermissions.filter((u) => u.access).map((u) => u.email)
 							"
@@ -151,7 +153,7 @@ function updatePermissions() {
 					<Button
 						class="flex-shrink-0"
 						variant="solid"
-						label="Share"
+						:label="__('Share')"
 						:disabled="!selectedUserEmail"
 						@click="shareWorkbook"
 					></Button>

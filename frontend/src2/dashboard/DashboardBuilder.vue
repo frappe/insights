@@ -73,7 +73,7 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 						v-if="!dashboard.editing"
 						variant="outline"
 						@click="() => dashboard.refresh(true)"
-						label="Refresh"
+						:label="__('Refresh')"
 					>
 						<template #prefix>
 							<RefreshCcw class="h-4 w-4 text-gray-700" stroke-width="1.5" />
@@ -83,7 +83,7 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 						v-if="!dashboard.editing && !dashboard.doc.read_only"
 						variant="outline"
 						@click="showShareDialog = true"
-						label="Share"
+						:label="__('Share')"
 					>
 						<template #prefix>
 							<Share2 class="h-4 text-gray-700" stroke-width="1.5" />
@@ -93,7 +93,7 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 						v-if="!dashboard.editing"
 						variant="outline"
 						@click="dashboard.editing = true"
-						label="Edit"
+						:label="__('Edit')"
 					>
 						<template #prefix>
 							<Edit3 class="h-4 w-4 text-gray-700" stroke-width="1.5" />
@@ -105,7 +105,7 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 						icon-left="plus"
 						@click="showChartSelectorDialog = true"
 					>
-						Chart
+						{{ __('Chart') }}
 					</Button>
 					<Button
 						v-if="dashboard.editing"
@@ -113,7 +113,7 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 						icon-left="plus"
 						@click="() => dashboard.addFilter()"
 					>
-						Filter
+						{{ __('Filter') }}
 					</Button>
 					<Button
 						v-if="dashboard.editing"
@@ -121,7 +121,7 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 						icon-left="plus"
 						@click="() => dashboard.addText()"
 					>
-						Text
+						{{ __('Text') }}
 					</Button>
 					<Button
 						v-if="dashboard.editing"
@@ -134,7 +134,7 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 							}
 						"
 					>
-						Done
+						{{ __('Done') }}
 					</Button>
 					<Dropdown
 						:button="{ icon: 'more-horizontal', variant: 'outline' }"

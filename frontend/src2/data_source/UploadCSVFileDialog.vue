@@ -115,10 +115,10 @@ function resetFile() {
 						/>
 						<div class="text-center">
 							<p v-if="!uploading" class="text-sm font-medium text-gray-800">
-								Select a CSV or Excel file to upload
+								{{ __('Select a CSV or Excel file to upload') }}
 							</p>
 							<p v-if="!uploading" class="mt-1 text-xs text-gray-600">
-								or drag and drop it here
+								{{ __('or drag and drop it here') }}
 							</p>
 							<div v-else class="flex w-[15rem] flex-col gap-2">
 								<div class="h-2 w-full rounded-full bg-gray-200">
@@ -127,7 +127,7 @@ function resetFile() {
 										:style="{ width: `${progress}%` }"
 									></div>
 								</div>
-								<p class="text-xs">Uploading...</p>
+								<p class="text-xs">{{ __('Uploading...') }}</p>
 							</div>
 						</div>
 					</div>
@@ -157,14 +157,14 @@ function resetFile() {
 			</div>
 			<div class="mt-4 flex justify-between pt-2">
 				<div class="ml-auto flex items-center space-x-2">
-					<Button :disabled="!fileUploaded" @click="resetFile"> Reset File </Button>
+					<Button :disabled="!fileUploaded" @click="resetFile">{{ __('Reset File') }}</Button>
 					<Button
 						variant="solid"
 						:disabled="importDisabled"
 						:loading="importing"
 						@click="importCSVData"
 					>
-						Import
+						{{ __('Import') }}
 					</Button>
 				</div>
 			</div>
