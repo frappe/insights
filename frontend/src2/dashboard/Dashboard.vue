@@ -9,7 +9,6 @@ import { __ } from '../translation'
 import DashboardItem from './DashboardItem.vue'
 import VueGridLayout from './VueGridLayout.vue'
 import { useStorage } from '@vueuse/core'
-import { __ } from '../translation'
 
 const props = defineProps<{ name: string }>()
 
