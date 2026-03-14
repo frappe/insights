@@ -79,10 +79,7 @@ if (!config.value.size_column) {
 			<div
 				class="group  flex flex-col items-between justify-between rounded py-2">
 					<div class=" gap-3">
-						<Toggle
-							v-model="config.show_data_labels"
-							:label="__('Show Data Labels')"
-						/>
+						<Toggle v-model="config.show_data_labels" :label="__('Show Data Labels')" />
 					</div>
 				</div>
 			</div>

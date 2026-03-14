@@ -171,7 +171,8 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 
 			<Toggle
 				v-if="config.comparison"
-				:label="__('Show sparkline')" v-model="config.sparkline"
+				:label="__('Show sparkline')"
+				v-model="config.sparkline"
 			/>
 
 			<InlineFormControlLabel v-if="config.sparkline" :label="__('Color')">
