@@ -61,13 +61,13 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 						icon: 'download',
 						onClick: downloadDashboardImage,
 					},
-					 canOpenWorkbook
+					canOpenWorkbook
 						? {
-							label: __('Open Workbook'),
-							variant: 'outline',
-							icon: 'external-link',
-							onClick: openWorkbook,
-						}
+								label: __('Open Workbook'),
+								variant: 'outline',
+								icon: 'external-link',
+								onClick: openWorkbook,
+							}
 						: null,
 				]"
 			/>

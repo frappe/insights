@@ -42,7 +42,7 @@ async function setupDemoData() {
 			:label="__('Logo')"
 			:description="
 				__(
-					'Appears in the top left corner of the application and in the browser tab next to the page title. Recommended size: 32x32px in PNG format.'
+					'Appears in the top left corner of the application and in the browser tab next to the page title. Recommended size: 32x32px in PNG format.',
 				)
 			"
 		>
@@ -55,7 +55,7 @@ async function setupDemoData() {
 			:label="__('Fiscal Year Start')"
 			:description="
 				__(
-					'Set the start of the fiscal year for the organization. This will be used to calculate quarterly and yearly data.'
+					'Set the start of the fiscal year for the organization. This will be used to calculate quarterly and yearly data.',
 				)
 			"
 		>
@@ -71,7 +71,7 @@ async function setupDemoData() {
 			:label="__('Week Starts On')"
 			:description="
 				__(
-					'Set the start of the week for the organization. This will be used to calculate weekly data.'
+					'Set the start of the week for the organization. This will be used to calculate weekly data.',
 				)
 			"
 		>
@@ -96,7 +96,7 @@ async function setupDemoData() {
 			:label="__('Demo Data')"
 			:description="
 				__(
-					'Set up sample data and a pre-built workbook to explore Insights features.'
+					'Set up sample data and a pre-built workbook to explore Insights features.',
 				)
 			"
 		>

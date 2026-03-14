@@ -165,7 +165,7 @@ const activeTab = ref('Members')
 					>
 						{{ 
 							__(
-								'Admin team has access to all the data sources and tables. Members of this team are allowed to manage teams, users, and other admin settings'
+								'Admin team has access to all the data sources and tables. Members of this team are allowed to manage teams, users, and other admin settings',
 							)
 						}}
 					</div>

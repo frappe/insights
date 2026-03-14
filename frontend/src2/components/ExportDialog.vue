@@ -37,7 +37,7 @@ function submit() {
 			<div class="space-y-4">
 				<div>
 					<div class="space-y-2">
-						<label class="flex cursor-pointer items-center ">
+						<label class="flex cursor-pointer items-center">
 							<FormControl
 								class="w-32"
 								type="select"
@@ -66,8 +66,18 @@ function submit() {
 
 		<template #actions>
 			<div class="flex justify-end gap-2">
-				<Button variant="ghost" @click="() => { emit('cancel'); show = false }">{{ __('Cancel') }}</Button>
-				<Button variant="solid" @click="submit" :loading="props.downloading">{{ __('Export') }}</Button>
+				<Button
+					variant="ghost"
+					@click="
+						() => {
+							emit('cancel')
+							show = false
+						}
+					"
+					>{{ __('Cancel') }}</Button>
+				<Button variant="solid" @click="submit" :loading="props.downloading">{{
+					__('Export')
+				}}</Button>
 			</div>
 		</template>
 	</Dialog>
