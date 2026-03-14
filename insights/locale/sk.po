@@ -393,3 +393,27 @@ msgstr "Názov dopytu"
 
 msgid "Title"
 msgstr "Názov"
+
+msgid "Tables updated for \"{0}\""
+msgstr "Tabuľky aktualizované pre \"{0}\""
+
+msgid "Updating tables for \"{0}\""
+msgstr "Aktualizujú sa  tabuľky pre \"{0}\""
+
+msgid "Pick Starting Data"
+msgstr "Vybrať štartovacie dáta"
+
+msgid "No dashboards"
+msgstr "Žiadne zošity"
+
+msgid "No charts"
+msgstr "Žiadne grafy"
+
+msgid "Copied to clipboard"
+msgstr "Skopírované do schránky"
+
+msgid ""
+msgstr ""
+
+msgid ""
+msgstr ""
