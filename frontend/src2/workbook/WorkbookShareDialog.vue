@@ -25,8 +25,17 @@ function shareWorkbook() {
 type PermissionMap = Record<string, ShareAccess>
 const permissionMap = ref<PermissionMap>({})
 const accessOptions = (user_email: string) => [
-	{ label: __('Can Edit'), value: 'edit', onClick: () => (permissionMap.value[user_email] = 'edit') },
-	{ label: __('Can View'), value: 'view', onClick: () => (permissionMap.value[user_email] = 'view') },
+	{
+		label: __('Can Edit'),
+		value: 'edit',
+		onClick: () => (permissionMap.value[user_email] = 'edit'),
+	},
+	{
+		label: __('Can View'),
+		value: 'view',
+		onClick: () => (permissionMap.value[user_email] = 'view'),
+	},
+
 	{
 		label: __('Remove'),
 		value: 'remove',
@@ -97,7 +106,9 @@ function updatePermissions() {
 				<div class="flex items-center gap-3 rounded border px-3 py-2">
 					<Building2 class="h-6 w-6 text-blue-500" stroke-width="1.5" />
 					<div class="flex flex-1 flex-col">
-						<div class="font-medium leading-5 text-gray-800">{{  __('Organization Access') }}</div>
+						<div class="font-medium leading-5 text-gray-800">
+								{{ __('Organization Access') }}
+						</div>
 						<div class="text-sm text-gray-700">
 							{{
 								organizationAccess

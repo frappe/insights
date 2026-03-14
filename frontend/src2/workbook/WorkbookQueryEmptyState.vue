@@ -10,7 +10,7 @@ const emit = defineEmits({
 <template>
 	<div class="flex h-full w-full items-center justify-center bg-gray-50">
 		<div class="flex flex-col space-y-4">
-			<div class="text-center text-gray-500">{{  __('Select an interface to start') }}</div>
+			<div class="text-center text-gray-500">{{ __('Select an interface to start') }}</div>
 			<div
 				class="flex w-full cursor-pointer items-center gap-4 rounded border border-transparent bg-white p-2 shadow-sm transition-all hover:border-gray-300"
 				@click="emit('select', 'query-builder')"
@@ -19,8 +19,8 @@ const emit = defineEmits({
 					<SquareMousePointer class="h-5 w-5 text-blue-500/70" stroke-width="1.5" />
 				</div>
 				<div class="flex flex-col gap-1">
-					<p class="font-medium text-gray-700">{{  __('Query Builder') }}</p>
-					<p class="text-sm text-gray-500">{{  __('Create queries with a visual interface') }}</p>
+					<p class="font-medium text-gray-700">{{ __('Query Builder') }}</p>
+					<p class="text-sm text-gray-500">{{ __('Create queries with a visual interface') }}</p>
 				</div>
 			</div>
 			<div
@@ -31,8 +31,8 @@ const emit = defineEmits({
 					<ScrollText class="h-5 w-5 text-orange-500/70" stroke-width="1.5" />
 				</div>
 				<div class="flex flex-col gap-1">
-					<p class="font-medium text-gray-700">{{  __('SQL Editor') }}</p>
-					<p class="text-sm text-gray-500">{{  __('Create queries with raw SQL') }}</p>
+					<p class="font-medium text-gray-700">{{ __('SQL Editor') }}</p>
+					<p class="text-sm text-gray-500">{{ __('Create queries with raw SQL') }}</p>
 				</div>
 			</div>
 			<div
@@ -43,8 +43,10 @@ const emit = defineEmits({
 					<Braces class="h-5 w-5 text-green-500/70" stroke-width="1.5" />
 				</div>
 				<div class="flex flex-col gap-1">
-					<p class="font-medium text-gray-700">{{  __('Script Editor') }}</p>
-					<p class="text-sm text-gray-500">{{  __('Create queries with a python script') }}</p>
+					<p class="font-medium text-gray-700">{{ __('Script Editor') }}</p>
+					<p class="text-sm text-gray-500">
+						{{ __('Create queries with a python script') }}
+					</p>
 				</div>
 			</div>
 		</div>

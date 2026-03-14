@@ -114,7 +114,9 @@ function saveVariables() {
 						</div>
 
 						<div v-if="variables.length === 0" class="flex justify-center py-8">
-							<span class="text-p-sm text-gray-400">{{ __('No variables added') }}</span>
+							<span class="text-p-sm text-gray-400">
+								{{ __('No variables added') }}
+							</span>
 						</div>
 					</div>
 
@@ -125,7 +127,9 @@ function saveVariables() {
 							</template>
 							{{ __('Add Variable') }}
 						</Button>
-						<Button variant="solid" @click="saveVariables"> {{ __('Save Variables') }} </Button>
+						<Button variant="solid" @click="saveVariables">
+							{{ __('Save Variables') }}
+						</Button>
 					</div>
 				</div>
 			</div>
