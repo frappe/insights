@@ -86,7 +86,7 @@ const editTeam = ref<Team | null>(null)
 			:label="__('Enable')"
 			:description="
 				__(
-					'Enable permissions to restrict access to data sources & tables based on teams and users.'
+					'Enable permissions to restrict access to data sources & tables based on teams and users.',
 				)
 			"
 		>
@@ -97,7 +97,7 @@ const editTeam = ref<Team | null>(null)
 			:label="__('Apply User Permissions')"
 			:description="
 				__(
-					'Apply restrictions based on roles and user permissions defined on this site. Only applicable for site data source.'
+					'Apply restrictions based on roles and user permissions defined on this site. Only applicable for site data source.',
 				)
 			"
 		>

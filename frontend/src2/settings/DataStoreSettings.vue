@@ -16,7 +16,7 @@ settings.load()
 			:label="__('Enable')"
 			:description="
 				__(
-					'Enable the data store to store database tables into a duckdb database for faster & cross-database queries.'
+					'Enable the data store to store database tables into a duckdb database for faster & cross-database queries.',
 				)
 			"
 		>
@@ -27,7 +27,7 @@ settings.load()
 			:label="__('Row Limit')"
 			:description="
 				__(
-					'Set the maximum number of rows per table that will be imported into the data store. Default is 10,00,000'
+					'Set the maximum number of rows per table that will be imported into the data store. Default is 10,00,000',
 				)
 			"
 		>
@@ -38,7 +38,7 @@ settings.load()
 			:label="__('Memory Limit')"
 			:description="
 				__(
-					'Set the maximum memory usage while importing tables into the data store. Default is 512MB'
+					'Set the maximum memory usage while importing tables into the data store. Default is 512MB',
 				)
 			"
 		>
