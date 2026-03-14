@@ -66,7 +66,7 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 								variant: 'outline',
 								icon: 'external-link',
 								onClick: openWorkbook,
-							}
+						  }
 						: null,
 				]"
 			/>

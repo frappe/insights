@@ -95,9 +95,7 @@ async function setupDemoData() {
 			v-if="session.user.is_admin && !session.user.has_demo_data"
 			:label="__('Demo Data')"
 			:description="
-				__(
-					'Set up sample data and a pre-built workbook to explore Insights features.',
-				)
+				__('Set up sample data and a pre-built workbook to explore Insights features.')
 			"
 		>
 			<Button
