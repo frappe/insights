@@ -84,14 +84,22 @@ const editTeam = ref<Team | null>(null)
 
 		<SettingItem
 			:label="__('Enable')"
-			:description="__('Enable permissions to restrict access to data sources & tables based on teams and users.')"
+			:description="
+				__(
+					'Enable permissions to restrict access to data sources & tables based on teams and users.'
+				)
+			"
 		>
 			<Toggle v-model="settings.doc.enable_permissions" />
 		</SettingItem>
 
 		<SettingItem
 			:label="__('Apply User Permissions')"
-			:description="__('Apply restrictions based on roles and user permissions defined on this site. Only applicable for site data source.')"
+			:description="
+				__(
+					'Apply restrictions based on roles and user permissions defined on this site. Only applicable for site data source.'
+				)
+			"
 		>
 			<Toggle v-model="settings.doc.apply_user_permissions" />
 		</SettingItem>

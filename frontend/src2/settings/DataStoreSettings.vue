@@ -14,21 +14,33 @@ settings.load()
 
 		<SettingItem
 			:label="__('Enable')"
-			:description="__('Enable the data store to store database tables into a duckdb database for faster & cross-database queries.')"
+			:description="
+				__(
+					'Enable the data store to store database tables into a duckdb database for faster & cross-database queries.'
+				)
+			"
 		>
 			<Toggle v-model="settings.doc.enable_data_store" />
 		</SettingItem>
 
 		<SettingItem
 			:label="__('Row Limit')"
-			:description="__('Set the maximum number of rows per table that will be imported into the data store. Default is 10,00,000')"
+			:description="
+				__(
+					'Set the maximum number of rows per table that will be imported into the data store. Default is 10,00,000'
+				)
+			"
 		>
 			<FormControl v-model="settings.doc.max_records_to_sync" class="w-28" type="number" />
 		</SettingItem>
 
 		<SettingItem
 			:label="__('Memory Limit')"
-			:description="__('Set the maximum memory usage while importing tables into the data store. Default is 512MB')"
+			:description="
+				__(
+					'Set the maximum memory usage while importing tables into the data store. Default is 512MB'
+				)
+			"
 		>
 			<FormControl v-model="settings.doc.max_memory_usage" class="w-28" type="number" />
 		</SettingItem>

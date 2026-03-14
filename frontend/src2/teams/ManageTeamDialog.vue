@@ -163,7 +163,11 @@ const activeTab = ref('Members')
 						v-if="currentTeam.name == 'Admin'"
 						class="rounded bg-gray-50 p-2 text-p-sm text-gray-600"
 					>
-						{{ __('Admin team has access to all the data sources and tables. Members of this team are allowed to manage teams, users, and other admin settings') }}
+						{{ 
+							__(
+								'Admin team has access to all the data sources and tables. Members of this team are allowed to manage teams, users, and other admin settings'
+							)
+						}}
 					</div>
 
 					<Suspense v-else>

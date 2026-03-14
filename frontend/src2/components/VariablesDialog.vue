@@ -65,7 +65,11 @@ function saveVariables() {
 				</div>
 
 				<p class="mb-5 text-p-base text-gray-600">
-					{{ __('Variables are used to store sensitive information such as API keys and credentials. They can be referenced and combined in your script just like any other variable. For eg.') }}
+					{{
+						__(
+							'Variables are used to store sensitive information such as API keys and credentials. They can be referenced and combined in your script just like any other variable. For eg.'
+						)
+					}}
 					<br />
 					<code class="rounded bg-gray-100 px-1 my-1 py-0.5 text-p-sm text-gray-800">
 						formatted_api_key = f'token {api_key}:{api_secret}'
