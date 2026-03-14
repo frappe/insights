@@ -4,7 +4,6 @@ import { computed, inject, ref } from 'vue'
 import session from '../session'
 import { Workbook, workbookKey } from './workbook'
 import WorkbookShareDialog from './WorkbookShareDialog.vue'
-import { __ } from '../translation'
 
 const workbook = inject(workbookKey) as Workbook
 
