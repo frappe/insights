@@ -87,7 +87,7 @@ const listColumns = [
 					}
 				},
 				emptyState: {
-					title: __('No Queries Found')
+					title: __('No Queries Found'),
 				},
 			}"
 		>
