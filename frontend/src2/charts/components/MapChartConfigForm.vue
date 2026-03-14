@@ -143,18 +143,18 @@ watch(
 
 <template>
 	<div class="flex flex-col gap-3">
-		<CollapsibleSection title="Options">
+		<CollapsibleSection :title="__('Options')">
 			<div class="flex flex-col gap-3 pt-1">
 				<FormControl
 					v-model="config.map_type"
-					label="Map Type"
+					:label="__('Map Type')"
 					type="select"
 					:options="map_options"
 				/>
 
 				<div class="flex flex-col gap-1">
 					<div class="flex justify-start items-center">
-						<label class="text-xs text-gray-600">Region Column</label>
+						<label class="text-xs text-gray-600">{{ __('Region Column') }}</label>
 						<Button
 							variant="ghost"
 							:icon="InfoIcon"
@@ -174,7 +174,7 @@ watch(
 				<MeasurePicker
 					v-model="config.value_column"
 					:column-options="props.columnOptions"
-					label="Value"
+					:label="__('Value')"
 				/>
 			</div>
 		</CollapsibleSection>

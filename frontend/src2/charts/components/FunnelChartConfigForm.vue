@@ -50,7 +50,7 @@ const discrete_dimensions = computed(() =>
 			/>
 			<FormControl
 				v-model="config.label_position"
-				label="Label Position"
+				:label="__('Label Position')"
 				type="select"
 				:options="[
 					{ label: __('Left'), value: 'left' },

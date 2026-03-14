@@ -14,6 +14,8 @@ import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
 import { wheneverChanges } from '../../helpers'
+import { __ } from '../../translation'
+
 const props = defineProps<{
 	formatGroup?: FormatGroupArgs
 	dimensions: DimensionOption[]
@@ -147,7 +149,7 @@ function toggleStickyColumn(column_name: string, is_sticky: boolean) {
 </script>
 
 <template>
-	<CollapsibleSection title="Rows">
+	<CollapsibleSection :title="__('Rows')">
 		<div>
 			<DraggableList v-model:items="config.rows" group="rows">
 				<template #item="{ item, index }">
@@ -159,7 +161,7 @@ function toggleStickyColumn(column_name: string, is_sticky: boolean) {
 					>
 						<template #config-fields>
 							<Toggle
-								label="Pin Column"
+								:label="__('Pin Column')"
 								:modelValue="config.sticky_columns?.includes(item.dimension_name)"
 								@update:modelValue="toggleStickyColumn(item.dimension_name, $event)"
 							/>
@@ -171,12 +173,12 @@ function toggleStickyColumn(column_name: string, is_sticky: boolean) {
 				class="mt-1.5 text-left text-xs text-gray-600 hover:underline"
 				@click="config.rows.push({} as any)"
 			>
-				+ Add column
+				{{ __('+ Add column') }}
 			</button>
 		</div>
 	</CollapsibleSection>
 
-	<CollapsibleSection title="Columns">
+	<CollapsibleSection :title="__('Columns')">
 		<div class="flex flex-col gap-3">
 			<div>
 				<DraggableList v-model:items="config.columns" group="columns">
@@ -193,14 +195,14 @@ function toggleStickyColumn(column_name: string, is_sticky: boolean) {
 					class="mt-1.5 text-left text-xs text-gray-600 hover:underline"
 					@click="config.columns.push({} as any)"
 				>
-					+ Add column
+					{{ __('+ Add column') }}
 				</button>
 			</div>
 
 			<InlineFormControlLabel
 				v-if="config.columns.length"
 				class="!w-1/2"
-				label="Max Column Values"
+				:label="__('Max Column Values')"
 			>
 				<FormControl
 					type="number"
@@ -212,7 +214,7 @@ function toggleStickyColumn(column_name: string, is_sticky: boolean) {
 		</div>
 	</CollapsibleSection>
 
-	<CollapsibleSection title="Values">
+	<CollapsibleSection :title="__('Values')">
 		<div class="flex flex-col gap-3">
 			<div>
 				<DraggableList v-model:items="config.values" group="values">
@@ -229,21 +231,21 @@ function toggleStickyColumn(column_name: string, is_sticky: boolean) {
 					class="mt-1.5 text-left text-xs text-gray-600 hover:underline"
 					@click="config.values.push({} as any)"
 				>
-					+ Add column
+					{{ __('+ Add column') }}
 				</button>
 			</div>
-			<Toggle label="Show Filters" v-model="config.show_filter_row" />
-			<Toggle label="Show Row Totals" v-model="config.show_row_totals" />
-			<Toggle label="Show Column Totals" v-model="config.show_column_totals" />
-			<Toggle label="Compact Number Format" v-model="config.compact_numbers" />
+			<Toggle :label="__('Show Filters')" v-model="config.show_filter_row" />
+			<Toggle :label="__('Show Row Totals')" v-model="config.show_row_totals" />
+			<Toggle :label="__('Show Column Totals')" v-model="config.show_column_totals" />
+			<Toggle :label="__('Compact Number Format')" v-model="config.compact_numbers" />
 			<Toggle
 				v-if="config.values.length === 1"
-				label="Show Color Scale"
+				:label="__('Show Color Scale')"
 				v-model="config.enable_color_scale"
 			/>
 		</div>
 	</CollapsibleSection>
-	<CollapsibleSection title="Formatting Rules" collapsed>
+	<CollapsibleSection :title="__('Formatting Rules')" collapsed>
 		<template #title-suffix v-if="config.conditional_formatting?.formats.length">
 			<Badge theme="orange">
 				<span class="tnum"> {{ config.conditional_formatting.formats.length }}</span>
@@ -284,7 +286,7 @@ function toggleStickyColumn(column_name: string, is_sticky: boolean) {
 				<template #prefix>
 					<Plus class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 				</template>
-				Add Rule
+				{{ __('Add Rule')}}
 			</Button>
 		</div>
 	</CollapsibleSection>

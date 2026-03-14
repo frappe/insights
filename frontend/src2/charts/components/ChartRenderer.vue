@@ -26,6 +26,7 @@ import BaseChart from './BaseChart.vue'
 import DrillDown from './DrillDown.vue'
 import NumberChart from './NumberChart.vue'
 import TableChart from './TableChart.vue'
+import { __ } from '../../translation'
 
 const props = defineProps<{ chart: Chart }>()
 
@@ -196,7 +197,7 @@ function onNumberChartDrillDown(column: any, row: any) {
 			<template v-else>
 				<ChartSectionEmptySvg></ChartSectionEmptySvg>
 				<p class="text-gray-500">
-					Pick a chart type and configure options to see the chart here
+					{{ __('Pick a chart type and configure options to see the chart here') }}
 				</p>
 			</template>
 		</div>

@@ -118,10 +118,10 @@ const generalAccess = computed({
 							>
 							</Autocomplete>
 						</div>
-						<Tooltip text="Copy Link" :hoverDelay="0.1">
+						<Tooltip text="__('Copy Link')" :hoverDelay="0.1">
 							<Button icon="link-2" @click="copyToClipboard(shareLink)"> </Button>
 						</Tooltip>
-						<Tooltip text="Copy Embed" :hoverDelay="0.1">
+						<Tooltip text="__('Copy Embed')" :hoverDelay="0.1">
 							<Button icon="code" @click="copyToClipboard(iFrameLink)"> </Button>
 						</Tooltip>
 					</div>

@@ -161,7 +161,7 @@ msgid "Enter the URL of the DuckDB file"
 msgstr "Pripojiť k PostgreSQL"
 
 msgid "Export as PNG"
-msgstr "Exportovať as PNG"
+msgstr "Exportovať ako PNG"
 
 msgid "Open Workbook"
 msgstr "Otvoriť zošit"
@@ -401,7 +401,7 @@ msgid "Updating tables for \"{0}\""
 msgstr "Aktualizujú sa  tabuľky pre \"{0}\""
 
 msgid "Pick Starting Data"
-msgstr "Vybrať štartovacie dáta"
+msgstr "Vybrať počiatočné dáta"
 
 msgid "No dashboards"
 msgstr "Žiadne zošity"
@@ -411,6 +411,600 @@ msgstr "Žiadne grafy"
 
 msgid "Copied to clipboard"
 msgstr "Skopírované do schránky"
+
+msgid "Connect to MariaDB database"
+msgstr "Pripojiť sa k MariaDB databáze"
+
+msgid "Connect to PostgreSQL database"
+msgstr "Pripojiť sa k PostgreSQL databázy"
+
+msgid "Connect to ClickHouse database"
+msgstr "Pripojiť sa k ClickHouse databáze"
+
+msgid "Connect to DuckDB database"
+msgstr "Pripojiť sa k DuckDB databáze"
+
+msgid "Delete Query"
+msgstr "Vymazať dopyt"
+
+msgid "Are you sure you want to delete this query?"
+msgstr "Ste si istý, že chcete vymazať tento dotaz?"
+
+msgid "Delete Chart"
+msgstr "Vymazať graf"
+
+msgid "Are you sure you want to delete this chart?"
+msgstr "Naozaj chcete vymazať tento graf?"
+
+msgid "Delete Dashboard"
+msgstr "Odstrániť nástenku"
+
+msgid "Are you sure you want to delete this dashboard?"
+msgstr "Naozaj chcete vymazať túto nástenku?"
+
+msgid "Duplicate Workbook"
+msgstr "Duplikovať zošit"
+
+msgid "Duplicating this workbook will create a new workbook and copy all queries, charts and dashboards to it. Do you want to continue?"
+msgstr "Duplikovaním tohto zošita sa vytvorí nový zošit a skopírujú sa do neho všetky dotazy, grafy a panely. Chcete pokračovať?"
+
+msgid "Workbook duplicated successfully"
+msgstr "Zošit bol úspešne duplikovaný"
+
+msgid "Import Query"
+msgstr "Importovať dotaz"
+
+msgid "Are you sure you want to import this query?"
+msgstr "Naozaj chcete importovať tento dotaz?"
+
+msgid "Import Chart"
+msgstr "Importzovať graf"
+
+msgid "Are you sure you want to import this chart?"
+msgstr "Naozaj chcete importovať tento graf?"
+
+msgid "Chart imported successfully"
+msgstr "Graf bol úspešne importovaný"
+
+msgid "Delete Workbook"
+msgstr "Vymazať zošit"
+
+msgid "Are you sure you want to delete this workbook?"
+msgstr "Naozaj chcete vymazať tento zošit?"
+
+msgid "Delete Folder"
+msgstr "Odstrániť priečinok"
+
+msgid "This will move all items in the folder to the root. Continue?"
+msgstr "Týmto sa všetky položky v priečinku presunú do koreňového adresára. Pokračovať?"
+
+msgid "Pick a chart type and configure options to see the chart here"
+msgstr "Zvoľte typ grafu a nakonfigurujte možnosti, aby sa tu zobrazil graf"
+
+msgid "equals"
+msgstr "rovná sa"
+
+msgid "not equals"
+msgstr "nerovná sa"
+
+msgid "greater than"
+msgstr "viac ako"
+
+msgid "greater than or equals"
+msgstr "viac ako alebo rovné"
+
+msgid "less than"
+msgstr "menej ako"
+
+msgid "less than or equals"
+msgstr "menej ako alebo rovné"
+
+msgid "between"
+msgstr "medzi"
+
+msgid "within"
+msgstr "počas"
+
+msgid "is set"
+msgstr "nastavené"
+
+msgid "is not set"
+msgstr "nenastavené"
+
+msgid "Copy Link"
+msgstr "Kopírovať odkaz"
+
+msgid "Copy Embed"
+msgstr "Kopírovať kód prvku"
+
+msgid "Share Chart"
+msgstr "Zdieľať graf"
+
+msgid "Duplicate Chart"
+msgstr "Duplikovať graf"
+
+msgid "Reset Options"
+msgstr "Resetovať nastavenia"
+
+msgid "Copy JSON"
+msgstr "Kopírovať JSON"
+
+msgid "Open in Desk"
+msgstr "Otvoriť na ploche"
+
+msgid "Fetched from cache"
+msgstr "Načítané z cache"
+
+msgid "Fetched in"
+msgstr "Načítané za"
+
+msgid "Columns"
+msgstr "Stĺpce"
+
+msgid "Prefix"
+msgstr "Predpona"
+
+msgid "Suffix"
+msgstr "Prípona"
+
+msgid "Decimal"
+msgstr "Desatiny"
+
+msgid "Color"
+msgstr "Farba"
+
+msgid "Show short numbers"
+msgstr "Zobraziť skrátené čísla"
+
+msgid "+ Add column"
+msgstr "+ Pridať stĺpec"
+
+msgid "Date"
+msgstr "Dátum"
+
+msgid "Show comparison"
+msgstr "Zobraziť porovnanie"
+
+msgid "Negative is better"
+msgstr "Nižšie hodnoty sú lepšie"
+
+msgid "Show sparkline"
+msgstr "Zobraziť mini-graf"
+
+msgid "Y-Min"
+msgstr "Y-Min"
+
+msgid "Y-Max"
+msgstr "Y-Max"
+
+msgid "Axis Label"
+msgstr "Popis osi"
+
+msgid "Show Data Labels"
+msgstr "Zobraziť popisky dát"
+
+msgid "Show Axis Label"
+msgstr "Zobraziť popis osi"
+
+msgid "Show Scrollbar"
+msgstr "Zobraziť posuvník"
+
+msgid "+ Add series"
+msgstr "+ Pridať sériu"
+
+msgid "Hide from Chart"
+msgstr "Skryť z grafu"
+
+msgid "Show Data Labels"
+msgstr "Zobraziť popisky dát"
+
+msgid "Align"
+msgstr "Zarovnanie"
+
+msgid "X Axis"
+msgstr "Osa X"
+
+msgid "Y Axis"
+msgstr "Osa Y"
+
+msgid "Split Series"
+msgstr "Rozdeliť sériu"
+
+msgid "Max Split Values"
+msgstr "Max počet rozdelení"
+
+msgid "Split By"
+msgstr "Rozdeliť podľa"
+
+msgid "Empty - Click 'Add Filter' to add a filter"
+msgstr "Prázdne – stlačte ‚Pridať filter‘ na pridanie filtra"
+
+msgid "Convert to Expression"
+msgstr "Previesť na výraz"
+
+msgid "Add Filter"
+msgstr "Pridať filter"
+
+msgid "Add Sort"
+msgstr "Pridať triedenie"
+
+msgid "Curved Lines"
+msgstr "Zakrivené čiary"
+
+msgid "Show Area"
+msgstr "Zobraziť oblasť"
+
+msgid "Show Data Points"
+msgstr "Zobraziť dátové body"
+
+msgid "Map Type"
+msgstr "Typ mapy"
+
+msgid "Region Column"
+msgstr "Stĺpec regiónu"
+
+msgid "Count of..."
+msgstr "Počet..."
+
+msgid "Sum of..."
+msgstr "Súčet..."
+
+msgid "Average of..."
+msgstr "Priemer..."
+
+msgid "Minimum of..."
+msgstr "Minimum..."
+
+msgid "Maximum of..."
+msgstr "Maximum..."
+
+msgid "Unique Count of..."
+msgstr "Počet unikátnych..."
+
+msgid "Select a column"
+msgstr "Vybrať stĺpec"
+
+msgid "Select a Function"
+msgstr "Vybrať funkciu"
+
+msgid "Search..."
+msgstr "Hľadať..."
+
+msgid "Create Measure"
+msgstr "Vytvoriť výpočet"
+
+msgid "Measure Name"
+msgstr "Názov miery"
+
+msgid "Data Type"
+msgstr "Typ dát"
+
+msgid "Resolve Locations"
+msgstr "Určiť lokality"
+
+msgid "Unresolved Locations"
+msgstr "Neurčené lokality"
+
+msgid "No Locations Resolved"
+msgstr "Žiadne lokality neboli rozpoznané"
+
+msgid "Resolved"
+msgstr "Rozpoznané"
+
+msgid "Rows"
+msgstr "Riadky"
+
+msgid "Pin Column"
+msgstr "Pripnúť stĺpec"
+
+msgid "Show Filters"
+msgstr "Ukázať filtre"
+
+msgid "Show Row Totals"
+msgstr "Zobraziť súčty riadkov"
+
+msgid "Show Column Totals"
+msgstr "Zobraziť súčty stĺpcov"
+
+msgid "Compact Number Format"
+msgstr "Kompaktný formát čísla"
+
+msgid "Show Color Scale"
+msgstr "Zobraziť farebnú škálu"
+
+msgid "Add Rule"
+msgstr "Pridať pravidlo"
+
+msgid "Label Position"
+msgstr "Pozícia popisku"
+
+msgid "Left"
+msgstr "Vľavo"
+
+msgid "Right"
+msgstr "Vpravo"
+
+msgid "Alternate"
+msgstr "Striedať"
+
+msgid "Drill Down"
+msgstr "Hĺbková analýza"
+
+msgid "Legend Position"
+msgstr "Pozícia legendy"
+
+msgid "Top"
+msgstr "Hore"
+
+msgid "Bottom"
+msgstr "Dole"
+
+msgid "Max Slices"
+msgstr "Maximálny počet výsekov"
+
+msgid "Inline Labels"
+msgstr "Popisky vo vnútri"
+
+msgid "Value"
+msgstr "Hodnota"
+
+msgid "Label"
+msgstr "Popis"
+
+msgid "Granularity"
+msgstr "Presnosť"
+
+msgid "Remove"
+msgstr "Odstrániť"
+
+msgid "Enable Public Access"
+msgstr "Povoliť verejný prístup"
+
+msgid "Anyone with the link can view this chart"
+msgstr "Každý s odkazom môže zobraziť tento graf"
+
+msgid "Query"
+msgstr "Dopyt"
+
+msgid "Setup"
+msgstr "Nastavenie"
+
+msgid "Color by"
+msgstr "Farba podľa"
+
+msgid "Size Column"
+msgstr "Veľkosť stĺpca"
+
+msgid "Name Column"
+msgstr "Názov stĺpca"
+
+msgid "Show Data Labels"
+msgstr "Zobraziť popisky dát"
+
+msgid "is"
+msgstr "je"
+
+msgid "is not"
+msgstr "nie je"
+
+msgid "contains"
+msgstr "obsahuje"
+
+msgid "does not contain"
+msgstr "neobsahuje"
+
+msgid "starts with"
+msgstr "začína na"
+
+msgid "ends with"
+msgstr "končí"
+
+msgid "Chart"
+msgstr "Graf"
+
+msgid "Filters"
+msgstr "Filtre"
+
+msgid "Sort"
+msgstr "Zoradiť"
+
+msgid "Limit"
+msgstr "Obmedziť"
+
+msgid "Keep only rows that have matching values in both tables"
+msgstr "Zachovať iba riadky, ktoré majú zhodné hodnoty v oboch tabuľkác"
+
+msgid "Keep all existing rows and include matching rows from the new table"
+msgstr "Zachovať všetky existujúce riadky a pridať zhodné riadky z novej tabuľky"
+
+msgid "Keep all rows from the new table and include matching rows from the existing table"
+msgstr "Zachovať všetky riadky z novej tabuľky a pridať zhodné riadky z existujúcej tabuľky"
+
+msgid "Keep all rows from both tables"
+msgstr "Zachovať všetky riadky z oboch tabuliek"
+
+msgid "Second"
+msgstr "Sekunda"
+
+msgid "Minute"
+msgstr "Minúta"
+
+msgid "Hour"
+msgstr "Hodina"
+
+msgid "Day"
+msgstr "Deň"
+
+msgid "Week"
+msgstr "Týždeň"
+
+msgid "Month"
+msgstr "Mesiac"
+
+msgid "Quarter"
+msgstr "Štvrťrok"
+
+msgid "Year"
+msgstr "Rok"
+
+msgid "Fiscal Year"
+msgstr "Fiskálny rok"
+
+msgid "Max Column Values"
+msgstr "Maximálne hodnoty stĺpca"
+
+msgid "Values"
+msgstr "Hodnoty"
+
+msgid "Formatting Rule"
+msgstr "Pravidlo formátovania"
+
+msgid "Formatting Rules"
+msgstr "Pravidlá formátovania"
+
+msgid "Highlight Cell"
+msgstr "Označiť bunku"
+
+msgid "Color Scale"
+msgstr "Farebná škála"
+
+msgid "Format Type"
+msgstr "Typ formátu"
+
+msgid "is today"
+msgstr "je dnešok"
+
+msgid "is yesterday"
+msgstr "je včerajšok"
+
+msgid "is tomorrow"
+msgstr "je zajtrajšok"
+
+msgid "is this week"
+msgstr "je tento týždeň"
+
+msgid "is last week"
+msgstr "je posledný týždeň"
+
+msgid "is this month"
+msgstr "je tento mesiac"
+
+msgid "is last month"
+msgstr "je posledný mesiac"
+
+msgid "is this year"
+msgstr "je tento rok"
+
+msgid "before date"
+msgstr "pred dátumom"
+
+msgid "after date"
+msgstr "po dátume"
+
+msgid "between dates"
+msgstr "medzi dátummi"
+
+msgid "Top N values"
+msgstr "Top N hodnôt"
+
+msgid "Bottom N values"
+msgstr "Spodných N hodnôt"
+
+msgid "Top N percent"
+msgstr "Top N percent"
+
+msgid "Bottom N percent"
+msgstr "Spodných N percent"
+
+msgid "Above average"
+msgstr "Nad priemerom"
+
+msgid "Below average"
+msgstr "Pod priemerom"
+
+msgid "Red"
+msgstr "Červená"
+
+msgid "Green"
+msgstr "Zelená"
+
+msgid "Amber"
+msgstr "oranžová"
+
+msgid "Red-Green"
+msgstr "Červeno-zelená"
+
+msgid "Green-Red"
+msgstr "Zeleno-červená"
+
+msgid "Value Rules"
+msgstr "Pravidlá hodnôt"
+
+msgid "Ranking Rules"
+msgstr "Pravidlá poradia"
+
+msgid "Text Rules"
+msgstr "Textové pravidlá"
+
+msgid "Date Rules"
+msgstr "Dátové pravidlá"
+
+msgid "Scale Scope"
+msgstr "Rozsah mierky"
+
+msgid "Global"
+msgstr "Globálne"
+
+msgid "Local"
+msgstr "Lokálne"
+
+msgid "Compare across all formatted columns"
+msgstr "Porovnať všetky formátované stĺpce"
+
+msgid "Compare within each column independently"
+msgstr "Porovnávať v rámci každého stĺpca samostatne"
+
+msgid "Rule Type"
+msgstr "Typ pravidla"
+
+msgid "Condition"
+msgstr "Podmienka"
+
+msgid "Operator"
+msgstr "Operator"
+
+msgid "Compare to"
+msgstr "Porovnať s"
+
+msgid "Text Value"
+msgstr "Textová hodnota"
+
+msgid "Ranking Condition"
+msgstr "Podmienka poradia"
+
+msgid "Rule"
+msgstr "Pravidlo"
+
+msgid "No data to display."
+msgstr "Žiadne údaje na zobrazenie"
+
+msgid "Normalize"
+msgstr "Normalizovať"
+
+msgid "Overlap"
+msgstr "Prekrytie"
+
+msgid "Stack"
+msgstr "Zoskupiť"
+
+msgid "Red to Green"
+msgstr "Od červenej po zelenú"
+
+msgid "Green to Red"
+msgstr "Od zelenej po červenú"
+
+msgid ""
+msgstr ""
 
 msgid ""
 msgstr ""

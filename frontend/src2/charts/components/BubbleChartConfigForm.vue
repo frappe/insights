@@ -4,6 +4,7 @@ import { ColumnOption, Dimension, DimensionOption, Measure } from '../../types/q
 import CollapsibleSection from './CollapsibleSection.vue'
 import MeasurePicker from './MeasurePicker.vue'
 import DimensionPicker from './DimensionPicker.vue'
+import { __ } from '../../translation'
 
 const props = defineProps<{
 	dimensions: DimensionOption[]
@@ -36,27 +37,27 @@ if (!config.value.size_column) {
 </script>
 
 <template>
-	<CollapsibleSection title="Setup">
+	<CollapsibleSection :title="__('Setup')">
 		<div class="flex flex-col gap-3 pt-1">
 			<MeasurePicker
-				label="X Axis"
+				:label="__('X Axis')"
 				v-model="config.xAxis"
 				:column-options="props.columnOptions"
 			/>
 
 			<MeasurePicker
-				label="Y Axis"
+				:label="__('Y Axis')"
 				v-model="config.yAxis"
 				:column-options="props.columnOptions"
 			/>
 			<DimensionPicker
-				label="Color by"
+				:label="__('Color by')"
 				v-model="config.quadrant_column!"
 				:options="props.dimensions"
 				@remove="config.quadrant_column = {} as Dimension"
 			/>
 			<MeasurePicker
-				label="Size Column"
+				:label="__('Size Column')"
 				v-model="config.size_column!"
 				:column-options="props.columnOptions"
 				@remove="config.size_column = {} as Measure"
@@ -64,12 +65,12 @@ if (!config.value.size_column) {
 		</div>
 	</CollapsibleSection>
 
-	<CollapsibleSection title="Options">
+	<CollapsibleSection :title="__('Options')">
 		<div class="flex flex-col gap-2 pt-1">
 			<div class="flex flex-col gap-2">
 				<div class="flex flex-col gap-3">
 				<DimensionPicker
-					label="Name Column"
+					:label="__('Name Column')"
 					v-model="config.dimension!"
 					:options="props.dimensions"
 					@remove="config.dimension = {} as Dimension"
@@ -81,7 +82,7 @@ if (!config.value.size_column) {
 					<div class=" gap-3">
 						<Toggle
 							v-model="config.show_data_labels"
-							label="Show Data Labels"
+							:label="__('Show Data Labels')"
 						/>
 					</div>
 				</div>

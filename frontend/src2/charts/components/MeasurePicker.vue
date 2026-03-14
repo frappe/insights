@@ -150,7 +150,7 @@ const label = ref('')
 								<span v-if="measure.measure_name">
 									{{ measure.measure_name }}
 								</span>
-								<span v-else class="text-gray-500"> Select a column </span>
+								<span v-else class="text-gray-500"> {{ __('Select a column') }} </span>
 							</div>
 						</button>
 					</div>
@@ -165,7 +165,7 @@ const label = ref('')
 								v-if="!columnMeasure.aggregation"
 								class="block px-1.5 py-0.5 text-p-xs text-gray-600"
 							>
-								Select a Function
+								{{ __('Select a Function') }}
 							</span>
 							<div
 								v-else-if="columnMeasure.aggregation"
@@ -207,7 +207,7 @@ const label = ref('')
 									<div class="sticky top-0 bg-white space-y-1 p-1">
 										<TextInput
 											v-model="searchQuery"
-											placeholder="Search..."
+											:placeholder="__('Search...')"
 											autocomplete="off"
 										/>
 									</div>

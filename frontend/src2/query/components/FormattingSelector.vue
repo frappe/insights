@@ -46,7 +46,7 @@ const hasChanged = computed(() => {
 <template>
 	<div class="min-w-[20rem] rounded-lg bg-white px-4 pb-6 pt-5 sm:px-6">
 		<div class="flex items-center justify-between pb-4">
-			<h3 class="text-2xl font-semibold leading-6 text-gray-900">Formatting Rule</h3>
+			<h3 class="text-2xl font-semibold leading-6 text-gray-900">{{ __('Formatting Rule') }}</h3>
 			<Button variant="ghost" @click="() => emit('close')" icon="x" size="md"> </Button>
 		</div>
 
@@ -54,7 +54,7 @@ const hasChanged = computed(() => {
 			<FormControl
 				type="select"
 				v-model="selectedFormatMode"
-				label="Format Type"
+				:label="__('Format Type')"
 				:options="[
 					{ label: __('Highlight Cell'), value: 'cell_rules' },
 					{ label: __('Color Scale'), value: 'color_scale' },
@@ -70,7 +70,7 @@ const hasChanged = computed(() => {
 		</div>
 		<div class="mt-6 flex items-center justify-end gap-2">
 			<Button
-				label="Apply"
+				:label="__('Apply')"
 				variant="solid"
 				:disabled="!hasChanged"
 				@click="applyFormatting"

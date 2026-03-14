@@ -3,6 +3,7 @@ import { Button, Dialog, FormControl, LoadingIndicator } from 'frappe-ui'
 import { ChevronLeft, ChevronRight, Download, Plus, Search, Table2Icon } from 'lucide-vue-next'
 import { computed, nextTick, reactive, ref } from 'vue'
 import { createHeaders, formatNumber, getShortNumber } from '../helpers'
+import { __ } from '../translation'
 import { FIELDTYPES } from '../helpers/constants'
 import { QueryResultColumn, QueryResultRow, SortDirection, SortOrder } from '../types/query.types'
 import DataTableColumn from './DataTableColumn.vue'
@@ -789,7 +790,7 @@ function toggleNewColumn() {
 	<div v-else class="flex h-full w-full items-center justify-center">
 		<div class="flex flex-col items-center gap-2">
 			<Table2Icon class="h-16 w-16 text-gray-300" stroke-width="1.5" />
-			<p class="text-center text-gray-500">No data to display.</p>
+			<p class="text-center text-gray-500">{{ __('No data to display.') }}</p>
 		</div>
 	</div>
 

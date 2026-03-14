@@ -367,7 +367,7 @@ const isInvalidColumn = computed(() => {
 <template>
 	<div class="flex flex-col gap-1.5 relative">
 		<Autocomplete
-			:label="'Column'"
+			:label="__('Column')"
 			:placeholder="__('Column')"
 			:modelValue="format.column?.column_name"
 			:options="availableColumns"
@@ -379,7 +379,7 @@ const isInvalidColumn = computed(() => {
 	<template v-if="!isInvalidColumn">
 		<div v-if="props.formatMode === 'color_scale'" class="w-full flex flex-col gap-4">
 			<div>
-				<h3 class="text-sm text-gray-600 mb-3">Color</h3>
+				<h3 class="text-sm text-gray-600 mb-3">{{ __('Color') }}</h3>
 				<RadioGroup
 					name="color-scale"
 					:modelValue="(format as color_scale).colorScale"
@@ -387,7 +387,7 @@ const isInvalidColumn = computed(() => {
 				>
 					<RadioGroupItem value="Red-Green" class="[&_label]:w-full">
 						<div class="flex items-center justify-between gap-2 w-full">
-							<span class="text-sm">Red to Green</span>
+							<span class="text-sm">{{ __('Red to Green') }}</span>
 							<div class="flex h-2 w-32">
 								<div class="w-1/2 bg-red-400"></div>
 								<div class="w-1/2 bg-red-300"></div>
@@ -398,7 +398,7 @@ const isInvalidColumn = computed(() => {
 					</RadioGroupItem>
 					<RadioGroupItem value="Green-Red" class="[&_label]:w-full">
 						<div class="flex items-center justify-between gap-2 w-full">
-							<span class="text-sm">Green to Red</span>
+							<span class="text-sm">{{ __('Green to Red') }}</span>
 							<div class="flex h-2 w-32">
 								<div class="w-1/2 bg-green-500"></div>
 								<div class="w-1/2 bg-green-300"></div>
@@ -412,7 +412,7 @@ const isInvalidColumn = computed(() => {
 
 			<div>
 				<div class="flex items-center gap-2 mb-3">
-					<h3 class="text-sm text-gray-600">Scale Scope</h3>
+					<h3 class="text-sm text-gray-600">{{ __('Scale Scope') }}</h3>
 				</div>
 				<RadioGroup
 					name="scale-scope"
@@ -421,17 +421,17 @@ const isInvalidColumn = computed(() => {
 				>
 					<RadioGroupItem value="global" class="[&_label]:w-full">
 						<div class="flex flex-col gap-0.5">
-							<span class="text-sm font-medium">Global</span>
+							<span class="text-sm font-medium">{{ __('Global') }}</span>
 							<span class="text-xs text-gray-500"
-								>Compare across all formatted columns</span
+								>{{ __('Compare across all formatted columns') }}</span
 							>
 						</div>
 					</RadioGroupItem>
 					<RadioGroupItem value="local" class="[&_label]:w-full">
 						<div class="flex flex-col gap-0.5">
-							<span class="text-sm font-medium">Local</span>
+							<span class="text-sm font-medium">{{ __('Local') }}</span>
 							<span class="text-xs text-gray-500"
-								>Compare within each column independently</span
+								>{{ __('Compare within each column independently') }}</span
 							>
 						</div>
 					</RadioGroupItem>
@@ -443,7 +443,7 @@ const isInvalidColumn = computed(() => {
 			<template v-if="ruleTypeOptions.length > 1">
 				<FormControl
 					type="select"
-					:label="'Rule Type'"
+					:label="__('Rule Type')"
 					:placeholder="__('Rule Type')"
 					:modelValue="format.mode"
 					:options="ruleTypeOptions"
@@ -454,7 +454,7 @@ const isInvalidColumn = computed(() => {
 			<template v-if="isValueRule">
 				<FormControl
 					type="select"
-					:label="'Condition'"
+					:label="__('Condition')"
 					:placeholder="__('Operator')"
 					:modelValue="(format as cell_rules).operator"
 					:options="operatorOptions"
@@ -462,7 +462,7 @@ const isInvalidColumn = computed(() => {
 				/>
 				<FormControl
 					type="number"
-					:label="'Compare to'"
+					:label="__('Compare to')"
 					:modelValue="(format as cell_rules).value"
 					:placeholder="__('Value')"
 					@update:modelValue="format.value = Number($event)"
@@ -480,7 +480,7 @@ const isInvalidColumn = computed(() => {
 				<template v-if="isTextValueRule">
 					<FormControl
 						type="text"
-						:label="'Text Value'"
+						:label="__('Text Value')"
 						:modelValue="(format as text_rules).value"
 						:placeholder="__('Enter text')"
 						@update:modelValue="format.value = $event"
@@ -497,7 +497,7 @@ const isInvalidColumn = computed(() => {
 					@update:modelValue="onOperatorChange($event)"
 				/>
 				<template v-if="isDateValueRule">
-					<h3 class="text-sm text-gray-600">Date Value</h3>
+					<h3 class="text-sm text-gray-600">{{ __('Date Value') }}</h3>
 					<template v-if="(format as date_rules).operator === 'date_between'">
 						<!-- todo: find a proper fix for datepicker v-model -->
 						<DatePicker
@@ -518,14 +518,14 @@ const isInvalidColumn = computed(() => {
 				<FormControl
 					type="select"
 					:placeholder="__('Ranking Condition')"
-					:label="'Rule'"
+					:label="__('Rule')"
 					:modelValue="(format as rank_rules).operator"
 					:options="rankOperatorOptions"
 					@update:modelValue="onOperatorChange($event)"
 				/>
 				<template v-if="isRankValueRule">
 					<FormControl
-						:label="'value'"
+						:label="__('value')"
 						type="number"
 						:modelValue="(format as rank_rules).value"
 						:placeholder="
@@ -540,7 +540,7 @@ const isInvalidColumn = computed(() => {
 
 			<FormControl
 				type="select"
-				:label="'Color'"
+				:label="__('Color')"
 				:placeholder="__('Color')"
 				:modelValue="currentColor"
 				:options="highlightColorOptions"

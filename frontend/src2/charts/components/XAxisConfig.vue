@@ -4,6 +4,7 @@ import { AxisChartConfig } from '../../types/chart.types'
 import { Dimension, DimensionOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
+import { __ } from '../../translation'
 
 const props = defineProps<{ dimensions: DimensionOption[]; showRotateLabels?: boolean }>()
 const x_axis = defineModel<AxisChartConfig['x_axis']>({
@@ -24,17 +25,17 @@ watchEffect(() => {
 </script>
 
 <template>
-	<CollapsibleSection title="X Axis">
+	<CollapsibleSection :title="__('X Axis')">
 		<div class="flex flex-col gap-3 pt-1">
 			<DimensionPicker
-				label="Column"
+				:label="__('Column')"
 				:options="props.dimensions"
 				:modelValue="x_axis.dimension"
 				@update:modelValue="x_axis.dimension = $event || {}"
 				@remove="x_axis.dimension = {} as Dimension"
 			/>
 			<FormControl
-				label="Rotate Values"
+				:label="__('Rotate Values')"
 				type="select"
 				v-model="x_axis.label_rotation"
 				:options="[

@@ -50,10 +50,10 @@ function saveChanges() {
 						<Globe class="h-6 w-6 text-blue-500" stroke-width="1.5" />
 						<div class="flex flex-1 flex-col">
 							<div class="font-medium leading-5 text-gray-800">
-								Enable Public Access
+								{{ __('Enable Public Access') }}
 							</div>
 							<div class="text-sm text-gray-700">
-								Anyone with the link can view this chart
+								{{ __('Anyone with the link can view this chart') }}
 							</div>
 						</div>
 						<Toggle v-model="isPublic" />

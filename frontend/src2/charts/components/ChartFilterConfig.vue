@@ -6,6 +6,7 @@ import FiltersSelectorDialog from '../../query/components/FiltersSelectorDialog.
 import useQuery, { Query } from '../../query/query'
 import { FilterArgs, FilterGroupArgs } from '../../types/query.types'
 import { Chart } from '../chart'
+import { __ } from '../../translation'
 
 const filterGroup = defineModel<FilterGroupArgs>({
 	default: () => {
@@ -72,7 +73,7 @@ function getFilterLabel(filter: FilterArgs) {
 			<template #prefix>
 				<Plus class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 			</template>
-			Add Filter
+			{{ __('Add Filter') }}
 		</Button>
 	</div>
 

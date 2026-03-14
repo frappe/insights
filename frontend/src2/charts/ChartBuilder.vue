@@ -87,19 +87,19 @@ const showShareDialog = ref(false)
 		<div
 			class="relative mt-1 flex w-[19rem] flex-shrink-0 flex-col divide-y overflow-y-auto bg-white px-3.5"
 		>
-			<CollapsibleSection title="Chart">
+			<CollapsibleSection :title="__('Chart')">
 				<div class="flex flex-col gap-3">
 					<ChartTypeSelector v-model="chart.doc.chart_type" />
 					<ChartQuerySelector v-model="chart.doc.query" :queries="props.queries" />
-					<InlineFormControlLabel label="Title">
-						<LazyTextInput type="text" placeholder="Title" v-model="chart.doc.title" />
+					<InlineFormControlLabel :label="__('Title')">
+						<LazyTextInput type="text" :placeholder="__('Title')" v-model="chart.doc.title" />
 					</InlineFormControlLabel>
 				</div>
 			</CollapsibleSection>
 
 			<ChartConfigForm v-if="chart.doc.query" :chart="chart" />
 
-			<CollapsibleSection title="Filters" collapsed>
+			<CollapsibleSection :title="__('Filters')" collapsed>
 				<template #title-suffix v-if="chart.doc.config.filters?.filters.length">
 					<Badge size="sm" theme="orange" type="info" class="mt-0.5">
 						<span class="tnum"> {{ chart.doc.config.filters.filters.length }}</span>
@@ -108,7 +108,7 @@ const showShareDialog = ref(false)
 				<ChartFilterConfig v-model="chart.doc.config.filters" />
 			</CollapsibleSection>
 
-			<CollapsibleSection title="Sort" collapsed>
+			<CollapsibleSection :title="__('Sort')" collapsed>
 				<template #title-suffix v-if="chart.doc.config.order_by?.length">
 					<Badge size="sm" theme="orange" type="info" class="mt-0.5">
 						<span class="tnum"> {{ chart.doc.config.order_by?.length }}</span>
@@ -120,7 +120,7 @@ const showShareDialog = ref(false)
 				/>
 			</CollapsibleSection>
 
-			<CollapsibleSection title="Limit" collapsed>
+			<CollapsibleSection :title="__('Limit')" collapsed>
 				<FormControl v-model="chart.doc.config.limit" type="number" />
 			</CollapsibleSection>
 		</div>

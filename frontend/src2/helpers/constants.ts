@@ -49,7 +49,7 @@ export const joinTypes = [
 		icon: defineAsyncComponent(() => import('../components/Icons/JoinRightIcon.vue')),
 		value: 'right',
 		description:
-			'Keep all rows from the new table and include matching rows from the existing table',
+			__('Keep all rows from the new table and include matching rows from the existing table'),
 	},
 	{
 		label: __('Full'),
@@ -64,12 +64,12 @@ export const granularityOptions = [
 	{ label: __('Second'), value: 'second' },
 	{ label: __('Minute'), value: 'minute' },
 	{ label: __('Hour'), value: 'hour' },
-	{ label: __('Day'), value: 'day'},
-	{ label: __('Week'), value: 'week'},
-	{ label: __('Month'), value: 'month'},
-	{ label: __('Quarter'), value: 'quarter'},
-	{ label: __('Year'), value: 'year'},
-	{ label: __('Fiscal Year'), value: 'fiscal_year'},
+	{ label: __('Day'), value: 'day' },
+	{ label: __('Week'), value: 'week' },
+	{ label: __('Month'), value: 'month' },
+	{ label: __('Quarter'), value: 'quarter' },
+	{ label: __('Year'), value: 'year' },
+	{ label: __('Fiscal Year'), value: 'fiscal_year' },
 ] as const
 
 export type GranularityType = typeof granularityOptions[number]['value']

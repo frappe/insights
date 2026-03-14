@@ -5,6 +5,7 @@ import { isDate } from '../../helpers'
 import { COLUMN_TYPES, granularityOptions } from '../../helpers/constants'
 import { Dimension, DimensionOption } from '../../types/query.types'
 import LazyTextInput from '../../components/LazyTextInput.vue'
+import { __ } from '../../translation'
 
 const emit = defineEmits({ remove: () => true })
 const props = defineProps<{
@@ -44,7 +45,7 @@ function selectDimension(option?: DimensionOption) {
 	<div class="flex items-end gap-1 overflow-hidden">
 		<div class="flex-1 overflow-hidden">
 			<Autocomplete
-				placeholder="Select a column"
+				:placeholder="__('Select a column')"
 				:showFooter="true"
 				:options="props.options"
 				:modelValue="dimension.column_name"
@@ -60,7 +61,7 @@ function selectDimension(option?: DimensionOption) {
 								class="truncate"
 								:class="dimension.column_name ? 'text-gray-900' : 'text-gray-500'"
 							>
-								{{ dimension.dimension_name || 'Select a column' }}
+								{{ dimension.dimension_name || __('Select a column') }}
 							</span>
 							<template #suffix>
 								<ChevronDown
@@ -83,14 +84,14 @@ function selectDimension(option?: DimensionOption) {
 			</template>
 			<template #body-main>
 				<div class="flex w-[14rem] flex-col gap-2 p-2">
-					<InlineFormControlLabel label="Label">
+					<InlineFormControlLabel :label="__('Label')">
 						<LazyTextInput
-							placeholder="Label"
+							:placeholder="__('Label')"
 							v-model="dimension.dimension_name"
 						/>
 					</InlineFormControlLabel>
 
-					<InlineFormControlLabel label="Type">
+					<InlineFormControlLabel :label="__('Type')">
 						<FormControl
 							type="select"
 							v-model="dimension.data_type"
@@ -98,7 +99,7 @@ function selectDimension(option?: DimensionOption) {
 						/>
 					</InlineFormControlLabel>
 
-					<InlineFormControlLabel v-if="isDate(dimension.data_type)" label="Granularity">
+					<InlineFormControlLabel v-if="isDate(dimension.data_type)" :label="__('Granularity')">
 						<FormControl
 							type="select"
 							v-model="dimension.granularity"
@@ -113,7 +114,7 @@ function selectDimension(option?: DimensionOption) {
 							<template #prefix>
 								<XIcon class="h-4 w-4 text-red-700" stroke-width="1.5" />
 							</template>
-							Remove
+							{{ __('Remove') }}
 						</Button>
 					</div>
 				</div>
