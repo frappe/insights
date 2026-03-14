@@ -1,5 +1,6 @@
 <script setup lang="tsx">
 import { watchDebounced } from '@vueuse/core'
+import { __ } from '../translation'
 import { Avatar, ListView } from 'frappe-ui'
 import { Plus } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
@@ -25,7 +26,7 @@ watchDebounced(
 			settings.save()
 		}
 	},
-	{ debounce: 500, deep: true }
+	{ debounce: 500, deep: true },
 )
 
 const searchQuery = ref('')
@@ -34,7 +35,7 @@ const filteredTeams = computed(() => {
 		return teamStore.teams
 	}
 	return teamStore.teams.filter((team) =>
-		team.team_name.toLowerCase().includes(searchQuery.value.toLowerCase())
+		team.team_name.toLowerCase().includes(searchQuery.value.toLowerCase()),
 	)
 })
 
@@ -83,14 +84,22 @@ const editTeam = ref<Team | null>(null)
 
 		<SettingItem
 			:label="__('Enable')"
-			:description="__('Enable permissions to restrict access to data sources & tables based on teams and users.')"
+			:description="
+				__(
+					'Enable permissions to restrict access to data sources & tables based on teams and users.',
+				)
+			"
 		>
 			<Toggle v-model="settings.doc.enable_permissions" />
 		</SettingItem>
 
 		<SettingItem
 			:label="__('Apply User Permissions')"
-			:description="__('Apply restrictions based on roles and user permissions defined on this site. Only applicable for site data source.')"
+			:description="
+				__(
+					'Apply restrictions based on roles and user permissions defined on this site. Only applicable for site data source.',
+				)
+			"
 		>
 			<Toggle v-model="settings.doc.apply_user_permissions" />
 		</SettingItem>

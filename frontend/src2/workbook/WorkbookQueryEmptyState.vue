@@ -20,7 +20,9 @@ const emit = defineEmits({
 				</div>
 				<div class="flex flex-col gap-1">
 					<p class="font-medium text-gray-700">{{ __('Query Builder') }}</p>
-					<p class="text-sm text-gray-500">{{ __('Create queries with a visual interface') }}</p>
+					<p class="text-sm text-gray-500">
+						{{ __('Create queries with a visual interface') }}
+					</p>
 				</div>
 			</div>
 			<div

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { __ } from '../translation'
 import useTeamStore from './teams'
 
 const show = defineModel()

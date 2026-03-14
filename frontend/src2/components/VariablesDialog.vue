@@ -53,17 +53,23 @@ function saveVariables() {
 	<Dialog
 		:modelValue="show"
 		@update:modelValue="show = $event"
-		:options="{ title: 'Variables', size: 'lg' }"
+		:options="{ title: __('Variables'), size: 'lg' }"
 	>
 		<template #body>
 			<div class="bg-white px-4 pb-6 pt-5 sm:px-6">
 				<div class="flex items-center justify-between pb-4">
-					<h3 class="text-2xl font-semibold leading-6 text-gray-900">Variables</h3>
+					<h3 class="text-2xl font-semibold leading-6 text-gray-900">
+						{{ __('Variables') }}
+					</h3>
 					<Button variant="ghost" @click="show = false" icon="x" size="md" />
 				</div>
 
 				<p class="mb-5 text-p-base text-gray-600">
-					{{ __('Variables are used to store sensitive information such as API keys and credentials. They can be referenced and combined in your script just like any other variable. For eg.') }}
+					{{
+						__(
+							'Variables are used to store sensitive information such as API keys and credentials. They can be referenced and combined in your script just like any other variable. For eg.',
+						)
+					}}
 					<br />
 					<code class="rounded bg-gray-100 px-1 my-1 py-0.5 text-p-sm text-gray-800">
 						formatted_api_key = f'token {api_key}:{api_secret}'
@@ -75,8 +81,8 @@ function saveVariables() {
 						<div
 							class="sticky top-0 flex gap-x-2 border-b bg-white py-2 text-p-sm font-medium text-gray-600"
 						>
-							<div class="flex flex-1 flex-shrink-0 px-2">Name</div>
-							<div class="flex flex-1 flex-shrink-0 px-2">Value</div>
+							<div class="flex flex-1 flex-shrink-0 px-2">{{ __('Name') }}</div>
+							<div class="flex flex-1 flex-shrink-0 px-2">{{ __('Value') }}</div>
 							<div class="flex w-10"></div>
 						</div>
 
@@ -90,7 +96,7 @@ function saveVariables() {
 									class="w-full rounded-sm border-none bg-transparent px-2 py-2 text-base focus:bg-gray-100 focus:outline-none focus:ring-0"
 									type="text"
 									v-model="variable.variable_name"
-									placeholder="e.g. api_key"
+									:placeholder="__('e.g. api_key')"
 								/>
 							</div>
 							<div class="flex flex-1 flex-shrink-0">

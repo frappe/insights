@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { call } from 'frappe-ui'
+import { __ } from '../translation'
 import { ref } from 'vue'
 import { createToast } from '../helpers/toasts'
 import DatePickerControl from '../query/components/DatePickerControl.vue'
@@ -39,7 +40,11 @@ async function setupDemoData() {
 		<h1 class="text-xl font-semibold">{{ __('General') }}</h1>
 		<SettingItem
 			:label="__('Logo')"
-			:description="__('Appears in the top left corner of the application and in the browser tab next to the page title. Recommended size: 32x32px in PNG format.')"
+			:description="
+				__(
+					'Appears in the top left corner of the application and in the browser tab next to the page title. Recommended size: 32x32px in PNG format.',
+				)
+			"
 		>
 			<div class="flex h-full w-full items-center justify-center rounded border">
 				<img src="../assets/insights-logo-new.svg" alt="Logo" class="w-8 rounded" />
@@ -48,7 +53,11 @@ async function setupDemoData() {
 
 		<SettingItem
 			:label="__('Fiscal Year Start')"
-			:description="__('Set the start of the fiscal year for the organization. This will be used to calculate quarterly and yearly data.')"
+			:description="
+				__(
+					'Set the start of the fiscal year for the organization. This will be used to calculate quarterly and yearly data.',
+				)
+			"
 		>
 			<DatePickerControl
 				class="w-28"
@@ -60,7 +69,11 @@ async function setupDemoData() {
 
 		<SettingItem
 			:label="__('Week Starts On')"
-			:description="__('Set the start of the week for the organization. This will be used to calculate weekly data.')"
+			:description="
+				__(
+					'Set the start of the week for the organization. This will be used to calculate weekly data.',
+				)
+			"
 		>
 			<FormControl
 				class="w-28"
@@ -81,7 +94,9 @@ async function setupDemoData() {
 		<SettingItem
 			v-if="session.user.is_admin && !session.user.has_demo_data"
 			:label="__('Demo Data')"
-			:description="__('Set up sample data and a pre-built workbook to explore Insights features.')"
+			:description="
+				__('Set up sample data and a pre-built workbook to explore Insights features.')
+			"
 		>
 			<Button
 				variant="subtle"

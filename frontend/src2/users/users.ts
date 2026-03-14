@@ -48,8 +48,8 @@ function inviteUsers(emails: string[]) {
 				title: __('Invitation Sent'),
 				message:
 					emails.length === 1
-						? `Invitation sent to ${emails[0]}`
-						: `Invitations sent to ${emails.length} users`,
+						? __(`Invitation sent to {0}`, emails[0])
+						: __(`Invitations sent to {0} users`, String(emails.length)),
 				variant: 'success',
 			})
 		})

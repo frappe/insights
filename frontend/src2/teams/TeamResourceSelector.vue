@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { watchDebounced } from '@vueuse/core'
+import { __ } from '../translation'
 import { call } from 'frappe-ui'
 import { ChevronDown, ChevronRight, SearchIcon } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
@@ -337,7 +338,7 @@ function getVisibleTableLimit(dataSource: string) {
 						<ExpressionEditor
 							:column-options="expandedTableColumns"
 							v-model="tableRestrictions[table.name]"
-							placeholder="eg. country == 'India'"
+							:placeholder="__('eg. country == \'India\'')"
 							:show-output="false"
 							class="h-fit max-h-[10rem] min-h-[2.5rem] text-sm"
 						/>

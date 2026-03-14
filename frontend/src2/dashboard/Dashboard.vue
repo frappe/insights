@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Breadcrumbs, call } from 'frappe-ui'
 import { RefreshCcw } from 'lucide-vue-next'
-import {computed, provide, ref } from 'vue'
+import { computed, provide, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { downloadImage, waitUntil, wheneverChanges } from '../helpers'
 import useDashboard from './dashboard'
@@ -40,12 +40,12 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 	<header class="flex h-12 items-center justify-between border-b py-2.5 pl-5 pr-2">
 		<Breadcrumbs
 			:items="[
-				{ label: 'Dashboards', route: '/dashboards' },
+				{ label: __('Dashboards'), route: '/dashboards' },
 				{ label: dashboard.doc.title, route: `/dashboards/${dashboard.doc.name}` },
 			]"
 		/>
 		<div class="flex items-center gap-2">
-			<Button variant="outline" @click="() => dashboard.refresh(true)" label="Refresh">
+			<Button variant="outline" @click="() => dashboard.refresh(true)" :label="__('Refresh')">
 				<template #prefix>
 					<RefreshCcw class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 				</template>
@@ -60,12 +60,14 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 						icon: 'download',
 						onClick: downloadDashboardImage,
 					},
-					 canOpenWorkbook ? {
-						label: __('Open Workbook'),
-						variant: 'outline',
-						icon: 'external-link',
-						onClick: openWorkbook,
-					} : null,
+					canOpenWorkbook
+						? {
+								label: __('Open Workbook'),
+								variant: 'outline',
+								icon: 'external-link',
+								onClick: openWorkbook,
+						  }
+						: null,
 				]"
 			/>
 		</div>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { __ } from '../../translation'
 import { COLUMN_TYPES, FIELDTYPES } from '../../helpers/constants'
 import ExpressionEditor from '../../query/components/ExpressionEditor.vue'
 import { expression } from '../../query/helpers'
@@ -16,7 +17,7 @@ const emit = defineEmits({ select: (measure: ExpressionMeasure) => true })
 const showDialog = defineModel()
 
 const columnTypes = COLUMN_TYPES.map((t) => t.value).filter((t) =>
-	FIELDTYPES.NUMBER.includes(t)
+	FIELDTYPES.NUMBER.includes(t),
 ) as MeasureDataType[]
 
 const newMeasure = ref(
@@ -30,7 +31,7 @@ const newMeasure = ref(
 				name: 'new_measure',
 				type: columnTypes[0],
 				expression: '',
-		  }
+		  },
 )
 
 const isValid = computed(() => {
@@ -50,12 +51,12 @@ async function confirmCalculation() {
 			{
 				expression: newMeasure.value.expression,
 				column_options: JSON.stringify(props.columnOptions),
-			}
+			},
 		)
 
 		if (!res || !res.is_valid) {
 			validationState.value = 'invalid'
-			validationErrors.value = res?.errors || [{ message: 'Validation failed' }]
+			validationErrors.value = res?.errors || [{ message: __('Validation failed') }]
 			return
 		}
 
@@ -70,7 +71,7 @@ async function confirmCalculation() {
 	} catch (e) {
 		console.error(e)
 		validationState.value = 'unknown'
-		validationErrors.value = [{ message: 'Unexpected validation error' }]
+		validationErrors.value = [{ message: __('Unexpected validation error') }]
 	}
 }
 
@@ -122,7 +123,7 @@ cachedCall('insights.insights.doctype.insights_data_source_v3.ibis.utils.get_fun
 			type: 'function' as const,
 		}))
 		functionList.value = [...functionItems, ...columnItems]
-	}
+	},
 )
 
 function selectFunction(item: FunctionListItem) {
@@ -130,7 +131,7 @@ function selectFunction(item: FunctionListItem) {
 
 	cachedCall(
 		'insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_description',
-		{ funcName: item.name }
+		{ funcName: item.name },
 	)
 		.then((res: any) => {
 			if (res) {
@@ -152,7 +153,7 @@ function updateDocumentationFromEditor(currentFunction: any) {
 	<Dialog
 		:modelValue="Boolean(showDialog)"
 		:disableOutsideClickToClose="true"
-		:options="{ title: 'Create Measure', size: '2xl' }"
+		:options="{ title: __('Create Measure'), size: '2xl' }"
 		@after-leave="resetNewMeasure"
 		@close="showDialog = false"
 	>
@@ -184,7 +185,7 @@ function updateDocumentationFromEditor(currentFunction: any) {
 					</div>
 					<ExpressionEditor
 						v-model="newMeasure.expression"
-						class= "column-expression"
+						class="column-expression"
 						:column-options="props.columnOptions"
 						@function-signature-update="updateDocumentationFromEditor"
 					/>
@@ -267,7 +268,7 @@ div[data-dismissable-layer] {
 	border-radius: 0.75rem;
 }
 .column-expression {
-	.cm-column-highlight{
+	.cm-column-highlight {
 		background-color: #ededed !important;
 		border-radius: 2px !important;
 		padding: 1px 2px !important;
@@ -279,5 +280,4 @@ div[data-dismissable-layer] {
 		border: 1px solid #ededed !important;
 	}
 }
-
 </style>

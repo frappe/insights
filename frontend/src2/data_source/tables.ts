@@ -1,4 +1,5 @@
 import { call } from 'frappe-ui'
+import { __ } from '../translation'
 import { reactive, ref } from 'vue'
 import { showErrorToast, toOptions } from '../helpers'
 import { createToast } from '../helpers/toasts'
@@ -115,13 +116,13 @@ async function getTableLinks(
 
 async function updateTableLinks(data_source: string) {
 	createToast({
-		title: 'Updating table links',
-		message: `Updating table links for ${data_source}. This may take a while.`,
+		title: __('Updating table links'),
+		message: __('Updating table links for {0}. This may take a while.', data_source),
 		variant: 'info',
 	})
 	return call('insights.api.data_sources.update_table_links', { data_source }).then(() => {
 		createToast({
-			message: `Table links updated for ${data_source}`,
+			message: __('Table links updated for {0}', data_source),
 			variant: 'success',
 		})
 	})
