@@ -238,7 +238,7 @@ export function updateDocumentTitle(meta) {
 				return
 			}
 		},
-		{ immediate: true, deep: true }
+		{ immediate: true, deep: true },
 	)
 }
 

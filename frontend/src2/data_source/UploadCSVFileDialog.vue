@@ -157,7 +157,9 @@ function resetFile() {
 			</div>
 			<div class="mt-4 flex justify-between pt-2">
 				<div class="ml-auto flex items-center space-x-2">
-					<Button :disabled="!fileUploaded" @click="resetFile">{{ __('Reset File') }}</Button>
+					<Button :disabled="!fileUploaded" @click="resetFile">{{
+						__('Reset File')
+					}}</Button>
 					<Button
 						variant="solid"
 						:disabled="importDisabled"

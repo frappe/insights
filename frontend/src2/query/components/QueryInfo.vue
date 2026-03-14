@@ -35,11 +35,7 @@ function toggleLiveConnection(enable: boolean) {
 		</div>
 		<div class="flex flex-shrink-0 flex-col gap-2.5 border-b px-0.5 pb-3">
 			<InlineFormControlLabel :label="__('Query Title')">
-				<LazyTextInput
-					type="text"
-					:placeholder="__('Title')"
-					v-model="query.doc.title"
-				/>
+				<LazyTextInput type="text" :placeholder="__('Title')" v-model="query.doc.title" />
 			</InlineFormControlLabel>
 			<InlineFormControlLabel
 				v-if="settings.doc.enable_data_store"

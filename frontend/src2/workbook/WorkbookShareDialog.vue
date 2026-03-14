@@ -105,7 +105,7 @@ function updatePermissions() {
 				<div class="flex items-center gap-3 rounded border px-3 py-2">
 					<Building2 class="h-6 w-6 text-blue-500" stroke-width="1.5" />
 					<div class="flex flex-1 flex-col">
-							<div class="font-medium leading-5 text-gray-800">
+						<div class="font-medium leading-5 text-gray-800">
 							{{ __('Organization Access') }}
 						</div>
 						<div class="text-sm text-gray-700">
