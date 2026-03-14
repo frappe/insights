@@ -74,7 +74,8 @@ function submit() {
 							show = false
 						}
 					"
-					>{{ __('Cancel') }}</Button>
+					>{{ __('Cancel') }}</Button
+				>
 				<Button variant="solid" @click="submit" :loading="props.downloading">{{
 					__('Export')
 				}}</Button>
