@@ -10,7 +10,6 @@ import useTableStore, { DataSourceTable } from '../data_source/tables'
 import { toOptions, wheneverChanges } from '../helpers'
 import ExpressionEditor from '../query/components/ExpressionEditor.vue'
 import { TeamPermission } from './teams'
-import { __ } from '../translation'
 
 const teamPermissions = defineModel<TeamPermission[]>({
 	required: true,

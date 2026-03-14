@@ -7,7 +7,6 @@ import { copy } from '../helpers'
 import useUserStore from '../users/users'
 import TeamResourceSelector from './TeamResourceSelector.vue'
 import useTeamStore, { Team } from './teams'
-import { __ } from '../translation'
 
 const props = defineProps<{ team: Team }>()
 const show = defineModel()
