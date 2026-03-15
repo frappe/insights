@@ -119,9 +119,15 @@ function handleSaveVariables(variables: any[]) {
 			class="tnum flex flex-shrink-0 items-center gap-2 text-sm text-gray-600"
 		>
 			<div class="h-2 w-2 rounded-full bg-green-500"></div>
+<<<<<<< HEAD
 			<div>
 				<span v-if="query.result.timeTaken == -1"> Fetched from cache </span>
 				<span v-else> Fetched in {{ query.result.timeTaken }}s </span>
+=======
+			<div class="flex items-center gap-1">
+				<span v-if="query.result.timeTaken == -1"> {{ __('Fetched from cache') }} </span>
+				<span v-else> {{ __('Fetched in {0}s', String(query.result.timeTaken)) }} </span>
+>>>>>>> 8caf883a (fix: query results spacing)
 				<span> {{ useTimeAgo(query.result.lastExecutedAt).value }} </span>
 			</div>
 		</div>
