@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-03-10 01:25+0000\n"
-"PO-Revision-Date: 2026-03-10 08:57\n"
+"PO-Revision-Date: 2026-03-12 09:16\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Serbian (Cyrillic)\n"
 "MIME-Version: 1.0\n"
@@ -21,30 +21,30 @@ msgstr ""
 #. Option for the 'Cardinality' (Select) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "1:1"
-msgstr ""
+msgstr "1:1"
 
 #. Option for the 'Cardinality' (Select) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "1:N"
-msgstr ""
+msgstr "1:N"
 
 #. Label of the api_configuration_section (Section Break) field in DocType
 #. 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "API Configuration"
-msgstr ""
+msgstr "API конфигурација"
 
 #. Option for the 'Authentication Type' (Select) field in DocType 'Insights
 #. Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "API Key / Bearer Token"
-msgstr ""
+msgstr "API кључ / Токен носиоца"
 
 #. Label of the api_password (Password) field in DocType 'Insights Data Source
 #. v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "API Password"
-msgstr ""
+msgstr "API лозинка"
 
 #. Label of the api_token (Password) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
@@ -54,7 +54,7 @@ msgstr "API токен"
 #. Label of the api_username (Data) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "API Username"
-msgstr ""
+msgstr "API корисничко име"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights User Invitation'
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
@@ -69,12 +69,12 @@ msgstr "Прихваћено"
 
 #: frontend/src2/workbook/WorkbookList.vue:47
 msgid "Access"
-msgstr ""
+msgstr "Приступ"
 
 #. Label of the if_exists (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Action if table exists"
-msgstr ""
+msgstr "Радња уколико табела постоји"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Data Source'
 #. Option for the 'Status' (Select) field in DocType 'Insights Data Source v3'
@@ -86,32 +86,32 @@ msgstr "Активан"
 #. Label of the aggregation (Data) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "Aggregation"
-msgstr ""
+msgstr "Агрегација"
 
 #. Label of the aggregation_condition (Code) field in DocType 'Insights Query
 #. Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "Aggregation Condition"
-msgstr ""
+msgstr "Услов агрегације"
 
 #: insights/insights/doctype/insights_alert/insights_alert.js:12
 msgid "Alert sent"
-msgstr ""
+msgstr "Упозорење послато"
 
 #. Label of the allow_subquery (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Allow Subquery"
-msgstr ""
+msgstr "Дозволи подупит"
 
 #. Label of the allow_imports (Check) field in DocType 'Insights Data Source'
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 msgid "Allow Table Import"
-msgstr ""
+msgstr "Дозволи увоз табеле"
 
 #. Label of the allowed_origins (Data) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Allowed Origins"
-msgstr ""
+msgstr "Дозвољени извори"
 
 #. Label of the amended_from (Link) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
@@ -122,30 +122,30 @@ msgstr "Измењено из"
 #. Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Append"
-msgstr ""
+msgstr "Додај"
 
 #. Label of the apply_user_permissions (Check) field in DocType 'Insights
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Apply User Permissions"
-msgstr ""
+msgstr "Примени корисничке дозволе"
 
 #. Label of the api_authentication_type (Select) field in DocType 'Insights
 #. Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Authentication Type"
-msgstr ""
+msgstr "Врста аутентификације"
 
 #. Label of the auto_execute_query (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Auto Execute Query"
-msgstr ""
+msgstr "Аутоматско извршавање упита"
 
 #. Description of the 'Vertical Compact Layout' (Check) field in DocType
 #. 'Insights Dashboard v3'
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Automatically arrange cards vertically to fill empty spaces"
-msgstr ""
+msgstr "Аутоматски распореди картице вертикално у циљу попуњавања празног простора"
 
 #. Label of the api_base_url (Data) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
@@ -156,7 +156,7 @@ msgstr "Основни URL"
 #. Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Basic Authentication"
-msgstr ""
+msgstr "Основна аутентификација"
 
 #. Label of the batch_size (Int) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
@@ -167,60 +167,60 @@ msgstr "Величина шарже"
 #. v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Before Import Script"
-msgstr ""
+msgstr "Скрипта пре увоза"
 
 #. Option for the 'Database Type' (Select) field in DocType 'Insights Data
 #. Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "BigQuery"
-msgstr ""
+msgstr "BigQuery"
 
 #. Label of the bigquery_configuration_section (Section Break) field in DocType
 #. 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "BigQuery Configuration"
-msgstr ""
+msgstr "BigQuery конфигурација"
 
 #. Label of the bigquery_dataset_id (Data) field in DocType 'Insights Data
 #. Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "BigQuery Dataset ID"
-msgstr ""
+msgstr "ИД скупа података BigQuery"
 
 #. Label of the bigquery_project_id (Data) field in DocType 'Insights Data
 #. Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "BigQuery Project ID"
-msgstr ""
+msgstr "ИД BigQuery пројекта"
 
 #. Label of the bigquery_service_account_key (JSON) field in DocType 'Insights
 #. Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "BigQuery Service Account Key (JSON)"
-msgstr ""
+msgstr "Кључ сервисног налога BigQuery (JSON)"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:10
 msgid "Bulk Enqueue"
-msgstr ""
+msgstr "Масовно додавање у ред"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:49
 msgid "Bulk Enqueue Import Job"
-msgstr ""
+msgstr "Масовно додавање задатка увоза у ред"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:24
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:34
 msgid "Bulk Enqueue Progress"
-msgstr ""
+msgstr "Напредак масовног додавања у ред"
 
 #. Label of the query_result_expiry (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Cache Query Results For (Minutes)"
-msgstr ""
+msgstr "Резултати упита са кеширања на (минута)"
 
 #. Label of the cardinality (Select) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "Cardinality"
-msgstr ""
+msgstr "Кардиналност"
 
 #. Label of the channel (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -245,7 +245,7 @@ msgstr "Врста дијаграма"
 #. Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "ClickHouse"
-msgstr ""
+msgstr "ClickHouse"
 
 #: frontend/src2/components/AppSidebar.vue:25
 msgid "Collapse"
@@ -271,7 +271,7 @@ msgstr "Колоне"
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Comma seperated URLs to whitelist for embedding charts & dashboards"
-msgstr ""
+msgstr "URL адресе одвојене зарезима за дозвољавање уградње дијаграма и контролних табли"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import
 #. Log'
@@ -302,7 +302,7 @@ msgstr "Потврди"
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Connection String"
-msgstr ""
+msgstr "Низ за повезивање"
 
 #. Label of the content (Code) field in DocType 'Insights Notebook Page'
 #: insights/insights/doctype/insights_notebook_page/insights_notebook_page.json
@@ -327,29 +327,29 @@ msgstr "Cron формат"
 #. Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Cron expression to schedule the script. Note: The scheduler checks for jobs every hour."
-msgstr ""
+msgstr "Cron израз за заказивање скрипте. Напомена: Планер проверава послове сваког сата."
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Query Transform'
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
 msgid "CumulativeSum"
-msgstr ""
+msgstr "Кумулативни збир"
 
 #. Label of the custom_condition (Check) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Custom Condition"
-msgstr ""
+msgstr "Прилагођени услов"
 
 #. Label of the api_custom_headers (JSON) field in DocType 'Insights Data
 #. Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Custom Headers"
-msgstr ""
+msgstr "Прилагођена заглавља"
 
 #. Description of the 'Custom Headers' (JSON) field in DocType 'Insights Data
 #. Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Custom headers for API requests (non-sensitive data only)"
-msgstr ""
+msgstr "Прилагођена заглавља за API захтеве (искључиво подаци који нису осетљиви)"
 
 #. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -363,12 +363,12 @@ msgstr "Контролне табле"
 #. Label of the data_backup (JSON) field in DocType 'Insights Workbook'
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
 msgid "Data Backup"
-msgstr ""
+msgstr "Резервна копија података"
 
 #. Label of the data_query (Link) field in DocType 'Insights Chart v3'
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
 msgid "Data Query"
-msgstr ""
+msgstr "Упит над подацима"
 
 #. Label of the data_source (Link) field in DocType 'Insights Query'
 #. Label of the data_source (Data) field in DocType 'Insights Query Execution
@@ -392,11 +392,11 @@ msgstr "Извор података"
 
 #: frontend/src2/components/AppSidebar.vue:82
 msgid "Data Sources"
-msgstr ""
+msgstr "Извори података"
 
 #: frontend/src2/components/AppSidebar.vue:87
 msgid "Data Store"
-msgstr ""
+msgstr "Извор података"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
@@ -408,7 +408,7 @@ msgstr "База података"
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Database Name"
-msgstr ""
+msgstr "Назив базе података"
 
 #. Label of the database_type (Select) field in DocType 'Insights Data Source'
 #. Label of the database_type (Select) field in DocType 'Insights Data Source
@@ -416,7 +416,7 @@ msgstr ""
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Database Type"
-msgstr ""
+msgstr "Врста базе података"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -431,7 +431,7 @@ msgstr "Датум и време"
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Decimal"
-msgstr ""
+msgstr "Децимално"
 
 #. Label of the disabled (Check) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -451,12 +451,12 @@ msgstr "Нацрт"
 #. Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "DuckDB"
-msgstr ""
+msgstr "DuckDB"
 
 #. Label of the time_taken (Int) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Duration (Seconds)"
-msgstr ""
+msgstr "Трајанје (секунде)"
 
 #. Option for the 'Channel' (Select) field in DocType 'Insights Alert'
 #. Label of the email (Data) field in DocType 'Insights User Invitation'
@@ -474,18 +474,18 @@ msgstr "Имејл послат у"
 #. Label of the enable_data_store (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Enable Data Store"
-msgstr ""
+msgstr "Омогући складиште података"
 
 #. Label of the enable_permissions (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Enable Permissions"
-msgstr ""
+msgstr "Омогући дозволе"
 
 #. Label of the enable_stored_procedure_execution (Check) field in DocType
 #. 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Enable Stored Procedure Execution"
-msgstr ""
+msgstr "Омогући извршавање складиштених процедура"
 
 #. Label of the enabled (Check) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
@@ -500,7 +500,7 @@ msgstr "Завршено у"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:6
 msgid "Enqueue"
-msgstr ""
+msgstr "Додај у ред"
 
 #. Label of the error (Text) field in DocType 'Insights Table Import'
 #. Label of the error (Code) field in DocType 'Insights Table Import Log'
@@ -512,17 +512,17 @@ msgstr "Грешка"
 #. Option for the 'Status' (Select) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Execution Failed"
-msgstr ""
+msgstr "Извршавање није успело"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Execution Successful"
-msgstr ""
+msgstr "Извршавање је успешно"
 
 #. Label of the execution_time (Float) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Execution Time (seconds)"
-msgstr ""
+msgstr "Време извршавања (секунди)"
 
 #: frontend/src2/components/AppSidebar.vue:25
 msgid "Expand"
@@ -558,7 +558,7 @@ msgstr "Неуспешна пријава"
 
 #: insights/setup/setup_wizard.py:18 insights/setup/setup_wizard.py:23
 msgid "Failed to setup demo data"
-msgstr ""
+msgstr "Неуспешно постављање демо података"
 
 #. Label of the filters (JSON) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -568,36 +568,36 @@ msgstr "Филтери"
 #. Label of the fiscal_year_start (Date) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Fiscal Year Start"
-msgstr ""
+msgstr "Почетак фискалне године"
 
 #: insights/api/workbooks.py:241
 msgid "Folder and item must belong to the same workbook"
-msgstr ""
+msgstr "Датотека и ставка морају припадати истој радној свесци"
 
 #. Label of the foreign_key (Data) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "Foreign Key"
-msgstr ""
+msgstr "Страни кључ"
 
 #. Label of the foreign_table (Data) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "Foreign Table"
-msgstr ""
+msgstr "Страна табела"
 
 #. Label of the foreign_table_label (Data) field in DocType 'Insights Table
 #. Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "Foreign Table Label"
-msgstr ""
+msgstr "Ознака стране табеле"
 
 #. Label of the format_option (Code) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "Format Option"
-msgstr ""
+msgstr "Опција формата"
 
 #: insights/config/desktop.py:11
 msgid "Frappe Insights"
-msgstr ""
+msgstr "Frappe Insights"
 
 #. Label of the frequency (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -613,7 +613,7 @@ msgstr "Петак"
 #. Label of the http_headers (JSON) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "HTTP Headers"
-msgstr ""
+msgstr "HTTP заглавља"
 
 #. Label of the hidden (Check) field in DocType 'Insights Table'
 #: insights/insights/doctype/insights_table/insights_table.json
@@ -640,20 +640,20 @@ msgstr "ИД"
 #. Label of the import_job (Link) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Import Job"
-msgstr ""
+msgstr "Задатак увоза"
 
 #. Label of the query (Code) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Import Query"
-msgstr ""
+msgstr "Упит за увоз"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:9
 msgid "Import job has been queued"
-msgstr ""
+msgstr "Задатак увоза је додат у ред чекања"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:7
 msgid "Import to Warehouse"
-msgstr ""
+msgstr "Увоз у складиште података"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import
 #. Log'
@@ -685,177 +685,177 @@ msgstr "Неактиван"
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
 msgid "Insights Admin"
-msgstr ""
+msgstr "Insight администратор"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Insights Alert"
-msgstr ""
+msgstr "Insight упозорење"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_chart/insights_chart.json
 msgid "Insights Chart"
-msgstr ""
+msgstr "Insight дијаграм"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
 msgid "Insights Chart v3"
-msgstr ""
+msgstr "Insight дијаграм v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_dashboard/insights_dashboard.json
 msgid "Insights Dashboard"
-msgstr ""
+msgstr "Insight контролна табла"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_dashboard_chart_v3/insights_dashboard_chart_v3.json
 msgid "Insights Dashboard Chart v3"
-msgstr ""
+msgstr "Insight дијаграм на контролној табли v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_dashboard_item/insights_dashboard_item.json
 msgid "Insights Dashboard Item"
-msgstr ""
+msgstr "Insight ставка контролне табле"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Insights Dashboard v3"
-msgstr ""
+msgstr "Insight контролна табла v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 msgid "Insights Data Source"
-msgstr ""
+msgstr "Insight извор података"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Insights Data Source v3"
-msgstr ""
+msgstr "Insight извор података v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_folder/insights_folder.json
 msgid "Insights Folder"
-msgstr ""
+msgstr "Insight датотека"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_notebook/insights_notebook.json
 msgid "Insights Notebook"
-msgstr ""
+msgstr "Insight бележница"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_notebook_page/insights_notebook_page.json
 msgid "Insights Notebook Page"
-msgstr ""
+msgstr "Insight страница бележнице"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Insights Query"
-msgstr ""
+msgstr "Insight упит"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_chart/insights_query_chart.json
 msgid "Insights Query Chart"
-msgstr ""
+msgstr "Insight дијаграм упита"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "Insights Query Column"
-msgstr ""
+msgstr "Insight колона упита"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_execution_log/insights_query_execution_log.json
 msgid "Insights Query Execution Log"
-msgstr ""
+msgstr "Insight евиденција извршавања упита"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_result/insights_query_result.json
 msgid "Insights Query Result"
-msgstr ""
+msgstr "Insight резултат упита"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_table/insights_query_table.json
 msgid "Insights Query Table"
-msgstr ""
+msgstr "Insight табела упита"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
 msgid "Insights Query Transform"
-msgstr ""
+msgstr "Insight трансформација упита"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_variable/insights_query_variable.json
 msgid "Insights Query Variable"
-msgstr ""
+msgstr "Insight променљива упита"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Insights Query v3"
-msgstr ""
+msgstr "Insight упит v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_resource_permission/insights_resource_permission.json
 msgid "Insights Resource Permission"
-msgstr ""
+msgstr "Insight дозвола за ресурс"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_secret_key/insights_secret_key.json
 msgid "Insights Secret Key"
-msgstr ""
+msgstr "Insight тајни кључ"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Insights Settings"
-msgstr ""
+msgstr "Insight подешавања"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table/insights_table.json
 msgid "Insights Table"
-msgstr ""
+msgstr "Insight табела"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Insights Table Column"
-msgstr ""
+msgstr "Insight колона табеле"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Insights Table Import"
-msgstr ""
+msgstr "Insight увоз табеле"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Insights Table Import Job"
-msgstr ""
+msgstr "Insight задатак увоза табеле"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Insights Table Import Log"
-msgstr ""
+msgstr "Insight евиденција увоза табеле"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "Insights Table Link"
-msgstr ""
+msgstr "Insight линк табеле"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
 msgid "Insights Table Link v3"
-msgstr ""
+msgstr "Insight линк табеле v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Insights Table v3"
-msgstr ""
+msgstr "Insight табела v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_team/insights_team.json
 msgid "Insights Team"
-msgstr ""
+msgstr "Insight тим"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_team_member/insights_team_member.json
 msgid "Insights Team Member"
-msgstr ""
+msgstr "Insight члан тима"
 
 #. Name of a role
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -882,22 +882,22 @@ msgstr ""
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
 msgid "Insights User"
-msgstr ""
+msgstr "Insight корисник"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Insights User Invitation"
-msgstr ""
+msgstr "Insight позив за корисника"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
 msgid "Insights Workbook"
-msgstr ""
+msgstr "Insight радна свеска"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Integer"
-msgstr ""
+msgstr "Цео број"
 
 #. Label of the integrations_section (Section Break) field in DocType 'Insights
 #. Settings'
@@ -913,39 +913,39 @@ msgstr "Позван од стране"
 #. Label of the is_assisted_query (Check) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Is Assisted Query"
-msgstr ""
+msgstr "Потпомогнути упит"
 
 #. Label of the is_builder_query (Check) field in DocType 'Insights Query v3'
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Is Builder Query"
-msgstr ""
+msgstr "Упит креиран у Builder-у"
 
 #. Label of the is_ducklake (Check) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Is DuckLake"
-msgstr ""
+msgstr "DuckLake"
 
 #. Label of the is_expanded (Check) field in DocType 'Insights Folder'
 #: insights/insights/doctype/insights_folder/insights_folder.json
 msgid "Is Expanded"
-msgstr ""
+msgstr "Проширено"
 
 #. Label of the is_expression (Check) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "Is Expression"
-msgstr ""
+msgstr "Израз"
 
 #. Label of the is_frappe_db (Check) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Is Frappe Database"
-msgstr ""
+msgstr "Frappe база података"
 
 #. Label of the is_native_query (Check) field in DocType 'Insights Query'
 #. Label of the is_native_query (Check) field in DocType 'Insights Query v3'
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Is Native Query"
-msgstr ""
+msgstr "Изворни упит"
 
 #. Label of the is_public (Check) field in DocType 'Insights Chart'
 #. Label of the is_public (Check) field in DocType 'Insights Chart v3'
@@ -961,24 +961,24 @@ msgstr "Јавно"
 #. Label of the is_query_based (Check) field in DocType 'Insights Table'
 #: insights/insights/doctype/insights_table/insights_table.json
 msgid "Is Query Based"
-msgstr ""
+msgstr "Засновано на упиту"
 
 #. Label of the is_saved_as_table (Check) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Is Saved as Table"
-msgstr ""
+msgstr "Сачувано као табела"
 
 #. Label of the is_script_query (Check) field in DocType 'Insights Query'
 #. Label of the is_script_query (Check) field in DocType 'Insights Query v3'
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Is Script Query"
-msgstr ""
+msgstr "Упит скрипте"
 
 #. Label of the is_site_db (Check) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Is Site Database"
-msgstr ""
+msgstr "База података сајта"
 
 #. Label of the items (Table) field in DocType 'Insights Dashboard'
 #. Label of the items (JSON) field in DocType 'Insights Dashboard v3'
@@ -999,7 +999,7 @@ msgstr "Придружи се"
 
 #: frontend/src2/components/UserDropdown.vue:116
 msgid "Join Telegram Group"
-msgstr ""
+msgstr "Придружи се Телеграм групи"
 
 #. Label of the key (Data) field in DocType 'Insights Secret Key'
 #. Label of the key (Data) field in DocType 'Insights User Invitation'
@@ -1022,7 +1022,7 @@ msgstr "Ознака"
 #. Label of the last_execution (Datetime) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Last Executed On"
-msgstr ""
+msgstr "Последњи пут извршено"
 
 #. Label of the last_execution (Datetime) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -1032,7 +1032,7 @@ msgstr "Последње извршење"
 #. Label of the last_log (Link) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Last Log"
-msgstr ""
+msgstr "Последња евиденција"
 
 #. Label of the last_run (Datetime) field in DocType 'Insights Table Import
 #. Job'
@@ -1043,7 +1043,7 @@ msgstr "Последње покретање"
 #. Label of the last_status (Data) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Last Status"
-msgstr ""
+msgstr "Последњи статус"
 
 #. Label of the last_synced_on (Datetime) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
@@ -1053,17 +1053,17 @@ msgstr "Последња синхронизација на"
 #. Label of the left_column (Data) field in DocType 'Insights Table Link v3'
 #: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
 msgid "Left Column"
-msgstr ""
+msgstr "Лева колона"
 
 #. Label of the left_table (Data) field in DocType 'Insights Table Link v3'
 #: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
 msgid "Left Table"
-msgstr ""
+msgstr "Лева табела"
 
 #. Label of the tab_break_tvwi (Tab Break) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Legacy"
-msgstr ""
+msgstr "Застарело"
 
 #. Label of the limit (Int) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -1074,12 +1074,12 @@ msgstr "Лимит"
 #. Dashboard v3'
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Linked Charts"
-msgstr ""
+msgstr "Повезани дијаграми"
 
 #. Label of the linked_queries (JSON) field in DocType 'Insights Query v3'
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Linked Queries"
-msgstr ""
+msgstr "Повезани упити"
 
 #. Label of the table_links (Table) field in DocType 'Insights Table'
 #: insights/insights/doctype/insights_table/insights_table.json
@@ -1106,7 +1106,7 @@ msgstr "Пријава на Frappe Cloud?"
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Long Int"
-msgstr ""
+msgstr "Дужи цео број"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -1120,31 +1120,31 @@ msgstr "Дужи текст"
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "MariaDB"
-msgstr ""
+msgstr "MariaDB"
 
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.js:7
 msgid "Mark as Failed"
-msgstr ""
+msgstr "Означи као неуспешно"
 
 #. Label of the max_execution_time (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Max Execution Time (Seconds)"
-msgstr ""
+msgstr "Максимално време извршавања (секунде)"
 
 #. Label of the max_memory_usage (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Max Memory Usage"
-msgstr ""
+msgstr "Максимална употреба меморије"
 
 #. Label of the max_records_to_sync (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Max Records To Sync"
-msgstr ""
+msgstr "Максималан број записа за синхронизацију"
 
 #. Label of the memory_limit (Int) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Memory Limit (MB)"
-msgstr ""
+msgstr "Ограничење меморије (MB)"
 
 #. Label of the message (Markdown Editor) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -1169,12 +1169,12 @@ msgstr "Месечно"
 #. Option for the 'Cardinality' (Select) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "N:1"
-msgstr ""
+msgstr "N:1"
 
 #. Option for the 'Cardinality' (Select) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "N:N"
-msgstr ""
+msgstr "N:N"
 
 #. Label of the column (Data) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
@@ -1184,7 +1184,7 @@ msgstr "Назив"
 #: frontend/src2/workbook/WorkbookList.vue:116
 #: frontend/src2/workbook/WorkbookList.vue:151
 msgid "New Workbook"
-msgstr ""
+msgstr "Нова радна свеска"
 
 #. Label of the next_execution (Datetime) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -1193,11 +1193,11 @@ msgstr "Следеће извршавање"
 
 #: frontend/src2/workbook/WorkbookList.vue:113
 msgid "No Workbooks"
-msgstr ""
+msgstr "Нема радних свезака"
 
 #: frontend/src2/workbook/WorkbookList.vue:114
 msgid "No workbooks to display."
-msgstr ""
+msgstr "Нема радних свезака за приказ."
 
 #. Option for the 'Authentication Type' (Select) field in DocType 'Insights
 #. Data Source v3'
@@ -1208,7 +1208,7 @@ msgstr "Ниједном"
 #. Label of the notebook (Link) field in DocType 'Insights Notebook Page'
 #: insights/insights/doctype/insights_notebook_page/insights_notebook_page.json
 msgid "Notebook"
-msgstr ""
+msgstr "Бележница"
 
 #. Label of the old_name (Data) field in DocType 'Insights Chart v3'
 #. Label of the old_name (Data) field in DocType 'Insights Dashboard v3'
@@ -1223,7 +1223,7 @@ msgstr "Претходни назив"
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Onboarding Complete"
-msgstr ""
+msgstr "Завршетак увођења"
 
 #. Label of the operations (JSON) field in DocType 'Insights Query v3'
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
@@ -1248,7 +1248,7 @@ msgstr "Наруџбина од"
 #. Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Overwrite"
-msgstr ""
+msgstr "Измени"
 
 #: frontend/src2/workbook/WorkbookList.vue:89
 msgid "Owner"
@@ -1258,7 +1258,7 @@ msgstr "Власник"
 #. Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Parquet File"
-msgstr ""
+msgstr "Parquet фајл"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
@@ -1280,18 +1280,18 @@ msgstr "На чекању"
 #. Option for the 'Status' (Select) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Pending Execution"
-msgstr ""
+msgstr "Чека се извршење"
 
 #. Description of the 'State (JSON)' (Code) field in DocType 'Insights Table
 #. Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Persistent state storage for the script"
-msgstr ""
+msgstr "Трајно складиште података за скрипту"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Query Transform'
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
 msgid "Pivot"
-msgstr ""
+msgstr "Пивот"
 
 #. Label of the port (Data) field in DocType 'Insights Data Source'
 #. Label of the port (Int) field in DocType 'Insights Data Source v3'
@@ -1303,7 +1303,7 @@ msgstr "Порт"
 #. Label of the layout (JSON) field in DocType 'Insights Dashboard Item'
 #: insights/insights/doctype/insights_dashboard_item/insights_dashboard_item.json
 msgid "Position & Size"
-msgstr ""
+msgstr "Позиција и величина"
 
 #. Option for the 'Database Type' (Select) field in DocType 'Insights Data
 #. Source'
@@ -1312,7 +1312,7 @@ msgstr ""
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "PostgreSQL"
-msgstr ""
+msgstr "PostgreSQL"
 
 #. Label of the preview_image (Data) field in DocType 'Insights Dashboard v3'
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
@@ -1322,14 +1322,14 @@ msgstr "Преглед слике"
 #. Label of the primary_key (Data) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "Primary Key"
-msgstr ""
+msgstr "Примарни кључ"
 
 #. Label of the public_key (Data) field in DocType 'Insights Chart'
 #. Label of the public_key (Data) field in DocType 'Insights Dashboard'
 #: insights/insights/doctype/insights_chart/insights_chart.json
 #: insights/insights/doctype/insights_dashboard/insights_dashboard.json
 msgid "Public Key"
-msgstr ""
+msgstr "Јавни кључ"
 
 #. Label of the query (Link) field in DocType 'Insights Alert'
 #. Label of the query (Link) field in DocType 'Insights Chart'
@@ -1354,7 +1354,7 @@ msgstr "Упит"
 #. Label of the query_result_limit (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Query Result Limit"
-msgstr ""
+msgstr "Ограничење резултата упита"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
@@ -1364,7 +1364,7 @@ msgstr "У реду"
 #. Option for the 'Type' (Select) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "REST API"
-msgstr ""
+msgstr "REST API"
 
 #. Label of the recipients (Small Text) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -1381,7 +1381,7 @@ msgstr "Ресурс"
 #. Permission'
 #: insights/insights/doctype/insights_resource_permission/insights_resource_permission.json
 msgid "Resource Type"
-msgstr ""
+msgstr "Врста ресурса"
 
 #. Label of the result_name (Data) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -1391,40 +1391,40 @@ msgstr "Резултат"
 #. Label of the results_row_count (Int) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Result Row Count"
-msgstr ""
+msgstr "Број редова резултата"
 
 #. Label of the results (Code) field in DocType 'Insights Query Result'
 #: insights/insights/doctype/insights_query_result/insights_query_result.json
 msgid "Results"
-msgstr ""
+msgstr "Резултати"
 
 #. Label of the results_row_count (Int) field in DocType 'Insights Query
 #. Result'
 #: insights/insights/doctype/insights_query_result/insights_query_result.json
 msgid "Results Row Count"
-msgstr ""
+msgstr "Број редова резултата"
 
 #. Label of the right_column (Data) field in DocType 'Insights Table Link v3'
 #: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
 msgid "Right Column"
-msgstr ""
+msgstr "Десна колона"
 
 #. Label of the right_table (Data) field in DocType 'Insights Table Link v3'
 #: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
 msgid "Right Table"
-msgstr ""
+msgstr "Десна табела"
 
 #. Label of the row_limit (Int) field in DocType 'Insights Table Import Log'
 #. Label of the row_limit (Int) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Row Limit"
-msgstr ""
+msgstr "Ограничење реда"
 
 #. Label of the row_size (Float) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Row Size (KB)"
-msgstr ""
+msgstr "Величина реда (KB)"
 
 #. Label of the rows (Int) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
@@ -1435,7 +1435,7 @@ msgstr "Редови"
 #. Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Rows Imported"
-msgstr ""
+msgstr "Увезени редови"
 
 #: insights/insights/doctype/insights_query/insights_query.js:7
 msgid "Run"
@@ -1443,7 +1443,7 @@ msgstr "Покрени"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:37
 msgid "Run {0} of {1}"
-msgstr ""
+msgstr "Покрени {0} од {1}"
 
 #. Label of the sql (Code) field in DocType 'Insights Query'
 #. Label of the sql (Code) field in DocType 'Insights Query Execution Log'
@@ -1459,7 +1459,7 @@ msgstr "SQL"
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "SQLite"
-msgstr ""
+msgstr "SQLite"
 
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
@@ -1470,12 +1470,12 @@ msgstr "Субота"
 #. Label of the schedule (Data) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Schedule (Cron)"
-msgstr ""
+msgstr "Распоред (Cron)"
 
 #. Label of the schema (Data) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Schema"
-msgstr ""
+msgstr "Шема"
 
 #. Label of the script (Code) field in DocType 'Insights Query'
 #. Label of the script (Code) field in DocType 'Insights Table Import Job'
@@ -1487,7 +1487,7 @@ msgstr "Скрипта"
 #. Label of the script_log (Text) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Script Log"
-msgstr ""
+msgstr "Евиденција скрипте"
 
 #: frontend/src2/workbook/WorkbookList.vue:166
 msgid "Search by Title"
@@ -1496,23 +1496,23 @@ msgstr "Претрага по наслову"
 #. Label of the secrets (Table) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Secrets"
-msgstr ""
+msgstr "Тајне"
 
 #: insights/insights/doctype/insights_alert/insights_alert.js:6
 msgid "Send Alert"
-msgstr ""
+msgstr "Пошаљи упозорење"
 
 #: insights/insights/doctype/insights_alert/insights_alert.js:7
 msgid "Sending Alert..."
-msgstr ""
+msgstr "Слање упозорења..."
 
 #: frontend/src2/components/UserDropdown.vue:66
 msgid "Set Insights v2 as default"
-msgstr ""
+msgstr "Постави Insights v2 као подразумевани"
 
 #: insights/setup/setup_wizard.py:17
 msgid "Setting up demo data"
-msgstr ""
+msgstr "Постављање демо података"
 
 #: frontend/src2/components/AppSidebar.vue:93
 msgid "Settings"
@@ -1526,12 +1526,12 @@ msgstr "Поставке завршене"
 #. Label of the share_link (Data) field in DocType 'Insights Dashboard v3'
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Share Link"
-msgstr ""
+msgstr "Подели линк"
 
 #. Label of the is_site_db (Check) field in DocType 'Insights Data Source'
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 msgid "Site Database"
-msgstr ""
+msgstr "База података сајта"
 
 #. Label of the sort_order (Int) field in DocType 'Insights Folder'
 #: insights/insights/doctype/insights_folder/insights_folder.json
@@ -1556,12 +1556,12 @@ msgstr "Започето у"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:27
 msgid "Starting..."
-msgstr ""
+msgstr "Покретање..."
 
 #. Label of the state (Code) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "State (JSON)"
-msgstr ""
+msgstr "Стање (JSON)"
 
 #. Label of the status (Select) field in DocType 'Insights Data Source'
 #. Label of the status (Select) field in DocType 'Insights Data Source v3'
@@ -1583,12 +1583,12 @@ msgstr "Статус"
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Stored"
-msgstr ""
+msgstr "Складиштено"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "String"
-msgstr ""
+msgstr "Низ карактера"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
@@ -1603,7 +1603,7 @@ msgstr "Недеља"
 
 #: frontend/src2/components/UserDropdown.vue:50
 msgid "Switch to Insights v2"
-msgstr ""
+msgstr "Пређи на Insights v2"
 
 #. Name of a role
 #: insights/insights/doctype/insights_chart/insights_chart.json
@@ -1638,7 +1638,7 @@ msgstr "Табела"
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Table Label"
-msgstr ""
+msgstr "Ознака табеле"
 
 #. Label of the table_name (Data) field in DocType 'Insights Table Import'
 #. Label of the table_name (Data) field in DocType 'Insights Table Import Job'
@@ -1647,18 +1647,18 @@ msgstr ""
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Table Name"
-msgstr ""
+msgstr "Назив табеле"
 
 #. Label of the table_restrictions (Data) field in DocType 'Insights Resource
 #. Permission'
 #: insights/insights/doctype/insights_resource_permission/insights_resource_permission.json
 msgid "Table Restrictions"
-msgstr ""
+msgstr "Ограничења табеле"
 
 #. Label of the tables (Table) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Tables"
-msgstr ""
+msgstr "Табеле"
 
 #. Label of the team_members (Table) field in DocType 'Insights Team'
 #: insights/insights/doctype/insights_team/insights_team.json
@@ -1673,23 +1673,23 @@ msgstr "Назив тима"
 #. Label of the team_permissions (Table) field in DocType 'Insights Team'
 #: insights/insights/doctype/insights_team/insights_team.json
 msgid "Team Permissions"
-msgstr ""
+msgstr "Дозволе тима"
 
 #. Option for the 'Channel' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Telegram"
-msgstr ""
+msgstr "Телеграм"
 
 #. Label of the telegram_api_token (Password) field in DocType 'Insights
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Telegram API Token"
-msgstr ""
+msgstr "Телеграм API токен"
 
 #. Label of the telegram_chat_id (Data) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Telegram Chat ID"
-msgstr ""
+msgstr "ИД Телеграм чета"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -1711,7 +1711,7 @@ msgstr "Време"
 #. Log'
 #: insights/insights/doctype/insights_query_execution_log/insights_query_execution_log.json
 msgid "Time Taken (Seconds)"
-msgstr ""
+msgstr "Време извршења (секунде)"
 
 #. Label of the title (Data) field in DocType 'Insights Alert'
 #. Label of the title (Data) field in DocType 'Insights Chart v3'
@@ -1748,17 +1748,17 @@ msgstr "Наслов"
 #. Label of the transform_tab (Tab Break) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Transform"
-msgstr ""
+msgstr "Трансформација"
 
 #. Label of the transforms (Table) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Transforms"
-msgstr ""
+msgstr "Трансформације"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Query Transform'
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
 msgid "Transpose"
-msgstr ""
+msgstr "Транспоновање"
 
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
@@ -1786,13 +1786,13 @@ msgstr "Врста"
 #. Option for the 'Type' (Select) field in DocType 'Insights Query Transform'
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
 msgid "Unpivot"
-msgstr ""
+msgstr "Поништи пивот"
 
 #. Label of the use_live_connection (Check) field in DocType 'Insights Query
 #. v3'
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Use Live Connection"
-msgstr ""
+msgstr "Користи везу уживо"
 
 #. Label of the use_ssl (Check) field in DocType 'Insights Data Source'
 #. Label of the use_ssl (Check) field in DocType 'Insights Data Source v3'
@@ -1827,7 +1827,7 @@ msgstr "Назив променљиве"
 #. Variable'
 #: insights/insights/doctype/insights_query_variable/insights_query_variable.json
 msgid "Variable Value"
-msgstr ""
+msgstr "Вредност променљиве"
 
 #. Label of the variables (Table) field in DocType 'Insights Query'
 #. Label of the variables (Table) field in DocType 'Insights Query v3'
@@ -1840,7 +1840,7 @@ msgstr "Променљиве"
 #. Dashboard v3'
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Vertical Compact Layout"
-msgstr ""
+msgstr "Вертикални компактни распоред"
 
 #: frontend/src2/workbook/WorkbookList.vue:74
 msgid "Views"
@@ -1855,7 +1855,7 @@ msgstr "Среда"
 #. Label of the week_starts_on (Select) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Week Starts On"
-msgstr ""
+msgstr "Недеља почиње"
 
 #. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -1871,12 +1871,12 @@ msgstr "Недељно"
 #: insights/insights/doctype/insights_folder/insights_folder.json
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Workbook"
-msgstr ""
+msgstr "Радна свеска"
 
 #: frontend/src2/components/AppSidebar.vue:77
 #: frontend/src2/workbook/WorkbookList.vue:148
 msgid "Workbooks"
-msgstr ""
+msgstr "Радне свеске"
 
 #: insights/setup/setup_wizard.py:28
 msgid "Wrapping up"
@@ -1886,26 +1886,26 @@ msgstr "Завршавање"
 #. Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Write Python code to fetch and transform data. Available globals:<br>• client: API client for the selected data source<br>• table: Write data to warehouse. Methods: insert(data, overwrite=False)<br>• state: Persist data between runs. Methods: get(key, default=None), set(key, value), delete(key), clear()<br>• secrets: Access secret keys. Methods: get(key)<br>• log(message): Log execution messages"
-msgstr ""
+msgstr "Напиши Python код за преузимање и трансформацију података. Доступне глобалне променљиве:<br>• client: API клијент за одабрани извор података<br>• table: Упис података у складиште података. Методе: insert(data, overwrite=False)<br>• state: Трајно чување стања између извршавања. Методе: get(key, default=None), set(key, value), delete(key), clear()<br>• secrets: Приступ тајним кључевима. Методе: get(key)<br>• log(message): Евиденција извршавања"
 
 #: insights/decorators.py:26
 msgid "You do not have permission to access this resource"
-msgstr ""
+msgstr "Немате дозволу за приступ овом ресурсу"
 
 #: insights/api/workbooks.py:165 insights/api/workbooks.py:186
 #: insights/api/workbooks.py:198 insights/api/workbooks.py:225
 #: insights/api/workbooks.py:236 insights/api/workbooks.py:250
 msgid "You do not have permission to modify this workbook"
-msgstr ""
+msgstr "Немате дозволу да мењате ову радну свеску"
 
 #: insights/api/workbooks.py:79 insights/api/workbooks.py:132
 msgid "You do not have permission to share this workbook"
-msgstr ""
+msgstr "Немате дозволу да поделите ову радну свеску"
 
 #. Option for the 'Order By' (Select) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "asc"
-msgstr ""
+msgstr "растуће"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Folder'
 #: insights/insights/doctype/insights_folder/insights_folder.json
@@ -1915,7 +1915,7 @@ msgstr "дијаграм"
 #. Option for the 'Order By' (Select) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "desc"
-msgstr ""
+msgstr "опадајуће"
 
 #. Label of the folder (Data) field in DocType 'Insights Chart v3'
 #. Label of the folder (Data) field in DocType 'Insights Query v3'
@@ -1934,5 +1934,5 @@ msgstr "упит"
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "sort_order"
-msgstr ""
+msgstr "редослед_сортирања"
 
