@@ -1,25 +1,30 @@
 <script setup lang="ts">
+<<<<<<< HEAD
 import { Button, Dialog, FormControl, LoadingIndicator, Rating } from 'frappe-ui'
 import { ChevronLeft, ChevronRight, Download, Plus, Search, Table2Icon } from 'lucide-vue-next'
+=======
+import { Button, FormControl, LoadingIndicator } from 'frappe-ui'
+import { ChevronLeft, ChevronRight, Plus, Search, Table2Icon } from 'lucide-vue-next'
+>>>>>>> a2f769b2 (feat: add column width and text wrap options (#934))
 import { computed, nextTick, reactive, ref } from 'vue'
 import { createHeaders, formatNumber, getShortNumber } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
-import { QueryResultColumn, QueryResultRow, SortDirection, SortOrder } from '../types/query.types'
-import DataTableColumn from './DataTableColumn.vue'
 import {
-	applyRule,
-	applyTextRule,
 	applyDateRule,
 	applyRankRule,
+	applyRule,
+	applyTextRule,
 	cell_rules,
-	text_rules,
 	date_rules,
-	rank_rules,
 	FormatGroupArgs,
 	FormattingMode,
 	garByPercentage,
 	ragByPercentage,
+	rank_rules,
+	text_rules,
 } from '../query/components/formatting_utils'
+import { QueryResultColumn, QueryResultRow, SortDirection, SortOrder } from '../types/query.types'
+import DataTableColumn from './DataTableColumn.vue'
 
 const props = defineProps<{
 	columns: QueryResultColumn[] | undefined
@@ -40,7 +45,9 @@ const props = defineProps<{
 	onSortChange?: (column_name: string, direction: SortDirection) => void
 	onColumnRename?: (column_name: string, new_name: string) => void
 	onDrilldown?: (column: QueryResultColumn, row: QueryResultRow) => void
-	stickyColumns?: string[] // List of column names to make sticky
+	stickyColumns?: string[]
+	columnWidths?: Record<string, number>
+	textWrap?: Record<string, boolean>
 }>()
 
 const headers = computed(() => {
@@ -119,6 +126,25 @@ const getStickyColumnStyle = (column: string) => {
 	return {
 		left: stickyColumnPositions.value[column] || '48px',
 	}
+}
+
+const getColumnWidthStyle = (column: string) => {
+	const width = props.columnWidths?.[column]
+	if (width) {
+		return {
+			width: `${width}px`,
+			minWidth: `${width}px`,
+			maxWidth: `${width}px`,
+		}
+	}
+	return {
+		maxWidth: '400px',
+	}
+}
+
+const getTextWrapClass = (column: string) => {
+	if (props.textWrap?.[column]) return ''
+	return 'truncate'
 }
 
 const filterPerColumn = ref<Record<string, string>>({})
@@ -307,8 +333,68 @@ function getColorClass(colorName: string): string {
 }
 
 const getColumnMinMax = (columnName: string) => {
+<<<<<<< HEAD
 	const values =
 		props.rows?.map((row) => Number(row[columnName])).filter((val) => !isNaN(val)) || []
+=======
+	const colorScaleFormats = formattingRulesByColumn.value[columnName]?.filter(
+		(rule) => rule.mode === 'color_scale',
+	)
+
+	if (!colorScaleFormats?.length) {
+		const values =
+			props.rows?.map((row) => Number(row[columnName])).filter((val) => !isNaN(val)) || []
+		return {
+			min: Math.min(...values),
+			max: Math.max(...values),
+		}
+	}
+
+	const scaleScope = colorScaleFormats[0].scaleScope || 'global'
+	let columnsToConsider = [columnName]
+
+	if (scaleScope === 'global') {
+		// Find all columns that have the same color_scale format applied
+		const allFormattedColumns = Object.keys(formattingRulesByColumn.value).filter((col) => {
+			return formattingRulesByColumn.value[col]?.some((rule) => rule.mode === 'color_scale')
+		})
+
+		// Calculate global min/max across all columns to ensure consistent scaling.
+		// this works on:
+		// multi-value pivot:  [Status]___[Measure] (eg: Draft___sum_of_mrr)
+		// single-pivot: [Dimension] (eg: Paid, Unpaid)
+		// multi-pivot:  [Dim1]___[Dim2] (eg: INR___Draft, USD___Paid)
+		if (allFormattedColumns.length > 1) {
+			if (columnName.includes('___')) {
+				const parts = columnName.split('___')
+				const measureName = parts[parts.length - 1]
+
+				const hasMultiValuePivot = allFormattedColumns.some((col) =>
+					col.endsWith('___' + measureName),
+				)
+
+				if (hasMultiValuePivot) {
+					// multi-value pivot: only include columns ending with the same measure
+					columnsToConsider = allFormattedColumns.filter((col) =>
+						col.endsWith('___' + measureName),
+					)
+				} else {
+					// multi-column pivot: all formatted columns represent the same measure
+					columnsToConsider = allFormattedColumns
+				}
+			} else {
+				columnsToConsider = allFormattedColumns
+			}
+		}
+	}
+
+	const values: number[] = []
+	columnsToConsider.forEach((col) => {
+		const colValues =
+			props.rows?.map((row) => Number(row[col])).filter((val) => !isNaN(val)) || []
+		values.push(...colValues)
+	})
+>>>>>>> a2f769b2 (feat: add column width and text wrap options (#934))
 
 	return {
 		min: Math.min(...values),
@@ -493,7 +579,10 @@ function toggleNewColumn() {
 									: 'text-left',
 								isStickyColumn(header.column.name) ? 'sticky bg-gray-50' : '',
 							]"
-							:style="getStickyColumnStyle(header.column.name)"
+							:style="{
+								...getStickyColumnStyle(header.column.name),
+								...getColumnWidthStyle(header.column.name),
+							}"
 							:colspan="header.colspan"
 							:data-column-name="header.column.name"
 						>
@@ -564,7 +653,10 @@ function toggleNewColumn() {
 							:key="idx"
 							class="h-8 border-b border-r p-1"
 							:class="isStickyColumn(column.name) ? 'sticky bg-gray-50' : ''"
-							:style="getStickyColumnStyle(column.name)"
+							:style="{
+								...getStickyColumnStyle(column.name),
+								...getColumnWidthStyle(column.name),
+							}"
 						>
 							<FormControl
 								type="text"
@@ -601,8 +693,9 @@ function toggleNewColumn() {
 
 						<td
 							v-for="col in props.columns"
-							class="h-8 max-w-[24rem] truncate border-b border-r px-3 text-gray-800"
+							class="h-8 border-b border-r px-3 text-gray-800 leading-5 py-1.5"
 							:class="[
+								getTextWrapClass(col.name),
 								isNumberColumn(col.name) ? 'tnum text-right' : 'text-left',
 								props.enableColorScale && isNumberColumn(col.name)
 									? colorByValues[row[col.name]]
@@ -613,7 +706,10 @@ function toggleNewColumn() {
 								getCellStyleClass(col.name, row[col.name]),
 								isStickyColumn(col.name) ? 'sticky bg-white' : '',
 							]"
-							:style="getStickyColumnStyle(col.name)"
+							:style="{
+								...getStickyColumnStyle(col.name),
+								...getColumnWidthStyle(col.name),
+							}"
 							height="30px"
 							@dblclick="isNumberColumn(col.name) && props.onDrilldown?.(col, row)"
 						>
@@ -656,7 +752,10 @@ function toggleNewColumn() {
 								isNumberColumn(col.name) ? 'tnum text-right' : 'text-left',
 								isStickyColumn(col.name) ? 'sticky bg-white' : '',
 							]"
-							:style="getStickyColumnStyle(col.name)"
+							:style="{
+								...getStickyColumnStyle(col.name),
+								...getColumnWidthStyle(col.name),
+							}"
 						>
 							{{
 								isNumberColumn(col.name)
