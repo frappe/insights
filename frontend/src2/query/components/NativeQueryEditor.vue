@@ -151,7 +151,7 @@ const completions = computed(() => {
 				class="tnum flex flex-shrink-0 items-center gap-2 text-sm text-gray-600"
 			>
 				<div class="h-2 w-2 rounded-full bg-green-500"></div>
-				<div>
+				<div class="flex items-center gap-1">
 					<span v-if="query.result.timeTaken == -1">
 						{{ __('Fetched from cache') }}
 					</span>
