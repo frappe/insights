@@ -1020,16 +1020,27 @@ export function getBubbleChartOptions(config: BubbleChartConfig, result: QueryRe
 
 export function getSankeyChartOptions(config: SankeyChartConfig, result: QueryResult) {
 	const rows = result.rows
+	const columns = result.columns
 
-	const sourceColumn = config.source_column?.dimension_name
-	const targetColumn = config.target_column?.dimension_name
-	const valueColumn = config.value_column?.measure_name
+	const sourceColumn = columns.find(
+		(c) =>
+			c.name === config.source_column?.dimension_name ||
+			c.name === config.source_column?.column_name
+	)?.name
+	const targetColumn = columns.find(
+		(c) =>
+			c.name === config.target_column?.dimension_name ||
+			c.name === config.target_column?.column_name
+	)?.name
+	const valueColumn = columns.find(
+		(c) =>
+			c.name === config.value_column?.measure_name || c.name === config.value_column?.column_name
+	)?.name
 
 	if (!sourceColumn || !targetColumn || !valueColumn) {
 		return null
 	}
 
-	const colors = getColors()
 	const orient = config.orient || 'horizontal'
 	const nodeAlign = config.node_align || 'justify'
 
@@ -1050,7 +1061,6 @@ export function getSankeyChartOptions(config: SankeyChartConfig, result: QueryRe
 	return {
 		animation: true,
 		animationDuration: 300,
-		color: colors,
 		tooltip: {
 			trigger: 'item',
 			confine: true,
@@ -1066,7 +1076,12 @@ export function getSankeyChartOptions(config: SankeyChartConfig, result: QueryRe
 							</div>
 						</div>`
 				}
-				return `<div class="font-bold">${params.name}</div>`
+				const value = formatNumber(params.value)
+				return `
+					<div class="flex items-center justify-between gap-5">
+						<div>${params.name}</div>
+						<div class="font-bold">${value}</div>
+					</div>`
 			},
 		},
 		series: [
@@ -1074,6 +1089,10 @@ export function getSankeyChartOptions(config: SankeyChartConfig, result: QueryRe
 				type: 'sankey',
 				orient,
 				nodeAlign,
+				top: '5%',
+				bottom: '5%',
+				left: '5%',
+				right: '10%',
 				draggable: false,
 				emphasis: { focus: 'adjacency' },
 				label: {
@@ -1081,9 +1100,9 @@ export function getSankeyChartOptions(config: SankeyChartConfig, result: QueryRe
 					fontSize: 12,
 				},
 				lineStyle: {
-					color: 'gradient',
+					color: 'source',
 					opacity: 0.4,
-					curveness: 0.5,
+					curveness: 0.1,
 				},
 				data: nodes,
 				links,
