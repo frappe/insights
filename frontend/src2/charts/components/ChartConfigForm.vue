@@ -9,6 +9,7 @@ import {
 	LineChartConfig,
 	MapChartConfig,
 	NumberChartConfig,
+	SankeyChartConfig,
 	TableChartConfig,
 } from '../../types/chart.types'
 import { DimensionOption } from '../../types/query.types'
@@ -20,6 +21,7 @@ import LineChartConfigForm from './LineChartConfigForm.vue'
 import MapChartConfigForm from './MapChartConfigForm.vue'
 import NumberChartConfigForm from './NumberChartConfigForm.vue'
 import BubbleChartConfigForm from './BubbleChartConfigForm.vue'
+import SankeyChartConfigForm from './SankeyChartConfigForm.vue'
 import TableChartConfigForm from './TableChartConfigForm.vue'
 
 const props = defineProps<{ chart: Chart }>()
@@ -93,6 +95,12 @@ const queryResult = computed(() => chartQuery.value.result)
 	<BubbleChartConfigForm
 		v-if="props.chart.doc.chart_type == 'Bubble'"
 		v-model="(props.chart.doc.config as BubbleChartConfig)"
+		:dimensions="dimensions"
+		:column-options="columnOptions"
+	/>
+	<SankeyChartConfigForm
+		v-if="props.chart.doc.chart_type == 'Sankey'"
+		v-model="(props.chart.doc.config as SankeyChartConfig)"
 		:dimensions="dimensions"
 		:column-options="columnOptions"
 	/>

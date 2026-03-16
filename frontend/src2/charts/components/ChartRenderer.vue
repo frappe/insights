@@ -10,6 +10,7 @@ import {
 	MapChartConfig,
 	NumberChartConfig,
 	BubbleChartConfig,
+	SankeyChartConfig,
 } from '../../types/chart.types'
 import { Chart } from '../chart'
 import {
@@ -19,6 +20,7 @@ import {
 	getLineChartOptions,
 	getMapChartOptions,
 	getBubbleChartOptions,
+	getSankeyChartOptions,
 } from '../helpers'
 import { FIELDTYPES } from '../../helpers/constants.ts'
 import { titleCase } from '../../helpers'
@@ -60,6 +62,9 @@ const eChartOptions = computed(() => {
 	}
 	if (chart_type.value === 'Bubble') {
 		return getBubbleChartOptions(config.value as BubbleChartConfig, result.value)
+	}
+	if (chart_type.value === 'Sankey') {
+		return getSankeyChartOptions(config.value as SankeyChartConfig, result.value)
 	}
 })
 

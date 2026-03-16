@@ -11,6 +11,7 @@ import {
 	LineChartConfig,
 	MapChartConfig,
 	BubbleChartConfig,
+	SankeyChartConfig,
 	Series,
 	SeriesLine,
 	XAxis,
@@ -1014,6 +1015,80 @@ export function getBubbleChartOptions(config: BubbleChartConfig, result: QueryRe
 			},
 		},
 		legend: getLegend(show_legend),
+	}
+}
+
+export function getSankeyChartOptions(config: SankeyChartConfig, result: QueryResult) {
+	const rows = result.rows
+
+	const sourceColumn = config.source_column?.dimension_name
+	const targetColumn = config.target_column?.dimension_name
+	const valueColumn = config.value_column?.measure_name
+
+	if (!sourceColumn || !targetColumn || !valueColumn) {
+		return null
+	}
+
+	const colors = getColors()
+	const orient = config.orient || 'horizontal'
+	const nodeAlign = config.node_align || 'justify'
+
+	const nodeSet = new Set<string>()
+	const links: { source: string; target: string; value: number }[] = []
+
+	for (const row of rows) {
+		const source = String(row[sourceColumn])
+		const target = String(row[targetColumn])
+		const value = Number(row[valueColumn]) || 0
+		nodeSet.add(source)
+		nodeSet.add(target)
+		links.push({ source, target, value })
+	}
+
+	const nodes = Array.from(nodeSet).map((name) => ({ name }))
+
+	return {
+		animation: true,
+		animationDuration: 300,
+		color: colors,
+		tooltip: {
+			trigger: 'item',
+			confine: true,
+			appendToBody: false,
+			formatter: (params: any) => {
+				if (params.dataType === 'edge') {
+					const value = formatNumber(params.value)
+					return `
+						<div class="flex flex-col gap-1">
+							<div class="flex items-center justify-between gap-5">
+								<div>${params.data.source} → ${params.data.target}</div>
+								<div class="font-bold">${value}</div>
+							</div>
+						</div>`
+				}
+				return `<div class="font-bold">${params.name}</div>`
+			},
+		},
+		series: [
+			{
+				type: 'sankey',
+				orient,
+				nodeAlign,
+				draggable: false,
+				emphasis: { focus: 'adjacency' },
+				label: {
+					color: '#565656',
+					fontSize: 12,
+				},
+				lineStyle: {
+					color: 'gradient',
+					opacity: 0.4,
+					curveness: 0.5,
+				},
+				data: nodes,
+				links,
+			},
+		],
 	}
 }
 
