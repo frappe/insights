@@ -1,25 +1,25 @@
 <script setup lang="ts">
-import { Button, Dialog, FormControl, LoadingIndicator, Rating } from 'frappe-ui'
-import { ChevronLeft, ChevronRight, Download, Plus, Search, Table2Icon } from 'lucide-vue-next'
+import { Button, FormControl, LoadingIndicator, Rating } from 'frappe-ui'
+import { ChevronLeft, ChevronRight, Plus, Search, Table2Icon } from 'lucide-vue-next'
 import { computed, nextTick, reactive, ref } from 'vue'
 import { createHeaders, formatNumber, getShortNumber } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
-import { QueryResultColumn, QueryResultRow, SortDirection, SortOrder } from '../types/query.types'
-import DataTableColumn from './DataTableColumn.vue'
 import {
-	applyRule,
-	applyTextRule,
 	applyDateRule,
 	applyRankRule,
+	applyRule,
+	applyTextRule,
 	cell_rules,
-	text_rules,
 	date_rules,
-	rank_rules,
 	FormatGroupArgs,
 	FormattingMode,
 	garByPercentage,
 	ragByPercentage,
+	rank_rules,
+	text_rules,
 } from '../query/components/formatting_utils'
+import { QueryResultColumn, QueryResultRow, SortDirection, SortOrder } from '../types/query.types'
+import DataTableColumn from './DataTableColumn.vue'
 
 const props = defineProps<{
 	columns: QueryResultColumn[] | undefined
@@ -40,7 +40,9 @@ const props = defineProps<{
 	onSortChange?: (column_name: string, direction: SortDirection) => void
 	onColumnRename?: (column_name: string, new_name: string) => void
 	onDrilldown?: (column: QueryResultColumn, row: QueryResultRow) => void
-	stickyColumns?: string[] // List of column names to make sticky
+	stickyColumns?: string[]
+	columnWidths?: Record<string, number>
+	textWrap?: Record<string, boolean>
 }>()
 
 const headers = computed(() => {
@@ -119,6 +121,25 @@ const getStickyColumnStyle = (column: string) => {
 	return {
 		left: stickyColumnPositions.value[column] || '48px',
 	}
+}
+
+const getColumnWidthStyle = (column: string) => {
+	const width = props.columnWidths?.[column]
+	if (width) {
+		return {
+			width: `${width}px`,
+			minWidth: `${width}px`,
+			maxWidth: `${width}px`,
+		}
+	}
+	return {
+		maxWidth: '400px',
+	}
+}
+
+const getTextWrapClass = (column: string) => {
+	if (props.textWrap?.[column]) return ''
+	return 'truncate'
 }
 
 const filterPerColumn = ref<Record<string, string>>({})
@@ -493,7 +514,10 @@ function toggleNewColumn() {
 									: 'text-left',
 								isStickyColumn(header.column.name) ? 'sticky bg-gray-50' : '',
 							]"
-							:style="getStickyColumnStyle(header.column.name)"
+							:style="{
+								...getStickyColumnStyle(header.column.name),
+								...getColumnWidthStyle(header.column.name),
+							}"
 							:colspan="header.colspan"
 							:data-column-name="header.column.name"
 						>
@@ -564,7 +588,10 @@ function toggleNewColumn() {
 							:key="idx"
 							class="h-8 border-b border-r p-1"
 							:class="isStickyColumn(column.name) ? 'sticky bg-gray-50' : ''"
-							:style="getStickyColumnStyle(column.name)"
+							:style="{
+								...getStickyColumnStyle(column.name),
+								...getColumnWidthStyle(column.name),
+							}"
 						>
 							<FormControl
 								type="text"
@@ -601,8 +628,9 @@ function toggleNewColumn() {
 
 						<td
 							v-for="col in props.columns"
-							class="h-8 max-w-[24rem] truncate border-b border-r px-3 text-gray-800"
+							class="h-8 border-b border-r px-3 text-gray-800 leading-5 py-1.5"
 							:class="[
+								getTextWrapClass(col.name),
 								isNumberColumn(col.name) ? 'tnum text-right' : 'text-left',
 								props.enableColorScale && isNumberColumn(col.name)
 									? colorByValues[row[col.name]]
@@ -613,7 +641,10 @@ function toggleNewColumn() {
 								getCellStyleClass(col.name, row[col.name]),
 								isStickyColumn(col.name) ? 'sticky bg-white' : '',
 							]"
-							:style="getStickyColumnStyle(col.name)"
+							:style="{
+								...getStickyColumnStyle(col.name),
+								...getColumnWidthStyle(col.name),
+							}"
 							height="30px"
 							@dblclick="isNumberColumn(col.name) && props.onDrilldown?.(col, row)"
 						>
@@ -656,7 +687,10 @@ function toggleNewColumn() {
 								isNumberColumn(col.name) ? 'tnum text-right' : 'text-left',
 								isStickyColumn(col.name) ? 'sticky bg-white' : '',
 							]"
-							:style="getStickyColumnStyle(col.name)"
+							:style="{
+								...getStickyColumnStyle(col.name),
+								...getColumnWidthStyle(col.name),
+							}"
 						>
 							{{
 								isNumberColumn(col.name)

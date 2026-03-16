@@ -119,6 +119,8 @@ export type TableChartConfig = {
 	compact_numbers?: boolean
 	enable_color_scale?: boolean
 	sticky_columns?: string[]
+	column_widths?: Record<string, number>
+	text_wrap?: Record<string, boolean>
 	conditional_formatting?: FormatGroupArgs
 }
 
