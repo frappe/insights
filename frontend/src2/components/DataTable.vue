@@ -1,11 +1,6 @@
 <script setup lang="ts">
-<<<<<<< HEAD
-import { Button, Dialog, FormControl, LoadingIndicator, Rating } from 'frappe-ui'
-import { ChevronLeft, ChevronRight, Download, Plus, Search, Table2Icon } from 'lucide-vue-next'
-=======
-import { Button, FormControl, LoadingIndicator } from 'frappe-ui'
+import { Button, FormControl, LoadingIndicator, Rating } from 'frappe-ui'
 import { ChevronLeft, ChevronRight, Plus, Search, Table2Icon } from 'lucide-vue-next'
->>>>>>> a2f769b2 (feat: add column width and text wrap options (#934))
 import { computed, nextTick, reactive, ref } from 'vue'
 import { createHeaders, formatNumber, getShortNumber } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
@@ -333,68 +328,8 @@ function getColorClass(colorName: string): string {
 }
 
 const getColumnMinMax = (columnName: string) => {
-<<<<<<< HEAD
 	const values =
 		props.rows?.map((row) => Number(row[columnName])).filter((val) => !isNaN(val)) || []
-=======
-	const colorScaleFormats = formattingRulesByColumn.value[columnName]?.filter(
-		(rule) => rule.mode === 'color_scale',
-	)
-
-	if (!colorScaleFormats?.length) {
-		const values =
-			props.rows?.map((row) => Number(row[columnName])).filter((val) => !isNaN(val)) || []
-		return {
-			min: Math.min(...values),
-			max: Math.max(...values),
-		}
-	}
-
-	const scaleScope = colorScaleFormats[0].scaleScope || 'global'
-	let columnsToConsider = [columnName]
-
-	if (scaleScope === 'global') {
-		// Find all columns that have the same color_scale format applied
-		const allFormattedColumns = Object.keys(formattingRulesByColumn.value).filter((col) => {
-			return formattingRulesByColumn.value[col]?.some((rule) => rule.mode === 'color_scale')
-		})
-
-		// Calculate global min/max across all columns to ensure consistent scaling.
-		// this works on:
-		// multi-value pivot:  [Status]___[Measure] (eg: Draft___sum_of_mrr)
-		// single-pivot: [Dimension] (eg: Paid, Unpaid)
-		// multi-pivot:  [Dim1]___[Dim2] (eg: INR___Draft, USD___Paid)
-		if (allFormattedColumns.length > 1) {
-			if (columnName.includes('___')) {
-				const parts = columnName.split('___')
-				const measureName = parts[parts.length - 1]
-
-				const hasMultiValuePivot = allFormattedColumns.some((col) =>
-					col.endsWith('___' + measureName),
-				)
-
-				if (hasMultiValuePivot) {
-					// multi-value pivot: only include columns ending with the same measure
-					columnsToConsider = allFormattedColumns.filter((col) =>
-						col.endsWith('___' + measureName),
-					)
-				} else {
-					// multi-column pivot: all formatted columns represent the same measure
-					columnsToConsider = allFormattedColumns
-				}
-			} else {
-				columnsToConsider = allFormattedColumns
-			}
-		}
-	}
-
-	const values: number[] = []
-	columnsToConsider.forEach((col) => {
-		const colValues =
-			props.rows?.map((row) => Number(row[col])).filter((val) => !isNaN(val)) || []
-		values.push(...colValues)
-	})
->>>>>>> a2f769b2 (feat: add column width and text wrap options (#934))
 
 	return {
 		min: Math.min(...values),
