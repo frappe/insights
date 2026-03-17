@@ -1,6 +1,6 @@
 <template>
-	<div class="flex h-screen w-screen overflow-hidden bg-white text-base antialiased">
-		<div v-if="!hideSidebar" class="h-full border-r bg-gray-50">
+	<div class="flex h-screen w-screen overflow-hidden bg-surface-white text-base antialiased">
+		<div v-if="!hideSidebar" class="h-full border-r bg-surface-gray-2">
 			<AppSidebar />
 		</div>
 
@@ -19,11 +19,13 @@
 			:expand="true"
 			:close-button="true"
 			:toast-options="{ duration: 4000 }"
+			:theme="isDark ? 'dark' : 'light'"
 		/>
 	</div>
 </template>
 
 <script setup lang="ts">
+import { useDark } from '@vueuse/core'
 import { computed, ref, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import { Toaster } from 'vue-sonner'
@@ -33,6 +35,8 @@ import { attachRealtimeListener, waitUntil } from './helpers/index.ts'
 import { createToast } from './helpers/toasts.ts'
 import session from './session'
 import router from '@/router.ts'
+
+const isDark = useDark({ attribute: 'data-theme' })
 
 const route = useRoute()
 const hideSidebar = ref(true)

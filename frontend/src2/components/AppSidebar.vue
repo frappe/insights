@@ -23,6 +23,19 @@
 				<DemoDataBanner v-if="!isSidebarCollapsed" class="m-2 p-2" />
 			<TrialBanner v-if="is_fc_site" :is-sidebar-collapsed="isSidebarCollapsed" />
 			<SidebarLink
+				:label="isDark ? __('Light Mode') : __('Dark Mode')"
+				:isCollapsed="isSidebarCollapsed"
+				@click="toggleDark()"
+				class="m-2"
+			>
+				<template #icon>
+					<span class="grid h-5 w-6 flex-shrink-0 place-items-center">
+						<Sun v-if="isDark" class="h-4.5 w-4.5 text-ink-gray-7" stroke-width="1.5" />
+						<Moon v-else class="h-4.5 w-4.5 text-ink-gray-7" stroke-width="1.5" />
+					</span>
+				</template>
+			</SidebarLink>
+			<SidebarLink
 				:label="isSidebarCollapsed ? __('Expand') : __('Collapse')"
 				:isCollapsed="isSidebarCollapsed"
 				@click="isSidebarCollapsed = !isSidebarCollapsed"
@@ -31,7 +44,7 @@
 				<template #icon>
 					<span class="grid h-5 w-6 flex-shrink-0 place-items-center">
 						<PanelRightOpen
-							class="h-4.5 w-4.5 text-gray-700 duration-300 ease-in-out"
+							class="h-4.5 w-4.5 text-ink-gray-7 duration-300 ease-in-out"
 							:class="{ '[transform:rotateY(180deg)]': isSidebarCollapsed }"
 							stroke-width="1.5"
 						/>
@@ -45,14 +58,16 @@
 </template>
 
 <script setup lang="ts">
-import { useStorage } from '@vueuse/core'
+import { useDark, useStorage, useToggle } from '@vueuse/core'
 import {
 	Book,
 	Database,
 	DatabaseZap,
 	LayoutGrid,
+	Moon,
 	PanelRightOpen,
 	SettingsIcon,
+	Sun,
 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import useSettings from '../settings/settings'
@@ -65,6 +80,9 @@ import { __ } from '../translation'
 
 const isSidebarCollapsed = useStorage('insights:sidebarCollapsed', false)
 const showSettingsDialog = ref(false)
+
+const isDark = useDark({ attribute: 'data-theme' })
+const toggleDark = useToggle(isDark)
 
 const settings = useSettings()
 const is_fc_site = window.is_fc_site

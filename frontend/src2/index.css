@@ -21,7 +21,7 @@ body {
 	/* Works on Firefox */
 	* {
 		scrollbar-width: thin;
-		scrollbar-color: #c0c6cc #ebeef0;
+		scrollbar-color: var(--surface-gray-3) var(--surface-gray-1);
 	}
 
 	html {
@@ -30,13 +30,13 @@ body {
 
 	/* Works on Chrome, Edge, and Safari */
 	*::-webkit-scrollbar-thumb {
-		background: #e2e8f0;
+		background: var(--surface-gray-3);
 		border-radius: 6px;
 	}
 
 	*::-webkit-scrollbar-track,
 	*::-webkit-scrollbar-corner {
-		background: #f8fafc;
+		background: var(--surface-gray-1);
 	}
 
 	*::-webkit-scrollbar {
