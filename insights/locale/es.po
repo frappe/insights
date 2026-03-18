@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-03-15 09:45+0000\n"
-"PO-Revision-Date: 2026-03-16 12:52\n"
+"PO-Revision-Date: 2026-03-18 12:51\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -1713,7 +1713,7 @@ msgstr "Cerrar sesión"
 
 #: frontend/src2/components/UserDropdown.vue:158
 msgid "Login to Frappe Cloud"
-msgstr ""
+msgstr "Iniciar sesión en Frappe Cloud"
 
 #: frontend/src2/components/UserDropdown.vue:80
 msgid "Login to Frappe Cloud?"
@@ -1974,7 +1974,7 @@ msgstr ""
 #: frontend/src2/charts/components/ChartBuilderToolbar.vue:55
 #: frontend/src2/workbook/WorkbookNavbarActions.vue:72
 msgid "Open in Desk"
-msgstr ""
+msgstr "Abrir en Desk"
 
 #. Label of the operations (JSON) field in DocType 'Insights Query v3'
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
