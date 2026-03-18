@@ -253,6 +253,7 @@ export function safeJSONParse(str: string, defaultValue = null) {
 	}
 }
 
+<<<<<<< HEAD
 export function copyToClipboard(text: string) {
 	if (navigator.clipboard) {
 		navigator.clipboard.writeText(text)
@@ -282,7 +283,31 @@ export function copyToClipboard(text: string) {
 		} finally {
 			document.body.removeChild(textArea)
 		}
+=======
+export function copyToClipboard(text: string | Promise<string>) {
+	if (text instanceof Promise) {
+		// Safari blocks clipboard access if called after an async operation
+		// fix: use call ClipboardItem synchronously but with the text as a promise
+		const blob = text.then((t) => new Blob([t], { type: 'text/plain' }))
+		navigator.clipboard
+			.write([new ClipboardItem({ 'text/plain': blob })])
+			.then(() => showCopyToast(true))
+			.catch(() => showCopyToast(false))
+		return
+>>>>>>> b562319d (fix: use `ClipboardItem` which resolves a promise)
 	}
+
+	navigator.clipboard
+		.writeText(text)
+		.then(() => showCopyToast(true))
+		.catch(() => showCopyToast(false))
+}
+
+function showCopyToast(success: boolean) {
+	createToast({
+		variant: success ? 'success' : 'error',
+		title: success ? __('Copied to clipboard') : __('Failed to copy to clipboard'),
+	})
 }
 
 export function ellipsis(value: string, length: number) {
