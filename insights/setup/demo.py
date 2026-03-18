@@ -70,6 +70,11 @@ class DemoDataFactory:
             data_source.db_insert()
 
         self.data_source = frappe.get_doc("Insights Data Source v3", "demo_data")
+        if self.data_source.database_type != "DuckDB":
+            self.data_source.db_set({
+                "database_type": "DuckDB",
+                "database_name": "insights_demo_data",
+            })
 
     def demo_data_exists(self):
         tables = get_data_source_tables(self.data_source.name)
