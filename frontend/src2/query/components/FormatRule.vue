@@ -115,48 +115,6 @@ function createNewFormat(ruleType: string, columnName: string) {
 	}
 }
 
-function useCachedFormatOptions(formatGroup: FormattingMode) {
-	const ruleType = formatGroup.mode
-	switch (ruleType) {
-		case 'text_rules':
-			const textFormat: text_rules = {
-				mode: 'text_rules',
-				column: column(formatGroup.column.column_name),
-				operator: formatGroup.operator,
-				color: formatGroup.color,
-				value: formatGroup.value,
-			}
-			format.value = textFormat
-			break
-		case 'date_rules':
-			const dateFormat: date_rules = {
-				mode: 'date_rules',
-				column: column(formatGroup.column.column_name),
-				operator: formatGroup.operator,
-				color: formatGroup.color,
-				value: formatGroup.value,
-			}
-			format.value = dateFormat
-			break
-		case 'rank_rules':
-			const rankFormat: rank_rules = {
-				mode: 'rank_rules',
-				column: column(formatGroup.column.column_name),
-				operator: formatGroup.operator,
-				color: formatGroup.color,
-				value: formatGroup.value,
-			}
-			format.value = rankFormat
-			break
-		default:
-			const cellFormat: cell_rules = {
-				mode: 'cell_rules',
-				column: column(formatGroup.column.column_name),
-				value: formatGroup.value,
-			}
-			format.value = cellFormat
-	}
-}
 function onColumnChange(column_name: string) {
 	if (props.formatMode === 'cell_rules') {
 		const ruleType = getRuleTypeForColumn(column_name)

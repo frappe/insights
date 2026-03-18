@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import { Dialog } from 'frappe-ui'
 import { ColumnOption, GroupedColumnOption,  } from '../../types/query.types'
 import { FormatGroupArgs, FormattingMode } from './formatting_utils';

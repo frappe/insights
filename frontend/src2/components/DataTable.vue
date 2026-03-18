@@ -86,7 +86,6 @@ const $header = ref<HTMLElement>()
 function getColumnWidth(column: string) {
 	const cell = $header.value?.querySelector(`td[data-column-name="${column}"]`)
 	if (cell && 'offsetWidth' in cell) {
-		console.log(`Width of column ${column}:`, cell.offsetWidth)
 		return cell.offsetWidth as number
 	}
 	return 200
