@@ -160,7 +160,9 @@ class InsightsQueryv3(Document):
         return ibis_query
 
     @frappe.whitelist()
-    def execute(self, active_operation_idx: int | None = None, adhoc_filters: dict | None = None, force: bool = False):
+    def execute(
+        self, active_operation_idx: int | None = None, adhoc_filters: dict | None = None, force: bool = False
+    ):
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
 
@@ -211,7 +213,9 @@ class InsightsQueryv3(Document):
         return int(total_count)
 
     @insights_whitelist()
-    def download_results(self, format: str = "csv", active_operation_idx: int | None = None, adhoc_filters: dict | None = None):
+    def download_results(
+        self, format: str = "csv", active_operation_idx: int | None = None, adhoc_filters: dict | None = None
+    ):
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
 
