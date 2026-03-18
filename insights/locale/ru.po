@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
-"POT-Creation-Date: 2026-03-10 01:25+0000\n"
-"PO-Revision-Date: 2026-03-10 08:57\n"
+"POT-Creation-Date: 2026-03-15 09:45+0000\n"
+"PO-Revision-Date: 2026-03-16 12:52\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Russian\n"
 "MIME-Version: 1.0\n"
@@ -56,6 +56,10 @@ msgstr "API Токен"
 msgid "API Username"
 msgstr ""
 
+#: frontend/src2/query/components/FormatRule.vue:245
+msgid "Above average"
+msgstr ""
+
 #. Option for the 'Status' (Select) field in DocType 'Insights User Invitation'
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Accepted"
@@ -71,6 +75,10 @@ msgstr "Принято в"
 msgid "Access"
 msgstr ""
 
+#: frontend/src2/settings/Settings.vue:10
+msgid "Account"
+msgstr "Аккаунт"
+
 #. Label of the if_exists (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Action if table exists"
@@ -83,6 +91,38 @@ msgstr ""
 msgid "Active"
 msgstr "Активен"
 
+#: frontend/src2/dashboard/DashboardChartSelectorDialog.vue:67
+msgid "Add"
+msgstr "Добавить"
+
+#: frontend/src2/data_source/ConnectClickhouseDialog.vue:106
+#: frontend/src2/data_source/ConnectDuckDBDialog.vue:77
+#: frontend/src2/data_source/ConnectMariaDBDialog.vue:106
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:114
+msgid "Add Data Source"
+msgstr ""
+
+#: frontend/src2/query/components/FiltersSelector.vue:137
+msgid "Add Filter"
+msgstr "Добавить фильтр"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:60
+msgid "Add New Column"
+msgstr ""
+
+#: frontend/src2/query/components/AddOperationPopover.vue:121
+msgid "Add Operation"
+msgstr ""
+
+#: frontend/src2/query/components/AddOperationPopover.vue:61
+msgid "Add a new column based on existing columns"
+msgstr ""
+
+#: frontend/src2/query/components/ColumnsSelectorDialog.vue:83
+#: frontend/src2/query/components/ColumnsSelectorDialog.vue:92
+msgid "Add column"
+msgstr "Добавить колонку"
+
 #. Label of the aggregation (Data) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "Aggregation"
@@ -94,8 +134,36 @@ msgstr ""
 msgid "Aggregation Condition"
 msgstr ""
 
+#: frontend/src2/query/components/AlertSetupDialog.vue:70
+msgid "Alert Created"
+msgstr ""
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:98
+msgid "Alert Disabled"
+msgstr ""
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:98
+msgid "Alert Enabled"
+msgstr ""
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:144
+msgid "Alert Name"
+msgstr ""
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:87
+msgid "Alert Sent"
+msgstr ""
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:70
+msgid "Alert Updated"
+msgstr ""
+
 #: insights/insights/doctype/insights_alert/insights_alert.js:12
 msgid "Alert sent"
+msgstr ""
+
+#: frontend/src2/query/components/QueryAlertsDialog.vue:95
+msgid "Alerts"
 msgstr ""
 
 #. Label of the allow_subquery (Check) field in DocType 'Insights Settings'
@@ -113,10 +181,26 @@ msgstr ""
 msgid "Allowed Origins"
 msgstr ""
 
+#: frontend/src2/charts/components/FunnelChartConfigForm.vue:58
+msgid "Alternate"
+msgstr ""
+
+#: frontend/src2/query/components/FormatRule.vue:203
+msgid "Amber"
+msgstr "Янтарный"
+
 #. Label of the amended_from (Link) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Amended From"
 msgstr "Изменено с"
+
+#: frontend/src2/dashboard/DashboardShareDialog.vue:110
+msgid "Anyone in the organization can view"
+msgstr ""
+
+#: frontend/src2/dashboard/DashboardShareDialog.vue:106
+msgid "Anyone with the link can view"
+msgstr ""
 
 #. Option for the 'Action if table exists' (Select) field in DocType 'Insights
 #. Table Import'
@@ -124,11 +208,39 @@ msgstr "Изменено с"
 msgid "Append"
 msgstr ""
 
+#: frontend/src2/query/components/UnionSelectorDialog.vue:116
+msgid "Append Rows"
+msgstr ""
+
+#: frontend/src2/query/components/AddOperationPopover.vue:54
+msgid "Append Table"
+msgstr ""
+
+#: frontend/src2/query/components/AddOperationPopover.vue:55
+msgid "Append this table with another table or query"
+msgstr ""
+
+#: frontend/src2/query/components/FiltersSelector.vue:145
+msgid "Apply Filters"
+msgstr "Применить"
+
 #. Label of the apply_user_permissions (Check) field in DocType 'Insights
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Apply User Permissions"
 msgstr ""
+
+#: frontend/src2/query/components/AddOperationPopover.vue:73
+msgid "Apply a custom operation using python script"
+msgstr ""
+
+#: frontend/src2/components/UserDropdown.vue:131
+msgid "Are you sure you want to log out?"
+msgstr ""
+
+#: frontend/src2/components/UserDropdown.vue:81
+msgid "Are you sure you want to login to your Frappe Cloud dashboard?"
+msgstr "Вы уверены, что хотите войти в панель управления Frappe?"
 
 #. Label of the api_authentication_type (Select) field in DocType 'Insights
 #. Data Source v3'
@@ -146,6 +258,10 @@ msgstr ""
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Automatically arrange cards vertically to fill empty spaces"
 msgstr ""
+
+#: frontend/src2/charts/components/MeasurePicker.vue:94
+msgid "Average of..."
+msgstr "Среднее значение..."
 
 #. Label of the api_base_url (Data) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
@@ -167,6 +283,10 @@ msgstr "Размер партии"
 #. v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Before Import Script"
+msgstr ""
+
+#: frontend/src2/query/components/FormatRule.vue:246
+msgid "Below average"
 msgstr ""
 
 #. Option for the 'Database Type' (Select) field in DocType 'Insights Data
@@ -199,6 +319,18 @@ msgstr ""
 msgid "BigQuery Service Account Key (JSON)"
 msgstr ""
 
+#: frontend/src2/charts/components/DonutChartConfigForm.vue:58
+msgid "Bottom"
+msgstr "Нижний"
+
+#: frontend/src2/query/components/FormatRule.vue:244
+msgid "Bottom N percent"
+msgstr ""
+
+#: frontend/src2/query/components/FormatRule.vue:242
+msgid "Bottom N values"
+msgstr ""
+
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:10
 msgid "Bulk Enqueue"
 msgstr ""
@@ -212,10 +344,37 @@ msgstr ""
 msgid "Bulk Enqueue Progress"
 msgstr ""
 
+#: frontend/src2/components/ExportDialog.vue:46
+msgid "CSV"
+msgstr "CSV"
+
 #. Label of the query_result_expiry (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Cache Query Results For (Minutes)"
 msgstr ""
+
+#: frontend/src2/workbook/WorkbookShareDialog.vue:29
+#: frontend/src2/workbook/WorkbookShareDialog.vue:128
+#: frontend/src2/workbook/WorkbookShareDialog.vue:183
+msgid "Can Edit"
+msgstr ""
+
+#: frontend/src2/workbook/WorkbookShareDialog.vue:34
+#: frontend/src2/workbook/WorkbookShareDialog.vue:124
+#: frontend/src2/workbook/WorkbookShareDialog.vue:183
+msgid "Can View"
+msgstr ""
+
+#: frontend/src2/charts/components/RegionMappingDialog.vue:312
+#: frontend/src2/components/ExportDialog.vue:77
+#: frontend/src2/dashboard/DashboardChartSelectorDialog.vue:73
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:109
+#: frontend/src2/dashboard/DashboardText.vue:37
+#: frontend/src2/query/components/ColumnsSelectorDialog.vue:71
+#: frontend/src2/query/components/JoinSelectorDialog.vue:371
+#: frontend/src2/query/components/UnionSelectorDialog.vue:152
+msgid "Cancel"
+msgstr "Отмена"
 
 #. Label of the cardinality (Select) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
@@ -223,6 +382,7 @@ msgid "Cardinality"
 msgstr ""
 
 #. Label of the channel (Select) field in DocType 'Insights Alert'
+#: frontend/src2/query/components/AlertSetupDialog.vue:171
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Channel"
 msgstr "Канал"
@@ -241,18 +401,63 @@ msgstr "Диаграмма"
 msgid "Chart Type"
 msgstr "Тип графика"
 
+#: frontend/src2/workbook/WorkbookSidebar.vue:57
+msgid "Charts"
+msgstr "Графики"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:154
+msgid "Check once a day"
+msgstr ""
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:156
+msgid "Check once a month"
+msgstr ""
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:155
+msgid "Check once a week"
+msgstr ""
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:153
+msgid "Check once an hour"
+msgstr ""
+
+#: frontend/src2/query/components/AddOperationPopover.vue:36
+msgid "Choose Columns"
+msgstr ""
+
+#: frontend/src2/query/components/FiltersSelector.vue:143
+msgid "Clear"
+msgstr "Очистить"
+
 #. Option for the 'Database Type' (Select) field in DocType 'Insights Data
 #. Source v3'
+#: frontend/src2/data_source/DataSourceList.vue:58
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "ClickHouse"
 msgstr ""
 
-#: frontend/src2/components/AppSidebar.vue:25
+#: frontend/src2/query/components/source_selector/SourceSelectorDialog.vue:130
+msgid "Close"
+msgstr "Закрыть"
+
+#: frontend/src2/components/AppSidebar.vue:26
 msgid "Collapse"
 msgstr "Свернуть"
 
+#: frontend/src2/query/components/FormatRule.vue:544
+msgid "Color"
+msgstr "Цвет"
+
+#: frontend/src2/query/components/FormattingSelector.vue:60
+msgid "Color Scale"
+msgstr ""
+
 #. Label of the label (Data) field in DocType 'Insights Query Column'
 #. Label of the column (Data) field in DocType 'Insights Table Column'
+#: frontend/src2/components/DataTableColumn.vue:42
+#: frontend/src2/query/components/FormatRule.vue:371
+#: frontend/src2/query/components/JoinSelectorDialog.vue:269
+#: frontend/src2/query/components/JoinSelectorDialog.vue:282
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Column"
@@ -261,6 +466,7 @@ msgstr "Столбец"
 #. Label of the columns (Table) field in DocType 'Insights Query'
 #. Label of the columns (Table) field in DocType 'Insights Table'
 #. Label of the columns (Table) field in DocType 'Insights Table Import'
+#: frontend/src2/query/components/JoinSelectorDialog.vue:353
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_table/insights_table.json
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
@@ -273,6 +479,10 @@ msgstr "Колонки"
 msgid "Comma seperated URLs to whitelist for embedding charts & dashboards"
 msgstr ""
 
+#: frontend/src2/dashboard/DashboardBuilder.vue:149
+msgid "Compact Layout"
+msgstr ""
+
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import
 #. Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
@@ -280,6 +490,8 @@ msgid "Completed"
 msgstr "Завершенно"
 
 #. Label of the condition (Code) field in DocType 'Insights Alert'
+#: frontend/src2/query/components/FormatRule.vue:475
+#: frontend/src2/query/components/FormatRule.vue:494
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Condition"
 msgstr "Условия"
@@ -291,9 +503,54 @@ msgstr "Условия"
 msgid "Config"
 msgstr "Конфигурация"
 
+#: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:132
 #: frontend/src2/components/ConfirmDialog.vue:26
+#: frontend/src2/components/UserDropdown.vue:84
+#: frontend/src2/query/components/ColumnsSelectorDialog.vue:65
+#: frontend/src2/query/components/JoinSelectorDialog.vue:374
+#: frontend/src2/query/components/UnionSelectorDialog.vue:155
+#: frontend/src2/query/components/source_selector/SourceSelectorDialog.vue:132
 msgid "Confirm"
 msgstr "Подтвердить"
+
+#: frontend/src2/data_source/ConnectClickhouseDialog.vue:77
+#: frontend/src2/data_source/ConnectDuckDBDialog.vue:47
+#: frontend/src2/data_source/ConnectMariaDBDialog.vue:77
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:85
+msgid "Connect"
+msgstr ""
+
+#: frontend/src2/data_source/ConnectClickhouseDialog.vue:120
+msgid "Connect to ClickHouse"
+msgstr ""
+
+#: frontend/src2/data_source/DataSourceList.vue:60
+msgid "Connect to ClickHouse database"
+msgstr ""
+
+#: frontend/src2/data_source/ConnectDuckDBDialog.vue:95
+msgid "Connect to DuckDB"
+msgstr ""
+
+#: frontend/src2/data_source/DataSourceList.vue:69
+msgid "Connect to DuckDB database"
+msgstr ""
+
+#: frontend/src2/data_source/ConnectMariaDBDialog.vue:120
+msgid "Connect to MariaDB"
+msgstr ""
+
+#: frontend/src2/data_source/DataSourceList.vue:42
+msgid "Connect to MariaDB database"
+msgstr ""
+
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:128
+msgid "Connect to PostgreSQL"
+msgstr ""
+
+#: frontend/src2/data_source/DataSourceList.vue:51
+msgid "Connect to PostgreSQL database"
+msgstr ""
 
 #. Label of the connection_string (Small Text) field in DocType 'Insights Data
 #. Source'
@@ -305,15 +562,69 @@ msgid "Connection String"
 msgstr ""
 
 #. Label of the content (Code) field in DocType 'Insights Notebook Page'
+#: frontend/src2/dashboard/DashboardText.vue:45
 #: insights/insights/doctype/insights_notebook_page/insights_notebook_page.json
 msgid "Content"
 msgstr "Содержимое"
 
-#: frontend/src2/components/UserDropdown.vue:53
+#: frontend/src2/components/UserDropdown.vue:57
 msgid "Continue"
 msgstr "Продолжить"
 
+#: frontend/src2/query/components/FiltersSelector.vue:113
+msgid "Convert to Expression"
+msgstr ""
+
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:50
+#: frontend/src2/workbook/WorkbookNavbarActions.vue:59
+msgid "Copy JSON"
+msgstr ""
+
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:37
+msgid "Copy Query"
+msgstr ""
+
+#: frontend/src2/charts/components/MeasurePicker.vue:92
+msgid "Count of..."
+msgstr ""
+
+#: frontend/src2/teams/CreateTeamDialog.vue:18
+msgid "Create"
+msgstr "Создать"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:129
+msgid "Create Alert"
+msgstr ""
+
+#: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:97
+msgid "Create Measure"
+msgstr ""
+
+#: frontend/src2/settings/PermissionsSettings.vue:67
+#: frontend/src2/teams/CreateTeamDialog.vue:15
+#: frontend/src2/teams/TeamList.vue:65
+msgid "Create Team"
+msgstr ""
+
+#: frontend/src2/dashboard/DashboardList.vue:96
+msgid "Create a dashboard in your workbook to view it here."
+msgstr ""
+
+#: frontend/src2/data_source/DataSourceList.vue:119
+msgid "Created"
+msgstr "Создано"
+
+#: frontend/src2/query/components/QueryAlertsDialog.vue:52
+msgid "Created By"
+msgstr "Создал"
+
+#: frontend/src2/teams/TeamList.vue:48
+msgid "Creation"
+msgstr "Создание"
+
 #. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
+#: frontend/src2/query/components/AlertSetupDialog.vue:157
+#: frontend/src2/query/components/AlertSetupDialog.vue:163
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Cron"
 msgstr "Планировщик"
@@ -345,6 +656,14 @@ msgstr ""
 msgid "Custom Headers"
 msgstr ""
 
+#: frontend/src2/query/components/JoinSelectorDialog.vue:302
+msgid "Custom Join Condition"
+msgstr ""
+
+#: frontend/src2/query/components/AddOperationPopover.vue:72
+msgid "Custom Operation"
+msgstr ""
+
 #. Description of the 'Custom Headers' (JSON) field in DocType 'Insights Data
 #. Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
@@ -356,7 +675,13 @@ msgstr ""
 msgid "Daily"
 msgstr "Ежедневно"
 
-#: frontend/src2/components/AppSidebar.vue:72
+#: frontend/src2/dashboard/DashboardShareDialog.vue:48
+msgid "Dashboard Access Updated"
+msgstr ""
+
+#: frontend/src2/components/AppSidebar.vue:74
+#: frontend/src2/dashboard/Dashboard.vue:43
+#: frontend/src2/workbook/WorkbookSidebar.vue:75
 msgid "Dashboards"
 msgstr "Приборные панели"
 
@@ -379,6 +704,8 @@ msgstr ""
 #. Label of the data_source (Data) field in DocType 'Insights Table Import Log'
 #. Label of the data_source (Link) field in DocType 'Insights Table Link v3'
 #. Label of the data_source (Link) field in DocType 'Insights Table v3'
+#: frontend/src2/data_store/DataStoreList.vue:40
+#: frontend/src2/query/components/source_selector/DataSourceTableList.vue:34
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_query_execution_log/insights_query_execution_log.json
 #: insights/insights/doctype/insights_table/insights_table.json
@@ -390,12 +717,25 @@ msgstr ""
 msgid "Data Source"
 msgstr "Источники данных"
 
-#: frontend/src2/components/AppSidebar.vue:82
+#: frontend/src2/components/AppSidebar.vue:84
+#: frontend/src2/data_source/DataSourceList.vue:146
+#: frontend/src2/data_source/DataSourceTable.vue:25
+#: frontend/src2/data_source/DataSourceTableList.vue:65
 msgid "Data Sources"
 msgstr ""
 
-#: frontend/src2/components/AppSidebar.vue:87
+#: frontend/src2/data_source/DataSourceList.vue:141
+msgid "Data Sources | Insights"
+msgstr ""
+
+#: frontend/src2/components/AppSidebar.vue:89
+#: frontend/src2/data_store/DataStoreList.vue:75
+#: frontend/src2/settings/Settings.vue:43
 msgid "Data Store"
+msgstr ""
+
+#: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:120
+msgid "Data Type"
 msgstr ""
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Data Source v3'
@@ -405,6 +745,9 @@ msgstr "База данных"
 
 #. Label of the database_name (Data) field in DocType 'Insights Data Source'
 #. Label of the database_name (Data) field in DocType 'Insights Data Source v3'
+#: frontend/src2/data_source/ConnectClickhouseDialog.vue:49
+#: frontend/src2/data_source/ConnectMariaDBDialog.vue:49
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:50
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Database Name"
@@ -423,6 +766,10 @@ msgstr ""
 msgid "Date"
 msgstr "Дата"
 
+#: frontend/src2/query/components/FormatRule.vue:276
+msgid "Date Rules"
+msgstr ""
+
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Datetime"
@@ -433,24 +780,71 @@ msgstr "Дата-тайм"
 msgid "Decimal"
 msgstr ""
 
+#: frontend/src2/dashboard/DashboardItemActions.vue:19
+#: frontend/src2/workbook/WorkbookNavbarActions.vue:65
+msgid "Delete"
+msgstr "Удалить"
+
+#: frontend/src2/components/DemoDataBanner.vue:26
+#: frontend/src2/settings/GeneralSettings.vue:22
+msgid "Demo Data Ready"
+msgstr ""
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:123
+msgid "Disable Alert"
+msgstr ""
+
 #. Label of the disabled (Check) field in DocType 'Insights Alert'
+#: frontend/src2/query/components/QueryAlertsDialog.vue:44
+#: frontend/src2/settings/UsersSettings.vue:46
+#: frontend/src2/users/UserList.vue:46
+#: frontend/src2/workbook/WorkbookShareDialog.vue:120
+#: frontend/src2/workbook/WorkbookShareDialog.vue:136
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Disabled"
 msgstr "Отключено"
 
-#: frontend/src2/components/UserDropdown.vue:111
+#: frontend/src2/components/UserDropdown.vue:116
 msgid "Documentation"
 msgstr "Документация"
+
+#: frontend/src2/charts/components/ChartShareDialog.vue:38
+#: frontend/src2/dashboard/DashboardShareDialog.vue:86
+#: frontend/src2/teams/ManageTeamDialog.vue:66
+msgid "Done"
+msgstr "Готово"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Draft"
 msgstr "Черновик"
 
+#: frontend/src2/charts/components/DrillDown.vue:59
+msgid "Drill Down"
+msgstr ""
+
+#: frontend/src2/query/components/UnionSelectorDialog.vue:139
+msgid "Drop Duplicates"
+msgstr ""
+
 #. Option for the 'Database Type' (Select) field in DocType 'Insights Data
 #. Source v3'
+#: frontend/src2/data_source/DataSourceList.vue:67
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "DuckDB"
+msgstr ""
+
+#: frontend/src2/query/components/FiltersSelector.vue:120
+#: frontend/src2/workbook/WorkbookNavbarActions.vue:53
+msgid "Duplicate"
+msgstr "Дублировать"
+
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:39
+msgid "Duplicate Chart"
+msgstr ""
+
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:32
+msgid "Duplicate Query"
 msgstr ""
 
 #. Label of the time_taken (Int) field in DocType 'Insights Table Import Log'
@@ -458,8 +852,23 @@ msgstr ""
 msgid "Duration (Seconds)"
 msgstr ""
 
+#: frontend/src2/dashboard/DashboardItemActions.vue:14
+msgid "Edit"
+msgstr "Редактировать"
+
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:100
+msgid "Edit Filter"
+msgstr ""
+
+#: frontend/src2/dashboard/DashboardText.vue:24
+msgid "Edit Text"
+msgstr ""
+
 #. Option for the 'Channel' (Select) field in DocType 'Insights Alert'
 #. Label of the email (Data) field in DocType 'Insights User Invitation'
+#: frontend/src2/query/components/AlertSetupDialog.vue:174
+#: frontend/src2/settings/UsersSettings.vue:61
+#: frontend/src2/users/UserList.vue:61
 #: insights/insights/doctype/insights_alert/insights_alert.json
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Email"
@@ -470,6 +879,14 @@ msgstr "Email"
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Email Sent At"
 msgstr "Электронное письмо отправлено на"
+
+#: frontend/src2/query/components/FiltersSelector.vue:134
+msgid "Empty - Click 'Add Filter' to add a filter"
+msgstr ""
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:123
+msgid "Enable Alert"
+msgstr ""
 
 #. Label of the enable_data_store (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
@@ -488,6 +905,9 @@ msgid "Enable Stored Procedure Execution"
 msgstr ""
 
 #. Label of the enabled (Check) field in DocType 'Insights Table Import Job'
+#: frontend/src2/query/components/QueryAlertsDialog.vue:44
+#: frontend/src2/settings/UsersSettings.vue:46
+#: frontend/src2/users/UserList.vue:46
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Enabled"
 msgstr "Включено"
@@ -502,12 +922,41 @@ msgstr "Закончился в"
 msgid "Enqueue"
 msgstr ""
 
+#: frontend/src2/components/ExportDialog.vue:60
+msgid "Enter filename"
+msgstr ""
+
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:122
+msgid "Enter filter label..."
+msgstr ""
+
+#: frontend/src2/query/components/FormatRule.vue:485
+msgid "Enter text"
+msgstr ""
+
+#: frontend/src2/data_source/ConnectDuckDBDialog.vue:33
+msgid "Enter the URL of the DuckDB file"
+msgstr ""
+
+#: frontend/src2/dashboard/DashboardText.vue:52
+msgid "Enter your text content here..."
+msgstr ""
+
 #. Label of the error (Text) field in DocType 'Insights Table Import'
 #. Label of the error (Code) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Error"
 msgstr "Ошибка"
+
+#: frontend/src2/components/ExportDialog.vue:47
+msgid "Excel"
+msgstr "Excel"
+
+#: frontend/src2/query/components/NativeQueryEditor.vue:132
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:69
+msgid "Execute"
+msgstr "Выполнить"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -524,7 +973,7 @@ msgstr ""
 msgid "Execution Time (seconds)"
 msgstr ""
 
-#: frontend/src2/components/AppSidebar.vue:25
+#: frontend/src2/components/AppSidebar.vue:26
 msgid "Expand"
 msgstr "Развернуть"
 
@@ -532,6 +981,23 @@ msgstr "Развернуть"
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Expired"
 msgstr "Истек срок действия"
+
+#: frontend/src2/components/ExportDialog.vue:80
+msgid "Export"
+msgstr "Экспорт"
+
+#: frontend/src2/components/ExportDialog.vue:35
+msgid "Export Data"
+msgstr "Экспорт данных"
+
+#: frontend/src2/components/ExportDialog.vue:44
+msgid "Export Format"
+msgstr ""
+
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:27
+#: frontend/src2/dashboard/Dashboard.vue:58
+msgid "Export as PNG"
+msgstr ""
 
 #. Label of the expression (JSON) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
@@ -552,12 +1018,57 @@ msgstr "Неудача"
 msgid "Failed"
 msgstr "Не выполнено"
 
-#: insights/setup/setup_wizard.py:29 insights/setup/setup_wizard.py:30
-msgid "Failed to login"
-msgstr "Не удалось войти"
+#: frontend/src2/query/components/NativeQueryEditor.vue:52
+msgid "Failed to format SQL"
+msgstr ""
 
-#: insights/setup/setup_wizard.py:18 insights/setup/setup_wizard.py:23
+#: frontend/src2/data_source/UploadCSVFileDialog.vue:71
+msgid "Failed to import table"
+msgstr ""
+
+#: frontend/src2/data_source/UploadCSVFileDialog.vue:38
+msgid "Failed to process uploaded file"
+msgstr ""
+
+#: frontend/src2/components/DemoDataBanner.vue:33
+#: frontend/src2/settings/GeneralSettings.vue:29
 msgid "Failed to setup demo data"
+msgstr ""
+
+#: frontend/src2/dashboard/DashboardList.vue:61
+msgid "Favorites"
+msgstr ""
+
+#: frontend/src2/query/components/NativeQueryEditor.vue:156
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:57
+#: frontend/src2/query/components/ScriptQueryEditor.vue:126
+msgid "Fetched from cache"
+msgstr ""
+
+#: frontend/src2/query/components/NativeQueryEditor.vue:159
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:60
+#: frontend/src2/query/components/ScriptQueryEditor.vue:127
+msgid "Fetched in {0}s"
+msgstr ""
+
+#: frontend/src2/data_source/ConnectDuckDBDialog.vue:28
+msgid "File URL"
+msgstr "URL Файла"
+
+#: frontend/src2/components/ExportDialog.vue:58
+msgid "Filename"
+msgstr ""
+
+#: frontend/src2/query/components/FiltersSelectorDialog.vue:21
+msgid "Filter"
+msgstr "Фильтр"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:42
+msgid "Filter Rows"
+msgstr ""
+
+#: frontend/src2/query/components/AddOperationPopover.vue:43
+msgid "Filter rows based on columns or expressions"
 msgstr ""
 
 #. Label of the filters (JSON) field in DocType 'Insights Query'
@@ -572,6 +1083,14 @@ msgstr ""
 
 #: insights/api/workbooks.py:241
 msgid "Folder and item must belong to the same workbook"
+msgstr ""
+
+#: frontend/src2/dashboard/DashboardBuilder.vue:143
+msgid "Force Refresh"
+msgstr ""
+
+#: frontend/src2/query/components/ScriptQueryEditor.vue:101
+msgid "Force Run"
 msgstr ""
 
 #. Label of the foreign_key (Data) field in DocType 'Insights Table Link'
@@ -595,11 +1114,16 @@ msgstr ""
 msgid "Format Option"
 msgstr ""
 
+#: frontend/src2/query/components/NativeQueryEditor.vue:141
+msgid "Format SQL"
+msgstr ""
+
 #: insights/config/desktop.py:11
 msgid "Frappe Insights"
 msgstr ""
 
 #. Label of the frequency (Select) field in DocType 'Insights Alert'
+#: frontend/src2/query/components/AlertSetupDialog.vue:150
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Frequency"
 msgstr "Периодичность"
@@ -609,6 +1133,30 @@ msgstr "Периодичность"
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Friday"
 msgstr "Пятница"
+
+#: frontend/src2/settings/Settings.vue:23
+msgid "General"
+msgstr "Общий"
+
+#: frontend/src2/query/components/ViewSQLDialog.vue:16
+msgid "Generated SQL"
+msgstr ""
+
+#: frontend/src2/query/components/FormatRule.vue:202
+msgid "Green"
+msgstr "Зеленый"
+
+#: frontend/src2/query/components/FormatRule.vue:255
+msgid "Green-Red"
+msgstr ""
+
+#: frontend/src2/query/components/AddOperationPopover.vue:66
+msgid "Group & Summarize"
+msgstr ""
+
+#: frontend/src2/query/components/AddOperationPopover.vue:67
+msgid "Group rows by columns and summarize the data"
+msgstr ""
 
 #. Label of the http_headers (JSON) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
@@ -620,8 +1168,15 @@ msgstr ""
 msgid "Hidden"
 msgstr "Скрытый"
 
+#: frontend/src2/query/components/FormattingSelector.vue:59
+msgid "Highlight Cell"
+msgstr ""
+
 #. Label of the host (Data) field in DocType 'Insights Data Source'
 #. Label of the host (Data) field in DocType 'Insights Data Source v3'
+#: frontend/src2/data_source/ConnectClickhouseDialog.vue:33
+#: frontend/src2/data_source/ConnectMariaDBDialog.vue:33
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:34
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Host"
@@ -637,6 +1192,14 @@ msgstr "Почасовая оплата"
 msgid "ID"
 msgstr "ID"
 
+#: frontend/src2/data_store/ImportTableDialog.vue:93
+msgid "Import"
+msgstr "Импорт"
+
+#: frontend/src2/data_source/UploadCSVFileDialog.vue:70
+msgid "Import Failed"
+msgstr ""
+
 #. Label of the import_job (Link) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Import Job"
@@ -645,6 +1208,13 @@ msgstr ""
 #. Label of the query (Code) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Import Query"
+msgstr ""
+
+#: frontend/src2/data_source/UploadCSVFileDialog.vue:95
+#: frontend/src2/data_store/DataStoreList.vue:61
+#: frontend/src2/data_store/DataStoreList.vue:79
+#: frontend/src2/data_store/ImportTableDialog.vue:59
+msgid "Import Table"
 msgstr ""
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:9
@@ -667,6 +1237,10 @@ msgstr "Выполняется"
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Inactive"
 msgstr "Неактивный"
+
+#: frontend/src2/charts/components/MapChartConfigForm.vue:55
+msgid "India"
+msgstr ""
 
 #. Name of a role
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -905,6 +1479,22 @@ msgstr ""
 msgid "Integrations"
 msgstr "Интеграции"
 
+#: frontend/src2/settings/UsersSettings.vue:44
+#: frontend/src2/users/UserList.vue:44
+msgid "Invitation Expired"
+msgstr ""
+
+#: frontend/src2/settings/UsersSettings.vue:43
+#: frontend/src2/users/UserList.vue:43
+msgid "Invitation Sent"
+msgstr ""
+
+#: frontend/src2/settings/UsersSettings.vue:85
+#: frontend/src2/settings/UsersSettings.vue:173
+#: frontend/src2/users/UserList.vue:84 frontend/src2/users/UserList.vue:175
+msgid "Invite User"
+msgstr "Пригласить пользователя"
+
 #. Label of the invited_by (Link) field in DocType 'Insights User Invitation'
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Invited By"
@@ -997,8 +1587,17 @@ msgstr "JSON"
 msgid "Join"
 msgstr "Присоединиться"
 
-#: frontend/src2/components/UserDropdown.vue:116
+#: frontend/src2/query/components/AddOperationPopover.vue:48
+#: frontend/src2/query/components/JoinSelectorDialog.vue:240
+msgid "Join Table"
+msgstr ""
+
+#: frontend/src2/components/UserDropdown.vue:121
 msgid "Join Telegram Group"
+msgstr ""
+
+#: frontend/src2/query/components/AddOperationPopover.vue:49
+msgid "Join this table with another table or query"
 msgstr ""
 
 #. Label of the key (Data) field in DocType 'Insights Secret Key'
@@ -1012,6 +1611,7 @@ msgstr "Ключ"
 #. Label of the label (Data) field in DocType 'Insights Table'
 #. Label of the label (Data) field in DocType 'Insights Table Column'
 #. Label of the label (Data) field in DocType 'Insights Table v3'
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:120
 #: insights/insights/doctype/insights_query_table/insights_query_table.json
 #: insights/insights/doctype/insights_table/insights_table.json
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -1019,12 +1619,17 @@ msgstr "Ключ"
 msgid "Label"
 msgstr "Ярлык"
 
+#: frontend/src2/users/UserList.vue:65
+msgid "Last Active"
+msgstr "Последний активный"
+
 #. Label of the last_execution (Datetime) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Last Executed On"
 msgstr ""
 
 #. Label of the last_execution (Datetime) field in DocType 'Insights Alert'
+#: frontend/src2/query/components/QueryAlertsDialog.vue:56
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Last Execution"
 msgstr "Последнее исполнение"
@@ -1045,12 +1650,22 @@ msgstr "Последний запуск"
 msgid "Last Status"
 msgstr ""
 
+#: frontend/src2/data_store/DataStoreList.vue:48
+msgid "Last Synced"
+msgstr ""
+
 #. Label of the last_synced_on (Datetime) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Last Synced On"
 msgstr "Последняя синхронизация"
 
+#: frontend/src2/charts/components/DonutChartConfigForm.vue:59
+#: frontend/src2/charts/components/FunnelChartConfigForm.vue:56
+msgid "Left"
+msgstr "Слева"
+
 #. Label of the left_column (Data) field in DocType 'Insights Table Link v3'
+#: frontend/src2/query/components/JoinSelectorDialog.vue:268
 #: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
 msgid "Left Column"
 msgstr ""
@@ -1091,17 +1706,23 @@ msgstr "Ссылки"
 msgid "Log"
 msgstr "Журнал"
 
-#: frontend/src2/components/UserDropdown.vue:121
+#: frontend/src2/components/UserDropdown.vue:126
+#: frontend/src2/components/UserDropdown.vue:130
 msgid "Log out"
 msgstr "Выйти"
 
-#: frontend/src2/components/UserDropdown.vue:153
+#: frontend/src2/components/UserDropdown.vue:158
 msgid "Login to Frappe Cloud"
 msgstr "Войти в Frappe Cloud"
 
-#: frontend/src2/components/UserDropdown.vue:76
+#: frontend/src2/components/UserDropdown.vue:80
 msgid "Login to Frappe Cloud?"
 msgstr "Войти в Frappe Cloud?"
+
+#: frontend/src2/query/components/ScriptQueryEditor.vue:80
+#: frontend/src2/query/components/ScriptQueryEditor.vue:111
+msgid "Logs"
+msgstr "Журналы"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -1113,10 +1734,19 @@ msgstr ""
 msgid "Long Text"
 msgstr "Длинный текст"
 
+#: frontend/src2/teams/ManageTeamDialog.vue:63
+msgid "Manage Team"
+msgstr ""
+
+#: frontend/src2/workbook/WorkbookShareDialog.vue:92
+msgid "Manage Workbook Access"
+msgstr ""
+
 #. Option for the 'Database Type' (Select) field in DocType 'Insights Data
 #. Source'
 #. Option for the 'Database Type' (Select) field in DocType 'Insights Data
 #. Source v3'
+#: frontend/src2/data_source/DataSourceList.vue:40
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "MariaDB"
@@ -1124,6 +1754,10 @@ msgstr ""
 
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.js:7
 msgid "Mark as Failed"
+msgstr ""
+
+#: frontend/src2/dashboard/DashboardText.vue:54
+msgid "Markdown supported"
 msgstr ""
 
 #. Label of the max_execution_time (Int) field in DocType 'Insights Settings'
@@ -1141,16 +1775,30 @@ msgstr ""
 msgid "Max Records To Sync"
 msgstr ""
 
+#: frontend/src2/charts/components/MeasurePicker.vue:96
+msgid "Maximum of..."
+msgstr ""
+
+#: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:112
+msgid "Measure Name"
+msgstr ""
+
 #. Label of the memory_limit (Int) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Memory Limit (MB)"
 msgstr ""
 
 #. Label of the message (Markdown Editor) field in DocType 'Insights Alert'
+#: frontend/src2/query/components/AlertSetupDialog.vue:238
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Message"
 msgstr "Сообщение"
 
+#: frontend/src2/charts/components/MeasurePicker.vue:95
+msgid "Minimum of..."
+msgstr ""
+
+#: frontend/src2/data_source/DataSourceList.vue:120
 #: frontend/src2/workbook/WorkbookList.vue:103
 msgid "Modified"
 msgstr "Изменено"
@@ -1177,10 +1825,34 @@ msgid "N:N"
 msgstr ""
 
 #. Label of the column (Data) field in DocType 'Insights Query Column'
+#: frontend/src2/components/VariablesDialog.vue:84
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "Name"
 msgstr "Имя"
 
+#: frontend/src2/query/components/QueryAlertsDialog.vue:79
+#: frontend/src2/query/components/QueryAlertsDialog.vue:108
+msgid "New Alert"
+msgstr ""
+
+#: frontend/src2/workbook/WorkbookTabSwitcher.vue:63
+msgid "New Chart"
+msgstr "Новая диаграмма"
+
+#: frontend/src2/workbook/WorkbookTabSwitcher.vue:64
+msgid "New Dashboard"
+msgstr ""
+
+#: frontend/src2/data_source/DataSourceList.vue:133
+#: frontend/src2/data_source/DataSourceList.vue:148
+msgid "New Data Source"
+msgstr ""
+
+#: frontend/src2/workbook/WorkbookTabSwitcher.vue:62
+msgid "New Query"
+msgstr ""
+
+#: frontend/src2/home/HomeQuickActions.vue:28
 #: frontend/src2/workbook/WorkbookList.vue:116
 #: frontend/src2/workbook/WorkbookList.vue:151
 msgid "New Workbook"
@@ -1191,8 +1863,77 @@ msgstr ""
 msgid "Next Execution"
 msgstr "Следующее исполнение"
 
+#: frontend/src2/query/components/UnionSelectorDialog.vue:144
+msgid "No"
+msgstr "Нет"
+
+#: frontend/src2/dashboard/DashboardList.vue:94
+msgid "No Dashboards"
+msgstr ""
+
+#: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:90
+msgid "No Queries Found"
+msgstr ""
+
+#: frontend/src2/data_source/DataSourceTableList.vue:40
+#: frontend/src2/query/components/source_selector/DataSourceTableList.vue:58
+msgid "No Tables Found"
+msgstr ""
+
+#: frontend/src2/data_store/DataStoreList.vue:57
+msgid "No Tables Stored"
+msgstr ""
+
 #: frontend/src2/workbook/WorkbookList.vue:113
 msgid "No Workbooks"
+msgstr ""
+
+#: frontend/src2/query/components/QueryAlertsDialog.vue:76
+msgid "No alerts"
+msgstr ""
+
+#: frontend/src2/query/components/ColumnsSelectorDialog.vue:108
+msgid "No columns selected"
+msgstr ""
+
+#: frontend/src2/data_source/DataSourceList.vue:131
+msgid "No data sources to display."
+msgstr ""
+
+#: frontend/src2/data_source/DataSourceList.vue:130
+msgid "No data sources."
+msgstr ""
+
+#: frontend/src2/data_source/DataSourceTableList.vue:41
+msgid "No tables found for the selected data source."
+msgstr ""
+
+#: frontend/src2/data_store/DataStoreList.vue:58
+msgid "No tables found in the data store."
+msgstr ""
+
+#: frontend/src2/settings/PermissionsSettings.vue:64
+#: frontend/src2/teams/TeamList.vue:62
+msgid "No teams to display."
+msgstr ""
+
+#: frontend/src2/settings/PermissionsSettings.vue:63
+#: frontend/src2/teams/TeamList.vue:61
+msgid "No teams."
+msgstr ""
+
+#: frontend/src2/settings/UsersSettings.vue:82
+#: frontend/src2/users/UserList.vue:81
+msgid "No users to display."
+msgstr ""
+
+#: frontend/src2/settings/UsersSettings.vue:81
+#: frontend/src2/users/UserList.vue:80
+msgid "No users."
+msgstr ""
+
+#: frontend/src2/home/HomeWorkbookList.vue:66
+msgid "No workbooks created"
 msgstr ""
 
 #: frontend/src2/workbook/WorkbookList.vue:114
@@ -1225,10 +1966,24 @@ msgstr "Прошлое имя"
 msgid "Onboarding Complete"
 msgstr ""
 
+#: frontend/src2/dashboard/Dashboard.vue:65
+#: frontend/src2/dashboard/DashboardList.vue:22
+msgid "Open Workbook"
+msgstr ""
+
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:55
+#: frontend/src2/workbook/WorkbookNavbarActions.vue:72
+msgid "Open in Desk"
+msgstr "Открыть в Desk"
+
 #. Label of the operations (JSON) field in DocType 'Insights Query v3'
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Operations"
 msgstr "Эксплуатация"
+
+#: frontend/src2/query/components/FormatRule.vue:458
+msgid "Operator"
+msgstr "Оператор"
 
 #. Label of the options (JSON) field in DocType 'Insights Chart'
 #. Label of the options (JSON) field in DocType 'Insights Dashboard Item'
@@ -1244,12 +1999,18 @@ msgstr "Опции"
 msgid "Order By"
 msgstr "Сортировать по"
 
+#: frontend/src2/settings/Settings.vue:20
+msgid "Organization"
+msgstr "Организация"
+
 #. Option for the 'Action if table exists' (Select) field in DocType 'Insights
 #. Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Overwrite"
 msgstr ""
 
+#: frontend/src2/data_source/DataSourceList.vue:106
+#: frontend/src2/teams/TeamList.vue:34
 #: frontend/src2/workbook/WorkbookList.vue:89
 msgid "Owner"
 msgstr "Владелец"
@@ -1267,6 +2028,9 @@ msgstr "Частичный успех"
 
 #. Label of the password (Password) field in DocType 'Insights Data Source'
 #. Label of the password (Password) field in DocType 'Insights Data Source v3'
+#: frontend/src2/data_source/ConnectClickhouseDialog.vue:63
+#: frontend/src2/data_source/ConnectMariaDBDialog.vue:63
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:71
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Password"
@@ -1282,10 +2046,22 @@ msgstr "В ожидании"
 msgid "Pending Execution"
 msgstr ""
 
+#: frontend/src2/settings/Settings.vue:38
+msgid "Permissions"
+msgstr "Разрешения"
+
+#: frontend/src2/workbook/WorkbookShareDialog.vue:82
+msgid "Permissions updated"
+msgstr ""
+
 #. Description of the 'State (JSON)' (Code) field in DocType 'Insights Table
 #. Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Persistent state storage for the script"
+msgstr ""
+
+#: frontend/src2/query/components/source_selector/SourceSelectorDialog.vue:125
+msgid "Pick Starting Data"
 msgstr ""
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Query Transform'
@@ -1293,8 +2069,19 @@ msgstr ""
 msgid "Pivot"
 msgstr ""
 
+#: frontend/src2/query/components/NativeQueryEditor.vue:26
+msgid "Please select a data source first"
+msgstr ""
+
+#: frontend/src2/query/components/source_selector/DataSourceTableList.vue:53
+msgid "Please wait while we refresh the tables from your data source"
+msgstr ""
+
 #. Label of the port (Data) field in DocType 'Insights Data Source'
 #. Label of the port (Int) field in DocType 'Insights Data Source v3'
+#: frontend/src2/data_source/ConnectClickhouseDialog.vue:41
+#: frontend/src2/data_source/ConnectMariaDBDialog.vue:41
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:42
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Port"
@@ -1309,6 +2096,7 @@ msgstr ""
 #. Source'
 #. Option for the 'Database Type' (Select) field in DocType 'Insights Data
 #. Source v3'
+#: frontend/src2/data_source/DataSourceList.vue:49
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "PostgreSQL"
@@ -1324,11 +2112,21 @@ msgstr "Предварительное изображение"
 msgid "Primary Key"
 msgstr ""
 
+#: frontend/src2/settings/Settings.vue:13
+msgid "Profile"
+msgstr "Профиль"
+
 #. Label of the public_key (Data) field in DocType 'Insights Chart'
 #. Label of the public_key (Data) field in DocType 'Insights Dashboard'
 #: insights/insights/doctype/insights_chart/insights_chart.json
 #: insights/insights/doctype/insights_dashboard/insights_dashboard.json
 msgid "Public Key"
+msgstr ""
+
+#: frontend/src2/query/components/source_selector/SourceSelectorDialog.vue:89
+#: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:59
+#: frontend/src2/workbook/WorkbookSidebar.vue:29
+msgid "Queries"
 msgstr ""
 
 #. Label of the query (Link) field in DocType 'Insights Alert'
@@ -1340,6 +2138,8 @@ msgstr ""
 #. Label of the query (Link) field in DocType 'Insights Query Result'
 #. Label of the query_section (Section Break) field in DocType 'Insights
 #. Settings'
+#: frontend/src2/query/components/JoinSelectorDialog.vue:153
+#: frontend/src2/query/components/UnionSelectorDialog.vue:71
 #: insights/insights/doctype/insights_alert/insights_alert.json
 #: insights/insights/doctype/insights_chart/insights_chart.json
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
@@ -1361,15 +2161,79 @@ msgstr ""
 msgid "Queued"
 msgstr "В очереди"
 
+#: frontend/src2/home/HomeQuickActions.vue:21
+msgid "Quick Actions"
+msgstr ""
+
 #. Option for the 'Type' (Select) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "REST API"
 msgstr ""
 
+#: frontend/src2/query/components/FormatRule.vue:520
+msgid "Ranking Condition"
+msgstr ""
+
+#: frontend/src2/query/components/FormatRule.vue:267
+msgid "Ranking Rules"
+msgstr ""
+
 #. Label of the recipients (Small Text) field in DocType 'Insights Alert'
+#: frontend/src2/query/components/AlertSetupDialog.vue:181
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Recipients"
 msgstr "Получатели"
+
+#: frontend/src2/query/components/FormatRule.vue:201
+msgid "Red"
+msgstr "Красный"
+
+#: frontend/src2/query/components/FormatRule.vue:251
+msgid "Red-Green"
+msgstr ""
+
+#: frontend/src2/dashboard/Dashboard.vue:48
+#: frontend/src2/data_source/DataSourceTableList.vue:43
+msgid "Refresh"
+msgstr "Обновить"
+
+#: frontend/src2/dashboard/DashboardList.vue:27
+msgid "Refresh Preview"
+msgstr ""
+
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:19
+msgid "Refresh Stored Tables"
+msgstr ""
+
+#: frontend/src2/query/components/source_selector/DataSourceTableList.vue:62
+#: frontend/src2/query/components/source_selector/DataSourceTableList.vue:87
+msgid "Refresh Tables"
+msgstr ""
+
+#: frontend/src2/query/components/source_selector/DataSourceTableList.vue:52
+msgid "Refreshing Tables"
+msgstr ""
+
+#: frontend/src2/query/components/FiltersSelector.vue:126
+#: frontend/src2/workbook/WorkbookShareDialog.vue:39
+msgid "Remove"
+msgstr "Удалить"
+
+#: frontend/src2/components/DataTableColumn.vue:30
+msgid "Remove Sort"
+msgstr ""
+
+#: frontend/src2/dashboard/DashboardBuilder.vue:156
+msgid "Reset Layout"
+msgstr "Сброс макета"
+
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:44
+msgid "Reset Options"
+msgstr ""
+
+#: frontend/src2/charts/components/RegionMappingDialog.vue:194
+msgid "Resolve Locations"
+msgstr ""
 
 #. Label of the resource_name (Dynamic Link) field in DocType 'Insights
 #. Resource Permission'
@@ -1404,12 +2268,19 @@ msgstr ""
 msgid "Results Row Count"
 msgstr ""
 
+#: frontend/src2/charts/components/DonutChartConfigForm.vue:60
+#: frontend/src2/charts/components/FunnelChartConfigForm.vue:57
+msgid "Right"
+msgstr "Справа"
+
 #. Label of the right_column (Data) field in DocType 'Insights Table Link v3'
+#: frontend/src2/query/components/JoinSelectorDialog.vue:281
 #: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
 msgid "Right Column"
 msgstr ""
 
 #. Label of the right_table (Data) field in DocType 'Insights Table Link v3'
+#: frontend/src2/query/components/JoinSelectorDialog.vue:250
 #: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
 msgid "Right Table"
 msgstr ""
@@ -1437,6 +2308,11 @@ msgstr "Строки"
 msgid "Rows Imported"
 msgstr ""
 
+#: frontend/src2/query/components/FormatRule.vue:447
+msgid "Rule Type"
+msgstr ""
+
+#: frontend/src2/query/components/ScriptQueryEditor.vue:92
 #: insights/insights/doctype/insights_query/insights_query.js:7
 msgid "Run"
 msgstr "Запуск"
@@ -1461,11 +2337,33 @@ msgstr "SQL"
 msgid "SQLite"
 msgstr ""
 
+#: frontend/src2/settings/GeneralSettings.vue:23
+msgid "Sample data and workbook have been set up successfully"
+msgstr ""
+
+#: frontend/src2/components/DemoDataBanner.vue:27
+msgid "Sample data with workbook has been set up successfully"
+msgstr ""
+
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Saturday"
 msgstr "Суббота"
+
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:103
+#: frontend/src2/dashboard/DashboardText.vue:27
+#: frontend/src2/workbook/WorkbookShareDialog.vue:95
+msgid "Save"
+msgstr "Сохранить"
+
+#: frontend/src2/charts/components/RegionMappingDialog.vue:314
+msgid "Save Changes"
+msgstr "Сохранить изменения"
+
+#: frontend/src2/components/VariablesDialog.vue:133
+msgid "Save Variables"
+msgstr ""
 
 #. Label of the schedule (Data) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
@@ -1473,6 +2371,7 @@ msgid "Schedule (Cron)"
 msgstr ""
 
 #. Label of the schema (Data) field in DocType 'Insights Data Source v3'
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:57
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Schema"
 msgstr ""
@@ -1489,43 +2388,141 @@ msgstr "Скрипт"
 msgid "Script Log"
 msgstr ""
 
+#: frontend/src2/dashboard/DashboardList.vue:52
+#: frontend/src2/data_store/DataStoreList.vue:92
+#: frontend/src2/query/components/QueryAlertsDialog.vue:102
+#: frontend/src2/settings/UsersSettings.vue:149
+#: frontend/src2/teams/TeamList.vue:100 frontend/src2/users/UserList.vue:163
+msgid "Search"
+msgstr "Поиск"
+
+#: frontend/src2/query/components/source_selector/DataSourceTableList.vue:75
+#: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:63
 #: frontend/src2/workbook/WorkbookList.vue:166
 msgid "Search by Title"
 msgstr "Поиск по названию"
+
+#: frontend/src2/dashboard/DashboardChartSelectorDialog.vue:85
+msgid "Search by name"
+msgstr ""
 
 #. Label of the secrets (Table) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Secrets"
 msgstr ""
 
+#: frontend/src2/dashboard/DashboardChartSelectorDialog.vue:64
+msgid "Select Charts"
+msgstr ""
+
+#: frontend/src2/query/components/ColumnsSelectorDialog.vue:62
+msgid "Select Columns"
+msgstr "Выберите столбцы"
+
+#: frontend/src2/query/components/JoinSelectorDialog.vue:349
+msgid "Select Columns to Add"
+msgstr ""
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:203
+msgid "Select Field"
+msgstr "Выберите поле"
+
+#: frontend/src2/query/components/JoinSelectorDialog.vue:321
+msgid "Select Join Type"
+msgstr ""
+
+#: frontend/src2/query/components/AddOperationPopover.vue:30
+msgid "Select Source"
+msgstr ""
+
+#: frontend/src2/query/components/UnionSelectorDialog.vue:126
+msgid "Select Table"
+msgstr ""
+
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:155
+msgid "Select a column"
+msgstr ""
+
+#: frontend/src2/data_source/DataSourceList.vue:170
+msgid "Select a data source"
+msgstr ""
+
+#: frontend/src2/query/components/AddOperationPopover.vue:31
+msgid "Select a table or query to start building your query"
+msgstr ""
+
+#: frontend/src2/query/components/AddOperationPopover.vue:134
+msgid "Select an operation"
+msgstr ""
+
 #: insights/insights/doctype/insights_alert/insights_alert.js:6
 msgid "Send Alert"
+msgstr ""
+
+#: frontend/src2/settings/UsersSettings.vue:177
+#: frontend/src2/users/UserList.vue:178
+msgid "Send Invitation"
+msgstr ""
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:117
+msgid "Send Test Alert"
+msgstr ""
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:197
+msgid "Send alert when"
 msgstr ""
 
 #: insights/insights/doctype/insights_alert/insights_alert.js:7
 msgid "Sending Alert..."
 msgstr ""
 
-#: frontend/src2/components/UserDropdown.vue:66
+#: frontend/src2/components/UserDropdown.vue:70
 msgid "Set Insights v2 as default"
 msgstr ""
 
-#: insights/setup/setup_wizard.py:17
-msgid "Setting up demo data"
+#: frontend/src2/query/components/QueryAlertsDialog.vue:77
+msgid "Set up alerts to get notified when a condition is met"
 msgstr ""
 
-#: frontend/src2/components/AppSidebar.vue:93
+#: frontend/src2/components/AppSidebar.vue:95
+#: frontend/src2/settings/Settings.vue:58
 msgid "Settings"
 msgstr "Настройки"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:113
+msgid "Setup Alert"
+msgstr ""
 
 #. Label of the setup_complete (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Setup Complete"
 msgstr "Установка завершена"
 
+#: frontend/src2/components/DemoDataBanner.vue:64
+msgid "Setup Demo Data"
+msgstr ""
+
+#: frontend/src2/components/DemoDataBanner.vue:32
+#: frontend/src2/settings/GeneralSettings.vue:28
+msgid "Setup Failed"
+msgstr ""
+
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:33
+#: frontend/src2/charts/components/ChartShareDialog.vue:35
+msgid "Share Chart"
+msgstr ""
+
+#: frontend/src2/dashboard/DashboardShareDialog.vue:83
+msgid "Share Dashboard"
+msgstr ""
+
 #. Label of the share_link (Data) field in DocType 'Insights Dashboard v3'
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Share Link"
+msgstr ""
+
+#: frontend/src2/query/components/AddOperationPopover.vue:37
+msgid "Show or hide columns from the table"
 msgstr ""
 
 #. Label of the is_site_db (Check) field in DocType 'Insights Data Source'
@@ -1533,15 +2530,28 @@ msgstr ""
 msgid "Site Database"
 msgstr ""
 
+#: frontend/src2/components/DataTableColumn.vue:20
+msgid "Sort Ascending"
+msgstr "Сортировка по возрастанию"
+
+#: frontend/src2/components/DataTableColumn.vue:25
+msgid "Sort Descending"
+msgstr "Сортировка по убыванию"
+
 #. Label of the sort_order (Int) field in DocType 'Insights Folder'
 #: insights/insights/doctype/insights_folder/insights_folder.json
 msgid "Sort Order"
 msgstr "Порядок сортировки"
 
 #. Label of the source (Attach) field in DocType 'Insights Table Import'
+#: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:38
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Source"
 msgstr "Источник"
+
+#: frontend/src2/dashboard/DashboardShareDialog.vue:114
+msgid "Specific people can view"
+msgstr ""
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
@@ -1569,6 +2579,10 @@ msgstr ""
 #. Label of the status (Select) field in DocType 'Insights Table Import'
 #. Label of the status (Select) field in DocType 'Insights Table Import Log'
 #. Label of the status (Select) field in DocType 'Insights User Invitation'
+#: frontend/src2/data_source/DataSourceList.vue:98
+#: frontend/src2/query/components/QueryAlertsDialog.vue:41
+#: frontend/src2/settings/UsersSettings.vue:37
+#: frontend/src2/users/UserList.vue:37
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -1595,14 +2609,27 @@ msgstr ""
 msgid "Success"
 msgstr "Успешно"
 
+#: frontend/src2/charts/components/MeasurePicker.vue:93
+msgid "Sum of..."
+msgstr "Сумма..."
+
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Sunday"
 msgstr "Воскресенье"
 
-#: frontend/src2/components/UserDropdown.vue:50
+#: frontend/src2/components/UserDropdown.vue:148
+msgid "Switch to Desk"
+msgstr ""
+
+#: frontend/src2/components/UserDropdown.vue:54
+#: frontend/src2/components/UserDropdown.vue:140
 msgid "Switch to Insights v2"
+msgstr ""
+
+#: frontend/src2/query/components/source_selector/DataSourceTableList.vue:59
+msgid "Sync tables from your data source to get started"
 msgstr ""
 
 #. Name of a role
@@ -1626,12 +2653,19 @@ msgstr "Менеджер системы"
 #. Label of the table (Data) field in DocType 'Insights Query Table'
 #. Label of the table (Data) field in DocType 'Insights Table'
 #. Label of the table (Data) field in DocType 'Insights Table v3'
+#: frontend/src2/query/components/JoinSelectorDialog.vue:251
+#: frontend/src2/query/components/UnionSelectorDialog.vue:129
+#: frontend/src2/query/components/source_selector/DataSourceTableList.vue:28
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 #: insights/insights/doctype/insights_query_table/insights_query_table.json
 #: insights/insights/doctype/insights_table/insights_table.json
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Table"
 msgstr "Таблица"
+
+#: frontend/src2/data_source/UploadCSVFileDialog.vue:63
+msgid "Table Imported"
+msgstr ""
 
 #. Label of the table_label (Data) field in DocType 'Insights Query Column'
 #. Label of the table_label (Data) field in DocType 'Insights Table Import'
@@ -1643,6 +2677,8 @@ msgstr ""
 #. Label of the table_name (Data) field in DocType 'Insights Table Import'
 #. Label of the table_name (Data) field in DocType 'Insights Table Import Job'
 #. Label of the table_name (Data) field in DocType 'Insights Table Import Log'
+#: frontend/src2/data_source/DataSourceTableList.vue:28
+#: frontend/src2/data_store/DataStoreList.vue:36
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
@@ -1660,12 +2696,17 @@ msgstr ""
 msgid "Tables"
 msgstr ""
 
+#: frontend/src2/teams/TeamList.vue:30
+msgid "Team"
+msgstr "Команда"
+
 #. Label of the team_members (Table) field in DocType 'Insights Team'
 #: insights/insights/doctype/insights_team/insights_team.json
 msgid "Team Members"
 msgstr "Члены команды"
 
 #. Label of the team_name (Data) field in DocType 'Insights Team'
+#: frontend/src2/settings/PermissionsSettings.vue:45
 #: insights/insights/doctype/insights_team/insights_team.json
 msgid "Team Name"
 msgstr "Название команды"
@@ -1674,6 +2715,10 @@ msgstr "Название команды"
 #: insights/insights/doctype/insights_team/insights_team.json
 msgid "Team Permissions"
 msgstr ""
+
+#: frontend/src2/teams/TeamList.vue:83
+msgid "Teams"
+msgstr "Команда"
 
 #. Option for the 'Channel' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -1687,6 +2732,7 @@ msgid "Telegram API Token"
 msgstr ""
 
 #. Label of the telegram_chat_id (Data) field in DocType 'Insights Alert'
+#: frontend/src2/query/components/AlertSetupDialog.vue:188
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Telegram Chat ID"
 msgstr ""
@@ -1695,6 +2741,30 @@ msgstr ""
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Text"
 msgstr "Текст"
+
+#: frontend/src2/query/components/FormatRule.vue:272
+msgid "Text Rules"
+msgstr ""
+
+#: frontend/src2/query/components/ColumnFilterTypeDate.vue:58
+msgid "This FY"
+msgstr ""
+
+#: frontend/src2/query/components/ColumnFilterTypeDate.vue:55
+msgid "This Month"
+msgstr "В этом месяце"
+
+#: frontend/src2/query/components/ColumnFilterTypeDate.vue:56
+msgid "This Quarter"
+msgstr "В этом квартале"
+
+#: frontend/src2/query/components/ColumnFilterTypeDate.vue:54
+msgid "This Week"
+msgstr "На этой неделе"
+
+#: frontend/src2/query/components/ColumnFilterTypeDate.vue:57
+msgid "This Year"
+msgstr "В этом году"
 
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
@@ -1727,6 +2797,13 @@ msgstr ""
 #. Label of the title (Data) field in DocType 'Insights Query v3'
 #. Label of the title (Data) field in DocType 'Insights Table Import Job'
 #. Label of the title (Data) field in DocType 'Insights Workbook'
+#: frontend/src2/data_source/ConnectClickhouseDialog.vue:27
+#: frontend/src2/data_source/ConnectDuckDBDialog.vue:22
+#: frontend/src2/data_source/ConnectMariaDBDialog.vue:27
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:28
+#: frontend/src2/data_source/DataSourceList.vue:90
+#: frontend/src2/query/components/QueryAlertsDialog.vue:37
+#: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:32
 #: frontend/src2/workbook/WorkbookList.vue:42
 #: insights/insights/doctype/insights_alert/insights_alert.json
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
@@ -1745,6 +2822,22 @@ msgstr ""
 msgid "Title"
 msgstr "Заголовок"
 
+#: frontend/src2/query/components/ColumnFilterTypeDate.vue:53
+msgid "Today"
+msgstr "Сегодня"
+
+#: frontend/src2/charts/components/DonutChartConfigForm.vue:57
+msgid "Top"
+msgstr "Топ"
+
+#: frontend/src2/query/components/FormatRule.vue:243
+msgid "Top N percent"
+msgstr ""
+
+#: frontend/src2/query/components/FormatRule.vue:241
+msgid "Top N values"
+msgstr ""
+
 #. Label of the transform_tab (Tab Break) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Transform"
@@ -1760,6 +2853,10 @@ msgstr ""
 msgid "Transpose"
 msgstr ""
 
+#: frontend/src2/components/DemoDataBanner.vue:50
+msgid "Try demo data"
+msgstr ""
+
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
@@ -1773,6 +2870,7 @@ msgstr "Вторник"
 #. Label of the type (Data) field in DocType 'Insights Query Column'
 #. Label of the type (Select) field in DocType 'Insights Query Transform'
 #. Label of the type (Select) field in DocType 'Insights Table Column'
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:133
 #: insights/insights/doctype/insights_dashboard_item/insights_dashboard_item.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 #: insights/insights/doctype/insights_folder/insights_folder.json
@@ -1783,9 +2881,49 @@ msgstr "Вторник"
 msgid "Type"
 msgstr "Тип"
 
+#: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:72
+msgid "Unexpected validation error"
+msgstr ""
+
+#: frontend/src2/charts/components/MeasurePicker.vue:97
+msgid "Unique Count of..."
+msgstr ""
+
 #. Option for the 'Type' (Select) field in DocType 'Insights Query Transform'
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
 msgid "Unpivot"
+msgstr ""
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:129
+msgid "Update Alert"
+msgstr ""
+
+#: frontend/src2/data_source/DataSourceTableList.vue:95
+msgid "Update Table Links"
+msgstr ""
+
+#: frontend/src2/data_source/DataSourceTableList.vue:82
+msgid "Update Tables"
+msgstr ""
+
+#: frontend/src2/data_source/DataSourceList.vue:76
+msgid "Upload CSV or Excel"
+msgstr ""
+
+#: frontend/src2/data_source/UploadCSVFileDialog.vue:95
+msgid "Upload CSV/Excel File"
+msgstr ""
+
+#: frontend/src2/data_source/UploadCSVFileDialog.vue:37
+msgid "Upload Failed"
+msgstr "Загрузка не удалась"
+
+#: frontend/src2/data_source/DataSourceList.vue:78
+msgid "Upload a CSV or Excel file to create a new data source"
+msgstr ""
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:231
+msgid "Use Custom Condition"
 msgstr ""
 
 #. Label of the use_live_connection (Check) field in DocType 'Insights Query
@@ -1801,22 +2939,47 @@ msgstr ""
 msgid "Use SSL"
 msgstr "Используйте SSL"
 
+#: frontend/src2/data_source/ConnectClickhouseDialog.vue:69
+#: frontend/src2/data_source/ConnectMariaDBDialog.vue:69
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:77
+msgid "Use secure connection (SSL)?"
+msgstr ""
+
 #. Label of the user (Link) field in DocType 'Insights Team Member'
+#: frontend/src2/settings/UsersSettings.vue:29
+#: frontend/src2/users/UserList.vue:29
 #: insights/insights/doctype/insights_team_member/insights_team_member.json
 msgid "User"
 msgstr "Пользователь"
 
 #. Label of the username (Data) field in DocType 'Insights Data Source'
 #. Label of the username (Data) field in DocType 'Insights Data Source v3'
+#: frontend/src2/data_source/ConnectClickhouseDialog.vue:56
+#: frontend/src2/data_source/ConnectMariaDBDialog.vue:56
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:64
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Username"
 msgstr "Имя пользователя"
 
+#: frontend/src2/settings/Settings.vue:33 frontend/src2/users/UserList.vue:146
+msgid "Users"
+msgstr "Пользователи"
+
+#: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:57
+msgid "Validation failed"
+msgstr ""
+
 #. Label of the value (Password) field in DocType 'Insights Secret Key'
+#: frontend/src2/components/VariablesDialog.vue:85
+#: frontend/src2/query/components/FormatRule.vue:467
 #: insights/insights/doctype/insights_secret_key/insights_secret_key.json
 msgid "Value"
 msgstr "Значение"
+
+#: frontend/src2/query/components/FormatRule.vue:266
+msgid "Value Rules"
+msgstr ""
 
 #. Label of the variable_name (Data) field in DocType 'Insights Query Variable'
 #: insights/insights/doctype/insights_query_variable/insights_query_variable.json
@@ -1831,15 +2994,26 @@ msgstr ""
 
 #. Label of the variables (Table) field in DocType 'Insights Query'
 #. Label of the variables (Table) field in DocType 'Insights Query v3'
+#: frontend/src2/components/VariablesDialog.vue:56
+#: frontend/src2/components/VariablesDialog.vue:62
+#: frontend/src2/query/components/ScriptQueryEditor.vue:106
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Variables"
 msgstr "Переменные"
 
+#: frontend/src2/components/VariablesDialog.vue:69
+msgid "Variables are used to store sensitive information such as API keys and credentials. They can be referenced and combined in your script just like any other variable. For eg."
+msgstr ""
+
 #. Label of the vertical_compact_layout (Check) field in DocType 'Insights
 #. Dashboard v3'
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Vertical Compact Layout"
+msgstr ""
+
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:27
+msgid "View SQL"
 msgstr ""
 
 #: frontend/src2/workbook/WorkbookList.vue:74
@@ -1873,19 +3047,28 @@ msgstr "Еженедельно"
 msgid "Workbook"
 msgstr ""
 
-#: frontend/src2/components/AppSidebar.vue:77
+#: frontend/src2/components/AppSidebar.vue:79
+#: frontend/src2/home/HomeWorkbookList.vue:36
 #: frontend/src2/workbook/WorkbookList.vue:148
 msgid "Workbooks"
 msgstr ""
 
-#: insights/setup/setup_wizard.py:28
-msgid "Wrapping up"
-msgstr "Завершение"
+#: frontend/src2/charts/components/MapChartConfigForm.vue:54
+msgid "World Map"
+msgstr ""
 
 #. Description of the 'Script' (Code) field in DocType 'Insights Table Import
 #. Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Write Python code to fetch and transform data. Available globals:<br>• client: API client for the selected data source<br>• table: Write data to warehouse. Methods: insert(data, overwrite=False)<br>• state: Persist data between runs. Methods: get(key, default=None), set(key, value), delete(key), clear()<br>• secrets: Access secret keys. Methods: get(key)<br>• log(message): Log execution messages"
+msgstr ""
+
+#: frontend/src2/query/components/UnionSelectorDialog.vue:143
+msgid "Yes"
+msgstr "Да"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:251
+msgid "You can use markdown to format the message. Use double asterisks (**) for bold text. You can use the following fields in the message:"
 msgstr ""
 
 #: insights/decorators.py:26
@@ -1902,9 +3085,25 @@ msgstr ""
 msgid "You do not have permission to share this workbook"
 msgstr ""
 
+#: frontend/src2/home/HomeWorkbookList.vue:68
+msgid "Your workbooks will appear here. Create a new workbook to get started."
+msgstr ""
+
+#: frontend/src2/query/components/FormatRule.vue:236
+msgid "after date"
+msgstr ""
+
 #. Option for the 'Order By' (Select) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "asc"
+msgstr ""
+
+#: frontend/src2/query/components/FormatRule.vue:235
+msgid "before date"
+msgstr ""
+
+#: frontend/src2/query/components/FormatRule.vue:237
+msgid "between dates"
 msgstr ""
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Folder'
@@ -1912,10 +3111,51 @@ msgstr ""
 msgid "chart"
 msgstr "диаграмма"
 
+#: frontend/src2/query/components/FormatRule.vue:216
+msgid "contains"
+msgstr ""
+
 #. Option for the 'Order By' (Select) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "desc"
 msgstr ""
+
+#: frontend/src2/query/components/FormatRule.vue:217
+msgid "does not contain"
+msgstr ""
+
+#: frontend/src2/query/components/FormatRule.vue:221
+msgid "does not equal"
+msgstr ""
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:165
+msgid "e.g. 0 0 12 * * ?"
+msgstr ""
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:190
+msgid "e.g. 123456789"
+msgstr ""
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:146
+msgid "e.g. Low Inventory"
+msgstr ""
+
+#: frontend/src2/components/VariablesDialog.vue:99
+msgid "e.g. api_key"
+msgstr ""
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:183
+msgid "e.g. john@example.com, henry@example.com"
+msgstr ""
+
+#: frontend/src2/query/components/FormatRule.vue:219
+msgid "ends with"
+msgstr ""
+
+#: frontend/src2/query/components/FormatRule.vue:207
+#: frontend/src2/query/components/FormatRule.vue:220
+msgid "equals"
+msgstr "равняется"
 
 #. Label of the folder (Data) field in DocType 'Insights Chart v3'
 #. Label of the folder (Data) field in DocType 'Insights Query v3'
@@ -1923,6 +3163,66 @@ msgstr ""
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "folder"
 msgstr "папка"
+
+#: frontend/src2/query/components/FormatRule.vue:209
+msgid "greater than"
+msgstr ""
+
+#: frontend/src2/query/components/FormatRule.vue:210
+msgid "greater than or equals"
+msgstr ""
+
+#: frontend/src2/query/components/FormatRule.vue:222
+msgid "is empty"
+msgstr ""
+
+#: frontend/src2/query/components/FormatRule.vue:233
+msgid "is last month"
+msgstr ""
+
+#: frontend/src2/query/components/FormatRule.vue:231
+msgid "is last week"
+msgstr ""
+
+#: frontend/src2/query/components/FormatRule.vue:223
+msgid "is not empty"
+msgstr ""
+
+#: frontend/src2/query/components/FormatRule.vue:232
+msgid "is this month"
+msgstr ""
+
+#: frontend/src2/query/components/FormatRule.vue:230
+msgid "is this week"
+msgstr ""
+
+#: frontend/src2/query/components/FormatRule.vue:234
+msgid "is this year"
+msgstr ""
+
+#: frontend/src2/query/components/FormatRule.vue:227
+msgid "is today"
+msgstr ""
+
+#: frontend/src2/query/components/FormatRule.vue:229
+msgid "is tomorrow"
+msgstr ""
+
+#: frontend/src2/query/components/FormatRule.vue:228
+msgid "is yesterday"
+msgstr ""
+
+#: frontend/src2/query/components/FormatRule.vue:211
+msgid "less than"
+msgstr ""
+
+#: frontend/src2/query/components/FormatRule.vue:212
+msgid "less than or equals"
+msgstr ""
+
+#: frontend/src2/query/components/FormatRule.vue:208
+msgid "not equals"
+msgstr ""
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Folder'
 #: insights/insights/doctype/insights_folder/insights_folder.json
@@ -1934,5 +3234,13 @@ msgstr "запрос"
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "sort_order"
+msgstr ""
+
+#: frontend/src2/query/components/FormatRule.vue:218
+msgid "starts with"
+msgstr ""
+
+#: frontend/src2/query/components/ColumnsSelectorDialog.vue:120
+msgid "{0} columns selected"
 msgstr ""
 

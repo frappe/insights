@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
-"POT-Creation-Date: 2026-03-10 01:25+0000\n"
-"PO-Revision-Date: 2026-03-12 09:16\n"
+"POT-Creation-Date: 2026-03-15 09:45+0000\n"
+"PO-Revision-Date: 2026-03-17 12:52\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Serbian (Cyrillic)\n"
 "MIME-Version: 1.0\n"
@@ -56,6 +56,10 @@ msgstr "API токен"
 msgid "API Username"
 msgstr "API корисничко име"
 
+#: frontend/src2/query/components/FormatRule.vue:245
+msgid "Above average"
+msgstr "Изнад просека"
+
 #. Option for the 'Status' (Select) field in DocType 'Insights User Invitation'
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Accepted"
@@ -71,6 +75,10 @@ msgstr "Прихваћено"
 msgid "Access"
 msgstr "Приступ"
 
+#: frontend/src2/settings/Settings.vue:10
+msgid "Account"
+msgstr "Налог"
+
 #. Label of the if_exists (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Action if table exists"
@@ -83,6 +91,38 @@ msgstr "Радња уколико табела постоји"
 msgid "Active"
 msgstr "Активан"
 
+#: frontend/src2/dashboard/DashboardChartSelectorDialog.vue:67
+msgid "Add"
+msgstr "Додај"
+
+#: frontend/src2/data_source/ConnectClickhouseDialog.vue:106
+#: frontend/src2/data_source/ConnectDuckDBDialog.vue:77
+#: frontend/src2/data_source/ConnectMariaDBDialog.vue:106
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:114
+msgid "Add Data Source"
+msgstr "Додај извор података"
+
+#: frontend/src2/query/components/FiltersSelector.vue:137
+msgid "Add Filter"
+msgstr "Додај филтер"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:60
+msgid "Add New Column"
+msgstr "Додај нову колону"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:121
+msgid "Add Operation"
+msgstr "Додај операцију"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:61
+msgid "Add a new column based on existing columns"
+msgstr "Додај нову колону на основу постојећих колона"
+
+#: frontend/src2/query/components/ColumnsSelectorDialog.vue:83
+#: frontend/src2/query/components/ColumnsSelectorDialog.vue:92
+msgid "Add column"
+msgstr "Додај колону"
+
 #. Label of the aggregation (Data) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "Aggregation"
@@ -94,9 +134,37 @@ msgstr "Агрегација"
 msgid "Aggregation Condition"
 msgstr "Услов агрегације"
 
+#: frontend/src2/query/components/AlertSetupDialog.vue:70
+msgid "Alert Created"
+msgstr "Упозорење је креирано"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:98
+msgid "Alert Disabled"
+msgstr "Упозорење је онемогућено"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:98
+msgid "Alert Enabled"
+msgstr "Упозорење је омогућено"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:144
+msgid "Alert Name"
+msgstr "Назив упозорења"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:87
+msgid "Alert Sent"
+msgstr "Упозорење је послато"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:70
+msgid "Alert Updated"
+msgstr "Упозорење је ажурирано"
+
 #: insights/insights/doctype/insights_alert/insights_alert.js:12
 msgid "Alert sent"
 msgstr "Упозорење послато"
+
+#: frontend/src2/query/components/QueryAlertsDialog.vue:95
+msgid "Alerts"
+msgstr "Упозорења"
 
 #. Label of the allow_subquery (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
@@ -113,10 +181,26 @@ msgstr "Дозволи увоз табеле"
 msgid "Allowed Origins"
 msgstr "Дозвољени извори"
 
+#: frontend/src2/charts/components/FunnelChartConfigForm.vue:58
+msgid "Alternate"
+msgstr "Алтернативно"
+
+#: frontend/src2/query/components/FormatRule.vue:203
+msgid "Amber"
+msgstr "Амбер"
+
 #. Label of the amended_from (Link) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Amended From"
 msgstr "Измењено из"
+
+#: frontend/src2/dashboard/DashboardShareDialog.vue:110
+msgid "Anyone in the organization can view"
+msgstr "Свако у организацији може да види"
+
+#: frontend/src2/dashboard/DashboardShareDialog.vue:106
+msgid "Anyone with the link can view"
+msgstr "Свако ко има приступ линку може да види"
 
 #. Option for the 'Action if table exists' (Select) field in DocType 'Insights
 #. Table Import'
@@ -124,11 +208,39 @@ msgstr "Измењено из"
 msgid "Append"
 msgstr "Додај"
 
+#: frontend/src2/query/components/UnionSelectorDialog.vue:116
+msgid "Append Rows"
+msgstr "Додај редове"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:54
+msgid "Append Table"
+msgstr "Додај табелу"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:55
+msgid "Append this table with another table or query"
+msgstr "Додај овој табели другу табелу или упит"
+
+#: frontend/src2/query/components/FiltersSelector.vue:145
+msgid "Apply Filters"
+msgstr "Примени филтере"
+
 #. Label of the apply_user_permissions (Check) field in DocType 'Insights
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Apply User Permissions"
 msgstr "Примени корисничке дозволе"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:73
+msgid "Apply a custom operation using python script"
+msgstr "Примени прилагођену операцију помоћу Python скрипте"
+
+#: frontend/src2/components/UserDropdown.vue:131
+msgid "Are you sure you want to log out?"
+msgstr "Да ли сте сигурни да желите да се одјавите?"
+
+#: frontend/src2/components/UserDropdown.vue:81
+msgid "Are you sure you want to login to your Frappe Cloud dashboard?"
+msgstr "Да ли сте сигурни да желите да се пријавите на своју Frappe Cloud контролну таблу?"
 
 #. Label of the api_authentication_type (Select) field in DocType 'Insights
 #. Data Source v3'
@@ -146,6 +258,10 @@ msgstr "Аутоматско извршавање упита"
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Automatically arrange cards vertically to fill empty spaces"
 msgstr "Аутоматски распореди картице вертикално у циљу попуњавања празног простора"
+
+#: frontend/src2/charts/components/MeasurePicker.vue:94
+msgid "Average of..."
+msgstr "Просечна вредност..."
 
 #. Label of the api_base_url (Data) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
@@ -168,6 +284,10 @@ msgstr "Величина шарже"
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Before Import Script"
 msgstr "Скрипта пре увоза"
+
+#: frontend/src2/query/components/FormatRule.vue:246
+msgid "Below average"
+msgstr "Испод просека"
 
 #. Option for the 'Database Type' (Select) field in DocType 'Insights Data
 #. Source v3'
@@ -199,6 +319,18 @@ msgstr "ИД BigQuery пројекта"
 msgid "BigQuery Service Account Key (JSON)"
 msgstr "Кључ сервисног налога BigQuery (JSON)"
 
+#: frontend/src2/charts/components/DonutChartConfigForm.vue:58
+msgid "Bottom"
+msgstr "Доле"
+
+#: frontend/src2/query/components/FormatRule.vue:244
+msgid "Bottom N percent"
+msgstr "Доњих N процената"
+
+#: frontend/src2/query/components/FormatRule.vue:242
+msgid "Bottom N values"
+msgstr "Доњих N вредности"
+
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:10
 msgid "Bulk Enqueue"
 msgstr "Масовно додавање у ред"
@@ -212,10 +344,37 @@ msgstr "Масовно додавање задатка увоза у ред"
 msgid "Bulk Enqueue Progress"
 msgstr "Напредак масовног додавања у ред"
 
+#: frontend/src2/components/ExportDialog.vue:46
+msgid "CSV"
+msgstr "CSV"
+
 #. Label of the query_result_expiry (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Cache Query Results For (Minutes)"
 msgstr "Резултати упита са кеширања на (минута)"
+
+#: frontend/src2/workbook/WorkbookShareDialog.vue:29
+#: frontend/src2/workbook/WorkbookShareDialog.vue:128
+#: frontend/src2/workbook/WorkbookShareDialog.vue:183
+msgid "Can Edit"
+msgstr "Може да уређује"
+
+#: frontend/src2/workbook/WorkbookShareDialog.vue:34
+#: frontend/src2/workbook/WorkbookShareDialog.vue:124
+#: frontend/src2/workbook/WorkbookShareDialog.vue:183
+msgid "Can View"
+msgstr "Може да прегледа"
+
+#: frontend/src2/charts/components/RegionMappingDialog.vue:312
+#: frontend/src2/components/ExportDialog.vue:77
+#: frontend/src2/dashboard/DashboardChartSelectorDialog.vue:73
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:109
+#: frontend/src2/dashboard/DashboardText.vue:37
+#: frontend/src2/query/components/ColumnsSelectorDialog.vue:71
+#: frontend/src2/query/components/JoinSelectorDialog.vue:371
+#: frontend/src2/query/components/UnionSelectorDialog.vue:152
+msgid "Cancel"
+msgstr "Откажи"
 
 #. Label of the cardinality (Select) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
@@ -223,6 +382,7 @@ msgid "Cardinality"
 msgstr "Кардиналност"
 
 #. Label of the channel (Select) field in DocType 'Insights Alert'
+#: frontend/src2/query/components/AlertSetupDialog.vue:171
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Channel"
 msgstr "Канал"
@@ -241,18 +401,63 @@ msgstr "Дијаграм"
 msgid "Chart Type"
 msgstr "Врста дијаграма"
 
+#: frontend/src2/workbook/WorkbookSidebar.vue:57
+msgid "Charts"
+msgstr "Дијаграми"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:154
+msgid "Check once a day"
+msgstr "Провери једном дневно"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:156
+msgid "Check once a month"
+msgstr "Провери једном месечно"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:155
+msgid "Check once a week"
+msgstr "Провери једном недељно"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:153
+msgid "Check once an hour"
+msgstr "Провери сваког часа"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:36
+msgid "Choose Columns"
+msgstr "Изабери колоне"
+
+#: frontend/src2/query/components/FiltersSelector.vue:143
+msgid "Clear"
+msgstr "Очисти"
+
 #. Option for the 'Database Type' (Select) field in DocType 'Insights Data
 #. Source v3'
+#: frontend/src2/data_source/DataSourceList.vue:58
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "ClickHouse"
 msgstr "ClickHouse"
 
-#: frontend/src2/components/AppSidebar.vue:25
+#: frontend/src2/query/components/source_selector/SourceSelectorDialog.vue:130
+msgid "Close"
+msgstr "Затвори"
+
+#: frontend/src2/components/AppSidebar.vue:26
 msgid "Collapse"
 msgstr "Сажми"
 
+#: frontend/src2/query/components/FormatRule.vue:544
+msgid "Color"
+msgstr "Боја"
+
+#: frontend/src2/query/components/FormattingSelector.vue:60
+msgid "Color Scale"
+msgstr "Скала боја"
+
 #. Label of the label (Data) field in DocType 'Insights Query Column'
 #. Label of the column (Data) field in DocType 'Insights Table Column'
+#: frontend/src2/components/DataTableColumn.vue:42
+#: frontend/src2/query/components/FormatRule.vue:371
+#: frontend/src2/query/components/JoinSelectorDialog.vue:269
+#: frontend/src2/query/components/JoinSelectorDialog.vue:282
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Column"
@@ -261,6 +466,7 @@ msgstr "Колона"
 #. Label of the columns (Table) field in DocType 'Insights Query'
 #. Label of the columns (Table) field in DocType 'Insights Table'
 #. Label of the columns (Table) field in DocType 'Insights Table Import'
+#: frontend/src2/query/components/JoinSelectorDialog.vue:353
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_table/insights_table.json
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
@@ -273,6 +479,10 @@ msgstr "Колоне"
 msgid "Comma seperated URLs to whitelist for embedding charts & dashboards"
 msgstr "URL адресе одвојене зарезима за дозвољавање уградње дијаграма и контролних табли"
 
+#: frontend/src2/dashboard/DashboardBuilder.vue:149
+msgid "Compact Layout"
+msgstr "Компактан распоред"
+
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import
 #. Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
@@ -280,6 +490,8 @@ msgid "Completed"
 msgstr "Завршено"
 
 #. Label of the condition (Code) field in DocType 'Insights Alert'
+#: frontend/src2/query/components/FormatRule.vue:475
+#: frontend/src2/query/components/FormatRule.vue:494
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Condition"
 msgstr "Услов"
@@ -291,9 +503,54 @@ msgstr "Услов"
 msgid "Config"
 msgstr "Конфигурација"
 
+#: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:132
 #: frontend/src2/components/ConfirmDialog.vue:26
+#: frontend/src2/components/UserDropdown.vue:84
+#: frontend/src2/query/components/ColumnsSelectorDialog.vue:65
+#: frontend/src2/query/components/JoinSelectorDialog.vue:374
+#: frontend/src2/query/components/UnionSelectorDialog.vue:155
+#: frontend/src2/query/components/source_selector/SourceSelectorDialog.vue:132
 msgid "Confirm"
 msgstr "Потврди"
+
+#: frontend/src2/data_source/ConnectClickhouseDialog.vue:77
+#: frontend/src2/data_source/ConnectDuckDBDialog.vue:47
+#: frontend/src2/data_source/ConnectMariaDBDialog.vue:77
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:85
+msgid "Connect"
+msgstr "Повежи"
+
+#: frontend/src2/data_source/ConnectClickhouseDialog.vue:120
+msgid "Connect to ClickHouse"
+msgstr "Повежи се са ClickHouse"
+
+#: frontend/src2/data_source/DataSourceList.vue:60
+msgid "Connect to ClickHouse database"
+msgstr "Повежи се са ClickHouse базом података"
+
+#: frontend/src2/data_source/ConnectDuckDBDialog.vue:95
+msgid "Connect to DuckDB"
+msgstr "Повежи се са DuckDB"
+
+#: frontend/src2/data_source/DataSourceList.vue:69
+msgid "Connect to DuckDB database"
+msgstr "Повежи се са DuckDB базом података"
+
+#: frontend/src2/data_source/ConnectMariaDBDialog.vue:120
+msgid "Connect to MariaDB"
+msgstr "Повежи се са MariaDB"
+
+#: frontend/src2/data_source/DataSourceList.vue:42
+msgid "Connect to MariaDB database"
+msgstr "Повежи се са MariaDB базом података"
+
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:128
+msgid "Connect to PostgreSQL"
+msgstr "Повежи се са PostgreSQL"
+
+#: frontend/src2/data_source/DataSourceList.vue:51
+msgid "Connect to PostgreSQL database"
+msgstr "Повежи се са PostgreSQL базом података"
 
 #. Label of the connection_string (Small Text) field in DocType 'Insights Data
 #. Source'
@@ -305,15 +562,69 @@ msgid "Connection String"
 msgstr "Низ за повезивање"
 
 #. Label of the content (Code) field in DocType 'Insights Notebook Page'
+#: frontend/src2/dashboard/DashboardText.vue:45
 #: insights/insights/doctype/insights_notebook_page/insights_notebook_page.json
 msgid "Content"
 msgstr "Садржај"
 
-#: frontend/src2/components/UserDropdown.vue:53
+#: frontend/src2/components/UserDropdown.vue:57
 msgid "Continue"
 msgstr "Настави"
 
+#: frontend/src2/query/components/FiltersSelector.vue:113
+msgid "Convert to Expression"
+msgstr "Претвори у израз"
+
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:50
+#: frontend/src2/workbook/WorkbookNavbarActions.vue:59
+msgid "Copy JSON"
+msgstr "Копирај JSON"
+
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:37
+msgid "Copy Query"
+msgstr "Копирај упит"
+
+#: frontend/src2/charts/components/MeasurePicker.vue:92
+msgid "Count of..."
+msgstr "Број од..."
+
+#: frontend/src2/teams/CreateTeamDialog.vue:18
+msgid "Create"
+msgstr "Креирај"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:129
+msgid "Create Alert"
+msgstr "Креирај упозорење"
+
+#: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:97
+msgid "Create Measure"
+msgstr "Креирај меру"
+
+#: frontend/src2/settings/PermissionsSettings.vue:67
+#: frontend/src2/teams/CreateTeamDialog.vue:15
+#: frontend/src2/teams/TeamList.vue:65
+msgid "Create Team"
+msgstr "Креирај тим"
+
+#: frontend/src2/dashboard/DashboardList.vue:96
+msgid "Create a dashboard in your workbook to view it here."
+msgstr "Креирајте контролну таблу у Вашој радној свесци да бисте је видели овде."
+
+#: frontend/src2/data_source/DataSourceList.vue:119
+msgid "Created"
+msgstr "Креирано"
+
+#: frontend/src2/query/components/QueryAlertsDialog.vue:52
+msgid "Created By"
+msgstr "Креирано од стране"
+
+#: frontend/src2/teams/TeamList.vue:48
+msgid "Creation"
+msgstr "Креирање"
+
 #. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
+#: frontend/src2/query/components/AlertSetupDialog.vue:157
+#: frontend/src2/query/components/AlertSetupDialog.vue:163
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Cron"
 msgstr "Cron"
@@ -345,6 +656,14 @@ msgstr "Прилагођени услов"
 msgid "Custom Headers"
 msgstr "Прилагођена заглавља"
 
+#: frontend/src2/query/components/JoinSelectorDialog.vue:302
+msgid "Custom Join Condition"
+msgstr "Прилагођени услов спајања"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:72
+msgid "Custom Operation"
+msgstr "Прилагођена операција"
+
 #. Description of the 'Custom Headers' (JSON) field in DocType 'Insights Data
 #. Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
@@ -356,7 +675,13 @@ msgstr "Прилагођена заглавља за API захтеве (иск�
 msgid "Daily"
 msgstr "Дневно"
 
-#: frontend/src2/components/AppSidebar.vue:72
+#: frontend/src2/dashboard/DashboardShareDialog.vue:48
+msgid "Dashboard Access Updated"
+msgstr "Приступ контролној табли је ажуриран"
+
+#: frontend/src2/components/AppSidebar.vue:74
+#: frontend/src2/dashboard/Dashboard.vue:43
+#: frontend/src2/workbook/WorkbookSidebar.vue:75
 msgid "Dashboards"
 msgstr "Контролне табле"
 
@@ -379,6 +704,8 @@ msgstr "Упит над подацима"
 #. Label of the data_source (Data) field in DocType 'Insights Table Import Log'
 #. Label of the data_source (Link) field in DocType 'Insights Table Link v3'
 #. Label of the data_source (Link) field in DocType 'Insights Table v3'
+#: frontend/src2/data_store/DataStoreList.vue:40
+#: frontend/src2/query/components/source_selector/DataSourceTableList.vue:34
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_query_execution_log/insights_query_execution_log.json
 #: insights/insights/doctype/insights_table/insights_table.json
@@ -390,13 +717,26 @@ msgstr "Упит над подацима"
 msgid "Data Source"
 msgstr "Извор података"
 
-#: frontend/src2/components/AppSidebar.vue:82
+#: frontend/src2/components/AppSidebar.vue:84
+#: frontend/src2/data_source/DataSourceList.vue:146
+#: frontend/src2/data_source/DataSourceTable.vue:25
+#: frontend/src2/data_source/DataSourceTableList.vue:65
 msgid "Data Sources"
 msgstr "Извори података"
 
-#: frontend/src2/components/AppSidebar.vue:87
+#: frontend/src2/data_source/DataSourceList.vue:141
+msgid "Data Sources | Insights"
+msgstr "Извори података | Insights"
+
+#: frontend/src2/components/AppSidebar.vue:89
+#: frontend/src2/data_store/DataStoreList.vue:75
+#: frontend/src2/settings/Settings.vue:43
 msgid "Data Store"
 msgstr "Извор података"
+
+#: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:120
+msgid "Data Type"
+msgstr "Врста података"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
@@ -405,6 +745,9 @@ msgstr "База података"
 
 #. Label of the database_name (Data) field in DocType 'Insights Data Source'
 #. Label of the database_name (Data) field in DocType 'Insights Data Source v3'
+#: frontend/src2/data_source/ConnectClickhouseDialog.vue:49
+#: frontend/src2/data_source/ConnectMariaDBDialog.vue:49
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:50
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Database Name"
@@ -423,6 +766,10 @@ msgstr "Врста базе података"
 msgid "Date"
 msgstr "Датум"
 
+#: frontend/src2/query/components/FormatRule.vue:276
+msgid "Date Rules"
+msgstr "Правила за датуме"
+
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Datetime"
@@ -433,33 +780,95 @@ msgstr "Датум и време"
 msgid "Decimal"
 msgstr "Децимално"
 
+#: frontend/src2/dashboard/DashboardItemActions.vue:19
+#: frontend/src2/workbook/WorkbookNavbarActions.vue:65
+msgid "Delete"
+msgstr "Обриши"
+
+#: frontend/src2/components/DemoDataBanner.vue:26
+#: frontend/src2/settings/GeneralSettings.vue:22
+msgid "Demo Data Ready"
+msgstr "Демо подаци су спремни"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:123
+msgid "Disable Alert"
+msgstr "Онемогући упозорење"
+
 #. Label of the disabled (Check) field in DocType 'Insights Alert'
+#: frontend/src2/query/components/QueryAlertsDialog.vue:44
+#: frontend/src2/settings/UsersSettings.vue:46
+#: frontend/src2/users/UserList.vue:46
+#: frontend/src2/workbook/WorkbookShareDialog.vue:120
+#: frontend/src2/workbook/WorkbookShareDialog.vue:136
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Disabled"
 msgstr "Онемогућено"
 
-#: frontend/src2/components/UserDropdown.vue:111
+#: frontend/src2/components/UserDropdown.vue:116
 msgid "Documentation"
 msgstr "Документација"
+
+#: frontend/src2/charts/components/ChartShareDialog.vue:38
+#: frontend/src2/dashboard/DashboardShareDialog.vue:86
+#: frontend/src2/teams/ManageTeamDialog.vue:66
+msgid "Done"
+msgstr "Завршено"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Draft"
 msgstr "Нацрт"
 
+#: frontend/src2/charts/components/DrillDown.vue:59
+msgid "Drill Down"
+msgstr "Детаљни приказ"
+
+#: frontend/src2/query/components/UnionSelectorDialog.vue:139
+msgid "Drop Duplicates"
+msgstr "Уклони дупликате"
+
 #. Option for the 'Database Type' (Select) field in DocType 'Insights Data
 #. Source v3'
+#: frontend/src2/data_source/DataSourceList.vue:67
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "DuckDB"
 msgstr "DuckDB"
+
+#: frontend/src2/query/components/FiltersSelector.vue:120
+#: frontend/src2/workbook/WorkbookNavbarActions.vue:53
+msgid "Duplicate"
+msgstr "Дупликат"
+
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:39
+msgid "Duplicate Chart"
+msgstr "Дупликат графикона"
+
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:32
+msgid "Duplicate Query"
+msgstr "Дупликат упита"
 
 #. Label of the time_taken (Int) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Duration (Seconds)"
 msgstr "Трајанје (секунде)"
 
+#: frontend/src2/dashboard/DashboardItemActions.vue:14
+msgid "Edit"
+msgstr "Уреди"
+
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:100
+msgid "Edit Filter"
+msgstr "Уреди филтер"
+
+#: frontend/src2/dashboard/DashboardText.vue:24
+msgid "Edit Text"
+msgstr "Уреди текст"
+
 #. Option for the 'Channel' (Select) field in DocType 'Insights Alert'
 #. Label of the email (Data) field in DocType 'Insights User Invitation'
+#: frontend/src2/query/components/AlertSetupDialog.vue:174
+#: frontend/src2/settings/UsersSettings.vue:61
+#: frontend/src2/users/UserList.vue:61
 #: insights/insights/doctype/insights_alert/insights_alert.json
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Email"
@@ -470,6 +879,14 @@ msgstr "Имејл"
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Email Sent At"
 msgstr "Имејл послат у"
+
+#: frontend/src2/query/components/FiltersSelector.vue:134
+msgid "Empty - Click 'Add Filter' to add a filter"
+msgstr "Празно - кликните на 'Додај филтер' да бисте додали филтер"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:123
+msgid "Enable Alert"
+msgstr "Омогући упозорење"
 
 #. Label of the enable_data_store (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
@@ -488,6 +905,9 @@ msgid "Enable Stored Procedure Execution"
 msgstr "Омогући извршавање складиштених процедура"
 
 #. Label of the enabled (Check) field in DocType 'Insights Table Import Job'
+#: frontend/src2/query/components/QueryAlertsDialog.vue:44
+#: frontend/src2/settings/UsersSettings.vue:46
+#: frontend/src2/users/UserList.vue:46
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Enabled"
 msgstr "Омогућено"
@@ -502,12 +922,41 @@ msgstr "Завршено у"
 msgid "Enqueue"
 msgstr "Додај у ред"
 
+#: frontend/src2/components/ExportDialog.vue:60
+msgid "Enter filename"
+msgstr "Унесите назив фајла"
+
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:122
+msgid "Enter filter label..."
+msgstr "Унесите ознаку филтера..."
+
+#: frontend/src2/query/components/FormatRule.vue:485
+msgid "Enter text"
+msgstr "Унесите текст"
+
+#: frontend/src2/data_source/ConnectDuckDBDialog.vue:33
+msgid "Enter the URL of the DuckDB file"
+msgstr "Унесите URL DuckDB фајла"
+
+#: frontend/src2/dashboard/DashboardText.vue:52
+msgid "Enter your text content here..."
+msgstr "Унесите садржај текста овде..."
+
 #. Label of the error (Text) field in DocType 'Insights Table Import'
 #. Label of the error (Code) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Error"
 msgstr "Грешка"
+
+#: frontend/src2/components/ExportDialog.vue:47
+msgid "Excel"
+msgstr "Excel"
+
+#: frontend/src2/query/components/NativeQueryEditor.vue:132
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:69
+msgid "Execute"
+msgstr "Изврши"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -524,7 +973,7 @@ msgstr "Извршавање је успешно"
 msgid "Execution Time (seconds)"
 msgstr "Време извршавања (секунди)"
 
-#: frontend/src2/components/AppSidebar.vue:25
+#: frontend/src2/components/AppSidebar.vue:26
 msgid "Expand"
 msgstr "Прошири"
 
@@ -532,6 +981,23 @@ msgstr "Прошири"
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Expired"
 msgstr "Истекло"
+
+#: frontend/src2/components/ExportDialog.vue:80
+msgid "Export"
+msgstr "Извоз"
+
+#: frontend/src2/components/ExportDialog.vue:35
+msgid "Export Data"
+msgstr "Извоз података"
+
+#: frontend/src2/components/ExportDialog.vue:44
+msgid "Export Format"
+msgstr "Формат извоза"
+
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:27
+#: frontend/src2/dashboard/Dashboard.vue:58
+msgid "Export as PNG"
+msgstr "Извези као PNG"
 
 #. Label of the expression (JSON) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
@@ -552,13 +1018,58 @@ msgstr "Неуспех"
 msgid "Failed"
 msgstr "Неуспешно"
 
-#: insights/setup/setup_wizard.py:29 insights/setup/setup_wizard.py:30
-msgid "Failed to login"
-msgstr "Неуспешна пријава"
+#: frontend/src2/query/components/NativeQueryEditor.vue:52
+msgid "Failed to format SQL"
+msgstr "Неуспешно форматирање SQL"
 
-#: insights/setup/setup_wizard.py:18 insights/setup/setup_wizard.py:23
+#: frontend/src2/data_source/UploadCSVFileDialog.vue:71
+msgid "Failed to import table"
+msgstr "Неуспешан увоз табеле"
+
+#: frontend/src2/data_source/UploadCSVFileDialog.vue:38
+msgid "Failed to process uploaded file"
+msgstr "Неуспешна обрада отпремљеног фајла"
+
+#: frontend/src2/components/DemoDataBanner.vue:33
+#: frontend/src2/settings/GeneralSettings.vue:29
 msgid "Failed to setup demo data"
 msgstr "Неуспешно постављање демо података"
+
+#: frontend/src2/dashboard/DashboardList.vue:61
+msgid "Favorites"
+msgstr "Омиљени"
+
+#: frontend/src2/query/components/NativeQueryEditor.vue:156
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:57
+#: frontend/src2/query/components/ScriptQueryEditor.vue:126
+msgid "Fetched from cache"
+msgstr "Преузето из кеша"
+
+#: frontend/src2/query/components/NativeQueryEditor.vue:159
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:60
+#: frontend/src2/query/components/ScriptQueryEditor.vue:127
+msgid "Fetched in {0}s"
+msgstr "Преузето са {0}"
+
+#: frontend/src2/data_source/ConnectDuckDBDialog.vue:28
+msgid "File URL"
+msgstr "URL фајла"
+
+#: frontend/src2/components/ExportDialog.vue:58
+msgid "Filename"
+msgstr "Назив фајла"
+
+#: frontend/src2/query/components/FiltersSelectorDialog.vue:21
+msgid "Filter"
+msgstr "Филтер"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:42
+msgid "Filter Rows"
+msgstr "Филтрирај редове"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:43
+msgid "Filter rows based on columns or expressions"
+msgstr "Филтрирај редове на основу колона или израза"
 
 #. Label of the filters (JSON) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -573,6 +1084,14 @@ msgstr "Почетак фискалне године"
 #: insights/api/workbooks.py:241
 msgid "Folder and item must belong to the same workbook"
 msgstr "Датотека и ставка морају припадати истој радној свесци"
+
+#: frontend/src2/dashboard/DashboardBuilder.vue:143
+msgid "Force Refresh"
+msgstr "Присилно освежавање"
+
+#: frontend/src2/query/components/ScriptQueryEditor.vue:101
+msgid "Force Run"
+msgstr "Присилно покретање"
 
 #. Label of the foreign_key (Data) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
@@ -595,11 +1114,16 @@ msgstr "Ознака стране табеле"
 msgid "Format Option"
 msgstr "Опција формата"
 
+#: frontend/src2/query/components/NativeQueryEditor.vue:141
+msgid "Format SQL"
+msgstr "Форматирај SQL"
+
 #: insights/config/desktop.py:11
 msgid "Frappe Insights"
 msgstr "Frappe Insights"
 
 #. Label of the frequency (Select) field in DocType 'Insights Alert'
+#: frontend/src2/query/components/AlertSetupDialog.vue:150
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Frequency"
 msgstr "Учесталост"
@@ -609,6 +1133,30 @@ msgstr "Учесталост"
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Friday"
 msgstr "Петак"
+
+#: frontend/src2/settings/Settings.vue:23
+msgid "General"
+msgstr "Опште"
+
+#: frontend/src2/query/components/ViewSQLDialog.vue:16
+msgid "Generated SQL"
+msgstr "Генерисани SQL"
+
+#: frontend/src2/query/components/FormatRule.vue:202
+msgid "Green"
+msgstr "Зелена"
+
+#: frontend/src2/query/components/FormatRule.vue:255
+msgid "Green-Red"
+msgstr "Зелено-црвено"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:66
+msgid "Group & Summarize"
+msgstr "Груписање и сумирање"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:67
+msgid "Group rows by columns and summarize the data"
+msgstr "Груписање редова по колонама и сумирање података"
 
 #. Label of the http_headers (JSON) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
@@ -620,8 +1168,15 @@ msgstr "HTTP заглавља"
 msgid "Hidden"
 msgstr "Сакривено"
 
+#: frontend/src2/query/components/FormattingSelector.vue:59
+msgid "Highlight Cell"
+msgstr "Истакни ћелију"
+
 #. Label of the host (Data) field in DocType 'Insights Data Source'
 #. Label of the host (Data) field in DocType 'Insights Data Source v3'
+#: frontend/src2/data_source/ConnectClickhouseDialog.vue:33
+#: frontend/src2/data_source/ConnectMariaDBDialog.vue:33
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:34
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Host"
@@ -637,6 +1192,14 @@ msgstr "По часу"
 msgid "ID"
 msgstr "ИД"
 
+#: frontend/src2/data_store/ImportTableDialog.vue:93
+msgid "Import"
+msgstr "Увоз"
+
+#: frontend/src2/data_source/UploadCSVFileDialog.vue:70
+msgid "Import Failed"
+msgstr "Увоз није успео"
+
 #. Label of the import_job (Link) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Import Job"
@@ -646,6 +1209,13 @@ msgstr "Задатак увоза"
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Import Query"
 msgstr "Упит за увоз"
+
+#: frontend/src2/data_source/UploadCSVFileDialog.vue:95
+#: frontend/src2/data_store/DataStoreList.vue:61
+#: frontend/src2/data_store/DataStoreList.vue:79
+#: frontend/src2/data_store/ImportTableDialog.vue:59
+msgid "Import Table"
+msgstr "Увези табелу"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:9
 msgid "Import job has been queued"
@@ -667,6 +1237,10 @@ msgstr "У току"
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Inactive"
 msgstr "Неактиван"
+
+#: frontend/src2/charts/components/MapChartConfigForm.vue:55
+msgid "India"
+msgstr "Индија"
 
 #. Name of a role
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -905,6 +1479,22 @@ msgstr "Цео број"
 msgid "Integrations"
 msgstr "Интеграције"
 
+#: frontend/src2/settings/UsersSettings.vue:44
+#: frontend/src2/users/UserList.vue:44
+msgid "Invitation Expired"
+msgstr "Позивница је истекла"
+
+#: frontend/src2/settings/UsersSettings.vue:43
+#: frontend/src2/users/UserList.vue:43
+msgid "Invitation Sent"
+msgstr "Позивница је послата"
+
+#: frontend/src2/settings/UsersSettings.vue:85
+#: frontend/src2/settings/UsersSettings.vue:173
+#: frontend/src2/users/UserList.vue:84 frontend/src2/users/UserList.vue:175
+msgid "Invite User"
+msgstr "Позовите корисника"
+
 #. Label of the invited_by (Link) field in DocType 'Insights User Invitation'
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Invited By"
@@ -997,9 +1587,18 @@ msgstr "JSON"
 msgid "Join"
 msgstr "Придружи се"
 
-#: frontend/src2/components/UserDropdown.vue:116
+#: frontend/src2/query/components/AddOperationPopover.vue:48
+#: frontend/src2/query/components/JoinSelectorDialog.vue:240
+msgid "Join Table"
+msgstr "Споји табелу"
+
+#: frontend/src2/components/UserDropdown.vue:121
 msgid "Join Telegram Group"
 msgstr "Придружи се Телеграм групи"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:49
+msgid "Join this table with another table or query"
+msgstr "Споји ову табелу са другом табелом или упитом"
 
 #. Label of the key (Data) field in DocType 'Insights Secret Key'
 #. Label of the key (Data) field in DocType 'Insights User Invitation'
@@ -1012,6 +1611,7 @@ msgstr "Кључ"
 #. Label of the label (Data) field in DocType 'Insights Table'
 #. Label of the label (Data) field in DocType 'Insights Table Column'
 #. Label of the label (Data) field in DocType 'Insights Table v3'
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:120
 #: insights/insights/doctype/insights_query_table/insights_query_table.json
 #: insights/insights/doctype/insights_table/insights_table.json
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -1019,12 +1619,17 @@ msgstr "Кључ"
 msgid "Label"
 msgstr "Ознака"
 
+#: frontend/src2/users/UserList.vue:65
+msgid "Last Active"
+msgstr "Последња активност"
+
 #. Label of the last_execution (Datetime) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Last Executed On"
 msgstr "Последњи пут извршено"
 
 #. Label of the last_execution (Datetime) field in DocType 'Insights Alert'
+#: frontend/src2/query/components/QueryAlertsDialog.vue:56
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Last Execution"
 msgstr "Последње извршење"
@@ -1045,12 +1650,22 @@ msgstr "Последње покретање"
 msgid "Last Status"
 msgstr "Последњи статус"
 
+#: frontend/src2/data_store/DataStoreList.vue:48
+msgid "Last Synced"
+msgstr "Последња синхронизација"
+
 #. Label of the last_synced_on (Datetime) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Last Synced On"
 msgstr "Последња синхронизација на"
 
+#: frontend/src2/charts/components/DonutChartConfigForm.vue:59
+#: frontend/src2/charts/components/FunnelChartConfigForm.vue:56
+msgid "Left"
+msgstr "Лево"
+
 #. Label of the left_column (Data) field in DocType 'Insights Table Link v3'
+#: frontend/src2/query/components/JoinSelectorDialog.vue:268
 #: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
 msgid "Left Column"
 msgstr "Лева колона"
@@ -1091,17 +1706,23 @@ msgstr "Линкови"
 msgid "Log"
 msgstr "Евиденција"
 
-#: frontend/src2/components/UserDropdown.vue:121
+#: frontend/src2/components/UserDropdown.vue:126
+#: frontend/src2/components/UserDropdown.vue:130
 msgid "Log out"
 msgstr "Ођавите се"
 
-#: frontend/src2/components/UserDropdown.vue:153
+#: frontend/src2/components/UserDropdown.vue:158
 msgid "Login to Frappe Cloud"
 msgstr "Пријављивање на Frappe Cloud"
 
-#: frontend/src2/components/UserDropdown.vue:76
+#: frontend/src2/components/UserDropdown.vue:80
 msgid "Login to Frappe Cloud?"
 msgstr "Пријава на Frappe Cloud?"
+
+#: frontend/src2/query/components/ScriptQueryEditor.vue:80
+#: frontend/src2/query/components/ScriptQueryEditor.vue:111
+msgid "Logs"
+msgstr "Евиденције"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -1113,10 +1734,19 @@ msgstr "Дужи цео број"
 msgid "Long Text"
 msgstr "Дужи текст"
 
+#: frontend/src2/teams/ManageTeamDialog.vue:63
+msgid "Manage Team"
+msgstr "Управљај тимом"
+
+#: frontend/src2/workbook/WorkbookShareDialog.vue:92
+msgid "Manage Workbook Access"
+msgstr "Управљај приступом радној свесци"
+
 #. Option for the 'Database Type' (Select) field in DocType 'Insights Data
 #. Source'
 #. Option for the 'Database Type' (Select) field in DocType 'Insights Data
 #. Source v3'
+#: frontend/src2/data_source/DataSourceList.vue:40
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "MariaDB"
@@ -1125,6 +1755,10 @@ msgstr "MariaDB"
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.js:7
 msgid "Mark as Failed"
 msgstr "Означи као неуспешно"
+
+#: frontend/src2/dashboard/DashboardText.vue:54
+msgid "Markdown supported"
+msgstr "Markdown је подржан"
 
 #. Label of the max_execution_time (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
@@ -1141,16 +1775,30 @@ msgstr "Максимална употреба меморије"
 msgid "Max Records To Sync"
 msgstr "Максималан број записа за синхронизацију"
 
+#: frontend/src2/charts/components/MeasurePicker.vue:96
+msgid "Maximum of..."
+msgstr "Максимум од..."
+
+#: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:112
+msgid "Measure Name"
+msgstr "Назив мере"
+
 #. Label of the memory_limit (Int) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Memory Limit (MB)"
 msgstr "Ограничење меморије (MB)"
 
 #. Label of the message (Markdown Editor) field in DocType 'Insights Alert'
+#: frontend/src2/query/components/AlertSetupDialog.vue:238
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Message"
 msgstr "Порука"
 
+#: frontend/src2/charts/components/MeasurePicker.vue:95
+msgid "Minimum of..."
+msgstr "Минимум од..."
+
+#: frontend/src2/data_source/DataSourceList.vue:120
 #: frontend/src2/workbook/WorkbookList.vue:103
 msgid "Modified"
 msgstr "Измењено"
@@ -1177,10 +1825,34 @@ msgid "N:N"
 msgstr "N:N"
 
 #. Label of the column (Data) field in DocType 'Insights Query Column'
+#: frontend/src2/components/VariablesDialog.vue:84
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "Name"
 msgstr "Назив"
 
+#: frontend/src2/query/components/QueryAlertsDialog.vue:79
+#: frontend/src2/query/components/QueryAlertsDialog.vue:108
+msgid "New Alert"
+msgstr "Ново упозорење"
+
+#: frontend/src2/workbook/WorkbookTabSwitcher.vue:63
+msgid "New Chart"
+msgstr "Нови графикон"
+
+#: frontend/src2/workbook/WorkbookTabSwitcher.vue:64
+msgid "New Dashboard"
+msgstr "Нова контролна табла"
+
+#: frontend/src2/data_source/DataSourceList.vue:133
+#: frontend/src2/data_source/DataSourceList.vue:148
+msgid "New Data Source"
+msgstr "Нови извор података"
+
+#: frontend/src2/workbook/WorkbookTabSwitcher.vue:62
+msgid "New Query"
+msgstr "Нови упит"
+
+#: frontend/src2/home/HomeQuickActions.vue:28
 #: frontend/src2/workbook/WorkbookList.vue:116
 #: frontend/src2/workbook/WorkbookList.vue:151
 msgid "New Workbook"
@@ -1191,9 +1863,78 @@ msgstr "Нова радна свеска"
 msgid "Next Execution"
 msgstr "Следеће извршавање"
 
+#: frontend/src2/query/components/UnionSelectorDialog.vue:144
+msgid "No"
+msgstr "Не"
+
+#: frontend/src2/dashboard/DashboardList.vue:94
+msgid "No Dashboards"
+msgstr "Нема контролних табли"
+
+#: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:90
+msgid "No Queries Found"
+msgstr "Нема пронађених упита"
+
+#: frontend/src2/data_source/DataSourceTableList.vue:40
+#: frontend/src2/query/components/source_selector/DataSourceTableList.vue:58
+msgid "No Tables Found"
+msgstr "Нема пронађених табела"
+
+#: frontend/src2/data_store/DataStoreList.vue:57
+msgid "No Tables Stored"
+msgstr "Нема сачуваних табела"
+
 #: frontend/src2/workbook/WorkbookList.vue:113
 msgid "No Workbooks"
 msgstr "Нема радних свезака"
+
+#: frontend/src2/query/components/QueryAlertsDialog.vue:76
+msgid "No alerts"
+msgstr "Нема упозорења"
+
+#: frontend/src2/query/components/ColumnsSelectorDialog.vue:108
+msgid "No columns selected"
+msgstr "Ниједна колона није изабрана"
+
+#: frontend/src2/data_source/DataSourceList.vue:131
+msgid "No data sources to display."
+msgstr "Нема извора података за приказ."
+
+#: frontend/src2/data_source/DataSourceList.vue:130
+msgid "No data sources."
+msgstr "Нема извора података."
+
+#: frontend/src2/data_source/DataSourceTableList.vue:41
+msgid "No tables found for the selected data source."
+msgstr "Нема пронађених табела за изабрани извор података."
+
+#: frontend/src2/data_store/DataStoreList.vue:58
+msgid "No tables found in the data store."
+msgstr "Нема пронађених табела у складишту података."
+
+#: frontend/src2/settings/PermissionsSettings.vue:64
+#: frontend/src2/teams/TeamList.vue:62
+msgid "No teams to display."
+msgstr "Нема тимова за приказ."
+
+#: frontend/src2/settings/PermissionsSettings.vue:63
+#: frontend/src2/teams/TeamList.vue:61
+msgid "No teams."
+msgstr "Нема тимова."
+
+#: frontend/src2/settings/UsersSettings.vue:82
+#: frontend/src2/users/UserList.vue:81
+msgid "No users to display."
+msgstr "Нема корисника за приказ."
+
+#: frontend/src2/settings/UsersSettings.vue:81
+#: frontend/src2/users/UserList.vue:80
+msgid "No users."
+msgstr "Нема корисника."
+
+#: frontend/src2/home/HomeWorkbookList.vue:66
+msgid "No workbooks created"
+msgstr "Није креирана ниједна радна свеска"
 
 #: frontend/src2/workbook/WorkbookList.vue:114
 msgid "No workbooks to display."
@@ -1225,10 +1966,24 @@ msgstr "Претходни назив"
 msgid "Onboarding Complete"
 msgstr "Завршетак увођења"
 
+#: frontend/src2/dashboard/Dashboard.vue:65
+#: frontend/src2/dashboard/DashboardList.vue:22
+msgid "Open Workbook"
+msgstr "Отвори радну свеску"
+
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:55
+#: frontend/src2/workbook/WorkbookNavbarActions.vue:72
+msgid "Open in Desk"
+msgstr "Отвори у радној површини"
+
 #. Label of the operations (JSON) field in DocType 'Insights Query v3'
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Operations"
 msgstr "Операције"
+
+#: frontend/src2/query/components/FormatRule.vue:458
+msgid "Operator"
+msgstr "Оператор"
 
 #. Label of the options (JSON) field in DocType 'Insights Chart'
 #. Label of the options (JSON) field in DocType 'Insights Dashboard Item'
@@ -1244,12 +1999,18 @@ msgstr "Опције"
 msgid "Order By"
 msgstr "Наруџбина од"
 
+#: frontend/src2/settings/Settings.vue:20
+msgid "Organization"
+msgstr "Организација"
+
 #. Option for the 'Action if table exists' (Select) field in DocType 'Insights
 #. Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Overwrite"
 msgstr "Измени"
 
+#: frontend/src2/data_source/DataSourceList.vue:106
+#: frontend/src2/teams/TeamList.vue:34
 #: frontend/src2/workbook/WorkbookList.vue:89
 msgid "Owner"
 msgstr "Власник"
@@ -1267,6 +2028,9 @@ msgstr "Делимичан успех"
 
 #. Label of the password (Password) field in DocType 'Insights Data Source'
 #. Label of the password (Password) field in DocType 'Insights Data Source v3'
+#: frontend/src2/data_source/ConnectClickhouseDialog.vue:63
+#: frontend/src2/data_source/ConnectMariaDBDialog.vue:63
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:71
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Password"
@@ -1282,19 +2046,42 @@ msgstr "На чекању"
 msgid "Pending Execution"
 msgstr "Чека се извршење"
 
+#: frontend/src2/settings/Settings.vue:38
+msgid "Permissions"
+msgstr "Дозволе"
+
+#: frontend/src2/workbook/WorkbookShareDialog.vue:82
+msgid "Permissions updated"
+msgstr "Дозволе су ажуриране"
+
 #. Description of the 'State (JSON)' (Code) field in DocType 'Insights Table
 #. Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Persistent state storage for the script"
 msgstr "Трајно складиште података за скрипту"
 
+#: frontend/src2/query/components/source_selector/SourceSelectorDialog.vue:125
+msgid "Pick Starting Data"
+msgstr "Изаберите почетне податке"
+
 #. Option for the 'Type' (Select) field in DocType 'Insights Query Transform'
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
 msgid "Pivot"
 msgstr "Пивот"
 
+#: frontend/src2/query/components/NativeQueryEditor.vue:26
+msgid "Please select a data source first"
+msgstr "Молимо Вас да прво изаберете извор података"
+
+#: frontend/src2/query/components/source_selector/DataSourceTableList.vue:53
+msgid "Please wait while we refresh the tables from your data source"
+msgstr "Молимо Вас да сачекате док освежавамо табелу из Вашег извора података"
+
 #. Label of the port (Data) field in DocType 'Insights Data Source'
 #. Label of the port (Int) field in DocType 'Insights Data Source v3'
+#: frontend/src2/data_source/ConnectClickhouseDialog.vue:41
+#: frontend/src2/data_source/ConnectMariaDBDialog.vue:41
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:42
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Port"
@@ -1309,6 +2096,7 @@ msgstr "Позиција и величина"
 #. Source'
 #. Option for the 'Database Type' (Select) field in DocType 'Insights Data
 #. Source v3'
+#: frontend/src2/data_source/DataSourceList.vue:49
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "PostgreSQL"
@@ -1324,12 +2112,22 @@ msgstr "Преглед слике"
 msgid "Primary Key"
 msgstr "Примарни кључ"
 
+#: frontend/src2/settings/Settings.vue:13
+msgid "Profile"
+msgstr "Профил"
+
 #. Label of the public_key (Data) field in DocType 'Insights Chart'
 #. Label of the public_key (Data) field in DocType 'Insights Dashboard'
 #: insights/insights/doctype/insights_chart/insights_chart.json
 #: insights/insights/doctype/insights_dashboard/insights_dashboard.json
 msgid "Public Key"
 msgstr "Јавни кључ"
+
+#: frontend/src2/query/components/source_selector/SourceSelectorDialog.vue:89
+#: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:59
+#: frontend/src2/workbook/WorkbookSidebar.vue:29
+msgid "Queries"
+msgstr "Упити"
 
 #. Label of the query (Link) field in DocType 'Insights Alert'
 #. Label of the query (Link) field in DocType 'Insights Chart'
@@ -1340,6 +2138,8 @@ msgstr "Јавни кључ"
 #. Label of the query (Link) field in DocType 'Insights Query Result'
 #. Label of the query_section (Section Break) field in DocType 'Insights
 #. Settings'
+#: frontend/src2/query/components/JoinSelectorDialog.vue:153
+#: frontend/src2/query/components/UnionSelectorDialog.vue:71
 #: insights/insights/doctype/insights_alert/insights_alert.json
 #: insights/insights/doctype/insights_chart/insights_chart.json
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
@@ -1361,15 +2161,79 @@ msgstr "Ограничење резултата упита"
 msgid "Queued"
 msgstr "У реду"
 
+#: frontend/src2/home/HomeQuickActions.vue:21
+msgid "Quick Actions"
+msgstr "Брзе радње"
+
 #. Option for the 'Type' (Select) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "REST API"
 msgstr "REST API"
 
+#: frontend/src2/query/components/FormatRule.vue:520
+msgid "Ranking Condition"
+msgstr "Услов рангирања"
+
+#: frontend/src2/query/components/FormatRule.vue:267
+msgid "Ranking Rules"
+msgstr "Правила рангирања"
+
 #. Label of the recipients (Small Text) field in DocType 'Insights Alert'
+#: frontend/src2/query/components/AlertSetupDialog.vue:181
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Recipients"
 msgstr "Примаоци"
+
+#: frontend/src2/query/components/FormatRule.vue:201
+msgid "Red"
+msgstr "Црвено"
+
+#: frontend/src2/query/components/FormatRule.vue:251
+msgid "Red-Green"
+msgstr "Црвено-зелено"
+
+#: frontend/src2/dashboard/Dashboard.vue:48
+#: frontend/src2/data_source/DataSourceTableList.vue:43
+msgid "Refresh"
+msgstr "Освежи"
+
+#: frontend/src2/dashboard/DashboardList.vue:27
+msgid "Refresh Preview"
+msgstr "Освежи преглед"
+
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:19
+msgid "Refresh Stored Tables"
+msgstr "Освежи сачуване табеле"
+
+#: frontend/src2/query/components/source_selector/DataSourceTableList.vue:62
+#: frontend/src2/query/components/source_selector/DataSourceTableList.vue:87
+msgid "Refresh Tables"
+msgstr "Освежи табеле"
+
+#: frontend/src2/query/components/source_selector/DataSourceTableList.vue:52
+msgid "Refreshing Tables"
+msgstr "Освежавање табела"
+
+#: frontend/src2/query/components/FiltersSelector.vue:126
+#: frontend/src2/workbook/WorkbookShareDialog.vue:39
+msgid "Remove"
+msgstr "Уклони"
+
+#: frontend/src2/components/DataTableColumn.vue:30
+msgid "Remove Sort"
+msgstr "Уклони сортирање"
+
+#: frontend/src2/dashboard/DashboardBuilder.vue:156
+msgid "Reset Layout"
+msgstr "Ресетуј распоред"
+
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:44
+msgid "Reset Options"
+msgstr "Ресетуј опције"
+
+#: frontend/src2/charts/components/RegionMappingDialog.vue:194
+msgid "Resolve Locations"
+msgstr "Разреши локације"
 
 #. Label of the resource_name (Dynamic Link) field in DocType 'Insights
 #. Resource Permission'
@@ -1404,12 +2268,19 @@ msgstr "Резултати"
 msgid "Results Row Count"
 msgstr "Број редова резултата"
 
+#: frontend/src2/charts/components/DonutChartConfigForm.vue:60
+#: frontend/src2/charts/components/FunnelChartConfigForm.vue:57
+msgid "Right"
+msgstr "Десно"
+
 #. Label of the right_column (Data) field in DocType 'Insights Table Link v3'
+#: frontend/src2/query/components/JoinSelectorDialog.vue:281
 #: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
 msgid "Right Column"
 msgstr "Десна колона"
 
 #. Label of the right_table (Data) field in DocType 'Insights Table Link v3'
+#: frontend/src2/query/components/JoinSelectorDialog.vue:250
 #: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
 msgid "Right Table"
 msgstr "Десна табела"
@@ -1437,6 +2308,11 @@ msgstr "Редови"
 msgid "Rows Imported"
 msgstr "Увезени редови"
 
+#: frontend/src2/query/components/FormatRule.vue:447
+msgid "Rule Type"
+msgstr "Врста правила"
+
+#: frontend/src2/query/components/ScriptQueryEditor.vue:92
 #: insights/insights/doctype/insights_query/insights_query.js:7
 msgid "Run"
 msgstr "Покрени"
@@ -1461,11 +2337,33 @@ msgstr "SQL"
 msgid "SQLite"
 msgstr "SQLite"
 
+#: frontend/src2/settings/GeneralSettings.vue:23
+msgid "Sample data and workbook have been set up successfully"
+msgstr "Пример података и радна свеска су успешно постављени"
+
+#: frontend/src2/components/DemoDataBanner.vue:27
+msgid "Sample data with workbook has been set up successfully"
+msgstr "Пример података са радном свеском је успешно постављен"
+
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Saturday"
 msgstr "Субота"
+
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:103
+#: frontend/src2/dashboard/DashboardText.vue:27
+#: frontend/src2/workbook/WorkbookShareDialog.vue:95
+msgid "Save"
+msgstr "Сачувај"
+
+#: frontend/src2/charts/components/RegionMappingDialog.vue:314
+msgid "Save Changes"
+msgstr "Сачувај промене"
+
+#: frontend/src2/components/VariablesDialog.vue:133
+msgid "Save Variables"
+msgstr "Сачувај променљиве"
 
 #. Label of the schedule (Data) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
@@ -1473,6 +2371,7 @@ msgid "Schedule (Cron)"
 msgstr "Распоред (Cron)"
 
 #. Label of the schema (Data) field in DocType 'Insights Data Source v3'
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:57
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Schema"
 msgstr "Шема"
@@ -1489,49 +2388,155 @@ msgstr "Скрипта"
 msgid "Script Log"
 msgstr "Евиденција скрипте"
 
+#: frontend/src2/dashboard/DashboardList.vue:52
+#: frontend/src2/data_store/DataStoreList.vue:92
+#: frontend/src2/query/components/QueryAlertsDialog.vue:102
+#: frontend/src2/settings/UsersSettings.vue:149
+#: frontend/src2/teams/TeamList.vue:100 frontend/src2/users/UserList.vue:163
+msgid "Search"
+msgstr "Претрага"
+
+#: frontend/src2/query/components/source_selector/DataSourceTableList.vue:75
+#: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:63
 #: frontend/src2/workbook/WorkbookList.vue:166
 msgid "Search by Title"
 msgstr "Претрага по наслову"
+
+#: frontend/src2/dashboard/DashboardChartSelectorDialog.vue:85
+msgid "Search by name"
+msgstr "Претрага по називу"
 
 #. Label of the secrets (Table) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Secrets"
 msgstr "Тајне"
 
+#: frontend/src2/dashboard/DashboardChartSelectorDialog.vue:64
+msgid "Select Charts"
+msgstr "Изаберите графиконе"
+
+#: frontend/src2/query/components/ColumnsSelectorDialog.vue:62
+msgid "Select Columns"
+msgstr "Изабери колоне"
+
+#: frontend/src2/query/components/JoinSelectorDialog.vue:349
+msgid "Select Columns to Add"
+msgstr "Изаберите колоне за додавање"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:203
+msgid "Select Field"
+msgstr "Изабери поље"
+
+#: frontend/src2/query/components/JoinSelectorDialog.vue:321
+msgid "Select Join Type"
+msgstr "Изаберите врсту спајања"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:30
+msgid "Select Source"
+msgstr "Изаберите извор"
+
+#: frontend/src2/query/components/UnionSelectorDialog.vue:126
+msgid "Select Table"
+msgstr "Изаберите табелу"
+
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:155
+msgid "Select a column"
+msgstr "Изаберите колону"
+
+#: frontend/src2/data_source/DataSourceList.vue:170
+msgid "Select a data source"
+msgstr "Изаберите извор података"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:31
+msgid "Select a table or query to start building your query"
+msgstr "Изаберите табелу или упит да бисте започели израду упита"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:134
+msgid "Select an operation"
+msgstr "Изаберите операцију"
+
 #: insights/insights/doctype/insights_alert/insights_alert.js:6
 msgid "Send Alert"
 msgstr "Пошаљи упозорење"
+
+#: frontend/src2/settings/UsersSettings.vue:177
+#: frontend/src2/users/UserList.vue:178
+msgid "Send Invitation"
+msgstr "Пошаљи позивницу"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:117
+msgid "Send Test Alert"
+msgstr "Пошаљи пробно упозорење"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:197
+msgid "Send alert when"
+msgstr "Пошаљи упозорење када"
 
 #: insights/insights/doctype/insights_alert/insights_alert.js:7
 msgid "Sending Alert..."
 msgstr "Слање упозорења..."
 
-#: frontend/src2/components/UserDropdown.vue:66
+#: frontend/src2/components/UserDropdown.vue:70
 msgid "Set Insights v2 as default"
 msgstr "Постави Insights v2 као подразумевани"
 
-#: insights/setup/setup_wizard.py:17
-msgid "Setting up demo data"
-msgstr "Постављање демо података"
+#: frontend/src2/query/components/QueryAlertsDialog.vue:77
+msgid "Set up alerts to get notified when a condition is met"
+msgstr "Подесите упозорења да бисте били обавештени када је услов испуњен"
 
-#: frontend/src2/components/AppSidebar.vue:93
+#: frontend/src2/components/AppSidebar.vue:95
+#: frontend/src2/settings/Settings.vue:58
 msgid "Settings"
 msgstr "Подешавања"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:113
+msgid "Setup Alert"
+msgstr "Подесите упозорење"
 
 #. Label of the setup_complete (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Setup Complete"
 msgstr "Поставке завршене"
 
+#: frontend/src2/components/DemoDataBanner.vue:64
+msgid "Setup Demo Data"
+msgstr "Подеси демо податке"
+
+#: frontend/src2/components/DemoDataBanner.vue:32
+#: frontend/src2/settings/GeneralSettings.vue:28
+msgid "Setup Failed"
+msgstr "Подешавање није успело"
+
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:33
+#: frontend/src2/charts/components/ChartShareDialog.vue:35
+msgid "Share Chart"
+msgstr "Подели графикон"
+
+#: frontend/src2/dashboard/DashboardShareDialog.vue:83
+msgid "Share Dashboard"
+msgstr "Подели контролну таблу"
+
 #. Label of the share_link (Data) field in DocType 'Insights Dashboard v3'
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Share Link"
 msgstr "Подели линк"
 
+#: frontend/src2/query/components/AddOperationPopover.vue:37
+msgid "Show or hide columns from the table"
+msgstr "Прикажи или сакриј колоне из табеле"
+
 #. Label of the is_site_db (Check) field in DocType 'Insights Data Source'
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 msgid "Site Database"
 msgstr "База података сајта"
+
+#: frontend/src2/components/DataTableColumn.vue:20
+msgid "Sort Ascending"
+msgstr "Сортирај растуће"
+
+#: frontend/src2/components/DataTableColumn.vue:25
+msgid "Sort Descending"
+msgstr "Сортирај опадајуће"
 
 #. Label of the sort_order (Int) field in DocType 'Insights Folder'
 #: insights/insights/doctype/insights_folder/insights_folder.json
@@ -1539,9 +2544,14 @@ msgid "Sort Order"
 msgstr "Редослед сортирања"
 
 #. Label of the source (Attach) field in DocType 'Insights Table Import'
+#: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:38
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Source"
 msgstr "Извор"
+
+#: frontend/src2/dashboard/DashboardShareDialog.vue:114
+msgid "Specific people can view"
+msgstr "Одређене особе могу да виде"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
@@ -1569,6 +2579,10 @@ msgstr "Стање (JSON)"
 #. Label of the status (Select) field in DocType 'Insights Table Import'
 #. Label of the status (Select) field in DocType 'Insights Table Import Log'
 #. Label of the status (Select) field in DocType 'Insights User Invitation'
+#: frontend/src2/data_source/DataSourceList.vue:98
+#: frontend/src2/query/components/QueryAlertsDialog.vue:41
+#: frontend/src2/settings/UsersSettings.vue:37
+#: frontend/src2/users/UserList.vue:37
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -1595,15 +2609,28 @@ msgstr "Низ карактера"
 msgid "Success"
 msgstr "Успех"
 
+#: frontend/src2/charts/components/MeasurePicker.vue:93
+msgid "Sum of..."
+msgstr "Збир за..."
+
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Sunday"
 msgstr "Недеља"
 
-#: frontend/src2/components/UserDropdown.vue:50
+#: frontend/src2/components/UserDropdown.vue:148
+msgid "Switch to Desk"
+msgstr "Пређи на радну површину"
+
+#: frontend/src2/components/UserDropdown.vue:54
+#: frontend/src2/components/UserDropdown.vue:140
 msgid "Switch to Insights v2"
 msgstr "Пређи на Insights v2"
+
+#: frontend/src2/query/components/source_selector/DataSourceTableList.vue:59
+msgid "Sync tables from your data source to get started"
+msgstr "Синхронизујте табеле из Вашег извора података да бисте започели"
 
 #. Name of a role
 #: insights/insights/doctype/insights_chart/insights_chart.json
@@ -1626,12 +2653,19 @@ msgstr "Систем менаџер"
 #. Label of the table (Data) field in DocType 'Insights Query Table'
 #. Label of the table (Data) field in DocType 'Insights Table'
 #. Label of the table (Data) field in DocType 'Insights Table v3'
+#: frontend/src2/query/components/JoinSelectorDialog.vue:251
+#: frontend/src2/query/components/UnionSelectorDialog.vue:129
+#: frontend/src2/query/components/source_selector/DataSourceTableList.vue:28
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 #: insights/insights/doctype/insights_query_table/insights_query_table.json
 #: insights/insights/doctype/insights_table/insights_table.json
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Table"
 msgstr "Табела"
+
+#: frontend/src2/data_source/UploadCSVFileDialog.vue:63
+msgid "Table Imported"
+msgstr "Табела је увезена"
 
 #. Label of the table_label (Data) field in DocType 'Insights Query Column'
 #. Label of the table_label (Data) field in DocType 'Insights Table Import'
@@ -1643,6 +2677,8 @@ msgstr "Ознака табеле"
 #. Label of the table_name (Data) field in DocType 'Insights Table Import'
 #. Label of the table_name (Data) field in DocType 'Insights Table Import Job'
 #. Label of the table_name (Data) field in DocType 'Insights Table Import Log'
+#: frontend/src2/data_source/DataSourceTableList.vue:28
+#: frontend/src2/data_store/DataStoreList.vue:36
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
@@ -1660,12 +2696,17 @@ msgstr "Ограничења табеле"
 msgid "Tables"
 msgstr "Табеле"
 
+#: frontend/src2/teams/TeamList.vue:30
+msgid "Team"
+msgstr "Тим"
+
 #. Label of the team_members (Table) field in DocType 'Insights Team'
 #: insights/insights/doctype/insights_team/insights_team.json
 msgid "Team Members"
 msgstr "Чланови тима"
 
 #. Label of the team_name (Data) field in DocType 'Insights Team'
+#: frontend/src2/settings/PermissionsSettings.vue:45
 #: insights/insights/doctype/insights_team/insights_team.json
 msgid "Team Name"
 msgstr "Назив тима"
@@ -1674,6 +2715,10 @@ msgstr "Назив тима"
 #: insights/insights/doctype/insights_team/insights_team.json
 msgid "Team Permissions"
 msgstr "Дозволе тима"
+
+#: frontend/src2/teams/TeamList.vue:83
+msgid "Teams"
+msgstr "Тимови"
 
 #. Option for the 'Channel' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -1687,6 +2732,7 @@ msgid "Telegram API Token"
 msgstr "Телеграм API токен"
 
 #. Label of the telegram_chat_id (Data) field in DocType 'Insights Alert'
+#: frontend/src2/query/components/AlertSetupDialog.vue:188
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Telegram Chat ID"
 msgstr "ИД Телеграм чета"
@@ -1695,6 +2741,30 @@ msgstr "ИД Телеграм чета"
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Text"
 msgstr "Текст"
+
+#: frontend/src2/query/components/FormatRule.vue:272
+msgid "Text Rules"
+msgstr "Текстуална правила"
+
+#: frontend/src2/query/components/ColumnFilterTypeDate.vue:58
+msgid "This FY"
+msgstr "Ова фискална година"
+
+#: frontend/src2/query/components/ColumnFilterTypeDate.vue:55
+msgid "This Month"
+msgstr "Овај месец"
+
+#: frontend/src2/query/components/ColumnFilterTypeDate.vue:56
+msgid "This Quarter"
+msgstr "Овај квартал"
+
+#: frontend/src2/query/components/ColumnFilterTypeDate.vue:54
+msgid "This Week"
+msgstr "Ове недеље"
+
+#: frontend/src2/query/components/ColumnFilterTypeDate.vue:57
+msgid "This Year"
+msgstr "Ове године"
 
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
@@ -1727,6 +2797,13 @@ msgstr "Време извршења (секунде)"
 #. Label of the title (Data) field in DocType 'Insights Query v3'
 #. Label of the title (Data) field in DocType 'Insights Table Import Job'
 #. Label of the title (Data) field in DocType 'Insights Workbook'
+#: frontend/src2/data_source/ConnectClickhouseDialog.vue:27
+#: frontend/src2/data_source/ConnectDuckDBDialog.vue:22
+#: frontend/src2/data_source/ConnectMariaDBDialog.vue:27
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:28
+#: frontend/src2/data_source/DataSourceList.vue:90
+#: frontend/src2/query/components/QueryAlertsDialog.vue:37
+#: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:32
 #: frontend/src2/workbook/WorkbookList.vue:42
 #: insights/insights/doctype/insights_alert/insights_alert.json
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
@@ -1745,6 +2822,22 @@ msgstr "Време извршења (секунде)"
 msgid "Title"
 msgstr "Наслов"
 
+#: frontend/src2/query/components/ColumnFilterTypeDate.vue:53
+msgid "Today"
+msgstr "Данас"
+
+#: frontend/src2/charts/components/DonutChartConfigForm.vue:57
+msgid "Top"
+msgstr "Горе"
+
+#: frontend/src2/query/components/FormatRule.vue:243
+msgid "Top N percent"
+msgstr "Горњих N процената"
+
+#: frontend/src2/query/components/FormatRule.vue:241
+msgid "Top N values"
+msgstr "Горњих N вредности"
+
 #. Label of the transform_tab (Tab Break) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Transform"
@@ -1760,6 +2853,10 @@ msgstr "Трансформације"
 msgid "Transpose"
 msgstr "Транспоновање"
 
+#: frontend/src2/components/DemoDataBanner.vue:50
+msgid "Try demo data"
+msgstr "Испробајте демо податке"
+
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
@@ -1773,6 +2870,7 @@ msgstr "Уторак"
 #. Label of the type (Data) field in DocType 'Insights Query Column'
 #. Label of the type (Select) field in DocType 'Insights Query Transform'
 #. Label of the type (Select) field in DocType 'Insights Table Column'
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:133
 #: insights/insights/doctype/insights_dashboard_item/insights_dashboard_item.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 #: insights/insights/doctype/insights_folder/insights_folder.json
@@ -1783,10 +2881,50 @@ msgstr "Уторак"
 msgid "Type"
 msgstr "Врста"
 
+#: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:72
+msgid "Unexpected validation error"
+msgstr "Неочекивана грешка приликом валидације"
+
+#: frontend/src2/charts/components/MeasurePicker.vue:97
+msgid "Unique Count of..."
+msgstr "Јединствени број од..."
+
 #. Option for the 'Type' (Select) field in DocType 'Insights Query Transform'
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
 msgid "Unpivot"
 msgstr "Поништи пивот"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:129
+msgid "Update Alert"
+msgstr "Ажурирај упозорење"
+
+#: frontend/src2/data_source/DataSourceTableList.vue:95
+msgid "Update Table Links"
+msgstr "Ажурирај везе табела"
+
+#: frontend/src2/data_source/DataSourceTableList.vue:82
+msgid "Update Tables"
+msgstr "Ажурирај табеле"
+
+#: frontend/src2/data_source/DataSourceList.vue:76
+msgid "Upload CSV or Excel"
+msgstr "Отпреми CSV или Excel"
+
+#: frontend/src2/data_source/UploadCSVFileDialog.vue:95
+msgid "Upload CSV/Excel File"
+msgstr "Отпреми CSV/Excel фајл"
+
+#: frontend/src2/data_source/UploadCSVFileDialog.vue:37
+msgid "Upload Failed"
+msgstr "Отпремање је неуспешно"
+
+#: frontend/src2/data_source/DataSourceList.vue:78
+msgid "Upload a CSV or Excel file to create a new data source"
+msgstr "Отпремите CSV или Excel фајл да бисте креирали нови извор података"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:231
+msgid "Use Custom Condition"
+msgstr "Користи прилагођени услов"
 
 #. Label of the use_live_connection (Check) field in DocType 'Insights Query
 #. v3'
@@ -1801,22 +2939,47 @@ msgstr "Користи везу уживо"
 msgid "Use SSL"
 msgstr "Користите SSL"
 
+#: frontend/src2/data_source/ConnectClickhouseDialog.vue:69
+#: frontend/src2/data_source/ConnectMariaDBDialog.vue:69
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:77
+msgid "Use secure connection (SSL)?"
+msgstr "Користи безбедну везу (SSL)?"
+
 #. Label of the user (Link) field in DocType 'Insights Team Member'
+#: frontend/src2/settings/UsersSettings.vue:29
+#: frontend/src2/users/UserList.vue:29
 #: insights/insights/doctype/insights_team_member/insights_team_member.json
 msgid "User"
 msgstr "Корисник"
 
 #. Label of the username (Data) field in DocType 'Insights Data Source'
 #. Label of the username (Data) field in DocType 'Insights Data Source v3'
+#: frontend/src2/data_source/ConnectClickhouseDialog.vue:56
+#: frontend/src2/data_source/ConnectMariaDBDialog.vue:56
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:64
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Username"
 msgstr "Корисничко име"
 
+#: frontend/src2/settings/Settings.vue:33 frontend/src2/users/UserList.vue:146
+msgid "Users"
+msgstr "Корисници"
+
+#: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:57
+msgid "Validation failed"
+msgstr "Валидација није успела"
+
 #. Label of the value (Password) field in DocType 'Insights Secret Key'
+#: frontend/src2/components/VariablesDialog.vue:85
+#: frontend/src2/query/components/FormatRule.vue:467
 #: insights/insights/doctype/insights_secret_key/insights_secret_key.json
 msgid "Value"
 msgstr "Вредност"
+
+#: frontend/src2/query/components/FormatRule.vue:266
+msgid "Value Rules"
+msgstr "Правила вредности"
 
 #. Label of the variable_name (Data) field in DocType 'Insights Query Variable'
 #: insights/insights/doctype/insights_query_variable/insights_query_variable.json
@@ -1831,16 +2994,27 @@ msgstr "Вредност променљиве"
 
 #. Label of the variables (Table) field in DocType 'Insights Query'
 #. Label of the variables (Table) field in DocType 'Insights Query v3'
+#: frontend/src2/components/VariablesDialog.vue:56
+#: frontend/src2/components/VariablesDialog.vue:62
+#: frontend/src2/query/components/ScriptQueryEditor.vue:106
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Variables"
 msgstr "Променљиве"
+
+#: frontend/src2/components/VariablesDialog.vue:69
+msgid "Variables are used to store sensitive information such as API keys and credentials. They can be referenced and combined in your script just like any other variable. For eg."
+msgstr "Променљиве се користе за чување осетљивих информација као што су API кључеви и креденцијали. На њих се можете позивати и комбиновати их у скрипти као и било коју другу променљиву. На пример."
 
 #. Label of the vertical_compact_layout (Check) field in DocType 'Insights
 #. Dashboard v3'
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Vertical Compact Layout"
 msgstr "Вертикални компактни распоред"
+
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:27
+msgid "View SQL"
+msgstr "Прикажи SQL"
 
 #: frontend/src2/workbook/WorkbookList.vue:74
 msgid "Views"
@@ -1873,20 +3047,29 @@ msgstr "Недељно"
 msgid "Workbook"
 msgstr "Радна свеска"
 
-#: frontend/src2/components/AppSidebar.vue:77
+#: frontend/src2/components/AppSidebar.vue:79
+#: frontend/src2/home/HomeWorkbookList.vue:36
 #: frontend/src2/workbook/WorkbookList.vue:148
 msgid "Workbooks"
 msgstr "Радне свеске"
 
-#: insights/setup/setup_wizard.py:28
-msgid "Wrapping up"
-msgstr "Завршавање"
+#: frontend/src2/charts/components/MapChartConfigForm.vue:54
+msgid "World Map"
+msgstr "Мапа света"
 
 #. Description of the 'Script' (Code) field in DocType 'Insights Table Import
 #. Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Write Python code to fetch and transform data. Available globals:<br>• client: API client for the selected data source<br>• table: Write data to warehouse. Methods: insert(data, overwrite=False)<br>• state: Persist data between runs. Methods: get(key, default=None), set(key, value), delete(key), clear()<br>• secrets: Access secret keys. Methods: get(key)<br>• log(message): Log execution messages"
 msgstr "Напиши Python код за преузимање и трансформацију података. Доступне глобалне променљиве:<br>• client: API клијент за одабрани извор података<br>• table: Упис података у складиште података. Методе: insert(data, overwrite=False)<br>• state: Трајно чување стања између извршавања. Методе: get(key, default=None), set(key, value), delete(key), clear()<br>• secrets: Приступ тајним кључевима. Методе: get(key)<br>• log(message): Евиденција извршавања"
+
+#: frontend/src2/query/components/UnionSelectorDialog.vue:143
+msgid "Yes"
+msgstr "Да"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:251
+msgid "You can use markdown to format the message. Use double asterisks (**) for bold text. You can use the following fields in the message:"
+msgstr "Можете користити Markdown за форматирање поруке. Користите двоструке звездице (**) за подебљан текст. У поруци можете користити следећа поља:"
 
 #: insights/decorators.py:26
 msgid "You do not have permission to access this resource"
@@ -1902,20 +3085,77 @@ msgstr "Немате дозволу да мењате ову радну свес
 msgid "You do not have permission to share this workbook"
 msgstr "Немате дозволу да поделите ову радну свеску"
 
+#: frontend/src2/home/HomeWorkbookList.vue:68
+msgid "Your workbooks will appear here. Create a new workbook to get started."
+msgstr "Ваше радне свеске ће се појавити овде. Креирајте нову радну свеску да бисте започели."
+
+#: frontend/src2/query/components/FormatRule.vue:236
+msgid "after date"
+msgstr "након датума"
+
 #. Option for the 'Order By' (Select) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "asc"
 msgstr "растуће"
+
+#: frontend/src2/query/components/FormatRule.vue:235
+msgid "before date"
+msgstr "пре датума"
+
+#: frontend/src2/query/components/FormatRule.vue:237
+msgid "between dates"
+msgstr "између датума"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Folder'
 #: insights/insights/doctype/insights_folder/insights_folder.json
 msgid "chart"
 msgstr "дијаграм"
 
+#: frontend/src2/query/components/FormatRule.vue:216
+msgid "contains"
+msgstr "садржи"
+
 #. Option for the 'Order By' (Select) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "desc"
 msgstr "опадајуће"
+
+#: frontend/src2/query/components/FormatRule.vue:217
+msgid "does not contain"
+msgstr "не садржи"
+
+#: frontend/src2/query/components/FormatRule.vue:221
+msgid "does not equal"
+msgstr "није једнако"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:165
+msgid "e.g. 0 0 12 * * ?"
+msgstr "нпр. 0 0 12 * * ?"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:190
+msgid "e.g. 123456789"
+msgstr "нпр. 123456789"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:146
+msgid "e.g. Low Inventory"
+msgstr "нпр. низак ниво залиха"
+
+#: frontend/src2/components/VariablesDialog.vue:99
+msgid "e.g. api_key"
+msgstr "нпр. api_key"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:183
+msgid "e.g. john@example.com, henry@example.com"
+msgstr "нпр. john@example.com, henry@example.com"
+
+#: frontend/src2/query/components/FormatRule.vue:219
+msgid "ends with"
+msgstr "завршава се са"
+
+#: frontend/src2/query/components/FormatRule.vue:207
+#: frontend/src2/query/components/FormatRule.vue:220
+msgid "equals"
+msgstr "једнако"
 
 #. Label of the folder (Data) field in DocType 'Insights Chart v3'
 #. Label of the folder (Data) field in DocType 'Insights Query v3'
@@ -1923,6 +3163,66 @@ msgstr "опадајуће"
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "folder"
 msgstr "датотека"
+
+#: frontend/src2/query/components/FormatRule.vue:209
+msgid "greater than"
+msgstr "веће од"
+
+#: frontend/src2/query/components/FormatRule.vue:210
+msgid "greater than or equals"
+msgstr "веће или једнако"
+
+#: frontend/src2/query/components/FormatRule.vue:222
+msgid "is empty"
+msgstr "празно"
+
+#: frontend/src2/query/components/FormatRule.vue:233
+msgid "is last month"
+msgstr "прошлог месеца"
+
+#: frontend/src2/query/components/FormatRule.vue:231
+msgid "is last week"
+msgstr "прошле недеље"
+
+#: frontend/src2/query/components/FormatRule.vue:223
+msgid "is not empty"
+msgstr "није празно"
+
+#: frontend/src2/query/components/FormatRule.vue:232
+msgid "is this month"
+msgstr "овог месеца"
+
+#: frontend/src2/query/components/FormatRule.vue:230
+msgid "is this week"
+msgstr "ове недеље"
+
+#: frontend/src2/query/components/FormatRule.vue:234
+msgid "is this year"
+msgstr "ове године"
+
+#: frontend/src2/query/components/FormatRule.vue:227
+msgid "is today"
+msgstr "данас"
+
+#: frontend/src2/query/components/FormatRule.vue:229
+msgid "is tomorrow"
+msgstr "сутра"
+
+#: frontend/src2/query/components/FormatRule.vue:228
+msgid "is yesterday"
+msgstr "јуче"
+
+#: frontend/src2/query/components/FormatRule.vue:211
+msgid "less than"
+msgstr "мање од"
+
+#: frontend/src2/query/components/FormatRule.vue:212
+msgid "less than or equals"
+msgstr "мање или једнако"
+
+#: frontend/src2/query/components/FormatRule.vue:208
+msgid "not equals"
+msgstr "није једнако"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Folder'
 #: insights/insights/doctype/insights_folder/insights_folder.json
@@ -1935,4 +3235,12 @@ msgstr "упит"
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "sort_order"
 msgstr "редослед_сортирања"
+
+#: frontend/src2/query/components/FormatRule.vue:218
+msgid "starts with"
+msgstr "почиње са"
+
+#: frontend/src2/query/components/ColumnsSelectorDialog.vue:120
+msgid "{0} columns selected"
+msgstr "Изабрано {0} колона"
 
