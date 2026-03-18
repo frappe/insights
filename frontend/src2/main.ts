@@ -8,6 +8,8 @@ import './index.css'
 import router from './router.ts'
 import { translationPlugin } from './translation.ts'
 import { spritePlugin } from 'frappe-ui/icons'
+//@ts-ignore
+import { telemetryPlugin } from 'frappe-ui/frappe'
 
 setConfig('resourceFetcher', frappeRequest)
 
@@ -17,6 +19,7 @@ const pinia = createPinia()
 app.use(pinia)
 app.use(router)
 app.use(spritePlugin)
+app.use(telemetryPlugin, { app_name: 'insights' })
 app.component('grid-layout', GridLayout)
 app.component('grid-item', GridItem)
 

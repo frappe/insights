@@ -1,4 +1,6 @@
 import { reactive, ref, toRefs } from 'vue'
+// @ts-ignore
+import { useTelemetry } from 'frappe-ui/frappe'
 import useChart from '../charts/chart'
 import {
 	getUniqueId,
@@ -39,6 +41,7 @@ export type FilterState = {
 }
 
 function makeDashboard(name: string) {
+	const { capture } = useTelemetry()
 	const dashboard = getDashboardResource(name)
 
 	const editing = ref(false)
@@ -71,6 +74,7 @@ function makeDashboard(name: string) {
 				})
 			}
 		})
+		capture('dashboard_chart_added')
 	}
 
 	function getMaxY() {

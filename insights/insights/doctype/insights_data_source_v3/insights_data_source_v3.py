@@ -81,7 +81,7 @@ class InsightsDataSourceDocument:
 
     def after_insert(self):
         if not self.is_site_db:
-            capture_event("data_source_connected")
+            capture_event("data_source_created")
 
     def on_update(self):
         if self.type == "REST API":
