@@ -84,9 +84,7 @@ class DemoDataFactory:
         links_count = frappe.db.count("Insights Table Link v3", {"data_source": self.data_source.name})
         links_exists = links_count >= 8
 
-        sample_workbook_exists = frappe.db.exists("Insights Workbook", {"title": "Order Analysis"})
-
-        return tables_exists and links_exists and sample_workbook_exists
+        return tables_exists and links_exists
 
     def download_demo_data(self):
         if frappe.flags.in_test or os.environ.get("CI"):
