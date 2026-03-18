@@ -108,6 +108,8 @@ def get_file_data(filename: str):
     file_name = frappe.scrub(file_name)
 
     con = ibis.duckdb.connect()
+    private_folder = frappe.utils.get_files_path(is_private=1)
+    con.raw_sql(f"SET home_directory='{private_folder}'")
     if ext in ["xlsx"]:
         table = con.read_xlsx(file_path)
     else:

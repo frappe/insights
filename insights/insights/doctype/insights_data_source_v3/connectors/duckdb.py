@@ -20,13 +20,16 @@ def get_duckdb_connection(data_source, read_only=True):
 
 
 def get_local_duckdb_connection(db_name, read_only=True):
-    path = os.path.join(os.path.realpath(get_files_path(is_private=1)), f"{db_name}.duckdb")
+    private_folder = os.path.realpath(get_files_path(is_private=1))
+    path = os.path.join(private_folder, f"{db_name}.duckdb")
 
     if not os.path.exists(path):
         db = ibis.duckdb.connect(path)
         db.disconnect()
 
-    return ibis.duckdb.connect(path, read_only=read_only, enable_external_access=False)
+    db = ibis.duckdb.connect(path, read_only=read_only, enable_external_access=False)
+    db.raw_sql(f"SET home_directory='{private_folder}'")
+    return db
 
 
 def get_http_duckdb_connection(data_source, name, db_name):
