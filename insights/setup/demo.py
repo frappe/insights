@@ -3,7 +3,6 @@
 
 import os
 import shutil
-from contextlib import contextmanager
 
 import frappe
 
@@ -71,10 +70,12 @@ class DemoDataFactory:
 
         self.data_source = frappe.get_doc("Insights Data Source v3", "demo_data")
         if self.data_source.database_type != "DuckDB":
-            self.data_source.db_set({
-                "database_type": "DuckDB",
-                "database_name": "insights_demo_data",
-            })
+            self.data_source.db_set(
+                {
+                    "database_type": "DuckDB",
+                    "database_name": "insights_demo_data",
+                }
+            )
 
     def demo_data_exists(self):
         tables = get_data_source_tables(self.data_source.name)
@@ -178,15 +179,4 @@ class DemoDataFactory:
         with open(fixture_path + "/sample_workbook.json") as f:
             sample_workbook = f.read()
 
-        with admin_session():
-            import_workbook(frappe.parse_json(sample_workbook))
-
-
-@contextmanager
-def admin_session():
-    current_user = frappe.session.user
-    frappe.set_user("Administrator")
-    try:
-        yield
-    finally:
-        frappe.set_user(current_user)
+        import_workbook(frappe.parse_json(sample_workbook))
