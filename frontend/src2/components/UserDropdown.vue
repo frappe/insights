@@ -8,8 +8,8 @@
 						props.isCollapsed
 							? 'w-auto px-0'
 							: open
-							? 'w-52 bg-white px-2 shadow-sm'
-							: 'w-52 px-2 hover:bg-gray-200'
+							  ? 'w-52 bg-white px-2 shadow-sm'
+							  : 'w-52 px-2 hover:bg-gray-200'
 					"
 				>
 					<img
@@ -27,7 +27,11 @@
 					>
 						<div class="text-base font-medium leading-none text-gray-900">Insights</div>
 						<div class="mt-1 text-sm leading-none text-gray-700">
-							{{ session.user.full_name }}
+							{{
+								session.user.full_name == 'Administrator'
+									? __(session.user.full_name)
+									: session.user.full_name
+							}}
 						</div>
 					</div>
 					<div
@@ -82,6 +86,7 @@
 						loading: loggingInToFC,
 						onClick() {
 							loginToFC()
+
 							showLoginToFCDialog.value = false
 						},
 					},
