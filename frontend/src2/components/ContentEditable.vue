@@ -16,6 +16,7 @@
 
 <script setup>
 import { onMounted, ref, watch } from 'vue'
+import { useDebounceFn } from '@vueuse/core'
 
 function replaceAll(str, search, replacement) {
 	return str.split(search).join(replacement)
@@ -66,13 +67,24 @@ function valuePropPresent() {
 	return props.value != undefined
 }
 
-function update(event) {
-	if (event == 'blur') emit('blur', currentContent())
+function emitContent(value) {
 	if (valuePropPresent()) {
-		emit('change', currentContent())
+		emit('change', value)
 	} else {
-		emit('update:modelValue', currentContent())
+		emit('update:modelValue', value)
 	}
+}
+
+const debouncedEmit = useDebounceFn(emitContent, 100)
+
+function update(event) {
+	if (event == 'blur') {
+		debouncedEmit.cancel()
+		emit('blur', currentContent())
+		emitContent(currentContent())
+		return
+	}
+	debouncedEmit(currentContent())
 }
 
 function onPaste(event) {
@@ -96,20 +108,24 @@ onMounted(() => {
 	updateContent(valuePropPresent() ? props.value : props.modelValue ?? '')
 })
 
+function isFocused() {
+	return document.activeElement === element.value
+}
+
 watch(
 	() => props.modelValue ?? props.value,
 	(newval, oldval) => {
-		if (newval != currentContent()) {
+		if (!isFocused() && newval != currentContent()) {
 			updateContent(newval ?? '')
 		}
-	}
+	},
 )
 
 watch(
 	() => props.noHtml,
 	(newval, oldval) => {
 		updateContent(props.modelValue ?? '')
-	}
+	},
 )
 
 watch(
@@ -117,7 +133,7 @@ watch(
 	(newval, oldval) => {
 		updateContent(props.modelValue ?? '')
 	},
-	{ flush: 'post' }
+	{ flush: 'post' },
 )
 </script>
 
