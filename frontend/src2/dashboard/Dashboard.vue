@@ -24,6 +24,9 @@ function openWorkbook() {
 	router.push(`/workbook/${dashboard.doc.workbook}`)
 }
 await waitUntil(() => dashboard.isloaded)
+
+document.title = `${dashboard.doc.title} | Insights`
+
 const canOpenWorkbook = ref(dashboard.doc.has_workbook_access)
 
 const dashboardContainer = ref<HTMLElement | null>(null)
