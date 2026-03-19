@@ -5,6 +5,7 @@ import { MoreHorizontal, RefreshCcw, SearchIcon } from 'lucide-vue-next'
 import { h, ref, watchEffect } from 'vue'
 import useDataSourceStore from './data_source'
 import useTableStore, { DataSourceTable } from './tables'
+import { __ } from '../translation'
 
 const props = defineProps<{ name: string }>()
 
@@ -24,7 +25,7 @@ function updateTablesList() {
 const listOptions = ref({
 	columns: [
 		{
-			label: 'Table Name',
+			label: __('Table Name'),
 			key: 'table_name',
 		},
 	],
@@ -36,8 +37,8 @@ const listOptions = ref({
 			path: `/data-source/${props.name}/${table.table_name}`,
 		}),
 		emptyState: {
-			title: 'No Tables Found',
-			description: 'No tables found for the selected data source.',
+			title: __('No Tables Found'),
+			description: __('No tables found for the selected data source.'),
 			button: {
 				label: 'Refresh',
 				iconLeft: 'refresh-ccw',
@@ -61,7 +62,7 @@ watchEffect(() => {
 	<header class="flex h-12 items-center justify-between border-b py-2.5 pl-5 pr-2">
 		<Breadcrumbs
 			:items="[
-				{ label: 'Data Sources', route: '/data-source' },
+				{ label: __('Data Sources'), route: '/data-source' },
 				{ label: dataSource?.title || props.name, route: `/data-source/${props.name}` },
 			]"
 		/>
@@ -78,7 +79,7 @@ watchEffect(() => {
 			<Dropdown
 				:options="[
 					{
-						label: 'Update Tables',
+						label: __('Update Tables'),
 						onClick: () =>
 							tableStore
 								.updateDataSourceTables(props.name)
@@ -91,7 +92,7 @@ watchEffect(() => {
 					},
 					dataSource?.is_frappe_db
 						? {
-								label: 'Update Table Links',
+								label: __('Update Table Links'),
 								onClick: () => tableStore.updateTableLinks(props.name),
 								icon: () =>
 									h(RefreshCcw, {
