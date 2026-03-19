@@ -27,8 +27,13 @@ def get_local_duckdb_connection(db_name, read_only=True):
         db = ibis.duckdb.connect(path)
         db.disconnect()
 
-    db = ibis.duckdb.connect(path, read_only=read_only, enable_external_access=False)
+    enable_external_access = not read_only
+    db = ibis.duckdb.connect(path, read_only=read_only, enable_external_access=enable_external_access)
     db.raw_sql(f"SET home_directory='{private_folder}'")
+
+    if enable_external_access:
+        db.raw_sql(f"SET allowed_directories = ['{private_folder}']")
+
     return db
 
 
