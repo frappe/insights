@@ -1,5 +1,4 @@
 <template>
-	<p v-if="props.hideLineNumbers" class="font-mono text-gray-600 pl-2">=</p>
 	<codemirror
 		:tab-size="2"
 		:disabled="readOnly"
@@ -23,7 +22,8 @@ import { javascript } from '@codemirror/lang-javascript'
 import { python } from '@codemirror/lang-python'
 import { MySQL, sql } from '@codemirror/lang-sql'
 import { syntaxTree } from '@codemirror/language'
-import { EditorView } from '@codemirror/view'
+import { linter } from '@codemirror/lint'
+import { Decoration, EditorView, ViewPlugin } from '@codemirror/view'
 import { onMounted, ref, watch } from 'vue'
 import { Codemirror } from 'vue-codemirror'
 import { tomorrow } from 'thememirror'
@@ -70,6 +70,14 @@ const props = defineProps({
 		type: Boolean,
 		default: true,
 	},
+	columnNames: {
+		type: Array,
+		default: () => [],
+	},
+	validationErrors: {
+		type: Array,
+		default: () => [],
+	},
 })
 const emit = defineEmits(['inputChange', 'viewUpdate', 'focus', 'blur'])
 
@@ -109,10 +117,88 @@ const language =
 					tables: props.tables,
 		    })
 
-const extensions = [language, closeBrackets(), tomorrow]
+const columnHighlighter = ViewPlugin.fromClass(
+	class {
+		decorations
+
+		constructor(view) {
+			this.decorations = this.buildDecorations(view)
+		}
+
+		update(update) {
+			if (update.docChanged || update.viewportChanged) {
+				this.decorations = this.buildDecorations(update.view)
+			}
+		}
+
+		buildDecorations(view) {
+			if (!props.columnNames || props.columnNames.length === 0) {
+				return Decoration.none
+			}
+
+			const decorations = []
+			const columnSet = new Set(props.columnNames)
+			const doc = view.state.doc
+
+			for (let i = 1; i <= doc.lines; i++) {
+				const line = doc.line(i)
+				const text = line.text
+
+				// match only whole words ie `signups` but not `signups_today`
+				const wordRegex = /\b\w+\b/g
+				let match
+
+				while ((match = wordRegex.exec(text)) !== null) {
+					const word = match[0]
+					if (columnSet.has(word)) {
+						const from = line.from + match.index
+						const to = from + word.length
+						decorations.push(
+							Decoration.mark({
+								class: 'cm-column-highlight',
+							}).range(from, to),
+						)
+					}
+				}
+			}
+
+			return Decoration.set(decorations)
+		}
+	},
+	{
+		decorations: (v) => v.decorations,
+	},
+)
+
+const validationLinter = linter((view) => {
+	const diagnostics = []
+
+	for (const error of props.validationErrors) {
+		if (!error.line) continue
+		const line = view.state.doc.line(error.line)
+		const from = error.column ? line.from + error.column - 1 : line.from
+		const to = error.column ? from + 1 : line.to
+
+		diagnostics.push({
+			from: Math.max(0, from),
+			to: Math.min(view.state.doc.length, to),
+			severity: 'error',
+			message: error.message + (error.hint ? `\n${error.hint}` : ''),
+		})
+	}
+	return diagnostics
+})
+
+const extensions = [language, closeBrackets(), tomorrow, validationLinter]
+
 if (props.multiLine) {
 	extensions.push(EditorView.lineWrapping)
 }
+
+if (props.columnNames && props.columnNames.length > 0) {
+	extensions.push(columnHighlighter)
+}
+
 const autocompletionOptions = {
 	activateOnTyping: true,
 	closeOnBlur: false,

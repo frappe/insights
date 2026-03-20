@@ -3,6 +3,7 @@ import { ChevronDown, SearchIcon } from 'lucide-vue-next'
 import { computed, inject, ref, watchEffect } from 'vue'
 import DraggableList from '../../components/DraggableList.vue'
 import { ColumnOption, QueryResultColumn, SelectArgs } from '../../types/query.types'
+import { __ } from '../../translation'
 import { Query } from '../query'
 import DataTypeIcon from './DataTypeIcon.vue'
 
@@ -40,7 +41,7 @@ const confirmDisabled = computed(
 	() =>
 		selectedColumns.value.length === 0 ||
 		selectedColumns.value.map((c) => c.name).join() ===
-			query.result.columns.map((c) => c.name).join()
+			query.result.columns.map((c) => c.name).join(),
 )
 function confirmSelection() {
 	emit('select', {
@@ -58,16 +59,16 @@ function confirmSelection() {
 		v-model="showDialog"
 		:options="{
 			size: 'sm',
-			title: 'Select Columns',
+			title: __('Select Columns'),
 			actions: [
 				{
-					label: 'Confirm',
+					label: __('Confirm'),
 					variant: 'solid',
 					disabled: confirmDisabled,
 					onClick: confirmSelection,
 				},
 				{
-					label: 'Cancel',
+					label: __('Cancel'),
 					onClick: () => (showDialog = false),
 				},
 			],
@@ -79,7 +80,7 @@ function confirmSelection() {
 					class="flex-shrink-0"
 					:multiple="true"
 					:options="columnOptions"
-					placeholder="Add column"
+					:placeholder="__('Add column')"
 					:modelValue="selectedColumns.map((c) => c.name)"
 					@update:modelValue="addColumns"
 				>
@@ -88,7 +89,7 @@ function confirmSelection() {
 							<template #prefix>
 								<SearchIcon class="h-4 w-4 text-gray-500" stroke-width="1.5" />
 							</template>
-							<span class="flex-1 text-gray-500">Add column</span>
+							<span class="flex-1 text-gray-500">{{ __('Add column') }}</span>
 							<template #suffix>
 								<ChevronDown
 									class="ml-auto h-4 w-4 text-gray-500"
@@ -104,7 +105,7 @@ function confirmSelection() {
 						v-model:items="selectedColumns"
 						:item-key="'name'"
 						group="columns"
-						empty-text="No columns selected"
+						:empty-text="__('No columns selected')"
 					>
 						<template #item-content="{ item }">
 							<div class="flex items-center gap-1.5">
@@ -116,7 +117,7 @@ function confirmSelection() {
 				</div>
 
 				<p class="flex-shrink-0 bg-white pt-1.5 text-sm text-gray-500">
-					{{ selectedColumns.length }} columns selected
+					{{ __('{0} columns selected', String(selectedColumns.length)) }}
 				</p>
 			</div>
 		</template>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch, watchEffect } from 'vue'
+import { __ } from '../../translation'
 import { MapChartConfig } from '../../types/chart.types'
 import {
 	DimensionOption,
@@ -46,12 +47,12 @@ watchEffect(() => {
 })
 
 const discrete_dimensions = computed(() =>
-	props.dimensions.filter((d) => FIELDTYPES.DISCRETE.includes(d.data_type))
+	props.dimensions.filter((d) => FIELDTYPES.DISCRETE.includes(d.data_type)),
 )
 
 const map_options = [
-	{ label: 'World Map', value: 'world' },
-	{ label: 'India', value: 'india' },
+	{ label: __('World Map'), value: 'world' },
+	{ label: __('India'), value: 'india' },
 ]
 
 const showRegionMappingDialog = ref(false)
@@ -59,29 +60,25 @@ const unresolvedCount = ref<number | null>(null)
 const loadingUnresolved = ref(false)
 
 const userRegions = ref<string[]>([])
-const {dataQuery}  = useChart(props.chartName!)
+const { dataQuery } = useChart(props.chartName!)
 
 watchDebounced(
-    [
-        () => config.value.location_column?.dimension_name,
-        () => dataQuery.result?.rows
-    ],
-    ([columnName, rows]) => {
-        if (!columnName || !props.queryName || !rows || rows.length === 0) {
-            userRegions.value = []
-            return
-        }
+	[() => config.value.location_column?.dimension_name, () => dataQuery.result?.rows],
+	([columnName, rows]) => {
+		if (!columnName || !props.queryName || !rows || rows.length === 0) {
+			userRegions.value = []
+			return
+		}
 
-        try {
-            const mappedRegions = rows.map((row) => row[columnName])
-            userRegions.value = mappedRegions
-
-        } catch (error) {
-            console.error(error)
-            userRegions.value = []
-        }
-    },
-    { debounce:500, immediate: true }
+		try {
+			const mappedRegions = rows.map((row) => row[columnName])
+			userRegions.value = mappedRegions
+		} catch (error) {
+			console.error(error)
+			userRegions.value = []
+		}
+	},
+	{ debounce: 500, immediate: true },
 )
 
 const canCheckRegions = computed(() => {
@@ -140,7 +137,7 @@ watch(
 		if (canCheckRegions.value) {
 			checkUnresolvedRegions()
 		}
-	}
+	},
 )
 </script>
 

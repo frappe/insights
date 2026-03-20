@@ -22,7 +22,7 @@ const newColumn = ref(
 				name: 'new_column',
 				type: columnTypes[0],
 				expression: '',
-		  }
+		  },
 )
 
 const isValid = computed(() => {
@@ -50,6 +50,7 @@ function resetNewColumn() {
 
 <template>
 	<Dialog
+		:options="{ size: '2xl' }"
 		:modelValue="showDialog"
 		@after-leave="resetNewColumn"
 		@close="!newColumn.expression && (showDialog = false)"

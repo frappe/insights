@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { call } from 'frappe-ui'
+import { __ } from '../translation'
 import { ref } from 'vue'
 import { createToast } from '../helpers/toasts'
 import DatePickerControl from '../query/components/DatePickerControl.vue'
@@ -18,14 +19,14 @@ async function setupDemoData() {
 		await call('insights.setup.setup_wizard.setup_demo_data')
 		session.user.has_demo_data = true
 		createToast({
-			title: 'Demo Data Ready',
-			message: 'Sample data and workbook have been set up successfully',
+			title: __('Demo Data Ready'),
+			message: __('Sample data and workbook have been set up successfully'),
 			variant: 'success',
 		})
 	} catch {
 		createToast({
-			title: 'Setup Failed',
-			message: 'Failed to setup demo data',
+			title: __('Setup Failed'),
+			message: __('Failed to setup demo data'),
 			variant: 'error',
 		})
 	} finally {

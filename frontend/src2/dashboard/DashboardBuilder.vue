@@ -10,6 +10,7 @@ import DashboardChartSelectorDialog from './DashboardChartSelectorDialog.vue'
 import DashboardItem from './DashboardItem.vue'
 import DashboardShareDialog from './DashboardShareDialog.vue'
 import VueGridLayout from './VueGridLayout.vue'
+import { __ } from '../translation'
 
 const props = defineProps<{
 	dashboard_name: string
@@ -139,20 +140,20 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 						:button="{ icon: 'more-horizontal', variant: 'outline' }"
 						:options="[
 							{
-								label: 'Force Refresh',
+								label: __('Force Refresh'),
 								icon: RefreshCcw,
 								onClick: () => dashboard.refresh(true),
 							},
 							dashboard.editing
 								? {
-										label: 'Compact Layout',
+										label: __('Compact Layout'),
 										icon: verticalCompact ? 'check-square' : 'square',
 										onClick: () => (verticalCompact = !verticalCompact),
 								  }
 								: null,
 							dashboard.editing
 								? {
-										label: 'Reset Layout',
+										label: __('Reset Layout'),
 										icon: 'refresh-ccw',
 										onClick: () => (
 											dashboard.discard(), (dashboard.editing = false)

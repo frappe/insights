@@ -1,4 +1,5 @@
 import { defineAsyncComponent } from 'vue'
+import { __ } from '../translation'
 
 const NumberTypes = ['Integer', 'Decimal']
 const TextTypes = ['Text', 'String', 'JSON', 'Array']
@@ -15,16 +16,16 @@ export const FIELDTYPES = {
 }
 
 export const COLUMN_TYPES = [
-	{ label: 'Auto', value: 'Auto' },
-	{ label: 'String', value: 'String' },
-	{ label: 'Text', value: 'Text' },
-	{ label: 'Integer', value: 'Integer' },
-	{ label: 'Decimal', value: 'Decimal' },
-	{ label: 'Date', value: 'Date' },
-	{ label: 'Time', value: 'Time' },
-	{ label: 'Datetime', value: 'Datetime' },
-	{ label: 'JSON', value: 'JSON' },
-	{ label: 'Array', value: 'Array' },
+	{ label: __('Auto'), value: 'Auto' },
+	{ label: __('String'), value: 'String' },
+	{ label: __('Text'), value: 'Text' },
+	{ label: __('Integer'), value: 'Integer' },
+	{ label: __('Decimal'), value: 'Decimal' },
+	{ label: __('Date'), value: 'Date' },
+	{ label: __('Time'), value: 'Time' },
+	{ label: __('Datetime'), value: 'Datetime' },
+	{ label: __('JSON'), value: 'JSON' },
+	{ label: __('Array'), value: 'Array' },
 ] as const
 
 export const FILTER_TYPES = ['String', 'Number', 'Date'] as const
@@ -32,43 +33,43 @@ export type FilterType = typeof FILTER_TYPES[number]
 
 export const joinTypes = [
 	{
-		label: 'Inner',
+		label: __('Inner'),
 		icon: defineAsyncComponent(() => import('../components/Icons/JoinInnerIcon.vue')),
 		value: 'inner',
-		description: 'Keep only rows that have matching values in both tables',
+		description: __('Keep only rows that have matching values in both tables'),
 	},
 	{
-		label: 'Left',
+		label: __('Left'),
 		icon: defineAsyncComponent(() => import('../components/Icons/JoinLeftIcon.vue')),
 		value: 'left',
-		description: 'Keep all existing rows and include matching rows from the new table',
+		description: __('Keep all existing rows and include matching rows from the new table'),
 	},
 	{
-		label: 'Right',
+		label: __('Right'),
 		icon: defineAsyncComponent(() => import('../components/Icons/JoinRightIcon.vue')),
 		value: 'right',
 		description:
 			'Keep all rows from the new table and include matching rows from the existing table',
 	},
 	{
-		label: 'Full',
+		label: __('Full'),
 		icon: defineAsyncComponent(() => import('../components/Icons/JoinFullIcon.vue')),
 		value: 'full',
-		description: 'Keep all rows from both tables',
+		description: __('Keep all rows from both tables'),
 	},
 ] as const
 
 
 export const granularityOptions = [
-	{ label: 'Second', value: 'second' },
-	{ label: 'Minute', value: 'minute' },
-	{ label: 'Hour', value: 'hour' },
-	{ label: 'Day', value: 'day'},
-	{ label: 'Week', value: 'week'},
-	{ label: 'Month', value: 'month'},
-	{ label: 'Quarter', value: 'quarter'},
-	{ label: 'Year', value: 'year'},
-	{ label: 'Fiscal Year', value: 'fiscal_year'},
+	{ label: __('Second'), value: 'second' },
+	{ label: __('Minute'), value: 'minute' },
+	{ label: __('Hour'), value: 'hour' },
+	{ label: __('Day'), value: 'day'},
+	{ label: __('Week'), value: 'week'},
+	{ label: __('Month'), value: 'month'},
+	{ label: __('Quarter'), value: 'quarter'},
+	{ label: __('Year'), value: 'year'},
+	{ label: __('Fiscal Year'), value: 'fiscal_year'},
 ] as const
 
 export type GranularityType = typeof granularityOptions[number]['value']

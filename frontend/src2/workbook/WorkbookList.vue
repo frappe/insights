@@ -9,6 +9,7 @@ import useUserStore from '../users/users'
 import useWorkbook, { newWorkbookName } from './workbook'
 import useWorkbooks from './workbooks'
 import { useMagicKeys, whenever } from '@vueuse/core'
+import { __ } from '../translation'
 
 const router = useRouter()
 const workbookStore = useWorkbooks()
@@ -38,12 +39,12 @@ const userStore = useUserStore()
 const listOptions = ref({
 	columns: [
 		{
-			label: 'Title',
+			label: __('Title'),
 			key: 'title',
 			width: 4,
 		},
 		{
-			label: 'Access',
+			label: __('Access'),
 			key: 'shared_with',
 			width: 2,
 			getLabel: (props: any) => {
@@ -70,7 +71,7 @@ const listOptions = ref({
 			},
 		},
 		{
-			label: 'Views',
+			label: __('Views'),
 			key: 'views',
 			width: 1.5,
 			getLabel: (props: any) => {},
@@ -85,7 +86,7 @@ const listOptions = ref({
 			},
 		},
 		{
-			label: 'Owner',
+			label: __('Owner'),
 			key: 'owner',
 			width: 2,
 			getLabel(props: any) {
@@ -99,7 +100,7 @@ const listOptions = ref({
 				return <Avatar size="md" label={workbook.owner} image={user?.user_image} />
 			},
 		},
-		{ label: 'Modified', key: 'modified_from_now', width: 2 },
+		{ label: __('Modified'), key: 'modified_from_now', width: 2 },
 	],
 	rows: workbooks,
 	rowKey: 'name',
@@ -109,10 +110,10 @@ const listOptions = ref({
 			path: `/workbook/${workbook.name}`,
 		}),
 		emptyState: {
-			title: 'No workbooks.',
-			description: 'No workbooks to display.',
+			title: __('No Workbooks'),
+			description: __('No workbooks to display.'),
 			button: {
-				label: 'New Workbook',
+				label: __('New Workbook'),
 				variant: 'solid',
 				onClick: openNewWorkbook,
 				loading: creatingWorkbook,
@@ -144,10 +145,10 @@ watchEffect(() => {
 
 <template>
 	<header class="flex h-12 items-center justify-between border-b py-2.5 pl-5 pr-2">
-		<Breadcrumbs :items="[{ label: 'Workbooks', route: '/workbook' }]" />
+		<Breadcrumbs :items="[{ label: __('Workbooks'), route: '/workbook' }]" />
 		<div class="flex items-center gap-2">
 			<Button
-				label="New Workbook"
+				:label="__('New Workbook')"
 				variant="solid"
 				@click="openNewWorkbook"
 				:loading="creatingWorkbook"
@@ -162,7 +163,7 @@ watchEffect(() => {
 	<div class="mb-4 flex h-full flex-col gap-3 overflow-auto px-5 py-3">
 		<div class="flex gap-2 overflow-visible py-1">
 			<FormControl
-				placeholder="Search by Title"
+				:placeholder="__('Search by Title')"
 				v-model="searchQuery"
 				:debounce="300"
 				autocomplete="off"
