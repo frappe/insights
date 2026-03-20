@@ -4,6 +4,7 @@ import { computed, reactive, unref } from 'vue'
 import Checkbox from '../../components/Checkbox.vue'
 import { waitUntil, wheneverChanges } from '../../helpers'
 import { createToast } from '../../helpers/toasts'
+import { __ } from '../../translation'
 import useAlertStore from '../alert'
 import { Query } from '../query'
 import ExpressionEditor from './ExpressionEditor.vue'
@@ -37,7 +38,7 @@ wheneverChanges(
 		alert.doc.custom_condition = 0
 		alert.doc.condition = `q['${filterCondition.left}'] ${filterCondition.operator} ${filterCondition.right}`
 	},
-	{ deep: true }
+	{ deep: true },
 )
 
 const isValidAlert = computed(() => {
@@ -66,8 +67,10 @@ function updateAlert() {
 	alert.doc.disabled = 0
 	return alert.save().then(() => {
 		createToast({
-			title: isNew ? 'Alert Created' : 'Alert Updated',
-			message: `Alert "${alert.doc.title}" has been ${isNew ? 'created' : 'updated'}.`,
+			title: isNew ? __('Alert Created') : __('Alert Updated'),
+			message: isNew
+				? __(`Alert "{0}" has been created.`, alert.doc.title)
+				: __(`Alert "{0}" has been updated.`, alert.doc.title),
 			variant: 'success',
 		})
 		show.value = false
@@ -81,8 +84,8 @@ function testSendAlert() {
 	}
 	return alert.call('test_alert').then(() => {
 		createToast({
-			title: 'Alert Sent',
-			message: `Alert "${alert.doc.title}" has been sent.`,
+			title: __('Alert Sent'),
+			message: __(`Alert "{0}" has been sent.`, alert.doc.title),
 			variant: 'success',
 		})
 	})
@@ -92,10 +95,10 @@ function toggleAlert() {
 	alert.doc.disabled = alert.doc.disabled ? 0 : 1
 	return alert.save().then(() => {
 		createToast({
-			title: alert.doc.disabled ? 'Alert Disabled' : 'Alert Enabled',
-			message: `Alert "${alert.doc.title}" has been ${
-				alert.doc.disabled ? 'disabled' : 'enabled'
-			}.`,
+			title: alert.doc.disabled ? __('Alert Disabled') : __('Alert Enabled'),
+			message: alert.doc.disabled
+				? __(`Alert "{0}" has been disabled.`, alert.doc.title)
+				: __(`Alert "{0}" has been enabled.`, alert.doc.title),
 			variant: 'success',
 		})
 	})
@@ -107,23 +110,23 @@ function toggleAlert() {
 		v-model="show"
 		:disableOutsideClickToClose="alert.isdirty || alert.islocal"
 		:options="{
-			title: 'Setup Alert',
+			title: __('Setup Alert'),
 			size: '2xl',
 			actions: [
 				{
-					label: 'Send Test Alert',
+					label: __('Send Test Alert'),
 					disabled: !isValidAlert || alert.loading || alert.saving,
 					loading: alert.loading,
 					onClick: testSendAlert,
 				},
 				{
-					label: alert.doc.disabled ? 'Enable Alert' : 'Disable Alert',
+					label: alert.doc.disabled ? __('Enable Alert') : __('Disable Alert'),
 					disabled: alert.loading || alert.saving,
 					loading: alert.loading,
 					onClick: toggleAlert,
 				},
 				{
-					label: alert.islocal ? 'Create Alert' : 'Update Alert',
+					label: alert.islocal ? __('Create Alert') : __('Update Alert'),
 					variant: 'solid',
 					disabled: !isValidAlert || !alert.isdirty || alert.saving || alert.loading,
 					loading: alert.saving,
@@ -138,64 +141,66 @@ function toggleAlert() {
 					<div class="flex flex-1 flex-col gap-3">
 						<FormControl
 							type="text"
-							label="Alert Name"
+							:label="__('Alert Name')"
 							v-model="alert.doc.title"
-							placeholder="e.g. Low Inventory"
+							:placeholder="__('e.g. Low Inventory')"
 						/>
 						<FormControl
 							type="select"
-							label="Frequency"
+							:label="__('Frequency')"
 							v-model="alert.doc.frequency"
 							:options="[
-								{ value: 'Hourly', label: 'Check once an hour' },
-								{ value: 'Daily', label: 'Check once a day' },
-								{ value: 'Weekly', label: 'Check once a week' },
-								{ value: 'Monthly', label: 'Check once a month' },
-								{ value: 'Cron', label: 'Cron' },
+								{ value: 'Hourly', label: __('Check once an hour') },
+								{ value: 'Daily', label: __('Check once a day') },
+								{ value: 'Weekly', label: __('Check once a week') },
+								{ value: 'Monthly', label: __('Check once a month') },
+								{ value: 'Cron', label: __('Cron') },
 							]"
 						/>
 						<FormControl
 							v-if="alert.doc.frequency === 'Cron'"
 							type="text"
-							label="Cron"
+							:label="__('Cron')"
 							v-model="alert.doc.cron_format"
-							placeholder="e.g. 0 0 12 * * ?"
+							:placeholder="__('e.g. 0 0 12 * * ?')"
 						/>
 					</div>
 					<div class="flex flex-1 flex-col gap-3">
 						<FormControl
 							type="select"
-							label="Channel"
+							:label="__('Channel')"
 							v-model="alert.doc.channel"
 							:options="[
-								{ label: 'Email', value: 'Email' },
+								{ label: __('Email'), value: 'Email' },
 								// { label: 'Telegram', value: 'Telegram' },
 							]"
 						/>
 						<FormControl
 							v-if="alert.doc.channel === 'Email'"
 							type="text"
-							label="Recipients"
+							:label="__('Recipients')"
 							v-model="alert.doc.recipients"
-							placeholder="e.g. john@example.com, henry@example.com"
+							:placeholder="__('e.g. john@example.com, henry@example.com')"
 						/>
 						<FormControl
 							v-if="alert.doc.channel === 'Telegram'"
 							type="text"
-							label="Telegram Chat ID"
+							:label="__('Telegram Chat ID')"
 							v-model="alert.doc.telegram_chat_id"
-							placeholder="e.g. 123456789"
+							:placeholder="__('e.g. 123456789')"
 						/>
 					</div>
 				</div>
 
 				<div class="flex flex-col">
-					<label class="mb-1.5 block text-xs text-ink-gray-5">Send alert when</label>
+					<label class="mb-1.5 block text-xs text-ink-gray-5">{{
+						__('Send alert when')
+					}}</label>
 					<div class="flex gap-4" v-if="!alert.doc.custom_condition">
 						<FormControl
 							type="select"
 							class="flex-1"
-							placeholder="Select Field"
+							:placeholder="__('Select Field')"
 							v-model="filterCondition.left"
 							:options="props.query.result.columnOptions"
 						/>
@@ -223,14 +228,14 @@ function toggleAlert() {
 					</div>
 					<Checkbox
 						class="mt-1.5"
-						label="Use Custom Condition"
+						:label="__('Use Custom Condition')"
 						v-model="alert.doc.custom_condition"
 					/>
 				</div>
 
 				<div>
 					<Textarea
-						label="Message"
+						:label="__('Message')"
 						class="min-h-40 text-p-sm"
 						v-model="alert.doc.message"
 						:placeholder="`e.g.
@@ -242,8 +247,11 @@ Thanks,
 					/>
 
 					<div class="mt-2 text-p-sm text-gray-600">
-						You can use markdown to format the message. Use double asterisks (**) for
-						bold text. You can use the following fields in the message:
+						{{
+							__(
+								'You can use markdown to format the message. Use double asterisks (**) for bold text. You can use the following fields in the message:',
+							)
+						}}
 
 						<div
 							v-html="

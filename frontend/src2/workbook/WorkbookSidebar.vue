@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Braces, LayoutPanelTop, ScrollText, Table2 } from 'lucide-vue-next'
+import { __ } from '../translation'
 import { computed, inject } from 'vue'
 import { useRoute } from 'vue-router'
 import WorkbookSidebarListSection from './WorkbookSidebarListSection.vue'
@@ -25,7 +26,7 @@ const activeQueryName = computed(() => {
 	>
 		<WorkbookSidebarFolders
 			v-bind="{
-				title: 'Queries',
+				title: __('Queries'),
 				emptyMessage: 'No queries',
 				items: workbook.doc.queries,
 				itemKey: 'name',
@@ -53,7 +54,7 @@ const activeQueryName = computed(() => {
 
 		<WorkbookSidebarFolders
 			v-bind="{
-				title: 'Charts',
+				title: __('Charts'),
 				emptyMessage: 'No charts',
 				items: workbook.doc.charts,
 				itemKey: 'name',
@@ -71,7 +72,7 @@ const activeQueryName = computed(() => {
 
 		<WorkbookSidebarListSection
 			v-bind="{
-				title: 'Dashboards',
+				title: __('Dashboards'),
 				emptyMessage: 'No dashboards',
 				items: workbook.doc.dashboards,
 				itemKey: 'name',

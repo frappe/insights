@@ -2,6 +2,7 @@ import { call } from 'frappe-ui'
 import { reactive, ref } from 'vue'
 import { createToast } from '../helpers/toasts'
 import { showErrorToast } from '../helpers'
+import { __ } from '../translation'
 
 export type User = {
 	name: ''
@@ -44,11 +45,11 @@ function inviteUsers(emails: string[]) {
 		.then(() => {
 			getUsers()
 			createToast({
-				title: 'Invitation Sent',
+				title: __('Invitation Sent'),
 				message:
 					emails.length === 1
-						? `Invitation sent to ${emails[0]}`
-						: `Invitations sent to ${emails.length} users`,
+						? __(`Invitation sent to {0}`, emails[0])
+						: __(`Invitations sent to {0} users`, String(emails.length)),
 				variant: 'success',
 			})
 		})
@@ -77,8 +78,8 @@ function updateUser(email: string, data: Partial<UpdateUser>) {
 		.then(() => {
 			getUsers()
 			createToast({
-				title: 'User Updated',
-				message: 'User updated successfully',
+				title: __('User Updated'),
+				message: __('User updated successfully'),
 				variant: 'success',
 			})
 		})

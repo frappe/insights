@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { cachedCall } from '../../helpers'
 import { COLUMN_TYPES, FIELDTYPES } from '../../helpers/constants'
 import ExpressionEditor from '../../query/components/ExpressionEditor.vue'
 import { expression } from '../../query/helpers'
+import { __ } from '../../translation'
 import { ColumnOption, ExpressionMeasure, MeasureDataType } from '../../types/query.types'
 
 const props = defineProps<{
@@ -34,16 +36,43 @@ const isValid = computed(() => {
 	return newMeasure.value.name && newMeasure.value.type && newMeasure.value.expression.trim()
 })
 
-function confirmCalculation() {
+const validationState = ref<'unknown' | 'validating' | 'valid' | 'invalid'>('unknown')
+const validationErrors = ref<Array<{ line?: number; column?: number; message: string }>>([])
+
+async function confirmCalculation() {
 	if (!isValid.value) return
-	emit('select', {
-		measure_name: newMeasure.value.name,
-		data_type: newMeasure.value.type,
-		expression: expression(newMeasure.value.expression),
-	})
-	resetNewMeasure()
-	showDialog.value = false
+	validationState.value = 'validating'
+	validationErrors.value = []
+	try {
+		const res: any = await cachedCall(
+			'insights.insights.doctype.insights_data_source_v3.ibis.utils.validate_expression',
+			{
+				expression: newMeasure.value.expression,
+				column_options: JSON.stringify(props.columnOptions),
+			},
+		)
+
+		if (!res || !res.is_valid) {
+			validationState.value = 'invalid'
+			validationErrors.value = res?.errors || [{ message: __('Validation failed') }]
+			return
+		}
+
+		validationState.value = 'valid'
+		emit('select', {
+			measure_name: newMeasure.value.name,
+			data_type: newMeasure.value.type,
+			expression: expression(newMeasure.value.expression),
+		})
+		resetNewMeasure()
+		showDialog.value = false
+	} catch (e) {
+		console.error(e)
+		validationState.value = 'unknown'
+		validationErrors.value = [{ message: __('Unexpected validation error') }]
+	}
 }
+
 function resetNewMeasure() {
 	newMeasure.value = {
 		name: 'new_measure',
@@ -55,48 +84,78 @@ function resetNewMeasure() {
 
 <template>
 	<Dialog
+		:options="{ size: '2xl' }"
 		:modelValue="Boolean(showDialog)"
 		:disableOutsideClickToClose="true"
-		:options="{ title: 'Create Measure' }"
 		@after-leave="resetNewMeasure"
 		@close="showDialog = false"
 	>
-		<template #body-content>
-			<div class="flex flex-col gap-2">
-				<ExpressionEditor
-					v-model="newMeasure.expression"
-					:column-options="props.columnOptions"
-				/>
-				<div class="flex gap-2">
-					<FormControl
-						type="text"
-						class="flex-1"
-						label="Measure Name"
-						autocomplete="off"
-						placeholder="Measure Name"
-						v-model="newMeasure.name"
-					/>
-					<FormControl
-						type="select"
-						class="flex-1"
-						label="Data Type"
-						autocomplete="off"
-						:options="columnTypes"
-						v-model="newMeasure.type"
-					/>
+		<template #body>
+			<div class="bg-white px-4 pb-6 pt-5 sm:px-6">
+				<div class="flex items-center justify-between pb-4">
+					<h3 class="text-2xl font-semibold leading-6 text-gray-900">
+						{{ __('Create Measure') }}
+					</h3>
+					<Button variant="ghost" @click="showDialog = false" icon="x" size="md" />
 				</div>
-			</div>
-			<div class="mt-2 flex items-center justify-between gap-2">
-				<div></div>
-				<div class="flex items-center gap-2">
-					<Button
-						label="Confirm"
-						variant="solid"
-						:disabled="!isValid"
-						@click="confirmCalculation"
+
+				<div class="flex flex-col gap-2">
+					<ExpressionEditor
+						v-model="newMeasure.expression"
+						class="column-expression"
+						:column-options="props.columnOptions"
 					/>
+					<div class="flex gap-2">
+						<FormControl
+							type="text"
+							class="flex-1"
+							:label="__('Measure Name')"
+							autocomplete="off"
+							placeholder="Measure Name"
+							v-model="newMeasure.name"
+						/>
+						<FormControl
+							type="select"
+							class="flex-1"
+							:label="__('Data Type')"
+							autocomplete="off"
+							:options="columnTypes"
+							v-model="newMeasure.type"
+						/>
+					</div>
+				</div>
+
+				<div class="mt-2 flex items-center justify-between gap-2">
+					<div></div>
+					<div class="flex items-center gap-2">
+						<Button
+							:label="__('Confirm')"
+							variant="solid"
+							:disabled="!isValid || validationState === 'validating'"
+							@click="confirmCalculation"
+						/>
+					</div>
 				</div>
 			</div>
 		</template>
 	</Dialog>
 </template>
+
+<style lang="scss">
+div[data-dismissable-layer] {
+	border-radius: 0.75rem;
+}
+.column-expression {
+	.cm-column-highlight {
+		background-color: #ededed !important;
+		border-radius: 0.5rem !important;
+		padding: 1px 2px !important;
+		border: 1px solid #dedede !important;
+	}
+	.cm-scroller {
+		background-color: #ffffff !important;
+		border-radius: 0.5rem !important;
+		border: 1px solid #ededed !important;
+	}
+}
+</style>

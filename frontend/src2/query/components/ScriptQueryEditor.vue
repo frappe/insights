@@ -7,6 +7,7 @@ import ContentEditable from '../../components/ContentEditable.vue'
 import VariablesDialog from '../../components/VariablesDialog.vue'
 import { attachRealtimeListener, wheneverChanges } from '../../helpers'
 import session from '../../session'
+import { __ } from '../../translation'
 import { Query } from '../query'
 import QueryDataTable from './QueryDataTable.vue'
 
@@ -75,7 +76,9 @@ function handleSaveVariables(variables: any[]) {
 						v-if="showLogs"
 						class="flex h-full w-[30rem] flex-shrink-0 flex-col overflow-hidden bg-gray-50 p-3"
 					>
-						<div class="font-mono text-sm uppercase text-gray-600">Logs</div>
+						<div class="font-mono text-sm uppercase text-gray-600">
+							{{ __('Logs') }}
+						</div>
 						<div class="mt-2 flex w-full flex-col gap-2 overflow-y-auto font-mono">
 							<div v-for="(log, index) in scriptLogs" :key="index" class="flex gap-2">
 								<div class="text-gray-400">[{{ index + 1 }}]</div>
@@ -86,7 +89,7 @@ function handleSaveVariables(variables: any[]) {
 				</transition>
 			</div>
 			<div class="flex flex-shrink-0 gap-1 border-t p-1">
-				<Button @click="query.execute" label="Run">
+				<Button @click="query.execute" :label="__('Run')">
 					<template #prefix>
 						<Play class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
 					</template>
@@ -95,17 +98,17 @@ function handleSaveVariables(variables: any[]) {
 					:button="{ icon: MoreHorizontal }"
 					:options="[
 						{
-							label: 'Force Run',
+							label: __('Force Run'),
 							icon: Play,
 							onClick: () => query.execute(true),
 						},
 						{
-							label: 'Variables',
+							label: __('Variables'),
 							icon: Braces,
 							onClick: openVariablesDialog,
 						},
 						{
-							label: 'Logs',
+							label: __('Logs'),
 							icon: Bug,
 							onClick: () => (showLogs = !showLogs),
 						},

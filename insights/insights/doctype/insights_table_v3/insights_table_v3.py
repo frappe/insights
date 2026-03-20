@@ -12,7 +12,6 @@ from ibis import Table
 from ibis.backends.duckdb import Backend as DuckDBBackend
 
 import insights
-from insights import create_toast
 from insights.utils import InsightsDataSourcev3
 
 
