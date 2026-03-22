@@ -2,11 +2,25 @@
 # For license information, please see license.txt
 
 import os
+from contextlib import contextmanager
 from urllib.parse import urlparse
 
 import frappe
 import ibis
 from frappe.utils import get_files_path
+
+
+@contextmanager
+def external_access(allowed_dir: str):
+    """Create a short-lived DuckDB connection with file access restricted to a single directory"""
+    escaped_str = allowed_dir.replace("'", "''")
+    conn = ibis.duckdb.connect()
+    conn.raw_sql(f"SET home_directory='{escaped_str}'")
+    conn.raw_sql(f"SET allowed_directories = ['{escaped_str}']")
+    try:
+        yield conn
+    finally:
+        conn.disconnect()
 
 
 def get_duckdb_connection(data_source, read_only=True):
@@ -27,12 +41,8 @@ def get_local_duckdb_connection(db_name, read_only=True):
         db = ibis.duckdb.connect(path)
         db.disconnect()
 
-    enable_external_access = not read_only
-    db = ibis.duckdb.connect(path, read_only=read_only, enable_external_access=enable_external_access)
+    db = ibis.duckdb.connect(path, read_only=read_only, enable_external_access=False)
     db.raw_sql(f"SET home_directory='{private_folder}'")
-
-    if enable_external_access:
-        db.raw_sql(f"SET allowed_directories = ['{private_folder}']")
 
     return db
 
