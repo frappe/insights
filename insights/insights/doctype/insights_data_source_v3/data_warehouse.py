@@ -43,26 +43,12 @@ class Warehouse:
             db = ibis.duckdb.connect(path)
             db.disconnect()
 
-        db = ibis.duckdb.connect(path, read_only=read_only)
-
-        if not read_only:
-            self._configure_temp_directory_access(db)
+        db = ibis.duckdb.connect(path, read_only=read_only, enable_external_access=False)
 
         if database:
             db.raw_sql(f"USE '{database}'")
 
         return db
-
-    def _configure_temp_directory_access(self, db: DuckDBBackend) -> None:
-        tmp_dir = str(Path(tempfile.gettempdir())).replace("'", "''")
-
-        # Some environments start with external access already disabled.
-        # Best effort: try enabling it first, then configure directory allowlist.
-        with suppress(Exception):
-            db.raw_sql("SET enable_external_access = true")
-
-        db.raw_sql(f"SET allowed_directories = ['{tmp_dir}']")
-        db.raw_sql("SET enable_external_access = false")
 
     def create_database(self, database: str):
         with self.get_write_connection() as db:
@@ -181,21 +167,24 @@ class WarehouseTableWriter:
 
         total_rows = 0
         try:
-            with insights.warehouse.get_write_connection(self.database) as db:
-                self._log(f"Committing {len(self._parquet_files)} parquet files to '{self.table_name}'")
+            from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import (
+                external_access,
+            )
 
+            self._log(f"Committing {len(self._parquet_files)} parquet files to '{self.table_name}'")
+
+            with external_access(str(self._temp_dir)) as conn:
                 parquet_glob = str(self._temp_dir / "*.parquet")
-                merged = db.read_parquet(parquet_glob)
+                data = conn.read_parquet(parquet_glob).to_pyarrow()
+                total_rows = data.num_rows
 
+            with insights.warehouse.get_write_connection(self.database) as db:
                 if self.mode == "append" and self._table_exists(db):
-                    db.insert(self.table_name, merged)
+                    db.insert(self.table_name, data)
                 else:
-                    db.create_table(self.table_name, merged, schema=self.table_schema, overwrite=True)
+                    db.create_table(self.table_name, data, schema=self.table_schema, overwrite=True)
 
                 self._log("Commit completed.")
-
-                total_rows = merged.count().execute()
-                total_rows = int(total_rows)
 
             self._committed = True
         finally:
