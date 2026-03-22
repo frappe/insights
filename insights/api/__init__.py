@@ -2,7 +2,6 @@
 # For license information, please see license.txt
 
 import frappe
-import ibis
 from frappe.defaults import get_user_default, set_user_default
 from frappe.handler import is_valid_http_method, is_whitelisted
 from frappe.monitor import add_data_to_monitor
@@ -10,6 +9,7 @@ from frappe.monitor import add_data_to_monitor
 from insights.api.shared import is_public
 from insights.decorators import insights_whitelist, validate_type
 from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import (
+    external_access,
     get_duckdb_connection,
 )
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
@@ -107,35 +107,33 @@ def get_file_data(filename: str):
     file_name = file.file_name.split(".")[0]
     file_name = frappe.scrub(file_name)
 
-    con = ibis.duckdb.connect()
     private_folder = frappe.utils.get_files_path(is_private=1)
-    con.raw_sql(f"SET home_directory='{private_folder}'")
-    if ext in ["xlsx"]:
-        table = con.read_xlsx(file_path)
-    else:
-        table = con.read_csv(file_path, table_name=file_name)
 
-    count = table.count().execute()
-    columns = get_columns_from_schema(table.schema())
-    rows = table.head(50).execute().fillna("").to_dict(orient="records")
+    with external_access(private_folder) as conn:
+        if ext in ["xlsx"]:
+            table = conn.read_xlsx(file_path)
+        else:
+            table = conn.read_csv(file_path, table_name=file_name)
+
+        columns = get_columns_from_schema(table.schema())
+        rows = table.head(50).execute().fillna("").to_dict(orient="records")
 
     return {
         "tablename": file_name,
         "rows": rows,
         "columns": columns,
-        "total_rows": count,
+        "total_rows": len(rows),
     }
 
 
 @insights_whitelist()
 @validate_type
-def import_csv_data(filename: str):
+def import_csv_data(filename: str, tablename: str = ""):
     check_data_source_permission("uploads")
 
     file, ext = get_csv_file(filename)
     file_path = file.get_full_path()
-    table_name = file.file_name.split(".")[0]
-    table_name = frappe.scrub(table_name)
+    table_name = frappe.scrub(tablename) if tablename else frappe.scrub(file.file_name.split(".")[0])
 
     if not frappe.db.exists("Insights Data Source v3", "uploads"):
         uploads = frappe.new_doc("Insights Data Source v3")
@@ -148,15 +146,21 @@ def import_csv_data(filename: str):
         uploads.db_insert()
 
     ds = frappe.get_doc("Insights Data Source v3", "uploads")
-    db = get_duckdb_connection(ds, read_only=False)
+    private_folder = frappe.utils.get_files_path(is_private=1)
 
     try:
-        if ext in ["xlsx"]:
-            table = db.read_xlsx(file_path)
-            db.create_table(table_name, table, overwrite=True)
-        else:
-            table = db.read_csv(file_path, table_name=table_name)
-            db.create_table(table_name, table, overwrite=True)
+        with external_access(private_folder) as con:
+            if ext in ["xlsx"]:
+                table = con.read_xlsx(file_path)
+            else:
+                table = con.read_csv(file_path, table_name=table_name)
+            data = table.to_pyarrow()
+
+        db = get_duckdb_connection(ds, read_only=False)
+        try:
+            db.create_table(table_name, data, overwrite=True)
+        finally:
+            db.disconnect()
     except Exception as e:
         frappe.log_error(e)
         if ext in ["xlsx"]:
@@ -165,8 +169,6 @@ def import_csv_data(filename: str):
             )
         else:
             frappe.throw("Failed to read CSV data from uploaded file. Please try again.")
-    finally:
-        db.disconnect()
 
     InsightsTablev3.bulk_create(ds.name, [table_name])
 
