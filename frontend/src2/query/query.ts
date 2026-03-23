@@ -2,7 +2,7 @@ import { useDebouncedRefHistory } from '@vueuse/core'
 import { Buffer } from 'buffer'
 import { isEqual } from 'es-toolkit'
 import { call, dayjs } from 'frappe-ui'
-import { computed, reactive, ref, toRefs, unref } from 'vue'
+import { computed, reactive, ref, toRefs, unref, watch } from 'vue'
 import {
 	copy,
 	copyToClipboard,
@@ -125,9 +125,13 @@ export function makeQuery(name: string) {
 	const executing = ref(false)
 	const downloading = ref(false)
 	const currentDownloadToken = ref<number | null>(null)
+	const currentPage = ref(1)
+	const pageSize = ref(100)
 	let lastExecutionArgs: {
 		operations: Operation[]
 		adhoc_filters?: AdhocFilters
+		page?: number
+		page_size?: number
 	}
 
 	const adhocFilters = ref<AdhocFilters>()
@@ -147,6 +151,8 @@ export function makeQuery(name: string) {
 			isEqual(lastExecutionArgs, {
 				operations: currentOperations.value,
 				adhoc_filters: adhocFilters.value,
+				page: currentPage.value,
+				page_size: pageSize.value,
 			})
 		) {
 			return Promise.resolve()
@@ -158,6 +164,8 @@ export function makeQuery(name: string) {
 				active_operation_idx: activeOperationIdx.value,
 				adhoc_filters: adhocFilters.value,
 				force,
+				page: currentPage.value,
+				page_size: pageSize.value,
 			})
 			.then((response: any) => {
 				if (!response) return
@@ -165,7 +173,6 @@ export function makeQuery(name: string) {
 				result.value.executedSQL = response.sql
 				result.value.columns = response.columns
 				result.value.rows = response.rows
-				result.value.totalRowCount = 0
 				result.value.formattedRows = getFormattedRows(result.value, query.doc.operations)
 				result.value.columnOptions = result.value.columns.map((column) => ({
 					label: column.name,
@@ -185,8 +192,16 @@ export function makeQuery(name: string) {
 				lastExecutionArgs = {
 					operations: currentOperations.value,
 					adhoc_filters: adhocFilters.value,
+					page: currentPage.value,
+					page_size: pageSize.value,
 				}
 			})
+	}
+
+	function goToPage(page: number) {
+		if (page < 1) return
+		currentPage.value = page
+		execute()
 	}
 
 	const fetchingCount = ref(false)
@@ -960,6 +975,11 @@ export function makeQuery(name: string) {
 		toggleCondition: () => autoExecute.value,
 	})
 
+	watch(currentOperations, () => {
+		currentPage.value = 1
+		result.value.totalRowCount = 0
+	})
+
 	waitUntil(() => query.isloaded).then(() => {
 		wheneverChanges(
 			() => query.doc.title,
@@ -991,6 +1011,10 @@ export function makeQuery(name: string) {
 		executing,
 		fetchingCount,
 		result,
+
+		currentPage,
+		pageSize,
+		goToPage,
 
 		execute,
 		fetchResultCount,
