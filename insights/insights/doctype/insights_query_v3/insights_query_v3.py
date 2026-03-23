@@ -161,16 +161,25 @@ class InsightsQueryv3(Document):
 
     @frappe.whitelist()
     def execute(
-        self, active_operation_idx: int | None = None, adhoc_filters: dict | None = None, force: bool = False
+        self,
+        active_operation_idx: int | None = None,
+        adhoc_filters: dict | None = None,
+        force: bool = False,
+        page: int = 1,
+        page_size: int = 100,
     ):
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
 
-        limit = 100
+        limit = page_size
         for op in frappe.parse_json(self.operations):
             if op.get("limit"):
                 limit = op.get("limit")
                 break
+
+        offset = (page - 1) * limit if page > 1 else None
+        if offset is not None:
+            ibis_query = ibis_query.limit(limit, offset=offset)
 
         results, time_taken = execute_ibis_query(
             ibis_query,

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Button, FormControl, LoadingIndicator } from 'frappe-ui'
 import { ChevronLeft, ChevronRight, Plus, Search, Table2Icon } from 'lucide-vue-next'
-import { computed, nextTick, reactive, ref } from 'vue'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { createHeaders, formatNumber, getShortNumber } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import {
@@ -43,6 +43,9 @@ const props = defineProps<{
 	stickyColumns?: string[]
 	columnWidths?: Record<string, number>
 	textWrap?: Record<string, boolean>
+	totalRowCount?: number
+	onPageChange?: (page: number) => void
+	currentPage?: number
 }>()
 
 const headers = computed(() => {
@@ -225,23 +228,55 @@ const page = reactive({
 	next() {
 		if (page.current < page.total) {
 			page.current++
+			props.onPageChange?.(page.current)
 		}
 	},
 	prev() {
 		if (page.current > 1) {
 			page.current--
+			props.onPageChange?.(page.current)
+		}
+	},
+	goto(pageNum: number) {
+		if (pageNum >= 1 && pageNum <= page.total) {
+			page.current = pageNum
+			props.onPageChange?.(page.current)
 		}
 	},
 })
 // @ts-ignore
 page.total = computed(() => {
-	if (!visibleRows.value?.length) return 1
-	return Math.ceil(visibleRows.value.length / page.size)
+	if (props.totalRowCount) {
+		return Math.ceil(props.totalRowCount / page.size)
+	}
+	if ((visibleRows.value?.length ?? 0) >= page.size) {
+		return page.current + 1
+	}
+	return page.current
 })
 // @ts-ignore
-page.startIndex = computed(() => (page.current - 1) * page.size)
+page.startIndex = computed(() => (props.onPageChange ? 0 : (page.current - 1) * page.size))
 // @ts-ignore
-page.endIndex = computed(() => Math.min(page.current * page.size, visibleRows.value?.length || 0))
+page.endIndex = computed(() => {
+	const len = visibleRows.value?.length || 0
+	if (!props.enablePagination) return len
+	if (props.onPageChange) return Math.min(page.size, len)
+	return Math.min(page.current * page.size, len)
+})
+
+// For display purposes only — accounts for current page offset
+const rowDisplayOffset = computed(() =>
+	props.onPageChange
+		? ((props.currentPage ?? 1) - 1) * page.size
+		: (page.current - 1) * page.size,
+)
+
+watch(
+	() => props.rows,
+	() => {
+		page.current = props.currentPage ?? 1
+	},
+)
 
 const colorByPercentage = {
 	0: 'bg-white text-gray-900',
@@ -691,7 +726,7 @@ function toggleNewColumn() {
 							width="1px"
 							height="30px"
 						>
-							{{ idx + page.startIndex + 1 }}
+							{{ idx + rowDisplayOffset + 1 }}
 						</td>
 
 						<td
@@ -777,21 +812,20 @@ function toggleNewColumn() {
 			</table>
 		</div>
 		<slot name="footer">
-			<div class="flex flex-shrink-0 items-center justify-between border-t px-2 py-1">
-				<slot name="footer-left">
-					<div></div>
-				</slot>
+			<div class="flex flex-shrink-0 items-center border-t px-2 py-1">
+				<div class="flex flex-1 items-center">
+					<slot name="footer-left">
+						<div></div>
+					</slot>
+				</div>
 				<slot name="footer-right">
 					<div class="flex items-center gap-2">
 						<div
-							v-if="props.enablePagination && visibleRows?.length && page.total > 1"
+							v-if="
+								props.enablePagination && !props.onPageChange && visibleRows?.length
+							"
 							class="flex flex-shrink-0 items-center justify-end gap-2"
 						>
-							<p class="tnum text-sm text-gray-600">
-								{{ page.startIndex + 1 }} - {{ page.endIndex }} of
-								{{ visibleRows.length }}
-							</p>
-
 							<div class="flex gap-2">
 								<Button
 									variant="ghost"
