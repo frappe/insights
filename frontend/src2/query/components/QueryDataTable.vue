@@ -1,11 +1,16 @@
 <script setup lang="ts">
-import { Button, LoadingIndicator } from 'frappe-ui'
-import { Bell, ChevronLeft, ChevronRight, Download, RefreshCw } from 'lucide-vue-next'
+import { Button } from 'frappe-ui'
+import { Bell, Download } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import DrillDown from '../../charts/components/DrillDown.vue'
 import DataTable from '../../components/DataTable.vue'
 import ExportDialog from '../../components/ExportDialog.vue'
-import { QueryResultColumn, QueryResultRow, SortDirection } from '../../types/query.types'
+import {
+	FilterArgs,
+	QueryResultColumn,
+	QueryResultRow,
+	SortDirection,
+} from '../../types/query.types'
 
 import { column } from '../helpers'
 import { Query } from '../query'
@@ -27,7 +32,7 @@ const rows = computed(() => props.query.result.formattedRows)
 const previewRowCount = computed(() => props.query.result.rows.length)
 const totalRowCount = computed(() => {
 	if (!props.query.result.totalRowCount && previewRowCount.value < props.query.pageSize) {
-		return previewRowCount.value
+		return (props.query.currentPage - 1) * props.query.pageSize + previewRowCount.value
 	}
 	return props.query.result.totalRowCount
 })
@@ -112,16 +117,47 @@ function onPageChange(page: number) {
 	props.query.goToPage(page)
 }
 
-const isFirstPage = computed(() => props.query.currentPage <= 1)
-const isLastPage = computed(() => {
-	if (totalRowCount.value) {
-		return props.query.currentPage >= Math.ceil(totalRowCount.value / props.query.pageSize)
+function onFilterChange(filters: Record<string, string>) {
+	const adhocFilters = {} as any
+	Object.entries(filters).forEach(([colName, filter]) => {
+		if (!filter) return
+
+		const rules = [] as FilterArgs[]
+		const operator = (['>', '<', '>=', '<=', '=', '!='] as const).find((op) =>
+			filter.startsWith(op),
+		)
+
+		if (operator) {
+			const val = filter.replace(operator, '').trim()
+			if (val) {
+				rules.push({
+					column: column(colName),
+					operator: operator,
+					value: isNaN(Number(val)) ? val : Number(val),
+				})
+			}
+		} else {
+			rules.push({
+				column: column(colName),
+				operator: 'contains',
+				value: filter,
+			})
+		}
+
+		if (rules.length) {
+			adhocFilters[colName] = {
+				type: 'filter_group',
+				logical_operator: 'And',
+				filters: rules,
+			}
+		}
+	})
+
+	if (props.query.adhocFilters) {
+		props.query.adhocFilters.value = adhocFilters
 	}
-	return previewRowCount.value < props.query.pageSize
-})
-const isSinglePage = computed(() => isFirstPage.value && isLastPage.value)
-const from = computed(() => (props.query.currentPage - 1) * props.query.pageSize + 1)
-const to = computed(() => from.value + previewRowCount.value - 1)
+	props.query.goToPage(1)
+}
 </script>
 
 <template>
@@ -133,6 +169,8 @@ const to = computed(() => from.value + previewRowCount.value - 1)
 		:total-row-count="totalRowCount"
 		:current-page="props.query.currentPage"
 		:on-page-change="onPageChange"
+		:on-fetch-count="props.query.fetchResultCount"
+		:on-filter-change="onFilterChange"
 		:on-export="props.query.exportResults"
 		:downloading="props.query.downloading"
 		:sort-order="sortOrder"
@@ -147,54 +185,6 @@ const to = computed(() => from.value + previewRowCount.value - 1)
 		</template>
 		<template #header-suffix="{ column }">
 			<slot name="header-suffix" :column="column" />
-		</template>
-		<template #footer-left>
-			<div v-if="!isSinglePage" class="flex w-full items-center justify-between">
-				<div class="flex items-center gap-1 tnum text-sm text-gray-500">
-					Showing {{ from }}–{{ to }} of
-					<template v-if="totalRowCount">
-						{{ totalRowCount.toLocaleString() }}
-					</template>
-					<template v-else>
-						<template v-if="props.query.fetchingCount">
-							<LoadingIndicator class="inline h-3.5 w-3.5 text-gray-500" />
-						</template>
-						<Tooltip v-else text="Load Count">
-							<RefreshCw
-								v-if="!props.query.fetchingCount"
-								class="h-3.5 w-3.5 inline-flex cursor-pointer transition-all hover:text-gray-800"
-								stroke-width="1.5"
-								@click="props.query.fetchResultCount"
-							/>
-						</Tooltip>
-					</template>
-					rows
-				</div>
-
-				<div class="flex items-center gap-0.5">
-					<Button
-						variant="ghost"
-						:disabled="isFirstPage"
-						@click="onPageChange(props.query.currentPage - 1)"
-					>
-						<template #icon>
-							<ChevronLeft class="h-4 w-4 text-gray-700" stroke-width="1.5" />
-						</template>
-					</Button>
-					<span class="tnum min-w-[3rem] text-center text-sm text-gray-600">
-						Page {{ props.query.currentPage }}
-					</span>
-					<Button
-						variant="ghost"
-						:disabled="isLastPage"
-						@click="onPageChange(props.query.currentPage + 1)"
-					>
-						<template #icon>
-							<ChevronRight class="h-4 w-4 text-gray-700" stroke-width="1.5" />
-						</template>
-					</Button>
-				</div>
-			</div>
 		</template>
 		<template #footer-right-actions>
 			<Button v-if="enableAlerts" variant="ghost" @click="showAlertsDialog = true">

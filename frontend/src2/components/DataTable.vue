@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { watchDebounced } from '@vueuse/core'
 import { Button, FormControl, LoadingIndicator } from 'frappe-ui'
-import { ChevronLeft, ChevronRight, Plus, Search, Table2Icon } from 'lucide-vue-next'
-import { computed, nextTick, reactive, ref, watch } from 'vue'
+import { Plus, Search, Table2Icon } from 'lucide-vue-next'
+import { computed, nextTick, ref } from 'vue'
+import { usePagination } from '../composables/usePagination'
 import { createHeaders, formatNumber, getShortNumber } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import {
@@ -20,6 +22,7 @@ import {
 } from '../query/components/formatting_utils'
 import { QueryResultColumn, QueryResultRow, SortDirection, SortOrder } from '../types/query.types'
 import DataTableColumn from './DataTableColumn.vue'
+import DataTableFooter from './DataTableFooter.vue'
 
 const props = defineProps<{
 	columns: QueryResultColumn[] | undefined
@@ -46,6 +49,8 @@ const props = defineProps<{
 	totalRowCount?: number
 	onPageChange?: (page: number) => void
 	currentPage?: number
+	onFetchCount?: () => Promise<void> | void
+	onFilterChange?: (filters: Record<string, string>) => void
 }>()
 
 const headers = computed(() => {
@@ -148,6 +153,8 @@ const visibleRows = computed(() => {
 	const rows = props.rows
 	if (!columns?.length || !rows?.length || !props.showFilterRow) return rows
 
+	if (props.onFilterChange) return rows
+
 	const filters = filterPerColumn.value
 	return rows.filter((row) => {
 		return Object.entries(filters).every(([col, filter]) => {
@@ -158,6 +165,14 @@ const visibleRows = computed(() => {
 		})
 	})
 })
+
+watchDebounced(
+	filterPerColumn,
+	(filters) => {
+		props.onFilterChange?.(filters)
+	},
+	{ debounce: 500, deep: true },
+)
 
 function applyFilter(value: any, isNumber: boolean, filter: string) {
 	if (isNumber) {
@@ -219,64 +234,13 @@ const totalColumnTotal = computed(() => {
 	return Object.values(totalPerColumn.value).reduce((acc, val) => acc + val, 0)
 })
 
-const page = reactive({
-	current: 1,
-	size: 100,
-	total: 1,
-	startIndex: 0,
-	endIndex: 99,
-	next() {
-		if (page.current < page.total) {
-			page.current++
-			props.onPageChange?.(page.current)
-		}
-	},
-	prev() {
-		if (page.current > 1) {
-			page.current--
-			props.onPageChange?.(page.current)
-		}
-	},
-	goto(pageNum: number) {
-		if (pageNum >= 1 && pageNum <= page.total) {
-			page.current = pageNum
-			props.onPageChange?.(page.current)
-		}
-	},
+const pagination = usePagination({
+	rowCount: computed(() => visibleRows.value?.length ?? 0),
+	totalRowCount: computed(() => props.totalRowCount),
+	currentPage: computed(() => props.currentPage),
+	onPageChange: props.onPageChange,
+	enabled: computed(() => Boolean(props.enablePagination)),
 })
-// @ts-ignore
-page.total = computed(() => {
-	if (props.totalRowCount) {
-		return Math.ceil(props.totalRowCount / page.size)
-	}
-	if ((visibleRows.value?.length ?? 0) >= page.size) {
-		return page.current + 1
-	}
-	return page.current
-})
-// @ts-ignore
-page.startIndex = computed(() => (props.onPageChange ? 0 : (page.current - 1) * page.size))
-// @ts-ignore
-page.endIndex = computed(() => {
-	const len = visibleRows.value?.length || 0
-	if (!props.enablePagination) return len
-	if (props.onPageChange) return Math.min(page.size, len)
-	return Math.min(page.current * page.size, len)
-})
-
-// For display purposes only — accounts for current page offset
-const rowDisplayOffset = computed(() =>
-	props.onPageChange
-		? ((props.currentPage ?? 1) - 1) * page.size
-		: (page.current - 1) * page.size,
-)
-
-watch(
-	() => props.rows,
-	() => {
-		page.current = props.currentPage ?? 1
-	},
-)
 
 const colorByPercentage = {
 	0: 'bg-white text-gray-900',
@@ -718,7 +682,10 @@ function toggleNewColumn() {
 				</thead>
 				<tbody>
 					<tr
-						v-for="(row, idx) in visibleRows?.slice(page.startIndex, page.endIndex)"
+						v-for="(row, idx) in visibleRows?.slice(
+							pagination.startIndex.value,
+							pagination.endIndex.value,
+						)"
 						:key="idx"
 					>
 						<td
@@ -726,7 +693,7 @@ function toggleNewColumn() {
 							width="1px"
 							height="30px"
 						>
-							{{ idx + rowDisplayOffset + 1 }}
+							{{ idx + pagination.rowDisplayOffset.value + 1 }}
 						</td>
 
 						<td
@@ -812,44 +779,20 @@ function toggleNewColumn() {
 			</table>
 		</div>
 		<slot name="footer">
-			<div class="flex flex-shrink-0 items-center border-t px-2 py-1">
-				<div class="flex flex-1 items-center">
-					<slot name="footer-left">
-						<div></div>
-					</slot>
-				</div>
-				<slot name="footer-right">
-					<div class="flex items-center gap-2">
-						<div
-							v-if="
-								props.enablePagination && !props.onPageChange && visibleRows?.length
-							"
-							class="flex flex-shrink-0 items-center justify-end gap-2"
-						>
-							<div class="flex gap-2">
-								<Button
-									variant="ghost"
-									@click="page.prev"
-									:disabled="page.current === 1"
-								>
-									<ChevronLeft class="h-4 w-4 text-gray-700" stroke-width="1.5" />
-								</Button>
-								<Button
-									variant="ghost"
-									@click="page.next"
-									:disabled="page.current === page.total"
-								>
-									<ChevronRight
-										class="h-4 w-4 text-gray-700"
-										stroke-width="1.5"
-									/>
-								</Button>
-							</div>
-						</div>
-						<slot name="footer-right-actions"></slot>
-					</div>
-				</slot>
-			</div>
+			<DataTableFooter
+				:pagination="props.enablePagination ? pagination : undefined"
+				:total-row-count="props.totalRowCount"
+				:on-fetch-count="props.onFetchCount"
+				@prev="pagination.prev"
+				@next="pagination.next"
+			>
+				<template #left>
+					<slot name="footer-left" />
+				</template>
+				<template #actions>
+					<slot name="footer-right-actions" />
+				</template>
+			</DataTableFooter>
 		</slot>
 	</div>
 
