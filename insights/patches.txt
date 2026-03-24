@@ -1,4 +1,5 @@
 [pre_model_sync]
+insights.patches.check_legacy_v2_data_before_upgrade #2
 insights.patches.normalize_workbook
 
 [post_model_sync]
