@@ -443,9 +443,7 @@ function makeChart(name: string) {
 	)
 
 	function copyChart() {
-		chart.call('export').then((data) => {
-			copyToClipboard(JSON.stringify(data, null, 2))
-		})
+		copyToClipboard(chart.call('export').then((data) => JSON.stringify(data, null, 2)))
 	}
 
 	function duplicateChart() {

@@ -10,6 +10,7 @@ import {
 	LineChart,
 	Map,
 	ScatterChart,
+	Share2,
 	Table2,
 } from 'lucide-vue-next'
 import { computed } from 'vue'
@@ -38,6 +39,8 @@ const icon = computed(() => {
 			return Hash
 		case 'Map':
 			return Map
+		case 'Sankey':
+			return Share2
 		default:
 			return BarChart3
 	}

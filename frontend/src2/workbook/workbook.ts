@@ -233,7 +233,7 @@ function makeWorkbook(name: string) {
 		confirmDialog({
 			title: __('Duplicate Workbook'),
 			message: __(
-				'Duplicating this workbook will create a new workbook and copy all queries, charts and dashboards to it. Do you want to continue?',
+				'Duplicating this workbook will create a new workbook and copy all queries, charts and dashboards to it. Do you want to continue?'
 			),
 			onSuccess: () => {
 				workbook
@@ -287,9 +287,7 @@ function makeWorkbook(name: string) {
 	}
 
 	function copyJSON() {
-		workbook.call('export').then((data) => {
-			copyToClipboard(JSON.stringify(data, null, 2))
-		})
+		copyToClipboard(workbook.call('export').then((data) => JSON.stringify(data, null, 2)))
 	}
 
 	function deleteWorkbook() {
