@@ -107,7 +107,7 @@ def create_uploads_if_not_exists():
         uploads.database_name = "insights_file_uploads"
         uploads.owner = "Administrator"
         uploads.status = "Active"
-        uploads.db_insert()
+        uploads.insert(ignore_permissions=True)
 
 
 @insights_whitelist()
