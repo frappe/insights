@@ -149,7 +149,8 @@ function resetFile() {
 					>
 						<template #footer-left>
 							<p class="tnum p-1 text-sm text-gray-600">
-								Showing first {{ csvData.rows.length }} rows
+								Showing {{ csvData.rows.length.toLocaleString() }} of
+								{{ csvData.totalRowCount.toLocaleString() }} rows
 							</p>
 						</template>
 					</DataTable>

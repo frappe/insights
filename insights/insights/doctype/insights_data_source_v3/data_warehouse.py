@@ -43,7 +43,7 @@ class Warehouse:
             db = ibis.duckdb.connect(path)
             db.disconnect()
 
-        db = ibis.duckdb.connect(path, read_only=read_only,enable_external_access=False)
+        db = ibis.duckdb.connect(path, read_only=read_only)
 
         if not read_only:
             self._configure_temp_directory_access(db)
