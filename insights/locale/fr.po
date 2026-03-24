@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
-"POT-Creation-Date: 2026-03-15 09:45+0000\n"
-"PO-Revision-Date: 2026-03-16 12:52\n"
+"POT-Creation-Date: 2026-03-22 09:44+0000\n"
+"PO-Revision-Date: 2026-03-23 13:22\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -56,7 +56,7 @@ msgstr ""
 msgid "API Username"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:245
+#: frontend/src2/query/components/FormatRule.vue:203
 msgid "Above average"
 msgstr ""
 
@@ -185,7 +185,7 @@ msgstr ""
 msgid "Alternate"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:203
+#: frontend/src2/query/components/FormatRule.vue:161
 msgid "Amber"
 msgstr ""
 
@@ -285,7 +285,7 @@ msgstr "Taille du lot"
 msgid "Before Import Script"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:246
+#: frontend/src2/query/components/FormatRule.vue:204
 msgid "Below average"
 msgstr ""
 
@@ -323,11 +323,11 @@ msgstr ""
 msgid "Bottom"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:244
+#: frontend/src2/query/components/FormatRule.vue:202
 msgid "Bottom N percent"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:242
+#: frontend/src2/query/components/FormatRule.vue:200
 msgid "Bottom N values"
 msgstr ""
 
@@ -444,7 +444,7 @@ msgstr ""
 msgid "Collapse"
 msgstr "Réduire"
 
-#: frontend/src2/query/components/FormatRule.vue:544
+#: frontend/src2/query/components/FormatRule.vue:502
 msgid "Color"
 msgstr "Couleur"
 
@@ -455,7 +455,7 @@ msgstr ""
 #. Label of the label (Data) field in DocType 'Insights Query Column'
 #. Label of the column (Data) field in DocType 'Insights Table Column'
 #: frontend/src2/components/DataTableColumn.vue:42
-#: frontend/src2/query/components/FormatRule.vue:371
+#: frontend/src2/query/components/FormatRule.vue:329
 #: frontend/src2/query/components/JoinSelectorDialog.vue:269
 #: frontend/src2/query/components/JoinSelectorDialog.vue:282
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
@@ -490,8 +490,8 @@ msgid "Completed"
 msgstr ""
 
 #. Label of the condition (Code) field in DocType 'Insights Alert'
-#: frontend/src2/query/components/FormatRule.vue:475
-#: frontend/src2/query/components/FormatRule.vue:494
+#: frontend/src2/query/components/FormatRule.vue:433
+#: frontend/src2/query/components/FormatRule.vue:452
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Condition"
 msgstr ""
@@ -680,7 +680,7 @@ msgid "Dashboard Access Updated"
 msgstr ""
 
 #: frontend/src2/components/AppSidebar.vue:74
-#: frontend/src2/dashboard/Dashboard.vue:43
+#: frontend/src2/dashboard/Dashboard.vue:46
 #: frontend/src2/workbook/WorkbookSidebar.vue:75
 msgid "Dashboards"
 msgstr ""
@@ -766,7 +766,7 @@ msgstr ""
 msgid "Date"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:276
+#: frontend/src2/query/components/FormatRule.vue:234
 msgid "Date Rules"
 msgstr ""
 
@@ -930,7 +930,7 @@ msgstr ""
 msgid "Enter filter label..."
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:485
+#: frontend/src2/query/components/FormatRule.vue:443
 msgid "Enter text"
 msgstr ""
 
@@ -995,7 +995,7 @@ msgid "Export Format"
 msgstr ""
 
 #: frontend/src2/charts/components/ChartBuilderToolbar.vue:27
-#: frontend/src2/dashboard/Dashboard.vue:58
+#: frontend/src2/dashboard/Dashboard.vue:61
 msgid "Export as PNG"
 msgstr ""
 
@@ -1142,11 +1142,11 @@ msgstr "Général"
 msgid "Generated SQL"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:202
+#: frontend/src2/query/components/FormatRule.vue:160
 msgid "Green"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:255
+#: frontend/src2/query/components/FormatRule.vue:213
 msgid "Green-Red"
 msgstr ""
 
@@ -1170,6 +1170,10 @@ msgstr "Caché"
 
 #: frontend/src2/query/components/FormattingSelector.vue:59
 msgid "Highlight Cell"
+msgstr ""
+
+#: frontend/src2/charts/components/SankeyChartConfigForm.vue:60
+msgid "Horizontal"
 msgstr ""
 
 #. Label of the host (Data) field in DocType 'Insights Data Source'
@@ -1600,6 +1604,10 @@ msgstr ""
 msgid "Join this table with another table or query"
 msgstr ""
 
+#: frontend/src2/charts/components/SankeyChartConfigForm.vue:69
+msgid "Justify"
+msgstr ""
+
 #. Label of the key (Data) field in DocType 'Insights Secret Key'
 #. Label of the key (Data) field in DocType 'Insights User Invitation'
 #: insights/insights/doctype/insights_secret_key/insights_secret_key.json
@@ -1661,6 +1669,7 @@ msgstr ""
 
 #: frontend/src2/charts/components/DonutChartConfigForm.vue:59
 #: frontend/src2/charts/components/FunnelChartConfigForm.vue:56
+#: frontend/src2/charts/components/SankeyChartConfigForm.vue:70
 msgid "Left"
 msgstr "Parti"
 
@@ -1966,7 +1975,7 @@ msgstr ""
 msgid "Onboarding Complete"
 msgstr ""
 
-#: frontend/src2/dashboard/Dashboard.vue:65
+#: frontend/src2/dashboard/Dashboard.vue:68
 #: frontend/src2/dashboard/DashboardList.vue:22
 msgid "Open Workbook"
 msgstr ""
@@ -1981,7 +1990,7 @@ msgstr ""
 msgid "Operations"
 msgstr "Opérations"
 
-#: frontend/src2/query/components/FormatRule.vue:458
+#: frontend/src2/query/components/FormatRule.vue:416
 msgid "Operator"
 msgstr "Opérateur"
 
@@ -2170,11 +2179,11 @@ msgstr ""
 msgid "REST API"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:520
+#: frontend/src2/query/components/FormatRule.vue:478
 msgid "Ranking Condition"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:267
+#: frontend/src2/query/components/FormatRule.vue:225
 msgid "Ranking Rules"
 msgstr ""
 
@@ -2184,15 +2193,15 @@ msgstr ""
 msgid "Recipients"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:201
+#: frontend/src2/query/components/FormatRule.vue:159
 msgid "Red"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:251
+#: frontend/src2/query/components/FormatRule.vue:209
 msgid "Red-Green"
 msgstr ""
 
-#: frontend/src2/dashboard/Dashboard.vue:48
+#: frontend/src2/dashboard/Dashboard.vue:51
 #: frontend/src2/data_source/DataSourceTableList.vue:43
 msgid "Refresh"
 msgstr ""
@@ -2270,6 +2279,7 @@ msgstr ""
 
 #: frontend/src2/charts/components/DonutChartConfigForm.vue:60
 #: frontend/src2/charts/components/FunnelChartConfigForm.vue:57
+#: frontend/src2/charts/components/SankeyChartConfigForm.vue:71
 msgid "Right"
 msgstr "Droit"
 
@@ -2308,7 +2318,7 @@ msgstr ""
 msgid "Rows Imported"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:447
+#: frontend/src2/query/components/FormatRule.vue:405
 msgid "Rule Type"
 msgstr ""
 
@@ -2742,7 +2752,7 @@ msgstr ""
 msgid "Text"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:272
+#: frontend/src2/query/components/FormatRule.vue:230
 msgid "Text Rules"
 msgstr ""
 
@@ -2830,11 +2840,11 @@ msgstr "Aujourd'hui"
 msgid "Top"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:243
+#: frontend/src2/query/components/FormatRule.vue:201
 msgid "Top N percent"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:241
+#: frontend/src2/query/components/FormatRule.vue:199
 msgid "Top N values"
 msgstr ""
 
@@ -2972,12 +2982,12 @@ msgstr ""
 
 #. Label of the value (Password) field in DocType 'Insights Secret Key'
 #: frontend/src2/components/VariablesDialog.vue:85
-#: frontend/src2/query/components/FormatRule.vue:467
+#: frontend/src2/query/components/FormatRule.vue:425
 #: insights/insights/doctype/insights_secret_key/insights_secret_key.json
 msgid "Value"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:266
+#: frontend/src2/query/components/FormatRule.vue:224
 msgid "Value Rules"
 msgstr ""
 
@@ -3004,6 +3014,10 @@ msgstr ""
 
 #: frontend/src2/components/VariablesDialog.vue:69
 msgid "Variables are used to store sensitive information such as API keys and credentials. They can be referenced and combined in your script just like any other variable. For eg."
+msgstr ""
+
+#: frontend/src2/charts/components/SankeyChartConfigForm.vue:61
+msgid "Vertical"
 msgstr ""
 
 #. Label of the vertical_compact_layout (Check) field in DocType 'Insights
@@ -3089,7 +3103,7 @@ msgstr ""
 msgid "Your workbooks will appear here. Create a new workbook to get started."
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:236
+#: frontend/src2/query/components/FormatRule.vue:194
 msgid "after date"
 msgstr ""
 
@@ -3098,11 +3112,11 @@ msgstr ""
 msgid "asc"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:235
+#: frontend/src2/query/components/FormatRule.vue:193
 msgid "before date"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:237
+#: frontend/src2/query/components/FormatRule.vue:195
 msgid "between dates"
 msgstr ""
 
@@ -3111,7 +3125,7 @@ msgstr ""
 msgid "chart"
 msgstr "graphique"
 
-#: frontend/src2/query/components/FormatRule.vue:216
+#: frontend/src2/query/components/FormatRule.vue:174
 msgid "contains"
 msgstr ""
 
@@ -3120,11 +3134,11 @@ msgstr ""
 msgid "desc"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:217
+#: frontend/src2/query/components/FormatRule.vue:175
 msgid "does not contain"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:221
+#: frontend/src2/query/components/FormatRule.vue:179
 msgid "does not equal"
 msgstr ""
 
@@ -3148,12 +3162,12 @@ msgstr ""
 msgid "e.g. john@example.com, henry@example.com"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:219
+#: frontend/src2/query/components/FormatRule.vue:177
 msgid "ends with"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:207
-#: frontend/src2/query/components/FormatRule.vue:220
+#: frontend/src2/query/components/FormatRule.vue:165
+#: frontend/src2/query/components/FormatRule.vue:178
 msgid "equals"
 msgstr "égal"
 
@@ -3164,63 +3178,63 @@ msgstr "égal"
 msgid "folder"
 msgstr "dossier"
 
-#: frontend/src2/query/components/FormatRule.vue:209
+#: frontend/src2/query/components/FormatRule.vue:167
 msgid "greater than"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:210
+#: frontend/src2/query/components/FormatRule.vue:168
 msgid "greater than or equals"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:222
+#: frontend/src2/query/components/FormatRule.vue:180
 msgid "is empty"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:233
+#: frontend/src2/query/components/FormatRule.vue:191
 msgid "is last month"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:231
+#: frontend/src2/query/components/FormatRule.vue:189
 msgid "is last week"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:223
+#: frontend/src2/query/components/FormatRule.vue:181
 msgid "is not empty"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:232
+#: frontend/src2/query/components/FormatRule.vue:190
 msgid "is this month"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:230
+#: frontend/src2/query/components/FormatRule.vue:188
 msgid "is this week"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:234
+#: frontend/src2/query/components/FormatRule.vue:192
 msgid "is this year"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:227
+#: frontend/src2/query/components/FormatRule.vue:185
 msgid "is today"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:229
+#: frontend/src2/query/components/FormatRule.vue:187
 msgid "is tomorrow"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:228
+#: frontend/src2/query/components/FormatRule.vue:186
 msgid "is yesterday"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:211
+#: frontend/src2/query/components/FormatRule.vue:169
 msgid "less than"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:212
+#: frontend/src2/query/components/FormatRule.vue:170
 msgid "less than or equals"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:208
+#: frontend/src2/query/components/FormatRule.vue:166
 msgid "not equals"
 msgstr ""
 
@@ -3236,7 +3250,7 @@ msgstr "requête"
 msgid "sort_order"
 msgstr ""
 
-#: frontend/src2/query/components/FormatRule.vue:218
+#: frontend/src2/query/components/FormatRule.vue:176
 msgid "starts with"
 msgstr ""
 
