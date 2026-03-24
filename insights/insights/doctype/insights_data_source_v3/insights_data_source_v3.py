@@ -322,12 +322,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
                 tables.extend(schema_tables)
             return tables
 
-        contains_special_chars = re.search(r"[^a-zA-Z0-9_]", database_name)
-        if not contains_special_chars:
-            return db.list_tables()
-
-        quoted_db_name = f"{db.dialect.QUOTE_START}{database_name}{db.dialect.QUOTE_END}"
-        return db.list_tables(database=quoted_db_name)
+        return db.list_tables()
 
     @frappe.whitelist()
     def test_connection(self, raise_exception: bool = False):
