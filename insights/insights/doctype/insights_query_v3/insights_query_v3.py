@@ -168,18 +168,17 @@ class InsightsQueryv3(Document):
         page: int = 1,
         page_size: int = 100,
     ):
-        with set_adhoc_filters(adhoc_filters):
-            ibis_query = self.build(active_operation_idx)
-
         limit = page_size
         for op in frappe.parse_json(self.operations):
-            if op.get("limit"):
+            if op.get("type") == "limit":
                 limit = op.get("limit")
+                offset = (page - 1) * limit if page > 1 else None
+                if offset is not None:
+                    op["offset"] = offset
                 break
 
-        offset = (page - 1) * limit if page > 1 else None
-        if offset is not None:
-            ibis_query = ibis_query.limit(limit, offset=offset)
+        with set_adhoc_filters(adhoc_filters):
+            ibis_query = self.build(active_operation_idx)
 
         results, time_taken = execute_ibis_query(
             ibis_query,
