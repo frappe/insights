@@ -2,13 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
-<<<<<<< HEAD
-"POT-Creation-Date: 2026-03-15 09:45+0000\n"
-"PO-Revision-Date: 2026-03-18 12:51\n"
-=======
 "POT-Creation-Date: 2026-03-22 09:44+0000\n"
 "PO-Revision-Date: 2026-03-25 13:51\n"
->>>>>>> 691bca29 (chore: sync translations from crowdin (#999))
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
