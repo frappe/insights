@@ -80,6 +80,12 @@ const routes = [
 		component: () => import('./data_store/DataStoreList.vue'),
 	},
 	{
+		path: '/ai-test',
+		name: 'AITest',
+		component: () => import('./ai/AITest.vue'),
+		meta: { hideSidebar: import.meta.env.DEV ? false : true },
+	},
+	{
 		props: true,
 		name: 'SharedChart',
 		path: '/shared/chart/:chart_name',

@@ -20,7 +20,7 @@
 			</div>
 		</div>
 		<div>
-				<DemoDataBanner v-if="!isSidebarCollapsed" class="m-2 p-2" />
+			<DemoDataBanner v-if="!isSidebarCollapsed" class="m-2 p-2" />
 			<TrialBanner v-if="is_fc_site" :is-sidebar-collapsed="isSidebarCollapsed" />
 			<SidebarLink
 				:label="isSidebarCollapsed ? __('Expand') : __('Collapse')"
@@ -53,6 +53,7 @@ import {
 	LayoutGrid,
 	PanelRightOpen,
 	SettingsIcon,
+	Sparkles,
 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import useSettings from '../settings/settings'
@@ -90,6 +91,12 @@ const links = ref([
 		icon: DatabaseZap,
 		to: 'DataStoreList',
 		hidden: computed(() => !settings.doc.enable_data_store),
+	},
+	{
+		label: __('AI Test'),
+		icon: Sparkles,
+		to: 'AITest',
+		hidden: computed(() => !import.meta.env.DEV),
 	},
 	{
 		label: __('Settings'),

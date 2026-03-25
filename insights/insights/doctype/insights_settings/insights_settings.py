@@ -18,9 +18,13 @@ class InsightsSettings(Document):
         from frappe.types import DF
 
         allow_subquery: DF.Check
+        ai_api_key: DF.Password | None
+        ai_model: DF.Data | None
+        ai_provider: DF.Literal["OpenRouter", "OpenAI", "Anthropic"]
         allowed_origins: DF.Data | None
         apply_user_permissions: DF.Check
         auto_execute_query: DF.Check
+        enable_ai: DF.Check
         enable_data_store: DF.Check
         enable_permissions: DF.Check
         fiscal_year_start: DF.Date | None

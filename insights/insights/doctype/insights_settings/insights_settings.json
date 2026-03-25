@@ -5,28 +5,33 @@
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
- "field_order": [
-  "onboarding_section",
-  "enable_permissions",
-  "enable_data_store",
-  "apply_user_permissions",
-  "allowed_origins",
-  "max_records_to_sync",
-  "max_memory_usage",
-  "max_execution_time",
-  "integrations_section",
-  "telegram_api_token",
-  "query_section",
-  "fiscal_year_start",
-  "week_starts_on",
-  "tab_break_tvwi",
-  "setup_complete",
-  "onboarding_complete",
-  "allow_subquery",
-  "auto_execute_query",
-  "query_result_expiry",
-  "query_result_limit"
- ],
+"field_order": [
+   "onboarding_section",
+   "enable_permissions",
+   "enable_data_store",
+   "apply_user_permissions",
+   "allowed_origins",
+   "max_records_to_sync",
+   "max_memory_usage",
+   "max_execution_time",
+   "integrations_section",
+   "telegram_api_token",
+   "ai_section",
+   "enable_ai",
+   "ai_provider",
+   "ai_api_key",
+   "ai_model",
+   "query_section",
+   "fiscal_year_start",
+   "week_starts_on",
+   "tab_break_tvwi",
+   "setup_complete",
+   "onboarding_complete",
+   "allow_subquery",
+   "auto_execute_query",
+   "query_result_expiry",
+   "query_result_limit"
+  ],
  "fields": [
   {
    "default": "0",
@@ -79,13 +84,42 @@
    "fieldtype": "Section Break",
    "label": "Integrations"
   },
-  {
-   "fieldname": "telegram_api_token",
-   "fieldtype": "Password",
-   "label": "Telegram API Token"
-  },
-  {
-   "fieldname": "query_section",
+{
+    "fieldname": "telegram_api_token",
+    "fieldtype": "Password",
+    "label": "Telegram API Token"
+   },
+   {
+    "fieldname": "ai_section",
+    "fieldtype": "Section Break",
+    "label": "AI Settings"
+   },
+   {
+    "default": "0",
+    "fieldname": "enable_ai",
+    "fieldtype": "Check",
+    "label": "Enable AI Features"
+   },
+{
+     "default": "OpenRouter",
+     "fieldname": "ai_provider",
+     "fieldtype": "Select",
+     "label": "AI Provider",
+     "options": "OpenRouter\nOpenAI\nAnthropic"
+    },
+    {
+     "fieldname": "ai_api_key",
+     "fieldtype": "Password",
+     "label": "AI API Key"
+    },
+    {
+     "fieldname": "ai_model",
+     "fieldtype": "Data",
+     "label": "AI Model",
+     "description": "For OpenRouter, use format: provider/model-name"
+    },
+   {
+    "fieldname": "query_section",
    "fieldtype": "Section Break",
    "label": "Query"
   },

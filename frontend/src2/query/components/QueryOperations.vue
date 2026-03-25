@@ -16,11 +16,10 @@ import {
 	Summarize,
 	Union,
 } from '../../types/query.types'
-import { workbookKey } from '../../workbook/workbook'
 import { query_operation_types } from '../helpers'
 import { Query } from '../query'
-import AddOperationPopover from './AddOperationPopover.vue'
 import useQuery from '../query.ts'
+import AddOperationPopover from './AddOperationPopover.vue'
 
 const query = inject('query') as Query
 const operations = computed(() => {
