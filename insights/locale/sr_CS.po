@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-03-22 09:44+0000\n"
-"PO-Revision-Date: 2026-03-23 13:23\n"
+"PO-Revision-Date: 2026-03-25 13:51\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Serbian (Latin)\n"
 "MIME-Version: 1.0\n"
@@ -1174,7 +1174,7 @@ msgstr "Istakni ćeliju"
 
 #: frontend/src2/charts/components/SankeyChartConfigForm.vue:60
 msgid "Horizontal"
-msgstr ""
+msgstr "Horizontalno"
 
 #. Label of the host (Data) field in DocType 'Insights Data Source'
 #. Label of the host (Data) field in DocType 'Insights Data Source v3'
@@ -1606,7 +1606,7 @@ msgstr "Spoji ovu tabelu sa drugom tabelom ili upitom"
 
 #: frontend/src2/charts/components/SankeyChartConfigForm.vue:69
 msgid "Justify"
-msgstr ""
+msgstr "Ravnomerno raspoređeno"
 
 #. Label of the key (Data) field in DocType 'Insights Secret Key'
 #. Label of the key (Data) field in DocType 'Insights User Invitation'
@@ -3018,7 +3018,7 @@ msgstr "Promenljive se koriste za čuvanje osetljivih informacija kao što su AP
 
 #: frontend/src2/charts/components/SankeyChartConfigForm.vue:61
 msgid "Vertical"
-msgstr ""
+msgstr "Vertikalno"
 
 #. Label of the vertical_compact_layout (Check) field in DocType 'Insights
 #. Dashboard v3'
