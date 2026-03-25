@@ -2,8 +2,13 @@ msgid ""
 msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
+<<<<<<< HEAD
 "POT-Creation-Date: 2026-03-15 09:45+0000\n"
 "PO-Revision-Date: 2026-03-16 12:52\n"
+=======
+"POT-Creation-Date: 2026-03-22 09:44+0000\n"
+"PO-Revision-Date: 2026-03-24 13:23\n"
+>>>>>>> e88f4519 (chore: sync translations from crowdin)
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Vietnamese\n"
 "MIME-Version: 1.0\n"
@@ -49,7 +54,7 @@ msgstr ""
 #. Label of the api_token (Password) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "API Token"
-msgstr ""
+msgstr "Mã thông báo API"
 
 #. Label of the api_username (Data) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
@@ -104,7 +109,7 @@ msgstr ""
 
 #: frontend/src2/query/components/FiltersSelector.vue:137
 msgid "Add Filter"
-msgstr ""
+msgstr "Thêm bộ lọc"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:60
 msgid "Add New Column"
@@ -627,12 +632,12 @@ msgstr ""
 #: frontend/src2/query/components/AlertSetupDialog.vue:163
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Cron"
-msgstr ""
+msgstr "Cron"
 
 #. Label of the cron_format (Data) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Cron Format"
-msgstr ""
+msgstr "Định dạng cron"
 
 #. Description of the 'Schedule (Cron)' (Data) field in DocType 'Insights Table
 #. Import Job'
@@ -951,7 +956,7 @@ msgstr "Lỗi"
 
 #: frontend/src2/components/ExportDialog.vue:47
 msgid "Excel"
-msgstr ""
+msgstr "Excel"
 
 #: frontend/src2/query/components/NativeQueryEditor.vue:132
 #: frontend/src2/query/components/QueryBuilderToolbar.vue:69
@@ -1585,7 +1590,7 @@ msgstr "JSON"
 #. Label of the join (Code) field in DocType 'Insights Query Table'
 #: insights/insights/doctype/insights_query_table/insights_query_table.json
 msgid "Join"
-msgstr ""
+msgstr "Tham gia"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:48
 #: frontend/src2/query/components/JoinSelectorDialog.vue:240
@@ -2013,7 +2018,7 @@ msgstr ""
 #: frontend/src2/teams/TeamList.vue:34
 #: frontend/src2/workbook/WorkbookList.vue:89
 msgid "Owner"
-msgstr ""
+msgstr "Chủ sở hữu"
 
 #. Label of the parquet_file (Text) field in DocType 'Insights Table Import
 #. Log'
@@ -2315,7 +2320,7 @@ msgstr ""
 #: frontend/src2/query/components/ScriptQueryEditor.vue:92
 #: insights/insights/doctype/insights_query/insights_query.js:7
 msgid "Run"
-msgstr ""
+msgstr "Chạy"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:37
 msgid "Run {0} of {1}"
@@ -2984,7 +2989,7 @@ msgstr ""
 #. Label of the variable_name (Data) field in DocType 'Insights Query Variable'
 #: insights/insights/doctype/insights_query_variable/insights_query_variable.json
 msgid "Variable Name"
-msgstr ""
+msgstr "Tên biến"
 
 #. Label of the variable_value (Password) field in DocType 'Insights Query
 #. Variable'
@@ -3000,7 +3005,7 @@ msgstr ""
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Variables"
-msgstr ""
+msgstr "Biến"
 
 #: frontend/src2/components/VariablesDialog.vue:69
 msgid "Variables are used to store sensitive information such as API keys and credentials. They can be referenced and combined in your script just like any other variable. For eg."
