@@ -20,6 +20,7 @@ import { h } from 'vue'
 import { copy } from '../helpers'
 import { FIELDTYPES, GranularityType } from '../helpers/constants'
 import dayjs from '../helpers/dayjs'
+import useSettings from '../settings/settings'
 import {
 	Cast,
 	CastArgs,
@@ -151,7 +152,15 @@ export function getFormattedDate(date: string, granularity: GranularityType) {
 
 	if (granularity === 'fiscal_year') {
 		const d = dayjs(date)
-		return `FY ${d.format('YYYY')}-${d.add(1, 'year').format('YY')}`
+		const fiscalYearStart = useSettings().doc.fiscal_year_start || '04-01'
+		const fiscalStartMonth = dayjs(fiscalYearStart).month()
+		const fiscalStartDay = dayjs(fiscalYearStart).date()
+
+		const fiscalStartThisYear = d.month(fiscalStartMonth).date(fiscalStartDay)
+		const startYear = d.isBefore(fiscalStartThisYear) ? d.year() - 1 : d.year()
+		const endYear = startYear + 1
+
+		return `FY ${startYear}-${String(endYear).slice(-2)}`
 	}
 
 	const dayjsFormat: Record<string, string> = {
