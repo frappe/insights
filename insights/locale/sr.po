@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
-"POT-Creation-Date: 2026-03-15 09:45+0000\n"
-"PO-Revision-Date: 2026-03-17 12:52\n"
+"POT-Creation-Date: 2026-03-22 09:44+0000\n"
+"PO-Revision-Date: 2026-03-25 13:51\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Serbian (Cyrillic)\n"
 "MIME-Version: 1.0\n"
@@ -1172,6 +1172,10 @@ msgstr "Сакривено"
 msgid "Highlight Cell"
 msgstr "Истакни ћелију"
 
+#: frontend/src2/charts/components/SankeyChartConfigForm.vue:60
+msgid "Horizontal"
+msgstr "Хоризонтално"
+
 #. Label of the host (Data) field in DocType 'Insights Data Source'
 #. Label of the host (Data) field in DocType 'Insights Data Source v3'
 #: frontend/src2/data_source/ConnectClickhouseDialog.vue:33
@@ -1599,6 +1603,10 @@ msgstr "Придружи се Телеграм групи"
 #: frontend/src2/query/components/AddOperationPopover.vue:49
 msgid "Join this table with another table or query"
 msgstr "Споји ову табелу са другом табелом или упитом"
+
+#: frontend/src2/charts/components/SankeyChartConfigForm.vue:69
+msgid "Justify"
+msgstr "Равномерно распоређено"
 
 #. Label of the key (Data) field in DocType 'Insights Secret Key'
 #. Label of the key (Data) field in DocType 'Insights User Invitation'
@@ -3005,6 +3013,10 @@ msgstr "Променљиве"
 #: frontend/src2/components/VariablesDialog.vue:69
 msgid "Variables are used to store sensitive information such as API keys and credentials. They can be referenced and combined in your script just like any other variable. For eg."
 msgstr "Променљиве се користе за чување осетљивих информација као што су API кључеви и креденцијали. На њих се можете позивати и комбиновати их у скрипти као и било коју другу променљиву. На пример."
+
+#: frontend/src2/charts/components/SankeyChartConfigForm.vue:61
+msgid "Vertical"
+msgstr "Вертикално"
 
 #. Label of the vertical_compact_layout (Check) field in DocType 'Insights
 #. Dashboard v3'
