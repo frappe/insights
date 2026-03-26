@@ -11,6 +11,9 @@ import frappe
 
 
 def execute():
+    from duckdb import CatalogException
+    from ibis.common.exceptions import TableNotFound
+
     from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
         Warehouse,
         get_warehouse_schema_name,
@@ -30,17 +33,28 @@ def execute():
     if not stored_tables:
         return
 
+    logger = frappe.logger()
+
     with w.get_write_connection() as db:
         for row in stored_tables:
             schema = get_warehouse_schema_name(row.data_source)
             table = frappe.scrub(row.table)
             legacy_name = f"{frappe.scrub(row.data_source)}.{table}"
 
-            with suppress(Exception):
+            # CatalogException is raised when the schema already exists — that is fine.
+            with suppress(CatalogException):
                 db.create_database(schema)
 
-            with suppress(Exception):
+            # TableNotFound means the legacy table was never written; skip silently.
+            try:
                 expr = db.table(legacy_name)
                 db.create_table(table, expr, database=schema, overwrite=True)
                 db.drop_table(legacy_name, force=True)
-                frappe.logger().info(f"Insights warehouse: migrated '{legacy_name}' → '{schema}'.'{table}'")
+                logger.info(f"Insights warehouse: migrated '{legacy_name}' → '{schema}'.'{table}'")
+            except TableNotFound:
+                logger.warning(f"Insights warehouse: legacy table '{legacy_name}' not found, skipping.")
+            except Exception:
+                logger.exception(
+                    f"Insights warehouse: failed to migrate '{legacy_name}' → '{schema}'.'{table}'. "
+                    "Manual remediation may be required."
+                )
