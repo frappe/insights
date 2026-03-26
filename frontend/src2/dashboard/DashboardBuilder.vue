@@ -65,7 +65,9 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 			<div class="flex items-center justify-between p-4 pb-3">
 				<ContentEditable
 					class="cursor-text rounded-sm text-lg font-semibold !text-gray-800 focus:ring-2 focus:ring-gray-700 focus:ring-offset-4"
-					v-model="dashboard.doc.title"
+					:modelValue="dashboard.doc.title"
+					@returned="dashboard.doc.title = $event"
+					@blur="dashboard.doc.title = $event"
 					placeholder="Untitled Dashboard"
 				></ContentEditable>
 				<div class="flex gap-2">

@@ -25,6 +25,7 @@ const dataSourceOptions = computed(() => {
 
 <template>
 	<Autocomplete
+		class="!w-fit"
 		:options="dataSourceOptions"
 		:modelValue="currentSourceName"
 		@update:modelValue="currentSourceName = $event?.value || ''"
