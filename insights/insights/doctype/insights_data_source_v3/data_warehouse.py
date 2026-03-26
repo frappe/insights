@@ -183,11 +183,15 @@ class WarehouseTableWriter:
 
         total_rows = 0
         try:
-            with insights.warehouse.get_write_connection(self.database) as db:
+            with insights.warehouse.get_write_connection() as db:
                 self._log(f"Committing {len(self._parquet_files)} parquet files to '{self.table_name}'")
 
                 with suppress(CatalogException):
                     db.create_database(self.database)
+
+                db.raw_sql(f"USE '{self.database}'")
+
+                self._log(f"Switched to '{self.database}' database")
 
                 parquet_glob = str(self._temp_dir / "*.parquet")
                 merged = db.read_parquet(parquet_glob)
