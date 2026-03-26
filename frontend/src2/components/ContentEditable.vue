@@ -16,7 +16,6 @@
 
 <script setup>
 import { onMounted, ref, watch } from 'vue'
-import { useDebounceFn } from '@vueuse/core'
 
 function replaceAll(str, search, replacement) {
 	return str.split(search).join(replacement)
@@ -75,16 +74,11 @@ function emitContent(value) {
 	}
 }
 
-const debouncedEmit = useDebounceFn(emitContent, 100)
-
 function update(event) {
 	if (event == 'blur') {
-		debouncedEmit.cancel()
 		emit('blur', currentContent())
-		emitContent(currentContent())
-		return
 	}
-	debouncedEmit(currentContent())
+	emitContent(currentContent())
 }
 
 function onPaste(event) {
@@ -114,7 +108,7 @@ function isFocused() {
 
 watch(
 	() => props.modelValue ?? props.value,
-	(newval, oldval) => {
+	(newval) => {
 		if (!isFocused() && newval != currentContent()) {
 			updateContent(newval ?? '')
 		}
@@ -123,14 +117,14 @@ watch(
 
 watch(
 	() => props.noHtml,
-	(newval, oldval) => {
+	() => {
 		updateContent(props.modelValue ?? '')
 	},
 )
 
 watch(
 	() => props.tag,
-	(newval, oldval) => {
+	() => {
 		updateContent(props.modelValue ?? '')
 	},
 	{ flush: 'post' },
