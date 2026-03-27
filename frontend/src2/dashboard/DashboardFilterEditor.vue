@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { IconPicker } from 'frappe-ui/icons'
-import { computed, inject, nextTick, reactive, ref, watch } from 'vue'
+import { computed, inject, reactive, ref } from 'vue'
 import useChart from '../charts/chart'
 import { copy } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
@@ -12,7 +12,7 @@ import { ColumnOption, FilterOperator } from '../types/query.types'
 import { WorkbookDashboardFilter } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
 import { __ } from '../translation'
-import { Switch, Tabs,DatePicker,DateRangePicker  } from 'frappe-ui'
+import { Switch, Tabs, DatePicker, DateRangePicker } from 'frappe-ui'
 
 const dashboard = inject<Dashboard>('dashboard')!
 const props = defineProps<{ item: WorkbookDashboardFilter }>()
@@ -127,7 +127,7 @@ function defaultValuesProvider(search: string) {
 	return dashboard.getDistinctColumnValues(
 		sourceColumn.value.query,
 		sourceColumn.value.column,
-		search
+		search,
 	)
 }
 
@@ -140,7 +140,6 @@ const editDisabled = computed(() => {
 })
 
 function saveEdit() {
-	dashboard.editingItemIndex = undefined
 	Object.assign(props.item, filter)
 }
 </script>
@@ -167,7 +166,7 @@ function saveEdit() {
 	>
 		<template #body-content>
 			<div class="flex flex-col min-h-[20rem] max-h-[20rem]">
-				<Tabs  v-model="tabIndex" :tabs="tabs" class="-mt-6">
+				<Tabs v-model="tabIndex" :tabs="tabs" class="-mt-6">
 					<template #tab-panel="{ tab }">
 						<div v-if="tab.value === 'setup'" class="flex flex-col gap-4 pt-2">
 							<div class="flex items-end gap-1.5 p-1">
@@ -188,7 +187,9 @@ function saveEdit() {
 								/>
 							</div>
 							<div class="flex flex-col gap-1 border-t pt-3">
-								<label class="text-xs text-ink-gray-5">{{ __('Linked Charts') }}</label>
+								<label class="text-xs text-ink-gray-5">{{
+									__('Linked Charts')
+								}}</label>
 								<div
 									v-for="link in linkOptions"
 									:key="link.name"
@@ -200,13 +201,18 @@ function saveEdit() {
 										@update:modelValue="toggleLink(link.name)"
 									></Switch>
 									<p class="flex-1 truncate text-base">{{ link.title }}</p>
-									<div v-if="enabledLinks.includes(link.name)" class="ml-auto flex-shrink-0">
+									<div
+										v-if="enabledLinks.includes(link.name)"
+										class="ml-auto flex-shrink-0"
+									>
 										<Autocomplete
 											class="min-w-[10rem]"
 											:placeholder="__('Select a column')"
 											:options="link.columns"
 											:modelValue="filter.links[link.name]"
-											@update:modelValue="filter.links[link.name] = $event.value"
+											@update:modelValue="
+												filter.links[link.name] = $event.value
+											"
 										/>
 									</div>
 								</div>
@@ -214,12 +220,19 @@ function saveEdit() {
 						</div>
 						<div v-else-if="tab.value === 'config'" class="flex flex-col gap-4 pt-2">
 							<div class="flex flex-col gap-1.5 p-1">
-								<label class="block text-xs text-ink-gray-5">{{ __('Filter Icon') }}</label>
+								<label class="block text-xs text-ink-gray-5">{{
+									__('Filter Icon')
+								}}</label>
 								<IconPicker v-model="filter.icon" />
 							</div>
-							<div v-if="filter.filter_type" class="flex flex-col gap-2.5 border-t pt-3 p-1">
+							<div
+								v-if="filter.filter_type"
+								class="flex flex-col gap-2.5 border-t pt-3 p-1"
+							>
 								<div class="flex items-center justify-between">
-									<label class="text-xs text-ink-gray-5">{{ __('Default Value') }}</label>
+									<label class="text-xs text-ink-gray-5">{{
+										__('Default Value')
+									}}</label>
 									<button
 										v-if="filter.default_operator"
 										class="text-xs text-ink-gray-5 hover:text-ink-gray-7"
@@ -231,48 +244,57 @@ function saveEdit() {
 								<NumberFilterPicker
 									v-if="filter.filter_type === 'Number'"
 									v-model:operator="filter.default_operator"
-									v-model:value="(filter.default_value as number)"
+									v-model:value="filter.default_value as number"
 								/>
 								<template v-else>
-									<div class=" flex flex-row items-start gap-2">
-									<FormControl
-										type="select"
-										:placeholder="__('Select operator...')"
-										:modelValue="filter.default_operator"
-										:options="defaultOperatorOptions"
-										class="w-1/3"
-										@update:modelValue="onDefaultOperatorChange($event)"
-									/>
-									<template v-if="defaultValueSelectorType">
-										<DatePicker
-											v-if="defaultValueSelectorType === 'date'"
-											:range="false"
-											:modelValue="[filter.default_value as string]"
-											@update:modelValue="filter.default_value = $event[0]"
-										/>
-										<DateRangePicker
-											v-else-if="defaultValueSelectorType === 'date_range'"
-											:range="true"
-											v-model="(filter.default_value as string[])"
-										/>
-										<RelativeDatePicker
-											v-else-if="defaultValueSelectorType === 'relative_date'"
-											v-model="(filter.default_value as string)"
-										/>
-										<ColumnFilterValueSelector
-											v-else-if="defaultValueSelectorType === 'select'"
-											v-model="(filter.default_value as string[])"
-											:valuesProvider="defaultValuesProvider"
-										/>
+									<div class="flex gap-2 items-start">
 										<FormControl
-											v-else-if="defaultValueSelectorType === 'text'"
-											v-model="filter.default_value"
-											:placeholder="__('Value')"
-											autocomplete="off"
+											type="select"
+											:placeholder="__('Select operator...')"
+											:modelValue="filter.default_operator"
+											:options="defaultOperatorOptions"
+											@update:modelValue="onDefaultOperatorChange($event)"
 										/>
-									</template>
-								</div>
-
+										<template v-if="defaultValueSelectorType">
+											<DatePicker
+												v-if="defaultValueSelectorType === 'date'"
+												class="flex-1"
+												:modelValue="filter.default_value as string"
+												@update:modelValue="filter.default_value = $event"
+											/>
+											<DateRangePicker
+												v-else-if="
+													defaultValueSelectorType === 'date_range'
+												"
+												class="flex-1"
+												:range="true"
+												v-model="filter.default_value as string[]"
+											/>
+											<RelativeDatePicker
+												v-else-if="
+													defaultValueSelectorType === 'relative_date'
+												"
+												class="flex-1"
+												v-model="filter.default_value as string"
+											/>
+											<div
+												v-else-if="defaultValueSelectorType === 'select'"
+												class="flex-1"
+											>
+												<ColumnFilterValueSelector
+													v-model="filter.default_value as string[]"
+													:valuesProvider="defaultValuesProvider"
+												/>
+											</div>
+											<FormControl
+												v-else-if="defaultValueSelectorType === 'text'"
+												class="flex-1"
+												v-model="filter.default_value"
+												:placeholder="__('Value')"
+												autocomplete="off"
+											/>
+										</template>
+									</div>
 								</template>
 							</div>
 						</div>
