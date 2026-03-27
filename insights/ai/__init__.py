@@ -1,15 +1,10 @@
 from insights.ai.client import AIClient
-from insights.ai.operation_parser import OperationParser
-from insights.ai.prompt_builder import PromptBuilder
-from insights.ai.query_validator import ValidationError, validate_operations
-from insights.ai.session_manager import AISession, AISessionManager
+from insights.ai.generate_query import generate_query
+from insights.ai.validator import ValidationError, validate_operations
 
 __all__ = [
     "AIClient",
-    "OperationParser",
-    "PromptBuilder",
-    "validate_operations",
     "ValidationError",
-    "AISessionManager",
-    "AISession",
+    "generate_query",
+    "validate_operations",
 ]

@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { DatabaseZap } from 'lucide-vue-next'
+import { DatabaseZap, Sparkles } from 'lucide-vue-next'
 import { inject, ref } from 'vue'
 import { Query } from '../query'
 import SourceSelectorDialog from './source_selector/SourceSelectorDialog.vue'
+import AIQueryDialog from './AIQueryDialog.vue'
 
 const query = inject('query') as Query
 const showSourceSelectorDialog = ref(true)
+const showAIQueryDialog = ref(false)
 </script>
 
 <template>
@@ -23,9 +25,17 @@ const showSourceSelectorDialog = ref(true)
 					<br />
 					You can also select a query as a source.
 				</span>
-				<Button class="mt-2" variant="outline" @click="showSourceSelectorDialog = true">
-					Open Selector
-				</Button>
+				<div class="mt-2 flex gap-2">
+					<Button variant="outline" @click="showSourceSelectorDialog = true">
+						Open Selector
+					</Button>
+					<Button variant="outline" @click="showAIQueryDialog = true">
+						<template #prefix>
+							<Sparkles class="h-3 w-3 text-gray-600" stroke-width="1.5" />
+						</template>
+						Generate with AI
+					</Button>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -35,4 +45,5 @@ const showSourceSelectorDialog = ref(true)
 		v-model="showSourceSelectorDialog"
 		@select="query.setSource($event)"
 	/>
+	<AIQueryDialog v-if="showAIQueryDialog" v-model="showAIQueryDialog" />
 </template>

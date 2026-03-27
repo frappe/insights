@@ -1,15 +1,26 @@
 <script setup lang="ts">
 import { useTimeAgo } from '@vueuse/core'
-import { Copy, CopyPlus, MoreHorizontal, PlayIcon, RefreshCw, Scroll } from 'lucide-vue-next'
+import { Tooltip } from 'frappe-ui'
+import {
+	Copy,
+	CopyPlus,
+	MoreHorizontal,
+	PlayIcon,
+	RefreshCw,
+	Scroll,
+	Sparkles,
+} from 'lucide-vue-next'
 import { computed, h, inject, ref } from 'vue'
-import { Query } from '../query'
-import { __ } from '../../translation'
-import ViewSQLDialog from './ViewSQLDialog.vue'
 import session from '../../session'
+import { __ } from '../../translation'
+import { Query } from '../query'
+import AIQueryDialog from './AIQueryDialog.vue'
+import ViewSQLDialog from './ViewSQLDialog.vue'
 
 const query = inject('query') as Query
 
 const showViewSQLDialog = ref(false)
+const showAIQueryDialog = ref(false)
 
 const moreActions = computed(() => {
 	const actions = []
@@ -64,6 +75,17 @@ const moreActions = computed(() => {
 			</div>
 		</div>
 		<div class="flex items-center gap-2">
+			<Tooltip :text="__('Modify with AI')">
+				<Button
+					variant="ghost"
+					@click="() => (showAIQueryDialog = true)"
+					class="!h-6 !gap-1.5 bg-white !px-2 text-xs shadow"
+				>
+					<template #icon>
+						<Sparkles class="h-3 w-3 text-gray-700" stroke-width="1.5" />
+					</template>
+				</Button>
+			</Tooltip>
 			<Button
 				variant="ghost"
 				:label="__('Execute')"
@@ -85,4 +107,5 @@ const moreActions = computed(() => {
 	</div>
 
 	<ViewSQLDialog v-if="showViewSQLDialog" v-model="showViewSQLDialog" />
+	<AIQueryDialog v-if="showAIQueryDialog" v-model="showAIQueryDialog" />
 </template>
