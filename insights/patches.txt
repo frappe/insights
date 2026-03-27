@@ -51,3 +51,8 @@ insights.insights.doctype.insights_table_v3.patches.force_sync_tables #5
 insights.patches.enable_data_store
 insights.insights.doctype.insights_data_source_v3.patches.set_type
 execute:frappe.db.set_single_value("Insights Settings", "apply_user_permissions", 1)
+<<<<<<< HEAD
+=======
+insights.patches.migrate_warehouse_tables_to_schemas
+insights.patches.fix_table_link_names
+>>>>>>> 290774d3 (fix: auto match join columns)
