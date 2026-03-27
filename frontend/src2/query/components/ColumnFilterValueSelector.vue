@@ -98,7 +98,7 @@ function toggleSort() {
 				@click.prevent.stop="toggleValue(value)"
 			>
 				<Checkbox
-					class="cursor-pointer duration-300"
+					class="pointer-events-none cursor-pointer duration-300"
 					:modelValue="selectedValues.includes(value)"
 				/>
 				<span class="flex-1 truncate"> {{ value }} </span>
