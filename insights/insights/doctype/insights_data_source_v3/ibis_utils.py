@@ -143,10 +143,50 @@ class IbisQueryBuilder:
         return _table
 
     def get_column(self, column_name, throw=True):
+        # 1. Exact match
         if column_name in self.query.columns:
             return self.query[column_name]
+
+        # 2. Sanitized name match (handles capitalisation / special-char differences)
         if sanitize_name(column_name) in self.query.columns:
             return self.query[sanitize_name(column_name)]
+
+        # 3. Suffix match: handles the case where a stored column name was produced
+        #    in live-connection mode (e.g. "tabhd_ticket_priority_name") but the
+        #    query now runs against the warehouse, where rename_duplicate_columns
+        #    prepends the data-source schema prefix and produces a longer name
+        #    (e.g. "support_frappe_io_tabhd_ticket_priority_name").
+        #    We only match when exactly one column ends with "_{column_name}" so
+        #    that ambiguous / short suffixes are never silently resolved to the
+        #    wrong column.
+        suffix = f"_{column_name}"
+        suffix_matches = [col for col in self.query.columns if col.endswith(suffix)]
+        if len(suffix_matches) == 1:
+            return self.query[suffix_matches[0]]
+
+        # 4. Schema-prefix-strip match: handles the case where a stored column name
+        #    was produced in old warehouse mode (e.g. "frappe_cloud_tabinvoice_item_parent")
+        #    but the query now runs without the data-source schema prefix, producing
+        #    the shorter name "tabinvoice_item_parent" (new warehouse behaviour after
+        #    PR #953 + revert of get_ibis_table_name).
+        #    We scan all DatabaseTable nodes in the current ibis expression tree to
+        #    collect the schema names that are actually present in this query, then
+        #    try stripping each as a leading prefix before checking for a column match.
+        all_dt = self.query.op().find_topmost(DatabaseTable)
+        schemas = {
+            dt.namespace.database
+            for dt in all_dt
+            if dt.namespace and dt.namespace.database and dt.namespace.database != "main"
+        }
+        for schema in schemas:
+            prefix = f"{schema}_"
+            if column_name.startswith(prefix):
+                remainder = column_name[len(prefix) :]
+                if remainder in self.query.columns:
+                    return self.query[remainder]
+                if sanitize_name(remainder) in self.query.columns:
+                    return self.query[sanitize_name(remainder)]
+
         if throw:
             frappe.throw(f"Column {column_name} does not exist in the table")
 
