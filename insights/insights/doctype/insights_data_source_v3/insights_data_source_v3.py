@@ -89,10 +89,8 @@ class InsightsDataSourceDocument:
                 {
                     "database_type": "DuckDB",
                     "database_name": None,  # this should never be used
-                    "schema": self.name.replace(".", "_"),
                 }
             )
-            insights.warehouse.create_database(self.schema)
 
         if self.is_site_db:
             self.db_set("is_frappe_db", 1)

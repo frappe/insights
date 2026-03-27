@@ -337,25 +337,23 @@ function makeDashboard(name: string) {
 	}
 
 
-	const defaultFilters = dashboard.doc.items.reduce((acc, item) => {
-		if (item.type != 'filter') return acc
-
-		const filterItem = item as WorkbookDashboardFilter
-		if (filterItem.default_operator && filterItem.default_value) {
-			acc[filterItem.filter_name] = {
-				operator: filterItem.default_operator,
-				value: filterItem.default_value,
-			}
-		}
-		return acc
-	}, {} as typeof filterStates.value)
-
-	Object.assign(filterStates.value, defaultFilters)
-
 	const key = `insights:dashboard-filter-states-${name}`
 	filterStates.value = store(key, () => filterStates.value)
 
 	waitUntil(() => dashboard.isloaded).then(() => {
+		const defaultFilters = dashboard.doc.items.reduce((acc, item) => {
+			if (item.type != 'filter') return acc
+			const filterItem = item as WorkbookDashboardFilter
+			if (filterItem.default_operator && filterItem.default_value) {
+				acc[filterItem.filter_name] = {
+					operator: filterItem.default_operator,
+					value: filterItem.default_value,
+				}
+			}
+			return acc
+		}, {} as typeof filterStates.value)
+		Object.assign(filterStates.value, defaultFilters)
+
 		wheneverChanges(
 			() => dashboard.doc.title,
 			() => {

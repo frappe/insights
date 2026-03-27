@@ -58,6 +58,7 @@
 		"vue-tsc": "^2.0.21"
 	},
 	"resolutions": {
-		"@iconify/utils": "^2.3.0"
+		"@iconify/utils": "^2.3.0",
+		"reka-ui": "2.5.0"
 	}
 }

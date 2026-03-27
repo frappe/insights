@@ -747,7 +747,15 @@ export function makeQuery(name: string) {
 		}
 
 		if (FIELDTYPES.DATE.includes(dim.data_type)) {
+			if (!value) {
+				filters.push({ column: column(dim.column_name), operator: 'is_not_set', value: '' })
+				return filters
+			}
+
 			const start = dayjs(value)
+			// since fiscal year is not supported in dayjs
+			// we will treat it as year for drill down purposes
+			const granularity = dim.granularity === 'fiscal_year' ? 'year' : dim.granularity
 
 			filters.push({
 				column: column(dim.column_name),
@@ -755,8 +763,8 @@ export function makeQuery(name: string) {
 				value: start.format('YYYY-MM-DD HH:mm:ss'),
 			})
 
-			if (dim.granularity) {
-				const end = start.clone().add(1, dim.granularity)
+			if (granularity) {
+				const end = start.clone().add(1, granularity)
 				filters.push({
 					column: column(dim.column_name),
 					operator: '<',
