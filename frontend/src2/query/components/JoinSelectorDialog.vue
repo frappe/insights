@@ -1,19 +1,21 @@
 <script setup lang="ts">
+import { Combobox, MultiSelect } from 'frappe-ui'
 import { Braces } from 'lucide-vue-next'
 import { computed, inject, reactive, watch } from 'vue'
 import useTableStore from '../../data_source/tables'
 import { wheneverChanges } from '../../helpers'
 import { joinTypes } from '../../helpers/constants'
+import { __ } from '../../translation'
 import { JoinArgs } from '../../types/query.types'
 import { workbookKey } from '../../workbook/workbook'
 import { column, expression, query_table, table } from '../helpers'
+import { Query } from '../query'
 import InlineExpression from './InlineExpression.vue'
-import { __ } from '../../translation'
 import {
 	handleOldProps,
+	useQueryColumnOptions,
 	useTableColumnOptions,
 	useTableOptions,
-	useQueryColumnOptions,
 } from './join_utils'
 
 const props = defineProps<{ join?: JoinArgs }>()
@@ -48,14 +50,23 @@ const selectedTable = computed({
 			return join.table.query_name
 		}
 	},
-	set(option: any) {
-		if (option.data_source && option.table_name) {
+	set(value: string) {
+		const option = [...queryTableOptions.value, ...tableOptions.options].find(
+			(o) => o.value === value,
+		)
+		if (!option) return
+		if (
+			'data_source' in option &&
+			'table_name' in option &&
+			option.data_source &&
+			option.table_name
+		) {
 			join.table = table({
 				data_source: option.data_source,
 				table_name: option.table_name,
 			})
 		}
-		if (option.query_name) {
+		if ('query_name' in option && option.query_name) {
 			join.table = query_table({
 				workbook: option.workbook,
 				query_name: option.query_name,
@@ -158,11 +169,11 @@ const groupedTableOptions = computed(() => {
 	return [
 		{
 			group: 'Queries',
-			items: queryTableOptions.value,
+			options: queryTableOptions.value,
 		},
 		{
 			group: 'Tables',
-			items: tableOptions.options,
+			options: tableOptions.options,
 		},
 	]
 })
@@ -245,14 +256,15 @@ function reset() {
 
 				<!-- Fields -->
 				<div class="flex w-full flex-col gap-3 overflow-auto p-0.5 text-base">
-					<div>
-						<Autocomplete
-							:label="__('Right Table')"
+					<div class="flex flex-col gap-1.5">
+						<label class="block text-xs text-ink-gray-5">{{ __('Right Table') }}</label>
+						<Combobox
 							:placeholder="__('Table')"
+							:open-on-focus="true"
 							v-model="selectedTable"
 							:loading="tableOptions.loading"
 							:options="groupedTableOptions"
-							@update:query="tableOptions.searchText = $event"
+							@input="tableOptions.searchText = $event"
 						/>
 					</div>
 					<div>
@@ -264,21 +276,24 @@ function reset() {
 								"
 							>
 								<div class="flex-1">
-									<Autocomplete
-										:label="__('Left Column')"
+									<label class="mb-1 block text-xs text-gray-600">{{
+										__('Left Column')
+									}}</label>
+									<Combobox
 										:placeholder="__('Column')"
 										:options="query.result.columnOptions"
 										:modelValue="join.join_condition.left_column.column_name"
 										@update:modelValue="
-											join.join_condition.left_column.column_name =
-												$event?.value
+											join.join_condition.left_column.column_name = $event
 										"
 									/>
 								</div>
 								<div class="flex h-7 flex-shrink-0 items-center font-mono">=</div>
 								<div class="flex-1">
-									<Autocomplete
-										:label="__('Right Column')"
+									<label class="mb-1 block text-xs text-gray-600">{{
+										__('Right Column')
+									}}</label>
+									<Combobox
 										:placeholder="__('Column')"
 										:loading="
 											rightTableColumnOptions.loading ||
@@ -290,8 +305,7 @@ function reset() {
 										]"
 										:modelValue="join.join_condition.right_column.column_name"
 										@update:modelValue="
-											join.join_condition.right_column.column_name =
-												$event?.value
+											join.join_condition.right_column.column_name = $event
 										"
 									/>
 								</div>
@@ -348,8 +362,7 @@ function reset() {
 						<label class="mb-1 block text-xs text-gray-600">{{
 							__('Select Columns to Add')
 						}}</label>
-						<Autocomplete
-							:multiple="true"
+						<MultiSelect
 							:placeholder="__('Columns')"
 							:loading="
 								rightTableColumnOptions.loading || queryTableColumnOptions.loading
@@ -360,7 +373,7 @@ function reset() {
 							]"
 							:modelValue="join.select_columns?.map((c) => c.column_name)"
 							@update:modelValue="
-								join.select_columns = $event?.map((o: any) => column(o.value)) || []
+								join.select_columns = $event?.map((o: any) => column(o)) || []
 							"
 						/>
 					</div>
