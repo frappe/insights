@@ -215,8 +215,8 @@ class IbisQueryBuilder:
         def left_eq_right_condition(left_column, right_column):
             if left_column and right_column and left_column.column_name and right_column.column_name:
                 rt = right_table
-                lc = getattr(self.query, left_column.column_name)
-                rc = getattr(rt, right_column.column_name)
+                lc = self.get_column(left_column.column_name)
+                rc = rt[right_column.column_name]
                 return lc.cast(rc.type()) == rc
 
             frappe.throw("Join condition is not valid")
@@ -372,7 +372,8 @@ class IbisQueryBuilder:
 
     def apply_select(self, select_args):
         select_args = _dict(select_args)
-        return self.query.select(select_args.column_names)
+        resolved_names = [self.get_column(col).get_name() for col in select_args.column_names]
+        return self.query.select(resolved_names)
 
     def apply_rename(self, rename_args):
         old_name = self.get_column(rename_args.column.column_name).get_name()
@@ -634,7 +635,7 @@ class IbisQueryBuilder:
         return column.name(measure.measure_name)
 
     def translate_dimension(self, dimension):
-        col = getattr(self.query, dimension.column_name)
+        col = self.get_column(dimension.column_name)
         if self.is_date_type(dimension.data_type) and dimension.granularity:
             col = self.apply_granularity(col, dimension.granularity)
             col = col.cast(self.get_ibis_dtype(dimension.data_type))
@@ -847,7 +848,24 @@ def get_ibis_table_name(table: IbisQuery):
     dt = table.op().find_topmost(DatabaseTable)
     if not dt:
         return "right_table"
-    return dt[0].name
+    name = dt[0].name
+    # For warehouse tables, reconstruct the qualified name by prepending the
+    # DuckDB schema (data source name). Before PR #953, warehouse tables were
+    # stored with a dot-delimited name like "frappe_cloud.tabinvoice_item" in
+    # the main schema, so get_ibis_table_name returned "frappe_cloud.tabinvoice_item"
+    # and rename_duplicate_columns produced prefixes like "frappe_cloud_tabinvoice_item_".
+    # After #953, tables live in per-data-source schemas, so DatabaseTable.name is
+    # just "tabinvoice_item". We include namespace.database here so that the same
+    # prefixed column names are produced, preserving existing stored queries.
+    namespace = dt[0].namespace
+    if (
+        namespace
+        and namespace.database
+        and namespace.database != "main"
+        and dt[0].source is insights.warehouse.db
+    ):
+        name = f"{namespace.database}.{name}"
+    return name
 
 
 def sanitize_name(name):
