@@ -407,7 +407,14 @@ export function makeQuery(name: string) {
 	}
 
 	function addPivotWider(args: PivotWiderArgs) {
-		addOperation(pivot_wider(args))
+		const editingPivot = activeEditOperation.value.type === 'pivot_wider'
+
+		if (!editingPivot) {
+			addOperation(pivot_wider(args))
+		} else {
+			query.doc.operations[activeEditIndex.value] = pivot_wider(args)
+			setActiveEditIndex(-1)
+		}
 	}
 
 	function selectColumns(args: SelectArgs) {
