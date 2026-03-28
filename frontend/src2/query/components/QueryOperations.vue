@@ -9,6 +9,7 @@ import {
 	Limit,
 	Mutate,
 	OrderBy,
+	PivotWider,
 	Remove,
 	Rename,
 	Select,
@@ -202,6 +203,30 @@ const SummarizeInfo = (props: any) => {
 	)
 }
 
+const PivotWiderInfo = (props: any) => {
+	const pivot = props.pivot as PivotWider
+	const values = pivot.values
+	const rows = pivot.rows
+	const columns = pivot.columns
+
+	return (
+		<div class="flex flex-wrap items-baseline gap-1 text-gray-700">
+			<p>Pivot</p>
+			{values.map((measure, idx) => (
+				<Element>{measure.measure_name}</Element>
+			))}
+			<p>rows</p>
+			{rows.map((dimension, idx) => (
+				<Element>{dimension.column_name}</Element>
+			))}
+			<p>cols</p>
+			{columns.map((dimension, idx) => (
+				<Element>{dimension.column_name}</Element>
+			))}
+		</div>
+	)
+}
+
 const OrderByInfo = (props: any) => {
 	const sort = props.sort as OrderBy
 	const column_name = sort.column.column_name
@@ -280,6 +305,7 @@ const CustomOperationInfo = (props: any) => {
 							<FilterInfo v-else-if="op.type === 'filter_group'" :filter="op" />
 							<MutateInfo v-else-if="op.type === 'mutate'" :mutate="op" />
 							<SummarizeInfo v-else-if="op.type === 'summarize'" :summarize="op" />
+							<PivotWiderInfo v-else-if="op.type === 'pivot_wider'" :pivot="op" />
 							<OrderByInfo v-else-if="op.type === 'order_by'" :sort="op" />
 							<LimitInfo v-else-if="op.type === 'limit'" :limit="op" />
 							<CustomOperationInfo
