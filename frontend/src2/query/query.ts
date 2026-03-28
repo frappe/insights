@@ -47,6 +47,7 @@ import {
 	Summarize,
 	SummarizeArgs,
 	UnionArgs,
+	aggregations,
 } from '../types/query.types'
 import { InsightsQueryv3, QueryVariable } from '../types/workbook.types'
 import useWorkbook from '../workbook/workbook'
@@ -99,6 +100,28 @@ export function makeQuery(name: string) {
 			return query.doc.operations.slice(0, activeOperationIdx.value + 1)
 		}
 		return query.doc.operations.slice()
+	})
+
+	const measureColumns = computed(() => {
+		const measureNames = new Set<string>()
+		let seenSummarize = false
+		for (const op of currentOperations.value) {
+			if (op.type === 'summarize') {
+				op.measures.forEach((m) => measureNames.add(m.measure_name))
+				seenSummarize = true
+			} else if (op.type === 'pivot_wider') {
+				op.values.forEach((m) => measureNames.add(m.measure_name))
+				seenSummarize = true
+			} else if (seenSummarize && op.type === 'rename') {
+				// Track renames that happen after a summarize/pivot_wider so that
+				// a measure renamed to e.g. "total_revenue" is still detected.
+				if (measureNames.has(op.column.column_name)) {
+					measureNames.delete(op.column.column_name)
+					measureNames.add(op.new_name)
+				}
+			}
+		}
+		return Array.from(measureNames)
 	})
 
 	const dataSource = computed(() => getDataSource(currentOperations.value))
@@ -160,24 +183,33 @@ export function makeQuery(name: string) {
 				adhoc_filters: adhocFilters.value,
 				force,
 			})
-			.then((response: any) => {
-				if (!response) return
+		.then((response: any) => {
+			if (!response) return
 
-				result.value.executedSQL = response.sql
-				result.value.columns = response.columns
-				result.value.rows = response.rows
-				result.value.totalRowCount = 0
-				result.value.formattedRows = getFormattedRows(result.value, query.doc.operations)
-				result.value.columnOptions = result.value.columns.map((column) => ({
+			result.value.executedSQL = response.sql
+			result.value.columns = response.columns
+			result.value.rows = response.rows
+			result.value.totalRowCount = 0
+			result.value.formattedRows = getFormattedRows(result.value, query.doc.operations)
+
+			const aggregationPrefixes = aggregations.map((a) => `${a}_`)
+			const isMeasureColumn = (name: string) =>
+				measureColumns.value.includes(name) ||
+				aggregationPrefixes.some((prefix) => name.startsWith(prefix))
+
+			result.value.columnOptions = result.value.columns.map((column) => {
+				return {
 					label: column.name,
 					value: column.name,
 					description: column.type,
 					query: query.doc.name,
 					data_type: column.type,
-				}))
-				result.value.timeTaken = response.time_taken
-				result.value.lastExecutedAt = new Date()
+					is_measure: isMeasureColumn(column.name),
+				}
 			})
+			result.value.timeTaken = response.time_taken
+			result.value.lastExecutedAt = new Date()
+		})
 			.catch(() => {
 				result.value = { ...EMPTY_RESULT }
 			})
