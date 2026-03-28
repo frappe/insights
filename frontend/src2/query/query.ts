@@ -984,7 +984,7 @@ export function makeQuery(name: string) {
 		const selectedValueColumn =
 			pivotOperation.values.length == 1
 				? pivotOperation.values[0].measure_name
-				: (pivotColumnValues.at(-1) as string)
+				: (pivotColumnValues[pivotColumnValues.length - 1] as string)
 		pivotOperation.values.forEach((m) => {
 			return filters.push(...getFiltersForMeasure(m, selectedValueColumn))
 		})
