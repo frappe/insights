@@ -143,10 +143,50 @@ class IbisQueryBuilder:
         return _table
 
     def get_column(self, column_name, throw=True):
+        # 1. Exact match
         if column_name in self.query.columns:
             return self.query[column_name]
+
+        # 2. Sanitized name match (handles capitalisation / special-char differences)
         if sanitize_name(column_name) in self.query.columns:
             return self.query[sanitize_name(column_name)]
+
+        # 3. Suffix match: handles the case where a stored column name was produced
+        #    in live-connection mode (e.g. "tabhd_ticket_priority_name") but the
+        #    query now runs against the warehouse, where rename_duplicate_columns
+        #    prepends the data-source schema prefix and produces a longer name
+        #    (e.g. "support_frappe_io_tabhd_ticket_priority_name").
+        #    We only match when exactly one column ends with "_{column_name}" so
+        #    that ambiguous / short suffixes are never silently resolved to the
+        #    wrong column.
+        suffix = f"_{column_name}"
+        suffix_matches = [col for col in self.query.columns if col.endswith(suffix)]
+        if len(suffix_matches) == 1:
+            return self.query[suffix_matches[0]]
+
+        # 4. Schema-prefix-strip match: handles the case where a stored column name
+        #    was produced in old warehouse mode (e.g. "frappe_cloud_tabinvoice_item_parent")
+        #    but the query now runs without the data-source schema prefix, producing
+        #    the shorter name "tabinvoice_item_parent" (new warehouse behaviour after
+        #    PR #953 + revert of get_ibis_table_name).
+        #    We scan all DatabaseTable nodes in the current ibis expression tree to
+        #    collect the schema names that are actually present in this query, then
+        #    try stripping each as a leading prefix before checking for a column match.
+        all_dt = self.query.op().find_topmost(DatabaseTable)
+        schemas = {
+            dt.namespace.database
+            for dt in all_dt
+            if dt.namespace and dt.namespace.database and dt.namespace.database != "main"
+        }
+        for schema in schemas:
+            prefix = f"{schema}_"
+            if column_name.startswith(prefix):
+                remainder = column_name[len(prefix) :]
+                if remainder in self.query.columns:
+                    return self.query[remainder]
+                if sanitize_name(remainder) in self.query.columns:
+                    return self.query[sanitize_name(remainder)]
+
         if throw:
             frappe.throw(f"Column {column_name} does not exist in the table")
 
@@ -848,24 +888,7 @@ def get_ibis_table_name(table: IbisQuery):
     dt = table.op().find_topmost(DatabaseTable)
     if not dt:
         return "right_table"
-    name = dt[0].name
-    # For warehouse tables, reconstruct the qualified name by prepending the
-    # DuckDB schema (data source name). Before PR #953, warehouse tables were
-    # stored with a dot-delimited name like "frappe_cloud.tabinvoice_item" in
-    # the main schema, so get_ibis_table_name returned "frappe_cloud.tabinvoice_item"
-    # and rename_duplicate_columns produced prefixes like "frappe_cloud_tabinvoice_item_".
-    # After #953, tables live in per-data-source schemas, so DatabaseTable.name is
-    # just "tabinvoice_item". We include namespace.database here so that the same
-    # prefixed column names are produced, preserving existing stored queries.
-    namespace = dt[0].namespace
-    if (
-        namespace
-        and namespace.database
-        and namespace.database != "main"
-        and dt[0].source is insights.warehouse.db
-    ):
-        name = f"{namespace.database}.{name}"
-    return name
+    return dt[0].name
 
 
 def sanitize_name(name):

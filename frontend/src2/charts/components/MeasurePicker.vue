@@ -22,6 +22,12 @@ const props = defineProps<{
 	columnOptions: ColumnOption[]
 }>()
 
+// True when at least one available column is a pre-aggregated measure (i.e. it
+// came from a summarize/pivot_wider step in the source query). In this case we
+// skip the "pick a function" step by pre-selecting `sum`, since the data is
+// already aggregated and users just want to pick the column directly.
+const sourceHasMeasures = computed(() => props.columnOptions.some((c) => c.is_measure))
+
 const measure = defineModel<Measure>({
 	required: true,
 	default: () => {
@@ -58,9 +64,28 @@ const expressionMeasure = computed<ExpressionMeasure | undefined>({
 
 const searchQuery = ref('')
 
+// Tracks whether the user manually clicked "back" (ChevronLeft) to change the
+// aggregation. When true, we don't auto-fill the aggregation so the user can
+// choose a different function.
+const userResetAggregation = ref(false)
+
 watchEffect(() => {
 	if (!columnMeasure.value && !expressionMeasure.value) {
 		resetMeasure()
+	}
+})
+
+// When the source columns include pre-aggregated measures, pre-select `sum` as
+// the aggregation so the picker opens straight to the column list — skipping
+// the "pick a function" step that would otherwise produce confusing
+// "sum of sum_of_revenue" labels.
+// We skip this if the user explicitly clicked back to pick a different function.
+watchEffect(() => {
+	if (!sourceHasMeasures.value) return
+	if (userResetAggregation.value) return
+	const cm = columnMeasure.value
+	if (cm && !cm.aggregation) {
+		cm.aggregation = 'sum'
 	}
 })
 
@@ -74,7 +99,16 @@ watchEffect(() => {
 		cm.measure_name.includes(cm.column_name)
 
 	if (cm.aggregation && cm.column_name && hasDefaultLabel) {
-		cm.measure_name = `${cm.aggregation}_of_${cm.column_name}`
+		// If the column is already a pre-aggregated measure (flagged via is_measure on
+		// the column option, or its name starts with an aggregation prefix), keep the
+		// column name as-is rather than wrapping it as e.g. "sum_of_total_requests".
+		const aggregationPrefixes = aggregations.map((a) => `${a}_`)
+		const columnIsAlreadyMeasure =
+			props.columnOptions.find((o) => o.value === cm.column_name)?.is_measure ||
+			aggregationPrefixes.some((prefix) => cm.column_name.startsWith(prefix))
+		cm.measure_name = columnIsAlreadyMeasure
+			? cm.column_name
+			: `${cm.aggregation}_of_${cm.column_name}`
 	}
 })
 
@@ -130,6 +164,14 @@ function resetMeasure() {
 	}
 }
 
+// Called when the user explicitly clicks ChevronLeft to go back and pick a
+// different aggregation function. We set a flag so the watchEffect above doesn't
+// immediately re-fill `sum` and trap the user on the column list.
+function resetAggregation() {
+	userResetAggregation.value = true
+	resetMeasure()
+}
+
 const label = ref('')
 </script>
 
@@ -171,7 +213,7 @@ const label = ref('')
 								v-else-if="columnMeasure.aggregation"
 								class="mb-1 flex items-center"
 							>
-								<Button class="!h-6 !w-6" @click.prevent.stop="resetMeasure">
+								<Button class="!h-6 !w-6" @click.prevent.stop="resetAggregation">
 									<template #icon>
 										<ChevronLeft
 											class="h-4 w-4 text-gray-700"
@@ -190,7 +232,11 @@ const label = ref('')
 										:key="option.value"
 										class="flex h-7 flex-shrink-0 cursor-pointer items-center justify-between rounded px-2.5 text-base hover:bg-gray-100"
 										@click.prevent.stop="
-											columnMeasure.aggregation = option.value
+											() => {
+												if (!columnMeasure) return
+												columnMeasure.aggregation = option.value
+												userResetAggregation = false
+											}
 										"
 									>
 										<span>{{ option.label }}</span>
