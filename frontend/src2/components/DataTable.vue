@@ -792,11 +792,4 @@ function toggleNewColumn() {
 			<p class="text-center text-gray-500">No data to display.</p>
 		</div>
 	</div>
-
-	<div
-		v-if="props.loading"
-		class="absolute top-10 flex h-[calc(100%-2rem)] w-full items-center justify-center rounded bg-white/30 backdrop-blur-sm"
-	>
-		<LoadingIndicator class="h-8 w-8 text-gray-700" />
-	</div>
 </template>
