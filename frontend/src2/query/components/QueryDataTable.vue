@@ -6,13 +6,14 @@ import DrillDown from '../../charts/components/DrillDown.vue'
 import DataTable from '../../components/DataTable.vue'
 import ExportDialog from '../../components/ExportDialog.vue'
 import {
+	AdhocFilters,
 	FilterArgs,
 	QueryResultColumn,
 	QueryResultRow,
 	SortDirection,
 } from '../../types/query.types'
 
-import { column } from '../helpers'
+import { column, filter_group } from '../helpers'
 import { Query } from '../query'
 import AlertSetupDialog from './AlertSetupDialog.vue'
 import QueryAlertsDialog from './QueryAlertsDialog.vue'
@@ -26,6 +27,14 @@ const props = defineProps<{
 	enableNewColumn?: boolean
 	onSortChange?: (column_name: string, sort_order: SortDirection) => void
 }>()
+
+const isFiltering = ref(false)
+watch(
+	() => props.query.executing,
+	(executing) => {
+		if (!executing) isFiltering.value = false
+	},
+)
 
 const columns = computed(() => props.query.result.columns)
 const rows = computed(() => props.query.result.formattedRows)
@@ -76,8 +85,8 @@ function onSortChange(column_name: string, sort_order: SortDirection) {
 
 const showDrillDown = ref(false)
 const drillDownQuery = ref<Query>()
-function onDrillDown(column: QueryResultColumn, row: QueryResultRow) {
-	drillDownQuery.value = props.query.getDrillDownQuery(column, row)
+async function onDrillDown(column: QueryResultColumn, row: QueryResultRow) {
+	drillDownQuery.value = await props.query.getDrillDownQuery(column, row)
 	if (drillDownQuery.value) {
 		showDrillDown.value = true
 	}
@@ -118,7 +127,7 @@ function onPageChange(page: number) {
 }
 
 function onFilterChange(filters: Record<string, string>) {
-	const adhocFilters = {} as any
+	const adhocFilters = {} as AdhocFilters
 	Object.entries(filters).forEach(([colName, filter]) => {
 		if (!filter) return
 
@@ -145,27 +154,27 @@ function onFilterChange(filters: Record<string, string>) {
 		}
 
 		if (rules.length) {
-			adhocFilters[colName] = {
-				type: 'filter_group',
+			adhocFilters[props.query.name] = filter_group({
 				logical_operator: 'And',
 				filters: rules,
-			}
+			})
 		}
 	})
 
-	if (props.query.adhocFilters) {
-		props.query.adhocFilters.value = adhocFilters
-	}
+	props.query.adhocFilters = adhocFilters
+
+	isFiltering.value = true
 	props.query.goToPage(1)
 }
 </script>
 
 <template>
 	<DataTable
-		:loading="props.query.executing"
+		:loading="props.query.executing && !isFiltering"
 		:columns="columns"
 		:rows="rows"
 		:enable-pagination="true"
+		:page-size="props.query.pageSize"
 		:total-row-count="totalRowCount"
 		:current-page="props.query.currentPage"
 		:on-page-change="onPageChange"

@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
-"POT-Creation-Date: 2026-03-15 09:45+0000\n"
-"PO-Revision-Date: 2026-03-16 12:53\n"
+"POT-Creation-Date: 2026-03-22 09:44+0000\n"
+"PO-Revision-Date: 2026-03-23 13:23\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Esperanto\n"
 "MIME-Version: 1.0\n"
@@ -56,7 +56,7 @@ msgstr "crwdns197644:0crwdne197644:0"
 msgid "API Username"
 msgstr "crwdns197646:0crwdne197646:0"
 
-#: frontend/src2/query/components/FormatRule.vue:245
+#: frontend/src2/query/components/FormatRule.vue:203
 msgid "Above average"
 msgstr "crwdns198384:0crwdne198384:0"
 
@@ -185,7 +185,7 @@ msgstr "crwdns197668:0crwdne197668:0"
 msgid "Alternate"
 msgstr "crwdns198416:0crwdne198416:0"
 
-#: frontend/src2/query/components/FormatRule.vue:203
+#: frontend/src2/query/components/FormatRule.vue:161
 msgid "Amber"
 msgstr "crwdns198418:0crwdne198418:0"
 
@@ -285,7 +285,7 @@ msgstr "crwdns197686:0crwdne197686:0"
 msgid "Before Import Script"
 msgstr "crwdns197688:0crwdne197688:0"
 
-#: frontend/src2/query/components/FormatRule.vue:246
+#: frontend/src2/query/components/FormatRule.vue:204
 msgid "Below average"
 msgstr "crwdns198440:0crwdne198440:0"
 
@@ -323,11 +323,11 @@ msgstr "crwdns197698:0crwdne197698:0"
 msgid "Bottom"
 msgstr "crwdns198442:0crwdne198442:0"
 
-#: frontend/src2/query/components/FormatRule.vue:244
+#: frontend/src2/query/components/FormatRule.vue:202
 msgid "Bottom N percent"
 msgstr "crwdns198444:0crwdne198444:0"
 
-#: frontend/src2/query/components/FormatRule.vue:242
+#: frontend/src2/query/components/FormatRule.vue:200
 msgid "Bottom N values"
 msgstr "crwdns198446:0crwdne198446:0"
 
@@ -444,7 +444,7 @@ msgstr "crwdns198470:0crwdne198470:0"
 msgid "Collapse"
 msgstr "crwdns197718:0crwdne197718:0"
 
-#: frontend/src2/query/components/FormatRule.vue:544
+#: frontend/src2/query/components/FormatRule.vue:502
 msgid "Color"
 msgstr "crwdns198472:0crwdne198472:0"
 
@@ -455,7 +455,7 @@ msgstr "crwdns198474:0crwdne198474:0"
 #. Label of the label (Data) field in DocType 'Insights Query Column'
 #. Label of the column (Data) field in DocType 'Insights Table Column'
 #: frontend/src2/components/DataTableColumn.vue:42
-#: frontend/src2/query/components/FormatRule.vue:371
+#: frontend/src2/query/components/FormatRule.vue:329
 #: frontend/src2/query/components/JoinSelectorDialog.vue:269
 #: frontend/src2/query/components/JoinSelectorDialog.vue:282
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
@@ -490,8 +490,8 @@ msgid "Completed"
 msgstr "crwdns197726:0crwdne197726:0"
 
 #. Label of the condition (Code) field in DocType 'Insights Alert'
-#: frontend/src2/query/components/FormatRule.vue:475
-#: frontend/src2/query/components/FormatRule.vue:494
+#: frontend/src2/query/components/FormatRule.vue:433
+#: frontend/src2/query/components/FormatRule.vue:452
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Condition"
 msgstr "crwdns197728:0crwdne197728:0"
@@ -680,7 +680,7 @@ msgid "Dashboard Access Updated"
 msgstr "crwdns198524:0crwdne198524:0"
 
 #: frontend/src2/components/AppSidebar.vue:74
-#: frontend/src2/dashboard/Dashboard.vue:43
+#: frontend/src2/dashboard/Dashboard.vue:46
 #: frontend/src2/workbook/WorkbookSidebar.vue:75
 msgid "Dashboards"
 msgstr "crwdns197756:0crwdne197756:0"
@@ -766,7 +766,7 @@ msgstr "crwdns197772:0crwdne197772:0"
 msgid "Date"
 msgstr "crwdns197774:0crwdne197774:0"
 
-#: frontend/src2/query/components/FormatRule.vue:276
+#: frontend/src2/query/components/FormatRule.vue:234
 msgid "Date Rules"
 msgstr "crwdns198530:0crwdne198530:0"
 
@@ -930,7 +930,7 @@ msgstr "crwdns198560:0crwdne198560:0"
 msgid "Enter filter label..."
 msgstr "crwdns198562:0crwdne198562:0"
 
-#: frontend/src2/query/components/FormatRule.vue:485
+#: frontend/src2/query/components/FormatRule.vue:443
 msgid "Enter text"
 msgstr "crwdns198564:0crwdne198564:0"
 
@@ -995,7 +995,7 @@ msgid "Export Format"
 msgstr "crwdns198578:0crwdne198578:0"
 
 #: frontend/src2/charts/components/ChartBuilderToolbar.vue:27
-#: frontend/src2/dashboard/Dashboard.vue:58
+#: frontend/src2/dashboard/Dashboard.vue:61
 msgid "Export as PNG"
 msgstr "crwdns198580:0crwdne198580:0"
 
@@ -1142,11 +1142,11 @@ msgstr "crwdns198610:0crwdne198610:0"
 msgid "Generated SQL"
 msgstr "crwdns198612:0crwdne198612:0"
 
-#: frontend/src2/query/components/FormatRule.vue:202
+#: frontend/src2/query/components/FormatRule.vue:160
 msgid "Green"
 msgstr "crwdns198614:0crwdne198614:0"
 
-#: frontend/src2/query/components/FormatRule.vue:255
+#: frontend/src2/query/components/FormatRule.vue:213
 msgid "Green-Red"
 msgstr "crwdns198616:0crwdne198616:0"
 
@@ -1171,6 +1171,10 @@ msgstr "crwdns197850:0crwdne197850:0"
 #: frontend/src2/query/components/FormattingSelector.vue:59
 msgid "Highlight Cell"
 msgstr "crwdns198622:0crwdne198622:0"
+
+#: frontend/src2/charts/components/SankeyChartConfigForm.vue:60
+msgid "Horizontal"
+msgstr "crwdns199368:0crwdne199368:0"
 
 #. Label of the host (Data) field in DocType 'Insights Data Source'
 #. Label of the host (Data) field in DocType 'Insights Data Source v3'
@@ -1600,6 +1604,10 @@ msgstr "crwdns197982:0crwdne197982:0"
 msgid "Join this table with another table or query"
 msgstr "crwdns198640:0crwdne198640:0"
 
+#: frontend/src2/charts/components/SankeyChartConfigForm.vue:69
+msgid "Justify"
+msgstr "crwdns199370:0crwdne199370:0"
+
 #. Label of the key (Data) field in DocType 'Insights Secret Key'
 #. Label of the key (Data) field in DocType 'Insights User Invitation'
 #: insights/insights/doctype/insights_secret_key/insights_secret_key.json
@@ -1661,6 +1669,7 @@ msgstr "crwdns197998:0crwdne197998:0"
 
 #: frontend/src2/charts/components/DonutChartConfigForm.vue:59
 #: frontend/src2/charts/components/FunnelChartConfigForm.vue:56
+#: frontend/src2/charts/components/SankeyChartConfigForm.vue:70
 msgid "Left"
 msgstr "crwdns198646:0crwdne198646:0"
 
@@ -1966,7 +1975,7 @@ msgstr "crwdns198064:0crwdne198064:0"
 msgid "Onboarding Complete"
 msgstr "crwdns198066:0crwdne198066:0"
 
-#: frontend/src2/dashboard/Dashboard.vue:65
+#: frontend/src2/dashboard/Dashboard.vue:68
 #: frontend/src2/dashboard/DashboardList.vue:22
 msgid "Open Workbook"
 msgstr "crwdns198704:0crwdne198704:0"
@@ -1981,7 +1990,7 @@ msgstr "crwdns198706:0crwdne198706:0"
 msgid "Operations"
 msgstr "crwdns198068:0crwdne198068:0"
 
-#: frontend/src2/query/components/FormatRule.vue:458
+#: frontend/src2/query/components/FormatRule.vue:416
 msgid "Operator"
 msgstr "crwdns198708:0crwdne198708:0"
 
@@ -2170,11 +2179,11 @@ msgstr "crwdns198726:0crwdne198726:0"
 msgid "REST API"
 msgstr "crwdns198110:0crwdne198110:0"
 
-#: frontend/src2/query/components/FormatRule.vue:520
+#: frontend/src2/query/components/FormatRule.vue:478
 msgid "Ranking Condition"
 msgstr "crwdns198728:0crwdne198728:0"
 
-#: frontend/src2/query/components/FormatRule.vue:267
+#: frontend/src2/query/components/FormatRule.vue:225
 msgid "Ranking Rules"
 msgstr "crwdns198730:0crwdne198730:0"
 
@@ -2184,15 +2193,15 @@ msgstr "crwdns198730:0crwdne198730:0"
 msgid "Recipients"
 msgstr "crwdns198112:0crwdne198112:0"
 
-#: frontend/src2/query/components/FormatRule.vue:201
+#: frontend/src2/query/components/FormatRule.vue:159
 msgid "Red"
 msgstr "crwdns198732:0crwdne198732:0"
 
-#: frontend/src2/query/components/FormatRule.vue:251
+#: frontend/src2/query/components/FormatRule.vue:209
 msgid "Red-Green"
 msgstr "crwdns198734:0crwdne198734:0"
 
-#: frontend/src2/dashboard/Dashboard.vue:48
+#: frontend/src2/dashboard/Dashboard.vue:51
 #: frontend/src2/data_source/DataSourceTableList.vue:43
 msgid "Refresh"
 msgstr "crwdns198736:0crwdne198736:0"
@@ -2270,6 +2279,7 @@ msgstr "crwdns198124:0crwdne198124:0"
 
 #: frontend/src2/charts/components/DonutChartConfigForm.vue:60
 #: frontend/src2/charts/components/FunnelChartConfigForm.vue:57
+#: frontend/src2/charts/components/SankeyChartConfigForm.vue:71
 msgid "Right"
 msgstr "crwdns198756:0crwdne198756:0"
 
@@ -2308,7 +2318,7 @@ msgstr "crwdns198134:0crwdne198134:0"
 msgid "Rows Imported"
 msgstr "crwdns198136:0crwdne198136:0"
 
-#: frontend/src2/query/components/FormatRule.vue:447
+#: frontend/src2/query/components/FormatRule.vue:405
 msgid "Rule Type"
 msgstr "crwdns198758:0crwdne198758:0"
 
@@ -2742,7 +2752,7 @@ msgstr "crwdns198222:0crwdne198222:0"
 msgid "Text"
 msgstr "crwdns198224:0crwdne198224:0"
 
-#: frontend/src2/query/components/FormatRule.vue:272
+#: frontend/src2/query/components/FormatRule.vue:230
 msgid "Text Rules"
 msgstr "crwdns198834:0crwdne198834:0"
 
@@ -2830,11 +2840,11 @@ msgstr "crwdns198846:0crwdne198846:0"
 msgid "Top"
 msgstr "crwdns198848:0crwdne198848:0"
 
-#: frontend/src2/query/components/FormatRule.vue:243
+#: frontend/src2/query/components/FormatRule.vue:201
 msgid "Top N percent"
 msgstr "crwdns198850:0crwdne198850:0"
 
-#: frontend/src2/query/components/FormatRule.vue:241
+#: frontend/src2/query/components/FormatRule.vue:199
 msgid "Top N values"
 msgstr "crwdns198852:0crwdne198852:0"
 
@@ -2972,12 +2982,12 @@ msgstr "crwdns198880:0crwdne198880:0"
 
 #. Label of the value (Password) field in DocType 'Insights Secret Key'
 #: frontend/src2/components/VariablesDialog.vue:85
-#: frontend/src2/query/components/FormatRule.vue:467
+#: frontend/src2/query/components/FormatRule.vue:425
 #: insights/insights/doctype/insights_secret_key/insights_secret_key.json
 msgid "Value"
 msgstr "crwdns198254:0crwdne198254:0"
 
-#: frontend/src2/query/components/FormatRule.vue:266
+#: frontend/src2/query/components/FormatRule.vue:224
 msgid "Value Rules"
 msgstr "crwdns198882:0crwdne198882:0"
 
@@ -3005,6 +3015,10 @@ msgstr "crwdns198260:0crwdne198260:0"
 #: frontend/src2/components/VariablesDialog.vue:69
 msgid "Variables are used to store sensitive information such as API keys and credentials. They can be referenced and combined in your script just like any other variable. For eg."
 msgstr "crwdns198884:0crwdne198884:0"
+
+#: frontend/src2/charts/components/SankeyChartConfigForm.vue:61
+msgid "Vertical"
+msgstr "crwdns199372:0crwdne199372:0"
 
 #. Label of the vertical_compact_layout (Check) field in DocType 'Insights
 #. Dashboard v3'
@@ -3089,7 +3103,7 @@ msgstr "crwdns198284:0crwdne198284:0"
 msgid "Your workbooks will appear here. Create a new workbook to get started."
 msgstr "crwdns198894:0crwdne198894:0"
 
-#: frontend/src2/query/components/FormatRule.vue:236
+#: frontend/src2/query/components/FormatRule.vue:194
 msgid "after date"
 msgstr "crwdns198896:0crwdne198896:0"
 
@@ -3098,11 +3112,11 @@ msgstr "crwdns198896:0crwdne198896:0"
 msgid "asc"
 msgstr "crwdns198286:0crwdne198286:0"
 
-#: frontend/src2/query/components/FormatRule.vue:235
+#: frontend/src2/query/components/FormatRule.vue:193
 msgid "before date"
 msgstr "crwdns198898:0crwdne198898:0"
 
-#: frontend/src2/query/components/FormatRule.vue:237
+#: frontend/src2/query/components/FormatRule.vue:195
 msgid "between dates"
 msgstr "crwdns198900:0crwdne198900:0"
 
@@ -3111,7 +3125,7 @@ msgstr "crwdns198900:0crwdne198900:0"
 msgid "chart"
 msgstr "crwdns198288:0crwdne198288:0"
 
-#: frontend/src2/query/components/FormatRule.vue:216
+#: frontend/src2/query/components/FormatRule.vue:174
 msgid "contains"
 msgstr "crwdns198902:0crwdne198902:0"
 
@@ -3120,11 +3134,11 @@ msgstr "crwdns198902:0crwdne198902:0"
 msgid "desc"
 msgstr "crwdns198290:0crwdne198290:0"
 
-#: frontend/src2/query/components/FormatRule.vue:217
+#: frontend/src2/query/components/FormatRule.vue:175
 msgid "does not contain"
 msgstr "crwdns198904:0crwdne198904:0"
 
-#: frontend/src2/query/components/FormatRule.vue:221
+#: frontend/src2/query/components/FormatRule.vue:179
 msgid "does not equal"
 msgstr "crwdns198906:0crwdne198906:0"
 
@@ -3148,12 +3162,12 @@ msgstr "crwdns198914:0crwdne198914:0"
 msgid "e.g. john@example.com, henry@example.com"
 msgstr "crwdns198916:0crwdne198916:0"
 
-#: frontend/src2/query/components/FormatRule.vue:219
+#: frontend/src2/query/components/FormatRule.vue:177
 msgid "ends with"
 msgstr "crwdns198918:0crwdne198918:0"
 
-#: frontend/src2/query/components/FormatRule.vue:207
-#: frontend/src2/query/components/FormatRule.vue:220
+#: frontend/src2/query/components/FormatRule.vue:165
+#: frontend/src2/query/components/FormatRule.vue:178
 msgid "equals"
 msgstr "crwdns198920:0crwdne198920:0"
 
@@ -3164,63 +3178,63 @@ msgstr "crwdns198920:0crwdne198920:0"
 msgid "folder"
 msgstr "crwdns198292:0crwdne198292:0"
 
-#: frontend/src2/query/components/FormatRule.vue:209
+#: frontend/src2/query/components/FormatRule.vue:167
 msgid "greater than"
 msgstr "crwdns198922:0crwdne198922:0"
 
-#: frontend/src2/query/components/FormatRule.vue:210
+#: frontend/src2/query/components/FormatRule.vue:168
 msgid "greater than or equals"
 msgstr "crwdns198924:0crwdne198924:0"
 
-#: frontend/src2/query/components/FormatRule.vue:222
+#: frontend/src2/query/components/FormatRule.vue:180
 msgid "is empty"
 msgstr "crwdns198926:0crwdne198926:0"
 
-#: frontend/src2/query/components/FormatRule.vue:233
+#: frontend/src2/query/components/FormatRule.vue:191
 msgid "is last month"
 msgstr "crwdns198928:0crwdne198928:0"
 
-#: frontend/src2/query/components/FormatRule.vue:231
+#: frontend/src2/query/components/FormatRule.vue:189
 msgid "is last week"
 msgstr "crwdns198930:0crwdne198930:0"
 
-#: frontend/src2/query/components/FormatRule.vue:223
+#: frontend/src2/query/components/FormatRule.vue:181
 msgid "is not empty"
 msgstr "crwdns198932:0crwdne198932:0"
 
-#: frontend/src2/query/components/FormatRule.vue:232
+#: frontend/src2/query/components/FormatRule.vue:190
 msgid "is this month"
 msgstr "crwdns198934:0crwdne198934:0"
 
-#: frontend/src2/query/components/FormatRule.vue:230
+#: frontend/src2/query/components/FormatRule.vue:188
 msgid "is this week"
 msgstr "crwdns198936:0crwdne198936:0"
 
-#: frontend/src2/query/components/FormatRule.vue:234
+#: frontend/src2/query/components/FormatRule.vue:192
 msgid "is this year"
 msgstr "crwdns198938:0crwdne198938:0"
 
-#: frontend/src2/query/components/FormatRule.vue:227
+#: frontend/src2/query/components/FormatRule.vue:185
 msgid "is today"
 msgstr "crwdns198940:0crwdne198940:0"
 
-#: frontend/src2/query/components/FormatRule.vue:229
+#: frontend/src2/query/components/FormatRule.vue:187
 msgid "is tomorrow"
 msgstr "crwdns198942:0crwdne198942:0"
 
-#: frontend/src2/query/components/FormatRule.vue:228
+#: frontend/src2/query/components/FormatRule.vue:186
 msgid "is yesterday"
 msgstr "crwdns198944:0crwdne198944:0"
 
-#: frontend/src2/query/components/FormatRule.vue:211
+#: frontend/src2/query/components/FormatRule.vue:169
 msgid "less than"
 msgstr "crwdns198946:0crwdne198946:0"
 
-#: frontend/src2/query/components/FormatRule.vue:212
+#: frontend/src2/query/components/FormatRule.vue:170
 msgid "less than or equals"
 msgstr "crwdns198948:0crwdne198948:0"
 
-#: frontend/src2/query/components/FormatRule.vue:208
+#: frontend/src2/query/components/FormatRule.vue:166
 msgid "not equals"
 msgstr "crwdns198950:0crwdne198950:0"
 
@@ -3236,7 +3250,7 @@ msgstr "crwdns198294:0crwdne198294:0"
 msgid "sort_order"
 msgstr "crwdns198296:0crwdne198296:0"
 
-#: frontend/src2/query/components/FormatRule.vue:218
+#: frontend/src2/query/components/FormatRule.vue:176
 msgid "starts with"
 msgstr "crwdns198952:0crwdne198952:0"
 

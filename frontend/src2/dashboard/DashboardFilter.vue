@@ -102,7 +102,7 @@ const label = computed(() => {
 						:valuesProvider="stringValuesProvider"
 						v-model:operator="filterState.operator"
 						v-model:value="filterState.value"
-						@update:value="() => togglePopover()"
+						@close="() => togglePopover()"
 					>
 					</Filter>
 				</div>

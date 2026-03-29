@@ -9,17 +9,17 @@ import ibis
 from frappe.utils import get_files_path
 
 
-def get_duckdb_connection(data_source, read_only=True):
+def get_duckdb_connection(data_source, read_only=True, allowed_dir=None):
     name = data_source.name or frappe.scrub(data_source.title)
     db_name = data_source.database_name
 
     if db_name.startswith("http"):
         return get_http_duckdb_connection(data_source, name, db_name)
 
-    return get_local_duckdb_connection(db_name, read_only=read_only)
+    return get_local_duckdb_connection(db_name, read_only=read_only, allowed_dir=allowed_dir)
 
 
-def get_local_duckdb_connection(db_name, read_only=True):
+def get_local_duckdb_connection(db_name, read_only=True, allowed_dir=None):
     private_folder = os.path.realpath(get_files_path(is_private=1))
     path = os.path.join(private_folder, f"{db_name}.duckdb")
 
@@ -27,8 +27,15 @@ def get_local_duckdb_connection(db_name, read_only=True):
         db = ibis.duckdb.connect(path)
         db.disconnect()
 
-    db = ibis.duckdb.connect(path, read_only=read_only, enable_external_access=False)
+    db = ibis.duckdb.connect(path, read_only=read_only)
     db.raw_sql(f"SET home_directory='{private_folder}'")
+
+    if allowed_dir:
+        escaped_dir = allowed_dir.replace("'", "''")
+        db.raw_sql(f"SET allowed_directories = ['{escaped_dir}']")
+
+    db.raw_sql("SET enable_external_access = false")
+
     return db
 
 

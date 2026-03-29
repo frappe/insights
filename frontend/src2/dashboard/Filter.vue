@@ -2,8 +2,8 @@
 import { computed, reactive } from 'vue'
 import { copy } from '../helpers'
 import { FilterType } from '../helpers/constants'
+import { DatePicker, DateRangePicker } from 'frappe-ui'
 import ColumnFilterValueSelector from '../query/components/ColumnFilterValueSelector.vue'
-import DatePicker from '../query/components/DatePicker.vue'
 import { getOperatorOptions, getValueSelectorType } from '../query/components/filter_utils'
 import NumberFilterPicker from '../query/components/NumberFilterPicker.vue'
 import RelativeDatePicker from '../query/components/RelativeDatePicker.vue'
@@ -15,6 +15,7 @@ const props = defineProps<{
 }>()
 const filterOperator = defineModel<FilterOperator>('operator')
 const filterValue = defineModel<FilterValue>('value')
+const emit = defineEmits<{ close: [] }>()
 
 const operatorOptions = computed(() => {
 	return getOperatorOptions(props.filterType)
@@ -24,7 +25,7 @@ const state = reactive(
 	copy({
 		operator: filterOperator.value || operatorOptions.value[0].value,
 		value: filterValue.value,
-	})
+	}),
 )
 
 const valueSelectorType = computed(() => {
@@ -43,10 +44,12 @@ function onOperatorChange(operator: FilterOperator) {
 function applyFilter() {
 	filterOperator.value = state.operator
 	filterValue.value = state.value
+	emit('close')
 }
 function clearFilter() {
 	filterOperator.value = undefined
 	filterValue.value = undefined
+	emit('close')
 }
 </script>
 
@@ -56,7 +59,7 @@ function clearFilter() {
 			v-if="filterType === 'Number'"
 			class="w-[200px]"
 			v-model:operator="state.operator"
-			v-model:value="(state.value as number)"
+			v-model:value="state.value as number"
 		/>
 		<template v-else>
 			<div id="operator" class="!min-w-[200px] flex-1">
@@ -69,25 +72,22 @@ function clearFilter() {
 				/>
 			</div>
 			<div id="value" class="!min-w-[200px] flex-1 flex-shrink-0">
-				<!-- todo: use date picker component -->
 				<DatePicker
 					v-if="valueSelectorType === 'date'"
-					:range="false"
-					:modelValue="[state.value as string]"
-					@update:modelValue="state.value = $event[0]"
-				></DatePicker>
-				<DatePicker
+					:modelValue="state.value as string"
+					@update:modelValue="state.value = $event"
+				/>
+				<DateRangePicker
 					v-else-if="valueSelectorType === 'date_range'"
-					:range="true"
-					v-model="(state.value as string[])"
-				></DatePicker>
+					v-model="state.value as string[]"
+				/>
 				<RelativeDatePicker
 					v-else-if="valueSelectorType === 'relative_date'"
-					v-model="(state.value as string)"
+					v-model="state.value as string"
 				/>
 				<ColumnFilterValueSelector
 					v-else-if="valueSelectorType === 'select'"
-					v-model="(state.value as string[])"
+					v-model="state.value as string[]"
 					:valuesProvider="props.valuesProvider"
 				/>
 				<FormControl

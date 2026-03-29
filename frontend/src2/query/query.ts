@@ -41,11 +41,13 @@ import {
 	QueryResultRow,
 	Rename,
 	SelectArgs,
+	Source,
 	SourceArgs,
 	SQLArgs,
 	Summarize,
 	SummarizeArgs,
 	UnionArgs,
+	aggregations,
 } from '../types/query.types'
 import { InsightsQueryv3, QueryVariable } from '../types/workbook.types'
 import useWorkbook from '../workbook/workbook'
@@ -60,7 +62,6 @@ import {
 	getFormattedRows,
 	getMeasures,
 	join,
-	limit,
 	mutate,
 	order_by,
 	pivot_wider,
@@ -98,6 +99,28 @@ export function makeQuery(name: string) {
 			return query.doc.operations.slice(0, activeOperationIdx.value + 1)
 		}
 		return query.doc.operations.slice()
+	})
+
+	const measureColumns = computed(() => {
+		const measureNames = new Set<string>()
+		let seenSummarize = false
+		for (const op of currentOperations.value) {
+			if (op.type === 'summarize') {
+				op.measures.forEach((m) => measureNames.add(m.measure_name))
+				seenSummarize = true
+			} else if (op.type === 'pivot_wider') {
+				op.values.forEach((m) => measureNames.add(m.measure_name))
+				seenSummarize = true
+			} else if (seenSummarize && op.type === 'rename') {
+				// Track renames that happen after a summarize/pivot_wider so that
+				// a measure renamed to e.g. "total_revenue" is still detected.
+				if (measureNames.has(op.column.column_name)) {
+					measureNames.delete(op.column.column_name)
+					measureNames.add(op.new_name)
+				}
+			}
+		}
+		return Array.from(measureNames)
 	})
 
 	const dataSource = computed(() => getDataSource(currentOperations.value))
@@ -167,23 +190,33 @@ export function makeQuery(name: string) {
 				page: currentPage.value,
 				page_size: pageSize.value,
 			})
-			.then((response: any) => {
-				if (!response) return
+		.then((response: any) => {
+			if (!response) return
 
-				result.value.executedSQL = response.sql
-				result.value.columns = response.columns
-				result.value.rows = response.rows
-				result.value.formattedRows = getFormattedRows(result.value, query.doc.operations)
-				result.value.columnOptions = result.value.columns.map((column) => ({
+			result.value.executedSQL = response.sql
+			result.value.columns = response.columns
+			result.value.rows = response.rows
+			result.value.totalRowCount = 0
+			result.value.formattedRows = getFormattedRows(result.value, query.doc.operations)
+
+			const aggregationPrefixes = aggregations.map((a) => `${a}_`)
+			const isMeasureColumn = (name: string) =>
+				measureColumns.value.includes(name) ||
+				aggregationPrefixes.some((prefix) => name.startsWith(prefix))
+
+			result.value.columnOptions = result.value.columns.map((column) => {
+				return {
 					label: column.name,
 					value: column.name,
 					description: column.type,
 					query: query.doc.name,
 					data_type: column.type,
-				}))
-				result.value.timeTaken = response.time_taken
-				result.value.lastExecutedAt = new Date()
+					is_measure: isMeasureColumn(column.name),
+				}
 			})
+			result.value.timeTaken = response.time_taken
+			result.value.lastExecutedAt = new Date()
+		})
 			.catch(() => {
 				result.value = { ...EMPTY_RESULT }
 			})
@@ -390,7 +423,14 @@ export function makeQuery(name: string) {
 	}
 
 	function addPivotWider(args: PivotWiderArgs) {
-		addOperation(pivot_wider(args))
+		const editingPivot = activeEditOperation.value.type === 'pivot_wider'
+
+		if (!editingPivot) {
+			addOperation(pivot_wider(args))
+		} else {
+			query.doc.operations[activeEditIndex.value] = pivot_wider(args)
+			setActiveEditIndex(-1)
+		}
 	}
 
 	function selectColumns(args: SelectArgs) {
@@ -699,55 +739,146 @@ export function makeQuery(name: string) {
 			})
 	}
 
-	function getDrillDownQuery(col: QueryResultColumn, row: QueryResultRow) {
+	async function getDrillDownQuery(col: QueryResultColumn, row: QueryResultRow) {
 		if (!session.isLoggedIn) {
 			return
 		}
 
-		const error = validateDrillDown(col, row)
-		if (error) {
-			createToast({
-				title: __('Failed to drill down'),
-				message: error,
-				variant: 'warning',
-			})
+		const rowIndex = result.value.formattedRows.findIndex((r) => r === row)
+		const currRow = result.value.rows[rowIndex]
+
+		// Get the effective operations — inlining source query ops if needed
+		const operations = await getEffectiveOperationsForDrillDown(
+			copy(query.doc.operations),
+			currRow,
+			col,
+		)
+		if (!operations) {
+			// error toast was already shown
 			return
 		}
 
-		const operations = copy(query.doc.operations)
-		const reversedOperations = operations.slice().reverse()
+		const { ops, filters: inheritedFilters } = operations
+
+		// Now find the last summarize/pivot in the resolved operations
+		const reversedOps = ops.slice().reverse()
+
+		let drillDownFilters: FilterArgs[] = []
+		let sliceIdx = -1
+
+		const lastPivotIdx = reversedOps.findIndex((op: Operation) => op.type === 'pivot_wider')
+		if (lastPivotIdx !== -1) {
+			sliceIdx = reversedOps.length - lastPivotIdx - 1
+			drillDownFilters = getDrillDownFiltersForPivot(ops, sliceIdx, col, currRow)
+		}
+
+		const lastSummarizeIdx = reversedOps.findIndex((op: Operation) => op.type === 'summarize')
+		if (lastSummarizeIdx !== -1) {
+			sliceIdx = reversedOps.length - lastSummarizeIdx - 1
+			drillDownFilters = getDrillDownFiltersForSummarize(ops, sliceIdx, col, currRow)
+		}
 
 		const drill_down_query = useQuery('new-query-' + getUniqueId())
 		drill_down_query.doc.title = 'Drill Down'
 		drill_down_query.doc.use_live_connection = query.doc.use_live_connection
 		drill_down_query.autoExecute = true
 
-		let filters: FilterArgs[] = []
-		let sliceIdx = -1
-		const rowIndex = result.value.formattedRows.findIndex((r) => r === row)
-		const currRow = result.value.rows[rowIndex]
-
-		const lastPivotIdx = reversedOperations.findIndex((op: Operation) => op.type === 'pivot_wider')
-		if (lastPivotIdx !== -1) {
-			sliceIdx = reversedOperations.length - lastPivotIdx - 1
-			filters = getDrillDownQueryForPivot(operations, sliceIdx, col, currRow)
-		}
-
-		const lastSummarizeIdx = reversedOperations.findIndex(
-			(op: Operation) => op.type === 'summarize'
-		)
-		if (lastSummarizeIdx !== -1) {
-			sliceIdx = reversedOperations.length - lastSummarizeIdx - 1
-			filters = getDrillDownQueryForSummarize(operations, sliceIdx, col, currRow)
-		}
-
-		drill_down_query.setOperations(operations.slice(0, sliceIdx))
+		drill_down_query.setOperations(ops.slice(0, sliceIdx))
 		drill_down_query.addFilterGroup({
 			logical_operator: 'And',
-			filters: filters,
+			filters: [...inheritedFilters, ...drillDownFilters],
 		})
 
 		return drill_down_query
+	}
+
+	/**
+	 * Returns the effective operations list for drill-down.
+	 *
+	 * If the current operations already have a summarize/pivot, return them as-is.
+	 * Otherwise, if the source is another query, inline that source query's operations
+	 * (prepending any filters from the current query) so the drill-down can find the
+	 * source query's summarize and slice through it.
+	 *
+	 * Returns null and shows a toast if drill-down is not possible.
+	 */
+	async function getEffectiveOperationsForDrillDown(
+		operations: Operation[],
+		currRow: QueryResultRow,
+		col: QueryResultColumn,
+		_visitedQueryNames: string[] = [],
+	): Promise<{ ops: Operation[]; filters: FilterArgs[] } | null> {
+		// If there's a local summarize/pivot, no inlining needed
+		const hasSummarizeOrPivot = operations.find(
+			(op) => op.type === 'summarize' || op.type === 'pivot_wider',
+		)
+		if (hasSummarizeOrPivot) {
+			// Basic validation
+			if (!result.value.columns?.length) {
+				createToast({
+					title: __('Failed to drill down'),
+					message: 'No columns found in the result',
+					variant: 'warning',
+				})
+				return null
+			}
+			if (!currRow) {
+				createToast({
+					title: __('Failed to drill down'),
+					message: 'Row not found',
+					variant: 'warning',
+				})
+				return null
+			}
+			return { ops: operations, filters: [] }
+		}
+
+		// No local summarize/pivot — check if the source is another query
+		const sourceOp = operations.find((op) => op.type === 'source') as Source | undefined
+		if (
+			!sourceOp ||
+			sourceOp.table.type !== 'query'
+		) {
+			createToast({
+				title: __('Failed to drill down'),
+				message: __('Drill down is only supported on summarized data'),
+				variant: 'warning',
+			})
+			return null
+		}
+
+		const sourceQueryName = sourceOp.table.query_name
+
+		// Guard against circular references
+		if (_visitedQueryNames.includes(sourceQueryName)) {
+			createToast({
+				title: __('Failed to drill down'),
+				message: __('Drill down is only supported on summarized data'),
+				variant: 'warning',
+			})
+			return null
+		}
+
+		// Load the source query's operations
+		const sourceQuery = useQuery(sourceQueryName)
+		await waitUntil(() => sourceQuery.isloaded)
+
+		const sourceOps = copy(sourceQuery.doc.operations)
+
+		// Merge: source query's operations + any filter_groups from the current query
+		// (filters applied on top of the source query should still be respected)
+		const mergedOps = [
+			...sourceOps,
+			...operations.filter((op) => op.type === 'filter_group'),
+		]
+
+		// Recursively resolve — the source query might itself have a query source
+		return getEffectiveOperationsForDrillDown(
+			mergedOps,
+			currRow,
+			col,
+			[..._visitedQueryNames, sourceQueryName],
+		)
 	}
 
 	function getFiltersForDimension(dim: Dimension, value: string) {
@@ -762,7 +893,15 @@ export function makeQuery(name: string) {
 		}
 
 		if (FIELDTYPES.DATE.includes(dim.data_type)) {
+			if (!value) {
+				filters.push({ column: column(dim.column_name), operator: 'is_not_set', value: '' })
+				return filters
+			}
+
 			const start = dayjs(value)
+			// since fiscal year is not supported in dayjs
+			// we will treat it as year for drill down purposes
+			const granularity = dim.granularity === 'fiscal_year' ? 'year' : dim.granularity
 
 			filters.push({
 				column: column(dim.column_name),
@@ -770,8 +909,8 @@ export function makeQuery(name: string) {
 				value: start.format('YYYY-MM-DD HH:mm:ss'),
 			})
 
-			if (dim.granularity) {
-				const end = start.clone().add(1, dim.granularity)
+			if (granularity) {
+				const end = start.clone().add(1, granularity)
 				filters.push({
 					column: column(dim.column_name),
 					operator: '<',
@@ -820,7 +959,7 @@ export function makeQuery(name: string) {
 		return []
 	}
 
-	function getDrillDownQueryForSummarize(
+	function getDrillDownFiltersForSummarize(
 		operations: Operation[],
 		summarizeIdx: number,
 		col: QueryResultColumn,
@@ -839,19 +978,12 @@ export function makeQuery(name: string) {
 		return filters
 	}
 
-	function getDrillDownQueryForPivot(
+	function getDrillDownFiltersForPivot(
 		operations: Operation[],
 		pivotIdx: number,
 		col: QueryResultColumn,
 		row: QueryResultRow
 	) {
-		const drill_down_query = useQuery('new-query-' + getUniqueId())
-		drill_down_query.doc.title = 'Drill Down'
-		drill_down_query.autoExecute = true
-		drill_down_query.doc.workbook = query.doc.workbook
-		drill_down_query.doc.use_live_connection = query.doc.use_live_connection
-		drill_down_query.setOperations(operations.slice(0, pivotIdx))
-
 		const pivotOperation = operations[pivotIdx] as PivotWiderArgs
 
 		const filters: FilterArgs[] = []
@@ -874,7 +1006,7 @@ export function makeQuery(name: string) {
 		const selectedValueColumn =
 			pivotOperation.values.length == 1
 				? pivotOperation.values[0].measure_name
-				: (pivotColumnValues.at(-1) as string)
+				: (pivotColumnValues[pivotColumnValues.length - 1] as string)
 		pivotOperation.values.forEach((m) => {
 			return filters.push(...getFiltersForMeasure(m, selectedValueColumn))
 		})
@@ -882,27 +1014,6 @@ export function makeQuery(name: string) {
 		return filters
 	}
 
-	function validateDrillDown(col: QueryResultColumn, row: QueryResultRow) {
-		if (!query.doc.operations.find((op) => op.type === 'summarize' || op.type === 'pivot_wider')) {
-			return 'Drill down is only supported on summarized data'
-		}
-
-		if (!result.value.columns?.length) {
-			return 'No columns found in the result'
-		}
-
-		if (!row) {
-			return 'Row not found'
-		}
-
-		if (!result.value.rows?.length) {
-			return 'No rows found in the result'
-		}
-
-		if (!result.value.formattedRows.find((r) => r === row)) {
-			return 'Row not found in the result'
-		}
-	}
 
 	function copyQuery() {
 		query.call('export').then((data) => {

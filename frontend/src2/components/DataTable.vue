@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { watchDebounced } from '@vueuse/core'
-import { Button, FormControl, LoadingIndicator } from 'frappe-ui'
+import { Button, LoadingIndicator } from 'frappe-ui'
 import { Plus, Search, Table2Icon } from 'lucide-vue-next'
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { usePagination } from '../composables/usePagination'
 import { createHeaders, formatNumber, getShortNumber } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
@@ -23,6 +22,7 @@ import {
 import { QueryResultColumn, QueryResultRow, SortDirection, SortOrder } from '../types/query.types'
 import DataTableColumn from './DataTableColumn.vue'
 import DataTableFooter from './DataTableFooter.vue'
+import LazyTextInput from './LazyTextInput.vue'
 
 const props = defineProps<{
 	columns: QueryResultColumn[] | undefined
@@ -166,12 +166,12 @@ const visibleRows = computed(() => {
 	})
 })
 
-watchDebounced(
+watch(
 	filterPerColumn,
 	(filters) => {
 		props.onFilterChange?.(filters)
 	},
-	{ debounce: 500, deep: true },
+	{ deep: true },
 )
 
 function applyFilter(value: any, isNumber: boolean, filter: string) {
@@ -660,16 +660,23 @@ function toggleNewColumn() {
 								...getColumnWidthStyle(column.name),
 							}"
 						>
-							<FormControl
-								type="text"
-								v-model="filterPerColumn[column.name]"
-								autocomplete="off"
+							<LazyTextInput
+								:model-value="filterPerColumn[column.name]"
+								@update:model-value="
+									(value) => (filterPerColumn[column.name] = value)
+								"
 								class="[&_input]:h-6 [&_input]:bg-gray-200/80"
 							>
 								<template #prefix>
-									<Search class="h-4 w-4 text-gray-500" stroke-width="1.5" />
+									<Search class="size-3.5 text-gray-500" :stroke-width="1.5" />
 								</template>
-							</FormControl>
+								<template #suffix>
+									<LoadingIndicator
+										v-if="props.loading"
+										class="size-3.5 text-gray-500"
+									/>
+								</template>
+							</LazyTextInput>
 						</td>
 						<td
 							v-if="props.showRowTotals"
@@ -805,8 +812,6 @@ function toggleNewColumn() {
 
 	<div
 		v-if="props.loading"
-		class="absolute top-10 flex h-[calc(100%-2rem)] w-full items-center justify-center rounded bg-white/30 backdrop-blur-sm"
-	>
-		<LoadingIndicator class="h-8 w-8 text-gray-700" />
-	</div>
+		class="absolute left-0 right-0 top-0 z-20 h-0.5 animate-pulse bg-blue-500"
+	/>
 </template>

@@ -57,6 +57,7 @@ function importCSVData() {
 	importing.value = true
 	return call('insights.api.import_csv_data', {
 		filename: csvData.file.name,
+		tablename: csvData.tablename,
 	})
 		.then(() => {
 			createToast({
@@ -148,8 +149,8 @@ function resetFile() {
 					>
 						<template #footer-left>
 							<p class="tnum p-1 text-sm text-gray-600">
-								Showing {{ csvData.rows.length }} of
-								{{ csvData.totalRowCount }} rows
+								Showing {{ csvData.rows.length.toLocaleString() }} of
+								{{ csvData.totalRowCount.toLocaleString() }} rows
 							</p>
 						</template>
 					</DataTable>

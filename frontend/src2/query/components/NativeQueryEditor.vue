@@ -114,8 +114,10 @@ const completions = computed(() => {
 					<DataSourceSelector v-model="data_source" placeholder="Select a data source" />
 					<ContentEditable
 						class="flex h-7 cursor-text items-center justify-center rounded bg-white px-2 text-base text-gray-800 focus-visible:ring-1 focus-visible:ring-gray-600"
-						v-model="query.doc.title"
 						placeholder="Untitled Dashboard"
+						:modelValue="query.doc.title"
+						@returned="query.doc.title = $event"
+						@blur="query.doc.title = $event"
 					></ContentEditable>
 				</div>
 				<div class="flex-1 overflow-hidden">

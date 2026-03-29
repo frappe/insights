@@ -53,7 +53,9 @@ function handleSaveVariables(variables: any[]) {
 			<div class="flex flex-shrink-0 items-center gap-1 border-b p-1">
 				<ContentEditable
 					class="flex h-7 cursor-text items-center justify-center rounded bg-white px-2 text-base text-gray-800 focus-visible:ring-1 focus-visible:ring-gray-600"
-					v-model="query.doc.title"
+					:modelValue="query.doc.title"
+					@returned="query.doc.title = $event"
+					@blur="query.doc.title = $event"
 					placeholder="Untitled Dashboard"
 				></ContentEditable>
 			</div>

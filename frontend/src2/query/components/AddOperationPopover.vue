@@ -10,6 +10,7 @@ import CustomScriptDialog from './CustomScriptDialog.vue'
 import FiltersSelectorDialog from './FiltersSelectorDialog.vue'
 import JoinSelectorDialog from './JoinSelectorDialog.vue'
 import NewColumnSelectorDialog from './NewColumnSelectorDialog.vue'
+import PivotSelectorDialog from './PivotSelectorDialog.vue'
 import SourceSelectorDialog from './source_selector/SourceSelectorDialog.vue'
 import SummarySelectorDialog from './SummarySelectorDialog.vue'
 import UnionSelectorDialog from './UnionSelectorDialog.vue'
@@ -23,6 +24,7 @@ const showColumnsSelectorDialog = ref(false)
 const showFiltersSelectorDialog = ref(false)
 const showNewColumnSelectorDialog = ref(false)
 const showSummarySelectorDialog = ref(false)
+const showPivotSelectorDialog = ref(false)
 const showCustomScriptDialog = ref(false)
 
 const operationButtons = [
@@ -69,6 +71,12 @@ const operationButtons = [
 		onClick: () => (showSummarySelectorDialog.value = true),
 	},
 	{
+		label: __('Pivot'),
+		description: __('Spreading column values into separate columns'),
+		icon: query_operation_types.pivot_wider.icon,
+		onClick: () => (showPivotSelectorDialog.value = true),
+	},
+	{
 		label: __('Custom Operation'),
 		description: __('Apply a custom operation using python script'),
 		icon: query_operation_types.custom_operation.icon,
@@ -101,6 +109,9 @@ watch(
 				break
 			case 'summarize':
 				showSummarySelectorDialog.value = true
+				break
+			case 'pivot_wider':
+				showPivotSelectorDialog.value = true
 				break
 			case 'custom_operation':
 				showCustomScriptDialog.value = true
@@ -238,6 +249,16 @@ watch(
 			query.activeEditOperation.type === 'summarize' ? query.activeEditOperation : undefined
 		"
 		@select="query.addSummarize($event)"
+	/>
+
+	<PivotSelectorDialog
+		v-if="showPivotSelectorDialog"
+		v-model="showPivotSelectorDialog"
+		@update:model-value="!$event && query.setActiveEditIndex(-1)"
+		:pivot="
+			query.activeEditOperation.type === 'pivot_wider' ? query.activeEditOperation : undefined
+		"
+		@select="query.addPivotWider($event)"
 	/>
 
 	<CustomScriptDialog
