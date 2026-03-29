@@ -749,6 +749,14 @@ class IbisQueryBuilder:
         return {col: getattr(self.query, col) for col in self.query.schema().names}
 
 
+def clamp(value, *, lo: int, hi: int) -> int:
+    """Cast *value* to int and clamp it to [lo, hi], returning *default* on failure."""
+    try:
+        return max(lo, min(int(value), hi))
+    except (TypeError, ValueError):
+        return lo
+
+
 def execute_ibis_query(
     query: IbisQuery,
     page=1,
@@ -760,14 +768,8 @@ def execute_ibis_query(
     reference_name=None,
 ):
     if hasattr(query, "limit"):
-        try:
-            page_size = max(1, min(int(page_size or 100), 10_00_000))
-        except (TypeError, ValueError):
-            page_size = 100
-        try:
-            page = max(1, int(page or 1))
-        except (TypeError, ValueError):
-            page = 1
+        page_size = clamp(page_size, 1, 10_00_000)
+        page = clamp(page, 1, 10_00_000)
         offset = (page - 1) * page_size
         query = query.limit(page_size, offset=offset)
 
