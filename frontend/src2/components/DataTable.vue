@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import { useDebounceFn } from '@vueuse/core'
 import { Button, LoadingIndicator } from 'frappe-ui'
 import { Plus, Search, Table2Icon } from 'lucide-vue-next'
 import { computed, nextTick, ref, watch } from 'vue'
-import { usePagination } from '../composables/usePagination'
 import { createHeaders, formatNumber, getShortNumber } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import {
@@ -19,10 +19,12 @@ import {
 	rank_rules,
 	text_rules,
 } from '../query/components/formatting_utils'
+import { matchesFilter, parseFilterString } from '../query/helpers'
 import { QueryResultColumn, QueryResultRow, SortDirection, SortOrder } from '../types/query.types'
 import DataTableColumn from './DataTableColumn.vue'
 import DataTableFooter from './DataTableFooter.vue'
 import LazyTextInput from './LazyTextInput.vue'
+import { usePagination } from '../composables/usePagination'
 
 const props = defineProps<{
 	columns: QueryResultColumn[] | undefined
@@ -36,6 +38,7 @@ const props = defineProps<{
 	replaceNullsWithZeros?: boolean
 	compactNumbers?: boolean
 	loading?: boolean
+	filtering?: boolean
 	onExport?: Function
 	downloading?: boolean
 	formatGroup?: FormatGroupArgs
@@ -158,46 +161,26 @@ const visibleRows = computed(() => {
 
 	const filters = filterPerColumn.value
 	return rows.filter((row) => {
-		return Object.entries(filters).every(([col, filter]) => {
-			if (!filter) return true
-			const isNumber = isNumberColumn(col)
-			const value = row[col]
-			return applyFilter(value, isNumber, filter)
+		return Object.entries(filters).every(([col, filterStr]) => {
+			if (!filterStr) return true
+			const parsed = parseFilterString(filterStr)
+			if (!parsed) return true
+			return matchesFilter(row[col], parsed)
 		})
 	})
 })
 
+const debouncedFilterChange = useDebounceFn((filters: Record<string, string>) => {
+	props.onFilterChange?.(filters)
+}, 300)
+
 watch(
 	filterPerColumn,
 	(filters) => {
-		props.onFilterChange?.(filters)
+		debouncedFilterChange(filters)
 	},
 	{ deep: true },
 )
-
-function applyFilter(value: any, isNumber: boolean, filter: string) {
-	if (isNumber) {
-		const operator = ['>', '<', '>=', '<=', '=', '!='].find((op) => filter.startsWith(op))
-		if (operator) {
-			const num = Number(filter.replace(operator, ''))
-			switch (operator) {
-				case '>':
-					return Number(value) > num
-				case '<':
-					return Number(value) < num
-				case '>=':
-					return Number(value) >= num
-				case '<=':
-					return Number(value) <= num
-				case '=':
-					return Number(value) === num
-				case '!=':
-					return Number(value) !== num
-			}
-		}
-	}
-	return String(value).toLowerCase().includes(filter.toLowerCase())
-}
 
 const totalPerColumn = computed(() => {
 	const columns = props.columns
@@ -674,7 +657,7 @@ function toggleNewColumn() {
 								</template>
 								<template #suffix>
 									<LoadingIndicator
-										v-if="props.loading"
+										v-if="props.loading || props.filtering"
 										class="size-3.5 text-gray-500"
 									/>
 								</template>
@@ -689,7 +672,11 @@ function toggleNewColumn() {
 						</td>
 					</tr>
 				</thead>
-				<tbody>
+				<tbody
+					:class="
+						props.filtering ? 'opacity-60 transition-opacity' : 'transition-opacity'
+					"
+				>
 					<tr
 						v-for="(row, idx) in visibleRows?.slice(
 							pagination.startIndex.value,

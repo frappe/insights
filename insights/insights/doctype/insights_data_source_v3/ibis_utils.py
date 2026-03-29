@@ -354,6 +354,9 @@ class IbisQueryBuilder:
         if filter_operator in ["contains", "not_contains"]:
             filter_value = filter_value.replace("%", "")
 
+            if left.type().is_numeric():
+                left = left.cast("string")
+
         if filter_operator == "between":
             start = filter_value[0]
             end = filter_value[1]
