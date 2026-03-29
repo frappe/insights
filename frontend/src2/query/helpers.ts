@@ -1,3 +1,4 @@
+import { __ } from '../translation'
 import {
 	ArrowUpDown,
 	BetweenHorizonalStart,
@@ -19,6 +20,7 @@ import { h } from 'vue'
 import { copy } from '../helpers'
 import { FIELDTYPES, GranularityType } from '../helpers/constants'
 import dayjs from '../helpers/dayjs'
+import useSettings from '../settings/settings'
 import {
 	Cast,
 	CastArgs,
@@ -148,7 +150,20 @@ export function getFormattedRows(result: QueryResult, operations: Operation[]) {
 export function getFormattedDate(date: string, granularity: GranularityType) {
 	if (!date) return ''
 
-	const dayjsFormat: Record<GranularityType, string> = {
+	if (granularity === 'fiscal_year') {
+		const d = dayjs(date)
+		const fiscalYearStart = useSettings().doc.fiscal_year_start || '04-01'
+		const fiscalStartMonth = dayjs(fiscalYearStart).month()
+		const fiscalStartDay = dayjs(fiscalYearStart).date()
+
+		const fiscalStartThisYear = d.month(fiscalStartMonth).date(fiscalStartDay)
+		const startYear = d.isBefore(fiscalStartThisYear) ? d.year() - 1 : d.year()
+		const endYear = startYear + 1
+
+		return `FY ${startYear}-${String(endYear).slice(-2)}`
+	}
+
+	const dayjsFormat: Record<string, string> = {
 		second: 'MMMM D, YYYY h:mm:ss A',
 		minute: 'MMMM D, YYYY h:mm A',
 		hour: 'MMMM D, YYYY h:00 A',
@@ -198,7 +213,7 @@ export function makeDimension(column: QueryResultColumn): Dimension {
 
 export const query_operation_types = {
 	source: {
-		label: 'Source',
+		label: __('Source'),
 		type: 'source',
 		icon: DatabaseZap,
 		color: 'gray',
@@ -209,7 +224,7 @@ export const query_operation_types = {
 		},
 	},
 	join: {
-		label: 'Join',
+		label: __('Join'),
 		type: 'join',
 		icon: h(BlendIcon, { class: '-rotate-45' }),
 		color: 'gray',
@@ -220,7 +235,7 @@ export const query_operation_types = {
 		},
 	},
 	union: {
-		label: 'Union',
+		label: __('Union'),
 		type: 'union',
 		icon: BetweenHorizonalStart,
 		color: 'gray',
@@ -231,7 +246,7 @@ export const query_operation_types = {
 		},
 	},
 	select: {
-		label: 'Select',
+		label: __('Select'),
 		type: 'select',
 		icon: ColumnsIcon,
 		color: 'gray',
@@ -242,7 +257,7 @@ export const query_operation_types = {
 		},
 	},
 	remove: {
-		label: 'Remove',
+		label: __('Remove'),
 		type: 'remove',
 		icon: XSquareIcon,
 		color: 'gray',
@@ -256,7 +271,7 @@ export const query_operation_types = {
 		},
 	},
 	rename: {
-		label: 'Rename',
+		label: __('Rename'),
 		type: 'rename',
 		icon: TextCursorInput,
 		color: 'gray',
@@ -267,7 +282,7 @@ export const query_operation_types = {
 		},
 	},
 	cast: {
-		label: 'Cast',
+		label: __('Cast'),
 		type: 'cast',
 		icon: Repeat,
 		color: 'gray',
@@ -278,7 +293,7 @@ export const query_operation_types = {
 		},
 	},
 	filter: {
-		label: 'Filter',
+		label: __('Filter'),
 		type: 'filter',
 		icon: FilterIcon,
 		color: 'gray',
@@ -286,22 +301,22 @@ export const query_operation_types = {
 		init: (args: FilterArgs): Filter => ({ type: 'filter', ...args }),
 		getDescription: (op: Filter) => {
 			// @ts-ignore
-			if (op.expression) return `custom expression`
+			if (op.expression) return __('custom expression')
 			// @ts-ignore
 			return `${op.column.column_name}`
 		},
 	},
 	filter_group: {
-		label: 'Filter Group',
+		label: __('Filter Group'),
 		type: 'filter_group',
 		icon: FilterIcon,
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: FilterGroupArgs): FilterGroup => ({ type: 'filter_group', ...args }),
 		getDescription: (op: FilterGroup) => {
-			if (!op.filters.length) return 'empty'
+			if (!op.filters.length) return __('empty')
 			const columns = op.filters.map((f) => {
-				if ('expression' in f) return 'custom expression'
+				if ('expression' in f) return __('custom expression')
 				return f.column.column_name
 			})
 			const more = columns.length - 2
@@ -309,7 +324,7 @@ export const query_operation_types = {
 		},
 	},
 	mutate: {
-		label: 'Calculate',
+		label: __('Calculate'),
 		type: 'mutate',
 		icon: FunctionSquare,
 		color: 'gray',
@@ -320,7 +335,7 @@ export const query_operation_types = {
 		},
 	},
 	summarize: {
-		label: 'Summarize',
+		label: __('Summarize'),
 		type: 'summarize',
 		icon: Combine,
 		color: 'gray',
@@ -329,22 +344,22 @@ export const query_operation_types = {
 		getDescription: (op: Summarize) => {
 			const measures = op.measures.map((m) => m.measure_name).join(', ')
 			const dimensions = op.dimensions.map((g) => g.column_name).join(', ')
-			return `${measures} BY ${dimensions}`
+			return __(`{0} BY {1}`, measures, dimensions)
 		},
 	},
 	pivot_wider: {
-		label: 'Pivot',
+		label: __('Pivot'),
 		type: 'pivot_wider',
 		icon: GitBranch,
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: PivotWiderArgs): PivotWider => ({ type: 'pivot_wider', ...args }),
 		getDescription: (op: PivotWider) => {
-			return 'Pivot Wider'
+			return __('Pivot Wider')
 		},
 	},
 	order_by: {
-		label: 'Sort',
+		label: __('Sort'),
 		type: 'order_by',
 		icon: ArrowUpDown,
 		color: 'gray',
@@ -355,7 +370,7 @@ export const query_operation_types = {
 		},
 	},
 	limit: {
-		label: 'Limit',
+		label: __('Limit'),
 		type: 'limit',
 		icon: Indent,
 		color: 'gray',
@@ -366,7 +381,7 @@ export const query_operation_types = {
 		},
 	},
 	custom_operation: {
-		label: 'Custom Operation',
+		label: __('Custom Operation'),
 		type: 'custom_operation',
 		icon: Braces,
 		color: 'gray',
@@ -377,25 +392,25 @@ export const query_operation_types = {
 		},
 	},
 	sql: {
-		label: 'SQL',
+		label: __('SQL'),
 		type: 'sql',
 		icon: ScrollText,
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: SQLArgs): SQL => ({ type: 'sql', ...args }),
 		getDescription: (op: SQL) => {
-			return "SQL"
+			return __("SQL")
 		},
 	},
 	code: {
-		label: 'Code',
+		label: __('Code'),
 		type: 'code',
 		icon: Braces,
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: CodeArgs): Code => ({ type: 'code', ...args }),
 		getDescription: (op: Code) => {
-			return "Code"
+			return __("Code")
 		},
 	},
 }

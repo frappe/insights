@@ -1,11 +1,38 @@
 <script setup lang="ts">
-import Checkbox from '../components/Checkbox.vue'
+import { call } from 'frappe-ui'
+import { ref } from 'vue'
+import { createToast } from '../helpers/toasts'
 import DatePickerControl from '../query/components/DatePickerControl.vue'
+import session from '../session'
+import { __ } from '../translation'
 import SettingItem from './SettingItem.vue'
 import useSettings from './settings'
 
 const settings = useSettings()
 settings.load()
+
+const demoLoading = ref(false)
+
+async function setupDemoData() {
+	demoLoading.value = true
+	try {
+		await call('insights.setup.setup_wizard.setup_demo_data')
+		session.user.has_demo_data = true
+		createToast({
+			title: __('Demo Data Ready'),
+			message: __('Sample data and workbook have been set up successfully'),
+			variant: 'success',
+		})
+	} catch {
+		createToast({
+			title: __('Setup Failed'),
+			message: __('Failed to setup demo data'),
+			variant: 'error',
+		})
+	} finally {
+		demoLoading.value = false
+	}
+}
 </script>
 
 <template>
@@ -63,6 +90,20 @@ settings.load()
 				v-model.number="settings.doc.max_concurrent_queries"
 				:min="6"
 				:max="18"
+			/>
+		</SettingItem>
+
+		<SettingItem
+			v-if="session.user.is_admin && !session.user.has_demo_data"
+			label="Demo Data"
+			description="Set up sample data and a pre-built workbook to explore Insights features."
+		>
+			<Button
+				variant="subtle"
+				size="sm"
+				label="Setup Demo Data"
+				:loading="demoLoading"
+				@click="setupDemoData"
 			/>
 		</SettingItem>
 

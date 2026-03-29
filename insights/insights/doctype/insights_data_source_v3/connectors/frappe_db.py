@@ -133,9 +133,9 @@ def get_frappedb_table_links(data_source):
             all_links.append(
                 _dict(
                     {
-                        "left_table": link.options,
+                        "left_table": "tab" + link.options,
                         "left_column": "name",
-                        "right_table": link.parent,
+                        "right_table": "tab" + link.parent,
                         "right_column": link.fieldname,
                     }
                 )
@@ -144,9 +144,9 @@ def get_frappedb_table_links(data_source):
             all_links.append(
                 _dict(
                     {
-                        "left_table": link.parent,
+                        "left_table": "tab" + link.parent,
                         "left_column": "name",
-                        "right_table": link.options,
+                        "right_table": "tab" + link.options,
                         "right_column": "parent",
                     }
                 )

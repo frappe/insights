@@ -8,6 +8,7 @@ import { DropdownOption } from '../types/query.types'
 import useUserStore from '../users/users'
 import { Dashboard } from './dashboard'
 import { createToast } from '../helpers/toasts'
+import { __ } from '../translation'
 
 const show = defineModel()
 
@@ -44,7 +45,7 @@ function saveChanges() {
 	})
 	createToast({
 		variant: 'success',
-		title: 'Dashboard Access Updated',
+		title: __('Dashboard Access Updated'),
 	})
 	show.value = false
 }
@@ -79,10 +80,10 @@ const generalAccess = computed({
 	<Dialog
 		v-model="show"
 		:options="{
-			title: 'Share Dashboard',
+			title: __('Share Dashboard'),
 			actions: [
 				{
-					label: 'Done',
+					label: __('Done'),
 					variant: 'solid',
 					disabled: !hasChanged,
 					onClick: saveChanges,
@@ -102,15 +103,15 @@ const generalAccess = computed({
 								v-model="generalAccess"
 								:options="[
 									{
-										label: 'Anyone with the link can view',
+										label: __('Anyone with the link can view'),
 										value: 'anyone',
 									},
 									{
-										label: 'Anyone in the organization can view',
+										label: __('Anyone in the organization can view'),
 										value: 'organization',
 									},
 									{
-										label: 'Specific people can view',
+										label: __('Specific people can view'),
 										value: 'specific',
 									},
 								]"

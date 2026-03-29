@@ -1,33 +1,37 @@
 <script setup lang="ts">
 import ChartSectionEmptySvg from '@/query/ChartSectionEmptySvg.vue'
+import { Button } from 'frappe-ui'
+import { Maximize, XIcon } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
+import { titleCase } from '../../helpers'
+import { FIELDTYPES } from '../../helpers/constants.ts'
 import { EMPTY_RESULT, Query } from '../../query/query'
 import {
 	BarChartConfig,
+	BubbleChartConfig,
 	DonutChartConfig,
 	FunnelChartConfig,
 	LineChartConfig,
 	MapChartConfig,
 	NumberChartConfig,
-	BubbleChartConfig,
+	SankeyChartConfig,
 } from '../../types/chart.types'
 import { Chart } from '../chart'
 import {
 	getBarChartOptions,
+	getBubbleChartOptions,
 	getDonutChartOptions,
 	getFunnelChartOptions,
 	getLineChartOptions,
 	getMapChartOptions,
-	getBubbleChartOptions,
+	getSankeyChartOptions,
 } from '../helpers'
-import { FIELDTYPES } from '../../helpers/constants.ts'
-import { titleCase } from '../../helpers'
 import BaseChart from './BaseChart.vue'
 import DrillDown from './DrillDown.vue'
 import NumberChart from './NumberChart.vue'
 import TableChart from './TableChart.vue'
 
-const props = defineProps<{ chart: Chart }>()
+const props = defineProps<{ chart: Chart; hideMaximize?: boolean }>()
 
 const chart_type = computed(() => props.chart.doc.chart_type)
 const config = computed(() => props.chart.doc.config)
@@ -61,6 +65,9 @@ const eChartOptions = computed(() => {
 	if (chart_type.value === 'Bubble') {
 		return getBubbleChartOptions(config.value as BubbleChartConfig, result.value)
 	}
+	if (chart_type.value === 'Sankey') {
+		return getSankeyChartOptions(config.value as SankeyChartConfig, result.value)
+	}
 })
 
 const showDrillDown = ref(false)
@@ -73,7 +80,7 @@ const locationColumn = computed(() => {
 	return result.value.columns.find(
 		(c) =>
 			FIELDTYPES.DIMENSION.includes(c.type) &&
-			c.name === mapConfig.value.location_column?.column_name
+			c.name === mapConfig.value.location_column?.column_name,
 	)
 })
 
@@ -114,7 +121,7 @@ const locationRowIndex = computed(() => {
 	return { index, reverseMap }
 })
 
-function handleMapChartClick(params:any) {
+function handleMapChartClick(params: any) {
 	if (!locationColumn.value) return null
 
 	const clickedLocation = params.name
@@ -150,11 +157,13 @@ function handleGeneralChartClick(params: any) {
 	return column ? props.chart.dataQuery.getDrillDownQuery(column, row) : null
 }
 
-function onChartElementClick(params: any) {
+async function onChartElementClick(params: any) {
 	if (params.componentType !== 'series') return
 
 	const query =
-		chart_type.value === 'Map' ? handleMapChartClick(params) : handleGeneralChartClick(params)
+		chart_type.value === 'Map'
+			? await handleMapChartClick(params)
+			: await handleGeneralChartClick(params)
 
 	if (query) {
 		drillDownQuery.value = query
@@ -162,16 +171,18 @@ function onChartElementClick(params: any) {
 	}
 }
 
-function onNumberChartDrillDown(column: any, row: any) {
-	drillDownQuery.value = props.chart.dataQuery.getDrillDownQuery(column, row)
+async function onNumberChartDrillDown(column: any, row: any) {
+	drillDownQuery.value = await props.chart.dataQuery.getDrillDownQuery(column, row)
 	if (drillDownQuery.value) {
 		showDrillDown.value = true
 	}
 }
+
+const showExpandedChartDialog = ref(false)
 </script>
 
 <template>
-	<div class="relative h-full w-full">
+	<div class="group relative h-full w-full">
 		<BaseChart
 			v-if="!loading && eChartOptions"
 			class="rounded bg-white py-1 shadow"
@@ -200,7 +211,17 @@ function onNumberChartDrillDown(column: any, row: any) {
 				</p>
 			</template>
 		</div>
+
+		<div
+			v-if="!props.hideMaximize && chart && chart.doc.chart_type !== 'Number'"
+			class="absolute top-1.5 right-1.5 p-1 opacity-0 transition-opacity group-hover:opacity-100"
+		>
+			<Button variant="ghost" @click="showExpandedChartDialog = true">
+				<Maximize class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
+			</Button>
+		</div>
 	</div>
+
 	<DrillDown
 		v-if="drillDownQuery"
 		v-model="showDrillDown"
@@ -208,4 +229,26 @@ function onNumberChartDrillDown(column: any, row: any) {
 		:query="drillDownQuery"
 	>
 	</DrillDown>
+
+	<Dialog
+		v-if="chart"
+		v-model="showExpandedChartDialog"
+		:options="{
+			size: '7xl',
+			title: chart?.doc.title,
+		}"
+	>
+		<template #body>
+			<div class="h-[85vh] w-full">
+				<ChartRenderer v-if="chart" :chart="chart" :hide-maximize="true" />
+				<div class="absolute top-2 right-2">
+					<Button variant="ghost" @click="showExpandedChartDialog = false">
+						<template #icon>
+							<XIcon class="size-4 text-gray-700" />
+						</template>
+					</Button>
+				</div>
+			</div>
+		</template>
+	</Dialog>
 </template>

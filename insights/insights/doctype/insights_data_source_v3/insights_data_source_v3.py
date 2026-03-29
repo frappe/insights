@@ -89,10 +89,8 @@ class InsightsDataSourceDocument:
                 {
                     "database_type": "DuckDB",
                     "database_name": None,  # this should never be used
-                    "schema": self.name.replace(".", "_"),
                 }
             )
-            insights.warehouse.create_database(self.schema)
 
         if self.is_site_db:
             self.db_set("is_frappe_db", 1)
@@ -413,6 +411,8 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         if self.database_type == "PostgreSQL" and "." in table_name:
             schema, table = table_name.split(".")
             return remote_db.table(table, database=schema)
+        if self.type == "REST API":
+            return remote_db.table(table_name, database=self.schema)
         return remote_db.table(table_name)
 
 

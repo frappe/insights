@@ -8,8 +8,8 @@
 						props.isCollapsed
 							? 'w-auto px-0'
 							: open
-							? 'w-52 bg-white px-2 shadow-sm'
-							: 'w-52 px-2 hover:bg-gray-200'
+							  ? 'w-52 bg-white px-2 shadow-sm'
+							  : 'w-52 px-2 hover:bg-gray-200'
 					"
 				>
 					<img
@@ -27,7 +27,11 @@
 					>
 						<div class="text-base font-medium leading-none text-gray-900">Insights</div>
 						<div class="mt-1 text-sm leading-none text-gray-700">
-							{{ __(session.user.full_name) }}
+							{{
+								session.user.full_name == 'Administrator'
+									? __(session.user.full_name)
+									: session.user.full_name
+							}}
 						</div>
 					</div>
 					<div
@@ -74,14 +78,15 @@
 			v-model="showLoginToFCDialog"
 			:options="{
 				title: __('Login to Frappe Cloud?'),
-				message: 'Are you sure you want to login to your Frappe Cloud dashboard?',
+				message: __('Are you sure you want to login to your Frappe Cloud dashboard?'),
 				actions: [
 					{
-						label: 'Confirm',
+						label: __('Confirm'),
 						variant: 'solid',
 						loading: loggingInToFC,
 						onClick() {
 							loginToFC()
+
 							showLoginToFCDialog.value = false
 						},
 					},
@@ -122,8 +127,8 @@ const userDropdownOptions = ref([
 		icon: h(LogOut),
 		onClick: () =>
 			confirmDialog({
-				title: 'Log out',
-				message: 'Are you sure you want to log out?',
+				title: __('Log out'),
+				message: __('Are you sure you want to log out?'),
 				onSuccess: session.logout,
 			}),
 	},
@@ -132,7 +137,7 @@ const userDropdownOptions = ref([
 waitUntil(() => session.initialized).then(() => {
 	if (session.user.is_v2_instance) {
 		userDropdownOptions.value.splice(userDropdownOptions.value.length - 2, 0, {
-			label: 'Switch to Insights v2',
+			label: __('Switch to Insights v2'),
 			icon: h(ToggleRight),
 			onClick: () => (showSwitchToV2Dialog.value = true),
 		})
@@ -140,7 +145,7 @@ waitUntil(() => session.initialized).then(() => {
 
 	if (session.user.is_admin) {
 		userDropdownOptions.value.splice(userDropdownOptions.value.length - 2, 0, {
-			label: 'Switch to Desk',
+			label: __('Switch to Desk'),
 			icon: h(ToggleRight),
 			onClick: () => window.open('/app', '_blank'),
 		})

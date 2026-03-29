@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Plus, X } from 'lucide-vue-next'
 import { Badge, Button, FormControl } from 'frappe-ui'
+import { Plus, X } from 'lucide-vue-next'
 import { computed, ref, watchEffect } from 'vue'
 import DraggableList from '../../components/DraggableList.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
@@ -13,7 +13,6 @@ import { ColumnOption, DimensionDataType, DimensionOption } from '../../types/qu
 import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
-import { wheneverChanges } from '../../helpers'
 const props = defineProps<{
 	formatGroup?: FormatGroupArgs
 	dimensions: DimensionOption[]
@@ -57,7 +56,7 @@ const measuresAsDimensions = computed<DimensionOption[]>(() =>
 			dimension_name: o.label,
 			label: o.label,
 			value: o.value,
-		}))
+		})),
 )
 
 const dimensions = computed(() => [...props.dimensions, ...measuresAsDimensions.value])
@@ -125,11 +124,11 @@ function handleFormatSelect(formatGroup: FormatGroupArgs) {
 }
 
 function getColumnType(column_name: string) {
-	const column = measuresAndDimensions.value.find((column) => column.data_type === column_name)
-	if (!column) {
+	const col = measuresAndDimensions.value.find((col) => col.value === column_name)
+	if (!col) {
 		return 'String'
 	}
-	return column.data_type
+	return col.data_type
 }
 
 function toggleStickyColumn(column_name: string, is_sticky: boolean) {
@@ -142,6 +141,28 @@ function toggleStickyColumn(column_name: string, is_sticky: boolean) {
 		}
 	} else {
 		config.value.sticky_columns = config.value.sticky_columns?.filter((c) => c !== column_name)
+	}
+}
+
+function updateColumnWidth(column_name: string, width: number | string | undefined) {
+	if (!config.value.column_widths) {
+		config.value.column_widths = {}
+	}
+	if (width === undefined || width === '' || width === null) {
+		delete config.value.column_widths[column_name]
+	} else {
+		config.value.column_widths[column_name] = Number(width)
+	}
+}
+
+function updateTextWrap(column_name: string, wrap: boolean | undefined) {
+	if (!config.value.text_wrap) {
+		config.value.text_wrap = {}
+	}
+	if (!wrap) {
+		delete config.value.text_wrap[column_name]
+	} else {
+		config.value.text_wrap[column_name] = true
 	}
 }
 </script>
@@ -158,6 +179,23 @@ function toggleStickyColumn(column_name: string, is_sticky: boolean) {
 						@remove="config.rows.splice(index, 1)"
 					>
 						<template #config-fields>
+							<InlineFormControlLabel label="Width">
+								<FormControl
+									type="number"
+									:modelValue="config.column_widths?.[item.dimension_name]"
+									@update:modelValue="
+										updateColumnWidth(item.dimension_name, $event)
+									"
+									placeholder="auto"
+									min="100"
+									step="10"
+								/>
+							</InlineFormControlLabel>
+							<Toggle
+								label="Wrap Text"
+								:modelValue="config.text_wrap?.[item.dimension_name]"
+								@update:modelValue="updateTextWrap(item.dimension_name, $event)"
+							/>
 							<Toggle
 								label="Pin Column"
 								:modelValue="config.sticky_columns?.includes(item.dimension_name)"

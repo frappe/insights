@@ -88,7 +88,8 @@ class InsightsDashboardv3(Document):
         if is_guest and not self.is_public:
             raise frappe.PermissionError
 
-        self.check_linked_filters(query, column_name)
+        if not self.has_permission("write"):
+            self.check_linked_filters(query, column_name)
 
         doc = frappe.get_cached_doc("Insights Query v3", query)
         return doc.get_distinct_column_values(

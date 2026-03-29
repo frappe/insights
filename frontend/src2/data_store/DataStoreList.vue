@@ -6,6 +6,7 @@ import { getDatabaseLogo } from '../data_source/data_source'
 import useDataStore, { DataStoreTable } from './data_store'
 import ImportTableDialog from './ImportTableDialog.vue'
 import session from '../session'
+import { __ } from '../translation'
 
 onMounted(() => {
 	dataStore.getTables()
@@ -25,20 +26,18 @@ const filteredTables = computed(() => {
 	if (!query) return allTables
 
 	return allTables.filter((table: DataStoreTable) => {
-		return (
-			table.table_name.toLowerCase().includes(query)
-		)
+		return table.table_name.toLowerCase().includes(query)
 	})
 })
 
 const listOptions = computed(() => ({
 	columns: [
 		{
-			label: 'Table Name',
+			label: __('Table Name'),
 			key: 'table_name',
 		},
 		{
-			label: 'Data Source',
+			label: __('Data Source'),
 			key: 'data_source',
 			prefix: (props: any) => {
 				const table = props.row as DataStoreTable
@@ -46,7 +45,7 @@ const listOptions = computed(() => ({
 			},
 		},
 		{
-			label: 'Last Synced',
+			label: __('Last Synced'),
 			key: 'last_synced_from_now',
 		},
 	],
@@ -55,11 +54,11 @@ const listOptions = computed(() => ({
 	options: {
 		showTooltip: false,
 		emptyState: {
-			title: 'No Tables Stored',
-			description: 'No tables found in the data store.',
+			title: __('No Tables Stored'),
+			description: __('No tables found in the data store.'),
 			button: session.user.is_admin
 				? {
-						label: 'Import Table',
+						label: __('Import Table'),
 						iconLeft: 'plus',
 						variant: 'solid',
 						loading: false,
@@ -69,16 +68,15 @@ const listOptions = computed(() => ({
 		},
 	},
 }))
-
 </script>
 
 <template>
 	<header class="flex h-12 items-center justify-between border-b py-2.5 pl-5 pr-2">
-		<Breadcrumbs :items="[{ label: 'Data Store', route: '/data-store' }]" />
+		<Breadcrumbs :items="[{ label: __('Data Store'), route: '/data-store' }]" />
 		<div class="flex items-center gap-2">
 			<Button
 				v-if="session.user.is_admin"
-				label="Import Table"
+				:label="__('Import Table')"
 				variant="solid"
 				@click="showImportTableDialog = true"
 			>
@@ -91,7 +89,7 @@ const listOptions = computed(() => ({
 
 	<div class="mb-4 flex h-full flex-col gap-3 overflow-auto px-5 py-3">
 		<div class="flex gap-2 overflow-visible py-1">
-			<FormControl placeholder="Search" v-model="searchQuery" :debounce="300">
+			<FormControl :placeholder="__('Search')" v-model="searchQuery" :debounce="300">
 				<template #prefix>
 					<SearchIcon class="h-4 w-4 text-gray-500" />
 				</template>

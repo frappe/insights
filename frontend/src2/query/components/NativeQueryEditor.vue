@@ -7,6 +7,7 @@ import ContentEditable from '../../components/ContentEditable.vue'
 import useDataSourceStore from '../../data_source/data_source'
 import { wheneverChanges } from '../../helpers'
 import { createToast } from '../../helpers/toasts'
+import { __ } from '../../translation'
 import { Query } from '../query'
 import QueryDataTable from './QueryDataTable.vue'
 import SchemaExplorer from './SchemaExplorer.vue'
@@ -22,7 +23,7 @@ const sql = ref(operation ? operation.raw_sql : '')
 function execute(force: boolean = false) {
 	if (!data_source.value) {
 		createToast({
-			title: 'Please select a data source first',
+			title: __('Please select a data source first'),
 			variant: 'error',
 		})
 		return
@@ -48,7 +49,7 @@ async function format() {
 		})
 	} catch (error) {
 		createToast({
-			title: 'Failed to format SQL',
+			title: __('Failed to format SQL'),
 			variant: 'error',
 		})
 	} finally {
@@ -113,8 +114,10 @@ const completions = computed(() => {
 					<DataSourceSelector v-model="data_source" placeholder="Select a data source" />
 					<ContentEditable
 						class="flex h-7 cursor-text items-center justify-center rounded bg-white px-2 text-base text-gray-800 focus-visible:ring-1 focus-visible:ring-gray-600"
-						v-model="query.doc.title"
 						placeholder="Untitled Dashboard"
+						:modelValue="query.doc.title"
+						@returned="query.doc.title = $event"
+						@blur="query.doc.title = $event"
 					></ContentEditable>
 				</div>
 				<div class="flex-1 overflow-hidden">
@@ -128,7 +131,7 @@ const completions = computed(() => {
 					/>
 				</div>
 				<div class="flex flex-shrink-0 gap-1 border-t p-1">
-					<Button @click="execute(true)" label="Execute">
+					<Button @click="execute(true)" :label="__('Execute')">
 						<template #prefix>
 							<Play class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
 						</template>
@@ -137,7 +140,7 @@ const completions = computed(() => {
 						:button="{ icon: MoreHorizontal }"
 						:options="[
 							{
-								label: 'Format SQL',
+								label: __('Format SQL'),
 								icon: Wand2,
 								onClick: () => format(),
 							},
@@ -150,9 +153,13 @@ const completions = computed(() => {
 				class="tnum flex flex-shrink-0 items-center gap-2 text-sm text-gray-600"
 			>
 				<div class="h-2 w-2 rounded-full bg-green-500"></div>
-				<div>
-					<span v-if="query.result.timeTaken == -1"> Fetched from cache </span>
-					<span v-else> Fetched in {{ query.result.timeTaken }}s </span>
+				<div class="flex items-center gap-1">
+					<span v-if="query.result.timeTaken == -1">
+						{{ __('Fetched from cache') }}
+					</span>
+					<span v-else>
+						{{ __('Fetched in {0}s', String(query.result.timeTaken)) }}
+					</span>
 					<span> {{ useTimeAgo(query.result.lastExecutedAt).value }} </span>
 				</div>
 			</div>

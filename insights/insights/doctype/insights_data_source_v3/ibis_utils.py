@@ -28,7 +28,7 @@ from insights.insights.query_builders.sql_functions import handle_timespan
 from insights.utils import create_execution_log
 from insights.utils import deep_convert_dict_to_dict as _dict
 
-from .ibis.functions import quarter_start, week_start
+from .ibis.functions import fiscal_year_start, quarter_start, week_start
 from .ibis.utils import get_functions
 
 # RedLock constants
@@ -230,10 +230,50 @@ class IbisQueryBuilder:
         return _table
 
     def get_column(self, column_name, throw=True):
+        # 1. Exact match
         if column_name in self.query.columns:
             return self.query[column_name]
+
+        # 2. Sanitized name match (handles capitalisation / special-char differences)
         if sanitize_name(column_name) in self.query.columns:
             return self.query[sanitize_name(column_name)]
+
+        # 3. Suffix match: handles the case where a stored column name was produced
+        #    in live-connection mode (e.g. "tabhd_ticket_priority_name") but the
+        #    query now runs against the warehouse, where rename_duplicate_columns
+        #    prepends the data-source schema prefix and produces a longer name
+        #    (e.g. "support_frappe_io_tabhd_ticket_priority_name").
+        #    We only match when exactly one column ends with "_{column_name}" so
+        #    that ambiguous / short suffixes are never silently resolved to the
+        #    wrong column.
+        suffix = f"_{column_name}"
+        suffix_matches = [col for col in self.query.columns if col.endswith(suffix)]
+        if len(suffix_matches) == 1:
+            return self.query[suffix_matches[0]]
+
+        # 4. Schema-prefix-strip match: handles the case where a stored column name
+        #    was produced in old warehouse mode (e.g. "frappe_cloud_tabinvoice_item_parent")
+        #    but the query now runs without the data-source schema prefix, producing
+        #    the shorter name "tabinvoice_item_parent" (new warehouse behaviour after
+        #    PR #953 + revert of get_ibis_table_name).
+        #    We scan all DatabaseTable nodes in the current ibis expression tree to
+        #    collect the schema names that are actually present in this query, then
+        #    try stripping each as a leading prefix before checking for a column match.
+        all_dt = self.query.op().find_topmost(DatabaseTable)
+        schemas = {
+            dt.namespace.database
+            for dt in all_dt
+            if dt.namespace and dt.namespace.database and dt.namespace.database != "main"
+        }
+        for schema in schemas:
+            prefix = f"{schema}_"
+            if column_name.startswith(prefix):
+                remainder = column_name[len(prefix) :]
+                if remainder in self.query.columns:
+                    return self.query[remainder]
+                if sanitize_name(remainder) in self.query.columns:
+                    return self.query[sanitize_name(remainder)]
+
         if throw:
             frappe.throw(f"Column {column_name} does not exist in the table")
 
@@ -302,8 +342,8 @@ class IbisQueryBuilder:
         def left_eq_right_condition(left_column, right_column):
             if left_column and right_column and left_column.column_name and right_column.column_name:
                 rt = right_table
-                lc = getattr(self.query, left_column.column_name)
-                rc = getattr(rt, right_column.column_name)
+                lc = self.get_column(left_column.column_name)
+                rc = rt[right_column.column_name]
                 return lc.cast(rc.type()) == rc
 
             frappe.throw("Join condition is not valid")
@@ -459,7 +499,8 @@ class IbisQueryBuilder:
 
     def apply_select(self, select_args):
         select_args = _dict(select_args)
-        return self.query.select(select_args.column_names)
+        resolved_names = [self.get_column(col).get_name() for col in select_args.column_names]
+        return self.query.select(resolved_names)
 
     def apply_rename(self, rename_args):
         old_name = self.get_column(rename_args.column.column_name).get_name()
@@ -721,7 +762,7 @@ class IbisQueryBuilder:
         return column.name(measure.measure_name)
 
     def translate_dimension(self, dimension):
-        col = getattr(self.query, dimension.column_name)
+        col = self.get_column(dimension.column_name)
         if self.is_date_type(dimension.data_type) and dimension.granularity:
             col = self.apply_granularity(col, dimension.granularity)
             col = col.cast(self.get_ibis_dtype(dimension.data_type))
@@ -751,6 +792,8 @@ class IbisQueryBuilder:
             return week_start(column).strftime("%Y-%m-%d").name(column.get_name())
         if granularity == "quarter":
             return quarter_start(column).strftime("%Y-%m-01").name(column.get_name())
+        if granularity == "fiscal_year":
+            return fiscal_year_start(column).strftime("%Y-%m-%d").name(column.get_name())
 
         format_str = {
             "second": "%Y-%m-%d %H:%M:%S",
@@ -995,7 +1038,7 @@ def get_code_results(code: str, variables=None):
     pandas.json_normalize = pd.json_normalize
 
     results = []
-    frappe.debug_log = []
+    frappe.local.debug_log = []
 
     variable_context = {}
     if variables:

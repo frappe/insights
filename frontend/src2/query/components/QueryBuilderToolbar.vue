@@ -3,6 +3,7 @@ import { useTimeAgo } from '@vueuse/core'
 import { Copy, CopyPlus, MoreHorizontal, PlayIcon, RefreshCw, Scroll } from 'lucide-vue-next'
 import { computed, h, inject, ref } from 'vue'
 import { Query } from '../query'
+import { __ } from '../../translation'
 import ViewSQLDialog from './ViewSQLDialog.vue'
 import session from '../../session'
 
@@ -15,7 +16,7 @@ const moreActions = computed(() => {
 
 	if (!query.doc.use_live_connection && session.user.is_admin) {
 		actions.push({
-			label: 'Refresh Stored Tables',
+			label: __('Refresh Stored Tables'),
 			icon: h(RefreshCw, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
 			onClick: query.refreshStoredTables,
 		})
@@ -23,17 +24,17 @@ const moreActions = computed(() => {
 
 	actions.push(
 		{
-			label: 'View SQL',
+			label: __('View SQL'),
 			icon: h(Scroll, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
 			onClick: () => (showViewSQLDialog.value = true),
 		},
 		{
-			label: 'Duplicate Query',
+			label: __('Duplicate Query'),
 			icon: h(CopyPlus, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
 			onClick: () => query.duplicate(),
 		},
 		{
-			label: 'Copy Query',
+			label: __('Copy Query'),
 			icon: h(Copy, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
 			onClick: () => query.copy(),
 		},
@@ -51,9 +52,13 @@ const moreActions = computed(() => {
 				class="tnum flex items-center gap-2 text-sm text-gray-600"
 			>
 				<div class="h-2 w-2 rounded-full bg-green-500"></div>
-				<div>
-					<span v-if="query.result.timeTaken == -1"> Fetched from cache </span>
-					<span v-else> Fetched in {{ query.result.timeTaken }}s </span>
+				<div class="flex items-center gap-1">
+					<span v-if="query.result.timeTaken == -1">
+						{{ __('Fetched from cache') }}
+					</span>
+					<span v-else>
+						{{ __('Fetched in {0}s', String(query.result.timeTaken)) }}
+					</span>
 					<span> {{ useTimeAgo(query.result.lastExecutedAt).value }} </span>
 				</div>
 			</div>
@@ -61,7 +66,7 @@ const moreActions = computed(() => {
 		<div class="flex items-center gap-2">
 			<Button
 				variant="ghost"
-				label="Execute"
+				:label="__('Execute')"
 				@click="() => query.execute(true)"
 				class="!h-6 !gap-1.5 bg-white !px-2 text-xs shadow"
 			>

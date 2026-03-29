@@ -4,7 +4,6 @@ import { computed, onMounted, ref } from 'vue'
 import Code from '../../components/Code.vue'
 import { cachedCall } from '../../helpers'
 import { DropdownOption } from '../../types/query.types'
-import { Info, CheckCircle } from 'lucide-vue-next'
 type FunctionSignature = {
 	name: string
 	definition: string
@@ -21,7 +20,9 @@ const props = defineProps<{
 	multiLine?: boolean
 	class?: string
 	showOutput?: boolean
+	language?: string
 }>()
+
 const expression = defineModel<string>({
 	required: true,
 })
@@ -34,7 +35,7 @@ const functionList = ref<string[]>([])
 cachedCall('insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_list').then(
 	(res: any) => {
 		functionList.value = res
-	}
+	},
 )
 
 const columnNames = computed(() => {
@@ -84,6 +85,7 @@ function getFunctionMatches(word: string) {
 
 const codeEditor = ref<any>(null)
 const codeContainer = ref<HTMLElement | null>(null)
+const signatureElement = ref<HTMLElement | null>(null)
 
 onMounted(() => {
 	// fix clipping of tooltip & signature element because of dialog styling
@@ -119,7 +121,7 @@ const fetchCompletions = debounce(() => {
 		{
 			code,
 			column_options: JSON.stringify(props.columnOptions),
-		}
+		},
 	)
 		.then((res: any) => {
 			currentFunctionSignature.value = res.current_function
@@ -148,7 +150,7 @@ const fetchCompletions = debounce(() => {
 		.catch((e: any) => {
 			console.error(e)
 		})
-}, 1000)
+}, 500)
 
 type ValidationError = {
 	line: number
@@ -200,65 +202,117 @@ const validateExpression = debounce(() => {
 			}
 		})
 }, 500)
+
+function setSignatureElementPosition() {
+	setTimeout(() => {
+		const containerRect = codeContainer.value?.getBoundingClientRect()
+		const tooltipElement = codeContainer.value?.querySelector('.cm-tooltip-autocomplete')
+		const cursorElement = codeContainer.value?.querySelector('.cm-cursor.cm-cursor-primary')
+
+		if (!containerRect) return
+		if (!signatureElement.value) return
+
+		let left = 0,
+			top = 0
+
+		if (tooltipElement) {
+			const tooltipRect = tooltipElement.getBoundingClientRect()
+			left = tooltipRect.left - containerRect.left
+			top = tooltipRect.top + tooltipRect.height - containerRect.top + 10
+		} else if (cursorElement) {
+			const cursorRect = cursorElement?.getBoundingClientRect()
+			left = cursorRect.left - containerRect.left
+			top = cursorRect.top - containerRect.top + 20
+		}
+
+		if (left <= 0 || top <= 0) {
+			return
+		}
+
+		signatureElement.value.style.left = `${left}px`
+		signatureElement.value.style.top = `${top}px`
+	}, 100)
+}
 </script>
 
 <template>
-	<div class="flex flex-col gap-2 w-full">
-		<div ref="codeContainer" class="relative flex h-[10rem] w-full text-base">
-			<Code
-				ref="codeEditor"
-				language="python"
-				:class="props.class"
-				class="column-expression"
-				v-model="expression"
-				:placeholder="placeholder"
-				:completions="getCompletions"
-				:hide-line-numbers="props.hideLineNumbers"
-				:multi-line="props.multiLine"
-				:column-names="columnNames"
-				:validation-errors="validationErrors"
-				@view-update="fetchCompletions"
-				@input-change="validateExpression"
-			>
-			</Code>
+	<div ref="codeContainer" class="relative flex h-[14rem] w-full text-base" :class="props.class">
+		<Code
+			ref="codeEditor"
+			:language="props.language || 'python'"
+			class="column-expression"
+			:class="props.class"
+			v-model="expression"
+			:placeholder="placeholder"
+			:completions="getCompletions"
+			:hide-line-numbers="props.hideLineNumbers"
+			:multi-line="props.multiLine"
+			:column-names="columnNames"
+			:validation-errors="validationErrors"
+			@view-update="
+				() => {
+					fetchCompletions()
+					setSignatureElementPosition()
+				}
+			"
+			@input-change="validateExpression"
+		>
+		</Code>
+
+		<div
+			ref="signatureElement"
+			v-show="currentFunctionSignature"
+			class="absolute z-10 flex h-fit max-h-[14rem] w-[25rem] flex-col gap-2 overflow-y-auto rounded-lg bg-white px-2.5 py-1.5 shadow-md transition-all"
+		>
+			<template v-if="currentFunctionSignature">
+				<p
+					v-if="currentFunctionSignature.definition"
+					v-html="currentFunctionSignature.definition"
+					class="font-mono text-p-sm text-gray-800"
+				></p>
+				<hr v-if="currentFunctionSignature.definition" />
+				<div class="whitespace-pre-wrap font-mono text-p-sm text-gray-800">
+					{{ currentFunctionSignature.description }}
+				</div>
+			</template>
 		</div>
-		<div v-if="showOutput" class="min-h-[2.5rem] ">
-			<transition name="fade" mode="out-in">
-				<div class="flex items-center gap-4 max-h-[10%] px-3 py-2 border-t border-b">
-					<template v-if="validationState === 'validating'">
-						<LoadingIndicator class="h-4 w-4 text-gray-500" />
-					</template>
+	</div>
+	<!-- <div v-if="showOutput" class="min-h-[2.5rem]">
+		<transition name="fade" mode="out-in">
+			<div class="flex items-center gap-4 max-h-[10%] px-3 py-2 border-t border-b">
+				<template v-if="validationState === 'validating'">
+					<LoadingIndicator class="h-4 w-4 text-gray-500" />
+				</template>
 
-					<template v-else-if="validationState === 'valid'">
-						<CheckCircle class="h-4 w-4 text-sm text-[#7c7c7c]" />
-						<div class="text-sm text-[#7c7c7c] font-medium">Valid Syntax</div>
-					</template>
+				<template v-else-if="validationState === 'valid'">
+					<CheckCircle class="h-4 w-4 text-sm text-[#7c7c7c]" />
+					<div class="text-sm text-[#7c7c7c] font-medium">Valid Syntax</div>
+				</template>
 
-					<template v-else-if="validationErrors.length">
-						<div class="flex items-center gap-2 text-red-800">
-							<Info class="h-4 w-4 flex-shrink-0" />
-							<div class="flex-1">
-								<div
-									v-for="(error, index) in validationErrors"
-									:key="index"
-									class="mb-2 last:mb-0"
-								>
-									<div class="text-sm text-[#7c7c7c] font-medium">
-										{{ error.message }}
-										{{ error!.hint }}
-									</div>
+				<template v-else-if="validationErrors.length">
+					<div class="flex items-center gap-2 text-red-800">
+						<Info class="h-4 w-4 flex-shrink-0" />
+						<div class="flex-1">
+							<div
+								v-for="(error, index) in validationErrors"
+								:key="index"
+								class="mb-2 last:mb-0"
+							>
+								<div class="text-sm text-[#7c7c7c] font-medium">
+									{{ error.message }}
+									{{ error!.hint }}
 								</div>
 							</div>
 						</div>
-					</template>
+					</div>
+				</template>
 
-					<template v-else>
-						<div class="text-sm text-gray-500">No output</div>
-					</template>
-				</div>
-			</transition>
-		</div>
-	</div>
+				<template v-else>
+					<div class="text-sm text-gray-500">No output</div>
+				</template>
+			</div>
+		</transition>
+	</div> -->
 </template>
 
 <style lang="scss">

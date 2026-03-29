@@ -3,7 +3,6 @@
 
 import os
 import shutil
-from contextlib import contextmanager
 
 import frappe
 
@@ -70,17 +69,22 @@ class DemoDataFactory:
             data_source.db_insert()
 
         self.data_source = frappe.get_doc("Insights Data Source v3", "demo_data")
+        if self.data_source.database_type != "DuckDB":
+            self.data_source.db_set(
+                {
+                    "database_type": "DuckDB",
+                    "database_name": "insights_demo_data",
+                }
+            )
 
     def demo_data_exists(self):
         tables = get_data_source_tables(self.data_source.name)
-        tables_exists = len(tables) == 8
+        tables_exists = len(tables) >= 8
 
         links_count = frappe.db.count("Insights Table Link v3", {"data_source": self.data_source.name})
-        links_exists = links_count == 8
+        links_exists = links_count >= 8
 
-        sample_workbook_exists = frappe.db.exists("Insights Workbook", {"title": "Order Analysis"})
-
-        return tables_exists and links_exists and sample_workbook_exists
+        return tables_exists and links_exists
 
     def download_demo_data(self):
         if frappe.flags.in_test or os.environ.get("CI"):
@@ -173,15 +177,4 @@ class DemoDataFactory:
         with open(fixture_path + "/sample_workbook.json") as f:
             sample_workbook = f.read()
 
-        with admin_session():
-            import_workbook(frappe.parse_json(sample_workbook))
-
-
-@contextmanager
-def admin_session():
-    current_user = frappe.session.user
-    frappe.set_user("Administrator")
-    try:
-        yield
-    finally:
-        frappe.set_user(current_user)
+        import_workbook(frappe.parse_json(sample_workbook))

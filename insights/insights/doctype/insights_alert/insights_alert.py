@@ -205,15 +205,18 @@ def render_template_restricted(template: str, context: dict) -> str:
     Uses the same sandboxed environment as frappe.render_template but without
     the get_safe_globals() that would expose frappe internals.
     """
-    from frappe.utils.jinja import _get_jenv
+    try:
+        from frappe.utils.jinja import _get_jenv
 
-    base_jenv = _get_jenv()
+        base_jenv = _get_jenv()
+        jenv = base_jenv.overlay()
+        jenv.filters = base_jenv.filters.copy()
 
-    # Create an overlay to avoid modifying the cached instance
-    jenv = base_jenv.overlay()
+    except ImportError:
+        # fallback for v15
+        from frappe.utils.jinja import get_jenv
 
-    # Copy filters but do NOT add get_safe_globals() or jinja hooks
-    jenv.filters = base_jenv.filters.copy()
+        jenv = get_jenv()
 
     compiled_template = jenv.from_string(template)
     return compiled_template.render(context)
