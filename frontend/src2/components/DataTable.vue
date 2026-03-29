@@ -24,6 +24,7 @@ import { matchesFilter, parseFilterString } from '../query/helpers'
 import { QueryResultColumn, QueryResultRow, SortDirection, SortOrder } from '../types/query.types'
 import DataTableColumn from './DataTableColumn.vue'
 import DataTableFooter from './DataTableFooter.vue'
+import LazyTextInput from './LazyTextInput.vue'
 
 const props = defineProps<{
 	columns: QueryResultColumn[] | undefined
@@ -174,7 +175,7 @@ watchDebounced(
 	(filters) => {
 		props.onFilterChange?.(filters)
 	},
-	{ debounce: 500, deep: true },
+	{ deep: true, debounce: 300 },
 )
 
 const totalPerColumn = computed(() => {
