@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { useDebounceFn } from '@vueuse/core'
+import { watchDebounced } from '@vueuse/core'
 import { Button, LoadingIndicator } from 'frappe-ui'
 import { Plus, Search, Table2Icon } from 'lucide-vue-next'
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref } from 'vue'
+import { usePagination } from '../composables/usePagination'
 import { createHeaders, formatNumber, getShortNumber } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import {
@@ -24,7 +25,6 @@ import { QueryResultColumn, QueryResultRow, SortDirection, SortOrder } from '../
 import DataTableColumn from './DataTableColumn.vue'
 import DataTableFooter from './DataTableFooter.vue'
 import LazyTextInput from './LazyTextInput.vue'
-import { usePagination } from '../composables/usePagination'
 
 const props = defineProps<{
 	columns: QueryResultColumn[] | undefined
@@ -170,16 +170,12 @@ const visibleRows = computed(() => {
 	})
 })
 
-const debouncedFilterChange = useDebounceFn((filters: Record<string, string>) => {
-	props.onFilterChange?.(filters)
-}, 300)
-
-watch(
+watchDebounced(
 	filterPerColumn,
 	(filters) => {
-		debouncedFilterChange(filters)
+		props.onFilterChange?.(filters)
 	},
-	{ deep: true },
+	{ deep: true, debounce: 300 },
 )
 
 const totalPerColumn = computed(() => {
