@@ -91,9 +91,9 @@ def get_csv_file(filename: str):
     extension = parts[-1] if parts else ""
     extension = extension.lstrip(".")
 
-    if not extension or extension not in ["csv", "xlsx"]:
+    if not extension or extension not in ["csv", "xlsx", "json", "jsonl"]:
         frappe.throw(
-            f"Only CSV and XLSX files are supported. Detected extension: '{extension}' from filename: '{file_name}'"
+            f"Only CSV, XLSX, JSON, and JSONL files are supported. Detected extension: '{extension}' from filename: '{file_name}'"
         )
     return file, extension
 
@@ -128,6 +128,8 @@ def get_file_data(filename: str):
     try:
         if ext in ["xlsx"]:
             table = db.read_xlsx(file_path)
+        elif ext in ["json", "jsonl"]:
+            table = db.read_json(file_path)
         else:
             table = db.read_csv(file_path, table_name=file_name)
 
@@ -162,6 +164,8 @@ def import_csv_data(filename: str, tablename: str = ""):
     try:
         if ext in ["xlsx"]:
             table = db.read_xlsx(file_path)
+        elif ext in ["json", "jsonl"]:
+            table = db.read_json(file_path)
         else:
             table = db.read_csv(file_path, table_name=table_name)
         db.create_table(table_name, table, overwrite=True)
@@ -170,6 +174,10 @@ def import_csv_data(filename: str, tablename: str = ""):
         if ext in ["xlsx"]:
             frappe.throw(
                 "Failed to read Excel data from uploaded file. Please ensure the file is a valid Excel format and try again."
+            )
+        elif ext in ["json", "jsonl"]:
+            frappe.throw(
+                "Failed to read JSON data from uploaded file. Please ensure the file is a valid JSON or JSONL format and try again."
             )
         else:
             frappe.throw("Failed to read CSV data from uploaded file. Please try again.")
