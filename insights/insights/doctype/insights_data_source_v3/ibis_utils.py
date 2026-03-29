@@ -759,10 +759,16 @@ def execute_ibis_query(
     reference_doctype=None,
     reference_name=None,
 ):
-    if hasattr(query, "limit") and page_size:
-        page_size = int(page_size or 100)
-        page_size = min(max(page_size, 1), 10_00_000)
-        offset = (page - 1) * page_size if page > 1 else 0
+    if hasattr(query, "limit"):
+        try:
+            page_size = max(1, min(int(page_size or 100), 10_00_000))
+        except (TypeError, ValueError):
+            page_size = 100
+        try:
+            page = max(1, int(page or 1))
+        except (TypeError, ValueError):
+            page = 1
+        offset = (page - 1) * page_size
         query = query.limit(page_size, offset=offset)
 
     try:
