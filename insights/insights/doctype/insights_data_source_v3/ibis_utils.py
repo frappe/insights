@@ -474,10 +474,7 @@ class IbisQueryBuilder:
         return self.query.order_by(order_fn(order_by_column))
 
     def apply_limit(self, limit_args):
-        return self.query.limit(
-            int(limit_args.limit),
-            offset=int(limit_args.offset or 0),
-        )
+        return self.query
 
     def apply_pivot(self, pivot_args, pivot_type):
         rows = [self.translate_dimension(dimension) for dimension in pivot_args["rows"]]
@@ -745,13 +742,20 @@ class IbisQueryBuilder:
 
 def execute_ibis_query(
     query: IbisQuery,
-    limit=100,
+    page=1,
+    page_size=100,
     force=False,
     cache=True,
     cache_expiry=3600,
     reference_doctype=None,
     reference_name=None,
 ):
+    if hasattr(query, "limit") and page_size:
+        page_size = int(page_size or 100)
+        page_size = min(max(page_size, 1), 10_00_000)
+        offset = (page - 1) * page_size if page > 1 else 0
+        query = query.limit(page_size, offset=offset)
+
     try:
         sql = ibis.to_sql(query)
     except ibis.common.exceptions.OperationNotDefinedError:
@@ -765,11 +769,6 @@ def execute_ibis_query(
 
         if has_cached_results(cache_key) and not force:
             return get_cached_results(cache_key), -1
-
-    if hasattr(query, "limit") and limit:
-        limit = int(limit or 100)
-        limit = min(max(limit, 1), 10_00_000)
-        query = query.limit(limit)
 
     start = time.monotonic()
 
