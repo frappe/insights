@@ -158,7 +158,7 @@ export function makeQuery(name: string) {
 	}
 
 	const adhocFilters = ref<AdhocFilters>()
-	async function execute(force: boolean = false) {
+	async function execute(force: boolean = false, page_size?: number) {
 		if (!query.islocal) {
 			await waitUntil(() => query.isloaded)
 		}
@@ -166,6 +166,11 @@ export function makeQuery(name: string) {
 		if (!query.doc.operations.length) {
 			result.value = { ...EMPTY_RESULT }
 			return
+		}
+
+		if (page_size) {
+			pageSize.value = page_size
+			currentPage.value = 1
 		}
 
 		if (
@@ -416,10 +421,6 @@ export function makeQuery(name: string) {
 		if (index > -1) {
 			query.doc.operations.splice(index, 1)
 		}
-	}
-
-	function addLimit(args: number) {
-		addOperation(limit(args))
 	}
 
 	function addPivotWider(args: PivotWiderArgs) {
@@ -1144,7 +1145,6 @@ export function makeQuery(name: string) {
 		addSummarize,
 		addOrderBy,
 		removeOrderBy,
-		addLimit,
 		addPivotWider,
 		selectColumns,
 		renameColumn,

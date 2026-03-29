@@ -17,13 +17,13 @@ export type PaginationState = {
 
 export function usePagination(options: {
 	rowCount: MaybeRefOrGetter<number>
-	pageSize?: number
+	pageSize: MaybeRefOrGetter<number>
 	totalRowCount?: MaybeRefOrGetter<number | undefined>
 	currentPage?: MaybeRefOrGetter<number | undefined>
 	onPageChange?: (page: number) => void
 	enabled?: MaybeRefOrGetter<boolean>
 }): PaginationState {
-	const PAGE_SIZE = options.pageSize ?? 100
+	const pageSize = computed(() => toValue(options.pageSize) ?? 100)
 	const currentPage = ref(toValue(options.currentPage) ?? 1)
 
 	watch(
@@ -38,27 +38,27 @@ export function usePagination(options: {
 	const isFirstPage = computed(() => currentPage.value <= 1)
 	const isLastPage = computed(() => {
 		const total = toValue(options.totalRowCount)
-		if (total) return currentPage.value >= Math.ceil(total / PAGE_SIZE)
-		return toValue(options.rowCount) < PAGE_SIZE
+		if (total) return currentPage.value >= Math.ceil(total / pageSize.value)
+		return toValue(options.rowCount) < pageSize.value
 	})
 	const isSinglePage = computed(() => isFirstPage.value && isLastPage.value)
 
-	const from = computed(() => (currentPage.value - 1) * PAGE_SIZE + 1)
+	const from = computed(() => (currentPage.value - 1) * pageSize.value + 1)
 	const to = computed(() => from.value + toValue(options.rowCount) - 1)
 
 	const startIndex = computed(() => {
 		if (!toValue(options.enabled)) return 0
 		if (isServerPaged.value) return 0
-		return (currentPage.value - 1) * PAGE_SIZE
+		return (currentPage.value - 1) * pageSize.value
 	})
 	const endIndex = computed(() => {
 		const len = toValue(options.rowCount)
 		if (!toValue(options.enabled)) return len
-		if (isServerPaged.value) return Math.min(PAGE_SIZE, len)
-		return Math.min(currentPage.value * PAGE_SIZE, len)
+		if (isServerPaged.value) return Math.min(pageSize.value, len)
+		return Math.min(currentPage.value * pageSize.value, len)
 	})
 
-	const rowDisplayOffset = computed(() => (currentPage.value - 1) * PAGE_SIZE)
+	const rowDisplayOffset = computed(() => (currentPage.value - 1) * pageSize.value)
 
 	function prev() {
 		if (isFirstPage.value) return
