@@ -157,6 +157,7 @@ export function makeQuery(name: string) {
 		page?: number
 		page_size?: number
 	}
+	let currentExecutionToken = 0
 
 	const adhocFilters = ref<AdhocFilters>()
 	async function execute(force: boolean = false, page_size?: number) {
@@ -188,6 +189,7 @@ export function makeQuery(name: string) {
 		}
 
 		executing.value = true
+		const token = ++currentExecutionToken
 		return query
 			.call('execute', {
 				active_operation_idx: activeOperationIdx.value,
@@ -197,6 +199,8 @@ export function makeQuery(name: string) {
 				page_size: pageSize.value,
 			})
 		.then((response: any) => {
+			// Discard stale responses — a newer execution has superseded this one
+			if (token !== currentExecutionToken) return
 			if (!response) return
 
 			result.value.executedSQL = response.sql
@@ -224,9 +228,11 @@ export function makeQuery(name: string) {
 			result.value.lastExecutedAt = new Date()
 		})
 			.catch(() => {
+				if (token !== currentExecutionToken) return
 				result.value = { ...EMPTY_RESULT }
 			})
 			.finally(() => {
+				if (token !== currentExecutionToken) return
 				executing.value = false
 				lastExecutionArgs = {
 					operations: currentOperations.value,

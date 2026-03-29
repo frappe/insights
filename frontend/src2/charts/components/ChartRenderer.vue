@@ -197,7 +197,7 @@ const showExpandedChartDialog = ref(false)
 			:result="result"
 			@drill-down="onNumberChartDrillDown"
 		/>
-		<TableChart v-else-if="!loading && chart_type == 'Table'" :chart="props.chart" />
+		<TableChart v-else-if="chart_type == 'Table'" :chart="props.chart" />
 
 		<div v-else class="flex h-full flex-1 flex-col items-center justify-center rounded border">
 			<template v-if="loading">

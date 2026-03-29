@@ -6,13 +6,14 @@ import DrillDown from '../../charts/components/DrillDown.vue'
 import DataTable from '../../components/DataTable.vue'
 import ExportDialog from '../../components/ExportDialog.vue'
 import {
+	AdhocFilters,
 	FilterArgs,
 	QueryResultColumn,
 	QueryResultRow,
 	SortDirection,
 } from '../../types/query.types'
 
-import { column } from '../helpers'
+import { column, filter_group, parseFilterString } from '../helpers'
 import { Query } from '../query'
 import AlertSetupDialog from './AlertSetupDialog.vue'
 import QueryAlertsDialog from './QueryAlertsDialog.vue'
@@ -27,6 +28,14 @@ const props = defineProps<{
 	onSortChange?: (column_name: string, sort_order: SortDirection) => void
 }>()
 
+const isFiltering = ref(false)
+watch(
+	() => props.query.executing,
+	(executing) => {
+		if (!executing) isFiltering.value = false
+	},
+)
+
 const columns = computed(() => props.query.result.columns)
 const rows = computed(() => props.query.result.formattedRows)
 const previewRowCount = computed(() => props.query.result.rows.length)
@@ -36,6 +45,11 @@ const totalRowCount = computed(() => {
 	}
 	return props.query.result.totalRowCount
 })
+
+// When the entire result fits on one page, filter client-side (instant, no round-trip)
+const isSinglePage = computed(
+	() => props.query.currentPage === 1 && previewRowCount.value < props.query.pageSize,
+)
 
 function onRename(column_name: string, new_name: string) {
 	new_name = new_name.trim()
@@ -118,51 +132,48 @@ function onPageChange(page: number) {
 }
 
 function onFilterChange(filters: Record<string, string>) {
-	const adhocFilters = {} as any
-	Object.entries(filters).forEach(([colName, filter]) => {
-		if (!filter) return
+	const adhocFilters = {} as AdhocFilters
 
-		const rules = [] as FilterArgs[]
-		const operator = (['>', '<', '>=', '<=', '=', '!='] as const).find((op) =>
-			filter.startsWith(op),
-		)
+	// Collect rules for ALL non-empty column filters into a single filter_group
+	const allRules = [] as FilterArgs[]
+	Object.entries(filters).forEach(([colName, filterStr]) => {
+		if (!filterStr) return
+		const parsed = parseFilterString(filterStr)
+		if (!parsed) return
 
-		if (operator) {
-			const val = filter.replace(operator, '').trim()
-			if (val) {
-				rules.push({
-					column: column(colName),
-					operator: operator,
-					value: isNaN(Number(val)) ? val : Number(val),
-				})
-			}
+		if (parsed.kind === 'numeric') {
+			allRules.push({
+				column: column(colName),
+				operator: parsed.operator,
+				value: parsed.num,
+			})
 		} else {
-			rules.push({
+			allRules.push({
 				column: column(colName),
 				operator: 'contains',
-				value: filter,
+				value: parsed.text,
 			})
-		}
-
-		if (rules.length) {
-			adhocFilters[colName] = {
-				type: 'filter_group',
-				logical_operator: 'And',
-				filters: rules,
-			}
 		}
 	})
 
-	if (props.query.adhocFilters) {
-		props.query.adhocFilters.value = adhocFilters
+	if (allRules.length) {
+		adhocFilters[props.query.name] = filter_group({
+			logical_operator: 'And',
+			filters: allRules,
+		})
 	}
+
+	props.query.adhocFilters = adhocFilters
+
+	isFiltering.value = true
 	props.query.goToPage(1)
 }
 </script>
 
 <template>
 	<DataTable
-		:loading="props.query.executing"
+		:loading="props.query.executing && !isFiltering"
+		:filtering="props.query.executing && isFiltering"
 		:columns="columns"
 		:rows="rows"
 		:enable-pagination="true"
@@ -170,7 +181,7 @@ function onFilterChange(filters: Record<string, string>) {
 		:current-page="props.query.currentPage"
 		:on-page-change="onPageChange"
 		:on-fetch-count="props.query.fetchResultCount"
-		:on-filter-change="onFilterChange"
+		:on-filter-change="isSinglePage ? undefined : onFilterChange"
 		:on-export="props.query.exportResults"
 		:downloading="props.query.downloading"
 		:sort-order="sortOrder"
