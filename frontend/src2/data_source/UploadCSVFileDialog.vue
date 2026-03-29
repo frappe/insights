@@ -93,7 +93,7 @@ function resetFile() {
 	<Dialog
 		v-model="show"
 		:options="{
-			title: csvData.tablename ? __('Import Table') : __('Upload CSV/Excel File'),
+			title: csvData.tablename ? __('Import Table') : __('Upload CSV/Excel/JSON File'),
 			size: fileUploaded ? '4xl' : '',
 		}"
 	>
@@ -101,7 +101,7 @@ function resetFile() {
 			<FileUploader
 				v-if="!fileUploaded"
 				:uploadArgs="{ private: true }"
-				:file-types="['.csv', '.xlsx']"
+				:file-types="['.csv', '.xlsx', '.json', '.jsonl']"
 				@success="uploadFile"
 			>
 				<template #default="{ progress, uploading, openFileSelector }">
@@ -116,7 +116,7 @@ function resetFile() {
 						/>
 						<div class="text-center">
 							<p v-if="!uploading" class="text-sm font-medium text-gray-800">
-								Select a CSV or Excel file to upload
+								Select a CSV, Excel, or JSON file to upload
 							</p>
 							<p v-if="!uploading" class="mt-1 text-xs text-gray-600">
 								or drag and drop it here
