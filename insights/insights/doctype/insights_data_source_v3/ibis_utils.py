@@ -478,7 +478,13 @@ class IbisQueryBuilder:
         return self.query.order_by(order_fn(order_by_column))
 
     def apply_limit(self, limit_args):
-        return self.query
+        try:
+            limit = int(limit_args.limit)
+        except (TypeError, ValueError, AttributeError):
+            return self.query
+        if limit <= 0:
+            return self.query
+        return self.query.limit(limit)
 
     def apply_pivot(self, pivot_args, pivot_type):
         rows = [self.translate_dimension(dimension) for dimension in pivot_args["rows"]]
