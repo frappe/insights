@@ -92,7 +92,7 @@ function clearFilter() {
 				/>
 				<FormControl
 					v-else-if="valueSelectorType === 'text'"
-					v-model="state.value"
+					v-model="state.value as string"
 					placeholder="Value"
 					autocomplete="off"
 				/>
