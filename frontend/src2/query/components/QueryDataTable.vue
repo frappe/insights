@@ -39,12 +39,7 @@ watch(
 const columns = computed(() => props.query.result.columns)
 const rows = computed(() => props.query.result.formattedRows)
 const previewRowCount = computed(() => props.query.result.rows.length)
-const totalRowCount = computed(() => {
-	if (!props.query.result.totalRowCount && previewRowCount.value < props.query.pageSize) {
-		return (props.query.currentPage - 1) * props.query.pageSize + previewRowCount.value
-	}
-	return props.query.result.totalRowCount
-})
+const totalRowCount = computed(() => props.query.result.totalRowCount || undefined)
 
 // When the entire result fits on one page, filter client-side (instant, no round-trip)
 const isSinglePage = computed(
