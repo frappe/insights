@@ -740,6 +740,17 @@ class IbisQueryBuilder:
         return {col: getattr(self.query, col) for col in self.query.schema().names}
 
 
+<<<<<<< HEAD
+=======
+def clamp(value, lo: int, hi: int) -> int:
+    """Cast *value* to int and clamp it to [lo, hi], returning *default* on failure."""
+    try:
+        return max(lo, min(int(value), hi))
+    except (TypeError, ValueError):
+        return lo
+
+
+>>>>>>> 8724803c (fix: clamp function arguments (#1015))
 def execute_ibis_query(
     query: IbisQuery,
     limit=100,
