@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-03-22 09:44+0000\n"
-"PO-Revision-Date: 2026-03-23 13:23\n"
+"PO-Revision-Date: 2026-03-29 14:42\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Persian\n"
 "MIME-Version: 1.0\n"
@@ -806,7 +806,7 @@ msgstr "غیرفعال"
 
 #: frontend/src2/components/UserDropdown.vue:116
 msgid "Documentation"
-msgstr "مستندات"
+msgstr ""
 
 #: frontend/src2/charts/components/ChartShareDialog.vue:38
 #: frontend/src2/dashboard/DashboardShareDialog.vue:86
