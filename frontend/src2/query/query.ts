@@ -2,7 +2,7 @@ import { useDebouncedRefHistory } from '@vueuse/core'
 import { Buffer } from 'buffer'
 import { isEqual } from 'es-toolkit'
 import { call, dayjs } from 'frappe-ui'
-import { computed, reactive, ref, toRefs, unref } from 'vue'
+import { computed, reactive, ref, toRefs, unref, watch } from 'vue'
 import {
 	copy,
 	copyToClipboard,
@@ -62,7 +62,6 @@ import {
 	getFormattedRows,
 	getMeasures,
 	join,
-	limit,
 	mutate,
 	order_by,
 	pivot_wider,
@@ -149,13 +148,18 @@ export function makeQuery(name: string) {
 	const executing = ref(false)
 	const downloading = ref(false)
 	const currentDownloadToken = ref<number | null>(null)
+	const currentPage = ref(1)
+	const pageSize = ref(100)
 	let lastExecutionArgs: {
 		operations: Operation[]
 		adhoc_filters?: AdhocFilters
+		page?: number
+		page_size?: number
 	}
+	let currentExecutionToken = 0
 
 	const adhocFilters = ref<AdhocFilters>()
-	async function execute(force: boolean = false) {
+	async function execute(force: boolean = false, page_size?: number) {
 		if (!query.islocal) {
 			await waitUntil(() => query.isloaded)
 		}
@@ -165,25 +169,37 @@ export function makeQuery(name: string) {
 			return
 		}
 
+		if (page_size) {
+			pageSize.value = page_size
+			currentPage.value = 1
+		}
+
 		if (
 			!force &&
 			lastExecutionArgs &&
 			isEqual(lastExecutionArgs, {
 				operations: currentOperations.value,
 				adhoc_filters: adhocFilters.value,
+				page: currentPage.value,
+				page_size: pageSize.value,
 			})
 		) {
 			return Promise.resolve()
 		}
 
 		executing.value = true
+		const token = ++currentExecutionToken
 		return query
 			.call('execute', {
 				active_operation_idx: activeOperationIdx.value,
 				adhoc_filters: adhocFilters.value,
 				force,
+				page: currentPage.value,
+				page_size: pageSize.value,
 			})
 		.then((response: any) => {
+			// Discard stale responses — a newer execution has superseded this one
+			if (token !== currentExecutionToken) return
 			if (!response) return
 
 			result.value.executedSQL = response.sql
@@ -211,15 +227,25 @@ export function makeQuery(name: string) {
 			result.value.lastExecutedAt = new Date()
 		})
 			.catch(() => {
+				if (token !== currentExecutionToken) return
 				result.value = { ...EMPTY_RESULT }
 			})
 			.finally(() => {
+				if (token !== currentExecutionToken) return
 				executing.value = false
 				lastExecutionArgs = {
 					operations: currentOperations.value,
 					adhoc_filters: adhocFilters.value,
+					page: currentPage.value,
+					page_size: pageSize.value,
 				}
 			})
+	}
+
+	function goToPage(page: number) {
+		if (page < 1) return
+		currentPage.value = page
+		execute()
 	}
 
 	const fetchingCount = ref(false)
@@ -401,10 +427,6 @@ export function makeQuery(name: string) {
 		if (index > -1) {
 			query.doc.operations.splice(index, 1)
 		}
-	}
-
-	function addLimit(args: number) {
-		addOperation(limit(args))
 	}
 
 	function addPivotWider(args: PivotWiderArgs) {
@@ -1071,6 +1093,11 @@ export function makeQuery(name: string) {
 		toggleCondition: () => autoExecute.value,
 	})
 
+	watch(currentOperations, () => {
+		currentPage.value = 1
+		result.value.totalRowCount = 0
+	})
+
 	waitUntil(() => query.isloaded).then(() => {
 		wheneverChanges(
 			() => query.doc.title,
@@ -1103,6 +1130,10 @@ export function makeQuery(name: string) {
 		fetchingCount,
 		result,
 
+		currentPage,
+		pageSize,
+		goToPage,
+
 		execute,
 		fetchResultCount,
 		refreshStoredTables,
@@ -1120,7 +1151,6 @@ export function makeQuery(name: string) {
 		addSummarize,
 		addOrderBy,
 		removeOrderBy,
-		addLimit,
 		addPivotWider,
 		selectColumns,
 		renameColumn,

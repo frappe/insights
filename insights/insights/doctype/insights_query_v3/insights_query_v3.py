@@ -161,20 +161,20 @@ class InsightsQueryv3(Document):
 
     @frappe.whitelist()
     def execute(
-        self, active_operation_idx: int | None = None, adhoc_filters: dict | None = None, force: bool = False
+        self,
+        active_operation_idx: int | None = None,
+        adhoc_filters: dict | None = None,
+        force: bool = False,
+        page: int = 1,
+        page_size: int = 100,
     ):
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
 
-        limit = 100
-        for op in frappe.parse_json(self.operations):
-            if op.get("limit"):
-                limit = op.get("limit")
-                break
-
         results, time_taken = execute_ibis_query(
             ibis_query,
-            limit,
+            page=page,
+            page_size=page_size,
             force=force,
             cache_expiry=60 * 10,
             reference_doctype=self.doctype,
@@ -203,7 +203,7 @@ class InsightsQueryv3(Document):
             ibis_query = self.build(active_operation_idx)
 
         count_query = ibis_query.aggregate(count=_.count())
-        count_results, time_taken = execute_ibis_query(
+        count_results, _time_taken = execute_ibis_query(
             count_query,
             cache_expiry=60 * 5,
             reference_doctype=self.doctype,
@@ -222,7 +222,7 @@ class InsightsQueryv3(Document):
         results, _ = execute_ibis_query(
             ibis_query,
             cache=False,
-            limit=10_00_000,
+            page_size=10_00_000,
             reference_doctype=self.doctype,
             reference_name=self.name,
         )
@@ -256,7 +256,7 @@ class InsightsQueryv3(Document):
             .distinct()
             .head(limit)
         )
-        result, time_taken = execute_ibis_query(
+        result, _time_taken = execute_ibis_query(
             values_query,
             cache_expiry=24 * 60 * 60,
             reference_doctype=self.doctype,
