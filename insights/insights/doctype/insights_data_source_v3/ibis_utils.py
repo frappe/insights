@@ -478,12 +478,7 @@ class IbisQueryBuilder:
         return self.query.order_by(order_fn(order_by_column))
 
     def apply_limit(self, limit_args):
-        try:
-            limit = int(limit_args.limit)
-        except (TypeError, ValueError, AttributeError):
-            return self.query
-        if limit <= 0:
-            return self.query
+        limit = clamp(limit_args.limit, 1, 10_00_000)
         return self.query.limit(limit)
 
     def apply_pivot(self, pivot_args, pivot_type):
