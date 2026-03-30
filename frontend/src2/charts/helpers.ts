@@ -353,12 +353,13 @@ function getXAxis(x_axis: XAxis) {
 			width: 100,
 			overflow: 'truncate',
 			ellipsis: '...',
-			formatter: (value:any) =>{
-				if (x_axis?.dimension?.granularity === 'fiscal_year') {
-					return getFormattedDate(value, 'fiscal_year')
-				}
-				return value
-			}
+			...(x_axis.dimension.granularity === 'fiscal_year'
+				? {
+						formatter: (value: any) => {
+							return getFormattedDate(value, 'fiscal_year')
+						},
+				  }
+				: null),
 		},
 	}
 }
@@ -508,7 +509,7 @@ export function getDonutChartOptions(config: DonutChartConfig, result: QueryResu
 function getDonutChartData(
 	columns: QueryResultColumn[],
 	rows: QueryResultRow[],
-	maxSlices: number
+	maxSlices: number,
 ) {
 	const measureColumn = columns.find((c) => FIELDTYPES.MEASURE.includes(c.type))
 	if (!measureColumn) {
@@ -638,7 +639,7 @@ export function getFunnelChartOptions(config: FunnelChartConfig, result: QueryRe
 function getMapChartData(
 	columns: QueryResultColumn[],
 	rows: QueryResultRow[],
-	config?: MapChartConfig
+	config?: MapChartConfig,
 ) {
 	const measureColumn = columns.find((c) => FIELDTYPES.MEASURE.includes(c.type))
 	if (!measureColumn) {
@@ -894,7 +895,9 @@ export function getBubbleChartOptions(config: BubbleChartConfig, result: QueryRe
 	// calculate symbol size
 	let symbolSizeConfig: any = 10
 	if (sizeColumnName) {
-		const allSizes = _rows.map((r) => r[sizeColumnName]).filter((val) => val != null && !isNaN(val))
+		const allSizes = _rows
+			.map((r) => r[sizeColumnName])
+			.filter((val) => val != null && !isNaN(val))
 		if (allSizes.length > 0) {
 			const minSize = Math.min(...allSizes)
 			const maxSize = Math.max(...allSizes)
@@ -1048,16 +1051,17 @@ export function getSankeyChartOptions(config: SankeyChartConfig, result: QueryRe
 	const sourceColumn = columns.find(
 		(c) =>
 			c.name === config.source_column?.dimension_name ||
-			c.name === config.source_column?.column_name
+			c.name === config.source_column?.column_name,
 	)?.name
 	const targetColumn = columns.find(
 		(c) =>
 			c.name === config.target_column?.dimension_name ||
-			c.name === config.target_column?.column_name
+			c.name === config.target_column?.column_name,
 	)?.name
 	const valueColumn = columns.find(
 		(c) =>
-			c.name === config.value_column?.measure_name || c.name === config.value_column?.column_name
+			c.name === config.value_column?.measure_name ||
+			c.name === config.value_column?.column_name,
 	)?.name
 
 	if (!sourceColumn || !targetColumn || !valueColumn) {
