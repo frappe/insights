@@ -19,7 +19,7 @@ function makeSettings() {
 			allowed_origins: '',
 			max_records_to_sync: 10_00_000,
 			max_memory_usage: 512,
-			fiscal_year_start: '2024-04-01',
+			fiscal_year_start: '',
 			week_starts_on: 'Monday',
 			enable_data_store: false,
 			apply_user_permissions: false,
