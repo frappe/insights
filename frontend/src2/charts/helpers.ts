@@ -353,6 +353,12 @@ function getXAxis(x_axis: XAxis) {
 			width: 100,
 			overflow: 'truncate',
 			ellipsis: '...',
+			formatter: (value:any) =>{
+				if (x_axis?.dimension?.granularity === 'fiscal_year') {
+					return getFormattedDate(value, 'fiscal_year')
+				}
+				return value
+			}
 		},
 	}
 }
