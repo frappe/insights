@@ -354,6 +354,9 @@ class IbisQueryBuilder:
         if filter_operator in ["contains", "not_contains"]:
             filter_value = filter_value.replace("%", "")
 
+            if left.type().is_numeric():
+                left = left.cast("string")
+
         if filter_operator == "between":
             start = filter_value[0]
             end = filter_value[1]
@@ -474,7 +477,8 @@ class IbisQueryBuilder:
         return self.query.order_by(order_fn(order_by_column))
 
     def apply_limit(self, limit_args):
-        return self.query.limit(int(limit_args.limit))
+        limit = clamp(limit_args.limit, 1, 10_00_000)
+        return self.query.limit(limit)
 
     def apply_pivot(self, pivot_args, pivot_type):
         rows = [self.translate_dimension(dimension) for dimension in pivot_args["rows"]]
@@ -740,15 +744,29 @@ class IbisQueryBuilder:
         return {col: getattr(self.query, col) for col in self.query.schema().names}
 
 
+def clamp(value, lo: int, hi: int) -> int:
+    try:
+        return max(lo, min(int(value), hi))
+    except (TypeError, ValueError):
+        return lo
+
+
 def execute_ibis_query(
     query: IbisQuery,
-    limit=100,
+    page=1,
+    page_size=100,
     force=False,
     cache=True,
     cache_expiry=3600,
     reference_doctype=None,
     reference_name=None,
 ):
+    if hasattr(query, "limit"):
+        page_size = clamp(page_size, 1, 10_000)
+        page = clamp(page, 1, 10_000)
+        offset = (page - 1) * page_size
+        query = query.limit(page_size, offset=offset)
+
     try:
         sql = ibis.to_sql(query)
     except ibis.common.exceptions.OperationNotDefinedError:
@@ -762,11 +780,6 @@ def execute_ibis_query(
 
         if has_cached_results(cache_key) and not force:
             return get_cached_results(cache_key), -1
-
-    if hasattr(query, "limit") and limit:
-        limit = int(limit or 100)
-        limit = min(max(limit, 1), 10_00_000)
-        query = query.limit(limit)
 
     start = time.monotonic()
 

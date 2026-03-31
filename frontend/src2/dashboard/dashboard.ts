@@ -14,7 +14,7 @@ import useDocumentResource from '../helpers/resource'
 import { isFilterValid } from '../query/components/filter_utils'
 import { column, filter_group } from '../query/helpers'
 import session from '../session'
-import { FilterArgs, FilterGroup, FilterOperator, FilterValue } from '../types/query.types'
+import { AdhocFilters, FilterArgs, FilterGroup, FilterOperator, FilterValue } from '../types/query.types'
 import {
 	InsightsDashboardv3,
 	WorkbookChart,
@@ -228,7 +228,7 @@ function makeDashboard(name: string) {
 
 		if (filtersApplied.length === 0) return
 
-		const filtersByQuery = {} as Record<string, FilterGroup>
+		const filtersByQuery = {} as AdhocFilters
 
 		function addFilterToQuery(query_name: string, filter: FilterArgs) {
 			if (!filtersByQuery[query_name]) {
