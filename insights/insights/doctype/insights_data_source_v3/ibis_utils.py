@@ -745,7 +745,6 @@ class IbisQueryBuilder:
 
 
 def clamp(value, lo: int, hi: int) -> int:
-    """Cast *value* to int and clamp it to [lo, hi], returning *default* on failure."""
     try:
         return max(lo, min(int(value), hi))
     except (TypeError, ValueError):
@@ -763,8 +762,8 @@ def execute_ibis_query(
     reference_name=None,
 ):
     if hasattr(query, "limit"):
-        page_size = clamp(page_size, 1, 10_00_000)
-        page = clamp(page, 1, 10_00_000)
+        page_size = clamp(page_size, 1, 10_000)
+        page = clamp(page, 1, 10_000)
         offset = (page - 1) * page_size
         query = query.limit(page_size, offset=offset)
 
