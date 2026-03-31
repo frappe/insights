@@ -642,13 +642,14 @@ function toggleNewColumn() {
 							}"
 						>
 							<LazyTextInput
-								type="text"
-								v-model="filterPerColumn[column.name]"
-								autocomplete="off"
+								:model-value="filterPerColumn[column.name]"
+								@update:model-value="
+									(value) => (filterPerColumn[column.name] = value)
+								"
 								class="[&_input]:h-6 [&_input]:bg-gray-200/80"
 							>
 								<template #prefix>
-									<Search class="h-4 w-4 text-gray-500" stroke-width="1.5" />
+									<Search class="size-3.5 text-gray-500" :stroke-width="1.5" />
 								</template>
 								<template #suffix>
 									<LoadingIndicator

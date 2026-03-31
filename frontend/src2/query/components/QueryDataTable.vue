@@ -172,6 +172,7 @@ function onFilterChange(filters: Record<string, string>) {
 		:columns="columns"
 		:rows="rows"
 		:enable-pagination="true"
+		:page-size="props.query.pageSize"
 		:total-row-count="totalRowCount"
 		:current-page="props.query.currentPage"
 		:on-page-change="onPageChange"

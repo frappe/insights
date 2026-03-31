@@ -62,7 +62,6 @@ import {
 	getFormattedRows,
 	getMeasures,
 	join,
-	limit,
 	mutate,
 	order_by,
 	pivot_wider,

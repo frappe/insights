@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import { Button, LoadingIndicator, Tooltip } from 'frappe-ui'
 import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-vue-next'
+import { ref } from 'vue'
 import type { PaginationState } from '../composables/usePagination'
 
 const props = defineProps<{
