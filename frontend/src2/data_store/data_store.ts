@@ -11,6 +11,7 @@ export type DataStoreTable = {
 	database_type: DatabaseType
 	last_synced_on: string
 	last_synced_from_now: string
+	sync_mode: string
 	row_limit?: number
 }
 const storedTables = ref<Record<string, DataStoreTable[]>>({})
@@ -44,12 +45,13 @@ async function getTables(data_source?: string, search_term?: string, limit: numb
 }
 
 const importingTable = ref(false)
-async function importTable(data_source: string, table_name: string, row_limit?: number) {
+async function importTable(data_source: string, table_name: string, row_limit?: number, sync_mode?: string) {
 	importingTable.value = true
 	return call('insights.api.data_store.import_table', {
 		data_source,
 		table_name,
 		row_limit,
+		sync_mode: sync_mode || '',
 	})
 		.then(() => {
 			getTables(data_source)
@@ -60,6 +62,22 @@ async function importTable(data_source: string, table_name: string, row_limit?: 
 		})
 }
 
+async function syncTable(data_source: string, table_name: string) {
+	return call('insights.api.data_store.import_table', {
+		data_source,
+		table_name,
+		sync_mode: 'Incremental Sync',
+	}).catch(showErrorToast)
+}
+
+async function fullRefreshTable(data_source: string, table_name: string) {
+	return call('insights.api.data_store.import_table', {
+		data_source,
+		table_name,
+		sync_mode: 'Full Refresh',
+	}).catch(showErrorToast)
+}
+
 export default function useDataStore() {
 	return reactive({
 		tables: storedTables,
@@ -68,5 +86,7 @@ export default function useDataStore() {
 
 		importingTable,
 		importTable,
+		syncTable,
+		fullRefreshTable,
 	})
 }
