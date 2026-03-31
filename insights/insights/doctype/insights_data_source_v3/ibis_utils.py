@@ -740,6 +740,16 @@ class IbisQueryBuilder:
         return {col: getattr(self.query, col) for col in self.query.schema().names}
 
 
+<<<<<<< HEAD
+=======
+def clamp(value, lo: int, hi: int) -> int:
+    try:
+        return max(lo, min(int(value), hi))
+    except (TypeError, ValueError):
+        return lo
+
+
+>>>>>>> 3eef8111 (fix: update max page_size (#1020))
 def execute_ibis_query(
     query: IbisQuery,
     limit=100,
@@ -749,6 +759,15 @@ def execute_ibis_query(
     reference_doctype=None,
     reference_name=None,
 ):
+<<<<<<< HEAD
+=======
+    if hasattr(query, "limit"):
+        page_size = clamp(page_size, 1, 10_000)
+        page = clamp(page, 1, 10_000)
+        offset = (page - 1) * page_size
+        query = query.limit(page_size, offset=offset)
+
+>>>>>>> 3eef8111 (fix: update max page_size (#1020))
     try:
         sql = ibis.to_sql(query)
     except ibis.common.exceptions.OperationNotDefinedError:
