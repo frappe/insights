@@ -12,6 +12,8 @@
   "last_synced_on",
   "row_limit",
   "stored",
+  "sync_mode",
+  "cursor",
   "before_import_script"
  ],
  "fields": [
@@ -62,15 +64,27 @@
    "label": "Row Limit"
   },
   {
+   "default": "Incremental Sync",
+   "fieldname": "sync_mode",
+   "fieldtype": "Select",
+   "label": "Sync Mode",
+   "options": "Full Refresh\nIncremental Sync"
+  },
+  {
    "fieldname": "before_import_script",
    "fieldtype": "Code",
    "label": "Before Import Script",
    "options": "Python"
+  },
+  {
+   "fieldname": "cursor",
+   "fieldtype": "Data",
+   "label": "Cursor"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-01 12:49:40.113177",
+ "modified": "2026-03-31 11:34:47.368303",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Table v3",

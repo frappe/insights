@@ -25,11 +25,13 @@ class InsightsTablev3(Document):
         from frappe.types import DF
 
         before_import_script: DF.Code | None
+        cursor: DF.Data | None
         data_source: DF.Link
         label: DF.Data
         last_synced_on: DF.Datetime | None
         row_limit: DF.Int
         stored: DF.Check
+        sync_mode: DF.Literal["Full Refresh", "Incremental Sync"]
         table: DF.Data
     # end: auto-generated types
 
