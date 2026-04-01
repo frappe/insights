@@ -105,7 +105,7 @@ export type DonutChartConfig = {
 export type FunnelChartConfig = {
 	label_column: Dimension
 	value_column: Measure
-	label_position?: 'left' | 'right' | 'alternate'
+	show_percentage?: boolean
 }
 
 export type TableChartConfig = {

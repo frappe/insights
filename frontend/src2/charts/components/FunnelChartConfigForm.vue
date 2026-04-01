@@ -48,16 +48,7 @@ const discrete_dimensions = computed(() =>
 				v-model="config.value_column"
 				:column-options="props.columnOptions"
 			/>
-			<FormControl
-				v-model="config.label_position"
-				label="Label Position"
-				type="select"
-				:options="[
-					{ label: __('Left'), value: 'left' },
-					{ label: __('Right'), value: 'right' },
-					{ label: __('Alternate'), value: 'alternate' },
-				]"
-			/>
+			<FormControl v-model="config.show_percentage" label="Show Percentage" type="checkbox" />
 		</div>
 	</CollapsibleSection>
 </template>
