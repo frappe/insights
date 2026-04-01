@@ -674,7 +674,7 @@ export function getFunnelChartOptions(config: FunnelChartConfig, result: QueryRe
 								style: {
 									text: valueText,
 									fill: '#111827',
-									fontSize: 20,
+									fontSize: 16,
 									fontWeight: 500,
 									textVerticalAlign: 'top',
 									width: width - 32,
@@ -684,11 +684,11 @@ export function getFunnelChartOptions(config: FunnelChartConfig, result: QueryRe
 							{
 								type: 'text',
 								x: params.dataIndex === 0 ? x : x + 16,
-								y: 36,
+								y: 32,
 								style: {
 									text: categories[params.dataIndex] || '',
 									fill: '#6b7280',
-									fontSize: 13,
+									fontSize: 12,
 									textVerticalAlign: 'top',
 									width: width - 32,
 									overflow: 'truncate',
