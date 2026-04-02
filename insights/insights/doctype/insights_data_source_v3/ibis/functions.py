@@ -4,10 +4,10 @@ import frappe
 import ibis
 import ibis.expr.types as ir
 import ibis.selectors as s
+import pandas as pd
 from frappe.utils import now_datetime
 from ibis import _
 
-from insights.insights.doctype.insights_query.utils import infer_type_from_list
 from insights.insights.query_builders.sql_functions import handle_timespan
 
 
@@ -1336,3 +1336,33 @@ def pad_number(number: ir.NumericValue, digits: int):
         zero_literal.repeat(digits - string_number.length()).concat(string_number),
         string_number,
     )
+
+
+def infer_type(value):
+    try:
+        # test if decimal
+        val = pd.to_numeric(value)
+        if val % 1 == 0:
+            return "Integer"
+        return "Decimal"
+    except Exception:
+        try:
+            # test if datetime
+            pd.to_datetime(value)
+            return "Datetime"
+        except Exception:
+            return "String"
+
+
+def infer_type_from_list(values):
+    inferred_types = [infer_type(v) for v in values]
+    if "String" in inferred_types:
+        return "String"
+    elif "Datetime" in inferred_types:
+        return "Datetime"
+    elif "Decimal" in inferred_types:
+        return "Decimal"
+    elif "Integer" in inferred_types:
+        return "Integer"
+    else:
+        return "String"

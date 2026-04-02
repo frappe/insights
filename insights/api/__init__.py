@@ -4,7 +4,7 @@
 import os
 
 import frappe
-from frappe.defaults import get_user_default, set_user_default
+from frappe.defaults import get_user_default
 from frappe.handler import is_valid_http_method, is_whitelisted
 from frappe.monitor import add_data_to_monitor
 
@@ -69,19 +69,10 @@ def get_user_info():
         # TODO: move to `get_session_info` since not user specific
         "country": frappe.db.get_single_value("System Settings", "country"),
         "locale": frappe.db.get_single_value("System Settings", "language"),
-        "is_v2_instance": frappe.db.count("Insights Query") > 0,
         "default_version": get_user_default("insights_default_version", frappe.session.user),
         "has_desk_access": user.get("user_type") == "System User",
         "has_demo_data": has_demo_data,
     }
-
-
-@insights_whitelist()
-def update_default_version(version: str):
-    if get_user_default("insights_has_visited_v3", frappe.session.user) != "1":
-        set_user_default("insights_has_visited_v3", "1", frappe.session.user)
-
-    set_user_default("insights_default_version", version, frappe.session.user)
 
 
 def get_csv_file(filename: str):

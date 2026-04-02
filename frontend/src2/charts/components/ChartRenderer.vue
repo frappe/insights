@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import ChartSectionEmptySvg from '@/query/ChartSectionEmptySvg.vue'
 import { Button } from 'frappe-ui'
 import { Maximize, XIcon } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
@@ -27,6 +26,7 @@ import {
 	getSankeyChartOptions,
 } from '../helpers'
 import BaseChart from './BaseChart.vue'
+import ChartSectionEmptySvg from './ChartSectionEmptySvg.vue'
 import DrillDown from './DrillDown.vue'
 import NumberChart from './NumberChart.vue'
 import TableChart from './TableChart.vue'

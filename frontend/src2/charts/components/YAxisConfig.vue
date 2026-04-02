@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ColorInput from '@/components/Controls/ColorInput.vue'
+import ColorInput from '../../components/ColorInput.vue'
 import { debounce } from 'frappe-ui'
 import { watchEffect } from 'vue'
 import Checkbox from '../../components/Checkbox.vue'

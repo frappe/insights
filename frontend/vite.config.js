@@ -31,7 +31,6 @@ export default defineConfig({
 		alias: {
 			// https://github.com/vitejs/vite/discussions/16730#discussioncomment-13048825
 			vue: 'vue/dist/vue.esm-bundler.js',
-			'@': path.resolve(__dirname, 'src'),
 			'tailwind.config.js': path.resolve(__dirname, 'tailwind.config.js'),
 		},
 	},
@@ -42,7 +41,6 @@ export default defineConfig({
 		rollupOptions: {
 			input: {
 				main: path.resolve(__dirname, 'index.html'),
-				insights_v2: path.resolve(__dirname, 'index_v2.html'),
 			},
 			output: {
 				manualChunks: {
