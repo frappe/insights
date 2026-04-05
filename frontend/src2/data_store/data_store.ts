@@ -4,6 +4,16 @@ import { reactive, ref } from 'vue'
 import { showErrorToast } from '../helpers'
 import { DatabaseType } from '../data_source/data_source.types'
 
+export type SyncLog = {
+	status: string
+	rows_imported: number
+	time_taken: number
+	started_at: string
+	ended_at: string
+	error: string
+	output: string
+}
+
 export type DataStoreTable = {
 	name?: string
 	data_source: string
@@ -78,6 +88,13 @@ async function fullRefreshTable(data_source: string, table_name: string) {
 	}).catch(showErrorToast)
 }
 
+async function getLastSyncLog(data_source: string, table_name: string): Promise<SyncLog | null> {
+	return call('insights.api.data_store.get_last_sync_log', {
+		data_source,
+		table_name,
+	}).catch(showErrorToast)
+}
+
 export default function useDataStore() {
 	return reactive({
 		tables: storedTables,
@@ -88,5 +105,6 @@ export default function useDataStore() {
 		importTable,
 		syncTable,
 		fullRefreshTable,
+		getLastSyncLog,
 	})
 }
