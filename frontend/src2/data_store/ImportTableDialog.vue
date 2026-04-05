@@ -49,7 +49,7 @@ function cancelImport() {
 const dataStore = useDataStore()
 const importDisabled = computed(() => !table.table_name)
 function importTable() {
-	dataStore.importTable(table.data_source, table.table_name, table.row_limit).then(() => {
+	dataStore.importTable(table.data_source, table.table_name, table.row_limit, table.sync_mode).then(() => {
 		show.value = false
 	})
 }
