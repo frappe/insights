@@ -15,6 +15,7 @@ const initalTable = {
 	table_name: '',
 	row_limit: 10_000_000,
 	table_row_count: 0,
+	sync_mode: 'Incremental Sync',
 }
 const table = reactive({ ...initalTable })
 
