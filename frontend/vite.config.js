@@ -58,7 +58,13 @@ export default defineConfig({
 				'.tsx': 'tsx',
 			},
 		},
-		include: ['feather-icons', 'showdown', 'tailwind.config.js', 'highlight.js/lib/core'],
+		include: [
+			'feather-icons',
+			'showdown',
+			'tailwind.config.js',
+			'highlight.js/lib/core',
+			'echarts/core',
+		],
 	},
 	define: {
 		// enable hydration mismatch details in production build
