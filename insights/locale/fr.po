@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
-"POT-Creation-Date: 2026-03-29 09:45+0000\n"
-"PO-Revision-Date: 2026-03-30 15:01\n"
+"POT-Creation-Date: 2026-04-05 09:45+0000\n"
+"PO-Revision-Date: 2026-04-06 17:31\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -2945,7 +2945,7 @@ msgid "Upload CSV or Excel"
 msgstr ""
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:96
-msgid "Upload CSV/Excel File"
+msgid "Upload CSV/Excel/JSON File"
 msgstr ""
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:37
