@@ -185,3 +185,4 @@ pids
 *.pid.lock
 todo
 frontend/package-lock.json
+.opencode/package-lock.json
