@@ -148,7 +148,7 @@ has_permission = {
 doc_events = {
     "User": {
         "on_change": "insights.insights.doctype.insights_team.insights_team.update_admin_team",
-    }
+    },
 }
 
 # Scheduled Tasks
@@ -160,6 +160,7 @@ scheduler_events = {
     ],
     "daily": [
         "insights.api.data_store.sync_tables",
+        "insights.api.data_store.handle_warehouse_deletes",
     ],
     "hourly": [
         "insights.api.data_store.update_failed_sync_status",
