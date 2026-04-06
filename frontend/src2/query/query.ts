@@ -125,15 +125,18 @@ export function makeQuery(name: string) {
 
 	const dataSource = computed(() => getDataSource(currentOperations.value))
 
-	function getDataSource(operations: Operation[]): string {
+	function getDataSource(operations: Operation[], _visited: Set<string> = new Set()): string {
 		const sourceOp = operations.find((op) => op.type === 'source')
 		if (!sourceOp) return ''
 		if (sourceOp.table.type === 'table') {
 			return sourceOp.table.data_source
 		}
 		if (sourceOp.table.type === 'query' && 'query_name' in sourceOp.table) {
-			const sourceQuery = useQuery(sourceOp.table.query_name)
-			return getDataSource(sourceQuery.currentOperations)
+			const queryName = sourceOp.table.query_name
+			if (_visited.has(queryName)) return ''
+			_visited.add(queryName)
+			const sourceQuery = useQuery(queryName)
+			return getDataSource(sourceQuery.currentOperations, _visited)
 		}
 		return ''
 	}
@@ -813,7 +816,7 @@ export function makeQuery(name: string) {
 		operations: Operation[],
 		currRow: QueryResultRow,
 		col: QueryResultColumn,
-		_visitedQueryNames: string[] = [],
+		_visitedQueries: Set<string> = new Set(),
 	): Promise<{ ops: Operation[]; filters: FilterArgs[] } | null> {
 		// If there's a local summarize/pivot, no inlining needed
 		const hasSummarizeOrPivot = operations.find(
@@ -857,7 +860,7 @@ export function makeQuery(name: string) {
 		const sourceQueryName = sourceOp.table.query_name
 
 		// Guard against circular references
-		if (_visitedQueryNames.includes(sourceQueryName)) {
+		if (_visitedQueries.has(sourceQueryName)) {
 			createToast({
 				title: __('Failed to drill down'),
 				message: __('Drill down is only supported on summarized data'),
@@ -884,7 +887,7 @@ export function makeQuery(name: string) {
 			mergedOps,
 			currRow,
 			col,
-			[..._visitedQueryNames, sourceQueryName],
+			_visitedQueries.add(sourceQueryName),
 		)
 	}
 
