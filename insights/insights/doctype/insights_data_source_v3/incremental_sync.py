@@ -45,7 +45,6 @@ class SyncCursorManager:
 
 
 class IncrementalImporter:
-
     # batch size hard coded to 1000 to avoid memory issues
     def __init__(self, table: WarehouseTable, batch_size: int = 2000):
         self.table = table
@@ -73,8 +72,7 @@ class IncrementalImporter:
 
         summary = self._sync_summary
         insights.create_toast(
-            f"Synced {frappe.bold(self.table.table_name)} — "
-            f"{summary['upserted']} rows upserted",
+            f"Synced {frappe.bold(self.table.table_name)} — {summary['upserted']} rows upserted",
             title="Incremental Sync Completed",
             type="success",
             duration=5,
@@ -165,8 +163,12 @@ class IncrementalImporter:
             del insights.db_connections[WAREHOUSE_DB_NAME]
         total = 0
         with insights.warehouse.get_table_writer(
-            self.table.warehouse_table_name, schema,
-            database=self.schema, mode="upsert", upsert_key="name", log_fn=self._log,
+            self.table.warehouse_table_name,
+            schema,
+            database=self.schema,
+            mode="upsert",
+            upsert_key="name",
+            log_fn=self._log,
         ) as writer:
             for df in batches:
                 writer.insert(df)

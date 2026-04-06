@@ -9,8 +9,8 @@ const props = defineProps<{
 }>()
 
 const statusColors: Record<string, string> = {
-	'Completed': 'text-green-700',
-	'Failed': 'text-red-700',
+	Completed: 'text-green-700',
+	Failed: 'text-red-700',
 	'In Progress': 'text-blue-700',
 }
 
@@ -72,10 +72,7 @@ function formatNumber(n: number): string {
 				</template>
 			</div>
 
-			<div
-				v-if="log.error"
-				class="mt-2 rounded bg-red-50 p-2 text-xs text-red-700"
-			>
+			<div v-if="log.error" class="mt-2 rounded bg-red-50 p-2 text-xs text-red-700">
 				{{ log.error }}
 			</div>
 		</template>

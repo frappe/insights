@@ -35,7 +35,11 @@ async function sync() {
 </script>
 
 <template>
-	<Dialog :modelValue="show" @update:modelValue="show = $event" :options="{ title: __('Sync Table'), size: 'sm' }">
+	<Dialog
+		:modelValue="show"
+		@update:modelValue="show = $event"
+		:options="{ title: __('Sync Table'), size: 'sm' }"
+	>
 		<template #body-content>
 			<div class="flex flex-col gap-3">
 				<p class="text-sm text-gray-600">
@@ -45,27 +49,47 @@ async function sync() {
 
 				<div
 					class="flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors"
-					:class="selectedMode === 'Incremental Sync' ? 'border-blue-500 bg-blue-50' : 'hover:bg-gray-50'"
+					:class="
+						selectedMode === 'Incremental Sync'
+							? 'border-blue-500 bg-blue-50'
+							: 'hover:bg-gray-50'
+					"
 					@click="selectedMode = 'Incremental Sync'"
 				>
 					<div class="flex-1">
-						<p class="text-sm font-medium text-gray-900">{{ __('Incremental Sync') }}</p>
+						<p class="text-sm font-medium text-gray-900">
+							{{ __('Incremental Sync') }}
+						</p>
 						<p class="mt-0.5 text-xs text-gray-500">
-							{{ __('Only syncs new and modified rows. Faster and recommended for most cases.') }}
+							{{
+								__(
+									'Only syncs new and modified rows. Faster and recommended for most cases.',
+								)
+							}}
 						</p>
 					</div>
-					<span class="flex-shrink-0 text-xs text-green-600">{{ __('Recommended') }}</span>
+					<span class="flex-shrink-0 text-xs text-green-600">{{
+						__('Recommended')
+					}}</span>
 				</div>
 
 				<div
 					class="flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors"
-					:class="selectedMode === 'Full Refresh' ? 'border-blue-500 bg-blue-50' : 'hover:bg-gray-50'"
+					:class="
+						selectedMode === 'Full Refresh'
+							? 'border-blue-500 bg-blue-50'
+							: 'hover:bg-gray-50'
+					"
 					@click="selectedMode = 'Full Refresh'"
 				>
 					<div class="flex-1">
 						<p class="text-sm font-medium text-gray-900">{{ __('Full Refresh') }}</p>
 						<p class="mt-0.5 text-xs text-gray-500">
-							{{ __('Replaces all data with a fresh copy from the source. Slower but ensures complete accuracy.') }}
+							{{
+								__(
+									'Replaces all data with a fresh copy from the source. Slower but ensures complete accuracy.',
+								)
+							}}
 						</p>
 					</div>
 				</div>

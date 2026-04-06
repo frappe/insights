@@ -156,7 +156,10 @@ function getCachedLogo(dbType: DatabaseType) {
 							@click.stop="openSyncDialog(table)"
 						>
 							<template #icon>
-								<RefreshCwIcon class="h-3.5 w-3.5 text-gray-600" stroke-width="1.5" />
+								<RefreshCwIcon
+									class="h-3.5 w-3.5 text-gray-600"
+									stroke-width="1.5"
+								/>
 							</template>
 						</Button>
 					</div>
