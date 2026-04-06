@@ -21,4 +21,5 @@ def get_postgres_connection(data_source):
             database=data_source.database_name,
             schema=data_source.schema,
             sslmode="require" if data_source.use_ssl else None,
+            connect_timeout=5,
         )
