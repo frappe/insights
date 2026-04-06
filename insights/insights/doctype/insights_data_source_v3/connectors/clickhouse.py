@@ -21,4 +21,5 @@ def get_clickhouse_connection(data_source):
         database=data_source.database_name,
         client_name="frappe_insights",
         secure=True if data_source.use_ssl else False,
+        connect_timeout=5,
     )
