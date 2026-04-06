@@ -15,7 +15,6 @@ const initalTable = {
 	table_name: '',
 	row_limit: 10_000_000,
 	table_row_count: 0,
-	sync_mode: 'Incremental Sync',
 }
 const table = reactive({ ...initalTable })
 
@@ -50,7 +49,7 @@ function cancelImport() {
 const dataStore = useDataStore()
 const importDisabled = computed(() => !table.table_name)
 function importTable() {
-	dataStore.importTable(table.data_source, table.table_name, table.row_limit, table.sync_mode).then(() => {
+	dataStore.importTable(table.data_source, table.table_name, table.row_limit).then(() => {
 		show.value = false
 	})
 }
