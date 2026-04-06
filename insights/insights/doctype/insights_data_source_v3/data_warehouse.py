@@ -94,7 +94,13 @@ class Warehouse:
         return WarehouseTable(data_source, table_name)
 
     def get_table_writer(
-        self, table_name: str, schema: ibis.Schema, database: str = "main", mode: str = "replace", log_fn=None
+        self,
+        table_name: str,
+        schema: ibis.Schema,
+        database: str = "main",
+        mode: str = "replace",
+        upsert_key: str = "",
+        log_fn=None,
     ) -> "WarehouseTableWriter":
         """Create a table writer for batch inserts with automatic cleanup.
 
@@ -106,7 +112,12 @@ class Warehouse:
             # On exception, temp files are cleaned up automatically
         """
         return WarehouseTableWriter(
-            table_name, table_schema=schema, database=database, mode=mode, log_fn=log_fn
+            table_name,
+            table_schema=schema,
+            database=database,
+            mode=mode,
+            upsert_key=upsert_key,
+            log_fn=log_fn,
         )
 
 
@@ -128,12 +139,14 @@ class WarehouseTableWriter:
         table_schema: ibis.Schema,
         database: str = "main",
         mode: str = "replace",
+        upsert_key: str = "",
         log_fn=None,
     ):
         self.database = database
         self.table_name = table_name
         self.table_schema = table_schema
-        self.mode = mode  # 'replace' or 'append'
+        self.mode = mode  # 'replace', 'append' or 'upsert'
+        self.upsert_key = upsert_key
         self._log = log_fn or (lambda *args, **kwargs: None)
 
         self._temp_dir: Path | None = None
@@ -194,9 +207,20 @@ class WarehouseTableWriter:
                 self._log(f"Switched to '{self.database}' database")
 
                 parquet_glob = str(self._temp_dir / "*.parquet")
-                merged = db.read_parquet(parquet_glob)
+                merged = db.read_parquet(parquet_glob, union_by_name=True)
 
-                if self.mode == "append" and self._table_exists(db):
+                # for upsert we have to create a temp table and merge
+                if self.mode == "upsert" and self._table_exists(db) and self.upsert_key:
+                    temp_name = f"_tmp_{self.table_name}"
+                    db.create_table(temp_name, merged, overwrite=True)
+                    key = self.upsert_key
+                    db.raw_sql(
+                        f'DELETE FROM "{self.table_name}" WHERE "{key}" IN '
+                        f'(SELECT "{key}" FROM "{temp_name}")'
+                    )
+                    db.raw_sql(f'INSERT INTO "{self.table_name}" SELECT * FROM "{temp_name}"')
+                    db.raw_sql(f'DROP TABLE "{temp_name}"')
+                elif self.mode == "append" and self._table_exists(db):
                     db.insert(self.table_name, merged)
                 else:
                     db.create_table(self.table_name, merged, schema=self.table_schema, overwrite=True)
@@ -282,12 +306,24 @@ class WarehouseTable:
         ds = InsightsDataSourcev3.get_doc(self.data_source)
         return ds.get_ibis_table(self.table_name)
 
-    def enqueue_import(self):
+    def enqueue_import(self, sync_mode: str = ""):
         if frappe.db.get_value("Insights Data Source v3", self.data_source, "type") == "REST API":
             frappe.throw("Import not supported for API data sources")
 
-        importer = WarehouseTableImporter(self)
-        importer.enqueue_import()
+        if not sync_mode:
+            sync_mode = (
+                frappe.db.get_value("Insights Table v3", self.table_doc_name, "sync_mode") or "Full Refresh"
+            )
+
+        if sync_mode == "Incremental Sync":
+            from insights.insights.doctype.insights_data_source_v3.incremental_sync import (
+                enqueue_incremental_sync,
+            )
+
+            enqueue_incremental_sync(data_source=self.data_source, table_name=self.table_name)
+        else:
+            importer = WarehouseTableImporter(self)
+            importer.enqueue_import()
 
 
 class WarehouseTableImporter:
@@ -451,6 +487,7 @@ class WarehouseTableImporter:
                 total_rows = self.process_batches(batch_size, writer)
                 self.log.rows_imported = total_rows
             self.update_insights_table()
+            self._set_incremental_cursor()
             self.log.status = "Completed"
             self._log("Import completed successfully.")
         except Exception as e:
@@ -523,6 +560,27 @@ class WarehouseTableImporter:
         t.stored = 1
         t.last_synced_on = frappe.utils.now()
         t.save()
+
+    def _set_incremental_cursor(self):
+        """After full refresh, set the cursor to the latest row so incremental picks up from here"""
+        from insights.insights.doctype.insights_data_source_v3.incremental_sync import SyncCursorManager
+
+        manager = SyncCursorManager()
+        try:
+            with insights.warehouse.get_write_connection() as db:
+                db.raw_sql(f"USE '{self.table.schema}'")
+                result = db.raw_sql(
+                    f'SELECT "modified", "name" FROM "{self.warehouse_table_name}" '
+                    f'ORDER BY "modified" DESC, "name" DESC LIMIT 1'
+                ).fetchone()
+            if result:
+                manager.update_cursor(
+                    self.table.data_source, self.table.table_name, str(result[0]), str(result[1])
+                )
+                return
+        except Exception:
+            pass
+        manager.delete_cursor(self.table.data_source, self.table.table_name)
 
     def _log(self, message: str, commit: bool = True):
         if self.last_log_time is None:
