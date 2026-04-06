@@ -315,15 +315,15 @@ function setSignatureElementPosition() {
 	</div> -->
 </template>
 
-<style lang="scss">
+<style>
 .column-expression {
-	.cm-content {
+	& .cm-content {
 		height: 100% !important;
 	}
-	.cm-gutters {
+	& .cm-gutters {
 		height: 100% !important;
 	}
-	.cm-tooltip-autocomplete {
+	& .cm-tooltip-autocomplete {
 		position: absolute !important;
 		z-index: 50 !important;
 	}
