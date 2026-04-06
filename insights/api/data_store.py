@@ -20,6 +20,7 @@ def get_data_store_tables(data_source: str | None = None, search_term: str | Non
             Table.label,
             Table.data_source,
             Table.last_synced_on,
+            Table.sync_mode,
             DataSource.database_type,
         )
         .where(
@@ -46,18 +47,38 @@ def get_data_store_tables(data_source: str | None = None, search_term: str | Non
                     "data_source": table.data_source,
                     "database_type": table.database_type,
                     "last_synced_on": table.last_synced_on,
+                    "sync_mode": table.sync_mode or "Incremental Sync",
                 }
             )
         )
     return ret
 
 
+@insights_whitelist()
+@validate_type
+def get_last_sync_log(data_source: str, table_name: str):
+    log = frappe.get_all(
+        "Insights Table Import Log",
+        filters={"data_source": data_source, "table_name": table_name},
+        fields=["status", "rows_imported", "time_taken", "started_at", "ended_at", "error", "output"],
+        order_by="creation desc",
+        limit=1,
+    )
+    return log[0] if log else None
+
+
 @insights_whitelist(role="Insights Admin")
 @validate_type
-def import_table(data_source: str, table_name: str):
-    name = get_table_name(data_source, table_name)
-    table_doc = frappe.get_doc("Insights Table v3", name)
-    table_doc.import_to_warehouse()
+def import_table(data_source: str, table_name: str, sync_mode: str = ""):
+    from insights.insights.doctype.insights_data_source_v3.data_warehouse import WarehouseTable
+
+    if sync_mode:
+        name = get_table_name(data_source, table_name)
+        if frappe.db.exists("Insights Table v3", name):
+            frappe.db.set_value("Insights Table v3", name, "sync_mode", sync_mode)
+
+    wt = WarehouseTable(data_source, table_name)
+    wt.enqueue_import(sync_mode=sync_mode)
 
 
 def sync_tables():
@@ -65,7 +86,7 @@ def sync_tables():
     tables = frappe.get_all(
         "Insights Table v3",
         filters={"stored": 1},
-        fields=["name", "data_source", "table"],
+        fields=["name", "data_source", "table", "sync_mode"],
     )
 
     for table in tables:
