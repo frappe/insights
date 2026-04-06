@@ -68,7 +68,28 @@ def sync_tables():
     )
 
     for table in tables:
-        import_table(table.data_source, table.table)
+        import_table(table.data_source, table.table, sync_mode=table.sync_mode or "Incremental Sync")
+
+
+def handle_warehouse_deletes():
+    from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
+        WarehouseTable,
+    )
+    from insights.insights.doctype.insights_data_source_v3.delete_tracker import handle_deletes
+
+    tables = frappe.get_all(
+        "Insights Table v3",
+        filters={"stored": 1, "sync_mode": "Incremental Sync"},
+        fields=["data_source", "table"],
+    )
+
+    for t in tables:
+        try:
+            wt = WarehouseTable(t.data_source, t.table)
+            doctype = t.table.replace("tab", "", 1) if t.table.startswith("tab") else t.table
+            handle_deletes(doctype=doctype, warehouse_table=wt.warehouse_table_name, schema=wt.schema)
+        except Exception:
+            frappe.log_error(title=f"Delete failed for {t.data_source}/{t.table}")
 
 
 def update_failed_sync_status():
