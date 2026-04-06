@@ -330,7 +330,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         return db.list_tables(database=quoted_db_name)
 
     @frappe.whitelist()
-    def test_connection(self, raise_exception: bool = False):
+    def test_connection(self, raise_exception: bool | None = False):
         if self.type == "REST API":
             return self.test_api_connection(raise_exception)
 
@@ -341,7 +341,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             if raise_exception:
                 raise e
 
-    def test_api_connection(self, raise_exception=False):
+    def test_api_connection(self, raise_exception: bool | None = False):
         client = self.get_api_client()
         try:
             client.test_connection()
