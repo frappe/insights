@@ -16,7 +16,7 @@ class InsightsTable(Document):
         source.sync_tables([self.table], force=True)
 
     @frappe.whitelist()
-    def update_visibility(self, hidden):
+    def update_visibility(self, hidden: bool | int):
         self.hidden = hidden
         self.save()
 
@@ -49,7 +49,7 @@ class InsightsTable(Document):
                 )
 
     @frappe.whitelist()
-    def update_column_type(self, column, newtype):
+    def update_column_type(self, column: str, newtype: str):
         for col in self.columns:
             if col.column == column and col.type != newtype:
                 col.type = newtype

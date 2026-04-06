@@ -9,30 +9,46 @@ import ibis
 from frappe.utils import get_files_path
 
 
-def get_duckdb_connection(data_source, read_only=True):
+def get_duckdb_connection(data_source, read_only=True, allowed_dir=None):
     name = data_source.name or frappe.scrub(data_source.title)
     db_name = data_source.database_name
 
     if db_name.startswith("http"):
-        db = ibis.duckdb.connect()
-        sql = get_http_secret(data_source, name, db_name)
-        sql and db.raw_sql(sql)
-        attach_url = f"ducklake:{db_name}" if data_source.is_ducklake else db_name
-        db.attach(attach_url, name, read_only=True)
-        db.raw_sql(f"USE {name}")
-        return db
+        return get_http_duckdb_connection(data_source, name, db_name)
 
-    return get_local_duckdb_connection(db_name, read_only=read_only)
+    return get_local_duckdb_connection(db_name, read_only=read_only, allowed_dir=allowed_dir)
 
 
-def get_local_duckdb_connection(db_name, read_only=True):
-    path = os.path.join(os.path.realpath(get_files_path(is_private=1)), f"{db_name}.duckdb")
+def get_local_duckdb_connection(db_name, read_only=True, allowed_dir=None):
+    private_folder = os.path.realpath(get_files_path(is_private=1))
+    path = os.path.join(private_folder, f"{db_name}.duckdb")
 
     if not os.path.exists(path):
         db = ibis.duckdb.connect(path)
         db.disconnect()
 
-    return ibis.duckdb.connect(path, read_only=read_only)
+    db = ibis.duckdb.connect(path, read_only=read_only)
+    db.raw_sql(f"SET home_directory='{private_folder}'")
+
+    if allowed_dir:
+        escaped_dir = allowed_dir.replace("'", "''")
+        db.raw_sql(f"SET allowed_directories = ['{escaped_dir}']")
+
+    db.raw_sql("SET enable_external_access = false")
+
+    return db
+
+
+def get_http_duckdb_connection(data_source, name, db_name):
+    """Connect to a remote DuckDB via HTTP or DuckLake."""
+    db = ibis.duckdb.connect()
+    sql = get_http_secret(data_source, name, db_name)
+    sql and db.raw_sql(sql)
+    attach_url = f"ducklake:{db_name}" if data_source.is_ducklake else db_name
+    db.attach(attach_url, name, read_only=True)
+    db.raw_sql(f"USE '{name}'")
+    db.raw_sql("SET enable_external_access=false")
+    return db
 
 
 def get_http_secret(data_source, name, db_name):

@@ -25,6 +25,12 @@ class InsightsChart(Document):
 
 
 def get_chart_public_key(name):
+
+    is_public = frappe.db.get_value("Insights Chart", name, "is_public")
+    if not is_public:
+        frappe.throw("Chart is not public")
+        return
+
     existing_key = frappe.db.get_value("Insights Chart", name, "public_key", cache=True)
     if existing_key:
         return existing_key

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { __ } from '../translation'
 import Switch from '../components/Switch.vue'
 import UserSelector from '../components/UserSelector.vue'
 import { copy } from '../helpers'
@@ -13,6 +14,16 @@ const show = defineModel()
 const currentTeam = ref(copy(props.team))
 const teamStore = useTeamStore()
 const userStore = useUserStore()
+
+watch(
+	() => show.value,
+	(isOpen) => {
+		if (isOpen) {
+			userStore.getUsers()
+		}
+	},
+	{ immediate: true },
+)
 
 const teamModified = computed(() => {
 	if (!currentTeam.value) {
@@ -37,7 +48,7 @@ function removeMember(userEmail: string) {
 		return
 	}
 	currentTeam.value.team_members = currentTeam.value.team_members.filter(
-		(u) => u.user !== userEmail
+		(u) => u.user !== userEmail,
 	)
 }
 
@@ -49,10 +60,10 @@ const activeTab = ref('Members')
 		v-if="currentTeam"
 		v-model="show"
 		:options="{
-			title: 'Manage Team',
+			title: __('Manage Team'),
 			actions: [
 				{
-					label: 'Done',
+					label: __('Done'),
 					variant: 'solid',
 					disabled: !teamModified || teamStore.updatingTeam,
 					loading: teamStore.updatingTeam,
@@ -105,23 +116,26 @@ const activeTab = ref('Members')
 					</div>
 
 					<div class="flex flex-1 flex-col gap-1 overflow-y-auto">
+						<div v-if="userStore.loading" class="flex items-center justify-center py-8">
+							<LoadingIndicator class="h-6 w-6 text-gray-600" />
+						</div>
 						<div
-							v-if="currentTeam.team_members.length"
+							v-else-if="currentTeam.team_members.length"
 							v-for="member in currentTeam.team_members"
 							:key="member.user"
 							class="flex w-full items-center gap-2 py-1"
 						>
 							<Avatar
 								size="xl"
-								:label="userStore.getUser(member.user)?.full_name"
+								:label="userStore.getUser(member.user)?.full_name || member.user"
 								:image="userStore.getUser(member.user)?.user_image"
 							/>
 							<div class="flex flex-1 flex-col">
 								<div class="leading-5">
-									{{ userStore.getUser(member.user)?.full_name }}
+									{{ userStore.getUser(member.user)?.full_name || member.user }}
 								</div>
 								<div class="text-xs text-gray-600">
-									{{ userStore.getUser(member.user)?.email }}
+									{{ userStore.getUser(member.user)?.email || member.user }}
 								</div>
 							</div>
 							<Button

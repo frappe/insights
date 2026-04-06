@@ -2,6 +2,7 @@
 import { inject } from 'vue'
 import Code from '../../components/Code.vue'
 import { copyToClipboard } from '../../helpers'
+import { __ } from '../../translation'
 import { Query } from '../query'
 
 const showDialog = defineModel()
@@ -12,7 +13,7 @@ const query = inject('query') as Query
 <template>
 	<Dialog
 		v-model="showDialog"
-		:options="{ title: 'Generated SQL', size: '3xl' }"
+		:options="{ title: __('Generated SQL'), size: '3xl' }"
 		:dismissable="true"
 	>
 		<template #body-content>

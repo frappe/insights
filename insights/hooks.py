@@ -1,5 +1,5 @@
 app_name = "insights"
-app_title = "Frappe Insights"
+app_title = "Insights"
 app_publisher = "Frappe Technologies Pvt. Ltd."
 app_description = "Powerful Reporting Tool for Frappe Apps"
 app_icon = "octicon octicon-file-directory"
@@ -8,6 +8,7 @@ app_email = "hello@frappe.io"
 app_license = "GNU GPLv3"
 
 export_python_type_annotations = True
+require_type_annotated_api_methods = True
 
 
 add_to_apps_screen = [
@@ -74,11 +75,6 @@ add_to_apps_screen = [
 # 	"filters": "insights.utils.jinja_filters"
 # }
 
-# Setup
-# ------------
-setup_wizard_requires = "assets/insights/js/setup_wizard.js"
-setup_wizard_stages = "insights.setup.setup_wizard.get_setup_stages"
-
 # Installation
 # ------------
 
@@ -86,7 +82,6 @@ setup_wizard_stages = "insights.setup.setup_wizard.get_setup_stages"
 after_install = "insights.migrate.after_migrate"
 after_migrate = "insights.migrate.after_migrate"
 
-before_request = ["insights.insights.doctype.insights_data_source_v3.insights_data_source_v3.before_request"]
 after_request = ["insights.insights.doctype.insights_data_source_v3.insights_data_source_v3.after_request"]
 
 fixtures = [
@@ -168,6 +163,7 @@ scheduler_events = {
     ],
     "hourly": [
         "insights.api.data_store.update_failed_sync_status",
+        "insights.insights.doctype.insights_table_import_job.insights_table_import_job.run_scheduled_imports",
     ],
 }
 

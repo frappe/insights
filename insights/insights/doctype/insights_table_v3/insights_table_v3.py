@@ -5,11 +5,13 @@
 from hashlib import md5
 
 import frappe
+import ibis
 from frappe.model.document import Document
 from frappe.permissions import get_valid_perms
+from ibis import Table
+from ibis.backends.duckdb import Backend as DuckDBBackend
 
-from insights import create_toast
-from insights.insights.doctype.insights_data_source_v3.data_warehouse import Warehouse
+import insights
 from insights.utils import InsightsDataSourcev3
 
 
@@ -81,10 +83,12 @@ class InsightsTablev3(Document):
             check_table_permission,
         )
 
+        # TODO: replace with frappe.has_permission()
         check_table_permission(data_source, table_name)
 
-        if not use_live_connection:
-            wt = Warehouse().get_table(data_source, table_name)
+        ds_type = frappe.db.get_value("Insights Data Source v3", data_source, "type", cache=True)
+        if not use_live_connection and ds_type != "REST API":
+            wt = insights.warehouse.get_table(data_source, table_name)
             t = wt.get_ibis_table(import_if_not_exists=True)
         else:
             ds = InsightsDataSourcev3.get_doc(data_source)
@@ -97,7 +101,7 @@ class InsightsTablev3(Document):
     @frappe.whitelist()
     def import_to_warehouse(self):
         frappe.only_for("Insights Admin")
-        wt = Warehouse().get_table(self.data_source, self.table)
+        wt = insights.warehouse.get_table(self.data_source, self.table)
         wt.enqueue_import()
 
 
@@ -105,11 +109,11 @@ def get_table_name(data_source, table):
     return md5((data_source + table).encode()).hexdigest()[:10]
 
 
-def apply_user_permissions(t, data_source, table_name):
-    if not frappe.db.get_single_value("Insights Settings", "apply_user_permissions", cache=True):
+def apply_user_permissions(t: Table, data_source, table_name):
+    if not frappe.db.get_value("Insights Data Source v3", data_source, "is_site_db", cache=True):
         return t
 
-    if not frappe.db.get_value("Insights Data Source v3", data_source, "is_site_db", cache=True):
+    if not frappe.db.get_single_value("Insights Settings", "apply_user_permissions", cache=True):
         return t
 
     if table_name == "tabSingles":
@@ -117,78 +121,106 @@ def apply_user_permissions(t, data_source, table_name):
         allowed_doctypes = get_valid_perms()
         allowed_doctypes = [p.parent for p in allowed_doctypes if p.read]
         allowed_single_doctypes = set(single_doctypes) & set(allowed_doctypes)
+        if not allowed_single_doctypes:
+            return t.filter(False)
         if len(allowed_single_doctypes) == len(single_doctypes):
             return t
         return t.filter(t.doctype.isin(allowed_single_doctypes))
 
-    doctype = table_name.replace("tab", "")
-    allowed_docs = get_allowed_documents(doctype)
+    permission_query = get_permission_query_for_table(table_name)
+    if not permission_query:
+        return t.filter(False)
 
-    if allowed_docs == "*":
+    if not _has_where_clause(permission_query):
         return t
-    if isinstance(allowed_docs, list):
-        return t.filter(t.name.isin(allowed_docs))
 
-    create_toast("You do not have permissions to access this table", type="error")
-    return t.filter(False)
+    from_warehouse = isinstance(t.get_backend(), DuckDBBackend)
+    if not from_warehouse:
+        return t.sql(permission_query)
+
+    # if from warehouse,
+    # we will have to transform the `permission_query` to duckdb dialect and also replace the table names from `tabX` to `site_db.tabX` to use it as a subquery to filter the table `t`
+    # to avoid the complexity of transforming the `permission_query` to duckdb dialect, we will execute the `permission_query` separately and get the list of permitted names and then filter the table `t` using semi_join
+
+    if "name" not in t.columns:
+        frappe.throw(
+            f"Cannot apply user permissions for table {table_name} because it does not have a `name` column"
+        )
+
+    db = InsightsDataSourcev3.get_doc(data_source)._get_ibis_backend()
+    names_expr = ibis.memtable(db.sql(permission_query).select("name"))
+    return t.semi_join(names_expr, "name")
 
 
-def get_allowed_documents(doctype):
-    docs = []
-
+def get_permission_query_for_table(table_name) -> str | None:
+    doctype = table_name.removeprefix("tab")
     istable = frappe.get_meta(doctype).istable
 
-    if not istable and frappe.has_permission(doctype):
-        docs = frappe.get_list(doctype, pluck="name")
-        doc_count = frappe.db.count(doctype)
-        if doc_count == len(docs):
-            docs = "*"
+    if not istable and frappe.has_permission(doctype, "read"):
+        permitted_docs_query = get_permission_query(doctype)
+        return permitted_docs_query
 
     if istable:
         # For child tables:
         # 1. Find all the parent doctypes of the child table
-        # 2. Filter the parent doctypes where user has read permission
-        # 3. Find all the allowed documents of the parent doctypes
-        # 4. Filter child table where `parent` is in allowed documents
+        # 2. Filter out the non-permitted parent doctypes
+        # 3. Call `get_list` for each permitted parent doctype
+        # 4. Union all the queries
 
         child_doctype = doctype
-        parent_doctypes = frappe.get_all(
-            "DocField",
-            filters={
-                "parenttype": "DocType",
-                "fieldtype": ["in", ["Table", "Table MultiSelect"]],
-                "options": child_doctype,
-            },
-            pluck="parent",
-            distinct=True,
+        parent_doctypes = get_parents(child_doctype)
+        permitted_parent_doctypes = [p for p in parent_doctypes if frappe.has_permission(p, "read")]
+
+        if not permitted_parent_doctypes:
+            return None
+
+        child_perm_queries = []
+        for parent_doctype in permitted_parent_doctypes:
+            permitted_child_docs_query = get_permission_query(child_doctype, parent_doctype)
+            child_perm_queries.append(permitted_child_docs_query)
+
+        final_query = " UNION ALL ".join(child_perm_queries)
+        return final_query
+
+    return None
+
+
+def get_permission_query(doctype, parent_doctype=None):
+    return str(
+        frappe.get_list(
+            doctype,
+            fields="*",
+            order_by=None,
+            parent_doctype=parent_doctype,
+            run=False,
         )
+    )
 
-        # FIX: check permission of the parent and not the child table
-        parent_doctypes = [p for p in parent_doctypes if frappe.has_permission(p, "read")]
 
-        parent_docs_by_doctype = {
-            parent_doctype: get_allowed_documents(parent_doctype) for parent_doctype in parent_doctypes
-        }
+def get_parents(child_doctype):
+    parent_doctypes = frappe.get_all(
+        "DocField",
+        filters={
+            "parenttype": "DocType",
+            "fieldtype": ["in", ["Table", "Table MultiSelect"]],
+            "options": child_doctype,
+        },
+        pluck="parent",
+        distinct=True,
+    )
 
-        CHILD_DOCTYPE = frappe.qb.DocType(child_doctype)
-        docs_query = frappe.qb.from_(CHILD_DOCTYPE).select(CHILD_DOCTYPE.name)
-        condition = None
-        for parent_doctype, parent_docs in parent_docs_by_doctype.items():
-            if parent_docs == "*":
-                _cond = CHILD_DOCTYPE.parenttype == parent_doctype
-                condition = _cond if condition is None else condition | _cond
-            elif parent_docs:
-                _cond = (CHILD_DOCTYPE.parenttype == parent_doctype) & (
-                    CHILD_DOCTYPE.parent.isin(parent_docs)
-                )
-                condition = _cond if condition is None else condition | _cond
+    custom_parent_doctypes = frappe.get_all(
+        "Custom Field",
+        filters={
+            "fieldtype": ["in", ["Table", "Table MultiSelect"]],
+            "options": child_doctype,
+        },
+        pluck="dt",
+        distinct=True,
+    )
 
-        if condition is not None:
-            docs = docs_query.where(condition).run(pluck="name")
-            doc_count = frappe.db.count(doctype)
-            if doc_count == len(docs):
-                docs = "*"
-        else:
-            docs = []
+    return list(set(parent_doctypes + custom_parent_doctypes))
 
-    return docs
+
+def _has_where_clause(sql: str) -> bool:
+    return " where " in sql.lower()

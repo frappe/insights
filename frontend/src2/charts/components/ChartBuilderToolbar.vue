@@ -13,6 +13,7 @@ import {
 } from 'lucide-vue-next'
 import { h } from 'vue'
 import session from '../../session'
+import { __ } from '../../translation'
 
 const props = defineProps<{
 	chart: any
@@ -23,40 +24,40 @@ const props = defineProps<{
 
 const moreActions = [
 	{
-		label: 'Export as PNG',
+		label: __('Export as PNG'),
 		icon: h(ImageDown, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
 		onClick: () => props.onDownload(),
 		condition: () => !!props.chartEl,
 	},
 	{
-		label: 'Share Chart',
+		label: __('Share Chart'),
 		icon: h(Share2, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
 		onClick: () => props.onShare(),
 		condition: () => !props.chart.doc.read_only,
 	},
 	{
-		label: 'Duplicate Chart',
+		label: __('Duplicate Chart'),
 		icon: h(CopyPlus, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
 		onClick: () => props.chart.duplicate(),
 	},
 	{
-		label: 'Reset Options',
+		label: __('Reset Options'),
 		icon: h(XIcon, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
 		onClick: () => props.chart.resetConfig(),
 		condition: () => !props.chart.doc.read_only,
 	},
 	{
-		label: 'Copy JSON',
+		label: __('Copy JSON'),
 		icon: h(Copy, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
 		onClick: () => props.chart.copy(),
 	},
 	{
-		label: 'Open in Desk',
+		label: __('Open in Desk'),
 		icon: h(ExternalLink, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
 		onClick: () => props.chart.openInDesk(),
 		condition: () => session.user.has_desk_access,
 	},
-].filter((action) => !action.condition || action.condition())
+].filter((action) => !action.condition || action.condition() || !!action.condition)
 </script>
 
 <template>

@@ -1,20 +1,22 @@
 <script setup lang="ts">
-import { LoadingIndicator, Button } from 'frappe-ui'
-import { Bell, RefreshCw, Download } from 'lucide-vue-next'
+import { Button } from 'frappe-ui'
+import { Bell, Download } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import DrillDown from '../../charts/components/DrillDown.vue'
 import DataTable from '../../components/DataTable.vue'
 import ExportDialog from '../../components/ExportDialog.vue'
 import {
+	AdhocFilters,
+	FilterArgs,
 	QueryResultColumn,
 	QueryResultRow,
 	SortDirection,
 } from '../../types/query.types'
 
-import { column } from '../helpers'
+import { column, filter_group, parseFilterString } from '../helpers'
 import { Query } from '../query'
-import QueryAlertsDialog from './QueryAlertsDialog.vue'
 import AlertSetupDialog from './AlertSetupDialog.vue'
+import QueryAlertsDialog from './QueryAlertsDialog.vue'
 
 const props = defineProps<{
 	query: Query
@@ -26,15 +28,23 @@ const props = defineProps<{
 	onSortChange?: (column_name: string, sort_order: SortDirection) => void
 }>()
 
+const isFiltering = ref(false)
+watch(
+	() => props.query.executing,
+	(executing) => {
+		if (!executing) isFiltering.value = false
+	},
+)
+
 const columns = computed(() => props.query.result.columns)
 const rows = computed(() => props.query.result.formattedRows)
 const previewRowCount = computed(() => props.query.result.rows.length)
-const totalRowCount = computed(() => {
-	if (!props.query.result.totalRowCount && previewRowCount.value < 100) {
-		return previewRowCount.value
-	}
-	return props.query.result.totalRowCount
-})
+const totalRowCount = computed(() => props.query.result.totalRowCount || undefined)
+
+// When the entire result fits on one page, filter client-side (instant, no round-trip)
+const isSinglePage = computed(
+	() => props.query.currentPage === 1 && previewRowCount.value < props.query.pageSize,
+)
 
 function onRename(column_name: string, new_name: string) {
 	new_name = new_name.trim()
@@ -75,8 +85,8 @@ function onSortChange(column_name: string, sort_order: SortDirection) {
 
 const showDrillDown = ref(false)
 const drillDownQuery = ref<Query>()
-function onDrillDown(column: QueryResultColumn, row: QueryResultRow) {
-	drillDownQuery.value = props.query.getDrillDownQuery(column, row)
+async function onDrillDown(column: QueryResultColumn, row: QueryResultRow) {
+	drillDownQuery.value = await props.query.getDrillDownQuery(column, row)
 	if (drillDownQuery.value) {
 		showDrillDown.value = true
 	}
@@ -88,14 +98,14 @@ const currentAlertName = ref('')
 // Export dialog state
 const showExportDialog = ref(false)
 const exportDefaultName = computed(() => {
-    const now = new Date()
-    const ts = `${now.getDate()}_${now.getMonth()}_${now.getFullYear()}`
-    return `export_${ts}`
+	const now = new Date()
+	const ts = `${now.getDate()}_${now.getMonth()}_${now.getFullYear()}`
+	return `export_${ts}`
 })
 
 function openExport() {
-    if (!props.query?.exportResults) return
-    showExportDialog.value = true
+	if (!props.query?.exportResults) return
+	showExportDialog.value = true
 }
 
 // Auto-close dialog after export completes
@@ -105,22 +115,71 @@ watch(
 		if (prev && !downloading) {
 			showExportDialog.value = false
 		}
-	}
+	},
 )
 
 function onExport(format: 'csv' | 'excel', filename: string) {
-    props.query.exportResults(format, filename)
+	props.query.exportResults(format, filename)
+}
+
+function onPageChange(page: number) {
+	props.query.goToPage(page)
+}
+
+function onFilterChange(filters: Record<string, string>) {
+	const adhocFilters = {} as AdhocFilters
+
+	// Collect rules for ALL non-empty column filters into a single filter_group
+	const allRules = [] as FilterArgs[]
+	Object.entries(filters).forEach(([colName, filterStr]) => {
+		if (!filterStr) return
+		const parsed = parseFilterString(filterStr)
+		if (!parsed) return
+
+		if (parsed.kind === 'numeric') {
+			allRules.push({
+				column: column(colName),
+				operator: parsed.operator,
+				value: parsed.num,
+			})
+		} else {
+			allRules.push({
+				column: column(colName),
+				operator: 'contains',
+				value: parsed.text,
+			})
+		}
+	})
+
+	if (allRules.length) {
+		adhocFilters[props.query.name] = filter_group({
+			logical_operator: 'And',
+			filters: allRules,
+		})
+	}
+
+	props.query.adhocFilters = adhocFilters
+
+	isFiltering.value = true
+	props.query.goToPage(1)
 }
 </script>
 
 <template>
 	<DataTable
-		:loading="props.query.executing"
+		:loading="props.query.executing && !isFiltering"
+		:filtering="props.query.executing && isFiltering"
 		:columns="columns"
 		:rows="rows"
 		:enable-pagination="true"
-        :on-export="props.query.exportResults"
-        :downloading="props.query.downloading"
+		:page-size="props.query.pageSize"
+		:total-row-count="totalRowCount"
+		:current-page="props.query.currentPage"
+		:on-page-change="onPageChange"
+		:on-fetch-count="props.query.fetchResultCount"
+		:on-filter-change="isSinglePage ? undefined : onFilterChange"
+		:on-export="props.query.exportResults"
+		:downloading="props.query.downloading"
 		:sort-order="sortOrder"
 		:on-sort-change="props.enableSort ? onSortChange : undefined"
 		:on-column-rename="props.enableColumnRename ? onRename : undefined"
@@ -134,52 +193,30 @@ function onExport(format: 'csv' | 'excel', filename: string) {
 		<template #header-suffix="{ column }">
 			<slot name="header-suffix" :column="column" />
 		</template>
-		<template #footer-left>
-			<div class="tnum flex items-center gap-1 text-sm text-gray-600">
-				<span> Showing {{ previewRowCount.toLocaleString() }} of </span>
-				<span v-if="!totalRowCount" class="inline-block">
-					<Tooltip text="Load Count">
-						<RefreshCw
-							v-if="!props.query.fetchingCount"
-							class="h-3.5 w-3.5 cursor-pointer transition-all hover:text-gray-800"
-							stroke-width="1.5"
-							@click="props.query.fetchResultCount"
-						/>
-						<LoadingIndicator v-else class="h-3.5 w-3.5 text-gray-600" />
-					</Tooltip>
-				</span>
-				<span v-else> {{ totalRowCount.toLocaleString() }} </span>
-				rows
-			</div>
-		</template>
 		<template #footer-right-actions>
-			<Button
-				v-if="enableAlerts"
-				variant="ghost"
-				@click="showAlertsDialog = true"
-			>
+			<Button v-if="enableAlerts" variant="ghost" @click="showAlertsDialog = true">
 				<template #icon>
 					<Bell class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 				</template>
 			</Button>
-            <Button variant="ghost" @click="openExport">
-                <template #icon>
-                    <Download class="h-4 w-4 text-gray-700" stroke-width="1.5" />
-                </template>
-            </Button>
+			<Button variant="ghost" @click="openExport">
+				<template #icon>
+					<Download class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+				</template>
+			</Button>
 		</template>
 
 		<template v-if="props.enableNewColumn" #new-column-editor="slotArgs">
 			<slot name="new-column-editor" v-bind="slotArgs" />
 		</template>
 	</DataTable>
-    <ExportDialog
-        v-model="showExportDialog"
-        :downloading="props.query.downloading"
-        :default-filename="exportDefaultName"
-        @export="onExport"
-        @cancel="props.query.cancelDownload"
-    />
+	<ExportDialog
+		v-model="showExportDialog"
+		:downloading="props.query.downloading"
+		:default-filename="exportDefaultName"
+		@export="onExport"
+		@cancel="props.query.cancelDownload"
+	/>
 
 	<DrillDown
 		v-if="drillDownQuery"

@@ -56,6 +56,7 @@ function onTableLinkClick(table) {
 			info="Select the tables you want to extract data from."
 		>
 			<Autocomplete
+				class="!w-fit"
 				bodyClasses="w-[18rem]"
 				:options="dataSource.groupedTableOptions"
 				@update:modelValue="$event && assistedQuery.addTable($event)"

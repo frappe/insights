@@ -1,4 +1,7 @@
 import { call } from 'frappe-ui'
+import { __ } from '../translation'
+// @ts-ignore
+import { useTelemetry } from 'frappe-ui/frappe'
 import { computed, InjectionKey, reactive, toRefs } from 'vue'
 import useChart, { newChart } from '../charts/chart'
 import useDashboard, { newDashboard } from '../dashboard/dashboard'
@@ -19,7 +22,7 @@ import router from '../router'
 import session from '../session'
 import type {
 	InsightsWorkbook,
-	WorkbookSharePermission as WorkbookUserPermission
+	WorkbookSharePermission as WorkbookUserPermission,
 } from '../types/workbook.types'
 
 const workbooks = new Map<string, Workbook>()
@@ -35,6 +38,7 @@ export default function useWorkbook(name: string) {
 }
 
 function makeWorkbook(name: string) {
+	const { capture } = useTelemetry()
 	const workbook = getWorkbookResource(name)
 
 	// getLinkedQueries expects the query to be loaded
@@ -84,8 +88,8 @@ function makeWorkbook(name: string) {
 		}
 
 		confirmDialog({
-			title: 'Delete Query',
-			message: 'Are you sure you want to delete this query?',
+			title: __('Delete Query'),
+			message: __('Are you sure you want to delete this query?'),
 			onSuccess: _remove,
 		})
 	}
@@ -107,6 +111,7 @@ function makeWorkbook(name: string) {
 				sort_order: chart.doc.sort_order,
 				folder: null,
 			})
+			capture('chart_created')
 			setActiveTab('chart', chart.doc.name)
 		})
 	}
@@ -124,8 +129,8 @@ function makeWorkbook(name: string) {
 		}
 
 		confirmDialog({
-			title: 'Delete Chart',
-			message: 'Are you sure you want to delete this chart?',
+			title: __('Delete Chart'),
+			message: __('Are you sure you want to delete this chart?'),
 			onSuccess: _remove,
 		})
 	}
@@ -139,6 +144,7 @@ function makeWorkbook(name: string) {
 				name: dashboard.doc.name,
 				title: dashboard.doc.title,
 			})
+			capture('dashboard_created')
 			setActiveTab('dashboard', dashboard.doc.name)
 		})
 	}
@@ -156,8 +162,8 @@ function makeWorkbook(name: string) {
 		}
 
 		confirmDialog({
-			title: 'Delete Dashboard',
-			message: 'Are you sure you want to delete this dashboard?',
+			title: __('Delete Dashboard'),
+			message: __('Are you sure you want to delete this dashboard?'),
 			onSuccess: _remove,
 		})
 	}
@@ -225,19 +231,19 @@ function makeWorkbook(name: string) {
 
 	function duplicate() {
 		confirmDialog({
-			title: 'Duplicate Workbook',
-			message:
-				'Duplicating this workbook will create a new workbook and copy all queries, charts and dashboards to it. Do you want to continue?',
+			title: __('Duplicate Workbook'),
+			message: __(
+				'Duplicating this workbook will create a new workbook and copy all queries, charts and dashboards to it. Do you want to continue?'
+			),
 			onSuccess: () => {
 				workbook
 					.call('duplicate')
 					.then((name: any) => {
 						createToast({
-							message: 'Workbook duplicated successfully',
+							message: __('Workbook duplicated successfully'),
 							variant: 'success',
 						})
-						// FIX: debug why new workbook is not loaded
-						router.push(`/workbook/${name}`)
+						window.location.href = `/insights/workbook/${name}`
 					})
 					.catch(showErrorToast)
 			},
@@ -246,13 +252,13 @@ function makeWorkbook(name: string) {
 
 	function importQuery(query: any) {
 		confirmDialog({
-			title: 'Import Query',
-			message: 'Are you sure you want to import this query?',
+			title: __('Import Query'),
+			message: __('Are you sure you want to import this query?'),
 			onSuccess: () => {
 				workbook.call('import_query', { query }).then((name) => {
 					workbook.load().then(() => {
 						createToast({
-							message: 'Query imported successfully',
+							message: __('Query imported successfully'),
 							variant: 'success',
 						})
 						setActiveTab('query', name)
@@ -264,13 +270,13 @@ function makeWorkbook(name: string) {
 
 	function importChart(chart: any) {
 		confirmDialog({
-			title: 'Import Chart',
-			message: 'Are you sure you want to import this chart?',
+			title: __('Import Chart'),
+			message: __('Are you sure you want to import this chart?'),
 			onSuccess: () => {
 				workbook.call('import_chart', { chart }).then((name) => {
 					workbook.load().then(() => {
 						createToast({
-							message: 'Chart imported successfully',
+							message: __('Chart imported successfully'),
 							variant: 'success',
 						})
 						setActiveTab('chart', name)
@@ -281,15 +287,13 @@ function makeWorkbook(name: string) {
 	}
 
 	function copyJSON() {
-		workbook.call('export').then((data) => {
-			copyToClipboard(JSON.stringify(data, null, 2))
-		})
+		copyToClipboard(workbook.call('export').then((data) => JSON.stringify(data, null, 2)))
 	}
 
 	function deleteWorkbook() {
 		confirmDialog({
-			title: 'Delete Workbook',
-			message: 'Are you sure you want to delete this workbook?',
+			title: __('Delete Workbook'),
+			message: __('Are you sure you want to delete this workbook?'),
 			theme: 'red',
 			onSuccess: () => {
 				workbook.delete().then(() => {
@@ -319,8 +323,8 @@ function makeWorkbook(name: string) {
 		}
 
 		confirmDialog({
-			title: 'Delete Folder',
-			message: 'This will move all items in the folder to the root. Continue?',
+			title: __('Delete Folder'),
+			message: __('This will move all items in the folder to the root. Continue?'),
 			onSuccess: _remove,
 		})
 	}

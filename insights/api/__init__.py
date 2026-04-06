@@ -1,13 +1,12 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+import os
+
 import frappe
-import ibis
 from frappe.defaults import get_user_default, set_user_default
 from frappe.handler import is_valid_http_method, is_whitelisted
-from frappe.integrations.utils import make_post_request
 from frappe.monitor import add_data_to_monitor
-from frappe.rate_limiter import rate_limit
 
 from insights.api.shared import is_public
 from insights.decorators import insights_whitelist, validate_type
@@ -53,11 +52,19 @@ def get_user_info():
         "User", frappe.session.user, ["first_name", "last_name", "user_type"], as_dict=1
     )
 
+    _is_admin = is_admin or frappe.session.user == "Administrator"
+
+    has_demo_data = False
+    if _is_admin:
+        from insights.setup.setup_wizard import check_demo_data_exists
+
+        has_demo_data = check_demo_data_exists()
+
     return {
         "email": frappe.session.user,
         "first_name": user.get("first_name"),
         "last_name": user.get("last_name"),
-        "is_admin": is_admin or frappe.session.user == "Administrator",
+        "is_admin": _is_admin,
         "is_user": is_user or frappe.session.user == "Administrator",
         # TODO: move to `get_session_info` since not user specific
         "country": frappe.db.get_single_value("System Settings", "country"),
@@ -65,43 +72,16 @@ def get_user_info():
         "is_v2_instance": frappe.db.count("Insights Query") > 0,
         "default_version": get_user_default("insights_default_version", frappe.session.user),
         "has_desk_access": user.get("user_type") == "System User",
+        "has_demo_data": has_demo_data,
     }
 
 
 @insights_whitelist()
-def update_default_version(version):
+def update_default_version(version: str):
     if get_user_default("insights_has_visited_v3", frappe.session.user) != "1":
         set_user_default("insights_has_visited_v3", "1", frappe.session.user)
 
     set_user_default("insights_default_version", version, frappe.session.user)
-
-
-@frappe.whitelist()
-@rate_limit(limit=10, seconds=60 * 60)
-def contact_team(message_type, message_content, is_critical=False):
-    if not message_type or not message_content:
-        frappe.throw("Message Type and Content are required")
-
-    message_title = {
-        "Feedback": "Feedback from Insights User",
-        "Bug": "Bug Report from Insights User",
-        "Question": "Question from Insights User",
-    }.get(message_type)
-
-    if not message_title:
-        frappe.throw("Invalid Message Type")
-
-    try:
-        make_post_request(
-            "https://frappeinsights.com/api/method/contact-team",
-            data={
-                "message_title": message_title,
-                "message_content": message_content,
-            },
-        )
-    except Exception as e:
-        frappe.log_error(e)
-        frappe.throw("Something went wrong. Please try again later.")
 
 
 def get_csv_file(filename: str):
@@ -111,11 +91,23 @@ def get_csv_file(filename: str):
     extension = parts[-1] if parts else ""
     extension = extension.lstrip(".")
 
-    if not extension or extension not in ["csv", "xlsx"]:
+    if not extension or extension not in ["csv", "xlsx", "json", "jsonl"]:
         frappe.throw(
-            f"Only CSV and XLSX files are supported. Detected extension: '{extension}' from filename: '{file_name}'"
+            f"Only CSV, XLSX, JSON, and JSONL files are supported. Detected extension: '{extension}' from filename: '{file_name}'"
         )
     return file, extension
+
+
+def create_uploads_if_not_exists():
+    if not frappe.db.exists("Insights Data Source v3", "uploads"):
+        uploads = frappe.new_doc("Insights Data Source v3")
+        uploads.name = "uploads"
+        uploads.title = "Uploads"
+        uploads.database_type = "DuckDB"
+        uploads.database_name = "insights_file_uploads"
+        uploads.owner = "Administrator"
+        uploads.status = "Active"
+        uploads.insert(ignore_permissions=True)
 
 
 @insights_whitelist()
@@ -128,59 +120,64 @@ def get_file_data(filename: str):
     file_name = file.file_name.split(".")[0]
     file_name = frappe.scrub(file_name)
 
-    con = ibis.duckdb.connect()
-    if ext in ["xlsx"]:
-        table = con.read_xlsx(file_path)
-    else:
-        table = con.read_csv(file_path, table_name=file_name)
+    create_uploads_if_not_exists()
+    ds = frappe.get_doc("Insights Data Source v3", "uploads")
+    private_folder = frappe.utils.get_files_path(is_private=1)
+    private_folder = os.path.realpath(private_folder)
+    db = get_duckdb_connection(ds, read_only=True, allowed_dir=private_folder)
+    try:
+        if ext in ["xlsx"]:
+            table = db.read_xlsx(file_path)
+        elif ext in ["json", "jsonl"]:
+            table = db.read_json(file_path)
+        else:
+            table = db.read_csv(file_path, table_name=file_name)
 
-    count = table.count().execute()
-    columns = get_columns_from_schema(table.schema())
-    rows = table.head(50).execute().fillna("").to_dict(orient="records")
+        columns = get_columns_from_schema(table.schema())
+        rows = table.head(50).execute().fillna("").to_dict(orient="records")
+        row_count = table.count().execute()
+    finally:
+        db.disconnect()
 
     return {
         "tablename": file_name,
         "rows": rows,
         "columns": columns,
-        "total_rows": count,
+        "total_rows": int(row_count),
     }
 
 
 @insights_whitelist()
 @validate_type
-def import_csv_data(filename: str):
+def import_csv_data(filename: str, tablename: str = ""):
     check_data_source_permission("uploads")
 
     file, ext = get_csv_file(filename)
     file_path = file.get_full_path()
-    table_name = file.file_name.split(".")[0]
-    table_name = frappe.scrub(table_name)
+    table_name = frappe.scrub(tablename) if tablename else frappe.scrub(file.file_name.split(".")[0])
 
-    if not frappe.db.exists("Insights Data Source v3", "uploads"):
-        uploads = frappe.new_doc("Insights Data Source v3")
-        uploads.name = "uploads"
-        uploads.title = "Uploads"
-        uploads.database_type = "DuckDB"
-        uploads.database_name = "insights_file_uploads"
-        uploads.owner = "Administrator"
-        uploads.status = "Active"
-        uploads.db_insert()
-
+    create_uploads_if_not_exists()
     ds = frappe.get_doc("Insights Data Source v3", "uploads")
-    db = get_duckdb_connection(ds, read_only=False)
+    private_folder = os.path.realpath(frappe.utils.get_files_path(is_private=1))
 
+    db = get_duckdb_connection(ds, read_only=False, allowed_dir=private_folder)
     try:
         if ext in ["xlsx"]:
             table = db.read_xlsx(file_path)
-            db.create_table(table_name, table, overwrite=True)
+        elif ext in ["json", "jsonl"]:
+            table = db.read_json(file_path)
         else:
             table = db.read_csv(file_path, table_name=table_name)
-            db.create_table(table_name, table, overwrite=True)
+        db.create_table(table_name, table, overwrite=True)
     except Exception as e:
         frappe.log_error(e)
         if ext in ["xlsx"]:
             frappe.throw(
                 "Failed to read Excel data from uploaded file. Please ensure the file is a valid Excel format and try again."
+            )
+        elif ext in ["json", "jsonl"]:
+            frappe.throw(
+                "Failed to read JSON data from uploaded file. Please ensure the file is a valid JSON or JSONL format and try again."
             )
         else:
             frappe.throw("Failed to read CSV data from uploaded file. Please try again.")

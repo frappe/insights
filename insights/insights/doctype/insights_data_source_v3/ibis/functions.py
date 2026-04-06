@@ -307,6 +307,19 @@ def if_else(condition: ir.BooleanValue, true_value: ir.Value, false_value: ir.Va
     return ibis.cases((condition, true_value), else_=false_value)
 
 
+def one_if(condition: ir.BooleanValue):
+    """
+    def one_if(condition)
+
+    Convert a boolean condition to 1 or 0.
+
+    Examples:
+    - one_if(status == 'Active')
+    - one_if(age > 18)
+    """
+    return if_else(condition, 1, 0)
+
+
 def case(condition: ir.BooleanValue, value: ir.Value, *args: tuple[ir.BooleanValue, ir.Value]):
     """
     def case(condition, value, *args)
@@ -1233,8 +1246,13 @@ def fiscal_year_start(column: ir.DateValue):
     - fiscal_year_start(order_date)
     """
 
-    fiscal_year_start_month = 4
-    fiscal_year_start_day = 1
+    fy_start = frappe.db.get_single_value("Insights Settings", "fiscal_year_start")
+    if not fy_start:
+        from datetime import date
+
+        fy_start = date(date.today().year - 1, 4, 1)
+    fiscal_year_start_month = fy_start.month
+    fiscal_year_start_day = fy_start.day
 
     year = column.year()
     month = column.month()

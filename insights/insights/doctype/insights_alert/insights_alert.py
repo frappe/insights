@@ -45,13 +45,20 @@ class InsightsAlert(Document):
         if self.disabled:
             return
 
+        if self.query:
+            self.has_query_permission()
+
         try:
             self.evaluate_condition()
         except Exception as e:
             frappe.throw(f"Invalid condition: {e}")
 
+    def has_query_permission(self):
+        if not frappe.has_permission("Insights Query v3", "read", self.query):
+            frappe.throw("You do not have permission to access this query")
+
     @frappe.whitelist()
-    def send_alert(self, force=False):
+    def send_alert(self, force: bool = False):
         results = self.evaluate_condition()
         if not results and not force:
             return
@@ -89,7 +96,7 @@ class InsightsAlert(Document):
         message_md = re.sub(rows_pattern, "{{ datatable }}", self.message)
 
         context = self.get_message_context()
-        message_md = frappe.render_template(message_md, context=context)
+        message_md = render_template_restricted(message_md, context)
         if self.channel == "Telegram":
             return message_md
 
@@ -171,9 +178,7 @@ def send_alerts():
 
 class TelegramAlert:
     def __init__(self, chat_id):
-        self.token = frappe.get_single("Insights Settings").get_password(
-            "telegram_api_token"
-        )
+        self.token = frappe.get_single("Insights Settings").get_password("telegram_api_token")
         if not self.token:
             frappe.throw("Telegram Bot Token not set in Insights Settings")
 
@@ -189,3 +194,29 @@ class TelegramAlert:
     @property
     def bot(self):
         return telegram.Bot(token=self.token)
+
+
+def render_template_restricted(template: str, context: dict) -> str:
+    """Render a Jinja template with a restricted sandbox environment.
+
+    Only allows access to explicitly passed context variables and basic filters.
+    Does not expose frappe utilities or other globals.
+
+    Uses the same sandboxed environment as frappe.render_template but without
+    the get_safe_globals() that would expose frappe internals.
+    """
+    try:
+        from frappe.utils.jinja import _get_jenv
+
+        base_jenv = _get_jenv()
+        jenv = base_jenv.overlay()
+        jenv.filters = base_jenv.filters.copy()
+
+    except ImportError:
+        # fallback for v15
+        from frappe.utils.jinja import get_jenv
+
+        jenv = get_jenv()
+
+    compiled_template = jenv.from_string(template)
+    return compiled_template.render(context)

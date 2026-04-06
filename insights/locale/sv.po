@@ -1,0 +1,3260 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: frappe\n"
+"Report-Msgid-Bugs-To: hello@frappe.io\n"
+"POT-Creation-Date: 2026-03-22 09:44+0000\n"
+"PO-Revision-Date: 2026-03-23 13:23\n"
+"Last-Translator: hello@frappe.io\n"
+"Language-Team: Swedish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: frappe\n"
+"X-Crowdin-Project-ID: 639578\n"
+"X-Crowdin-Language: sv-SE\n"
+"X-Crowdin-File: /[frappe.insights] develop/insights/locale/main.pot\n"
+"X-Crowdin-File-ID: 152\n"
+"Language: sv_SE\n"
+
+#. Option for the 'Cardinality' (Select) field in DocType 'Insights Table Link'
+#: insights/insights/doctype/insights_table_link/insights_table_link.json
+msgid "1:1"
+msgstr "1:1"
+
+#. Option for the 'Cardinality' (Select) field in DocType 'Insights Table Link'
+#: insights/insights/doctype/insights_table_link/insights_table_link.json
+msgid "1:N"
+msgstr "1:N"
+
+#. Label of the api_configuration_section (Section Break) field in DocType
+#. 'Insights Data Source v3'
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "API Configuration"
+msgstr "API Konfiguration"
+
+#. Option for the 'Authentication Type' (Select) field in DocType 'Insights
+#. Data Source v3'
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "API Key / Bearer Token"
+msgstr "API Nyckel / Bärartoken"
+
+#. Label of the api_password (Password) field in DocType 'Insights Data Source
+#. v3'
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "API Password"
+msgstr "API Lösenord"
+
+#. Label of the api_token (Password) field in DocType 'Insights Data Source v3'
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "API Token"
+msgstr "API Token"
+
+#. Label of the api_username (Data) field in DocType 'Insights Data Source v3'
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "API Username"
+msgstr "API Användarnamn"
+
+#: frontend/src2/query/components/FormatRule.vue:203
+msgid "Above average"
+msgstr "Över genomsnittet"
+
+#. Option for the 'Status' (Select) field in DocType 'Insights User Invitation'
+#: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
+msgid "Accepted"
+msgstr "Accepterad"
+
+#. Label of the accepted_at (Datetime) field in DocType 'Insights User
+#. Invitation'
+#: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
+msgid "Accepted At"
+msgstr "Accepterad"
+
+#: frontend/src2/workbook/WorkbookList.vue:47
+msgid "Access"
+msgstr "Åtkomst"
+
+#: frontend/src2/settings/Settings.vue:10
+msgid "Account"
+msgstr "Konto"
+
+#. Label of the if_exists (Select) field in DocType 'Insights Table Import'
+#: insights/insights/doctype/insights_table_import/insights_table_import.json
+msgid "Action if table exists"
+msgstr "Åtgärd om tabell finns"
+
+#. Option for the 'Status' (Select) field in DocType 'Insights Data Source'
+#. Option for the 'Status' (Select) field in DocType 'Insights Data Source v3'
+#: insights/insights/doctype/insights_data_source/insights_data_source.json
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "Active"
+msgstr "Aktiv"
+
+#: frontend/src2/dashboard/DashboardChartSelectorDialog.vue:67
+msgid "Add"
+msgstr "Lägg till"
+
+#: frontend/src2/data_source/ConnectClickhouseDialog.vue:106
+#: frontend/src2/data_source/ConnectDuckDBDialog.vue:77
+#: frontend/src2/data_source/ConnectMariaDBDialog.vue:106
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:114
+msgid "Add Data Source"
+msgstr "Lägg till Datakälla"
+
+#: frontend/src2/query/components/FiltersSelector.vue:137
+msgid "Add Filter"
+msgstr "Lägg till Filter"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:60
+msgid "Add New Column"
+msgstr "Lägg till ny Kolumn"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:121
+msgid "Add Operation"
+msgstr "Lägg till Åtgärd"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:61
+msgid "Add a new column based on existing columns"
+msgstr "Lägg till ny kolumn baserat på befintliga kolumner"
+
+#: frontend/src2/query/components/ColumnsSelectorDialog.vue:83
+#: frontend/src2/query/components/ColumnsSelectorDialog.vue:92
+msgid "Add column"
+msgstr "Lägg till kolumn"
+
+#. Label of the aggregation (Data) field in DocType 'Insights Query Column'
+#: insights/insights/doctype/insights_query_column/insights_query_column.json
+msgid "Aggregation"
+msgstr "Aggregation"
+
+#. Label of the aggregation_condition (Code) field in DocType 'Insights Query
+#. Column'
+#: insights/insights/doctype/insights_query_column/insights_query_column.json
+msgid "Aggregation Condition"
+msgstr "Aggregation Villkor"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:70
+msgid "Alert Created"
+msgstr "Avisering Skapad"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:98
+msgid "Alert Disabled"
+msgstr "Avisering Inaktiverad"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:98
+msgid "Alert Enabled"
+msgstr "Avisering Aktiverad"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:144
+msgid "Alert Name"
+msgstr "Avisering Namn"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:87
+msgid "Alert Sent"
+msgstr "Avisering Skickad"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:70
+msgid "Alert Updated"
+msgstr "Avisering Uppdaterad"
+
+#: insights/insights/doctype/insights_alert/insights_alert.js:12
+msgid "Alert sent"
+msgstr "Avisering skickad"
+
+#: frontend/src2/query/components/QueryAlertsDialog.vue:95
+msgid "Alerts"
+msgstr "Aviseringar"
+
+#. Label of the allow_subquery (Check) field in DocType 'Insights Settings'
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Allow Subquery"
+msgstr "Tillåt Underfråga"
+
+#. Label of the allow_imports (Check) field in DocType 'Insights Data Source'
+#: insights/insights/doctype/insights_data_source/insights_data_source.json
+msgid "Allow Table Import"
+msgstr "Tillåt Tabell Import"
+
+#. Label of the allowed_origins (Data) field in DocType 'Insights Settings'
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Allowed Origins"
+msgstr "Tillåtna Ursprung"
+
+#: frontend/src2/charts/components/FunnelChartConfigForm.vue:58
+msgid "Alternate"
+msgstr "Alternativ"
+
+#: frontend/src2/query/components/FormatRule.vue:161
+msgid "Amber"
+msgstr "Bärnsten"
+
+#. Label of the amended_from (Link) field in DocType 'Insights Table Import'
+#: insights/insights/doctype/insights_table_import/insights_table_import.json
+msgid "Amended From"
+msgstr "Ändrad Från"
+
+#: frontend/src2/dashboard/DashboardShareDialog.vue:110
+msgid "Anyone in the organization can view"
+msgstr "Alla i organisationen kan visa"
+
+#: frontend/src2/dashboard/DashboardShareDialog.vue:106
+msgid "Anyone with the link can view"
+msgstr "Alla med länken kan visa"
+
+#. Option for the 'Action if table exists' (Select) field in DocType 'Insights
+#. Table Import'
+#: insights/insights/doctype/insights_table_import/insights_table_import.json
+msgid "Append"
+msgstr "Bifoga"
+
+#: frontend/src2/query/components/UnionSelectorDialog.vue:116
+msgid "Append Rows"
+msgstr "Lägga till Rader"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:54
+msgid "Append Table"
+msgstr "Lägg till Tabell"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:55
+msgid "Append this table with another table or query"
+msgstr "Lägg till denna tabell med annan tabell eller fråga"
+
+#: frontend/src2/query/components/FiltersSelector.vue:145
+msgid "Apply Filters"
+msgstr "Tillämpa Filter"
+
+#. Label of the apply_user_permissions (Check) field in DocType 'Insights
+#. Settings'
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Apply User Permissions"
+msgstr "Tillämpa Användarbehörigheter"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:73
+msgid "Apply a custom operation using python script"
+msgstr "Tillämpa anpassad åtgärd med hjälp av python skript"
+
+#: frontend/src2/components/UserDropdown.vue:131
+msgid "Are you sure you want to log out?"
+msgstr "Är du säker på att du vill logga ut?"
+
+#: frontend/src2/components/UserDropdown.vue:81
+msgid "Are you sure you want to login to your Frappe Cloud dashboard?"
+msgstr "Är du säker på att du vill logga in på din Översikt Panel i Frappe Cloud?"
+
+#. Label of the api_authentication_type (Select) field in DocType 'Insights
+#. Data Source v3'
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "Authentication Type"
+msgstr "Autentisering Typ"
+
+#. Label of the auto_execute_query (Check) field in DocType 'Insights Settings'
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Auto Execute Query"
+msgstr "Automatisk Exekvera Fråga"
+
+#. Description of the 'Vertical Compact Layout' (Check) field in DocType
+#. 'Insights Dashboard v3'
+#: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
+msgid "Automatically arrange cards vertically to fill empty spaces"
+msgstr "Automatiskt arrangera kort vertikalt för att fylla tomma utrymmen"
+
+#: frontend/src2/charts/components/MeasurePicker.vue:94
+msgid "Average of..."
+msgstr "Genomsnitt av..."
+
+#. Label of the api_base_url (Data) field in DocType 'Insights Data Source v3'
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "Base URL"
+msgstr "Bas URL"
+
+#. Option for the 'Authentication Type' (Select) field in DocType 'Insights
+#. Data Source v3'
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "Basic Authentication"
+msgstr "Grundläggande Autentisering"
+
+#. Label of the batch_size (Int) field in DocType 'Insights Table Import Log'
+#: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
+msgid "Batch Size"
+msgstr "Parti Kvantitet"
+
+#. Label of the before_import_script (Code) field in DocType 'Insights Table
+#. v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Before Import Script"
+msgstr "Före Import Skript"
+
+#: frontend/src2/query/components/FormatRule.vue:204
+msgid "Below average"
+msgstr "Under genomsnittet"
+
+#. Option for the 'Database Type' (Select) field in DocType 'Insights Data
+#. Source v3'
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "BigQuery"
+msgstr "BigQuery"
+
+#. Label of the bigquery_configuration_section (Section Break) field in DocType
+#. 'Insights Data Source v3'
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "BigQuery Configuration"
+msgstr "BigQuery Konfiguration"
+
+#. Label of the bigquery_dataset_id (Data) field in DocType 'Insights Data
+#. Source v3'
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "BigQuery Dataset ID"
+msgstr "BigQuery Datauppsättning ID"
+
+#. Label of the bigquery_project_id (Data) field in DocType 'Insights Data
+#. Source v3'
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "BigQuery Project ID"
+msgstr "BigQuery Projekt ID"
+
+#. Label of the bigquery_service_account_key (JSON) field in DocType 'Insights
+#. Data Source v3'
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "BigQuery Service Account Key (JSON)"
+msgstr "BigQuery Service Konto Nyckel (JSON)"
+
+#: frontend/src2/charts/components/DonutChartConfigForm.vue:58
+msgid "Bottom"
+msgstr "Botten"
+
+#: frontend/src2/query/components/FormatRule.vue:202
+msgid "Bottom N percent"
+msgstr "Nedersta N procent"
+
+#: frontend/src2/query/components/FormatRule.vue:200
+msgid "Bottom N values"
+msgstr "Nedersta N värden"
+
+#: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:10
+msgid "Bulk Enqueue"
+msgstr "Mass Kö"
+
+#: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:49
+msgid "Bulk Enqueue Import Job"
+msgstr "Mass Kö Import Jobb"
+
+#: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:24
+#: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:34
+msgid "Bulk Enqueue Progress"
+msgstr "Mass Kö Förlopp"
+
+#: frontend/src2/components/ExportDialog.vue:46
+msgid "CSV"
+msgstr "CSV"
+
+#. Label of the query_result_expiry (Int) field in DocType 'Insights Settings'
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Cache Query Results For (Minutes)"
+msgstr "Cache Fråga Resultat för (Minuter)"
+
+#: frontend/src2/workbook/WorkbookShareDialog.vue:29
+#: frontend/src2/workbook/WorkbookShareDialog.vue:128
+#: frontend/src2/workbook/WorkbookShareDialog.vue:183
+msgid "Can Edit"
+msgstr "Kan Redigera"
+
+#: frontend/src2/workbook/WorkbookShareDialog.vue:34
+#: frontend/src2/workbook/WorkbookShareDialog.vue:124
+#: frontend/src2/workbook/WorkbookShareDialog.vue:183
+msgid "Can View"
+msgstr "Kan Visa"
+
+#: frontend/src2/charts/components/RegionMappingDialog.vue:312
+#: frontend/src2/components/ExportDialog.vue:77
+#: frontend/src2/dashboard/DashboardChartSelectorDialog.vue:73
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:109
+#: frontend/src2/dashboard/DashboardText.vue:37
+#: frontend/src2/query/components/ColumnsSelectorDialog.vue:71
+#: frontend/src2/query/components/JoinSelectorDialog.vue:371
+#: frontend/src2/query/components/UnionSelectorDialog.vue:152
+msgid "Cancel"
+msgstr "Annullera"
+
+#. Label of the cardinality (Select) field in DocType 'Insights Table Link'
+#: insights/insights/doctype/insights_table_link/insights_table_link.json
+msgid "Cardinality"
+msgstr "Kardinalitet"
+
+#. Label of the channel (Select) field in DocType 'Insights Alert'
+#: frontend/src2/query/components/AlertSetupDialog.vue:171
+#: insights/insights/doctype/insights_alert/insights_alert.json
+msgid "Channel"
+msgstr "Skicka Med"
+
+#. Label of the chart (Link) field in DocType 'Insights Dashboard Chart v3'
+#. Label of the chart (Link) field in DocType 'Insights Query'
+#: insights/insights/doctype/insights_dashboard_chart_v3/insights_dashboard_chart_v3.json
+#: insights/insights/doctype/insights_query/insights_query.json
+msgid "Chart"
+msgstr "Diagram"
+
+#. Label of the chart_type (Data) field in DocType 'Insights Chart'
+#. Label of the chart_type (Data) field in DocType 'Insights Chart v3'
+#: insights/insights/doctype/insights_chart/insights_chart.json
+#: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
+msgid "Chart Type"
+msgstr "Diagram Typ"
+
+#: frontend/src2/workbook/WorkbookSidebar.vue:57
+msgid "Charts"
+msgstr "Diagram"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:154
+msgid "Check once a day"
+msgstr "Kontroll en gång om dagen"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:156
+msgid "Check once a month"
+msgstr "Kontroll en gång i månaden"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:155
+msgid "Check once a week"
+msgstr "Kontroll en gång i veckan"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:153
+msgid "Check once an hour"
+msgstr "Kontroll en gång i timmen"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:36
+msgid "Choose Columns"
+msgstr "Välj Kolumner"
+
+#: frontend/src2/query/components/FiltersSelector.vue:143
+msgid "Clear"
+msgstr "Rensa"
+
+#. Option for the 'Database Type' (Select) field in DocType 'Insights Data
+#. Source v3'
+#: frontend/src2/data_source/DataSourceList.vue:58
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "ClickHouse"
+msgstr "ClickHouse"
+
+#: frontend/src2/query/components/source_selector/SourceSelectorDialog.vue:130
+msgid "Close"
+msgstr "Stäng"
+
+#: frontend/src2/components/AppSidebar.vue:26
+msgid "Collapse"
+msgstr "Fäll In"
+
+#: frontend/src2/query/components/FormatRule.vue:502
+msgid "Color"
+msgstr "Färg"
+
+#: frontend/src2/query/components/FormattingSelector.vue:60
+msgid "Color Scale"
+msgstr "Färg Skala"
+
+#. Label of the label (Data) field in DocType 'Insights Query Column'
+#. Label of the column (Data) field in DocType 'Insights Table Column'
+#: frontend/src2/components/DataTableColumn.vue:42
+#: frontend/src2/query/components/FormatRule.vue:329
+#: frontend/src2/query/components/JoinSelectorDialog.vue:269
+#: frontend/src2/query/components/JoinSelectorDialog.vue:282
+#: insights/insights/doctype/insights_query_column/insights_query_column.json
+#: insights/insights/doctype/insights_table_column/insights_table_column.json
+msgid "Column"
+msgstr "Kolumn"
+
+#. Label of the columns (Table) field in DocType 'Insights Query'
+#. Label of the columns (Table) field in DocType 'Insights Table'
+#. Label of the columns (Table) field in DocType 'Insights Table Import'
+#: frontend/src2/query/components/JoinSelectorDialog.vue:353
+#: insights/insights/doctype/insights_query/insights_query.json
+#: insights/insights/doctype/insights_table/insights_table.json
+#: insights/insights/doctype/insights_table_import/insights_table_import.json
+msgid "Columns"
+msgstr "Kolumner"
+
+#. Description of the 'Allowed Origins' (Data) field in DocType 'Insights
+#. Settings'
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Comma seperated URLs to whitelist for embedding charts & dashboards"
+msgstr "Kommaseparerade URL: er till vitlistan för att bädda in diagram & översikt paneler"
+
+#: frontend/src2/dashboard/DashboardBuilder.vue:149
+msgid "Compact Layout"
+msgstr "Kompakt Layout"
+
+#. Option for the 'Status' (Select) field in DocType 'Insights Table Import
+#. Log'
+#: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
+msgid "Completed"
+msgstr "Klar"
+
+#. Label of the condition (Code) field in DocType 'Insights Alert'
+#: frontend/src2/query/components/FormatRule.vue:433
+#: frontend/src2/query/components/FormatRule.vue:452
+#: insights/insights/doctype/insights_alert/insights_alert.json
+msgid "Condition"
+msgstr "Villkor"
+
+#. Label of the config (JSON) field in DocType 'Insights Chart v3'
+#. Label of the config (JSON) field in DocType 'Insights Query Chart'
+#: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
+#: insights/insights/doctype/insights_query_chart/insights_query_chart.json
+msgid "Config"
+msgstr "Konfiguration"
+
+#: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:132
+#: frontend/src2/components/ConfirmDialog.vue:26
+#: frontend/src2/components/UserDropdown.vue:84
+#: frontend/src2/query/components/ColumnsSelectorDialog.vue:65
+#: frontend/src2/query/components/JoinSelectorDialog.vue:374
+#: frontend/src2/query/components/UnionSelectorDialog.vue:155
+#: frontend/src2/query/components/source_selector/SourceSelectorDialog.vue:132
+msgid "Confirm"
+msgstr "Bekräfta"
+
+#: frontend/src2/data_source/ConnectClickhouseDialog.vue:77
+#: frontend/src2/data_source/ConnectDuckDBDialog.vue:47
+#: frontend/src2/data_source/ConnectMariaDBDialog.vue:77
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:85
+msgid "Connect"
+msgstr "Anslut"
+
+#: frontend/src2/data_source/ConnectClickhouseDialog.vue:120
+msgid "Connect to ClickHouse"
+msgstr "Anslut till ClickHouse"
+
+#: frontend/src2/data_source/DataSourceList.vue:60
+msgid "Connect to ClickHouse database"
+msgstr "Anslut till ClickHouse databas"
+
+#: frontend/src2/data_source/ConnectDuckDBDialog.vue:95
+msgid "Connect to DuckDB"
+msgstr "Anslut till DuckDB"
+
+#: frontend/src2/data_source/DataSourceList.vue:69
+msgid "Connect to DuckDB database"
+msgstr "Anslut till DuckDB databas"
+
+#: frontend/src2/data_source/ConnectMariaDBDialog.vue:120
+msgid "Connect to MariaDB"
+msgstr "Anslut till MariaDB"
+
+#: frontend/src2/data_source/DataSourceList.vue:42
+msgid "Connect to MariaDB database"
+msgstr "Anslut till MariaDB databas"
+
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:128
+msgid "Connect to PostgreSQL"
+msgstr "Anslut till PostgreSQL"
+
+#: frontend/src2/data_source/DataSourceList.vue:51
+msgid "Connect to PostgreSQL database"
+msgstr "Anslut till PostgreSQL databas"
+
+#. Label of the connection_string (Small Text) field in DocType 'Insights Data
+#. Source'
+#. Label of the connection_string (Text) field in DocType 'Insights Data Source
+#. v3'
+#: insights/insights/doctype/insights_data_source/insights_data_source.json
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "Connection String"
+msgstr "Anslutning Sträng"
+
+#. Label of the content (Code) field in DocType 'Insights Notebook Page'
+#: frontend/src2/dashboard/DashboardText.vue:45
+#: insights/insights/doctype/insights_notebook_page/insights_notebook_page.json
+msgid "Content"
+msgstr "Innehåll "
+
+#: frontend/src2/components/UserDropdown.vue:57
+msgid "Continue"
+msgstr "Fortsätt"
+
+#: frontend/src2/query/components/FiltersSelector.vue:113
+msgid "Convert to Expression"
+msgstr "Konvertera till Uttryck"
+
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:50
+#: frontend/src2/workbook/WorkbookNavbarActions.vue:59
+msgid "Copy JSON"
+msgstr "Kopiera JSON"
+
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:37
+msgid "Copy Query"
+msgstr "Kopiera Fråga"
+
+#: frontend/src2/charts/components/MeasurePicker.vue:92
+msgid "Count of..."
+msgstr "Antal..."
+
+#: frontend/src2/teams/CreateTeamDialog.vue:18
+msgid "Create"
+msgstr "Skapa"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:129
+msgid "Create Alert"
+msgstr "Skapa Avisering"
+
+#: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:97
+msgid "Create Measure"
+msgstr "Skapa Åtgärd"
+
+#: frontend/src2/settings/PermissionsSettings.vue:67
+#: frontend/src2/teams/CreateTeamDialog.vue:15
+#: frontend/src2/teams/TeamList.vue:65
+msgid "Create Team"
+msgstr "Skapa Team"
+
+#: frontend/src2/dashboard/DashboardList.vue:96
+msgid "Create a dashboard in your workbook to view it here."
+msgstr "Skapa en översikt panel i arbetsbok för att visa den här."
+
+#: frontend/src2/data_source/DataSourceList.vue:119
+msgid "Created"
+msgstr "Skapad"
+
+#: frontend/src2/query/components/QueryAlertsDialog.vue:52
+msgid "Created By"
+msgstr "Skapad Av"
+
+#: frontend/src2/teams/TeamList.vue:48
+msgid "Creation"
+msgstr "Skapande"
+
+#. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
+#: frontend/src2/query/components/AlertSetupDialog.vue:157
+#: frontend/src2/query/components/AlertSetupDialog.vue:163
+#: insights/insights/doctype/insights_alert/insights_alert.json
+msgid "Cron"
+msgstr "Cron"
+
+#. Label of the cron_format (Data) field in DocType 'Insights Alert'
+#: insights/insights/doctype/insights_alert/insights_alert.json
+msgid "Cron Format"
+msgstr "Cron Format"
+
+#. Description of the 'Schedule (Cron)' (Data) field in DocType 'Insights Table
+#. Import Job'
+#: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
+msgid "Cron expression to schedule the script. Note: The scheduler checks for jobs every hour."
+msgstr "Cron uttryck för att schemalägga skript. Obs: Schemaläggare söker efter jobb varje timme."
+
+#. Option for the 'Type' (Select) field in DocType 'Insights Query Transform'
+#: insights/insights/doctype/insights_query_transform/insights_query_transform.json
+msgid "CumulativeSum"
+msgstr "Kumulativ Summa"
+
+#. Label of the custom_condition (Check) field in DocType 'Insights Alert'
+#: insights/insights/doctype/insights_alert/insights_alert.json
+msgid "Custom Condition"
+msgstr "Anpassat Tillstånd"
+
+#. Label of the api_custom_headers (JSON) field in DocType 'Insights Data
+#. Source v3'
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "Custom Headers"
+msgstr "Anpassade Rubriker"
+
+#: frontend/src2/query/components/JoinSelectorDialog.vue:302
+msgid "Custom Join Condition"
+msgstr "Anpassad Sammanfogning Villkor"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:72
+msgid "Custom Operation"
+msgstr "Anpassad Åtgärd"
+
+#. Description of the 'Custom Headers' (JSON) field in DocType 'Insights Data
+#. Source v3'
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "Custom headers for API requests (non-sensitive data only)"
+msgstr "Anpassade rubriker för API förfrågningar (endast icke-känsliga data)"
+
+#. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
+#: insights/insights/doctype/insights_alert/insights_alert.json
+msgid "Daily"
+msgstr "Dagsvis"
+
+#: frontend/src2/dashboard/DashboardShareDialog.vue:48
+msgid "Dashboard Access Updated"
+msgstr "Översikt Panel Åtkomst Uppdaterad"
+
+#: frontend/src2/components/AppSidebar.vue:74
+#: frontend/src2/dashboard/Dashboard.vue:46
+#: frontend/src2/workbook/WorkbookSidebar.vue:75
+msgid "Dashboards"
+msgstr "Översikt Paneler"
+
+#. Label of the data_backup (JSON) field in DocType 'Insights Workbook'
+#: insights/insights/doctype/insights_workbook/insights_workbook.json
+msgid "Data Backup"
+msgstr "Data Säkerhetskopia"
+
+#. Label of the data_query (Link) field in DocType 'Insights Chart v3'
+#: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
+msgid "Data Query"
+msgstr "Data Fråga"
+
+#. Label of the data_source (Link) field in DocType 'Insights Query'
+#. Label of the data_source (Data) field in DocType 'Insights Query Execution
+#. Log'
+#. Label of the data_source (Link) field in DocType 'Insights Table'
+#. Label of the data_source (Link) field in DocType 'Insights Table Import'
+#. Label of the data_source (Link) field in DocType 'Insights Table Import Job'
+#. Label of the data_source (Data) field in DocType 'Insights Table Import Log'
+#. Label of the data_source (Link) field in DocType 'Insights Table Link v3'
+#. Label of the data_source (Link) field in DocType 'Insights Table v3'
+#: frontend/src2/data_store/DataStoreList.vue:40
+#: frontend/src2/query/components/source_selector/DataSourceTableList.vue:34
+#: insights/insights/doctype/insights_query/insights_query.json
+#: insights/insights/doctype/insights_query_execution_log/insights_query_execution_log.json
+#: insights/insights/doctype/insights_table/insights_table.json
+#: insights/insights/doctype/insights_table_import/insights_table_import.json
+#: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
+#: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
+#: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Data Source"
+msgstr "Data Källa"
+
+#: frontend/src2/components/AppSidebar.vue:84
+#: frontend/src2/data_source/DataSourceList.vue:146
+#: frontend/src2/data_source/DataSourceTable.vue:25
+#: frontend/src2/data_source/DataSourceTableList.vue:65
+msgid "Data Sources"
+msgstr "Data Källor"
+
+#: frontend/src2/data_source/DataSourceList.vue:141
+msgid "Data Sources | Insights"
+msgstr "Datakällor | Insikter"
+
+#: frontend/src2/components/AppSidebar.vue:89
+#: frontend/src2/data_store/DataStoreList.vue:75
+#: frontend/src2/settings/Settings.vue:43
+msgid "Data Store"
+msgstr "Data Lagring"
+
+#: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:120
+msgid "Data Type"
+msgstr "Datatyp"
+
+#. Option for the 'Type' (Select) field in DocType 'Insights Data Source v3'
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "Database"
+msgstr "Databas"
+
+#. Label of the database_name (Data) field in DocType 'Insights Data Source'
+#. Label of the database_name (Data) field in DocType 'Insights Data Source v3'
+#: frontend/src2/data_source/ConnectClickhouseDialog.vue:49
+#: frontend/src2/data_source/ConnectMariaDBDialog.vue:49
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:50
+#: insights/insights/doctype/insights_data_source/insights_data_source.json
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "Database Name"
+msgstr "Databas Namn"
+
+#. Label of the database_type (Select) field in DocType 'Insights Data Source'
+#. Label of the database_type (Select) field in DocType 'Insights Data Source
+#. v3'
+#: insights/insights/doctype/insights_data_source/insights_data_source.json
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "Database Type"
+msgstr "Databas Typ"
+
+#. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
+#: insights/insights/doctype/insights_table_column/insights_table_column.json
+msgid "Date"
+msgstr "Datum"
+
+#: frontend/src2/query/components/FormatRule.vue:234
+msgid "Date Rules"
+msgstr "Datum Regler"
+
+#. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
+#: insights/insights/doctype/insights_table_column/insights_table_column.json
+msgid "Datetime"
+msgstr "Datum och Tid"
+
+#. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
+#: insights/insights/doctype/insights_table_column/insights_table_column.json
+msgid "Decimal"
+msgstr "Decimal"
+
+#: frontend/src2/dashboard/DashboardItemActions.vue:19
+#: frontend/src2/workbook/WorkbookNavbarActions.vue:65
+msgid "Delete"
+msgstr "Ta bort"
+
+#: frontend/src2/components/DemoDataBanner.vue:26
+#: frontend/src2/settings/GeneralSettings.vue:22
+msgid "Demo Data Ready"
+msgstr "Demo Data Klar"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:123
+msgid "Disable Alert"
+msgstr "Inaktivera Avisering"
+
+#. Label of the disabled (Check) field in DocType 'Insights Alert'
+#: frontend/src2/query/components/QueryAlertsDialog.vue:44
+#: frontend/src2/settings/UsersSettings.vue:46
+#: frontend/src2/users/UserList.vue:46
+#: frontend/src2/workbook/WorkbookShareDialog.vue:120
+#: frontend/src2/workbook/WorkbookShareDialog.vue:136
+#: insights/insights/doctype/insights_alert/insights_alert.json
+msgid "Disabled"
+msgstr "Inaktiverad"
+
+#: frontend/src2/components/UserDropdown.vue:116
+msgid "Documentation"
+msgstr "Dokumentation"
+
+#: frontend/src2/charts/components/ChartShareDialog.vue:38
+#: frontend/src2/dashboard/DashboardShareDialog.vue:86
+#: frontend/src2/teams/ManageTeamDialog.vue:66
+msgid "Done"
+msgstr "Klart"
+
+#. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
+#: insights/insights/doctype/insights_table_import/insights_table_import.json
+msgid "Draft"
+msgstr "Utkast"
+
+#: frontend/src2/charts/components/DrillDown.vue:59
+msgid "Drill Down"
+msgstr "Visa Mer"
+
+#: frontend/src2/query/components/UnionSelectorDialog.vue:139
+msgid "Drop Duplicates"
+msgstr "Ta bort Dubbletter"
+
+#. Option for the 'Database Type' (Select) field in DocType 'Insights Data
+#. Source v3'
+#: frontend/src2/data_source/DataSourceList.vue:67
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "DuckDB"
+msgstr "DuckDB"
+
+#: frontend/src2/query/components/FiltersSelector.vue:120
+#: frontend/src2/workbook/WorkbookNavbarActions.vue:53
+msgid "Duplicate"
+msgstr "Kopiera"
+
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:39
+msgid "Duplicate Chart"
+msgstr "Duplicera Diagram"
+
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:32
+msgid "Duplicate Query"
+msgstr "Duplicera Fråga"
+
+#. Label of the time_taken (Int) field in DocType 'Insights Table Import Log'
+#: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
+msgid "Duration (Seconds)"
+msgstr "Varaktighet (sekunder)"
+
+#: frontend/src2/dashboard/DashboardItemActions.vue:14
+msgid "Edit"
+msgstr "Redigera"
+
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:100
+msgid "Edit Filter"
+msgstr "Redigera Filter"
+
+#: frontend/src2/dashboard/DashboardText.vue:24
+msgid "Edit Text"
+msgstr "Redigera Text"
+
+#. Option for the 'Channel' (Select) field in DocType 'Insights Alert'
+#. Label of the email (Data) field in DocType 'Insights User Invitation'
+#: frontend/src2/query/components/AlertSetupDialog.vue:174
+#: frontend/src2/settings/UsersSettings.vue:61
+#: frontend/src2/users/UserList.vue:61
+#: insights/insights/doctype/insights_alert/insights_alert.json
+#: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
+msgid "Email"
+msgstr "E-post"
+
+#. Label of the email_sent_at (Datetime) field in DocType 'Insights User
+#. Invitation'
+#: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
+msgid "Email Sent At"
+msgstr "E-post skickad Kl"
+
+#: frontend/src2/query/components/FiltersSelector.vue:134
+msgid "Empty - Click 'Add Filter' to add a filter"
+msgstr "Tomt - Klicka på \"Lägg till filter\" för att lägga till filter"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:123
+msgid "Enable Alert"
+msgstr "Aktivera Avisering"
+
+#. Label of the enable_data_store (Check) field in DocType 'Insights Settings'
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Enable Data Store"
+msgstr "Aktivera Data Lagring"
+
+#. Label of the enable_permissions (Check) field in DocType 'Insights Settings'
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Enable Permissions"
+msgstr "Aktivera Behörigheter"
+
+#. Label of the enable_stored_procedure_execution (Check) field in DocType
+#. 'Insights Data Source v3'
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "Enable Stored Procedure Execution"
+msgstr "Aktivera Lagrad Procedur Exekvering"
+
+#. Label of the enabled (Check) field in DocType 'Insights Table Import Job'
+#: frontend/src2/query/components/QueryAlertsDialog.vue:44
+#: frontend/src2/settings/UsersSettings.vue:46
+#: frontend/src2/users/UserList.vue:46
+#: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
+msgid "Enabled"
+msgstr "Aktiverad"
+
+#. Label of the ended_at (Datetime) field in DocType 'Insights Table Import
+#. Log'
+#: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
+msgid "Ended At"
+msgstr "Slutade Kl"
+
+#: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:6
+msgid "Enqueue"
+msgstr "Lägg i kö"
+
+#: frontend/src2/components/ExportDialog.vue:60
+msgid "Enter filename"
+msgstr "Ange filnamn"
+
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:122
+msgid "Enter filter label..."
+msgstr "Ange filter etikett..."
+
+#: frontend/src2/query/components/FormatRule.vue:443
+msgid "Enter text"
+msgstr "Ange text"
+
+#: frontend/src2/data_source/ConnectDuckDBDialog.vue:33
+msgid "Enter the URL of the DuckDB file"
+msgstr "Ange URL till DuckDB fil"
+
+#: frontend/src2/dashboard/DashboardText.vue:52
+msgid "Enter your text content here..."
+msgstr "Ange ditt textinnehåll här..."
+
+#. Label of the error (Text) field in DocType 'Insights Table Import'
+#. Label of the error (Code) field in DocType 'Insights Table Import Log'
+#: insights/insights/doctype/insights_table_import/insights_table_import.json
+#: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
+msgid "Error"
+msgstr "Fel"
+
+#: frontend/src2/components/ExportDialog.vue:47
+msgid "Excel"
+msgstr "Excel"
+
+#: frontend/src2/query/components/NativeQueryEditor.vue:132
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:69
+msgid "Execute"
+msgstr "Kör"
+
+#. Option for the 'Status' (Select) field in DocType 'Insights Query'
+#: insights/insights/doctype/insights_query/insights_query.json
+msgid "Execution Failed"
+msgstr "Exekvering Misslyckades"
+
+#. Option for the 'Status' (Select) field in DocType 'Insights Query'
+#: insights/insights/doctype/insights_query/insights_query.json
+msgid "Execution Successful"
+msgstr "Exekvering Lyckades"
+
+#. Label of the execution_time (Float) field in DocType 'Insights Query'
+#: insights/insights/doctype/insights_query/insights_query.json
+msgid "Execution Time (seconds)"
+msgstr "Exekvering Tid (sekunder)"
+
+#: frontend/src2/components/AppSidebar.vue:26
+msgid "Expand"
+msgstr "Expandera"
+
+#. Option for the 'Status' (Select) field in DocType 'Insights User Invitation'
+#: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
+msgid "Expired"
+msgstr "Utgått"
+
+#: frontend/src2/components/ExportDialog.vue:80
+msgid "Export"
+msgstr "Export"
+
+#: frontend/src2/components/ExportDialog.vue:35
+msgid "Export Data"
+msgstr "Data Export"
+
+#: frontend/src2/components/ExportDialog.vue:44
+msgid "Export Format"
+msgstr "Export Format"
+
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:27
+#: frontend/src2/dashboard/Dashboard.vue:61
+msgid "Export as PNG"
+msgstr "Exportera som PNG"
+
+#. Label of the expression (JSON) field in DocType 'Insights Query Column'
+#: insights/insights/doctype/insights_query_column/insights_query_column.json
+msgid "Expression"
+msgstr "Uttryck"
+
+#. Option for the 'Action if table exists' (Select) field in DocType 'Insights
+#. Table Import'
+#: insights/insights/doctype/insights_table_import/insights_table_import.json
+msgid "Fail"
+msgstr "Misslyckad "
+
+#. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
+#. Option for the 'Status' (Select) field in DocType 'Insights Table Import
+#. Log'
+#: insights/insights/doctype/insights_table_import/insights_table_import.json
+#: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
+msgid "Failed"
+msgstr "Misslyckad"
+
+#: frontend/src2/query/components/NativeQueryEditor.vue:52
+msgid "Failed to format SQL"
+msgstr "Misslyckades med att formatera SQL"
+
+#: frontend/src2/data_source/UploadCSVFileDialog.vue:71
+msgid "Failed to import table"
+msgstr "Misslyckades med att importera tabell"
+
+#: frontend/src2/data_source/UploadCSVFileDialog.vue:38
+msgid "Failed to process uploaded file"
+msgstr "Misslyckades med att bearbeta uppladdad fil"
+
+#: frontend/src2/components/DemoDataBanner.vue:33
+#: frontend/src2/settings/GeneralSettings.vue:29
+msgid "Failed to setup demo data"
+msgstr "Misslyckades med att konfigurera demodata"
+
+#: frontend/src2/dashboard/DashboardList.vue:61
+msgid "Favorites"
+msgstr "Favoriter"
+
+#: frontend/src2/query/components/NativeQueryEditor.vue:156
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:57
+#: frontend/src2/query/components/ScriptQueryEditor.vue:126
+msgid "Fetched from cache"
+msgstr "Hämtad från cache"
+
+#: frontend/src2/query/components/NativeQueryEditor.vue:159
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:60
+#: frontend/src2/query/components/ScriptQueryEditor.vue:127
+msgid "Fetched in {0}s"
+msgstr "Hämtad på {0}s"
+
+#: frontend/src2/data_source/ConnectDuckDBDialog.vue:28
+msgid "File URL"
+msgstr "Fil URL"
+
+#: frontend/src2/components/ExportDialog.vue:58
+msgid "Filename"
+msgstr "Filnamn"
+
+#: frontend/src2/query/components/FiltersSelectorDialog.vue:21
+msgid "Filter"
+msgstr "Filter"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:42
+msgid "Filter Rows"
+msgstr "Filter Rader"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:43
+msgid "Filter rows based on columns or expressions"
+msgstr "Filtrera rader baserat på kolumner eller uttryck"
+
+#. Label of the filters (JSON) field in DocType 'Insights Query'
+#: insights/insights/doctype/insights_query/insights_query.json
+msgid "Filters"
+msgstr "Filter"
+
+#. Label of the fiscal_year_start (Date) field in DocType 'Insights Settings'
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Fiscal Year Start"
+msgstr "Bokföringsår Start"
+
+#: insights/api/workbooks.py:241
+msgid "Folder and item must belong to the same workbook"
+msgstr "Mapp och artikel måste tillhöra samma arbetsbok"
+
+#: frontend/src2/dashboard/DashboardBuilder.vue:143
+msgid "Force Refresh"
+msgstr "Tvinga Uppdatering"
+
+#: frontend/src2/query/components/ScriptQueryEditor.vue:101
+msgid "Force Run"
+msgstr "Tvinga Exekvering"
+
+#. Label of the foreign_key (Data) field in DocType 'Insights Table Link'
+#: insights/insights/doctype/insights_table_link/insights_table_link.json
+msgid "Foreign Key"
+msgstr "Främmande Nyckel"
+
+#. Label of the foreign_table (Data) field in DocType 'Insights Table Link'
+#: insights/insights/doctype/insights_table_link/insights_table_link.json
+msgid "Foreign Table"
+msgstr "Främmande Tabell"
+
+#. Label of the foreign_table_label (Data) field in DocType 'Insights Table
+#. Link'
+#: insights/insights/doctype/insights_table_link/insights_table_link.json
+msgid "Foreign Table Label"
+msgstr "Främmande Tabell Etikett"
+
+#. Label of the format_option (Code) field in DocType 'Insights Query Column'
+#: insights/insights/doctype/insights_query_column/insights_query_column.json
+msgid "Format Option"
+msgstr "Format Alternativ"
+
+#: frontend/src2/query/components/NativeQueryEditor.vue:141
+msgid "Format SQL"
+msgstr "Format SQL"
+
+#: insights/config/desktop.py:11
+msgid "Frappe Insights"
+msgstr "Frappe Insights"
+
+#. Label of the frequency (Select) field in DocType 'Insights Alert'
+#: frontend/src2/query/components/AlertSetupDialog.vue:150
+#: insights/insights/doctype/insights_alert/insights_alert.json
+msgid "Frequency"
+msgstr "Intervall"
+
+#. Option for the 'Week Starts On' (Select) field in DocType 'Insights
+#. Settings'
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Friday"
+msgstr "Fredag"
+
+#: frontend/src2/settings/Settings.vue:23
+msgid "General"
+msgstr "Allmänt"
+
+#: frontend/src2/query/components/ViewSQLDialog.vue:16
+msgid "Generated SQL"
+msgstr "Genererad SQL"
+
+#: frontend/src2/query/components/FormatRule.vue:160
+msgid "Green"
+msgstr "Grön"
+
+#: frontend/src2/query/components/FormatRule.vue:213
+msgid "Green-Red"
+msgstr "Grön-Röd"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:66
+msgid "Group & Summarize"
+msgstr "Gruppera & Sammanfatta"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:67
+msgid "Group rows by columns and summarize the data"
+msgstr "Gruppera rader efter kolumner och sammanfatta data"
+
+#. Label of the http_headers (JSON) field in DocType 'Insights Data Source v3'
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "HTTP Headers"
+msgstr "HTTP Headers"
+
+#. Label of the hidden (Check) field in DocType 'Insights Table'
+#: insights/insights/doctype/insights_table/insights_table.json
+msgid "Hidden"
+msgstr "Dold "
+
+#: frontend/src2/query/components/FormattingSelector.vue:59
+msgid "Highlight Cell"
+msgstr "Markera Cell"
+
+#: frontend/src2/charts/components/SankeyChartConfigForm.vue:60
+msgid "Horizontal"
+msgstr "Horisontell"
+
+#. Label of the host (Data) field in DocType 'Insights Data Source'
+#. Label of the host (Data) field in DocType 'Insights Data Source v3'
+#: frontend/src2/data_source/ConnectClickhouseDialog.vue:33
+#: frontend/src2/data_source/ConnectMariaDBDialog.vue:33
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:34
+#: insights/insights/doctype/insights_data_source/insights_data_source.json
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "Host"
+msgstr "Värd"
+
+#. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
+#: insights/insights/doctype/insights_alert/insights_alert.json
+msgid "Hourly"
+msgstr "Timvis"
+
+#. Label of the item_id (Data) field in DocType 'Insights Dashboard Item'
+#: insights/insights/doctype/insights_dashboard_item/insights_dashboard_item.json
+msgid "ID"
+msgstr "ID"
+
+#: frontend/src2/data_store/ImportTableDialog.vue:93
+msgid "Import"
+msgstr "Importera"
+
+#: frontend/src2/data_source/UploadCSVFileDialog.vue:70
+msgid "Import Failed"
+msgstr "Importen misslyckades"
+
+#. Label of the import_job (Link) field in DocType 'Insights Table Import Log'
+#: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
+msgid "Import Job"
+msgstr "Importera Jobb"
+
+#. Label of the query (Code) field in DocType 'Insights Table Import Log'
+#: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
+msgid "Import Query"
+msgstr "Importera Fråga"
+
+#: frontend/src2/data_source/UploadCSVFileDialog.vue:95
+#: frontend/src2/data_store/DataStoreList.vue:61
+#: frontend/src2/data_store/DataStoreList.vue:79
+#: frontend/src2/data_store/ImportTableDialog.vue:59
+msgid "Import Table"
+msgstr "Importera Tabell"
+
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.js:9
+msgid "Import job has been queued"
+msgstr "Import Jobb är placerad i kö"
+
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.js:7
+msgid "Import to Warehouse"
+msgstr "Importera till Lager"
+
+#. Option for the 'Status' (Select) field in DocType 'Insights Table Import
+#. Log'
+#: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
+msgid "In Progress"
+msgstr "Pågående"
+
+#. Option for the 'Status' (Select) field in DocType 'Insights Data Source'
+#. Option for the 'Status' (Select) field in DocType 'Insights Data Source v3'
+#: insights/insights/doctype/insights_data_source/insights_data_source.json
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "Inactive"
+msgstr "Inaktiv"
+
+#: frontend/src2/charts/components/MapChartConfigForm.vue:55
+msgid "India"
+msgstr "Indien"
+
+#. Name of a role
+#: insights/insights/doctype/insights_alert/insights_alert.json
+#: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
+#: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+#: insights/insights/doctype/insights_folder/insights_folder.json
+#: insights/insights/doctype/insights_query_execution_log/insights_query_execution_log.json
+#: insights/insights/doctype/insights_query_result/insights_query_result.json
+#: insights/insights/doctype/insights_query_v3/insights_query_v3.json
+#: insights/insights/doctype/insights_settings/insights_settings.json
+#: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
+#: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+#: insights/insights/doctype/insights_team/insights_team.json
+#: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
+#: insights/insights/doctype/insights_workbook/insights_workbook.json
+msgid "Insights Admin"
+msgstr "Administratör"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_alert/insights_alert.json
+msgid "Insights Alert"
+msgstr "Avisering"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_chart/insights_chart.json
+msgid "Insights Chart"
+msgstr "Diagram"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
+msgid "Insights Chart v3"
+msgstr "Diagram v3"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_dashboard/insights_dashboard.json
+msgid "Insights Dashboard"
+msgstr "Översikt Panel"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_dashboard_chart_v3/insights_dashboard_chart_v3.json
+msgid "Insights Dashboard Chart v3"
+msgstr "Översikt Panel Diagram v3"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_dashboard_item/insights_dashboard_item.json
+msgid "Insights Dashboard Item"
+msgstr "Översikt Panel Artikel"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
+msgid "Insights Dashboard v3"
+msgstr "Översikt Panel v3"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_data_source/insights_data_source.json
+msgid "Insights Data Source"
+msgstr "Data Källa"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "Insights Data Source v3"
+msgstr "Data Källa v3"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_folder/insights_folder.json
+msgid "Insights Folder"
+msgstr "Mapp"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_notebook/insights_notebook.json
+msgid "Insights Notebook"
+msgstr "Anteckningsbok"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_notebook_page/insights_notebook_page.json
+msgid "Insights Notebook Page"
+msgstr "Anteckningsbok Sida"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_query/insights_query.json
+msgid "Insights Query"
+msgstr "Fråga"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_query_chart/insights_query_chart.json
+msgid "Insights Query Chart"
+msgstr "Fråga Diagram"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_query_column/insights_query_column.json
+msgid "Insights Query Column"
+msgstr "Fråga Kolumn"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_query_execution_log/insights_query_execution_log.json
+msgid "Insights Query Execution Log"
+msgstr "Fråga Exekvering Logg"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_query_result/insights_query_result.json
+msgid "Insights Query Result"
+msgstr "Fråga Resultat"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_query_table/insights_query_table.json
+msgid "Insights Query Table"
+msgstr "Fråga Tabell"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_query_transform/insights_query_transform.json
+msgid "Insights Query Transform"
+msgstr "Fråga Transformering"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_query_variable/insights_query_variable.json
+msgid "Insights Query Variable"
+msgstr "Fråga Variabel"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_query_v3/insights_query_v3.json
+msgid "Insights Query v3"
+msgstr "Fråga v3"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_resource_permission/insights_resource_permission.json
+msgid "Insights Resource Permission"
+msgstr "Resurs Behörighet"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_secret_key/insights_secret_key.json
+msgid "Insights Secret Key"
+msgstr "Hemlig Nyckel"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Insights Settings"
+msgstr "Inställningar"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_table/insights_table.json
+msgid "Insights Table"
+msgstr "Tabell"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_table_column/insights_table_column.json
+msgid "Insights Table Column"
+msgstr "Tabell Kolumn"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_table_import/insights_table_import.json
+msgid "Insights Table Import"
+msgstr "Tabell Import"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
+msgid "Insights Table Import Job"
+msgstr "Tabell Import Jobb"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
+msgid "Insights Table Import Log"
+msgstr "Tabell Import Logg"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_table_link/insights_table_link.json
+msgid "Insights Table Link"
+msgstr "Tabell Länk"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
+msgid "Insights Table Link v3"
+msgstr "Tabell Länk v3"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Insights Table v3"
+msgstr "Tabell v3"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_team/insights_team.json
+msgid "Insights Team"
+msgstr "Team"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_team_member/insights_team_member.json
+msgid "Insights Team Member"
+msgstr "Team Medlem"
+
+#. Name of a role
+#: insights/insights/doctype/insights_alert/insights_alert.json
+#: insights/insights/doctype/insights_chart/insights_chart.json
+#: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
+#: insights/insights/doctype/insights_dashboard/insights_dashboard.json
+#: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
+#: insights/insights/doctype/insights_data_source/insights_data_source.json
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+#: insights/insights/doctype/insights_folder/insights_folder.json
+#: insights/insights/doctype/insights_notebook/insights_notebook.json
+#: insights/insights/doctype/insights_notebook_page/insights_notebook_page.json
+#: insights/insights/doctype/insights_query/insights_query.json
+#: insights/insights/doctype/insights_query_chart/insights_query_chart.json
+#: insights/insights/doctype/insights_query_execution_log/insights_query_execution_log.json
+#: insights/insights/doctype/insights_query_result/insights_query_result.json
+#: insights/insights/doctype/insights_query_v3/insights_query_v3.json
+#: insights/insights/doctype/insights_settings/insights_settings.json
+#: insights/insights/doctype/insights_table/insights_table.json
+#: insights/insights/doctype/insights_table_import/insights_table_import.json
+#: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+#: insights/insights/doctype/insights_team/insights_team.json
+#: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
+#: insights/insights/doctype/insights_workbook/insights_workbook.json
+msgid "Insights User"
+msgstr "Användare"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
+msgid "Insights User Invitation"
+msgstr "Användare Inbjudan"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_workbook/insights_workbook.json
+msgid "Insights Workbook"
+msgstr "Arbetsbok"
+
+#. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
+#: insights/insights/doctype/insights_table_column/insights_table_column.json
+msgid "Integer"
+msgstr "Heltal"
+
+#. Label of the integrations_section (Section Break) field in DocType 'Insights
+#. Settings'
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Integrations"
+msgstr "Integrationer"
+
+#: frontend/src2/settings/UsersSettings.vue:44
+#: frontend/src2/users/UserList.vue:44
+msgid "Invitation Expired"
+msgstr "Inbjudan Utgången"
+
+#: frontend/src2/settings/UsersSettings.vue:43
+#: frontend/src2/users/UserList.vue:43
+msgid "Invitation Sent"
+msgstr "Inbjudan Skickad"
+
+#: frontend/src2/settings/UsersSettings.vue:85
+#: frontend/src2/settings/UsersSettings.vue:173
+#: frontend/src2/users/UserList.vue:84 frontend/src2/users/UserList.vue:175
+msgid "Invite User"
+msgstr "Skapa Användare"
+
+#. Label of the invited_by (Link) field in DocType 'Insights User Invitation'
+#: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
+msgid "Invited By"
+msgstr "Inbjuden av"
+
+#. Label of the is_assisted_query (Check) field in DocType 'Insights Query'
+#: insights/insights/doctype/insights_query/insights_query.json
+msgid "Is Assisted Query"
+msgstr "Är Assisterad Fråga"
+
+#. Label of the is_builder_query (Check) field in DocType 'Insights Query v3'
+#: insights/insights/doctype/insights_query_v3/insights_query_v3.json
+msgid "Is Builder Query"
+msgstr "Är Builder Fråga"
+
+#. Label of the is_ducklake (Check) field in DocType 'Insights Data Source v3'
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "Is DuckLake"
+msgstr "Är Anka Sjö"
+
+#. Label of the is_expanded (Check) field in DocType 'Insights Folder'
+#: insights/insights/doctype/insights_folder/insights_folder.json
+msgid "Is Expanded"
+msgstr "Är Utökad"
+
+#. Label of the is_expression (Check) field in DocType 'Insights Query Column'
+#: insights/insights/doctype/insights_query_column/insights_query_column.json
+msgid "Is Expression"
+msgstr "Är Uttryck"
+
+#. Label of the is_frappe_db (Check) field in DocType 'Insights Data Source v3'
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "Is Frappe Database"
+msgstr "Är Frappe Databas"
+
+#. Label of the is_native_query (Check) field in DocType 'Insights Query'
+#. Label of the is_native_query (Check) field in DocType 'Insights Query v3'
+#: insights/insights/doctype/insights_query/insights_query.json
+#: insights/insights/doctype/insights_query_v3/insights_query_v3.json
+msgid "Is Native Query"
+msgstr "Är Nativ Fråga"
+
+#. Label of the is_public (Check) field in DocType 'Insights Chart'
+#. Label of the is_public (Check) field in DocType 'Insights Chart v3'
+#. Label of the is_public (Check) field in DocType 'Insights Dashboard'
+#. Label of the is_public (Check) field in DocType 'Insights Dashboard v3'
+#: insights/insights/doctype/insights_chart/insights_chart.json
+#: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
+#: insights/insights/doctype/insights_dashboard/insights_dashboard.json
+#: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
+msgid "Is Public"
+msgstr "Är Publik"
+
+#. Label of the is_query_based (Check) field in DocType 'Insights Table'
+#: insights/insights/doctype/insights_table/insights_table.json
+msgid "Is Query Based"
+msgstr "Är Fråga Baserad"
+
+#. Label of the is_saved_as_table (Check) field in DocType 'Insights Query'
+#: insights/insights/doctype/insights_query/insights_query.json
+msgid "Is Saved as Table"
+msgstr "Är Sparad som Tabell"
+
+#. Label of the is_script_query (Check) field in DocType 'Insights Query'
+#. Label of the is_script_query (Check) field in DocType 'Insights Query v3'
+#: insights/insights/doctype/insights_query/insights_query.json
+#: insights/insights/doctype/insights_query_v3/insights_query_v3.json
+msgid "Is Script Query"
+msgstr "Är Skript Fråga"
+
+#. Label of the is_site_db (Check) field in DocType 'Insights Data Source v3'
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "Is Site Database"
+msgstr "Är Webbplats Databas"
+
+#. Label of the items (Table) field in DocType 'Insights Dashboard'
+#. Label of the items (JSON) field in DocType 'Insights Dashboard v3'
+#: insights/insights/doctype/insights_dashboard/insights_dashboard.json
+#: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
+msgid "Items"
+msgstr "Artiklar"
+
+#. Label of the json (Code) field in DocType 'Insights Query'
+#: insights/insights/doctype/insights_query/insights_query.json
+msgid "JSON"
+msgstr "JSON"
+
+#. Label of the join (Code) field in DocType 'Insights Query Table'
+#: insights/insights/doctype/insights_query_table/insights_query_table.json
+msgid "Join"
+msgstr "Anslut"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:48
+#: frontend/src2/query/components/JoinSelectorDialog.vue:240
+msgid "Join Table"
+msgstr "Sammanfogning Tabell"
+
+#: frontend/src2/components/UserDropdown.vue:121
+msgid "Join Telegram Group"
+msgstr "Anslut till Telegram Grupp"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:49
+msgid "Join this table with another table or query"
+msgstr "Sammanfoga denna tabell med annan tabell eller fråga"
+
+#: frontend/src2/charts/components/SankeyChartConfigForm.vue:69
+msgid "Justify"
+msgstr "Justera"
+
+#. Label of the key (Data) field in DocType 'Insights Secret Key'
+#. Label of the key (Data) field in DocType 'Insights User Invitation'
+#: insights/insights/doctype/insights_secret_key/insights_secret_key.json
+#: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
+msgid "Key"
+msgstr "Nyckel"
+
+#. Label of the label (Data) field in DocType 'Insights Query Table'
+#. Label of the label (Data) field in DocType 'Insights Table'
+#. Label of the label (Data) field in DocType 'Insights Table Column'
+#. Label of the label (Data) field in DocType 'Insights Table v3'
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:120
+#: insights/insights/doctype/insights_query_table/insights_query_table.json
+#: insights/insights/doctype/insights_table/insights_table.json
+#: insights/insights/doctype/insights_table_column/insights_table_column.json
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Label"
+msgstr "Etikett"
+
+#: frontend/src2/users/UserList.vue:65
+msgid "Last Active"
+msgstr "Senast Aktiv"
+
+#. Label of the last_execution (Datetime) field in DocType 'Insights Query'
+#: insights/insights/doctype/insights_query/insights_query.json
+msgid "Last Executed On"
+msgstr "Senaste Exekvering"
+
+#. Label of the last_execution (Datetime) field in DocType 'Insights Alert'
+#: frontend/src2/query/components/QueryAlertsDialog.vue:56
+#: insights/insights/doctype/insights_alert/insights_alert.json
+msgid "Last Execution"
+msgstr "Senaste Exekvering"
+
+#. Label of the last_log (Link) field in DocType 'Insights Table Import Job'
+#: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
+msgid "Last Log"
+msgstr "Senaste Logg"
+
+#. Label of the last_run (Datetime) field in DocType 'Insights Table Import
+#. Job'
+#: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
+msgid "Last Run"
+msgstr "Sista Körning"
+
+#. Label of the last_status (Data) field in DocType 'Insights Table Import Job'
+#: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
+msgid "Last Status"
+msgstr "Senaste Status"
+
+#: frontend/src2/data_store/DataStoreList.vue:48
+msgid "Last Synced"
+msgstr "Senast Synkroniserad"
+
+#. Label of the last_synced_on (Datetime) field in DocType 'Insights Table v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Last Synced On"
+msgstr "Senast Synkroniserad"
+
+#: frontend/src2/charts/components/DonutChartConfigForm.vue:59
+#: frontend/src2/charts/components/FunnelChartConfigForm.vue:56
+#: frontend/src2/charts/components/SankeyChartConfigForm.vue:70
+msgid "Left"
+msgstr "Vänster"
+
+#. Label of the left_column (Data) field in DocType 'Insights Table Link v3'
+#: frontend/src2/query/components/JoinSelectorDialog.vue:268
+#: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
+msgid "Left Column"
+msgstr "Vänster Kolumn"
+
+#. Label of the left_table (Data) field in DocType 'Insights Table Link v3'
+#: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
+msgid "Left Table"
+msgstr "Vänster Tabell"
+
+#. Label of the tab_break_tvwi (Tab Break) field in DocType 'Insights Settings'
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Legacy"
+msgstr "Äldre"
+
+#. Label of the limit (Int) field in DocType 'Insights Query'
+#: insights/insights/doctype/insights_query/insights_query.json
+msgid "Limit"
+msgstr "Begränsa"
+
+#. Label of the linked_charts (Table MultiSelect) field in DocType 'Insights
+#. Dashboard v3'
+#: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
+msgid "Linked Charts"
+msgstr "Länkade Diagram"
+
+#. Label of the linked_queries (JSON) field in DocType 'Insights Query v3'
+#: insights/insights/doctype/insights_query_v3/insights_query_v3.json
+msgid "Linked Queries"
+msgstr "Länkade Frågor"
+
+#. Label of the table_links (Table) field in DocType 'Insights Table'
+#: insights/insights/doctype/insights_table/insights_table.json
+msgid "Links"
+msgstr "Länkar"
+
+#. Label of the output (Code) field in DocType 'Insights Table Import Log'
+#: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
+msgid "Log"
+msgstr "Logg"
+
+#: frontend/src2/components/UserDropdown.vue:126
+#: frontend/src2/components/UserDropdown.vue:130
+msgid "Log out"
+msgstr "Logga Ut"
+
+#: frontend/src2/components/UserDropdown.vue:158
+msgid "Login to Frappe Cloud"
+msgstr "Logga in på Frappe Cloud"
+
+#: frontend/src2/components/UserDropdown.vue:80
+msgid "Login to Frappe Cloud?"
+msgstr "Logga in på Frappe Cloud?"
+
+#: frontend/src2/query/components/ScriptQueryEditor.vue:80
+#: frontend/src2/query/components/ScriptQueryEditor.vue:111
+msgid "Logs"
+msgstr "Loggar"
+
+#. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
+#: insights/insights/doctype/insights_table_column/insights_table_column.json
+msgid "Long Int"
+msgstr "Long Int"
+
+#. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
+#: insights/insights/doctype/insights_table_column/insights_table_column.json
+msgid "Long Text"
+msgstr "Lång Text"
+
+#: frontend/src2/teams/ManageTeamDialog.vue:63
+msgid "Manage Team"
+msgstr "Hantera Team"
+
+#: frontend/src2/workbook/WorkbookShareDialog.vue:92
+msgid "Manage Workbook Access"
+msgstr "Hantera Arbetsbok Åtkomst"
+
+#. Option for the 'Database Type' (Select) field in DocType 'Insights Data
+#. Source'
+#. Option for the 'Database Type' (Select) field in DocType 'Insights Data
+#. Source v3'
+#: frontend/src2/data_source/DataSourceList.vue:40
+#: insights/insights/doctype/insights_data_source/insights_data_source.json
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "MariaDB"
+msgstr "MariaDB"
+
+#: insights/insights/doctype/insights_table_import_log/insights_table_import_log.js:7
+msgid "Mark as Failed"
+msgstr "Ange som Misslyckad"
+
+#: frontend/src2/dashboard/DashboardText.vue:54
+msgid "Markdown supported"
+msgstr "Markdown stöds"
+
+#. Label of the max_execution_time (Int) field in DocType 'Insights Settings'
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Max Execution Time (Seconds)"
+msgstr "Maximal Exekvering Tid (Sekunder)"
+
+#. Label of the max_memory_usage (Int) field in DocType 'Insights Settings'
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Max Memory Usage"
+msgstr "Maximal Minnes Användning"
+
+#. Label of the max_records_to_sync (Int) field in DocType 'Insights Settings'
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Max Records To Sync"
+msgstr "Maximalt antal poster att synkronisera"
+
+#: frontend/src2/charts/components/MeasurePicker.vue:96
+msgid "Maximum of..."
+msgstr "Maximalt..."
+
+#: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:112
+msgid "Measure Name"
+msgstr "Åtgärd Namn"
+
+#. Label of the memory_limit (Int) field in DocType 'Insights Table Import Log'
+#: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
+msgid "Memory Limit (MB)"
+msgstr "Minnesgräns (MB)"
+
+#. Label of the message (Markdown Editor) field in DocType 'Insights Alert'
+#: frontend/src2/query/components/AlertSetupDialog.vue:238
+#: insights/insights/doctype/insights_alert/insights_alert.json
+msgid "Message"
+msgstr "Meddelande"
+
+#: frontend/src2/charts/components/MeasurePicker.vue:95
+msgid "Minimum of..."
+msgstr "Minst..."
+
+#: frontend/src2/data_source/DataSourceList.vue:120
+#: frontend/src2/workbook/WorkbookList.vue:103
+msgid "Modified"
+msgstr "Ändrad"
+
+#. Option for the 'Week Starts On' (Select) field in DocType 'Insights
+#. Settings'
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Monday"
+msgstr "Måndag"
+
+#. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
+#: insights/insights/doctype/insights_alert/insights_alert.json
+msgid "Monthly"
+msgstr "Månadsvis"
+
+#. Option for the 'Cardinality' (Select) field in DocType 'Insights Table Link'
+#: insights/insights/doctype/insights_table_link/insights_table_link.json
+msgid "N:1"
+msgstr "N:1"
+
+#. Option for the 'Cardinality' (Select) field in DocType 'Insights Table Link'
+#: insights/insights/doctype/insights_table_link/insights_table_link.json
+msgid "N:N"
+msgstr "N:N"
+
+#. Label of the column (Data) field in DocType 'Insights Query Column'
+#: frontend/src2/components/VariablesDialog.vue:84
+#: insights/insights/doctype/insights_query_column/insights_query_column.json
+msgid "Name"
+msgstr "Namn"
+
+#: frontend/src2/query/components/QueryAlertsDialog.vue:79
+#: frontend/src2/query/components/QueryAlertsDialog.vue:108
+msgid "New Alert"
+msgstr "Ny Avisering"
+
+#: frontend/src2/workbook/WorkbookTabSwitcher.vue:63
+msgid "New Chart"
+msgstr "Ny Diagram"
+
+#: frontend/src2/workbook/WorkbookTabSwitcher.vue:64
+msgid "New Dashboard"
+msgstr "Ny Översikt Panel"
+
+#: frontend/src2/data_source/DataSourceList.vue:133
+#: frontend/src2/data_source/DataSourceList.vue:148
+msgid "New Data Source"
+msgstr "Ny Datakälla"
+
+#: frontend/src2/workbook/WorkbookTabSwitcher.vue:62
+msgid "New Query"
+msgstr "Ny Fråga"
+
+#: frontend/src2/home/HomeQuickActions.vue:28
+#: frontend/src2/workbook/WorkbookList.vue:116
+#: frontend/src2/workbook/WorkbookList.vue:151
+msgid "New Workbook"
+msgstr "Ny Arbetsbok"
+
+#. Label of the next_execution (Datetime) field in DocType 'Insights Alert'
+#: insights/insights/doctype/insights_alert/insights_alert.json
+msgid "Next Execution"
+msgstr "Nästa Exekvering"
+
+#: frontend/src2/query/components/UnionSelectorDialog.vue:144
+msgid "No"
+msgstr "Nej"
+
+#: frontend/src2/dashboard/DashboardList.vue:94
+msgid "No Dashboards"
+msgstr "Inga Översikt Paneler"
+
+#: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:90
+msgid "No Queries Found"
+msgstr "Inga Frågor Hittades"
+
+#: frontend/src2/data_source/DataSourceTableList.vue:40
+#: frontend/src2/query/components/source_selector/DataSourceTableList.vue:58
+msgid "No Tables Found"
+msgstr "Inga Tabeller Hittades"
+
+#: frontend/src2/data_store/DataStoreList.vue:57
+msgid "No Tables Stored"
+msgstr "Inga Tabeller Sparade"
+
+#: frontend/src2/workbook/WorkbookList.vue:113
+msgid "No Workbooks"
+msgstr "Inga Arbetsböcker"
+
+#: frontend/src2/query/components/QueryAlertsDialog.vue:76
+msgid "No alerts"
+msgstr "Inga aviseringar"
+
+#: frontend/src2/query/components/ColumnsSelectorDialog.vue:108
+msgid "No columns selected"
+msgstr "Inga kolumner valda"
+
+#: frontend/src2/data_source/DataSourceList.vue:131
+msgid "No data sources to display."
+msgstr "Inga datakällor att visa."
+
+#: frontend/src2/data_source/DataSourceList.vue:130
+msgid "No data sources."
+msgstr "Inga datakällor."
+
+#: frontend/src2/data_source/DataSourceTableList.vue:41
+msgid "No tables found for the selected data source."
+msgstr "Inga tabeller hittades för vald datakälla."
+
+#: frontend/src2/data_store/DataStoreList.vue:58
+msgid "No tables found in the data store."
+msgstr "Inga tabeller hittades i datalager."
+
+#: frontend/src2/settings/PermissionsSettings.vue:64
+#: frontend/src2/teams/TeamList.vue:62
+msgid "No teams to display."
+msgstr "Inga team att visa."
+
+#: frontend/src2/settings/PermissionsSettings.vue:63
+#: frontend/src2/teams/TeamList.vue:61
+msgid "No teams."
+msgstr "Inga team."
+
+#: frontend/src2/settings/UsersSettings.vue:82
+#: frontend/src2/users/UserList.vue:81
+msgid "No users to display."
+msgstr "Inga användare att visa."
+
+#: frontend/src2/settings/UsersSettings.vue:81
+#: frontend/src2/users/UserList.vue:80
+msgid "No users."
+msgstr "Inga användare."
+
+#: frontend/src2/home/HomeWorkbookList.vue:66
+msgid "No workbooks created"
+msgstr "Inga arbetsböcker skapade"
+
+#: frontend/src2/workbook/WorkbookList.vue:114
+msgid "No workbooks to display."
+msgstr "Inga Arbetsböcker att visa."
+
+#. Option for the 'Authentication Type' (Select) field in DocType 'Insights
+#. Data Source v3'
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "None"
+msgstr "Ingen"
+
+#. Label of the notebook (Link) field in DocType 'Insights Notebook Page'
+#: insights/insights/doctype/insights_notebook_page/insights_notebook_page.json
+msgid "Notebook"
+msgstr "Anteckningsbok"
+
+#. Label of the old_name (Data) field in DocType 'Insights Chart v3'
+#. Label of the old_name (Data) field in DocType 'Insights Dashboard v3'
+#. Label of the old_name (Data) field in DocType 'Insights Query v3'
+#: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
+#: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
+#: insights/insights/doctype/insights_query_v3/insights_query_v3.json
+msgid "Old Name"
+msgstr "Gammalt Namn"
+
+#. Label of the onboarding_complete (Check) field in DocType 'Insights
+#. Settings'
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Onboarding Complete"
+msgstr "Introduktion Klar"
+
+#: frontend/src2/dashboard/Dashboard.vue:68
+#: frontend/src2/dashboard/DashboardList.vue:22
+msgid "Open Workbook"
+msgstr "Öppna Arbetsbok"
+
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:55
+#: frontend/src2/workbook/WorkbookNavbarActions.vue:72
+msgid "Open in Desk"
+msgstr "Öppna i Skrivbord"
+
+#. Label of the operations (JSON) field in DocType 'Insights Query v3'
+#: insights/insights/doctype/insights_query_v3/insights_query_v3.json
+msgid "Operations"
+msgstr "Åtgärder"
+
+#: frontend/src2/query/components/FormatRule.vue:416
+msgid "Operator"
+msgstr "Personal"
+
+#. Label of the options (JSON) field in DocType 'Insights Chart'
+#. Label of the options (JSON) field in DocType 'Insights Dashboard Item'
+#. Label of the options (JSON) field in DocType 'Insights Query Transform'
+#: insights/insights/doctype/insights_chart/insights_chart.json
+#: insights/insights/doctype/insights_dashboard_item/insights_dashboard_item.json
+#: insights/insights/doctype/insights_query_transform/insights_query_transform.json
+msgid "Options"
+msgstr "Alternativ "
+
+#. Label of the order_by (Select) field in DocType 'Insights Query Column'
+#: insights/insights/doctype/insights_query_column/insights_query_column.json
+msgid "Order By"
+msgstr "Sortera Efter"
+
+#: frontend/src2/settings/Settings.vue:20
+msgid "Organization"
+msgstr "Organisation"
+
+#. Option for the 'Action if table exists' (Select) field in DocType 'Insights
+#. Table Import'
+#: insights/insights/doctype/insights_table_import/insights_table_import.json
+msgid "Overwrite"
+msgstr "Skriv över"
+
+#: frontend/src2/data_source/DataSourceList.vue:106
+#: frontend/src2/teams/TeamList.vue:34
+#: frontend/src2/workbook/WorkbookList.vue:89
+msgid "Owner"
+msgstr "Ansvarig"
+
+#. Label of the parquet_file (Text) field in DocType 'Insights Table Import
+#. Log'
+#: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
+msgid "Parquet File"
+msgstr "Parkett Fil"
+
+#. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
+#: insights/insights/doctype/insights_table_import/insights_table_import.json
+msgid "Partial Success"
+msgstr "Delvis Klar"
+
+#. Label of the password (Password) field in DocType 'Insights Data Source'
+#. Label of the password (Password) field in DocType 'Insights Data Source v3'
+#: frontend/src2/data_source/ConnectClickhouseDialog.vue:63
+#: frontend/src2/data_source/ConnectMariaDBDialog.vue:63
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:71
+#: insights/insights/doctype/insights_data_source/insights_data_source.json
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "Password"
+msgstr "Lösenord"
+
+#. Option for the 'Status' (Select) field in DocType 'Insights User Invitation'
+#: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
+msgid "Pending"
+msgstr "Pågående"
+
+#. Option for the 'Status' (Select) field in DocType 'Insights Query'
+#: insights/insights/doctype/insights_query/insights_query.json
+msgid "Pending Execution"
+msgstr "Väntande Exekvering"
+
+#: frontend/src2/settings/Settings.vue:38
+msgid "Permissions"
+msgstr "Behörigheter"
+
+#: frontend/src2/workbook/WorkbookShareDialog.vue:82
+msgid "Permissions updated"
+msgstr "Behörigheter uppdaterade"
+
+#. Description of the 'State (JSON)' (Code) field in DocType 'Insights Table
+#. Import Job'
+#: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
+msgid "Persistent state storage for the script"
+msgstr "Permanent tillstånd lagring för skript"
+
+#: frontend/src2/query/components/source_selector/SourceSelectorDialog.vue:125
+msgid "Pick Starting Data"
+msgstr "Välj Start Data"
+
+#. Option for the 'Type' (Select) field in DocType 'Insights Query Transform'
+#: insights/insights/doctype/insights_query_transform/insights_query_transform.json
+msgid "Pivot"
+msgstr "Pivot"
+
+#: frontend/src2/query/components/NativeQueryEditor.vue:26
+msgid "Please select a data source first"
+msgstr "Välj datakälla först"
+
+#: frontend/src2/query/components/source_selector/DataSourceTableList.vue:53
+msgid "Please wait while we refresh the tables from your data source"
+msgstr "Vänta medan vi uppdaterar tabellerna från din datakälla"
+
+#. Label of the port (Data) field in DocType 'Insights Data Source'
+#. Label of the port (Int) field in DocType 'Insights Data Source v3'
+#: frontend/src2/data_source/ConnectClickhouseDialog.vue:41
+#: frontend/src2/data_source/ConnectMariaDBDialog.vue:41
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:42
+#: insights/insights/doctype/insights_data_source/insights_data_source.json
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "Port"
+msgstr "Port"
+
+#. Label of the layout (JSON) field in DocType 'Insights Dashboard Item'
+#: insights/insights/doctype/insights_dashboard_item/insights_dashboard_item.json
+msgid "Position & Size"
+msgstr "Position & Storlek"
+
+#. Option for the 'Database Type' (Select) field in DocType 'Insights Data
+#. Source'
+#. Option for the 'Database Type' (Select) field in DocType 'Insights Data
+#. Source v3'
+#: frontend/src2/data_source/DataSourceList.vue:49
+#: insights/insights/doctype/insights_data_source/insights_data_source.json
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "PostgreSQL"
+msgstr "PostgreSQL"
+
+#. Label of the preview_image (Data) field in DocType 'Insights Dashboard v3'
+#: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
+msgid "Preview Image"
+msgstr "Förhandsgranska Bild"
+
+#. Label of the primary_key (Data) field in DocType 'Insights Table Link'
+#: insights/insights/doctype/insights_table_link/insights_table_link.json
+msgid "Primary Key"
+msgstr "Primär Nyckel"
+
+#: frontend/src2/settings/Settings.vue:13
+msgid "Profile"
+msgstr "Profil"
+
+#. Label of the public_key (Data) field in DocType 'Insights Chart'
+#. Label of the public_key (Data) field in DocType 'Insights Dashboard'
+#: insights/insights/doctype/insights_chart/insights_chart.json
+#: insights/insights/doctype/insights_dashboard/insights_dashboard.json
+msgid "Public Key"
+msgstr "Publik Nyckel"
+
+#: frontend/src2/query/components/source_selector/SourceSelectorDialog.vue:89
+#: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:59
+#: frontend/src2/workbook/WorkbookSidebar.vue:29
+msgid "Queries"
+msgstr "Frågor"
+
+#. Label of the query (Link) field in DocType 'Insights Alert'
+#. Label of the query (Link) field in DocType 'Insights Chart'
+#. Label of the query (Link) field in DocType 'Insights Chart v3'
+#. Label of the tab_break_1 (Tab Break) field in DocType 'Insights Query'
+#. Label of the query (Link) field in DocType 'Insights Query Chart'
+#. Label of the query (Data) field in DocType 'Insights Query Execution Log'
+#. Label of the query (Link) field in DocType 'Insights Query Result'
+#. Label of the query_section (Section Break) field in DocType 'Insights
+#. Settings'
+#: frontend/src2/query/components/JoinSelectorDialog.vue:153
+#: frontend/src2/query/components/UnionSelectorDialog.vue:71
+#: insights/insights/doctype/insights_alert/insights_alert.json
+#: insights/insights/doctype/insights_chart/insights_chart.json
+#: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
+#: insights/insights/doctype/insights_query/insights_query.json
+#: insights/insights/doctype/insights_query_chart/insights_query_chart.json
+#: insights/insights/doctype/insights_query_execution_log/insights_query_execution_log.json
+#: insights/insights/doctype/insights_query_result/insights_query_result.json
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Query"
+msgstr "Fråga"
+
+#. Label of the query_result_limit (Int) field in DocType 'Insights Settings'
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Query Result Limit"
+msgstr "Frågeresultat Gräns"
+
+#. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
+#: insights/insights/doctype/insights_table_import/insights_table_import.json
+msgid "Queued"
+msgstr "I Kö"
+
+#: frontend/src2/home/HomeQuickActions.vue:21
+msgid "Quick Actions"
+msgstr "Snabb Åtgärder"
+
+#. Option for the 'Type' (Select) field in DocType 'Insights Data Source v3'
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "REST API"
+msgstr "REST API"
+
+#: frontend/src2/query/components/FormatRule.vue:478
+msgid "Ranking Condition"
+msgstr "Rangordning Villkor"
+
+#: frontend/src2/query/components/FormatRule.vue:225
+msgid "Ranking Rules"
+msgstr "Rangordning Regler"
+
+#. Label of the recipients (Small Text) field in DocType 'Insights Alert'
+#: frontend/src2/query/components/AlertSetupDialog.vue:181
+#: insights/insights/doctype/insights_alert/insights_alert.json
+msgid "Recipients"
+msgstr "Mottagare"
+
+#: frontend/src2/query/components/FormatRule.vue:159
+msgid "Red"
+msgstr "Röd"
+
+#: frontend/src2/query/components/FormatRule.vue:209
+msgid "Red-Green"
+msgstr "Röd-Grön"
+
+#: frontend/src2/dashboard/Dashboard.vue:51
+#: frontend/src2/data_source/DataSourceTableList.vue:43
+msgid "Refresh"
+msgstr "Uppdatera"
+
+#: frontend/src2/dashboard/DashboardList.vue:27
+msgid "Refresh Preview"
+msgstr "Uppdatera Förhandsgranskning"
+
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:19
+msgid "Refresh Stored Tables"
+msgstr "Uppdatera Sparade Tabeller"
+
+#: frontend/src2/query/components/source_selector/DataSourceTableList.vue:62
+#: frontend/src2/query/components/source_selector/DataSourceTableList.vue:87
+msgid "Refresh Tables"
+msgstr "Uppdatera Tabeller"
+
+#: frontend/src2/query/components/source_selector/DataSourceTableList.vue:52
+msgid "Refreshing Tables"
+msgstr "Uppdaterar Tabeller"
+
+#: frontend/src2/query/components/FiltersSelector.vue:126
+#: frontend/src2/workbook/WorkbookShareDialog.vue:39
+msgid "Remove"
+msgstr "Ta bort"
+
+#: frontend/src2/components/DataTableColumn.vue:30
+msgid "Remove Sort"
+msgstr "Ta bort Sortering"
+
+#: frontend/src2/dashboard/DashboardBuilder.vue:156
+msgid "Reset Layout"
+msgstr "Återställ Layout"
+
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:44
+msgid "Reset Options"
+msgstr "Återställ Alternativ"
+
+#: frontend/src2/charts/components/RegionMappingDialog.vue:194
+msgid "Resolve Locations"
+msgstr "Lös Platser"
+
+#. Label of the resource_name (Dynamic Link) field in DocType 'Insights
+#. Resource Permission'
+#: insights/insights/doctype/insights_resource_permission/insights_resource_permission.json
+msgid "Resource"
+msgstr "Resurs"
+
+#. Label of the resource_type (Link) field in DocType 'Insights Resource
+#. Permission'
+#: insights/insights/doctype/insights_resource_permission/insights_resource_permission.json
+msgid "Resource Type"
+msgstr "Resurs Typ"
+
+#. Label of the result_name (Data) field in DocType 'Insights Query'
+#: insights/insights/doctype/insights_query/insights_query.json
+msgid "Result"
+msgstr "Resultat"
+
+#. Label of the results_row_count (Int) field in DocType 'Insights Query'
+#: insights/insights/doctype/insights_query/insights_query.json
+msgid "Result Row Count"
+msgstr "Resultat Rad Antal"
+
+#. Label of the results (Code) field in DocType 'Insights Query Result'
+#: insights/insights/doctype/insights_query_result/insights_query_result.json
+msgid "Results"
+msgstr "Resultat"
+
+#. Label of the results_row_count (Int) field in DocType 'Insights Query
+#. Result'
+#: insights/insights/doctype/insights_query_result/insights_query_result.json
+msgid "Results Row Count"
+msgstr "Resultat Rad Antal"
+
+#: frontend/src2/charts/components/DonutChartConfigForm.vue:60
+#: frontend/src2/charts/components/FunnelChartConfigForm.vue:57
+#: frontend/src2/charts/components/SankeyChartConfigForm.vue:71
+msgid "Right"
+msgstr "Höger"
+
+#. Label of the right_column (Data) field in DocType 'Insights Table Link v3'
+#: frontend/src2/query/components/JoinSelectorDialog.vue:281
+#: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
+msgid "Right Column"
+msgstr "Höger Kolumn"
+
+#. Label of the right_table (Data) field in DocType 'Insights Table Link v3'
+#: frontend/src2/query/components/JoinSelectorDialog.vue:250
+#: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
+msgid "Right Table"
+msgstr "Höger Tabell"
+
+#. Label of the row_limit (Int) field in DocType 'Insights Table Import Log'
+#. Label of the row_limit (Int) field in DocType 'Insights Table v3'
+#: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Row Limit"
+msgstr "Rad Begränsning"
+
+#. Label of the row_size (Float) field in DocType 'Insights Table Import Log'
+#: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
+msgid "Row Size (KB)"
+msgstr "Rad Storlek (KB)"
+
+#. Label of the rows (Int) field in DocType 'Insights Table Import'
+#: insights/insights/doctype/insights_table_import/insights_table_import.json
+msgid "Rows"
+msgstr "Rader"
+
+#. Label of the rows_imported (Int) field in DocType 'Insights Table Import
+#. Log'
+#: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
+msgid "Rows Imported"
+msgstr "Rader Importerade"
+
+#: frontend/src2/query/components/FormatRule.vue:405
+msgid "Rule Type"
+msgstr "Regel Typ"
+
+#: frontend/src2/query/components/ScriptQueryEditor.vue:92
+#: insights/insights/doctype/insights_query/insights_query.js:7
+msgid "Run"
+msgstr "Kör"
+
+#: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:37
+msgid "Run {0} of {1}"
+msgstr "Kör {0} av {1}"
+
+#. Label of the sql (Code) field in DocType 'Insights Query'
+#. Label of the sql (Code) field in DocType 'Insights Query Execution Log'
+#: insights/insights/doctype/insights_query/insights_query.json
+#: insights/insights/doctype/insights_query_execution_log/insights_query_execution_log.json
+msgid "SQL"
+msgstr "SQL"
+
+#. Option for the 'Database Type' (Select) field in DocType 'Insights Data
+#. Source'
+#. Option for the 'Database Type' (Select) field in DocType 'Insights Data
+#. Source v3'
+#: insights/insights/doctype/insights_data_source/insights_data_source.json
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "SQLite"
+msgstr "SQLite"
+
+#: frontend/src2/settings/GeneralSettings.vue:23
+msgid "Sample data and workbook have been set up successfully"
+msgstr "Exempeldata och arbetsbok har konfigurerats"
+
+#: frontend/src2/components/DemoDataBanner.vue:27
+msgid "Sample data with workbook has been set up successfully"
+msgstr "Exempeldata med arbetsbok har konfigurerats"
+
+#. Option for the 'Week Starts On' (Select) field in DocType 'Insights
+#. Settings'
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Saturday"
+msgstr "Lördag"
+
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:103
+#: frontend/src2/dashboard/DashboardText.vue:27
+#: frontend/src2/workbook/WorkbookShareDialog.vue:95
+msgid "Save"
+msgstr "Spara"
+
+#: frontend/src2/charts/components/RegionMappingDialog.vue:314
+msgid "Save Changes"
+msgstr "Spara Ändringar"
+
+#: frontend/src2/components/VariablesDialog.vue:133
+msgid "Save Variables"
+msgstr "Spara Variabler"
+
+#. Label of the schedule (Data) field in DocType 'Insights Table Import Job'
+#: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
+msgid "Schedule (Cron)"
+msgstr "Schema (Cron)"
+
+#. Label of the schema (Data) field in DocType 'Insights Data Source v3'
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:57
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "Schema"
+msgstr "Schema"
+
+#. Label of the script (Code) field in DocType 'Insights Query'
+#. Label of the script (Code) field in DocType 'Insights Table Import Job'
+#: insights/insights/doctype/insights_query/insights_query.json
+#: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
+msgid "Script"
+msgstr "Skript"
+
+#. Label of the script_log (Text) field in DocType 'Insights Query'
+#: insights/insights/doctype/insights_query/insights_query.json
+msgid "Script Log"
+msgstr "Script Logg"
+
+#: frontend/src2/dashboard/DashboardList.vue:52
+#: frontend/src2/data_store/DataStoreList.vue:92
+#: frontend/src2/query/components/QueryAlertsDialog.vue:102
+#: frontend/src2/settings/UsersSettings.vue:149
+#: frontend/src2/teams/TeamList.vue:100 frontend/src2/users/UserList.vue:163
+msgid "Search"
+msgstr "Sök"
+
+#: frontend/src2/query/components/source_selector/DataSourceTableList.vue:75
+#: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:63
+#: frontend/src2/workbook/WorkbookList.vue:166
+msgid "Search by Title"
+msgstr "Sök efter Benämning"
+
+#: frontend/src2/dashboard/DashboardChartSelectorDialog.vue:85
+msgid "Search by name"
+msgstr "Sök efter namn"
+
+#. Label of the secrets (Table) field in DocType 'Insights Table Import Job'
+#: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
+msgid "Secrets"
+msgstr "Hemligheter"
+
+#: frontend/src2/dashboard/DashboardChartSelectorDialog.vue:64
+msgid "Select Charts"
+msgstr "Välj Diagram"
+
+#: frontend/src2/query/components/ColumnsSelectorDialog.vue:62
+msgid "Select Columns"
+msgstr "Välj Kolumner"
+
+#: frontend/src2/query/components/JoinSelectorDialog.vue:349
+msgid "Select Columns to Add"
+msgstr "Välj Kolumner att Lägga till"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:203
+msgid "Select Field"
+msgstr "Välj Fält"
+
+#: frontend/src2/query/components/JoinSelectorDialog.vue:321
+msgid "Select Join Type"
+msgstr "Välj Sammanfogning Typ"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:30
+msgid "Select Source"
+msgstr "Välj Källa"
+
+#: frontend/src2/query/components/UnionSelectorDialog.vue:126
+msgid "Select Table"
+msgstr "Välj Tabell"
+
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:155
+msgid "Select a column"
+msgstr "Välj kolumn"
+
+#: frontend/src2/data_source/DataSourceList.vue:170
+msgid "Select a data source"
+msgstr "Välj datakälla"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:31
+msgid "Select a table or query to start building your query"
+msgstr "Välj en tabell eller fråga för att börja bygga din fråga"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:134
+msgid "Select an operation"
+msgstr "Välj åtgärd"
+
+#: insights/insights/doctype/insights_alert/insights_alert.js:6
+msgid "Send Alert"
+msgstr "Skicka Avisering"
+
+#: frontend/src2/settings/UsersSettings.vue:177
+#: frontend/src2/users/UserList.vue:178
+msgid "Send Invitation"
+msgstr "Skicka Inbjudan"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:117
+msgid "Send Test Alert"
+msgstr "Skicka Test Avisering"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:197
+msgid "Send alert when"
+msgstr "Skicka avisering när"
+
+#: insights/insights/doctype/insights_alert/insights_alert.js:7
+msgid "Sending Alert..."
+msgstr "Skickar Avisering..."
+
+#: frontend/src2/components/UserDropdown.vue:70
+msgid "Set Insights v2 as default"
+msgstr "Ange v2 som standard"
+
+#: frontend/src2/query/components/QueryAlertsDialog.vue:77
+msgid "Set up alerts to get notified when a condition is met"
+msgstr "Konfigurera aviseringar för att få meddelanden när ett villkor är uppfyllt"
+
+#: frontend/src2/components/AppSidebar.vue:95
+#: frontend/src2/settings/Settings.vue:58
+msgid "Settings"
+msgstr "Inställningar"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:113
+msgid "Setup Alert"
+msgstr "Konfigurera Avisering"
+
+#. Label of the setup_complete (Check) field in DocType 'Insights Settings'
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Setup Complete"
+msgstr "Konfigurering Klar"
+
+#: frontend/src2/components/DemoDataBanner.vue:64
+msgid "Setup Demo Data"
+msgstr "Konfigurera Demo Data"
+
+#: frontend/src2/components/DemoDataBanner.vue:32
+#: frontend/src2/settings/GeneralSettings.vue:28
+msgid "Setup Failed"
+msgstr "Konfiguration Misslyckades"
+
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:33
+#: frontend/src2/charts/components/ChartShareDialog.vue:35
+msgid "Share Chart"
+msgstr "Dela Diagram"
+
+#: frontend/src2/dashboard/DashboardShareDialog.vue:83
+msgid "Share Dashboard"
+msgstr "Dela Översikt Panel"
+
+#. Label of the share_link (Data) field in DocType 'Insights Dashboard v3'
+#: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
+msgid "Share Link"
+msgstr "Delning Länk"
+
+#: frontend/src2/query/components/AddOperationPopover.vue:37
+msgid "Show or hide columns from the table"
+msgstr "Visa eller dölj kolumner från tabell"
+
+#. Label of the is_site_db (Check) field in DocType 'Insights Data Source'
+#: insights/insights/doctype/insights_data_source/insights_data_source.json
+msgid "Site Database"
+msgstr "Webbplats Databas"
+
+#: frontend/src2/components/DataTableColumn.vue:20
+msgid "Sort Ascending"
+msgstr "Sortera Stigande"
+
+#: frontend/src2/components/DataTableColumn.vue:25
+msgid "Sort Descending"
+msgstr "Sortera Fallande"
+
+#. Label of the sort_order (Int) field in DocType 'Insights Folder'
+#: insights/insights/doctype/insights_folder/insights_folder.json
+msgid "Sort Order"
+msgstr "Sortering Order"
+
+#. Label of the source (Attach) field in DocType 'Insights Table Import'
+#: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:38
+#: insights/insights/doctype/insights_table_import/insights_table_import.json
+msgid "Source"
+msgstr "Källa"
+
+#: frontend/src2/dashboard/DashboardShareDialog.vue:114
+msgid "Specific people can view"
+msgstr "Specifika personer kan visa"
+
+#. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
+#: insights/insights/doctype/insights_table_import/insights_table_import.json
+msgid "Started"
+msgstr "Startad"
+
+#. Label of the started_at (Datetime) field in DocType 'Insights Table Import
+#. Log'
+#: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
+msgid "Started At"
+msgstr "Startade"
+
+#: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:27
+msgid "Starting..."
+msgstr "Startar..."
+
+#. Label of the state (Code) field in DocType 'Insights Table Import Job'
+#: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
+msgid "State (JSON)"
+msgstr "Tillstånd (JSON)"
+
+#. Label of the status (Select) field in DocType 'Insights Data Source'
+#. Label of the status (Select) field in DocType 'Insights Data Source v3'
+#. Label of the status (Select) field in DocType 'Insights Query'
+#. Label of the status (Select) field in DocType 'Insights Table Import'
+#. Label of the status (Select) field in DocType 'Insights Table Import Log'
+#. Label of the status (Select) field in DocType 'Insights User Invitation'
+#: frontend/src2/data_source/DataSourceList.vue:98
+#: frontend/src2/query/components/QueryAlertsDialog.vue:41
+#: frontend/src2/settings/UsersSettings.vue:37
+#: frontend/src2/users/UserList.vue:37
+#: insights/insights/doctype/insights_data_source/insights_data_source.json
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+#: insights/insights/doctype/insights_query/insights_query.json
+#: insights/insights/doctype/insights_table_import/insights_table_import.json
+#: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
+#: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
+msgid "Status"
+msgstr "Status"
+
+#. Label of the is_stored (Check) field in DocType 'Insights Query'
+#. Label of the stored (Check) field in DocType 'Insights Table v3'
+#: insights/insights/doctype/insights_query/insights_query.json
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Stored"
+msgstr "Lagrad"
+
+#. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
+#: insights/insights/doctype/insights_table_column/insights_table_column.json
+msgid "String"
+msgstr "Sträng"
+
+#. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
+#: insights/insights/doctype/insights_table_import/insights_table_import.json
+msgid "Success"
+msgstr "Lyckad"
+
+#: frontend/src2/charts/components/MeasurePicker.vue:93
+msgid "Sum of..."
+msgstr "Summa av..."
+
+#. Option for the 'Week Starts On' (Select) field in DocType 'Insights
+#. Settings'
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Sunday"
+msgstr "Söndag"
+
+#: frontend/src2/components/UserDropdown.vue:148
+msgid "Switch to Desk"
+msgstr "Växla till Skrivbord"
+
+#: frontend/src2/components/UserDropdown.vue:54
+#: frontend/src2/components/UserDropdown.vue:140
+msgid "Switch to Insights v2"
+msgstr "Växla till v2"
+
+#: frontend/src2/query/components/source_selector/DataSourceTableList.vue:59
+msgid "Sync tables from your data source to get started"
+msgstr "Synkronisera tabeller från din datakälla för att komma igång"
+
+#. Name of a role
+#: insights/insights/doctype/insights_chart/insights_chart.json
+#: insights/insights/doctype/insights_dashboard/insights_dashboard.json
+#: insights/insights/doctype/insights_data_source/insights_data_source.json
+#: insights/insights/doctype/insights_notebook/insights_notebook.json
+#: insights/insights/doctype/insights_notebook_page/insights_notebook_page.json
+#: insights/insights/doctype/insights_query/insights_query.json
+#: insights/insights/doctype/insights_query_chart/insights_query_chart.json
+#: insights/insights/doctype/insights_query_result/insights_query_result.json
+#: insights/insights/doctype/insights_settings/insights_settings.json
+#: insights/insights/doctype/insights_table/insights_table.json
+#: insights/insights/doctype/insights_table_import/insights_table_import.json
+#: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
+#: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
+msgid "System Manager"
+msgstr "System Ansvarig"
+
+#. Label of the table (Data) field in DocType 'Insights Query Column'
+#. Label of the table (Data) field in DocType 'Insights Query Table'
+#. Label of the table (Data) field in DocType 'Insights Table'
+#. Label of the table (Data) field in DocType 'Insights Table v3'
+#: frontend/src2/query/components/JoinSelectorDialog.vue:251
+#: frontend/src2/query/components/UnionSelectorDialog.vue:129
+#: frontend/src2/query/components/source_selector/DataSourceTableList.vue:28
+#: insights/insights/doctype/insights_query_column/insights_query_column.json
+#: insights/insights/doctype/insights_query_table/insights_query_table.json
+#: insights/insights/doctype/insights_table/insights_table.json
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Table"
+msgstr "Tabell"
+
+#: frontend/src2/data_source/UploadCSVFileDialog.vue:63
+msgid "Table Imported"
+msgstr "Tabell Importerad"
+
+#. Label of the table_label (Data) field in DocType 'Insights Query Column'
+#. Label of the table_label (Data) field in DocType 'Insights Table Import'
+#: insights/insights/doctype/insights_query_column/insights_query_column.json
+#: insights/insights/doctype/insights_table_import/insights_table_import.json
+msgid "Table Label"
+msgstr "Tabell Etikett"
+
+#. Label of the table_name (Data) field in DocType 'Insights Table Import'
+#. Label of the table_name (Data) field in DocType 'Insights Table Import Job'
+#. Label of the table_name (Data) field in DocType 'Insights Table Import Log'
+#: frontend/src2/data_source/DataSourceTableList.vue:28
+#: frontend/src2/data_store/DataStoreList.vue:36
+#: insights/insights/doctype/insights_table_import/insights_table_import.json
+#: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
+#: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
+msgid "Table Name"
+msgstr "Tabell Namn"
+
+#. Label of the table_restrictions (Data) field in DocType 'Insights Resource
+#. Permission'
+#: insights/insights/doctype/insights_resource_permission/insights_resource_permission.json
+msgid "Table Restrictions"
+msgstr "Tabell Begränsningar"
+
+#. Label of the tables (Table) field in DocType 'Insights Query'
+#: insights/insights/doctype/insights_query/insights_query.json
+msgid "Tables"
+msgstr "Tabeller"
+
+#: frontend/src2/teams/TeamList.vue:30
+msgid "Team"
+msgstr "Team"
+
+#. Label of the team_members (Table) field in DocType 'Insights Team'
+#: insights/insights/doctype/insights_team/insights_team.json
+msgid "Team Members"
+msgstr "Team Medlemmar"
+
+#. Label of the team_name (Data) field in DocType 'Insights Team'
+#: frontend/src2/settings/PermissionsSettings.vue:45
+#: insights/insights/doctype/insights_team/insights_team.json
+msgid "Team Name"
+msgstr "Team Namn"
+
+#. Label of the team_permissions (Table) field in DocType 'Insights Team'
+#: insights/insights/doctype/insights_team/insights_team.json
+msgid "Team Permissions"
+msgstr "Team Behörigheter"
+
+#: frontend/src2/teams/TeamList.vue:83
+msgid "Teams"
+msgstr "Teams"
+
+#. Option for the 'Channel' (Select) field in DocType 'Insights Alert'
+#: insights/insights/doctype/insights_alert/insights_alert.json
+msgid "Telegram"
+msgstr "Telegram"
+
+#. Label of the telegram_api_token (Password) field in DocType 'Insights
+#. Settings'
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Telegram API Token"
+msgstr "Telegram API Token"
+
+#. Label of the telegram_chat_id (Data) field in DocType 'Insights Alert'
+#: frontend/src2/query/components/AlertSetupDialog.vue:188
+#: insights/insights/doctype/insights_alert/insights_alert.json
+msgid "Telegram Chat ID"
+msgstr "Telegram Chatt ID"
+
+#. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
+#: insights/insights/doctype/insights_table_column/insights_table_column.json
+msgid "Text"
+msgstr "Text"
+
+#: frontend/src2/query/components/FormatRule.vue:230
+msgid "Text Rules"
+msgstr "Text Regler"
+
+#: frontend/src2/query/components/ColumnFilterTypeDate.vue:58
+msgid "This FY"
+msgstr "Detta Bokföringsår"
+
+#: frontend/src2/query/components/ColumnFilterTypeDate.vue:55
+msgid "This Month"
+msgstr "Denna Månad"
+
+#: frontend/src2/query/components/ColumnFilterTypeDate.vue:56
+msgid "This Quarter"
+msgstr "Detta Kvartal"
+
+#: frontend/src2/query/components/ColumnFilterTypeDate.vue:54
+msgid "This Week"
+msgstr "Denna Vecka"
+
+#: frontend/src2/query/components/ColumnFilterTypeDate.vue:57
+msgid "This Year"
+msgstr "I År"
+
+#. Option for the 'Week Starts On' (Select) field in DocType 'Insights
+#. Settings'
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Thursday"
+msgstr "Torsdag"
+
+#. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
+#: insights/insights/doctype/insights_table_column/insights_table_column.json
+msgid "Time"
+msgstr "Tid"
+
+#. Label of the time_taken (Float) field in DocType 'Insights Query Execution
+#. Log'
+#: insights/insights/doctype/insights_query_execution_log/insights_query_execution_log.json
+msgid "Time Taken (Seconds)"
+msgstr "Tid Tagen (Sekunder)"
+
+#. Label of the title (Data) field in DocType 'Insights Alert'
+#. Label of the title (Data) field in DocType 'Insights Chart v3'
+#. Label of the title (Data) field in DocType 'Insights Dashboard'
+#. Label of the title (Data) field in DocType 'Insights Dashboard v3'
+#. Label of the title (Data) field in DocType 'Insights Data Source'
+#. Label of the title (Data) field in DocType 'Insights Data Source v3'
+#. Label of the title (Data) field in DocType 'Insights Folder'
+#. Label of the title (Data) field in DocType 'Insights Notebook'
+#. Label of the title (Data) field in DocType 'Insights Notebook Page'
+#. Label of the title (Data) field in DocType 'Insights Query'
+#. Label of the title (Data) field in DocType 'Insights Query Chart'
+#. Label of the title (Data) field in DocType 'Insights Query v3'
+#. Label of the title (Data) field in DocType 'Insights Table Import Job'
+#. Label of the title (Data) field in DocType 'Insights Workbook'
+#: frontend/src2/data_source/ConnectClickhouseDialog.vue:27
+#: frontend/src2/data_source/ConnectDuckDBDialog.vue:22
+#: frontend/src2/data_source/ConnectMariaDBDialog.vue:27
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:28
+#: frontend/src2/data_source/DataSourceList.vue:90
+#: frontend/src2/query/components/QueryAlertsDialog.vue:37
+#: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:32
+#: frontend/src2/workbook/WorkbookList.vue:42
+#: insights/insights/doctype/insights_alert/insights_alert.json
+#: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
+#: insights/insights/doctype/insights_dashboard/insights_dashboard.json
+#: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
+#: insights/insights/doctype/insights_data_source/insights_data_source.json
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+#: insights/insights/doctype/insights_folder/insights_folder.json
+#: insights/insights/doctype/insights_notebook/insights_notebook.json
+#: insights/insights/doctype/insights_notebook_page/insights_notebook_page.json
+#: insights/insights/doctype/insights_query/insights_query.json
+#: insights/insights/doctype/insights_query_chart/insights_query_chart.json
+#: insights/insights/doctype/insights_query_v3/insights_query_v3.json
+#: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
+#: insights/insights/doctype/insights_workbook/insights_workbook.json
+msgid "Title"
+msgstr "Benämning"
+
+#: frontend/src2/query/components/ColumnFilterTypeDate.vue:53
+msgid "Today"
+msgstr "Idag"
+
+#: frontend/src2/charts/components/DonutChartConfigForm.vue:57
+msgid "Top"
+msgstr "Topp"
+
+#: frontend/src2/query/components/FormatRule.vue:201
+msgid "Top N percent"
+msgstr "Övre N procent"
+
+#: frontend/src2/query/components/FormatRule.vue:199
+msgid "Top N values"
+msgstr "Övre N värden"
+
+#. Label of the transform_tab (Tab Break) field in DocType 'Insights Query'
+#: insights/insights/doctype/insights_query/insights_query.json
+msgid "Transform"
+msgstr "Omvandla"
+
+#. Label of the transforms (Table) field in DocType 'Insights Query'
+#: insights/insights/doctype/insights_query/insights_query.json
+msgid "Transforms"
+msgstr "Omvandlar"
+
+#. Option for the 'Type' (Select) field in DocType 'Insights Query Transform'
+#: insights/insights/doctype/insights_query_transform/insights_query_transform.json
+msgid "Transpose"
+msgstr "Transponera"
+
+#: frontend/src2/components/DemoDataBanner.vue:50
+msgid "Try demo data"
+msgstr "Testa demodata"
+
+#. Option for the 'Week Starts On' (Select) field in DocType 'Insights
+#. Settings'
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Tuesday"
+msgstr "Tisdag"
+
+#. Label of the item_type (Data) field in DocType 'Insights Dashboard Item'
+#. Label of the type (Select) field in DocType 'Insights Data Source v3'
+#. Label of the type (Select) field in DocType 'Insights Folder'
+#. Label of the type (Data) field in DocType 'Insights Query Chart'
+#. Label of the type (Data) field in DocType 'Insights Query Column'
+#. Label of the type (Select) field in DocType 'Insights Query Transform'
+#. Label of the type (Select) field in DocType 'Insights Table Column'
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:133
+#: insights/insights/doctype/insights_dashboard_item/insights_dashboard_item.json
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+#: insights/insights/doctype/insights_folder/insights_folder.json
+#: insights/insights/doctype/insights_query_chart/insights_query_chart.json
+#: insights/insights/doctype/insights_query_column/insights_query_column.json
+#: insights/insights/doctype/insights_query_transform/insights_query_transform.json
+#: insights/insights/doctype/insights_table_column/insights_table_column.json
+msgid "Type"
+msgstr "Typ "
+
+#: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:72
+msgid "Unexpected validation error"
+msgstr "Oväntat valideringsfel"
+
+#: frontend/src2/charts/components/MeasurePicker.vue:97
+msgid "Unique Count of..."
+msgstr "Unik Antal av..."
+
+#. Option for the 'Type' (Select) field in DocType 'Insights Query Transform'
+#: insights/insights/doctype/insights_query_transform/insights_query_transform.json
+msgid "Unpivot"
+msgstr "Avpivotera"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:129
+msgid "Update Alert"
+msgstr "Uppdatera Avisering"
+
+#: frontend/src2/data_source/DataSourceTableList.vue:95
+msgid "Update Table Links"
+msgstr "Uppdatera Tabell Länkar"
+
+#: frontend/src2/data_source/DataSourceTableList.vue:82
+msgid "Update Tables"
+msgstr "Uppdatera Tabeller"
+
+#: frontend/src2/data_source/DataSourceList.vue:76
+msgid "Upload CSV or Excel"
+msgstr "Ladda upp CSV eller Excel"
+
+#: frontend/src2/data_source/UploadCSVFileDialog.vue:95
+msgid "Upload CSV/Excel File"
+msgstr "Ladda upp CSV/Excel fil"
+
+#: frontend/src2/data_source/UploadCSVFileDialog.vue:37
+msgid "Upload Failed"
+msgstr "Uppladdning misslyckades"
+
+#: frontend/src2/data_source/DataSourceList.vue:78
+msgid "Upload a CSV or Excel file to create a new data source"
+msgstr "Ladda upp CSV eller Excel fil för att skapa ny datakälla"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:231
+msgid "Use Custom Condition"
+msgstr "Använd Anpassad Villkor"
+
+#. Label of the use_live_connection (Check) field in DocType 'Insights Query
+#. v3'
+#: insights/insights/doctype/insights_query_v3/insights_query_v3.json
+msgid "Use Live Connection"
+msgstr "Använd Realtid Anslutning"
+
+#. Label of the use_ssl (Check) field in DocType 'Insights Data Source'
+#. Label of the use_ssl (Check) field in DocType 'Insights Data Source v3'
+#: insights/insights/doctype/insights_data_source/insights_data_source.json
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "Use SSL"
+msgstr "Använd SSL"
+
+#: frontend/src2/data_source/ConnectClickhouseDialog.vue:69
+#: frontend/src2/data_source/ConnectMariaDBDialog.vue:69
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:77
+msgid "Use secure connection (SSL)?"
+msgstr "Använd säker anslutning (SSL)?"
+
+#. Label of the user (Link) field in DocType 'Insights Team Member'
+#: frontend/src2/settings/UsersSettings.vue:29
+#: frontend/src2/users/UserList.vue:29
+#: insights/insights/doctype/insights_team_member/insights_team_member.json
+msgid "User"
+msgstr "Användare"
+
+#. Label of the username (Data) field in DocType 'Insights Data Source'
+#. Label of the username (Data) field in DocType 'Insights Data Source v3'
+#: frontend/src2/data_source/ConnectClickhouseDialog.vue:56
+#: frontend/src2/data_source/ConnectMariaDBDialog.vue:56
+#: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:64
+#: insights/insights/doctype/insights_data_source/insights_data_source.json
+#: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
+msgid "Username"
+msgstr "Användarnamn"
+
+#: frontend/src2/settings/Settings.vue:33 frontend/src2/users/UserList.vue:146
+msgid "Users"
+msgstr "Användare"
+
+#: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:57
+msgid "Validation failed"
+msgstr "Validering misslyckades"
+
+#. Label of the value (Password) field in DocType 'Insights Secret Key'
+#: frontend/src2/components/VariablesDialog.vue:85
+#: frontend/src2/query/components/FormatRule.vue:425
+#: insights/insights/doctype/insights_secret_key/insights_secret_key.json
+msgid "Value"
+msgstr "Värde"
+
+#: frontend/src2/query/components/FormatRule.vue:224
+msgid "Value Rules"
+msgstr "Värde Regler"
+
+#. Label of the variable_name (Data) field in DocType 'Insights Query Variable'
+#: insights/insights/doctype/insights_query_variable/insights_query_variable.json
+msgid "Variable Name"
+msgstr "Variabel Namn"
+
+#. Label of the variable_value (Password) field in DocType 'Insights Query
+#. Variable'
+#: insights/insights/doctype/insights_query_variable/insights_query_variable.json
+msgid "Variable Value"
+msgstr "Variabel Värde"
+
+#. Label of the variables (Table) field in DocType 'Insights Query'
+#. Label of the variables (Table) field in DocType 'Insights Query v3'
+#: frontend/src2/components/VariablesDialog.vue:56
+#: frontend/src2/components/VariablesDialog.vue:62
+#: frontend/src2/query/components/ScriptQueryEditor.vue:106
+#: insights/insights/doctype/insights_query/insights_query.json
+#: insights/insights/doctype/insights_query_v3/insights_query_v3.json
+msgid "Variables"
+msgstr "Variabler"
+
+#: frontend/src2/components/VariablesDialog.vue:69
+msgid "Variables are used to store sensitive information such as API keys and credentials. They can be referenced and combined in your script just like any other variable. For eg."
+msgstr "Variabler används för att lagra känslig information som API nycklar och inloggningsuppgifter. De kan refereras till och kombineras i ditt skript precis som vilken annan variabel som helst. Till exempel."
+
+#: frontend/src2/charts/components/SankeyChartConfigForm.vue:61
+msgid "Vertical"
+msgstr "Vertikal"
+
+#. Label of the vertical_compact_layout (Check) field in DocType 'Insights
+#. Dashboard v3'
+#: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
+msgid "Vertical Compact Layout"
+msgstr "Vertikal Kompakt Layout"
+
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:27
+msgid "View SQL"
+msgstr "Visa SQL"
+
+#: frontend/src2/workbook/WorkbookList.vue:74
+msgid "Views"
+msgstr "Vyer"
+
+#. Option for the 'Week Starts On' (Select) field in DocType 'Insights
+#. Settings'
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Wednesday"
+msgstr "Onsdag"
+
+#. Label of the week_starts_on (Select) field in DocType 'Insights Settings'
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Week Starts On"
+msgstr "Veckan börjar på"
+
+#. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
+#: insights/insights/doctype/insights_alert/insights_alert.json
+msgid "Weekly"
+msgstr "Veckovis"
+
+#. Label of the workbook (Link) field in DocType 'Insights Chart v3'
+#. Label of the workbook (Link) field in DocType 'Insights Dashboard v3'
+#. Label of the workbook (Link) field in DocType 'Insights Folder'
+#. Label of the workbook (Link) field in DocType 'Insights Query v3'
+#: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
+#: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
+#: insights/insights/doctype/insights_folder/insights_folder.json
+#: insights/insights/doctype/insights_query_v3/insights_query_v3.json
+msgid "Workbook"
+msgstr "Arbetsbok"
+
+#: frontend/src2/components/AppSidebar.vue:79
+#: frontend/src2/home/HomeWorkbookList.vue:36
+#: frontend/src2/workbook/WorkbookList.vue:148
+msgid "Workbooks"
+msgstr "Arbetsböcker"
+
+#: frontend/src2/charts/components/MapChartConfigForm.vue:54
+msgid "World Map"
+msgstr "Världskarta"
+
+#. Description of the 'Script' (Code) field in DocType 'Insights Table Import
+#. Job'
+#: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
+msgid "Write Python code to fetch and transform data. Available globals:<br>• client: API client for the selected data source<br>• table: Write data to warehouse. Methods: insert(data, overwrite=False)<br>• state: Persist data between runs. Methods: get(key, default=None), set(key, value), delete(key), clear()<br>• secrets: Access secret keys. Methods: get(key)<br>• log(message): Log execution messages"
+msgstr "Skriv Python kod för att hämta och omvandla data. Tillgängliga globaler:<br>• klient: API klient för vald datakälla<br>• tabell: Skriv data till lager. Metoder: insert(data, overwrite=False)<br>• state: Fortsätta data mellan körningar. Metoder: get(key, default=Inone), set(key, value), delete(key), clear()<br>• hemligheter: Access hemliga nycklar. Metoder: get(key)<br>• log(message): Log exekvering meddelanden"
+
+#: frontend/src2/query/components/UnionSelectorDialog.vue:143
+msgid "Yes"
+msgstr "Ja"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:251
+msgid "You can use markdown to format the message. Use double asterisks (**) for bold text. You can use the following fields in the message:"
+msgstr "Använd markdown för att formatera meddelande. Använd dubbla asterisker (**) för fetstil. Använd följande fält i meddelande:"
+
+#: insights/decorators.py:26
+msgid "You do not have permission to access this resource"
+msgstr "Du har inte behörighet att komma åt denna resurs"
+
+#: insights/api/workbooks.py:165 insights/api/workbooks.py:186
+#: insights/api/workbooks.py:198 insights/api/workbooks.py:225
+#: insights/api/workbooks.py:236 insights/api/workbooks.py:250
+msgid "You do not have permission to modify this workbook"
+msgstr "Du har inte behörighet att ändra denna arbetsbok"
+
+#: insights/api/workbooks.py:79 insights/api/workbooks.py:132
+msgid "You do not have permission to share this workbook"
+msgstr "Du har inte behörighet att dela denna arbetsbok"
+
+#: frontend/src2/home/HomeWorkbookList.vue:68
+msgid "Your workbooks will appear here. Create a new workbook to get started."
+msgstr "Dina arbetsböcker kommer att visas här. Skapa ny arbetsbok för att komma igång."
+
+#: frontend/src2/query/components/FormatRule.vue:194
+msgid "after date"
+msgstr "efter datum"
+
+#. Option for the 'Order By' (Select) field in DocType 'Insights Query Column'
+#: insights/insights/doctype/insights_query_column/insights_query_column.json
+msgid "asc"
+msgstr "Stigande"
+
+#: frontend/src2/query/components/FormatRule.vue:193
+msgid "before date"
+msgstr "före datum"
+
+#: frontend/src2/query/components/FormatRule.vue:195
+msgid "between dates"
+msgstr "mellan datum"
+
+#. Option for the 'Type' (Select) field in DocType 'Insights Folder'
+#: insights/insights/doctype/insights_folder/insights_folder.json
+msgid "chart"
+msgstr "diagram"
+
+#: frontend/src2/query/components/FormatRule.vue:174
+msgid "contains"
+msgstr "innehåller"
+
+#. Option for the 'Order By' (Select) field in DocType 'Insights Query Column'
+#: insights/insights/doctype/insights_query_column/insights_query_column.json
+msgid "desc"
+msgstr "Fallande"
+
+#: frontend/src2/query/components/FormatRule.vue:175
+msgid "does not contain"
+msgstr "innehåller inte"
+
+#: frontend/src2/query/components/FormatRule.vue:179
+msgid "does not equal"
+msgstr "är inte lika med"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:165
+msgid "e.g. 0 0 12 * * ?"
+msgstr "t.ex. 0 0 12 * * ?"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:190
+msgid "e.g. 123456789"
+msgstr "t.ex. 123456789"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:146
+msgid "e.g. Low Inventory"
+msgstr "t.ex. Låg Lager"
+
+#: frontend/src2/components/VariablesDialog.vue:99
+msgid "e.g. api_key"
+msgstr "t.ex. api_key"
+
+#: frontend/src2/query/components/AlertSetupDialog.vue:183
+msgid "e.g. john@example.com, henry@example.com"
+msgstr "t.ex. john@example.com, henry@example.com"
+
+#: frontend/src2/query/components/FormatRule.vue:177
+msgid "ends with"
+msgstr "slutar med"
+
+#: frontend/src2/query/components/FormatRule.vue:165
+#: frontend/src2/query/components/FormatRule.vue:178
+msgid "equals"
+msgstr "lika"
+
+#. Label of the folder (Data) field in DocType 'Insights Chart v3'
+#. Label of the folder (Data) field in DocType 'Insights Query v3'
+#: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
+#: insights/insights/doctype/insights_query_v3/insights_query_v3.json
+msgid "folder"
+msgstr "mapp"
+
+#: frontend/src2/query/components/FormatRule.vue:167
+msgid "greater than"
+msgstr "större än"
+
+#: frontend/src2/query/components/FormatRule.vue:168
+msgid "greater than or equals"
+msgstr "större än eller lika med"
+
+#: frontend/src2/query/components/FormatRule.vue:180
+msgid "is empty"
+msgstr "är tom"
+
+#: frontend/src2/query/components/FormatRule.vue:191
+msgid "is last month"
+msgstr "är förra månaden"
+
+#: frontend/src2/query/components/FormatRule.vue:189
+msgid "is last week"
+msgstr "är förra veckan"
+
+#: frontend/src2/query/components/FormatRule.vue:181
+msgid "is not empty"
+msgstr "är inte tom"
+
+#: frontend/src2/query/components/FormatRule.vue:190
+msgid "is this month"
+msgstr "är denna månad"
+
+#: frontend/src2/query/components/FormatRule.vue:188
+msgid "is this week"
+msgstr "är denna vecka"
+
+#: frontend/src2/query/components/FormatRule.vue:192
+msgid "is this year"
+msgstr "är detta år"
+
+#: frontend/src2/query/components/FormatRule.vue:185
+msgid "is today"
+msgstr "är idag"
+
+#: frontend/src2/query/components/FormatRule.vue:187
+msgid "is tomorrow"
+msgstr "är imorgon"
+
+#: frontend/src2/query/components/FormatRule.vue:186
+msgid "is yesterday"
+msgstr "är igår"
+
+#: frontend/src2/query/components/FormatRule.vue:169
+msgid "less than"
+msgstr "mindre än"
+
+#: frontend/src2/query/components/FormatRule.vue:170
+msgid "less than or equals"
+msgstr "mindre än eller lika med"
+
+#: frontend/src2/query/components/FormatRule.vue:166
+msgid "not equals"
+msgstr "inte lika med"
+
+#. Option for the 'Type' (Select) field in DocType 'Insights Folder'
+#: insights/insights/doctype/insights_folder/insights_folder.json
+msgid "query"
+msgstr "dataförfråga"
+
+#. Label of the sort_order (Int) field in DocType 'Insights Chart v3'
+#. Label of the sort_order (Int) field in DocType 'Insights Query v3'
+#: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
+#: insights/insights/doctype/insights_query_v3/insights_query_v3.json
+msgid "sort_order"
+msgstr "Sortering"
+
+#: frontend/src2/query/components/FormatRule.vue:176
+msgid "starts with"
+msgstr "börjar med"
+
+#: frontend/src2/query/components/ColumnsSelectorDialog.vue:120
+msgid "{0} columns selected"
+msgstr "{0} kolumner valda"
+

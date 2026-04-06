@@ -5,7 +5,7 @@ from insights.decorators import insights_whitelist
 
 
 @insights_whitelist()
-def get_resource_access_info(resource_type, resource_name):
+def get_resource_access_info(resource_type: str, resource_name: str):
     # returns a list of authorized and unauthorized teams for a resource
     InsightsTeam = frappe.qb.DocType("Insights Team")
     InsightsTeamMember = frappe.qb.DocType("Insights Team Member")
@@ -62,7 +62,7 @@ def get_resource_access_info(resource_type, resource_name):
 
 
 @insights_whitelist()
-def grant_access(resource_type, resource_name, team):
+def grant_access(resource_type: str, resource_name: str, team: str):
     if (
         frappe.db.get_value(resource_type, resource_name, "owner")
         == frappe.session.user
@@ -85,7 +85,7 @@ def grant_access(resource_type, resource_name, team):
 
 
 @insights_whitelist()
-def revoke_access(resource_type, resource_name, team):
+def revoke_access(resource_type: str, resource_name: str, team: str):
     if (
         frappe.db.get_value(resource_type, resource_name, "owner")
         == frappe.session.user

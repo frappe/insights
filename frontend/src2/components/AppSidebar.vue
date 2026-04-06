@@ -20,9 +20,10 @@
 			</div>
 		</div>
 		<div>
+				<DemoDataBanner v-if="!isSidebarCollapsed" class="m-2 p-2" />
 			<TrialBanner v-if="is_fc_site" :is-sidebar-collapsed="isSidebarCollapsed" />
 			<SidebarLink
-				:label="isSidebarCollapsed ? 'Expand' : 'Collapse'"
+				:label="isSidebarCollapsed ? __('Expand') : __('Collapse')"
 				:isCollapsed="isSidebarCollapsed"
 				@click="isSidebarCollapsed = !isSidebarCollapsed"
 				class="m-2"
@@ -57,8 +58,10 @@ import { computed, ref } from 'vue'
 import useSettings from '../settings/settings'
 import Settings from '../settings/Settings.vue'
 import SidebarLink from './SidebarLink.vue'
+import DemoDataBanner from './DemoDataBanner.vue'
 import UserDropdown from './UserDropdown.vue'
 import { TrialBanner } from 'frappe-ui/frappe'
+import { __ } from '../translation'
 
 const isSidebarCollapsed = useStorage('insights:sidebarCollapsed', false)
 const showSettingsDialog = ref(false)
@@ -68,28 +71,28 @@ const is_fc_site = window.is_fc_site
 
 const links = ref([
 	{
-		label: 'Dashboards',
+		label: __('Dashboards'),
 		icon: LayoutGrid,
 		to: 'DashboardList',
 	},
 	{
-		label: 'Workbooks',
+		label: __('Workbooks'),
 		icon: Book,
 		to: 'WorkbookList',
 	},
 	{
-		label: 'Data Sources',
+		label: __('Data Sources'),
 		icon: Database,
 		to: 'DataSourceList',
 	},
 	{
-		label: 'Data Store',
+		label: __('Data Store'),
 		icon: DatabaseZap,
 		to: 'DataStoreList',
 		hidden: computed(() => !settings.doc.enable_data_store),
 	},
 	{
-		label: 'Settings',
+		label: __('Settings'),
 		icon: SettingsIcon,
 		to: 'Settings',
 		onClick: () => (showSettingsDialog.value = true),

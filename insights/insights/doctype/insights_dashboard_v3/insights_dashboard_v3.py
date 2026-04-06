@@ -10,6 +10,7 @@ from frappe.model.document import Document
 from frappe.query_builder import Interval
 from frappe.query_builder.functions import Now
 
+from insights.api.telemetry import capture_event
 from insights.utils import DocShare, File
 
 
@@ -80,12 +81,15 @@ class InsightsDashboardv3(Document):
         )
 
     @frappe.whitelist()
-    def get_distinct_column_values(self, query, column_name, search_term=None, adhoc_filters=None):
+    def get_distinct_column_values(
+        self, query: str, column_name: str, search_term: str | None = None, adhoc_filters: dict | None = None
+    ):
         is_guest = frappe.session.user == "Guest"
         if is_guest and not self.is_public:
             raise frappe.PermissionError
 
-        self.check_linked_filters(query, column_name)
+        if not self.has_permission("write"):
+            self.check_linked_filters(query, column_name)
 
         doc = frappe.get_cached_doc("Insights Query v3", query)
         return doc.get_distinct_column_values(
@@ -181,7 +185,7 @@ class InsightsDashboardv3(Document):
         return people_with_access, org_access
 
     @frappe.whitelist()
-    def update_access(self, data):
+    def update_access(self, data: dict | str):
         if not frappe.has_permission("Insights Dashboard v3", ptype="share", doc=self.name):
             frappe.throw("You do not have permission to share this dashboard")
 
@@ -233,6 +237,11 @@ class InsightsDashboardv3(Document):
                 frappe.delete_doc("DocShare", share.name, ignore_permissions=True)
 
         self.db_set("is_public", is_public)
+
+        if people_with_access:
+            capture_event("dashboard_shared_with_user")
+        if is_public:
+            capture_event("dashboard_set_public")
 
 
 def get_page_preview(url: str, headers: dict | None = None) -> bytes:

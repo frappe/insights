@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { ColumnOption, FilterGroupArgs, GroupedColumnOption } from '../../types/query.types'
+import { __ } from '../../translation'
 import FiltersSelector from './FiltersSelector.vue'
 
 const props = defineProps<{
@@ -16,7 +17,8 @@ const showDialog = defineModel()
 <template>
 	<Dialog
 		v-model="showDialog"
-		:options="{ size: '2xl', title: 'Filter' }"
+		:disableOutsideClickToClose="true"
+		:options="{ size: '2xl', title: __('Filter') }"
 		@close="showDialog = false"
 	>
 		<template #body-content>

@@ -37,8 +37,6 @@ if (props.item.chart) {
 	})
 }
 
-const showExpandedChartDialog = ref(false)
-
 const router = useRouter()
 const workbook = inject(workbookKey, null)
 wheneverChanges(
@@ -59,35 +57,4 @@ wheneverChanges(
 		<AlertTriangle class="h-8 w-8 text-gray-500" stroke-width="1" />
 		<p class="text-p-base text-gray-500">Chart not found</p>
 	</div>
-
-	<div
-		v-if="chart && chart.doc.chart_type !== 'Number'"
-		class="absolute top-1.5 right-1.5 p-2 opacity-0 transition-opacity group-hover:opacity-100"
-	>
-		<Button variant="ghost" @click="showExpandedChartDialog = true">
-			<Maximize class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
-		</Button>
-	</div>
-
-	<Dialog
-		v-if="chart"
-		v-model="showExpandedChartDialog"
-		:options="{
-			size: '7xl',
-			title: chart?.doc.title,
-		}"
-	>
-		<template #body>
-			<div class="h-[75vh] w-full">
-				<ChartRenderer v-if="chart" :chart="chart" />
-				<div class="absolute top-2 right-2">
-					<Button variant="ghost" @click="showExpandedChartDialog = false">
-						<template #icon>
-							<XIcon class="size-4 text-gray-700" />
-						</template>
-					</Button>
-				</div>
-			</div>
-		</template>
-	</Dialog>
 </template>

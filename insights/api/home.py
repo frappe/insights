@@ -9,7 +9,7 @@ from insights.decorators import insights_whitelist
 
 
 @insights_whitelist()
-def create_last_viewed_log(record_type, record_name):
+def create_last_viewed_log(record_type: str, record_name: str):
     recordToDoctype = {
         "Query": "Insights Query",
         "Dashboard": "Insights Dashboard",

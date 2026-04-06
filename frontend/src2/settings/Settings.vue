@@ -2,24 +2,25 @@
 import { Building2, CircleUser, DatabaseZap, KeyRound, SettingsIcon, Users } from 'lucide-vue-next'
 import { defineAsyncComponent, shallowRef } from 'vue'
 import TabbedSidebarLayout, { Tab, TabGroup } from '../components/TabbedSidebarLayout.vue'
+import { __ } from '../translation'
 
 const showDialog = defineModel({ required: true, default: false })
 const tabGroups: TabGroup[] = [
 	{
-		groupLabel: 'Account',
+		groupLabel: __('Account'),
 		tabs: [
 			{
-				label: 'Profile',
+				label: __('Profile'),
 				icon: CircleUser,
 				component: defineAsyncComponent(() => import('./ProfileSettings.vue')),
 			},
 		],
 	},
 	{
-		groupLabel: 'Organization',
+		groupLabel: __('Organization'),
 		tabs: [
 			{
-				label: 'General',
+				label: __('General'),
 				icon: SettingsIcon,
 				component: defineAsyncComponent(() => import('./GeneralSettings.vue')),
 			},
@@ -29,17 +30,17 @@ const tabGroups: TabGroup[] = [
 			// 	component: () => {},
 			// },
 			{
-				label: 'Users',
+				label: __('Users'),
 				icon: Users,
 				component: defineAsyncComponent(() => import('./UsersSettings.vue')),
 			},
 			{
-				label: 'Permissions',
+				label: __('Permissions'),
 				icon: KeyRound,
 				component: defineAsyncComponent(() => import('./PermissionsSettings.vue')),
 			},
 			{
-				label: 'Data Store',
+				label: __('Data Store'),
 				icon: DatabaseZap,
 				component: defineAsyncComponent(() => import('./DataStoreSettings.vue')),
 			},
@@ -54,7 +55,7 @@ const activeTab = shallowRef<Tab>(tabGroups[0].tabs[0])
 		<template #body>
 			<div class="relative flex text-base" :style="{ height: 'calc(100vh - 12rem)' }">
 				<TabbedSidebarLayout
-					title="Settings"
+					:title="__('Settings')"
 					:tabs="tabGroups"
 					v-model:activeTab="activeTab"
 				/>

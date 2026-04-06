@@ -65,3 +65,9 @@ typing-modules = ["frappe.types.DF"]
 quote-style = "double"
 indent-style = "space"
 docstring-code-format = true
+
+[project.urls]
+Homepage = "https://frappe.io/insights"
+Repository = "https://github.com/frappe/insights.git"
+"Bug Reports" = "https://github.com/frappe/insights/issues"
+

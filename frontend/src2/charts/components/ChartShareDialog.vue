@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Globe } from 'lucide-vue-next'
+import { __ } from '../../translation'
 import { computed, ref, unref } from 'vue'
 import { copyToClipboard } from '../../helpers'
 import { Chart } from '../chart'
@@ -31,10 +32,10 @@ function saveChanges() {
 	<Dialog
 		v-model="show"
 		:options="{
-			title: 'Share Chart',
+			title: __('Share Chart'),
 			actions: [
 				{
-					label: 'Done',
+					label: __('Done'),
 					variant: 'solid',
 					disabled: !hasChanged,
 					onClick: saveChanges,

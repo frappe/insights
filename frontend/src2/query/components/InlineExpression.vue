@@ -20,18 +20,3 @@ const modelValue = defineModel<Expression>({
 		/>
 	</div>
 </template>
-
-<style>
-.inline-expression {
-	& .cm-content {
-		padding: 0 !important;
-		line-height: 26px !important;
-	}
-	& .cm-placeholder {
-		line-height: 26px !important;
-	}
-	& .cm-gutters {
-		line-height: 26px !important;
-	}
-}
-</style>

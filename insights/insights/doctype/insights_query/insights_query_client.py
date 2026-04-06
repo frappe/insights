@@ -8,9 +8,6 @@ from frappe.utils import cint
 from insights.insights.doctype.insights_data_source.sources.query_store import (
     remove_stored_query,
 )
-from insights.insights.doctype.insights_query.insights_assisted_query import (
-    DEFAULT_JSON,
-)
 from insights.insights.doctype.insights_query.patches.migrate_old_query_to_new_query_structure import (
     convert_classic_to_assisted,
 )
@@ -18,7 +15,7 @@ from insights.insights.doctype.insights_query.patches.migrate_old_query_to_new_q
 
 class InsightsQueryClient:
     @frappe.whitelist()
-    def set_status(self, status):
+    def set_status(self, status: str):
         # since status is auto set based on the sql, we need some way to override it
         self.db_set("status", status)
 
@@ -29,7 +26,7 @@ class InsightsQueryClient:
         return new_query.name
 
     @frappe.whitelist()
-    def add_transform(self, type, options):
+    def add_transform(self, type: str, options: dict):
         existing = self.get("transforms", {"type": type})
         if existing:
             existing[0].options = frappe.as_json(options)
@@ -49,7 +46,7 @@ class InsightsQueryClient:
         self.run()
 
     @frappe.whitelist()
-    def set_limit(self, limit):
+    def set_limit(self, limit: int):
         validated_limit = cint(limit)
         if not validated_limit or validated_limit < 0:
             frappe.throw("Limit must be a positive integer")
@@ -116,7 +113,7 @@ class InsightsQueryClient:
         self.save()
 
     @frappe.whitelist()
-    def fetch_related_tables_columns(self, search_txt=None):
+    def fetch_related_tables_columns(self, search_txt: str | None = None):
         if not self.is_assisted_query:
             return []
         if search_txt and not isinstance(search_txt, str):
@@ -129,18 +126,13 @@ class InsightsQueryClient:
 
         related_table_names = get_related_table_names(table_names, self.data_source)
 
-        selected_table_cols = get_matching_columns_from(
-            table_names, self.data_source, search_txt
-        )
-        related_table_cols = get_matching_columns_from(
-            related_table_names, self.data_source, search_txt
-        )
+        selected_table_cols = get_matching_columns_from(table_names, self.data_source, search_txt)
+        related_table_cols = get_matching_columns_from(related_table_names, self.data_source, search_txt)
 
         columns = []
         for col in selected_table_cols + related_table_cols:
             col_added = any(
-                col["column"] == column["column"] and col["table"] == column["table"]
-                for column in columns
+                col["column"] == column["column"] and col["table"] == column["table"] for column in columns
             )
             if col_added:
                 continue
@@ -166,10 +158,7 @@ def get_related_table_names(table_names, data_source):
         frappe.qb.from_(insights_table)
         .left_join(insights_table_link)
         .on(insights_table.name == insights_table_link.parent)
-        .where(
-            (insights_table.data_source == data_source)
-            & (insights_table.table.isin(table_names))
-        )
+        .where((insights_table.data_source == data_source) & (insights_table.table.isin(table_names)))
         .select(insights_table_link.foreign_table)
         .groupby(insights_table_link.foreign_table)
         .run(pluck=True)
@@ -220,9 +209,7 @@ def get_matching_columns_from(tables, data_source, search_txt=None, limit=200):
         .on(insights_table.name == insights_table_column.parent)
         .select(*fields_to_select)
         .where(
-            (insights_table.data_source == data_source)
-            & insights_table.table.isin(tables)
-            & (search_cond)
+            (insights_table.data_source == data_source) & insights_table.table.isin(tables) & (search_cond)
         )
         .groupby(insights_table.table, insights_table_column.column)
         .limit(limit)

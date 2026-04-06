@@ -9,6 +9,7 @@ import { Workbook, workbookKey } from '../../../workbook/workbook'
 import { query_table, table } from '../../helpers'
 import DataSourceTableList from './DataSourceTableList.vue'
 import WorkbookQueryList from './WorkbookQueryList.vue'
+import { __ } from '../../../translation'
 
 const emit = defineEmits({ select: (source: SourceArgs) => true })
 const props = defineProps<{ source?: SourceArgs }>()
@@ -21,7 +22,7 @@ const selectedTable = ref<TableArgs>(
 				type: 'table',
 				data_source: '',
 				table_name: '',
-		  }
+		  },
 )
 
 const dataSourceStore = useDataSourceStore()
@@ -45,7 +46,7 @@ wheneverChanges(
 			workbook: '',
 			query_name: '',
 		}
-	}
+	},
 )
 
 dataSourceStore.getSources().then(() => {
@@ -77,7 +78,7 @@ const selectedQuery = ref<QueryTableArgs>(
 				type: 'query',
 				workbook: '',
 				query_name: '',
-		  }
+		  },
 )
 const workbook = inject<Workbook>(workbookKey)!
 if (workbook.doc.queries.length > 1) {
@@ -85,7 +86,7 @@ if (workbook.doc.queries.length > 1) {
 		groupLabel: 'Workbook',
 		tabs: [
 			{
-				label: 'Queries',
+				label: __('Queries'),
 				icon: Table2Icon,
 				component: () => <WorkbookQueryList v-model:selectedQuery={selectedQuery.value} />,
 			},
@@ -110,7 +111,7 @@ function onConfirm() {
 			  }
 			: {
 					table: table(selectedTable.value),
-			  }
+			  },
 	)
 	showDialog.value = false
 }
@@ -121,14 +122,14 @@ function onConfirm() {
 		<template #body>
 			<div class="relative flex pb-10" :style="{ height: 'calc(100vh - 12rem)' }">
 				<TabbedSidebarLayout
-					title="Pick Starting Data"
+					:title="__('Pick Starting Data')"
 					:tabs="tabGroups"
 					v-model:activeTab="activeTab"
 				/>
 				<div class="absolute bottom-3 right-3 flex gap-2">
-					<Button @click="showDialog = false"> Close </Button>
+					<Button @click="showDialog = false"> {{ __('Close') }} </Button>
 					<Button variant="solid" :disabled="confirmDisabled" @click="onConfirm">
-						Confirm
+						{{ __('Confirm') }}
 					</Button>
 				</div>
 			</div>

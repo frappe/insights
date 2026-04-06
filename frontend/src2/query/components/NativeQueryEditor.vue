@@ -6,11 +6,12 @@ import Code from '../../components/Code.vue'
 import ContentEditable from '../../components/ContentEditable.vue'
 import useDataSourceStore from '../../data_source/data_source'
 import { wheneverChanges } from '../../helpers'
+import { createToast } from '../../helpers/toasts'
+import { __ } from '../../translation'
 import { Query } from '../query'
 import QueryDataTable from './QueryDataTable.vue'
-import DataSourceSelector from './source_selector/DataSourceSelector.vue'
-import { createToast } from '../../helpers/toasts'
 import SchemaExplorer from './SchemaExplorer.vue'
+import DataSourceSelector from './source_selector/DataSourceSelector.vue'
 
 const query = inject<Query>('query')!
 query.autoExecute = false
@@ -22,7 +23,7 @@ const sql = ref(operation ? operation.raw_sql : '')
 function execute(force: boolean = false) {
 	if (!data_source.value) {
 		createToast({
-			title: 'Please select a data source first',
+			title: __('Please select a data source first'),
 			variant: 'error',
 		})
 		return
@@ -48,7 +49,7 @@ async function format() {
 		})
 	} catch (error) {
 		createToast({
-			title: 'Failed to format SQL',
+			title: __('Failed to format SQL'),
 			variant: 'error',
 		})
 	} finally {
@@ -97,7 +98,7 @@ const completions = computed(() => {
 		label: table,
 		detail: tableData.label,
 	}))
-	
+
 	return {
 		schema,
 		tables,
@@ -107,64 +108,64 @@ const completions = computed(() => {
 
 <template>
 	<div class="flex flex-1 gap-4 overflow-hidden p-4">
-
 		<div class="flex flex-1 flex-col gap-4 overflow-hidden">
-		<div class="relative flex h-[55%] w-full flex-col rounded border">
-			<div class="flex flex-shrink-0 items-center gap-1 border-b p-1">
-				<DataSourceSelector v-model="data_source" placeholder="Select a data source" />
-				<ContentEditable
-					class="flex h-7 cursor-text items-center justify-center rounded bg-white px-2 text-base text-gray-800 focus-visible:ring-1 focus-visible:ring-gray-600"
-					v-model="query.doc.title"
-					placeholder="Untitled Dashboard"
-				></ContentEditable>
+			<div class="relative flex h-[55%] w-full flex-col rounded border">
+				<div class="flex flex-shrink-0 items-center gap-1 border-b p-1">
+					<DataSourceSelector v-model="data_source" placeholder="Select a data source" />
+					<ContentEditable
+						class="flex h-7 cursor-text items-center justify-center rounded bg-white px-2 text-base text-gray-800 focus-visible:ring-1 focus-visible:ring-gray-600"
+						placeholder="Untitled Dashboard"
+						:modelValue="query.doc.title"
+						@returned="query.doc.title = $event"
+						@blur="query.doc.title = $event"
+					></ContentEditable>
+				</div>
+				<div class="flex-1 overflow-hidden">
+					<Code
+						ref="codeEditor"
+						:key="completions.tables.length"
+						v-model="sql"
+						language="sql"
+						:schema="completions.schema"
+						:tables="completions.tables"
+					/>
+				</div>
+				<div class="flex flex-shrink-0 gap-1 border-t p-1">
+					<Button @click="execute(true)" :label="__('Execute')">
+						<template #prefix>
+							<Play class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
+						</template>
+					</Button>
+					<Dropdown
+						:button="{ icon: MoreHorizontal }"
+						:options="[
+							{
+								label: __('Format SQL'),
+								icon: Wand2,
+								onClick: () => format(),
+							},
+						]"
+					/>
+				</div>
 			</div>
-			<div class="flex-1 overflow-hidden">
-				<Code
-					ref="codeEditor"
-					:key="completions.tables.length"
-					v-model="sql"
-					language="sql"
-					:schema="completions.schema"
-					:tables="completions.tables"
-				/>
+			<div
+				v-show="query.result.executedSQL"
+				class="tnum flex flex-shrink-0 items-center gap-2 text-sm text-gray-600"
+			>
+				<div class="h-2 w-2 rounded-full bg-green-500"></div>
+				<div class="flex items-center gap-1">
+					<span v-if="query.result.timeTaken == -1">
+						{{ __('Fetched from cache') }}
+					</span>
+					<span v-else>
+						{{ __('Fetched in {0}s', String(query.result.timeTaken)) }}
+					</span>
+					<span> {{ useTimeAgo(query.result.lastExecutedAt).value }} </span>
+				</div>
 			</div>
-			<div class="flex flex-shrink-0 gap-1 border-t p-1">
-				<Button @click="execute(false)" label="Execute">
-					<template #prefix>
-						<Play class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
-					</template>
-				</Button>
-				<Dropdown
-					:button="{ icon: MoreHorizontal }"
-					:options="[
-						{
-							label: 'Force Execute',
-							icon: Play,
-							onClick: () => execute(true),
-						},
-						{
-							label: 'Format SQL',
-							icon: Wand2,
-							onClick: () => format(),
-						},
-					]"
-				/>
+			<div class="relative flex w-full flex-1 flex-col overflow-hidden rounded border">
+				<QueryDataTable :query="query" :enable-alerts="true" />
 			</div>
-		</div>
-		<div
-			v-show="query.result.executedSQL"
-			class="tnum flex flex-shrink-0 items-center gap-2 text-sm text-gray-600"
-		>
-			<div class="h-2 w-2 rounded-full bg-green-500"></div>
-			<div>
-				<span v-if="query.result.timeTaken == -1"> Fetched from cache </span>
-				<span v-else> Fetched in {{ query.result.timeTaken }}s </span>
-				<span> {{ useTimeAgo(query.result.lastExecutedAt).value }} </span>
-			</div>
-		</div>
-		<div class="relative flex w-full flex-1 flex-col overflow-hidden rounded border">
-			<QueryDataTable :query="query" :enable-alerts="true" />
-		</div>
 		</div>
 		<div class="w-64 flex-shrink-0">
 			<SchemaExplorer :schema="dataSourceSchema" @insert-text="insertTextIntoEditor" />

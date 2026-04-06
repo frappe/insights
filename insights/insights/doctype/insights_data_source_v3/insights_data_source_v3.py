@@ -9,6 +9,8 @@ import frappe
 from frappe.model.document import Document
 from ibis import BaseBackend
 
+import insights
+from insights.api.telemetry import capture_event
 from insights.insights.doctype.insights_table_link_v3.insights_table_link_v3 import (
     InsightsTableLinkv3,
 )
@@ -28,8 +30,8 @@ from .connectors.frappe_db import (
 from .connectors.mariadb import get_mariadb_connection
 from .connectors.mssql import get_mssql_connection
 from .connectors.postgresql import get_postgres_connection
+from .connectors.rest_api import RestAPIClient
 from .connectors.sqlite import get_sqlite_connection
-from .data_warehouse import WAREHOUSE_DB_NAME
 
 
 class DataSourceConnectionError(frappe.ValidationError):
@@ -41,9 +43,6 @@ class InsightsDataSourceDocument:
         self.name = frappe.scrub(self.title)
 
     def before_insert(self):
-        if self.name == WAREHOUSE_DB_NAME:
-            frappe.throw("Cannot create a Data Source with this name")
-
         if (
             not frappe.flags.in_migrate
             and self.is_site_db
@@ -51,7 +50,48 @@ class InsightsDataSourceDocument:
         ):
             frappe.throw("Only one site database can be configured")
 
+    def before_import(self):
+        if not frappe.flags.in_migrate or not self.is_site_db:
+            return
+
+        if not frappe.db.exists("Insights Data Source v3", "Site DB"):
+            return
+
+        existing_doc = frappe.get_doc("Insights Data Source v3", "Site DB")
+        if not (
+            existing_doc.host
+            or existing_doc.port
+            or existing_doc.database_name
+            or existing_doc.username
+            or existing_doc.password
+        ):
+            return
+
+        # TODO: better way to handle this?
+        # preserve customized site db credentials
+        self.update(
+            {
+                "host": existing_doc.host,
+                "port": existing_doc.port,
+                "database_name": existing_doc.database_name,
+                "username": existing_doc.username,
+                "password": existing_doc.get_password("password", raise_exception=False),
+            }
+        )
+
+    def after_insert(self):
+        if not self.is_site_db:
+            capture_event("data_source_created")
+
     def on_update(self):
+        if self.type == "REST API":
+            self.db_set(
+                {
+                    "database_type": "DuckDB",
+                    "database_name": None,  # this should never be used
+                }
+            )
+
         if self.is_site_db:
             self.db_set("is_frappe_db", 1)
             self.db_set("status", "Active")
@@ -116,12 +156,27 @@ class InsightsDataSourceDocument:
     def validate(self):
         if self.is_site_db:
             return
-        if self.database_type == "SQLite" or self.database_type == "DuckDB":
+        if self.type == "REST API":
+            self.validate_api_fields()
+        elif self.database_type == "SQLite" or self.database_type == "DuckDB":
             self.validate_database_name()
         elif self.database_type == "BigQuery":
             self.validate_bigquery_fields()
         else:
             self.validate_remote_db_fields()
+
+    def validate_api_fields(self):
+        if not self.api_base_url:
+            frappe.throw("Base URL is mandatory for API Data Source")
+
+        if self.api_authentication_type == "API Key / Bearer Token" and not self.api_token:
+            frappe.throw("API Token is mandatory for the selected Authentication Type")
+
+        if self.api_authentication_type == "Basic Authentication":
+            mandatory = ("api_username", "api_password")
+            for field in mandatory:
+                if not self.get(field):
+                    frappe.throw(f"{field} is mandatory for the selected Authentication Type")
 
     def validate_database_name(self):
         mandatory = ("database_name",)
@@ -157,6 +212,12 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
     if TYPE_CHECKING:
         from frappe.types import DF
 
+        api_authentication_type: DF.Literal["None", "API Key / Bearer Token", "Basic Authentication"]
+        api_base_url: DF.Data | None
+        api_custom_headers: DF.JSON | None
+        api_password: DF.Password | None
+        api_token: DF.Password | None
+        api_username: DF.Data | None
         bigquery_dataset_id: DF.Data | None
         bigquery_project_id: DF.Data | None
         bigquery_service_account_key: DF.JSON | None
@@ -174,13 +235,14 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         schema: DF.Data | None
         status: DF.Literal["Inactive", "Active"]
         title: DF.Data
+        type: DF.Literal["Database", "REST API"]
         use_ssl: DF.Check
         username: DF.Data | None
     # end: auto-generated types
 
     def _get_ibis_backend(self) -> BaseBackend:
-        if self.name in frappe.local.insights_db_connections:
-            return frappe.local.insights_db_connections[self.name]
+        if self.name in insights.db_connections:
+            return insights.db_connections[self.name]
 
         try:
             db: BaseBackend = self._get_db_connection()
@@ -194,6 +256,11 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         if self.database_type == "MariaDB":
             db.raw_sql("SET SESSION time_zone='+00:00'")
             db.raw_sql("SET collation_connection = 'utf8mb4_unicode_ci'")
+            try:
+                db.raw_sql("SET SESSION tx_read_only = TRUE")
+            except Exception:
+                db.raw_sql("SET SESSION TRANSACTION_READ_ONLY = 1")
+
             MAX_STATEMENT_TIMEOUT = (
                 frappe.db.get_single_value("Insights Settings", "max_execution_time", cache=True) or 180
             )
@@ -203,7 +270,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             except Exception:
                 pass
 
-        frappe.local.insights_db_connections[self.name] = db
+        insights.db_connections[self.name] = db
         return db
 
     def _get_db_connection(self) -> BaseBackend:
@@ -211,6 +278,8 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             return get_sitedb_connection()
         if self.is_frappe_db:
             return get_frappedb_connection(self)
+        if self.type == "REST API":
+            return insights.warehouse.get_connection(self.schema)
         if self.database_type == "MariaDB":
             return get_mariadb_connection(self)
         if self.database_type == "PostgreSQL":
@@ -235,8 +304,11 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         if self.is_site_db:
             database_name = frappe.conf.db_name
 
-        if not database_name or self.database_type == "DuckDB" or self.database_type == "SQLite":
+        if not database_name or self.database_type == "SQLite":
             return db.list_tables()
+
+        if self.database_type == "DuckDB":
+            return db.list_tables(database=self.schema)
 
         if self.database_type == "PostgreSQL":
             schema = self.schema or "public"
@@ -255,13 +327,32 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         quoted_db_name = f"{db.dialect.QUOTE_START}{database_name}{db.dialect.QUOTE_END}"
         return db.list_tables(database=quoted_db_name)
 
-    def test_connection(self, raise_exception=False):
+    @frappe.whitelist()
+    def test_connection(self, raise_exception: bool = False):
+        if self.type == "REST API":
+            return self.test_api_connection(raise_exception)
+
         try:
             self.get_table_list()
             return True
         except Exception as e:
             if raise_exception:
                 raise e
+
+    def test_api_connection(self, raise_exception=False):
+        client = self.get_api_client()
+        try:
+            client.test_connection()
+            return True
+        except Exception as e:
+            if raise_exception:
+                raise e
+
+    def get_api_client(self):
+        if self.type != "REST API":
+            frappe.throw("Only REST API Data Sources have an API client")
+
+        return RestAPIClient(self)
 
     def update_table_list(self, force=False):
         remote_tables = self.get_table_list()
@@ -274,24 +365,25 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             return
 
         if force:
+            # TODO: prevent deletion of tables if the imports are customized
             frappe.db.delete(
                 "Insights Table v3",
                 {"data_source": self.name},
             )
 
-        tables_to_import = set(remote_tables)
+        new_tables = set(remote_tables)
         if not force:
             existing_tables = frappe.get_all(
                 "Insights Table v3",
                 {"data_source": self.name},
                 pluck="table",
             )
-            tables_to_import = set(remote_tables) - set(existing_tables)
+            new_tables = set(remote_tables) - set(existing_tables)
 
-        if not tables_to_import:
+        if not new_tables:
             return
 
-        InsightsTablev3.bulk_create(self.name, list(tables_to_import))
+        InsightsTablev3.bulk_create(self.name, list(new_tables))
         self.update_table_links(force)
 
     def update_table_links(self, force=False):
@@ -319,17 +411,14 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         if self.database_type == "PostgreSQL" and "." in table_name:
             schema, table = table_name.split(".")
             return remote_db.table(table, database=schema)
+        if self.type == "REST API":
+            return remote_db.table(table_name, database=self.schema)
         return remote_db.table(table_name)
-
-
-def before_request():
-    if not hasattr(frappe.local, "insights_db_connections"):
-        frappe.local.insights_db_connections = {}
 
 
 def after_request():
     closed = {}
-    for name, db in getattr(frappe.local, "insights_db_connections", {}).items():
+    for name, db in insights.db_connections.items():
         try:
             db.disconnect()
             closed[name] = True
@@ -337,12 +426,12 @@ def after_request():
             frappe.log_error(title=f"Failed to disconnect db connection for {name}")
 
     for name in closed:
-        del frappe.local.insights_db_connections[name]
+        del insights.db_connections[name]
 
 
 @contextmanager
 def db_connections():
-    before_request()
+    """Context manager to ensure database connections are cleaned up."""
     try:
         yield
     finally:

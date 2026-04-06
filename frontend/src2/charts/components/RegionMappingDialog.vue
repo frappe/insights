@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { __ } from '../../translation'
 import { call } from 'frappe-ui'
 import { Dialog, Button, Autocomplete, LoadingIndicator, TextInput } from 'frappe-ui'
 import { MappingData, Region } from '../../types/chart.types'
@@ -27,7 +28,7 @@ watch(
 	async (open) => {
 		if (open) await loadData()
 	},
-	{ immediate: true }
+	{ immediate: true },
 )
 
 async function loadData() {
@@ -147,7 +148,7 @@ const unresolvedRegions = computed(() => {
 	})
 
 	const filteredRegions = regions.filter((region) =>
-		region.user_region.toLowerCase().includes(searchQuery.value.toLowerCase())
+		region.user_region.toLowerCase().includes(searchQuery.value.toLowerCase()),
 	)
 	return filteredRegions
 })
@@ -190,7 +191,7 @@ function getOptions(region: Region) {
 <template>
 	<Dialog
 		:modelValue="modelValue"
-		:options="{ title: 'Resolve Locations', size: '2xl' }"
+		:options="{ title: __('Resolve Locations'), size: '2xl' }"
 		@update:modelValue="emit('update:modelValue', $event)"
 	>
 		<template #body-content>
@@ -213,14 +214,18 @@ function getOptions(region: Region) {
 							</h3>
 							<h3 class="text-sm font-bold text-gray-900">Unresolved Locations</h3>
 						</div>
-						<div class="h-[15rem] overflow-y-auto rounded-md border bg-white">
-							<TextInput
-								v-model="searchQuery"
-								placeholder="Search locations"
-								class="w-1/3 p-2"
-								variant="subtle"
-							/>
-							<div class="flex flex-col divide-y">
+						<div
+							class="h-[15rem] flex flex-col overflow-hidden rounded-md border bg-white"
+						>
+							<div class="z-10 bg-white">
+								<TextInput
+									v-model="searchQuery"
+									placeholder="Search locations"
+									class="w-1/3 p-2"
+									variant="subtle"
+								/>
+							</div>
+							<div class="flex flex-col divide-y overflow-y-auto">
 								<div
 									v-for="region in unresolvedRegions"
 									:key="region.user_region"
@@ -304,9 +309,9 @@ function getOptions(region: Region) {
 
 		<template #actions>
 			<div class="flex justify-end gap-2">
-				<Button label="Cancel" @click="emit('update:modelValue', false)" />
+				<Button :label="__('Cancel')" @click="emit('update:modelValue', false)" />
 				<Button
-					label="Save Changes"
+					:label="__('Save Changes')"
 					variant="solid"
 					:loading="saving"
 					:disabled="!hasChanges"

@@ -26,7 +26,6 @@ def get_subscription_info():
         return None
 
 
-@frappe.whitelist()
 def trial_expired():
     subscription_info = get_subscription_info()
     if not subscription_info:

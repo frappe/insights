@@ -158,10 +158,10 @@ export function useNumber(num: any) {
 export function applyRule(
     value: any,
     rule: cell_rules
-) {
+): boolean {
 
     const numberVal = useNumber(value)
-    if (numberVal === null) return;
+    if (numberVal === null) return false;
     switch (rule.operator) {
         case '<':
             return numberVal < (rule.value as number)
@@ -174,7 +174,9 @@ export function applyRule(
         case '>=':
             return numberVal >= (rule.value as number)
         case '!=':
-            return numberVal !== (rule.value)
+            return numberVal !== (rule.value as number)
+        default:
+            return false
     }
 
 }
@@ -202,8 +204,7 @@ export function applyTextRule(
         case 'is_empty':
             return textVal.trim() === '';
         case 'is_not_empty':
-            // handle null case as well
-            return textVal.trim() !== '' || ruleValue.trim() !== null;
+            return textVal.trim() !== '';
         default:
             return false;
     }
@@ -280,8 +281,7 @@ export function applyRankRule(
     const numVal = useNumber(value);
     if (numVal === null) return false;
     // sort descending
-    const numericValues = allValues
-        .sort((a, b) => b - a);
+    const numericValues = [...allValues].sort((a, b) => b - a);
 
     if (numericValues.length === 0) return false;
 

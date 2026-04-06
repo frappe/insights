@@ -10,6 +10,7 @@ import DashboardChartSelectorDialog from './DashboardChartSelectorDialog.vue'
 import DashboardItem from './DashboardItem.vue'
 import DashboardShareDialog from './DashboardShareDialog.vue'
 import VueGridLayout from './VueGridLayout.vue'
+import { __ } from '../translation'
 
 const props = defineProps<{
 	dashboard_name: string
@@ -64,7 +65,9 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 			<div class="flex items-center justify-between p-4 pb-3">
 				<ContentEditable
 					class="cursor-text rounded-sm text-lg font-semibold !text-gray-800 focus:ring-2 focus:ring-gray-700 focus:ring-offset-4"
-					v-model="dashboard.doc.title"
+					:modelValue="dashboard.doc.title"
+					@returned="dashboard.doc.title = $event"
+					@blur="dashboard.doc.title = $event"
 					placeholder="Untitled Dashboard"
 				></ContentEditable>
 				<div class="flex gap-2">
@@ -139,20 +142,20 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 						:button="{ icon: 'more-horizontal', variant: 'outline' }"
 						:options="[
 							{
-								label: 'Force Refresh',
+								label: __('Force Refresh'),
 								icon: RefreshCcw,
 								onClick: () => dashboard.refresh(true),
 							},
 							dashboard.editing
 								? {
-										label: 'Compact Layout',
+										label: __('Compact Layout'),
 										icon: verticalCompact ? 'check-square' : 'square',
 										onClick: () => (verticalCompact = !verticalCompact),
 								  }
 								: null,
 							dashboard.editing
 								? {
-										label: 'Reset Layout',
+										label: __('Reset Layout'),
 										icon: 'refresh-ccw',
 										onClick: () => (
 											dashboard.discard(), (dashboard.editing = false)

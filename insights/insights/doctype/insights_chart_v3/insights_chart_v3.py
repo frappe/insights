@@ -51,6 +51,9 @@ class InsightsChartv3(Document):
 
     def cleanup_empty_folder(self, folder_name):
         """Delete folder if it has no queries or charts"""
+        if not frappe.db.exists("Insights Folder", folder_name):
+            return
+
         folder = frappe.get_doc("Insights Folder", folder_name)
         folder_type = folder.type
 

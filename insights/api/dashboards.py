@@ -12,9 +12,7 @@ def get_dashboard_list():
     )
     for dashboard in dashboards:
         if dashboard._liked_by:
-            dashboard["is_favourite"] = frappe.session.user in frappe.as_json(
-                dashboard._liked_by
-            )
+            dashboard["is_favourite"] = frappe.session.user in frappe.as_json(dashboard._liked_by)
         dashboard["charts"] = frappe.get_all(
             "Insights Dashboard Item",
             filters={
@@ -38,7 +36,7 @@ def get_dashboard_list():
 
 
 @insights_whitelist()
-def create_dashboard(title):
+def create_dashboard(title: str):
     dashboard = frappe.get_doc({"doctype": "Insights Dashboard", "title": title})
     dashboard.insert()
     return {
@@ -48,7 +46,7 @@ def create_dashboard(title):
 
 
 @insights_whitelist()
-def get_dashboard_options(chart):
+def get_dashboard_options(chart: str):
     # find all dashboards that don't have the chart within the allowed dashboards
     Dashboard = frappe.qb.DocType("Insights Dashboard")
     DashboardItem = frappe.qb.DocType("Insights Dashboard Item")
@@ -65,7 +63,7 @@ def get_dashboard_options(chart):
 
 
 @insights_whitelist()
-def add_chart_to_dashboard(dashboard, chart):
+def add_chart_to_dashboard(dashboard: str, chart: str):
     dashboard = frappe.get_doc("Insights Dashboard", dashboard)
     dashboard.add_chart(chart)
     dashboard.save()
@@ -75,13 +73,14 @@ def add_chart_to_dashboard(dashboard, chart):
 
 
 @insights_whitelist()
-def get_dashboards(search_term=None, limit=50):
+def get_dashboards(search_term: str | None = None, limit: int = 50, get_favorites: bool = False):
     dashboards = frappe.get_list(
         "Insights Dashboard v3",
         or_filters={
             "name": ["like", f"%{search_term}%" if search_term else "%"],
             "title": ["like", f"%{search_term}%" if search_term else "%"],
         },
+        filters={"_liked_by": ["like", f"%{frappe.session.user}%"]} if get_favorites else {},
         fields=[
             "name",
             "title",
@@ -93,7 +92,7 @@ def get_dashboards(search_term=None, limit=50):
             "_liked_by",
         ],
         order_by="creation desc",
-        limit=limit,
+        limit=limit if not get_favorites else 0,
     )
 
     for dashboard in dashboards:
@@ -108,9 +107,7 @@ def get_dashboards(search_term=None, limit=50):
             },
         )
         if dashboard._liked_by:
-            dashboard["is_favourite"] = frappe.session.user in frappe.as_json(
-                dashboard._liked_by
-            )
+            dashboard["is_favourite"] = frappe.session.user in frappe.as_json(dashboard._liked_by)
         del dashboard["items"]
 
     return dashboards

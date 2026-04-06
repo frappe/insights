@@ -1,5 +1,7 @@
 import ast
+import re
 import time
+from contextlib import contextmanager
 from datetime import date
 
 import frappe
@@ -16,9 +18,9 @@ from ibis.expr.operations.relations import DatabaseTable, Field
 from ibis.expr.types import Expr
 from ibis.expr.types import Table as IbisQuery
 
+import insights
 from insights import create_toast
 from insights.cache_utils import make_digest
-from insights.insights.doctype.insights_data_source_v3.data_warehouse import Warehouse
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
 )
@@ -26,7 +28,7 @@ from insights.insights.query_builders.sql_functions import handle_timespan
 from insights.utils import create_execution_log
 from insights.utils import deep_convert_dict_to_dict as _dict
 
-from .ibis.functions import quarter_start, week_start
+from .ibis.functions import fiscal_year_start, quarter_start, week_start
 from .ibis.utils import get_functions
 
 
@@ -60,7 +62,12 @@ class IbisQueryBuilder:
                 and adhoc_filters.get("type") == "filter_group"
                 and adhoc_filters.get("filters")
             ):
-                operations.append(adhoc_filters)
+                # Filter out expression-based filters, keep only rule-based filters
+                adhoc_filters["filters"] = [
+                    f for f in adhoc_filters["filters"] if not f.get("expression", {}).get("type")
+                ]
+                if adhoc_filters["filters"]:
+                    operations.append(adhoc_filters)
 
         self.operations = operations
 
@@ -136,10 +143,50 @@ class IbisQueryBuilder:
         return _table
 
     def get_column(self, column_name, throw=True):
+        # 1. Exact match
         if column_name in self.query.columns:
-            return getattr(self.query, column_name)
+            return self.query[column_name]
+
+        # 2. Sanitized name match (handles capitalisation / special-char differences)
         if sanitize_name(column_name) in self.query.columns:
-            return getattr(self.query, sanitize_name(column_name))
+            return self.query[sanitize_name(column_name)]
+
+        # 3. Suffix match: handles the case where a stored column name was produced
+        #    in live-connection mode (e.g. "tabhd_ticket_priority_name") but the
+        #    query now runs against the warehouse, where rename_duplicate_columns
+        #    prepends the data-source schema prefix and produces a longer name
+        #    (e.g. "support_frappe_io_tabhd_ticket_priority_name").
+        #    We only match when exactly one column ends with "_{column_name}" so
+        #    that ambiguous / short suffixes are never silently resolved to the
+        #    wrong column.
+        suffix = f"_{column_name}"
+        suffix_matches = [col for col in self.query.columns if col.endswith(suffix)]
+        if len(suffix_matches) == 1:
+            return self.query[suffix_matches[0]]
+
+        # 4. Schema-prefix-strip match: handles the case where a stored column name
+        #    was produced in old warehouse mode (e.g. "frappe_cloud_tabinvoice_item_parent")
+        #    but the query now runs without the data-source schema prefix, producing
+        #    the shorter name "tabinvoice_item_parent" (new warehouse behaviour after
+        #    PR #953 + revert of get_ibis_table_name).
+        #    We scan all DatabaseTable nodes in the current ibis expression tree to
+        #    collect the schema names that are actually present in this query, then
+        #    try stripping each as a leading prefix before checking for a column match.
+        all_dt = self.query.op().find_topmost(DatabaseTable)
+        schemas = {
+            dt.namespace.database
+            for dt in all_dt
+            if dt.namespace and dt.namespace.database and dt.namespace.database != "main"
+        }
+        for schema in schemas:
+            prefix = f"{schema}_"
+            if column_name.startswith(prefix):
+                remainder = column_name[len(prefix) :]
+                if remainder in self.query.columns:
+                    return self.query[remainder]
+                if sanitize_name(remainder) in self.query.columns:
+                    return self.query[sanitize_name(remainder)]
+
         if throw:
             frappe.throw(f"Column {column_name} does not exist in the table")
 
@@ -208,8 +255,8 @@ class IbisQueryBuilder:
         def left_eq_right_condition(left_column, right_column):
             if left_column and right_column and left_column.column_name and right_column.column_name:
                 rt = right_table
-                lc = getattr(self.query, left_column.column_name)
-                rc = getattr(rt, right_column.column_name)
+                lc = self.get_column(left_column.column_name)
+                rc = rt[right_column.column_name]
                 return lc.cast(rc.type()) == rc
 
             frappe.throw("Join condition is not valid")
@@ -307,6 +354,9 @@ class IbisQueryBuilder:
         if filter_operator in ["contains", "not_contains"]:
             filter_value = filter_value.replace("%", "")
 
+            if left.type().is_numeric():
+                left = left.cast("string")
+
         if filter_operator == "between":
             start = filter_value[0]
             end = filter_value[1]
@@ -365,7 +415,8 @@ class IbisQueryBuilder:
 
     def apply_select(self, select_args):
         select_args = _dict(select_args)
-        return self.query.select(select_args.column_names)
+        resolved_names = [self.get_column(col).get_name() for col in select_args.column_names]
+        return self.query.select(resolved_names)
 
     def apply_rename(self, rename_args):
         old_name = self.get_column(rename_args.column.column_name).get_name()
@@ -427,7 +478,8 @@ class IbisQueryBuilder:
         return self.query.order_by(order_fn(order_by_column))
 
     def apply_limit(self, limit_args):
-        return self.query.limit(int(limit_args.limit))
+        limit = clamp(limit_args.limit, 1, 10_00_000)
+        return self.query.limit(limit)
 
     def apply_pivot(self, pivot_args, pivot_type):
         rows = [self.translate_dimension(dimension) for dimension in pivot_args["rows"]]
@@ -495,6 +547,7 @@ class IbisQueryBuilder:
 
         raw_sql = sqlparse.format(sql=raw_sql, strip_comments=True)
 
+        # TODO: apply user permissions by default
         check_permissions = frappe.db.get_single_value(
             "Insights Settings", "enable_permissions"
         ) or frappe.db.get_single_value("Insights Settings", "apply_user_permissions")
@@ -504,11 +557,13 @@ class IbisQueryBuilder:
 
             tables = set()
             for table_exp in parsed.find_all(sg.exp.Table):
-                tables.add(table_exp.name)
+                if table_exp.name:
+                    tables.add(table_exp.name)
 
             cte_aliases = set()
             for cte_exp in parsed.find_all(sg.exp.CTE):
-                cte_aliases.add(cte_exp.alias)
+                if cte_exp.alias:
+                    cte_aliases.add(cte_exp.alias)
 
             tables = tables - cte_aliases
 
@@ -520,6 +575,12 @@ class IbisQueryBuilder:
                     use_live_connection=True,
                 )
                 t_sql = ibis.to_sql(t)
+
+                # NOTE: This currently works because `apply_sql` uses live connections,
+                # If this flow ever starts using warehouse-backed tables,
+                # this WHERE-based check will be insufficient
+                # check insights_table_v3.py -> apply_user_permissions()
+
                 # check if t_sql has any where clause, if not, then don't replace
                 t_parsed = sg.parse_one(t_sql, dialect=db.dialect)
                 if not t_parsed.find(sg.exp.Where):
@@ -532,10 +593,29 @@ class IbisQueryBuilder:
                 with_clauses.append(f"{quoted_table_name} AS ({table_sql})")
 
             if with_clauses:
-                with_clause_sql = "WITH " + ", ".join(with_clauses)
-                raw_sql = with_clause_sql + " " + raw_sql
+                with_clause_sql = ", ".join(with_clauses)
+                # Check if raw_sql already starts with WITH clause
+                raw_sql_stripped = raw_sql.strip()
+                if raw_sql_stripped.lower().startswith("with"):
+                    # Insert new CTEs after the WITH keyword and before existing CTEs
+                    # Use regex to handle both uppercase and lowercase "with"
+                    raw_sql = re.sub(
+                        r"(\bwith\b)",
+                        f"WITH {with_clause_sql},",
+                        raw_sql_stripped,
+                        count=1,
+                        flags=re.IGNORECASE,
+                    )
+                else:
+                    # Prepend WITH clause if it doesn't exist
+                    raw_sql = f"WITH {with_clause_sql} {raw_sql_stripped}"
 
-        if ds.enable_stored_procedure_execution and raw_sql.strip().lower().startswith("exec"):
+        supports_stored_procedure = ds.database_type in ["PostgreSQL", "MSSQL", "MariaDB"]
+        if (
+            supports_stored_procedure
+            and ds.enable_stored_procedure_execution
+            and raw_sql.strip().lower().startswith("exec")
+        ):
             current_date = date.today().strftime("%Y-%m-%d")  # Format: 'YYYY-MM-DD'
             raw_sql = raw_sql.replace("@Today", f"'{current_date}'")
 
@@ -575,7 +655,7 @@ class IbisQueryBuilder:
             results = get_code_results(code, variables=variables)
             cache_results(digest, results, cache_expiry=60 * 5)
 
-        return Warehouse().db.create_table(
+        return insights.warehouse.db.create_table(
             digest,
             results,
             temp=True,
@@ -599,7 +679,7 @@ class IbisQueryBuilder:
         return column.name(measure.measure_name)
 
     def translate_dimension(self, dimension):
-        col = getattr(self.query, dimension.column_name)
+        col = self.get_column(dimension.column_name)
         if self.is_date_type(dimension.data_type) and dimension.granularity:
             col = self.apply_granularity(col, dimension.granularity)
             col = col.cast(self.get_ibis_dtype(dimension.data_type))
@@ -629,6 +709,8 @@ class IbisQueryBuilder:
             return week_start(column).strftime("%Y-%m-%d").name(column.get_name())
         if granularity == "quarter":
             return quarter_start(column).strftime("%Y-%m-01").name(column.get_name())
+        if granularity == "fiscal_year":
+            return fiscal_year_start(column).strftime("%Y-%m-%d").name(column.get_name())
 
         format_str = {
             "second": "%Y-%m-%d %H:%M:%S",
@@ -663,15 +745,29 @@ class IbisQueryBuilder:
         return {col: getattr(self.query, col) for col in self.query.schema().names}
 
 
+def clamp(value, lo: int, hi: int) -> int:
+    try:
+        return max(lo, min(int(value), hi))
+    except (TypeError, ValueError):
+        return lo
+
+
 def execute_ibis_query(
     query: IbisQuery,
-    limit=100,
+    page=1,
+    page_size=100,
     force=False,
     cache=True,
     cache_expiry=3600,
     reference_doctype=None,
     reference_name=None,
 ):
+    if hasattr(query, "limit"):
+        page_size = clamp(page_size, 1, 10_000)
+        page = clamp(page, 1, 10_000)
+        offset = (page - 1) * page_size
+        query = query.limit(page_size, offset=offset)
+
     try:
         sql = ibis.to_sql(query)
     except ibis.common.exceptions.OperationNotDefinedError:
@@ -686,11 +782,6 @@ def execute_ibis_query(
         if has_cached_results(cache_key) and not force:
             return get_cached_results(cache_key), -1
 
-    if hasattr(query, "limit") and limit:
-        limit = int(limit or 100)
-        limit = min(max(limit, 1), 10_00_000)
-        query = query.limit(limit)
-
     start = time.monotonic()
 
     try:
@@ -701,9 +792,10 @@ def execute_ibis_query(
                 title="Query execution time exceeded the limit.",
                 message=f"Query: {sql}",
             )
+            max_time = frappe.db.get_single_value("Insights Settings", "max_execution_time") or 180
             frappe.throw(
                 title="Query Timeout",
-                msg="Query execution time exceeded the limit. Please try again with a smaller timespan or a more specific filter.",
+                msg=f"Query execution time exceeded the limit of {max_time} seconds. Please try again with a smaller timespan or a more specific filter.",
             )
         raise e
 
@@ -788,9 +880,9 @@ def exec_with_return(
     if isinstance(last_node, ast.Expr):
         output_expression = ast.unparse(last_node)
     elif isinstance(last_node, ast.Assign):
-        output_expression = ast.unparse(last_node.targets[0])
+        output_expression = ast.unparse(last_node.value)
     elif isinstance(last_node, ast.AnnAssign | ast.AugAssign):
-        output_expression = ast.unparse(last_node.target)
+        output_expression = ast.unparse(last_node.value)
 
     _globals = _globals or {}
     _locals = _locals or {}
@@ -798,7 +890,8 @@ def exec_with_return(
     tree.body.pop()  # remove the last expression
     _script = ast.unparse(tree)
     if _script.strip():
-        safe_exec(_script, _globals, _locals, restrict_commit_rollback=True)
+        with ensure_rollback():
+            safe_exec(_script, _globals, _locals, restrict_commit_rollback=True)
         return safe_eval(output_expression, _globals, _locals)
     else:
         return safe_eval(output_expression, _globals, _locals)
@@ -841,7 +934,7 @@ def get_code_results(code: str, variables=None):
     pandas.json_normalize = pd.json_normalize
 
     results = []
-    frappe.debug_log = []
+    frappe.local.debug_log = []
 
     variable_context = {}
     if variables:
@@ -856,12 +949,14 @@ def get_code_results(code: str, variables=None):
                 variable_context[var.get("variable_name")] = var.get("variable_value")
 
     _locals = {"results": results, **variable_context}
-    _, _locals = safe_exec(
-        code,
-        _globals={"pandas": pandas},
-        _locals=_locals,
-        restrict_commit_rollback=True,
-    )
+    with ensure_rollback():
+        _, _locals = safe_exec(
+            code,
+            _globals={"pandas": pandas},
+            _locals=_locals,
+            restrict_commit_rollback=True,
+        )
+
     results = _locals["results"]
     if results is None or len(results) == 0:
         results = [{"error": "No results"}]
@@ -879,3 +974,13 @@ def get_code_results(code: str, variables=None):
         results = pd.DataFrame(results)
 
     return results
+
+
+@contextmanager
+def ensure_rollback():
+    hash = frappe.generate_hash(length=4)
+    try:
+        frappe.db.savepoint(f"save_point_{hash}")
+        yield
+    finally:
+        frappe.db.rollback(save_point=f"save_point_{hash}")

@@ -72,6 +72,9 @@ class InsightsQueryv3(Document):
 
     def cleanup_empty_folder(self, folder_name):
         """Delete folder if it has no queries or charts"""
+        if not frappe.db.exists("Insights Folder", folder_name):
+            return
+
         folder = frappe.get_doc("Insights Folder", folder_name)
         folder_type = folder.type
 
@@ -99,6 +102,51 @@ class InsightsQueryv3(Document):
                 linked_queries.append(operation.get("table").get("query_name"))
         self.linked_queries = linked_queries
 
+    def get_source_tables(self, visited=None):
+        """Recursively collect all leaf table references from this query and its dependencies."""
+        if visited is None:
+            visited = set()
+
+        # Prevent infinite recursion from circular dependencies
+        if self.name in visited:
+            return []
+        visited.add(self.name)
+
+        source_tables = []
+        operations = frappe.parse_json(self.operations)
+
+        if not operations:
+            return source_tables
+
+        # Collect direct table references from this query's operations
+        for operation in operations:
+            if operation.get("type") in ["source", "join", "union"]:
+                table = operation.get("table")
+                if table and table.get("type") == "table":
+                    table_info = {
+                        "data_source": table.get("data_source"),
+                        "table_name": table.get("table_name"),
+                    }
+                    if table_info not in source_tables:
+                        source_tables.append(table_info)
+
+        # Recursively collect tables from linked queries
+        linked_queries = frappe.parse_json(self.linked_queries)
+        if linked_queries:
+            for query_name in linked_queries:
+                if query_name not in visited:
+                    try:
+                        linked_query = frappe.get_doc("Insights Query v3", query_name)
+                        linked_tables = linked_query.get_source_tables(visited)
+                        for table_info in linked_tables:
+                            if table_info not in source_tables:
+                                source_tables.append(table_info)
+                    except Exception:
+                        # Skip if linked query doesn't exist or can't be loaded
+                        continue
+
+        return source_tables
+
     def build(self, active_operation_idx=None, use_live_connection=None):
         builder = IbisQueryBuilder(self, active_operation_idx)
         builder.use_live_connection = (
@@ -112,19 +160,21 @@ class InsightsQueryv3(Document):
         return ibis_query
 
     @frappe.whitelist()
-    def execute(self, active_operation_idx=None, adhoc_filters=None, force=False):
+    def execute(
+        self,
+        active_operation_idx: int | None = None,
+        adhoc_filters: dict | None = None,
+        force: bool = False,
+        page: int = 1,
+        page_size: int = 100,
+    ):
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
 
-        limit = 100
-        for op in frappe.parse_json(self.operations):
-            if op.get("limit"):
-                limit = op.get("limit")
-                break
-
         results, time_taken = execute_ibis_query(
             ibis_query,
-            limit,
+            page=page,
+            page_size=page_size,
             force=force,
             cache_expiry=60 * 10,
             reference_doctype=self.doctype,
@@ -141,19 +191,19 @@ class InsightsQueryv3(Document):
         }
 
     @insights_whitelist()
-    def format(self, raw_sql):
+    def format(self, raw_sql: str):
         if not raw_sql or not self.is_native_query:
             return raw_sql
 
         return sqlparse.format(str(raw_sql), reindent=True, keyword_case="upper")
 
     @insights_whitelist()
-    def get_count(self, active_operation_idx=None, adhoc_filters=None):
+    def get_count(self, active_operation_idx: int | None = None, adhoc_filters: dict | None = None):
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
 
         count_query = ibis_query.aggregate(count=_.count())
-        count_results, time_taken = execute_ibis_query(
+        count_results, _time_taken = execute_ibis_query(
             count_query,
             cache_expiry=60 * 5,
             reference_doctype=self.doctype,
@@ -163,14 +213,16 @@ class InsightsQueryv3(Document):
         return int(total_count)
 
     @insights_whitelist()
-    def download_results(self, format="csv", active_operation_idx=None, adhoc_filters=None):
+    def download_results(
+        self, format: str = "csv", active_operation_idx: int | None = None, adhoc_filters: dict | None = None
+    ):
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
 
         results, _ = execute_ibis_query(
             ibis_query,
             cache=False,
-            limit=10_00_000,
+            page_size=10_00_000,
             reference_doctype=self.doctype,
             reference_name=self.name,
         )
@@ -185,11 +237,11 @@ class InsightsQueryv3(Document):
     @insights_whitelist()
     def get_distinct_column_values(
         self,
-        column_name,
-        active_operation_idx=None,
-        search_term=None,
-        limit=20,
-        adhoc_filters=None,
+        column_name: str,
+        active_operation_idx: int | None = None,
+        search_term: str | None = None,
+        limit: int = 20,
+        adhoc_filters: dict | None = None,
     ):
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
@@ -204,7 +256,7 @@ class InsightsQueryv3(Document):
             .distinct()
             .head(limit)
         )
-        result, time_taken = execute_ibis_query(
+        result, _time_taken = execute_ibis_query(
             values_query,
             cache_expiry=24 * 60 * 60,
             reference_doctype=self.doctype,
@@ -213,7 +265,7 @@ class InsightsQueryv3(Document):
         return result[column_name].tolist()
 
     @insights_whitelist()
-    def get_columns_for_selection(self, active_operation_idx=None):
+    def get_columns_for_selection(self, active_operation_idx: int | None = None):
         ibis_query = self.build(active_operation_idx)
         columns = get_columns_from_schema(ibis_query.schema())
         return columns
@@ -267,6 +319,28 @@ class InsightsQueryv3(Document):
         new_query.title = f"{self.title} (Copy)"
         new_query.insert()
         return new_query.name
+
+    @insights_whitelist(role="Insights Admin")
+    def refresh_stored_tables(self):
+        """Import all source tables used in this query to the data store"""
+        source_tables = self.get_source_tables()
+        if not source_tables:
+            frappe.throw("No tables found in the query to import")
+
+        imported_count = 0
+        for table in source_tables:
+            data_source = table.get("data_source")
+            table_name = table.get("table_name")
+            if data_source and table_name:
+                from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
+
+                table_doc_name = get_table_name(data_source, table_name)
+                if frappe.db.exists("Insights Table v3", table_doc_name):
+                    table_doc = frappe.get_doc("Insights Table v3", table_doc_name)
+                    table_doc.import_to_warehouse()
+                    imported_count += 1
+
+        return {"message": f"Importing {imported_count} table(s) to data store", "count": imported_count}
 
 
 def import_query(query, workbook):

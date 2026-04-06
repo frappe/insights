@@ -5,12 +5,13 @@ import { getFormattedDate } from '../query/helpers'
 import {
 	AxisChartConfig,
 	BarChartConfig,
+	BubbleChartConfig,
 	ChartConfig,
 	DonutChartConfig,
 	FunnelChartConfig,
 	LineChartConfig,
 	MapChartConfig,
-	BubbleChartConfig,
+	SankeyChartConfig,
 	Series,
 	SeriesLine,
 	XAxis,
@@ -55,7 +56,6 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 	const _rows = result.rows
 
 	const number_columns = _columns.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
-	const show_legend = number_columns.length > 1
 	const show_scrollbar = config.y_axis.show_scrollbar || false
 
 	const xAxis = getXAxis(config.x_axis)
@@ -70,7 +70,7 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 	const yAxis = !hasRightAxis ? [leftYAxis] : [leftYAxis, rightYAxis]
 
 	const sortedRows = xAxisIsDate
-		? _rows.sort((a, b) => {
+		? [..._rows].sort((a, b) => {
 				const a_date = new Date(a[config.x_axis.dimension.dimension_name])
 				const b_date = new Date(b[config.x_axis.dimension.dimension_name])
 				return a_date.getTime() - b_date.getTime()
@@ -86,6 +86,61 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 
 	const colors = getColors()
 
+	const chartSeries = number_columns.map((c, idx) => {
+		const serie = getSerie(config, c.name) as SeriesLine
+
+		const is_right_axis = serie.align === 'Right'
+		const type = serie.type?.toLowerCase() || 'line'
+		const smooth = serie.smooth ?? config.y_axis.smooth
+		const show_data_points = serie.show_data_points ?? config.y_axis.show_data_points
+		const show_area = serie.show_area ?? config.y_axis.show_area
+		const show_data_labels = serie.show_data_labels ?? config.y_axis.show_data_labels
+		const color = serie.color?.[0] || colors[idx]
+		const name = config.split_by?.dimension?.column_name
+			? c.name
+			: serie.measure.measure_name || c.name
+		const hide_from_chart = serie.hide_from_chart || false
+
+		let labelPosition = 'top'
+		if (type === 'bar') {
+			labelPosition = 'inside'
+		}
+
+		return {
+			type,
+			name,
+			data: getSeriesData(c.name),
+			color: color,
+			yAxisIndex: is_right_axis ? 1 : 0,
+			smooth: smooth ? 0.4 : false,
+			smoothMonotone: 'x',
+			showSymbol: hide_from_chart ? false : show_data_points || show_data_labels,
+			label: {
+				fontSize: 11,
+				show: hide_from_chart ? false : show_data_labels,
+				position: labelPosition,
+				formatter: (params: any) => {
+					return getShortNumber(params.value?.[1], 1)
+				},
+			},
+			labelLayout: { hideOverlap: true },
+			itemStyle: { color: color },
+			areaStyle: show_area ? getAreaStyle(color) : undefined,
+			...(hide_from_chart
+				? {
+						lineStyle: { opacity: 0 },
+						itemStyle: { color: color, opacity: 0 },
+						areaStyle: undefined,
+						emphasis: { disabled: true },
+				  }
+				: {}),
+			_hide_from_chart: hide_from_chart,
+		}
+	})
+
+	const legendData = chartSeries.filter((s) => !s._hide_from_chart).map((s) => s.name)
+	const show_legend = legendData.length > 1
+
 	return {
 		animation: true,
 		animationDuration: 700,
@@ -94,50 +149,12 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 		color: colors,
 		xAxis,
 		yAxis,
-		series: number_columns.map((c, idx) => {
-			const serie = getSerie(config, c.name) as SeriesLine
-
-			const is_right_axis = serie.align === 'Right'
-			const type = serie.type?.toLowerCase() || 'line'
-			const smooth = serie.smooth ?? config.y_axis.smooth
-			const show_data_points = serie.show_data_points ?? config.y_axis.show_data_points
-			const show_area = serie.show_area ?? config.y_axis.show_area
-			const show_data_labels = serie.show_data_labels ?? config.y_axis.show_data_labels
-			const color = serie.color?.[0] || colors[idx]
-			const name = config.split_by?.dimension?.column_name ? c.name : serie.measure.measure_name || c.name
-
-			let labelPosition = 'top'
-			if (type === 'bar') {
-				labelPosition = 'inside'
-			}
-
-			return {
-				type,
-				name,
-				data: getSeriesData(c.name),
-				color: color,
-				yAxisIndex: is_right_axis ? 1 : 0,
-				smooth: smooth ? 0.4 : false,
-				smoothMonotone: 'x',
-				showSymbol: show_data_points || show_data_labels,
-				label: {
-					fontSize: 11,
-					show: show_data_labels,
-					position: labelPosition,
-					formatter: (params: any) => {
-						return getShortNumber(params.value?.[1], 1)
-					},
-				},
-				labelLayout: { hideOverlap: true },
-				itemStyle: { color: color },
-				areaStyle: show_area ? getAreaStyle(color) : undefined,
-			}
-		}),
+		series: chartSeries,
 		tooltip: getTooltip({
 			xAxisIsDate,
 			granularity,
 		}),
-		legend: getLegend(show_legend, show_scrollbar),
+		legend: { ...getLegend(show_legend, show_scrollbar), data: legendData },
 	}
 }
 
@@ -157,10 +174,10 @@ function getDataZoom(show: boolean, swapAxes = false) {
 		orient: swapAxes ? 'vertical' : 'horizontal',
 		type: 'slider',
 		zoomLock: false,
-		bottom: swapAxes ? "20%" : "4%",
-		height: swapAxes ? "80%" : 15,
-		width: swapAxes ? 15 : "90%",
-		left: swapAxes ? null : "5%",
+		bottom: swapAxes ? '20%' : '4%',
+		height: swapAxes ? '80%' : 15,
+		width: swapAxes ? 15 : '90%',
+		left: swapAxes ? null : '5%',
 		right: swapAxes ? 10 : null,
 		handleSize: 25,
 	}
@@ -171,7 +188,6 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 	const _rows = result.rows
 
 	const number_columns = _columns.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
-	const show_legend = number_columns.length > 1
 	const show_scrollbar = config.y_axis.show_scrollbar || false
 
 	const xAxis = getXAxis(config.x_axis)
@@ -190,7 +206,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 	const yAxis = !hasRightAxis ? [leftYAxis] : [leftYAxis, rightYAxis]
 
 	const sortedRows = xAxisIsDate
-		? _rows.sort((a, b) => {
+		? [..._rows].sort((a, b) => {
 				const a_date = new Date(a[config.x_axis.dimension.dimension_name])
 				const b_date = new Date(b[config.x_axis.dimension.dimension_name])
 				return a_date.getTime() - b_date.getTime()
@@ -222,6 +238,60 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 
 	const colors = getColors()
 
+	const chartSeries = number_columns.map((c, idx) => {
+		const serie = getSerie(config, c.name)
+		const is_right_axis = serie.align === 'Right'
+
+		const color = serie.color?.[0] || colors[idx]
+		const type = serie.type?.toLowerCase() || 'bar'
+		const stack = type === 'bar' && config.y_axis.stack ? 'stack' : undefined
+		const show_data_labels = serie.show_data_labels ?? config.y_axis.show_data_labels
+		const data = getSeriesData(c.name)
+		const name = config.split_by?.dimension?.column_name
+			? c.name
+			: serie.measure.measure_name || c.name
+		const hide_from_chart = serie.hide_from_chart || false
+
+		const roundedCorners = swapAxes ? [0, 2, 2, 0] : [2, 2, 0, 0]
+		const isLast = idx === number_columns.length - 1
+
+		let labelPosition = 'inside'
+		if (type == 'line') {
+			labelPosition = 'top'
+		}
+
+		return {
+			type,
+			stack: config.y_axis.overlap ? undefined : stack,
+			name,
+			data: swapAxes ? data.reverse() : data,
+			color: color,
+			label: {
+				show: hide_from_chart ? false : show_data_labels,
+				position: labelPosition,
+				formatter: (params: any) => {
+					const _val = swapAxes ? params.value?.[0] : params.value?.[1]
+					return getShortNumber(_val, 1)
+				},
+				fontSize: 11,
+			},
+			barGap: config.y_axis.overlap ? '-100%' : undefined,
+			labelLayout: { hideOverlap: true },
+			yAxisIndex: is_right_axis ? 1 : 0,
+			lineStyle: hide_from_chart ? { opacity: 0 } : undefined,
+			itemStyle: {
+				color: color,
+				opacity: hide_from_chart ? 0 : 1,
+				borderRadius: roundedCorners,
+			},
+			emphasis: hide_from_chart ? { disabled: true } : undefined,
+			_hide_from_chart: hide_from_chart,
+		}
+	})
+
+	const legendData = chartSeries.filter((s) => !s._hide_from_chart).map((s) => s.name)
+	const show_legend = legendData.length > 1
+
 	return {
 		animation: true,
 		animationDuration: 700,
@@ -230,55 +300,13 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 		xAxis: swapAxes ? yAxis : xAxis,
 		yAxis: swapAxes ? xAxis : yAxis,
 		dataZoom: getDataZoom(show_scrollbar, swapAxes),
-		series: number_columns.map((c, idx) => {
-			const serie = getSerie(config, c.name)
-			const is_right_axis = serie.align === 'Right'
-
-			const color = serie.color?.[0] || colors[idx]
-			const type = serie.type?.toLowerCase() || 'bar'
-			const stack = type === 'bar' && config.y_axis.stack ? 'stack' : undefined
-			const show_data_labels = serie.show_data_labels ?? config.y_axis.show_data_labels
-			const data = getSeriesData(c.name)
-			const name = config.split_by?.dimension?.column_name ? c.name : serie.measure.measure_name || c.name
-
-			const roundedCorners = swapAxes ? [0, 2, 2, 0] : [2, 2, 0, 0]
-			const isLast = idx === number_columns.length - 1
-
-			let labelPosition = 'inside'
-			if (type == 'line') {
-				labelPosition = 'top'
-			}
-
-			return {
-				type,
-				stack: config.y_axis.overlap ? undefined : stack,
-				name,
-				data: swapAxes ? data.reverse() : data,
-				color: color,
-				label: {
-					show: show_data_labels,
-					position: labelPosition,
-					formatter: (params: any) => {
-						const _val = swapAxes ? params.value?.[0] : params.value?.[1]
-						return getShortNumber(_val, 1)
-					},
-					fontSize: 11,
-				},
-				barGap: config.y_axis.overlap ? '-100%' : undefined,
-				labelLayout: { hideOverlap: true },
-				yAxisIndex: is_right_axis ? 1 : 0,
-				itemStyle: {
-					color: color,
-					borderRadius: roundedCorners,
-				},
-			}
-		}),
+		series: chartSeries,
 		tooltip: getTooltip({
 			xAxisIsDate,
 			granularity,
 			xySwapped: swapAxes,
 		}),
-		legend: getLegend(show_legend, show_scrollbar, swapAxes),
+		legend: { ...getLegend(show_legend, show_scrollbar, swapAxes), data: legendData },
 	}
 }
 
@@ -325,6 +353,13 @@ function getXAxis(x_axis: XAxis) {
 			width: 100,
 			overflow: 'truncate',
 			ellipsis: '...',
+			...(x_axis.dimension.granularity === 'fiscal_year'
+				? {
+						formatter: (value: any) => {
+							return getFormattedDate(value, 'fiscal_year')
+						},
+				  }
+				: null),
 		},
 	}
 }
@@ -474,7 +509,7 @@ export function getDonutChartOptions(config: DonutChartConfig, result: QueryResu
 function getDonutChartData(
 	columns: QueryResultColumn[],
 	rows: QueryResultRow[],
-	maxSlices: number
+	maxSlices: number,
 ) {
 	const measureColumn = columns.find((c) => FIELDTYPES.MEASURE.includes(c.type))
 	if (!measureColumn) {
@@ -604,7 +639,7 @@ export function getFunnelChartOptions(config: FunnelChartConfig, result: QueryRe
 function getMapChartData(
 	columns: QueryResultColumn[],
 	rows: QueryResultRow[],
-	config?: MapChartConfig
+	config?: MapChartConfig,
 ) {
 	const measureColumn = columns.find((c) => FIELDTYPES.MEASURE.includes(c.type))
 	if (!measureColumn) {
@@ -639,65 +674,65 @@ function getMapChartData(
 }
 
 function jenksMatrices(data: number[], nClasses: number) {
-
 	//initialize matrices
-	const mat1 = Array.from({ length: data.length + 1 }, () => Array(nClasses + 1).fill(0));
-	const mat2 = Array.from({ length: data.length + 1 }, () => Array(nClasses + 1).fill(0));
+	const mat1 = Array.from({ length: data.length + 1 }, () => Array(nClasses + 1).fill(0))
+	const mat2 = Array.from({ length: data.length + 1 }, () => Array(nClasses + 1).fill(0))
 
 	for (let i = 1; i <= nClasses; i++) {
-	  mat1[1][i] = 1;
-	  mat2[1][i] = 0;
-	  for (let j = 2; j <= data.length; j++) mat2[j][i] = Infinity;
+		mat1[1][i] = 1
+		mat2[1][i] = 0
+		for (let j = 2; j <= data.length; j++) mat2[j][i] = Infinity
 	}
-	return { mat1, mat2 };
-  }
+	return { mat1, mat2 }
+}
 
 function jenksBreaks(data: number[], nClasses: number, mat1: number[][], mat2: number[][]) {
-
 	for (let l = 2; l <= data.length; l++) {
-	  let s1 = 0, s2 = 0, w = 0;
-	  for (let m = 1; m <= l; m++) {
-		const i3 = l - m + 1;
-		const val = data[i3 - 1];
-		s2 += val * val;
-		s1 += val;
-		w++;
-		const v = s2 - (s1 * s1) / w;
-		const i4 = i3 - 1;
-		if (i4 !== 0) {
-		  for (let j = 2; j <= nClasses; j++) {
-			if (mat2[l][j] >= v + mat2[i4][j - 1]) {
-			  mat1[l][j] = i3;
-			  mat2[l][j] = v + mat2[i4][j - 1];
+		let s1 = 0,
+			s2 = 0,
+			w = 0
+		for (let m = 1; m <= l; m++) {
+			const i3 = l - m + 1
+			const val = data[i3 - 1]
+			s2 += val * val
+			s1 += val
+			w++
+			const v = s2 - (s1 * s1) / w
+			const i4 = i3 - 1
+			if (i4 !== 0) {
+				for (let j = 2; j <= nClasses; j++) {
+					if (mat2[l][j] >= v + mat2[i4][j - 1]) {
+						mat1[l][j] = i3
+						mat2[l][j] = v + mat2[i4][j - 1]
+					}
+				}
 			}
-		  }
 		}
-	  }
 
-	  mat1[l][1] = 1;
-	  mat2[l][1] = s2 - (s1 * s1) / w;
+		mat1[l][1] = 1
+		mat2[l][1] = s2 - (s1 * s1) / w
 	}
-  }
+}
 
 function jenks(data: number[], nClasses: number) {
+	data = data.slice().sort((a, b) => a - b)
+	const { mat1, mat2 } = jenksMatrices(data, nClasses)
 
-	data = data.slice().sort((a, b) => a - b);
-	const { mat1, mat2 } = jenksMatrices(data, nClasses);
+	jenksBreaks(data, nClasses, mat1, mat2)
 
-	jenksBreaks(data, nClasses, mat1, mat2);
-
-	const kClass = Array(nClasses + 1).fill(0);
-	kClass[nClasses] = data[data.length - 1];
-	let k = data.length, countNum = nClasses;
+	const kClass = Array(nClasses + 1).fill(0)
+	kClass[nClasses] = data[data.length - 1]
+	let k = data.length,
+		countNum = nClasses
 	while (countNum >= 2) {
-	  const idx = mat1[k][countNum] - 2;
-	  kClass[countNum - 1] = data[idx];
-	  k = mat1[k][countNum] - 1;
-	  countNum--;
+		const idx = mat1[k][countNum] - 2
+		kClass[countNum - 1] = data[idx]
+		k = mat1[k][countNum] - 1
+		countNum--
 	}
-	kClass[0] = data[0];
-	return kClass;
-  }
+	kClass[0] = data[0]
+	return kClass
+}
 
 // visual map pieces
 function mapPieces(values: number[]) {
@@ -705,18 +740,20 @@ function mapPieces(values: number[]) {
 		return [{ min: 0, max: 0, label: '0' }]
 	}
 
-	const validValues = values.filter(v => typeof v === 'number' && !isNaN(v) && v > 0)
+	const validValues = values.filter((v) => typeof v === 'number' && !isNaN(v) && v > 0)
 
 	if (validValues.length === 0) {
 		return [{ min: 0, max: 0, label: '0' }]
 	}
 
 	if (validValues.length === 1) {
-		return [{
-			min: 0,
-			max: validValues[0],
-			label: getShortNumber(validValues[0], 1)
-		}]
+		return [
+			{
+				min: 0,
+				max: validValues[0],
+				label: getShortNumber(validValues[0], 1),
+			},
+		]
 	}
 
 	const sortedValues = validValues.sort((a, b) => a - b)
@@ -732,16 +769,14 @@ function mapPieces(values: number[]) {
 		const rangeMax = breaks[i + 1]
 		const rangeMin = i === 0 ? 0 : breaks[i]
 
-			pieces.push({
-				gt: rangeMin,
-				lte: rangeMax,
-				label: getShortNumber(rangeMax, 1)
-			})
-
+		pieces.push({
+			gt: rangeMin,
+			lte: rangeMax,
+			label: getShortNumber(rangeMax, 1),
+		})
 	}
 
 	return pieces.reverse()
-
 }
 
 export function getMapChartOptions(config: MapChartConfig, result: QueryResult) {
@@ -756,10 +791,10 @@ export function getMapChartOptions(config: MapChartConfig, result: QueryResult) 
 	}
 
 	let jsonUrl = ''
-		if (config.map_type === 'world') {
-			jsonUrl = 'world'
-		} else if (config.map_type === 'india') {
-			jsonUrl = 'india'
+	if (config.map_type === 'world') {
+		jsonUrl = 'world'
+	} else if (config.map_type === 'india') {
+		jsonUrl = 'india'
 	}
 
 	const data = getMapChartData(columns, rows, config)
@@ -778,37 +813,45 @@ export function getMapChartOptions(config: MapChartConfig, result: QueryResult) 
 					<div>${params.name}</div>
 					<div class="font-bold">${value}</div>
 				</div>`
-			}
+			},
 		},
 		visualMap: {
 			type: 'piecewise',
 			pieces: mapPieces(values),
 			itemSymbol: 'circle',
 			inRange: {
-				color: ['#dbeeff','#b7ddff', '#92cdff','#6ebcff','#4aabff']
+				color: ['#dbeeff', '#b7ddff', '#92cdff', '#6ebcff', '#4aabff'],
 			},
 		},
-		series: [{
-			name: measureColumn.name,
-			type: 'map',
-			map: jsonUrl,
-			projection: {
-					project: (point: [number, number]) => [point[0] / 180 * Math.PI, -Math.log(Math.tan((Math.PI / 2 + point[1] / 180 * Math.PI) / 2))],
-					unproject: (point: [number, number]) => [point[0] * 180 / Math.PI, 2 * 180 / Math.PI * Math.atan(Math.exp(point[1])) - 90]
+		series: [
+			{
+				name: measureColumn.name,
+				type: 'map',
+				map: jsonUrl,
+				projection: {
+					project: (point: [number, number]) => [
+						(point[0] / 180) * Math.PI,
+						-Math.log(Math.tan((Math.PI / 2 + (point[1] / 180) * Math.PI) / 2)),
+					],
+					unproject: (point: [number, number]) => [
+						(point[0] * 180) / Math.PI,
+						((2 * 180) / Math.PI) * Math.atan(Math.exp(point[1])) - 90,
+					],
+				},
+				data: data.map((d) => ({
+					name: d[0],
+					value: d[1],
+				})),
+				itemStyle: {
+					color: 'rgb(68, 68, 68)',
+					areaColor: 'rgb(243, 243, 243)',
+					borderWidth: 0.5,
+					borderColor: 'rgb(124, 124, 124)',
+				},
+				emphasis: false,
+				selectedMode: false,
 			},
-			data: data.map((d) => ({
-				name: d[0],
-				value: d[1]
-			})),
-			itemStyle: {
-				color: 'rgb(68, 68, 68)',
-				areaColor: 'rgb(243, 243, 243)',
-				borderWidth: 0.5,
-				borderColor: 'rgb(124, 124, 124)',
-			},
-			emphasis: false,
-			selectedMode: false,
-		}],
+		],
 	}
 
 	return options
@@ -827,7 +870,8 @@ export function getBubbleChartOptions(config: BubbleChartConfig, result: QueryRe
 	const colors = getColors()
 	const sizeColumnName = config.size_column?.measure_name
 	const nameColumnName = config.dimension?.dimension_name || config.dimension?.column_name
-	const groupByColumnName = config.quadrant_column?.dimension_name || config.quadrant_column?.column_name
+	const groupByColumnName =
+		config.quadrant_column?.dimension_name || config.quadrant_column?.column_name
 	const show_data_labels = config.show_data_labels || false
 
 	const scatterData = _rows.map((row) => {
@@ -851,7 +895,9 @@ export function getBubbleChartOptions(config: BubbleChartConfig, result: QueryRe
 	// calculate symbol size
 	let symbolSizeConfig: any = 10
 	if (sizeColumnName) {
-		const allSizes = _rows.map((r) => r[sizeColumnName]).filter((val) => val != null && !isNaN(val))
+		const allSizes = _rows
+			.map((r) => r[sizeColumnName])
+			.filter((val) => val != null && !isNaN(val))
 		if (allSizes.length > 0) {
 			const minSize = Math.min(...allSizes)
 			const maxSize = Math.max(...allSizes)
@@ -927,8 +973,10 @@ export function getBubbleChartOptions(config: BubbleChartConfig, result: QueryRe
 		return seriesConfig
 	})
 
-	const xColumnLabel = result.columnOptions.find((c) => c.value === xColumnName)?.label || xColumnName
-	const yColumnLabel = result.columnOptions.find((c) => c.value === yColumnName)?.label || yColumnName
+	const xColumnLabel =
+		result.columnOptions.find((c) => c.value === xColumnName)?.label || xColumnName
+	const yColumnLabel =
+		result.columnOptions.find((c) => c.value === yColumnName)?.label || yColumnName
 
 	const xAxis = {
 		...getYAxis(),
@@ -996,10 +1044,104 @@ export function getBubbleChartOptions(config: BubbleChartConfig, result: QueryRe
 	}
 }
 
+export function getSankeyChartOptions(config: SankeyChartConfig, result: QueryResult) {
+	const rows = result.rows
+	const columns = result.columns
+
+	const sourceColumn = columns.find(
+		(c) =>
+			c.name === config.source_column?.dimension_name ||
+			c.name === config.source_column?.column_name,
+	)?.name
+	const targetColumn = columns.find(
+		(c) =>
+			c.name === config.target_column?.dimension_name ||
+			c.name === config.target_column?.column_name,
+	)?.name
+	const valueColumn = columns.find(
+		(c) =>
+			c.name === config.value_column?.measure_name ||
+			c.name === config.value_column?.column_name,
+	)?.name
+
+	if (!sourceColumn || !targetColumn || !valueColumn) {
+		return null
+	}
+
+	const orient = config.orient || 'horizontal'
+	const nodeAlign = config.node_align || 'justify'
+
+	const nodeSet = new Set<string>()
+	const links: { source: string; target: string; value: number }[] = []
+
+	for (const row of rows) {
+		const source = String(row[sourceColumn])
+		const target = String(row[targetColumn])
+		const value = Number(row[valueColumn]) || 0
+		nodeSet.add(source)
+		nodeSet.add(target)
+		links.push({ source, target, value })
+	}
+
+	const nodes = Array.from(nodeSet).map((name) => ({ name }))
+
+	return {
+		animation: true,
+		animationDuration: 300,
+		tooltip: {
+			trigger: 'item',
+			confine: true,
+			appendToBody: false,
+			formatter: (params: any) => {
+				if (params.dataType === 'edge') {
+					const value = formatNumber(params.value)
+					return `
+						<div class="flex flex-col gap-1">
+							<div class="flex items-center justify-between gap-5">
+								<div>${params.data.source} → ${params.data.target}</div>
+								<div class="font-bold">${value}</div>
+							</div>
+						</div>`
+				}
+				const value = formatNumber(params.value)
+				return `
+					<div class="flex items-center justify-between gap-5">
+						<div>${params.name}</div>
+						<div class="font-bold">${value}</div>
+					</div>`
+			},
+		},
+		series: [
+			{
+				type: 'sankey',
+				orient,
+				nodeAlign,
+				top: '5%',
+				bottom: '5%',
+				left: '5%',
+				right: '10%',
+				draggable: false,
+				emphasis: { focus: 'adjacency' },
+				label: {
+					color: '#565656',
+					fontSize: 12,
+				},
+				lineStyle: {
+					color: 'source',
+					opacity: 0.4,
+					curveness: 0.1,
+				},
+				data: nodes,
+				links,
+			},
+		],
+	}
+}
+
 function getGrid(options: any = {}) {
-	let bottom = options.show_legend ? 45 : 22;
+	let bottom = options.show_legend ? 45 : 22
 	if (options.show_scrollbar && !options.swapAxes) {
-		bottom += 30;
+		bottom += 30
 	}
 
 	return {
@@ -1063,9 +1205,9 @@ function getTooltip(options: any = {}) {
 }
 
 function getLegend(show_legend = true, show_scrollbar = false, swap_axes = false) {
-	let bottom: string | number = 'bottom';
+	let bottom: string | number = 'bottom'
 	if (show_scrollbar && !swap_axes) {
-		bottom = 32;
+		bottom = 32
 	}
 
 	return {

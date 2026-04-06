@@ -41,7 +41,7 @@ def get_data_sources():
 
 
 @insights_whitelist()
-def get_table_columns(data_source, table):
+def get_table_columns(data_source: str, table: str):
     check_table_permission(data_source, table)
 
     doc = frappe.get_doc(
@@ -56,15 +56,13 @@ def get_table_columns(data_source, table):
 
 
 @insights_whitelist()
-def get_table_name(data_source, table):
+def get_table_name(data_source: str, table: str):
     check_table_permission(data_source, table)
-    return frappe.get_value(
-        "Insights Table", {"data_source": data_source, "table": table}, "name"
-    )
+    return frappe.get_value("Insights Table", {"data_source": data_source, "table": table}, "name")
 
 
 @insights_whitelist()
-def get_tables(data_source=None, with_query_tables=False):
+def get_tables(data_source: str | None = None, with_query_tables: bool = False):
     if not data_source:
         return []
 
@@ -87,7 +85,7 @@ def get_tables(data_source=None, with_query_tables=False):
 
 @insights_whitelist()
 def create_table_link(
-    data_source, primary_table, foreign_table, primary_key, foreign_key
+    data_source: str, primary_table: dict, foreign_table: dict, primary_key: str, foreign_key: str
 ):
     check_table_permission(data_source, primary_table.get("value"))
     check_table_permission(data_source, foreign_table.get("value"))
@@ -128,7 +126,7 @@ def create_table_link(
 
 
 @insights_whitelist()
-def get_columns_from_uploaded_file(filename):
+def get_columns_from_uploaded_file(filename: str):
     import pandas as pd
 
     file = frappe.get_doc("File", filename)
@@ -158,7 +156,9 @@ def create_data_source_for_csv():
 
 
 @insights_whitelist()
-def import_csv(table_label, table_name, filename, if_exists, columns, data_source):
+def import_csv(
+    table_label: str, table_name: str, filename: str, if_exists: str, columns: list, data_source: str
+):
     create_data_source_for_csv()
 
     table_import = frappe.new_doc("Insights Table Import")
@@ -189,7 +189,7 @@ def import_csv(table_label, table_name, filename, if_exists, columns, data_sourc
 
 
 @insights_whitelist()
-def delete_data_source(data_source):
+def delete_data_source(data_source: str):
     try:
         frappe.delete_doc("Insights Data Source", data_source)
         notify(
@@ -219,7 +219,7 @@ def delete_data_source(data_source):
 
 @insights_whitelist()
 @redis_cache()
-def fetch_column_values(data_source, table, column, search_text=None):
+def fetch_column_values(data_source: str, table: str, column: str, search_text: str | None = None):
     if not data_source or not isinstance(data_source, str):
         frappe.throw("Data Source is required")
     if not table or not isinstance(table, str):
@@ -231,16 +231,12 @@ def fetch_column_values(data_source, table, column, search_text=None):
 
 
 @insights_whitelist()
-def get_relation(data_source, table_one, table_two):
-    table_one_doc = InsightsTable.get_doc(
-        {"data_source": data_source, "table": table_one}
-    )
+def get_relation(data_source: str, table_one: str, table_two: str):
+    table_one_doc = InsightsTable.get_doc({"data_source": data_source, "table": table_one})
     if not table_one_doc:
         frappe.throw(f"Table {table_one} not found")
 
-    table_two_doc = InsightsTable.get_doc(
-        {"data_source": data_source, "table": table_two}
-    )
+    table_two_doc = InsightsTable.get_doc({"data_source": data_source, "table": table_two})
     if not table_two_doc:
         frappe.throw(f"Table {table_two} not found")
 
@@ -299,7 +295,7 @@ def get_all_data_sources():
 
 @insights_whitelist()
 @validate_type
-def get_data_source_tables(data_source=None, search_term=None, limit=100):
+def get_data_source_tables(data_source: str | None = None, search_term: str | None = None, limit: int = 100):
     tables = frappe.get_list(
         "Insights Table v3",
         filters={
@@ -410,16 +406,14 @@ def make_data_source(data_source):
     return ds
 
 
-@insights_whitelist()
-def test_connection(data_source):
-    frappe.only_for("Insights Admin")
+@insights_whitelist(role="Insights Admin")
+def test_connection(data_source: dict):
     ds = make_data_source(data_source)
     return ds.test_connection(raise_exception=True)
 
 
-@insights_whitelist()
-def create_data_source(data_source):
-    frappe.only_for("Insights Admin")
+@insights_whitelist(role="Insights Admin")
+def create_data_source(data_source: dict):
     ds = make_data_source(data_source)
     ds.save()
     return ds.name
@@ -465,7 +459,10 @@ def get_schema(data_source: str):
             "data_source": data_source,
             "columns": [],
         }
-        _table = ds.get_ibis_table(table_name)
+        try:
+            _table = ds.get_ibis_table(table_name)
+        except Exception:
+            continue
         for column, datatype in _table.schema().items():
             schema[table_name]["columns"].append(
                 frappe._dict(

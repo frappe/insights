@@ -11,6 +11,7 @@ import {
 import { GranularityType } from '../helpers/constants'
 import useDocumentResource from '../helpers/resource'
 import { createToast } from '../helpers/toasts'
+import { __ } from '../translation'
 import { column, count, query_table } from '../query/helpers'
 import useQuery, { Query } from '../query/query'
 import router from '../router'
@@ -71,14 +72,15 @@ function makeChart(name: string) {
 		addFilterOperation(query)
 		addChartOperation(query)
 		addOrderByOperation(query)
-		addLimitOperation(query)
 
+		const currentLimit = chart.doc.config.limit || 100
 		const shouldExecute =
 			force ||
 			reload ||
 			!dataQuery.value.result.executedSQL ||
 			dataQuery.value.adhocFilters ||
-			JSON.stringify(query.doc.operations) !== JSON.stringify(dataQuery.value.doc.operations)
+			JSON.stringify(query.doc.operations) !== JSON.stringify(dataQuery.value.doc.operations) ||
+			currentLimit !== dataQuery.value.pageSize
 
 		if (!shouldExecute) {
 			return
@@ -86,7 +88,7 @@ function makeChart(name: string) {
 
 		dataQuery.value.setOperations(copy(query.doc.operations))
 		dataQuery.value.doc.use_live_connection = query.doc.use_live_connection
-		return dataQuery.value.execute(force)
+		return dataQuery.value.execute(force, chart.doc.config.limit)
 	}
 
 	function validateConfig() {
@@ -94,20 +96,20 @@ function makeChart(name: string) {
 		if (!chart.doc.query) {
 			messages.push({
 				variant: 'error',
-				message: 'Query is required',
+				message: __('Query is required'),
 			})
 		}
 		if (!chart.doc.chart_type) {
 			messages.push({
 				variant: 'error',
-				message: 'Chart type is required',
+				message: __('Chart type is required'),
 			})
 		}
 
 		if (!CHARTS.includes(chart.doc.chart_type)) {
 			messages.push({
 				variant: 'error',
-				message: 'Invalid chart type: ' + chart.doc.chart_type,
+				message: __('Invalid chart type: ') + chart.doc.chart_type,
 			})
 		}
 
@@ -116,13 +118,13 @@ function makeChart(name: string) {
 			if (!config.x_axis.dimension || !config.x_axis.dimension.column_name) {
 				messages.push({
 					variant: 'error',
-					message: 'X-axis is required',
+					message: __('X-axis is required'),
 				})
 			}
 			if (config.x_axis.dimension.column_name === config.split_by?.dimension.column_name) {
 				messages.push({
 					variant: 'error',
-					message: 'X-axis and Split by cannot be the same',
+					message: __('X-axis and Split by cannot be the same'),
 				})
 			}
 		}
@@ -132,7 +134,7 @@ function makeChart(name: string) {
 			if (!config.number_columns?.filter((c) => c.measure_name).length) {
 				messages.push({
 					variant: 'error',
-					message: 'Number column is required',
+					message: __('Number column is required'),
 				})
 			}
 		}
@@ -142,13 +144,13 @@ function makeChart(name: string) {
 			if (!config.label_column?.column_name) {
 				messages.push({
 					variant: 'error',
-					message: 'Label column is required',
+					message: __('Label column is required'),
 				})
 			}
 			if (!config.value_column?.measure_name) {
 				messages.push({
 					variant: 'error',
-					message: 'Value column is required',
+					message: __('Value column is required'),
 				})
 			}
 		}
@@ -158,7 +160,7 @@ function makeChart(name: string) {
 			if (!config.rows?.filter((r) => r.column_name).length) {
 				messages.push({
 					variant: 'error',
-					message: 'Rows are required',
+					message: __('Rows are required'),
 				})
 			}
 		}
@@ -171,14 +173,14 @@ function makeChart(name: string) {
 			if (!hasLocation) {
 				messages.push({
 					variant: 'error',
-					message: 'Location column is required',
+					message: __('Location column is required'),
 				})
 			}
 
 			if (!hasValue) {
 				messages.push({
 					variant: 'error',
-					message: 'Value column is required',
+					message: __('Value column is required'),
 				})
 			}
 		}
@@ -188,13 +190,13 @@ function makeChart(name: string) {
 			if (!config.xAxis?.measure_name) {
 				messages.push({
 					variant: 'error',
-					message: 'X-axis is required',
+					message: __('X-axis is required'),
 				})
 			}
 			if (!config.yAxis?.measure_name) {
 				messages.push({
 					variant: 'error',
-					message: 'Y-axis is required',
+					message: __('Y-axis is required'),
 				})
 			}
 		}
@@ -361,12 +363,6 @@ function makeChart(name: string) {
 		})
 	}
 
-	function addLimitOperation(query: Query) {
-		if (chart.doc.config.limit) {
-			query.addLimit(chart.doc.config.limit)
-		}
-	}
-
 	function updateGranularity(column_name: string, granularity: GranularityType) {
 		if ('x_axis' in chart.doc.config) {
 			if (chart.doc.config.x_axis?.dimension?.dimension_name === column_name) {
@@ -442,9 +438,7 @@ function makeChart(name: string) {
 	)
 
 	function copyChart() {
-		chart.call('export').then((data) => {
-			copyToClipboard(JSON.stringify(data, null, 2))
-		})
+		copyToClipboard(chart.call('export').then((data) => JSON.stringify(data, null, 2)))
 	}
 
 	function duplicateChart() {
@@ -453,7 +447,7 @@ function makeChart(name: string) {
 			.call('duplicate')
 			.then((newChartName: string) => {
 				createToast({
-					title: 'Chart duplicated',
+					title: __('Chart duplicated'),
 					variant: 'success',
 				})
 				router.push(`/workbook/${chart.doc.workbook}/chart/${newChartName}`)

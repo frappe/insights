@@ -20,6 +20,17 @@
 .tnum {
 	font-feature-settings: 'tnum';
 }
+
+.dialog-overlay {
+	z-index: 100;
+}
+
+[data-reka-popper-content-wrapper] {
+	z-index: 100 !important;
+}
+
+
+
 /* Code Control */
 .cm-editor {
 	user-select: text;

@@ -1,6 +1,6 @@
 <script setup>
-import { computed } from 'vue'
 import DraggableList from '@/components/DraggableList.vue'
+import { computed } from 'vue'
 
 const emit = defineEmits(['update:modelValue'])
 const props = defineProps({
@@ -38,7 +38,12 @@ const columnOptions = computed(() => {
 		<div>
 			<div class="mb-1 flex items-center justify-between">
 				<label class="block text-xs text-gray-600">Rows</label>
-				<Autocomplete :multiple="true" v-model="options.rows" :options="columnOptions">
+				<Autocomplete
+					class="!w-fit"
+					:multiple="true"
+					v-model="options.rows"
+					:options="columnOptions"
+				>
 					<template #target="{ togglePopover }">
 						<Button variant="ghost" icon="plus" @click="togglePopover"></Button>
 					</template>
@@ -56,7 +61,12 @@ const columnOptions = computed(() => {
 		<div>
 			<div class="mb-1 flex items-center justify-between">
 				<label class="block text-xs text-gray-600">Columns</label>
-				<Autocomplete :multiple="true" v-model="options.columns" :options="columnOptions">
+				<Autocomplete
+					class="!w-fit"
+					:multiple="true"
+					v-model="options.columns"
+					:options="columnOptions"
+				>
 					<template #target="{ togglePopover }">
 						<Button variant="ghost" icon="plus" @click="togglePopover"></Button>
 					</template>
@@ -74,7 +84,12 @@ const columnOptions = computed(() => {
 		<div>
 			<div class="mb-1 flex items-center justify-between">
 				<label class="block text-xs text-gray-600">Values</label>
-				<Autocomplete :multiple="true" v-model="options.values" :options="columnOptions">
+				<Autocomplete
+					class="!w-fit"
+					:multiple="true"
+					v-model="options.values"
+					:options="columnOptions"
+				>
 					<template #target="{ togglePopover }">
 						<Button variant="ghost" icon="plus" @click="togglePopover"></Button>
 					</template>

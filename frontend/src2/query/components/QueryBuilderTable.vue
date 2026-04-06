@@ -79,6 +79,7 @@ function addNewColumn() {
 			:enable-column-rename="true"
 			:enable-alerts="true"
 			:enable-new-column="true"
+			:enable-drill-down="true"
 		>
 			<template #header-prefix="{ column }">
 				<ColumnTypeChange

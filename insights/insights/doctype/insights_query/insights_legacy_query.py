@@ -36,7 +36,7 @@ DEFAULT_FILTERS = dumps(
 
 class InsightsLegacyQueryClient:
     @frappe.whitelist()
-    def add_table(self, table):
+    def add_table(self, table: dict):
         new_table = {
             "label": table.get("label"),
             "table": table.get("table"),
@@ -45,7 +45,7 @@ class InsightsLegacyQueryClient:
         self.save()
 
     @frappe.whitelist()
-    def update_table(self, table):
+    def update_table(self, table: dict):
         for row in self.tables:
             if row.get("name") != table.get("name"):
                 continue
@@ -63,7 +63,7 @@ class InsightsLegacyQueryClient:
             return
 
     @frappe.whitelist()
-    def remove_table(self, table):
+    def remove_table(self, table: dict):
         for row in self.tables:
             if row.get("name") == table.get("name"):
                 self.remove(row)
@@ -72,7 +72,7 @@ class InsightsLegacyQueryClient:
         self.save()
 
     @frappe.whitelist()
-    def add_column(self, column):
+    def add_column(self, column: dict):
         new_column = {
             "type": column.get("type"),
             "label": column.get("label"),
@@ -88,14 +88,14 @@ class InsightsLegacyQueryClient:
         self.save()
 
     @frappe.whitelist()
-    def move_column(self, from_index, to_index):
+    def move_column(self, from_index: int, to_index: int):
         self.columns.insert(to_index, self.columns.pop(from_index))
         for row in self.columns:
             row.idx = self.columns.index(row) + 1
         self.save()
 
     @frappe.whitelist()
-    def update_column(self, column):
+    def update_column(self, column: dict):
         for row in self.columns:
             if row.get("name") == column.get("name"):
                 row.type = column.get("type")
@@ -110,24 +110,20 @@ class InsightsLegacyQueryClient:
                 if format_option:
                     # check if format option is an object
                     row.format_option = (
-                        dumps(format_option, indent=2)
-                        if isinstance(format_option, dict)
-                        else format_option
+                        dumps(format_option, indent=2) if isinstance(format_option, dict) else format_option
                     )
                 expression = column.get("expression")
                 if expression:
                     # check if expression is an object
                     row.expression = (
-                        dumps(expression, indent=2)
-                        if isinstance(expression, dict)
-                        else expression
+                        dumps(expression, indent=2) if isinstance(expression, dict) else expression
                     )
                 break
 
         self.save()
 
     @frappe.whitelist()
-    def remove_column(self, column):
+    def remove_column(self, column: dict):
         for row in self.columns:
             if row.get("name") == column.get("name"):
                 self.remove(row)
@@ -136,7 +132,7 @@ class InsightsLegacyQueryClient:
         self.save()
 
     @frappe.whitelist()
-    def update_filters(self, filters):
+    def update_filters(self, filters: dict):
         sanitized_conditions = self.sanitize_conditions(filters.get("conditions"))
         filters["conditions"] = sanitized_conditions or []
         self.filters = dumps(filters, indent=2, default=cstr)
@@ -164,9 +160,7 @@ class InsightsLegacyQueryClient:
 
     @frappe.whitelist()
     def fetch_tables(self):
-        with_query_tables = frappe.db.get_single_value(
-            "Insights Settings", "allow_subquery"
-        )
+        with_query_tables = frappe.db.get_single_value("Insights Settings", "allow_subquery")
         return get_tables(self.data_source, with_query_tables)
 
     @frappe.whitelist()
@@ -174,7 +168,7 @@ class InsightsLegacyQueryClient:
         return self.variant_controller.get_tables_columns()
 
     @frappe.whitelist()
-    def fetch_column_values(self, column, search_text=None):
+    def fetch_column_values(self, column: dict, search_text: str | None = None):
         return fetch_column_values(
             column.get("data_source") or self.data_source,
             column.get("table"),
@@ -183,7 +177,7 @@ class InsightsLegacyQueryClient:
         )
 
     @frappe.whitelist()
-    def fetch_join_options(self, left_table, right_table):
+    def fetch_join_options(self, left_table: str, right_table: str):
         left_doc = frappe.get_cached_doc(
             "Insights Table",
             {
@@ -339,27 +333,18 @@ class InsightsLegacyQueryController(InsightsLegacyQueryValidation):
     def before_fetch(self):
         if self.doc.data_source != "Query Store":
             return
-        sub_stored_queries = [
-            t.table for t in self.get_selected_tables() if t.table != self.doc.name
-        ]
+        sub_stored_queries = [t.table for t in self.get_selected_tables() if t.table != self.doc.name]
         sync_query_store(sub_stored_queries)
 
     def after_fetch(self, results):
         if not self.has_cumulative_columns():
             return results
 
-        columns = [
-            col
-            for col in self.doc.columns
-            if col.aggregation and "Cumulative" in col.aggregation
-        ]
+        columns = [col for col in self.doc.columns if col.aggregation and "Cumulative" in col.aggregation]
         return apply_cumulative_sum(columns, results)
 
     def has_cumulative_columns(self):
-        return any(
-            col.aggregation and "Cumulative" in col.aggregation
-            for col in self.doc.columns
-        )
+        return any(col.aggregation and "Cumulative" in col.aggregation for col in self.doc.columns)
 
     def fetch_results(self, additional_filters=None):
         query = self.doc
@@ -389,9 +374,7 @@ class InsightsLegacyQueryController(InsightsLegacyQueryValidation):
             # TODO: FIX: additional_filters was simple filter, got converted to expression, then again converted to simple filter
             if new_simple_filter := convert_into_simple_filter(new_filter):
                 for index, exisiting_filter in enumerate(filters.conditions):
-                    existing_simple_filter = convert_into_simple_filter(
-                        exisiting_filter
-                    )
+                    existing_simple_filter = convert_into_simple_filter(exisiting_filter)
                     if not existing_simple_filter:
                         continue
                     if existing_simple_filter["column"] == new_simple_filter["column"]:
@@ -473,6 +456,4 @@ class LegacyQueryImporter(BaseNestedQueryImporter):
 
     def _rename_subquery_in_filters(self, old_name, new_name):
         # do a hacky string replace for now
-        self.data.query["filters"] = self.data.query["filters"].replace(
-            old_name, new_name
-        )
+        self.data.query["filters"] = self.data.query["filters"].replace(old_name, new_name)

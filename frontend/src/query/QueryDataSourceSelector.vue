@@ -30,6 +30,7 @@ function changeDataSource(sourceName) {
 
 <template>
 	<Autocomplete
+		class="!w-fit"
 		:options="dataSourceOptions"
 		:modelValue="query.doc.data_source"
 		@update:modelValue="changeDataSource($event.value)"
