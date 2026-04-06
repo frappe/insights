@@ -32,6 +32,12 @@ from .ibis.functions import fiscal_year_start, quarter_start, week_start
 from .ibis.utils import get_functions
 
 
+class CircularQueryReferenceError(frappe.ValidationError):
+    """Raised when a circular query reference is detected during query building."""
+
+    pass
+
+
 class IbisQueryBuilder:
     def __init__(self, doc, active_operation_idx=None):
         self.doc = doc
@@ -72,20 +78,34 @@ class IbisQueryBuilder:
         self.operations = operations
 
     def build(self) -> IbisQuery:
-        self.query = None
-        for idx, operation in enumerate(self.operations):
-            try:
-                operation = _dict(operation)
-                self.query = self.perform_operation(operation)
-            except BaseException as e:
-                operation_type_title = frappe.bold(operation.type.title())
-                create_toast(
-                    title=f"Failed to Build {self.title} Query",
-                    message=f"Please check the {operation_type_title} operation at position {idx + 1}",
-                    type="error",
-                )
-                raise e
-        return self.query
+        if not hasattr(frappe.local, "_insights_building_queries"):
+            frappe.local._insights_building_queries = set()
+
+        if self.doc.name in frappe.local._insights_building_queries:
+            raise CircularQueryReferenceError(
+                frappe._('Circular query reference detected while building "{0}"').format(self.title)
+            )
+
+        frappe.local._insights_building_queries.add(self.doc.name)
+        try:
+            self.query = None
+            for idx, operation in enumerate(self.operations):
+                try:
+                    operation = _dict(operation)
+                    self.query = self.perform_operation(operation)
+                except CircularQueryReferenceError:
+                    raise
+                except BaseException as e:
+                    operation_type_title = frappe.bold(operation.type.title())
+                    create_toast(
+                        title=f"Failed to Build {self.title} Query",
+                        message=f"Please check the {operation_type_title} operation at position {idx + 1}",
+                        type="error",
+                    )
+                    raise e
+            return self.query
+        finally:
+            frappe.local._insights_building_queries.discard(self.doc.name)
 
     def perform_operation(self, operation):
         if operation.type == "source":
