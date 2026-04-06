@@ -30,6 +30,7 @@ def get_data_store_tables(data_source: str | None = None, search_term: str | Non
                 | (Table.table == search_term if search_term else Table.table.like("%"))
             )
         )
+        .orderby(Table.last_synced_on, order=frappe.qb.desc)
         .limit(limit)
         .run(as_dict=True)
     )
