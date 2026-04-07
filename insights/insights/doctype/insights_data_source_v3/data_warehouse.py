@@ -339,10 +339,17 @@ class WarehouseTableImporter:
 
         with db_connections():
             self.prepare_log()
-            self.prepare_settings()
-            self.prepare_remote_table()
-            self.start_batch_import()
-            self.update_log()
+            try:
+                self.prepare_settings()
+                self.prepare_remote_table()
+                self.start_batch_import()
+            except Exception:
+                if self.log.status != "Failed":
+                    self.log.status = "Failed"
+                    self._log(frappe.get_traceback())
+                raise
+            finally:
+                self.update_log()
 
         insights.create_toast(
             f"Imported {frappe.bold(self.table.table_name)} to the data store. "
@@ -455,7 +462,7 @@ class WarehouseTableImporter:
             self._log("Import completed successfully.")
         except Exception as e:
             self.log.status = "Failed"
-            self._log(f"Error: \n{e}")
+            self._log(f"Error:\n{frappe.get_traceback()}")
             raise e
 
     def calculate_batch_size(self) -> int:
@@ -505,10 +512,11 @@ class WarehouseTableImporter:
         return total_rows
 
     def update_log(self):
+        ended_at = frappe.utils.now()
         self.log.db_set(
             {
-                "ended_at": frappe.utils.now(),
-                "time_taken": frappe.utils.time_diff_in_seconds(self.log.ended_at, self.log.started_at),
+                "ended_at": ended_at,
+                "time_taken": frappe.utils.time_diff_in_seconds(ended_at, self.log.started_at),
             },
             commit=True,
         )
