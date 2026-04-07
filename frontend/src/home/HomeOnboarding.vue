@@ -6,8 +6,6 @@ import { ref } from 'vue'
 const session = sessionStore()
 const showDetailsDialog = ref(false)
 
-const removalDate = 'April 6, 2026'
-
 function switchToV3() {
 	session
 		.updateDefaultVersion(
@@ -28,8 +26,8 @@ function switchToV3() {
 					Insights v2 is being discontinued
 				</h2>
 				<p class="mt-1 text-p-sm text-gray-700">
-					You are currently using Insights v2. A newer version (Insights v3) is available.
-					This interface will be removed on {{ removalDate }}.
+					You are currently using Insights v2. This version will be removed in an upcoming
+					update. Switch to v3 now to avoid disruption.
 				</p>
 			</div>
 			<div class="ml-2 flex-shrink-0 self-center">
@@ -46,24 +44,22 @@ function switchToV3() {
 		}"
 	>
 		<template #body-content>
-			<div class="space-y-4 text-sm leading-relaxed text-gray-700">
+			<div class="space-y-4 text-base leading-relaxed text-gray-700">
 				<div>
-					<h3 class="mb-1.5 text-sm font-semibold text-gray-900">What's happening?</h3>
+					<h3 class="mb-1.5 text-base font-semibold text-gray-900">What's happening?</h3>
 					<p>
-						You are currently using Insights v2. This version will be permanently
-						removed on
-						<strong>{{ removalDate }}</strong
-						>. Insights v3 is already available with a better experience and ongoing
-						improvements.
+						You are currently using Insights v2. This version will be removed in an
+						upcoming release. Once you update, v2 will no longer be accessible. Insights
+						v3 is already available with a better experience and ongoing improvements.
 					</p>
 					<p class="mt-2">
-						New features and improvements for v2 have already stopped. Only critical
-						security fixes are being provided, and those will stop soon too.
+						New features and security fixes for v2 have stopped. We recommend migrating
+						before your next update.
 					</p>
 				</div>
 
 				<div>
-					<h3 class="mb-1.5 text-sm font-semibold text-gray-900">
+					<h3 class="mb-1.5 text-base font-semibold text-gray-900">
 						What do you need to do?
 					</h3>
 					<p>
@@ -79,7 +75,7 @@ function switchToV3() {
 				</div>
 
 				<div>
-					<h3 class="mb-1.5 text-sm font-semibold text-gray-900">Need help?</h3>
+					<h3 class="mb-1.5 text-base font-semibold text-gray-900">Need help?</h3>
 					<p>
 						Join the
 						<a
