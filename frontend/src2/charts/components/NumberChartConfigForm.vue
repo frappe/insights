@@ -5,11 +5,13 @@ import { computed, watchEffect } from 'vue'
 import DraggableList from '../../components/DraggableList.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { FIELDTYPES } from '../../helpers/constants'
-import { NumberChartConfig, NumberColumnOptions } from '../../types/chart.types'
+import { ICONS, NumberChartConfig, NumberColumnOptions } from '../../types/chart.types'
 import { ColumnOption, Dimension, DimensionOption, MeasureOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
+import IconPicker from '../../components/IconPicker.vue'
+import { FormControl } from 'frappe-ui'
 
 const props = defineProps<{
 	dimensions: DimensionOption[]
@@ -46,7 +48,7 @@ function addNumberColumn() {
 	if (!config.value.number_columns) {
 		config.value.number_columns = []
 	}
-	config.value.number_columns.push({} as MeasureOption)
+	config.value.number_columns!.push({} as MeasureOption)
 }
 
 const updateColor = debounce((color: string) => {
@@ -54,11 +56,11 @@ const updateColor = debounce((color: string) => {
 }, 500)
 
 function getNumberOption(index: number, option: keyof NumberColumnOptions) {
-	return config.value.number_column_options[index]?.[option]
+	return config.value.number_column_options[index]?.[option] as any
 }
 function setNumberOption(index: number, option: keyof NumberColumnOptions, value: any) {
 	if (!config.value.number_column_options[index]) {
-		config.value.number_column_options[index] = {} as NumberColumnOptions
+		config.value.number_column_options![index] = {} as NumberColumnOptions
 	}
 	config.value.number_column_options[index][option] = value
 }
@@ -117,6 +119,14 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 										/>
 									</InlineFormControlLabel>
 
+									<InlineFormControlLabel label="Icon">
+										<IconPicker
+											:model-value="getNumberOption(index, 'icon')"
+											@update:model-value="(val: unknown) => setNumberOption(index, 'icon', val as string)"
+											class="!mb-0"
+										/>
+									</InlineFormControlLabel>
+
 									<Toggle
 										label="Show short numbers"
 										:modelValue="getNumberOption(index, 'shorten_numbers')"
@@ -130,7 +140,7 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 					</DraggableList>
 					<button
 						class="mt-1.5 text-left text-xs text-gray-600 hover:underline"
-						@click="config.number_columns.push({} as any)"
+@click="addNumberColumn()"
 					>
 						+ Add column
 					</button>
