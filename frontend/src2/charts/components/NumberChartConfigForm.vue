@@ -122,7 +122,10 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 									<InlineFormControlLabel label="Icon">
 										<IconPicker
 											:model-value="getNumberOption(index, 'icon')"
-											@update:model-value="(val: unknown) => setNumberOption(index, 'icon', val as string)"
+											@update:model-value="
+												(val: unknown) =>
+													setNumberOption(index, 'icon', val as string)
+											"
 											class="!mb-0"
 										/>
 									</InlineFormControlLabel>
@@ -140,7 +143,7 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 					</DraggableList>
 					<button
 						class="mt-1.5 text-left text-xs text-gray-600 hover:underline"
-@click="addNumberColumn()"
+						@click="addNumberColumn()"
 					>
 						+ Add column
 					</button>

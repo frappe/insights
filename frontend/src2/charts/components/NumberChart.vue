@@ -79,7 +79,10 @@ const getFormattedValue = (value: number, decimal?: number, shorten_numbers?: bo
 	return formatNumber(value, decimal)
 }
 
-function getNumberOption<T = string | number | boolean>(index: number, option: keyof NumberColumnOptions): T | undefined {
+function getNumberOption<T = string | number | boolean>(
+	index: number,
+	option: keyof NumberColumnOptions,
+): T | undefined {
 	const numberOption = config.value.number_column_options?.[index]?.[option]
 	if (numberOption !== undefined) return numberOption as T
 	const globalOption = (config.value as any)[option]
@@ -110,7 +113,7 @@ function onDoubleClick(measure_name: string) {
 					prefix,
 					suffix,
 					color,
-					icon
+					icon,
 				} in cards"
 				:key="measure_name"
 				class="flex max-h-[140px] items-center gap-2 overflow-hidden rounded bg-white px-6 pt-5 shadow cursor-pointer"
@@ -122,10 +125,12 @@ function onDoubleClick(measure_name: string) {
 						<component
 							v-if="icon && iconMap[icon as keyof typeof iconMap]"
 							:is="iconMap[icon as keyof typeof iconMap]"
-class="h-6 w-6 flex-shrink-0 fill-current stroke-0"
+							class="h-6 w-6 flex-shrink-0 fill-current stroke-0"
 							:style="{ color }"
 						/>
-						<span v-else-if="icon" class="text-xl leading-none flex-shrink-0">{{ icon }}</span>
+						<span v-else-if="icon" class="text-xl leading-none flex-shrink-0">{{
+							icon
+						}}</span>
 						<span class="truncate text-sm font-medium">
 							{{ measure_name }}
 						</span>
@@ -145,8 +150,8 @@ class="h-6 w-6 flex-shrink-0 fill-current stroke-0"
 									? 'text-red-500'
 									: 'text-green-500'
 								: delta >= 0
-								  ? 'text-green-500'
-								  : 'text-red-500',
+									? 'text-green-500'
+									: 'text-red-500',
 						]"
 					>
 						<span class="">
