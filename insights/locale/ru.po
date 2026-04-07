@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
-"POT-Creation-Date: 2026-03-22 09:44+0000\n"
-"PO-Revision-Date: 2026-03-23 13:23\n"
+"POT-Creation-Date: 2026-04-05 09:45+0000\n"
+"PO-Revision-Date: 2026-04-06 17:31\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Russian\n"
 "MIME-Version: 1.0\n"
@@ -106,15 +106,15 @@ msgstr ""
 msgid "Add Filter"
 msgstr "Добавить фильтр"
 
-#: frontend/src2/query/components/AddOperationPopover.vue:60
+#: frontend/src2/query/components/AddOperationPopover.vue:62
 msgid "Add New Column"
 msgstr ""
 
-#: frontend/src2/query/components/AddOperationPopover.vue:121
+#: frontend/src2/query/components/AddOperationPopover.vue:132
 msgid "Add Operation"
 msgstr ""
 
-#: frontend/src2/query/components/AddOperationPopover.vue:61
+#: frontend/src2/query/components/AddOperationPopover.vue:63
 msgid "Add a new column based on existing columns"
 msgstr ""
 
@@ -212,11 +212,11 @@ msgstr ""
 msgid "Append Rows"
 msgstr ""
 
-#: frontend/src2/query/components/AddOperationPopover.vue:54
+#: frontend/src2/query/components/AddOperationPopover.vue:56
 msgid "Append Table"
 msgstr ""
 
-#: frontend/src2/query/components/AddOperationPopover.vue:55
+#: frontend/src2/query/components/AddOperationPopover.vue:57
 msgid "Append this table with another table or query"
 msgstr ""
 
@@ -230,7 +230,7 @@ msgstr "Применить"
 msgid "Apply User Permissions"
 msgstr ""
 
-#: frontend/src2/query/components/AddOperationPopover.vue:73
+#: frontend/src2/query/components/AddOperationPopover.vue:81
 msgid "Apply a custom operation using python script"
 msgstr ""
 
@@ -259,7 +259,7 @@ msgstr ""
 msgid "Automatically arrange cards vertically to fill empty spaces"
 msgstr ""
 
-#: frontend/src2/charts/components/MeasurePicker.vue:94
+#: frontend/src2/charts/components/MeasurePicker.vue:128
 msgid "Average of..."
 msgstr "Среднее значение..."
 
@@ -368,10 +368,10 @@ msgstr ""
 #: frontend/src2/charts/components/RegionMappingDialog.vue:312
 #: frontend/src2/components/ExportDialog.vue:77
 #: frontend/src2/dashboard/DashboardChartSelectorDialog.vue:73
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:109
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:161
 #: frontend/src2/dashboard/DashboardText.vue:37
 #: frontend/src2/query/components/ColumnsSelectorDialog.vue:71
-#: frontend/src2/query/components/JoinSelectorDialog.vue:371
+#: frontend/src2/query/components/JoinSelectorDialog.vue:384
 #: frontend/src2/query/components/UnionSelectorDialog.vue:152
 msgid "Cancel"
 msgstr "Отмена"
@@ -421,10 +421,11 @@ msgstr ""
 msgid "Check once an hour"
 msgstr ""
 
-#: frontend/src2/query/components/AddOperationPopover.vue:36
+#: frontend/src2/query/components/AddOperationPopover.vue:38
 msgid "Choose Columns"
 msgstr ""
 
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:241
 #: frontend/src2/query/components/FiltersSelector.vue:143
 msgid "Clear"
 msgstr "Очистить"
@@ -456,8 +457,8 @@ msgstr ""
 #. Label of the column (Data) field in DocType 'Insights Table Column'
 #: frontend/src2/components/DataTableColumn.vue:42
 #: frontend/src2/query/components/FormatRule.vue:329
-#: frontend/src2/query/components/JoinSelectorDialog.vue:269
-#: frontend/src2/query/components/JoinSelectorDialog.vue:282
+#: frontend/src2/query/components/JoinSelectorDialog.vue:283
+#: frontend/src2/query/components/JoinSelectorDialog.vue:297
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Column"
@@ -466,7 +467,7 @@ msgstr "Столбец"
 #. Label of the columns (Table) field in DocType 'Insights Query'
 #. Label of the columns (Table) field in DocType 'Insights Table'
 #. Label of the columns (Table) field in DocType 'Insights Table Import'
-#: frontend/src2/query/components/JoinSelectorDialog.vue:353
+#: frontend/src2/query/components/JoinSelectorDialog.vue:366
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_table/insights_table.json
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
@@ -479,7 +480,7 @@ msgstr "Колонки"
 msgid "Comma seperated URLs to whitelist for embedding charts & dashboards"
 msgstr ""
 
-#: frontend/src2/dashboard/DashboardBuilder.vue:149
+#: frontend/src2/dashboard/DashboardBuilder.vue:151
 msgid "Compact Layout"
 msgstr ""
 
@@ -498,6 +499,7 @@ msgstr "Условия"
 
 #. Label of the config (JSON) field in DocType 'Insights Chart v3'
 #. Label of the config (JSON) field in DocType 'Insights Query Chart'
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:32
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
 #: insights/insights/doctype/insights_query_chart/insights_query_chart.json
 msgid "Config"
@@ -507,7 +509,7 @@ msgstr "Конфигурация"
 #: frontend/src2/components/ConfirmDialog.vue:26
 #: frontend/src2/components/UserDropdown.vue:84
 #: frontend/src2/query/components/ColumnsSelectorDialog.vue:65
-#: frontend/src2/query/components/JoinSelectorDialog.vue:374
+#: frontend/src2/query/components/JoinSelectorDialog.vue:387
 #: frontend/src2/query/components/UnionSelectorDialog.vue:155
 #: frontend/src2/query/components/source_selector/SourceSelectorDialog.vue:132
 msgid "Confirm"
@@ -584,7 +586,7 @@ msgstr ""
 msgid "Copy Query"
 msgstr ""
 
-#: frontend/src2/charts/components/MeasurePicker.vue:92
+#: frontend/src2/charts/components/MeasurePicker.vue:126
 msgid "Count of..."
 msgstr ""
 
@@ -656,11 +658,11 @@ msgstr ""
 msgid "Custom Headers"
 msgstr ""
 
-#: frontend/src2/query/components/JoinSelectorDialog.vue:302
+#: frontend/src2/query/components/JoinSelectorDialog.vue:316
 msgid "Custom Join Condition"
 msgstr ""
 
-#: frontend/src2/query/components/AddOperationPopover.vue:72
+#: frontend/src2/query/components/AddOperationPopover.vue:80
 msgid "Custom Operation"
 msgstr ""
 
@@ -780,6 +782,10 @@ msgstr "Дата-тайм"
 msgid "Decimal"
 msgstr ""
 
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:234
+msgid "Default Value"
+msgstr "Значение по умолчанию"
+
 #: frontend/src2/dashboard/DashboardItemActions.vue:19
 #: frontend/src2/workbook/WorkbookNavbarActions.vue:65
 msgid "Delete"
@@ -856,7 +862,7 @@ msgstr ""
 msgid "Edit"
 msgstr "Редактировать"
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:100
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:152
 msgid "Edit Filter"
 msgstr ""
 
@@ -926,7 +932,7 @@ msgstr ""
 msgid "Enter filename"
 msgstr ""
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:122
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:177
 msgid "Enter filter label..."
 msgstr ""
 
@@ -953,7 +959,7 @@ msgstr "Ошибка"
 msgid "Excel"
 msgstr "Excel"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:132
+#: frontend/src2/query/components/NativeQueryEditor.vue:134
 #: frontend/src2/query/components/QueryBuilderToolbar.vue:69
 msgid "Execute"
 msgstr "Выполнить"
@@ -1022,7 +1028,7 @@ msgstr "Не выполнено"
 msgid "Failed to format SQL"
 msgstr ""
 
-#: frontend/src2/data_source/UploadCSVFileDialog.vue:71
+#: frontend/src2/data_source/UploadCSVFileDialog.vue:72
 msgid "Failed to import table"
 msgstr ""
 
@@ -1039,15 +1045,15 @@ msgstr ""
 msgid "Favorites"
 msgstr ""
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:156
+#: frontend/src2/query/components/NativeQueryEditor.vue:158
 #: frontend/src2/query/components/QueryBuilderToolbar.vue:57
-#: frontend/src2/query/components/ScriptQueryEditor.vue:126
+#: frontend/src2/query/components/ScriptQueryEditor.vue:128
 msgid "Fetched from cache"
 msgstr ""
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:159
+#: frontend/src2/query/components/NativeQueryEditor.vue:161
 #: frontend/src2/query/components/QueryBuilderToolbar.vue:60
-#: frontend/src2/query/components/ScriptQueryEditor.vue:127
+#: frontend/src2/query/components/ScriptQueryEditor.vue:129
 msgid "Fetched in {0}s"
 msgstr ""
 
@@ -1063,11 +1069,15 @@ msgstr ""
 msgid "Filter"
 msgstr "Фильтр"
 
-#: frontend/src2/query/components/AddOperationPopover.vue:42
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:224
+msgid "Filter Icon"
+msgstr ""
+
+#: frontend/src2/query/components/AddOperationPopover.vue:44
 msgid "Filter Rows"
 msgstr ""
 
-#: frontend/src2/query/components/AddOperationPopover.vue:43
+#: frontend/src2/query/components/AddOperationPopover.vue:45
 msgid "Filter rows based on columns or expressions"
 msgstr ""
 
@@ -1085,11 +1095,11 @@ msgstr ""
 msgid "Folder and item must belong to the same workbook"
 msgstr ""
 
-#: frontend/src2/dashboard/DashboardBuilder.vue:143
+#: frontend/src2/dashboard/DashboardBuilder.vue:145
 msgid "Force Refresh"
 msgstr ""
 
-#: frontend/src2/query/components/ScriptQueryEditor.vue:101
+#: frontend/src2/query/components/ScriptQueryEditor.vue:103
 msgid "Force Run"
 msgstr ""
 
@@ -1114,7 +1124,7 @@ msgstr ""
 msgid "Format Option"
 msgstr ""
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:141
+#: frontend/src2/query/components/NativeQueryEditor.vue:143
 msgid "Format SQL"
 msgstr ""
 
@@ -1150,11 +1160,11 @@ msgstr "Зеленый"
 msgid "Green-Red"
 msgstr ""
 
-#: frontend/src2/query/components/AddOperationPopover.vue:66
+#: frontend/src2/query/components/AddOperationPopover.vue:68
 msgid "Group & Summarize"
 msgstr ""
 
-#: frontend/src2/query/components/AddOperationPopover.vue:67
+#: frontend/src2/query/components/AddOperationPopover.vue:69
 msgid "Group rows by columns and summarize the data"
 msgstr ""
 
@@ -1200,7 +1210,7 @@ msgstr "ID"
 msgid "Import"
 msgstr "Импорт"
 
-#: frontend/src2/data_source/UploadCSVFileDialog.vue:70
+#: frontend/src2/data_source/UploadCSVFileDialog.vue:71
 msgid "Import Failed"
 msgstr ""
 
@@ -1214,7 +1224,7 @@ msgstr ""
 msgid "Import Query"
 msgstr ""
 
-#: frontend/src2/data_source/UploadCSVFileDialog.vue:95
+#: frontend/src2/data_source/UploadCSVFileDialog.vue:96
 #: frontend/src2/data_store/DataStoreList.vue:61
 #: frontend/src2/data_store/DataStoreList.vue:79
 #: frontend/src2/data_store/ImportTableDialog.vue:59
@@ -1591,8 +1601,8 @@ msgstr "JSON"
 msgid "Join"
 msgstr "Присоединиться"
 
-#: frontend/src2/query/components/AddOperationPopover.vue:48
-#: frontend/src2/query/components/JoinSelectorDialog.vue:240
+#: frontend/src2/query/components/AddOperationPopover.vue:50
+#: frontend/src2/query/components/JoinSelectorDialog.vue:251
 msgid "Join Table"
 msgstr ""
 
@@ -1600,7 +1610,7 @@ msgstr ""
 msgid "Join Telegram Group"
 msgstr ""
 
-#: frontend/src2/query/components/AddOperationPopover.vue:49
+#: frontend/src2/query/components/AddOperationPopover.vue:51
 msgid "Join this table with another table or query"
 msgstr ""
 
@@ -1619,7 +1629,7 @@ msgstr "Ключ"
 #. Label of the label (Data) field in DocType 'Insights Table'
 #. Label of the label (Data) field in DocType 'Insights Table Column'
 #. Label of the label (Data) field in DocType 'Insights Table v3'
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:120
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:175
 #: insights/insights/doctype/insights_query_table/insights_query_table.json
 #: insights/insights/doctype/insights_table/insights_table.json
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -1674,7 +1684,7 @@ msgid "Left"
 msgstr "Слева"
 
 #. Label of the left_column (Data) field in DocType 'Insights Table Link v3'
-#: frontend/src2/query/components/JoinSelectorDialog.vue:268
+#: frontend/src2/query/components/JoinSelectorDialog.vue:280
 #: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
 msgid "Left Column"
 msgstr ""
@@ -1696,6 +1706,7 @@ msgstr "Лимит"
 
 #. Label of the linked_charts (Table MultiSelect) field in DocType 'Insights
 #. Dashboard v3'
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:191
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Linked Charts"
 msgstr ""
@@ -1728,8 +1739,8 @@ msgstr "Войти в Frappe Cloud"
 msgid "Login to Frappe Cloud?"
 msgstr "Войти в Frappe Cloud?"
 
-#: frontend/src2/query/components/ScriptQueryEditor.vue:80
-#: frontend/src2/query/components/ScriptQueryEditor.vue:111
+#: frontend/src2/query/components/ScriptQueryEditor.vue:82
+#: frontend/src2/query/components/ScriptQueryEditor.vue:113
 msgid "Logs"
 msgstr "Журналы"
 
@@ -1784,7 +1795,7 @@ msgstr ""
 msgid "Max Records To Sync"
 msgstr ""
 
-#: frontend/src2/charts/components/MeasurePicker.vue:96
+#: frontend/src2/charts/components/MeasurePicker.vue:130
 msgid "Maximum of..."
 msgstr ""
 
@@ -1803,7 +1814,7 @@ msgstr ""
 msgid "Message"
 msgstr "Сообщение"
 
-#: frontend/src2/charts/components/MeasurePicker.vue:95
+#: frontend/src2/charts/components/MeasurePicker.vue:129
 msgid "Minimum of..."
 msgstr ""
 
@@ -2074,6 +2085,7 @@ msgid "Pick Starting Data"
 msgstr ""
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Query Transform'
+#: frontend/src2/query/components/AddOperationPopover.vue:74
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
 msgid "Pivot"
 msgstr ""
@@ -2147,7 +2159,7 @@ msgstr ""
 #. Label of the query (Link) field in DocType 'Insights Query Result'
 #. Label of the query_section (Section Break) field in DocType 'Insights
 #. Settings'
-#: frontend/src2/query/components/JoinSelectorDialog.vue:153
+#: frontend/src2/query/components/JoinSelectorDialog.vue:164
 #: frontend/src2/query/components/UnionSelectorDialog.vue:71
 #: insights/insights/doctype/insights_alert/insights_alert.json
 #: insights/insights/doctype/insights_chart/insights_chart.json
@@ -2232,7 +2244,7 @@ msgstr "Удалить"
 msgid "Remove Sort"
 msgstr ""
 
-#: frontend/src2/dashboard/DashboardBuilder.vue:156
+#: frontend/src2/dashboard/DashboardBuilder.vue:158
 msgid "Reset Layout"
 msgstr "Сброс макета"
 
@@ -2284,13 +2296,13 @@ msgid "Right"
 msgstr "Справа"
 
 #. Label of the right_column (Data) field in DocType 'Insights Table Link v3'
-#: frontend/src2/query/components/JoinSelectorDialog.vue:281
+#: frontend/src2/query/components/JoinSelectorDialog.vue:294
 #: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
 msgid "Right Column"
 msgstr ""
 
 #. Label of the right_table (Data) field in DocType 'Insights Table Link v3'
-#: frontend/src2/query/components/JoinSelectorDialog.vue:250
+#: frontend/src2/query/components/JoinSelectorDialog.vue:260
 #: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
 msgid "Right Table"
 msgstr ""
@@ -2322,7 +2334,7 @@ msgstr ""
 msgid "Rule Type"
 msgstr ""
 
-#: frontend/src2/query/components/ScriptQueryEditor.vue:92
+#: frontend/src2/query/components/ScriptQueryEditor.vue:94
 #: insights/insights/doctype/insights_query/insights_query.js:7
 msgid "Run"
 msgstr "Запуск"
@@ -2361,7 +2373,7 @@ msgstr ""
 msgid "Saturday"
 msgstr "Суббота"
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:103
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:155
 #: frontend/src2/dashboard/DashboardText.vue:27
 #: frontend/src2/workbook/WorkbookShareDialog.vue:95
 msgid "Save"
@@ -2429,7 +2441,7 @@ msgstr ""
 msgid "Select Columns"
 msgstr "Выберите столбцы"
 
-#: frontend/src2/query/components/JoinSelectorDialog.vue:349
+#: frontend/src2/query/components/JoinSelectorDialog.vue:363
 msgid "Select Columns to Add"
 msgstr ""
 
@@ -2437,11 +2449,11 @@ msgstr ""
 msgid "Select Field"
 msgstr "Выберите поле"
 
-#: frontend/src2/query/components/JoinSelectorDialog.vue:321
+#: frontend/src2/query/components/JoinSelectorDialog.vue:335
 msgid "Select Join Type"
 msgstr ""
 
-#: frontend/src2/query/components/AddOperationPopover.vue:30
+#: frontend/src2/query/components/AddOperationPopover.vue:32
 msgid "Select Source"
 msgstr ""
 
@@ -2449,7 +2461,7 @@ msgstr ""
 msgid "Select Table"
 msgstr ""
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:155
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:210
 msgid "Select a column"
 msgstr ""
 
@@ -2457,12 +2469,16 @@ msgstr ""
 msgid "Select a data source"
 msgstr ""
 
-#: frontend/src2/query/components/AddOperationPopover.vue:31
+#: frontend/src2/query/components/AddOperationPopover.vue:33
 msgid "Select a table or query to start building your query"
 msgstr ""
 
-#: frontend/src2/query/components/AddOperationPopover.vue:134
+#: frontend/src2/query/components/AddOperationPopover.vue:145
 msgid "Select an operation"
+msgstr ""
+
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:253
+msgid "Select operator..."
 msgstr ""
 
 #: insights/insights/doctype/insights_alert/insights_alert.js:6
@@ -2499,6 +2515,10 @@ msgstr ""
 msgid "Settings"
 msgstr "Настройки"
 
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:28
+msgid "Setup"
+msgstr "Настраивать"
+
 #: frontend/src2/query/components/AlertSetupDialog.vue:113
 msgid "Setup Alert"
 msgstr ""
@@ -2531,7 +2551,7 @@ msgstr ""
 msgid "Share Link"
 msgstr ""
 
-#: frontend/src2/query/components/AddOperationPopover.vue:37
+#: frontend/src2/query/components/AddOperationPopover.vue:39
 msgid "Show or hide columns from the table"
 msgstr ""
 
@@ -2561,6 +2581,10 @@ msgstr "Источник"
 
 #: frontend/src2/dashboard/DashboardShareDialog.vue:114
 msgid "Specific people can view"
+msgstr ""
+
+#: frontend/src2/query/components/AddOperationPopover.vue:75
+msgid "Spreading column values into separate columns"
 msgstr ""
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
@@ -2619,7 +2643,7 @@ msgstr ""
 msgid "Success"
 msgstr "Успешно"
 
-#: frontend/src2/charts/components/MeasurePicker.vue:93
+#: frontend/src2/charts/components/MeasurePicker.vue:127
 msgid "Sum of..."
 msgstr "Сумма..."
 
@@ -2663,7 +2687,7 @@ msgstr "Менеджер системы"
 #. Label of the table (Data) field in DocType 'Insights Query Table'
 #. Label of the table (Data) field in DocType 'Insights Table'
 #. Label of the table (Data) field in DocType 'Insights Table v3'
-#: frontend/src2/query/components/JoinSelectorDialog.vue:251
+#: frontend/src2/query/components/JoinSelectorDialog.vue:262
 #: frontend/src2/query/components/UnionSelectorDialog.vue:129
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:28
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
@@ -2673,7 +2697,7 @@ msgstr "Менеджер системы"
 msgid "Table"
 msgstr "Таблица"
 
-#: frontend/src2/data_source/UploadCSVFileDialog.vue:63
+#: frontend/src2/data_source/UploadCSVFileDialog.vue:64
 msgid "Table Imported"
 msgstr ""
 
@@ -2880,7 +2904,7 @@ msgstr "Вторник"
 #. Label of the type (Data) field in DocType 'Insights Query Column'
 #. Label of the type (Select) field in DocType 'Insights Query Transform'
 #. Label of the type (Select) field in DocType 'Insights Table Column'
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:133
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:183
 #: insights/insights/doctype/insights_dashboard_item/insights_dashboard_item.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 #: insights/insights/doctype/insights_folder/insights_folder.json
@@ -2895,7 +2919,7 @@ msgstr "Тип"
 msgid "Unexpected validation error"
 msgstr ""
 
-#: frontend/src2/charts/components/MeasurePicker.vue:97
+#: frontend/src2/charts/components/MeasurePicker.vue:131
 msgid "Unique Count of..."
 msgstr ""
 
@@ -2920,8 +2944,8 @@ msgstr ""
 msgid "Upload CSV or Excel"
 msgstr ""
 
-#: frontend/src2/data_source/UploadCSVFileDialog.vue:95
-msgid "Upload CSV/Excel File"
+#: frontend/src2/data_source/UploadCSVFileDialog.vue:96
+msgid "Upload CSV/Excel/JSON File"
 msgstr ""
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:37
@@ -2982,6 +3006,7 @@ msgstr ""
 
 #. Label of the value (Password) field in DocType 'Insights Secret Key'
 #: frontend/src2/components/VariablesDialog.vue:85
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:293
 #: frontend/src2/query/components/FormatRule.vue:425
 #: insights/insights/doctype/insights_secret_key/insights_secret_key.json
 msgid "Value"
@@ -3006,7 +3031,7 @@ msgstr ""
 #. Label of the variables (Table) field in DocType 'Insights Query v3'
 #: frontend/src2/components/VariablesDialog.vue:56
 #: frontend/src2/components/VariablesDialog.vue:62
-#: frontend/src2/query/components/ScriptQueryEditor.vue:106
+#: frontend/src2/query/components/ScriptQueryEditor.vue:108
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Variables"
