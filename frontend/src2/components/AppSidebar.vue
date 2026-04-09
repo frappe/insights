@@ -20,7 +20,7 @@
 			</div>
 		</div>
 		<div>
-				<DemoDataBanner v-if="!isSidebarCollapsed" class="m-2 p-2" />
+			<DemoDataBanner v-if="!isSidebarCollapsed" class="m-2 p-2" />
 			<TrialBanner v-if="is_fc_site" :is-sidebar-collapsed="isSidebarCollapsed" />
 			<SidebarLink
 				:label="isSidebarCollapsed ? __('Expand') : __('Collapse')"
@@ -94,7 +94,6 @@ const links = ref([
 	{
 		label: __('Settings'),
 		icon: SettingsIcon,
-		to: 'Settings',
 		onClick: () => (showSettingsDialog.value = true),
 	},
 ])
