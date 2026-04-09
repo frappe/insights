@@ -49,8 +49,10 @@ def get_user_info():
     )
 
     user = frappe.db.get_value(
-        "User", frappe.session.user, ["first_name", "last_name", "user_type"], as_dict=1
+        "User", frappe.session.user, ["first_name", "last_name", "user_type", "language"], as_dict=1
     )
+
+    locale = user.get("language") or frappe.db.get_single_value("System Settings", "language") or "en"
 
     _is_admin = is_admin or frappe.session.user == "Administrator"
 
@@ -68,7 +70,7 @@ def get_user_info():
         "is_user": is_user or frappe.session.user == "Administrator",
         # TODO: move to `get_session_info` since not user specific
         "country": frappe.db.get_single_value("System Settings", "country"),
-        "locale": frappe.db.get_single_value("System Settings", "language"),
+        "locale": locale,
         "is_v2_instance": frappe.db.count("Insights Query") > 0,
         "default_version": get_user_default("insights_default_version", frappe.session.user),
         "has_desk_access": user.get("user_type") == "System User",
