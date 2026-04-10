@@ -172,7 +172,7 @@ function resetAggregation() {
 	resetMeasure()
 }
 
-const label = ref('')
+const label = ref(measure.value.measure_name)
 </script>
 
 <template>
