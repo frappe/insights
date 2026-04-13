@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { FileUploader, call } from 'frappe-ui'
+import { __ } from '../translation'
 import { FileUp } from 'lucide-vue-next'
 import { computed, reactive, ref } from 'vue'
 import DataTable from '../components/DataTable.vue'
@@ -33,8 +34,8 @@ function uploadFile(file: File) {
 		})
 		.catch((error: any) => {
 			createToast({
-				title: 'Upload Failed',
-				message: error?.message || 'Failed to process uploaded file',
+				title: __('Upload Failed'),
+				message: error?.message || __('Failed to process uploaded file'),
 				variant: 'error',
 			})
 			fileUploaded.value = false
@@ -56,19 +57,19 @@ function importCSVData() {
 	importing.value = true
 	return call('insights.api.import_csv_data', {
 		filename: csvData.file.name,
+		tablename: csvData.tablename,
 	})
 		.then(() => {
-			
-				createToast({
-					title: 'Table Imported',
-					message: `Table '${csvData.tablename}' imported successfully`,
-					variant: 'success',
-				})
+			createToast({
+				title: __('Table Imported'),
+				message: __(`Table '{0}' imported successfully`, csvData.tablename),
+				variant: 'success',
+			})
 		})
 		.catch((error: any) => {
 			createToast({
-				title: 'Import Failed',
-				message: error?.message || 'Failed to import table',
+				title: __('Import Failed'),
+				message: error?.message || __('Failed to import table'),
 				variant: 'error',
 			})
 		})
@@ -92,7 +93,7 @@ function resetFile() {
 	<Dialog
 		v-model="show"
 		:options="{
-			title: csvData.tablename ? 'Import Table' : 'Upload CSV/Excel File',
+			title: csvData.tablename ? __('Import Table') : __('Upload CSV/Excel/JSON File'),
 			size: fileUploaded ? '4xl' : '',
 		}"
 	>
@@ -100,7 +101,7 @@ function resetFile() {
 			<FileUploader
 				v-if="!fileUploaded"
 				:uploadArgs="{ private: true }"
-				:file-types="['.csv', '.xlsx']"
+				:file-types="['.csv', '.xlsx', '.json', '.jsonl']"
 				@success="uploadFile"
 			>
 				<template #default="{ progress, uploading, openFileSelector }">
@@ -115,7 +116,7 @@ function resetFile() {
 						/>
 						<div class="text-center">
 							<p v-if="!uploading" class="text-sm font-medium text-gray-800">
-								Select a CSV or Excel file to upload
+								Select a CSV, Excel, or JSON file to upload
 							</p>
 							<p v-if="!uploading" class="mt-1 text-xs text-gray-600">
 								or drag and drop it here
@@ -148,8 +149,8 @@ function resetFile() {
 					>
 						<template #footer-left>
 							<p class="tnum p-1 text-sm text-gray-600">
-								Showing {{ csvData.rows.length }} of
-								{{ csvData.totalRowCount }} rows
+								Showing {{ csvData.rows.length.toLocaleString() }} of
+								{{ csvData.totalRowCount.toLocaleString() }} rows
 							</p>
 						</template>
 					</DataTable>

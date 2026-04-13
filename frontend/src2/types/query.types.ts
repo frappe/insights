@@ -207,6 +207,7 @@ export type GroupedDropdownOption = {
 export type ColumnOption = DropdownOption & {
 	query: string
 	data_type: ColumnDataType
+	is_measure?: boolean
 }
 
 export type GroupedColumnOption = {

@@ -8,8 +8,8 @@
 						props.isCollapsed
 							? 'w-auto px-0'
 							: open
-							? 'w-52 bg-white px-2 shadow-sm'
-							: 'w-52 px-2 hover:bg-gray-200'
+							  ? 'w-52 bg-white px-2 shadow-sm'
+							  : 'w-52 px-2 hover:bg-gray-200'
 					"
 				>
 					<img
@@ -27,7 +27,11 @@
 					>
 						<div class="text-base font-medium leading-none text-gray-900">Insights</div>
 						<div class="mt-1 text-sm leading-none text-gray-700">
-							{{ session.user.full_name }}
+							{{
+								session.user.full_name == 'Administrator'
+									? __(session.user.full_name)
+									: session.user.full_name
+							}}
 						</div>
 					</div>
 					<div
@@ -47,10 +51,10 @@
 		<Dialog
 			v-model="showSwitchToV2Dialog"
 			:options="{
-				title: 'Switch to Insights v2',
+				title: __('Switch to Insights v2'),
 				actions: [
 					{
-						label: 'Continue',
+						label: __('Continue'),
 						variant: 'solid',
 						onClick: openInsightsV2,
 					},
@@ -63,7 +67,7 @@
 				</div>
 				<FormControl
 					type="checkbox"
-					label="Set Insights v2 as default"
+					:label="__('Set Insights v2 as default')"
 					:modelValue="session.user.default_version === 'v2'"
 					@update:modelValue="session.user.default_version = $event ? 'v2' : ''"
 				/>
@@ -73,15 +77,16 @@
 		<Dialog
 			v-model="showLoginToFCDialog"
 			:options="{
-				title: 'Login to Frappe Cloud?',
-				message: 'Are you sure you want to login to your Frappe Cloud dashboard?',
+				title: __('Login to Frappe Cloud?'),
+				message: __('Are you sure you want to login to your Frappe Cloud dashboard?'),
 				actions: [
 					{
-						label: 'Confirm',
+						label: __('Confirm'),
 						variant: 'solid',
 						loading: loggingInToFC,
 						onClick() {
 							loginToFC()
+
 							showLoginToFCDialog.value = false
 						},
 					},
@@ -99,6 +104,7 @@ import { showErrorToast, waitUntil } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import session from '../session'
 import FrappeCloudIcon from './Icons/FrappeCloudIcon.vue'
+import { __ } from '../translation'
 
 const props = defineProps<{ isCollapsed?: boolean }>()
 
@@ -107,22 +113,22 @@ const showLoginToFCDialog = ref(false)
 
 const userDropdownOptions = ref([
 	{
-		label: 'Documentation',
+		label: __('Documentation'),
 		icon: h(HelpCircle),
 		onClick: () => window.open('https://docs.frappe.io/insights', '_blank'),
 	},
 	{
-		label: 'Join Telegram Group',
+		label: __('Join Telegram Group'),
 		icon: h(MessageCircle),
 		onClick: () => window.open('https://t.me/frappeinsights', '_blank'),
 	},
 	{
-		label: 'Log out',
+		label: __('Log out'),
 		icon: h(LogOut),
 		onClick: () =>
 			confirmDialog({
-				title: 'Log out',
-				message: 'Are you sure you want to log out?',
+				title: __('Log out'),
+				message: __('Are you sure you want to log out?'),
 				onSuccess: session.logout,
 			}),
 	},
@@ -131,7 +137,7 @@ const userDropdownOptions = ref([
 waitUntil(() => session.initialized).then(() => {
 	if (session.user.is_v2_instance) {
 		userDropdownOptions.value.splice(userDropdownOptions.value.length - 2, 0, {
-			label: 'Switch to Insights v2',
+			label: __('Switch to Insights v2'),
 			icon: h(ToggleRight),
 			onClick: () => (showSwitchToV2Dialog.value = true),
 		})
@@ -139,7 +145,7 @@ waitUntil(() => session.initialized).then(() => {
 
 	if (session.user.is_admin) {
 		userDropdownOptions.value.splice(userDropdownOptions.value.length - 2, 0, {
-			label: 'Switch to Desk',
+			label: __('Switch to Desk'),
 			icon: h(ToggleRight),
 			onClick: () => window.open('/app', '_blank'),
 		})
@@ -149,7 +155,7 @@ waitUntil(() => session.initialized).then(() => {
 if (window.is_fc_site) {
 	userDropdownOptions.value.splice(userDropdownOptions.value.length - 1, 0, {
 		icon: h(FrappeCloudIcon),
-		label: 'Login to Frappe Cloud',
+		label: __('Login to Frappe Cloud'),
 		onClick: () => (showLoginToFCDialog.value = true),
 	})
 }

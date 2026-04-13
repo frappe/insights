@@ -66,13 +66,19 @@ function valuePropPresent() {
 	return props.value != undefined
 }
 
-function update(event) {
-	if (event == 'blur') emit('blur', currentContent())
+function emitContent(value) {
 	if (valuePropPresent()) {
-		emit('change', currentContent())
+		emit('change', value)
 	} else {
-		emit('update:modelValue', currentContent())
+		emit('update:modelValue', value)
 	}
+}
+
+function update(event) {
+	if (event == 'blur') {
+		emit('blur', currentContent())
+	}
+	emitContent(currentContent())
 }
 
 function onPaste(event) {
@@ -96,32 +102,36 @@ onMounted(() => {
 	updateContent(valuePropPresent() ? props.value : props.modelValue ?? '')
 })
 
+function isFocused() {
+	return document.activeElement === element.value
+}
+
 watch(
 	() => props.modelValue ?? props.value,
-	(newval, oldval) => {
-		if (newval != currentContent()) {
+	(newval) => {
+		if (!isFocused() && newval != currentContent()) {
 			updateContent(newval ?? '')
 		}
-	}
+	},
 )
 
 watch(
 	() => props.noHtml,
-	(newval, oldval) => {
+	() => {
 		updateContent(props.modelValue ?? '')
-	}
+	},
 )
 
 watch(
 	() => props.tag,
-	(newval, oldval) => {
+	() => {
 		updateContent(props.modelValue ?? '')
 	},
-	{ flush: 'post' }
+	{ flush: 'post' },
 )
 </script>
 
-<style lang="scss">
+<style>
 .contenteditable:empty:before {
 	content: attr(placeholder);
 	pointer-events: none;

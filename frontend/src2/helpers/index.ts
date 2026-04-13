@@ -1,4 +1,5 @@
 import { watchDebounced } from '@vueuse/core'
+import { __ } from '../translation'
 import domtoimage from 'dom-to-image'
 import { isEqual } from 'es-toolkit'
 import { call, debounce } from 'frappe-ui'
@@ -141,7 +142,7 @@ export function getErrorMessage(err: any) {
 export function showErrorToast(err: Error, raise = true) {
 	createToast({
 		variant: 'error',
-		title: 'Error',
+		title: __('Error'),
 		message: getErrorMessage(err),
 	})
 	if (raise) throw err
@@ -246,43 +247,36 @@ export function safeJSONParse(str: string, defaultValue = null) {
 		console.error(e)
 		console.groupEnd()
 		createToast({
-			message: 'Error parsing JSON',
+			message: __('Error parsing JSON'),
 			variant: 'error',
 		})
 		return defaultValue
 	}
 }
 
-export function copyToClipboard(text: string) {
-	if (navigator.clipboard) {
-		navigator.clipboard.writeText(text)
-		createToast({
-			variant: 'success',
-			title: 'Copied to clipboard',
-		})
-	} else {
-		// try to use execCommand
-		const textArea = document.createElement('textarea')
-		textArea.value = text
-		textArea.style.position = 'fixed'
-		document.body.appendChild(textArea)
-		textArea.focus()
-		textArea.select()
-		try {
-			document.execCommand('copy')
-			createToast({
-				variant: 'success',
-				title: 'Copied to clipboard',
-			})
-		} catch (err) {
-			createToast({
-				variant: 'error',
-				title: 'Copy to clipboard not supported',
-			})
-		} finally {
-			document.body.removeChild(textArea)
-		}
+export function copyToClipboard(text: string | Promise<string>) {
+	if (text instanceof Promise) {
+		// Safari blocks clipboard access if called after an async operation
+		// fix: use call ClipboardItem synchronously but with the text as a promise
+		const blob = text.then((t) => new Blob([t], { type: 'text/plain' }))
+		navigator.clipboard
+			.write([new ClipboardItem({ 'text/plain': blob })])
+			.then(() => showCopyToast(true))
+			.catch(() => showCopyToast(false))
+		return
 	}
+
+	navigator.clipboard
+		.writeText(text)
+		.then(() => showCopyToast(true))
+		.catch(() => showCopyToast(false))
+}
+
+function showCopyToast(success: boolean) {
+	createToast({
+		variant: success ? 'success' : 'error',
+		title: success ? __('Copied to clipboard') : __('Failed to copy to clipboard'),
+	})
 }
 
 export function ellipsis(value: string, length: number) {

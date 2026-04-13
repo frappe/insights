@@ -124,11 +124,11 @@ function handleFormatSelect(formatGroup: FormatGroupArgs) {
 }
 
 function getColumnType(column_name: string) {
-	const column = measuresAndDimensions.value.find((column) => column.data_type === column_name)
-	if (!column) {
+	const col = measuresAndDimensions.value.find((col) => col.value === column_name)
+	if (!col) {
 		return 'String'
 	}
-	return column.data_type
+	return col.data_type
 }
 
 function toggleStickyColumn(column_name: string, is_sticky: boolean) {

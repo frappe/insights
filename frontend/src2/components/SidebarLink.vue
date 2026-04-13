@@ -1,8 +1,12 @@
 <template>
-	<button
+	<component
+		:is="to ? 'router-link' : 'div'"
 		class="flex h-7 cursor-pointer items-center rounded text-gray-800 duration-300 ease-in-out focus:outline-none focus:transition-none focus-visible:rounded focus-visible:ring-2 focus-visible:ring-gray-400"
 		:class="isActive ? 'bg-white shadow-sm' : 'hover:bg-gray-100'"
-		@click="handleClick"
+		v-bind="{
+			to: to ? { name: to } : null,
+			onClick: to ? null : handleClick,
+		}"
 	>
 		<div
 			class="flex items-center overflow-hidden duration-300 ease-in-out"
@@ -30,7 +34,7 @@
 				{{ label }}
 			</span>
 		</div>
-	</button>
+	</component>
 </template>
 
 <script setup lang="ts">

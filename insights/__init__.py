@@ -14,6 +14,15 @@ if TYPE_CHECKING:
 __all__ = ["create_toast", "db_connections", "notify", "warehouse"]
 
 
+if TYPE_CHECKING:
+    from insights.insights.doctype.insights_data_source_v3.data_warehouse import Warehouse
+
+    warehouse: Warehouse
+    db_connections: dict
+
+__all__ = ["create_toast", "db_connections", "notify", "warehouse"]
+
+
 def __getattr__(name):
     if name == "warehouse":
         import frappe

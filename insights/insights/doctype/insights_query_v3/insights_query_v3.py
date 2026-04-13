@@ -13,9 +13,15 @@ from ibis import _
 
 from insights.decorators import insights_whitelist
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
+    CircularQueryReferenceError,
     IbisQueryBuilder,
     execute_ibis_query,
     get_columns_from_schema,
+)
+from insights.insights.query_utils import (
+    extract_query_deps_from_operations,
+    find_cycle,
+    transitive_closure,
 )
 from insights.utils import deep_convert_dict_to_dict
 
@@ -67,6 +73,27 @@ class InsightsQueryv3(Document):
         if self.folder:
             self.cleanup_empty_folder(self.folder)
 
+    def validate(self):
+        self._validate_no_circular_dependency()
+
+    def _validate_no_circular_dependency(self):
+        """Raise an error if the current operations would create a circular query reference."""
+        operations = frappe.parse_json(self.operations) or []
+        new_direct_deps = extract_query_deps_from_operations(operations)
+
+        if not new_direct_deps:
+            return
+
+        cycle = find_cycle(self.name, new_direct_deps)
+        if cycle:
+            path_str = " → ".join(
+                f'"{frappe.db.get_value("Insights Query v3", q, "title") or q}"' for q in cycle
+            )
+            frappe.throw(
+                f"Circular query reference detected: {path_str}",
+                exc=CircularQueryReferenceError,
+            )
+
     def before_save(self):
         self.set_linked_queries()
 
@@ -88,62 +115,33 @@ class InsightsQueryv3(Document):
             frappe.delete_doc("Insights Folder", folder_name, force=True, ignore_permissions=True)
 
     def set_linked_queries(self):
-        operations = frappe.parse_json(self.operations)
-        if not operations:
-            return
+        operations = frappe.parse_json(self.operations) or []
+        self.linked_queries = extract_query_deps_from_operations(operations)
 
-        linked_queries = []
-        for operation in operations:
-            if (
-                operation.get("table")
-                and operation.get("table").get("type") == "query"
-                and operation.get("table").get("query_name")
-            ):
-                linked_queries.append(operation.get("table").get("query_name"))
-        self.linked_queries = linked_queries
-
-    def get_source_tables(self, visited=None):
-        """Recursively collect all leaf table references from this query and its dependencies."""
-        if visited is None:
-            visited = set()
-
-        # Prevent infinite recursion from circular dependencies
-        if self.name in visited:
-            return []
-        visited.add(self.name)
-
+    def get_source_tables(self):
+        """Collect all leaf table references from this query and its dependencies."""
+        all_query_names = {self.name} | transitive_closure(self.name)
         source_tables = []
-        operations = frappe.parse_json(self.operations)
 
-        if not operations:
-            return source_tables
+        for query_name in all_query_names:
+            if query_name == self.name:
+                operations = frappe.parse_json(self.operations) or []
+            else:
+                operations = (
+                    frappe.parse_json(frappe.db.get_value("Insights Query v3", query_name, "operations"))
+                    or []
+                )
 
-        # Collect direct table references from this query's operations
-        for operation in operations:
-            if operation.get("type") in ["source", "join", "union"]:
-                table = operation.get("table")
-                if table and table.get("type") == "table":
-                    table_info = {
-                        "data_source": table.get("data_source"),
-                        "table_name": table.get("table_name"),
-                    }
-                    if table_info not in source_tables:
-                        source_tables.append(table_info)
-
-        # Recursively collect tables from linked queries
-        linked_queries = frappe.parse_json(self.linked_queries)
-        if linked_queries:
-            for query_name in linked_queries:
-                if query_name not in visited:
-                    try:
-                        linked_query = frappe.get_doc("Insights Query v3", query_name)
-                        linked_tables = linked_query.get_source_tables(visited)
-                        for table_info in linked_tables:
-                            if table_info not in source_tables:
-                                source_tables.append(table_info)
-                    except Exception:
-                        # Skip if linked query doesn't exist or can't be loaded
-                        continue
+            for operation in operations:
+                if operation.get("type") in ["source", "join", "union"]:
+                    table = operation.get("table")
+                    if table and table.get("type") == "table":
+                        table_info = {
+                            "data_source": table.get("data_source"),
+                            "table_name": table.get("table_name"),
+                        }
+                        if table_info not in source_tables:
+                            source_tables.append(table_info)
 
         return source_tables
 
@@ -161,20 +159,20 @@ class InsightsQueryv3(Document):
 
     @frappe.whitelist()
     def execute(
-        self, active_operation_idx: int | None = None, adhoc_filters: dict | None = None, force: bool = False
+        self,
+        active_operation_idx: int | None = None,
+        adhoc_filters: dict | None = None,
+        force: bool = False,
+        page: int = 1,
+        page_size: int = 100,
     ):
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
 
-        limit = 100
-        for op in frappe.parse_json(self.operations):
-            if op.get("limit"):
-                limit = op.get("limit")
-                break
-
         results, time_taken = execute_ibis_query(
             ibis_query,
-            limit,
+            page=page,
+            page_size=page_size,
             force=force,
             cache_expiry=60 * 10,
             reference_doctype=self.doctype,
@@ -203,7 +201,7 @@ class InsightsQueryv3(Document):
             ibis_query = self.build(active_operation_idx)
 
         count_query = ibis_query.aggregate(count=_.count())
-        count_results, time_taken = execute_ibis_query(
+        count_results, _time_taken = execute_ibis_query(
             count_query,
             cache_expiry=60 * 5,
             reference_doctype=self.doctype,
@@ -222,7 +220,7 @@ class InsightsQueryv3(Document):
         results, _ = execute_ibis_query(
             ibis_query,
             cache=False,
-            limit=10_00_000,
+            page_size=10_00_000,
             reference_doctype=self.doctype,
             reference_name=self.name,
         )
@@ -256,7 +254,7 @@ class InsightsQueryv3(Document):
             .distinct()
             .head(limit)
         )
-        result, time_taken = execute_ibis_query(
+        result, _time_taken = execute_ibis_query(
             values_query,
             cache_expiry=24 * 60 * 60,
             reference_doctype=self.doctype,

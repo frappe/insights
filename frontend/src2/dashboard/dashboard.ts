@@ -14,7 +14,7 @@ import useDocumentResource from '../helpers/resource'
 import { isFilterValid } from '../query/components/filter_utils'
 import { column, filter_group } from '../query/helpers'
 import session from '../session'
-import { FilterArgs, FilterGroup, FilterOperator, FilterValue } from '../types/query.types'
+import { AdhocFilters, FilterArgs, FilterGroup, FilterOperator, FilterValue } from '../types/query.types'
 import {
 	InsightsDashboardv3,
 	WorkbookChart,
@@ -228,7 +228,7 @@ function makeDashboard(name: string) {
 
 		if (filtersApplied.length === 0) return
 
-		const filtersByQuery = {} as Record<string, FilterGroup>
+		const filtersByQuery = {} as AdhocFilters
 
 		function addFilterToQuery(query_name: string, filter: FilterArgs) {
 			if (!filtersByQuery[query_name]) {
@@ -337,25 +337,23 @@ function makeDashboard(name: string) {
 	}
 
 
-	const defaultFilters = dashboard.doc.items.reduce((acc, item) => {
-		if (item.type != 'filter') return acc
-
-		const filterItem = item as WorkbookDashboardFilter
-		if (filterItem.default_operator && filterItem.default_value) {
-			acc[filterItem.filter_name] = {
-				operator: filterItem.default_operator,
-				value: filterItem.default_value,
-			}
-		}
-		return acc
-	}, {} as typeof filterStates.value)
-
-	Object.assign(filterStates.value, defaultFilters)
-
 	const key = `insights:dashboard-filter-states-${name}`
 	filterStates.value = store(key, () => filterStates.value)
 
 	waitUntil(() => dashboard.isloaded).then(() => {
+		const defaultFilters = dashboard.doc.items.reduce((acc, item) => {
+			if (item.type != 'filter') return acc
+			const filterItem = item as WorkbookDashboardFilter
+			if (filterItem.default_operator && filterItem.default_value) {
+				acc[filterItem.filter_name] = {
+					operator: filterItem.default_operator,
+					value: filterItem.default_value,
+				}
+			}
+			return acc
+		}, {} as typeof filterStates.value)
+		Object.assign(filterStates.value, defaultFilters)
+
 		wheneverChanges(
 			() => dashboard.doc.title,
 			() => {
