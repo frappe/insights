@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-04-05 09:45+0000\n"
-"PO-Revision-Date: 2026-04-06 17:32\n"
+"PO-Revision-Date: 2026-04-14 23:52\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Burmese\n"
 "MIME-Version: 1.0\n"
@@ -63,13 +63,13 @@ msgstr ""
 #. Option for the 'Status' (Select) field in DocType 'Insights User Invitation'
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Accepted"
-msgstr ""
+msgstr "လက်ခံပါသည်။"
 
 #. Label of the accepted_at (Datetime) field in DocType 'Insights User
 #. Invitation'
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Accepted At"
-msgstr ""
+msgstr "တွင် လက်ခံခဲ့သည်။"
 
 #: frontend/src2/workbook/WorkbookList.vue:47
 msgid "Access"
@@ -789,7 +789,7 @@ msgstr ""
 #: frontend/src2/dashboard/DashboardItemActions.vue:19
 #: frontend/src2/workbook/WorkbookNavbarActions.vue:65
 msgid "Delete"
-msgstr ""
+msgstr "ဖျက်မည်"
 
 #: frontend/src2/components/DemoDataBanner.vue:26
 #: frontend/src2/settings/GeneralSettings.vue:22
@@ -1589,7 +1589,7 @@ msgstr ""
 #: insights/insights/doctype/insights_dashboard/insights_dashboard.json
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Items"
-msgstr ""
+msgstr "ပစ္စည်းများ"
 
 #. Label of the json (Code) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
