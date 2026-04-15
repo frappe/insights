@@ -91,7 +91,7 @@ function handleSaveVariables(variables: any[]) {
 				</transition>
 			</div>
 			<div class="flex flex-shrink-0 gap-1 border-t p-1">
-				<Button @click="query.execute" :label="__('Run')">
+				<Button @click="() => query.execute()" :label="__('Run')">
 					<template #prefix>
 						<Play class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
 					</template>
