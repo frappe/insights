@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-04-05 09:45+0000\n"
-"PO-Revision-Date: 2026-04-06 17:31\n"
+"PO-Revision-Date: 2026-04-15 08:05\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Dutch\n"
 "MIME-Version: 1.0\n"
@@ -503,7 +503,7 @@ msgstr "Voorwaarde"
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
 #: insights/insights/doctype/insights_query_chart/insights_query_chart.json
 msgid "Config"
-msgstr ""
+msgstr "Configuratie"
 
 #: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:132
 #: frontend/src2/components/ConfirmDialog.vue:26
