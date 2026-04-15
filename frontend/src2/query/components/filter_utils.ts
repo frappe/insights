@@ -31,13 +31,13 @@ export function getOperatorOptions(filterType: FilterType) {
 		options.push({ label: __('is not set'), value: 'is_not_set' })
 	}
 	if (filterType === 'Date') {
+		options.push({ label: __('between'), value: 'between' })
 		options.push({ label: __('equals'), value: '=' })
 		options.push({ label: __('not equals'), value: '!=' })
 		options.push({ label: __('greater than'), value: '>' })
 		options.push({ label: __('greater than or equals'), value: '>=' })
 		options.push({ label: __('less than'), value: '<' })
 		options.push({ label: __('less than or equals'), value: '<=' })
-		options.push({ label: __('between'), value: 'between' })
 		options.push({ label: __('within'), value: 'within' })
 		options.push({ label: __('is set'), value: 'is_set' })
 		options.push({ label: __('is not set'), value: 'is_not_set' })

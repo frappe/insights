@@ -131,7 +131,11 @@ export function getFormattedRows(result: QueryResult, operations: Operation[]) {
 				formattedRow[column.name] = getFormattedDate(row[column.name], granularity)
 			}
 
-			if (FIELDTYPES.TEXT.includes(column.type) && typeof row[column.name] === 'string' && row[column.name]) {
+			if (
+				FIELDTYPES.TEXT.includes(column.type) &&
+				typeof row[column.name] === 'string' &&
+				row[column.name]
+			) {
 				const htmlTagRegex = /<[^>]*>/g
 				if (htmlTagRegex.test(row[column.name])) {
 					htmlTagRegex.lastIndex = 0
@@ -146,13 +150,13 @@ export function getFormattedRows(result: QueryResult, operations: Operation[]) {
 	})
 	return formattedRows
 }
-
-export function getFormattedDate(date: string, granularity: GranularityType) {
+export function getFormattedDate(date: string, granularity: string) {
 	if (!date) return ''
+	const fy = useSettings()
 
 	if (granularity === 'fiscal_year') {
 		const d = dayjs(date)
-		const fiscalYearStart = useSettings().doc.fiscal_year_start || '04-01'
+		const fiscalYearStart = fy.doc.fiscal_year_start
 		const fiscalStartMonth = dayjs(fiscalYearStart).month()
 		const fiscalStartDay = dayjs(fiscalYearStart).date()
 
@@ -386,7 +390,10 @@ export const query_operation_types = {
 		icon: Braces,
 		color: 'gray',
 		class: 'text-gray-600 bg-gray-100',
-		init: (args: CustomOperationArgs): CustomOperation => ({ type: 'custom_operation', ...args }),
+		init: (args: CustomOperationArgs): CustomOperation => ({
+			type: 'custom_operation',
+			...args,
+		}),
 		getDescription: (op: CustomOperation) => {
 			return `${op.expression.expression}`
 		},
@@ -399,7 +406,7 @@ export const query_operation_types = {
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: SQLArgs): SQL => ({ type: 'sql', ...args }),
 		getDescription: (op: SQL) => {
-			return __("SQL")
+			return __('SQL')
 		},
 	},
 	code: {
@@ -410,7 +417,7 @@ export const query_operation_types = {
 		class: 'text-gray-600 bg-gray-100',
 		init: (args: CodeArgs): Code => ({ type: 'code', ...args }),
 		getDescription: (op: Code) => {
-			return __("Code")
+			return __('Code')
 		},
 	},
 }
@@ -484,5 +491,7 @@ export function matchesFilter(value: any, parsed: ParsedFilter): boolean {
 		}
 	}
 	// text: case-insensitive substring match
-	return String(value ?? '').toLowerCase().includes(parsed.text.toLowerCase())
+	return String(value ?? '')
+		.toLowerCase()
+		.includes(parsed.text.toLowerCase())
 }

@@ -275,8 +275,8 @@ class IbisQueryBuilder:
         def left_eq_right_condition(left_column, right_column):
             if left_column and right_column and left_column.column_name and right_column.column_name:
                 rt = right_table
-                lc = getattr(self.query, left_column.column_name)
-                rc = getattr(rt, right_column.column_name)
+                lc = self.get_column(left_column.column_name)
+                rc = rt[right_column.column_name]
                 return lc.cast(rc.type()) == rc
 
             frappe.throw("Join condition is not valid")
@@ -435,7 +435,8 @@ class IbisQueryBuilder:
 
     def apply_select(self, select_args):
         select_args = _dict(select_args)
-        return self.query.select(select_args.column_names)
+        resolved_names = [self.get_column(col).get_name() for col in select_args.column_names]
+        return self.query.select(resolved_names)
 
     def apply_rename(self, rename_args):
         old_name = self.get_column(rename_args.column.column_name).get_name()
@@ -698,7 +699,7 @@ class IbisQueryBuilder:
         return column.name(measure.measure_name)
 
     def translate_dimension(self, dimension):
-        col = getattr(self.query, dimension.column_name)
+        col = self.get_column(dimension.column_name)
         if self.is_date_type(dimension.data_type) and dimension.granularity:
             col = self.apply_granularity(col, dimension.granularity)
             col = col.cast(self.get_ibis_dtype(dimension.data_type))

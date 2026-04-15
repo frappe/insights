@@ -94,18 +94,20 @@ class Warehouse:
         return WarehouseTable(data_source, table_name)
 
     def get_table_writer(
-        self, table_name: str, schema: ibis.Schema, mode: str = "replace", log_fn=None
+        self, table_name: str, schema: ibis.Schema, database: str = "main", mode: str = "replace", log_fn=None
     ) -> "WarehouseTableWriter":
         """Create a table writer for batch inserts with automatic cleanup.
 
         Usage:
-            with warehouse.get_table_writer("table", schema) as writer:
+            with warehouse.get_table_writer("table", schema, database="my_schema") as writer:
                 writer.insert(df1)
                 writer.insert(df2)
             # On successful exit, data is committed to warehouse
             # On exception, temp files are cleaned up automatically
         """
-        return WarehouseTableWriter(table_name, table_schema=schema, mode=mode, log_fn=log_fn)
+        return WarehouseTableWriter(
+            table_name, table_schema=schema, database=database, mode=mode, log_fn=log_fn
+        )
 
 
 class WarehouseTableWriter:
@@ -181,8 +183,15 @@ class WarehouseTableWriter:
 
         total_rows = 0
         try:
-            with insights.warehouse.get_write_connection(self.database) as db:
+            with insights.warehouse.get_write_connection() as db:
                 self._log(f"Committing {len(self._parquet_files)} parquet files to '{self.table_name}'")
+
+                with suppress(CatalogException):
+                    db.create_database(self.database)
+
+                db.raw_sql(f"USE '{self.database}'")
+
+                self._log(f"Switched to '{self.database}' database")
 
                 parquet_glob = str(self._temp_dir / "*.parquet")
                 merged = db.read_parquet(parquet_glob)
@@ -235,15 +244,11 @@ class WarehouseTable:
 
         self.data_source = data_source
         self.table_name = table_name
-        self.warehouse_table_name = self.format_table_name(data_source, table_name)
+        self.schema = get_warehouse_schema_name(data_source)
+        self.warehouse_table_name = frappe.scrub(table_name)
         self.table_doc_name = get_table_name(data_source, table_name)
 
         self.validate()
-
-    @staticmethod
-    def format_table_name(data_source: str, table_name: str) -> str:
-        """Format a warehouse table name from data source and table name."""
-        return f"{frappe.scrub(data_source)}.{frappe.scrub(table_name)}"
 
     def validate(self):
         if not self.data_source:
@@ -253,7 +258,7 @@ class WarehouseTable:
 
     def get_ibis_table(self, import_if_not_exists: bool = True) -> Expr:
         try:
-            return insights.warehouse.db.table(self.warehouse_table_name)
+            return insights.warehouse.db.table(self.warehouse_table_name, database=self.schema)
         except TableNotFound:
             if import_if_not_exists:
                 self.enqueue_import()
@@ -261,6 +266,7 @@ class WarehouseTable:
                 return insights.warehouse.db.create_table(
                     self.warehouse_table_name,
                     schema=remote_table.schema(),
+                    database=self.schema,
                     temp=True,
                     overwrite=True,
                 )
@@ -444,7 +450,10 @@ class WarehouseTableImporter:
         try:
             batch_size = self.calculate_batch_size()
             with insights.warehouse.get_table_writer(
-                self.warehouse_table_name, self.remote_table_schema, log_fn=self._log
+                self.warehouse_table_name,
+                self.remote_table_schema,
+                database=self.table.schema,
+                log_fn=self._log,
             ) as writer:
                 total_rows = self.process_batches(batch_size, writer)
                 self.log.rows_imported = total_rows
@@ -552,3 +561,8 @@ def execute_warehouse_table_import(data_source: str, table_name: str):
     table = WarehouseTable(data_source, table_name)
     importer = WarehouseTableImporter(table)
     importer.start_import()
+
+
+def get_warehouse_schema_name(data_source: str) -> str:
+    """Return the DuckDB schema name for a given data source name."""
+    return frappe.scrub(data_source).replace(".", "_")
