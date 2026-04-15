@@ -25,7 +25,7 @@ const state = reactive(
 	copy({
 		operator: filterOperator.value || operatorOptions.value[0].value,
 		value: filterValue.value,
-	})
+	}),
 )
 
 const valueSelectorType = computed(() => {
@@ -51,6 +51,21 @@ function clearFilter() {
 	filterValue.value = undefined
 	emit('close')
 }
+
+// For a bried period, the value of a date filter with 'between' operator is stored as `from_date,to_date` string. This computed property helps to convert it to array and vice versa for the DateRangePicker component.
+const dateRangeVal = computed({
+	get() {
+		let val = state.value
+		if (typeof val === 'string') {
+			const [from_date, to_date] = val.split(',')
+			return [from_date, to_date]
+		}
+		return val
+	},
+	set(val: string) {
+		state.value = val.split(',')
+	},
+})
 </script>
 
 <template>
@@ -59,7 +74,7 @@ function clearFilter() {
 			v-if="filterType === 'Number'"
 			class="w-[200px]"
 			v-model:operator="state.operator"
-			v-model:value="(state.value as number)"
+			v-model:value="state.value as number"
 		/>
 		<template v-else>
 			<div id="operator" class="!min-w-[200px] flex-1">
@@ -72,27 +87,27 @@ function clearFilter() {
 				/>
 			</div>
 			<div id="value" class="!min-w-[200px] flex-1 flex-shrink-0">
-					<DatePicker
+				<DatePicker
 					v-if="valueSelectorType === 'date'"
 					:modelValue="state.value as string"
 					@update:modelValue="state.value = $event"
 				/>
 				<DateRangePicker
 					v-else-if="valueSelectorType === 'date_range'"
-					v-model="(state.value as string[])"
+					v-model="dateRangeVal as string[]"
 				/>
 				<RelativeDatePicker
 					v-else-if="valueSelectorType === 'relative_date'"
-					v-model="(state.value as string)"
+					v-model="state.value as string"
 				/>
 				<ColumnFilterValueSelector
 					v-else-if="valueSelectorType === 'select'"
-					v-model="(state.value as string[])"
+					v-model="state.value as string[]"
 					:valuesProvider="props.valuesProvider"
 				/>
 				<FormControl
 					v-else-if="valueSelectorType === 'text'"
-					v-model="state.value"
+					v-model="state.value as string"
 					placeholder="Value"
 					autocomplete="off"
 				/>

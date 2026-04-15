@@ -26,7 +26,7 @@ watchDebounced(
 			.then((values: string[]) => (distinctColumnValues.value = values))
 			.finally(() => (fetchingValues.value = false))
 	},
-	{ debounce: 300, immediate: true }
+	{ debounce: 300, immediate: true },
 )
 
 const sortedValues = computed(() => {

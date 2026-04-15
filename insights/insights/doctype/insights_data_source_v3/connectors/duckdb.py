@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import os
+from contextlib import suppress
 from urllib.parse import urlparse
 
 import frappe
@@ -32,6 +33,10 @@ def get_local_duckdb_connection(db_name, read_only=True, allowed_dir=None):
 
     if allowed_dir:
         escaped_dir = allowed_dir.replace("'", "''")
+        # Some environments start with external access already disabled.
+        # Best effort: try enabling it first, then configure directory allowlist.
+        with suppress(Exception):
+            db.raw_sql("SET enable_external_access = true")
         db.raw_sql(f"SET allowed_directories = ['{escaped_dir}']")
 
     db.raw_sql("SET enable_external_access = false")
