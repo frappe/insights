@@ -196,7 +196,7 @@ export function makeQuery(name: string) {
 			.call('execute', {
 				active_operation_idx: activeOperationIdx.value,
 				adhoc_filters: adhocFilters.value,
-				force,
+				force: Boolean(force),
 				page: currentPage.value,
 				page_size: pageSize.value,
 			})
