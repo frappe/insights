@@ -167,7 +167,7 @@ function onFilterChange(filters: Record<string, string>) {
 
 <template>
 	<DataTable
-		v-if="props.query.isloaded"
+		v-if="props.query.isloaded || props.query.islocal"
 		:loading="props.query.executing && !isFiltering"
 		:filtering="props.query.executing && isFiltering"
 		:columns="columns"
