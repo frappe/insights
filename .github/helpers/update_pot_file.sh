@@ -10,7 +10,7 @@ bench -v init frappe-bench --skip-assets --skip-redis-config-generation --python
 cd ./frappe-bench || exit
 
 echo "Get Insights..."
-bench get-app insights "${GITHUB_WORKSPACE}" --skip-assets 
+bench get-app insights "${GITHUB_WORKSPACE}" --skip-assets
 
 echo "Generating POT file..."
 bench generate-pot-file --app insights

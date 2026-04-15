@@ -88,7 +88,7 @@ function resetNewMeasure() {
 		:modelValue="Boolean(showDialog)"
 		:disableOutsideClickToClose="true"
 		@after-leave="resetNewMeasure"
-		@close="!newMeasure.expression && (showDialog = false)"
+		@close="showDialog = false"
 	>
 		<template #body>
 			<div class="bg-white px-4 pb-6 pt-5 sm:px-6">

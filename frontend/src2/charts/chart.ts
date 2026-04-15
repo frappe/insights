@@ -455,6 +455,20 @@ function makeChart(name: string) {
 			.then(workbook.load)
 	}
 
+	function duplicateChart() {
+		const workbook = useWorkbook(chart.doc.workbook)
+		return chart
+			.call('duplicate')
+			.then((newChartName: string) => {
+				createToast({
+					title: 'Chart duplicated',
+					variant: 'success',
+				})
+				router.push(`/workbook/${chart.doc.workbook}/chart/${newChartName}`)
+			})
+			.then(workbook.load)
+	}
+
 	const history = useDebouncedRefHistory(
 		// @ts-ignore
 		computed({
