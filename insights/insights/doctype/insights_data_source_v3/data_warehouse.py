@@ -399,8 +399,21 @@ class WarehouseTableImporter:
             commit=True,
         )
 
+    def _disable_statement_timeout(self):
+        """Disable statement timeout on the remote connection.
+
+        Import jobs are long-running background tasks managed by the queue
+        worker, so the user-facing max_execution_time limit should not apply.
+        """
+        backend = insights.db_connections.get(self.table.data_source)
+        if backend is None:
+            return
+        with suppress(Exception):
+            backend.raw_sql("SET MAX_STATEMENT_TIME=0")
+
     def prepare_remote_table(self) -> Expr:
         self.remote_table = self.table.get_remote_table()
+        self._disable_statement_timeout()
 
         if hasattr(self.remote_table, "creation"):
             self.primary_key = "creation"
