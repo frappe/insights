@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-04-05 09:45+0000\n"
-"PO-Revision-Date: 2026-04-15 08:05\n"
+"PO-Revision-Date: 2026-04-16 08:32\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -922,7 +922,7 @@ msgstr "Etkin"
 #. Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Ended At"
-msgstr ""
+msgstr "Sona erdi"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:6
 msgid "Enqueue"
@@ -994,7 +994,7 @@ msgstr "Dışarı Aktar"
 
 #: frontend/src2/components/ExportDialog.vue:35
 msgid "Export Data"
-msgstr ""
+msgstr "Veri Dışa Aktar"
 
 #: frontend/src2/components/ExportDialog.vue:44
 msgid "Export Format"
@@ -1008,7 +1008,7 @@ msgstr ""
 #. Label of the expression (JSON) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "Expression"
-msgstr ""
+msgstr "İfade"
 
 #. Option for the 'Action if table exists' (Select) field in DocType 'Insights
 #. Table Import'
@@ -1022,7 +1022,7 @@ msgstr "Başarısız"
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Failed"
-msgstr ""
+msgstr "Başarısız"
 
 #: frontend/src2/query/components/NativeQueryEditor.vue:52
 msgid "Failed to format SQL"
@@ -1059,7 +1059,7 @@ msgstr ""
 
 #: frontend/src2/data_source/ConnectDuckDBDialog.vue:28
 msgid "File URL"
-msgstr ""
+msgstr "Dosya URL'si"
 
 #: frontend/src2/components/ExportDialog.vue:58
 msgid "Filename"
@@ -1084,7 +1084,7 @@ msgstr ""
 #. Label of the filters (JSON) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Filters"
-msgstr ""
+msgstr "Filtreler"
 
 #. Label of the fiscal_year_start (Date) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
@@ -1142,7 +1142,7 @@ msgstr "Sıklık"
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Friday"
-msgstr ""
+msgstr "Cuma"
 
 #: frontend/src2/settings/Settings.vue:23
 msgid "General"
@@ -1154,7 +1154,7 @@ msgstr ""
 
 #: frontend/src2/query/components/FormatRule.vue:160
 msgid "Green"
-msgstr ""
+msgstr "Yeşil"
 
 #: frontend/src2/query/components/FormatRule.vue:213
 msgid "Green-Red"
@@ -1560,7 +1560,7 @@ msgstr ""
 #: insights/insights/doctype/insights_dashboard/insights_dashboard.json
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Is Public"
-msgstr ""
+msgstr "Herkese Açık mı"
 
 #. Label of the is_query_based (Check) field in DocType 'Insights Table'
 #: insights/insights/doctype/insights_table/insights_table.json
@@ -1623,7 +1623,7 @@ msgstr ""
 #: insights/insights/doctype/insights_secret_key/insights_secret_key.json
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Key"
-msgstr ""
+msgstr "Anahtar"
 
 #. Label of the label (Data) field in DocType 'Insights Query Table'
 #. Label of the label (Data) field in DocType 'Insights Table'
@@ -1639,7 +1639,7 @@ msgstr "Etiket"
 
 #: frontend/src2/users/UserList.vue:65
 msgid "Last Active"
-msgstr ""
+msgstr "Son Aktif"
 
 #. Label of the last_execution (Datetime) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -1675,7 +1675,7 @@ msgstr ""
 #. Label of the last_synced_on (Datetime) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Last Synced On"
-msgstr ""
+msgstr "Son Senkronizasyon Tarihi"
 
 #: frontend/src2/charts/components/DonutChartConfigForm.vue:59
 #: frontend/src2/charts/components/FunnelChartConfigForm.vue:56
