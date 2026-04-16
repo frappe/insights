@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-04-05 09:45+0000\n"
-"PO-Revision-Date: 2026-04-15 08:05\n"
+"PO-Revision-Date: 2026-04-16 08:32\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Portuguese\n"
 "MIME-Version: 1.0\n"
@@ -789,7 +789,7 @@ msgstr "Valor Padrão"
 #: frontend/src2/dashboard/DashboardItemActions.vue:19
 #: frontend/src2/workbook/WorkbookNavbarActions.vue:65
 msgid "Delete"
-msgstr ""
+msgstr "Eliminar"
 
 #: frontend/src2/components/DemoDataBanner.vue:26
 #: frontend/src2/settings/GeneralSettings.vue:22
@@ -808,7 +808,7 @@ msgstr ""
 #: frontend/src2/workbook/WorkbookShareDialog.vue:136
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Disabled"
-msgstr ""
+msgstr "Desativado"
 
 #: frontend/src2/components/UserDropdown.vue:116
 msgid "Documentation"
@@ -823,7 +823,7 @@ msgstr "Feito"
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Draft"
-msgstr ""
+msgstr "Rascunho"
 
 #: frontend/src2/charts/components/DrillDown.vue:59
 msgid "Drill Down"
@@ -878,7 +878,7 @@ msgstr ""
 #: insights/insights/doctype/insights_alert/insights_alert.json
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Email"
-msgstr ""
+msgstr "E-mail"
 
 #. Label of the email_sent_at (Datetime) field in DocType 'Insights User
 #. Invitation'
@@ -922,7 +922,7 @@ msgstr "Ativado"
 #. Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Ended At"
-msgstr ""
+msgstr "Terminou em"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:6
 msgid "Enqueue"
@@ -994,7 +994,7 @@ msgstr "Exportar"
 
 #: frontend/src2/components/ExportDialog.vue:35
 msgid "Export Data"
-msgstr ""
+msgstr "Exportar dados"
 
 #: frontend/src2/components/ExportDialog.vue:44
 msgid "Export Format"
@@ -1008,13 +1008,13 @@ msgstr ""
 #. Label of the expression (JSON) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "Expression"
-msgstr ""
+msgstr "Expressão"
 
 #. Option for the 'Action if table exists' (Select) field in DocType 'Insights
 #. Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Fail"
-msgstr ""
+msgstr "Falha"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import
@@ -1059,7 +1059,7 @@ msgstr ""
 
 #: frontend/src2/data_source/ConnectDuckDBDialog.vue:28
 msgid "File URL"
-msgstr ""
+msgstr "URL do ficheiro"
 
 #: frontend/src2/components/ExportDialog.vue:58
 msgid "Filename"
@@ -1136,13 +1136,13 @@ msgstr ""
 #: frontend/src2/query/components/AlertSetupDialog.vue:150
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Frequency"
-msgstr ""
+msgstr "Frequência"
 
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Friday"
-msgstr ""
+msgstr "Sexta-feira"
 
 #: frontend/src2/settings/Settings.vue:23
 msgid "General"
@@ -1154,7 +1154,7 @@ msgstr ""
 
 #: frontend/src2/query/components/FormatRule.vue:160
 msgid "Green"
-msgstr ""
+msgstr "Verde"
 
 #: frontend/src2/query/components/FormatRule.vue:213
 msgid "Green-Red"
@@ -1176,7 +1176,7 @@ msgstr ""
 #. Label of the hidden (Check) field in DocType 'Insights Table'
 #: insights/insights/doctype/insights_table/insights_table.json
 msgid "Hidden"
-msgstr ""
+msgstr "Oculto"
 
 #: frontend/src2/query/components/FormattingSelector.vue:59
 msgid "Highlight Cell"
@@ -1243,14 +1243,14 @@ msgstr ""
 #. Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "In Progress"
-msgstr ""
+msgstr "Em Progresso"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Data Source'
 #. Option for the 'Status' (Select) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Inactive"
-msgstr ""
+msgstr "Inativo"
 
 #: frontend/src2/charts/components/MapChartConfigForm.vue:55
 msgid "India"
@@ -1560,7 +1560,7 @@ msgstr ""
 #: insights/insights/doctype/insights_dashboard/insights_dashboard.json
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Is Public"
-msgstr ""
+msgstr "É público"
 
 #. Label of the is_query_based (Check) field in DocType 'Insights Table'
 #: insights/insights/doctype/insights_table/insights_table.json
@@ -1589,7 +1589,7 @@ msgstr ""
 #: insights/insights/doctype/insights_dashboard/insights_dashboard.json
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Items"
-msgstr ""
+msgstr "Itens"
 
 #. Label of the json (Code) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -1623,7 +1623,7 @@ msgstr ""
 #: insights/insights/doctype/insights_secret_key/insights_secret_key.json
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Key"
-msgstr ""
+msgstr "Chave"
 
 #. Label of the label (Data) field in DocType 'Insights Query Table'
 #. Label of the label (Data) field in DocType 'Insights Table'
@@ -1639,7 +1639,7 @@ msgstr "Rótulo"
 
 #: frontend/src2/users/UserList.vue:65
 msgid "Last Active"
-msgstr ""
+msgstr "Última Atividade"
 
 #. Label of the last_execution (Datetime) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -1650,7 +1650,7 @@ msgstr ""
 #: frontend/src2/query/components/QueryAlertsDialog.vue:56
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Last Execution"
-msgstr ""
+msgstr "Última execução"
 
 #. Label of the last_log (Link) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
@@ -1661,7 +1661,7 @@ msgstr ""
 #. Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Last Run"
-msgstr ""
+msgstr "Última execução"
 
 #. Label of the last_status (Data) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
@@ -1675,7 +1675,7 @@ msgstr ""
 #. Label of the last_synced_on (Datetime) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Last Synced On"
-msgstr ""
+msgstr "Última sincronização em"
 
 #: frontend/src2/charts/components/DonutChartConfigForm.vue:59
 #: frontend/src2/charts/components/FunnelChartConfigForm.vue:56
@@ -1702,7 +1702,7 @@ msgstr ""
 #. Label of the limit (Int) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Limit"
-msgstr ""
+msgstr "Limite"
 
 #. Label of the linked_charts (Table MultiSelect) field in DocType 'Insights
 #. Dashboard v3'
@@ -1724,12 +1724,12 @@ msgstr ""
 #. Label of the output (Code) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Log"
-msgstr ""
+msgstr "Registo"
 
 #: frontend/src2/components/UserDropdown.vue:126
 #: frontend/src2/components/UserDropdown.vue:130
 msgid "Log out"
-msgstr ""
+msgstr "Terminar sessão"
 
 #: frontend/src2/components/UserDropdown.vue:158
 msgid "Login to Frappe Cloud"
