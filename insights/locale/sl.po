@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-04-05 09:45+0000\n"
-"PO-Revision-Date: 2026-04-16 08:32\n"
+"PO-Revision-Date: 2026-04-17 08:36\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Slovenian\n"
 "MIME-Version: 1.0\n"
@@ -953,7 +953,7 @@ msgstr ""
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Error"
-msgstr ""
+msgstr "Napaka"
 
 #: frontend/src2/components/ExportDialog.vue:47
 msgid "Excel"
@@ -981,7 +981,7 @@ msgstr ""
 
 #: frontend/src2/components/AppSidebar.vue:26
 msgid "Expand"
-msgstr ""
+msgstr "Razširi"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights User Invitation'
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
@@ -1208,7 +1208,7 @@ msgstr ""
 
 #: frontend/src2/data_store/ImportTableDialog.vue:93
 msgid "Import"
-msgstr ""
+msgstr "Uvoz"
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:71
 msgid "Import Failed"
@@ -1719,7 +1719,7 @@ msgstr ""
 #. Label of the table_links (Table) field in DocType 'Insights Table'
 #: insights/insights/doctype/insights_table/insights_table.json
 msgid "Links"
-msgstr ""
+msgstr "Povezave"
 
 #. Label of the output (Code) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
@@ -1742,7 +1742,7 @@ msgstr ""
 #: frontend/src2/query/components/ScriptQueryEditor.vue:82
 #: frontend/src2/query/components/ScriptQueryEditor.vue:113
 msgid "Logs"
-msgstr ""
+msgstr "Dnevniki"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -1752,7 +1752,7 @@ msgstr ""
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Long Text"
-msgstr ""
+msgstr "Dolgo besedilo"
 
 #: frontend/src2/teams/ManageTeamDialog.vue:63
 msgid "Manage Team"
@@ -1812,7 +1812,7 @@ msgstr ""
 #: frontend/src2/query/components/AlertSetupDialog.vue:238
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Message"
-msgstr ""
+msgstr "Sporočilo"
 
 #: frontend/src2/charts/components/MeasurePicker.vue:129
 msgid "Minimum of..."
@@ -1827,12 +1827,12 @@ msgstr ""
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Monday"
-msgstr ""
+msgstr "Ponedeljek"
 
 #. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Monthly"
-msgstr ""
+msgstr "Mesečno"
 
 #. Option for the 'Cardinality' (Select) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
@@ -1848,7 +1848,7 @@ msgstr ""
 #: frontend/src2/components/VariablesDialog.vue:84
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "Name"
-msgstr ""
+msgstr "Ime"
 
 #: frontend/src2/query/components/QueryAlertsDialog.vue:79
 #: frontend/src2/query/components/QueryAlertsDialog.vue:108
@@ -1857,7 +1857,7 @@ msgstr ""
 
 #: frontend/src2/workbook/WorkbookTabSwitcher.vue:63
 msgid "New Chart"
-msgstr ""
+msgstr "Nov grafikon"
 
 #: frontend/src2/workbook/WorkbookTabSwitcher.vue:64
 msgid "New Dashboard"
@@ -1881,11 +1881,11 @@ msgstr ""
 #. Label of the next_execution (Datetime) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Next Execution"
-msgstr ""
+msgstr "Naslednja izvedba"
 
 #: frontend/src2/query/components/UnionSelectorDialog.vue:144
 msgid "No"
-msgstr ""
+msgstr "Ne"
 
 #: frontend/src2/dashboard/DashboardList.vue:94
 msgid "No Dashboards"
@@ -2012,7 +2012,7 @@ msgstr ""
 #: insights/insights/doctype/insights_dashboard_item/insights_dashboard_item.json
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
 msgid "Options"
-msgstr ""
+msgstr "Možnosti"
 
 #. Label of the order_by (Select) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
@@ -2044,7 +2044,7 @@ msgstr ""
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Partial Success"
-msgstr ""
+msgstr "Delni uspeh"
 
 #. Label of the password (Password) field in DocType 'Insights Data Source'
 #. Label of the password (Password) field in DocType 'Insights Data Source v3'
@@ -2054,12 +2054,12 @@ msgstr ""
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Password"
-msgstr ""
+msgstr "Geslo"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights User Invitation'
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Pending"
-msgstr ""
+msgstr "V teku"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -2068,7 +2068,7 @@ msgstr ""
 
 #: frontend/src2/settings/Settings.vue:38
 msgid "Permissions"
-msgstr ""
+msgstr "Dovoljenja"
 
 #: frontend/src2/workbook/WorkbookShareDialog.vue:82
 msgid "Permissions updated"
@@ -2106,7 +2106,7 @@ msgstr ""
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Port"
-msgstr ""
+msgstr "Vrata"
 
 #. Label of the layout (JSON) field in DocType 'Insights Dashboard Item'
 #: insights/insights/doctype/insights_dashboard_item/insights_dashboard_item.json
