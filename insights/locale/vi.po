@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-04-05 09:45+0000\n"
-"PO-Revision-Date: 2026-04-16 08:32\n"
+"PO-Revision-Date: 2026-04-17 08:36\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Vietnamese\n"
 "MIME-Version: 1.0\n"
@@ -77,7 +77,7 @@ msgstr ""
 
 #: frontend/src2/settings/Settings.vue:10
 msgid "Account"
-msgstr "Tài khoản"
+msgstr "Tài Khoản"
 
 #. Label of the if_exists (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
@@ -89,7 +89,7 @@ msgstr ""
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Active"
-msgstr "Hoạt động"
+msgstr "Đang hoạt động"
 
 #: frontend/src2/dashboard/DashboardChartSelectorDialog.vue:67
 msgid "Add"
@@ -192,7 +192,7 @@ msgstr "Màu vàng cam"
 #. Label of the amended_from (Link) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Amended From"
-msgstr "Sửa đổi từ"
+msgstr "Được sửa đổi từ"
 
 #: frontend/src2/dashboard/DashboardShareDialog.vue:110
 msgid "Anyone in the organization can view"
@@ -222,7 +222,7 @@ msgstr ""
 
 #: frontend/src2/query/components/FiltersSelector.vue:145
 msgid "Apply Filters"
-msgstr "Áp dụng bộ lọc"
+msgstr "Áp Dụng Bộ Lọc"
 
 #. Label of the apply_user_permissions (Check) field in DocType 'Insights
 #. Settings'
@@ -443,11 +443,11 @@ msgstr "Đóng"
 
 #: frontend/src2/components/AppSidebar.vue:26
 msgid "Collapse"
-msgstr "Thu Gọn"
+msgstr "Thu gọn"
 
 #: frontend/src2/query/components/FormatRule.vue:502
 msgid "Color"
-msgstr "Màu"
+msgstr "Màu sắc"
 
 #: frontend/src2/query/components/FormattingSelector.vue:60
 msgid "Color Scale"
@@ -488,14 +488,14 @@ msgstr ""
 #. Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Completed"
-msgstr "Đã Hoàn Thành"
+msgstr "Đã hoàn thành"
 
 #. Label of the condition (Code) field in DocType 'Insights Alert'
 #: frontend/src2/query/components/FormatRule.vue:433
 #: frontend/src2/query/components/FormatRule.vue:452
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Condition"
-msgstr "Điều Kiện"
+msgstr "Tình trạng"
 
 #. Label of the config (JSON) field in DocType 'Insights Chart v3'
 #. Label of the config (JSON) field in DocType 'Insights Query Chart'
@@ -503,7 +503,7 @@ msgstr "Điều Kiện"
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
 #: insights/insights/doctype/insights_query_chart/insights_query_chart.json
 msgid "Config"
-msgstr "Cấu Hình"
+msgstr "Cấu hình"
 
 #: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:132
 #: frontend/src2/components/ConfirmDialog.vue:26
@@ -513,7 +513,7 @@ msgstr "Cấu Hình"
 #: frontend/src2/query/components/UnionSelectorDialog.vue:155
 #: frontend/src2/query/components/source_selector/SourceSelectorDialog.vue:132
 msgid "Confirm"
-msgstr "Xác Nhận"
+msgstr "Xác nhận"
 
 #: frontend/src2/data_source/ConnectClickhouseDialog.vue:77
 #: frontend/src2/data_source/ConnectDuckDBDialog.vue:47
@@ -567,11 +567,11 @@ msgstr ""
 #: frontend/src2/dashboard/DashboardText.vue:45
 #: insights/insights/doctype/insights_notebook_page/insights_notebook_page.json
 msgid "Content"
-msgstr "Nội Dung"
+msgstr "Nội dung"
 
 #: frontend/src2/components/UserDropdown.vue:57
 msgid "Continue"
-msgstr "Tiếp Tục"
+msgstr "Tiếp tục"
 
 #: frontend/src2/query/components/FiltersSelector.vue:113
 msgid "Convert to Expression"
@@ -614,11 +614,11 @@ msgstr ""
 
 #: frontend/src2/data_source/DataSourceList.vue:119
 msgid "Created"
-msgstr "Đã Tạo"
+msgstr "Đã tạo"
 
 #: frontend/src2/query/components/QueryAlertsDialog.vue:52
 msgid "Created By"
-msgstr "Người Tạo"
+msgstr "Tạo bởi"
 
 #: frontend/src2/teams/TeamList.vue:48
 msgid "Creation"
@@ -634,7 +634,7 @@ msgstr "Cron"
 #. Label of the cron_format (Data) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Cron Format"
-msgstr "Định Dạng Cron"
+msgstr "Định dạng cron"
 
 #. Description of the 'Schedule (Cron)' (Data) field in DocType 'Insights Table
 #. Import Job'
@@ -675,7 +675,7 @@ msgstr ""
 #. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Daily"
-msgstr "Hàng Ngày"
+msgstr "Hàng ngày"
 
 #: frontend/src2/dashboard/DashboardShareDialog.vue:48
 msgid "Dashboard Access Updated"
@@ -685,7 +685,7 @@ msgstr ""
 #: frontend/src2/dashboard/Dashboard.vue:46
 #: frontend/src2/workbook/WorkbookSidebar.vue:75
 msgid "Dashboards"
-msgstr "Các Bảng Điều Khiển"
+msgstr "Trang tổng quan"
 
 #. Label of the data_backup (JSON) field in DocType 'Insights Workbook'
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
@@ -743,7 +743,7 @@ msgstr ""
 #. Option for the 'Type' (Select) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Database"
-msgstr "Cơ Sở Dữ Liệu"
+msgstr "Cơ sở dữ liệu"
 
 #. Label of the database_name (Data) field in DocType 'Insights Data Source'
 #. Label of the database_name (Data) field in DocType 'Insights Data Source v3'
@@ -775,7 +775,7 @@ msgstr ""
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Datetime"
-msgstr "Ngày Giờ"
+msgstr "Ngày giờ"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -784,12 +784,12 @@ msgstr ""
 
 #: frontend/src2/dashboard/DashboardFilterEditor.vue:234
 msgid "Default Value"
-msgstr "Giá Trị Mặc Định"
+msgstr "Giá trị mặc định"
 
 #: frontend/src2/dashboard/DashboardItemActions.vue:19
 #: frontend/src2/workbook/WorkbookNavbarActions.vue:65
 msgid "Delete"
-msgstr "Xóa"
+msgstr "Đã cập nhật giá trị mặc định"
 
 #: frontend/src2/components/DemoDataBanner.vue:26
 #: frontend/src2/settings/GeneralSettings.vue:22
@@ -818,12 +818,12 @@ msgstr "Tài liệu"
 #: frontend/src2/dashboard/DashboardShareDialog.vue:86
 #: frontend/src2/teams/ManageTeamDialog.vue:66
 msgid "Done"
-msgstr "Hoàn thành"
+msgstr "Xong"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Draft"
-msgstr "Nháp"
+msgstr "Bản nháp"
 
 #: frontend/src2/charts/components/DrillDown.vue:59
 msgid "Drill Down"
@@ -860,7 +860,7 @@ msgstr ""
 
 #: frontend/src2/dashboard/DashboardItemActions.vue:14
 msgid "Edit"
-msgstr "Sửa"
+msgstr "Chỉnh sửa"
 
 #: frontend/src2/dashboard/DashboardFilterEditor.vue:152
 msgid "Edit Filter"
@@ -916,13 +916,13 @@ msgstr ""
 #: frontend/src2/users/UserList.vue:46
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Enabled"
-msgstr "Bật"
+msgstr "Đã bật"
 
 #. Label of the ended_at (Datetime) field in DocType 'Insights Table Import
 #. Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Ended At"
-msgstr "Kết thúc lúc"
+msgstr "Đã kết thúc tại"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:6
 msgid "Enqueue"
@@ -962,7 +962,7 @@ msgstr "Excel"
 #: frontend/src2/query/components/NativeQueryEditor.vue:134
 #: frontend/src2/query/components/QueryBuilderToolbar.vue:69
 msgid "Execute"
-msgstr "Thực thi"
+msgstr "Thực hiện"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -994,7 +994,7 @@ msgstr "Xuất"
 
 #: frontend/src2/components/ExportDialog.vue:35
 msgid "Export Data"
-msgstr "Xuất Dữ liệu"
+msgstr "Xuất dữ liệu"
 
 #: frontend/src2/components/ExportDialog.vue:44
 msgid "Export Format"
@@ -1059,7 +1059,7 @@ msgstr ""
 
 #: frontend/src2/data_source/ConnectDuckDBDialog.vue:28
 msgid "File URL"
-msgstr "URL File"
+msgstr "URL tệp"
 
 #: frontend/src2/components/ExportDialog.vue:58
 msgid "Filename"
@@ -1084,7 +1084,7 @@ msgstr ""
 #. Label of the filters (JSON) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Filters"
-msgstr "Các Bộ lọc"
+msgstr "Bộ lọc"
 
 #. Label of the fiscal_year_start (Date) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
@@ -1136,7 +1136,7 @@ msgstr ""
 #: frontend/src2/query/components/AlertSetupDialog.vue:150
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Frequency"
-msgstr "Tần suất"
+msgstr "Tần số"
 
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
@@ -1154,7 +1154,7 @@ msgstr ""
 
 #: frontend/src2/query/components/FormatRule.vue:160
 msgid "Green"
-msgstr "Xanh lá"
+msgstr "Xanh"
 
 #: frontend/src2/query/components/FormatRule.vue:213
 msgid "Green-Red"
@@ -1199,16 +1199,16 @@ msgstr ""
 #. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Hourly"
-msgstr "Mỗi giờ"
+msgstr "Hàng giờ"
 
 #. Label of the item_id (Data) field in DocType 'Insights Dashboard Item'
 #: insights/insights/doctype/insights_dashboard_item/insights_dashboard_item.json
 msgid "ID"
-msgstr "ID"
+msgstr "Mã số"
 
 #: frontend/src2/data_store/ImportTableDialog.vue:93
 msgid "Import"
-msgstr "Nhập"
+msgstr "Nhập dữ liệu"
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:71
 msgid "Import Failed"
@@ -1243,7 +1243,7 @@ msgstr ""
 #. Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "In Progress"
-msgstr "Đang Tiến hành"
+msgstr "Đang tiến hành"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Data Source'
 #. Option for the 'Status' (Select) field in DocType 'Insights Data Source v3'
@@ -1560,7 +1560,7 @@ msgstr ""
 #: insights/insights/doctype/insights_dashboard/insights_dashboard.json
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Is Public"
-msgstr "Công khai"
+msgstr "Là công khai"
 
 #. Label of the is_query_based (Check) field in DocType 'Insights Table'
 #: insights/insights/doctype/insights_table/insights_table.json
@@ -1589,7 +1589,7 @@ msgstr ""
 #: insights/insights/doctype/insights_dashboard/insights_dashboard.json
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Items"
-msgstr "Các Mặt hàng"
+msgstr "Mục"
 
 #. Label of the json (Code) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -1623,7 +1623,7 @@ msgstr ""
 #: insights/insights/doctype/insights_secret_key/insights_secret_key.json
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Key"
-msgstr "Khóa"
+msgstr "Chìa khóa"
 
 #. Label of the label (Data) field in DocType 'Insights Query Table'
 #. Label of the label (Data) field in DocType 'Insights Table'
@@ -1650,7 +1650,7 @@ msgstr ""
 #: frontend/src2/query/components/QueryAlertsDialog.vue:56
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Last Execution"
-msgstr "Thực thi lần cuối"
+msgstr "Thực hiện lần cuối"
 
 #. Label of the last_log (Link) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
@@ -1661,7 +1661,7 @@ msgstr ""
 #. Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Last Run"
-msgstr "Chạy cuối"
+msgstr "Lần chạy cuối cùng"
 
 #. Label of the last_status (Data) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
@@ -1675,13 +1675,13 @@ msgstr ""
 #. Label of the last_synced_on (Datetime) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Last Synced On"
-msgstr "Đã đồng bộ cuối vào"
+msgstr "Đồng bộ hóa lần cuối vào"
 
 #: frontend/src2/charts/components/DonutChartConfigForm.vue:59
 #: frontend/src2/charts/components/FunnelChartConfigForm.vue:56
 #: frontend/src2/charts/components/SankeyChartConfigForm.vue:70
 msgid "Left"
-msgstr "Trái"
+msgstr "Còn lại"
 
 #. Label of the left_column (Data) field in DocType 'Insights Table Link v3'
 #: frontend/src2/query/components/JoinSelectorDialog.vue:280
@@ -1881,7 +1881,7 @@ msgstr ""
 #. Label of the next_execution (Datetime) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Next Execution"
-msgstr "Lần thực thi tiếp theo"
+msgstr "Thực hiện tiếp theo"
 
 #: frontend/src2/query/components/UnionSelectorDialog.vue:144
 msgid "No"
@@ -2059,7 +2059,7 @@ msgstr "Mật khẩu"
 #. Option for the 'Status' (Select) field in DocType 'Insights User Invitation'
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Pending"
-msgstr "Đang chờ"
+msgstr "Đang chờ xử lý"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -2106,7 +2106,7 @@ msgstr ""
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Port"
-msgstr "Cổng"
+msgstr "Cảng"
 
 #. Label of the layout (JSON) field in DocType 'Insights Dashboard Item'
 #: insights/insights/doctype/insights_dashboard_item/insights_dashboard_item.json
@@ -2180,7 +2180,7 @@ msgstr ""
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Queued"
-msgstr "Đã xếp hàng"
+msgstr "Đang xếp hàng"
 
 #: frontend/src2/home/HomeQuickActions.vue:21
 msgid "Quick Actions"
@@ -2246,7 +2246,7 @@ msgstr ""
 
 #: frontend/src2/dashboard/DashboardBuilder.vue:158
 msgid "Reset Layout"
-msgstr "Đặt lại Bố cục"
+msgstr "Đặt lại bố cục"
 
 #: frontend/src2/charts/components/ChartBuilderToolbar.vue:44
 msgid "Reset Options"
@@ -2293,7 +2293,7 @@ msgstr ""
 #: frontend/src2/charts/components/FunnelChartConfigForm.vue:57
 #: frontend/src2/charts/components/SankeyChartConfigForm.vue:71
 msgid "Right"
-msgstr "Phải"
+msgstr "Đúng"
 
 #. Label of the right_column (Data) field in DocType 'Insights Table Link v3'
 #: frontend/src2/query/components/JoinSelectorDialog.vue:294
@@ -2403,7 +2403,7 @@ msgstr ""
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Script"
-msgstr "Script"
+msgstr "Kịch bản"
 
 #. Label of the script_log (Text) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -2439,7 +2439,7 @@ msgstr ""
 
 #: frontend/src2/query/components/ColumnsSelectorDialog.vue:62
 msgid "Select Columns"
-msgstr "Chọn Cột"
+msgstr "Chọn cột"
 
 #: frontend/src2/query/components/JoinSelectorDialog.vue:363
 msgid "Select Columns to Add"
@@ -2447,7 +2447,7 @@ msgstr ""
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:203
 msgid "Select Field"
-msgstr "Chọn Trường"
+msgstr "Chọn trường"
 
 #: frontend/src2/query/components/JoinSelectorDialog.vue:335
 msgid "Select Join Type"
@@ -2513,11 +2513,11 @@ msgstr ""
 #: frontend/src2/components/AppSidebar.vue:95
 #: frontend/src2/settings/Settings.vue:58
 msgid "Settings"
-msgstr "Cài đặt"
+msgstr "Thiết lập"
 
 #: frontend/src2/dashboard/DashboardFilterEditor.vue:28
 msgid "Setup"
-msgstr "Thiết lập"
+msgstr "Cấu hình"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:113
 msgid "Setup Alert"
@@ -2526,7 +2526,7 @@ msgstr ""
 #. Label of the setup_complete (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Setup Complete"
-msgstr "Thiết lập Hoàn tất"
+msgstr "Thiết lập hoàn tất"
 
 #: frontend/src2/components/DemoDataBanner.vue:64
 msgid "Setup Demo Data"
@@ -2562,16 +2562,16 @@ msgstr ""
 
 #: frontend/src2/components/DataTableColumn.vue:20
 msgid "Sort Ascending"
-msgstr "Sắp xếp Tăng dần"
+msgstr "Sắp xếp tăng dần"
 
 #: frontend/src2/components/DataTableColumn.vue:25
 msgid "Sort Descending"
-msgstr "Sắp xếp Giảm dần"
+msgstr "Sắp xếp giảm dần"
 
 #. Label of the sort_order (Int) field in DocType 'Insights Folder'
 #: insights/insights/doctype/insights_folder/insights_folder.json
 msgid "Sort Order"
-msgstr "Thứ tự Sắp xếp"
+msgstr "Thứ tự sắp xếp"
 
 #. Label of the source (Attach) field in DocType 'Insights Table Import'
 #: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:38
@@ -2596,7 +2596,7 @@ msgstr "Đã bắt đầu"
 #. Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Started At"
-msgstr "Bắt đầu lúc"
+msgstr "Bắt đầu tại"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:27
 msgid "Starting..."
@@ -2681,7 +2681,7 @@ msgstr ""
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "System Manager"
-msgstr "Quản lý Hệ thống"
+msgstr "Người quản lý hệ thống"
 
 #. Label of the table (Data) field in DocType 'Insights Query Column'
 #. Label of the table (Data) field in DocType 'Insights Query Table'
@@ -2737,7 +2737,7 @@ msgstr "Nhóm"
 #. Label of the team_members (Table) field in DocType 'Insights Team'
 #: insights/insights/doctype/insights_team/insights_team.json
 msgid "Team Members"
-msgstr "Thành viên Nhóm"
+msgstr "Thành viên nhóm"
 
 #. Label of the team_name (Data) field in DocType 'Insights Team'
 #: frontend/src2/settings/PermissionsSettings.vue:45
@@ -2804,7 +2804,7 @@ msgstr "Năm nay"
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Thursday"
-msgstr "Thứ Năm"
+msgstr "Thứ năm"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -2862,7 +2862,7 @@ msgstr "Hôm nay"
 
 #: frontend/src2/charts/components/DonutChartConfigForm.vue:57
 msgid "Top"
-msgstr "Trên"
+msgstr "Đứng đầu"
 
 #: frontend/src2/query/components/FormatRule.vue:201
 msgid "Top N percent"
@@ -2994,7 +2994,7 @@ msgstr "Người dùng"
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Username"
-msgstr "Tên đăng nhập"
+msgstr "Tên người dùng"
 
 #: frontend/src2/settings/Settings.vue:33 frontend/src2/users/UserList.vue:146
 msgid "Users"
@@ -3063,7 +3063,7 @@ msgstr "Lượt xem"
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Wednesday"
-msgstr "Thứ tư"
+msgstr "Thứ Tư"
 
 #. Label of the week_starts_on (Select) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
