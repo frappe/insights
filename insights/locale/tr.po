@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-04-05 09:45+0000\n"
-"PO-Revision-Date: 2026-04-16 08:32\n"
+"PO-Revision-Date: 2026-04-17 08:36\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -1827,7 +1827,7 @@ msgstr "Değiştirilmiş"
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Monday"
-msgstr ""
+msgstr "Pazartesi"
 
 #. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -1881,7 +1881,7 @@ msgstr ""
 #. Label of the next_execution (Datetime) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Next Execution"
-msgstr ""
+msgstr "Sonraki Çalıştırma"
 
 #: frontend/src2/query/components/UnionSelectorDialog.vue:144
 msgid "No"
@@ -2059,7 +2059,7 @@ msgstr "Şifre"
 #. Option for the 'Status' (Select) field in DocType 'Insights User Invitation'
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Pending"
-msgstr ""
+msgstr "Beklemede"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
