@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-04-05 09:45+0000\n"
-"PO-Revision-Date: 2026-04-16 08:32\n"
+"PO-Revision-Date: 2026-04-17 08:36\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Indonesian\n"
 "MIME-Version: 1.0\n"
@@ -1719,7 +1719,7 @@ msgstr ""
 #. Label of the table_links (Table) field in DocType 'Insights Table'
 #: insights/insights/doctype/insights_table/insights_table.json
 msgid "Links"
-msgstr ""
+msgstr "Tautan"
 
 #. Label of the output (Code) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
@@ -1752,7 +1752,7 @@ msgstr ""
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Long Text"
-msgstr ""
+msgstr "Teks Panjang"
 
 #: frontend/src2/teams/ManageTeamDialog.vue:63
 msgid "Manage Team"
@@ -1827,7 +1827,7 @@ msgstr ""
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Monday"
-msgstr ""
+msgstr "Senin"
 
 #. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -1857,7 +1857,7 @@ msgstr ""
 
 #: frontend/src2/workbook/WorkbookTabSwitcher.vue:63
 msgid "New Chart"
-msgstr ""
+msgstr "Diagram Baru"
 
 #: frontend/src2/workbook/WorkbookTabSwitcher.vue:64
 msgid "New Dashboard"
@@ -1881,11 +1881,11 @@ msgstr ""
 #. Label of the next_execution (Datetime) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Next Execution"
-msgstr ""
+msgstr "Eksekusi Berikutnya"
 
 #: frontend/src2/query/components/UnionSelectorDialog.vue:144
 msgid "No"
-msgstr ""
+msgstr "Tidak"
 
 #: frontend/src2/dashboard/DashboardList.vue:94
 msgid "No Dashboards"
@@ -2012,7 +2012,7 @@ msgstr ""
 #: insights/insights/doctype/insights_dashboard_item/insights_dashboard_item.json
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
 msgid "Options"
-msgstr ""
+msgstr "Opsi"
 
 #. Label of the order_by (Select) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
@@ -2044,7 +2044,7 @@ msgstr ""
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Partial Success"
-msgstr ""
+msgstr "Berhasil Sebagian"
 
 #. Label of the password (Password) field in DocType 'Insights Data Source'
 #. Label of the password (Password) field in DocType 'Insights Data Source v3'
@@ -2059,7 +2059,7 @@ msgstr "Kata sandi"
 #. Option for the 'Status' (Select) field in DocType 'Insights User Invitation'
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Pending"
-msgstr ""
+msgstr "Tertunda"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
