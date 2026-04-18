@@ -12,6 +12,11 @@
   "last_synced_on",
   "row_limit",
   "stored",
+  "sync_section",
+  "sync_mode",
+  "sync_cursor_column",
+  "sync_from",
+  "last_sync_bookmark",
   "before_import_script"
  ],
  "fields": [
@@ -60,6 +65,41 @@
    "fieldname": "row_limit",
    "fieldtype": "Int",
    "label": "Row Limit"
+  },
+  {
+   "fieldname": "sync_section",
+   "fieldtype": "Section Break",
+   "label": "Incremental Sync"
+  },
+  {
+   "default": "Full",
+   "fieldname": "sync_mode",
+   "fieldtype": "Select",
+   "label": "Sync Mode",
+   "options": "Full\nIncremental"
+  },
+  {
+   "depends_on": "eval:doc.sync_mode == 'Incremental'",
+   "description": "Column used as bookmark for incremental sync (e.g., creation)",
+   "fieldname": "sync_cursor_column",
+   "fieldtype": "Data",
+   "label": "Cursor Column",
+   "mandatory_depends_on": "eval:doc.sync_mode == 'Incremental'"
+  },
+  {
+   "depends_on": "eval:doc.sync_mode == 'Incremental'",
+   "description": "Start importing rows from this datetime onward (used on first sync only)",
+   "fieldname": "sync_from",
+   "fieldtype": "Datetime",
+   "label": "Sync From"
+  },
+  {
+   "description": "Last synced cursor value (set automatically)",
+   "fieldname": "last_sync_bookmark",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Last Sync Bookmark",
+   "read_only": 1
   },
   {
    "fieldname": "before_import_script",

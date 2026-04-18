@@ -28,9 +28,13 @@ class InsightsTablev3(Document):
         before_import_script: DF.Code | None
         data_source: DF.Link
         label: DF.Data
+        last_sync_bookmark: DF.Data | None
         last_synced_on: DF.Datetime | None
         row_limit: DF.Int
         stored: DF.Check
+        sync_cursor_column: DF.Data | None
+        sync_from: DF.Datetime | None
+        sync_mode: DF.Literal["Full", "Incremental"]
         table: DF.Data
     # end: auto-generated types
 
@@ -38,6 +42,9 @@ class InsightsTablev3(Document):
         self.name = get_table_name(self.data_source, self.table)
 
     def validate(self):
+        if self.sync_mode == "Incremental":
+            self._validate_incremental_sync_config()
+
         if self.before_import_script:
             from insights.insights.doctype.insights_data_source_v3.ibis_utils import exec_with_return
 
@@ -46,6 +53,46 @@ class InsightsTablev3(Document):
                 exec_with_return(self.before_import_script, {"table": table})
             except Exception as e:
                 frappe.throw(f"Error executing before import script: {e}")
+
+    def _validate_incremental_sync_config(self):
+        try:
+            remote = InsightsDataSourcev3.get_doc(self.data_source).get_ibis_table(self.table)
+        except Exception:
+            # Can't connect right now — skip validation rather than blocking save.
+            return
+
+        if not self.sync_cursor_column:
+            frappe.throw(
+                "Incremental sync requires a Cursor Column. "
+                "Set it to the datetime column that marks when rows were created (e.g., <b>creation</b>)."
+            )
+
+        if not self.sync_cursor_column:
+            for candidate in ("creation", "timestamp"):
+                if candidate in remote.columns:
+                    self.sync_cursor_column = candidate
+                    return
+            frappe.throw(
+                "Incremental sync requires a Cursor Column. "
+                "Set it to the datetime column that marks when rows were created (e.g., <b>creation</b>)."
+            )
+            return
+
+        # Auto-detected candidates are known-good; only validate user-specified columns.
+        if self.sync_cursor_column in ("creation", "timestamp"):
+            return
+
+        if self.sync_cursor_column not in remote.columns:
+            frappe.throw(
+                f"Cursor Column <b>{self.sync_cursor_column}</b> does not exist in <b>{self.table}</b>."
+            )
+
+        col_type = remote[self.sync_cursor_column].type()
+        if not col_type.is_temporal():
+            frappe.throw(
+                f"Cursor Column <b>{self.sync_cursor_column}</b> must be a datetime/date column, "
+                f"but its type is <b>{col_type}</b>."
+            )
 
     @staticmethod
     def bulk_create(data_source: str, tables: list[str]):
@@ -104,6 +151,19 @@ class InsightsTablev3(Document):
         frappe.only_for("Insights Admin")
         wt = insights.warehouse.get_table(self.data_source, self.table)
         wt.enqueue_import()
+
+    @frappe.whitelist()
+    def clear_warehouse_data(self):
+        frappe.only_for("Insights Admin")
+        insights.warehouse.get_table(self.data_source, self.table).drop()
+        self.db_set(
+            {
+                "stored": 0,
+                "last_synced_on": None,
+                "last_sync_bookmark": None,
+            },
+            commit=True,
+        )
 
     @frappe.whitelist()
     def get_stats(self):

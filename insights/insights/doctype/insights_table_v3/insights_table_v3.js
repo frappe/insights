@@ -3,11 +3,29 @@
 
 frappe.ui.form.on("Insights Table v3", {
 	refresh: function (frm) {
+		frm.add_custom_button(__("Import to Warehouse"), function () {
+			frm.call("import_to_warehouse").then(() => {
+				frappe.msgprint(__("Import job has been queued"));
+			});
+		});
+
 		if (frm.doc.stored) {
-			frm.add_custom_button(__("Import to Warehouse"), function () {
-				frm.call("import_to_warehouse").then(() => {
-					frappe.msgprint(__("Import job has been queued"));
-				});
+			frm.add_custom_button(__("Clear Warehouse Data"), function () {
+				frappe.confirm(
+					__(
+						"This will delete all warehouse data for <b>{0}</b> and reset the sync bookmark. Are you sure?",
+						[frm.doc.label || frm.doc.table],
+					),
+					() => {
+						frm.call("clear_warehouse_data").then(() => {
+							frappe.show_alert({
+								message: __("Warehouse data cleared"),
+								indicator: "green",
+							});
+							frm.reload_doc();
+						});
+					},
+				);
 			});
 		}
 
