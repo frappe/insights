@@ -504,7 +504,7 @@ class WarehouseTableImporter:
             # Verify the warehouse table still exists; if not, treat as first sync
             try:
                 insights.warehouse.db.table(self.table.warehouse_table_name, database=self.table.schema)
-            except Exception:
+            except TableNotFound:
                 self._log("Warehouse table not found despite existing bookmark — falling back to sync_from.")
                 bookmark = ""
 
