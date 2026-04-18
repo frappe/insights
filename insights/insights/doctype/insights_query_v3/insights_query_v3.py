@@ -25,6 +25,16 @@ from insights.insights.query_utils import (
 )
 from insights.utils import deep_convert_dict_to_dict
 
+try:
+    from frappe.concurrency_limiter import concurrent_limit
+except ImportError:
+    # Fallback no-op decorator if concurrency_limiter is not available (e.g. in older versions of Frappe)
+    def concurrent_limit(limit=None, wait_timeout=None):
+        def decorator(func):
+            return func
+
+        return decorator
+
 
 class InsightsQueryv3(Document):
     # begin: auto-generated types
@@ -158,6 +168,7 @@ class InsightsQueryv3(Document):
         return ibis_query
 
     @frappe.whitelist()
+    @concurrent_limit()
     def execute(
         self,
         active_operation_idx: int | None = None,
