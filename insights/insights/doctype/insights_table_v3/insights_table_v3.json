@@ -80,7 +80,7 @@
   },
   {
    "depends_on": "eval:doc.sync_mode == 'Incremental'",
-   "description": "Column used as bookmark for incremental sync (e.g., creation)",
+   "description": "Column used to track sync progress. Use <b>modified</b> if rows can be updated (syncs new and changed rows). Use <b>creation</b> if rows are append-only (syncs only new rows, faster).",
    "fieldname": "sync_cursor_column",
    "fieldtype": "Data",
    "label": "Cursor Column",
