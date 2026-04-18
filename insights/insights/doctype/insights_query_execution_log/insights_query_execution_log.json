@@ -11,6 +11,7 @@
   "data_source",
   "column_break_zzqc",
   "query",
+  "data_store",
   "section_break_pkwk",
   "sql",
   "time_taken"
@@ -47,11 +48,18 @@
   {
    "fieldname": "section_break_pkwk",
    "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "data_store",
+   "fieldtype": "Check",
+   "label": "Data Store",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-18 19:34:15.738058",
+ "modified": "2026-04-19 00:12:10.738307",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query Execution Log",
@@ -76,6 +84,7 @@
    "share": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

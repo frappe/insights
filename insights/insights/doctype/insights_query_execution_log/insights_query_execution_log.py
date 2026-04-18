@@ -16,6 +16,7 @@ class InsightsQueryExecutionLog(Document):
 
         data_source: DF.Data | None
         query: DF.Data | None
+        use_data_store: DF.Check
         sql: DF.Code | None
         time_taken: DF.Float
     # end: auto-generated types

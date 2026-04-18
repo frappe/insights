@@ -273,6 +273,20 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         insights.db_connections[self.name] = db
         return db
 
+    def get_sqlglot_dialect(self) -> str | None:
+        if self.type == "REST API":
+            return "duckdb"
+
+        return {
+            "MariaDB": "mysql",
+            "PostgreSQL": "postgres",
+            "SQLite": "sqlite",
+            "DuckDB": "duckdb",
+            "BigQuery": "bigquery",
+            "MSSQL": "tsql",
+            "ClickHouse": "clickhouse",
+        }.get(self.database_type)
+
     def _get_db_connection(self) -> BaseBackend:
         if self.is_site_db:
             return get_sitedb_connection()
