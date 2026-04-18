@@ -579,3 +579,11 @@ def execute_warehouse_table_import(data_source: str, table_name: str):
 def get_warehouse_schema_name(data_source: str) -> str:
     """Return the DuckDB schema name for a given data source name."""
     return frappe.scrub(data_source).replace(".", "_")
+
+
+def is_warehouse(backend: DuckDBBackend):
+    args = getattr(backend, "_con_args", None)
+    if args and isinstance(args, tuple) and len(args) > 0:
+        warehouse_db_path = insights.warehouse.get_db_path()
+        return args[0] == warehouse_db_path
+    return False

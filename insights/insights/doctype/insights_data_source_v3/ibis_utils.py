@@ -21,6 +21,7 @@ from ibis.expr.types import Table as IbisQuery
 import insights
 from insights import create_toast
 from insights.cache_utils import make_digest
+from insights.insights.doctype.insights_data_source_v3.data_warehouse import is_warehouse
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
 )
@@ -30,6 +31,16 @@ from insights.utils import deep_convert_dict_to_dict as _dict
 
 from .ibis.functions import fiscal_year_start, quarter_start, week_start
 from .ibis.utils import get_functions
+
+try:
+    from frappe.concurrency_limiter import concurrent_limit
+except ImportError:
+    # Fallback no-op decorator if concurrency_limiter is not available (e.g. in older versions of Frappe)
+    def concurrent_limit(limit=None, wait_timeout=None):
+        def decorator(func):
+            return func
+
+        return decorator
 
 
 class CircularQueryReferenceError(frappe.ValidationError):
@@ -794,18 +805,23 @@ def execute_ibis_query(
         # TODO: throw better error message
         raise
 
+    backend = query.get_backend()
     if cache:
-        backends, _ = query._find_backends()
-        backend_id = backends[0].db_identity if backends else None
+        backend_id = backend.db_identity if backend else None
         cache_key = make_digest(sql, backend_id)
 
         if has_cached_results(cache_key) and not force:
             return get_cached_results(cache_key), -1
 
-    start = time.monotonic()
+    time_taken = -1
 
     try:
-        result = query.execute()
+        if is_warehouse(backend):
+            start = time.monotonic()
+            result = query.execute()
+            time_taken = flt(time.monotonic() - start, 3)
+        else:
+            result, time_taken = _execute_live_query(query)
     except Exception as e:
         if "max_statement_time" in str(e):
             frappe.log_error(
@@ -819,7 +835,6 @@ def execute_ibis_query(
             )
         raise e
 
-    time_taken = flt(time.monotonic() - start, 3)
     create_execution_log(sql, time_taken, reference_name)
 
     if isinstance(result, pd.DataFrame):
@@ -828,6 +843,13 @@ def execute_ibis_query(
             cache_results(cache_key, result, cache_expiry)
 
     return result, time_taken
+
+
+@concurrent_limit()
+def _execute_live_query(query: IbisQuery):
+    start = time.monotonic()
+    result = query.execute()
+    return result, flt(time.monotonic() - start, 3)
 
 
 def get_columns_from_schema(schema: ibis.Schema):
