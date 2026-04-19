@@ -277,6 +277,9 @@ def _get_referencing_queries(data_source: str, table_name: str) -> list[dict]:
 
 
 def apply_user_permissions(t: Table, data_source, table_name):
+    if frappe.flags.get("insights_for_public_access"):
+        return t
+
     if not frappe.db.get_value("Insights Data Source v3", data_source, "is_site_db", cache=True):
         return t
 
