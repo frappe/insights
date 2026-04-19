@@ -87,10 +87,9 @@ class Warehouse:
             # DuckDB disallows a second connection to the same file with a different
             # config (read_only vs read-write). Close the cached read-only connection
             # before opening the write connection; it will be re-opened on next access.
-            cached = insights.db_connections.pop(WAREHOUSE_DB_NAME, None)
-            if cached is not None:
-                with suppress(Exception):
-                    cached.disconnect()
+            with suppress(Exception):
+                cached = insights.db_connections.pop(WAREHOUSE_DB_NAME, None)
+                cached.disconnect()
 
             db = self.get_connection(database, read_only=False)
             try:
