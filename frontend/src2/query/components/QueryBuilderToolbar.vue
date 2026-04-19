@@ -64,20 +64,15 @@ const moreActions = computed(() => {
 			</div>
 		</div>
 		<div class="flex items-center gap-2">
-			<Button
-				variant="ghost"
-				:label="__('Execute')"
-				@click="() => query.execute(true)"
-				class="!h-6 !gap-1.5 bg-white !px-2 text-xs shadow"
-			>
+			<Button variant="outline" :label="__('Execute')" @click="() => query.execute(true)">
 				<template #prefix>
-					<PlayIcon class="h-3 w-3 text-gray-700" stroke-width="1.5" />
+					<PlayIcon class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
 				</template>
 			</Button>
 			<Dropdown placement="right" :options="moreActions">
-				<Button variant="ghost" class="!h-6 !gap-1.5 bg-white !px-2 text-xs shadow">
+				<Button variant="outline">
 					<template #icon>
-						<MoreHorizontal class="h-3 w-3 text-gray-700" stroke-width="1.5" />
+						<MoreHorizontal class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
 					</template>
 				</Button>
 			</Dropdown>
