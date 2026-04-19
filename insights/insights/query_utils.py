@@ -47,10 +47,64 @@ def extract_query_deps_from_operations(operations: list) -> list[str]:
     ]
 
 
+def extract_table_deps_from_operations(operations: list) -> list[dict]:
+    """Extract all unique (data_source, table_name) pairs from a list of operations."""
+    seen: set[tuple] = set()
+    result = []
+    for op in operations:
+        tbl = op.get("table") or {}
+        if tbl.get("type") != "table":
+            continue
+        ds, tn = tbl.get("data_source"), tbl.get("table_name")
+        if not ds or not tn:
+            continue
+        key = (ds, tn)
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append({"data_source": ds, "table_name": tn})
+    return result
+
+
+def sync_query_references(query_name: str, operations) -> None:
+    """Rebuild edge rows for *query_name* in Insights Query Reference.
+
+    Deletes all existing outgoing edges for this query then inserts fresh
+    rows for every table and query reference found in operations.
+    """
+    from frappe.model.document import bulk_insert
+
+    ops = frappe.parse_json(operations) or []
+    frappe.db.delete("Insights Query Reference", {"query": query_name})
+
+    docs = []
+
+    for tbl in extract_table_deps_from_operations(ops):
+        ref = frappe.new_doc("Insights Query Reference")
+        ref.query = query_name
+        ref.ref_type = "Table"
+        ref.data_source = tbl["data_source"]
+        ref.table_name = tbl["table_name"]
+        docs.append(ref)
+
+    for dep_query in extract_query_deps_from_operations(ops):
+        ref = frappe.new_doc("Insights Query Reference")
+        ref.query = query_name
+        ref.ref_type = "Query"
+        ref.ref_query = dep_query
+        docs.append(ref)
+
+    if docs:
+        bulk_insert("Insights Query Reference", docs)
+
+
 def get_direct_dependencies(query_name: str) -> list[str]:
-    """Return the list of query names this query directly depends on, from the DB."""
-    linked_queries = frappe.db.get_value("Insights Query v3", query_name, "linked_queries")
-    return frappe.parse_json(linked_queries) or []
+    """Return the query names this query directly depends on, from the edge table."""
+    return frappe.get_all(
+        "Insights Query Reference",
+        filters={"query": query_name, "ref_type": "Query"},
+        pluck="ref_query",
+    )
 
 
 def transitive_closure(start: str) -> set[str]:

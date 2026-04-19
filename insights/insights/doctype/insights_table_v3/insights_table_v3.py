@@ -263,18 +263,15 @@ def get_table_stats(data_source: str, table_name: str) -> dict:
 
 
 def _get_referencing_queries(data_source: str, table_name: str) -> list[dict]:
-    """Find all Insights Query v3 docs whose operations JSON references this table."""
-    try:
-        from frappe.query_builder.functions import JSONContains
-    except ImportError:
-        return []
-
-    candidate = {"table": {"data_source": data_source, "table_name": table_name}}
+    """Find all Insights Query v3 docs that reference this table via the edge table."""
+    Ref = frappe.qb.DocType("Insights Query Reference")
     Query = frappe.qb.DocType("Insights Query v3")
     return (
-        frappe.qb.from_(Query)
+        frappe.qb.from_(Ref)
+        .join(Query)
+        .on(Query.name == Ref.query)
         .select(Query.name, Query.title, Query.workbook)
-        .where(JSONContains(Query.operations, candidate))
+        .where((Ref.ref_type == "Table") & (Ref.data_source == data_source) & (Ref.table_name == table_name))
         .run(as_dict=True)
     )
 

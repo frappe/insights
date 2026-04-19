@@ -21,6 +21,8 @@ from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
 from insights.insights.query_utils import (
     extract_query_deps_from_operations,
     find_cycle,
+    get_direct_dependencies,
+    sync_query_references,
     transitive_closure,
 )
 from insights.utils import deep_convert_dict_to_dict
@@ -43,7 +45,6 @@ class InsightsQueryv3(Document):
         is_builder_query: DF.Check
         is_native_query: DF.Check
         is_script_query: DF.Check
-        linked_queries: DF.JSON | None
         old_name: DF.Data | None
         operations: DF.JSON | None
         sort_order: DF.Int
@@ -56,8 +57,6 @@ class InsightsQueryv3(Document):
     def get_valid_dict(self, *args, **kwargs):
         if isinstance(self.operations, list):
             self.operations = frappe.as_json(self.operations)
-        if isinstance(self.linked_queries, list):
-            self.linked_queries = frappe.as_json(self.linked_queries)
         return super().get_valid_dict(*args, **kwargs)
 
     def as_dict(self, *args, **kwargs):
@@ -68,6 +67,10 @@ class InsightsQueryv3(Document):
     def on_trash(self):
         for alert in frappe.get_all("Insights Alert", filters={"query": self.name}, pluck="name"):
             frappe.delete_doc("Insights Alert", alert, force=True, ignore_permissions=True)
+
+        # Remove all edges referencing or referenced by this query
+        frappe.db.delete("Insights Query Reference", {"query": self.name})
+        frappe.db.delete("Insights Query Reference", {"ref_query": self.name})
 
         # Clean up empty folders
         if self.folder:
@@ -94,8 +97,8 @@ class InsightsQueryv3(Document):
                 exc=CircularQueryReferenceError,
             )
 
-    def before_save(self):
-        self.set_linked_queries()
+    def on_update(self):
+        sync_query_references(self.name, self.operations)
 
     def cleanup_empty_folder(self, folder_name):
         """Delete folder if it has no queries or charts"""
@@ -114,36 +117,18 @@ class InsightsQueryv3(Document):
         if not has_items:
             frappe.delete_doc("Insights Folder", folder_name, force=True, ignore_permissions=True)
 
-    def set_linked_queries(self):
-        operations = frappe.parse_json(self.operations) or []
-        self.linked_queries = extract_query_deps_from_operations(operations)
-
     def get_source_tables(self):
-        """Collect all leaf table references from this query and its dependencies."""
+        """Collect all leaf table references from this query and its transitive dependencies."""
         all_query_names = {self.name} | transitive_closure(self.name)
-        source_tables = []
-
-        for query_name in all_query_names:
-            if query_name == self.name:
-                operations = frappe.parse_json(self.operations) or []
-            else:
-                operations = (
-                    frappe.parse_json(frappe.db.get_value("Insights Query v3", query_name, "operations"))
-                    or []
-                )
-
-            for operation in operations:
-                if operation.get("type") in ["source", "join", "union"]:
-                    table = operation.get("table")
-                    if table and table.get("type") == "table":
-                        table_info = {
-                            "data_source": table.get("data_source"),
-                            "table_name": table.get("table_name"),
-                        }
-                        if table_info not in source_tables:
-                            source_tables.append(table_info)
-
-        return source_tables
+        Ref = frappe.qb.DocType("Insights Query Reference")
+        rows = (
+            frappe.qb.from_(Ref)
+            .select(Ref.data_source, Ref.table_name)
+            .where((Ref.query.isin(list(all_query_names))) & (Ref.ref_type == "Table"))
+            .distinct()
+            .run(as_dict=True)
+        )
+        return [{"data_source": r.data_source, "table_name": r.table_name} for r in rows]
 
     def build(self, active_operation_idx=None, use_live_connection=None):
         builder = IbisQueryBuilder(self, active_operation_idx)
@@ -304,7 +289,7 @@ class InsightsQueryv3(Document):
             },
         }
 
-        linked_queries = frappe.parse_json(self.linked_queries)
+        linked_queries = get_direct_dependencies(self.name)
         for q in linked_queries:
             exported_query = frappe.get_doc("Insights Query v3", q).export()
             query["dependencies"]["queries"][q] = exported_query
