@@ -243,13 +243,17 @@ def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
             raise frappe.PermissionError("You don't have permission to access this method")
 
         doc = frappe.get_doc(doctype, name)
-        return _execute_doc_method(doc, method, args, ignore_permissions=True)
+        frappe.flags.insights_for_public_access = True
+        try:
+            return _execute_doc_method(doc, method, args, ignore_permissions=True)
+        finally:
+            frappe.flags.insights_for_public_access = False
 
 
 def is_public_method(doctype: str, method: str):
     public_methods = {
         "Insights Query v3": ["execute", "download_results"],
-        "Insights Dashboard v3": ["get_distinct_column_values"],
+        "Insights Dashboard v3": ["get_distinct_column_values", "track_view"],
     }
 
     if doctype in public_methods and method in public_methods[doctype]:

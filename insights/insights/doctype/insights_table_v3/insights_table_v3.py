@@ -110,6 +110,9 @@ def get_table_name(data_source, table):
 
 
 def apply_user_permissions(t: Table, data_source, table_name):
+    if frappe.flags.get("insights_for_public_access"):
+        return t
+
     if not frappe.db.get_value("Insights Data Source v3", data_source, "is_site_db", cache=True):
         return t
 
