@@ -147,6 +147,7 @@ export function makeQuery(name: string) {
 		return query.doc.operations[activeEditIndex.value]
 	})
 
+	const isServerBusy = ref(false)
 	const result = ref({ ...EMPTY_RESULT })
 	const executing = ref(false)
 	const downloading = ref(false)
@@ -166,6 +167,8 @@ export function makeQuery(name: string) {
 		if (!query.islocal) {
 			await waitUntil(() => query.isloaded)
 		}
+
+		isServerBusy.value = false
 
 		if (!query.doc.operations.length) {
 			result.value = { ...EMPTY_RESULT }
@@ -229,7 +232,10 @@ export function makeQuery(name: string) {
 			result.value.timeTaken = response.time_taken
 			result.value.lastExecutedAt = new Date()
 		})
-			.catch(() => {
+			.catch((err) => {
+				if (err.status === 503 && err.message && err.message.includes('ServiceUnavailableError')) {
+					isServerBusy.value = true
+				}
 				if (token !== currentExecutionToken) return
 				result.value = { ...EMPTY_RESULT }
 			})
@@ -1131,6 +1137,7 @@ export function makeQuery(name: string) {
 		autoExecute,
 		executing,
 		fetchingCount,
+		isServerBusy,
 		result,
 
 		currentPage,
