@@ -17,7 +17,7 @@ from frappe.utils.background_jobs import is_job_enqueued
 from ibis import _
 from ibis.backends.duckdb import Backend as DuckDBBackend
 from ibis.common.exceptions import TableNotFound
-from ibis.expr.types import Expr
+from ibis.expr.types import Expr, Table
 
 import insights
 from insights.utils import InsightsDataSourcev3, InsightsTablev3
@@ -307,7 +307,7 @@ class WarehouseTable:
 class WarehouseTableImporter:
     def __init__(self, table: WarehouseTable):
         self.table = table
-        self.remote_table = None
+        self.remote_table: Table = None
         self.remote_table_schema = None
         self.primary_key = ""
         self.warehouse_table_name = ""
@@ -525,7 +525,7 @@ class WarehouseTableImporter:
 
         pk = self.primary_key
         cutoff_row = (
-            table.order_by(ibis.desc(pk))
+            table.order_by(ibis.desc(pk, nulls_first=False))
             # OFFSET to the Nth row
             # Only selects the pk column so the query is a covering index scan
             .limit(1, offset=self.settings.row_limit - 1)
@@ -582,7 +582,9 @@ class WarehouseTableImporter:
     def process_batches(self, batch_size: int, writer: WarehouseTableWriter) -> int:
         remote_table = self.remote_table
         if self.primary_key:
-            remote_table = remote_table.order_by(self.primary_key)
+            remote_table = remote_table.order_by(
+                ibis.asc(self.primary_key, nulls_first=True),
+            )
 
         batch_number = 0
         total_rows = 0
