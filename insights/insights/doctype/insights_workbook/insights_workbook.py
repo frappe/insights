@@ -368,6 +368,99 @@ class InsightsWorkbook(Document):
 
         return import_chart(chart, self.name)
 
+    @frappe.whitelist()
+    def get_lineage_graph(self):
+        """Return query-reference graph nodes and edges for queries in this workbook,
+        including all upstream table and query dependencies."""
+        frappe.only_for("Insights Admin")
+
+        Ref = frappe.qb.DocType("Insights Query Reference")
+        Query = frappe.qb.DocType("Insights Query v3")
+
+        edges = (
+            frappe.qb.from_(Ref)
+            .join(Query)
+            .on(Query.name == Ref.query)
+            .select(
+                Ref.ref_type,
+                Ref.query,
+                Query.title.as_("query_title"),
+                Query.workbook,
+                Ref.data_source,
+                Ref.table_name,
+                Ref.ref_query,
+            )
+            .where(Query.workbook == self.name)
+            .run(as_dict=True)
+        )
+
+        dep_query_names = list({e.ref_query for e in edges if e.ref_type == "Query" and e.ref_query})
+        dep_titles: dict[str, dict] = {}
+        if dep_query_names:
+            for row in frappe.get_all(
+                "Insights Query v3",
+                filters={"name": ("in", dep_query_names)},
+                fields=["name", "title", "workbook"],
+            ):
+                dep_titles[row.name] = row
+
+        nodes: dict[str, dict] = {}
+        edge_list: list[dict] = []
+
+        for e in edges:
+            q_id = f"query::{e.query}"
+            nodes[q_id] = {
+                "id": q_id,
+                "node_type": "query",
+                "label": e.query_title or e.query,
+                "name": e.query,
+                "workbook": e.workbook,
+            }
+
+            if e.ref_type == "Table":
+                t_id = f"table::{e.data_source}::{e.table_name}"
+                nodes.setdefault(
+                    t_id,
+                    {
+                        "id": t_id,
+                        "node_type": "table",
+                        "label": e.table_name,
+                        "data_source": e.data_source,
+                    },
+                )
+                edge_list.append({"id": f"{t_id}=>{q_id}", "source": t_id, "target": q_id})
+
+            elif e.ref_type == "Query" and e.ref_query:
+                dep_id = f"query::{e.ref_query}"
+                if dep_id not in nodes:
+                    info = dep_titles.get(e.ref_query, {})
+                    nodes[dep_id] = {
+                        "id": dep_id,
+                        "node_type": "query",
+                        "label": info.get("title") or e.ref_query,
+                        "name": e.ref_query,
+                        "workbook": info.get("workbook"),
+                    }
+                edge_list.append({"id": f"{dep_id}=>{q_id}", "source": dep_id, "target": q_id})
+
+        chart_query_map: dict[str, str] = {
+            row.data_query: row.title
+            for row in frappe.get_all(
+                "Insights Chart v3",
+                filters={"workbook": self.name, "data_query": ("is", "set")},
+                fields=["data_query", "title"],
+            )
+        }
+        for node in nodes.values():
+            if node["node_type"] == "query" and node["name"] in chart_query_map:
+                node["is_chart_query"] = True
+                node["chart_title"] = chart_query_map[node["name"]]
+
+        return {
+            "nodes": list(nodes.values()),
+            "edges": edge_list,
+        }
+
 
 def import_workbook(workbook):
     workbook = frappe.parse_json(workbook)
