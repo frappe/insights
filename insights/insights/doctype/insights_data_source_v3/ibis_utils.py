@@ -30,7 +30,7 @@ from insights.insights.query_utils import extract_sql_table_refs
 from insights.utils import create_execution_log
 from insights.utils import deep_convert_dict_to_dict as _dict
 
-from .ibis.functions import fiscal_year_start, quarter_start, week_start
+from .ibis.functions import fiscal_year_start, week_start
 from .ibis.utils import get_functions
 
 try:
@@ -808,23 +808,22 @@ class IbisQueryBuilder:
 
     def apply_granularity(self, column, granularity):
         if granularity == "week":
-            return week_start(column).strftime("%Y-%m-%d").name(column.get_name())
-        if granularity == "quarter":
-            return quarter_start(column).strftime("%Y-%m-01").name(column.get_name())
+            return week_start(column).name(column.get_name())
         if granularity == "fiscal_year":
-            return fiscal_year_start(column).strftime("%Y-%m-%d").name(column.get_name())
+            return fiscal_year_start(column).name(column.get_name())
 
-        format_str = {
-            "second": "%Y-%m-%d %H:%M:%S",
-            "minute": "%Y-%m-%d %H:%M:00",
-            "hour": "%Y-%m-%d %H:00:00",
-            "day": "%Y-%m-%d",
-            "month": "%Y-%m-01",
-            "year": "%Y-01-01",
+        truncate_unit = {
+            "second": "s",
+            "minute": "m",
+            "hour": "h",
+            "day": "D",
+            "quarter": "Q",
+            "month": "M",
+            "year": "Y",
         }
-        if not format_str.get(granularity):
+        if granularity not in truncate_unit:
             frappe.throw(f"Granularity {granularity} is not supported")
-        return column.strftime(format_str[granularity]).name(column.get_name())
+        return column.truncate(truncate_unit[granularity]).name(column.get_name())
 
     def evaluate_expression(self, expression, additonal_context=None):
         if not expression or not expression.strip():
