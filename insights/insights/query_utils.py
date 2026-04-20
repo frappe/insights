@@ -81,6 +81,7 @@ def sync_query_references(query_name: str, operations) -> None:
 
     for tbl in extract_table_deps_from_operations(ops):
         ref = frappe.new_doc("Insights Query Reference")
+        ref.name = frappe.generate_hash(length=10)
         ref.query = query_name
         ref.ref_type = "Table"
         ref.data_source = tbl["data_source"]
@@ -89,6 +90,7 @@ def sync_query_references(query_name: str, operations) -> None:
 
     for dep_query in extract_query_deps_from_operations(ops):
         ref = frappe.new_doc("Insights Query Reference")
+        ref.name = frappe.generate_hash(length=10)
         ref.query = query_name
         ref.ref_type = "Query"
         ref.ref_query = dep_query
