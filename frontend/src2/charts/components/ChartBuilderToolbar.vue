@@ -8,12 +8,14 @@ import {
 	ImageDown,
 	MoreHorizontal,
 	RefreshCcw,
+	Scroll,
 	Share2,
 	XIcon,
 } from 'lucide-vue-next'
-import { h } from 'vue'
+import { h, provide, ref } from 'vue'
 import session from '../../session'
 import { __ } from '../../translation'
+import ViewSQLDialog from '../../query/components/ViewSQLDialog.vue'
 
 const props = defineProps<{
 	chart: any
@@ -21,6 +23,9 @@ const props = defineProps<{
 	onDownload: () => void
 	onShare: () => void
 }>()
+
+const showViewSQLDialog = ref(false)
+provide('query', props.chart.dataQuery)
 
 const moreActions = [
 	{
@@ -45,6 +50,11 @@ const moreActions = [
 		icon: h(XIcon, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
 		onClick: () => props.chart.resetConfig(),
 		condition: () => !props.chart.doc.read_only,
+	},
+	{
+		label: __('View SQL'),
+		icon: h(Scroll, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
+		onClick: () => (showViewSQLDialog.value = true),
 	},
 	{
 		label: __('Copy JSON'),
@@ -95,4 +105,6 @@ const moreActions = [
 			</Dropdown>
 		</div>
 	</div>
+
+	<ViewSQLDialog v-if="showViewSQLDialog" v-model="showViewSQLDialog" />
 </template>
