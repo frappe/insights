@@ -395,7 +395,7 @@ export function getDonutChartOptions(config: DonutChartConfig, result: QueryResu
 	const values = data.map((d) => d[1])
 	const total = values.reduce((a, b) => a + b, 0)
 
-	const colors = getColors()
+	const colors = config.label_colors?.length ? config.label_colors : getColors()
 
 	let center, radius, top, left, right, bottom, padding, orient
 	const legend_position = config.legend_position || 'bottom'
