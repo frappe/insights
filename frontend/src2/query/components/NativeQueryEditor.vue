@@ -1,6 +1,15 @@
 <script setup lang="ts">
 import { useTimeAgo } from '@vueuse/core'
-import { Copy, CopyPlus, MoreHorizontal, PlayIcon, RefreshCw, Scroll, Wand2 } from 'lucide-vue-next'
+import {
+	Copy,
+	CopyPlus,
+	MoreHorizontal,
+	PlayIcon,
+	RefreshCw,
+	Scroll,
+	ScanSearch,
+	Wand2,
+} from 'lucide-vue-next'
 import { computed, h, inject, ref } from 'vue'
 import Code from '../../components/Code.vue'
 import { formatShortcut, useShortcut } from '../../composables/useShortcut'
@@ -10,6 +19,7 @@ import { createToast } from '../../helpers/toasts'
 import session from '../../session'
 import { __ } from '../../translation'
 import { Query } from '../query'
+import ExplainPlanDialog from './ExplainPlanDialog.vue'
 import QueryDataTable from './QueryDataTable.vue'
 import QueryInfo from './QueryInfo.vue'
 import SchemaExplorer from './SchemaExplorer.vue'
@@ -63,6 +73,12 @@ async function format() {
 }
 
 const showViewSQLDialog = ref(false)
+const showExplainDialog = ref(false)
+
+async function openExplainDialog() {
+	showExplainDialog.value = true
+	await query.explainQuery()
+}
 
 const moreActions = computed(() => {
 	const actions: any[] = []
@@ -97,6 +113,14 @@ const moreActions = computed(() => {
 			onClick: () => query.copy(),
 		},
 	)
+
+	if (session.user.is_admin) {
+		actions.push({
+			label: __('Explain Plan'),
+			icon: h(ScanSearch, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
+			onClick: openExplainDialog,
+		})
+	}
 
 	return actions
 })
@@ -221,4 +245,5 @@ useShortcut('Meta+e', () => {
 	</div>
 
 	<ViewSQLDialog v-if="showViewSQLDialog" v-model="showViewSQLDialog" />
+	<ExplainPlanDialog v-if="showExplainDialog" v-model="showExplainDialog" />
 </template>

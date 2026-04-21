@@ -1076,6 +1076,30 @@ export function makeQuery(name: string) {
 		}
 	)
 
+	const explaining = ref(false)
+	const explainResult = ref<{ plan: string; is_analyze: boolean } | null>(null)
+	async function explainQuery() {
+		if (!query.doc.operations.length) {
+			createToast({ title: __('No query to explain'), variant: 'warning' })
+			return
+		}
+		explaining.value = true
+		try {
+			const response = await query.call('explain', {
+				active_operation_idx: activeOperationIdx.value,
+			})
+			explainResult.value = response
+		} catch (error: any) {
+			createToast({
+				title: __('Explain Failed'),
+				message: error?.message || __('Failed to get query plan'),
+				variant: 'error',
+			})
+		} finally {
+			explaining.value = false
+		}
+	}
+
 	const importingTables = ref(false)
 	async function refreshStoredTables() {
 		importingTables.value = true
@@ -1150,6 +1174,9 @@ export function makeQuery(name: string) {
 		fetchResultCount,
 		refreshStoredTables,
 		importingTables,
+		explainQuery,
+		explaining,
+		explainResult,
 
 		setOperations,
 		setActiveOperation,

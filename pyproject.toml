@@ -9,6 +9,7 @@ readme = "README.md"
 dynamic = ["version"]
 dependencies = [
     "pandas~=2.3.3",
+    "tabulate",
     "SQLAlchemy==2.0.41",
     "python-telegram-bot==21.4",
     "duckdb~=1.4.3",
@@ -70,4 +71,3 @@ docstring-code-format = true
 Homepage = "https://frappe.io/insights"
 Repository = "https://github.com/frappe/insights.git"
 "Bug Reports" = "https://github.com/frappe/insights/issues"
-

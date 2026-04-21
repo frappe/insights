@@ -309,6 +309,40 @@ class InsightsQueryv3(Document):
         return new_query.name
 
     @insights_whitelist(role="Insights Admin")
+    def explain(self, active_operation_idx: int | None = None):
+        """Return EXPLAIN (ANALYZE for data store, plain for live) output for this query."""
+        ibis_query = self.build(active_operation_idx)
+
+        from insights.insights.doctype.insights_data_source_v3.data_warehouse import is_warehouse
+
+        backend = ibis_query.get_backend()
+        use_analyze = is_warehouse(backend)
+
+        sql_text = str(ibis.to_sql(ibis_query))
+        prefix = "EXPLAIN ANALYZE" if use_analyze else "EXPLAIN"
+
+        try:
+            result = backend.raw_sql(f"{prefix} {sql_text}")
+            rows = result.fetchall()
+            desc = result.description
+        except Exception as e:
+            frappe.throw(f"EXPLAIN failed: {e}")
+
+        if use_analyze:
+            plan = "\n".join(filter(None, (row[1] for row in rows)))
+        else:
+            import pandas as pd
+
+            headers = [d[0] for d in desc]
+            df = pd.DataFrame(rows, columns=headers).fillna("NULL").astype(str)
+            plan = df.to_markdown(index=False, tablefmt="pipe")
+
+        return {
+            "plan": plan,
+            "is_analyze": use_analyze,
+        }
+
+    @insights_whitelist(role="Insights Admin")
     def refresh_stored_tables(self):
         """Import all source tables used in this query to the data store"""
         source_tables = self.get_source_tables()
