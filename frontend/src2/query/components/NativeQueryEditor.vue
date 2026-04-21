@@ -3,6 +3,7 @@ import { useTimeAgo } from '@vueuse/core'
 import { Copy, CopyPlus, MoreHorizontal, PlayIcon, RefreshCw, Scroll, Wand2 } from 'lucide-vue-next'
 import { computed, h, inject, ref } from 'vue'
 import Code from '../../components/Code.vue'
+import { formatShortcut, useShortcut } from '../../composables/useShortcut'
 import useDataSourceStore from '../../data_source/data_source'
 import { wheneverChanges } from '../../helpers'
 import { createToast } from '../../helpers/toasts'
@@ -14,6 +15,7 @@ import QueryInfo from './QueryInfo.vue'
 import SchemaExplorer from './SchemaExplorer.vue'
 import DataSourceSelector from './source_selector/DataSourceSelector.vue'
 import ViewSQLDialog from './ViewSQLDialog.vue'
+import { Tooltip } from 'frappe-ui'
 
 const query = inject<Query>('query')!
 query.autoExecute = false
@@ -146,6 +148,10 @@ const completions = computed(() => {
 		tables,
 	}
 })
+
+useShortcut('Meta+e', () => {
+	execute(true)
+})
 </script>
 
 <template>
@@ -155,11 +161,13 @@ const completions = computed(() => {
 			<div class="flex w-full flex-shrink-0 items-center justify-between bg-white">
 				<DataSourceSelector v-model="data_source" placeholder="Select a data source" />
 				<div class="flex items-center gap-2">
-					<Button variant="outline" :label="__('Execute')" @click="execute(true)">
-						<template #prefix>
-							<PlayIcon class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
-						</template>
-					</Button>
+					<Tooltip :text="__('Execute ({0})', formatShortcut('Meta+E'))">
+						<Button variant="outline" :label="__('Execute')" @click="execute(true)">
+							<template #prefix>
+								<PlayIcon class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
+							</template>
+						</Button>
+					</Tooltip>
 					<Dropdown placement="right" :options="moreActions">
 						<Button variant="outline">
 							<template #icon>
