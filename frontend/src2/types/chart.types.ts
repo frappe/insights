@@ -101,6 +101,7 @@ export type DonutChartConfig = {
 	legend_position?: 'top' | 'bottom' | 'left' | 'right'
 	max_slices?: number
 	show_inline_labels?: boolean
+	label_colors?: string[]
 }
 export type FunnelChartConfig = {
 	label_column: Dimension
