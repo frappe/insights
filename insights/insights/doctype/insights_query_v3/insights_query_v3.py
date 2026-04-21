@@ -2,7 +2,7 @@
 # For license information, please see license.txt
 
 import base64
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from io import BytesIO
 
 import frappe
@@ -168,7 +168,13 @@ class InsightsQueryv3(Document):
         results = results.to_dict(orient="records")
 
         columns = get_columns_from_schema(ibis_query.schema())
-        sql = next((op.get("raw_sql", "") for op in self.operations if op.get("type") == "sql"), None)
+
+        sql = None
+        with suppress(Exception):
+            for op in frappe.parse_json(self.operations) or []:
+                if op.get("type") == "sql" and op.get("raw_sql"):
+                    sql = op.get("raw_sql")
+                    break
 
         return {
             "sql": ibis.to_sql(ibis_query),
