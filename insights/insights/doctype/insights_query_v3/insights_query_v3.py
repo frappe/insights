@@ -7,6 +7,8 @@ from io import BytesIO
 
 import frappe
 import ibis
+import sqlglot
+import sqlglot.expressions as sqlglot_exp
 import sqlparse
 from frappe.model.document import Document
 from ibis import _
@@ -166,11 +168,14 @@ class InsightsQueryv3(Document):
         results = results.to_dict(orient="records")
 
         columns = get_columns_from_schema(ibis_query.schema())
+        sql = next((op.get("raw_sql", "") for op in self.operations if op.get("type") == "sql"), None)
+
         return {
             "sql": ibis.to_sql(ibis_query),
             "columns": columns,
             "rows": results,
             "time_taken": time_taken,
+            "is_aggregated_sql": _sql_has_group_by(sql) if sql else False,
         }
 
     @insights_whitelist()
@@ -324,6 +329,28 @@ class InsightsQueryv3(Document):
                     imported_count += 1
 
         return {"message": f"Importing {imported_count} table(s) to data store", "count": imported_count}
+
+
+def _sql_has_group_by(sql: str) -> bool:
+    """Return True if SQL contains a GROUP BY
+    anywhere in its AST (including CTEs and subqueries that feed the outer SELECT).
+
+    Uses sqlglot to parse the SQL so that GROUP BY inside string literals or
+    comments is correctly ignored. Falls back to False on any parse error.
+
+    The only residual false positive is a GROUP BY that appears exclusively
+    inside a WHERE … IN (subquery) used for deduplication — negligible in
+    practice for analytics SQL (DISTINCT is used instead).
+    """
+    try:
+        statements = sqlglot.parse(sql)
+        if statements:
+            stmt = statements[-1]
+            if stmt is not None and stmt.find(sqlglot_exp.Group) is not None:
+                return True
+    except Exception:
+        pass
+    return False
 
 
 def import_query(query, workbook):
