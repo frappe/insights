@@ -212,9 +212,11 @@ export function makeQuery(name: string) {
 			result.value.formattedRows = getFormattedRows(result.value, query.doc.operations)
 
 			const aggregationPrefixes = aggregations.map((a) => `${a}_`)
-			const isMeasureColumn = (name: string) =>
-				measureColumns.value.includes(name) ||
-				aggregationPrefixes.some((prefix) => name.startsWith(prefix))
+			const isAggregatedSql = Boolean(response.is_aggregated_sql)
+			const isMeasureColumn = (column: QueryResultColumn) =>
+				measureColumns.value.includes(column.name) ||
+				aggregationPrefixes.some((prefix) => column.name.startsWith(prefix)) ||
+				(isAggregatedSql && FIELDTYPES.NUMBER.includes(column.type))
 
 			result.value.columnOptions = result.value.columns.map((column) => {
 				return {
@@ -223,7 +225,7 @@ export function makeQuery(name: string) {
 					description: column.type,
 					query: query.doc.name,
 					data_type: column.type,
-					is_measure: isMeasureColumn(column.name),
+					is_measure: isMeasureColumn(column),
 				}
 			})
 			result.value.timeTaken = response.time_taken
