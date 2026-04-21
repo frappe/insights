@@ -66,6 +66,26 @@ def extract_table_deps_from_operations(operations: list) -> list[dict]:
     return result
 
 
+def extract_table_deps_from_sql_operations(operations: list) -> list[dict]:
+    """Extract unique (data_source, table_name) pairs from native SQL operations."""
+    seen: set[tuple] = set()
+    result = []
+    for op in operations:
+        if op.get("type") != "sql":
+            continue
+        raw_sql = op.get("raw_sql") or ""
+        ds = op.get("data_source") or ""
+        if not raw_sql or not ds:
+            continue
+        for ref in extract_sql_table_refs(raw_sql):
+            key = (ds, ref.name)
+            if key in seen:
+                continue
+            seen.add(key)
+            result.append({"data_source": ds, "table_name": ref.name})
+    return result
+
+
 def sync_query_references(query_name: str, operations) -> None:
     """Rebuild edge rows for *query_name* in Insights Query Reference.
 
@@ -79,7 +99,8 @@ def sync_query_references(query_name: str, operations) -> None:
 
     docs = []
 
-    for tbl in extract_table_deps_from_operations(ops):
+    all_table_deps = extract_table_deps_from_operations(ops) + extract_table_deps_from_sql_operations(ops)
+    for tbl in all_table_deps:
         ref = frappe.new_doc("Insights Query Reference")
         ref.name = frappe.generate_hash(length=10)
         ref.query = query_name
