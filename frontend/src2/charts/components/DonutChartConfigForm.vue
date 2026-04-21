@@ -71,19 +71,16 @@ function applyPalette(colors: string[]) {
 							'border-blue-500 bg-blue-50':
 								palette.colors.length === 0
 									? !config.label_colors?.length
-									: JSON.stringify(config.label_colors) === JSON.stringify(palette.colors),
-							'border-gray-200': !(
-								palette.colors.length === 0
-									? !config.label_colors?.length
-									: JSON.stringify(config.label_colors) === JSON.stringify(palette.colors)
-							),
+									: JSON.stringify(config.label_colors) ===
+										JSON.stringify(palette.colors),
+							'border-gray-200': !(palette.colors.length === 0
+								? !config.label_colors?.length
+								: JSON.stringify(config.label_colors) ===
+									JSON.stringify(palette.colors)),
 						}"
 						@click="applyPalette(palette.colors)"
 					>
-						<span
-							v-if="palette.colors.length"
-							class="flex gap-0.5"
-						>
+						<span v-if="palette.colors.length" class="flex gap-0.5">
 							<span
 								v-for="color in palette.colors.slice(0, 5)"
 								:key="color"
@@ -93,7 +90,7 @@ function applyPalette(colors: string[]) {
 						</span>
 						<span v-else class="flex gap-0.5">
 							<span
-								v-for="c in ['#5470c6','#91cc75','#fac858','#ee6666','#73c0de']"
+								v-for="c in ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de']"
 								:key="c"
 								class="inline-block h-3 w-3 rounded-full"
 								:style="{ backgroundColor: c }"
@@ -113,11 +110,13 @@ function applyPalette(colors: string[]) {
 							type="color"
 							:value="color"
 							class="h-6 w-6 cursor-pointer rounded border border-gray-200 p-0"
-							@input="(e) => {
-								const updated = [...(config.label_colors || [])]
-								updated[idx] = (e.target as HTMLInputElement).value
-								config.label_colors = updated
-							}"
+							@input="
+								(e) => {
+									const updated = [...(config.label_colors || [])]
+									updated[idx] = (e.target as HTMLInputElement).value
+									config.label_colors = updated
+								}
+							"
 						/>
 					</div>
 				</div>
