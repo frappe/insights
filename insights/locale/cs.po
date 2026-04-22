@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-04-05 09:45+0000\n"
-"PO-Revision-Date: 2026-04-18 08:39\n"
+"PO-Revision-Date: 2026-04-22 09:40\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Czech\n"
 "MIME-Version: 1.0\n"
@@ -567,11 +567,11 @@ msgstr ""
 #: frontend/src2/dashboard/DashboardText.vue:45
 #: insights/insights/doctype/insights_notebook_page/insights_notebook_page.json
 msgid "Content"
-msgstr ""
+msgstr "Obsah"
 
 #: frontend/src2/components/UserDropdown.vue:57
 msgid "Continue"
-msgstr ""
+msgstr "Pokračovat"
 
 #: frontend/src2/query/components/FiltersSelector.vue:113
 msgid "Convert to Expression"
@@ -743,7 +743,7 @@ msgstr ""
 #. Option for the 'Type' (Select) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Database"
-msgstr ""
+msgstr "Databáze"
 
 #. Label of the database_name (Data) field in DocType 'Insights Data Source'
 #. Label of the database_name (Data) field in DocType 'Insights Data Source v3'
@@ -766,7 +766,7 @@ msgstr ""
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Date"
-msgstr ""
+msgstr "Datum"
 
 #: frontend/src2/query/components/FormatRule.vue:234
 msgid "Date Rules"
@@ -916,7 +916,7 @@ msgstr ""
 #: frontend/src2/users/UserList.vue:46
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Enabled"
-msgstr ""
+msgstr "Aktivováno"
 
 #. Label of the ended_at (Datetime) field in DocType 'Insights Table Import
 #. Log'
@@ -1146,7 +1146,7 @@ msgstr "Pátek"
 
 #: frontend/src2/settings/Settings.vue:23
 msgid "General"
-msgstr ""
+msgstr "Obecné"
 
 #: frontend/src2/query/components/ViewSQLDialog.vue:16
 msgid "Generated SQL"
@@ -1199,7 +1199,7 @@ msgstr ""
 #. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Hourly"
-msgstr ""
+msgstr "Každou hodinu"
 
 #. Label of the item_id (Data) field in DocType 'Insights Dashboard Item'
 #: insights/insights/doctype/insights_dashboard_item/insights_dashboard_item.json
@@ -1681,7 +1681,7 @@ msgstr "Naposledy synchronizováno dne"
 #: frontend/src2/charts/components/FunnelChartConfigForm.vue:56
 #: frontend/src2/charts/components/SankeyChartConfigForm.vue:70
 msgid "Left"
-msgstr ""
+msgstr "Vlevo"
 
 #. Label of the left_column (Data) field in DocType 'Insights Table Link v3'
 #: frontend/src2/query/components/JoinSelectorDialog.vue:280
@@ -2135,7 +2135,7 @@ msgstr ""
 
 #: frontend/src2/settings/Settings.vue:13
 msgid "Profile"
-msgstr ""
+msgstr "Profil"
 
 #. Label of the public_key (Data) field in DocType 'Insights Chart'
 #. Label of the public_key (Data) field in DocType 'Insights Dashboard'
@@ -2170,7 +2170,7 @@ msgstr ""
 #: insights/insights/doctype/insights_query_result/insights_query_result.json
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Query"
-msgstr ""
+msgstr "Dotaz"
 
 #. Label of the query_result_limit (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
@@ -2180,7 +2180,7 @@ msgstr ""
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Queued"
-msgstr ""
+msgstr "Ve frontě"
 
 #: frontend/src2/home/HomeQuickActions.vue:21
 msgid "Quick Actions"
@@ -2203,11 +2203,11 @@ msgstr ""
 #: frontend/src2/query/components/AlertSetupDialog.vue:181
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Recipients"
-msgstr ""
+msgstr "Příjemci"
 
 #: frontend/src2/query/components/FormatRule.vue:159
 msgid "Red"
-msgstr ""
+msgstr "Červená"
 
 #: frontend/src2/query/components/FormatRule.vue:209
 msgid "Red-Green"
@@ -2216,7 +2216,7 @@ msgstr ""
 #: frontend/src2/dashboard/Dashboard.vue:51
 #: frontend/src2/data_source/DataSourceTableList.vue:43
 msgid "Refresh"
-msgstr ""
+msgstr "Obnovit"
 
 #: frontend/src2/dashboard/DashboardList.vue:27
 msgid "Refresh Preview"
@@ -2260,7 +2260,7 @@ msgstr ""
 #. Resource Permission'
 #: insights/insights/doctype/insights_resource_permission/insights_resource_permission.json
 msgid "Resource"
-msgstr ""
+msgstr "Prostředek"
 
 #. Label of the resource_type (Link) field in DocType 'Insights Resource
 #. Permission'
@@ -2271,7 +2271,7 @@ msgstr ""
 #. Label of the result_name (Data) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Result"
-msgstr ""
+msgstr "Výsledek"
 
 #. Label of the results_row_count (Int) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -2293,7 +2293,7 @@ msgstr ""
 #: frontend/src2/charts/components/FunnelChartConfigForm.vue:57
 #: frontend/src2/charts/components/SankeyChartConfigForm.vue:71
 msgid "Right"
-msgstr ""
+msgstr "Vpravo"
 
 #. Label of the right_column (Data) field in DocType 'Insights Table Link v3'
 #: frontend/src2/query/components/JoinSelectorDialog.vue:294
@@ -2371,13 +2371,13 @@ msgstr ""
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Saturday"
-msgstr ""
+msgstr "Sobota"
 
 #: frontend/src2/dashboard/DashboardFilterEditor.vue:155
 #: frontend/src2/dashboard/DashboardText.vue:27
 #: frontend/src2/workbook/WorkbookShareDialog.vue:95
 msgid "Save"
-msgstr ""
+msgstr "Uložit"
 
 #: frontend/src2/charts/components/RegionMappingDialog.vue:314
 msgid "Save Changes"
@@ -2403,7 +2403,7 @@ msgstr ""
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Script"
-msgstr ""
+msgstr "Skript"
 
 #. Label of the script_log (Text) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -2416,7 +2416,7 @@ msgstr ""
 #: frontend/src2/settings/UsersSettings.vue:149
 #: frontend/src2/teams/TeamList.vue:100 frontend/src2/users/UserList.vue:163
 msgid "Search"
-msgstr ""
+msgstr "Vyhledávání"
 
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:75
 #: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:63
@@ -2439,7 +2439,7 @@ msgstr ""
 
 #: frontend/src2/query/components/ColumnsSelectorDialog.vue:62
 msgid "Select Columns"
-msgstr ""
+msgstr "Vyberte sloupce"
 
 #: frontend/src2/query/components/JoinSelectorDialog.vue:363
 msgid "Select Columns to Add"
@@ -2513,7 +2513,7 @@ msgstr ""
 #: frontend/src2/components/AppSidebar.vue:95
 #: frontend/src2/settings/Settings.vue:58
 msgid "Settings"
-msgstr ""
+msgstr "Nastavení"
 
 #: frontend/src2/dashboard/DashboardFilterEditor.vue:28
 msgid "Setup"
@@ -2577,7 +2577,7 @@ msgstr "Řazení"
 #: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:38
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Source"
-msgstr ""
+msgstr "Zdroj"
 
 #: frontend/src2/dashboard/DashboardShareDialog.vue:114
 msgid "Specific people can view"
@@ -2624,7 +2624,7 @@ msgstr ""
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Status"
-msgstr ""
+msgstr "Stav"
 
 #. Label of the is_stored (Check) field in DocType 'Insights Query'
 #. Label of the stored (Check) field in DocType 'Insights Table v3'
@@ -2641,7 +2641,7 @@ msgstr ""
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Success"
-msgstr ""
+msgstr "Úspěch"
 
 #: frontend/src2/charts/components/MeasurePicker.vue:127
 msgid "Sum of..."
@@ -2651,7 +2651,7 @@ msgstr ""
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Sunday"
-msgstr ""
+msgstr "Neděle"
 
 #: frontend/src2/components/UserDropdown.vue:148
 msgid "Switch to Desk"
@@ -2681,7 +2681,7 @@ msgstr ""
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "System Manager"
-msgstr ""
+msgstr "Systémový správce"
 
 #. Label of the table (Data) field in DocType 'Insights Query Column'
 #. Label of the table (Data) field in DocType 'Insights Query Table'
@@ -2695,7 +2695,7 @@ msgstr ""
 #: insights/insights/doctype/insights_table/insights_table.json
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Table"
-msgstr ""
+msgstr "Tabulka"
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:64
 msgid "Table Imported"
@@ -2804,7 +2804,7 @@ msgstr ""
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Thursday"
-msgstr ""
+msgstr "Čtvrtek"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -2854,15 +2854,15 @@ msgstr ""
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
 msgid "Title"
-msgstr ""
+msgstr "Název"
 
 #: frontend/src2/query/components/ColumnFilterTypeDate.vue:53
 msgid "Today"
-msgstr ""
+msgstr "Dnes"
 
 #: frontend/src2/charts/components/DonutChartConfigForm.vue:57
 msgid "Top"
-msgstr ""
+msgstr "Nahoře"
 
 #: frontend/src2/query/components/FormatRule.vue:201
 msgid "Top N percent"
@@ -2895,7 +2895,7 @@ msgstr ""
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Tuesday"
-msgstr ""
+msgstr "Úterý"
 
 #. Label of the item_type (Data) field in DocType 'Insights Dashboard Item'
 #. Label of the type (Select) field in DocType 'Insights Data Source v3'
@@ -2913,7 +2913,7 @@ msgstr ""
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Type"
-msgstr ""
+msgstr "Typ"
 
 #: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:72
 msgid "Unexpected validation error"
@@ -2950,7 +2950,7 @@ msgstr ""
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:37
 msgid "Upload Failed"
-msgstr ""
+msgstr "Nahrání selhalo"
 
 #: frontend/src2/data_source/DataSourceList.vue:78
 msgid "Upload a CSV or Excel file to create a new data source"
@@ -2971,7 +2971,7 @@ msgstr ""
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Use SSL"
-msgstr ""
+msgstr "Použít SSL"
 
 #: frontend/src2/data_source/ConnectClickhouseDialog.vue:69
 #: frontend/src2/data_source/ConnectMariaDBDialog.vue:69
@@ -2984,7 +2984,7 @@ msgstr ""
 #: frontend/src2/users/UserList.vue:29
 #: insights/insights/doctype/insights_team_member/insights_team_member.json
 msgid "User"
-msgstr ""
+msgstr "Uživatel"
 
 #. Label of the username (Data) field in DocType 'Insights Data Source'
 #. Label of the username (Data) field in DocType 'Insights Data Source v3'
@@ -2994,11 +2994,11 @@ msgstr ""
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Username"
-msgstr ""
+msgstr "Uživatelské jméno"
 
 #: frontend/src2/settings/Settings.vue:33 frontend/src2/users/UserList.vue:146
 msgid "Users"
-msgstr ""
+msgstr "Uživatelé"
 
 #: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:57
 msgid "Validation failed"
@@ -3010,7 +3010,7 @@ msgstr ""
 #: frontend/src2/query/components/FormatRule.vue:425
 #: insights/insights/doctype/insights_secret_key/insights_secret_key.json
 msgid "Value"
-msgstr ""
+msgstr "Hodnota"
 
 #: frontend/src2/query/components/FormatRule.vue:224
 msgid "Value Rules"
@@ -3057,13 +3057,13 @@ msgstr ""
 
 #: frontend/src2/workbook/WorkbookList.vue:74
 msgid "Views"
-msgstr ""
+msgstr "Zobrazení"
 
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Wednesday"
-msgstr ""
+msgstr "Středa"
 
 #. Label of the week_starts_on (Select) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
@@ -3073,7 +3073,7 @@ msgstr ""
 #. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Weekly"
-msgstr ""
+msgstr "Týdně"
 
 #. Label of the workbook (Link) field in DocType 'Insights Chart v3'
 #. Label of the workbook (Link) field in DocType 'Insights Dashboard v3'
@@ -3104,7 +3104,7 @@ msgstr ""
 
 #: frontend/src2/query/components/UnionSelectorDialog.vue:143
 msgid "Yes"
-msgstr ""
+msgstr "Ano"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:251
 msgid "You can use markdown to format the message. Use double asterisks (**) for bold text. You can use the following fields in the message:"
