@@ -15,6 +15,7 @@ type SessionUser = {
 	default_version: 'v3' | 'v2' | ''
 	has_desk_access?: boolean
 	has_demo_data: boolean
+	fiscal_year_start: string
 }
 
 const emptyUser: SessionUser = {
@@ -30,6 +31,7 @@ const emptyUser: SessionUser = {
 	is_v2_instance: false,
 	default_version: '',
 	has_demo_data: false,
+	fiscal_year_start: '01-04-2020',
 }
 
 const session = reactive({
