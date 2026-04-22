@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-04-05 09:45+0000\n"
-"PO-Revision-Date: 2026-04-06 17:31\n"
+"PO-Revision-Date: 2026-04-22 09:39\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -2203,7 +2203,7 @@ msgstr ""
 #: frontend/src2/query/components/AlertSetupDialog.vue:181
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Recipients"
-msgstr ""
+msgstr "Destinatarios"
 
 #: frontend/src2/query/components/FormatRule.vue:159
 msgid "Red"
@@ -2950,7 +2950,7 @@ msgstr ""
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:37
 msgid "Upload Failed"
-msgstr ""
+msgstr "Carga Fallida"
 
 #: frontend/src2/data_source/DataSourceList.vue:78
 msgid "Upload a CSV or Excel file to create a new data source"
@@ -3010,7 +3010,7 @@ msgstr ""
 #: frontend/src2/query/components/FormatRule.vue:425
 #: insights/insights/doctype/insights_secret_key/insights_secret_key.json
 msgid "Value"
-msgstr ""
+msgstr "Valor"
 
 #: frontend/src2/query/components/FormatRule.vue:224
 msgid "Value Rules"
