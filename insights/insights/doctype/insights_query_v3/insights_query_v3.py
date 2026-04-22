@@ -228,6 +228,16 @@ class InsightsQueryv3(Document):
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
 
+        import ibis.expr.datatypes as dt
+
+        decimal_casts = {
+            col: ibis_query[col].cast("float64")
+            for col in ibis_query.columns
+            if isinstance(ibis_query[col].type(), dt.Decimal)
+        }
+        if decimal_casts:
+            ibis_query = ibis_query.mutate(**decimal_casts)
+
         results, _ = execute_ibis_query(
             ibis_query,
             cache=False,
@@ -235,6 +245,7 @@ class InsightsQueryv3(Document):
             reference_doctype=self.doctype,
             reference_name=self.name,
         )
+
         if format == "excel":
             output = BytesIO()
             results.to_excel(output, index=False, engine="openpyxl")
