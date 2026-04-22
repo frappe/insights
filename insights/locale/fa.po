@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-04-05 09:45+0000\n"
-"PO-Revision-Date: 2026-04-18 08:39\n"
+"PO-Revision-Date: 2026-04-22 09:40\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Persian\n"
 "MIME-Version: 1.0\n"
@@ -1199,7 +1199,7 @@ msgstr "میزبان"
 #. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Hourly"
-msgstr ""
+msgstr "ساعتی"
 
 #. Label of the item_id (Data) field in DocType 'Insights Dashboard Item'
 #: insights/insights/doctype/insights_dashboard_item/insights_dashboard_item.json
@@ -2203,7 +2203,7 @@ msgstr ""
 #: frontend/src2/query/components/AlertSetupDialog.vue:181
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Recipients"
-msgstr ""
+msgstr "گیرندگان"
 
 #: frontend/src2/query/components/FormatRule.vue:159
 msgid "Red"
@@ -2403,7 +2403,7 @@ msgstr ""
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Script"
-msgstr ""
+msgstr "اسکریپت"
 
 #. Label of the script_log (Text) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -2774,7 +2774,7 @@ msgstr ""
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Text"
-msgstr ""
+msgstr "متن"
 
 #: frontend/src2/query/components/FormatRule.vue:230
 msgid "Text Rules"
@@ -2950,7 +2950,7 @@ msgstr ""
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:37
 msgid "Upload Failed"
-msgstr ""
+msgstr "بارگذاری ناموفق"
 
 #: frontend/src2/data_source/DataSourceList.vue:78
 msgid "Upload a CSV or Excel file to create a new data source"
