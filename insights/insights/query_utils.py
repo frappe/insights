@@ -68,6 +68,11 @@ def extract_table_deps_from_operations(operations: list) -> list[dict]:
 
 def extract_table_deps_from_sql_operations(operations: list) -> list[dict]:
     """Extract unique (data_source, table_name) pairs from native SQL operations."""
+
+    from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
+        db_type_to_sqlglot_dialect,
+    )
+
     seen: set[tuple] = set()
     result = []
     for op in operations:
@@ -77,7 +82,9 @@ def extract_table_deps_from_sql_operations(operations: list) -> list[dict]:
         ds = op.get("data_source") or ""
         if not raw_sql or not ds:
             continue
-        for ref in extract_sql_table_refs(raw_sql):
+        db_type = frappe.db.get_value("Insights Data Source v3", ds, "db_type", cache=True)
+        dialect = db_type_to_sqlglot_dialect(db_type)
+        for ref in extract_sql_table_refs(raw_sql, dialect=dialect):
             key = (ds, ref.name)
             if key in seen:
                 continue
