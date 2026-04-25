@@ -383,15 +383,6 @@ class IbisQueryBuilder:
             self.get_column(filter_value.column_name) if getattr(filter_value, "column_name", None) is not None else None
         )
 
-        # If it's a visual filter literal value wrapper, extract the actual value
-        if (
-            right_column is None
-            and isinstance(filter_value, dict)
-            and filter_value.get("type") in ["Value", "value"]
-            and "value" in filter_value
-        ):
-            filter_value = filter_value.get("value")
-
         if filter_operator in ["contains", "not_contains"]:
             filter_value = filter_value.replace("%", "")
 
