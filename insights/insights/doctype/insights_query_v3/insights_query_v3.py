@@ -461,6 +461,9 @@ def import_query(query, workbook):
 
 @contextmanager
 def set_adhoc_filters(filters):
-    frappe.local.insights_adhoc_filters = filters or getattr(frappe.local, "insights_adhoc_filters", {})
+    # If frappe.local.insights_adhoc_filters exists but is None, getattr returns None.
+    # We must ensure it's a dict.
+    current = getattr(frappe.local, "insights_adhoc_filters", None)
+    frappe.local.insights_adhoc_filters = filters or current or {}
     yield
     frappe.local.insights_adhoc_filters = None
