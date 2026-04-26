@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Insights VERSION\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
-"POT-Creation-Date: 2026-04-05 09:45+0000\n"
-"PO-Revision-Date: 2026-04-05 09:45+0000\n"
+"POT-Creation-Date: 2026-04-12 09:46+0000\n"
+"PO-Revision-Date: 2026-04-12 09:46+0000\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: hello@frappe.io\n"
 "MIME-Version: 1.0\n"
@@ -421,6 +421,10 @@ msgstr ""
 
 #: frontend/src2/query/components/AddOperationPopover.vue:38
 msgid "Choose Columns"
+msgstr ""
+
+#: insights/insights/doctype/insights_data_source_v3/ibis_utils.py:86
+msgid "Circular query reference detected while building \"{0}\""
 msgstr ""
 
 #: frontend/src2/dashboard/DashboardFilterEditor.vue:241
