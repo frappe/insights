@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-04-05 09:45+0000\n"
-"PO-Revision-Date: 2026-04-06 17:31\n"
+"PO-Revision-Date: 2026-04-22 09:40\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Persian\n"
 "MIME-Version: 1.0\n"
@@ -77,7 +77,7 @@ msgstr ""
 
 #: frontend/src2/settings/Settings.vue:10
 msgid "Account"
-msgstr ""
+msgstr "حساب"
 
 #. Label of the if_exists (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
@@ -385,7 +385,7 @@ msgstr ""
 #: frontend/src2/query/components/AlertSetupDialog.vue:171
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Channel"
-msgstr ""
+msgstr "کانال"
 
 #. Label of the chart (Link) field in DocType 'Insights Dashboard Chart v3'
 #. Label of the chart (Link) field in DocType 'Insights Query'
@@ -634,7 +634,7 @@ msgstr ""
 #. Label of the cron_format (Data) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Cron Format"
-msgstr ""
+msgstr "فرمت Cron"
 
 #. Description of the 'Schedule (Cron)' (Data) field in DocType 'Insights Table
 #. Import Job'
@@ -922,7 +922,7 @@ msgstr "فعال"
 #. Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Ended At"
-msgstr ""
+msgstr "پایان یافته در"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:6
 msgid "Enqueue"
@@ -1014,7 +1014,7 @@ msgstr "عبارت"
 #. Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Fail"
-msgstr ""
+msgstr "شکست"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import
@@ -1059,7 +1059,7 @@ msgstr ""
 
 #: frontend/src2/data_source/ConnectDuckDBDialog.vue:28
 msgid "File URL"
-msgstr ""
+msgstr "آدرس فایل"
 
 #: frontend/src2/components/ExportDialog.vue:58
 msgid "Filename"
@@ -1084,7 +1084,7 @@ msgstr ""
 #. Label of the filters (JSON) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Filters"
-msgstr ""
+msgstr "فیلترها"
 
 #. Label of the fiscal_year_start (Date) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
@@ -1199,7 +1199,7 @@ msgstr "میزبان"
 #. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Hourly"
-msgstr ""
+msgstr "ساعتی"
 
 #. Label of the item_id (Data) field in DocType 'Insights Dashboard Item'
 #: insights/insights/doctype/insights_dashboard_item/insights_dashboard_item.json
@@ -1623,7 +1623,7 @@ msgstr ""
 #: insights/insights/doctype/insights_secret_key/insights_secret_key.json
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Key"
-msgstr ""
+msgstr "کلید"
 
 #. Label of the label (Data) field in DocType 'Insights Query Table'
 #. Label of the label (Data) field in DocType 'Insights Table'
@@ -1639,7 +1639,7 @@ msgstr "برچسب"
 
 #: frontend/src2/users/UserList.vue:65
 msgid "Last Active"
-msgstr ""
+msgstr "آخرین فعالیت"
 
 #. Label of the last_execution (Datetime) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -1675,7 +1675,7 @@ msgstr ""
 #. Label of the last_synced_on (Datetime) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Last Synced On"
-msgstr ""
+msgstr "آخرین همگام‌سازی در"
 
 #: frontend/src2/charts/components/DonutChartConfigForm.vue:59
 #: frontend/src2/charts/components/FunnelChartConfigForm.vue:56
@@ -1702,7 +1702,7 @@ msgstr ""
 #. Label of the limit (Int) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Limit"
-msgstr ""
+msgstr "محدودیت"
 
 #. Label of the linked_charts (Table MultiSelect) field in DocType 'Insights
 #. Dashboard v3'
@@ -1752,7 +1752,7 @@ msgstr ""
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Long Text"
-msgstr ""
+msgstr "متن بلند"
 
 #: frontend/src2/teams/ManageTeamDialog.vue:63
 msgid "Manage Team"
@@ -1881,7 +1881,7 @@ msgstr ""
 #. Label of the next_execution (Datetime) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Next Execution"
-msgstr ""
+msgstr "اجرای بعدی"
 
 #: frontend/src2/query/components/UnionSelectorDialog.vue:144
 msgid "No"
@@ -2203,7 +2203,7 @@ msgstr ""
 #: frontend/src2/query/components/AlertSetupDialog.vue:181
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Recipients"
-msgstr ""
+msgstr "گیرندگان"
 
 #: frontend/src2/query/components/FormatRule.vue:159
 msgid "Red"
@@ -2403,7 +2403,7 @@ msgstr ""
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Script"
-msgstr ""
+msgstr "اسکریپت"
 
 #. Label of the script_log (Text) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -2571,7 +2571,7 @@ msgstr "مرتب‌سازی نزولی"
 #. Label of the sort_order (Int) field in DocType 'Insights Folder'
 #: insights/insights/doctype/insights_folder/insights_folder.json
 msgid "Sort Order"
-msgstr ""
+msgstr "ترتیب مرتب‌سازی"
 
 #. Label of the source (Attach) field in DocType 'Insights Table Import'
 #: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:38
@@ -2590,13 +2590,13 @@ msgstr ""
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Started"
-msgstr ""
+msgstr "شروع شده"
 
 #. Label of the started_at (Datetime) field in DocType 'Insights Table Import
 #. Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Started At"
-msgstr ""
+msgstr "شروع شده در"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:27
 msgid "Starting..."
@@ -2774,7 +2774,7 @@ msgstr ""
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Text"
-msgstr ""
+msgstr "متن"
 
 #: frontend/src2/query/components/FormatRule.vue:230
 msgid "Text Rules"
@@ -2950,7 +2950,7 @@ msgstr ""
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:37
 msgid "Upload Failed"
-msgstr ""
+msgstr "بارگذاری ناموفق"
 
 #: frontend/src2/data_source/DataSourceList.vue:78
 msgid "Upload a CSV or Excel file to create a new data source"

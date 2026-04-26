@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-04-05 09:45+0000\n"
-"PO-Revision-Date: 2026-04-06 17:31\n"
+"PO-Revision-Date: 2026-04-22 09:40\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Dutch\n"
 "MIME-Version: 1.0\n"
@@ -503,7 +503,7 @@ msgstr "Voorwaarde"
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
 #: insights/insights/doctype/insights_query_chart/insights_query_chart.json
 msgid "Config"
-msgstr ""
+msgstr "Configuratie"
 
 #: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:132
 #: frontend/src2/components/ConfirmDialog.vue:26
@@ -1589,7 +1589,7 @@ msgstr ""
 #: insights/insights/doctype/insights_dashboard/insights_dashboard.json
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Items"
-msgstr ""
+msgstr "Artikelen"
 
 #. Label of the json (Code) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -1661,7 +1661,7 @@ msgstr ""
 #. Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Last Run"
-msgstr ""
+msgstr "Laatste uitvoering"
 
 #. Label of the last_status (Data) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
@@ -1857,7 +1857,7 @@ msgstr ""
 
 #: frontend/src2/workbook/WorkbookTabSwitcher.vue:63
 msgid "New Chart"
-msgstr ""
+msgstr "Nieuwe tabel"
 
 #: frontend/src2/workbook/WorkbookTabSwitcher.vue:64
 msgid "New Dashboard"
@@ -2950,7 +2950,7 @@ msgstr ""
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:37
 msgid "Upload Failed"
-msgstr ""
+msgstr "Upload Mislukt"
 
 #: frontend/src2/data_source/DataSourceList.vue:78
 msgid "Upload a CSV or Excel file to create a new data source"

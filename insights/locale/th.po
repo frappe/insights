@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-04-05 09:45+0000\n"
-"PO-Revision-Date: 2026-04-06 17:31\n"
+"PO-Revision-Date: 2026-04-22 09:40\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Thai\n"
 "MIME-Version: 1.0\n"
@@ -89,11 +89,11 @@ msgstr ""
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Active"
-msgstr ""
+msgstr "ใช้งาน"
 
 #: frontend/src2/dashboard/DashboardChartSelectorDialog.vue:67
 msgid "Add"
-msgstr ""
+msgstr "เพิ่ม"
 
 #: frontend/src2/data_source/ConnectClickhouseDialog.vue:106
 #: frontend/src2/data_source/ConnectDuckDBDialog.vue:77
@@ -121,7 +121,7 @@ msgstr ""
 #: frontend/src2/query/components/ColumnsSelectorDialog.vue:83
 #: frontend/src2/query/components/ColumnsSelectorDialog.vue:92
 msgid "Add column"
-msgstr ""
+msgstr "เพิ่มคอลัมน์"
 
 #. Label of the aggregation (Data) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
@@ -187,12 +187,12 @@ msgstr ""
 
 #: frontend/src2/query/components/FormatRule.vue:161
 msgid "Amber"
-msgstr ""
+msgstr "แอมเบอร์"
 
 #. Label of the amended_from (Link) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Amended From"
-msgstr ""
+msgstr "แก้ไขจาก"
 
 #: frontend/src2/dashboard/DashboardShareDialog.vue:110
 msgid "Anyone in the organization can view"
@@ -222,7 +222,7 @@ msgstr ""
 
 #: frontend/src2/query/components/FiltersSelector.vue:145
 msgid "Apply Filters"
-msgstr ""
+msgstr "ใช้ตัวกรอง"
 
 #. Label of the apply_user_permissions (Check) field in DocType 'Insights
 #. Settings'
@@ -240,7 +240,7 @@ msgstr ""
 
 #: frontend/src2/components/UserDropdown.vue:81
 msgid "Are you sure you want to login to your Frappe Cloud dashboard?"
-msgstr ""
+msgstr "คุณแน่ใจหรือไม่ว่าต้องการเข้าสู่ระบบแดชบอร์ด Frappe Cloud ของคุณ?"
 
 #. Label of the api_authentication_type (Select) field in DocType 'Insights
 #. Data Source v3'
@@ -266,7 +266,7 @@ msgstr ""
 #. Label of the api_base_url (Data) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Base URL"
-msgstr ""
+msgstr "URL ฐาน"
 
 #. Option for the 'Authentication Type' (Select) field in DocType 'Insights
 #. Data Source v3'
@@ -321,7 +321,7 @@ msgstr ""
 
 #: frontend/src2/charts/components/DonutChartConfigForm.vue:58
 msgid "Bottom"
-msgstr ""
+msgstr "ด้านล่าง"
 
 #: frontend/src2/query/components/FormatRule.vue:202
 msgid "Bottom N percent"
@@ -346,7 +346,7 @@ msgstr ""
 
 #: frontend/src2/components/ExportDialog.vue:46
 msgid "CSV"
-msgstr ""
+msgstr "CSV"
 
 #. Label of the query_result_expiry (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
@@ -374,7 +374,7 @@ msgstr ""
 #: frontend/src2/query/components/JoinSelectorDialog.vue:384
 #: frontend/src2/query/components/UnionSelectorDialog.vue:152
 msgid "Cancel"
-msgstr ""
+msgstr "ยกเลิก"
 
 #. Label of the cardinality (Select) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
@@ -385,25 +385,25 @@ msgstr ""
 #: frontend/src2/query/components/AlertSetupDialog.vue:171
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Channel"
-msgstr ""
+msgstr "ช่องทาง"
 
 #. Label of the chart (Link) field in DocType 'Insights Dashboard Chart v3'
 #. Label of the chart (Link) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_dashboard_chart_v3/insights_dashboard_chart_v3.json
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Chart"
-msgstr ""
+msgstr "แผนภูมิ"
 
 #. Label of the chart_type (Data) field in DocType 'Insights Chart'
 #. Label of the chart_type (Data) field in DocType 'Insights Chart v3'
 #: insights/insights/doctype/insights_chart/insights_chart.json
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
 msgid "Chart Type"
-msgstr ""
+msgstr "ประเภทแผนภูมิ"
 
 #: frontend/src2/workbook/WorkbookSidebar.vue:57
 msgid "Charts"
-msgstr ""
+msgstr "แผนภูมิ"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:154
 msgid "Check once a day"
@@ -428,7 +428,7 @@ msgstr ""
 #: frontend/src2/dashboard/DashboardFilterEditor.vue:241
 #: frontend/src2/query/components/FiltersSelector.vue:143
 msgid "Clear"
-msgstr ""
+msgstr "ชัดเจน"
 
 #. Option for the 'Database Type' (Select) field in DocType 'Insights Data
 #. Source v3'
@@ -439,15 +439,15 @@ msgstr ""
 
 #: frontend/src2/query/components/source_selector/SourceSelectorDialog.vue:130
 msgid "Close"
-msgstr ""
+msgstr "ปิด"
 
 #: frontend/src2/components/AppSidebar.vue:26
 msgid "Collapse"
-msgstr ""
+msgstr "ยุบ"
 
 #: frontend/src2/query/components/FormatRule.vue:502
 msgid "Color"
-msgstr ""
+msgstr "สี"
 
 #: frontend/src2/query/components/FormattingSelector.vue:60
 msgid "Color Scale"
@@ -462,7 +462,7 @@ msgstr ""
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Column"
-msgstr ""
+msgstr "คอลัมน์"
 
 #. Label of the columns (Table) field in DocType 'Insights Query'
 #. Label of the columns (Table) field in DocType 'Insights Table'
@@ -472,7 +472,7 @@ msgstr ""
 #: insights/insights/doctype/insights_table/insights_table.json
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Columns"
-msgstr ""
+msgstr "คอลัมน์"
 
 #. Description of the 'Allowed Origins' (Data) field in DocType 'Insights
 #. Settings'
@@ -488,14 +488,14 @@ msgstr ""
 #. Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Completed"
-msgstr ""
+msgstr "เสร็จสิ้น"
 
 #. Label of the condition (Code) field in DocType 'Insights Alert'
 #: frontend/src2/query/components/FormatRule.vue:433
 #: frontend/src2/query/components/FormatRule.vue:452
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Condition"
-msgstr ""
+msgstr "เงื่อนไข"
 
 #. Label of the config (JSON) field in DocType 'Insights Chart v3'
 #. Label of the config (JSON) field in DocType 'Insights Query Chart'
@@ -503,7 +503,7 @@ msgstr ""
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
 #: insights/insights/doctype/insights_query_chart/insights_query_chart.json
 msgid "Config"
-msgstr ""
+msgstr "การกำหนดค่า"
 
 #: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:132
 #: frontend/src2/components/ConfirmDialog.vue:26
@@ -513,7 +513,7 @@ msgstr ""
 #: frontend/src2/query/components/UnionSelectorDialog.vue:155
 #: frontend/src2/query/components/source_selector/SourceSelectorDialog.vue:132
 msgid "Confirm"
-msgstr ""
+msgstr "ยืนยัน"
 
 #: frontend/src2/data_source/ConnectClickhouseDialog.vue:77
 #: frontend/src2/data_source/ConnectDuckDBDialog.vue:47
@@ -567,11 +567,11 @@ msgstr ""
 #: frontend/src2/dashboard/DashboardText.vue:45
 #: insights/insights/doctype/insights_notebook_page/insights_notebook_page.json
 msgid "Content"
-msgstr ""
+msgstr "เนื้อหา"
 
 #: frontend/src2/components/UserDropdown.vue:57
 msgid "Continue"
-msgstr ""
+msgstr "ดำเนินการต่อ"
 
 #: frontend/src2/query/components/FiltersSelector.vue:113
 msgid "Convert to Expression"
@@ -592,7 +592,7 @@ msgstr ""
 
 #: frontend/src2/teams/CreateTeamDialog.vue:18
 msgid "Create"
-msgstr ""
+msgstr "สร้าง"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:129
 msgid "Create Alert"
@@ -614,11 +614,11 @@ msgstr ""
 
 #: frontend/src2/data_source/DataSourceList.vue:119
 msgid "Created"
-msgstr ""
+msgstr "สร้างขึ้น"
 
 #: frontend/src2/query/components/QueryAlertsDialog.vue:52
 msgid "Created By"
-msgstr ""
+msgstr "สร้างโดย"
 
 #: frontend/src2/teams/TeamList.vue:48
 msgid "Creation"
@@ -629,12 +629,12 @@ msgstr "การสร้าง"
 #: frontend/src2/query/components/AlertSetupDialog.vue:163
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Cron"
-msgstr ""
+msgstr "ครอน"
 
 #. Label of the cron_format (Data) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Cron Format"
-msgstr ""
+msgstr "รูปแบบของ Cron"
 
 #. Description of the 'Schedule (Cron)' (Data) field in DocType 'Insights Table
 #. Import Job'
@@ -784,7 +784,7 @@ msgstr ""
 
 #: frontend/src2/dashboard/DashboardFilterEditor.vue:234
 msgid "Default Value"
-msgstr ""
+msgstr "ค่าเริ่มต้น"
 
 #: frontend/src2/dashboard/DashboardItemActions.vue:19
 #: frontend/src2/workbook/WorkbookNavbarActions.vue:65
@@ -808,7 +808,7 @@ msgstr ""
 #: frontend/src2/workbook/WorkbookShareDialog.vue:136
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Disabled"
-msgstr ""
+msgstr "ปิดใช้งานแล้ว"
 
 #: frontend/src2/components/UserDropdown.vue:116
 msgid "Documentation"
@@ -1014,7 +1014,7 @@ msgstr "นิพจน์"
 #. Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Fail"
-msgstr ""
+msgstr "ล้มเหลว"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import
@@ -1022,7 +1022,7 @@ msgstr ""
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Failed"
-msgstr ""
+msgstr "ล้มเหลว"
 
 #: frontend/src2/query/components/NativeQueryEditor.vue:52
 msgid "Failed to format SQL"
@@ -1059,7 +1059,7 @@ msgstr ""
 
 #: frontend/src2/data_source/ConnectDuckDBDialog.vue:28
 msgid "File URL"
-msgstr ""
+msgstr "ไฟล์ URL"
 
 #: frontend/src2/components/ExportDialog.vue:58
 msgid "Filename"
@@ -1067,7 +1067,7 @@ msgstr ""
 
 #: frontend/src2/query/components/FiltersSelectorDialog.vue:21
 msgid "Filter"
-msgstr ""
+msgstr "ตัวกรอง"
 
 #: frontend/src2/dashboard/DashboardFilterEditor.vue:224
 msgid "Filter Icon"
@@ -1084,7 +1084,7 @@ msgstr ""
 #. Label of the filters (JSON) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Filters"
-msgstr ""
+msgstr "ตัวกรอง"
 
 #. Label of the fiscal_year_start (Date) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
@@ -1146,7 +1146,7 @@ msgstr "วันศุกร์"
 
 #: frontend/src2/settings/Settings.vue:23
 msgid "General"
-msgstr ""
+msgstr "ทั่วไป"
 
 #: frontend/src2/query/components/ViewSQLDialog.vue:16
 msgid "Generated SQL"
@@ -1194,7 +1194,7 @@ msgstr ""
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Host"
-msgstr ""
+msgstr "โฮสต์"
 
 #. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -1594,12 +1594,12 @@ msgstr "รายการ"
 #. Label of the json (Code) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "JSON"
-msgstr ""
+msgstr "JSON"
 
 #. Label of the join (Code) field in DocType 'Insights Query Table'
 #: insights/insights/doctype/insights_query_table/insights_query_table.json
 msgid "Join"
-msgstr ""
+msgstr "เข้าร่วม"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:50
 #: frontend/src2/query/components/JoinSelectorDialog.vue:251
@@ -1724,7 +1724,7 @@ msgstr "ลิงก์"
 #. Label of the output (Code) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Log"
-msgstr ""
+msgstr "บันทึก"
 
 #: frontend/src2/components/UserDropdown.vue:126
 #: frontend/src2/components/UserDropdown.vue:130
@@ -1733,16 +1733,16 @@ msgstr "ออกจากระบบ"
 
 #: frontend/src2/components/UserDropdown.vue:158
 msgid "Login to Frappe Cloud"
-msgstr ""
+msgstr "เข้าสู่ระบบ Frappe Cloud"
 
 #: frontend/src2/components/UserDropdown.vue:80
 msgid "Login to Frappe Cloud?"
-msgstr ""
+msgstr "เข้าสู่ระบบ Frappe Cloud?"
 
 #: frontend/src2/query/components/ScriptQueryEditor.vue:82
 #: frontend/src2/query/components/ScriptQueryEditor.vue:113
 msgid "Logs"
-msgstr ""
+msgstr "บันทึก"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -1821,7 +1821,7 @@ msgstr ""
 #: frontend/src2/data_source/DataSourceList.vue:120
 #: frontend/src2/workbook/WorkbookList.vue:103
 msgid "Modified"
-msgstr ""
+msgstr "แก้ไขแล้ว"
 
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
@@ -1885,7 +1885,7 @@ msgstr "การดำเนินการถัดไป"
 
 #: frontend/src2/query/components/UnionSelectorDialog.vue:144
 msgid "No"
-msgstr ""
+msgstr "ไม่"
 
 #: frontend/src2/dashboard/DashboardList.vue:94
 msgid "No Dashboards"
@@ -1978,7 +1978,7 @@ msgstr ""
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Old Name"
-msgstr ""
+msgstr "ชื่อเก่า"
 
 #. Label of the onboarding_complete (Check) field in DocType 'Insights
 #. Settings'
@@ -1994,7 +1994,7 @@ msgstr ""
 #: frontend/src2/charts/components/ChartBuilderToolbar.vue:55
 #: frontend/src2/workbook/WorkbookNavbarActions.vue:72
 msgid "Open in Desk"
-msgstr ""
+msgstr "เปิดในเดสก์"
 
 #. Label of the operations (JSON) field in DocType 'Insights Query v3'
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
@@ -2059,7 +2059,7 @@ msgstr "รหัสผ่าน"
 #. Option for the 'Status' (Select) field in DocType 'Insights User Invitation'
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Pending"
-msgstr ""
+msgstr "รอดำเนินการ"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -2246,7 +2246,7 @@ msgstr ""
 
 #: frontend/src2/dashboard/DashboardBuilder.vue:158
 msgid "Reset Layout"
-msgstr ""
+msgstr "รีเซ็ตเลย์เอาต์"
 
 #: frontend/src2/charts/components/ChartBuilderToolbar.vue:44
 msgid "Reset Options"
@@ -2260,7 +2260,7 @@ msgstr ""
 #. Resource Permission'
 #: insights/insights/doctype/insights_resource_permission/insights_resource_permission.json
 msgid "Resource"
-msgstr ""
+msgstr "ทรัพยากร"
 
 #. Label of the resource_type (Link) field in DocType 'Insights Resource
 #. Permission'
@@ -2337,7 +2337,7 @@ msgstr ""
 #: frontend/src2/query/components/ScriptQueryEditor.vue:94
 #: insights/insights/doctype/insights_query/insights_query.js:7
 msgid "Run"
-msgstr ""
+msgstr "วิ่ง"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:37
 msgid "Run {0} of {1}"
@@ -2348,7 +2348,7 @@ msgstr ""
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_query_execution_log/insights_query_execution_log.json
 msgid "SQL"
-msgstr ""
+msgstr "SQL"
 
 #. Option for the 'Database Type' (Select) field in DocType 'Insights Data
 #. Source'
@@ -2403,7 +2403,7 @@ msgstr ""
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Script"
-msgstr ""
+msgstr "สคริปต์"
 
 #. Label of the script_log (Text) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -2416,13 +2416,13 @@ msgstr ""
 #: frontend/src2/settings/UsersSettings.vue:149
 #: frontend/src2/teams/TeamList.vue:100 frontend/src2/users/UserList.vue:163
 msgid "Search"
-msgstr ""
+msgstr "ค้นหา"
 
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:75
 #: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:63
 #: frontend/src2/workbook/WorkbookList.vue:166
 msgid "Search by Title"
-msgstr ""
+msgstr "ค้นหาตามชื่อ"
 
 #: frontend/src2/dashboard/DashboardChartSelectorDialog.vue:85
 msgid "Search by name"
@@ -2439,7 +2439,7 @@ msgstr ""
 
 #: frontend/src2/query/components/ColumnsSelectorDialog.vue:62
 msgid "Select Columns"
-msgstr ""
+msgstr "เลือกคอลัมน์"
 
 #: frontend/src2/query/components/JoinSelectorDialog.vue:363
 msgid "Select Columns to Add"
@@ -2447,7 +2447,7 @@ msgstr ""
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:203
 msgid "Select Field"
-msgstr ""
+msgstr "เลือกฟิลด์"
 
 #: frontend/src2/query/components/JoinSelectorDialog.vue:335
 msgid "Select Join Type"
@@ -2562,22 +2562,22 @@ msgstr ""
 
 #: frontend/src2/components/DataTableColumn.vue:20
 msgid "Sort Ascending"
-msgstr ""
+msgstr "เรียงลำดับจากน้อยไปมาก"
 
 #: frontend/src2/components/DataTableColumn.vue:25
 msgid "Sort Descending"
-msgstr ""
+msgstr "เรียงลำดับจากน้อยไปมาก"
 
 #. Label of the sort_order (Int) field in DocType 'Insights Folder'
 #: insights/insights/doctype/insights_folder/insights_folder.json
 msgid "Sort Order"
-msgstr ""
+msgstr "ลำดับการจัดเรียง"
 
 #. Label of the source (Attach) field in DocType 'Insights Table Import'
 #: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:38
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Source"
-msgstr ""
+msgstr "แหล่งที่มา"
 
 #: frontend/src2/dashboard/DashboardShareDialog.vue:114
 msgid "Specific people can view"
@@ -2590,13 +2590,13 @@ msgstr ""
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Started"
-msgstr ""
+msgstr "เริ่มต้น"
 
 #. Label of the started_at (Datetime) field in DocType 'Insights Table Import
 #. Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Started At"
-msgstr ""
+msgstr "เริ่มต้นที่"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:27
 msgid "Starting..."
@@ -2651,7 +2651,7 @@ msgstr ""
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Sunday"
-msgstr ""
+msgstr "วันอาทิตย์"
 
 #: frontend/src2/components/UserDropdown.vue:148
 msgid "Switch to Desk"
@@ -2695,7 +2695,7 @@ msgstr "ผู้จัดการระบบ"
 #: insights/insights/doctype/insights_table/insights_table.json
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Table"
-msgstr ""
+msgstr "ตาราง"
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:64
 msgid "Table Imported"
@@ -2737,13 +2737,13 @@ msgstr "ทีม"
 #. Label of the team_members (Table) field in DocType 'Insights Team'
 #: insights/insights/doctype/insights_team/insights_team.json
 msgid "Team Members"
-msgstr ""
+msgstr "สมาชิกทีม"
 
 #. Label of the team_name (Data) field in DocType 'Insights Team'
 #: frontend/src2/settings/PermissionsSettings.vue:45
 #: insights/insights/doctype/insights_team/insights_team.json
 msgid "Team Name"
-msgstr ""
+msgstr "ชื่อทีม"
 
 #. Label of the team_permissions (Table) field in DocType 'Insights Team'
 #: insights/insights/doctype/insights_team/insights_team.json
@@ -2752,7 +2752,7 @@ msgstr ""
 
 #: frontend/src2/teams/TeamList.vue:83
 msgid "Teams"
-msgstr ""
+msgstr "ทีม"
 
 #. Option for the 'Channel' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -2804,12 +2804,12 @@ msgstr "ปีนี้"
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Thursday"
-msgstr ""
+msgstr "วันพฤหัสบดี"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Time"
-msgstr ""
+msgstr "เวลา"
 
 #. Label of the time_taken (Float) field in DocType 'Insights Query Execution
 #. Log'
@@ -2854,7 +2854,7 @@ msgstr ""
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
 msgid "Title"
-msgstr ""
+msgstr "ชื่อเรื่อง"
 
 #: frontend/src2/query/components/ColumnFilterTypeDate.vue:53
 msgid "Today"
@@ -2895,7 +2895,7 @@ msgstr ""
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Tuesday"
-msgstr ""
+msgstr "วันอังคาร"
 
 #. Label of the item_type (Data) field in DocType 'Insights Dashboard Item'
 #. Label of the type (Select) field in DocType 'Insights Data Source v3'
@@ -2913,7 +2913,7 @@ msgstr ""
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Type"
-msgstr ""
+msgstr "ประเภท"
 
 #: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:72
 msgid "Unexpected validation error"
@@ -2950,7 +2950,7 @@ msgstr ""
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:37
 msgid "Upload Failed"
-msgstr ""
+msgstr "อัปโหลดล้มเหลว"
 
 #: frontend/src2/data_source/DataSourceList.vue:78
 msgid "Upload a CSV or Excel file to create a new data source"

@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-04-05 09:45+0000\n"
-"PO-Revision-Date: 2026-04-06 17:32\n"
+"PO-Revision-Date: 2026-04-22 09:40\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Burmese\n"
 "MIME-Version: 1.0\n"
@@ -63,13 +63,13 @@ msgstr ""
 #. Option for the 'Status' (Select) field in DocType 'Insights User Invitation'
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Accepted"
-msgstr ""
+msgstr "လက်ခံပါသည်။"
 
 #. Label of the accepted_at (Datetime) field in DocType 'Insights User
 #. Invitation'
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Accepted At"
-msgstr ""
+msgstr "တွင် လက်ခံခဲ့သည်။"
 
 #: frontend/src2/workbook/WorkbookList.vue:47
 msgid "Access"
@@ -77,7 +77,7 @@ msgstr ""
 
 #: frontend/src2/settings/Settings.vue:10
 msgid "Account"
-msgstr ""
+msgstr "အကောင့်"
 
 #. Label of the if_exists (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
@@ -89,11 +89,11 @@ msgstr ""
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Active"
-msgstr ""
+msgstr "အသက်ဝင်နေသည်"
 
 #: frontend/src2/dashboard/DashboardChartSelectorDialog.vue:67
 msgid "Add"
-msgstr ""
+msgstr "ထည့်သွင်းရန်"
 
 #: frontend/src2/data_source/ConnectClickhouseDialog.vue:106
 #: frontend/src2/data_source/ConnectDuckDBDialog.vue:77
@@ -121,7 +121,7 @@ msgstr ""
 #: frontend/src2/query/components/ColumnsSelectorDialog.vue:83
 #: frontend/src2/query/components/ColumnsSelectorDialog.vue:92
 msgid "Add column"
-msgstr ""
+msgstr "ကော်လံထည့်ပါ"
 
 #. Label of the aggregation (Data) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
@@ -192,7 +192,7 @@ msgstr ""
 #. Label of the amended_from (Link) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Amended From"
-msgstr ""
+msgstr "မူရင်းပြင်ဆင်ချက်"
 
 #: frontend/src2/dashboard/DashboardShareDialog.vue:110
 msgid "Anyone in the organization can view"
@@ -222,7 +222,7 @@ msgstr ""
 
 #: frontend/src2/query/components/FiltersSelector.vue:145
 msgid "Apply Filters"
-msgstr ""
+msgstr "စစ်ထုတ်မှုများအသုံးပြုမည်"
 
 #. Label of the apply_user_permissions (Check) field in DocType 'Insights
 #. Settings'
@@ -266,7 +266,7 @@ msgstr ""
 #. Label of the api_base_url (Data) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Base URL"
-msgstr ""
+msgstr "အခြေခံ URL"
 
 #. Option for the 'Authentication Type' (Select) field in DocType 'Insights
 #. Data Source v3'
@@ -321,7 +321,7 @@ msgstr ""
 
 #: frontend/src2/charts/components/DonutChartConfigForm.vue:58
 msgid "Bottom"
-msgstr ""
+msgstr "အောက်"
 
 #: frontend/src2/query/components/FormatRule.vue:202
 msgid "Bottom N percent"
@@ -374,7 +374,7 @@ msgstr ""
 #: frontend/src2/query/components/JoinSelectorDialog.vue:384
 #: frontend/src2/query/components/UnionSelectorDialog.vue:152
 msgid "Cancel"
-msgstr ""
+msgstr "မလုပ်တော့ပါ"
 
 #. Label of the cardinality (Select) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
@@ -385,25 +385,25 @@ msgstr ""
 #: frontend/src2/query/components/AlertSetupDialog.vue:171
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Channel"
-msgstr ""
+msgstr "ချန်နယ်"
 
 #. Label of the chart (Link) field in DocType 'Insights Dashboard Chart v3'
 #. Label of the chart (Link) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_dashboard_chart_v3/insights_dashboard_chart_v3.json
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Chart"
-msgstr ""
+msgstr "ဇယားပုံ"
 
 #. Label of the chart_type (Data) field in DocType 'Insights Chart'
 #. Label of the chart_type (Data) field in DocType 'Insights Chart v3'
 #: insights/insights/doctype/insights_chart/insights_chart.json
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
 msgid "Chart Type"
-msgstr ""
+msgstr "ဇယားပုံ အမျိုးအစား"
 
 #: frontend/src2/workbook/WorkbookSidebar.vue:57
 msgid "Charts"
-msgstr ""
+msgstr "ဇယားပုံများ"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:154
 msgid "Check once a day"
@@ -428,7 +428,7 @@ msgstr ""
 #: frontend/src2/dashboard/DashboardFilterEditor.vue:241
 #: frontend/src2/query/components/FiltersSelector.vue:143
 msgid "Clear"
-msgstr ""
+msgstr "ရှင်းလင်းမည်"
 
 #. Option for the 'Database Type' (Select) field in DocType 'Insights Data
 #. Source v3'
@@ -439,11 +439,11 @@ msgstr ""
 
 #: frontend/src2/query/components/source_selector/SourceSelectorDialog.vue:130
 msgid "Close"
-msgstr ""
+msgstr "ပိတ်မည်"
 
 #: frontend/src2/components/AppSidebar.vue:26
 msgid "Collapse"
-msgstr ""
+msgstr "ခေါက်သိမ်းရန်"
 
 #: frontend/src2/query/components/FormatRule.vue:502
 msgid "Color"
@@ -462,7 +462,7 @@ msgstr ""
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Column"
-msgstr ""
+msgstr "ကော်လံ"
 
 #. Label of the columns (Table) field in DocType 'Insights Query'
 #. Label of the columns (Table) field in DocType 'Insights Table'
@@ -472,7 +472,7 @@ msgstr ""
 #: insights/insights/doctype/insights_table/insights_table.json
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Columns"
-msgstr ""
+msgstr "ကော်လံများ"
 
 #. Description of the 'Allowed Origins' (Data) field in DocType 'Insights
 #. Settings'
@@ -488,14 +488,14 @@ msgstr ""
 #. Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Completed"
-msgstr ""
+msgstr "ပြီးဆုံးပြီ"
 
 #. Label of the condition (Code) field in DocType 'Insights Alert'
 #: frontend/src2/query/components/FormatRule.vue:433
 #: frontend/src2/query/components/FormatRule.vue:452
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Condition"
-msgstr ""
+msgstr "အခြေအနေ"
 
 #. Label of the config (JSON) field in DocType 'Insights Chart v3'
 #. Label of the config (JSON) field in DocType 'Insights Query Chart'
@@ -503,7 +503,7 @@ msgstr ""
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
 #: insights/insights/doctype/insights_query_chart/insights_query_chart.json
 msgid "Config"
-msgstr ""
+msgstr "ဖွဲ့စည်းမှု"
 
 #: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:132
 #: frontend/src2/components/ConfirmDialog.vue:26
@@ -513,7 +513,7 @@ msgstr ""
 #: frontend/src2/query/components/UnionSelectorDialog.vue:155
 #: frontend/src2/query/components/source_selector/SourceSelectorDialog.vue:132
 msgid "Confirm"
-msgstr ""
+msgstr "အတည်ပြုပါ"
 
 #: frontend/src2/data_source/ConnectClickhouseDialog.vue:77
 #: frontend/src2/data_source/ConnectDuckDBDialog.vue:47
@@ -567,11 +567,11 @@ msgstr ""
 #: frontend/src2/dashboard/DashboardText.vue:45
 #: insights/insights/doctype/insights_notebook_page/insights_notebook_page.json
 msgid "Content"
-msgstr ""
+msgstr "အကြောင်းအရာ"
 
 #: frontend/src2/components/UserDropdown.vue:57
 msgid "Continue"
-msgstr ""
+msgstr "ဆက်လက်လုပ်ဆောင်ပါ"
 
 #: frontend/src2/query/components/FiltersSelector.vue:113
 msgid "Convert to Expression"
@@ -592,7 +592,7 @@ msgstr ""
 
 #: frontend/src2/teams/CreateTeamDialog.vue:18
 msgid "Create"
-msgstr ""
+msgstr "ဖန်တီးရန်"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:129
 msgid "Create Alert"
@@ -614,11 +614,11 @@ msgstr ""
 
 #: frontend/src2/data_source/DataSourceList.vue:119
 msgid "Created"
-msgstr ""
+msgstr "ဖန်တီးပြီး"
 
 #: frontend/src2/query/components/QueryAlertsDialog.vue:52
 msgid "Created By"
-msgstr ""
+msgstr "ဖန်တီးသူ"
 
 #: frontend/src2/teams/TeamList.vue:48
 msgid "Creation"
@@ -634,7 +634,7 @@ msgstr ""
 #. Label of the cron_format (Data) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Cron Format"
-msgstr ""
+msgstr "Cron ပုံစံ"
 
 #. Description of the 'Schedule (Cron)' (Data) field in DocType 'Insights Table
 #. Import Job'
@@ -675,7 +675,7 @@ msgstr ""
 #. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Daily"
-msgstr ""
+msgstr "နေ့စဉ်"
 
 #: frontend/src2/dashboard/DashboardShareDialog.vue:48
 msgid "Dashboard Access Updated"
@@ -685,7 +685,7 @@ msgstr ""
 #: frontend/src2/dashboard/Dashboard.vue:46
 #: frontend/src2/workbook/WorkbookSidebar.vue:75
 msgid "Dashboards"
-msgstr ""
+msgstr "ဒက်ရှ်ဘုတ်များ"
 
 #. Label of the data_backup (JSON) field in DocType 'Insights Workbook'
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
@@ -743,7 +743,7 @@ msgstr ""
 #. Option for the 'Type' (Select) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Database"
-msgstr ""
+msgstr "ဒေတာဘေ့စ်"
 
 #. Label of the database_name (Data) field in DocType 'Insights Data Source'
 #. Label of the database_name (Data) field in DocType 'Insights Data Source v3'
@@ -766,7 +766,7 @@ msgstr ""
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Date"
-msgstr ""
+msgstr "ရက်စွဲ"
 
 #: frontend/src2/query/components/FormatRule.vue:234
 msgid "Date Rules"
@@ -775,7 +775,7 @@ msgstr ""
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Datetime"
-msgstr ""
+msgstr "ရက်စွဲနှင့်အချိန်"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -784,12 +784,12 @@ msgstr ""
 
 #: frontend/src2/dashboard/DashboardFilterEditor.vue:234
 msgid "Default Value"
-msgstr ""
+msgstr "ပုံသေ တန်ဖိုး"
 
 #: frontend/src2/dashboard/DashboardItemActions.vue:19
 #: frontend/src2/workbook/WorkbookNavbarActions.vue:65
 msgid "Delete"
-msgstr ""
+msgstr "ဖျက်ရန်"
 
 #: frontend/src2/components/DemoDataBanner.vue:26
 #: frontend/src2/settings/GeneralSettings.vue:22
@@ -808,7 +808,7 @@ msgstr ""
 #: frontend/src2/workbook/WorkbookShareDialog.vue:136
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Disabled"
-msgstr ""
+msgstr "ပိတ်ထားသည်"
 
 #: frontend/src2/components/UserDropdown.vue:116
 msgid "Documentation"
@@ -818,12 +818,12 @@ msgstr ""
 #: frontend/src2/dashboard/DashboardShareDialog.vue:86
 #: frontend/src2/teams/ManageTeamDialog.vue:66
 msgid "Done"
-msgstr ""
+msgstr "ပြီးပါပြီ"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Draft"
-msgstr ""
+msgstr "မူကြမ်း"
 
 #: frontend/src2/charts/components/DrillDown.vue:59
 msgid "Drill Down"
@@ -843,7 +843,7 @@ msgstr ""
 #: frontend/src2/query/components/FiltersSelector.vue:120
 #: frontend/src2/workbook/WorkbookNavbarActions.vue:53
 msgid "Duplicate"
-msgstr ""
+msgstr "ပွားယူမည်"
 
 #: frontend/src2/charts/components/ChartBuilderToolbar.vue:39
 msgid "Duplicate Chart"
@@ -860,7 +860,7 @@ msgstr ""
 
 #: frontend/src2/dashboard/DashboardItemActions.vue:14
 msgid "Edit"
-msgstr ""
+msgstr "တည်းဖြတ်"
 
 #: frontend/src2/dashboard/DashboardFilterEditor.vue:152
 msgid "Edit Filter"
@@ -878,7 +878,7 @@ msgstr ""
 #: insights/insights/doctype/insights_alert/insights_alert.json
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Email"
-msgstr ""
+msgstr "အီးမေးလ်"
 
 #. Label of the email_sent_at (Datetime) field in DocType 'Insights User
 #. Invitation'
@@ -916,13 +916,13 @@ msgstr ""
 #: frontend/src2/users/UserList.vue:46
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Enabled"
-msgstr ""
+msgstr "ဖွင့်ထား"
 
 #. Label of the ended_at (Datetime) field in DocType 'Insights Table Import
 #. Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Ended At"
-msgstr ""
+msgstr "ပြီးဆုံးချိန်"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:6
 msgid "Enqueue"
@@ -953,7 +953,7 @@ msgstr ""
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Error"
-msgstr ""
+msgstr "အမှား"
 
 #: frontend/src2/components/ExportDialog.vue:47
 msgid "Excel"
@@ -962,7 +962,7 @@ msgstr ""
 #: frontend/src2/query/components/NativeQueryEditor.vue:134
 #: frontend/src2/query/components/QueryBuilderToolbar.vue:69
 msgid "Execute"
-msgstr ""
+msgstr "လုပ်ဆောင်မည်"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -981,20 +981,20 @@ msgstr ""
 
 #: frontend/src2/components/AppSidebar.vue:26
 msgid "Expand"
-msgstr ""
+msgstr "ချဲ့ရန်"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights User Invitation'
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Expired"
-msgstr ""
+msgstr "သက်တမ်းကုန်ပြီး"
 
 #: frontend/src2/components/ExportDialog.vue:80
 msgid "Export"
-msgstr ""
+msgstr "ထုတ်ယူမည်"
 
 #: frontend/src2/components/ExportDialog.vue:35
 msgid "Export Data"
-msgstr ""
+msgstr "ဒေတာထုတ်ယူမည်"
 
 #: frontend/src2/components/ExportDialog.vue:44
 msgid "Export Format"
@@ -1008,13 +1008,13 @@ msgstr ""
 #. Label of the expression (JSON) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "Expression"
-msgstr ""
+msgstr "ဖော်ပြချက်"
 
 #. Option for the 'Action if table exists' (Select) field in DocType 'Insights
 #. Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Fail"
-msgstr ""
+msgstr "မအောင်မြင်"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import
@@ -1022,7 +1022,7 @@ msgstr ""
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Failed"
-msgstr ""
+msgstr "မအောင်မြင်ပါ"
 
 #: frontend/src2/query/components/NativeQueryEditor.vue:52
 msgid "Failed to format SQL"
@@ -1059,7 +1059,7 @@ msgstr ""
 
 #: frontend/src2/data_source/ConnectDuckDBDialog.vue:28
 msgid "File URL"
-msgstr ""
+msgstr "ဖိုင် URL"
 
 #: frontend/src2/components/ExportDialog.vue:58
 msgid "Filename"
@@ -1067,7 +1067,7 @@ msgstr ""
 
 #: frontend/src2/query/components/FiltersSelectorDialog.vue:21
 msgid "Filter"
-msgstr ""
+msgstr "စစ်ထုတ်မှု"
 
 #: frontend/src2/dashboard/DashboardFilterEditor.vue:224
 msgid "Filter Icon"
@@ -1084,7 +1084,7 @@ msgstr ""
 #. Label of the filters (JSON) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Filters"
-msgstr ""
+msgstr "စစ်ထုတ်မှုများ"
 
 #. Label of the fiscal_year_start (Date) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
@@ -1136,17 +1136,17 @@ msgstr ""
 #: frontend/src2/query/components/AlertSetupDialog.vue:150
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Frequency"
-msgstr ""
+msgstr "ကြိမ်နှုန်း"
 
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Friday"
-msgstr ""
+msgstr "သောကြာ"
 
 #: frontend/src2/settings/Settings.vue:23
 msgid "General"
-msgstr ""
+msgstr "အထွေထွေ"
 
 #: frontend/src2/query/components/ViewSQLDialog.vue:16
 msgid "Generated SQL"
@@ -1154,7 +1154,7 @@ msgstr ""
 
 #: frontend/src2/query/components/FormatRule.vue:160
 msgid "Green"
-msgstr ""
+msgstr "အစိမ်းရောင်"
 
 #: frontend/src2/query/components/FormatRule.vue:213
 msgid "Green-Red"
@@ -1176,7 +1176,7 @@ msgstr ""
 #. Label of the hidden (Check) field in DocType 'Insights Table'
 #: insights/insights/doctype/insights_table/insights_table.json
 msgid "Hidden"
-msgstr ""
+msgstr "ဝှက်ထားသော"
 
 #: frontend/src2/query/components/FormattingSelector.vue:59
 msgid "Highlight Cell"
@@ -1199,7 +1199,7 @@ msgstr ""
 #. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Hourly"
-msgstr ""
+msgstr "တစ်နာရီတိုင်း"
 
 #. Label of the item_id (Data) field in DocType 'Insights Dashboard Item'
 #: insights/insights/doctype/insights_dashboard_item/insights_dashboard_item.json
@@ -1208,7 +1208,7 @@ msgstr ""
 
 #: frontend/src2/data_store/ImportTableDialog.vue:93
 msgid "Import"
-msgstr ""
+msgstr "တင်သွင်း"
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:71
 msgid "Import Failed"
@@ -1243,14 +1243,14 @@ msgstr ""
 #. Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "In Progress"
-msgstr ""
+msgstr "လုပ်ဆောင်နေဆဲ"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Data Source'
 #. Option for the 'Status' (Select) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Inactive"
-msgstr ""
+msgstr "မလှုပ်ရှားသော"
 
 #: frontend/src2/charts/components/MapChartConfigForm.vue:55
 msgid "India"
@@ -1491,7 +1491,7 @@ msgstr ""
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Integrations"
-msgstr ""
+msgstr "ပေါင်းစည်းမှုများ"
 
 #: frontend/src2/settings/UsersSettings.vue:44
 #: frontend/src2/users/UserList.vue:44
@@ -1560,7 +1560,7 @@ msgstr ""
 #: insights/insights/doctype/insights_dashboard/insights_dashboard.json
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Is Public"
-msgstr ""
+msgstr "အများသုံးဖြစ်သည်"
 
 #. Label of the is_query_based (Check) field in DocType 'Insights Table'
 #: insights/insights/doctype/insights_table/insights_table.json
@@ -1589,7 +1589,7 @@ msgstr ""
 #: insights/insights/doctype/insights_dashboard/insights_dashboard.json
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Items"
-msgstr ""
+msgstr "ပစ္စည်းများ"
 
 #. Label of the json (Code) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -1623,7 +1623,7 @@ msgstr ""
 #: insights/insights/doctype/insights_secret_key/insights_secret_key.json
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Key"
-msgstr ""
+msgstr "သော့"
 
 #. Label of the label (Data) field in DocType 'Insights Query Table'
 #. Label of the label (Data) field in DocType 'Insights Table'
@@ -1635,11 +1635,11 @@ msgstr ""
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Label"
-msgstr ""
+msgstr "အညွှန်း"
 
 #: frontend/src2/users/UserList.vue:65
 msgid "Last Active"
-msgstr ""
+msgstr "နောက်ဆုံး တက်ကြွချိန်"
 
 #. Label of the last_execution (Datetime) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -1650,7 +1650,7 @@ msgstr ""
 #: frontend/src2/query/components/QueryAlertsDialog.vue:56
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Last Execution"
-msgstr ""
+msgstr "နောက်ဆုံးလုပ်ဆောင်မှု"
 
 #. Label of the last_log (Link) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
@@ -1661,7 +1661,7 @@ msgstr ""
 #. Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Last Run"
-msgstr ""
+msgstr "နောက်ဆုံးလုပ်ဆောင်မှု"
 
 #. Label of the last_status (Data) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
@@ -1675,13 +1675,13 @@ msgstr ""
 #. Label of the last_synced_on (Datetime) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Last Synced On"
-msgstr ""
+msgstr "နောက်ဆုံးချိန်ကိုက်သည့်ရက်"
 
 #: frontend/src2/charts/components/DonutChartConfigForm.vue:59
 #: frontend/src2/charts/components/FunnelChartConfigForm.vue:56
 #: frontend/src2/charts/components/SankeyChartConfigForm.vue:70
 msgid "Left"
-msgstr ""
+msgstr "ဘယ်"
 
 #. Label of the left_column (Data) field in DocType 'Insights Table Link v3'
 #: frontend/src2/query/components/JoinSelectorDialog.vue:280
@@ -1702,7 +1702,7 @@ msgstr ""
 #. Label of the limit (Int) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Limit"
-msgstr ""
+msgstr "ကန့်သတ်ချက်"
 
 #. Label of the linked_charts (Table MultiSelect) field in DocType 'Insights
 #. Dashboard v3'
@@ -1719,17 +1719,17 @@ msgstr ""
 #. Label of the table_links (Table) field in DocType 'Insights Table'
 #: insights/insights/doctype/insights_table/insights_table.json
 msgid "Links"
-msgstr ""
+msgstr "လင့်ခ်များ"
 
 #. Label of the output (Code) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Log"
-msgstr ""
+msgstr "မှတ်တမ်း"
 
 #: frontend/src2/components/UserDropdown.vue:126
 #: frontend/src2/components/UserDropdown.vue:130
 msgid "Log out"
-msgstr ""
+msgstr "ထွက်ရန်"
 
 #: frontend/src2/components/UserDropdown.vue:158
 msgid "Login to Frappe Cloud"
@@ -1742,7 +1742,7 @@ msgstr ""
 #: frontend/src2/query/components/ScriptQueryEditor.vue:82
 #: frontend/src2/query/components/ScriptQueryEditor.vue:113
 msgid "Logs"
-msgstr ""
+msgstr "မှတ်တမ်းများ"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -1752,7 +1752,7 @@ msgstr ""
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Long Text"
-msgstr ""
+msgstr "စာသားရှည်"
 
 #: frontend/src2/teams/ManageTeamDialog.vue:63
 msgid "Manage Team"
@@ -1812,7 +1812,7 @@ msgstr ""
 #: frontend/src2/query/components/AlertSetupDialog.vue:238
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Message"
-msgstr ""
+msgstr "စာတို"
 
 #: frontend/src2/charts/components/MeasurePicker.vue:129
 msgid "Minimum of..."
@@ -1827,12 +1827,12 @@ msgstr ""
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Monday"
-msgstr ""
+msgstr "တနင်္လာ"
 
 #. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Monthly"
-msgstr ""
+msgstr "လစဉ်"
 
 #. Option for the 'Cardinality' (Select) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
@@ -1848,7 +1848,7 @@ msgstr ""
 #: frontend/src2/components/VariablesDialog.vue:84
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "Name"
-msgstr ""
+msgstr "အမည်"
 
 #: frontend/src2/query/components/QueryAlertsDialog.vue:79
 #: frontend/src2/query/components/QueryAlertsDialog.vue:108
@@ -1857,7 +1857,7 @@ msgstr ""
 
 #: frontend/src2/workbook/WorkbookTabSwitcher.vue:63
 msgid "New Chart"
-msgstr ""
+msgstr "ဇယားပုံအသစ်"
 
 #: frontend/src2/workbook/WorkbookTabSwitcher.vue:64
 msgid "New Dashboard"
@@ -1881,11 +1881,11 @@ msgstr ""
 #. Label of the next_execution (Datetime) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Next Execution"
-msgstr ""
+msgstr "နောက်လုပ်ဆောင်မှု"
 
 #: frontend/src2/query/components/UnionSelectorDialog.vue:144
 msgid "No"
-msgstr ""
+msgstr "မဟုတ်ပါ"
 
 #: frontend/src2/dashboard/DashboardList.vue:94
 msgid "No Dashboards"
@@ -2012,7 +2012,7 @@ msgstr ""
 #: insights/insights/doctype/insights_dashboard_item/insights_dashboard_item.json
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
 msgid "Options"
-msgstr ""
+msgstr "ရွေးချယ်စရာများ"
 
 #. Label of the order_by (Select) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
@@ -2044,7 +2044,7 @@ msgstr ""
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Partial Success"
-msgstr ""
+msgstr "တစ်စိတ်တစ်ပိုင်းအောင်မြင်"
 
 #. Label of the password (Password) field in DocType 'Insights Data Source'
 #. Label of the password (Password) field in DocType 'Insights Data Source v3'
@@ -2054,12 +2054,12 @@ msgstr ""
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Password"
-msgstr ""
+msgstr "စကားဝှက်"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights User Invitation'
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Pending"
-msgstr ""
+msgstr "ဆိုင်းငံ့ထားသည်"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -2068,7 +2068,7 @@ msgstr ""
 
 #: frontend/src2/settings/Settings.vue:38
 msgid "Permissions"
-msgstr ""
+msgstr "ခွင့်ပြုချက်များ"
 
 #: frontend/src2/workbook/WorkbookShareDialog.vue:82
 msgid "Permissions updated"
@@ -2135,7 +2135,7 @@ msgstr ""
 
 #: frontend/src2/settings/Settings.vue:13
 msgid "Profile"
-msgstr ""
+msgstr "ပရိုဖိုင်"
 
 #. Label of the public_key (Data) field in DocType 'Insights Chart'
 #. Label of the public_key (Data) field in DocType 'Insights Dashboard'
@@ -2170,7 +2170,7 @@ msgstr ""
 #: insights/insights/doctype/insights_query_result/insights_query_result.json
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Query"
-msgstr ""
+msgstr "မေးမြန်းချက်"
 
 #. Label of the query_result_limit (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
@@ -2180,7 +2180,7 @@ msgstr ""
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Queued"
-msgstr ""
+msgstr "တန်းစီနေသည်"
 
 #: frontend/src2/home/HomeQuickActions.vue:21
 msgid "Quick Actions"
@@ -2203,11 +2203,11 @@ msgstr ""
 #: frontend/src2/query/components/AlertSetupDialog.vue:181
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Recipients"
-msgstr ""
+msgstr "လက်ခံသူများ"
 
 #: frontend/src2/query/components/FormatRule.vue:159
 msgid "Red"
-msgstr ""
+msgstr "အနီ"
 
 #: frontend/src2/query/components/FormatRule.vue:209
 msgid "Red-Green"
@@ -2216,7 +2216,7 @@ msgstr ""
 #: frontend/src2/dashboard/Dashboard.vue:51
 #: frontend/src2/data_source/DataSourceTableList.vue:43
 msgid "Refresh"
-msgstr ""
+msgstr "ပြန်လည်ဖွင့်"
 
 #: frontend/src2/dashboard/DashboardList.vue:27
 msgid "Refresh Preview"
@@ -2238,7 +2238,7 @@ msgstr ""
 #: frontend/src2/query/components/FiltersSelector.vue:126
 #: frontend/src2/workbook/WorkbookShareDialog.vue:39
 msgid "Remove"
-msgstr ""
+msgstr "ဖယ်ရှားရန်"
 
 #: frontend/src2/components/DataTableColumn.vue:30
 msgid "Remove Sort"
@@ -2246,7 +2246,7 @@ msgstr ""
 
 #: frontend/src2/dashboard/DashboardBuilder.vue:158
 msgid "Reset Layout"
-msgstr ""
+msgstr "အပြင်အဆင်ကို ပြန်လည်သတ်မှတ်ရန်"
 
 #: frontend/src2/charts/components/ChartBuilderToolbar.vue:44
 msgid "Reset Options"
@@ -2260,7 +2260,7 @@ msgstr ""
 #. Resource Permission'
 #: insights/insights/doctype/insights_resource_permission/insights_resource_permission.json
 msgid "Resource"
-msgstr ""
+msgstr "အရင်းအမြစ်"
 
 #. Label of the resource_type (Link) field in DocType 'Insights Resource
 #. Permission'
@@ -2271,7 +2271,7 @@ msgstr ""
 #. Label of the result_name (Data) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Result"
-msgstr ""
+msgstr "ရလဒ်"
 
 #. Label of the results_row_count (Int) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -2293,7 +2293,7 @@ msgstr ""
 #: frontend/src2/charts/components/FunnelChartConfigForm.vue:57
 #: frontend/src2/charts/components/SankeyChartConfigForm.vue:71
 msgid "Right"
-msgstr ""
+msgstr "ညာ"
 
 #. Label of the right_column (Data) field in DocType 'Insights Table Link v3'
 #: frontend/src2/query/components/JoinSelectorDialog.vue:294
@@ -2371,7 +2371,7 @@ msgstr ""
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Saturday"
-msgstr ""
+msgstr "စနေနေ့"
 
 #: frontend/src2/dashboard/DashboardFilterEditor.vue:155
 #: frontend/src2/dashboard/DashboardText.vue:27
@@ -2403,7 +2403,7 @@ msgstr ""
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Script"
-msgstr ""
+msgstr "စကရစ်"
 
 #. Label of the script_log (Text) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -2416,7 +2416,7 @@ msgstr ""
 #: frontend/src2/settings/UsersSettings.vue:149
 #: frontend/src2/teams/TeamList.vue:100 frontend/src2/users/UserList.vue:163
 msgid "Search"
-msgstr ""
+msgstr "ရှာဖွေမှု"
 
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:75
 #: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:63
@@ -2439,7 +2439,7 @@ msgstr ""
 
 #: frontend/src2/query/components/ColumnsSelectorDialog.vue:62
 msgid "Select Columns"
-msgstr ""
+msgstr "ကော်လံများရွေးချယ်ပါ"
 
 #: frontend/src2/query/components/JoinSelectorDialog.vue:363
 msgid "Select Columns to Add"
@@ -2447,7 +2447,7 @@ msgstr ""
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:203
 msgid "Select Field"
-msgstr ""
+msgstr "အကွက် ရွေးချယ်ပါ"
 
 #: frontend/src2/query/components/JoinSelectorDialog.vue:335
 msgid "Select Join Type"
@@ -2513,11 +2513,11 @@ msgstr ""
 #: frontend/src2/components/AppSidebar.vue:95
 #: frontend/src2/settings/Settings.vue:58
 msgid "Settings"
-msgstr ""
+msgstr "ဆက်တင်များ"
 
 #: frontend/src2/dashboard/DashboardFilterEditor.vue:28
 msgid "Setup"
-msgstr ""
+msgstr "တပ်ဆင်မှု"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:113
 msgid "Setup Alert"
@@ -2526,7 +2526,7 @@ msgstr ""
 #. Label of the setup_complete (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Setup Complete"
-msgstr ""
+msgstr "တပ်ဆင်မှု ပြီးဆုံးပါပြီ"
 
 #: frontend/src2/components/DemoDataBanner.vue:64
 msgid "Setup Demo Data"
@@ -2562,22 +2562,22 @@ msgstr ""
 
 #: frontend/src2/components/DataTableColumn.vue:20
 msgid "Sort Ascending"
-msgstr ""
+msgstr "ငယ်စဉ်မှကြီးစဉ် စီရန်"
 
 #: frontend/src2/components/DataTableColumn.vue:25
 msgid "Sort Descending"
-msgstr ""
+msgstr "ကြီးစဉ်မှငယ်စဉ် စီရန်"
 
 #. Label of the sort_order (Int) field in DocType 'Insights Folder'
 #: insights/insights/doctype/insights_folder/insights_folder.json
 msgid "Sort Order"
-msgstr ""
+msgstr "စီစဉ်မှုအစီအစဉ်"
 
 #. Label of the source (Attach) field in DocType 'Insights Table Import'
 #: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:38
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Source"
-msgstr ""
+msgstr "ရင်းမြစ်"
 
 #: frontend/src2/dashboard/DashboardShareDialog.vue:114
 msgid "Specific people can view"
@@ -2590,13 +2590,13 @@ msgstr ""
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Started"
-msgstr ""
+msgstr "စတင်ပြီး"
 
 #. Label of the started_at (Datetime) field in DocType 'Insights Table Import
 #. Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Started At"
-msgstr ""
+msgstr "စတင်ချိန်"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:27
 msgid "Starting..."
@@ -2624,7 +2624,7 @@ msgstr ""
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Status"
-msgstr ""
+msgstr "အခြေအနေ"
 
 #. Label of the is_stored (Check) field in DocType 'Insights Query'
 #. Label of the stored (Check) field in DocType 'Insights Table v3'
@@ -2641,7 +2641,7 @@ msgstr ""
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Success"
-msgstr ""
+msgstr "အောင်မြင်မှု"
 
 #: frontend/src2/charts/components/MeasurePicker.vue:127
 msgid "Sum of..."
@@ -2651,7 +2651,7 @@ msgstr ""
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Sunday"
-msgstr ""
+msgstr "တနင်္ဂနွေ"
 
 #: frontend/src2/components/UserDropdown.vue:148
 msgid "Switch to Desk"
@@ -2681,7 +2681,7 @@ msgstr ""
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "System Manager"
-msgstr ""
+msgstr "စနစ်စီမံခန့်ခွဲသူ"
 
 #. Label of the table (Data) field in DocType 'Insights Query Column'
 #. Label of the table (Data) field in DocType 'Insights Query Table'
@@ -2695,7 +2695,7 @@ msgstr ""
 #: insights/insights/doctype/insights_table/insights_table.json
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Table"
-msgstr ""
+msgstr "ဇယား"
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:64
 msgid "Table Imported"
@@ -2737,7 +2737,7 @@ msgstr ""
 #. Label of the team_members (Table) field in DocType 'Insights Team'
 #: insights/insights/doctype/insights_team/insights_team.json
 msgid "Team Members"
-msgstr ""
+msgstr "အဖွဲ့ဝင်များ"
 
 #. Label of the team_name (Data) field in DocType 'Insights Team'
 #: frontend/src2/settings/PermissionsSettings.vue:45
@@ -2774,7 +2774,7 @@ msgstr ""
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Text"
-msgstr ""
+msgstr "စာသား"
 
 #: frontend/src2/query/components/FormatRule.vue:230
 msgid "Text Rules"
@@ -2804,12 +2804,12 @@ msgstr ""
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Thursday"
-msgstr ""
+msgstr "ကြာသပတေး"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Time"
-msgstr ""
+msgstr "အချိန်"
 
 #. Label of the time_taken (Float) field in DocType 'Insights Query Execution
 #. Log'
@@ -2854,15 +2854,15 @@ msgstr ""
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
 msgid "Title"
-msgstr ""
+msgstr "ခေါင်းစဉ်"
 
 #: frontend/src2/query/components/ColumnFilterTypeDate.vue:53
 msgid "Today"
-msgstr ""
+msgstr "ယနေ့"
 
 #: frontend/src2/charts/components/DonutChartConfigForm.vue:57
 msgid "Top"
-msgstr ""
+msgstr "အပေါ်"
 
 #: frontend/src2/query/components/FormatRule.vue:201
 msgid "Top N percent"
@@ -2895,7 +2895,7 @@ msgstr ""
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Tuesday"
-msgstr ""
+msgstr "အင်္ဂါ"
 
 #. Label of the item_type (Data) field in DocType 'Insights Dashboard Item'
 #. Label of the type (Select) field in DocType 'Insights Data Source v3'
@@ -2913,7 +2913,7 @@ msgstr ""
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Type"
-msgstr ""
+msgstr "အမျိုးအစား"
 
 #: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:72
 msgid "Unexpected validation error"
@@ -2950,7 +2950,7 @@ msgstr ""
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:37
 msgid "Upload Failed"
-msgstr ""
+msgstr "အပ်လုဒ်တင်ခြင်း မအောင်မြင်ပါ"
 
 #: frontend/src2/data_source/DataSourceList.vue:78
 msgid "Upload a CSV or Excel file to create a new data source"
@@ -2971,7 +2971,7 @@ msgstr ""
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Use SSL"
-msgstr ""
+msgstr "SSL ကို အသုံးပြုပါ"
 
 #: frontend/src2/data_source/ConnectClickhouseDialog.vue:69
 #: frontend/src2/data_source/ConnectMariaDBDialog.vue:69
@@ -2984,7 +2984,7 @@ msgstr ""
 #: frontend/src2/users/UserList.vue:29
 #: insights/insights/doctype/insights_team_member/insights_team_member.json
 msgid "User"
-msgstr ""
+msgstr "အသုံးပြုသူ"
 
 #. Label of the username (Data) field in DocType 'Insights Data Source'
 #. Label of the username (Data) field in DocType 'Insights Data Source v3'
@@ -2994,11 +2994,11 @@ msgstr ""
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Username"
-msgstr ""
+msgstr "အသုံးပြုသူအမည်"
 
 #: frontend/src2/settings/Settings.vue:33 frontend/src2/users/UserList.vue:146
 msgid "Users"
-msgstr ""
+msgstr "အသုံးပြုသူများ"
 
 #: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:57
 msgid "Validation failed"
@@ -3010,7 +3010,7 @@ msgstr ""
 #: frontend/src2/query/components/FormatRule.vue:425
 #: insights/insights/doctype/insights_secret_key/insights_secret_key.json
 msgid "Value"
-msgstr ""
+msgstr "တန်ဖိုး"
 
 #: frontend/src2/query/components/FormatRule.vue:224
 msgid "Value Rules"
@@ -3057,13 +3057,13 @@ msgstr ""
 
 #: frontend/src2/workbook/WorkbookList.vue:74
 msgid "Views"
-msgstr ""
+msgstr "မြင်ကွင်းများ"
 
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Wednesday"
-msgstr ""
+msgstr "ဗုဒ္ဓဟူး"
 
 #. Label of the week_starts_on (Select) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
@@ -3073,7 +3073,7 @@ msgstr ""
 #. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Weekly"
-msgstr ""
+msgstr "အပတ်စဉ်"
 
 #. Label of the workbook (Link) field in DocType 'Insights Chart v3'
 #. Label of the workbook (Link) field in DocType 'Insights Dashboard v3'
@@ -3104,7 +3104,7 @@ msgstr ""
 
 #: frontend/src2/query/components/UnionSelectorDialog.vue:143
 msgid "Yes"
-msgstr ""
+msgstr "ဟုတ်ကဲ့"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:251
 msgid "You can use markdown to format the message. Use double asterisks (**) for bold text. You can use the following fields in the message:"

@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-04-05 09:45+0000\n"
-"PO-Revision-Date: 2026-04-06 17:31\n"
+"PO-Revision-Date: 2026-04-14 23:52\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Hungarian\n"
 "MIME-Version: 1.0\n"
@@ -660,7 +660,7 @@ msgstr "Egyéni fejlécek"
 
 #: frontend/src2/query/components/JoinSelectorDialog.vue:316
 msgid "Custom Join Condition"
-msgstr ""
+msgstr "Egyéni Join feltététel"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:80
 msgid "Custom Operation"
@@ -1158,20 +1158,20 @@ msgstr "Zöld"
 
 #: frontend/src2/query/components/FormatRule.vue:213
 msgid "Green-Red"
-msgstr ""
+msgstr "Zöld-piros"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:68
 msgid "Group & Summarize"
-msgstr ""
+msgstr "Csoportosítás és Összegzés"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:69
 msgid "Group rows by columns and summarize the data"
-msgstr ""
+msgstr "Sorok oszlopok szerinti csoportosítása és az adatok összegzése"
 
 #. Label of the http_headers (JSON) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "HTTP Headers"
-msgstr ""
+msgstr "HTTP Fejlécek"
 
 #. Label of the hidden (Check) field in DocType 'Insights Table'
 #: insights/insights/doctype/insights_table/insights_table.json
@@ -1180,11 +1180,11 @@ msgstr "Rejtett"
 
 #: frontend/src2/query/components/FormattingSelector.vue:59
 msgid "Highlight Cell"
-msgstr ""
+msgstr "Cella kiemelése"
 
 #: frontend/src2/charts/components/SankeyChartConfigForm.vue:60
 msgid "Horizontal"
-msgstr ""
+msgstr "Vízszintes"
 
 #. Label of the host (Data) field in DocType 'Insights Data Source'
 #. Label of the host (Data) field in DocType 'Insights Data Source v3'
@@ -1212,32 +1212,32 @@ msgstr "Importálás"
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:71
 msgid "Import Failed"
-msgstr ""
+msgstr "Importálás sikertelen"
 
 #. Label of the import_job (Link) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Import Job"
-msgstr ""
+msgstr "Importálási feladat"
 
 #. Label of the query (Code) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Import Query"
-msgstr ""
+msgstr "Importálási lekérdezés"
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:96
 #: frontend/src2/data_store/DataStoreList.vue:61
 #: frontend/src2/data_store/DataStoreList.vue:79
 #: frontend/src2/data_store/ImportTableDialog.vue:59
 msgid "Import Table"
-msgstr ""
+msgstr "Táblázat importálása"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:9
 msgid "Import job has been queued"
-msgstr ""
+msgstr "Az importálási feladat várólistára került"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:7
 msgid "Import to Warehouse"
-msgstr ""
+msgstr "Import a raktárba"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import
 #. Log'
@@ -1254,7 +1254,7 @@ msgstr "Inaktív"
 
 #: frontend/src2/charts/components/MapChartConfigForm.vue:55
 msgid "India"
-msgstr ""
+msgstr "India"
 
 #. Name of a role
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -1273,177 +1273,177 @@ msgstr ""
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
 msgid "Insights Admin"
-msgstr ""
+msgstr "Insights Admin"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Insights Alert"
-msgstr ""
+msgstr "Insights Figyelmeztetés"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_chart/insights_chart.json
 msgid "Insights Chart"
-msgstr ""
+msgstr "Insights Diagram"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
 msgid "Insights Chart v3"
-msgstr ""
+msgstr "Insights Diagram v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_dashboard/insights_dashboard.json
 msgid "Insights Dashboard"
-msgstr ""
+msgstr "Insights Műszerfal"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_dashboard_chart_v3/insights_dashboard_chart_v3.json
 msgid "Insights Dashboard Chart v3"
-msgstr ""
+msgstr "Insights Műszerfal Diagram v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_dashboard_item/insights_dashboard_item.json
 msgid "Insights Dashboard Item"
-msgstr ""
+msgstr "Insights Műszerfal Elem"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Insights Dashboard v3"
-msgstr ""
+msgstr "Insights Műszerfal v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 msgid "Insights Data Source"
-msgstr ""
+msgstr "Insights Adatforrás"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Insights Data Source v3"
-msgstr ""
+msgstr "Insights Adatforrás v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_folder/insights_folder.json
 msgid "Insights Folder"
-msgstr ""
+msgstr "Insights Mappa"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_notebook/insights_notebook.json
 msgid "Insights Notebook"
-msgstr ""
+msgstr "Insights Munkafüzet"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_notebook_page/insights_notebook_page.json
 msgid "Insights Notebook Page"
-msgstr ""
+msgstr "Insights Munkafüzet Oldal"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Insights Query"
-msgstr ""
+msgstr "Insights Lekérdezés"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_chart/insights_query_chart.json
 msgid "Insights Query Chart"
-msgstr ""
+msgstr "Insights Lekérdezés Diagram"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "Insights Query Column"
-msgstr ""
+msgstr "Insights Lekérdezés Oszlop"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_execution_log/insights_query_execution_log.json
 msgid "Insights Query Execution Log"
-msgstr ""
+msgstr "Insights Lekérdezés Végrehajtási Napló"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_result/insights_query_result.json
 msgid "Insights Query Result"
-msgstr ""
+msgstr "Insights Lekérdezés Eredmény"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_table/insights_query_table.json
 msgid "Insights Query Table"
-msgstr ""
+msgstr "Insights Lekérdezés Táblázat"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
 msgid "Insights Query Transform"
-msgstr ""
+msgstr "Insights Lekérdezés Átalakítás"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_variable/insights_query_variable.json
 msgid "Insights Query Variable"
-msgstr ""
+msgstr "Insights Lekérdezés Változó"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Insights Query v3"
-msgstr ""
+msgstr "Insights Lekérdezés v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_resource_permission/insights_resource_permission.json
 msgid "Insights Resource Permission"
-msgstr ""
+msgstr "Insights Erőforrás Jogosultság"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_secret_key/insights_secret_key.json
 msgid "Insights Secret Key"
-msgstr ""
+msgstr "Insights Titkos Kulcs"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Insights Settings"
-msgstr ""
+msgstr "Insights Beállítások"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table/insights_table.json
 msgid "Insights Table"
-msgstr ""
+msgstr "Insights Táblázat"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Insights Table Column"
-msgstr ""
+msgstr "Insights Táblázat Oszlop"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Insights Table Import"
-msgstr ""
+msgstr "Insights Táblázat Import"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Insights Table Import Job"
-msgstr ""
+msgstr "Insights Táblázat Import Feladat"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Insights Table Import Log"
-msgstr ""
+msgstr "Insights Táblázat Import Napló"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "Insights Table Link"
-msgstr ""
+msgstr "Insights Táblázat Link"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
 msgid "Insights Table Link v3"
-msgstr ""
+msgstr "Insights Táblázat Link v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Insights Table v3"
-msgstr ""
+msgstr "Insights Táblázat v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_team/insights_team.json
 msgid "Insights Team"
-msgstr ""
+msgstr "Insights Csapat"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_team_member/insights_team_member.json
 msgid "Insights Team Member"
-msgstr ""
+msgstr "Insights Csapat Tag"
 
 #. Name of a role
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -1470,7 +1470,7 @@ msgstr ""
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
 msgid "Insights User"
-msgstr ""
+msgstr "Insights Felhasználó"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
@@ -1604,7 +1604,7 @@ msgstr ""
 #: frontend/src2/query/components/AddOperationPopover.vue:50
 #: frontend/src2/query/components/JoinSelectorDialog.vue:251
 msgid "Join Table"
-msgstr ""
+msgstr "Tábla Összekapcsolás"
 
 #: frontend/src2/components/UserDropdown.vue:121
 msgid "Join Telegram Group"
@@ -1612,7 +1612,7 @@ msgstr "Csatlakozzon a Telegram csoporthoz"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:51
 msgid "Join this table with another table or query"
-msgstr ""
+msgstr "Tábla összekapcsolása egy másik táblával vagy lekérdezéssel"
 
 #: frontend/src2/charts/components/SankeyChartConfigForm.vue:69
 msgid "Justify"
@@ -2092,11 +2092,11 @@ msgstr "Pivot tábla"
 
 #: frontend/src2/query/components/NativeQueryEditor.vue:26
 msgid "Please select a data source first"
-msgstr ""
+msgstr "Kérjük, először válasszon ki egy adatforrást"
 
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:53
 msgid "Please wait while we refresh the tables from your data source"
-msgstr ""
+msgstr "Kérjük, várjon, amíg frissítjük a táblákat az adatforrásból"
 
 #. Label of the port (Data) field in DocType 'Insights Data Source'
 #. Label of the port (Int) field in DocType 'Insights Data Source v3'
@@ -2111,7 +2111,7 @@ msgstr "Port"
 #. Label of the layout (JSON) field in DocType 'Insights Dashboard Item'
 #: insights/insights/doctype/insights_dashboard_item/insights_dashboard_item.json
 msgid "Position & Size"
-msgstr ""
+msgstr "Pozíció és méret"
 
 #. Option for the 'Database Type' (Select) field in DocType 'Insights Data
 #. Source'
@@ -2121,7 +2121,7 @@ msgstr ""
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "PostgreSQL"
-msgstr ""
+msgstr "PostgreSQL"
 
 #. Label of the preview_image (Data) field in DocType 'Insights Dashboard v3'
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
@@ -2131,7 +2131,7 @@ msgstr "Előnézeti Kép"
 #. Label of the primary_key (Data) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "Primary Key"
-msgstr ""
+msgstr "Elsődleges kulcs"
 
 #: frontend/src2/settings/Settings.vue:13
 msgid "Profile"
@@ -2142,13 +2142,13 @@ msgstr "Profil"
 #: insights/insights/doctype/insights_chart/insights_chart.json
 #: insights/insights/doctype/insights_dashboard/insights_dashboard.json
 msgid "Public Key"
-msgstr ""
+msgstr "Nyilvános kulcs"
 
 #: frontend/src2/query/components/source_selector/SourceSelectorDialog.vue:89
 #: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:59
 #: frontend/src2/workbook/WorkbookSidebar.vue:29
 msgid "Queries"
-msgstr ""
+msgstr "Lekérdezések"
 
 #. Label of the query (Link) field in DocType 'Insights Alert'
 #. Label of the query (Link) field in DocType 'Insights Chart'
@@ -2175,7 +2175,7 @@ msgstr "Lekérdezés"
 #. Label of the query_result_limit (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Query Result Limit"
-msgstr ""
+msgstr "Lekérdezés eredményének korlátja"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
@@ -2184,20 +2184,20 @@ msgstr "Várakozik"
 
 #: frontend/src2/home/HomeQuickActions.vue:21
 msgid "Quick Actions"
-msgstr ""
+msgstr "Gyors műveletek"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "REST API"
-msgstr ""
+msgstr "REST API"
 
 #: frontend/src2/query/components/FormatRule.vue:478
 msgid "Ranking Condition"
-msgstr ""
+msgstr "Rangsorolás Feltétel"
 
 #: frontend/src2/query/components/FormatRule.vue:225
 msgid "Ranking Rules"
-msgstr ""
+msgstr "Rangsorolás Szabályok"
 
 #. Label of the recipients (Small Text) field in DocType 'Insights Alert'
 #: frontend/src2/query/components/AlertSetupDialog.vue:181
@@ -2211,7 +2211,7 @@ msgstr "Piros"
 
 #: frontend/src2/query/components/FormatRule.vue:209
 msgid "Red-Green"
-msgstr ""
+msgstr "Piros-zöld"
 
 #: frontend/src2/dashboard/Dashboard.vue:51
 #: frontend/src2/data_source/DataSourceTableList.vue:43
@@ -2220,20 +2220,20 @@ msgstr "Újratölt"
 
 #: frontend/src2/dashboard/DashboardList.vue:27
 msgid "Refresh Preview"
-msgstr ""
+msgstr "Előnézet frissítése"
 
 #: frontend/src2/query/components/QueryBuilderToolbar.vue:19
 msgid "Refresh Stored Tables"
-msgstr ""
+msgstr "Tárolt táblázatok frissítése"
 
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:62
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:87
 msgid "Refresh Tables"
-msgstr ""
+msgstr "Táblák frissítése"
 
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:52
 msgid "Refreshing Tables"
-msgstr ""
+msgstr "Táblák frissítése"
 
 #: frontend/src2/query/components/FiltersSelector.vue:126
 #: frontend/src2/workbook/WorkbookShareDialog.vue:39
@@ -2242,7 +2242,7 @@ msgstr "Eltávolítás"
 
 #: frontend/src2/components/DataTableColumn.vue:30
 msgid "Remove Sort"
-msgstr ""
+msgstr "Rendezés megszűntetése"
 
 #: frontend/src2/dashboard/DashboardBuilder.vue:158
 msgid "Reset Layout"
@@ -2250,11 +2250,11 @@ msgstr "Elrendezés Viszaállítása"
 
 #: frontend/src2/charts/components/ChartBuilderToolbar.vue:44
 msgid "Reset Options"
-msgstr ""
+msgstr "Beállítások visszaállítása"
 
 #: frontend/src2/charts/components/RegionMappingDialog.vue:194
 msgid "Resolve Locations"
-msgstr ""
+msgstr "Helyszínek feloldása"
 
 #. Label of the resource_name (Dynamic Link) field in DocType 'Insights
 #. Resource Permission'
@@ -2266,7 +2266,7 @@ msgstr "Erőforrás"
 #. Permission'
 #: insights/insights/doctype/insights_resource_permission/insights_resource_permission.json
 msgid "Resource Type"
-msgstr ""
+msgstr "Erőforrás Típus"
 
 #. Label of the result_name (Data) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -2276,12 +2276,12 @@ msgstr "Eredmény"
 #. Label of the results_row_count (Int) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Result Row Count"
-msgstr ""
+msgstr "Eredmény sorok száma"
 
 #. Label of the results (Code) field in DocType 'Insights Query Result'
 #: insights/insights/doctype/insights_query_result/insights_query_result.json
 msgid "Results"
-msgstr ""
+msgstr "Eredmények"
 
 #. Label of the results_row_count (Int) field in DocType 'Insights Query
 #. Result'
@@ -2664,7 +2664,7 @@ msgstr "Váltás Insights v2-re"
 
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:59
 msgid "Sync tables from your data source to get started"
-msgstr ""
+msgstr "Szinkronizálja a táblázatokat az adatforrásból a kezdéshez"
 
 #. Name of a role
 #: insights/insights/doctype/insights_chart/insights_chart.json
@@ -2699,14 +2699,14 @@ msgstr "Táblázat"
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:64
 msgid "Table Imported"
-msgstr ""
+msgstr "Táblázat importálva"
 
 #. Label of the table_label (Data) field in DocType 'Insights Query Column'
 #. Label of the table_label (Data) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Table Label"
-msgstr ""
+msgstr "Táblázat Címe"
 
 #. Label of the table_name (Data) field in DocType 'Insights Table Import'
 #. Label of the table_name (Data) field in DocType 'Insights Table Import Job'
@@ -2717,18 +2717,18 @@ msgstr ""
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Table Name"
-msgstr ""
+msgstr "Táblázat Neve"
 
 #. Label of the table_restrictions (Data) field in DocType 'Insights Resource
 #. Permission'
 #: insights/insights/doctype/insights_resource_permission/insights_resource_permission.json
 msgid "Table Restrictions"
-msgstr ""
+msgstr "Táblázat Korlátozások"
 
 #. Label of the tables (Table) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Tables"
-msgstr ""
+msgstr "Táblák"
 
 #: frontend/src2/teams/TeamList.vue:30
 msgid "Team"
@@ -2748,7 +2748,7 @@ msgstr "Csapat neve"
 #. Label of the team_permissions (Table) field in DocType 'Insights Team'
 #: insights/insights/doctype/insights_team/insights_team.json
 msgid "Team Permissions"
-msgstr ""
+msgstr "Csapat Engedélyek"
 
 #: frontend/src2/teams/TeamList.vue:83
 msgid "Teams"
@@ -2757,19 +2757,19 @@ msgstr "Csapatok"
 #. Option for the 'Channel' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Telegram"
-msgstr ""
+msgstr "Telegram"
 
 #. Label of the telegram_api_token (Password) field in DocType 'Insights
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Telegram API Token"
-msgstr ""
+msgstr "Telegram API Token"
 
 #. Label of the telegram_chat_id (Data) field in DocType 'Insights Alert'
 #: frontend/src2/query/components/AlertSetupDialog.vue:188
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Telegram Chat ID"
-msgstr ""
+msgstr "Telegram Chat ID"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -2778,11 +2778,11 @@ msgstr "Szöveg"
 
 #: frontend/src2/query/components/FormatRule.vue:230
 msgid "Text Rules"
-msgstr ""
+msgstr "Szöveges szabályok"
 
 #: frontend/src2/query/components/ColumnFilterTypeDate.vue:58
 msgid "This FY"
-msgstr ""
+msgstr "Ez a pénzügyi év"
 
 #: frontend/src2/query/components/ColumnFilterTypeDate.vue:55
 msgid "This Month"
@@ -2815,7 +2815,7 @@ msgstr "Idő"
 #. Log'
 #: insights/insights/doctype/insights_query_execution_log/insights_query_execution_log.json
 msgid "Time Taken (Seconds)"
-msgstr ""
+msgstr "Eltelt idő (másodperc)"
 
 #. Label of the title (Data) field in DocType 'Insights Alert'
 #. Label of the title (Data) field in DocType 'Insights Chart v3'
@@ -2866,30 +2866,30 @@ msgstr "Felül"
 
 #: frontend/src2/query/components/FormatRule.vue:201
 msgid "Top N percent"
-msgstr ""
+msgstr "Top N százalék"
 
 #: frontend/src2/query/components/FormatRule.vue:199
 msgid "Top N values"
-msgstr ""
+msgstr "Top N érték"
 
 #. Label of the transform_tab (Tab Break) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Transform"
-msgstr ""
+msgstr "Átalakítás"
 
 #. Label of the transforms (Table) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Transforms"
-msgstr ""
+msgstr "Átalakítások"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Query Transform'
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
 msgid "Transpose"
-msgstr ""
+msgstr "Átültetés"
 
 #: frontend/src2/components/DemoDataBanner.vue:50
 msgid "Try demo data"
-msgstr ""
+msgstr "Próbálja ki a demó adatokat"
 
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
@@ -2917,36 +2917,36 @@ msgstr "Típus"
 
 #: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:72
 msgid "Unexpected validation error"
-msgstr ""
+msgstr "Váratlan érvényesítési hiba"
 
 #: frontend/src2/charts/components/MeasurePicker.vue:131
 msgid "Unique Count of..."
-msgstr ""
+msgstr "Egyedi darabszám..."
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Query Transform'
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
 msgid "Unpivot"
-msgstr ""
+msgstr "Forgatás feloldása"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:129
 msgid "Update Alert"
-msgstr ""
+msgstr "Frissítési riasztás"
 
 #: frontend/src2/data_source/DataSourceTableList.vue:95
 msgid "Update Table Links"
-msgstr ""
+msgstr "Táblázathivatkozások frissítése"
 
 #: frontend/src2/data_source/DataSourceTableList.vue:82
 msgid "Update Tables"
-msgstr ""
+msgstr "Táblázatok frissítése"
 
 #: frontend/src2/data_source/DataSourceList.vue:76
 msgid "Upload CSV or Excel"
-msgstr ""
+msgstr "CSV vagy Excel feltöltése"
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:96
 msgid "Upload CSV/Excel/JSON File"
-msgstr ""
+msgstr "CSV/Excel/JSON fájl feltöltése"
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:37
 msgid "Upload Failed"
@@ -2954,17 +2954,17 @@ msgstr "Sikertelen Feltöltés"
 
 #: frontend/src2/data_source/DataSourceList.vue:78
 msgid "Upload a CSV or Excel file to create a new data source"
-msgstr ""
+msgstr "CSV vagy Excel fájl feltöltése új adatforrás létrehozásához"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:231
 msgid "Use Custom Condition"
-msgstr ""
+msgstr "Egyéni feltétel"
 
 #. Label of the use_live_connection (Check) field in DocType 'Insights Query
 #. v3'
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Use Live Connection"
-msgstr ""
+msgstr "Élő kapcsolat használata"
 
 #. Label of the use_ssl (Check) field in DocType 'Insights Data Source'
 #. Label of the use_ssl (Check) field in DocType 'Insights Data Source v3'
@@ -2977,7 +2977,7 @@ msgstr "SSL használata"
 #: frontend/src2/data_source/ConnectMariaDBDialog.vue:69
 #: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:77
 msgid "Use secure connection (SSL)?"
-msgstr ""
+msgstr "Biztonságos kapcsolat használata (SSL)?"
 
 #. Label of the user (Link) field in DocType 'Insights Team Member'
 #: frontend/src2/settings/UsersSettings.vue:29
@@ -3002,7 +3002,7 @@ msgstr "Felhasználók"
 
 #: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:57
 msgid "Validation failed"
-msgstr ""
+msgstr "Az érvényesítés sikertelen"
 
 #. Label of the value (Password) field in DocType 'Insights Secret Key'
 #: frontend/src2/components/VariablesDialog.vue:85
@@ -3014,7 +3014,7 @@ msgstr "Érték"
 
 #: frontend/src2/query/components/FormatRule.vue:224
 msgid "Value Rules"
-msgstr ""
+msgstr "Értékszabályok"
 
 #. Label of the variable_name (Data) field in DocType 'Insights Query Variable'
 #: insights/insights/doctype/insights_query_variable/insights_query_variable.json
@@ -3025,7 +3025,7 @@ msgstr ""
 #. Variable'
 #: insights/insights/doctype/insights_query_variable/insights_query_variable.json
 msgid "Variable Value"
-msgstr ""
+msgstr "Változó érték"
 
 #. Label of the variables (Table) field in DocType 'Insights Query'
 #. Label of the variables (Table) field in DocType 'Insights Query v3'
@@ -3039,21 +3039,21 @@ msgstr ""
 
 #: frontend/src2/components/VariablesDialog.vue:69
 msgid "Variables are used to store sensitive information such as API keys and credentials. They can be referenced and combined in your script just like any other variable. For eg."
-msgstr ""
+msgstr "A változókat érzékeny információk, például API-kulcsok és hitelesítő adatok tárolására használják. Ugyanúgy hivatkozhat rájuk és kombinálhatja őket a szkriptben, mint bármely más változót. Pl."
 
 #: frontend/src2/charts/components/SankeyChartConfigForm.vue:61
 msgid "Vertical"
-msgstr ""
+msgstr "Függőleges"
 
 #. Label of the vertical_compact_layout (Check) field in DocType 'Insights
 #. Dashboard v3'
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Vertical Compact Layout"
-msgstr ""
+msgstr "Függőleges kompakt elrendezés"
 
 #: frontend/src2/query/components/QueryBuilderToolbar.vue:27
 msgid "View SQL"
-msgstr ""
+msgstr "SQL megtekintése"
 
 #: frontend/src2/workbook/WorkbookList.vue:74
 msgid "Views"
@@ -3068,7 +3068,7 @@ msgstr "Szerda"
 #. Label of the week_starts_on (Select) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Week Starts On"
-msgstr ""
+msgstr "A hét kezdőnapja"
 
 #. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -3084,23 +3084,23 @@ msgstr "Heti"
 #: insights/insights/doctype/insights_folder/insights_folder.json
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Workbook"
-msgstr ""
+msgstr "Munkafüzet"
 
 #: frontend/src2/components/AppSidebar.vue:79
 #: frontend/src2/home/HomeWorkbookList.vue:36
 #: frontend/src2/workbook/WorkbookList.vue:148
 msgid "Workbooks"
-msgstr ""
+msgstr "Munkafüzetek"
 
 #: frontend/src2/charts/components/MapChartConfigForm.vue:54
 msgid "World Map"
-msgstr ""
+msgstr "Világtérkép"
 
 #. Description of the 'Script' (Code) field in DocType 'Insights Table Import
 #. Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Write Python code to fetch and transform data. Available globals:<br>• client: API client for the selected data source<br>• table: Write data to warehouse. Methods: insert(data, overwrite=False)<br>• state: Persist data between runs. Methods: get(key, default=None), set(key, value), delete(key), clear()<br>• secrets: Access secret keys. Methods: get(key)<br>• log(message): Log execution messages"
-msgstr ""
+msgstr "Python kód írása adatok lekérdezéséhez és átalakításához. Elérhető globálok:<br>- kliens: <br> - table: Adatok írása a raktárba. Módszerek: insert(data, overwrite=False)<br>- state: Az adatok futtatások közötti perzisztenciája. Módszerek: get(kulcs, alapértelmezett=None), set(kulcs, érték), delete(kulcs), clear()<br>- secrets: Titkos kulcsokhoz való hozzáférés. Módszerek: get(key)<br>- log(message): Naplózza a végrehajtási üzeneteket"
 
 #: frontend/src2/query/components/UnionSelectorDialog.vue:143
 msgid "Yes"
@@ -3108,34 +3108,34 @@ msgstr "Igen"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:251
 msgid "You can use markdown to format the message. Use double asterisks (**) for bold text. You can use the following fields in the message:"
-msgstr ""
+msgstr "Az üzenet formázásához használhat markdownt. A félkövér szöveghez használjon dupla csillagot (**). Az üzenetben a következő mezőket használhatja:"
 
 #: insights/decorators.py:26
 msgid "You do not have permission to access this resource"
-msgstr ""
+msgstr "Nincs jogosultsága az erőforrás eléréséhez"
 
 #: insights/api/workbooks.py:165 insights/api/workbooks.py:186
 #: insights/api/workbooks.py:198 insights/api/workbooks.py:225
 #: insights/api/workbooks.py:236 insights/api/workbooks.py:250
 msgid "You do not have permission to modify this workbook"
-msgstr ""
+msgstr "Nincs jogosultsága a munkafüzet módosítására"
 
 #: insights/api/workbooks.py:79 insights/api/workbooks.py:132
 msgid "You do not have permission to share this workbook"
-msgstr ""
+msgstr "Nincs jogosultsága a munkafüzet megosztására"
 
 #: frontend/src2/home/HomeWorkbookList.vue:68
 msgid "Your workbooks will appear here. Create a new workbook to get started."
-msgstr ""
+msgstr "A munkafüzetek itt fognak megjelenni. Hozzon létre egy új munkafüzetet a kezdéshez."
 
 #: frontend/src2/query/components/FormatRule.vue:194
 msgid "after date"
-msgstr ""
+msgstr "dátum után"
 
 #. Option for the 'Order By' (Select) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "asc"
-msgstr ""
+msgstr "növ"
 
 #: frontend/src2/query/components/FormatRule.vue:193
 msgid "before date"

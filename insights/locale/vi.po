@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-04-05 09:45+0000\n"
-"PO-Revision-Date: 2026-04-06 17:31\n"
+"PO-Revision-Date: 2026-04-22 09:40\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Vietnamese\n"
 "MIME-Version: 1.0\n"
@@ -69,7 +69,7 @@ msgstr "Đã Chấp Nhận"
 #. Invitation'
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Accepted At"
-msgstr ""
+msgstr "Chấp Nhận Lúc"
 
 #: frontend/src2/workbook/WorkbookList.vue:47
 msgid "Access"
@@ -277,7 +277,7 @@ msgstr ""
 #. Label of the batch_size (Int) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Batch Size"
-msgstr ""
+msgstr "Kích thước Lô"
 
 #. Label of the before_import_script (Code) field in DocType 'Insights Table
 #. v3'
@@ -622,7 +622,7 @@ msgstr "Tạo bởi"
 
 #: frontend/src2/teams/TeamList.vue:48
 msgid "Creation"
-msgstr ""
+msgstr "Tạo lập"
 
 #. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
 #: frontend/src2/query/components/AlertSetupDialog.vue:157
@@ -717,7 +717,7 @@ msgstr ""
 #: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Data Source"
-msgstr ""
+msgstr "Nguồn Dữ liệu"
 
 #: frontend/src2/components/AppSidebar.vue:84
 #: frontend/src2/data_source/DataSourceList.vue:146
@@ -812,7 +812,7 @@ msgstr "Đã tắt"
 
 #: frontend/src2/components/UserDropdown.vue:116
 msgid "Documentation"
-msgstr ""
+msgstr "Tài liệu"
 
 #: frontend/src2/charts/components/ChartShareDialog.vue:38
 #: frontend/src2/dashboard/DashboardShareDialog.vue:86
@@ -878,7 +878,7 @@ msgstr ""
 #: insights/insights/doctype/insights_alert/insights_alert.json
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Email"
-msgstr ""
+msgstr "Email"
 
 #. Label of the email_sent_at (Datetime) field in DocType 'Insights User
 #. Invitation'
@@ -1507,7 +1507,7 @@ msgstr ""
 #: frontend/src2/settings/UsersSettings.vue:173
 #: frontend/src2/users/UserList.vue:84 frontend/src2/users/UserList.vue:175
 msgid "Invite User"
-msgstr ""
+msgstr "Mời Người dùng"
 
 #. Label of the invited_by (Link) field in DocType 'Insights User Invitation'
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
@@ -1560,7 +1560,7 @@ msgstr ""
 #: insights/insights/doctype/insights_dashboard/insights_dashboard.json
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Is Public"
-msgstr ""
+msgstr "Là công khai"
 
 #. Label of the is_query_based (Check) field in DocType 'Insights Table'
 #: insights/insights/doctype/insights_table/insights_table.json
@@ -1702,7 +1702,7 @@ msgstr ""
 #. Label of the limit (Int) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Limit"
-msgstr ""
+msgstr "Giới hạn"
 
 #. Label of the linked_charts (Table MultiSelect) field in DocType 'Insights
 #. Dashboard v3'
@@ -1999,11 +1999,11 @@ msgstr "Mở trong Desk"
 #. Label of the operations (JSON) field in DocType 'Insights Query v3'
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Operations"
-msgstr ""
+msgstr "Các hoạt động"
 
 #: frontend/src2/query/components/FormatRule.vue:416
 msgid "Operator"
-msgstr ""
+msgstr "Người vận hành"
 
 #. Label of the options (JSON) field in DocType 'Insights Chart'
 #. Label of the options (JSON) field in DocType 'Insights Dashboard Item'
@@ -2017,11 +2017,11 @@ msgstr "Tùy chọn"
 #. Label of the order_by (Select) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "Order By"
-msgstr ""
+msgstr "Sắp xếp theo"
 
 #: frontend/src2/settings/Settings.vue:20
 msgid "Organization"
-msgstr ""
+msgstr "Tổ chức"
 
 #. Option for the 'Action if table exists' (Select) field in DocType 'Insights
 #. Table Import'
@@ -2322,7 +2322,7 @@ msgstr ""
 #. Label of the rows (Int) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Rows"
-msgstr ""
+msgstr "Hàng"
 
 #. Label of the rows_imported (Int) field in DocType 'Insights Table Import
 #. Log'
@@ -2381,7 +2381,7 @@ msgstr "Lưu"
 
 #: frontend/src2/charts/components/RegionMappingDialog.vue:314
 msgid "Save Changes"
-msgstr ""
+msgstr "Lưu Thay đổi"
 
 #: frontend/src2/components/VariablesDialog.vue:133
 msgid "Save Variables"
@@ -2732,7 +2732,7 @@ msgstr ""
 
 #: frontend/src2/teams/TeamList.vue:30
 msgid "Team"
-msgstr ""
+msgstr "Nhóm"
 
 #. Label of the team_members (Table) field in DocType 'Insights Team'
 #: insights/insights/doctype/insights_team/insights_team.json
@@ -2950,7 +2950,7 @@ msgstr ""
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:37
 msgid "Upload Failed"
-msgstr ""
+msgstr "Tải lên Thất bại"
 
 #: frontend/src2/data_source/DataSourceList.vue:78
 msgid "Upload a CSV or Excel file to create a new data source"
