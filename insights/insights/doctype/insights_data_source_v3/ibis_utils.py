@@ -368,7 +368,7 @@ class IbisQueryBuilder:
             frappe.throw(f"Operator {filter_operator} is not supported")
 
         right_column = (
-            self.get_column(filter_value.column_name) if hasattr(filter_value, "column_name") else None
+            self.get_column(filter_value.column_name) if getattr(filter_value, "column_name", None) is not None else None
         )
 
         if filter_operator in ["contains", "not_contains"]:
@@ -389,7 +389,7 @@ class IbisQueryBuilder:
 
             filter_value = [start, end]
 
-        right_value = right_column or filter_value
+        right_value = right_column if right_column is not None else filter_value
         return operator_fn(left, right_value)
 
     def get_operator(self, operator):
