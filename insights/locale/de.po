@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
-"POT-Creation-Date: 2026-04-05 09:45+0000\n"
-"PO-Revision-Date: 2026-04-07 17:27\n"
+"POT-Creation-Date: 2026-04-19 09:47+0000\n"
+"PO-Revision-Date: 2026-04-26 10:34\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -425,10 +425,18 @@ msgstr "Einmal stündlich prüfen"
 msgid "Choose Columns"
 msgstr "Spalten auswählen"
 
+#: insights/insights/doctype/insights_data_source_v3/ibis_utils.py:98
+msgid "Circular query reference detected while building \"{0}\""
+msgstr ""
+
 #: frontend/src2/dashboard/DashboardFilterEditor.vue:241
 #: frontend/src2/query/components/FiltersSelector.vue:143
 msgid "Clear"
 msgstr "Löschen"
+
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.js:13
+msgid "Clear Warehouse Data"
+msgstr ""
 
 #. Option for the 'Database Type' (Select) field in DocType 'Insights Data
 #. Source v3'
@@ -438,6 +446,7 @@ msgid "ClickHouse"
 msgstr ""
 
 #: frontend/src2/query/components/source_selector/SourceSelectorDialog.vue:130
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.js:95
 msgid "Close"
 msgstr "Schließen"
 
@@ -463,6 +472,12 @@ msgstr "Farbskala"
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Column"
 msgstr "Spalte"
+
+#. Description of the 'Cursor Column' (Data) field in DocType 'Insights Table
+#. v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Column used to track sync progress. Use <b>modified</b> if rows can be updated (syncs new and changed rows). Use <b>creation</b> if rows are append-only (syncs only new rows, faster)."
+msgstr ""
 
 #. Label of the columns (Table) field in DocType 'Insights Query'
 #. Label of the columns (Table) field in DocType 'Insights Table'
@@ -582,6 +597,7 @@ msgstr "In Ausdruck umwandeln"
 msgid "Copy JSON"
 msgstr "JSON kopieren"
 
+#: frontend/src2/query/components/NativeQueryEditor.vue:93
 #: frontend/src2/query/components/QueryBuilderToolbar.vue:37
 msgid "Copy Query"
 msgstr "Abfrage kopieren"
@@ -646,6 +662,11 @@ msgstr "Cron-Ausdruck zur Planung des Skripts. Hinweis: Der Scheduler prüft st�
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
 msgid "CumulativeSum"
 msgstr "Kumulative Summe"
+
+#. Label of the sync_cursor_column (Data) field in DocType 'Insights Table v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Cursor Column"
+msgstr ""
 
 #. Label of the custom_condition (Check) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -730,9 +751,12 @@ msgstr "Datenquellen"
 msgid "Data Sources | Insights"
 msgstr "Datenquellen | Insights"
 
+#. Label of the data_store (Check) field in DocType 'Insights Query Execution
+#. Log'
 #: frontend/src2/components/AppSidebar.vue:89
 #: frontend/src2/data_store/DataStoreList.vue:75
 #: frontend/src2/settings/Settings.vue:43
+#: insights/insights/doctype/insights_query_execution_log/insights_query_execution_log.json
 msgid "Data Store"
 msgstr "Datenspeicher"
 
@@ -849,6 +873,7 @@ msgstr "Duplizieren"
 msgid "Duplicate Chart"
 msgstr "Diagramm duplizieren"
 
+#: frontend/src2/query/components/NativeQueryEditor.vue:88
 #: frontend/src2/query/components/QueryBuilderToolbar.vue:32
 msgid "Duplicate Query"
 msgstr "Abfrage duplizieren"
@@ -959,10 +984,14 @@ msgstr "Fehler"
 msgid "Excel"
 msgstr "Excel"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:134
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:69
+#: frontend/src2/query/components/NativeQueryEditor.vue:158
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:67
 msgid "Execute"
 msgstr "Ausführen"
+
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.js:80
+msgid "Execution Count"
+msgstr ""
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -1024,7 +1053,11 @@ msgstr "Fehler"
 msgid "Failed"
 msgstr "Fehlgeschlagen"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:52
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.js:73
+msgid "Failed Syncs"
+msgstr ""
+
+#: frontend/src2/query/components/NativeQueryEditor.vue:55
 msgid "Failed to format SQL"
 msgstr "SQL-Formatierung fehlgeschlagen"
 
@@ -1045,13 +1078,13 @@ msgstr "Einrichtung der Demodaten fehlgeschlagen"
 msgid "Favorites"
 msgstr "Favoriten"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:158
+#: frontend/src2/query/components/NativeQueryEditor.vue:193
 #: frontend/src2/query/components/QueryBuilderToolbar.vue:57
 #: frontend/src2/query/components/ScriptQueryEditor.vue:128
 msgid "Fetched from cache"
 msgstr "Aus Cache geladen"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:161
+#: frontend/src2/query/components/NativeQueryEditor.vue:196
 #: frontend/src2/query/components/QueryBuilderToolbar.vue:60
 #: frontend/src2/query/components/ScriptQueryEditor.vue:129
 msgid "Fetched in {0}s"
@@ -1124,7 +1157,7 @@ msgstr "Fremdtabellenbezeichnung"
 msgid "Format Option"
 msgstr "Formatierungsoption"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:143
+#: frontend/src2/query/components/NativeQueryEditor.vue:78
 msgid "Format SQL"
 msgstr "SQL formatieren"
 
@@ -1143,6 +1176,11 @@ msgstr "Häufigkeit"
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Friday"
 msgstr "Freitag"
+
+#. Option for the 'Sync Mode' (Select) field in DocType 'Insights Table v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Full"
+msgstr "Voll"
 
 #: frontend/src2/settings/Settings.vue:23
 msgid "General"
@@ -1231,11 +1269,11 @@ msgstr "Importabfrage"
 msgid "Import Table"
 msgstr "Tabelle importieren"
 
-#: insights/insights/doctype/insights_table_v3/insights_table_v3.js:9
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.js:8
 msgid "Import job has been queued"
 msgstr "Importauftrag wurde eingereiht"
 
-#: insights/insights/doctype/insights_table_v3/insights_table_v3.js:7
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.js:6
 msgid "Import to Warehouse"
 msgstr "In Warehouse importieren"
 
@@ -1251,6 +1289,17 @@ msgstr "In Bearbeitung"
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Inactive"
 msgstr "Inaktiv"
+
+#. Option for the 'Sync Mode' (Select) field in DocType 'Insights Table v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Incremental"
+msgstr ""
+
+#. Label of the sync_section (Section Break) field in DocType 'Insights Table
+#. v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Incremental Sync"
+msgstr ""
 
 #: frontend/src2/charts/components/MapChartConfigForm.vue:55
 msgid "India"
@@ -1643,6 +1692,7 @@ msgstr "Letzte Aktivität"
 
 #. Label of the last_execution (Datetime) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.js:77
 msgid "Last Executed On"
 msgstr "Zuletzt ausgeführt am"
 
@@ -1651,6 +1701,14 @@ msgstr "Zuletzt ausgeführt am"
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Last Execution"
 msgstr "Letzte Ausführung"
+
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.js:66
+msgid "Last Import Duration"
+msgstr ""
+
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.js:63
+msgid "Last Import Rows"
+msgstr ""
 
 #. Label of the last_log (Link) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
@@ -1668,14 +1726,26 @@ msgstr "Letzter Lauf"
 msgid "Last Status"
 msgstr "Letzter Status"
 
+#. Label of the last_sync_bookmark (Data) field in DocType 'Insights Table v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Last Sync Bookmark"
+msgstr ""
+
 #: frontend/src2/data_store/DataStoreList.vue:48
 msgid "Last Synced"
 msgstr "Zuletzt synchronisiert"
 
 #. Label of the last_synced_on (Datetime) field in DocType 'Insights Table v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.js:60
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Last Synced On"
 msgstr "Zuletzt synchronisiert am"
+
+#. Description of the 'Last Sync Bookmark' (Data) field in DocType 'Insights
+#. Table v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Last synced cursor value (set automatically)"
+msgstr ""
 
 #: frontend/src2/charts/components/DonutChartConfigForm.vue:59
 #: frontend/src2/charts/components/FunnelChartConfigForm.vue:56
@@ -2090,7 +2160,7 @@ msgstr "Ausgangsdaten auswählen"
 msgid "Pivot"
 msgstr ""
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:26
+#: frontend/src2/query/components/NativeQueryEditor.vue:29
 msgid "Please select a data source first"
 msgstr "Bitte wählen Sie zuerst eine Datenquelle aus"
 
@@ -2213,6 +2283,10 @@ msgstr "Rot"
 msgid "Red-Green"
 msgstr "Rot-Grün"
 
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.js:84
+msgid "Referencing Queries"
+msgstr ""
+
 #: frontend/src2/dashboard/Dashboard.vue:51
 #: frontend/src2/data_source/DataSourceTableList.vue:43
 msgid "Refresh"
@@ -2222,6 +2296,7 @@ msgstr "Aktualisieren"
 msgid "Refresh Preview"
 msgstr "Vorschau aktualisieren"
 
+#: frontend/src2/query/components/NativeQueryEditor.vue:70
 #: frontend/src2/query/components/QueryBuilderToolbar.vue:19
 msgid "Refresh Stored Tables"
 msgstr "Gespeicherte Tabellen aktualisieren"
@@ -2587,6 +2662,12 @@ msgstr "Bestimmte Personen können ansehen"
 msgid "Spreading column values into separate columns"
 msgstr ""
 
+#. Description of the 'Sync From' (Datetime) field in DocType 'Insights Table
+#. v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Start importing rows from this datetime onward (used on first sync only)"
+msgstr ""
+
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Started"
@@ -2606,6 +2687,14 @@ msgstr "Starten..."
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "State (JSON)"
 msgstr "Zustand (JSON)"
+
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.js:32
+msgid "Statistics"
+msgstr "Statistiken"
+
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.js:91
+msgid "Statistics — {0}"
+msgstr ""
 
 #. Label of the status (Select) field in DocType 'Insights Data Source'
 #. Label of the status (Select) field in DocType 'Insights Data Source v3'
@@ -2661,6 +2750,20 @@ msgstr "Zum Desk wechseln"
 #: frontend/src2/components/UserDropdown.vue:140
 msgid "Switch to Insights v2"
 msgstr "Zu Insights v2 wechseln"
+
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.js:58
+msgid "Sync"
+msgstr "Synchronisieren"
+
+#. Label of the sync_from (Datetime) field in DocType 'Insights Table v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Sync From"
+msgstr ""
+
+#. Label of the sync_mode (Select) field in DocType 'Insights Table v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Sync Mode"
+msgstr ""
 
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:59
 msgid "Sync tables from your data source to get started"
@@ -2800,6 +2903,10 @@ msgstr ""
 msgid "This Year"
 msgstr ""
 
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.js:15
+msgid "This will delete all warehouse data for <b>{0}</b> and reset the sync bookmark. Are you sure?"
+msgstr ""
+
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
@@ -2871,6 +2978,14 @@ msgstr "Obere N Prozent"
 #: frontend/src2/query/components/FormatRule.vue:199
 msgid "Top N values"
 msgstr "Obere N Werte"
+
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.js:70
+msgid "Total Sync Time"
+msgstr ""
+
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.js:69
+msgid "Total Syncs"
+msgstr ""
 
 #. Label of the transform_tab (Tab Break) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -2955,6 +3070,10 @@ msgstr "Upload fehlgeschlagen"
 #: frontend/src2/data_source/DataSourceList.vue:78
 msgid "Upload a CSV or Excel file to create a new data source"
 msgstr "Laden Sie eine CSV- oder Excel-Datei hoch, um eine neue Datenquelle zu erstellen"
+
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.js:75
+msgid "Usage"
+msgstr ""
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:231
 msgid "Use Custom Condition"
@@ -3051,6 +3170,7 @@ msgstr "Vertikal"
 msgid "Vertical Compact Layout"
 msgstr "Vertikales kompaktes Layout"
 
+#: frontend/src2/query/components/NativeQueryEditor.vue:83
 #: frontend/src2/query/components/QueryBuilderToolbar.vue:27
 msgid "View SQL"
 msgstr "SQL anzeigen"
@@ -3058,6 +3178,10 @@ msgstr "SQL anzeigen"
 #: frontend/src2/workbook/WorkbookList.vue:74
 msgid "Views"
 msgstr "Ansichten"
+
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.js:22
+msgid "Warehouse data cleared"
+msgstr ""
 
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
