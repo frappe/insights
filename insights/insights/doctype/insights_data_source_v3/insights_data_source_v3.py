@@ -274,18 +274,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         return db
 
     def get_sqlglot_dialect(self) -> str | None:
-        if self.type == "REST API":
-            return "duckdb"
-
-        return {
-            "MariaDB": "mysql",
-            "PostgreSQL": "postgres",
-            "SQLite": "sqlite",
-            "DuckDB": "duckdb",
-            "BigQuery": "bigquery",
-            "MSSQL": "tsql",
-            "ClickHouse": "clickhouse",
-        }.get(self.database_type)
+        return db_type_to_sqlglot_dialect(self.database_type)
 
     def _get_db_connection(self) -> BaseBackend:
         if self.is_site_db:
@@ -450,3 +439,18 @@ def db_connections():
         yield
     finally:
         after_request()
+
+
+def db_type_to_sqlglot_dialect(db_type: str) -> str | None:
+    if db_type == "REST API":
+        return "duckdb"
+
+    return {
+        "MariaDB": "mysql",
+        "PostgreSQL": "postgres",
+        "SQLite": "sqlite",
+        "DuckDB": "duckdb",
+        "BigQuery": "bigquery",
+        "MSSQL": "tsql",
+        "ClickHouse": "clickhouse",
+    }.get(db_type)

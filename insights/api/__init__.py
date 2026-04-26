@@ -75,6 +75,8 @@ def get_user_info():
         "default_version": get_user_default("insights_default_version", frappe.session.user),
         "has_desk_access": user.get("user_type") == "System User",
         "has_demo_data": has_demo_data,
+        "fiscal_year_start": frappe.get_single_value("Insights Settings", "fiscal_year_start")
+        or "01-04-2020",
     }
 
 
@@ -241,13 +243,17 @@ def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
             raise frappe.PermissionError("You don't have permission to access this method")
 
         doc = frappe.get_doc(doctype, name)
-        return _execute_doc_method(doc, method, args, ignore_permissions=True)
+        frappe.flags.insights_for_public_access = True
+        try:
+            return _execute_doc_method(doc, method, args, ignore_permissions=True)
+        finally:
+            frappe.flags.insights_for_public_access = False
 
 
 def is_public_method(doctype: str, method: str):
     public_methods = {
         "Insights Query v3": ["execute", "download_results"],
-        "Insights Dashboard v3": ["get_distinct_column_values"],
+        "Insights Dashboard v3": ["get_distinct_column_values", "track_view"],
     }
 
     if doctype in public_methods and method in public_methods[doctype]:

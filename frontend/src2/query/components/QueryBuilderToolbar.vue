@@ -1,15 +1,30 @@
 <script setup lang="ts">
 import { useTimeAgo } from '@vueuse/core'
-import { Copy, CopyPlus, MoreHorizontal, PlayIcon, RefreshCw, Scroll } from 'lucide-vue-next'
+import {
+	Copy,
+	CopyPlus,
+	MoreHorizontal,
+	PlayIcon,
+	RefreshCw,
+	Scroll,
+	ScanSearch,
+} from 'lucide-vue-next'
 import { computed, h, inject, ref } from 'vue'
 import { Query } from '../query'
 import { __ } from '../../translation'
+import ExplainPlanDialog from './ExplainPlanDialog.vue'
 import ViewSQLDialog from './ViewSQLDialog.vue'
 import session from '../../session'
 
 const query = inject('query') as Query
 
 const showViewSQLDialog = ref(false)
+const showExplainDialog = ref(false)
+
+async function openExplainDialog() {
+	showExplainDialog.value = true
+	await query.explainQuery()
+}
 
 const moreActions = computed(() => {
 	const actions = []
@@ -39,6 +54,14 @@ const moreActions = computed(() => {
 			onClick: () => query.copy(),
 		},
 	)
+
+	if (session.user.is_admin) {
+		actions.push({
+			label: __('Explain Plan'),
+			icon: h(ScanSearch, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
+			onClick: openExplainDialog,
+		})
+	}
 
 	return actions
 })
@@ -80,4 +103,5 @@ const moreActions = computed(() => {
 	</div>
 
 	<ViewSQLDialog v-if="showViewSQLDialog" v-model="showViewSQLDialog" />
+	<ExplainPlanDialog v-if="showExplainDialog" v-model="showExplainDialog" />
 </template>

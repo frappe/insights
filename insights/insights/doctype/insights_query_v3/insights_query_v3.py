@@ -2,11 +2,13 @@
 # For license information, please see license.txt
 
 import base64
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from io import BytesIO
 
 import frappe
 import ibis
+import sqlglot
+import sqlglot.expressions as sqlglot_exp
 import sqlparse
 from frappe.model.document import Document
 from ibis import _
@@ -21,6 +23,8 @@ from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
 from insights.insights.query_utils import (
     extract_query_deps_from_operations,
     find_cycle,
+    get_direct_dependencies,
+    sync_query_references,
     transitive_closure,
 )
 from insights.utils import deep_convert_dict_to_dict
@@ -43,7 +47,6 @@ class InsightsQueryv3(Document):
         is_builder_query: DF.Check
         is_native_query: DF.Check
         is_script_query: DF.Check
-        linked_queries: DF.JSON | None
         old_name: DF.Data | None
         operations: DF.JSON | None
         sort_order: DF.Int
@@ -56,8 +59,6 @@ class InsightsQueryv3(Document):
     def get_valid_dict(self, *args, **kwargs):
         if isinstance(self.operations, list):
             self.operations = frappe.as_json(self.operations)
-        if isinstance(self.linked_queries, list):
-            self.linked_queries = frappe.as_json(self.linked_queries)
         return super().get_valid_dict(*args, **kwargs)
 
     def as_dict(self, *args, **kwargs):
@@ -68,6 +69,10 @@ class InsightsQueryv3(Document):
     def on_trash(self):
         for alert in frappe.get_all("Insights Alert", filters={"query": self.name}, pluck="name"):
             frappe.delete_doc("Insights Alert", alert, force=True, ignore_permissions=True)
+
+        # Remove all edges referencing or referenced by this query
+        frappe.db.delete("Insights Query Reference", {"query": self.name})
+        frappe.db.delete("Insights Query Reference", {"ref_query": self.name})
 
         # Clean up empty folders
         if self.folder:
@@ -94,8 +99,8 @@ class InsightsQueryv3(Document):
                 exc=CircularQueryReferenceError,
             )
 
-    def before_save(self):
-        self.set_linked_queries()
+    def on_update(self):
+        sync_query_references(self.name, self.operations)
 
     def cleanup_empty_folder(self, folder_name):
         """Delete folder if it has no queries or charts"""
@@ -114,36 +119,18 @@ class InsightsQueryv3(Document):
         if not has_items:
             frappe.delete_doc("Insights Folder", folder_name, force=True, ignore_permissions=True)
 
-    def set_linked_queries(self):
-        operations = frappe.parse_json(self.operations) or []
-        self.linked_queries = extract_query_deps_from_operations(operations)
-
     def get_source_tables(self):
-        """Collect all leaf table references from this query and its dependencies."""
+        """Collect all leaf table references from this query and its transitive dependencies."""
         all_query_names = {self.name} | transitive_closure(self.name)
-        source_tables = []
-
-        for query_name in all_query_names:
-            if query_name == self.name:
-                operations = frappe.parse_json(self.operations) or []
-            else:
-                operations = (
-                    frappe.parse_json(frappe.db.get_value("Insights Query v3", query_name, "operations"))
-                    or []
-                )
-
-            for operation in operations:
-                if operation.get("type") in ["source", "join", "union"]:
-                    table = operation.get("table")
-                    if table and table.get("type") == "table":
-                        table_info = {
-                            "data_source": table.get("data_source"),
-                            "table_name": table.get("table_name"),
-                        }
-                        if table_info not in source_tables:
-                            source_tables.append(table_info)
-
-        return source_tables
+        Ref = frappe.qb.DocType("Insights Query Reference")
+        rows = (
+            frappe.qb.from_(Ref)
+            .select(Ref.data_source, Ref.table_name)
+            .where((Ref.query.isin(list(all_query_names))) & (Ref.ref_type == "Table"))
+            .distinct()
+            .run(as_dict=True)
+        )
+        return [{"data_source": r.data_source, "table_name": r.table_name} for r in rows]
 
     def build(self, active_operation_idx=None, use_live_connection=None):
         builder = IbisQueryBuilder(self, active_operation_idx)
@@ -181,11 +168,20 @@ class InsightsQueryv3(Document):
         results = results.to_dict(orient="records")
 
         columns = get_columns_from_schema(ibis_query.schema())
+
+        sql = None
+        with suppress(Exception):
+            for op in frappe.parse_json(self.operations) or []:
+                if op.get("type") == "sql" and op.get("raw_sql"):
+                    sql = op.get("raw_sql")
+                    break
+
         return {
             "sql": ibis.to_sql(ibis_query),
             "columns": columns,
             "rows": results,
             "time_taken": time_taken,
+            "is_aggregated_sql": _sql_has_group_by(sql) if sql else False,
         }
 
     @insights_whitelist()
@@ -217,6 +213,16 @@ class InsightsQueryv3(Document):
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
 
+        import ibis.expr.datatypes as dt
+
+        decimal_casts = {
+            col: ibis_query[col].cast("float64")
+            for col in ibis_query.columns
+            if isinstance(ibis_query[col].type(), dt.Decimal)
+        }
+        if decimal_casts:
+            ibis_query = ibis_query.mutate(**decimal_casts)
+
         results, _ = execute_ibis_query(
             ibis_query,
             cache=False,
@@ -224,6 +230,7 @@ class InsightsQueryv3(Document):
             reference_doctype=self.doctype,
             reference_name=self.name,
         )
+
         if format == "excel":
             output = BytesIO()
             results.to_excel(output, index=False, engine="openpyxl")
@@ -304,7 +311,7 @@ class InsightsQueryv3(Document):
             },
         }
 
-        linked_queries = frappe.parse_json(self.linked_queries)
+        linked_queries = get_direct_dependencies(self.name)
         for q in linked_queries:
             exported_query = frappe.get_doc("Insights Query v3", q).export()
             query["dependencies"]["queries"][q] = exported_query
@@ -317,6 +324,40 @@ class InsightsQueryv3(Document):
         new_query.title = f"{self.title} (Copy)"
         new_query.insert()
         return new_query.name
+
+    @insights_whitelist(role="Insights Admin")
+    def explain(self, active_operation_idx: int | None = None):
+        """Return EXPLAIN (ANALYZE for data store, plain for live) output for this query."""
+        ibis_query = self.build(active_operation_idx)
+
+        from insights.insights.doctype.insights_data_source_v3.data_warehouse import is_warehouse
+
+        backend = ibis_query.get_backend()
+        use_analyze = is_warehouse(backend)
+
+        sql_text = str(ibis.to_sql(ibis_query))
+        prefix = "EXPLAIN ANALYZE" if use_analyze else "EXPLAIN"
+
+        try:
+            result = backend.raw_sql(f"{prefix} {sql_text}")
+            rows = result.fetchall()
+            desc = result.description
+        except Exception as e:
+            frappe.throw(f"EXPLAIN failed: {e}")
+
+        if use_analyze:
+            plan = "\n".join(filter(None, (row[1] for row in rows)))
+        else:
+            import pandas as pd
+
+            headers = [d[0] for d in desc]
+            df = pd.DataFrame(rows, columns=headers).fillna("NULL").astype(str)
+            plan = df.to_markdown(index=False, tablefmt="pipe")
+
+        return {
+            "plan": plan,
+            "is_analyze": use_analyze,
+        }
 
     @insights_whitelist(role="Insights Admin")
     def refresh_stored_tables(self):
@@ -339,6 +380,28 @@ class InsightsQueryv3(Document):
                     imported_count += 1
 
         return {"message": f"Importing {imported_count} table(s) to data store", "count": imported_count}
+
+
+def _sql_has_group_by(sql: str) -> bool:
+    """Return True if SQL contains a GROUP BY
+    anywhere in its AST (including CTEs and subqueries that feed the outer SELECT).
+
+    Uses sqlglot to parse the SQL so that GROUP BY inside string literals or
+    comments is correctly ignored. Falls back to False on any parse error.
+
+    The only residual false positive is a GROUP BY that appears exclusively
+    inside a WHERE … IN (subquery) used for deduplication — negligible in
+    practice for analytics SQL (DISTINCT is used instead).
+    """
+    try:
+        statements = sqlglot.parse(sql)
+        if statements:
+            stmt = statements[-1]
+            if stmt is not None and stmt.find(sqlglot_exp.Group) is not None:
+                return True
+    except Exception:
+        pass
+    return False
 
 
 def import_query(query, workbook):
@@ -398,6 +461,9 @@ def import_query(query, workbook):
 
 @contextmanager
 def set_adhoc_filters(filters):
-    frappe.local.insights_adhoc_filters = filters or getattr(frappe.local, "insights_adhoc_filters", {})
+    # If frappe.local.insights_adhoc_filters exists but is None, getattr returns None.
+    # We must ensure it's a dict.
+    current = getattr(frappe.local, "insights_adhoc_filters", None)
+    frappe.local.insights_adhoc_filters = filters or current or {}
     yield
     frappe.local.insights_adhoc_filters = None

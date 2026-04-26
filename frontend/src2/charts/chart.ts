@@ -11,10 +11,10 @@ import {
 import { GranularityType } from '../helpers/constants'
 import useDocumentResource from '../helpers/resource'
 import { createToast } from '../helpers/toasts'
-import { __ } from '../translation'
 import { column, count, query_table } from '../query/helpers'
 import useQuery, { Query } from '../query/query'
 import router from '../router'
+import { __ } from '../translation'
 import {
 	AXIS_CHARTS,
 	AxisChartConfig,
@@ -448,20 +448,6 @@ function makeChart(name: string) {
 			.then((newChartName: string) => {
 				createToast({
 					title: __('Chart duplicated'),
-					variant: 'success',
-				})
-				router.push(`/workbook/${chart.doc.workbook}/chart/${newChartName}`)
-			})
-			.then(workbook.load)
-	}
-
-	function duplicateChart() {
-		const workbook = useWorkbook(chart.doc.workbook)
-		return chart
-			.call('duplicate')
-			.then((newChartName: string) => {
-				createToast({
-					title: 'Chart duplicated',
 					variant: 'success',
 				})
 				router.push(`/workbook/${chart.doc.workbook}/chart/${newChartName}`)

@@ -1,0 +1,103 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-04-19 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "ref_type",
+  "query",
+  "column_break_vopj",
+  "data_source",
+  "table_name",
+  "ref_query"
+ ],
+ "fields": [
+  {
+   "fieldname": "query",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Query",
+   "options": "Insights Query v3",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "ref_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Reference Type",
+   "options": "Table\nQuery",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "depends_on": "data_source",
+   "fieldname": "data_source",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Data Source",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "depends_on": "table_name",
+   "fieldname": "table_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Table Name",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "depends_on": "ref_query",
+   "fieldname": "ref_query",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Referenced Query",
+   "options": "Insights Query v3",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_vopj",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "links": [],
+ "modified": "2026-04-19 14:13:44.125880",
+ "modified_by": "Administrator",
+ "module": "Insights",
+ "name": "Insights Query Reference",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Administrator",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "query"
+}

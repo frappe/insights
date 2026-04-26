@@ -147,6 +147,7 @@ export function makeQuery(name: string) {
 		return query.doc.operations[activeEditIndex.value]
 	})
 
+	const isServerBusy = ref(false)
 	const result = ref({ ...EMPTY_RESULT })
 	const executing = ref(false)
 	const downloading = ref(false)
@@ -166,6 +167,8 @@ export function makeQuery(name: string) {
 		if (!query.islocal) {
 			await waitUntil(() => query.isloaded)
 		}
+
+		isServerBusy.value = false
 
 		if (!query.doc.operations.length) {
 			result.value = { ...EMPTY_RESULT }
@@ -212,9 +215,11 @@ export function makeQuery(name: string) {
 			result.value.formattedRows = getFormattedRows(result.value, query.doc.operations)
 
 			const aggregationPrefixes = aggregations.map((a) => `${a}_`)
-			const isMeasureColumn = (name: string) =>
-				measureColumns.value.includes(name) ||
-				aggregationPrefixes.some((prefix) => name.startsWith(prefix))
+			const isAggregatedSql = Boolean(response.is_aggregated_sql)
+			const isMeasureColumn = (column: QueryResultColumn) =>
+				measureColumns.value.includes(column.name) ||
+				aggregationPrefixes.some((prefix) => column.name.startsWith(prefix)) ||
+				(isAggregatedSql && FIELDTYPES.NUMBER.includes(column.type))
 
 			result.value.columnOptions = result.value.columns.map((column) => {
 				return {
@@ -223,13 +228,16 @@ export function makeQuery(name: string) {
 					description: column.type,
 					query: query.doc.name,
 					data_type: column.type,
-					is_measure: isMeasureColumn(column.name),
+					is_measure: isMeasureColumn(column),
 				}
 			})
 			result.value.timeTaken = response.time_taken
 			result.value.lastExecutedAt = new Date()
 		})
-			.catch(() => {
+			.catch((err) => {
+				if (err.status === 503 && err.message && err.message.includes('ServiceUnavailableError')) {
+					isServerBusy.value = true
+				}
 				if (token !== currentExecutionToken) return
 				result.value = { ...EMPTY_RESULT }
 			})
@@ -1068,6 +1076,30 @@ export function makeQuery(name: string) {
 		}
 	)
 
+	const explaining = ref(false)
+	const explainResult = ref<{ plan: string; is_analyze: boolean } | null>(null)
+	async function explainQuery() {
+		if (!query.doc.operations.length) {
+			createToast({ title: __('No query to explain'), variant: 'warning' })
+			return
+		}
+		explaining.value = true
+		try {
+			const response = await query.call('explain', {
+				active_operation_idx: activeOperationIdx.value,
+			})
+			explainResult.value = response
+		} catch (error: any) {
+			createToast({
+				title: __('Explain Failed'),
+				message: error?.message || __('Failed to get query plan'),
+				variant: 'error',
+			})
+		} finally {
+			explaining.value = false
+		}
+	}
+
 	const importingTables = ref(false)
 	async function refreshStoredTables() {
 		importingTables.value = true
@@ -1131,6 +1163,7 @@ export function makeQuery(name: string) {
 		autoExecute,
 		executing,
 		fetchingCount,
+		isServerBusy,
 		result,
 
 		currentPage,
@@ -1141,6 +1174,9 @@ export function makeQuery(name: string) {
 		fetchResultCount,
 		refreshStoredTables,
 		importingTables,
+		explainQuery,
+		explaining,
+		explainResult,
 
 		setOperations,
 		setActiveOperation,
