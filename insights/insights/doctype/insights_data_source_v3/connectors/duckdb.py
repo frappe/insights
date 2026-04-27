@@ -10,36 +10,39 @@ import ibis
 from frappe.utils import get_files_path
 
 
-def get_duckdb_connection(data_source, read_only=True, allowed_dir=None):
+def get_duckdb_connection(data_source, read_only=True, allowed_dir=None, allow_private_files=False):
     name = data_source.name or frappe.scrub(data_source.title)
     db_name = data_source.database_name
 
     if db_name.startswith("http"):
         return get_http_duckdb_connection(data_source, name, db_name)
 
-    return get_local_duckdb_connection(db_name, read_only=read_only, allowed_dir=allowed_dir)
+    path = os.path.join(get_files_path(is_private=1), f"{db_name}.duckdb")
+    return get_local_duckdb_connection(
+        path, read_only=read_only, allowed_dir=allowed_dir, allow_private_files=allow_private_files
+    )
 
 
-def get_local_duckdb_connection(db_name, read_only=True, allowed_dir=None):
-    private_folder = os.path.realpath(get_files_path(is_private=1))
-    path = os.path.join(private_folder, f"{db_name}.duckdb")
-
+def get_local_duckdb_connection(path, read_only=True, allowed_dir=None, allow_private_files=False):
     if not os.path.exists(path):
         db = ibis.duckdb.connect(path)
         db.disconnect()
 
     db = ibis.duckdb.connect(path, read_only=read_only)
+
+    private_folder = os.path.realpath(get_files_path(is_private=1))
+    private_folder = _escape_sql_path(private_folder)
     db.raw_sql(f"SET home_directory='{private_folder}'")
 
-    if allowed_dir:
-        escaped_dir = allowed_dir.replace("'", "''")
-        # Some environments start with external access already disabled.
-        # Best effort: try enabling it first, then configure directory allowlist.
+    if not read_only and (allowed_dir or allow_private_files):
+        allowed_dir = _escape_sql_path(allowed_dir) if allowed_dir else private_folder
+
         with suppress(Exception):
             db.raw_sql("SET enable_external_access = true")
-        db.raw_sql(f"SET allowed_directories = ['{escaped_dir}']")
 
-    db.raw_sql("SET enable_external_access = false")
+        db.raw_sql(f"SET allowed_directories = ['{allowed_dir}']")
+    else:
+        db.raw_sql("SET enable_external_access = false")
 
     return db
 
@@ -80,3 +83,7 @@ def get_http_secret(data_source, name, db_name):
     except Exception as e:
         frappe.log_error(title="Error creating HTTP Secret for DuckDB", message=str(e))
         return
+
+
+def _escape_sql_path(path: str) -> str:
+    return path.replace("'", "''")
