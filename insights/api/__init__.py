@@ -1,8 +1,6 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-import os
-
 import frappe
 from frappe.defaults import get_user_default, set_user_default
 from frappe.handler import is_valid_http_method, is_whitelisted
@@ -10,9 +8,7 @@ from frappe.monitor import add_data_to_monitor
 
 from insights.api.shared import is_public
 from insights.decorators import insights_whitelist, validate_type
-from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import (
-    get_duckdb_connection,
-)
+from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import get_duckdb_connection
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     get_columns_from_schema,
 )
@@ -126,29 +122,22 @@ def get_file_data(filename: str):
 
     create_uploads_if_not_exists()
     ds = frappe.get_doc("Insights Data Source v3", "uploads")
-    private_folder = frappe.utils.get_files_path(is_private=1)
-    private_folder = os.path.realpath(private_folder)
-    db = get_duckdb_connection(ds, read_only=True, allowed_dir=private_folder)
-    try:
-        if ext in ["xlsx"]:
-            table = db.read_xlsx(file_path)
-        elif ext in ["json", "jsonl"]:
-            table = db.read_json(file_path)
-        else:
-            table = db.read_csv(file_path, table_name=file_name)
+    db = get_duckdb_connection(ds, read_only=False, allow_private_files=True)
 
+    try:
+        table = _read_uploaded_table(db, file_path, ext)
         columns = get_columns_from_schema(table.schema())
         rows = table.head(50).execute().fillna("").to_dict(orient="records")
         row_count = table.count().execute()
+
+        return {
+            "tablename": file_name,
+            "rows": rows,
+            "columns": columns,
+            "total_rows": int(row_count),
+        }
     finally:
         db.disconnect()
-
-    return {
-        "tablename": file_name,
-        "rows": rows,
-        "columns": columns,
-        "total_rows": int(row_count),
-    }
 
 
 @insights_whitelist()
@@ -162,33 +151,46 @@ def import_csv_data(filename: str, tablename: str = ""):
 
     create_uploads_if_not_exists()
     ds = frappe.get_doc("Insights Data Source v3", "uploads")
-    private_folder = os.path.realpath(frappe.utils.get_files_path(is_private=1))
+    db = get_duckdb_connection(ds, read_only=False, allow_private_files=True)
 
-    db = get_duckdb_connection(ds, read_only=False, allowed_dir=private_folder)
     try:
-        if ext in ["xlsx"]:
-            table = db.read_xlsx(file_path)
-        elif ext in ["json", "jsonl"]:
-            table = db.read_json(file_path)
-        else:
-            table = db.read_csv(file_path, table_name=table_name)
+        table = _read_uploaded_table(db, file_path, ext)
         db.create_table(table_name, table, overwrite=True)
+    except frappe.ValidationError:
+        raise
     except Exception as e:
         frappe.log_error(e)
-        if ext in ["xlsx"]:
-            frappe.throw(
-                "Failed to read Excel data from uploaded file. Please ensure the file is a valid Excel format and try again."
-            )
-        elif ext in ["json", "jsonl"]:
-            frappe.throw(
-                "Failed to read JSON data from uploaded file. Please ensure the file is a valid JSON or JSONL format and try again."
-            )
-        else:
-            frappe.throw("Failed to read CSV data from uploaded file. Please try again.")
+        frappe.throw("Failed to import uploaded file data into Insights uploads table. Please try again.")
     finally:
         db.disconnect()
 
     InsightsTablev3.bulk_create(ds.name, [table_name])
+
+
+def _read_uploaded_table(db, file_path: str, ext: str):
+    try:
+        if ext == "xlsx":
+            return db.read_xlsx(file_path)
+
+        if ext in ["json", "jsonl"]:
+            return db.read_json(file_path)
+
+        return db.read_csv(file_path)
+
+    except Exception as e:
+        frappe.log_error(e)
+
+        if ext == "xlsx":
+            frappe.throw(
+                "Failed to read Excel data from uploaded file. Please ensure the file is a valid Excel format and try again."
+            )
+
+        if ext in ["json", "jsonl"]:
+            frappe.throw(
+                "Failed to read JSON data from uploaded file. Please ensure the file is a valid JSON or JSONL format and try again."
+            )
+
+        frappe.throw("Failed to read CSV data from uploaded file. Please try again.")
 
 
 @frappe.whitelist(allow_guest=True)
