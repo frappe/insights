@@ -82,7 +82,7 @@ def extract_table_deps_from_sql_operations(operations: list) -> list[dict]:
         ds = op.get("data_source") or ""
         if not raw_sql or not ds:
             continue
-        db_type = frappe.db.get_value("Insights Data Source v3", ds, "db_type", cache=True)
+        db_type = frappe.db.get_value("Insights Data Source v3", ds, "database_type", cache=True)
         dialect = db_type_to_sqlglot_dialect(db_type)
         for ref in extract_sql_table_refs(raw_sql, dialect=dialect):
             key = (ds, ref.name)
