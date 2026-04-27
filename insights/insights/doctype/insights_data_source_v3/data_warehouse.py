@@ -637,7 +637,7 @@ class WarehouseTableImporter:
                 t.last_sync_bookmark = str(new_bookmark)
                 self._log(f"Bookmark updated: {self.primary_key} = {new_bookmark}")
 
-        t.save()
+        t.save(ignore_permissions=True)
 
     def _read_warehouse_bookmark(self):
         """Query DuckDB for the MAX cursor value after a successful incremental import.
