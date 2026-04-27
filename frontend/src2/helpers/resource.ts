@@ -276,6 +276,7 @@ const metaFields = [
 	'modified',
 	'modified_by',
 	'docstatus',
+	'idx',
 	'parent',
 	'parentfield',
 	'parenttype',
