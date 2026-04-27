@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
-"POT-Creation-Date: 2026-04-19 09:47+0000\n"
-"PO-Revision-Date: 2026-04-26 10:35\n"
+"POT-Creation-Date: 2026-04-26 09:47+0000\n"
+"PO-Revision-Date: 2026-04-27 11:04\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Esperanto\n"
 "MIME-Version: 1.0\n"
@@ -122,6 +122,11 @@ msgstr "crwdns198398:0crwdne198398:0"
 #: frontend/src2/query/components/ColumnsSelectorDialog.vue:92
 msgid "Add column"
 msgstr "crwdns198400:0crwdne198400:0"
+
+#. Name of a role
+#: insights/insights/doctype/insights_query_reference/insights_query_reference.json
+msgid "Administrator"
+msgstr "crwdns200600:0crwdne200600:0"
 
 #. Label of the aggregation (Data) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
@@ -389,6 +394,7 @@ msgstr "crwdns197710:0crwdne197710:0"
 
 #. Label of the chart (Link) field in DocType 'Insights Dashboard Chart v3'
 #. Label of the chart (Link) field in DocType 'Insights Query'
+#: frontend/src2/workbook/WorkbookLineageDialog.vue:213
 #: insights/insights/doctype/insights_dashboard_chart_v3/insights_dashboard_chart_v3.json
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Chart"
@@ -592,13 +598,13 @@ msgstr "crwdns197738:0crwdne197738:0"
 msgid "Convert to Expression"
 msgstr "crwdns198496:0crwdne198496:0"
 
-#: frontend/src2/charts/components/ChartBuilderToolbar.vue:50
-#: frontend/src2/workbook/WorkbookNavbarActions.vue:59
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:60
+#: frontend/src2/workbook/WorkbookNavbarActions.vue:66
 msgid "Copy JSON"
 msgstr "crwdns198498:0crwdne198498:0"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:93
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:37
+#: frontend/src2/query/components/NativeQueryEditor.vue:111
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:52
 msgid "Copy Query"
 msgstr "crwdns198500:0crwdne198500:0"
 
@@ -721,6 +727,7 @@ msgstr "crwdns197760:0crwdne197760:0"
 #. Label of the data_source (Link) field in DocType 'Insights Query'
 #. Label of the data_source (Data) field in DocType 'Insights Query Execution
 #. Log'
+#. Label of the data_source (Data) field in DocType 'Insights Query Reference'
 #. Label of the data_source (Link) field in DocType 'Insights Table'
 #. Label of the data_source (Link) field in DocType 'Insights Table Import'
 #. Label of the data_source (Link) field in DocType 'Insights Table Import Job'
@@ -731,6 +738,7 @@ msgstr "crwdns197760:0crwdne197760:0"
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:34
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_query_execution_log/insights_query_execution_log.json
+#: insights/insights/doctype/insights_query_reference/insights_query_reference.json
 #: insights/insights/doctype/insights_table/insights_table.json
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
@@ -811,7 +819,7 @@ msgid "Default Value"
 msgstr "crwdns199618:0crwdne199618:0"
 
 #: frontend/src2/dashboard/DashboardItemActions.vue:19
-#: frontend/src2/workbook/WorkbookNavbarActions.vue:65
+#: frontend/src2/workbook/WorkbookNavbarActions.vue:72
 msgid "Delete"
 msgstr "crwdns198532:0crwdne198532:0"
 
@@ -865,16 +873,16 @@ msgid "DuckDB"
 msgstr "crwdns197786:0crwdne197786:0"
 
 #: frontend/src2/query/components/FiltersSelector.vue:120
-#: frontend/src2/workbook/WorkbookNavbarActions.vue:53
+#: frontend/src2/workbook/WorkbookNavbarActions.vue:60
 msgid "Duplicate"
 msgstr "crwdns198544:0crwdne198544:0"
 
-#: frontend/src2/charts/components/ChartBuilderToolbar.vue:39
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:44
 msgid "Duplicate Chart"
 msgstr "crwdns198546:0crwdne198546:0"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:88
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:32
+#: frontend/src2/query/components/NativeQueryEditor.vue:106
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:47
 msgid "Duplicate Query"
 msgstr "crwdns198548:0crwdne198548:0"
 
@@ -984,10 +992,14 @@ msgstr "crwdns197806:0crwdne197806:0"
 msgid "Excel"
 msgstr "crwdns198570:0crwdne198570:0"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:158
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:67
+#: frontend/src2/query/components/NativeQueryEditor.vue:189
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:90
 msgid "Execute"
 msgstr "crwdns198572:0crwdne198572:0"
+
+#: frontend/src2/query/components/NativeQueryEditor.vue:188
+msgid "Execute ({0})"
+msgstr "crwdns200602:0{0}crwdne200602:0"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:80
 msgid "Execution Count"
@@ -1017,6 +1029,11 @@ msgstr "crwdns197814:0crwdne197814:0"
 msgid "Expired"
 msgstr "crwdns197816:0crwdne197816:0"
 
+#: frontend/src2/query/components/NativeQueryEditor.vue:119
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:60
+msgid "Explain Plan"
+msgstr "crwdns200604:0crwdne200604:0"
+
 #: frontend/src2/components/ExportDialog.vue:80
 msgid "Export"
 msgstr "crwdns198574:0crwdne198574:0"
@@ -1029,7 +1046,7 @@ msgstr "crwdns198576:0crwdne198576:0"
 msgid "Export Format"
 msgstr "crwdns198578:0crwdne198578:0"
 
-#: frontend/src2/charts/components/ChartBuilderToolbar.vue:27
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:32
 #: frontend/src2/dashboard/Dashboard.vue:61
 msgid "Export as PNG"
 msgstr "crwdns198580:0crwdne198580:0"
@@ -1057,7 +1074,7 @@ msgstr "crwdns197822:0crwdne197822:0"
 msgid "Failed Syncs"
 msgstr "crwdns200406:0crwdne200406:0"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:55
+#: frontend/src2/query/components/NativeQueryEditor.vue:67
 msgid "Failed to format SQL"
 msgstr "crwdns198582:0crwdne198582:0"
 
@@ -1078,14 +1095,14 @@ msgstr "crwdns197826:0crwdne197826:0"
 msgid "Favorites"
 msgstr "crwdns198588:0crwdne198588:0"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:193
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:57
+#: frontend/src2/query/components/NativeQueryEditor.vue:225
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:80
 #: frontend/src2/query/components/ScriptQueryEditor.vue:128
 msgid "Fetched from cache"
 msgstr "crwdns198590:0crwdne198590:0"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:196
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:60
+#: frontend/src2/query/components/NativeQueryEditor.vue:228
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:83
 #: frontend/src2/query/components/ScriptQueryEditor.vue:129
 msgid "Fetched in {0}s"
 msgstr "crwdns198592:0{0}crwdne198592:0"
@@ -1157,7 +1174,7 @@ msgstr "crwdns197838:0crwdne197838:0"
 msgid "Format Option"
 msgstr "crwdns197840:0crwdne197840:0"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:78
+#: frontend/src2/query/components/NativeQueryEditor.vue:96
 msgid "Format SQL"
 msgstr "crwdns198608:0crwdne198608:0"
 
@@ -1403,6 +1420,11 @@ msgstr "crwdns197900:0crwdne197900:0"
 #: insights/insights/doctype/insights_query_execution_log/insights_query_execution_log.json
 msgid "Insights Query Execution Log"
 msgstr "crwdns197902:0crwdne197902:0"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_query_reference/insights_query_reference.json
+msgid "Insights Query Reference"
+msgstr "crwdns200606:0crwdne200606:0"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_result/insights_query_result.json
@@ -1781,15 +1803,14 @@ msgstr "crwdns198006:0crwdne198006:0"
 msgid "Linked Charts"
 msgstr "crwdns198008:0crwdne198008:0"
 
-#. Label of the linked_queries (JSON) field in DocType 'Insights Query v3'
-#: insights/insights/doctype/insights_query_v3/insights_query_v3.json
-msgid "Linked Queries"
-msgstr "crwdns198010:0crwdne198010:0"
-
 #. Label of the table_links (Table) field in DocType 'Insights Table'
 #: insights/insights/doctype/insights_table/insights_table.json
 msgid "Links"
 msgstr "crwdns198012:0crwdne198012:0"
+
+#: frontend/src2/workbook/WorkbookLineageDialog.vue:179
+msgid "Loading\\u2026"
+msgstr "crwdns200608:0crwdne200608:0"
 
 #. Label of the output (Code) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
@@ -1994,6 +2015,10 @@ msgstr "crwdns198686:0crwdne198686:0"
 msgid "No data sources."
 msgstr "crwdns198688:0crwdne198688:0"
 
+#: frontend/src2/query/components/ExplainPlanDialog.vue:44
+msgid "No plan available. Execute the query first."
+msgstr "crwdns200610:0crwdne200610:0"
+
 #: frontend/src2/data_source/DataSourceTableList.vue:41
 msgid "No tables found for the selected data source."
 msgstr "crwdns198690:0crwdne198690:0"
@@ -2061,8 +2086,8 @@ msgstr "crwdns198066:0crwdne198066:0"
 msgid "Open Workbook"
 msgstr "crwdns198704:0crwdne198704:0"
 
-#: frontend/src2/charts/components/ChartBuilderToolbar.vue:55
-#: frontend/src2/workbook/WorkbookNavbarActions.vue:72
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:65
+#: frontend/src2/workbook/WorkbookNavbarActions.vue:79
 msgid "Open in Desk"
 msgstr "crwdns198706:0crwdne198706:0"
 
@@ -2160,7 +2185,7 @@ msgstr "crwdns198716:0crwdne198716:0"
 msgid "Pivot"
 msgstr "crwdns198090:0crwdne198090:0"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:29
+#: frontend/src2/query/components/NativeQueryEditor.vue:41
 msgid "Please select a data source first"
 msgstr "crwdns198718:0crwdne198718:0"
 
@@ -2226,21 +2251,34 @@ msgstr "crwdns198724:0crwdne198724:0"
 #. Label of the tab_break_1 (Tab Break) field in DocType 'Insights Query'
 #. Label of the query (Link) field in DocType 'Insights Query Chart'
 #. Label of the query (Data) field in DocType 'Insights Query Execution Log'
+#. Label of the query (Link) field in DocType 'Insights Query Reference'
+#. Option for the 'Reference Type' (Select) field in DocType 'Insights Query
+#. Reference'
 #. Label of the query (Link) field in DocType 'Insights Query Result'
 #. Label of the query_section (Section Break) field in DocType 'Insights
 #. Settings'
 #: frontend/src2/query/components/JoinSelectorDialog.vue:164
 #: frontend/src2/query/components/UnionSelectorDialog.vue:71
+#: frontend/src2/workbook/WorkbookLineageDialog.vue:207
 #: insights/insights/doctype/insights_alert/insights_alert.json
 #: insights/insights/doctype/insights_chart/insights_chart.json
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_query_chart/insights_query_chart.json
 #: insights/insights/doctype/insights_query_execution_log/insights_query_execution_log.json
+#: insights/insights/doctype/insights_query_reference/insights_query_reference.json
 #: insights/insights/doctype/insights_query_result/insights_query_result.json
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Query"
 msgstr "crwdns198104:0crwdne198104:0"
+
+#: frontend/src2/workbook/WorkbookLineageDialog.vue:149
+msgid "Query Lineage"
+msgstr "crwdns200612:0crwdne200612:0"
+
+#: frontend/src2/query/components/ExplainPlanDialog.vue:15
+msgid "Query Plan"
+msgstr "crwdns200614:0crwdne200614:0"
 
 #. Label of the query_result_limit (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
@@ -2283,6 +2321,16 @@ msgstr "crwdns198732:0crwdne198732:0"
 msgid "Red-Green"
 msgstr "crwdns198734:0crwdne198734:0"
 
+#. Label of the ref_type (Select) field in DocType 'Insights Query Reference'
+#: insights/insights/doctype/insights_query_reference/insights_query_reference.json
+msgid "Reference Type"
+msgstr "crwdns200616:0crwdne200616:0"
+
+#. Label of the ref_query (Link) field in DocType 'Insights Query Reference'
+#: insights/insights/doctype/insights_query_reference/insights_query_reference.json
+msgid "Referenced Query"
+msgstr "crwdns200618:0crwdne200618:0"
+
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:84
 msgid "Referencing Queries"
 msgstr "crwdns200422:0crwdne200422:0"
@@ -2296,8 +2344,8 @@ msgstr "crwdns198736:0crwdne198736:0"
 msgid "Refresh Preview"
 msgstr "crwdns198738:0crwdne198738:0"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:70
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:19
+#: frontend/src2/query/components/NativeQueryEditor.vue:88
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:34
 msgid "Refresh Stored Tables"
 msgstr "crwdns198740:0crwdne198740:0"
 
@@ -2323,7 +2371,7 @@ msgstr "crwdns198748:0crwdne198748:0"
 msgid "Reset Layout"
 msgstr "crwdns198750:0crwdne198750:0"
 
-#: frontend/src2/charts/components/ChartBuilderToolbar.vue:44
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:49
 msgid "Reset Options"
 msgstr "crwdns198752:0crwdne198752:0"
 
@@ -2418,6 +2466,10 @@ msgstr "crwdns198138:0crwdne198138:0"
 msgid "Run {0} of {1}"
 msgstr "crwdns198140:0{0}crwdnd198140:0{1}crwdne198140:0"
 
+#: frontend/src2/query/components/ExplainPlanDialog.vue:24
+msgid "Running {0}…"
+msgstr "crwdns200620:0{0}crwdne200620:0"
+
 #. Label of the sql (Code) field in DocType 'Insights Query'
 #. Label of the sql (Code) field in DocType 'Insights Query Execution Log'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -2502,6 +2554,10 @@ msgstr "crwdns198156:0crwdne198156:0"
 #: frontend/src2/dashboard/DashboardChartSelectorDialog.vue:85
 msgid "Search by name"
 msgstr "crwdns198772:0crwdne198772:0"
+
+#: frontend/src2/workbook/WorkbookLineageDialog.vue:163
+msgid "Search nodes\\u2026"
+msgstr "crwdns200622:0crwdne200622:0"
 
 #. Label of the secrets (Table) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
@@ -2612,7 +2668,7 @@ msgstr "crwdns198806:0crwdne198806:0"
 msgid "Setup Failed"
 msgstr "crwdns198808:0crwdne198808:0"
 
-#: frontend/src2/charts/components/ChartBuilderToolbar.vue:33
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:38
 #: frontend/src2/charts/components/ChartShareDialog.vue:35
 msgid "Share Chart"
 msgstr "crwdns198810:0crwdne198810:0"
@@ -2777,6 +2833,7 @@ msgstr "crwdns198826:0crwdne198826:0"
 #: insights/insights/doctype/insights_notebook_page/insights_notebook_page.json
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_query_chart/insights_query_chart.json
+#: insights/insights/doctype/insights_query_reference/insights_query_reference.json
 #: insights/insights/doctype/insights_query_result/insights_query_result.json
 #: insights/insights/doctype/insights_settings/insights_settings.json
 #: insights/insights/doctype/insights_table/insights_table.json
@@ -2787,13 +2844,17 @@ msgid "System Manager"
 msgstr "crwdns198200:0crwdne198200:0"
 
 #. Label of the table (Data) field in DocType 'Insights Query Column'
+#. Option for the 'Reference Type' (Select) field in DocType 'Insights Query
+#. Reference'
 #. Label of the table (Data) field in DocType 'Insights Query Table'
 #. Label of the table (Data) field in DocType 'Insights Table'
 #. Label of the table (Data) field in DocType 'Insights Table v3'
 #: frontend/src2/query/components/JoinSelectorDialog.vue:262
 #: frontend/src2/query/components/UnionSelectorDialog.vue:129
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:28
+#: frontend/src2/workbook/WorkbookLineageDialog.vue:201
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
+#: insights/insights/doctype/insights_query_reference/insights_query_reference.json
 #: insights/insights/doctype/insights_query_table/insights_query_table.json
 #: insights/insights/doctype/insights_table/insights_table.json
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
@@ -2811,11 +2872,13 @@ msgstr "crwdns198828:0crwdne198828:0"
 msgid "Table Label"
 msgstr "crwdns198204:0crwdne198204:0"
 
+#. Label of the table_name (Data) field in DocType 'Insights Query Reference'
 #. Label of the table_name (Data) field in DocType 'Insights Table Import'
 #. Label of the table_name (Data) field in DocType 'Insights Table Import Job'
 #. Label of the table_name (Data) field in DocType 'Insights Table Import Log'
 #: frontend/src2/data_source/DataSourceTableList.vue:28
 #: frontend/src2/data_store/DataStoreList.vue:36
+#: insights/insights/doctype/insights_query_reference/insights_query_reference.json
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
@@ -3170,8 +3233,13 @@ msgstr "crwdns199372:0crwdne199372:0"
 msgid "Vertical Compact Layout"
 msgstr "crwdns198262:0crwdne198262:0"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:83
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:27
+#: frontend/src2/workbook/WorkbookNavbarActions.vue:54
+msgid "View Lineage"
+msgstr "crwdns200624:0crwdne200624:0"
+
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:55
+#: frontend/src2/query/components/NativeQueryEditor.vue:101
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:42
 msgid "View SQL"
 msgstr "crwdns198886:0crwdne198886:0"
 
@@ -3311,6 +3379,10 @@ msgstr "crwdns198914:0crwdne198914:0"
 msgid "e.g. john@example.com, henry@example.com"
 msgstr "crwdns198916:0crwdne198916:0"
 
+#: frontend/src2/workbook/WorkbookLineageDialog.vue:158
+msgid "edges"
+msgstr "crwdns200626:0crwdne200626:0"
+
 #: frontend/src2/query/components/FormatRule.vue:177
 msgid "ends with"
 msgstr "crwdns198918:0crwdne198918:0"
@@ -3382,6 +3454,10 @@ msgstr "crwdns198946:0crwdne198946:0"
 #: frontend/src2/query/components/FormatRule.vue:170
 msgid "less than or equals"
 msgstr "crwdns198948:0crwdne198948:0"
+
+#: frontend/src2/workbook/WorkbookLineageDialog.vue:157
+msgid "nodes"
+msgstr "crwdns200628:0crwdne200628:0"
 
 #: frontend/src2/query/components/FormatRule.vue:166
 msgid "not equals"
