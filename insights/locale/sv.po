@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
-"POT-Creation-Date: 2026-04-19 09:47+0000\n"
-"PO-Revision-Date: 2026-04-26 10:35\n"
+"POT-Creation-Date: 2026-04-26 09:47+0000\n"
+"PO-Revision-Date: 2026-04-27 11:03\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Swedish\n"
 "MIME-Version: 1.0\n"
@@ -122,6 +122,11 @@ msgstr "Lägg till ny kolumn baserat på befintliga kolumner"
 #: frontend/src2/query/components/ColumnsSelectorDialog.vue:92
 msgid "Add column"
 msgstr "Lägg till kolumn"
+
+#. Name of a role
+#: insights/insights/doctype/insights_query_reference/insights_query_reference.json
+msgid "Administrator"
+msgstr "Administratör"
 
 #. Label of the aggregation (Data) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
@@ -389,6 +394,7 @@ msgstr "Skicka Med"
 
 #. Label of the chart (Link) field in DocType 'Insights Dashboard Chart v3'
 #. Label of the chart (Link) field in DocType 'Insights Query'
+#: frontend/src2/workbook/WorkbookLineageDialog.vue:213
 #: insights/insights/doctype/insights_dashboard_chart_v3/insights_dashboard_chart_v3.json
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Chart"
@@ -427,7 +433,7 @@ msgstr "Välj Kolumner"
 
 #: insights/insights/doctype/insights_data_source_v3/ibis_utils.py:98
 msgid "Circular query reference detected while building \"{0}\""
-msgstr ""
+msgstr "Referens till cirkulär frågesökning upptäcktes vid skapande av \"{0}\""
 
 #: frontend/src2/dashboard/DashboardFilterEditor.vue:241
 #: frontend/src2/query/components/FiltersSelector.vue:143
@@ -436,7 +442,7 @@ msgstr "Rensa"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:13
 msgid "Clear Warehouse Data"
-msgstr ""
+msgstr "Rensa Lagerdata"
 
 #. Option for the 'Database Type' (Select) field in DocType 'Insights Data
 #. Source v3'
@@ -477,7 +483,7 @@ msgstr "Kolumn"
 #. v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Column used to track sync progress. Use <b>modified</b> if rows can be updated (syncs new and changed rows). Use <b>creation</b> if rows are append-only (syncs only new rows, faster)."
-msgstr ""
+msgstr "Kolumn som används för att spåra synkronisering förlopp. Använd <b>modifierad</b> om rader kan uppdateras (synkroniserar nya och ändrade rader). Använd <b>skapande</b> om rader endast kan läggas till (synkroniserar endast nya rader, snabbare)."
 
 #. Label of the columns (Table) field in DocType 'Insights Query'
 #. Label of the columns (Table) field in DocType 'Insights Table'
@@ -592,13 +598,13 @@ msgstr "Fortsätt"
 msgid "Convert to Expression"
 msgstr "Konvertera till Uttryck"
 
-#: frontend/src2/charts/components/ChartBuilderToolbar.vue:50
-#: frontend/src2/workbook/WorkbookNavbarActions.vue:59
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:60
+#: frontend/src2/workbook/WorkbookNavbarActions.vue:66
 msgid "Copy JSON"
 msgstr "Kopiera JSON"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:93
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:37
+#: frontend/src2/query/components/NativeQueryEditor.vue:111
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:52
 msgid "Copy Query"
 msgstr "Kopiera Fråga"
 
@@ -666,7 +672,7 @@ msgstr "Kumulativ Summa"
 #. Label of the sync_cursor_column (Data) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Cursor Column"
-msgstr ""
+msgstr "Cursor Kolumn"
 
 #. Label of the custom_condition (Check) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -721,6 +727,7 @@ msgstr "Data Fråga"
 #. Label of the data_source (Link) field in DocType 'Insights Query'
 #. Label of the data_source (Data) field in DocType 'Insights Query Execution
 #. Log'
+#. Label of the data_source (Data) field in DocType 'Insights Query Reference'
 #. Label of the data_source (Link) field in DocType 'Insights Table'
 #. Label of the data_source (Link) field in DocType 'Insights Table Import'
 #. Label of the data_source (Link) field in DocType 'Insights Table Import Job'
@@ -731,6 +738,7 @@ msgstr "Data Fråga"
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:34
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_query_execution_log/insights_query_execution_log.json
+#: insights/insights/doctype/insights_query_reference/insights_query_reference.json
 #: insights/insights/doctype/insights_table/insights_table.json
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
@@ -811,7 +819,7 @@ msgid "Default Value"
 msgstr "Förvald Värde"
 
 #: frontend/src2/dashboard/DashboardItemActions.vue:19
-#: frontend/src2/workbook/WorkbookNavbarActions.vue:65
+#: frontend/src2/workbook/WorkbookNavbarActions.vue:72
 msgid "Delete"
 msgstr "Ta bort"
 
@@ -865,16 +873,16 @@ msgid "DuckDB"
 msgstr "DuckDB"
 
 #: frontend/src2/query/components/FiltersSelector.vue:120
-#: frontend/src2/workbook/WorkbookNavbarActions.vue:53
+#: frontend/src2/workbook/WorkbookNavbarActions.vue:60
 msgid "Duplicate"
 msgstr "Kopiera"
 
-#: frontend/src2/charts/components/ChartBuilderToolbar.vue:39
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:44
 msgid "Duplicate Chart"
 msgstr "Duplicera Diagram"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:88
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:32
+#: frontend/src2/query/components/NativeQueryEditor.vue:106
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:47
 msgid "Duplicate Query"
 msgstr "Duplicera Fråga"
 
@@ -984,14 +992,18 @@ msgstr "Fel"
 msgid "Excel"
 msgstr "Excel"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:158
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:67
+#: frontend/src2/query/components/NativeQueryEditor.vue:189
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:90
 msgid "Execute"
 msgstr "Kör"
 
+#: frontend/src2/query/components/NativeQueryEditor.vue:188
+msgid "Execute ({0})"
+msgstr "Utför ({0})"
+
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:80
 msgid "Execution Count"
-msgstr ""
+msgstr "Antal Utförande"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -1017,6 +1029,11 @@ msgstr "Expandera"
 msgid "Expired"
 msgstr "Utgått"
 
+#: frontend/src2/query/components/NativeQueryEditor.vue:119
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:60
+msgid "Explain Plan"
+msgstr "Förklara Plan"
+
 #: frontend/src2/components/ExportDialog.vue:80
 msgid "Export"
 msgstr "Export"
@@ -1029,7 +1046,7 @@ msgstr "Data Export"
 msgid "Export Format"
 msgstr "Export Format"
 
-#: frontend/src2/charts/components/ChartBuilderToolbar.vue:27
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:32
 #: frontend/src2/dashboard/Dashboard.vue:61
 msgid "Export as PNG"
 msgstr "Exportera som PNG"
@@ -1055,9 +1072,9 @@ msgstr "Misslyckad"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:73
 msgid "Failed Syncs"
-msgstr ""
+msgstr "Misslyckade Synkroniseringar"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:55
+#: frontend/src2/query/components/NativeQueryEditor.vue:67
 msgid "Failed to format SQL"
 msgstr "Misslyckades med att formatera SQL"
 
@@ -1078,14 +1095,14 @@ msgstr "Misslyckades med att konfigurera demodata"
 msgid "Favorites"
 msgstr "Favoriter"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:193
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:57
+#: frontend/src2/query/components/NativeQueryEditor.vue:225
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:80
 #: frontend/src2/query/components/ScriptQueryEditor.vue:128
 msgid "Fetched from cache"
 msgstr "Hämtad från cache"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:196
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:60
+#: frontend/src2/query/components/NativeQueryEditor.vue:228
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:83
 #: frontend/src2/query/components/ScriptQueryEditor.vue:129
 msgid "Fetched in {0}s"
 msgstr "Hämtad på {0}s"
@@ -1157,7 +1174,7 @@ msgstr "Främmande Tabell Etikett"
 msgid "Format Option"
 msgstr "Format Alternativ"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:78
+#: frontend/src2/query/components/NativeQueryEditor.vue:96
 msgid "Format SQL"
 msgstr "Format SQL"
 
@@ -1293,13 +1310,13 @@ msgstr "Inaktiv"
 #. Option for the 'Sync Mode' (Select) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Incremental"
-msgstr ""
+msgstr "Stegvis"
 
 #. Label of the sync_section (Section Break) field in DocType 'Insights Table
 #. v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Incremental Sync"
-msgstr ""
+msgstr "Stegvis Synkronisering"
 
 #: frontend/src2/charts/components/MapChartConfigForm.vue:55
 msgid "India"
@@ -1403,6 +1420,11 @@ msgstr "Fråga Kolumn"
 #: insights/insights/doctype/insights_query_execution_log/insights_query_execution_log.json
 msgid "Insights Query Execution Log"
 msgstr "Fråga Exekvering Logg"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_query_reference/insights_query_reference.json
+msgid "Insights Query Reference"
+msgstr "Insights Frågereferens"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_result/insights_query_result.json
@@ -1704,11 +1726,11 @@ msgstr "Senaste Exekvering"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:66
 msgid "Last Import Duration"
-msgstr ""
+msgstr "Senaste Importtid"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:63
 msgid "Last Import Rows"
-msgstr ""
+msgstr "Senast Importerade Rader"
 
 #. Label of the last_log (Link) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
@@ -1729,7 +1751,7 @@ msgstr "Senaste Status"
 #. Label of the last_sync_bookmark (Data) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Last Sync Bookmark"
-msgstr ""
+msgstr "Senaste Synkronisering Bokmärke"
 
 #: frontend/src2/data_store/DataStoreList.vue:48
 msgid "Last Synced"
@@ -1745,7 +1767,7 @@ msgstr "Senast Synkroniserad"
 #. Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Last synced cursor value (set automatically)"
-msgstr ""
+msgstr "Senast synkroniserade cursor värde (angiven automatiskt)"
 
 #: frontend/src2/charts/components/DonutChartConfigForm.vue:59
 #: frontend/src2/charts/components/FunnelChartConfigForm.vue:56
@@ -1781,15 +1803,14 @@ msgstr "Begränsa"
 msgid "Linked Charts"
 msgstr "Länkade Diagram"
 
-#. Label of the linked_queries (JSON) field in DocType 'Insights Query v3'
-#: insights/insights/doctype/insights_query_v3/insights_query_v3.json
-msgid "Linked Queries"
-msgstr "Länkade Frågor"
-
 #. Label of the table_links (Table) field in DocType 'Insights Table'
 #: insights/insights/doctype/insights_table/insights_table.json
 msgid "Links"
 msgstr "Länkar"
+
+#: frontend/src2/workbook/WorkbookLineageDialog.vue:179
+msgid "Loading\\u2026"
+msgstr "Laddar\\u2026"
 
 #. Label of the output (Code) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
@@ -1994,6 +2015,10 @@ msgstr "Inga datakällor att visa."
 msgid "No data sources."
 msgstr "Inga datakällor."
 
+#: frontend/src2/query/components/ExplainPlanDialog.vue:44
+msgid "No plan available. Execute the query first."
+msgstr "Ingen plan tillgänglig. Utför frågan först."
+
 #: frontend/src2/data_source/DataSourceTableList.vue:41
 msgid "No tables found for the selected data source."
 msgstr "Inga tabeller hittades för vald datakälla."
@@ -2061,8 +2086,8 @@ msgstr "Introduktion Klar"
 msgid "Open Workbook"
 msgstr "Öppna Arbetsbok"
 
-#: frontend/src2/charts/components/ChartBuilderToolbar.vue:55
-#: frontend/src2/workbook/WorkbookNavbarActions.vue:72
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:65
+#: frontend/src2/workbook/WorkbookNavbarActions.vue:79
 msgid "Open in Desk"
 msgstr "Öppna i Skrivbord"
 
@@ -2160,7 +2185,7 @@ msgstr "Välj Start Data"
 msgid "Pivot"
 msgstr "Pivot"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:29
+#: frontend/src2/query/components/NativeQueryEditor.vue:41
 msgid "Please select a data source first"
 msgstr "Välj datakälla först"
 
@@ -2226,21 +2251,34 @@ msgstr "Frågor"
 #. Label of the tab_break_1 (Tab Break) field in DocType 'Insights Query'
 #. Label of the query (Link) field in DocType 'Insights Query Chart'
 #. Label of the query (Data) field in DocType 'Insights Query Execution Log'
+#. Label of the query (Link) field in DocType 'Insights Query Reference'
+#. Option for the 'Reference Type' (Select) field in DocType 'Insights Query
+#. Reference'
 #. Label of the query (Link) field in DocType 'Insights Query Result'
 #. Label of the query_section (Section Break) field in DocType 'Insights
 #. Settings'
 #: frontend/src2/query/components/JoinSelectorDialog.vue:164
 #: frontend/src2/query/components/UnionSelectorDialog.vue:71
+#: frontend/src2/workbook/WorkbookLineageDialog.vue:207
 #: insights/insights/doctype/insights_alert/insights_alert.json
 #: insights/insights/doctype/insights_chart/insights_chart.json
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_query_chart/insights_query_chart.json
 #: insights/insights/doctype/insights_query_execution_log/insights_query_execution_log.json
+#: insights/insights/doctype/insights_query_reference/insights_query_reference.json
 #: insights/insights/doctype/insights_query_result/insights_query_result.json
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Query"
 msgstr "Fråga"
+
+#: frontend/src2/workbook/WorkbookLineageDialog.vue:149
+msgid "Query Lineage"
+msgstr "Frågerad"
+
+#: frontend/src2/query/components/ExplainPlanDialog.vue:15
+msgid "Query Plan"
+msgstr "Frågeplan"
 
 #. Label of the query_result_limit (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
@@ -2283,9 +2321,19 @@ msgstr "Röd"
 msgid "Red-Green"
 msgstr "Röd-Grön"
 
+#. Label of the ref_type (Select) field in DocType 'Insights Query Reference'
+#: insights/insights/doctype/insights_query_reference/insights_query_reference.json
+msgid "Reference Type"
+msgstr "Referens Typ"
+
+#. Label of the ref_query (Link) field in DocType 'Insights Query Reference'
+#: insights/insights/doctype/insights_query_reference/insights_query_reference.json
+msgid "Referenced Query"
+msgstr "Refererad Fråga"
+
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:84
 msgid "Referencing Queries"
-msgstr ""
+msgstr "Referens Frågor"
 
 #: frontend/src2/dashboard/Dashboard.vue:51
 #: frontend/src2/data_source/DataSourceTableList.vue:43
@@ -2296,8 +2344,8 @@ msgstr "Uppdatera"
 msgid "Refresh Preview"
 msgstr "Uppdatera Förhandsgranskning"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:70
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:19
+#: frontend/src2/query/components/NativeQueryEditor.vue:88
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:34
 msgid "Refresh Stored Tables"
 msgstr "Uppdatera Sparade Tabeller"
 
@@ -2323,7 +2371,7 @@ msgstr "Ta bort Sortering"
 msgid "Reset Layout"
 msgstr "Återställ Layout"
 
-#: frontend/src2/charts/components/ChartBuilderToolbar.vue:44
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:49
 msgid "Reset Options"
 msgstr "Återställ Alternativ"
 
@@ -2418,6 +2466,10 @@ msgstr "Kör"
 msgid "Run {0} of {1}"
 msgstr "Kör {0} av {1}"
 
+#: frontend/src2/query/components/ExplainPlanDialog.vue:24
+msgid "Running {0}…"
+msgstr "Urför {0}…"
+
 #. Label of the sql (Code) field in DocType 'Insights Query'
 #. Label of the sql (Code) field in DocType 'Insights Query Execution Log'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -2502,6 +2554,10 @@ msgstr "Sök efter Benämning"
 #: frontend/src2/dashboard/DashboardChartSelectorDialog.vue:85
 msgid "Search by name"
 msgstr "Sök efter namn"
+
+#: frontend/src2/workbook/WorkbookLineageDialog.vue:163
+msgid "Search nodes\\u2026"
+msgstr "Sök noder\\u2026"
 
 #. Label of the secrets (Table) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
@@ -2612,7 +2668,7 @@ msgstr "Konfigurera Demo Data"
 msgid "Setup Failed"
 msgstr "Konfiguration Misslyckades"
 
-#: frontend/src2/charts/components/ChartBuilderToolbar.vue:33
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:38
 #: frontend/src2/charts/components/ChartShareDialog.vue:35
 msgid "Share Chart"
 msgstr "Dela Diagram"
@@ -2666,7 +2722,7 @@ msgstr "Sprid kolumnvärden till separata kolumner"
 #. v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Start importing rows from this datetime onward (used on first sync only)"
-msgstr ""
+msgstr "Börja importera rader från denna tidpunkt och framåt (används endast vid första synkronisering)"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
@@ -2694,7 +2750,7 @@ msgstr "Statistik"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:91
 msgid "Statistics — {0}"
-msgstr ""
+msgstr "Statistik — {0}"
 
 #. Label of the status (Select) field in DocType 'Insights Data Source'
 #. Label of the status (Select) field in DocType 'Insights Data Source v3'
@@ -2758,12 +2814,12 @@ msgstr "Synkronisera"
 #. Label of the sync_from (Datetime) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Sync From"
-msgstr ""
+msgstr "Synkronisera Från"
 
 #. Label of the sync_mode (Select) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Sync Mode"
-msgstr ""
+msgstr "Synkronisering Läge"
 
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:59
 msgid "Sync tables from your data source to get started"
@@ -2777,6 +2833,7 @@ msgstr "Synkronisera tabeller från din datakälla för att komma igång"
 #: insights/insights/doctype/insights_notebook_page/insights_notebook_page.json
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_query_chart/insights_query_chart.json
+#: insights/insights/doctype/insights_query_reference/insights_query_reference.json
 #: insights/insights/doctype/insights_query_result/insights_query_result.json
 #: insights/insights/doctype/insights_settings/insights_settings.json
 #: insights/insights/doctype/insights_table/insights_table.json
@@ -2787,13 +2844,17 @@ msgid "System Manager"
 msgstr "System Ansvarig"
 
 #. Label of the table (Data) field in DocType 'Insights Query Column'
+#. Option for the 'Reference Type' (Select) field in DocType 'Insights Query
+#. Reference'
 #. Label of the table (Data) field in DocType 'Insights Query Table'
 #. Label of the table (Data) field in DocType 'Insights Table'
 #. Label of the table (Data) field in DocType 'Insights Table v3'
 #: frontend/src2/query/components/JoinSelectorDialog.vue:262
 #: frontend/src2/query/components/UnionSelectorDialog.vue:129
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:28
+#: frontend/src2/workbook/WorkbookLineageDialog.vue:201
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
+#: insights/insights/doctype/insights_query_reference/insights_query_reference.json
 #: insights/insights/doctype/insights_query_table/insights_query_table.json
 #: insights/insights/doctype/insights_table/insights_table.json
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
@@ -2811,11 +2872,13 @@ msgstr "Tabell Importerad"
 msgid "Table Label"
 msgstr "Tabell Etikett"
 
+#. Label of the table_name (Data) field in DocType 'Insights Query Reference'
 #. Label of the table_name (Data) field in DocType 'Insights Table Import'
 #. Label of the table_name (Data) field in DocType 'Insights Table Import Job'
 #. Label of the table_name (Data) field in DocType 'Insights Table Import Log'
 #: frontend/src2/data_source/DataSourceTableList.vue:28
 #: frontend/src2/data_store/DataStoreList.vue:36
+#: insights/insights/doctype/insights_query_reference/insights_query_reference.json
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
@@ -2905,7 +2968,7 @@ msgstr "I År"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:15
 msgid "This will delete all warehouse data for <b>{0}</b> and reset the sync bookmark. Are you sure?"
-msgstr ""
+msgstr "Detta kommer att radera all lagerdata för <b>{0}</b> och återställa synkroniseringsbokmärke. Är du säker?"
 
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
@@ -2981,11 +3044,11 @@ msgstr "Övre N värden"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:70
 msgid "Total Sync Time"
-msgstr ""
+msgstr "Total Synkronisering Tid"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:69
 msgid "Total Syncs"
-msgstr ""
+msgstr "Totalt Antal Synkroniseringar"
 
 #. Label of the transform_tab (Tab Break) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -3073,7 +3136,7 @@ msgstr "Ladda upp CSV eller Excel fil för att skapa ny datakälla"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:75
 msgid "Usage"
-msgstr ""
+msgstr "Användning"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:231
 msgid "Use Custom Condition"
@@ -3170,8 +3233,13 @@ msgstr "Vertikal"
 msgid "Vertical Compact Layout"
 msgstr "Vertikal Kompakt Layout"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:83
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:27
+#: frontend/src2/workbook/WorkbookNavbarActions.vue:54
+msgid "View Lineage"
+msgstr "Visa Rad"
+
+#: frontend/src2/charts/components/ChartBuilderToolbar.vue:55
+#: frontend/src2/query/components/NativeQueryEditor.vue:101
+#: frontend/src2/query/components/QueryBuilderToolbar.vue:42
 msgid "View SQL"
 msgstr "Visa SQL"
 
@@ -3181,7 +3249,7 @@ msgstr "Vyer"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:22
 msgid "Warehouse data cleared"
-msgstr ""
+msgstr "Lagerdata Rensad"
 
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
@@ -3311,6 +3379,10 @@ msgstr "t.ex. api_key"
 msgid "e.g. john@example.com, henry@example.com"
 msgstr "t.ex. john@example.com, henry@example.com"
 
+#: frontend/src2/workbook/WorkbookLineageDialog.vue:158
+msgid "edges"
+msgstr "kanter"
+
 #: frontend/src2/query/components/FormatRule.vue:177
 msgid "ends with"
 msgstr "slutar med"
@@ -3382,6 +3454,10 @@ msgstr "mindre än"
 #: frontend/src2/query/components/FormatRule.vue:170
 msgid "less than or equals"
 msgstr "mindre än eller lika med"
+
+#: frontend/src2/workbook/WorkbookLineageDialog.vue:157
+msgid "nodes"
+msgstr "noder"
 
 #: frontend/src2/query/components/FormatRule.vue:166
 msgid "not equals"
