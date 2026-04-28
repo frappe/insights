@@ -2,6 +2,8 @@
 # For license information, please see license.txt
 
 
+from contextlib import contextmanager
+
 import frappe
 import pandas as pd
 from frappe.utils.password import get_decrypted_password
@@ -38,9 +40,7 @@ class InsightsScriptQueryController:
             return []
 
         def get_value(variable):
-            return get_decrypted_password(
-                variable.doctype, variable.name, "variable_value"
-            )
+            return get_decrypted_password(variable.doctype, variable.name, "variable_value")
 
         results = []
         try:
@@ -48,12 +48,13 @@ class InsightsScriptQueryController:
             variables = self.doc.get("variables") or []
             variables = {var.variable_name: get_value(var) for var in variables}
             _locals = {"results": results, **variables}
-            safe_exec(
-                script,
-                _globals=get_globals(),
-                _locals=_locals,
-                restrict_commit_rollback=True,
-            )
+            with _ensure_rollback():
+                safe_exec(
+                    script,
+                    _globals=get_globals(),
+                    _locals=_locals,
+                    restrict_commit_rollback=True,
+                )
             self.update_script_log()
             results = _locals["results"]
         except Exception as e:
@@ -87,9 +88,7 @@ class InsightsScriptQueryController:
             or (isinstance(results, list) and not results)
             or (isinstance(results, pd.DataFrame) and results.empty)
         ):
-            notify(
-                "The script should declare a variable named 'results' that contains the data."
-            )
+            notify("The script should declare a variable named 'results' that contains the data.")
             return []
 
         if isinstance(results, pd.DataFrame):
@@ -141,3 +140,13 @@ def get_query_results(query_name):
         raise ScriptQueryExecutionError("Query name should be a string.")
     doc = frappe.get_doc("Insights Query", query_name)
     return doc.retrieve_results(fetch_if_not_cached=True)
+
+
+@contextmanager
+def _ensure_rollback():
+    hash = frappe.generate_hash(length=4)
+    try:
+        frappe.db.savepoint(f"save_point_{hash}")
+        yield
+    finally:
+        frappe.db.rollback(save_point=f"save_point_{hash}")
