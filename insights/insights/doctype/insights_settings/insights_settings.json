@@ -125,13 +125,13 @@
    "non_negative": 1
   },
   {
-   "default": "0",
+   "default": "1",
    "fieldname": "enable_data_store",
    "fieldtype": "Check",
    "label": "Enable Data Store"
   },
   {
-   "default": "0",
+   "default": "1",
    "fieldname": "apply_user_permissions",
    "fieldtype": "Check",
    "label": "Apply User Permissions"
@@ -145,7 +145,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-01-14 13:17:25.798141",
+ "modified": "2026-04-28 13:08:07.166485",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",
@@ -179,6 +179,7 @@
    "share": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
