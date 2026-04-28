@@ -233,74 +233,55 @@ class SQLQueryBuilder:
 
 
 def get_allowed_documents(doctype):
-    docs = []
-
     istable = frappe.get_meta(doctype).istable
 
-    if not istable and frappe.has_permission(doctype):
+    if not istable:
+        if not frappe.has_permission(doctype, "read"):
+            return []
         docs = frappe.get_list(doctype, pluck="name")
-        doc_count = frappe.db.count(doctype)
-        if doc_count == len(docs):
-            docs = "*"
+        if frappe.db.count(doctype) == len(docs):
+            return "*"
+        return docs
 
     if istable:
-        # For child tables:
-        # 1. Find all the parent doctypes of the child table
-        # 2. Filter the parent doctypes where user has read permission
-        # 3. Find all the allowed documents of the parent doctypes
-        # 4. Filter child table where `parent` is in allowed documents
-
         child_doctype = doctype
-        parent_doctypes = frappe.get_all(
-            "DocField",
-            filters={
-                "parenttype": "DocType",
-                "fieldtype": ["in", ["Table", "Table MultiSelect"]],
-                "options": child_doctype,
-            },
-            pluck="parent",
-            distinct=True,
-        )
+        parent_doctypes = _get_parent_doctypes(child_doctype)
+        permitted_parents = [p for p in parent_doctypes if frappe.has_permission(p, "read")]
 
-        custom_parent_doctypes = frappe.get_all(
-            "Custom Field",
-            filters={
-                "fieldtype": ["in", ["Table", "Table MultiSelect"]],
-                "options": child_doctype,
-            },
-            pluck="dt",
-            distinct=True,
-        )
+        if not permitted_parents:
+            return []
 
-        # Combine and deduplicate parent doctypes
-        parent_doctypes = list(set(parent_doctypes + custom_parent_doctypes))
+        all_names = []
+        for parent_doctype in permitted_parents:
+            names = frappe.get_list(child_doctype, parent_doctype=parent_doctype, pluck="name")
+            all_names.extend(names)
 
-        # FIX: check permission of the parent and not the child table
-        parent_doctypes = [p for p in parent_doctypes if frappe.has_permission(p, "read")]
+        docs = list(set(all_names))
+        if frappe.db.count(doctype) == len(docs):
+            return "*"
+        return docs
 
-        parent_docs_by_doctype = {
-            parent_doctype: get_allowed_documents(parent_doctype) for parent_doctype in parent_doctypes
-        }
+    return []
 
-        CHILD_DOCTYPE = frappe.qb.DocType(child_doctype)
-        docs_query = frappe.qb.from_(CHILD_DOCTYPE).select(CHILD_DOCTYPE.name)
-        condition = None
-        for parent_doctype, parent_docs in parent_docs_by_doctype.items():
-            if parent_docs == "*":
-                _cond = CHILD_DOCTYPE.parenttype == parent_doctype
-                condition = _cond if condition is None else condition | _cond
-            elif parent_docs:
-                _cond = (CHILD_DOCTYPE.parenttype == parent_doctype) & (
-                    CHILD_DOCTYPE.parent.isin(parent_docs)
-                )
-                condition = _cond if condition is None else condition | _cond
 
-        if condition is not None:
-            docs = docs_query.where(condition).run(pluck="name")
-            doc_count = frappe.db.count(doctype)
-            if doc_count == len(docs):
-                docs = "*"
-        else:
-            docs = []
-
-    return docs
+def _get_parent_doctypes(child_doctype):
+    parent_doctypes = frappe.get_all(
+        "DocField",
+        filters={
+            "parenttype": "DocType",
+            "fieldtype": ["in", ["Table", "Table MultiSelect"]],
+            "options": child_doctype,
+        },
+        pluck="parent",
+        distinct=True,
+    )
+    custom_parent_doctypes = frappe.get_all(
+        "Custom Field",
+        filters={
+            "fieldtype": ["in", ["Table", "Table MultiSelect"]],
+            "options": child_doctype,
+        },
+        pluck="dt",
+        distinct=True,
+    )
+    return list(set(parent_doctypes + custom_parent_doctypes))
