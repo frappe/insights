@@ -223,10 +223,13 @@ class InsightsQueryv3(Document):
         if decimal_casts:
             ibis_query = ibis_query.mutate(**decimal_casts)
 
+        if hasattr(ibis_query, "limit"):
+            ibis_query = ibis_query.limit(100_000)
+
         results, _ = execute_ibis_query(
             ibis_query,
             cache=False,
-            page_size=10_00_000,
+            paginate=False,
             reference_doctype=self.doctype,
             reference_name=self.name,
         )
