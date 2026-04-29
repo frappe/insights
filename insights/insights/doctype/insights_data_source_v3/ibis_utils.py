@@ -776,13 +776,14 @@ def execute_ibis_query(
     query: IbisQuery,
     page=1,
     page_size=100,
+    paginate=True,
     force=False,
     cache=True,
     cache_expiry=3600,
     reference_doctype=None,
     reference_name=None,
 ):
-    if hasattr(query, "limit"):
+    if paginate and hasattr(query, "limit"):
         page_size = clamp(page_size, 1, 10_000)
         page = clamp(page, 1, 10_000)
         offset = (page - 1) * page_size
