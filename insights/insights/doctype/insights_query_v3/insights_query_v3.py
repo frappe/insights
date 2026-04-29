@@ -226,7 +226,7 @@ class InsightsQueryv3(Document):
         results, _ = execute_ibis_query(
             ibis_query,
             cache=False,
-            page_size=10_00_000,
+            paginate=False,
             reference_doctype=self.doctype,
             reference_name=self.name,
         )
