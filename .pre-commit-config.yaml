@@ -8,7 +8,7 @@ repos:
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
-        exclude: ".*json$|.*txt$|.*csv|.*md|.*svg"
+        exclude: ".*json$|.*txt$|.*csv|.*md|.*svg|frontend/src2/types/emojis.ts"
       - id: check-merge-conflict
       - id: check-ast
       - id: check-json
@@ -33,6 +33,7 @@ repos:
     rev: v3.1.0
     hooks:
       - id: prettier
+        exclude: "frontend/src2/types/emojis.ts"
         types_or: [javascript, vue, scss]
 
 ci:

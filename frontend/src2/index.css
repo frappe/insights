@@ -60,6 +60,10 @@ body {
 	opacity: 0;
 }
 
-.lucide {
-	stroke-width: 1.5;
+@layer utilities {
+	.lucide {
+        stroke-width: 2;
+		color: theme('colors.foreground');
+		fill: none;
+	}
 }

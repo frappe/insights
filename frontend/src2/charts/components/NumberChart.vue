@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { formatNumber, getShortNumber } from '../../helpers'
+import { formatNumber, getShortNumber } from '../../helpers/index'
 import { NumberChartConfig, NumberColumnOptions } from '../../types/chart.types'
+import { iconMap } from '../../types/iconMap'
 import { QueryResult, QueryResultColumn, QueryResultRow } from '../../types/query.types'
 import Sparkline from './Sparkline.vue'
 
@@ -46,16 +47,18 @@ const cards = computed(() => {
 		const delta = config.value.negative_is_better
 			? previousValue - currentValue
 			: currentValue - previousValue
-		const percentDelta = (delta / Math.abs(previousValue)) * 100
+		const percentDelta = (delta / Math.abs(previousValue || 1)) * 100
 
-		const prefix = getNumberOption(idx, 'prefix')
-		const suffix = getNumberOption(idx, 'suffix')
-		const decimal = getNumberOption(idx, 'decimal')
-		const color = getNumberOption(idx, 'color')
-		const shorten_numbers = getNumberOption(idx, 'shorten_numbers')
+		const prefix = (getNumberOption(idx, 'prefix') as string) || ''
+		const suffix = (getNumberOption(idx, 'suffix') as string) || ''
+		const decimal = getNumberOption(idx, 'decimal') as number
+		const color = getNumberOption(idx, 'color') as string
+		const icon = getNumberOption(idx, 'icon') as string
+		const shorten_numbers = getNumberOption(idx, 'shorten_numbers') as boolean
 
 		return {
 			measure_name,
+			icon,
 			values: numberValues,
 			currentValue: getFormattedValue(currentValue, decimal, shorten_numbers),
 			previousValue: getFormattedValue(previousValue, decimal, shorten_numbers),
@@ -76,14 +79,19 @@ const getFormattedValue = (value: number, decimal?: number, shorten_numbers?: bo
 	return formatNumber(value, decimal)
 }
 
-function getNumberOption(index: number, option: keyof NumberColumnOptions) {
-	const numberOption = config.value.number_column_options?.[index]?.[option] as any
-	return numberOption === undefined ? config.value[option] : numberOption
+function getNumberOption<T = string | number | boolean>(
+	index: number,
+	option: keyof NumberColumnOptions,
+): T | undefined {
+	const numberOption = config.value.number_column_options?.[index]?.[option]
+	if (numberOption !== undefined) return numberOption as T
+	const globalOption = (config.value as any)[option]
+	return globalOption !== undefined ? globalOption : undefined
 }
 
 function onDoubleClick(measure_name: string) {
 	const column = props.result.columns.find((c) => c.name === measure_name)
-	const row = props.result.formattedRows.at(-1)
+	const row = props.result.formattedRows[props.result.formattedRows.length - 1]
 	if (column && row) {
 		emit('drillDown', column, row)
 	}
@@ -105,6 +113,7 @@ function onDoubleClick(measure_name: string) {
 					prefix,
 					suffix,
 					color,
+					icon,
 				} in cards"
 				:key="measure_name"
 				class="flex max-h-[140px] items-center gap-2 overflow-hidden rounded bg-white px-6 pt-5 shadow cursor-pointer"
@@ -112,9 +121,20 @@ function onDoubleClick(measure_name: string) {
 				@dblclick="onDoubleClick(measure_name)"
 			>
 				<div class="flex w-full flex-col">
-					<span class="truncate text-sm font-medium">
-						{{ measure_name }}
-					</span>
+					<div class="flex items-center gap-2">
+						<component
+							v-if="icon && iconMap[icon as keyof typeof iconMap]"
+							:is="iconMap[icon as keyof typeof iconMap]"
+							class="h-6 w-6 flex-shrink-0 fill-current stroke-0"
+							:style="{ color }"
+						/>
+						<span v-else-if="icon" class="text-xl leading-none flex-shrink-0">{{
+							icon
+						}}</span>
+						<span class="truncate text-sm font-medium">
+							{{ measure_name }}
+						</span>
+					</div>
 					<div
 						class="flex-1 flex-shrink-0 truncate text-[24px] font-semibold leading-10"
 						:style="color && typeof color === 'string' ? { color: color } : {}"
@@ -130,8 +150,8 @@ function onDoubleClick(measure_name: string) {
 									? 'text-red-500'
 									: 'text-green-500'
 								: delta >= 0
-								  ? 'text-green-500'
-								  : 'text-red-500',
+									? 'text-green-500'
+									: 'text-red-500',
 						]"
 					>
 						<span class="">
