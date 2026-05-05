@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-04-26 09:47+0000\n"
-"PO-Revision-Date: 2026-04-27 11:03\n"
+"PO-Revision-Date: 2026-05-05 12:04\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Hungarian\n"
 "MIME-Version: 1.0\n"
@@ -433,7 +433,7 @@ msgstr "Oszlopok kijelölése"
 
 #: insights/insights/doctype/insights_data_source_v3/ibis_utils.py:98
 msgid "Circular query reference detected while building \"{0}\""
-msgstr ""
+msgstr "Körkörös lekérdezési hivatkozás észlelve a(z) \"{0} \" készítése során"
 
 #: frontend/src2/dashboard/DashboardFilterEditor.vue:241
 #: frontend/src2/query/components/FiltersSelector.vue:143
@@ -442,7 +442,7 @@ msgstr "Törlés"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:13
 msgid "Clear Warehouse Data"
-msgstr ""
+msgstr "Raktáradatok törlése"
 
 #. Option for the 'Database Type' (Select) field in DocType 'Insights Data
 #. Source v3'
@@ -483,7 +483,7 @@ msgstr "Oszlop"
 #. v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Column used to track sync progress. Use <b>modified</b> if rows can be updated (syncs new and changed rows). Use <b>creation</b> if rows are append-only (syncs only new rows, faster)."
-msgstr ""
+msgstr "A szinkronizálás előrehaladásának nyomon követésére használt oszlop. Használja a <b>módosított</b> oszlopot, ha a sorok frissíthetők (az új és a módosított sorok szinkronizálódnak). Használja a <b>létrehozás</b> oszlopot, ha a sorok csak hozzáfűzésre alkalmasak (csak az új sorok szinkronizálódnak, gyorsabb)."
 
 #. Label of the columns (Table) field in DocType 'Insights Query'
 #. Label of the columns (Table) field in DocType 'Insights Table'
@@ -672,7 +672,7 @@ msgstr "KumulatívÖsszeg"
 #. Label of the sync_cursor_column (Data) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Cursor Column"
-msgstr ""
+msgstr "Kurzor oszlop"
 
 #. Label of the custom_condition (Check) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -999,11 +999,11 @@ msgstr "Futtat"
 
 #: frontend/src2/query/components/NativeQueryEditor.vue:188
 msgid "Execute ({0})"
-msgstr ""
+msgstr "Végrehajtás ({0})"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:80
 msgid "Execution Count"
-msgstr ""
+msgstr "Végrehajtások száma"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -1032,7 +1032,7 @@ msgstr "Lejárt"
 #: frontend/src2/query/components/NativeQueryEditor.vue:119
 #: frontend/src2/query/components/QueryBuilderToolbar.vue:60
 msgid "Explain Plan"
-msgstr ""
+msgstr "Terv magyarázata"
 
 #: frontend/src2/components/ExportDialog.vue:80
 msgid "Export"
@@ -1072,7 +1072,7 @@ msgstr "Sikertelen"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:73
 msgid "Failed Syncs"
-msgstr ""
+msgstr "Sikertelen szinkronizálások"
 
 #: frontend/src2/query/components/NativeQueryEditor.vue:67
 msgid "Failed to format SQL"
@@ -1310,13 +1310,13 @@ msgstr "Inaktív"
 #. Option for the 'Sync Mode' (Select) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Incremental"
-msgstr ""
+msgstr "Inkrementális"
 
 #. Label of the sync_section (Section Break) field in DocType 'Insights Table
 #. v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Incremental Sync"
-msgstr ""
+msgstr "Inkrementális szinkronizálás"
 
 #: frontend/src2/charts/components/MapChartConfigForm.vue:55
 msgid "India"
@@ -1424,7 +1424,7 @@ msgstr "Insights Lekérdezés Végrehajtási Napló"
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_reference/insights_query_reference.json
 msgid "Insights Query Reference"
-msgstr ""
+msgstr "Insights lekérdezési hivatkozás"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_result/insights_query_result.json
@@ -1726,11 +1726,11 @@ msgstr "Utolsó Végrehajtás"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:66
 msgid "Last Import Duration"
-msgstr ""
+msgstr "Utolsó importálás időtartama"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:63
 msgid "Last Import Rows"
-msgstr ""
+msgstr "Utolsó importált sorok"
 
 #. Label of the last_log (Link) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
@@ -1751,7 +1751,7 @@ msgstr "Utolsó állapot"
 #. Label of the last_sync_bookmark (Data) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Last Sync Bookmark"
-msgstr ""
+msgstr "Utolsó szinkronizálás könyvjelzője"
 
 #: frontend/src2/data_store/DataStoreList.vue:48
 msgid "Last Synced"
@@ -1767,7 +1767,7 @@ msgstr "Utoljára Szinkronizálva"
 #. Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Last synced cursor value (set automatically)"
-msgstr ""
+msgstr "Utolsó szinkronizált kurzorérték (automatikusan beállítva)"
 
 #: frontend/src2/charts/components/DonutChartConfigForm.vue:59
 #: frontend/src2/charts/components/FunnelChartConfigForm.vue:56
@@ -2017,7 +2017,7 @@ msgstr "Nincsenek adatforrások."
 
 #: frontend/src2/query/components/ExplainPlanDialog.vue:44
 msgid "No plan available. Execute the query first."
-msgstr ""
+msgstr "Nincs rendelkezésre álló terv. Először hajtsa végre a lekérdezést."
 
 #: frontend/src2/data_source/DataSourceTableList.vue:41
 msgid "No tables found for the selected data source."
@@ -2274,11 +2274,11 @@ msgstr "Lekérdezés"
 
 #: frontend/src2/workbook/WorkbookLineageDialog.vue:149
 msgid "Query Lineage"
-msgstr ""
+msgstr "Lekérdezési láncolat"
 
 #: frontend/src2/query/components/ExplainPlanDialog.vue:15
 msgid "Query Plan"
-msgstr ""
+msgstr "Lekérdezési terv"
 
 #. Label of the query_result_limit (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
@@ -2329,11 +2329,11 @@ msgstr "Hivatkozás Típusa"
 #. Label of the ref_query (Link) field in DocType 'Insights Query Reference'
 #: insights/insights/doctype/insights_query_reference/insights_query_reference.json
 msgid "Referenced Query"
-msgstr ""
+msgstr "Kapcsolódó lekérdezés"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:84
 msgid "Referencing Queries"
-msgstr ""
+msgstr "Kapcsolódó lekérdezések"
 
 #: frontend/src2/dashboard/Dashboard.vue:51
 #: frontend/src2/data_source/DataSourceTableList.vue:43
@@ -2468,7 +2468,7 @@ msgstr "{0} / {1} futtatása"
 
 #: frontend/src2/query/components/ExplainPlanDialog.vue:24
 msgid "Running {0}…"
-msgstr ""
+msgstr "A(z) {0} futtatása…"
 
 #. Label of the sql (Code) field in DocType 'Insights Query'
 #. Label of the sql (Code) field in DocType 'Insights Query Execution Log'
@@ -2557,7 +2557,7 @@ msgstr "Keresés név szerint"
 
 #: frontend/src2/workbook/WorkbookLineageDialog.vue:163
 msgid "Search nodes\\u2026"
-msgstr ""
+msgstr "Keresés csomópontok\\u2026"
 
 #. Label of the secrets (Table) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
@@ -2722,7 +2722,7 @@ msgstr "Az oszlopértékek szétosztása külön oszlopokba"
 #. v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Start importing rows from this datetime onward (used on first sync only)"
-msgstr ""
+msgstr "Sorok importálásának indítása ettől a dátumtól/időponttól (csak az első szinkronizáláskor használatos)"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
@@ -2750,7 +2750,7 @@ msgstr "Statisztikák"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:91
 msgid "Statistics — {0}"
-msgstr ""
+msgstr "Statisztikák — {0}"
 
 #. Label of the status (Select) field in DocType 'Insights Data Source'
 #. Label of the status (Select) field in DocType 'Insights Data Source v3'
@@ -2814,12 +2814,12 @@ msgstr "Szinkronizalás"
 #. Label of the sync_from (Datetime) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Sync From"
-msgstr ""
+msgstr "Szinkronizálás innen"
 
 #. Label of the sync_mode (Select) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Sync Mode"
-msgstr ""
+msgstr "Szinkronizálás módja"
 
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:59
 msgid "Sync tables from your data source to get started"
@@ -2968,7 +2968,7 @@ msgstr "Ebben az évben"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:15
 msgid "This will delete all warehouse data for <b>{0}</b> and reset the sync bookmark. Are you sure?"
-msgstr ""
+msgstr "Ez törli az összes raktáradatot a <b>{0}</b> és visszaállítja a szinkronizálási könyvjelzőt. Biztos vagy benne?"
 
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
@@ -3044,11 +3044,11 @@ msgstr "Top N érték"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:70
 msgid "Total Sync Time"
-msgstr ""
+msgstr "Teljes szinkronizálási idő"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:69
 msgid "Total Syncs"
-msgstr ""
+msgstr "Összes szinkronizálás"
 
 #. Label of the transform_tab (Tab Break) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -3136,7 +3136,7 @@ msgstr "CSV vagy Excel fájl feltöltése új adatforrás létrehozásához"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:75
 msgid "Usage"
-msgstr ""
+msgstr "Használat"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:231
 msgid "Use Custom Condition"
@@ -3235,7 +3235,7 @@ msgstr "Függőleges kompakt elrendezés"
 
 #: frontend/src2/workbook/WorkbookNavbarActions.vue:54
 msgid "View Lineage"
-msgstr ""
+msgstr "Láncolat megtekintése"
 
 #: frontend/src2/charts/components/ChartBuilderToolbar.vue:55
 #: frontend/src2/query/components/NativeQueryEditor.vue:101
@@ -3249,7 +3249,7 @@ msgstr "Megtekintések"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:22
 msgid "Warehouse data cleared"
-msgstr ""
+msgstr "Raktári adatok törölve"
 
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
@@ -3381,7 +3381,7 @@ msgstr "pl. john@example.com, henry@example.com"
 
 #: frontend/src2/workbook/WorkbookLineageDialog.vue:158
 msgid "edges"
-msgstr ""
+msgstr "élek"
 
 #: frontend/src2/query/components/FormatRule.vue:177
 msgid "ends with"
@@ -3457,7 +3457,7 @@ msgstr "kisebb vagy egyenlő, mint"
 
 #: frontend/src2/workbook/WorkbookLineageDialog.vue:157
 msgid "nodes"
-msgstr ""
+msgstr "csomópontok"
 
 #: frontend/src2/query/components/FormatRule.vue:166
 msgid "not equals"
