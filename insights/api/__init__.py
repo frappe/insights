@@ -75,6 +75,8 @@ def get_user_info():
         "default_version": get_user_default("insights_default_version", frappe.session.user),
         "has_desk_access": user.get("user_type") == "System User",
         "has_demo_data": has_demo_data,
+        "fiscal_year_start": frappe.db.get_single_value("Insights Settings", "fiscal_year_start")
+        or "01-04-2020",
     }
 
 
