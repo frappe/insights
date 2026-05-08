@@ -814,6 +814,7 @@ export function getMapChartOptions(config: MapChartConfig, result: QueryResult) 
 			pieces: mapPieces(values),
 			itemSymbol: 'circle',
 			inRange: {
+
 				color: ['#dbeeff', '#b7ddff', '#92cdff', '#6ebcff', '#4aabff'],
 			},
 		},
