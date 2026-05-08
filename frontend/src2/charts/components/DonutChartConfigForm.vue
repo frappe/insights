@@ -72,11 +72,11 @@ function applyPalette(colors: string[]) {
 								palette.colors.length === 0
 									? !config.label_colors?.length
 									: JSON.stringify(config.label_colors) ===
-										JSON.stringify(palette.colors),
+									  JSON.stringify(palette.colors),
 							'border-gray-200': !(palette.colors.length === 0
 								? !config.label_colors?.length
 								: JSON.stringify(config.label_colors) ===
-									JSON.stringify(palette.colors)),
+								  JSON.stringify(palette.colors)),
 						}"
 						@click="applyPalette(palette.colors)"
 					>

@@ -18,6 +18,7 @@ export type XAxis = {
 	label_rotation?: number
 }
 
+
 export type SplitBy = {
 	dimension: Dimension
 	max_split_values?: number

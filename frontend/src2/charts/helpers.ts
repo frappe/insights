@@ -274,6 +274,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 					return getShortNumber(_val, 1)
 				},
 				fontSize: 11,
+
 			},
 			barGap: config.y_axis.overlap ? '-100%' : undefined,
 			labelLayout: { hideOverlap: true },
