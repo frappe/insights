@@ -40,6 +40,9 @@ export type Series = {
 	align?: 'Left' | 'Right'
 	show_data_labels?: boolean
 	hide_from_chart?: boolean
+	label_bold?: boolean
+	label_italic?: boolean
+	label_color?: string
 }
 export type YAxisLine = Series & {
 	series: SeriesLine[]
@@ -93,6 +96,10 @@ export type NumberColumnOptions = {
 	prefix?: string
 	suffix?: string
 	color?: string
+	label_bold?: boolean
+	label_italic?: boolean
+	label_color?: string
+	label_size?: number
 }
 
 export type DonutChartConfig = {

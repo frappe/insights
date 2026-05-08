@@ -109,14 +109,45 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 									</InlineFormControlLabel>
 									<InlineFormControlLabel label="Color">
 										<ColorInput
-											:model-value="getNumberOption(index, 'color')"
+											:model-value="getNumberOption(index, 'color')as string | undefined"
 											@update:model-value="
 												setNumberOption(index, 'color', $event)
 											"
 											placement="left-start"
 										/>
 									</InlineFormControlLabel>
-
+									<InlineFormControlLabel label="Label Color">
+										<ColorInput
+											:model-value="getNumberOption(index, 'label_color')as string| undefined"
+											@update:model-value="
+												setNumberOption(index, 'label_color', $event)
+											"
+											placement="left-start"
+										/>
+									</InlineFormControlLabel>
+									<InlineFormControlLabel label="Label Size">
+    									<FormControl
+        									type="number"
+        									autocomplete="off"
+        									:modelValue="getNumberOption(index, 'label_size')"
+        									@update:modelValue="setNumberOption(index, 'label_size', Number($event))"
+        									placeholder="14"
+    									/>
+									</InlineFormControlLabel>
+									<Toggle
+										label="Bold Label"
+										:modelValue="getNumberOption(index, 'label_bold')"
+										@update:modelValue="
+											setNumberOption(index, 'label_bold', $event)
+										"
+									/>
+									<Toggle
+										label="Italic Label"
+										:modelValue="getNumberOption(index, 'label_italic')"
+										@update:modelValue="
+											setNumberOption(index, 'label_italic', $event)
+										"
+									/>
 									<Toggle
 										label="Show short numbers"
 										:modelValue="getNumberOption(index, 'shorten_numbers')"
