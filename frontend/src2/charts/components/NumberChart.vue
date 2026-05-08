@@ -150,8 +150,8 @@ function onDoubleClick(measure_name: string) {
 									? 'text-red-500'
 									: 'text-green-500'
 								: delta >= 0
-									? 'text-green-500'
-									: 'text-red-500',
+								  ? 'text-green-500'
+								  : 'text-red-500',
 						]"
 					>
 						<span class="">
