@@ -69,8 +69,8 @@ const cards = computed(() => {
 			suffix,
 			color,
 			label_bold,
-    		label_italic,
-    		label_color,
+			label_italic,
+			label_color,
 			label_size,
 		}
 	})
@@ -124,12 +124,13 @@ function onDoubleClick(measure_name: string) {
 				@dblclick="onDoubleClick(measure_name)"
 			>
 				<div class="flex w-full flex-col">
-					<span class="truncate text-sm font-medium"
+					<span
+						class="truncate text-sm font-medium"
 						:style="{
-							 fontWeight: label_bold ? 'bold' : '500',
-							 fontStyle: label_italic ? 'italic' : 'normal',
-							 color: label_color || undefined,
-							 fontSize: label_size ? `${label_size}px` : undefined,
+							fontWeight: label_bold ? 'bold' : '500',
+							fontStyle: label_italic ? 'italic' : 'normal',
+							color: label_color || undefined,
+							fontSize: label_size ? `${label_size}px` : undefined,
 						}"
 					>
 						{{ measure_name }}
@@ -149,8 +150,8 @@ function onDoubleClick(measure_name: string) {
 									? 'text-red-500'
 									: 'text-green-500'
 								: delta >= 0
-								  ? 'text-green-500'
-								  : 'text-red-500',
+									? 'text-green-500'
+									: 'text-red-500',
 						]"
 					>
 						<span class="">
