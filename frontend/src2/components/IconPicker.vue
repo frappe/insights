@@ -45,7 +45,6 @@ const clearIcon = () => {
 						:is="iconMap[model as keyof typeof iconMap]"
 						class="h-4 w-4 fill-current stroke-0"
 					/>
-
 					<span v-else-if="model" class="text-lg leading-none">
 						{{ model }}
 					</span>
