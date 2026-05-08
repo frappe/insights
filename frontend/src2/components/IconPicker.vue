@@ -29,6 +29,16 @@ const clearIcon = () => {
 	model.value = ''
 	emit('update:modelValue', '')
 }
+
+const handleSelectIcon = (icon: IconName, togglePopover: (val: boolean) => void) => {
+	selectIcon(icon)
+	togglePopover(false)
+}
+
+const handleClearIcon = (togglePopover: (val: boolean) => void) => {
+	clearIcon()
+	togglePopover(false)
+}
 </script>
 
 <template>
@@ -70,10 +80,7 @@ const clearIcon = () => {
 							variant="ghost"
 							class="mx-0.5 my-0.5 h-12 w-12 p-0 justify-center hover:bg-gray-100"
 							:class="model === icon ? 'bg-gray-100 ring-1 ring-gray-300' : ''"
-							@click="
-								selectIcon(icon)
-								togglePopover(false)
-							"
+							@click="handleSelectIcon(icon, togglePopover)"
 						>
 							<component
 								v-if="iconMap[icon as keyof typeof iconMap]"
@@ -89,10 +96,7 @@ const clearIcon = () => {
 							variant="outline"
 							class="gap-2"
 							size="sm"
-							@click="
-								clearIcon()
-								togglePopover(false)
-							"
+							@click="handleClearIcon(togglePopover)"
 						>
 							<X class="h-4 w-4" />
 							Clear
