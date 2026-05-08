@@ -8,3 +8,4 @@ export const EMOJIS = [
 
 export type EmojiName = (typeof EMOJIS)[number];
 
+ 
