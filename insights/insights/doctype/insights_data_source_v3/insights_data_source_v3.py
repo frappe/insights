@@ -273,6 +273,30 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         insights.db_connections[self.name] = db
         return db
 
+    @contextmanager
+    def write_connection(self):
+        """Safely yield a writable DuckDB connection for this data source.
+
+        Evicts the cached read-only connection, opens a write connection with
+        access to private files (needed for CSV/Excel/JSON imports), then
+        disconnects on exit so the read connection is lazily re-opened cleanly.
+
+        Only supported for local DuckDB data sources.
+        """
+        if self.database_type != "DuckDB" or (self.database_name or "").startswith("http"):
+            raise NotImplementedError(
+                f"write_connection() is only supported for local DuckDB data sources, not '{self.database_type}'"
+            )
+
+        from .connectors.duckdb import get_duckdb_path, local_duckdb_write_connection
+
+        path = get_duckdb_path(self)
+        with local_duckdb_write_connection(path, cache_key=self.name, allow_private_files=True) as db:
+            yield db
+
+    def get_sqlglot_dialect(self) -> str | None:
+        return db_type_to_sqlglot_dialect(self.database_type)
+
     def _get_db_connection(self) -> BaseBackend:
         if self.is_site_db:
             return get_sitedb_connection()
@@ -328,7 +352,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         return db.list_tables(database=quoted_db_name)
 
     @frappe.whitelist()
-    def test_connection(self, raise_exception: bool = False):
+    def test_connection(self, raise_exception: bool | None = False):
         if self.type == "REST API":
             return self.test_api_connection(raise_exception)
 
@@ -339,7 +363,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             if raise_exception:
                 raise e
 
-    def test_api_connection(self, raise_exception=False):
+    def test_api_connection(self, raise_exception: bool | None = False):
         client = self.get_api_client()
         try:
             client.test_connection()
@@ -436,3 +460,18 @@ def db_connections():
         yield
     finally:
         after_request()
+
+
+def db_type_to_sqlglot_dialect(db_type: str) -> str | None:
+    if db_type == "REST API":
+        return "duckdb"
+
+    return {
+        "MariaDB": "mysql",
+        "PostgreSQL": "postgres",
+        "SQLite": "sqlite",
+        "DuckDB": "duckdb",
+        "BigQuery": "bigquery",
+        "MSSQL": "tsql",
+        "ClickHouse": "clickhouse",
+    }.get(db_type)

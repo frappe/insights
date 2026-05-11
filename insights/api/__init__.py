@@ -1,8 +1,6 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-import os
-
 import frappe
 from frappe.defaults import get_user_default, set_user_default
 from frappe.handler import is_valid_http_method, is_whitelisted
@@ -10,9 +8,6 @@ from frappe.monitor import add_data_to_monitor
 
 from insights.api.shared import is_public
 from insights.decorators import insights_whitelist, validate_type
-from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import (
-    get_duckdb_connection,
-)
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     get_columns_from_schema,
 )
@@ -49,8 +44,10 @@ def get_user_info():
     )
 
     user = frappe.db.get_value(
-        "User", frappe.session.user, ["first_name", "last_name", "user_type"], as_dict=1
+        "User", frappe.session.user, ["first_name", "last_name", "user_type", "language"], as_dict=1
     )
+
+    locale = user.get("language") or frappe.db.get_single_value("System Settings", "language") or "en"
 
     _is_admin = is_admin or frappe.session.user == "Administrator"
 
@@ -68,11 +65,13 @@ def get_user_info():
         "is_user": is_user or frappe.session.user == "Administrator",
         # TODO: move to `get_session_info` since not user specific
         "country": frappe.db.get_single_value("System Settings", "country"),
-        "locale": frappe.db.get_single_value("System Settings", "language"),
+        "locale": locale,
         "is_v2_instance": frappe.db.count("Insights Query") > 0,
         "default_version": get_user_default("insights_default_version", frappe.session.user),
         "has_desk_access": user.get("user_type") == "System User",
         "has_demo_data": has_demo_data,
+        "fiscal_year_start": frappe.db.get_single_value("Insights Settings", "fiscal_year_start")
+        or "01-04-2020",
     }
 
 
@@ -122,29 +121,24 @@ def get_file_data(filename: str):
 
     create_uploads_if_not_exists()
     ds = frappe.get_doc("Insights Data Source v3", "uploads")
-    private_folder = frappe.utils.get_files_path(is_private=1)
-    private_folder = os.path.realpath(private_folder)
-    db = get_duckdb_connection(ds, read_only=True, allowed_dir=private_folder)
-    try:
-        if ext in ["xlsx"]:
-            table = db.read_xlsx(file_path)
-        elif ext in ["json", "jsonl"]:
-            table = db.read_json(file_path)
-        else:
-            table = db.read_csv(file_path, table_name=file_name)
+    with ds.write_connection() as db:
+        try:
+            table = _read_uploaded_table(db, file_path, ext)
+            columns = get_columns_from_schema(table.schema())
+            rows = table.head(50).execute().fillna("").to_dict(orient="records")
+            row_count = table.count().execute()
 
-        columns = get_columns_from_schema(table.schema())
-        rows = table.head(50).execute().fillna("").to_dict(orient="records")
-        row_count = table.count().execute()
-    finally:
-        db.disconnect()
-
-    return {
-        "tablename": file_name,
-        "rows": rows,
-        "columns": columns,
-        "total_rows": int(row_count),
-    }
+            return {
+                "tablename": file_name,
+                "rows": rows,
+                "columns": columns,
+                "total_rows": int(row_count),
+            }
+        except frappe.ValidationError:
+            raise
+        except Exception as e:
+            frappe.log_error(e)
+            raise
 
 
 @insights_whitelist()
@@ -158,33 +152,43 @@ def import_csv_data(filename: str, tablename: str = ""):
 
     create_uploads_if_not_exists()
     ds = frappe.get_doc("Insights Data Source v3", "uploads")
-    private_folder = os.path.realpath(frappe.utils.get_files_path(is_private=1))
+    with ds.write_connection() as db:
+        try:
+            table = _read_uploaded_table(db, file_path, ext)
+            db.create_table(table_name, table, overwrite=True)
+        except frappe.ValidationError:
+            raise
+        except Exception as e:
+            frappe.log_error(e)
+            frappe.throw("Failed to import uploaded file data into Insights uploads table. Please try again.")
 
-    db = get_duckdb_connection(ds, read_only=False, allowed_dir=private_folder)
+    InsightsTablev3.bulk_create(ds.name, [table_name])
+
+
+def _read_uploaded_table(db, file_path: str, ext: str):
     try:
-        if ext in ["xlsx"]:
-            table = db.read_xlsx(file_path)
-        elif ext in ["json", "jsonl"]:
-            table = db.read_json(file_path)
-        else:
-            table = db.read_csv(file_path, table_name=table_name)
-        db.create_table(table_name, table, overwrite=True)
+        if ext == "xlsx":
+            return db.read_xlsx(file_path)
+
+        if ext in ["json", "jsonl"]:
+            return db.read_json(file_path)
+
+        return db.read_csv(file_path)
+
     except Exception as e:
         frappe.log_error(e)
-        if ext in ["xlsx"]:
+
+        if ext == "xlsx":
             frappe.throw(
                 "Failed to read Excel data from uploaded file. Please ensure the file is a valid Excel format and try again."
             )
-        elif ext in ["json", "jsonl"]:
+
+        if ext in ["json", "jsonl"]:
             frappe.throw(
                 "Failed to read JSON data from uploaded file. Please ensure the file is a valid JSON or JSONL format and try again."
             )
-        else:
-            frappe.throw("Failed to read CSV data from uploaded file. Please try again.")
-    finally:
-        db.disconnect()
 
-    InsightsTablev3.bulk_create(ds.name, [table_name])
+        frappe.throw("Failed to read CSV data from uploaded file. Please try again.")
 
 
 @frappe.whitelist(allow_guest=True)
@@ -239,13 +243,17 @@ def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
             raise frappe.PermissionError("You don't have permission to access this method")
 
         doc = frappe.get_doc(doctype, name)
-        return _execute_doc_method(doc, method, args, ignore_permissions=True)
+        frappe.flags.insights_for_public_access = True
+        try:
+            return _execute_doc_method(doc, method, args, ignore_permissions=True)
+        finally:
+            frappe.flags.insights_for_public_access = False
 
 
 def is_public_method(doctype: str, method: str):
     public_methods = {
         "Insights Query v3": ["execute", "download_results"],
-        "Insights Dashboard v3": ["get_distinct_column_values"],
+        "Insights Dashboard v3": ["get_distinct_column_values", "track_view"],
     }
 
     if doctype in public_methods and method in public_methods[doctype]:

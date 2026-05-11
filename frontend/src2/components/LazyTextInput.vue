@@ -19,10 +19,10 @@ const modelValue = defineModel({
 		@keydown.enter="modelValue = $event.target.value"
 		@blur="modelValue = $event.target.value"
 	>
-		<template #prefix>
+		<template #prefix v-if="$slots.prefix">
 			<slot name="prefix"></slot>
 		</template>
-		<template #suffix>
+		<template #suffix v-if="$slots.suffix">
 			<slot name="suffix"></slot>
 		</template>
 	</TextInput>

@@ -19,14 +19,6 @@ export default defineConfig({
 		allowedHosts: true,
 	},
 	esbuild: { loader: 'ts' },
-	css: {
-		preprocessorOptions: {
-			scss: {
-				api: 'modern-compiler', // or "modern"
-				silenceDeprecations: ['legacy-js-api'],
-			},
-		},
-	},
 	resolve: {
 		alias: {
 			// https://github.com/vitejs/vite/discussions/16730#discussioncomment-13048825
@@ -58,7 +50,13 @@ export default defineConfig({
 				'.tsx': 'tsx',
 			},
 		},
-		include: ['feather-icons', 'showdown', 'tailwind.config.js', 'highlight.js/lib/core'],
+		include: [
+			'feather-icons',
+			'showdown',
+			'tailwind.config.js',
+			'highlight.js/lib/core',
+			'echarts/core',
+		],
 	},
 	define: {
 		// enable hydration mismatch details in production build

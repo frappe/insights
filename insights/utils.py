@@ -13,7 +13,7 @@ from frappe.website.page_renderers.template_page import TemplatePage
 class ResultColumn:
     label: str
     type: str | list[str]
-    options: dict = {}
+    options: dict = {}  # noqa: RUF012
 
     @staticmethod
     def from_args(label, type="String", options=None) -> "ResultColumn":
@@ -30,9 +30,7 @@ class ResultColumn:
         return frappe._dict(
             label=data.get("alias") or data.get("label") or "Unnamed",
             type=data.get("type") or "String",
-            options=data.get("format_option")
-            or data.get("options")
-            or data.get("format_options"),
+            options=data.get("format_option") or data.get("options") or data.get("format_options"),
         )
 
     @classmethod
@@ -140,13 +138,14 @@ def deep_convert_dict_to_dict(d):
     return d
 
 
-def create_execution_log(sql, time_taken=0, query_name=None):
+def create_execution_log(sql, time_taken=0, query_name=None, data_store=False):
     frappe.get_doc(
         {
             "doctype": "Insights Query Execution Log",
             "time_taken": time_taken,
             "query": query_name,
             "sql": sql,
+            "data_store": data_store,
         }
     ).insert(ignore_permissions=True)
 
@@ -214,9 +213,7 @@ class InsightsPageRenderer(TemplatePage):
         return super().render()
 
     def set_headers(self):
-        allowed_origins = frappe.db.get_single_value(
-            "Insights Settings", "allowed_origins"
-        )
+        allowed_origins = frappe.db.get_single_value("Insights Settings", "allowed_origins")
         if not allowed_origins:
             return
 
@@ -224,6 +221,4 @@ class InsightsPageRenderer(TemplatePage):
         allowed_origins = allowed_origins.split(",") if allowed_origins else []
         allowed_origins = [origin.strip() for origin in allowed_origins]
         allowed_origins = " ".join(allowed_origins)
-        self.headers[
-            "Content-Security-Policy"
-        ] = f"frame-ancestors 'self' {allowed_origins}"
+        self.headers["Content-Security-Policy"] = f"frame-ancestors 'self' {allowed_origins}"

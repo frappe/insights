@@ -1,4 +1,3 @@
-declare module 'frappe-ui'
 declare module '@/utils/dayjs'
 declare module 'dom-to-image'
 

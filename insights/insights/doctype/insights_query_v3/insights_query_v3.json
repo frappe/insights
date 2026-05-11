@@ -17,7 +17,6 @@
   "operations",
   "variables",
   "section_break_oujt",
-  "linked_queries",
   "old_name"
  ],
  "fields": [
@@ -78,12 +77,6 @@
    "fieldtype": "Section Break"
   },
   {
-   "fieldname": "linked_queries",
-   "fieldtype": "JSON",
-   "label": "Linked Queries",
-   "read_only": 1
-  },
-  {
    "fieldname": "old_name",
    "fieldtype": "Data",
    "label": "Old Name",
@@ -115,9 +108,13 @@
   {
    "link_doctype": "Insights Chart v3",
    "link_fieldname": "data_query"
+  },
+  {
+   "link_doctype": "Insights Query Reference",
+   "link_fieldname": "query"
   }
  ],
- "modified": "2025-10-18 02:38:07.732705",
+ "modified": "2026-04-19 14:06:26.149575",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query v3",

@@ -70,6 +70,7 @@ import {
 	Union,
 	UnionArgs,
 } from '../types/query.types'
+import session from '../session'
 
 export const table = (args: Partial<TableArgs>): Table => ({
 	type: 'table',
@@ -152,11 +153,10 @@ export function getFormattedRows(result: QueryResult, operations: Operation[]) {
 }
 export function getFormattedDate(date: string, granularity: string) {
 	if (!date) return ''
-	const fy = useSettings()
 
 	if (granularity === 'fiscal_year') {
 		const d = dayjs(date)
-		const fiscalYearStart = fy.doc.fiscal_year_start
+		const fiscalYearStart = session.user.fiscal_year_start
 		const fiscalStartMonth = dayjs(fiscalYearStart).month()
 		const fiscalStartDay = dayjs(fiscalYearStart).date()
 

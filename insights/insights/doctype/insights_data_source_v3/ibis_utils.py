@@ -21,15 +21,33 @@ from ibis.expr.types import Table as IbisQuery
 import insights
 from insights import create_toast
 from insights.cache_utils import make_digest
+from insights.insights.doctype.insights_data_source_v3.data_warehouse import is_warehouse
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
 )
 from insights.insights.query_builders.sql_functions import handle_timespan
+from insights.insights.query_utils import extract_sql_table_refs
 from insights.utils import create_execution_log
 from insights.utils import deep_convert_dict_to_dict as _dict
 
-from .ibis.functions import fiscal_year_start, quarter_start, week_start
+from .ibis.functions import fiscal_year_start, week_start
 from .ibis.utils import get_functions
+
+try:
+    from frappe.concurrency_limiter import concurrent_limit
+except ImportError:
+    # Fallback no-op decorator if concurrency_limiter is not available (e.g. in older versions of Frappe)
+    def concurrent_limit(limit=None, wait_timeout=None):
+        def decorator(func):
+            return func
+
+        return decorator
+
+
+class CircularQueryReferenceError(frappe.ValidationError):
+    """Raised when a circular query reference is detected during query building."""
+
+    pass
 
 
 class IbisQueryBuilder:
@@ -37,7 +55,7 @@ class IbisQueryBuilder:
         self.doc = doc
         self.title = self.doc.title or self.doc.name
         self.active_operation_idx = active_operation_idx
-        self.use_live_connection = doc.use_live_connection
+        self.use_live_connection = bool(doc.use_live_connection)
         self.operations = doc.operations
         self.set_operations()
 
@@ -72,20 +90,34 @@ class IbisQueryBuilder:
         self.operations = operations
 
     def build(self) -> IbisQuery:
-        self.query = None
-        for idx, operation in enumerate(self.operations):
-            try:
-                operation = _dict(operation)
-                self.query = self.perform_operation(operation)
-            except BaseException as e:
-                operation_type_title = frappe.bold(operation.type.title())
-                create_toast(
-                    title=f"Failed to Build {self.title} Query",
-                    message=f"Please check the {operation_type_title} operation at position {idx + 1}",
-                    type="error",
-                )
-                raise e
-        return self.query
+        if not hasattr(frappe.local, "_insights_building_queries"):
+            frappe.local._insights_building_queries = set()
+
+        if self.doc.name in frappe.local._insights_building_queries:
+            raise CircularQueryReferenceError(
+                frappe._('Circular query reference detected while building "{0}"').format(self.title)
+            )
+
+        frappe.local._insights_building_queries.add(self.doc.name)
+        try:
+            self.query = None
+            for idx, operation in enumerate(self.operations):
+                try:
+                    operation = _dict(operation)
+                    self.query = self.perform_operation(operation)
+                except CircularQueryReferenceError:
+                    raise
+                except BaseException as e:
+                    operation_type_title = frappe.bold(operation.type.title())
+                    create_toast(
+                        title=f"Failed to Build {self.title} Query",
+                        message=f"Please check the {operation_type_title} operation at position {idx + 1}",
+                        type="error",
+                    )
+                    raise e
+            return self.query
+        finally:
+            frappe.local._insights_building_queries.discard(self.doc.name)
 
     def perform_operation(self, operation):
         if operation.type == "source":
@@ -348,7 +380,9 @@ class IbisQueryBuilder:
             frappe.throw(f"Operator {filter_operator} is not supported")
 
         right_column = (
-            self.get_column(filter_value.column_name) if hasattr(filter_value, "column_name") else None
+            self.get_column(filter_value.column_name)
+            if getattr(filter_value, "column_name", None) is not None
+            else None
         )
 
         if filter_operator in ["contains", "not_contains"]:
@@ -369,14 +403,19 @@ class IbisQueryBuilder:
 
             filter_value = [start, end]
 
-        right_value = right_column or filter_value
+        right_value = right_column if right_column is not None else filter_value
         return operator_fn(left, right_value)
 
     def get_operator(self, operator):
         def null_check(is_null, x):
-            rt = x.isnull() if is_null else x.notnull()
-            if x.type().is_string():
-                rt = rt & (x != "")
+            if is_null:
+                rt = x.isnull()
+                if x.type().is_string():
+                    rt = rt | (x == "")
+            else:
+                rt = x.notnull()
+                if x.type().is_string():
+                    rt = rt & (x != "")
             return rt
 
         return {
@@ -543,72 +582,34 @@ class IbisQueryBuilder:
         raw_sql = sql_args.raw_sql
 
         ds = frappe.get_doc("Insights Data Source v3", data_source)
-        db = ds._get_ibis_backend()
+        db = ds._get_ibis_backend() if self.use_live_connection else insights.warehouse.db
+        source_dialect = ds.get_sqlglot_dialect()
 
         raw_sql = sqlparse.format(sql=raw_sql, strip_comments=True)
+        raw_sql = self._validate_native_sql(raw_sql, use_live_connection=self.use_live_connection)
 
-        # TODO: apply user permissions by default
-        check_permissions = frappe.db.get_single_value(
-            "Insights Settings", "enable_permissions"
-        ) or frappe.db.get_single_value("Insights Settings", "apply_user_permissions")
+        check_permissions = any(
+            frappe.get_single_value("Insights Settings", ["enable_permissions", "apply_user_permissions"])
+        )
 
-        if check_permissions:
-            parsed = sg.parse_one(raw_sql, dialect=db.dialect)
+        if check_permissions or not self.use_live_connection:
+            tables = self._get_sql_table_names(
+                raw_sql,
+                dialect=source_dialect,
+                use_live_connection=self.use_live_connection,
+            )
+            replace_map = self._get_sql_table_bindings(
+                data_source,
+                tables,
+                dialect=source_dialect,
+                use_live_connection=self.use_live_connection,
+                check_permissions=check_permissions,
+            )
 
-            tables = set()
-            for table_exp in parsed.find_all(sg.exp.Table):
-                if table_exp.name:
-                    tables.add(table_exp.name)
+            if not self.use_live_connection:
+                raw_sql = self._transpile_sql_to_duckdb(raw_sql, source_dialect)
 
-            cte_aliases = set()
-            for cte_exp in parsed.find_all(sg.exp.CTE):
-                if cte_exp.alias:
-                    cte_aliases.add(cte_exp.alias)
-
-            tables = tables - cte_aliases
-
-            replace_map = {}
-            for table_name in tables:
-                t = InsightsTablev3.get_ibis_table(
-                    data_source,
-                    table_name,
-                    use_live_connection=True,
-                )
-                t_sql = ibis.to_sql(t)
-
-                # NOTE: This currently works because `apply_sql` uses live connections,
-                # If this flow ever starts using warehouse-backed tables,
-                # this WHERE-based check will be insufficient
-                # check insights_table_v3.py -> apply_user_permissions()
-
-                # check if t_sql has any where clause, if not, then don't replace
-                t_parsed = sg.parse_one(t_sql, dialect=db.dialect)
-                if not t_parsed.find(sg.exp.Where):
-                    continue
-                replace_map[table_name] = t_sql
-
-            with_clauses = []
-            for table_name, table_sql in replace_map.items():
-                quoted_table_name = sg.to_identifier(table_name)
-                with_clauses.append(f"{quoted_table_name} AS ({table_sql})")
-
-            if with_clauses:
-                with_clause_sql = ", ".join(with_clauses)
-                # Check if raw_sql already starts with WITH clause
-                raw_sql_stripped = raw_sql.strip()
-                if raw_sql_stripped.lower().startswith("with"):
-                    # Insert new CTEs after the WITH keyword and before existing CTEs
-                    # Use regex to handle both uppercase and lowercase "with"
-                    raw_sql = re.sub(
-                        r"(\bwith\b)",
-                        f"WITH {with_clause_sql},",
-                        raw_sql_stripped,
-                        count=1,
-                        flags=re.IGNORECASE,
-                    )
-                else:
-                    # Prepend WITH clause if it doesn't exist
-                    raw_sql = f"WITH {with_clause_sql} {raw_sql_stripped}"
+            raw_sql = self._prepend_sql_with_clauses(raw_sql, replace_map)
 
         supports_stored_procedure = ds.database_type in ["PostgreSQL", "MSSQL", "MariaDB"]
         if (
@@ -638,6 +639,114 @@ class IbisQueryBuilder:
             )
 
         return results
+
+    def _validate_native_sql(self, raw_sql: str, use_live_connection: bool) -> str:
+        raw_sql = raw_sql.strip()
+
+        if not use_live_connection:
+            statements = [stmt for stmt in sqlparse.parse(raw_sql) if stmt.tokens and stmt.value.strip()]
+            if len(statements) > 1:
+                frappe.throw(
+                    "Multiple SQL statements are not supported with Data Store for native queries",
+                    title="Unsupported SQL Query",
+                )
+
+            if raw_sql.lower().startswith("exec"):
+                frappe.throw(
+                    "Stored procedures are not supported with Data Store for native queries",
+                    title="Unsupported SQL Query",
+                )
+
+        return raw_sql
+
+    def _transpile_sql_to_duckdb(self, raw_sql: str, source_dialect: str | None) -> str:
+        if not source_dialect or source_dialect == "duckdb":
+            return raw_sql
+
+        try:
+            transpiled_sql = sg.transpile(raw_sql, read=source_dialect, write="duckdb")
+        except Exception as e:
+            frappe.throw(
+                f"Failed to translate SQL query for Data Store execution: {e}",
+                title="Unsupported SQL Query",
+            )
+
+        if not transpiled_sql:
+            frappe.throw(
+                "Failed to translate SQL query for Data Store execution",
+                title="Unsupported SQL Query",
+            )
+
+        return transpiled_sql[0]
+
+    def _get_sql_table_names(
+        self,
+        raw_sql: str,
+        dialect: sg.Dialect | None,
+        use_live_connection: bool,
+    ) -> set[str]:
+        tables = set()
+        for table_ref in extract_sql_table_refs(raw_sql, dialect=dialect):
+            if not use_live_connection and (table_ref.db or table_ref.catalog):
+                frappe.throw(
+                    "Schema-qualified table names are not supported with Data Store for native queries yet",
+                    title="Unsupported SQL Query",
+                )
+
+            tables.add(table_ref.name)
+
+        return tables
+
+    def _get_sql_table_bindings(
+        self,
+        data_source: str,
+        tables: set[str],
+        dialect: sg.Dialect | None,
+        use_live_connection: bool,
+        check_permissions: bool,
+    ) -> dict[str, str]:
+        replace_map = {}
+
+        for table_name in tables:
+            table_expr = InsightsTablev3.get_ibis_table(
+                data_source,
+                table_name,
+                use_live_connection=use_live_connection,
+            )
+            table_sql = ibis.to_sql(table_expr)
+
+            if use_live_connection and check_permissions:
+                table_sql_parsed = sg.parse_one(table_sql, dialect=dialect)
+                if not table_sql_parsed.find(sg.exp.Where):
+                    # if we are running in live connection and there are no permission filters applied,
+                    # we skip replacing the table with a subquery
+                    continue
+
+            replace_map[table_name] = table_sql
+
+        return replace_map
+
+    def _prepend_sql_with_clauses(self, raw_sql: str, replace_map: dict[str, str]) -> str:
+        if not replace_map:
+            return raw_sql
+
+        with_clauses = []
+        for table_name, table_sql in replace_map.items():
+            quoted_table_name = sg.to_identifier(table_name)
+            with_clauses.append(f"{quoted_table_name} AS ({table_sql})")
+
+        with_clause_sql = ", ".join(with_clauses)
+        raw_sql_stripped = raw_sql.strip()
+        if raw_sql_stripped.lower().startswith("with"):
+            return re.sub(
+                r"(\bwith\b)",
+                f"WITH {with_clause_sql},",
+                raw_sql_stripped,
+                count=1,
+                flags=re.IGNORECASE,
+            )
+
+        return f"WITH {with_clause_sql} {raw_sql_stripped}"
 
     def apply_code(self, code_args):
         code = code_args.code
@@ -706,23 +815,22 @@ class IbisQueryBuilder:
 
     def apply_granularity(self, column, granularity):
         if granularity == "week":
-            return week_start(column).strftime("%Y-%m-%d").name(column.get_name())
-        if granularity == "quarter":
-            return quarter_start(column).strftime("%Y-%m-01").name(column.get_name())
+            return week_start(column).name(column.get_name())
         if granularity == "fiscal_year":
-            return fiscal_year_start(column).strftime("%Y-%m-%d").name(column.get_name())
+            return fiscal_year_start(column).name(column.get_name())
 
-        format_str = {
-            "second": "%Y-%m-%d %H:%M:%S",
-            "minute": "%Y-%m-%d %H:%M:00",
-            "hour": "%Y-%m-%d %H:00:00",
-            "day": "%Y-%m-%d",
-            "month": "%Y-%m-01",
-            "year": "%Y-01-01",
+        truncate_unit = {
+            "second": "s",
+            "minute": "m",
+            "hour": "h",
+            "day": "D",
+            "quarter": "Q",
+            "month": "M",
+            "year": "Y",
         }
-        if not format_str.get(granularity):
+        if granularity not in truncate_unit:
             frappe.throw(f"Granularity {granularity} is not supported")
-        return column.strftime(format_str[granularity]).name(column.get_name())
+        return column.truncate(truncate_unit[granularity]).name(column.get_name())
 
     def evaluate_expression(self, expression, additonal_context=None):
         if not expression or not expression.strip():
@@ -756,13 +864,14 @@ def execute_ibis_query(
     query: IbisQuery,
     page=1,
     page_size=100,
+    paginate=True,
     force=False,
     cache=True,
     cache_expiry=3600,
     reference_doctype=None,
     reference_name=None,
 ):
-    if hasattr(query, "limit"):
+    if paginate and hasattr(query, "limit"):
         page_size = clamp(page_size, 1, 10_000)
         page = clamp(page, 1, 10_000)
         offset = (page - 1) * page_size
@@ -774,18 +883,24 @@ def execute_ibis_query(
         # TODO: throw better error message
         raise
 
+    backend = query.get_backend()
     if cache:
-        backends, _ = query._find_backends()
-        backend_id = backends[0].db_identity if backends else None
+        backend_id = backend.db_identity if backend else None
         cache_key = make_digest(sql, backend_id)
 
         if has_cached_results(cache_key) and not force:
             return get_cached_results(cache_key), -1
 
-    start = time.monotonic()
+    time_taken = -1
+    use_data_store = is_warehouse(backend)
 
     try:
-        result = query.execute()
+        if use_data_store:
+            start = time.monotonic()
+            result = query.execute()
+            time_taken = flt(time.monotonic() - start, 3)
+        else:
+            result, time_taken = _execute_live_query(query)
     except Exception as e:
         if "max_statement_time" in str(e):
             frappe.log_error(
@@ -799,8 +914,12 @@ def execute_ibis_query(
             )
         raise e
 
-    time_taken = flt(time.monotonic() - start, 3)
-    create_execution_log(sql, time_taken, reference_name)
+    create_execution_log(
+        sql,
+        time_taken,
+        query_name=reference_name,
+        data_store=use_data_store,
+    )
 
     if isinstance(result, pd.DataFrame):
         result = result.replace({pd.NaT: None, np.nan: None})
@@ -808,6 +927,13 @@ def execute_ibis_query(
             cache_results(cache_key, result, cache_expiry)
 
     return result, time_taken
+
+
+@concurrent_limit()
+def _execute_live_query(query: IbisQuery):
+    start = time.monotonic()
+    result = query.execute()
+    return result, flt(time.monotonic() - start, 3)
 
 
 def get_columns_from_schema(schema: ibis.Schema):

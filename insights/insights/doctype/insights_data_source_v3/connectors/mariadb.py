@@ -13,6 +13,7 @@ def suppress_ibis_utc_warning(func):
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", message="Unable to set session timezone")
             return func(*args, **kwargs)
+
     return wrapper
 
 
@@ -29,4 +30,5 @@ def get_mariadb_connection(data_source):
         charset="utf8mb4",
         use_unicode=True,
         ssl_mode="VERIFY_CA" if data_source.use_ssl else "DISABLED",
+        connect_timeout=5,
     )

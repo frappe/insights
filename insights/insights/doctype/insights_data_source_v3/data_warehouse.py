@@ -17,9 +17,13 @@ from frappe.utils.background_jobs import is_job_enqueued
 from ibis import _
 from ibis.backends.duckdb import Backend as DuckDBBackend
 from ibis.common.exceptions import TableNotFound
-from ibis.expr.types import Expr
+from ibis.expr.types import Expr, Table
 
 import insights
+from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import (
+    local_duckdb_write_connection,
+    open_local_duckdb,
+)
 from insights.utils import InsightsDataSourcev3, InsightsTablev3
 
 WAREHOUSE_DB_NAME = "insights"
@@ -39,30 +43,16 @@ class Warehouse:
     def get_connection(self, database: str | None = None, read_only: bool = True) -> DuckDBBackend:
         path = self.get_db_path()
 
-        if not os.path.exists(path):
-            db = ibis.duckdb.connect(path)
-            db.disconnect()
-
-        db = ibis.duckdb.connect(path, read_only=read_only)
-
-        if not read_only:
-            self._configure_temp_directory_access(db)
+        db = open_local_duckdb(
+            path,
+            read_only=read_only,
+            allowed_dir=str(Path(tempfile.gettempdir())) if not read_only else None,
+        )
 
         if database:
             db.raw_sql(f"USE '{database}'")
 
         return db
-
-    def _configure_temp_directory_access(self, db: DuckDBBackend) -> None:
-        tmp_dir = str(Path(tempfile.gettempdir())).replace("'", "''")
-
-        # Some environments start with external access already disabled.
-        # Best effort: try enabling it first, then configure directory allowlist.
-        with suppress(Exception):
-            db.raw_sql("SET enable_external_access = true")
-
-        db.raw_sql(f"SET allowed_directories = ['{tmp_dir}']")
-        db.raw_sql("SET enable_external_access = false")
 
     def create_database(self, database: str):
         with self.get_write_connection() as db:
@@ -81,14 +71,15 @@ class Warehouse:
     def get_write_connection(
         self, database: str | None = None, timeout: int = 30
     ) -> Generator[DuckDBBackend, None, None]:
-        from frappe.utils.synchronization import filelock
+        path = self.get_db_path()
+        allowed_dir = str(Path(tempfile.gettempdir()))
 
-        with filelock("insights_warehouse_write", timeout=timeout):
-            db = self.get_connection(database, read_only=False)
-            try:
-                yield db
-            finally:
-                db.disconnect()
+        with local_duckdb_write_connection(
+            path, cache_key=WAREHOUSE_DB_NAME, allowed_dir=allowed_dir, timeout=timeout
+        ) as db:
+            if database:
+                db.raw_sql(f"USE '{database}'")
+            yield db
 
     def get_table(self, data_source: str, table_name: str) -> "WarehouseTable":
         return WarehouseTable(data_source, table_name)
@@ -289,14 +280,21 @@ class WarehouseTable:
         importer = WarehouseTableImporter(self)
         importer.enqueue_import()
 
+    def drop(self) -> None:
+        """Drop this table from the warehouse. No-op if it does not exist."""
+        with insights.warehouse.get_write_connection(self.schema) as db:
+            with suppress(Exception):
+                db.drop_table(self.warehouse_table_name, force=True)
+
 
 class WarehouseTableImporter:
     def __init__(self, table: WarehouseTable):
         self.table = table
-        self.remote_table = None
+        self.remote_table: Table = None
         self.remote_table_schema = None
         self.primary_key = ""
         self.warehouse_table_name = ""
+        self.writer_mode = "replace"  # overridden to "append" for incremental syncs
 
         self.log = None
         self.last_log_time = None
@@ -339,10 +337,17 @@ class WarehouseTableImporter:
 
         with db_connections():
             self.prepare_log()
-            self.prepare_settings()
-            self.prepare_remote_table()
-            self.start_batch_import()
-            self.update_log()
+            try:
+                self.prepare_settings()
+                self.prepare_remote_table()
+                self.start_batch_import()
+            except Exception:
+                if self.log.status != "Failed":
+                    self.log.status = "Failed"
+                    self._log(frappe.get_traceback())
+                raise
+            finally:
+                self.update_log()
 
         insights.create_toast(
             f"Imported {frappe.bold(self.table.table_name)} to the data store. "
@@ -373,17 +378,32 @@ class WarehouseTableImporter:
         )
 
     def prepare_settings(self) -> dict:
+        table_doc = frappe.get_value(
+            "Insights Table v3",
+            self.table.table_doc_name,
+            [
+                "row_limit",
+                "before_import_script",
+                "sync_mode",
+                "sync_cursor_column",
+                "sync_from",
+                "last_sync_bookmark",
+            ],
+            as_dict=True,
+        )
         self.settings.row_limit = (
-            frappe.get_value("Insights Table v3", self.table.table_doc_name, "row_limit")
+            table_doc.row_limit
             or frappe.db.get_single_value("Insights Settings", "max_records_to_sync")
             or 10_00_000
         )
-        self.settings.before_import_script = (
-            frappe.get_value("Insights Table v3", self.table.table_doc_name, "before_import_script") or ""
-        )
+        self.settings.before_import_script = table_doc.before_import_script or ""
         self.settings.memory_limit = (
             frappe.db.get_single_value("Insights Settings", "max_memory_usage") or 512
         )
+        self.settings.sync_mode = table_doc.sync_mode or "Full"
+        self.settings.sync_cursor_column = table_doc.sync_cursor_column or ""
+        self.settings.sync_from = table_doc.sync_from  # Datetime or None
+        self.settings.last_sync_bookmark = table_doc.last_sync_bookmark or ""
         self.log.db_set(
             {
                 "row_limit": self.settings.row_limit,
@@ -391,17 +411,39 @@ class WarehouseTableImporter:
             },
             commit=True,
         )
+        self._log(
+            f"Settings: sync_mode={self.settings.sync_mode}"
+            f", cursor={self.settings.sync_cursor_column or 'N/A'}"
+            f", sync_from={self.settings.sync_from or 'N/A'}"
+            f", bookmark={self.settings.last_sync_bookmark or 'N/A'}"
+            f", row_limit={self.settings.row_limit}"
+        )
+
+    def _disable_statement_timeout(self):
+        """Disable statement timeout on the remote connection.
+
+        Import jobs are long-running background tasks managed by the queue
+        worker, so the user-facing max_execution_time limit should not apply.
+        """
+        backend = insights.db_connections.get(self.table.data_source)
+        if backend is None:
+            return
+        with suppress(Exception):
+            backend.raw_sql("SET MAX_STATEMENT_TIME=0")
 
     def prepare_remote_table(self) -> Expr:
         self.remote_table = self.table.get_remote_table()
+        self._disable_statement_timeout()
 
-        if hasattr(self.remote_table, "creation"):
-            self.primary_key = "creation"
-        elif hasattr(self.remote_table, "timestamp"):
-            self.primary_key = "timestamp"
+        if self.settings.sync_mode == "Incremental":
+            self._prepare_incremental_table()
         else:
-            self.primary_key = ""
+            self._prepare_full_table()
 
+        self.remote_table_schema = self.remote_table.schema()
+        self.log.db_set("query", ibis.to_sql(self.remote_table), commit=True)
+
+    def _apply_before_import_script(self) -> None:
         if self.settings.before_import_script:
             from .ibis_utils import exec_with_return
 
@@ -409,10 +451,56 @@ class WarehouseTableImporter:
                 self.settings.before_import_script, {"table": self.remote_table}
             )
 
-        self.remote_table = self.apply_limit(self.remote_table)
-        self.remote_table_schema = self.remote_table.schema()
+    def _prepare_full_table(self) -> None:
+        if hasattr(self.remote_table, "creation"):
+            self.primary_key = "creation"
+        elif hasattr(self.remote_table, "timestamp"):
+            self.primary_key = "timestamp"
+        else:
+            self.primary_key = ""
 
-        self.log.db_set("query", ibis.to_sql(self.remote_table), commit=True)
+        self._apply_before_import_script()
+        self.remote_table = self.apply_limit(self.remote_table)
+        self.writer_mode = "replace"
+
+    def _prepare_incremental_table(self) -> None:
+        pk = self.settings.sync_cursor_column
+        self.primary_key = pk
+
+        self._apply_before_import_script()
+
+        bookmark = self._resolve_incremental_bookmark()
+        self._log(f"Incremental sync: {pk} > {bookmark}")
+        self.remote_table = self.remote_table.filter(_[pk] > bookmark)
+
+        self.writer_mode = "append"
+
+    def _resolve_incremental_bookmark(self):
+        """Return the cursor value to filter from for incremental sync, following this precedence:
+        1. Last sync bookmark (if exists and valid)
+        2. Sync From date (if set)
+        3. Throw error if neither is available
+        """
+        bookmark = self.settings.last_sync_bookmark
+
+        if bookmark:
+            # Verify the warehouse table still exists; if not, treat as first sync
+            try:
+                insights.warehouse.db.table(self.table.warehouse_table_name, database=self.table.schema)
+            except TableNotFound:
+                self._log("Warehouse table not found despite existing bookmark — falling back to sync_from.")
+                bookmark = ""
+
+        if bookmark:
+            return bookmark
+
+        if self.settings.sync_from:
+            return str(self.settings.sync_from)
+
+        frappe.throw(
+            f"Incremental sync for <b>{self.table.table_name}</b> has no bookmark and no Sync From date. "
+            "Set a <b>Sync From</b> date on the table to define where the first import should start."
+        )
 
     def apply_limit(self, table: Expr) -> Expr:
         if not self.primary_key:
@@ -420,7 +508,7 @@ class WarehouseTableImporter:
 
         pk = self.primary_key
         cutoff_row = (
-            table.order_by(ibis.desc(pk))
+            table.order_by(ibis.desc(pk, nulls_first=False))
             # OFFSET to the Nth row
             # Only selects the pk column so the query is a covering index scan
             .limit(1, offset=self.settings.row_limit - 1)
@@ -446,6 +534,7 @@ class WarehouseTableImporter:
                 self.warehouse_table_name,
                 self.remote_table_schema,
                 database=self.table.schema,
+                mode=self.writer_mode,
                 log_fn=self._log,
             ) as writer:
                 total_rows = self.process_batches(batch_size, writer)
@@ -455,7 +544,7 @@ class WarehouseTableImporter:
             self._log("Import completed successfully.")
         except Exception as e:
             self.log.status = "Failed"
-            self._log(f"Error: \n{e}")
+            self._log(f"Error:\n{frappe.get_traceback()}")
             raise e
 
     def calculate_batch_size(self) -> int:
@@ -476,7 +565,9 @@ class WarehouseTableImporter:
     def process_batches(self, batch_size: int, writer: WarehouseTableWriter) -> int:
         remote_table = self.remote_table
         if self.primary_key:
-            remote_table = remote_table.order_by(self.primary_key)
+            remote_table = remote_table.order_by(
+                ibis.asc(self.primary_key, nulls_first=True),
+            )
 
         batch_number = 0
         total_rows = 0
@@ -505,10 +596,11 @@ class WarehouseTableImporter:
         return total_rows
 
     def update_log(self):
+        ended_at = frappe.utils.now()
         self.log.db_set(
             {
-                "ended_at": frappe.utils.now(),
-                "time_taken": frappe.utils.time_diff_in_seconds(self.log.ended_at, self.log.started_at),
+                "ended_at": ended_at,
+                "time_taken": frappe.utils.time_diff_in_seconds(ended_at, self.log.started_at),
             },
             commit=True,
         )
@@ -522,7 +614,29 @@ class WarehouseTableImporter:
         )
         t.stored = 1
         t.last_synced_on = frappe.utils.now()
-        t.save()
+
+        if self.settings.sync_mode == "Incremental" and self.primary_key:
+            new_bookmark = self._read_warehouse_bookmark()
+            if new_bookmark is not None:
+                t.last_sync_bookmark = str(new_bookmark)
+                self._log(f"Bookmark updated: {self.primary_key} = {new_bookmark}")
+
+        t.save(ignore_permissions=True)
+
+    def _read_warehouse_bookmark(self):
+        """Query DuckDB for the MAX cursor value after a successful incremental import.
+
+        Reading from the warehouse (not the remote query) ensures the bookmark
+        matches what was actually committed, surviving partial failures.
+        """
+        try:
+            wh_table = insights.warehouse.db.table(
+                self.table.warehouse_table_name, database=self.table.schema
+            )
+            return wh_table[self.primary_key].max().execute()
+        except Exception:
+            self._log("Warning: could not read bookmark from warehouse table.")
+            return None
 
     def _log(self, message: str, commit: bool = True):
         if self.last_log_time is None:
@@ -558,3 +672,11 @@ def execute_warehouse_table_import(data_source: str, table_name: str):
 def get_warehouse_schema_name(data_source: str) -> str:
     """Return the DuckDB schema name for a given data source name."""
     return frappe.scrub(data_source).replace(".", "_")
+
+
+def is_warehouse(backend: DuckDBBackend):
+    args = getattr(backend, "_con_args", None)
+    if args and isinstance(args, tuple) and len(args) > 0:
+        warehouse_db_path = insights.warehouse.get_db_path()
+        return args[0] == warehouse_db_path
+    return False

@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { Share2 } from 'lucide-vue-next'
-import { __ } from '../translation'
-import { computed, inject, ref } from 'vue'
+import { GitFork, Share2 } from 'lucide-vue-next'
+import { inject, ref } from 'vue'
 import session from '../session'
+import { __ } from '../translation'
 import { Workbook, workbookKey } from './workbook'
+import WorkbookLineageDialog from './WorkbookLineageDialog.vue'
 import WorkbookShareDialog from './WorkbookShareDialog.vue'
 
 const workbook = inject(workbookKey) as Workbook
 
 const showShareDialog = ref(false)
+const showLineageDialog = ref(false)
 </script>
 
 <template>
@@ -48,6 +50,11 @@ const showShareDialog = ref(false)
 			:button="{ icon: 'more-horizontal', variant: 'outline' }"
 			placement="right"
 			:options="[
+				{
+					label: __('View Lineage'),
+					icon: GitFork,
+					onClick: () => (showLineageDialog = true),
+				},
 				!workbook.doc.read_only
 					? {
 							label: __('Duplicate'),
@@ -79,4 +86,5 @@ const showShareDialog = ref(false)
 	</div>
 
 	<WorkbookShareDialog v-if="workbook.canShare && showShareDialog" v-model="showShareDialog" />
+	<WorkbookLineageDialog v-if="showLineageDialog" v-model="showLineageDialog" />
 </template>

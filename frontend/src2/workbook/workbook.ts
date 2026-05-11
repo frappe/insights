@@ -448,7 +448,10 @@ export function newWorkbookName() {
 	return `new-workbook-${unique_id}`
 }
 
-export function getLinkedQueries(query_name: string): string[] {
+export function getLinkedQueries(query_name: string, _visited: Set<string> = new Set()): string[] {
+	if (_visited.has(query_name)) return []
+	_visited.add(query_name)
+
 	const query = useQuery(query_name)
 	const linkedQueries = new Set<string>()
 
@@ -467,7 +470,7 @@ export function getLinkedQueries(query_name: string): string[] {
 		}
 	})
 
-	linkedQueries.forEach((q) => getLinkedQueries(q).forEach((q) => linkedQueries.add(q)))
+	linkedQueries.forEach((q) => getLinkedQueries(q, _visited).forEach((q) => linkedQueries.add(q)))
 
 	return Array.from(linkedQueries)
 }

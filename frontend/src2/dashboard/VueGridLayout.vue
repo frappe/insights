@@ -72,7 +72,7 @@ const options = reactive({
 })
 </script>
 
-<style lang="scss">
+<style>
 .vgl-layout {
 	--vgl-placeholder-bg: #b1b1b1;
 	--vgl-placeholder-opacity: 15%;
@@ -105,14 +105,14 @@ const options = reactive({
 	width: var(--vgl-resizer-size);
 	height: var(--vgl-resizer-size);
 	cursor: se-resize;
-}
 
-.vgl-item__resizer:before {
-	position: absolute;
-	inset: 0 3px 3px 0;
-	content: '';
-	border: 0 solid var(--vgl-resizer-border-color);
-	border-right-width: var(--vgl-resizer-border-width);
-	border-bottom-width: var(--vgl-resizer-border-width);
+	&:before {
+		position: absolute;
+		inset: 0 3px 3px 0;
+		content: '';
+		border: 0 solid var(--vgl-resizer-border-color);
+		border-right-width: var(--vgl-resizer-border-width);
+		border-bottom-width: var(--vgl-resizer-border-width);
+	}
 }
 </style>

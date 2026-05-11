@@ -51,6 +51,21 @@ function clearFilter() {
 	filterValue.value = undefined
 	emit('close')
 }
+
+// For a bried period, the value of a date filter with 'between' operator is stored as `from_date,to_date` string. This computed property helps to convert it to array and vice versa for the DateRangePicker component.
+const dateRangeVal = computed({
+	get() {
+		let val = state.value
+		if (typeof val === 'string') {
+			const [from_date, to_date] = val.split(',')
+			return [from_date, to_date]
+		}
+		return val
+	},
+	set(val: string) {
+		state.value = val.split(',')
+	},
+})
 </script>
 
 <template>
@@ -79,7 +94,7 @@ function clearFilter() {
 				/>
 				<DateRangePicker
 					v-else-if="valueSelectorType === 'date_range'"
-					v-model="state.value as string[]"
+					v-model="dateRangeVal as string[]"
 				/>
 				<RelativeDatePicker
 					v-else-if="valueSelectorType === 'relative_date'"

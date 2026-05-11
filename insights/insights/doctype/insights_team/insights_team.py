@@ -261,7 +261,9 @@ def check_data_source_permission(source_name, user=None, raise_error=True):
 
 
 def check_table_permission(data_source, table, user=None, raise_error=True):
-    if not frappe.db.get_single_value("Insights Settings", "enable_permissions"):
+    if not frappe.db.get_single_value("Insights Settings", "enable_permissions") or frappe.flags.get(
+        "insights_for_public_access"
+    ):
         return True
 
     user = user or frappe.session.user
@@ -284,7 +286,9 @@ def check_table_permission(data_source, table, user=None, raise_error=True):
 
 
 def get_table_restrictions(data_source, table, user=None):
-    if not frappe.db.get_single_value("Insights Settings", "enable_permissions"):
+    if not frappe.db.get_single_value("Insights Settings", "enable_permissions") or frappe.flags.get(
+        "insights_for_public_access"
+    ):
         return []
 
     user = user or frappe.session.user

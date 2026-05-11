@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { ChevronDown, ChevronRight, Search, Table2 , Calendar, HashIcon,SearchIcon,TypeIcon} from 'lucide-vue-next'
+import {
+	ChevronDown,
+	ChevronRight,
+	Search,
+	Calendar,
+	HashIcon,
+	SearchIcon,
+	TypeIcon,
+} from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
 interface Column {
@@ -46,7 +54,7 @@ function insertColumnName(columnName: string) {
 function getColumnIcon(type: string) {
 	const colType = type?.toLowerCase() || ''
 
-	if (colType === 'string' ) {
+	if (colType === 'string') {
 		return TypeIcon
 	} else if (colType === 'integer' || colType.includes('decimal')) {
 		return HashIcon
@@ -69,7 +77,7 @@ const filteredSchema = computed(() => {
 	Object.entries(props.schema).forEach(([tableName, tableData]) => {
 		const tableMatches = tableName.toLowerCase().includes(query)
 		const matchingColumns = tableData.columns.filter((column) =>
-			column.label.toLowerCase().includes(query)
+			column.label.toLowerCase().includes(query),
 		)
 
 		if (tableMatches || matchingColumns.length > 0) {
@@ -89,68 +97,73 @@ const filteredSchema = computed(() => {
 </script>
 
 <template>
-	<div class="flex h-full flex-col overflow-hidden rounded border">
-		<div class="flex-shrink-0 border-b px-3 py-2.5 text-sm font-medium text-gray-700">
-			Tables
+	<div class="flex flex-1 flex-col overflow-hidden px-3.5 py-3">
+		<div class="mb-2 flex h-6 flex-shrink-0 items-center justify-between">
+			<div class="text-sm font-medium">Tables</div>
 		</div>
-		<div class="flex-shrink-0 border-b p-2">
-			<div class="relative">
-				<FormControl
-				placeholder="Search Tables and Columns..."
+		<div class="mb-2 flex-shrink-0">
+			<FormControl
+				placeholder="Search tables and columns..."
 				v-model="searchQuery"
-				:debounce="300">
+				:debounce="300"
+				autocomplete="off"
+			>
 				<template #prefix>
-					<SearchIcon class="h-4 w-4 text-gray-500" />
+					<SearchIcon class="h-3.5 w-3.5 text-gray-500" />
 				</template>
 			</FormControl>
-			</div>
 		</div>
-		<div class="flex-1 overflow-y-auto">
-			<div v-if="!Object.keys(schema).length" class="p-4 text-center text-sm text-gray-500">
-				No Tables available. Select a data source first
+		<div class="flex-1 overflow-y-auto text-base">
+			<div v-if="!Object.keys(schema).length" class="py-4 text-center text-sm text-gray-500">
+				Select a data source to explore tables
 			</div>
-			<div v-else-if="!Object.keys(filteredSchema).length" class="p-4 text-center text-sm text-gray-500">
+			<div
+				v-else-if="!Object.keys(filteredSchema).length"
+				class="py-4 text-center text-sm text-gray-500"
+			>
 				No tables or columns match your search
 			</div>
-			<div v-else class="divide-y">
-				<div v-for="[tableName, tableData] in Object.entries(filteredSchema)" :key="tableName">
-					<div class="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50">
+			<div v-else class="flex flex-col gap-0.5">
+				<div
+					v-for="[tableName, tableData] in Object.entries(filteredSchema)"
+					:key="tableName"
+				>
+					<div
+						class="flex w-full cursor-pointer select-none items-center gap-1.5 rounded py-1.5 text-gray-700 hover:bg-gray-50"
+						@click="toggleTable(tableName)"
+					>
+						<ChevronDown
+							v-if="expandedTables.has(tableName)"
+							class="h-4 w-4 flex-shrink-0 text-gray-400"
+						/>
+						<ChevronRight v-else class="h-4 w-4 flex-shrink-0 text-gray-400" />
+
 						<button
-							@click="toggleTable(tableName)"
-							class="flex h-4 w-4 flex-shrink-0 items-center justify-center"
-						>
-							<ChevronRight
-								v-if="!expandedTables.has(tableName)"
-								class="h-4 w-4 text-gray-500"
-							/>
-							<ChevronDown
-								v-else
-								class="h-4 w-4 text-gray-500"
-							/>
-						</button>
-						<Table2 class="h-4 w-4text-gray-700 flex flex-shrink-0" />
-						<button
-							@click="insertTableName(tableName)"
+							@click.stop="insertTableName(tableName)"
 							class="truncate text-start font-medium text-gray-700 hover:text-blue-600"
 						>
 							{{ tableName }}
 						</button>
 					</div>
-					<div v-if="expandedTables.has(tableName)" class=" py-1">
+					<div
+						v-if="expandedTables.has(tableName)"
+						class="ml-3 flex flex-col gap-0.5 py-0.5"
+					>
 						<button
 							v-for="column in tableData.columns"
 							:key="column.label"
 							@click="insertColumnName(column.label)"
-							class="flex w-full items-center gap-2 px-4 py-1.5 text-left text-sm text-gray-600 hover:bg-gray-100 hover:text-blue-600"
+							class="flex w-full items-center gap-1.5 rounded py-1.5 pl-2 text-left text-gray-600 hover:bg-gray-50"
 							:title="`${column.label} (${column.detail || column.type})`"
 						>
 							<component
 								:is="getColumnIcon(column.detail || column.type)"
-								class="h-4 w-4 flex-shrink-0 text-gray-700"
+								class="h-4 w-4 flex-shrink-0 text-gray-600"
 							/>
-
-							<span class="truncate text-gray-700 hover:text-blue-600">{{ column.label }}</span>
-							<span class="ml-auto flex-shrink-0 text-xs text-gray-500">{{ column.detail || column.type }}</span>
+							<span class="truncate text-gray-700">{{ column.label }}</span>
+							<span class="ml-auto flex-shrink-0 pr-1 text-xs text-gray-500">{{
+								column.detail || column.type
+							}}</span>
 						</button>
 					</div>
 				</div>

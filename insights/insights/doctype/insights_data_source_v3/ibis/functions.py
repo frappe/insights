@@ -1185,9 +1185,10 @@ def week_start(column: ir.DateValue):
         "Sunday",
     ]
     week_starts_on = days.index(week_start_day)
-    day_of_week = column.day_of_week.index().cast("int32")
+    date = column.truncate("D")
+    day_of_week = date.day_of_week.index().cast("int32")
     adjusted_week_start = (day_of_week - week_starts_on + 7) % 7
-    week_start = column - adjusted_week_start.as_interval("D")
+    week_start = date - adjusted_week_start.as_interval("D")
     return week_start
 
 
@@ -1200,9 +1201,7 @@ def month_start(column: ir.DateValue):
     Examples:
     - month_start(order_date)
     """
-
-    month_start = column.strftime("%Y-%m-01").cast("date")
-    return month_start
+    return column.truncate("M")
 
 
 def quarter_start(column: ir.DateValue):
@@ -1214,12 +1213,7 @@ def quarter_start(column: ir.DateValue):
     Examples:
     - quarter_start(order_date)
     """
-
-    year = column.year()
-    quarter = column.quarter()
-    month = (quarter * 3) - 2
-    quarter_start = ibis.date(year, month, 1)
-    return quarter_start
+    return column.truncate("Q")
 
 
 def year_start(column: ir.DateValue):
@@ -1231,9 +1225,7 @@ def year_start(column: ir.DateValue):
     Examples:
     - year_start(order_date)
     """
-
-    year_start = column.strftime("%Y-01-01").cast("date")
-    return year_start
+    return column.truncate("Y")
 
 
 def fiscal_year_start(column: ir.DateValue):

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import ChartSectionEmptySvg from '@/query/ChartSectionEmptySvg.vue'
 import { Button } from 'frappe-ui'
-import { Maximize, XIcon } from 'lucide-vue-next'
+import { Maximize, XIcon, RefreshCcw } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { titleCase } from '../../helpers'
 import { FIELDTYPES } from '../../helpers/constants.ts'
@@ -204,6 +204,17 @@ const showExpandedChartDialog = ref(false)
 				<LoadingIndicator class="h-5 w-5 text-gray-500" />
 				<p class="mt-1.5 text-gray-500">Loading data...</p>
 			</template>
+			<template v-else-if="chart.dataQuery.isServerBusy">
+				<Button
+					variant="outline"
+					@click="chart.refresh(true)"
+					label="Server is busy, click to retry"
+				>
+					<template #prefix>
+						<RefreshCcw class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+					</template>
+				</Button>
+			</template>
 			<template v-else>
 				<ChartSectionEmptySvg></ChartSectionEmptySvg>
 				<p class="text-gray-500">
@@ -214,7 +225,8 @@ const showExpandedChartDialog = ref(false)
 
 		<div
 			v-if="!props.hideMaximize && chart && chart.doc.chart_type !== 'Number'"
-			class="absolute top-1.5 right-1.5 p-1 opacity-0 transition-opacity group-hover:opacity-100"
+			class="absolute top-0 right-0 opacity-0 transition-opacity group-hover:opacity-100"
+			:class="chart_type == 'Table' ? 'p-1.5' : 'p-2'"
 		>
 			<Button variant="ghost" @click="showExpandedChartDialog = true">
 				<Maximize class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />

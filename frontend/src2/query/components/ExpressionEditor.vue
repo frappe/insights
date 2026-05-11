@@ -262,7 +262,7 @@ function setSignatureElementPosition() {
 		<div
 			ref="signatureElement"
 			v-show="currentFunctionSignature"
-			class="absolute z-10 flex h-fit max-h-[14rem] w-[25rem] flex-col gap-2 overflow-y-auto rounded-lg bg-white px-2.5 py-1.5 shadow-md transition-all"
+			class="absolute flex h-fit max-h-[14rem] w-[25rem] flex-col gap-2 overflow-y-auto rounded-lg bg-white px-2.5 py-1.5 shadow-md transition-all"
 		>
 			<template v-if="currentFunctionSignature">
 				<p
@@ -315,15 +315,15 @@ function setSignatureElementPosition() {
 	</div> -->
 </template>
 
-<style lang="scss">
+<style>
 .column-expression {
-	.cm-content {
+	& .cm-content {
 		height: 100% !important;
 	}
-	.cm-gutters {
+	& .cm-gutters {
 		height: 100% !important;
 	}
-	.cm-tooltip-autocomplete {
+	& .cm-tooltip-autocomplete {
 		position: absolute !important;
 		z-index: 50 !important;
 	}

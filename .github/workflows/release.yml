@@ -20,8 +20,22 @@ jobs:
           node-version: 24
       - name: Setup dependencies
         run: |
-          npm install @semantic-release/git @semantic-release/exec --no-save
+          npm install @semantic-release/git @semantic-release/exec @semantic-release/release-notes-generator conventional-changelog-conventionalcommits --no-save
+      - name: Record pre-release state
+        id: pre_release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PREV=$(gh release list --limit 1 --json tagName --jq '.[0].tagName // ""')
+          echo "tag=${PREV}" >> $GITHUB_OUTPUT
       - name: Create Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx semantic-release
+      - name: Enrich release notes with author mentions
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          bash .github/helpers/enrich_release_notes.sh \
+            "${{ steps.pre_release.outputs.tag }}" \
+            "${{ github.repository }}"

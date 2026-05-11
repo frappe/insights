@@ -8,6 +8,7 @@ import frappe
 import ibis
 from frappe.model.document import Document
 from frappe.permissions import get_valid_perms
+from frappe.query_builder.functions import Count, Max, Sum
 from ibis import Table
 from ibis.backends.duckdb import Backend as DuckDBBackend
 
@@ -27,9 +28,13 @@ class InsightsTablev3(Document):
         before_import_script: DF.Code | None
         data_source: DF.Link
         label: DF.Data
+        last_sync_bookmark: DF.Data | None
         last_synced_on: DF.Datetime | None
         row_limit: DF.Int
         stored: DF.Check
+        sync_cursor_column: DF.Data | None
+        sync_from: DF.Datetime | None
+        sync_mode: DF.Literal["Full", "Incremental"]
         table: DF.Data
     # end: auto-generated types
 
@@ -37,6 +42,9 @@ class InsightsTablev3(Document):
         self.name = get_table_name(self.data_source, self.table)
 
     def validate(self):
+        if self.sync_mode == "Incremental":
+            self._validate_incremental_sync_config()
+
         if self.before_import_script:
             from insights.insights.doctype.insights_data_source_v3.ibis_utils import exec_with_return
 
@@ -45,6 +53,46 @@ class InsightsTablev3(Document):
                 exec_with_return(self.before_import_script, {"table": table})
             except Exception as e:
                 frappe.throw(f"Error executing before import script: {e}")
+
+    def _validate_incremental_sync_config(self):
+        try:
+            remote = InsightsDataSourcev3.get_doc(self.data_source).get_ibis_table(self.table)
+        except Exception:
+            # Can't connect right now — skip validation rather than blocking save.
+            return
+
+        if not self.sync_cursor_column:
+            frappe.throw(
+                "Incremental sync requires a Cursor Column. "
+                "Set it to the datetime column that marks when rows were created (e.g., <b>creation</b>)."
+            )
+
+        if not self.sync_cursor_column:
+            for candidate in ("creation", "timestamp"):
+                if candidate in remote.columns:
+                    self.sync_cursor_column = candidate
+                    return
+            frappe.throw(
+                "Incremental sync requires a Cursor Column. "
+                "Set it to the datetime column that marks when rows were created (e.g., <b>creation</b>)."
+            )
+            return
+
+        # Auto-detected candidates are known-good; only validate user-specified columns.
+        if self.sync_cursor_column in ("creation", "timestamp"):
+            return
+
+        if self.sync_cursor_column not in remote.columns:
+            frappe.throw(
+                f"Cursor Column <b>{self.sync_cursor_column}</b> does not exist in <b>{self.table}</b>."
+            )
+
+        col_type = remote[self.sync_cursor_column].type()
+        if not col_type.is_temporal():
+            frappe.throw(
+                f"Cursor Column <b>{self.sync_cursor_column}</b> must be a datetime/date column, "
+                f"but its type is <b>{col_type}</b>."
+            )
 
     @staticmethod
     def bulk_create(data_source: str, tables: list[str]):
@@ -104,12 +152,134 @@ class InsightsTablev3(Document):
         wt = insights.warehouse.get_table(self.data_source, self.table)
         wt.enqueue_import()
 
+    @frappe.whitelist()
+    def clear_warehouse_data(self):
+        frappe.only_for("Insights Admin")
+        insights.warehouse.get_table(self.data_source, self.table).drop()
+        self.db_set(
+            {
+                "stored": 0,
+                "last_synced_on": None,
+                "last_sync_bookmark": None,
+            },
+            commit=True,
+        )
+
+    @frappe.whitelist()
+    def get_stats(self):
+        """Return usage and sync statistics for this table."""
+        return get_table_stats(self.data_source, self.table)
+
 
 def get_table_name(data_source, table):
     return md5((data_source + table).encode()).hexdigest()[:10]
 
 
+def get_table_stats(data_source: str, table_name: str) -> dict:
+    """Derive usage and sync stats for a warehouse table from existing data.
+
+    Returns:
+        - last_synced_on: last successful import timestamp
+        - last_import_rows: row count from the most recent import
+        - last_import_duration: duration (seconds) of the most recent import
+        - referencing_queries: list of query names/titles that currently reference this table
+        - last_executed_on: when the most recent referencing query was last executed
+        - execution_count: total executions across all referencing queries
+        - total_syncs: total number of import attempts
+        - total_sync_time: sum of all import durations (seconds)
+        - failed_syncs: number of failed imports
+    """
+    ImportLog = frappe.qb.DocType("Insights Table Import Log")
+
+    last_import = (
+        frappe.qb.from_(ImportLog)
+        .select(ImportLog.rows_imported, ImportLog.time_taken)
+        .where(
+            (ImportLog.data_source == data_source)
+            & (ImportLog.table_name == table_name)
+            & (ImportLog.status == "Success")
+        )
+        .orderby(ImportLog.creation, order=frappe.qb.desc)
+        .limit(1)
+        .run(as_dict=True)
+    )
+
+    import_agg = (
+        frappe.qb.from_(ImportLog)
+        .select(
+            Count("*").as_("total_syncs"),
+            Sum(ImportLog.time_taken).as_("total_sync_time"),
+            Count(frappe.qb.terms.Case().when(ImportLog.status == "Failed", 1)).as_("failed_syncs"),
+        )
+        .where((ImportLog.data_source == data_source) & (ImportLog.table_name == table_name))
+        .run(as_dict=True)
+    )
+
+    last_synced_on, last_import_rows, last_import_duration = None, 0, 0
+    table_doc = frappe.db.get_value(
+        "Insights Table v3",
+        get_table_name(data_source, table_name),
+        ["last_synced_on"],
+        as_dict=True,
+    )
+    if table_doc:
+        last_synced_on = table_doc.last_synced_on
+    if last_import:
+        last_import_rows = last_import[0].get("rows_imported") or 0
+        last_import_duration = last_import[0].get("time_taken") or 0
+
+    referencing_queries = _get_referencing_queries(data_source, table_name)
+    query_names = [q["name"] for q in referencing_queries]
+
+    last_executed_on = None
+    execution_count = 0
+    if query_names:
+        ExecLog = frappe.qb.DocType("Insights Query Execution Log")
+        exec_stats = (
+            frappe.qb.from_(ExecLog)
+            .select(
+                Max(ExecLog.creation).as_("last_executed_on"),
+                Count("*").as_("execution_count"),
+            )
+            .where(ExecLog.query.isin(query_names))
+            .run(as_dict=True)
+        )
+        if exec_stats:
+            last_executed_on = exec_stats[0].get("last_executed_on")
+            execution_count = exec_stats[0].get("execution_count") or 0
+
+    agg = import_agg[0] if import_agg else {}
+    return {
+        "last_synced_on": last_synced_on,
+        "last_import_rows": last_import_rows,
+        "last_import_duration": last_import_duration,
+        "total_syncs": agg.get("total_syncs") or 0,
+        "total_sync_time": agg.get("total_sync_time") or 0,
+        "failed_syncs": agg.get("failed_syncs") or 0,
+        "referencing_queries": referencing_queries,
+        "last_executed_on": last_executed_on,
+        "execution_count": execution_count,
+    }
+
+
+def _get_referencing_queries(data_source: str, table_name: str) -> list[dict]:
+    """Find all Insights Query v3 docs that reference this table via the edge table."""
+    Ref = frappe.qb.DocType("Insights Query Reference")
+    Query = frappe.qb.DocType("Insights Query v3")
+    return (
+        frappe.qb.from_(Ref)
+        .join(Query)
+        .on(Query.name == Ref.query)
+        .select(Query.name, Query.title, Query.workbook)
+        .where((Ref.ref_type == "Table") & (Ref.data_source == data_source) & (Ref.table_name == table_name))
+        .run(as_dict=True)
+    )
+
+
 def apply_user_permissions(t: Table, data_source, table_name):
+    if frappe.flags.get("insights_for_public_access"):
+        return t
+
     if not frappe.db.get_value("Insights Data Source v3", data_source, "is_site_db", cache=True):
         return t
 

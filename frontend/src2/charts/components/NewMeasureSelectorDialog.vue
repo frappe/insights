@@ -88,7 +88,7 @@ function resetNewMeasure() {
 		:modelValue="Boolean(showDialog)"
 		:disableOutsideClickToClose="true"
 		@after-leave="resetNewMeasure"
-		@close="!newMeasure.expression && (showDialog = false)"
+		@close="showDialog = false"
 	>
 		<template #body>
 			<div class="bg-white px-4 pb-6 pt-5 sm:px-6">
@@ -141,18 +141,18 @@ function resetNewMeasure() {
 	</Dialog>
 </template>
 
-<style lang="scss">
+<style>
 div[data-dismissable-layer] {
 	border-radius: 0.75rem;
 }
 .column-expression {
-	.cm-column-highlight {
+	& .cm-column-highlight {
 		background-color: #ededed !important;
 		border-radius: 0.5rem !important;
 		padding: 1px 2px !important;
 		border: 1px solid #dedede !important;
 	}
-	.cm-scroller {
+	& .cm-scroller {
 		background-color: #ffffff !important;
 		border-radius: 0.5rem !important;
 		border: 1px solid #ededed !important;

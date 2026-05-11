@@ -32,25 +32,16 @@ function toggleLiveConnection(enable: boolean) {
 			</div>
 			<div></div>
 		</div>
-		<div class="flex flex-shrink-0 flex-col gap-2.5 border-b px-0.5 pb-3">
+		<div class="flex flex-shrink-0 flex-col gap-3 border-b px-0.5 pb-3">
 			<InlineFormControlLabel label="Query Title">
-				<LazyTextInput
-					type="text"
-					placeholder="Title"
-					v-model="query.doc.title"
-				/>
+				<LazyTextInput type="text" placeholder="Title" v-model="query.doc.title" />
 			</InlineFormControlLabel>
-			<InlineFormControlLabel
+			<Toggle
 				v-if="settings.doc.enable_data_store"
 				label="Enable Data Store"
-				class="!w-1/2"
-			>
-				<Toggle
-					class="mt-1"
-					:modelValue="!query.doc.use_live_connection"
-					@update:modelValue="toggleLiveConnection"
-				/>
-			</InlineFormControlLabel>
+				:modelValue="!query.doc.use_live_connection"
+				@update:modelValue="toggleLiveConnection"
+			/>
 		</div>
 	</div>
 </template>

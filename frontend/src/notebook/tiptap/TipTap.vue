@@ -84,7 +84,7 @@ const bubbleMenu = [
 ]
 </script>
 
-<style lang="scss">
+<style>
 /* Placeholder */
 .prose [data-placeholder].is-empty::before {
 	content: attr(data-placeholder);

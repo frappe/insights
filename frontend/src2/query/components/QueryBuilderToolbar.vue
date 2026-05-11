@@ -1,15 +1,30 @@
 <script setup lang="ts">
 import { useTimeAgo } from '@vueuse/core'
-import { Copy, CopyPlus, MoreHorizontal, PlayIcon, RefreshCw, Scroll } from 'lucide-vue-next'
+import {
+	Copy,
+	CopyPlus,
+	MoreHorizontal,
+	PlayIcon,
+	RefreshCw,
+	Scroll,
+	ScanSearch,
+} from 'lucide-vue-next'
 import { computed, h, inject, ref } from 'vue'
 import { Query } from '../query'
 import { __ } from '../../translation'
+import ExplainPlanDialog from './ExplainPlanDialog.vue'
 import ViewSQLDialog from './ViewSQLDialog.vue'
 import session from '../../session'
 
 const query = inject('query') as Query
 
 const showViewSQLDialog = ref(false)
+const showExplainDialog = ref(false)
+
+async function openExplainDialog() {
+	showExplainDialog.value = true
+	await query.explainQuery()
+}
 
 const moreActions = computed(() => {
 	const actions = []
@@ -40,6 +55,14 @@ const moreActions = computed(() => {
 		},
 	)
 
+	if (session.user.is_admin) {
+		actions.push({
+			label: __('Explain Plan'),
+			icon: h(ScanSearch, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
+			onClick: openExplainDialog,
+		})
+	}
+
 	return actions
 })
 </script>
@@ -64,20 +87,15 @@ const moreActions = computed(() => {
 			</div>
 		</div>
 		<div class="flex items-center gap-2">
-			<Button
-				variant="ghost"
-				:label="__('Execute')"
-				@click="() => query.execute(true)"
-				class="!h-6 !gap-1.5 bg-white !px-2 text-xs shadow"
-			>
+			<Button variant="outline" :label="__('Execute')" @click="() => query.execute(true)">
 				<template #prefix>
-					<PlayIcon class="h-3 w-3 text-gray-700" stroke-width="1.5" />
+					<PlayIcon class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
 				</template>
 			</Button>
 			<Dropdown placement="right" :options="moreActions">
-				<Button variant="ghost" class="!h-6 !gap-1.5 bg-white !px-2 text-xs shadow">
+				<Button variant="outline">
 					<template #icon>
-						<MoreHorizontal class="h-3 w-3 text-gray-700" stroke-width="1.5" />
+						<MoreHorizontal class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
 					</template>
 				</Button>
 			</Dropdown>
@@ -85,4 +103,5 @@ const moreActions = computed(() => {
 	</div>
 
 	<ViewSQLDialog v-if="showViewSQLDialog" v-model="showViewSQLDialog" />
+	<ExplainPlanDialog v-if="showExplainDialog" v-model="showExplainDialog" />
 </template>

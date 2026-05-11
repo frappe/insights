@@ -121,7 +121,7 @@ watch(
 )
 </script>
 
-<style lang="scss">
+<style>
 .contenteditable:empty:before {
 	content: attr(placeholder);
 	pointer-events: none;
