@@ -17,6 +17,8 @@ import ChartShareDialog from './components/ChartShareDialog.vue'
 import ChartSortConfig from './components/ChartSortConfig.vue'
 import ChartTypeSelector from './components/ChartTypeSelector.vue'
 import CollapsibleSection from './components/CollapsibleSection.vue'
+import FormControl from '../components/FormControl.vue'
+import TitleColorSelector from './components/Titlecolorselector.vue'
 
 const props = defineProps<{ chart_name: string; queries: DropdownOption[] }>()
 
@@ -93,6 +95,18 @@ const showShareDialog = ref(false)
 					<ChartQuerySelector v-model="chart.doc.query" :queries="props.queries" />
 					<InlineFormControlLabel label="Title">
 						<LazyTextInput type="text" placeholder="Title" v-model="chart.doc.title" />
+					</InlineFormControlLabel>
+					<InlineFormControlLabel label="Title Size">
+						<FormControl
+							type="number"
+							v-model="chart.doc.config.title_font_size"
+							:min="10"
+							:max="72"
+							placeholder="18"
+						/>
+					</InlineFormControlLabel>
+					<InlineFormControlLabel label="Title Color">
+						<TitleColorSelector v-model="chart.doc.config.title_color" />
 					</InlineFormControlLabel>
 				</div>
 			</CollapsibleSection>

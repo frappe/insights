@@ -98,6 +98,8 @@ export type InsightsChartv3 = {
 		order_by: OrderByArgs[]
 		filters?: FilterGroupArgs
 		limit?: number
+		title_font_size?: number
+		title_color?:string
 	}
 	read_only: boolean
 }
