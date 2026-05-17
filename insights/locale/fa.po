@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-04-26 09:47+0000\n"
-"PO-Revision-Date: 2026-05-11 12:59\n"
+"PO-Revision-Date: 2026-05-17 13:39\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Persian\n"
 "MIME-Version: 1.0\n"
@@ -2666,16 +2666,16 @@ msgstr ""
 #: frontend/src2/components/DemoDataBanner.vue:32
 #: frontend/src2/settings/GeneralSettings.vue:28
 msgid "Setup Failed"
-msgstr ""
+msgstr "راه‌اندازی ناموفق بود"
 
 #: frontend/src2/charts/components/ChartBuilderToolbar.vue:38
 #: frontend/src2/charts/components/ChartShareDialog.vue:35
 msgid "Share Chart"
-msgstr ""
+msgstr "اشتراک‌گذاری نمودار"
 
 #: frontend/src2/dashboard/DashboardShareDialog.vue:83
 msgid "Share Dashboard"
-msgstr ""
+msgstr "اشتراک‌گذاری داشبورد"
 
 #. Label of the share_link (Data) field in DocType 'Insights Dashboard v3'
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
@@ -2689,7 +2689,7 @@ msgstr ""
 #. Label of the is_site_db (Check) field in DocType 'Insights Data Source'
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 msgid "Site Database"
-msgstr ""
+msgstr "پایگاه داده سایت"
 
 #: frontend/src2/components/DataTableColumn.vue:20
 msgid "Sort Ascending"
@@ -2894,7 +2894,7 @@ msgstr ""
 #. Label of the tables (Table) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Tables"
-msgstr "جدول‌ها"
+msgstr "جداول"
 
 #: frontend/src2/teams/TeamList.vue:30
 msgid "Team"
@@ -3053,17 +3053,17 @@ msgstr ""
 #. Label of the transform_tab (Tab Break) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Transform"
-msgstr ""
+msgstr "تبدیل"
 
 #. Label of the transforms (Table) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Transforms"
-msgstr ""
+msgstr "تبدیل‌ها"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Query Transform'
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
 msgid "Transpose"
-msgstr ""
+msgstr "انتقال"
 
 #: frontend/src2/components/DemoDataBanner.vue:50
 msgid "Try demo data"
@@ -3095,7 +3095,7 @@ msgstr "نوع"
 
 #: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:72
 msgid "Unexpected validation error"
-msgstr ""
+msgstr "خطای اعتبارسنجی غیرمنتظره"
 
 #: frontend/src2/charts/components/MeasurePicker.vue:131
 msgid "Unique Count of..."
@@ -3116,15 +3116,15 @@ msgstr ""
 
 #: frontend/src2/data_source/DataSourceTableList.vue:82
 msgid "Update Tables"
-msgstr ""
+msgstr "به‌روزرسانی جداول"
 
 #: frontend/src2/data_source/DataSourceList.vue:76
 msgid "Upload CSV or Excel"
-msgstr ""
+msgstr "آپلود فایل CSV یا اکسل"
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:96
 msgid "Upload CSV/Excel/JSON File"
-msgstr ""
+msgstr "آپلود فایل CSV/Excel/JSON"
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:37
 msgid "Upload Failed"
@@ -3132,7 +3132,7 @@ msgstr "بارگذاری ناموفق"
 
 #: frontend/src2/data_source/DataSourceList.vue:78
 msgid "Upload a CSV or Excel file to create a new data source"
-msgstr ""
+msgstr "برای ایجاد یک منبع داده جدید، یک فایل CSV یا Excel آپلود کنید"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:75
 msgid "Usage"
@@ -3276,13 +3276,13 @@ msgstr "هفتگی"
 #: insights/insights/doctype/insights_folder/insights_folder.json
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Workbook"
-msgstr ""
+msgstr "کتاب کار"
 
 #: frontend/src2/components/AppSidebar.vue:79
 #: frontend/src2/home/HomeWorkbookList.vue:36
 #: frontend/src2/workbook/WorkbookList.vue:148
 msgid "Workbooks"
-msgstr ""
+msgstr "کتاب‌های کار"
 
 #: frontend/src2/charts/components/MapChartConfigForm.vue:54
 msgid "World Map"
@@ -3322,7 +3322,7 @@ msgstr ""
 
 #: frontend/src2/query/components/FormatRule.vue:194
 msgid "after date"
-msgstr ""
+msgstr "پس از تاریخ"
 
 #. Option for the 'Order By' (Select) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
@@ -3331,7 +3331,7 @@ msgstr "صعودی"
 
 #: frontend/src2/query/components/FormatRule.vue:193
 msgid "before date"
-msgstr ""
+msgstr "قبل از تاریخ"
 
 #: frontend/src2/query/components/FormatRule.vue:195
 msgid "between dates"
@@ -3381,7 +3381,7 @@ msgstr "مثلاً john@example.com، henry@example.com"
 
 #: frontend/src2/workbook/WorkbookLineageDialog.vue:158
 msgid "edges"
-msgstr ""
+msgstr "لبه‌ها"
 
 #: frontend/src2/query/components/FormatRule.vue:177
 msgid "ends with"
@@ -3433,23 +3433,23 @@ msgstr "این هفته است"
 
 #: frontend/src2/query/components/FormatRule.vue:192
 msgid "is this year"
-msgstr ""
+msgstr "امسال است"
 
 #: frontend/src2/query/components/FormatRule.vue:185
 msgid "is today"
-msgstr ""
+msgstr "امروز است"
 
 #: frontend/src2/query/components/FormatRule.vue:187
 msgid "is tomorrow"
-msgstr ""
+msgstr "فردا است"
 
 #: frontend/src2/query/components/FormatRule.vue:186
 msgid "is yesterday"
-msgstr ""
+msgstr "دیروز است"
 
 #: frontend/src2/query/components/FormatRule.vue:169
 msgid "less than"
-msgstr ""
+msgstr "کمتر از"
 
 #: frontend/src2/query/components/FormatRule.vue:170
 msgid "less than or equals"
@@ -3461,7 +3461,7 @@ msgstr ""
 
 #: frontend/src2/query/components/FormatRule.vue:166
 msgid "not equals"
-msgstr ""
+msgstr "برابر نیست"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Folder'
 #: insights/insights/doctype/insights_folder/insights_folder.json
@@ -3477,7 +3477,7 @@ msgstr ""
 
 #: frontend/src2/query/components/FormatRule.vue:176
 msgid "starts with"
-msgstr ""
+msgstr "شروع می‌شود با"
 
 #: frontend/src2/query/components/ColumnsSelectorDialog.vue:120
 msgid "{0} columns selected"
