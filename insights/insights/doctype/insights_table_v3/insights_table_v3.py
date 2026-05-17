@@ -35,6 +35,8 @@ class InsightsTablev3(Document):
         sync_cursor_column: DF.Data | None
         sync_from: DF.Datetime | None
         sync_mode: DF.Literal["Full", "Incremental"]
+        sync_primary_key_column: DF.Data | None
+        sync_strategy: DF.Literal["Append Only", "Update or Insert"]
         table: DF.Data
     # end: auto-generated types
 
@@ -61,26 +63,19 @@ class InsightsTablev3(Document):
             # Can't connect right now — skip validation rather than blocking save.
             return
 
-        if not self.sync_cursor_column:
-            frappe.throw(
-                "Incremental sync requires a Cursor Column. "
-                "Set it to the datetime column that marks when rows were created (e.g., <b>creation</b>)."
-            )
+        self.sync_strategy = self.sync_strategy or "Append Only"
 
         if not self.sync_cursor_column:
-            for candidate in ("creation", "timestamp"):
-                if candidate in remote.columns:
+            for candidate in ("modified", "creation", "timestamp"):
+                if candidate in remote.columns and remote[candidate].type().is_temporal():
                     self.sync_cursor_column = candidate
-                    return
+                    break
+
+        if not self.sync_cursor_column:
             frappe.throw(
                 "Incremental sync requires a Cursor Column. "
-                "Set it to the datetime column that marks when rows were created (e.g., <b>creation</b>)."
+                "Set it to the datetime column that tracks when rows changed (for example <b>modified</b> or <b>creation</b>)."
             )
-            return
-
-        # Auto-detected candidates are known-good; only validate user-specified columns.
-        if self.sync_cursor_column in ("creation", "timestamp"):
-            return
 
         if self.sync_cursor_column not in remote.columns:
             frappe.throw(
@@ -93,6 +88,18 @@ class InsightsTablev3(Document):
                 f"Cursor Column <b>{self.sync_cursor_column}</b> must be a datetime/date column, "
                 f"but its type is <b>{col_type}</b>."
             )
+
+        if self.sync_strategy == "Update or Insert":
+            if not self.sync_primary_key_column:
+                frappe.throw(
+                    "Incremental upsert sync requires a Primary Key Column. "
+                    "Set it to the stable column that uniquely identifies each logical row."
+                )
+
+            if self.sync_primary_key_column not in remote.columns:
+                frappe.throw(
+                    f"Primary Key Column <b>{self.sync_primary_key_column}</b> does not exist in <b>{self.table}</b>."
+                )
 
     @staticmethod
     def bulk_create(data_source: str, tables: list[str]):

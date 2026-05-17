@@ -14,9 +14,13 @@
   "stored",
   "sync_section",
   "sync_mode",
-  "sync_cursor_column",
   "sync_from",
+  "column_break_poei",
+  "sync_strategy",
+  "sync_cursor_column",
+  "sync_primary_key_column",
   "last_sync_bookmark",
+  "section_break_mdzv",
   "before_import_script"
  ],
  "fields": [
@@ -68,8 +72,7 @@
   },
   {
    "fieldname": "sync_section",
-   "fieldtype": "Section Break",
-   "label": "Incremental Sync"
+   "fieldtype": "Section Break"
   },
   {
    "default": "Full",
@@ -79,12 +82,29 @@
    "options": "Full\nIncremental"
   },
   {
+   "default": "Append Only",
    "depends_on": "eval:doc.sync_mode == 'Incremental'",
-   "description": "Column used to track sync progress. Use <b>modified</b> if rows can be updated (syncs new and changed rows). Use <b>creation</b> if rows are append-only (syncs only new rows, faster).",
+   "description": "Choose how incremental sync writes rows: <b>Append Only</b> adds new rows, while <b>Update or Insert</b> updates matching keys and inserts new rows.",
+   "fieldname": "sync_strategy",
+   "fieldtype": "Select",
+   "label": "Sync Strategy",
+   "options": "Append Only\nUpdate or Insert"
+  },
+  {
+   "depends_on": "eval:doc.sync_mode == 'Incremental'",
+   "description": "Temporal column used to detect rows that changed since the last sync. Use <b>modified</b> for mutable tables and <b>creation</b> for append-only tables.",
    "fieldname": "sync_cursor_column",
    "fieldtype": "Data",
    "label": "Cursor Column",
    "mandatory_depends_on": "eval:doc.sync_mode == 'Incremental'"
+  },
+  {
+   "depends_on": "eval:doc.sync_mode == 'Incremental' && doc.sync_strategy == 'Update or Insert'",
+   "description": "Stable key used to identify the latest version of each logical row during incremental upserts.",
+   "fieldname": "sync_primary_key_column",
+   "fieldtype": "Data",
+   "label": "Primary Key Column",
+   "mandatory_depends_on": "eval:doc.sync_mode == 'Incremental' && doc.sync_strategy == 'Update or Insert'"
   },
   {
    "depends_on": "eval:doc.sync_mode == 'Incremental'",
@@ -106,11 +126,19 @@
    "fieldtype": "Code",
    "label": "Before Import Script",
    "options": "Python"
+  },
+  {
+   "fieldname": "column_break_poei",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_mdzv",
+   "fieldtype": "Section Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-18 00:00:00.000000",
+ "modified": "2026-05-17 11:46:50.112615",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Table v3",
