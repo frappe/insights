@@ -129,12 +129,15 @@ class InsightsPermissions:
             return frappe.qb.from_(frappe.qb.DocType("Insights Data Source v3")).select("name")
 
         # if team permissions are enabled, allow data sources of allowed tables
+        DataSource = frappe.qb.DocType("Insights Data Source v3")
         Table = frappe.qb.DocType("Insights Table v3")
         AllowedTables = self._build_table_permission_query(ptype)
 
         return (
-            frappe.qb.from_(Table)
-            .select(Table.data_source)
+            frappe.qb.from_(DataSource)
+            .select(DataSource.name)
+            .left_join(Table)
+            .on(Table.data_source == DataSource.name)
             .left_join(AllowedTables)
             .on(Table.name == AllowedTables.name)
             .where(AllowedTables.name.isnotnull())

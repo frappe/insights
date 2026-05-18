@@ -63,11 +63,28 @@ const expressionMeasure = computed<ExpressionMeasure | undefined>({
 })
 
 const searchQuery = ref('')
+const aggregationPrefixes = aggregations.map((aggregation) => `${aggregation}_`)
+const lastAutoMeasureName = ref('')
 
 // Tracks whether the user manually clicked "back" (ChevronLeft) to change the
 // aggregation. When true, we don't auto-fill the aggregation so the user can
 // choose a different function.
 const userResetAggregation = ref(false)
+
+function isPreAggregatedMeasure(columnName: string) {
+	return (
+		props.columnOptions.find((option) => option.value === columnName)?.is_measure ||
+		aggregationPrefixes.some((prefix) => columnName.startsWith(prefix))
+	)
+}
+
+function getAutoMeasureName(columnMeasure: ColumnMeasure) {
+	if (!columnMeasure.aggregation || !columnMeasure.column_name) return ''
+
+	return isPreAggregatedMeasure(columnMeasure.column_name)
+		? columnMeasure.column_name
+		: `${columnMeasure.aggregation}_of_${columnMeasure.column_name}`
+}
 
 watchEffect(() => {
 	if (!columnMeasure.value && !expressionMeasure.value) {
@@ -93,22 +110,15 @@ watchEffect(() => {
 	const cm = columnMeasure.value
 	if (!cm) return
 
+	const autoMeasureName = getAutoMeasureName(cm)
 	const hasDefaultLabel =
 		!cm.measure_name ||
-		cm.measure_name.includes(`${cm.aggregation}_`) ||
-		cm.measure_name.includes(cm.column_name)
+		cm.measure_name === autoMeasureName ||
+		cm.measure_name === lastAutoMeasureName.value
 
-	if (cm.aggregation && cm.column_name && hasDefaultLabel) {
-		// If the column is already a pre-aggregated measure (flagged via is_measure on
-		// the column option, or its name starts with an aggregation prefix), keep the
-		// column name as-is rather than wrapping it as e.g. "sum_of_total_requests".
-		const aggregationPrefixes = aggregations.map((a) => `${a}_`)
-		const columnIsAlreadyMeasure =
-			props.columnOptions.find((o) => o.value === cm.column_name)?.is_measure ||
-			aggregationPrefixes.some((prefix) => cm.column_name.startsWith(prefix))
-		cm.measure_name = columnIsAlreadyMeasure
-			? cm.column_name
-			: `${cm.aggregation}_of_${cm.column_name}`
+	if (autoMeasureName && hasDefaultLabel) {
+		cm.measure_name = autoMeasureName
+		lastAutoMeasureName.value = autoMeasureName
 	}
 })
 
@@ -173,6 +183,16 @@ function resetAggregation() {
 }
 
 const label = ref(measure.value.measure_name)
+
+function handleRemove() {
+	measure.value = {
+		column_name: '',
+		data_type: 'Decimal',
+		measure_name: '',
+		aggregation: '',
+	}
+	emit('remove')
+}
 </script>
 
 <template>
@@ -329,7 +349,7 @@ const label = ref(measure.value.measure_name)
 					<slot name="config-fields" />
 
 					<div class="flex gap-1">
-						<Button class="w-full" @click="emit('remove')" theme="red">
+						<Button class="w-full" @click="handleRemove" theme="red">
 							<template #prefix>
 								<XIcon class="h-4 w-4 text-red-700" stroke-width="1.5" />
 							</template>

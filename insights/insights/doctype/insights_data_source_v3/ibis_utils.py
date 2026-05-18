@@ -61,6 +61,7 @@ class IbisQueryBuilder:
 
     def set_operations(self):
         operations = frappe.parse_json(self.operations)
+        adhoc_filters_by_query = getattr(frappe.local, "insights_adhoc_filters", None) or {}
 
         if (
             self.active_operation_idx is not None
@@ -69,11 +70,8 @@ class IbisQueryBuilder:
         ):
             operations = operations[: self.active_operation_idx + 1]
 
-        if (
-            hasattr(frappe.local, "insights_adhoc_filters")
-            and self.doc.name in frappe.local.insights_adhoc_filters
-        ):
-            adhoc_filters = frappe.local.insights_adhoc_filters[self.doc.name]
+        if self.doc.name in adhoc_filters_by_query:
+            adhoc_filters = adhoc_filters_by_query[self.doc.name]
             if (
                 adhoc_filters
                 and isinstance(adhoc_filters, dict)

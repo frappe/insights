@@ -1,236 +1,290 @@
-import unittest
-
 import frappe
 
+from insights.api.workbooks import get_share_permissions, update_share_permissions
+from insights.decorators import insights_whitelist
+from insights.permissions import PERMISSION_DOCTYPES
+from insights.tests.base import InsightsIntegrationTestCase
+from insights.tests.factories import (
+    DT,
+    create_test_chart,
+    create_test_dashboard,
+    create_test_query,
+    create_test_workbook,
+)
+from insights.tests.permissions_utils import (
+    ADMIN,
+    NON_INSIGHTS_USER,
+    TEST_DS,
+    TEST_TABLE1,
+    USER_1,
+    USER_2,
+    cleanup_test_fixtures,
+    clear_team_cache,
+    create_test_data_sources,
+    create_test_tables,
+    create_test_teams,
+    create_test_users,
+    share_chart,
+    unshare_chart,
+    update_dashboard_access,
+)
 
-class TestInsightsPermissions(unittest.TestCase):
-    def setUp(self):
+
+@insights_whitelist()
+def protected_insights_call():
+    return True
+
+
+class TestInsightsPermissions(InsightsIntegrationTestCase):
+    SAVEPOINT = "test_insights_permissions"
+
+    @classmethod
+    def before_class(cls):
+        cls.original_enable_permissions = frappe.db.get_single_value(DT.SETTINGS, "enable_permissions")
+        cleanup_test_fixtures()
         create_test_users()
+        clear_team_cache()
+
+    @classmethod
+    def after_class(cls):
+        frappe.db.set_single_value(DT.SETTINGS, "enable_permissions", cls.original_enable_permissions)
+        clear_team_cache()
+        cleanup_test_fixtures()
+
+    def before_test(self):
+        clear_team_cache()
+
+    def after_test(self):
+        clear_team_cache()
+
+    def toggle_team_permissions(self, enable):
+        frappe.db.set_single_value(DT.SETTINGS, "enable_permissions", enable)
+        clear_team_cache()
+
+    def test_permissions_for_non_insights_user(self):
+        with self.as_user(NON_INSIGHTS_USER):
+            for doctype in PERMISSION_DOCTYPES:
+                self.assertFalse(
+                    frappe.has_permission(doctype, ptype="read"),
+                    f"{doctype} should not be readable without an Insights role",
+                )
+
+            with self.assertRaises(frappe.PermissionError):
+                protected_insights_call()
+
+    def test_permissions_on_team_based_doctype_with_team_permissions_disabled(self):
         create_test_data_sources()
         create_test_tables()
         create_test_teams()
-
-    def tearDown(self):
-        delete_test_teams()
-        delete_test_tables()
-        delete_test_data_sources()
-        delete_test_users()
-
-    def toggle_team_permissions(self, enable):
-        frappe.db.set_value(
-            "Insights Settings", None, "enable_team_permissions", enable
-        )
-
-    def test_permissions_for_non_insights_user(self):
-        # check if a non insights user can access a insights doctypes
-        pass
-
-    def test_permissions_on_team_based_doctype_with_team_permissions_disabled(self):
         self.toggle_team_permissions(False)
-        # check if a insights user can access all teams
-        pass
+
+        self.assert_visible_to(USER_2, DT.DATA_SOURCE, TEST_DS)
+        self.assert_visible_to(USER_2, DT.TABLE, TEST_TABLE1)
 
     def test_permission_on_team_based_doctype_with_team_permissions_enabled(self):
+        create_test_data_sources()
+        create_test_tables()
+        team = create_test_teams()
         self.toggle_team_permissions(True)
-        # check if insights user can access a team, table, data source
-        # add user to a team, give access to a table, data source
-        # check if insights user can access a team, table, data source
-        pass
+
+        self.assert_not_visible_to(USER_2, DT.DATA_SOURCE, TEST_DS)
+        self.assert_not_visible_to(USER_2, DT.TABLE, TEST_TABLE1)
+
+        with self.as_user("Administrator"):
+            team.append(
+                "team_permissions",
+                {"resource_type": DT.DATA_SOURCE, "resource_name": TEST_DS},
+            )
+            team.append(
+                "team_permissions",
+                {
+                    "resource_type": DT.TABLE,
+                    "resource_name": TEST_TABLE1,
+                },
+            )
+            team.save(ignore_permissions=True)
+            clear_team_cache()
+
+        self.assert_visible_to(USER_1, DT.DATA_SOURCE, TEST_DS)
+        self.assert_visible_to(USER_1, DT.TABLE, TEST_TABLE1)
 
     def test_permission_for_admin_on_team_based_doctype_with_team_permissions_enabled(
         self,
     ):
+        create_test_data_sources()
+        create_test_tables()
         self.toggle_team_permissions(True)
-        # check if admin can access all teams, tables, data sources
-        pass
+
+        self.assert_visible_to(ADMIN, DT.DATA_SOURCE, TEST_DS)
+        self.assert_visible_to(ADMIN, DT.TABLE, TEST_TABLE1)
 
     def test_permission_for_workbook(self):
-        # check if insights user has access to no workbooks
-        # check if insights user can create a workbook
-        # check if insights user can share a workbook
-        # check if another insights user can access a shared workbook
-        # unshare the workbook and check if another insights user can access it
-        pass
+        workbook = create_test_workbook(USER_1)
+
+        self.assert_visible_to(USER_1, DT.WORKBOOK, workbook.name)
+        self.assert_not_visible_to(USER_2, DT.WORKBOOK, workbook.name)
+
+        with self.as_user(USER_1):
+            update_share_permissions(
+                workbook.name,
+                [{"user": USER_2, "read": 1, "write": 0}],
+            )
+            share_permissions = get_share_permissions(workbook.name)
+        self.assertIn(
+            USER_2,
+            [permission["user"] for permission in share_permissions["user_permissions"]],
+        )
+
+        self.assert_visible_to(USER_2, DT.WORKBOOK, workbook.name)
+
+        with self.as_user(USER_1):
+            update_share_permissions(workbook.name, [])
+
+        self.assert_not_visible_to(USER_2, DT.WORKBOOK, workbook.name)
 
     def test_permission_for_dashboard(self):
-        # check if insights user has access to no dashboard
-        # create a workbook
-        # check if insights user can create a dashboard
-        # check if insights user can share a dashboard
-        # check if another insights user can access the shared dashboard
-        # unshare the dashboard and check if another insights user can access it
-        # share the workbook with read access
-        # check if another insights user can access the workbook dashboard
-        # check if another user cannot create a dashboard for the workbook
-        pass
+        workbook = create_test_workbook(USER_1)
+        dashboard = create_test_dashboard(USER_1, workbook.name)
+
+        self.assert_visible_to(USER_1, DT.DASHBOARD, dashboard.name)
+        self.assert_not_visible_to(USER_2, DT.DASHBOARD, dashboard.name)
+
+        with self.as_user(USER_1):
+            update_dashboard_access(dashboard.name, [USER_2])
+        self.assert_visible_to(USER_2, DT.DASHBOARD, dashboard.name)
+
+        with self.as_user(USER_1):
+            update_dashboard_access(dashboard.name, [])
+        self.assert_not_visible_to(USER_2, DT.DASHBOARD, dashboard.name)
+
+        with self.as_user(USER_1):
+            update_share_permissions(
+                workbook.name,
+                [{"user": USER_2, "read": 1, "write": 0}],
+            )
+
+        self.assert_visible_to(USER_2, DT.DASHBOARD, dashboard.name)
+        with self.as_user(USER_2):
+            self.assertFalse(frappe.has_permission(DT.DASHBOARD, ptype="write", doc=dashboard.name))
+            with self.assertRaises(frappe.PermissionError):
+                create_test_dashboard(
+                    USER_2,
+                    workbook.name,
+                    title="Permissions Test Dashboard Read Only",
+                )
 
     def test_permission_for_chart(self):
-        # check if insights user has access to no chart
-        # create a workbook
-        # create a chart
-        # check if insights user can share a chart
-        # check if another insights user can access the shared chart
-        # unshare the chart and check if another insights user can access it
-        # share the workbook with read access
-        # check if another insights user can access the workbook chart
-        # check if another user cannot create a chart for the workbook
-        # unshare the workbook and chart
-        # create a dashboard and add a chart
-        # share the dashboard
-        # check if another insights user can access the dashboard chart
-        pass
+        workbook = create_test_workbook(USER_1)
+        query = create_test_query(USER_1, workbook.name)
+        chart = create_test_chart(USER_1, workbook.name, query.name)
+
+        self.assert_visible_to(USER_1, DT.CHART, chart.name)
+        self.assert_not_visible_to(USER_2, DT.CHART, chart.name)
+
+        with self.as_user(USER_1):
+            share_chart(chart.name, USER_2)
+        self.assert_visible_to(USER_2, DT.CHART, chart.name)
+
+        with self.as_user(USER_1):
+            unshare_chart(chart.name, USER_2)
+        self.assert_not_visible_to(USER_2, DT.CHART, chart.name)
+
+        with self.as_user(USER_1):
+            update_share_permissions(
+                workbook.name,
+                [{"user": USER_2, "read": 1, "write": 0}],
+            )
+
+        self.assert_visible_to(USER_2, DT.CHART, chart.name)
+        with self.as_user(USER_2):
+            self.assertFalse(frappe.has_permission(DT.CHART, ptype="write", doc=chart.name))
+            with self.assertRaises(frappe.PermissionError):
+                create_test_chart(
+                    USER_2,
+                    workbook.name,
+                    query.name,
+                    title="Permissions Test Chart Read Only",
+                )
+
+        with self.as_user(USER_1):
+            update_share_permissions(workbook.name, [])
+        self.assert_not_visible_to(USER_2, DT.CHART, chart.name)
+
+        dashboard = create_test_dashboard(
+            USER_1,
+            workbook.name,
+            chart.name,
+            title="Permissions Test Dashboard For Chart",
+        )
+        with self.as_user(USER_1):
+            update_dashboard_access(dashboard.name, [USER_2])
+        self.assert_visible_to(USER_2, DT.CHART, chart.name)
 
     def test_permission_for_query(self):
-        # check if insights user has access to no query
-        # create a workbook
-        # create a query
-        # share the workbook with read access
-        # check if another insights user can access the workbook query
-        # check if another user cannot create a query for the workbook
-        # unshare the workbook and query
-        # create a chart and select the query
-        # share the chart
-        # check if another insights user can access the chart query & data_query
-        # unshare the chart
-        # create a dashboard and add a chart
-        # share the dashboard
-        # check if another insights user can access the dashboard chart query & data_query
+        workbook = create_test_workbook(USER_1)
+        query = create_test_query(USER_1, workbook.name)
 
-        # drilldown cases
-        # if a non-insights user creates a query, it should fail, because role permissions will not allow it
-        # if an insights user creates a query against a workbook, then it should check workbook permissions
-        # if an insights user creates a query without a workbook, then it should check permissions of the sources
-        pass
+        self.assert_visible_to(USER_1, DT.QUERY, query.name)
+        self.assert_not_visible_to(USER_2, DT.QUERY, query.name)
 
+        with self.as_user(USER_1):
+            update_share_permissions(
+                workbook.name,
+                [{"user": USER_2, "read": 1, "write": 0}],
+            )
 
-def create_test_users():
-    # create a website user
-    user = frappe.get_doc(
-        {
-            "doctype": "User",
-            "email": "web_user@test.com",
-            "first_name": "Web",
-            "last_name": "User",
-            "send_welcome_email": 0,
-            "user_type": "Website User",
-            "enabled": 1,
-        }
-    ).insert()
+        self.assert_visible_to(USER_2, DT.QUERY, query.name)
+        with self.as_user(USER_2):
+            with self.assertRaises(frappe.PermissionError):
+                create_test_query(
+                    USER_2,
+                    workbook.name,
+                    title="Permissions Test Query Read Only",
+                )
 
-    # create a non insights user
-    user = frappe.get_doc(
-        {
-            "doctype": "User",
-            "email": "non_insights_user@test.com",
-            "first_name": "Non",
-            "last_name": "Insights User",
-            "send_welcome_email": 0,
-            "user_type": "System User",
-            "enabled": 1,
-        }
-    ).insert()
+        with self.as_user(USER_1):
+            update_share_permissions(workbook.name, [])
+        self.assert_not_visible_to(USER_2, DT.QUERY, query.name)
 
-    # create a insights user
-    user = frappe.get_doc(
-        {
-            "doctype": "User",
-            "email": "insights_user1@test.com",
-            "first_name": "Insights",
-            "last_name": "User",
-            "send_welcome_email": 0,
-            "user_type": "System User",
-            "enabled": 1,
-        }
-    ).insert()
-    user.add_roles("Insights User")
+        chart = create_test_chart(
+            USER_1,
+            workbook.name,
+            query.name,
+            title="Permissions Test Chart For Query",
+        )
+        chart = frappe.get_doc(DT.CHART, chart.name)
 
-    user = frappe.get_doc(
-        {
-            "doctype": "User",
-            "email": "insights_user2@test.com",
-            "first_name": "Insights",
-            "last_name": "User",
-            "send_welcome_email": 0,
-            "user_type": "System User",
-            "enabled": 1,
-        }
-    ).insert()
-    user.add_roles("Insights User")
+        self.assert_not_visible_to(USER_2, DT.QUERY, query.name)
+        self.assert_not_visible_to(USER_2, DT.QUERY, chart.data_query)
 
-    # create a insights admin
-    user = frappe.get_doc(
-        {
-            "doctype": "User",
-            "email": "insights_admin@test.com",
-            "first_name": "Insights",
-            "last_name": "Admin",
-            "send_welcome_email": 0,
-            "user_type": "System User",
-            "enabled": 1,
-        }
-    ).insert()
-    user.add_roles("Insights Admin")
+        with self.as_user(USER_1):
+            share_chart(chart.name, USER_2)
 
+        self.assert_visible_to(USER_2, DT.QUERY, query.name)
+        self.assert_visible_to(USER_2, DT.QUERY, chart.data_query)
 
-def delete_test_users():
-    frappe.delete_doc("User", "web_user@test.com", force=True)
-    frappe.delete_doc("User", "non_insights_user@test.com", force=True)
-    frappe.delete_doc("User", "insights_user1@test.com", force=True)
-    frappe.delete_doc("User", "insights_user2@test.com", force=True)
-    frappe.delete_doc("User", "insights_admin@test.com", force=True)
+        with self.as_user(USER_1):
+            unshare_chart(chart.name, USER_2)
 
+        self.assert_not_visible_to(USER_2, DT.QUERY, query.name)
+        self.assert_not_visible_to(USER_2, DT.QUERY, chart.data_query)
 
-def create_test_data_sources():
-    frappe.get_doc(
-        {
-            "doctype": "Insights Data Source v3",
-            "database_type": "DuckDB",
-            "database_name": "Test DuckDB",
-        }
-    ).insert()
+        dashboard = create_test_dashboard(
+            USER_1,
+            workbook.name,
+            chart.name,
+            title="Permissions Test Dashboard For Query",
+        )
+        with self.as_user(USER_1):
+            update_dashboard_access(dashboard.name, [USER_2])
 
+        self.assert_visible_to(USER_2, DT.QUERY, query.name)
+        self.assert_visible_to(USER_2, DT.QUERY, chart.data_query)
 
-def delete_test_data_sources():
-    frappe.delete_doc("Insights Data Source v3", "Test DuckDB", force=True)
-
-
-def create_test_tables():
-    frappe.get_doc(
-        {
-            "doctype": "Insights Table v3",
-            "table_name": "table1",
-            "data_source": "Test DuckDB",
-        }
-    ).insert()
-
-    frappe.get_doc(
-        {
-            "doctype": "Insights Table v3",
-            "table_name": "table2",
-            "data_source": "Test DuckDB",
-        }
-    ).insert()
-
-    frappe.get_doc(
-        {
-            "doctype": "Insights Table v3",
-            "table_name": "table3",
-            "data_source": "Test DuckDB",
-        }
-    ).insert()
-
-
-def delete_test_tables():
-    frappe.delete_doc("Insights Table v3", "table1", force=True)
-    frappe.delete_doc("Insights Table v3", "table2", force=True)
-    frappe.delete_doc("Insights Table v3", "table3", force=True)
-
-
-def create_test_teams():
-    team1 = frappe.get_doc({"doctype": "Insights Team", "team_name": "team1"})
-    team1.append("team_members", {"user": "insights_user1@test.com"})
-    team1.save()
-
-
-def delete_test_teams():
-    frappe.delete_doc("Insights Team", "team1", force=True)
+        with self.as_user(NON_INSIGHTS_USER):
+            with self.assertRaises(frappe.PermissionError):
+                create_test_query(
+                    NON_INSIGHTS_USER,
+                    workbook.name,
+                    title="Permissions Test Query Non Insights",
+                )

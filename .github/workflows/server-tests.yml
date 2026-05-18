@@ -1,12 +1,14 @@
-name: Server Tests
+name: Server
 
 on:
+  pull_request:
+  workflow_dispatch:
   schedule:
     # Run everday at midnight UTC / 5:30 IST
     - cron: "0 0 * * *"
 
 concurrency:
-  group: develop-insights-${{ github.event.number }}
+  group: server-${{ github.event_name }}-${{ github.event.number }}
   cancel-in-progress: true
 
 permissions:
@@ -18,6 +20,12 @@ jobs:
     strategy:
       fail-fast: false
     name: Server
+    env:
+      BENCH_PATH: /home/runner/frappe-bench
+      SITE_NAME: test_site
+      DB_ROOT_PASSWORD: root
+      ADMIN_PASSWORD: admin
+      FRAPPE_BRANCH: develop
 
     services:
       mariadb:
@@ -30,7 +38,7 @@ jobs:
 
     steps:
       - name: Clone
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
 
       - name: Check for valid Python & Merge Conflicts
         run: |
@@ -41,18 +49,18 @@ jobs:
           fi
 
       - name: Setup Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v6
         with:
-          python-version: "3.10"
+          python-version: "3.14"
 
       - name: Setup Node
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v5
         with:
-          node-version: 18
+          node-version: 24
           check-latest: true
 
       - name: Cache pip
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/*requirements.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
@@ -62,9 +70,9 @@ jobs:
 
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
-        run: 'echo "::set-output name=dir::$(yarn cache dir)"'
+        run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
 
-      - uses: actions/cache@v2
+      - uses: actions/cache@v4
         id: yarn-cache
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
@@ -72,37 +80,55 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-yarn-
 
+      - name: Install system dependencies
+        run: |
+          sudo apt -qq update
+          sudo apt -qq install -y redis-server
+
       - name: Setup
         run: |
           pip install frappe-bench
-          bench init --skip-redis-config-generation --skip-assets --python "$(which python)" ~/frappe-bench
-          mysql --host 127.0.0.1 --port 3306 -u root -proot -e "SET GLOBAL character_set_server = 'utf8mb4'"
-          mysql --host 127.0.0.1 --port 3306 -u root -proot -e "SET GLOBAL collation_server = 'utf8mb4_unicode_ci'"
+          bench init \
+            --frappe-branch "$FRAPPE_BRANCH" \
+            --skip-assets \
+            --python "$(which python)" \
+            "$BENCH_PATH"
+          mysql --host 127.0.0.1 --port 3306 -u root -p"$DB_ROOT_PASSWORD" -e "SET GLOBAL character_set_server = 'utf8mb4'"
+          mysql --host 127.0.0.1 --port 3306 -u root -p"$DB_ROOT_PASSWORD" -e "SET GLOBAL collation_server = 'utf8mb4_unicode_ci'"
 
       - name: Install
-        working-directory: /home/runner/frappe-bench
+        working-directory: ${{ env.BENCH_PATH }}
         run: |
-          bench get-app insights $GITHUB_WORKSPACE
+          bench get-app insights $GITHUB_WORKSPACE --skip-assets
           bench setup requirements --dev
-          bench new-site --db-root-password root --admin-password admin test_site
-          bench --site test_site install-app insights
+          bench new-site --db-root-password "$DB_ROOT_PASSWORD" --admin-password "$ADMIN_PASSWORD" "$SITE_NAME"
+          bench --site "$SITE_NAME" set-config server_script_enabled 1 --parse
+          bench --site "$SITE_NAME" install-app insights
           bench build
         env:
           CI: "Yes"
 
-      - name: Run Tests
-        working-directory: /home/runner/frappe-bench
+      - name: Start Bench Services
+        working-directory: ${{ env.BENCH_PATH }}
         run: |
-          bench --site test_site set-config allow_tests true
-          bench --site test_site run-tests --app insights --coverage
+          sed -i '/^watch:/d' Procfile
+          sed -i '/^schedule:/d' Procfile
+          sed -i '/^socketio:/d' Procfile
+          bench start &> bench_start.log &
+
+      - name: Run Tests
+        working-directory: ${{ env.BENCH_PATH }}
+        run: |
+          bench --site "$SITE_NAME" set-config allow_tests 1 --parse
+          env/bin/python apps/insights/.github/helpers/run_backend_tests.py --site "$SITE_NAME"
         env:
           TYPE: server
 
       - name: Upload coverage data
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: coverage-${{ matrix.container }}
-          path: /home/runner/frappe-bench/sites/coverage.xml
+          name: coverage-server
+          path: ${{ env.BENCH_PATH }}/sites/coverage.xml
 
   coverage:
     name: Coverage Wrap Up
@@ -110,14 +136,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Clone
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
 
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
 
       - name: Upload coverage data
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v6
         with:
-          name: coverage-unittests
+          name: Server
+          token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
           verbose: true
+          flags: server

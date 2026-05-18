@@ -1,0 +1,6 @@
+[report]
+omit =
+    */tests/*
+    */config/*
+    */insights/setup.py
+    */coverage.py

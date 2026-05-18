@@ -214,7 +214,7 @@ def _execute_doc_method(doc, method: str, args: dict | None = None, ignore_permi
         is_whitelisted(fn)
         is_valid_http_method(fn)
 
-    new_kwargs = frappe.get_newargs(fn, args)
+    new_kwargs = frappe.get_newargs(fn, args or {})
     response = doc.run_method(method, **new_kwargs)
     frappe.response.docs.append(doc)
     frappe.response["message"] = response

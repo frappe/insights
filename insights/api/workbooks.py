@@ -1,5 +1,5 @@
 import frappe
-from ibis import _
+from frappe import _
 
 from insights.decorators import insights_whitelist
 from insights.utils import DocShare
@@ -74,9 +74,9 @@ def import_workbook(workbook: dict):
 
 
 @insights_whitelist()
-def get_share_permissions(workbook_name:str):
+def get_share_permissions(workbook_name: str):
     if not frappe.has_permission("Insights Workbook", ptype="share", doc=workbook_name):
-        frappe.throw(_("You do not have permission to share this workbook"))
+        frappe.throw(_("You do not have permission to share this workbook"), frappe.PermissionError)
 
     DocShare = frappe.qb.DocType("DocShare")
     User = frappe.qb.DocType("User")
@@ -94,6 +94,7 @@ def get_share_permissions(workbook_name:str):
         )
         .where(DocShare.share_doctype == "Insights Workbook")
         .where(DocShare.share_name == workbook_name)
+        .where(DocShare.everyone == 0)
         .run(as_dict=True)
     )
     owner = frappe.db.get_value("Insights Workbook", workbook_name, "owner")
@@ -127,9 +128,25 @@ def get_share_permissions(workbook_name:str):
 
 
 @insights_whitelist()
-def update_share_permissions(workbook_name:str, user_permissions: dict, organization_access: str | None = None):
+def update_share_permissions(
+    workbook_name: str, user_permissions: dict, organization_access: str | None = None
+):
     if not frappe.has_permission("Insights Workbook", ptype="share", doc=workbook_name):
-        frappe.throw(_("You do not have permission to share this workbook"))
+        frappe.throw(_("You do not have permission to share this workbook"), frappe.PermissionError)
+
+    existing_shares = frappe.get_all(
+        "DocShare",
+        filters={
+            "share_doctype": "Insights Workbook",
+            "share_name": workbook_name,
+        },
+        fields=["name", "user", "everyone"],
+    )
+
+    allowed_users = {permission["user"] for permission in user_permissions}
+    for share in existing_shares:
+        if share.user and share.user not in allowed_users:
+            frappe.delete_doc("DocShare", share.name, ignore_permissions=True)
 
     for permission in user_permissions:
         doc = DocShare.get_or_create_doc(
@@ -158,16 +175,14 @@ def update_share_permissions(workbook_name:str, user_permissions: dict, organiza
 
 # folder Management APIs
 
+
 @insights_whitelist()
 def create_folder(workbook: str, title: str, folder_type: str):
     """Create a new folder in workbook"""
     if not frappe.has_permission("Insights Workbook", ptype="write", doc=workbook):
-        frappe.throw(_("You do not have permission to modify this workbook"))
+        frappe.throw(_("You do not have permission to modify this workbook"), frappe.PermissionError)
 
-    current_folders = frappe.db.count(
-        "Insights Folder",
-        filters={"workbook": workbook, "type": folder_type}
-    )
+    current_folders = frappe.db.count("Insights Folder", filters={"workbook": workbook, "type": folder_type})
 
     folder = frappe.new_doc("Insights Folder")
     folder.workbook = workbook
@@ -178,24 +193,26 @@ def create_folder(workbook: str, title: str, folder_type: str):
 
     return folder.name
 
+
 @insights_whitelist()
 def rename_folder(folder_name: str, new_title: str):
     """Rename a folder"""
     folder = frappe.get_doc("Insights Folder", folder_name)
     if not frappe.has_permission("Insights Workbook", ptype="write", doc=folder.workbook):
-        frappe.throw(_("You do not have permission to modify this workbook"))
+        frappe.throw(_("You do not have permission to modify this workbook"), frappe.PermissionError)
 
     folder.title = new_title
     folder.save()
 
     return folder.name
 
+
 @insights_whitelist()
 def delete_folder(folder_name: str, move_items_to_root: bool = True):
     """Delete folder and move items to root"""
     folder = frappe.get_doc("Insights Folder", folder_name)
     if not frappe.has_permission("Insights Workbook", ptype="write", doc=folder.workbook):
-        frappe.throw(_("You do not have permission to modify this workbook"))
+        frappe.throw(_("You do not have permission to modify this workbook"), frappe.PermissionError)
 
     if move_items_to_root:
         # move all queries to root
@@ -217,14 +234,16 @@ def delete_folder(folder_name: str, move_items_to_root: bool = True):
 
     frappe.delete_doc("Insights Folder", folder_name)
 
+
 @insights_whitelist()
 def toggle_folder_expanded(folder_name: str, is_expanded: bool):
     """Toggle folder expanded state"""
     folder = frappe.get_doc("Insights Folder", folder_name)
     if not frappe.has_permission("Insights Workbook", ptype="read", doc=folder.workbook):
-        frappe.throw(_("You do not have permission to modify this workbook"))
+        frappe.throw(_("You do not have permission to modify this workbook"), frappe.PermissionError)
 
     folder.db_set("is_expanded", is_expanded, update_modified=False)
+
 
 @insights_whitelist()
 def move_item_to_folder(item_type: str, item_name: str, folder_name: str | None = None):
@@ -233,7 +252,7 @@ def move_item_to_folder(item_type: str, item_name: str, folder_name: str | None 
     item = frappe.get_doc(doctype, item_name)
 
     if not frappe.has_permission("Insights Workbook", ptype="write", doc=item.workbook):
-        frappe.throw(_("You do not have permission to modify this workbook"))
+        frappe.throw(_("You do not have permission to modify this workbook"), frappe.PermissionError)
 
     if folder_name:
         folder = frappe.get_doc("Insights Folder", folder_name)
@@ -247,7 +266,7 @@ def move_item_to_folder(item_type: str, item_name: str, folder_name: str | None 
 def update_sort_orders(workbook: str, items: list):
     """Bulk update sort orders"""
     if not frappe.has_permission("Insights Workbook", ptype="write", doc=workbook):
-        frappe.throw(_("You do not have permission to modify this workbook"))
+        frappe.throw(_("You do not have permission to modify this workbook"), frappe.PermissionError)
 
     for item in items:
         if item["type"] == "folder":

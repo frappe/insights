@@ -5,9 +5,9 @@ from insights.utils import deep_convert_dict_to_dict
 
 
 def execute():
-    should_run_patch = frappe.db.exists(
-        "DocType", "Insights Workbook"
-    ) and frappe.db.count("Insights Workbook")
+    should_run_patch = frappe.db.exists("DocType", "Insights Workbook") and frappe.db.count(
+        "Insights Workbook"
+    )
     if not should_run_patch:
         return
 
@@ -21,9 +21,18 @@ def execute():
     for wb in workbooks:
         workbook = frappe.get_doc("Insights Workbook", wb)
 
-        queries = frappe.parse_json(workbook.queries) or []
-        charts = frappe.parse_json(workbook.charts) or []
-        dashboards = frappe.parse_json(workbook.dashboards) or []
+        legacy_queries = getattr(workbook, "queries", None)
+        legacy_charts = getattr(workbook, "charts", None)
+        legacy_dashboards = getattr(workbook, "dashboards", None)
+
+        # Sites that already use linked child doctypes no longer have these
+        # legacy JSON fields on the workbook itself, so this patch becomes a no-op.
+        if legacy_queries is None and legacy_charts is None and legacy_dashboards is None:
+            continue
+
+        queries = frappe.parse_json(legacy_queries) or []
+        charts = frappe.parse_json(legacy_charts) or []
+        dashboards = frappe.parse_json(legacy_dashboards) or []
         query_name_to_doc = {}
         chart_name_to_doc = {}
 
@@ -93,11 +102,7 @@ def execute():
 
                     item.links = item.links or {}
                     for chart_name, field in item.links.items():
-                        if (
-                            chart_name not in chart_name_to_doc
-                            or not field
-                            or "`.`" not in field
-                        ):
+                        if chart_name not in chart_name_to_doc or not field or "`.`" not in field:
                             continue
 
                         chart = chart_name_to_doc[chart_name]

@@ -225,7 +225,8 @@ const showExpandedChartDialog = ref(false)
 
 		<div
 			v-if="!props.hideMaximize && chart && chart.doc.chart_type !== 'Number'"
-			class="absolute top-1.5 right-1.5 p-1 opacity-0 transition-opacity group-hover:opacity-100"
+			class="absolute top-0 right-0 opacity-0 transition-opacity group-hover:opacity-100"
+			:class="chart_type == 'Table' ? 'p-1.5' : 'p-2'"
 		>
 			<Button variant="ghost" @click="showExpandedChartDialog = true">
 				<Maximize class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
