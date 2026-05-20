@@ -77,14 +77,9 @@ def create_test_user(email=USER_1, role="Insights User"):
     )
 
 
-def delete_doc_if_exists(doctype, name):
-    if frappe.db.exists(doctype, name):
-        frappe.delete_doc(doctype, name, force=True)
-
-
 def delete_users(*emails):
     for email in emails:
-        delete_doc_if_exists(DT.USER, email)
+        frappe.delete_doc(DT.USER, email, force=True)
 
 
 def delete_test_users():
@@ -156,10 +151,6 @@ def execute_test_query(query_name):
     query = frappe.get_doc(DT.QUERY, query_name)
     with db_connections():
         return query.execute()
-
-
-def doc_exists(doctype, name):
-    return bool(frappe.db.exists(doctype, name))
 
 
 def is_visible(doctype, name):

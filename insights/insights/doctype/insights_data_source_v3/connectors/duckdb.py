@@ -18,7 +18,11 @@ def get_duckdb_path(data_source) -> str:
     return os.path.join(get_files_path(is_private=1), f"{db_name}.duckdb")
 
 
-def open_local_duckdb(path, read_only=True, allowed_dir=None, allow_private_files=False) -> DuckDBBackend:
+def open_local_duckdb(
+    path,
+    read_only=True,
+    allowed_dir=None,
+) -> DuckDBBackend:
     """Open a DuckDB connection at the given filesystem path.
 
     This is the single place that knows how to configure a local DuckDB
@@ -28,8 +32,6 @@ def open_local_duckdb(path, read_only=True, allowed_dir=None, allow_private_file
         path: Absolute path to the .duckdb file.
         read_only: Whether to open in read-only mode.
         allowed_dir: Directory to allow external file access from (write mode only).
-        allow_private_files: If True, allows access to the private files folder
-            (used when reading uploaded CSV/Excel files into DuckDB).
     """
     if not os.path.exists(path):
         db = ibis.duckdb.connect(path)
@@ -41,13 +43,14 @@ def open_local_duckdb(path, read_only=True, allowed_dir=None, allow_private_file
     private_folder = _escape_sql_path(private_folder)
     db.raw_sql(f"SET home_directory='{private_folder}'")
 
-    if not read_only and (allowed_dir or allow_private_files):
-        resolved_dir = _escape_sql_path(allowed_dir) if allowed_dir else private_folder
+    if not read_only and allowed_dir:
+        resolved_dir = os.path.realpath(allowed_dir)
+        resolved_dir_escaped = _escape_sql_path(resolved_dir)
 
         with suppress(Exception):
             db.raw_sql("SET enable_external_access = true")
 
-        db.raw_sql(f"SET allowed_directories = ['{resolved_dir}']")
+        db.raw_sql(f"SET allowed_directories = ['{resolved_dir_escaped}']")
     else:
         db.raw_sql("SET enable_external_access = false")
 
@@ -58,8 +61,7 @@ def open_local_duckdb(path, read_only=True, allowed_dir=None, allow_private_file
 def local_duckdb_write_connection(
     path: str,
     cache_key: str,
-    allowed_dir: str | None = None,
-    allow_private_files: bool = False,
+    allowed_dir: str,
     timeout: int = 30,
 ) -> Generator[DuckDBBackend, None, None]:
     """Context manager that safely yields a write connection to a local DuckDB file.
@@ -77,7 +79,6 @@ def local_duckdb_write_connection(
         cache_key: The key under which the read connection is cached in
             insights.db_connections (typically the data source name).
         allowed_dir: Directory to allow external file access from.
-        allow_private_files: If True, allow access to the private files folder.
         timeout: Seconds to wait for the file lock before giving up.
     """
     from frappe.utils.synchronization import filelock
@@ -95,7 +96,6 @@ def local_duckdb_write_connection(
             path,
             read_only=False,
             allowed_dir=allowed_dir,
-            allow_private_files=allow_private_files,
         )
         try:
             yield db
@@ -103,9 +103,7 @@ def local_duckdb_write_connection(
             db.disconnect()
 
 
-def get_duckdb_connection(
-    data_source, read_only=True, allowed_dir=None, allow_private_files=False
-) -> DuckDBBackend:
+def get_duckdb_connection(data_source) -> DuckDBBackend:
     name = data_source.name or frappe.scrub(data_source.title)
     db_name = data_source.database_name
 
@@ -113,9 +111,7 @@ def get_duckdb_connection(
         return get_http_duckdb_connection(data_source, name, db_name)
 
     path = get_duckdb_path(data_source)
-    return open_local_duckdb(
-        path, read_only=read_only, allowed_dir=allowed_dir, allow_private_files=allow_private_files
-    )
+    return open_local_duckdb(path)
 
 
 # Backward-compatible alias — prefer open_local_duckdb for new code

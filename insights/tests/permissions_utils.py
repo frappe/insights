@@ -3,7 +3,7 @@ import frappe.share
 
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 from insights.insights.doctype.insights_team.insights_team import clear_cache as clear_team_cache
-from insights.tests.factories import DT, create_user, delete_doc_if_exists, delete_users, delete_workbooks
+from insights.tests.factories import DT, create_user, delete_users, delete_workbooks
 
 WEB_USER_EMAIL = "web_user@test.com"
 NON_INSIGHTS_USER = "non_insights_user@test.com"
@@ -72,7 +72,7 @@ def create_test_data_sources():
 
 
 def delete_test_data_sources():
-    delete_doc_if_exists(DT.DATA_SOURCE, TEST_DS)
+    frappe.delete_doc(DT.DATA_SOURCE, TEST_DS, force=True)
 
 
 def create_test_tables():
@@ -89,9 +89,9 @@ def create_test_tables():
 
 
 def delete_test_tables():
-    delete_doc_if_exists(DT.TABLE, TEST_TABLE1)
-    delete_doc_if_exists(DT.TABLE, TEST_TABLE2_NAME)
-    delete_doc_if_exists(DT.TABLE, TEST_TABLE3_NAME)
+    frappe.delete_doc(DT.TABLE, TEST_TABLE1, force=True)
+    frappe.delete_doc(DT.TABLE, TEST_TABLE2_NAME, force=True)
+    frappe.delete_doc(DT.TABLE, TEST_TABLE3_NAME, force=True)
 
 
 def create_test_teams():
@@ -103,7 +103,7 @@ def create_test_teams():
 
 
 def delete_test_teams():
-    delete_doc_if_exists(DT.TEAM, "team1")
+    frappe.delete_doc(DT.TEAM, "team1", force=True)
 
 
 def update_dashboard_access(dashboard_name, people_with_access):

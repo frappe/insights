@@ -10,7 +10,7 @@ from insights.api.workbooks import (
     update_sort_orders,
 )
 from insights.tests.base import InsightsIntegrationTestCase
-from insights.tests.factories import DT, USER_1, create_test_user, delete_users, doc_exists
+from insights.tests.factories import DT, USER_1, create_test_user, delete_users
 from insights.tests.workbook_utils import (
     cleanup_test_workbooks,
     create_workbook_bundle,
@@ -62,7 +62,7 @@ class TestWorkbook(InsightsIntegrationTestCase):
         self.assertGreater(len(query_result["columns"]), 0)
         self.assertEqual(chart["query"], bundle["query"].name)
         self.assertTrue(chart["data_query"])
-        self.assertTrue(doc_exists(DT.QUERY, chart["data_query"]))
+        self.assertTrue(frappe.db.exists(DT.QUERY, chart["data_query"]))
         self.assertTrue(any(item.get("chart") == bundle["chart"].name for item in dashboard_items))
 
     def test_deleting_workbook_removes_the_user_visible_tree(self):
@@ -74,11 +74,11 @@ class TestWorkbook(InsightsIntegrationTestCase):
         with self.as_user("Administrator"):
             frappe.delete_doc(DT.WORKBOOK, bundle["workbook"].name, force=True)
 
-        self.assertFalse(doc_exists(DT.WORKBOOK, bundle["workbook"].name))
-        self.assertFalse(doc_exists(DT.QUERY, bundle["query"].name))
-        self.assertFalse(doc_exists(DT.CHART, bundle["chart"].name))
-        self.assertFalse(doc_exists(DT.QUERY, data_query_name))
-        self.assertFalse(doc_exists(DT.DASHBOARD, bundle["dashboard"].name))
+        self.assertFalse(frappe.db.exists(DT.WORKBOOK, bundle["workbook"].name))
+        self.assertFalse(frappe.db.exists(DT.QUERY, bundle["query"].name))
+        self.assertFalse(frappe.db.exists(DT.CHART, bundle["chart"].name))
+        self.assertFalse(frappe.db.exists(DT.QUERY, data_query_name))
+        self.assertFalse(frappe.db.exists(DT.DASHBOARD, bundle["dashboard"].name))
 
     def test_owner_can_organize_and_reorder_workbook_contents(self):
         bundle = create_workbook_bundle(

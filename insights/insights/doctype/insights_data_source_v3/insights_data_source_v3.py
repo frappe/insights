@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 
+import os
 import re
 from contextlib import contextmanager
 
@@ -278,8 +279,8 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         """Safely yield a writable DuckDB connection for this data source.
 
         Evicts the cached read-only connection, opens a write connection with
-        access to private files (needed for CSV/Excel/JSON imports), then
-        disconnects on exit so the read connection is lazily re-opened cleanly.
+        access to private files, then disconnects on exit so the read
+        connection is lazily re-opened cleanly.
 
         Only supported for local DuckDB data sources.
         """
@@ -288,10 +289,17 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
                 f"write_connection() is only supported for local DuckDB data sources, not '{self.database_type}'"
             )
 
+        from frappe.utils import get_files_path
+
         from .connectors.duckdb import get_duckdb_path, local_duckdb_write_connection
 
         path = get_duckdb_path(self)
-        with local_duckdb_write_connection(path, cache_key=self.name, allow_private_files=True) as db:
+        private_files_path = os.path.realpath(get_files_path(is_private=1))
+        with local_duckdb_write_connection(
+            path,
+            cache_key=self.name,
+            allowed_dir=private_files_path,
+        ) as db:
             yield db
 
     def get_sqlglot_dialect(self) -> str | None:
