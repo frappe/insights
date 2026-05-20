@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-05-17 10:03+0000\n"
-"PO-Revision-Date: 2026-05-19 13:57\n"
+"PO-Revision-Date: 2026-05-20 14:36\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -49,7 +49,7 @@ msgstr ""
 #. Label of the api_token (Password) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "API Token"
-msgstr ""
+msgstr "Jeton API"
 
 #. Label of the api_username (Data) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
@@ -63,13 +63,13 @@ msgstr ""
 #. Option for the 'Status' (Select) field in DocType 'Insights User Invitation'
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Accepted"
-msgstr ""
+msgstr "Accepté"
 
 #. Label of the accepted_at (Datetime) field in DocType 'Insights User
 #. Invitation'
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Accepted At"
-msgstr ""
+msgstr "Accepté le"
 
 #: frontend/src2/workbook/WorkbookList.vue:47
 msgid "Access"
@@ -104,7 +104,7 @@ msgstr ""
 
 #: frontend/src2/query/components/FiltersSelector.vue:137
 msgid "Add Filter"
-msgstr ""
+msgstr "Ajouter un filtre"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:62
 msgid "Add New Column"
@@ -798,7 +798,7 @@ msgstr ""
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Date"
-msgstr ""
+msgstr "Date"
 
 #: frontend/src2/query/components/FormatRule.vue:234
 msgid "Date Rules"
@@ -844,7 +844,7 @@ msgstr "Désactivé"
 
 #: frontend/src2/components/UserDropdown.vue:116
 msgid "Documentation"
-msgstr ""
+msgstr "Documentation"
 
 #: frontend/src2/charts/components/ChartShareDialog.vue:38
 #: frontend/src2/dashboard/DashboardShareDialog.vue:86
@@ -1578,12 +1578,12 @@ msgstr ""
 #: frontend/src2/settings/UsersSettings.vue:173
 #: frontend/src2/users/UserList.vue:84 frontend/src2/users/UserList.vue:175
 msgid "Invite User"
-msgstr ""
+msgstr "Inviter un utilisateur"
 
 #. Label of the invited_by (Link) field in DocType 'Insights User Invitation'
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Invited By"
-msgstr ""
+msgstr "Invité par"
 
 #. Label of the is_assisted_query (Check) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -2445,7 +2445,7 @@ msgstr ""
 #. Label of the rows (Int) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Rows"
-msgstr ""
+msgstr "Lignes"
 
 #. Label of the rows_imported (Int) field in DocType 'Insights Table Import
 #. Log'
@@ -2508,7 +2508,7 @@ msgstr "Enregistrer"
 
 #: frontend/src2/charts/components/RegionMappingDialog.vue:314
 msgid "Save Changes"
-msgstr ""
+msgstr "Enregistrer les modifications"
 
 #: frontend/src2/components/VariablesDialog.vue:133
 msgid "Save Variables"
@@ -2952,19 +2952,19 @@ msgstr ""
 
 #: frontend/src2/query/components/ColumnFilterTypeDate.vue:55
 msgid "This Month"
-msgstr ""
+msgstr "Ce mois-ci"
 
 #: frontend/src2/query/components/ColumnFilterTypeDate.vue:56
 msgid "This Quarter"
-msgstr ""
+msgstr "Ce trimestre"
 
 #: frontend/src2/query/components/ColumnFilterTypeDate.vue:54
 msgid "This Week"
-msgstr ""
+msgstr "Cette semaine"
 
 #: frontend/src2/query/components/ColumnFilterTypeDate.vue:57
 msgid "This Year"
-msgstr ""
+msgstr "Cette année"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:15
 msgid "This will delete all warehouse data for <b>{0}</b> and reset the sync bookmark. Are you sure?"
