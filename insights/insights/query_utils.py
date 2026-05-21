@@ -6,7 +6,12 @@ import sqlglot as sg
 
 
 def extract_sql_table_refs(raw_sql: str, dialect: sg.Dialect | None = None) -> list[frappe._dict]:
-    parsed = sg.parse_one(raw_sql, dialect=dialect)
+    try:
+        parsed = sg.parse_one(raw_sql, dialect=dialect)
+    except Exception:
+        # If parsing fails, we return an empty list to avoid blocking the user from saving their query.
+        # In the future, we may want to log these exceptions to help improve our SQL parsing capabilities.
+        return []
 
     cte_aliases = {
         str(alias)
