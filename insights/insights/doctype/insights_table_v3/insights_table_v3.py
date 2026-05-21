@@ -6,6 +6,7 @@ from hashlib import md5
 
 import frappe
 import ibis
+import sqlglot as sg
 from frappe.model.document import Document
 from frappe.permissions import get_valid_perms
 from frappe.query_builder.functions import Count, Max, Sum
@@ -400,4 +401,8 @@ def get_parents(child_doctype):
 
 
 def _has_where_clause(sql: str) -> bool:
-    return " where " in sql.lower()
+    try:
+        stmt = sg.parse_one(sql)
+        return stmt.find(sg.exp.Where) is not None
+    except Exception:
+        return " where " in sql.replace("\n", " ").lower()
