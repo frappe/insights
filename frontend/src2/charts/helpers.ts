@@ -274,6 +274,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 					return getShortNumber(_val, 1)
 				},
 				fontSize: 11,
+
 			},
 			barGap: config.y_axis.overlap ? '-100%' : undefined,
 			labelLayout: { hideOverlap: true },
@@ -402,7 +403,8 @@ export function getDonutChartOptions(config: DonutChartConfig, result: QueryResu
 	const values = data.map((d) => d[1])
 	const total = values.reduce((a, b) => a + b, 0)
 
-	const colors = getColors()
+	const baseColors = config.label_colors?.length ? config.label_colors : getColors()
+	const colors = labels.map((_, i) => baseColors[i % baseColors.length])
 
 	let center, radius, top, left, right, bottom, padding, orient
 	const legend_position = config.legend_position || 'bottom'
@@ -450,18 +452,20 @@ export function getDonutChartOptions(config: DonutChartConfig, result: QueryResu
 		animation: true,
 		animationDuration: 700,
 		color: colors,
-		dataset: { source: data },
 		series: [
 			{
 				type: 'pie',
 				name: valueColumn?.name,
 				center,
 				radius,
+				data: labels.map((label, i) => ({
+					name: label,
+					value: values[i],
+					itemStyle: { color: colors[i] },
+				})),
 				labelLine: {
 					show: show_inline_labels,
-					lineStyle: {
-						width: 2,
-					},
+					lineStyle: { width: 2 },
 					length: 10,
 					length2: 20,
 					smooth: true,
@@ -469,7 +473,7 @@ export function getDonutChartOptions(config: DonutChartConfig, result: QueryResu
 				label: {
 					show: show_inline_labels,
 					formatter: ({ value, name }: any) => {
-						const percentage = total > 0 ? (value[1] / total) * 100 : 0
+						const percentage = total > 0 ? (value / total) * 100 : 0
 						return `${ellipsis(name, 20)} (${percentage.toFixed(0)}%)`
 					},
 				},
@@ -491,9 +495,7 @@ export function getDonutChartOptions(config: DonutChartConfig, result: QueryResu
 						return `${ellipsis(name, 20)} (${percentage.toFixed(0)}%)`
 					},
 			  }
-			: {
-					show: false,
-			  },
+			: { show: false },
 		tooltip: {
 			trigger: 'item',
 			confine: true,
@@ -571,10 +573,6 @@ export function getFunnelChartOptions(config: FunnelChartConfig, result: QueryRe
 				sort: 'descending',
 				label: {
 					show: true,
-					// position doesn't have any effect
-					// it is mapped here to re-render when the label position changes
-					// because the label layout function is not changing when the label position changes
-					// and so the chart doesn't re-render
 					position: labelPosition,
 					color: '#565656',
 					lineHeight: 16,
@@ -820,6 +818,7 @@ export function getMapChartOptions(config: MapChartConfig, result: QueryResult) 
 			pieces: mapPieces(values),
 			itemSymbol: 'circle',
 			inRange: {
+
 				color: ['#dbeeff', '#b7ddff', '#92cdff', '#6ebcff', '#4aabff'],
 			},
 		},
