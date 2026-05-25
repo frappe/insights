@@ -59,6 +59,7 @@ class IbisQueryBuilder:
 
         if (
             hasattr(frappe.local, "insights_adhoc_filters")
+            and frappe.local.insights_adhoc_filters
             and self.doc.name in frappe.local.insights_adhoc_filters
         ):
             adhoc_filters = frappe.local.insights_adhoc_filters[self.doc.name]
@@ -667,7 +668,7 @@ class IbisQueryBuilder:
     def apply_code(self, code_args):
         code = code_args.code
 
-        adhoc_filters = frappe.as_json(getattr(frappe.local, "insights_adhoc_filters", {}))
+        adhoc_filters = frappe.as_json(getattr(frappe.local, "insights_adhoc_filters") or {})
         digest = make_digest(code + adhoc_filters)
 
         cached_results = get_cached_results(digest)
