@@ -31,7 +31,26 @@ export type YAxis = {
 	show_axis_label?: boolean
 	show_data_labels?: boolean
 	show_scrollbar?: boolean
+	units?: AxisUnit
 }
+
+export type AxisUnit =
+	| 'none'
+	| 'ns'
+	| 'us'
+	| 'ms'
+	| 's'
+	| 'min'
+	| 'h'
+	| 'd'
+	| 'w'
+	| 'mo'
+	| 'y'
+	| 'bytes'
+	| 'KB'
+	| 'MB'
+	| 'GB'
+	| 'TB'
 export type Series = {
 	name?: string
 	measure: Measure

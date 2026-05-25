@@ -10,6 +10,7 @@ import { AxisChartConfig } from '../../types/chart.types'
 import { ColumnOption, MeasureOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import MeasurePicker from './MeasurePicker.vue'
+import { UNIT_OPTIONS } from '../units'
 
 const props = defineProps<{ columnOptions: ColumnOption[] }>()
 const y_axis = defineModel<AxisChartConfig['y_axis']>({
@@ -105,6 +106,13 @@ const updateColor = debounce((color: string, idx: number) => {
 				v-if="y_axis.show_axis_label"
 				v-model="y_axis.axis_label"
 				label="Axis Label"
+			/>
+			<FormControl
+				v-if="y_axis.show_axis_label"
+				v-model="y_axis.units"
+				label="Units"
+				type="select"
+				:options="UNIT_OPTIONS.map((o) => ({ label: o.label, value: o.value }))"
 			/>
 
 			<InlineFormControlLabel label="Y-Min" class="w-1/2">

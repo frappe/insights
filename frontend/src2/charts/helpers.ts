@@ -4,6 +4,7 @@ import { FIELDTYPES } from '../helpers/constants'
 import { getFormattedDate } from '../query/helpers'
 import {
 	AxisChartConfig,
+	AxisUnit,
 	BarChartConfig,
 	BubbleChartConfig,
 	ChartConfig,
@@ -18,6 +19,7 @@ import {
 } from '../types/chart.types'
 import { QueryResult, QueryResultColumn, QueryResultRow } from '../types/query.types'
 import { getColors, getGradientColors } from './colors'
+import { formatValueWithUnit, hasUnit } from './units'
 
 interface GeoJSONFeature {
 	type: string
@@ -65,12 +67,14 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 		: null
 
 	const yAxisLabel = config.y_axis.show_axis_label ? config.y_axis.axis_label : undefined
+	const yUnit = config.y_axis.show_axis_label ? config.y_axis.units : undefined
 	const leftYAxis = getYAxis({
 		min: config.y_axis.min,
 		max: config.y_axis.max,
 		label: yAxisLabel,
+		unit: yUnit,
 	})
-	const rightYAxis = getYAxis()
+	const rightYAxis = getYAxis({ unit: yUnit })
 	const hasRightAxis = config.y_axis.series.some((s) => s.align === 'Right')
 	const yAxis = !hasRightAxis ? [leftYAxis] : [leftYAxis, rightYAxis]
 
@@ -125,7 +129,8 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 				show: hide_from_chart ? false : show_data_labels,
 				position: labelPosition,
 				formatter: (params: any) => {
-					return getShortNumber(params.value?.[1], 1)
+					const v = params.value?.[1]
+					return hasUnit(yUnit) ? formatValueWithUnit(v, yUnit, 1) : getShortNumber(v, 1)
 				},
 			},
 			labelLayout: { hideOverlap: true },
@@ -158,6 +163,7 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 		tooltip: getTooltip({
 			xAxisIsDate,
 			granularity,
+			yUnit,
 		}),
 		legend: { ...getLegend(show_legend, show_scrollbar), data: legendData },
 	}
@@ -202,14 +208,16 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 		: null
 
 	const yAxisLabel = config.y_axis.show_axis_label ? config.y_axis.axis_label : undefined
+	const yUnit = config.y_axis.show_axis_label ? config.y_axis.units : undefined
 	const leftYAxis = getYAxis({
 		normalized: config.y_axis.normalize,
 		min: config.y_axis.min,
 		max: config.y_axis.max,
 		label: yAxisLabel,
 		horizontal: swapAxes,
+		unit: yUnit,
 	})
-	const rightYAxis = getYAxis({ normalized: config.y_axis.normalize })
+	const rightYAxis = getYAxis({ normalized: config.y_axis.normalize, unit: yUnit })
 	const hasRightAxis = config.y_axis.series.some((s) => s.align === 'Right')
 	const yAxis = !hasRightAxis ? [leftYAxis] : [leftYAxis, rightYAxis]
 
@@ -279,7 +287,8 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 				position: labelPosition,
 				formatter: (params: any) => {
 					const _val = swapAxes ? params.value?.[0] : params.value?.[1]
-					return getShortNumber(_val, 1)
+					if (config.y_axis.normalize) return getShortNumber(_val, 1)
+					return hasUnit(yUnit) ? formatValueWithUnit(_val, yUnit, 1) : getShortNumber(_val, 1)
 				},
 				fontSize: 11,
 			},
@@ -313,6 +322,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 			xAxisIsDate,
 			granularity,
 			xySwapped: swapAxes,
+			yUnit: config.y_axis.normalize ? undefined : yUnit,
 		}),
 		legend: { ...getLegend(show_legend, show_scrollbar, swapAxes), data: legendData },
 	}
@@ -379,6 +389,7 @@ type YAxisCustomizeOptions = {
 	max?: number
 	label?: string
 	horizontal?: boolean
+	unit?: AxisUnit
 }
 function getYAxis(options: YAxisCustomizeOptions = {}) {
 	const nameConfig = options.label
@@ -389,6 +400,11 @@ function getYAxis(options: YAxisCustomizeOptions = {}) {
 				nameTextStyle: { fontSize: 12, fontWeight: 'bold' as const },
 		  }
 		: { name: '' }
+
+	const useUnit = !options.normalized && hasUnit(options.unit)
+	const formatter = useUnit
+		? (value: number) => formatValueWithUnit(value, options.unit, 1)
+		: (value: number) => getShortNumber(value, 1)
 
 	return {
 		show: true,
@@ -404,7 +420,7 @@ function getYAxis(options: YAxisCustomizeOptions = {}) {
 			show: true,
 			hideOverlap: true,
 			margin: 8,
-			formatter: (value: number) => getShortNumber(value, 1),
+			formatter,
 		},
 		min: options.normalized ? 0 : options.min || undefined,
 		max: options.normalized ? 100 : options.max || undefined,
@@ -1184,6 +1200,12 @@ function getGrid(options: any = {}) {
 }
 
 function getTooltip(options: any = {}) {
+	const formatY = (value: number) => {
+		if (isNaN(value)) return value
+		return hasUnit(options.yUnit)
+			? formatValueWithUnit(value, options.yUnit, 2)
+			: formatNumber(value)
+	}
 	return {
 		trigger: 'axis',
 		confine: true,
@@ -1198,7 +1220,7 @@ function getTooltip(options: any = {}) {
 			if (!Array.isArray(params)) {
 				const p = params as any
 				const value = options.xySwapped ? p.value[0] : p.value[1]
-				const formatted = isNaN(value) ? value : formatNumber(value)
+				const formatted = formatY(value)
 				return `
 					<div class="flex items-center justify-between gap-5">
 						<div>${p.name}</div>
@@ -1214,7 +1236,7 @@ function getTooltip(options: any = {}) {
 						options.xAxisIsDate && options.granularity
 							? getFormattedDate(xValue, options.granularity)
 							: xValue
-					const formattedY = isNaN(yValue) ? yValue : formatNumber(yValue)
+					const formattedY = formatY(yValue)
 					return `
 							<div class="flex flex-col">
 								${idx == 0 ? `<div>${formattedX}</div>` : ''}
