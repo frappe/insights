@@ -64,7 +64,12 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 		? getGranularity(config.x_axis.dimension.dimension_name, config)
 		: null
 
-	const leftYAxis = getYAxis({ min: config.y_axis.min, max: config.y_axis.max })
+	const yAxisLabel = config.y_axis.show_axis_label ? config.y_axis.axis_label : undefined
+	const leftYAxis = getYAxis({
+		min: config.y_axis.min,
+		max: config.y_axis.max,
+		label: yAxisLabel,
+	})
 	const rightYAxis = getYAxis()
 	const hasRightAxis = config.y_axis.series.some((s) => s.align === 'Right')
 	const yAxis = !hasRightAxis ? [leftYAxis] : [leftYAxis, rightYAxis]
@@ -145,7 +150,7 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 		animation: true,
 		animationDuration: 700,
 		dataZoom: getDataZoom(show_scrollbar),
-		grid: getGrid({ show_legend, show_scrollbar }),
+		grid: getGrid({ show_legend, show_scrollbar, y_axis_label: yAxisLabel }),
 		color: colors,
 		xAxis,
 		yAxis,
@@ -196,10 +201,13 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 		? getGranularity(config.x_axis.dimension.dimension_name, config)
 		: null
 
+	const yAxisLabel = config.y_axis.show_axis_label ? config.y_axis.axis_label : undefined
 	const leftYAxis = getYAxis({
 		normalized: config.y_axis.normalize,
 		min: config.y_axis.min,
 		max: config.y_axis.max,
+		label: yAxisLabel,
+		horizontal: swapAxes,
 	})
 	const rightYAxis = getYAxis({ normalized: config.y_axis.normalize })
 	const hasRightAxis = config.y_axis.series.some((s) => s.align === 'Right')
@@ -296,7 +304,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 		animation: true,
 		animationDuration: 700,
 		color: colors,
-		grid: getGrid({ show_legend, show_scrollbar, swapAxes }),
+		grid: getGrid({ show_legend, show_scrollbar, swapAxes, y_axis_label: yAxisLabel }),
 		xAxis: swapAxes ? yAxis : xAxis,
 		yAxis: swapAxes ? xAxis : yAxis,
 		dataZoom: getDataZoom(show_scrollbar, swapAxes),
@@ -369,8 +377,19 @@ type YAxisCustomizeOptions = {
 	normalized?: boolean
 	min?: number
 	max?: number
+	label?: string
+	horizontal?: boolean
 }
 function getYAxis(options: YAxisCustomizeOptions = {}) {
+	const nameConfig = options.label
+		? {
+				name: options.label,
+				nameLocation: 'middle',
+				nameGap: options.horizontal ? 30 : 50,
+				nameTextStyle: { fontSize: 12, fontWeight: 'bold' as const },
+		  }
+		: { name: '' }
+
 	return {
 		show: true,
 		type: 'value',
@@ -389,6 +408,7 @@ function getYAxis(options: YAxisCustomizeOptions = {}) {
 		},
 		min: options.normalized ? 0 : options.min || undefined,
 		max: options.normalized ? 100 : options.max || undefined,
+		...nameConfig,
 	}
 }
 
@@ -1144,11 +1164,21 @@ function getGrid(options: any = {}) {
 		bottom += 30
 	}
 
+	let left = 30
+	if (options.y_axis_label) {
+		// containLabel reserves space for tick labels, not the axis `name` — pad it ourselves
+		if (options.swapAxes) {
+			bottom += 25
+		} else {
+			left += 25
+		}
+	}
+
 	return {
 		top: 18,
-		left: 30,
+		left,
 		right: 30,
-		bottom: bottom,
+		bottom,
 		containLabel: true,
 	}
 }
