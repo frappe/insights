@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-05-17 10:03+0000\n"
-"PO-Revision-Date: 2026-05-20 14:36\n"
+"PO-Revision-Date: 2026-05-27 15:35\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -3401,7 +3401,7 @@ msgstr "dossier"
 
 #: frontend/src2/query/components/FormatRule.vue:167
 msgid "greater than"
-msgstr ""
+msgstr "supérieur à"
 
 #: frontend/src2/query/components/FormatRule.vue:168
 msgid "greater than or equals"
@@ -3449,7 +3449,7 @@ msgstr ""
 
 #: frontend/src2/query/components/FormatRule.vue:169
 msgid "less than"
-msgstr ""
+msgstr "inférieur à"
 
 #: frontend/src2/query/components/FormatRule.vue:170
 msgid "less than or equals"
@@ -3461,7 +3461,7 @@ msgstr ""
 
 #: frontend/src2/query/components/FormatRule.vue:166
 msgid "not equals"
-msgstr ""
+msgstr "différent de"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Folder'
 #: insights/insights/doctype/insights_folder/insights_folder.json
