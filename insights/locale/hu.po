@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
-"POT-Creation-Date: 2026-04-26 09:47+0000\n"
-"PO-Revision-Date: 2026-05-05 12:04\n"
+"POT-Creation-Date: 2026-05-17 10:03+0000\n"
+"PO-Revision-Date: 2026-05-27 15:35\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Hungarian\n"
 "MIME-Version: 1.0\n"
@@ -264,7 +264,7 @@ msgstr "Lekérdezés Automatikus Végrehajtása"
 msgid "Automatically arrange cards vertically to fill empty spaces"
 msgstr "A kártyák automatikus függőleges elrendezése az üres helyek kitöltéséhez"
 
-#: frontend/src2/charts/components/MeasurePicker.vue:128
+#: frontend/src2/charts/components/MeasurePicker.vue:138
 msgid "Average of..."
 msgstr "Átlagos..."
 
@@ -431,7 +431,7 @@ msgstr "Óránként egyszer ellenőrizze"
 msgid "Choose Columns"
 msgstr "Oszlopok kijelölése"
 
-#: insights/insights/doctype/insights_data_source_v3/ibis_utils.py:98
+#: insights/insights/doctype/insights_data_source_v3/ibis_utils.py:96
 msgid "Circular query reference detected while building \"{0}\""
 msgstr "Körkörös lekérdezési hivatkozás észlelve a(z) \"{0} \" készítése során"
 
@@ -608,7 +608,7 @@ msgstr "JSON másolása"
 msgid "Copy Query"
 msgstr "Lekérdezés másolása"
 
-#: frontend/src2/charts/components/MeasurePicker.vue:126
+#: frontend/src2/charts/components/MeasurePicker.vue:136
 msgid "Count of..."
 msgstr "darab..."
 
@@ -1141,7 +1141,7 @@ msgstr "Szűrők"
 msgid "Fiscal Year Start"
 msgstr "Költségvetési év kezdete"
 
-#: insights/api/workbooks.py:241
+#: insights/api/workbooks.py:260
 msgid "Folder and item must belong to the same workbook"
 msgstr "A mappának és az elemnek ugyanahhoz a munkafüzethez kell tartoznia"
 
@@ -1886,7 +1886,7 @@ msgstr "Max. memóriahasználat"
 msgid "Max Records To Sync"
 msgstr "Max. szinkronizálandó rekordok"
 
-#: frontend/src2/charts/components/MeasurePicker.vue:130
+#: frontend/src2/charts/components/MeasurePicker.vue:140
 msgid "Maximum of..."
 msgstr "Maximum..."
 
@@ -1905,7 +1905,7 @@ msgstr "Memória korlát (MB)"
 msgid "Message"
 msgstr "Üzenet"
 
-#: frontend/src2/charts/components/MeasurePicker.vue:129
+#: frontend/src2/charts/components/MeasurePicker.vue:139
 msgid "Minimum of..."
 msgstr "Minimum..."
 
@@ -2788,7 +2788,7 @@ msgstr "Karakterlánc"
 msgid "Success"
 msgstr "Siker"
 
-#: frontend/src2/charts/components/MeasurePicker.vue:127
+#: frontend/src2/charts/components/MeasurePicker.vue:137
 msgid "Sum of..."
 msgstr "Összeg..."
 
@@ -3097,7 +3097,7 @@ msgstr "Típus"
 msgid "Unexpected validation error"
 msgstr "Váratlan érvényesítési hiba"
 
-#: frontend/src2/charts/components/MeasurePicker.vue:131
+#: frontend/src2/charts/components/MeasurePicker.vue:141
 msgid "Unique Count of..."
 msgstr "Egyedi darabszám..."
 
@@ -3306,13 +3306,13 @@ msgstr "Az üzenet formázásához használhat markdownt. A félkövér szövegh
 msgid "You do not have permission to access this resource"
 msgstr "Nincs jogosultsága az erőforrás eléréséhez"
 
-#: insights/api/workbooks.py:165 insights/api/workbooks.py:186
-#: insights/api/workbooks.py:198 insights/api/workbooks.py:225
-#: insights/api/workbooks.py:236 insights/api/workbooks.py:250
+#: insights/api/workbooks.py:183 insights/api/workbooks.py:202
+#: insights/api/workbooks.py:215 insights/api/workbooks.py:243
+#: insights/api/workbooks.py:255 insights/api/workbooks.py:269
 msgid "You do not have permission to modify this workbook"
 msgstr "Nincs jogosultsága a munkafüzet módosítására"
 
-#: insights/api/workbooks.py:79 insights/api/workbooks.py:132
+#: insights/api/workbooks.py:79 insights/api/workbooks.py:135
 msgid "You do not have permission to share this workbook"
 msgstr "Nincs jogosultsága a munkafüzet megosztására"
 
