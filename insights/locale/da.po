@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
-"POT-Creation-Date: 2026-04-26 09:47+0000\n"
-"PO-Revision-Date: 2026-04-27 11:03\n"
+"POT-Creation-Date: 2026-05-17 10:03+0000\n"
+"PO-Revision-Date: 2026-05-27 15:35\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Danish\n"
 "MIME-Version: 1.0\n"
@@ -264,9 +264,9 @@ msgstr ""
 msgid "Automatically arrange cards vertically to fill empty spaces"
 msgstr ""
 
-#: frontend/src2/charts/components/MeasurePicker.vue:128
+#: frontend/src2/charts/components/MeasurePicker.vue:138
 msgid "Average of..."
-msgstr ""
+msgstr "Gennemsnit af..."
 
 #. Label of the api_base_url (Data) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
@@ -431,7 +431,7 @@ msgstr ""
 msgid "Choose Columns"
 msgstr ""
 
-#: insights/insights/doctype/insights_data_source_v3/ibis_utils.py:98
+#: insights/insights/doctype/insights_data_source_v3/ibis_utils.py:96
 msgid "Circular query reference detected while building \"{0}\""
 msgstr ""
 
@@ -608,7 +608,7 @@ msgstr ""
 msgid "Copy Query"
 msgstr ""
 
-#: frontend/src2/charts/components/MeasurePicker.vue:126
+#: frontend/src2/charts/components/MeasurePicker.vue:136
 msgid "Count of..."
 msgstr ""
 
@@ -1141,7 +1141,7 @@ msgstr "Filtre"
 msgid "Fiscal Year Start"
 msgstr ""
 
-#: insights/api/workbooks.py:241
+#: insights/api/workbooks.py:260
 msgid "Folder and item must belong to the same workbook"
 msgstr ""
 
@@ -1886,7 +1886,7 @@ msgstr ""
 msgid "Max Records To Sync"
 msgstr ""
 
-#: frontend/src2/charts/components/MeasurePicker.vue:130
+#: frontend/src2/charts/components/MeasurePicker.vue:140
 msgid "Maximum of..."
 msgstr ""
 
@@ -1905,7 +1905,7 @@ msgstr ""
 msgid "Message"
 msgstr "Besked"
 
-#: frontend/src2/charts/components/MeasurePicker.vue:129
+#: frontend/src2/charts/components/MeasurePicker.vue:139
 msgid "Minimum of..."
 msgstr ""
 
@@ -2788,9 +2788,9 @@ msgstr ""
 msgid "Success"
 msgstr "Succes"
 
-#: frontend/src2/charts/components/MeasurePicker.vue:127
+#: frontend/src2/charts/components/MeasurePicker.vue:137
 msgid "Sum of..."
-msgstr ""
+msgstr "Sum af..."
 
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
@@ -3097,7 +3097,7 @@ msgstr ""
 msgid "Unexpected validation error"
 msgstr ""
 
-#: frontend/src2/charts/components/MeasurePicker.vue:131
+#: frontend/src2/charts/components/MeasurePicker.vue:141
 msgid "Unique Count of..."
 msgstr ""
 
@@ -3306,13 +3306,13 @@ msgstr ""
 msgid "You do not have permission to access this resource"
 msgstr ""
 
-#: insights/api/workbooks.py:165 insights/api/workbooks.py:186
-#: insights/api/workbooks.py:198 insights/api/workbooks.py:225
-#: insights/api/workbooks.py:236 insights/api/workbooks.py:250
+#: insights/api/workbooks.py:183 insights/api/workbooks.py:202
+#: insights/api/workbooks.py:215 insights/api/workbooks.py:243
+#: insights/api/workbooks.py:255 insights/api/workbooks.py:269
 msgid "You do not have permission to modify this workbook"
 msgstr ""
 
-#: insights/api/workbooks.py:79 insights/api/workbooks.py:132
+#: insights/api/workbooks.py:79 insights/api/workbooks.py:135
 msgid "You do not have permission to share this workbook"
 msgstr ""
 
@@ -3390,14 +3390,14 @@ msgstr ""
 #: frontend/src2/query/components/FormatRule.vue:165
 #: frontend/src2/query/components/FormatRule.vue:178
 msgid "equals"
-msgstr ""
+msgstr "lig med"
 
 #. Label of the folder (Data) field in DocType 'Insights Chart v3'
 #. Label of the folder (Data) field in DocType 'Insights Query v3'
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "folder"
-msgstr ""
+msgstr "mappe"
 
 #: frontend/src2/query/components/FormatRule.vue:167
 msgid "greater than"
@@ -3466,7 +3466,7 @@ msgstr ""
 #. Option for the 'Type' (Select) field in DocType 'Insights Folder'
 #: insights/insights/doctype/insights_folder/insights_folder.json
 msgid "query"
-msgstr ""
+msgstr "forespørgsel"
 
 #. Label of the sort_order (Int) field in DocType 'Insights Chart v3'
 #. Label of the sort_order (Int) field in DocType 'Insights Query v3'
