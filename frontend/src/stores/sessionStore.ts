@@ -10,6 +10,7 @@ const emptyUser: SessionUser = {
 	user_image: '',
 	is_admin: false,
 	is_user: false,
+	can_download: true,
 	country: '',
 	locale: 'en-US',
 	is_v2_user: false,
@@ -39,6 +40,7 @@ const sessionStore = defineStore('insights:session', function () {
 			is_admin: Boolean(userInfo.is_admin),
 			is_user: Boolean(userInfo.is_user),
 			is_v2_user: Boolean(userInfo.is_v2_user),
+			can_download: Boolean(userInfo.can_download),
 		})
 	}
 

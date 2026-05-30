@@ -39,11 +39,13 @@
 					icon: 'copy',
 					onClick: duplicateQuery,
 				},
-				{
-					label: 'Download CSV',
-					icon: 'download',
-					onClick: query.downloadResults,
-				},
+				session.user.can_download
+				? {
+						label: 'Download CSV',
+						icon: 'download',
+						onClick: query.downloadResults,
+				  }
+				: null,
 				{
 					label: query.doc.is_assisted_query
 						? 'Switch to Classic Query Builder'
@@ -144,6 +146,7 @@
 <script setup>
 import ShareDialog from '@/components/ShareDialog.vue'
 import useQueryStore from '@/stores/queryStore'
+import sessionStore from '@/stores/sessionStore'
 import settingsStore from '@/stores/settingsStore'
 import { copyToClipboard } from '@/utils'
 import { useMagicKeys } from '@vueuse/core'
@@ -153,6 +156,7 @@ import { computed, inject, nextTick, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import Code from '@/components/Controls/Code.vue'
 const settings = settingsStore().settings
+const session = sessionStore()
 
 const props = defineProps(['query'])
 const query = props.query || inject('query')

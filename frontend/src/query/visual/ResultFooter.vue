@@ -10,14 +10,16 @@
 			<span class="text-gray-600">seconds</span>
 		</div>
 		<div class="ml-auto flex items-center gap-1">
-			<Button variant="ghost" icon="download" @click="query.downloadResults"> </Button>
+			<Button v-if="session.user.can_download" variant="ghost" icon="download" @click="query.downloadResults"> </Button>
 		</div>
 	</div>
 </template>
 
 <script setup>
 import { computed, inject } from 'vue'
+import sessionStore from '@/stores/sessionStore'
 
+const session = sessionStore()
 const query = inject('query')
 const executionTime = computed(() => query.doc.execution_time)
 const queriedRowCount = computed(() => query.doc.results_row_count)

@@ -8,6 +8,7 @@
  "field_order": [
   "onboarding_section",
   "enable_permissions",
+  "allow_download",
   "enable_data_store",
   "apply_user_permissions",
   "allowed_origins",
@@ -73,6 +74,12 @@
    "fieldname": "enable_permissions",
    "fieldtype": "Check",
    "label": "Enable Permissions"
+  },
+  {
+   "default": "1",
+   "fieldname": "allow_download",
+   "fieldtype": "Check",
+   "label": "Allow Data Download"
   },
   {
    "fieldname": "integrations_section",

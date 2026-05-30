@@ -1,9 +1,11 @@
 <script setup>
 import { inject, ref, watch, computed } from 'vue'
+import sessionStore from '@/stores/sessionStore'
 import ResultSection from './ResultSection.vue'
 import ResultFooter from './visual/ResultFooter.vue'
 import NativeQueryEditor from './NativeQueryEditor.vue'
 
+const session = sessionStore()
 const query = inject('query')
 const nativeQuery = ref(query.doc.sql)
 
@@ -34,6 +36,7 @@ const displayedRowCount = computed(() => Math.min(query.MAX_ROWS, queriedRowCoun
 							<span class="text-gray-600">seconds</span>
 						</div>
 						<Button
+							v-if="session.user.can_download"
 							variant="ghost"
 							class="ml-1"
 							icon="download"

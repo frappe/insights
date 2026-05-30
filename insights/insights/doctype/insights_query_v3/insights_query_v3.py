@@ -210,6 +210,16 @@ class InsightsQueryv3(Document):
     def download_results(
         self, format: str = "csv", active_operation_idx: int | None = None, adhoc_filters: dict | None = None
     ):
+        from insights.insights.doctype.insights_team.insights_team import is_admin
+
+        if not is_admin(frappe.session.user) and not frappe.db.get_single_value(
+            "Insights Settings", "allow_download"
+        ):
+            frappe.throw(
+                "You are not allowed to download data. Contact your administrator.",
+                frappe.PermissionError,
+            )
+
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
 
