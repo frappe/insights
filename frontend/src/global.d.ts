@@ -12,7 +12,6 @@ interface SessionUser {
 	user_image: string
 	is_admin: boolean
 	is_user: boolean
-	can_download: boolean
 	country: string
 	locale: string
 	is_v2_user: boolean
