@@ -17,6 +17,7 @@ import { column, filter_group, parseFilterString } from '../helpers'
 import { Query } from '../query'
 import AlertSetupDialog from './AlertSetupDialog.vue'
 import QueryAlertsDialog from './QueryAlertsDialog.vue'
+import session from '../../session'
 
 const props = defineProps<{
 	query: Query
@@ -200,7 +201,7 @@ function onFilterChange(filters: Record<string, string>) {
 					<Bell class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 				</template>
 			</Button>
-			<Button variant="ghost" @click="openExport">
+			<Button v-if="session.user.can_download" variant="ghost" @click="openExport">
 				<template #icon>
 					<Download class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 				</template>

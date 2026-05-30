@@ -9,6 +9,7 @@ type SessionUser = {
 	user_image: string
 	is_admin: boolean
 	is_user: boolean
+	can_download: boolean
 	country: string
 	locale: string
 	is_v2_instance: boolean
@@ -26,6 +27,7 @@ const emptyUser: SessionUser = {
 	user_image: '',
 	is_admin: false,
 	is_user: false,
+	can_download: true,
 	country: '',
 	locale: 'en-US',
 	is_v2_instance: false,
@@ -69,6 +71,7 @@ async function fetchSessionInfo() {
 		is_v2_instance: Boolean(userInfo.is_v2_instance),
 		has_desk_access: Boolean(userInfo.has_desk_access),
 		has_demo_data: Boolean(userInfo.has_demo_data),
+		can_download: Boolean(userInfo.can_download),
 	})
 }
 

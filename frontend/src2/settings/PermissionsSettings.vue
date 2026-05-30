@@ -96,6 +96,13 @@ const editTeam = ref<Team | null>(null)
 			<Toggle v-model="settings.doc.apply_user_permissions" />
 		</SettingItem>
 
+		<SettingItem
+			label="Allow Data Download"
+			description="Allow users to download query results as CSV or Excel. When disabled, only admins can download data."
+		>
+			<Toggle v-model="settings.doc.allow_download" />
+		</SettingItem>
+
 		<div class="flex w-full flex-1 flex-col gap-3 overflow-auto">
 			<SettingItem
 				label="Teams"
