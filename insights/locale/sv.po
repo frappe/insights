@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
-"POT-Creation-Date: 2026-04-26 09:47+0000\n"
-"PO-Revision-Date: 2026-04-27 11:03\n"
+"POT-Creation-Date: 2026-05-24 10:09+0000\n"
+"PO-Revision-Date: 2026-05-30 15:53\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Swedish\n"
 "MIME-Version: 1.0\n"
@@ -213,6 +213,11 @@ msgstr "Alla med länken kan visa"
 msgid "Append"
 msgstr "Bifoga"
 
+#. Option for the 'Sync Strategy' (Select) field in DocType 'Insights Table v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Append Only"
+msgstr "Endast Tillägg"
+
 #: frontend/src2/query/components/UnionSelectorDialog.vue:116
 msgid "Append Rows"
 msgstr "Lägga till Rader"
@@ -264,7 +269,7 @@ msgstr "Automatisk Exekvera Fråga"
 msgid "Automatically arrange cards vertically to fill empty spaces"
 msgstr "Automatiskt arrangera kort vertikalt för att fylla tomma utrymmen"
 
-#: frontend/src2/charts/components/MeasurePicker.vue:128
+#: frontend/src2/charts/components/MeasurePicker.vue:138
 msgid "Average of..."
 msgstr "Genomsnitt av..."
 
@@ -431,7 +436,13 @@ msgstr "Kontroll en gång i timmen"
 msgid "Choose Columns"
 msgstr "Välj Kolumner"
 
-#: insights/insights/doctype/insights_data_source_v3/ibis_utils.py:98
+#. Description of the 'Sync Strategy' (Select) field in DocType 'Insights Table
+#. v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Choose how incremental sync writes rows: <b>Append Only</b> adds new rows, while <b>Update or Insert</b> updates matching keys and inserts new rows."
+msgstr "Välj hur stegvis synkronisering skriver rader: <b>Endast Tillägg</b> lägger till nya rader, medan <b>Uppdatera eller Infoga</b> uppdaterar matchande nycklar och infogar nya rader."
+
+#: insights/insights/doctype/insights_data_source_v3/ibis_utils.py:96
 msgid "Circular query reference detected while building \"{0}\""
 msgstr "Referens till cirkulär frågesökning upptäcktes vid skapande av \"{0}\""
 
@@ -478,12 +489,6 @@ msgstr "Färg Skala"
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Column"
 msgstr "Kolumn"
-
-#. Description of the 'Cursor Column' (Data) field in DocType 'Insights Table
-#. v3'
-#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
-msgid "Column used to track sync progress. Use <b>modified</b> if rows can be updated (syncs new and changed rows). Use <b>creation</b> if rows are append-only (syncs only new rows, faster)."
-msgstr "Kolumn som används för att spåra synkronisering förlopp. Använd <b>modifierad</b> om rader kan uppdateras (synkroniserar nya och ändrade rader). Använd <b>skapande</b> om rader endast kan läggas till (synkroniserar endast nya rader, snabbare)."
 
 #. Label of the columns (Table) field in DocType 'Insights Query'
 #. Label of the columns (Table) field in DocType 'Insights Table'
@@ -608,7 +613,7 @@ msgstr "Kopiera JSON"
 msgid "Copy Query"
 msgstr "Kopiera Fråga"
 
-#: frontend/src2/charts/components/MeasurePicker.vue:126
+#: frontend/src2/charts/components/MeasurePicker.vue:136
 msgid "Count of..."
 msgstr "Antal..."
 
@@ -819,6 +824,7 @@ msgid "Default Value"
 msgstr "Förvald Värde"
 
 #: frontend/src2/dashboard/DashboardItemActions.vue:19
+#: frontend/src2/teams/ManageTeamDialog.vue:80
 #: frontend/src2/workbook/WorkbookNavbarActions.vue:72
 msgid "Delete"
 msgstr "Ta bort"
@@ -848,7 +854,7 @@ msgstr "Dokumentation"
 
 #: frontend/src2/charts/components/ChartShareDialog.vue:38
 #: frontend/src2/dashboard/DashboardShareDialog.vue:86
-#: frontend/src2/teams/ManageTeamDialog.vue:66
+#: frontend/src2/teams/ManageTeamDialog.vue:67
 msgid "Done"
 msgstr "Klart"
 
@@ -1141,7 +1147,7 @@ msgstr "Filter"
 msgid "Fiscal Year Start"
 msgstr "Bokföringsår Start"
 
-#: insights/api/workbooks.py:241
+#: insights/api/workbooks.py:260
 msgid "Folder and item must belong to the same workbook"
 msgstr "Mapp och artikel måste tillhöra samma arbetsbok"
 
@@ -1311,12 +1317,6 @@ msgstr "Inaktiv"
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Incremental"
 msgstr "Stegvis"
-
-#. Label of the sync_section (Section Break) field in DocType 'Insights Table
-#. v3'
-#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
-msgid "Incremental Sync"
-msgstr "Stegvis Synkronisering"
 
 #: frontend/src2/charts/components/MapChartConfigForm.vue:55
 msgid "India"
@@ -1845,7 +1845,7 @@ msgstr "Long Int"
 msgid "Long Text"
 msgstr "Lång Text"
 
-#: frontend/src2/teams/ManageTeamDialog.vue:63
+#: frontend/src2/teams/ManageTeamDialog.vue:64
 msgid "Manage Team"
 msgstr "Hantera Team"
 
@@ -1886,7 +1886,7 @@ msgstr "Maximal Minnes Användning"
 msgid "Max Records To Sync"
 msgstr "Maximalt antal poster att synkronisera"
 
-#: frontend/src2/charts/components/MeasurePicker.vue:130
+#: frontend/src2/charts/components/MeasurePicker.vue:140
 msgid "Maximum of..."
 msgstr "Maximalt..."
 
@@ -1905,7 +1905,7 @@ msgstr "Minnesgräns (MB)"
 msgid "Message"
 msgstr "Meddelande"
 
-#: frontend/src2/charts/components/MeasurePicker.vue:129
+#: frontend/src2/charts/components/MeasurePicker.vue:139
 msgid "Minimum of..."
 msgstr "Minst..."
 
@@ -2227,6 +2227,12 @@ msgstr "Förhandsgranska Bild"
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "Primary Key"
 msgstr "Primär Nyckel"
+
+#. Label of the sync_primary_key_column (Data) field in DocType 'Insights Table
+#. v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Primary Key Column"
+msgstr "Primär Nyckel Kolumn"
 
 #: frontend/src2/settings/Settings.vue:13
 msgid "Profile"
@@ -2648,7 +2654,7 @@ msgstr "Inställningar"
 
 #: frontend/src2/dashboard/DashboardFilterEditor.vue:28
 msgid "Setup"
-msgstr "Inställningar"
+msgstr "Konfigurera"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:113
 msgid "Setup Alert"
@@ -2717,6 +2723,12 @@ msgstr "Specifika personer kan visa"
 #: frontend/src2/query/components/AddOperationPopover.vue:75
 msgid "Spreading column values into separate columns"
 msgstr "Sprid kolumnvärden till separata kolumner"
+
+#. Description of the 'Primary Key Column' (Data) field in DocType 'Insights
+#. Table v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Stable key used to identify the latest version of each logical row during incremental upserts."
+msgstr "Stabil nyckel som används för att identifiera senaste version av varje logisk rad under stegvisa uppdateringar."
 
 #. Description of the 'Sync From' (Datetime) field in DocType 'Insights Table
 #. v3'
@@ -2788,7 +2800,7 @@ msgstr "Sträng"
 msgid "Success"
 msgstr "Lyckad"
 
-#: frontend/src2/charts/components/MeasurePicker.vue:127
+#: frontend/src2/charts/components/MeasurePicker.vue:137
 msgid "Sum of..."
 msgstr "Summa av..."
 
@@ -2820,6 +2832,11 @@ msgstr "Synkronisera Från"
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Sync Mode"
 msgstr "Synkronisering Läge"
+
+#. Label of the sync_strategy (Select) field in DocType 'Insights Table v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Sync Strategy"
+msgstr "Synkroniserings Strategi"
 
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:59
 msgid "Sync tables from your data source to get started"
@@ -2936,6 +2953,12 @@ msgstr "Telegram API Token"
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Telegram Chat ID"
 msgstr "Telegram Chatt ID"
+
+#. Description of the 'Cursor Column' (Data) field in DocType 'Insights Table
+#. v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Temporal column used to detect rows that changed since the last sync. Use <b>modified</b> for mutable tables and <b>creation</b> for append-only tables."
+msgstr "Temporär kolumn som används för att upptäcka rader som ändrats sedan senaste synkronisering. Använd <b>modifierad</b> för ändringsbara tabeller och <b>skapande</b> för tabeller som endast kan läggas till."
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -3097,7 +3120,7 @@ msgstr "Typ "
 msgid "Unexpected validation error"
 msgstr "Oväntat valideringsfel"
 
-#: frontend/src2/charts/components/MeasurePicker.vue:131
+#: frontend/src2/charts/components/MeasurePicker.vue:141
 msgid "Unique Count of..."
 msgstr "Unik Antal av..."
 
@@ -3117,6 +3140,11 @@ msgstr "Uppdatera Tabell Länkar"
 #: frontend/src2/data_source/DataSourceTableList.vue:82
 msgid "Update Tables"
 msgstr "Uppdatera Tabeller"
+
+#. Option for the 'Sync Strategy' (Select) field in DocType 'Insights Table v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Update or Insert"
+msgstr "Uppdatera eller Infoga"
 
 #: frontend/src2/data_source/DataSourceList.vue:76
 msgid "Upload CSV or Excel"
@@ -3306,13 +3334,13 @@ msgstr "Använd markdown för att formatera meddelande. Använd dubbla asteriske
 msgid "You do not have permission to access this resource"
 msgstr "Du har inte behörighet att komma åt denna resurs"
 
-#: insights/api/workbooks.py:165 insights/api/workbooks.py:186
-#: insights/api/workbooks.py:198 insights/api/workbooks.py:225
-#: insights/api/workbooks.py:236 insights/api/workbooks.py:250
+#: insights/api/workbooks.py:183 insights/api/workbooks.py:202
+#: insights/api/workbooks.py:215 insights/api/workbooks.py:243
+#: insights/api/workbooks.py:255 insights/api/workbooks.py:269
 msgid "You do not have permission to modify this workbook"
 msgstr "Du har inte behörighet att ändra denna arbetsbok"
 
-#: insights/api/workbooks.py:79 insights/api/workbooks.py:132
+#: insights/api/workbooks.py:79 insights/api/workbooks.py:135
 msgid "You do not have permission to share this workbook"
 msgstr "Du har inte behörighet att dela denna arbetsbok"
 
