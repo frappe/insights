@@ -54,3 +54,4 @@ execute:frappe.db.set_single_value("Insights Settings", "apply_user_permissions"
 insights.patches.migrate_warehouse_tables_to_schemas
 insights.patches.fix_table_link_names
 insights.patches.backfill_query_references
+execute:frappe.db.set_single_value("Insights Settings", "allow_download", 1)

@@ -65,8 +65,7 @@ def get_user_info():
         "last_name": user.get("last_name"),
         "is_admin": _is_admin,
         "is_user": is_user or frappe.session.user == "Administrator",
-        "can_download": _is_admin
-        or bool(frappe.db.get_single_value("Insights Settings", "allow_download")),
+        "can_download": _is_admin or bool(frappe.db.get_single_value("Insights Settings", "allow_download")),
         # TODO: move to `get_session_info` since not user specific
         "country": frappe.db.get_single_value("System Settings", "country"),
         "locale": locale,
