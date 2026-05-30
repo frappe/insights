@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
-"POT-Creation-Date: 2026-05-17 10:03+0000\n"
-"PO-Revision-Date: 2026-05-27 15:36\n"
+"POT-Creation-Date: 2026-05-24 10:09+0000\n"
+"PO-Revision-Date: 2026-05-30 15:52\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Russian\n"
 "MIME-Version: 1.0\n"
@@ -211,6 +211,11 @@ msgstr ""
 #. Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Append"
+msgstr ""
+
+#. Option for the 'Sync Strategy' (Select) field in DocType 'Insights Table v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Append Only"
 msgstr ""
 
 #: frontend/src2/query/components/UnionSelectorDialog.vue:116
@@ -431,6 +436,12 @@ msgstr ""
 msgid "Choose Columns"
 msgstr ""
 
+#. Description of the 'Sync Strategy' (Select) field in DocType 'Insights Table
+#. v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Choose how incremental sync writes rows: <b>Append Only</b> adds new rows, while <b>Update or Insert</b> updates matching keys and inserts new rows."
+msgstr ""
+
 #: insights/insights/doctype/insights_data_source_v3/ibis_utils.py:96
 msgid "Circular query reference detected while building \"{0}\""
 msgstr ""
@@ -478,12 +489,6 @@ msgstr ""
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Column"
 msgstr "Столбец"
-
-#. Description of the 'Cursor Column' (Data) field in DocType 'Insights Table
-#. v3'
-#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
-msgid "Column used to track sync progress. Use <b>modified</b> if rows can be updated (syncs new and changed rows). Use <b>creation</b> if rows are append-only (syncs only new rows, faster)."
-msgstr ""
 
 #. Label of the columns (Table) field in DocType 'Insights Query'
 #. Label of the columns (Table) field in DocType 'Insights Table'
@@ -819,6 +824,7 @@ msgid "Default Value"
 msgstr "Значение по умолчанию"
 
 #: frontend/src2/dashboard/DashboardItemActions.vue:19
+#: frontend/src2/teams/ManageTeamDialog.vue:80
 #: frontend/src2/workbook/WorkbookNavbarActions.vue:72
 msgid "Delete"
 msgstr "Удалить"
@@ -848,7 +854,7 @@ msgstr "Документация"
 
 #: frontend/src2/charts/components/ChartShareDialog.vue:38
 #: frontend/src2/dashboard/DashboardShareDialog.vue:86
-#: frontend/src2/teams/ManageTeamDialog.vue:66
+#: frontend/src2/teams/ManageTeamDialog.vue:67
 msgid "Done"
 msgstr "Готово"
 
@@ -1310,12 +1316,6 @@ msgstr "Неактивный"
 #. Option for the 'Sync Mode' (Select) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Incremental"
-msgstr ""
-
-#. Label of the sync_section (Section Break) field in DocType 'Insights Table
-#. v3'
-#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
-msgid "Incremental Sync"
 msgstr ""
 
 #: frontend/src2/charts/components/MapChartConfigForm.vue:55
@@ -1845,7 +1845,7 @@ msgstr ""
 msgid "Long Text"
 msgstr "Длинный текст"
 
-#: frontend/src2/teams/ManageTeamDialog.vue:63
+#: frontend/src2/teams/ManageTeamDialog.vue:64
 msgid "Manage Team"
 msgstr ""
 
@@ -2226,6 +2226,12 @@ msgstr "Предварительное изображение"
 #. Label of the primary_key (Data) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "Primary Key"
+msgstr ""
+
+#. Label of the sync_primary_key_column (Data) field in DocType 'Insights Table
+#. v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Primary Key Column"
 msgstr ""
 
 #: frontend/src2/settings/Settings.vue:13
@@ -2718,6 +2724,12 @@ msgstr ""
 msgid "Spreading column values into separate columns"
 msgstr ""
 
+#. Description of the 'Primary Key Column' (Data) field in DocType 'Insights
+#. Table v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Stable key used to identify the latest version of each logical row during incremental upserts."
+msgstr ""
+
 #. Description of the 'Sync From' (Datetime) field in DocType 'Insights Table
 #. v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
@@ -2819,6 +2831,11 @@ msgstr ""
 #. Label of the sync_mode (Select) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Sync Mode"
+msgstr ""
+
+#. Label of the sync_strategy (Select) field in DocType 'Insights Table v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Sync Strategy"
 msgstr ""
 
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:59
@@ -2935,6 +2952,12 @@ msgstr ""
 #: frontend/src2/query/components/AlertSetupDialog.vue:188
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Telegram Chat ID"
+msgstr ""
+
+#. Description of the 'Cursor Column' (Data) field in DocType 'Insights Table
+#. v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Temporal column used to detect rows that changed since the last sync. Use <b>modified</b> for mutable tables and <b>creation</b> for append-only tables."
 msgstr ""
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
@@ -3116,6 +3139,11 @@ msgstr ""
 
 #: frontend/src2/data_source/DataSourceTableList.vue:82
 msgid "Update Tables"
+msgstr ""
+
+#. Option for the 'Sync Strategy' (Select) field in DocType 'Insights Table v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Update or Insert"
 msgstr ""
 
 #: frontend/src2/data_source/DataSourceList.vue:76
