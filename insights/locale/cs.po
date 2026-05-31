@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-05-24 10:09+0000\n"
-"PO-Revision-Date: 2026-05-30 15:52\n"
+"PO-Revision-Date: 2026-05-31 15:57\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Czech\n"
 "MIME-Version: 1.0\n"
@@ -192,7 +192,7 @@ msgstr ""
 
 #: frontend/src2/query/components/FormatRule.vue:161
 msgid "Amber"
-msgstr ""
+msgstr "Jantarová"
 
 #. Label of the amended_from (Link) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
@@ -2128,7 +2128,7 @@ msgstr ""
 #: frontend/src2/teams/TeamList.vue:34
 #: frontend/src2/workbook/WorkbookList.vue:89
 msgid "Owner"
-msgstr ""
+msgstr "Vlastník"
 
 #. Label of the parquet_file (Text) field in DocType 'Insights Table Import
 #. Log'
@@ -2451,7 +2451,7 @@ msgstr ""
 #. Label of the rows (Int) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Rows"
-msgstr ""
+msgstr "Řádky"
 
 #. Label of the rows_imported (Int) field in DocType 'Insights Table Import
 #. Log'
@@ -2514,7 +2514,7 @@ msgstr "Uložit"
 
 #: frontend/src2/charts/components/RegionMappingDialog.vue:314
 msgid "Save Changes"
-msgstr ""
+msgstr "Uložit změny"
 
 #: frontend/src2/components/VariablesDialog.vue:133
 msgid "Save Variables"
@@ -2915,7 +2915,7 @@ msgstr ""
 
 #: frontend/src2/teams/TeamList.vue:30
 msgid "Team"
-msgstr ""
+msgstr "Tým"
 
 #. Label of the team_members (Table) field in DocType 'Insights Team'
 #: insights/insights/doctype/insights_team/insights_team.json
@@ -2926,7 +2926,7 @@ msgstr "Členové týmu"
 #: frontend/src2/settings/PermissionsSettings.vue:45
 #: insights/insights/doctype/insights_team/insights_team.json
 msgid "Team Name"
-msgstr ""
+msgstr "Název týmu"
 
 #. Label of the team_permissions (Table) field in DocType 'Insights Team'
 #: insights/insights/doctype/insights_team/insights_team.json
@@ -2935,7 +2935,7 @@ msgstr ""
 
 #: frontend/src2/teams/TeamList.vue:83
 msgid "Teams"
-msgstr ""
+msgstr "Týmy"
 
 #. Option for the 'Channel' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
