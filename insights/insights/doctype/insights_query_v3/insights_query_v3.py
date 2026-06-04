@@ -105,6 +105,7 @@ class InsightsQueryv3(Document):
             query_name=self.name,
             operations=self.operations,
             enqueue_after_commit=True,
+            now=bool(frappe.flags.in_test),
         )
 
     def cleanup_empty_folder(self, folder_name):
