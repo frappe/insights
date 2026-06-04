@@ -762,6 +762,14 @@ class IbisQueryBuilder:
             results = get_code_results(code, variables=variables)
             cache_results(digest, results, cache_expiry=60 * 5)
 
+        # DuckDB (via PyArrow) cannot create tables with NULL-typed columns.
+        # PyArrow infers pa.null() for any all-None column regardless of pandas dtype.
+        # Casting to pandas StringDtype makes PyArrow emit pa.large_string() instead,
+        # which DuckDB accepts while still preserving null values as pd.NA.
+        for col in results.columns:
+            if results[col].isna().all():
+                results[col] = results[col].astype(pd.StringDtype())
+
         return insights.warehouse.db.create_table(
             digest,
             results,
@@ -1137,7 +1145,15 @@ def get_code_results(code: str, variables=None):
     )
 
     if not isinstance(results, pd.DataFrame):
-        results = pd.DataFrame(results)
+        try:
+            if isinstance(results, list) and results and isinstance(results[0], list | tuple):
+                results = pd.DataFrame.from_records(results)
+            else:
+                results = pd.DataFrame(results)
+        except (ValueError, TypeError):
+            import json as _json
+
+            results = pd.DataFrame(_json.loads(frappe.as_json(results)))
 
     return results
 
