@@ -6,6 +6,7 @@ from contextlib import contextmanager
 
 import frappe
 import requests
+from frappe import _
 from frappe.model.document import Document
 from frappe.query_builder import Interval
 from frappe.query_builder.functions import Now
@@ -82,7 +83,7 @@ class InsightsDashboardv3(Document):
 
         folder = frappe.get_doc("Insights Folder", self.folder)
         if folder.type != "dashboard":
-            frappe.throw("Dashboard folder must be a dashboard folder")
+            frappe.throw(_("Dashboard folder must be a dashboard folder"))
 
     def set_linked_charts(self):
         self.set(

@@ -31,4 +31,4 @@ class InsightsFolder(Document):
         if self.type == "dashboard":
             self.workbook = None
         elif not self.workbook:
-            frappe.throw("Workbook is required for query and chart folders")
+            frappe.throw(_("Workbook is required for query and chart folders"))
