@@ -16,10 +16,18 @@ export type DashboardListItem = {
 	preview_image: string
 	views: number
 	is_favourite: boolean
+	folder?: string | null
+}
+
+export type DashboardFolder = {
+	name: string
+	title: string
+	sort_order: number
 }
 
 const dashboards = ref<DashboardListItem[]>([])
 const favorites = ref<DashboardListItem[]>([])
+const folders = ref<DashboardFolder[]>([])
 
 const loading = ref(false)
 const mapTimeAgo = (dashboard: any) => ({
@@ -27,16 +35,18 @@ const mapTimeAgo = (dashboard: any) => ({
 	created_from_now: useTimeAgo(dashboard.creation),
 	modified_from_now: useTimeAgo(dashboard.modified),
 })
-async function fetchDashboards(search_term?: string, limit: number = 50) {
+async function fetchDashboards(search_term?: string, limit: number = 0) {
 	loading.value = true
 
-	const [regular, fav] = await Promise.all([
+	const [regular, fav, dashboardFolders] = await Promise.all([
 		call('insights.api.dashboards.get_dashboards', { search_term, limit }),
 		call('insights.api.dashboards.get_dashboards', { get_favorites: true }),
+		call('insights.api.dashboards.get_dashboard_folders'),
 	])
 
 	dashboards.value = regular.map(mapTimeAgo)
 	favorites.value = fav.map(mapTimeAgo)
+	folders.value = dashboardFolders
 	loading.value = false
 }
 
@@ -66,6 +76,40 @@ async function toggleLike(dashboard_name: string, add: boolean) {
 	}).then(() => fetchDashboards())
 }
 
+async function createFolder(title: string) {
+	await call('insights.api.dashboards.create_dashboard_folder', { title }).catch(showErrorToast)
+	return fetchDashboards()
+}
+
+async function renameFolder(folder_name: string, title: string) {
+	await call('insights.api.dashboards.rename_dashboard_folder', { folder_name, title }).catch(
+		showErrorToast,
+	)
+	return fetchDashboards()
+}
+
+async function deleteFolder(folder_name: string) {
+	await call('insights.api.dashboards.delete_dashboard_folder', { folder_name }).catch(
+		showErrorToast,
+	)
+	return fetchDashboards()
+}
+
+async function moveDashboard(dashboard_name: string, folder_name?: string | null) {
+	await call('insights.api.dashboards.move_dashboard_to_folder', {
+		dashboard_name,
+		folder_name: folder_name || null,
+	}).catch(showErrorToast)
+	return fetchDashboards()
+}
+
+async function updateFolderOrder(folder_names: string[]) {
+	await call('insights.api.dashboards.update_dashboard_folder_order', { folder_names }).catch(
+		showErrorToast,
+	)
+	return fetchDashboards()
+}
+
 export default function useDashboardStore() {
 	if (!dashboards.value.length) {
 		fetchDashboards()
@@ -74,6 +118,7 @@ export default function useDashboardStore() {
 	return reactive({
 		dashboards,
 		favorites,
+		folders,
 		loading,
 		fetchDashboards,
 
@@ -81,5 +126,10 @@ export default function useDashboardStore() {
 		updatingPreviewImage,
 
 		toggleLike,
+		createFolder,
+		renameFolder,
+		deleteFolder,
+		moveDashboard,
+		updateFolderOrder,
 	})
 }

@@ -1,10 +1,11 @@
 <script setup lang="tsx">
-import { BarChart2, Clock, Eye, MoreVertical, RefreshCw, Bookmark } from 'lucide-vue-next'
+import { BarChart2, Bookmark, Clock, Eye, Folder, MoreVertical, RefreshCw } from 'lucide-vue-next'
 import { DashboardListItem } from './dashboards'
 
 interface Props {
 	dashboard: DashboardListItem
 	dropdownOptions: any[]
+	folderTitle?: string
 	previewLoading?: boolean
 }
 
@@ -30,10 +31,7 @@ const emit = defineEmits<{
 				onerror="this.src = ''"
 				class="object-cover opacity-80"
 			/>
-			<div
-				v-else
-				class="flex h-full w-full items-center justify-center bg-gray-50/70"
-			>
+			<div v-else class="flex h-full w-full items-center justify-center bg-gray-50/70">
 				<Button
 					variant="ghost"
 					@click.prevent.stop="emit('update-preview')"
@@ -53,6 +51,14 @@ const emit = defineEmits<{
 					<p class="truncate text-sm" :title="dashboard.title">
 						{{ dashboard.title }}
 					</p>
+				</div>
+				<div
+					v-if="folderTitle"
+					class="mt-1 flex min-w-0 items-center gap-1 text-xs text-gray-600"
+					:title="folderTitle"
+				>
+					<Folder class="h-3 w-3 shrink-0" stroke-width="1.5" />
+					<span class="truncate">{{ folderTitle }}</span>
 				</div>
 				<div class="mt-1.5 flex gap-2">
 					<div class="flex items-center gap-1">

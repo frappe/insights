@@ -1,4 +1,5 @@
 import frappe
+from frappe import _
 
 from insights.api.permissions import is_private
 from insights.decorators import insights_whitelist, validate_type
@@ -85,6 +86,7 @@ def get_dashboards(search_term: str | None = None, limit: int = 50, get_favorite
             "name",
             "title",
             "workbook",
+            "folder",
             "creation",
             "modified",
             "preview_image",
@@ -111,6 +113,73 @@ def get_dashboards(search_term: str | None = None, limit: int = 50, get_favorite
         del dashboard["items"]
 
     return dashboards
+
+
+@insights_whitelist()
+def get_dashboard_folders():
+    return frappe.get_all(
+        "Insights Folder",
+        filters={"type": "dashboard"},
+        fields=["name", "title", "sort_order"],
+        order_by="sort_order asc, creation asc",
+    )
+
+
+@insights_whitelist()
+def create_dashboard_folder(title: str):
+    folder = frappe.new_doc("Insights Folder")
+    folder.title = title
+    folder.type = "dashboard"
+    folder.sort_order = frappe.db.count("Insights Folder", filters={"type": "dashboard"})
+    folder.insert()
+    return folder.as_dict()
+
+
+def get_dashboard_folder(folder_name: str):
+    folder = frappe.get_doc("Insights Folder", folder_name)
+    if folder.type != "dashboard":
+        frappe.throw(_("Invalid dashboard folder"))
+    return folder
+
+
+@insights_whitelist()
+def rename_dashboard_folder(folder_name: str, title: str):
+    folder = get_dashboard_folder(folder_name)
+    folder.check_permission("write")
+    folder.title = title
+    folder.save()
+    return folder.as_dict()
+
+
+@insights_whitelist()
+def delete_dashboard_folder(folder_name: str):
+    folder = get_dashboard_folder(folder_name)
+    folder.check_permission("delete")
+    frappe.db.set_value(
+        "Insights Dashboard v3",
+        {"folder": folder_name},
+        "folder",
+        None,
+        update_modified=False,
+    )
+    folder.delete()
+
+
+@insights_whitelist()
+def move_dashboard_to_folder(dashboard_name: str, folder_name: str | None = None):
+    dashboard = frappe.get_doc("Insights Dashboard v3", dashboard_name)
+    dashboard.check_permission("write")
+    if folder_name:
+        get_dashboard_folder(folder_name).check_permission("read")
+    dashboard.db_set("folder", folder_name, update_modified=False)
+
+
+@insights_whitelist()
+def update_dashboard_folder_order(folder_names: list[str]):
+    for sort_order, folder_name in enumerate(folder_names):
+        folder = get_dashboard_folder(folder_name)
+        folder.check_permission("write")
+        folder.db_set("sort_order", sort_order, update_modified=False)
 
 
 @insights_whitelist()

@@ -108,6 +108,7 @@ export type InsightsDashboardv3 = {
 	owner: string
 	title: string
 	workbook: string
+	folder?: string | null
 	items: WorkbookDashboardItem[]
 	preview_image?: string
 	share_link?: string

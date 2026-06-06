@@ -27,6 +27,7 @@ class InsightsDashboardv3(Document):
             InsightsDashboardChartv3,
         )
 
+        folder: DF.Link | None
         is_public: DF.Check
         items: DF.JSON | None
         linked_charts: DF.TableMultiSelect[InsightsDashboardChartv3]
@@ -71,8 +72,17 @@ class InsightsDashboardv3(Document):
         return d
 
     def before_save(self):
+        self.validate_folder()
         self.set_linked_charts()
         self.enqueue_update_dashboard_preview()
+
+    def validate_folder(self):
+        if not self.folder:
+            return
+
+        folder = frappe.get_doc("Insights Folder", self.folder)
+        if folder.type != "dashboard":
+            frappe.throw("Dashboard folder must be a dashboard folder")
 
     def set_linked_charts(self):
         self.set(

@@ -9,6 +9,7 @@
   "share_link",
   "column_break_owsx",
   "workbook",
+  "folder",
   "is_public",
   "vertical_compact_layout",
   "section_break_lgpd",
@@ -50,6 +51,14 @@
    "options": "Insights Workbook",
    "reqd": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "folder",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Folder",
+   "options": "Insights Folder"
   },
   {
    "fieldname": "share_link",

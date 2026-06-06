@@ -26,7 +26,6 @@
    "in_standard_filter": 1,
    "label": "Workbook",
    "options": "Insights Workbook",
-   "reqd": 1,
    "search_index": 1
   },
   {
@@ -35,7 +34,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Type",
-   "options": "query\nchart",
+   "options": "query\nchart\ndashboard",
    "reqd": 1
   },
   {
