@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Insights VERSION\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
-"POT-Creation-Date: 2026-05-24 10:09+0000\n"
-"PO-Revision-Date: 2026-05-24 10:09+0000\n"
+"POT-Creation-Date: 2026-06-07 10:18+0000\n"
+"PO-Revision-Date: 2026-06-07 10:18+0000\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: hello@frappe.io\n"
 "MIME-Version: 1.0\n"
@@ -169,6 +169,11 @@ msgstr ""
 msgid "Alerts"
 msgstr ""
 
+#. Label of the allow_download (Check) field in DocType 'Insights Settings'
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Allow Data Download"
+msgstr ""
+
 #. Label of the allow_subquery (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Allow Subquery"
@@ -182,10 +187,6 @@ msgstr ""
 #. Label of the allowed_origins (Data) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Allowed Origins"
-msgstr ""
-
-#: frontend/src2/charts/components/FunnelChartConfigForm.vue:58
-msgid "Alternate"
 msgstr ""
 
 #: frontend/src2/query/components/FormatRule.vue:161
@@ -504,7 +505,7 @@ msgstr ""
 msgid "Comma seperated URLs to whitelist for embedding charts & dashboards"
 msgstr ""
 
-#: frontend/src2/dashboard/DashboardBuilder.vue:151
+#: frontend/src2/dashboard/DashboardBuilder.vue:163
 msgid "Compact Layout"
 msgstr ""
 
@@ -1052,6 +1053,7 @@ msgstr ""
 
 #: frontend/src2/charts/components/ChartBuilderToolbar.vue:32
 #: frontend/src2/dashboard/Dashboard.vue:61
+#: frontend/src2/dashboard/DashboardBuilder.vue:156
 msgid "Export as PNG"
 msgstr ""
 
@@ -1149,7 +1151,7 @@ msgstr ""
 msgid "Folder and item must belong to the same workbook"
 msgstr ""
 
-#: frontend/src2/dashboard/DashboardBuilder.vue:145
+#: frontend/src2/dashboard/DashboardBuilder.vue:151
 msgid "Force Refresh"
 msgstr ""
 
@@ -1768,7 +1770,6 @@ msgid "Last synced cursor value (set automatically)"
 msgstr ""
 
 #: frontend/src2/charts/components/DonutChartConfigForm.vue:59
-#: frontend/src2/charts/components/FunnelChartConfigForm.vue:56
 #: frontend/src2/charts/components/SankeyChartConfigForm.vue:70
 msgid "Left"
 msgstr ""
@@ -2371,7 +2372,7 @@ msgstr ""
 msgid "Remove Sort"
 msgstr ""
 
-#: frontend/src2/dashboard/DashboardBuilder.vue:158
+#: frontend/src2/dashboard/DashboardBuilder.vue:170
 msgid "Reset Layout"
 msgstr ""
 
@@ -2417,7 +2418,6 @@ msgid "Results Row Count"
 msgstr ""
 
 #: frontend/src2/charts/components/DonutChartConfigForm.vue:60
-#: frontend/src2/charts/components/FunnelChartConfigForm.vue:57
 #: frontend/src2/charts/components/SankeyChartConfigForm.vue:71
 msgid "Right"
 msgstr ""
@@ -2684,6 +2684,10 @@ msgstr ""
 #. Label of the share_link (Data) field in DocType 'Insights Dashboard v3'
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Share Link"
+msgstr ""
+
+#: frontend/src2/charts/components/FunnelChartConfigForm.vue:51
+msgid "Show Percentage"
 msgstr ""
 
 #: frontend/src2/query/components/AddOperationPopover.vue:39
