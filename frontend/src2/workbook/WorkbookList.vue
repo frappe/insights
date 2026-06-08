@@ -39,7 +39,7 @@ const { currentFolder, searchQuery, drillInto, subfolders, breadcrumbs } = useFo
 const scope = ref<'all' | 'owned' | 'shared'>('all')
 
 async function refresh() {
-	workbookStore.getWorkbooks(searchQuery.value, 0, scope.value, currentFolder.value || 'root')
+	workbookStore.getWorkbooks(searchQuery.value, 100, scope.value, currentFolder.value || 'root')
 }
 // reset the list when the folder/scope changes so a slow fetch can't keep
 // showing the previous folder's workbooks; search keeps previous data (no flicker)
