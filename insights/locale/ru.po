@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-05-24 10:09+0000\n"
-"PO-Revision-Date: 2026-05-30 15:52\n"
+"PO-Revision-Date: 2026-06-14 16:51\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Russian\n"
 "MIME-Version: 1.0\n"
@@ -3429,7 +3429,7 @@ msgstr "папка"
 
 #: frontend/src2/query/components/FormatRule.vue:167
 msgid "greater than"
-msgstr ""
+msgstr "больше чем"
 
 #: frontend/src2/query/components/FormatRule.vue:168
 msgid "greater than or equals"
@@ -3477,7 +3477,7 @@ msgstr ""
 
 #: frontend/src2/query/components/FormatRule.vue:169
 msgid "less than"
-msgstr ""
+msgstr "менее чем"
 
 #: frontend/src2/query/components/FormatRule.vue:170
 msgid "less than or equals"
