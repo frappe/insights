@@ -9,8 +9,8 @@ import requests
 from frappe.model.document import Document
 from frappe.query_builder import Interval
 from frappe.query_builder.functions import Now
+from frappe.utils.telemetry import capture
 
-from insights.api.telemetry import capture_event
 from insights.utils import DocShare, File
 
 
@@ -239,9 +239,9 @@ class InsightsDashboardv3(Document):
         self.db_set("is_public", is_public)
 
         if people_with_access:
-            capture_event("dashboard_shared_with_user")
+            capture("dashboard_shared_with_user", "insights")
         if is_public:
-            capture_event("dashboard_set_public")
+            capture("dashboard_set_public", "insights")
 
 
 def get_page_preview(url: str, headers: dict | None = None) -> bytes:

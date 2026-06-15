@@ -8,10 +8,10 @@ from contextlib import contextmanager
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils.telemetry import capture
 from ibis import BaseBackend
 
 import insights
-from insights.api.telemetry import capture_event
 from insights.insights.doctype.insights_table_link_v3.insights_table_link_v3 import (
     InsightsTableLinkv3,
 )
@@ -82,7 +82,7 @@ class InsightsDataSourceDocument:
 
     def after_insert(self):
         if not self.is_site_db:
-            capture_event("data_source_created")
+            capture("data_source_created", "insights")
 
     def on_update(self):
         if self.type == "REST API":
