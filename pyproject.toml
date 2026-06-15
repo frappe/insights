@@ -9,7 +9,6 @@ readme = "README.md"
 dynamic = ["version"]
 dependencies = [
     "pandas~=2.3.3",
-    "tabulate",
     "SQLAlchemy==2.0.41",
     "python-telegram-bot==21.4",
     "duckdb~=1.4.3",
