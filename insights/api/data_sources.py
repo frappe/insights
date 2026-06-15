@@ -295,7 +295,9 @@ def get_all_data_sources():
 
 @insights_whitelist()
 @validate_type
-def get_data_source_tables(data_source: str | None = None, search_term: str | None = None, limit: int = 100, offset: int = 0):
+def get_data_source_tables(
+    data_source: str | None = None, search_term: str | None = None, limit: int = 100, offset: int = 0
+):
     tables = frappe.get_list(
         "Insights Table v3",
         filters={

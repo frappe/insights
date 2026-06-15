@@ -28,7 +28,7 @@ export function useUrlPagination<T>(
 	const isError = ref(false)
 	const currentPage = computed(() => Number(route.query.page) || 1)
 	const refreshTrigger = ref(0)
-	
+
 	function refresh() {
 		refreshTrigger.value++
 	}
@@ -53,7 +53,7 @@ export function useUrlPagination<T>(
 		}),
 		async ({ search, page }, oldVal, onCleanup) => {
 			let isAborted = false
-			
+
 			onCleanup(() => {
 				isAborted = true
 			})

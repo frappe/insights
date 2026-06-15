@@ -23,7 +23,7 @@ export async function getTables(data_source?: string, search_term?: string, limi
 		offset,
 	})
 	loading.value = false
-	
+
 	const key = data_source || '__all'
 	if (offset === 0) {
 		tables.value[key] = _tables
