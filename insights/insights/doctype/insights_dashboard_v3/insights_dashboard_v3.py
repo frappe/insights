@@ -88,27 +88,29 @@ class InsightsDashboardv3(Document):
         if is_guest and not self.is_public:
             raise frappe.PermissionError
 
-        if not self.has_permission("write"):
-            self.check_linked_filters(query, column_name)
+        if not self.is_filter_column(query, column_name):
+            frappe.throw(
+                frappe._("This column is not available as a filter on this dashboard"),
+                frappe.PermissionError,
+            )
 
         doc = frappe.get_cached_doc("Insights Query v3", query)
         return doc.get_distinct_column_values(
             column_name, search_term=search_term, adhoc_filters=adhoc_filters
         )
 
-    def check_linked_filters(self, query, column_name):
+    def is_filter_column(self, query, column_name):
+        # a filter links a column as "links": { '<chart>': "`<query>`.`<column>`" }
+        pattern = "^`([^`]+)`\\.`([^`]+)`$"
         items = frappe.parse_json(self.items)
-        filters = [item for item in items if item["type"] == "filter"]
-        for f in filters:
-            # check if there is a filter which has "link": { 'chart': "`<query>`.`<column>`" }
-            linked_columns = f.get("links", {}).values()
-            pattern = "^`([^`]+)`\\.`([^`]+)`$"
-            for linked_column in linked_columns:
+        for item in items:
+            if item["type"] != "filter":
+                continue
+            for linked_column in item.get("links", {}).values():
                 match = re.match(pattern, linked_column)
-                if match and match.groups()[0] == query and match.groups()[1] == column_name:
+                if match and match.groups() == (query, column_name):
                     return True
-
-        raise frappe.PermissionError
+        return False
 
     def enqueue_update_dashboard_preview(self):
         if self.is_new() or not self.get_doc_before_save() or frappe.flags.in_patch:
