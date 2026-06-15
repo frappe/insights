@@ -1,35 +1,69 @@
 <script setup lang="tsx">
-import { watchDebounced } from '@vueuse/core'
-import { Breadcrumbs, ListView } from 'frappe-ui'
+import { Breadcrumbs, ListView, Button, FormControl } from 'frappe-ui'
 import { MoreHorizontal, RefreshCcw, SearchIcon } from 'lucide-vue-next'
-import { h, ref, watchEffect } from 'vue'
+import { h, ref, computed, watchEffect } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import useDataSourceStore from './data_source'
 import useTableStore, { DataSourceTable } from './tables'
+import { usePagination } from '../composables/usePagination'
+import { useUrlPagination } from '../composables/useUrlPagination'
+import DataTableFooter from '../components/DataTableFooter.vue'
 import { __ } from '../translation'
 
 const props = defineProps<{ name: string }>()
 
-const dataSource = useDataSourceStore().getSource(props.name)
+const route = useRoute()
+const router = useRouter()
+const dataSourceStore = useDataSourceStore()
 const tableStore = useTableStore()
+const dataSource = computed(() => dataSourceStore.getSource(props.name))
 
-const searchQuery = ref('')
-const filteredTables = ref<DataSourceTable[]>()
-watchDebounced(searchQuery, () => updateTablesList(), { debounce: 300, immediate: true })
+const listWrapper = ref<HTMLElement | null>(null)
+const listView = ref<any>(null)
 
-function updateTablesList() {
-	tableStore.getTables(props.name, searchQuery.value).then((tables) => {
-		filteredTables.value = tables
-	})
-}
+const {
+	searchQuery,
+	items: filteredTables,
+	totalCount,
+	currentPage,
+	isLoading,
+	isError,
+	refresh,
+} = useUrlPagination(
+	(search, limit, offset) => tableStore.getTables(props.name, search, limit, offset),
+	(search) => tableStore.getTablesCount(props.name, search),
+	100,
+	() => {
+		if (listWrapper.value) {
+			const scrollEl = listWrapper.value.querySelector('.overflow-y-auto')
+			if (scrollEl) {
+				scrollEl.scrollTop = 0
+			}
+		}
+		if (listView.value?.selections) {
+			listView.value.selections.clear()
+		}
+	},
+)
 
-const listOptions = ref({
+const pagination = usePagination({
+	rowCount: computed(() => filteredTables.value.length),
+	totalRowCount: totalCount,
+	pageSize: 100,
+	currentPage: currentPage,
+	onPageChange: (page) => {
+		router.replace({ query: { ...route.query, page } })
+	},
+})
+
+const listOptions = computed(() => ({
 	columns: [
 		{
 			label: __('Table Name'),
 			key: 'table_name',
 		},
 	],
-	rows: filteredTables,
+	rows: filteredTables.value,
 	rowKey: 'table_name',
 	options: {
 		showTooltip: false,
@@ -44,17 +78,14 @@ const listOptions = ref({
 				iconLeft: 'refresh-ccw',
 				variant: 'outline',
 				loading: tableStore.updatingDataSourceTables,
-				onClick: () =>
-					tableStore.updateDataSourceTables(props.name).then(() => updateTablesList()),
+				onClick: () => tableStore.updateDataSourceTables(props.name).then(refresh),
 			},
 		},
 	},
-})
+}))
 
-const dataSourceStore = useDataSourceStore()
 watchEffect(() => {
-	const ds = dataSourceStore.getSource(props.name)
-	document.title = `Tables | ${props.name || ds?.title}`
+	document.title = `Tables | ${dataSource.value?.title || props.name}`
 })
 </script>
 
@@ -66,12 +97,15 @@ watchEffect(() => {
 				{ label: dataSource?.title || props.name, route: `/data-source/${props.name}` },
 			]"
 		/>
-		<div class="flex items-center gap-2"></div>
 	</header>
 
-	<div class="mb-4 flex h-full flex-col gap-3 overflow-auto px-5 py-3">
-		<div class="flex gap-2 overflow-visible py-1">
-			<FormControl placeholder="Search by Title" v-model="searchQuery" :debounce="300">
+	<div class="flex flex-1 flex-col overflow-hidden">
+		<div class="flex gap-2 overflow-visible px-5 py-4">
+			<FormControl
+				:placeholder="__('Search by Table Name')"
+				v-model="searchQuery"
+				autocomplete="off"
+			>
 				<template #prefix>
 					<SearchIcon class="h-4 w-4 text-gray-500" />
 				</template>
@@ -81,9 +115,7 @@ watchEffect(() => {
 					{
 						label: __('Update Tables'),
 						onClick: () =>
-							tableStore
-								.updateDataSourceTables(props.name)
-								.then(() => updateTablesList()),
+							tableStore.updateDataSourceTables(props.name).then(() => refresh()),
 						icon: () =>
 							h(RefreshCcw, {
 								class: 'h-4 w-4 text-gray-700',
@@ -110,6 +142,14 @@ watchEffect(() => {
 				</Button>
 			</Dropdown>
 		</div>
-		<ListView class="h-full" v-bind="listOptions"> </ListView>
+		<div class="flex flex-1 flex-col min-h-0 overflow-hidden px-5" ref="listWrapper">
+			<ListView ref="listView" class="h-full" v-bind="listOptions"> </ListView>
+		</div>
+		<DataTableFooter
+			:pagination="pagination"
+			:total-row-count="totalCount ?? undefined"
+			@prev="pagination.prev()"
+			@next="pagination.next()"
+		/>
 	</div>
 </template>
