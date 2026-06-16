@@ -11,6 +11,7 @@ export type WorkbookListItem = {
 	title: string
 	name: string
 	owner: string
+	folder?: string | null
 	creation: string
 	modified: string
 	created_from_now: string
@@ -18,6 +19,13 @@ export type WorkbookListItem = {
 	views: number
 	shared_with: string[]
 	shared_with_organization?: boolean
+}
+
+// org-level folder that categorizes workbooks themselves
+export type WorkbookFolderItem = {
+	name: string
+	title: string
+	parent_folder: string | null
 }
 
 export type WorkbookFolder = {

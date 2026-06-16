@@ -186,3 +186,4 @@ pids
 todo
 frontend/package-lock.json
 .opencode/package-lock.json
+frontend/components.d.ts

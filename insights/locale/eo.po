@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
-"POT-Creation-Date: 2026-05-17 10:03+0000\n"
-"PO-Revision-Date: 2026-05-18 13:53\n"
+"POT-Creation-Date: 2026-05-24 10:09+0000\n"
+"PO-Revision-Date: 2026-05-30 15:52\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Esperanto\n"
 "MIME-Version: 1.0\n"
@@ -212,6 +212,11 @@ msgstr "crwdns198422:0crwdne198422:0"
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Append"
 msgstr "crwdns197672:0crwdne197672:0"
+
+#. Option for the 'Sync Strategy' (Select) field in DocType 'Insights Table v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Append Only"
+msgstr "crwdns201931:0crwdne201931:0"
 
 #: frontend/src2/query/components/UnionSelectorDialog.vue:116
 msgid "Append Rows"
@@ -431,6 +436,12 @@ msgstr "crwdns198464:0crwdne198464:0"
 msgid "Choose Columns"
 msgstr "crwdns198466:0crwdne198466:0"
 
+#. Description of the 'Sync Strategy' (Select) field in DocType 'Insights Table
+#. v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Choose how incremental sync writes rows: <b>Append Only</b> adds new rows, while <b>Update or Insert</b> updates matching keys and inserts new rows."
+msgstr "crwdns201933:0crwdne201933:0"
+
 #: insights/insights/doctype/insights_data_source_v3/ibis_utils.py:96
 msgid "Circular query reference detected while building \"{0}\""
 msgstr "crwdns200396:0{0}crwdne200396:0"
@@ -478,12 +489,6 @@ msgstr "crwdns198474:0crwdne198474:0"
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Column"
 msgstr "crwdns197720:0crwdne197720:0"
-
-#. Description of the 'Cursor Column' (Data) field in DocType 'Insights Table
-#. v3'
-#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
-msgid "Column used to track sync progress. Use <b>modified</b> if rows can be updated (syncs new and changed rows). Use <b>creation</b> if rows are append-only (syncs only new rows, faster)."
-msgstr "crwdns200400:0crwdne200400:0"
 
 #. Label of the columns (Table) field in DocType 'Insights Query'
 #. Label of the columns (Table) field in DocType 'Insights Table'
@@ -819,6 +824,7 @@ msgid "Default Value"
 msgstr "crwdns199618:0crwdne199618:0"
 
 #: frontend/src2/dashboard/DashboardItemActions.vue:19
+#: frontend/src2/teams/ManageTeamDialog.vue:80
 #: frontend/src2/workbook/WorkbookNavbarActions.vue:72
 msgid "Delete"
 msgstr "crwdns198532:0crwdne198532:0"
@@ -848,7 +854,7 @@ msgstr "crwdns197782:0crwdne197782:0"
 
 #: frontend/src2/charts/components/ChartShareDialog.vue:38
 #: frontend/src2/dashboard/DashboardShareDialog.vue:86
-#: frontend/src2/teams/ManageTeamDialog.vue:66
+#: frontend/src2/teams/ManageTeamDialog.vue:67
 msgid "Done"
 msgstr "crwdns198538:0crwdne198538:0"
 
@@ -1311,12 +1317,6 @@ msgstr "crwdns197868:0crwdne197868:0"
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Incremental"
 msgstr "crwdns200410:0crwdne200410:0"
-
-#. Label of the sync_section (Section Break) field in DocType 'Insights Table
-#. v3'
-#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
-msgid "Incremental Sync"
-msgstr "crwdns200412:0crwdne200412:0"
 
 #: frontend/src2/charts/components/MapChartConfigForm.vue:55
 msgid "India"
@@ -1845,7 +1845,7 @@ msgstr "crwdns198022:0crwdne198022:0"
 msgid "Long Text"
 msgstr "crwdns198024:0crwdne198024:0"
 
-#: frontend/src2/teams/ManageTeamDialog.vue:63
+#: frontend/src2/teams/ManageTeamDialog.vue:64
 msgid "Manage Team"
 msgstr "crwdns198650:0crwdne198650:0"
 
@@ -2227,6 +2227,12 @@ msgstr "crwdns198098:0crwdne198098:0"
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "Primary Key"
 msgstr "crwdns198100:0crwdne198100:0"
+
+#. Label of the sync_primary_key_column (Data) field in DocType 'Insights Table
+#. v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Primary Key Column"
+msgstr "crwdns201935:0crwdne201935:0"
 
 #: frontend/src2/settings/Settings.vue:13
 msgid "Profile"
@@ -2718,6 +2724,12 @@ msgstr "crwdns198820:0crwdne198820:0"
 msgid "Spreading column values into separate columns"
 msgstr "crwdns199626:0crwdne199626:0"
 
+#. Description of the 'Primary Key Column' (Data) field in DocType 'Insights
+#. Table v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Stable key used to identify the latest version of each logical row during incremental upserts."
+msgstr "crwdns201937:0crwdne201937:0"
+
 #. Description of the 'Sync From' (Datetime) field in DocType 'Insights Table
 #. v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
@@ -2820,6 +2832,11 @@ msgstr "crwdns200432:0crwdne200432:0"
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Sync Mode"
 msgstr "crwdns200434:0crwdne200434:0"
+
+#. Label of the sync_strategy (Select) field in DocType 'Insights Table v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Sync Strategy"
+msgstr "crwdns201939:0crwdne201939:0"
 
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:59
 msgid "Sync tables from your data source to get started"
@@ -2936,6 +2953,12 @@ msgstr "crwdns198220:0crwdne198220:0"
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Telegram Chat ID"
 msgstr "crwdns198222:0crwdne198222:0"
+
+#. Description of the 'Cursor Column' (Data) field in DocType 'Insights Table
+#. v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Temporal column used to detect rows that changed since the last sync. Use <b>modified</b> for mutable tables and <b>creation</b> for append-only tables."
+msgstr "crwdns201941:0crwdne201941:0"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -3117,6 +3140,11 @@ msgstr "crwdns198862:0crwdne198862:0"
 #: frontend/src2/data_source/DataSourceTableList.vue:82
 msgid "Update Tables"
 msgstr "crwdns198864:0crwdne198864:0"
+
+#. Option for the 'Sync Strategy' (Select) field in DocType 'Insights Table v3'
+#: insights/insights/doctype/insights_table_v3/insights_table_v3.json
+msgid "Update or Insert"
+msgstr "crwdns201943:0crwdne201943:0"
 
 #: frontend/src2/data_source/DataSourceList.vue:76
 msgid "Upload CSV or Excel"

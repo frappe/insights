@@ -3,7 +3,7 @@ import { useStorage, useWindowSize } from '@vueuse/core'
 import { Edit3, RefreshCcw, Share2 } from 'lucide-vue-next'
 import { computed, provide, ref, watchEffect } from 'vue'
 import ContentEditable from '../components/ContentEditable.vue'
-import { safeJSONParse, waitUntil } from '../helpers'
+import { downloadImage, safeJSONParse, waitUntil } from '../helpers'
 import { WorkbookChart, WorkbookQuery } from '../types/workbook.types'
 import useDashboard from './dashboard'
 import DashboardChartSelectorDialog from './DashboardChartSelectorDialog.vue'
@@ -57,6 +57,12 @@ function onDrop(event: DragEvent) {
 const showShareDialog = ref(false)
 
 const verticalCompact = useStorage('dashboard_vertical_compact', true)
+
+const dashboardContainer = ref<HTMLElement | null>(null)
+async function downloadDashboardImage() {
+	if (!dashboardContainer.value) return
+	await downloadImage(dashboardContainer.value, `${dashboard.doc.title}.png`)
+}
 </script>
 
 <template>
@@ -146,6 +152,12 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 								icon: RefreshCcw,
 								onClick: () => dashboard.refresh(true),
 							},
+							{
+								label: __('Export as PNG'),
+								variant: 'outline',
+								icon: 'download',
+								onClick: downloadDashboardImage,
+							},
 							dashboard.editing
 								? {
 										label: __('Compact Layout'),
@@ -166,7 +178,12 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 					/>
 				</div>
 			</div>
-			<div class="flex-1 overflow-y-auto p-2 pt-0" @dragover="onDragOver" @drop="onDrop">
+			<div
+				ref="dashboardContainer"
+				class="flex-1 overflow-y-auto p-2 pt-0"
+				@dragover="onDragOver"
+				@drop="onDrop"
+			>
 				<VueGridLayout
 					v-if="dashboard.doc.items.length > 0"
 					class="h-fit w-full"

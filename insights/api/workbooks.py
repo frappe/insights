@@ -2,21 +2,49 @@ import frappe
 from frappe import _
 
 from insights.decorators import insights_whitelist
+from insights.insights.doctype.insights_team.insights_team import is_admin
 from insights.utils import DocShare
 
 
 @insights_whitelist()
-def get_workbooks(search_term: str | None = None, limit: int = 100):
+def get_workbooks(
+    search_term: str | None = None,
+    limit: int = 100,
+    scope: str | None = None,
+    folder: str | None = None,
+):
+    """Return workbooks accessible to the current user.
+
+    scope:
+        "owned"  -> only workbooks owned by the current user
+        "shared" -> only workbooks owned by someone else (still permission filtered)
+        None     -> all accessible workbooks
+    folder:
+        when provided, only workbooks filed directly under this folder
+        (use the sentinel "" / "root" to restrict to unfiled workbooks)
+    """
+    filters = {}
+    if scope == "owned":
+        filters["owner"] = frappe.session.user
+    elif scope == "shared":
+        filters["owner"] = ["!=", frappe.session.user]
+
+    if folder in ("", "root"):
+        filters["folder"] = ["is", "not set"]
+    elif folder:
+        filters["folder"] = folder
+
+    or_filters = {"title": ["like", f"%{search_term}%"]} if search_term else None
+
     workbooks = frappe.get_list(
         "Insights Workbook",
-        or_filters={
-            "owner": ["like", f"%{search_term}%" if search_term else "%"],
-            "title": ["like", f"%{search_term}%" if search_term else "%"],
-        },
+        filters=filters,
+        or_filters=or_filters,
         fields=[
             "name",
             "title",
             "owner",
+            "folder",
             "creation",
             "modified",
         ],
@@ -300,3 +328,114 @@ def update_sort_orders(workbook: str, items: list):
             )
 
     frappe.db.commit()
+
+
+# Workbook Folder (org-level) APIs
+#
+# These organize workbooks themselves into a shared, org-level tree.
+# This is distinct from `Insights Folder` above, which organizes
+# queries/charts *inside* a single workbook.
+
+
+def _ensure_workbook_folder_admin():
+    if not is_admin(frappe.session.user):
+        frappe.throw(
+            _("Only an Insights Admin can manage workbook folders"),
+            frappe.PermissionError,
+        )
+
+
+@insights_whitelist()
+def get_workbook_folders():
+    """Return the full org-level workbook folder tree.
+
+    The client builds the subfolder list and breadcrumb from this flat tree and
+    fetches the workbooks of a given folder via `get_workbooks(folder=...)`.
+    """
+    folders = frappe.get_all(
+        "Insights Workbook Folder",
+        fields=["name", "title", "parent_folder"],
+        order_by="title asc",
+    )
+    # name is an autoincrement int; link fields store it as a string, so expose
+    # it as a string everywhere to keep comparisons consistent
+    for f in folders:
+        f["name"] = str(f["name"])
+    return folders
+
+
+@insights_whitelist()
+def create_workbook_folder(title: str, parent_folder: str | None = None):
+    """Create an org-level workbook folder (admin only)."""
+    _ensure_workbook_folder_admin()
+
+    folder = frappe.new_doc("Insights Workbook Folder")
+    folder.title = title
+    folder.parent_folder = parent_folder or None
+    folder.insert()
+    return str(folder.name)
+
+
+@insights_whitelist()
+def rename_workbook_folder(folder_name: str, new_title: str):
+    """Rename an org-level workbook folder (admin only)."""
+    _ensure_workbook_folder_admin()
+
+    folder = frappe.get_doc("Insights Workbook Folder", folder_name)
+    folder.title = new_title
+    folder.save()
+    return folder.name
+
+
+@insights_whitelist()
+def delete_workbook_folder(folder_name: str):
+    """Delete an empty org-level workbook folder (admin only).
+
+    Deletion is blocked while the folder still contains subfolders or workbooks.
+    """
+    _ensure_workbook_folder_admin()
+
+    has_subfolders = frappe.db.exists("Insights Workbook Folder", {"parent_folder": folder_name})
+    has_workbooks = frappe.db.exists("Insights Workbook", {"folder": folder_name})
+    if has_subfolders or has_workbooks:
+        frappe.throw(
+            _("Cannot delete a folder that is not empty. Move its contents out first."),
+        )
+
+    frappe.delete_doc("Insights Workbook Folder", folder_name)
+
+
+@insights_whitelist()
+def move_workbook_to_folder(workbook: str, folder: str | None = None):
+    """File a workbook into a folder (or back to root when folder is None).
+
+    A user can file workbooks they can write to; the org folder structure
+    itself is admin-governed, but filing is open.
+    """
+    if not frappe.has_permission("Insights Workbook", ptype="write", doc=workbook):
+        frappe.throw(_("You do not have permission to modify this workbook"), frappe.PermissionError)
+
+    if folder and not frappe.db.exists("Insights Workbook Folder", folder):
+        frappe.throw(_("Folder {0} does not exist").format(folder))
+
+    frappe.db.set_value("Insights Workbook", workbook, "folder", folder or None)
+
+
+@insights_whitelist()
+def move_workbooks_to_folder(workbooks: list, folder: str | None = None):
+    """Bulk-file workbooks into a folder (or back to root when folder is None).
+
+    Workbooks the user can't write to are skipped; the count actually moved is
+    returned so the client can report it.
+    """
+    if folder and not frappe.db.exists("Insights Workbook Folder", folder):
+        frappe.throw(_("Folder {0} does not exist").format(folder))
+
+    moved = 0
+    for workbook in workbooks:
+        if not frappe.has_permission("Insights Workbook", ptype="write", doc=workbook):
+            continue
+        frappe.db.set_value("Insights Workbook", workbook, "folder", folder or None)
+        moved += 1
+
+    return moved

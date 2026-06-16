@@ -10,13 +10,20 @@ import { WorkbookListItem } from '../types/workbook.types'
 const workbooks = ref<WorkbookListItem[]>([])
 
 const loading = ref(false)
-async function getWorkbooks(search_term?: string, limit: number = 100) {
+async function getWorkbooks(
+	search_term?: string,
+	limit: number = 100,
+	scope?: 'all' | 'owned' | 'shared',
+	folder?: string | null,
+) {
 	loading.value = true
-	workbooks.value = await call('insights.api.workbooks.get_workbooks', {
+	const result = await call('insights.api.workbooks.get_workbooks', {
 		search_term,
 		limit,
+		scope: scope === 'all' ? null : scope,
+		folder: folder ?? null,
 	})
-	workbooks.value = workbooks.value.map((workbook: any) => ({
+	workbooks.value = result.map((workbook: any) => ({
 		...workbook,
 		created_from_now: useTimeAgo(workbook.creation),
 		modified_from_now: useTimeAgo(workbook.modified),
@@ -44,14 +51,12 @@ function importWorkbook(workbook: any) {
 }
 
 export default function useWorkbookListItemStore() {
-	if (!workbooks.value.length) {
-		getWorkbooks()
-	}
-
+	// the list view drives fetching (with folder/scope); no implicit fetch here,
+	// otherwise an unscoped "fetch all" can race with and overwrite it
 	return reactive({
 		workbooks,
 		loading,
 		getWorkbooks,
-		importWorkbook
+		importWorkbook,
 	})
 }

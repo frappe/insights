@@ -4,8 +4,6 @@
 
 import frappe
 
-from insights.api.telemetry import track_active_site
-
 no_cache = 1
 
 
@@ -20,4 +18,3 @@ def get_context(context):
     context.csrf_token = csrf_token
     context.site_name = frappe.local.site
     context.socketio_port = frappe.conf.get("socketio_port")
-    track_active_site()

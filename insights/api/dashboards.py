@@ -73,14 +73,38 @@ def add_chart_to_dashboard(dashboard: str, chart: str):
 
 
 @insights_whitelist()
-def get_dashboards(search_term: str | None = None, limit: int = 50, get_favorites: bool = False):
+def get_dashboards(
+    search_term: str | None = None,
+    limit: int = 50,
+    get_favorites: bool = False,
+    folder: str | None = None,
+):
+    """Return dashboards, optionally limited to a workbook folder.
+
+    Dashboards inherit categorization from their workbook (no folder field of
+    their own), so `folder` filters to dashboards whose workbook is filed there.
+    Use the sentinel "" / "root" to restrict to dashboards of unfiled workbooks.
+    """
+    filters = {}
+    if get_favorites:
+        filters["_liked_by"] = ["like", f"%{frappe.session.user}%"]
+
+    if folder is not None:
+        folder_workbooks = frappe.get_all(
+            "Insights Workbook",
+            filters={"folder": ["is", "not set"]} if folder in ("", "root") else {"folder": folder},
+            pluck="name",
+        )
+        # workbook link is stored as a string; cast to match
+        filters["workbook"] = ["in", [str(name) for name in folder_workbooks] or [""]]
+
     dashboards = frappe.get_list(
         "Insights Dashboard v3",
         or_filters={
             "name": ["like", f"%{search_term}%" if search_term else "%"],
             "title": ["like", f"%{search_term}%" if search_term else "%"],
         },
-        filters={"_liked_by": ["like", f"%{frappe.session.user}%"]} if get_favorites else {},
+        filters=filters,
         fields=[
             "name",
             "title",
@@ -92,7 +116,7 @@ def get_dashboards(search_term: str | None = None, limit: int = 50, get_favorite
             "_liked_by",
         ],
         order_by="creation desc",
-        limit=limit if not get_favorites else 0,
+        limit=0 if (get_favorites or folder is not None) else limit,
     )
 
     for dashboard in dashboards:

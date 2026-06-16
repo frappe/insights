@@ -27,8 +27,7 @@ const sessionStore = defineStore('insights:session', function () {
 		if (initialized.value && !force) return
 		Object.assign(user.value, getSessionFromCookies())
 		isLoggedIn.value && (await fetchSessionInfo())
-		isLoggedIn.value && api.trackActiveSite()
-		initialized.value = true
+initialized.value = true
 	}
 
 	async function fetchSessionInfo() {

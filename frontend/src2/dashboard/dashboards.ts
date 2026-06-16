@@ -8,6 +8,7 @@ export type DashboardListItem = {
 	name: string
 	title: string
 	workbook: string
+	folder?: string | null
 	charts: number
 	creation: string
 	modified: string
@@ -19,7 +20,6 @@ export type DashboardListItem = {
 }
 
 const dashboards = ref<DashboardListItem[]>([])
-const favorites = ref<DashboardListItem[]>([])
 
 const loading = ref(false)
 const mapTimeAgo = (dashboard: any) => ({
@@ -27,16 +27,18 @@ const mapTimeAgo = (dashboard: any) => ({
 	created_from_now: useTimeAgo(dashboard.creation),
 	modified_from_now: useTimeAgo(dashboard.modified),
 })
-async function fetchDashboards(search_term?: string, limit: number = 50) {
+
+// dashboards of the current folder (favorites = the personal lens). subfolders
+// + breadcrumb are derived on the client from the shared workbook folder tree.
+async function fetchDashboards(folder?: string | null, search_term?: string, favorites = false) {
 	loading.value = true
-
-	const [regular, fav] = await Promise.all([
-		call('insights.api.dashboards.get_dashboards', { search_term, limit }),
-		call('insights.api.dashboards.get_dashboards', { get_favorites: true }),
-	])
-
-	dashboards.value = regular.map(mapTimeAgo)
-	favorites.value = fav.map(mapTimeAgo)
+	const result = await call('insights.api.dashboards.get_dashboards', {
+		folder: folder ?? 'root',
+		search_term,
+		get_favorites: favorites,
+		limit: 0,
+	})
+	dashboards.value = result.map(mapTimeAgo)
 	loading.value = false
 }
 
@@ -63,17 +65,12 @@ async function toggleLike(dashboard_name: string, add: boolean) {
 		doctype: 'Insights Dashboard v3',
 		name: dashboard_name,
 		add: add ? 'Yes' : 'No',
-	}).then(() => fetchDashboards())
+	})
 }
 
 export default function useDashboardStore() {
-	if (!dashboards.value.length) {
-		fetchDashboards()
-	}
-
 	return reactive({
 		dashboards,
-		favorites,
 		loading,
 		fetchDashboards,
 

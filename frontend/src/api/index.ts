@@ -7,7 +7,6 @@ export const login = (email: string, password: string): Promise<SessionUser> => 
 export const logout = (): Promise<any> => call('logout')
 
 export const fetchUserInfo = (): Promise<any> => call('insights.api.get_user_info')
-export const trackActiveSite = (): Promise<any> => call('insights.api.telemetry.track_active_site')
 export const updateDefaultVersion = (version: 'v3' | 'v2' | ''): Promise<any> => {
 	return call('insights.api.update_default_version', { version })
 }

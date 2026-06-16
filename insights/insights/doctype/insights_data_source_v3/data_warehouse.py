@@ -139,7 +139,7 @@ class WarehouseTableWriter:
         self.database = database
         self.table_name = table_name
         self.table_schema = table_schema
-        self.mode = mode  # 'replace' or 'append'
+        self.mode = mode
         self.primary_key_column = primary_key_column
         self.cursor_column = cursor_column
         self._log = log_fn or (lambda *args, **kwargs: None)
@@ -204,7 +204,7 @@ class WarehouseTableWriter:
                 parquet_glob = str(self._temp_dir / "*.parquet")
                 merged = db.read_parquet(parquet_glob)
 
-                if self._table_exists(db):
+                if self._table_exists(db) and self.mode in ("append", "upsert"):
                     if self.mode == "append":
                         db.insert(self.table_name, merged)
                     elif self.mode == "upsert":
