@@ -2,6 +2,7 @@
 import { IconPicker } from 'frappe-ui/icons'
 import { computed, inject, reactive, ref } from 'vue'
 import useChart from '../charts/chart'
+import useQuery from '../query/query'
 import { copy } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import ColumnFilterValueSelector from '../query/components/ColumnFilterValueSelector.vue'
@@ -124,8 +125,9 @@ const sourceColumn = computed(() => {
 
 function defaultValuesProvider(search: string) {
 	if (!sourceColumn.value) return Promise.resolve([])
-	return dashboard.getDistinctColumnValues(
-		sourceColumn.value.query,
+	// preview values straight from the linked query — the dashboard endpoint only
+	// serves columns already saved as filters, which this column may not be yet
+	return useQuery(sourceColumn.value.query).getDistinctColumnValues(
 		sourceColumn.value.column,
 		search,
 	)

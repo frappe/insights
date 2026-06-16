@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-05-24 10:09+0000\n"
-"PO-Revision-Date: 2026-06-03 16:54\n"
+"PO-Revision-Date: 2026-06-09 18:46\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Hungarian\n"
 "MIME-Version: 1.0\n"
@@ -2330,7 +2330,7 @@ msgstr "Piros-zöld"
 #. Label of the ref_type (Select) field in DocType 'Insights Query Reference'
 #: insights/insights/doctype/insights_query_reference/insights_query_reference.json
 msgid "Reference Type"
-msgstr "Hivatkozás Típusa"
+msgstr "Hivatkozás típusa"
 
 #. Label of the ref_query (Link) field in DocType 'Insights Query Reference'
 #: insights/insights/doctype/insights_query_reference/insights_query_reference.json
@@ -2375,7 +2375,7 @@ msgstr "Rendezés megszűntetése"
 
 #: frontend/src2/dashboard/DashboardBuilder.vue:158
 msgid "Reset Layout"
-msgstr "Elrendezés Viszaállítása"
+msgstr "Elrendezés viszaállítása"
 
 #: frontend/src2/charts/components/ChartBuilderToolbar.vue:49
 msgid "Reset Options"
@@ -2576,7 +2576,7 @@ msgstr "Diagramok kiválasztása"
 
 #: frontend/src2/query/components/ColumnsSelectorDialog.vue:62
 msgid "Select Columns"
-msgstr "Oszlopok Kiválasztása"
+msgstr "Oszlopok kiválasztása"
 
 #: frontend/src2/query/components/JoinSelectorDialog.vue:363
 msgid "Select Columns to Add"
@@ -2584,7 +2584,7 @@ msgstr "Hozzáadandó oszlopok kiválasztása"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:203
 msgid "Select Field"
-msgstr "Választó Mező"
+msgstr "Választó mező"
 
 #: frontend/src2/query/components/JoinSelectorDialog.vue:335
 msgid "Select Join Type"
@@ -2663,7 +2663,7 @@ msgstr "Riasztás beállítása"
 #. Label of the setup_complete (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Setup Complete"
-msgstr "Telepítés Befejezve"
+msgstr "Telepítés kész"
 
 #: frontend/src2/components/DemoDataBanner.vue:64
 msgid "Setup Demo Data"
@@ -2699,16 +2699,16 @@ msgstr "Oldal Adatbázis"
 
 #: frontend/src2/components/DataTableColumn.vue:20
 msgid "Sort Ascending"
-msgstr "Növekvő Sorrend"
+msgstr "Növekvő sorrend"
 
 #: frontend/src2/components/DataTableColumn.vue:25
 msgid "Sort Descending"
-msgstr "Csökkenő Sorrend"
+msgstr "Csökkenő sorrend"
 
 #. Label of the sort_order (Int) field in DocType 'Insights Folder'
 #: insights/insights/doctype/insights_folder/insights_folder.json
 msgid "Sort Order"
-msgstr "Rendezési Irány"
+msgstr "Rendezési irány"
 
 #. Label of the source (Attach) field in DocType 'Insights Table Import'
 #: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:38
@@ -2745,7 +2745,7 @@ msgstr "Elkezdve"
 #. Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Started At"
-msgstr "Kezdés Ideje"
+msgstr "Kezdés ideje"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:27
 msgid "Starting..."
@@ -2920,7 +2920,7 @@ msgstr "Csapat"
 #. Label of the team_members (Table) field in DocType 'Insights Team'
 #: insights/insights/doctype/insights_team/insights_team.json
 msgid "Team Members"
-msgstr "Csoport Tagok"
+msgstr "Csoporttagok"
 
 #. Label of the team_name (Data) field in DocType 'Insights Team'
 #: frontend/src2/settings/PermissionsSettings.vue:45
@@ -3156,7 +3156,7 @@ msgstr "CSV/Excel/JSON fájl feltöltése"
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:37
 msgid "Upload Failed"
-msgstr "Sikertelen Feltöltés"
+msgstr "Feltöltés sikertelen"
 
 #: frontend/src2/data_source/DataSourceList.vue:78
 msgid "Upload a CSV or Excel file to create a new data source"

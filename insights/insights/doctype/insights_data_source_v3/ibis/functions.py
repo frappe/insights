@@ -556,7 +556,7 @@ def textsplit(column: ir.StringColumn, delimiter: str, max_splits: int):
     """
     query = frappe.flags.current_ibis_query
     if query is None:
-        frappe.throw("Query not found")
+        return column  # return original column if query is not found
 
     column_name = column.get_name() if hasattr(column, "get_name") else str(column)
 
@@ -578,9 +578,9 @@ def json_extract(column: ir.StringColumn, *field_names: str):
     """
     query = frappe.flags.current_ibis_query
     if query is None:
-        frappe.throw("Query not found")
+        return column  # return original column if query is not found
 
-    json_column = column.cast("json")
+    json_column = normalize_json(column).cast("json")
 
     # cast JSON values to string and remove quotes
     clean_columns = {}
@@ -611,6 +611,26 @@ def json_extract(column: ir.StringColumn, *field_names: str):
         query = query.mutate({field: clean_col})
 
     return query
+
+
+def normalize_json(column: ir.StringColumn):
+    """
+    def normalize_json(column)
+
+    Normalize a JSON string by replacing single quotes with double quotes and unescaping escaped single quotes.
+
+    Examples:
+    - normalize_json(api_response)
+    """
+    return (
+        column
+        # opening quote: a ' that follows {  [  ,  or  :
+        .re_replace(r"([{\[,:]\s*)'", r'\1"')
+        # closing quote: a ' that precedes }  ]  ,  or  :
+        .re_replace(r"'(\s*[}\],:])", r'"\1')
+        # unescape Python's \' (apostrophe inside a single-quoted value)
+        .re_replace(r"\\'", "'")
+    )
 
 
 # date functions
