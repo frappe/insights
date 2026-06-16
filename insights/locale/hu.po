@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
-"POT-Creation-Date: 2026-05-24 10:09+0000\n"
-"PO-Revision-Date: 2026-06-09 18:46\n"
+"POT-Creation-Date: 2026-06-14 10:34+0000\n"
+"PO-Revision-Date: 2026-06-16 18:32\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Hungarian\n"
 "MIME-Version: 1.0\n"
@@ -27,6 +27,10 @@ msgstr "1:1"
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "1:N"
 msgstr "1:N"
+
+#: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.py:35
+msgid "A folder cannot be its own parent"
+msgstr ""
 
 #. Label of the api_configuration_section (Section Break) field in DocType
 #. 'Insights Data Source v3'
@@ -70,10 +74,6 @@ msgstr "Elfogadva"
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Accepted At"
 msgstr "Elfogadva ekkor"
-
-#: frontend/src2/workbook/WorkbookList.vue:47
-msgid "Access"
-msgstr "Hozzáférés"
 
 #: frontend/src2/settings/Settings.vue:10
 msgid "Account"
@@ -171,6 +171,16 @@ msgstr "Riasztás elküldve"
 msgid "Alerts"
 msgstr "Riasztások"
 
+#: frontend/src2/dashboard/DashboardList.vue:86
+#: frontend/src2/workbook/WorkbookList.vue:205
+msgid "All"
+msgstr "Összes"
+
+#. Label of the allow_download (Check) field in DocType 'Insights Settings'
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Allow Data Download"
+msgstr ""
+
 #. Label of the allow_subquery (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Allow Subquery"
@@ -185,10 +195,6 @@ msgstr "Táblázat Importálásának Engedélyezése"
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Allowed Origins"
 msgstr "Engedélyezett Eredetek"
-
-#: frontend/src2/charts/components/FunnelChartConfigForm.vue:58
-msgid "Alternate"
-msgstr "Váltakozó"
 
 #: frontend/src2/query/components/FormatRule.vue:161
 msgid "Amber"
@@ -386,6 +392,10 @@ msgstr "Megtekintheti"
 msgid "Cancel"
 msgstr "Mégsem"
 
+#: insights/api/workbooks.py:402
+msgid "Cannot delete a folder that is not empty. Move its contents out first."
+msgstr ""
+
 #. Label of the cardinality (Select) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "Cardinality"
@@ -506,7 +516,7 @@ msgstr "Oszlopok"
 msgid "Comma seperated URLs to whitelist for embedding charts & dashboards"
 msgstr "Vesszővel elválasztott URL-ek a diagramok és irányítópultok beágyazásához szükséges engedélyezőlistára"
 
-#: frontend/src2/dashboard/DashboardBuilder.vue:151
+#: frontend/src2/dashboard/DashboardBuilder.vue:163
 msgid "Compact Layout"
 msgstr "Kompakt elrendezés"
 
@@ -635,10 +645,6 @@ msgstr "Mérés létrehozása"
 msgid "Create Team"
 msgstr "Csapat létrehozása"
 
-#: frontend/src2/dashboard/DashboardList.vue:96
-msgid "Create a dashboard in your workbook to view it here."
-msgstr "Hozzon létre egy vezérlőpultot a munkafüzetében, hogy itt megtekinthesse."
-
 #: frontend/src2/data_source/DataSourceList.vue:119
 msgid "Created"
 msgstr "Létrehozva ekkor"
@@ -646,6 +652,10 @@ msgstr "Létrehozva ekkor"
 #: frontend/src2/query/components/QueryAlertsDialog.vue:52
 msgid "Created By"
 msgstr "Létrehozta"
+
+#: frontend/src2/workbook/WorkbookList.vue:206
+msgid "Created by me"
+msgstr ""
 
 #: frontend/src2/teams/TeamList.vue:48
 msgid "Creation"
@@ -715,6 +725,7 @@ msgstr "Irányítópult hozzáférés frissítve"
 
 #: frontend/src2/components/AppSidebar.vue:74
 #: frontend/src2/dashboard/Dashboard.vue:46
+#: frontend/src2/dashboard/DashboardList.vue:20
 #: frontend/src2/workbook/WorkbookSidebar.vue:75
 msgid "Dashboards"
 msgstr "Irányítópultok"
@@ -929,6 +940,10 @@ msgstr "E-mail Elküldve ekkor"
 msgid "Empty - Click 'Add Filter' to add a filter"
 msgstr "Üres - Szűrő hozzáadásához kattintson a 'Szűrő Hozzáadása' gombra"
 
+#: frontend/src2/workbook/WorkbookList.vue:128
+msgid "Empty Folder"
+msgstr ""
+
 #: frontend/src2/query/components/AlertSetupDialog.vue:123
 msgid "Enable Alert"
 msgstr "Riasztás Engedélyezése"
@@ -1054,6 +1069,7 @@ msgstr "Exportálási formátum"
 
 #: frontend/src2/charts/components/ChartBuilderToolbar.vue:32
 #: frontend/src2/dashboard/Dashboard.vue:61
+#: frontend/src2/dashboard/DashboardBuilder.vue:156
 msgid "Export as PNG"
 msgstr "Exportálás PNG-ként"
 
@@ -1097,7 +1113,7 @@ msgstr "Sikertelen fájl feltöltés"
 msgid "Failed to setup demo data"
 msgstr "Sikertelen a demó adatok beállítása"
 
-#: frontend/src2/dashboard/DashboardList.vue:61
+#: frontend/src2/dashboard/DashboardList.vue:87
 msgid "Favorites"
 msgstr "Kedvencek"
 
@@ -1147,11 +1163,25 @@ msgstr "Szűrők"
 msgid "Fiscal Year Start"
 msgstr "Költségvetési év kezdete"
 
-#: insights/api/workbooks.py:260
+#. Label of the folder (Link) field in DocType 'Insights Workbook'
+#: frontend/src2/components/FolderCard.vue:24
+#: insights/insights/doctype/insights_workbook/insights_workbook.json
+msgid "Folder"
+msgstr "Mappa"
+
+#: insights/api/workbooks.py:288
 msgid "Folder and item must belong to the same workbook"
 msgstr "A mappának és az elemnek ugyanahhoz a munkafüzethez kell tartoznia"
 
-#: frontend/src2/dashboard/DashboardBuilder.vue:145
+#: insights/api/workbooks.py:419 insights/api/workbooks.py:432
+msgid "Folder {0} does not exist"
+msgstr ""
+
+#: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.py:40
+msgid "Folders can only be nested up to {0} levels deep"
+msgstr ""
+
+#: frontend/src2/dashboard/DashboardBuilder.vue:151
 msgid "Force Refresh"
 msgstr "Kényszerített Frissítés"
 
@@ -1338,6 +1368,7 @@ msgstr "India"
 #: insights/insights/doctype/insights_team/insights_team.json
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
+#: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.json
 msgid "Insights Admin"
 msgstr "Insights Admin"
 
@@ -1540,6 +1571,7 @@ msgstr "Insights Csapat Tag"
 #: insights/insights/doctype/insights_team/insights_team.json
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
+#: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.json
 msgid "Insights User"
 msgstr "Insights Felhasználó"
 
@@ -1552,6 +1584,11 @@ msgstr "Insights felhasználói meghívó"
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
 msgid "Insights Workbook"
 msgstr "Insights Munkafüzet"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.json
+msgid "Insights Workbook Folder"
+msgstr ""
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -1770,7 +1807,6 @@ msgid "Last synced cursor value (set automatically)"
 msgstr "Utolsó szinkronizált kurzorérték (automatikusan beállítva)"
 
 #: frontend/src2/charts/components/DonutChartConfigForm.vue:59
-#: frontend/src2/charts/components/FunnelChartConfigForm.vue:56
 #: frontend/src2/charts/components/SankeyChartConfigForm.vue:70
 msgid "Left"
 msgstr "Balra"
@@ -1863,6 +1899,10 @@ msgstr "Munkafüzet hozzáférés kezelése"
 msgid "MariaDB"
 msgstr "MariaDB"
 
+#: frontend/src2/dashboard/DashboardList.vue:126
+msgid "Mark a dashboard as favorite to see it here."
+msgstr ""
+
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.js:7
 msgid "Mark as Failed"
 msgstr "Megjelölés sikertelenként"
@@ -1910,7 +1950,6 @@ msgid "Minimum of..."
 msgstr "Minimum..."
 
 #: frontend/src2/data_source/DataSourceList.vue:120
-#: frontend/src2/workbook/WorkbookList.vue:103
 msgid "Modified"
 msgstr "Módosítva"
 
@@ -1924,6 +1963,10 @@ msgstr "Hétfő"
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Monthly"
 msgstr "Havi"
+
+#: frontend/src2/workbook/WorkbookList.vue:218
+msgid "Move to folder"
+msgstr ""
 
 #. Option for the 'Cardinality' (Select) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
@@ -1959,13 +2002,17 @@ msgstr "Új vezérlőpult"
 msgid "New Data Source"
 msgstr "Új adatforrás"
 
+#: frontend/src2/workbook/WorkbookList.vue:73
+msgid "New Folder"
+msgstr "Új mappa"
+
 #: frontend/src2/workbook/WorkbookTabSwitcher.vue:62
 msgid "New Query"
 msgstr "Új lekérdezés"
 
 #: frontend/src2/home/HomeQuickActions.vue:28
-#: frontend/src2/workbook/WorkbookList.vue:116
-#: frontend/src2/workbook/WorkbookList.vue:151
+#: frontend/src2/workbook/WorkbookList.vue:135
+#: frontend/src2/workbook/WorkbookList.vue:170
 msgid "New Workbook"
 msgstr "Új munkafüzet"
 
@@ -1978,9 +2025,9 @@ msgstr "Következő végrehajtás"
 msgid "No"
 msgstr "Nem"
 
-#: frontend/src2/dashboard/DashboardList.vue:94
-msgid "No Dashboards"
-msgstr "Nincs vezérlőpult"
+#: frontend/src2/dashboard/DashboardList.vue:121
+msgid "No Favorites"
+msgstr ""
 
 #: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:90
 msgid "No Queries Found"
@@ -1995,7 +2042,7 @@ msgstr "Nem találhatók táblák"
 msgid "No Tables Stored"
 msgstr "Nincsenek tárolt táblák"
 
-#: frontend/src2/workbook/WorkbookList.vue:113
+#: frontend/src2/workbook/WorkbookList.vue:128
 msgid "No Workbooks"
 msgstr "Nincsenek munkafüzetek"
 
@@ -2014,6 +2061,14 @@ msgstr "Nincsenek megjelenítendő adatforrások."
 #: frontend/src2/data_source/DataSourceList.vue:130
 msgid "No data sources."
 msgstr "Nincsenek adatforrások."
+
+#: frontend/src2/dashboard/DashboardList.vue:127
+msgid "No folders or dashboards to display."
+msgstr ""
+
+#: frontend/src2/workbook/WorkbookList.vue:130
+msgid "No folders or workbooks here."
+msgstr ""
 
 #: frontend/src2/query/components/ExplainPlanDialog.vue:44
 msgid "No plan available. Execute the query first."
@@ -2051,7 +2106,7 @@ msgstr "Nincsenek felhasználók."
 msgid "No workbooks created"
 msgstr "Nincsenek létrehozott munkafüzetek"
 
-#: frontend/src2/workbook/WorkbookList.vue:114
+#: frontend/src2/workbook/WorkbookList.vue:131
 msgid "No workbooks to display."
 msgstr "Nincs megjelenítendő munkafüzetek."
 
@@ -2065,6 +2120,10 @@ msgstr "Semelyik"
 #: insights/insights/doctype/insights_notebook_page/insights_notebook_page.json
 msgid "Notebook"
 msgstr "Jegyzetfüzet"
+
+#: frontend/src2/dashboard/DashboardList.vue:121
+msgid "Nothing here"
+msgstr ""
 
 #. Label of the old_name (Data) field in DocType 'Insights Chart v3'
 #. Label of the old_name (Data) field in DocType 'Insights Dashboard v3'
@@ -2081,8 +2140,12 @@ msgstr "Régi név"
 msgid "Onboarding Complete"
 msgstr "Betanítás befejeződött"
 
+#: insights/api/workbooks.py:343
+msgid "Only an Insights Admin can manage workbook folders"
+msgstr ""
+
 #: frontend/src2/dashboard/Dashboard.vue:68
-#: frontend/src2/dashboard/DashboardList.vue:22
+#: frontend/src2/dashboard/DashboardList.vue:44
 msgid "Open Workbook"
 msgstr "Munkafüzet megnyitása"
 
@@ -2126,9 +2189,14 @@ msgstr "Felülírás"
 
 #: frontend/src2/data_source/DataSourceList.vue:106
 #: frontend/src2/teams/TeamList.vue:34
-#: frontend/src2/workbook/WorkbookList.vue:89
 msgid "Owner"
 msgstr "Tulajdonos"
+
+#. Label of the parent_folder (Link) field in DocType 'Insights Workbook
+#. Folder'
+#: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.json
+msgid "Parent Folder"
+msgstr ""
 
 #. Label of the parquet_file (Text) field in DocType 'Insights Table Import
 #. Log'
@@ -2346,7 +2414,7 @@ msgstr "Kapcsolódó lekérdezések"
 msgid "Refresh"
 msgstr "Újratölt"
 
-#: frontend/src2/dashboard/DashboardList.vue:27
+#: frontend/src2/dashboard/DashboardList.vue:49
 msgid "Refresh Preview"
 msgstr "Előnézet frissítése"
 
@@ -2373,7 +2441,7 @@ msgstr "Eltávolítás"
 msgid "Remove Sort"
 msgstr "Rendezés megszűntetése"
 
-#: frontend/src2/dashboard/DashboardBuilder.vue:158
+#: frontend/src2/dashboard/DashboardBuilder.vue:170
 msgid "Reset Layout"
 msgstr "Elrendezés viszaállítása"
 
@@ -2419,7 +2487,6 @@ msgid "Results Row Count"
 msgstr "Sorok száma"
 
 #: frontend/src2/charts/components/DonutChartConfigForm.vue:60
-#: frontend/src2/charts/components/FunnelChartConfigForm.vue:57
 #: frontend/src2/charts/components/SankeyChartConfigForm.vue:71
 msgid "Right"
 msgstr "Jobb"
@@ -2543,7 +2610,6 @@ msgstr "Szkript"
 msgid "Script Log"
 msgstr "Parancsfájlnapló"
 
-#: frontend/src2/dashboard/DashboardList.vue:52
 #: frontend/src2/data_store/DataStoreList.vue:92
 #: frontend/src2/query/components/QueryAlertsDialog.vue:102
 #: frontend/src2/settings/UsersSettings.vue:149
@@ -2551,9 +2617,10 @@ msgstr "Parancsfájlnapló"
 msgid "Search"
 msgstr "Keresés"
 
+#: frontend/src2/dashboard/DashboardList.vue:73
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:75
 #: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:63
-#: frontend/src2/workbook/WorkbookList.vue:166
+#: frontend/src2/workbook/WorkbookList.vue:192
 msgid "Search by Title"
 msgstr "Keresés cím szerint"
 
@@ -2687,6 +2754,14 @@ msgstr "Vezérlőpult megosztása"
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Share Link"
 msgstr "Link megosztása"
+
+#: frontend/src2/workbook/WorkbookList.vue:207
+msgid "Shared with me"
+msgstr ""
+
+#: frontend/src2/charts/components/FunnelChartConfigForm.vue:51
+msgid "Show Percentage"
+msgstr ""
 
 #: frontend/src2/query/components/AddOperationPopover.vue:39
 msgid "Show or hide columns from the table"
@@ -3024,6 +3099,7 @@ msgstr "Eltelt idő (másodperc)"
 #. Label of the title (Data) field in DocType 'Insights Query v3'
 #. Label of the title (Data) field in DocType 'Insights Table Import Job'
 #. Label of the title (Data) field in DocType 'Insights Workbook'
+#. Label of the title (Data) field in DocType 'Insights Workbook Folder'
 #: frontend/src2/data_source/ConnectClickhouseDialog.vue:27
 #: frontend/src2/data_source/ConnectDuckDBDialog.vue:22
 #: frontend/src2/data_source/ConnectMariaDBDialog.vue:27
@@ -3031,7 +3107,6 @@ msgstr "Eltelt idő (másodperc)"
 #: frontend/src2/data_source/DataSourceList.vue:90
 #: frontend/src2/query/components/QueryAlertsDialog.vue:37
 #: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:32
-#: frontend/src2/workbook/WorkbookList.vue:42
 #: insights/insights/doctype/insights_alert/insights_alert.json
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
 #: insights/insights/doctype/insights_dashboard/insights_dashboard.json
@@ -3046,6 +3121,7 @@ msgstr "Eltelt idő (másodperc)"
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
+#: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.json
 msgid "Title"
 msgstr "Cím"
 
@@ -3271,10 +3347,6 @@ msgstr "Láncolat megtekintése"
 msgid "View SQL"
 msgstr "SQL megtekintése"
 
-#: frontend/src2/workbook/WorkbookList.vue:74
-msgid "Views"
-msgstr "Megtekintések"
-
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:22
 msgid "Warehouse data cleared"
 msgstr "Raktári adatok törölve"
@@ -3308,7 +3380,7 @@ msgstr "Munkafüzet"
 
 #: frontend/src2/components/AppSidebar.vue:79
 #: frontend/src2/home/HomeWorkbookList.vue:36
-#: frontend/src2/workbook/WorkbookList.vue:148
+#: frontend/src2/workbook/WorkbookList.vue:36
 msgid "Workbooks"
 msgstr "Munkafüzetek"
 
@@ -3334,13 +3406,14 @@ msgstr "Az üzenet formázásához használhat markdownt. A félkövér szövegh
 msgid "You do not have permission to access this resource"
 msgstr "Nincs jogosultsága az erőforrás eléréséhez"
 
-#: insights/api/workbooks.py:183 insights/api/workbooks.py:202
-#: insights/api/workbooks.py:215 insights/api/workbooks.py:243
-#: insights/api/workbooks.py:255 insights/api/workbooks.py:269
+#: insights/api/workbooks.py:211 insights/api/workbooks.py:230
+#: insights/api/workbooks.py:243 insights/api/workbooks.py:271
+#: insights/api/workbooks.py:283 insights/api/workbooks.py:297
+#: insights/api/workbooks.py:416
 msgid "You do not have permission to modify this workbook"
 msgstr "Nincs jogosultsága a munkafüzet módosítására"
 
-#: insights/api/workbooks.py:79 insights/api/workbooks.py:135
+#: insights/api/workbooks.py:107 insights/api/workbooks.py:163
 msgid "You do not have permission to share this workbook"
 msgstr "Nincs jogosultsága a munkafüzet megosztására"
 
