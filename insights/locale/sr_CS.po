@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
-"POT-Creation-Date: 2026-05-24 10:09+0000\n"
-"PO-Revision-Date: 2026-05-30 15:53\n"
+"POT-Creation-Date: 2026-06-14 10:34+0000\n"
+"PO-Revision-Date: 2026-06-16 18:33\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Serbian (Latin)\n"
 "MIME-Version: 1.0\n"
@@ -27,6 +27,10 @@ msgstr "1:1"
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "1:N"
 msgstr "1:N"
+
+#: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.py:35
+msgid "A folder cannot be its own parent"
+msgstr ""
 
 #. Label of the api_configuration_section (Section Break) field in DocType
 #. 'Insights Data Source v3'
@@ -70,10 +74,6 @@ msgstr "Prihvaćeno"
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Accepted At"
 msgstr "Prihvaćeno"
-
-#: frontend/src2/workbook/WorkbookList.vue:47
-msgid "Access"
-msgstr "Pristup"
 
 #: frontend/src2/settings/Settings.vue:10
 msgid "Account"
@@ -171,6 +171,16 @@ msgstr "Upozorenje poslato"
 msgid "Alerts"
 msgstr "Upozorenja"
 
+#: frontend/src2/dashboard/DashboardList.vue:86
+#: frontend/src2/workbook/WorkbookList.vue:205
+msgid "All"
+msgstr "Sve"
+
+#. Label of the allow_download (Check) field in DocType 'Insights Settings'
+#: insights/insights/doctype/insights_settings/insights_settings.json
+msgid "Allow Data Download"
+msgstr ""
+
 #. Label of the allow_subquery (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Allow Subquery"
@@ -185,10 +195,6 @@ msgstr "Dozvoli uvoz tabele"
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Allowed Origins"
 msgstr "Dozvoljeni izvori"
-
-#: frontend/src2/charts/components/FunnelChartConfigForm.vue:58
-msgid "Alternate"
-msgstr "Alternativno"
 
 #: frontend/src2/query/components/FormatRule.vue:161
 msgid "Amber"
@@ -386,6 +392,10 @@ msgstr "Može da pregleda"
 msgid "Cancel"
 msgstr "Otkaži"
 
+#: insights/api/workbooks.py:402
+msgid "Cannot delete a folder that is not empty. Move its contents out first."
+msgstr ""
+
 #. Label of the cardinality (Select) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "Cardinality"
@@ -506,7 +516,7 @@ msgstr "Kolone"
 msgid "Comma seperated URLs to whitelist for embedding charts & dashboards"
 msgstr "URL adrese odvojene zarezima za dozvoljavanje ugradnje dijagrama i kontrolnih tabli"
 
-#: frontend/src2/dashboard/DashboardBuilder.vue:151
+#: frontend/src2/dashboard/DashboardBuilder.vue:163
 msgid "Compact Layout"
 msgstr "Kompaktan raspored"
 
@@ -635,10 +645,6 @@ msgstr "Kreiraj meru"
 msgid "Create Team"
 msgstr "Kreiraj tim"
 
-#: frontend/src2/dashboard/DashboardList.vue:96
-msgid "Create a dashboard in your workbook to view it here."
-msgstr "Kreirajte kontrolnu tablu u Vašoj radnoj svesci da biste je videli ovde."
-
 #: frontend/src2/data_source/DataSourceList.vue:119
 msgid "Created"
 msgstr "Kreirano"
@@ -646,6 +652,10 @@ msgstr "Kreirano"
 #: frontend/src2/query/components/QueryAlertsDialog.vue:52
 msgid "Created By"
 msgstr "Kreirano od strane"
+
+#: frontend/src2/workbook/WorkbookList.vue:206
+msgid "Created by me"
+msgstr ""
 
 #: frontend/src2/teams/TeamList.vue:48
 msgid "Creation"
@@ -715,6 +725,7 @@ msgstr "Pristup kontrolnoj tabli je ažuriran"
 
 #: frontend/src2/components/AppSidebar.vue:74
 #: frontend/src2/dashboard/Dashboard.vue:46
+#: frontend/src2/dashboard/DashboardList.vue:20
 #: frontend/src2/workbook/WorkbookSidebar.vue:75
 msgid "Dashboards"
 msgstr "Kontrolne table"
@@ -929,6 +940,10 @@ msgstr "Imejl poslat u"
 msgid "Empty - Click 'Add Filter' to add a filter"
 msgstr "Prazno - kliknite na 'Dodaj filter' da biste dodali filter"
 
+#: frontend/src2/workbook/WorkbookList.vue:128
+msgid "Empty Folder"
+msgstr ""
+
 #: frontend/src2/query/components/AlertSetupDialog.vue:123
 msgid "Enable Alert"
 msgstr "Omogući upozorenje"
@@ -1054,6 +1069,7 @@ msgstr "Format izvoza"
 
 #: frontend/src2/charts/components/ChartBuilderToolbar.vue:32
 #: frontend/src2/dashboard/Dashboard.vue:61
+#: frontend/src2/dashboard/DashboardBuilder.vue:156
 msgid "Export as PNG"
 msgstr "Izvezi kao PNG"
 
@@ -1097,7 +1113,7 @@ msgstr "Neuspešna obrada otpremljenog fajla"
 msgid "Failed to setup demo data"
 msgstr "Neuspešno postavljanje demo podataka"
 
-#: frontend/src2/dashboard/DashboardList.vue:61
+#: frontend/src2/dashboard/DashboardList.vue:87
 msgid "Favorites"
 msgstr "Omiljeni"
 
@@ -1147,11 +1163,25 @@ msgstr "Filteri"
 msgid "Fiscal Year Start"
 msgstr "Početak fiskalne godine"
 
-#: insights/api/workbooks.py:260
+#. Label of the folder (Link) field in DocType 'Insights Workbook'
+#: frontend/src2/components/FolderCard.vue:24
+#: insights/insights/doctype/insights_workbook/insights_workbook.json
+msgid "Folder"
+msgstr "Datoteka"
+
+#: insights/api/workbooks.py:288
 msgid "Folder and item must belong to the same workbook"
 msgstr "Datoteka i stavka moraju pripadati istoj radnoj svesci"
 
-#: frontend/src2/dashboard/DashboardBuilder.vue:145
+#: insights/api/workbooks.py:419 insights/api/workbooks.py:432
+msgid "Folder {0} does not exist"
+msgstr ""
+
+#: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.py:40
+msgid "Folders can only be nested up to {0} levels deep"
+msgstr ""
+
+#: frontend/src2/dashboard/DashboardBuilder.vue:151
 msgid "Force Refresh"
 msgstr "Prisilno osvežavanje"
 
@@ -1338,6 +1368,7 @@ msgstr "Indija"
 #: insights/insights/doctype/insights_team/insights_team.json
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
+#: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.json
 msgid "Insights Admin"
 msgstr "Insight administrator"
 
@@ -1540,6 +1571,7 @@ msgstr "Insight član tima"
 #: insights/insights/doctype/insights_team/insights_team.json
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
+#: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.json
 msgid "Insights User"
 msgstr "Insight korisnik"
 
@@ -1552,6 +1584,11 @@ msgstr "Insight poziv za korisnika"
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
 msgid "Insights Workbook"
 msgstr "Insight radna sveska"
+
+#. Name of a DocType
+#: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.json
+msgid "Insights Workbook Folder"
+msgstr ""
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -1770,7 +1807,6 @@ msgid "Last synced cursor value (set automatically)"
 msgstr ""
 
 #: frontend/src2/charts/components/DonutChartConfigForm.vue:59
-#: frontend/src2/charts/components/FunnelChartConfigForm.vue:56
 #: frontend/src2/charts/components/SankeyChartConfigForm.vue:70
 msgid "Left"
 msgstr "Levo"
@@ -1863,6 +1899,10 @@ msgstr "Upravljaj pristupom radnoj svesci"
 msgid "MariaDB"
 msgstr "MariaDB"
 
+#: frontend/src2/dashboard/DashboardList.vue:126
+msgid "Mark a dashboard as favorite to see it here."
+msgstr ""
+
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.js:7
 msgid "Mark as Failed"
 msgstr "Označi kao neuspešno"
@@ -1910,7 +1950,6 @@ msgid "Minimum of..."
 msgstr "Minimum od..."
 
 #: frontend/src2/data_source/DataSourceList.vue:120
-#: frontend/src2/workbook/WorkbookList.vue:103
 msgid "Modified"
 msgstr "Izmenjeno"
 
@@ -1924,6 +1963,10 @@ msgstr "Ponedeljak"
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Monthly"
 msgstr "Mesečno"
+
+#: frontend/src2/workbook/WorkbookList.vue:218
+msgid "Move to folder"
+msgstr ""
 
 #. Option for the 'Cardinality' (Select) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
@@ -1959,13 +2002,17 @@ msgstr "Nova kontrolna tabla"
 msgid "New Data Source"
 msgstr "Novi izvor podataka"
 
+#: frontend/src2/workbook/WorkbookList.vue:73
+msgid "New Folder"
+msgstr "Nova datoteka"
+
 #: frontend/src2/workbook/WorkbookTabSwitcher.vue:62
 msgid "New Query"
 msgstr "Novi upit"
 
 #: frontend/src2/home/HomeQuickActions.vue:28
-#: frontend/src2/workbook/WorkbookList.vue:116
-#: frontend/src2/workbook/WorkbookList.vue:151
+#: frontend/src2/workbook/WorkbookList.vue:135
+#: frontend/src2/workbook/WorkbookList.vue:170
 msgid "New Workbook"
 msgstr "Nova radna sveska"
 
@@ -1978,9 +2025,9 @@ msgstr "Sledeće izvršavanje"
 msgid "No"
 msgstr "Ne"
 
-#: frontend/src2/dashboard/DashboardList.vue:94
-msgid "No Dashboards"
-msgstr "Nema kontrolnih tabli"
+#: frontend/src2/dashboard/DashboardList.vue:121
+msgid "No Favorites"
+msgstr ""
 
 #: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:90
 msgid "No Queries Found"
@@ -1995,7 +2042,7 @@ msgstr "Nema pronađenih tabela"
 msgid "No Tables Stored"
 msgstr "Nema sačuvanih tabela"
 
-#: frontend/src2/workbook/WorkbookList.vue:113
+#: frontend/src2/workbook/WorkbookList.vue:128
 msgid "No Workbooks"
 msgstr "Nema radnih svezaka"
 
@@ -2014,6 +2061,14 @@ msgstr "Nema izvora podataka za prikaz."
 #: frontend/src2/data_source/DataSourceList.vue:130
 msgid "No data sources."
 msgstr "Nema izvora podataka."
+
+#: frontend/src2/dashboard/DashboardList.vue:127
+msgid "No folders or dashboards to display."
+msgstr ""
+
+#: frontend/src2/workbook/WorkbookList.vue:130
+msgid "No folders or workbooks here."
+msgstr ""
 
 #: frontend/src2/query/components/ExplainPlanDialog.vue:44
 msgid "No plan available. Execute the query first."
@@ -2051,7 +2106,7 @@ msgstr "Nema korisnika."
 msgid "No workbooks created"
 msgstr "Nije kreirana nijedna radna sveska"
 
-#: frontend/src2/workbook/WorkbookList.vue:114
+#: frontend/src2/workbook/WorkbookList.vue:131
 msgid "No workbooks to display."
 msgstr "Nema radnih svezaka za prikaz."
 
@@ -2065,6 +2120,10 @@ msgstr "Nijednom"
 #: insights/insights/doctype/insights_notebook_page/insights_notebook_page.json
 msgid "Notebook"
 msgstr "Beležnica"
+
+#: frontend/src2/dashboard/DashboardList.vue:121
+msgid "Nothing here"
+msgstr ""
 
 #. Label of the old_name (Data) field in DocType 'Insights Chart v3'
 #. Label of the old_name (Data) field in DocType 'Insights Dashboard v3'
@@ -2081,8 +2140,12 @@ msgstr "Prethodni naziv"
 msgid "Onboarding Complete"
 msgstr "Završetak uvođenja"
 
+#: insights/api/workbooks.py:343
+msgid "Only an Insights Admin can manage workbook folders"
+msgstr ""
+
 #: frontend/src2/dashboard/Dashboard.vue:68
-#: frontend/src2/dashboard/DashboardList.vue:22
+#: frontend/src2/dashboard/DashboardList.vue:44
 msgid "Open Workbook"
 msgstr "Otvori radnu svesku"
 
@@ -2126,9 +2189,14 @@ msgstr "Izmeni"
 
 #: frontend/src2/data_source/DataSourceList.vue:106
 #: frontend/src2/teams/TeamList.vue:34
-#: frontend/src2/workbook/WorkbookList.vue:89
 msgid "Owner"
 msgstr "Vlasnik"
+
+#. Label of the parent_folder (Link) field in DocType 'Insights Workbook
+#. Folder'
+#: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.json
+msgid "Parent Folder"
+msgstr ""
 
 #. Label of the parquet_file (Text) field in DocType 'Insights Table Import
 #. Log'
@@ -2346,7 +2414,7 @@ msgstr ""
 msgid "Refresh"
 msgstr "Osveži"
 
-#: frontend/src2/dashboard/DashboardList.vue:27
+#: frontend/src2/dashboard/DashboardList.vue:49
 msgid "Refresh Preview"
 msgstr "Osveži pregled"
 
@@ -2373,7 +2441,7 @@ msgstr "Ukloni"
 msgid "Remove Sort"
 msgstr "Ukloni sortiranje"
 
-#: frontend/src2/dashboard/DashboardBuilder.vue:158
+#: frontend/src2/dashboard/DashboardBuilder.vue:170
 msgid "Reset Layout"
 msgstr "Resetuj raspored"
 
@@ -2419,7 +2487,6 @@ msgid "Results Row Count"
 msgstr "Broj redova rezultata"
 
 #: frontend/src2/charts/components/DonutChartConfigForm.vue:60
-#: frontend/src2/charts/components/FunnelChartConfigForm.vue:57
 #: frontend/src2/charts/components/SankeyChartConfigForm.vue:71
 msgid "Right"
 msgstr "Desno"
@@ -2543,7 +2610,6 @@ msgstr "Skripta"
 msgid "Script Log"
 msgstr "Evidencija skripte"
 
-#: frontend/src2/dashboard/DashboardList.vue:52
 #: frontend/src2/data_store/DataStoreList.vue:92
 #: frontend/src2/query/components/QueryAlertsDialog.vue:102
 #: frontend/src2/settings/UsersSettings.vue:149
@@ -2551,9 +2617,10 @@ msgstr "Evidencija skripte"
 msgid "Search"
 msgstr "Pretraga"
 
+#: frontend/src2/dashboard/DashboardList.vue:73
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:75
 #: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:63
-#: frontend/src2/workbook/WorkbookList.vue:166
+#: frontend/src2/workbook/WorkbookList.vue:192
 msgid "Search by Title"
 msgstr "Pretraga po naslovu"
 
@@ -2687,6 +2754,14 @@ msgstr "Podeli kontrolnu tablu"
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Share Link"
 msgstr "Podeli link"
+
+#: frontend/src2/workbook/WorkbookList.vue:207
+msgid "Shared with me"
+msgstr ""
+
+#: frontend/src2/charts/components/FunnelChartConfigForm.vue:51
+msgid "Show Percentage"
+msgstr ""
 
 #: frontend/src2/query/components/AddOperationPopover.vue:39
 msgid "Show or hide columns from the table"
@@ -3024,6 +3099,7 @@ msgstr "Vreme izvršenja (sekunde)"
 #. Label of the title (Data) field in DocType 'Insights Query v3'
 #. Label of the title (Data) field in DocType 'Insights Table Import Job'
 #. Label of the title (Data) field in DocType 'Insights Workbook'
+#. Label of the title (Data) field in DocType 'Insights Workbook Folder'
 #: frontend/src2/data_source/ConnectClickhouseDialog.vue:27
 #: frontend/src2/data_source/ConnectDuckDBDialog.vue:22
 #: frontend/src2/data_source/ConnectMariaDBDialog.vue:27
@@ -3031,7 +3107,6 @@ msgstr "Vreme izvršenja (sekunde)"
 #: frontend/src2/data_source/DataSourceList.vue:90
 #: frontend/src2/query/components/QueryAlertsDialog.vue:37
 #: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:32
-#: frontend/src2/workbook/WorkbookList.vue:42
 #: insights/insights/doctype/insights_alert/insights_alert.json
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
 #: insights/insights/doctype/insights_dashboard/insights_dashboard.json
@@ -3046,6 +3121,7 @@ msgstr "Vreme izvršenja (sekunde)"
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
+#: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.json
 msgid "Title"
 msgstr "Naslov"
 
@@ -3271,10 +3347,6 @@ msgstr ""
 msgid "View SQL"
 msgstr "Prikaži SQL"
 
-#: frontend/src2/workbook/WorkbookList.vue:74
-msgid "Views"
-msgstr "Pregledi"
-
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:22
 msgid "Warehouse data cleared"
 msgstr ""
@@ -3308,7 +3380,7 @@ msgstr "Radna sveska"
 
 #: frontend/src2/components/AppSidebar.vue:79
 #: frontend/src2/home/HomeWorkbookList.vue:36
-#: frontend/src2/workbook/WorkbookList.vue:148
+#: frontend/src2/workbook/WorkbookList.vue:36
 msgid "Workbooks"
 msgstr "Radne sveske"
 
@@ -3334,13 +3406,14 @@ msgstr "Možete koristiti Markdown za formatiranje poruke. Koristite dvostruke z
 msgid "You do not have permission to access this resource"
 msgstr "Nemate dozvolu za pristup ovom resursu"
 
-#: insights/api/workbooks.py:183 insights/api/workbooks.py:202
-#: insights/api/workbooks.py:215 insights/api/workbooks.py:243
-#: insights/api/workbooks.py:255 insights/api/workbooks.py:269
+#: insights/api/workbooks.py:211 insights/api/workbooks.py:230
+#: insights/api/workbooks.py:243 insights/api/workbooks.py:271
+#: insights/api/workbooks.py:283 insights/api/workbooks.py:297
+#: insights/api/workbooks.py:416
 msgid "You do not have permission to modify this workbook"
 msgstr "Nemate dozvolu da menjate ovu radnu svesku"
 
-#: insights/api/workbooks.py:79 insights/api/workbooks.py:135
+#: insights/api/workbooks.py:107 insights/api/workbooks.py:163
 msgid "You do not have permission to share this workbook"
 msgstr "Nemate dozvolu da podelite ovu radnu svesku"
 
