@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-06-14 10:34+0000\n"
-"PO-Revision-Date: 2026-06-16 18:32\n"
+"PO-Revision-Date: 2026-06-17 18:31\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Swedish\n"
 "MIME-Version: 1.0\n"
@@ -30,7 +30,7 @@ msgstr "1:N"
 
 #: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.py:35
 msgid "A folder cannot be its own parent"
-msgstr ""
+msgstr "En mapp kan inte vara sin egen överordnad mapp"
 
 #. Label of the api_configuration_section (Section Break) field in DocType
 #. 'Insights Data Source v3'
@@ -179,7 +179,7 @@ msgstr "Alla"
 #. Label of the allow_download (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Allow Data Download"
-msgstr ""
+msgstr "Tillåt Data Nedladdning"
 
 #. Label of the allow_subquery (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
@@ -394,7 +394,7 @@ msgstr "Annullera"
 
 #: insights/api/workbooks.py:402
 msgid "Cannot delete a folder that is not empty. Move its contents out first."
-msgstr ""
+msgstr "Kan inte ta bort mapp som inte är tom. Flytta dess innehåll ut först."
 
 #. Label of the cardinality (Select) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
@@ -655,7 +655,7 @@ msgstr "Skapad Av"
 
 #: frontend/src2/workbook/WorkbookList.vue:206
 msgid "Created by me"
-msgstr ""
+msgstr "Skapad av mig"
 
 #: frontend/src2/teams/TeamList.vue:48
 msgid "Creation"
@@ -942,7 +942,7 @@ msgstr "Tomt - Klicka på \"Lägg till filter\" för att lägga till filter"
 
 #: frontend/src2/workbook/WorkbookList.vue:128
 msgid "Empty Folder"
-msgstr ""
+msgstr "Tom Mapp"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:123
 msgid "Enable Alert"
@@ -1175,11 +1175,11 @@ msgstr "Mapp och artikel måste tillhöra samma arbetsbok"
 
 #: insights/api/workbooks.py:419 insights/api/workbooks.py:432
 msgid "Folder {0} does not exist"
-msgstr ""
+msgstr "Mapp {0} finns inte"
 
 #: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.py:40
 msgid "Folders can only be nested up to {0} levels deep"
-msgstr ""
+msgstr "Mappar kan bara kapslas upp till {0} nivåer djupt"
 
 #: frontend/src2/dashboard/DashboardBuilder.vue:151
 msgid "Force Refresh"
@@ -1588,7 +1588,7 @@ msgstr "Arbetsbok"
 #. Name of a DocType
 #: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.json
 msgid "Insights Workbook Folder"
-msgstr ""
+msgstr "Insights Arbetsbok Mapp"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -1901,7 +1901,7 @@ msgstr "MariaDB"
 
 #: frontend/src2/dashboard/DashboardList.vue:126
 msgid "Mark a dashboard as favorite to see it here."
-msgstr ""
+msgstr "Ange Överskt Panel som favorit för att visa den här."
 
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.js:7
 msgid "Mark as Failed"
@@ -1966,7 +1966,7 @@ msgstr "Månadsvis"
 
 #: frontend/src2/workbook/WorkbookList.vue:218
 msgid "Move to folder"
-msgstr ""
+msgstr "Flytta till mapp"
 
 #. Option for the 'Cardinality' (Select) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
@@ -2027,7 +2027,7 @@ msgstr "Nej"
 
 #: frontend/src2/dashboard/DashboardList.vue:121
 msgid "No Favorites"
-msgstr ""
+msgstr "Inga Favoriter"
 
 #: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:90
 msgid "No Queries Found"
@@ -2064,11 +2064,11 @@ msgstr "Inga datakällor."
 
 #: frontend/src2/dashboard/DashboardList.vue:127
 msgid "No folders or dashboards to display."
-msgstr ""
+msgstr "Inga mappar eller översikt paneler att visa."
 
 #: frontend/src2/workbook/WorkbookList.vue:130
 msgid "No folders or workbooks here."
-msgstr ""
+msgstr "Inga mappar eller arbetsböcker här."
 
 #: frontend/src2/query/components/ExplainPlanDialog.vue:44
 msgid "No plan available. Execute the query first."
@@ -2123,7 +2123,7 @@ msgstr "Anteckningsbok"
 
 #: frontend/src2/dashboard/DashboardList.vue:121
 msgid "Nothing here"
-msgstr ""
+msgstr "Ingenting här"
 
 #. Label of the old_name (Data) field in DocType 'Insights Chart v3'
 #. Label of the old_name (Data) field in DocType 'Insights Dashboard v3'
@@ -2142,7 +2142,7 @@ msgstr "Introduktion Klar"
 
 #: insights/api/workbooks.py:343
 msgid "Only an Insights Admin can manage workbook folders"
-msgstr ""
+msgstr "Endast Insights administratör kan hantera arbetsbok mappar"
 
 #: frontend/src2/dashboard/Dashboard.vue:68
 #: frontend/src2/dashboard/DashboardList.vue:44
@@ -2196,7 +2196,7 @@ msgstr "Ansvarig"
 #. Folder'
 #: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.json
 msgid "Parent Folder"
-msgstr ""
+msgstr "Överordnad Mapp"
 
 #. Label of the parquet_file (Text) field in DocType 'Insights Table Import
 #. Log'
@@ -2757,11 +2757,11 @@ msgstr "Delning Länk"
 
 #: frontend/src2/workbook/WorkbookList.vue:207
 msgid "Shared with me"
-msgstr ""
+msgstr "Delade med mig"
 
 #: frontend/src2/charts/components/FunnelChartConfigForm.vue:51
 msgid "Show Percentage"
-msgstr ""
+msgstr "Visa Procentandel"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:39
 msgid "Show or hide columns from the table"
