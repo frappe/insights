@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-06-14 10:34+0000\n"
-"PO-Revision-Date: 2026-06-16 18:33\n"
+"PO-Revision-Date: 2026-06-17 18:31\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Bosnian\n"
 "MIME-Version: 1.0\n"
@@ -30,7 +30,7 @@ msgstr "1:N"
 
 #: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.py:35
 msgid "A folder cannot be its own parent"
-msgstr ""
+msgstr "Mapu ne može biti njen vlastiti nadređeni"
 
 #. Label of the api_configuration_section (Section Break) field in DocType
 #. 'Insights Data Source v3'
@@ -179,7 +179,7 @@ msgstr "Svi"
 #. Label of the allow_download (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Allow Data Download"
-msgstr ""
+msgstr "Dozvoli Preuzimanje Podataka"
 
 #. Label of the allow_subquery (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
@@ -394,7 +394,7 @@ msgstr "Otkaži"
 
 #: insights/api/workbooks.py:402
 msgid "Cannot delete a folder that is not empty. Move its contents out first."
-msgstr ""
+msgstr "Ne možete obrisati mapu koja nije prazna. Prvo premjestite njen sadržaj."
 
 #. Label of the cardinality (Select) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
@@ -655,7 +655,7 @@ msgstr "Kreirano Od"
 
 #: frontend/src2/workbook/WorkbookList.vue:206
 msgid "Created by me"
-msgstr ""
+msgstr "Kreirano od mene"
 
 #: frontend/src2/teams/TeamList.vue:48
 msgid "Creation"
@@ -942,7 +942,7 @@ msgstr "Prazno - Kliknite na 'Dodaj filter' da biste dodali filter"
 
 #: frontend/src2/workbook/WorkbookList.vue:128
 msgid "Empty Folder"
-msgstr ""
+msgstr "Prazna mapa"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:123
 msgid "Enable Alert"
@@ -1175,11 +1175,11 @@ msgstr "Mapa i stavka moraju pripadati istoj radnoj svesci"
 
 #: insights/api/workbooks.py:419 insights/api/workbooks.py:432
 msgid "Folder {0} does not exist"
-msgstr ""
+msgstr "Mapa {0} ne postoji"
 
 #: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.py:40
 msgid "Folders can only be nested up to {0} levels deep"
-msgstr ""
+msgstr "Mape je moguće ugnijezditi najviše {0} nivoa duboko"
 
 #: frontend/src2/dashboard/DashboardBuilder.vue:151
 msgid "Force Refresh"
@@ -1588,7 +1588,7 @@ msgstr "Radna Sveska"
 #. Name of a DocType
 #: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.json
 msgid "Insights Workbook Folder"
-msgstr ""
+msgstr "Mapa Radne Sveske Uvida"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -1901,7 +1901,7 @@ msgstr "MariaDB"
 
 #: frontend/src2/dashboard/DashboardList.vue:126
 msgid "Mark a dashboard as favorite to see it here."
-msgstr ""
+msgstr "Odaberi kontrolnu tablu kao omiljenu da bi je vidjeli ovdje."
 
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.js:7
 msgid "Mark as Failed"
@@ -1966,7 +1966,7 @@ msgstr "Mjesečno"
 
 #: frontend/src2/workbook/WorkbookList.vue:218
 msgid "Move to folder"
-msgstr ""
+msgstr "Premjesti u mapu"
 
 #. Option for the 'Cardinality' (Select) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
@@ -2027,7 +2027,7 @@ msgstr "Ne"
 
 #: frontend/src2/dashboard/DashboardList.vue:121
 msgid "No Favorites"
-msgstr ""
+msgstr "Nema Favorita"
 
 #: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:90
 msgid "No Queries Found"
@@ -2064,11 +2064,11 @@ msgstr "Nema izvora podataka."
 
 #: frontend/src2/dashboard/DashboardList.vue:127
 msgid "No folders or dashboards to display."
-msgstr ""
+msgstr "Nema mapa ni nadzornih ploča za prikaz."
 
 #: frontend/src2/workbook/WorkbookList.vue:130
 msgid "No folders or workbooks here."
-msgstr ""
+msgstr "Ovdje nema mapa ni radnih svesaka."
 
 #: frontend/src2/query/components/ExplainPlanDialog.vue:44
 msgid "No plan available. Execute the query first."
@@ -2123,7 +2123,7 @@ msgstr "Bilježnica"
 
 #: frontend/src2/dashboard/DashboardList.vue:121
 msgid "Nothing here"
-msgstr ""
+msgstr "Ništa ovdje"
 
 #. Label of the old_name (Data) field in DocType 'Insights Chart v3'
 #. Label of the old_name (Data) field in DocType 'Insights Dashboard v3'
@@ -2142,7 +2142,7 @@ msgstr "Introdukcija Završena"
 
 #: insights/api/workbooks.py:343
 msgid "Only an Insights Admin can manage workbook folders"
-msgstr ""
+msgstr "Samo Administrator Uvida može upravljati mapama radnih svesaka"
 
 #: frontend/src2/dashboard/Dashboard.vue:68
 #: frontend/src2/dashboard/DashboardList.vue:44
@@ -2196,7 +2196,7 @@ msgstr "Odgovorni"
 #. Folder'
 #: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.json
 msgid "Parent Folder"
-msgstr ""
+msgstr "Nadređena mapa"
 
 #. Label of the parquet_file (Text) field in DocType 'Insights Table Import
 #. Log'
@@ -2757,11 +2757,11 @@ msgstr "Podijeli Link"
 
 #: frontend/src2/workbook/WorkbookList.vue:207
 msgid "Shared with me"
-msgstr ""
+msgstr "Podijeljeno sa mnom"
 
 #: frontend/src2/charts/components/FunnelChartConfigForm.vue:51
 msgid "Show Percentage"
-msgstr ""
+msgstr "Prikaži Postotak"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:39
 msgid "Show or hide columns from the table"
