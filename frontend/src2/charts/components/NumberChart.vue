@@ -139,7 +139,10 @@ function onDoubleClick(measure_name: string) {
 						</span>
 						<span> {{ percentDelta }}% </span>
 					</div>
-					<div v-if="config.sparkline" class="mt-2 h-[18px] w-[80px]">
+					<div
+						v-if="config.sparkline && config.date_column?.column_name"
+						class="mt-2 h-[18px] w-[80px]"
+					>
 						<Sparkline
 							:dates="dateValues"
 							:values="values"
