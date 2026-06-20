@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-06-14 10:34+0000\n"
-"PO-Revision-Date: 2026-06-19 20:13\n"
+"PO-Revision-Date: 2026-06-20 20:17\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Swedish\n"
 "MIME-Version: 1.0\n"
@@ -62,7 +62,7 @@ msgstr "API Användarnamn"
 
 #: frontend/src2/query/components/FormatRule.vue:203
 msgid "Above average"
-msgstr "Över medel"
+msgstr "Över Medelvärde"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights User Invitation'
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
@@ -277,7 +277,7 @@ msgstr "Automatiskt arrangera kort vertikalt för att fylla tomma utrymmen"
 
 #: frontend/src2/charts/components/MeasurePicker.vue:138
 msgid "Average of..."
-msgstr "Medel av..."
+msgstr "Medelvärde av..."
 
 #. Label of the api_base_url (Data) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
@@ -303,7 +303,7 @@ msgstr "Före Import Skript"
 
 #: frontend/src2/query/components/FormatRule.vue:204
 msgid "Below average"
-msgstr "Under medel"
+msgstr "Under Medelvärde"
 
 #. Option for the 'Database Type' (Select) field in DocType 'Insights Data
 #. Source v3'
@@ -1057,7 +1057,7 @@ msgstr "Förklara Plan"
 
 #: frontend/src2/components/ExportDialog.vue:80
 msgid "Export"
-msgstr "Export"
+msgstr "Exportera"
 
 #: frontend/src2/components/ExportDialog.vue:35
 msgid "Export Data"
@@ -1161,7 +1161,7 @@ msgstr "Filter"
 #. Label of the fiscal_year_start (Date) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Fiscal Year Start"
-msgstr "Bokföringsår Start"
+msgstr "Bokföring År Start"
 
 #. Label of the folder (Link) field in DocType 'Insights Workbook'
 #: frontend/src2/components/FolderCard.vue:24
@@ -3046,7 +3046,7 @@ msgstr "Text Regler"
 
 #: frontend/src2/query/components/ColumnFilterTypeDate.vue:58
 msgid "This FY"
-msgstr "Detta Bokföringsår"
+msgstr "Detta Bokslut år"
 
 #: frontend/src2/query/components/ColumnFilterTypeDate.vue:55
 msgid "This Month"
