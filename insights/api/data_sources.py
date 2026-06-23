@@ -2,7 +2,6 @@ import frappe
 from frappe.utils.caching import redis_cache
 
 from insights import notify
-from insights.api.telemetry import track
 from insights.decorators import check_role
 from insights.insights.doctype.insights_query.utils import infer_type_from_list
 from insights.insights.doctype.insights_team.insights_team import (
@@ -187,7 +186,6 @@ def import_csv(table_label, table_name, filename, if_exists, columns, data_sourc
 @frappe.whitelist()
 @check_role("Insights User")
 def delete_data_source(data_source):
-    track("delete_data_source")
     try:
         frappe.delete_doc("Insights Data Source", data_source)
         notify(

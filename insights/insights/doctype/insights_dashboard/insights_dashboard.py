@@ -11,7 +11,6 @@ from frappe.model.document import Document
 
 from insights import notify
 from insights.api.permissions import is_private
-from insights.api.telemetry import track
 from insights.cache_utils import make_digest
 
 from .utils import guess_layout_for_chart
@@ -20,9 +19,6 @@ CACHE_NAMESPACE = "insights_dashboard"
 
 
 class InsightsDashboard(Document):
-    def on_trash(self):
-        track("delete_dashboard")
-
     @frappe.whitelist()
     def is_private(self):
         return is_private("Insights Dashboard", self.name)

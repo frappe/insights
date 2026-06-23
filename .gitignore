@@ -188,3 +188,5 @@ pids
 *.seed
 *.pid.lock
 todo
+frontend/components.d.ts
+insights/www/insights_v2.html
