@@ -1,12 +1,6 @@
 declare module '@/utils/dayjs'
 declare module 'dom-to-image'
 
-declare namespace JSX {
-  interface IntrinsicElements {
-    [elemName: string]: any;
-  }
-}
-
 declare type HashString = `#${string}`
 declare type RGBString = `rgb(${number}, ${number}, ${number})`
 

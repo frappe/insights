@@ -38,6 +38,8 @@ def get_user_info():
 
     locale = user.get("language") or frappe.db.get_single_value("System Settings", "language") or "en"
 
+    _is_admin = is_admin or frappe.session.user == "Administrator"
+
     has_demo_data = False
     if is_admin:
         from insights.setup.setup_wizard import check_demo_data_exists

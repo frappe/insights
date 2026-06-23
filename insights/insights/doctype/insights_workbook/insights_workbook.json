@@ -6,7 +6,6 @@
  "engine": "InnoDB",
  "field_order": [
   "title",
-  "folder",
   "data_backup"
  ],
  "fields": [
@@ -16,13 +15,6 @@
    "in_list_view": 1,
    "label": "Title",
    "reqd": 1
-  },
-  {
-   "fieldname": "folder",
-   "fieldtype": "Link",
-   "label": "Folder",
-   "options": "Insights Workbook Folder",
-   "search_index": 1
   },
   {
    "fieldname": "data_backup",

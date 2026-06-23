@@ -8,7 +8,6 @@ export type DashboardListItem = {
 	name: string
 	title: string
 	workbook: string
-	folder?: string | null
 	charts: number
 	creation: string
 	modified: string
@@ -20,6 +19,7 @@ export type DashboardListItem = {
 }
 
 const dashboards = ref<DashboardListItem[]>([])
+const favorites = ref<DashboardListItem[]>([])
 
 const loading = ref(false)
 const mapTimeAgo = (dashboard: any) => ({
@@ -28,34 +28,16 @@ const mapTimeAgo = (dashboard: any) => ({
 	modified_from_now: useTimeAgo(dashboard.modified),
 })
 
-export type DashboardScope = 'owned' | 'shared'
-type FetchDashboardsOptions = {
-	// omit folder for personal lenses (favorites/created/shared) so they span folders
-	folder?: string | null
-	search_term?: string
-	favorites?: boolean
-	scope?: DashboardScope
-	limit?: number
-}
-
-// folder filters to a workbook folder; favorites/scope are personal lenses.
-// subfolders + breadcrumb are derived on the client from the workbook folder tree.
-async function fetchDashboards({
-	folder,
-	search_term,
-	favorites = false,
-	scope,
-	limit = 0,
-}: FetchDashboardsOptions = {}) {
+async function fetchDashboards(search_term?: string, limit: number = 50) {
 	loading.value = true
-	const result = await call('insights.api.dashboards.get_dashboards', {
-		folder,
-		search_term,
-		get_favorites: favorites,
-		scope,
-		limit,
-	})
-	dashboards.value = result.map(mapTimeAgo)
+
+	const [regular, fav] = await Promise.all([
+		call('insights.api.dashboards.get_dashboards', { search_term, limit }),
+		call('insights.api.dashboards.get_dashboards', { get_favorites: true }),
+	])
+
+	dashboards.value = regular.map(mapTimeAgo)
+	favorites.value = fav.map(mapTimeAgo)
 	loading.value = false
 }
 
@@ -91,12 +73,17 @@ async function toggleLike(dashboard_name: string, add: boolean) {
 		doctype: 'Insights Dashboard v3',
 		name: dashboard_name,
 		add: add ? 'Yes' : 'No',
-	})
+	}).then(() => fetchDashboards())
 }
 
 export default function useDashboardStore() {
+	if (!dashboards.value.length) {
+		fetchDashboards()
+	}
+
 	return reactive({
 		dashboards,
+		favorites,
 		loading,
 		fetchDashboards,
 		fetchRecentDashboards,
