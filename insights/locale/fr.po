@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-06-14 10:34+0000\n"
-"PO-Revision-Date: 2026-06-16 18:32\n"
+"PO-Revision-Date: 2026-06-24 20:40\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -3445,7 +3445,7 @@ msgstr "graphique"
 
 #: frontend/src2/query/components/FormatRule.vue:174
 msgid "contains"
-msgstr ""
+msgstr "contient"
 
 #. Option for the 'Order By' (Select) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
@@ -3486,7 +3486,7 @@ msgstr ""
 
 #: frontend/src2/query/components/FormatRule.vue:177
 msgid "ends with"
-msgstr ""
+msgstr "se termine par"
 
 #: frontend/src2/query/components/FormatRule.vue:165
 #: frontend/src2/query/components/FormatRule.vue:178
@@ -3578,7 +3578,7 @@ msgstr ""
 
 #: frontend/src2/query/components/FormatRule.vue:176
 msgid "starts with"
-msgstr ""
+msgstr "commence avec"
 
 #: frontend/src2/query/components/ColumnsSelectorDialog.vue:120
 msgid "{0} columns selected"
