@@ -2,24 +2,18 @@
 import { useStorage } from '@vueuse/core'
 import { Breadcrumbs, TabButtons } from 'frappe-ui'
 import { SearchIcon } from 'lucide-vue-next'
-import { computed, ref, toRef, watchEffect } from 'vue'
+import { computed, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
-import FolderCard from '../components/FolderCard.vue'
 import { showErrorToast, wheneverChanges } from '../helpers'
 import { __ } from '../translation'
-import { useFolderNavigation } from '../workbook/useFolderNavigation'
-import useWorkbookFolders from '../workbook/workbookFolders'
 import DashboardCard from './DashboardCard.vue'
 import useDashboardStore, { DashboardListItem } from './dashboards'
 
 const store = useDashboardStore()
-const folderStore = useWorkbookFolders()
 const router = useRouter()
 
-const { currentFolder, searchQuery, drillInto, subfolders, breadcrumbs } = useFolderNavigation(
-	toRef(folderStore, 'folders'),
-	__('Dashboards'),
-)
+const searchQuery = ref('')
+
 type DashboardFilter = 'all' | 'recents' | 'favorites' | 'created' | 'shared'
 
 const filterTabs: { label: string; value: DashboardFilter }[] = [
@@ -33,24 +27,17 @@ const filterTabs: { label: string; value: DashboardFilter }[] = [
 // persist the chosen filter locally so it survives reloads
 const filter = useStorage<DashboardFilter>('insights:dashboard-filter', 'all')
 
-// folders only make sense in the "all" view; the other lenses span folders
-const showFolders = computed(() => filter.value === 'all')
-
 // "Load more" grows the page size and refetches (recents is capped server-side)
 const PAGE_SIZE = 20
 const limit = ref(PAGE_SIZE)
 const hasMore = computed(() => filter.value !== 'recents' && store.dashboards.length >= limit.value)
 
-// dashboards come from the server; subfolders + breadcrumb are derived on the
-// client from the shared workbook folder tree
 async function refresh() {
 	if (filter.value === 'recents') {
 		store.fetchRecentDashboards(searchQuery.value)
 		return
 	}
 	store.fetchDashboards({
-		// only the "all" view is folder-scoped; lenses span folders
-		folder: filter.value === 'all' ? currentFolder.value ?? 'root' : undefined,
 		search_term: searchQuery.value,
 		favorites: filter.value === 'favorites',
 		scope:
@@ -59,7 +46,7 @@ async function refresh() {
 	})
 }
 
-// reset pagination for a new query (filter/folder/search change)
+// reset pagination for a new query (filter/search change)
 function reload() {
 	limit.value = PAGE_SIZE
 	refresh()
@@ -95,15 +82,15 @@ const emptyState = computed(() => {
 		default:
 			return {
 				title: __('Nothing here'),
-				subtitle: __('No folders or dashboards to display.'),
+				subtitle: __('No dashboards to display.'),
 			}
 	}
 })
 
-// reset on folder/filter change so a slow fetch can't keep showing the previous
-// folder's dashboards; search keeps previous data (no flicker)
+// reset on filter change so a slow fetch can't keep showing the previous lens's
+// dashboards; search keeps previous data (no flicker)
 wheneverChanges(
-	() => [filter.value, currentFolder.value],
+	() => filter.value,
 	() => {
 		store.dashboards = []
 		reload()
@@ -149,7 +136,7 @@ watchEffect(() => {
 
 <template>
 	<header class="flex h-12 items-center justify-between border-b py-2.5 pl-5 pr-2">
-		<Breadcrumbs :items="breadcrumbs" />
+		<Breadcrumbs :items="[{ label: __('Dashboards'), route: '/dashboards' }]" />
 	</header>
 
 	<div class="mb-4 flex h-full flex-col gap-3 overflow-auto px-5 py-3">
@@ -169,19 +156,10 @@ watchEffect(() => {
 		</div>
 
 		<div class="h-full w-full">
-			<!-- folders (sorted on top) and dashboards share one grid -->
 			<div
-				v-if="(showFolders && subfolders.length) || store.dashboards.length"
+				v-if="store.dashboards.length"
 				class="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
 			>
-				<template v-if="showFolders">
-					<FolderCard
-						v-for="folder in subfolders"
-						:key="'folder-' + folder.name"
-						:title="folder.title"
-						@open="drillInto(folder.name)"
-					/>
-				</template>
 				<DashboardCard
 					v-for="dashboard in store.dashboards"
 					:key="dashboard.name"
@@ -200,11 +178,7 @@ watchEffect(() => {
 
 			<!-- empty (hidden while a fetch is in flight so it doesn't flash on tab switch) -->
 			<div
-				v-if="
-					(!showFolders || !subfolders.length) &&
-					!store.dashboards.length &&
-					!store.loading
-				"
+				v-if="!store.dashboards.length && !store.loading"
 				class="flex h-full w-full flex-col items-center justify-center text-base"
 			>
 				<div class="text-xl font-medium">{{ emptyState.title }}</div>

@@ -30,18 +30,14 @@ const mapTimeAgo = (dashboard: any) => ({
 
 export type DashboardScope = 'owned' | 'shared'
 type FetchDashboardsOptions = {
-	// omit folder for personal lenses (favorites/created/shared) so they span folders
-	folder?: string | null
 	search_term?: string
 	favorites?: boolean
 	scope?: DashboardScope
 	limit?: number
 }
 
-// folder filters to a workbook folder; favorites/scope are personal lenses.
-// subfolders + breadcrumb are derived on the client from the workbook folder tree.
+// favorites/scope are personal lenses over all accessible dashboards
 async function fetchDashboards({
-	folder,
 	search_term,
 	favorites = false,
 	scope,
@@ -49,7 +45,6 @@ async function fetchDashboards({
 }: FetchDashboardsOptions = {}) {
 	loading.value = true
 	const result = await call('insights.api.dashboards.get_dashboards', {
-		folder,
 		search_term,
 		get_favorites: favorites,
 		scope,

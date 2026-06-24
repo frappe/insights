@@ -78,16 +78,11 @@ def get_dashboards(
     search_term: str | None = None,
     limit: int = 50,
     get_favorites: bool = False,
-    folder: str | None = None,
     scope: str | None = None,
 ):
-    """Return dashboards, optionally limited to a workbook folder.
+    """Return dashboards accessible to the current user.
 
-    Dashboards inherit categorization from their workbook (no folder field of
-    their own), so `folder` filters to dashboards whose workbook is filed there.
-    Use the sentinel "" / "root" to restrict to dashboards of unfiled workbooks.
-
-    scope (a personal lens, spans folders):
+    scope (a personal lens):
         "owned"  -> only dashboards created by the current user
         "shared" -> only dashboards created by someone else (still permission filtered)
     """
@@ -99,15 +94,6 @@ def get_dashboards(
         filters["owner"] = frappe.session.user
     elif scope == "shared":
         filters["owner"] = ["!=", frappe.session.user]
-
-    if folder is not None:
-        folder_workbooks = frappe.get_all(
-            "Insights Workbook",
-            filters={"folder": ["is", "not set"]} if folder in ("", "root") else {"folder": folder},
-            pluck="name",
-        )
-        # workbook link is stored as a string; cast to match
-        filters["workbook"] = ["in", [str(name) for name in folder_workbooks] or [""]]
 
     dashboards = frappe.get_list(
         "Insights Dashboard v3",
