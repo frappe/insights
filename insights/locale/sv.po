@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-06-14 10:34+0000\n"
-"PO-Revision-Date: 2026-06-20 20:17\n"
+"PO-Revision-Date: 2026-06-25 20:38\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Swedish\n"
 "MIME-Version: 1.0\n"
@@ -518,7 +518,7 @@ msgstr "Kommaseparerade URL: er till vitlistan för att bädda in diagram & öve
 
 #: frontend/src2/dashboard/DashboardBuilder.vue:163
 msgid "Compact Layout"
-msgstr "Kompakt Utseende"
+msgstr "Kompakt Uppsättning"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import
 #. Log'
@@ -2443,7 +2443,7 @@ msgstr "Ta bort Sortering"
 
 #: frontend/src2/dashboard/DashboardBuilder.vue:170
 msgid "Reset Layout"
-msgstr "Återställ Utseende"
+msgstr "Återställ Uppsättning"
 
 #: frontend/src2/charts/components/ChartBuilderToolbar.vue:49
 msgid "Reset Options"
@@ -3335,7 +3335,7 @@ msgstr "Vertikal"
 #. Dashboard v3'
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Vertical Compact Layout"
-msgstr "Vertikal Kompakt Utseende"
+msgstr "Vertikal Kompakt Uppsättning"
 
 #: frontend/src2/workbook/WorkbookNavbarActions.vue:54
 msgid "View Lineage"
