@@ -51,6 +51,24 @@ export function guessChart(columns: QueryResultColumn[], rows: QueryResultRow[])
 	if (discreteDimensions.length > 1 && measures.length) return 'table'
 }
 
+export function getAxisChartRowOrder(rows: any[], xAxisConfig: any, reversed = false) {
+	let indices = rows.map((_, i) => i)
+	const xAxisIsDate = isCalendarDateType(xAxisConfig.dimension?.data_type)
+
+	if (xAxisIsDate) {
+		indices.sort((a, b) => {
+			const a_date = new Date(rows[a][xAxisConfig.dimension.dimension_name])
+			const b_date = new Date(rows[b][xAxisConfig.dimension.dimension_name])
+			return a_date.getTime() - b_date.getTime()
+		})
+	}
+
+	if (reversed) {
+		indices.reverse()
+	}
+	return indices
+}
+
 export function getLineChartOptions(config: LineChartConfig, result: QueryResult) {
 	const _columns = result.columns
 	const _rows = result.rows
@@ -69,13 +87,8 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 	const hasRightAxis = config.y_axis.series.some((s) => s.align === 'Right')
 	const yAxis = !hasRightAxis ? [leftYAxis] : [leftYAxis, rightYAxis]
 
-	const sortedRows = xAxisIsDate
-		? [..._rows].sort((a, b) => {
-				const a_date = new Date(a[config.x_axis.dimension.dimension_name])
-				const b_date = new Date(b[config.x_axis.dimension.dimension_name])
-				return a_date.getTime() - b_date.getTime()
-		  })
-		: _rows
+	const rowOrder = getAxisChartRowOrder(_rows, config.x_axis)
+	const sortedRows = rowOrder.map((i) => _rows[i])
 
 	const getSeriesData = (column: string) =>
 		sortedRows.map((r) => {
@@ -205,13 +218,8 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 	const hasRightAxis = config.y_axis.series.some((s) => s.align === 'Right')
 	const yAxis = !hasRightAxis ? [leftYAxis] : [leftYAxis, rightYAxis]
 
-	const sortedRows = xAxisIsDate
-		? [..._rows].sort((a, b) => {
-				const a_date = new Date(a[config.x_axis.dimension.dimension_name])
-				const b_date = new Date(b[config.x_axis.dimension.dimension_name])
-				return a_date.getTime() - b_date.getTime()
-		  })
-		: _rows
+	const rowOrder = getAxisChartRowOrder(_rows, config.x_axis, swapAxes)
+	const sortedRows = rowOrder.map((i) => _rows[i])
 
 	const total_per_x_value = _rows.reduce((acc, row) => {
 		const x_value = row[config.x_axis.dimension.dimension_name]
@@ -264,7 +272,7 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 			type,
 			stack: config.y_axis.overlap ? undefined : stack,
 			name,
-			data: swapAxes ? data.reverse() : data,
+			data,
 			color: color,
 			label: {
 				show: hide_from_chart ? false : show_data_labels,
