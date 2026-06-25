@@ -586,8 +586,9 @@ class IbisQueryBuilder:
         raw_sql = sqlparse.format(sql=raw_sql, strip_comments=True)
         raw_sql = self._validate_native_sql(raw_sql, use_live_connection=self.use_live_connection)
 
-        check_permissions = any(
-            frappe.get_single_value("Insights Settings", ["enable_permissions", "apply_user_permissions"])
+        check_permissions = (
+            frappe.db.get_single_value("Insights Settings", "enable_permissions")
+            or frappe.db.get_single_value("Insights Settings", "apply_user_permissions")
         )
 
         if check_permissions or not self.use_live_connection:
