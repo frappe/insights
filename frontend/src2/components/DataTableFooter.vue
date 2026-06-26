@@ -31,7 +31,10 @@ async function handleFetchCount() {
 	<div class="flex flex-shrink-0 items-center border-t px-2 py-1">
 		<div class="flex flex-1 items-center">
 			<slot name="left">
-				<div v-if="pagination" class="flex items-center gap-1 tnum text-sm text-gray-500">
+				<div
+					v-if="pagination && pagination.to.value > 0"
+					class="flex items-center gap-1 tnum text-sm text-gray-500"
+				>
 					Showing {{ pagination.from.value }}–{{ pagination.to.value }} of
 					<template v-if="totalRowCount">
 						{{ totalRowCount.toLocaleString() }}
