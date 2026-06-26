@@ -1,5 +1,6 @@
 import frappe
 from frappe.utils.caching import redis_cache, site_cache
+from pypika.functions import Count
 
 from insights import notify
 from insights.decorators import insights_whitelist, validate_type
@@ -332,7 +333,7 @@ def get_data_source_tables(
 @insights_whitelist()
 @validate_type
 def get_data_source_tables_count(data_source: str | None = None, search_term: str | None = None):
-    tables = frappe.get_all(
+    partial_query = frappe.get_list(
         "Insights Table v3",
         filters={
             "data_source": data_source or ["is", "set"],
@@ -341,9 +342,14 @@ def get_data_source_tables_count(data_source: str | None = None, search_term: st
             "label": ["is", "set"] if not search_term else ["like", f"%{search_term}%"],
             "table": ["is", "set"] if not search_term else ["like", f"%{search_term}%"],
         },
-        pluck="name",
+        fields=["name"],
+        run=0,
     )
-    return len(tables)
+
+    count_query = frappe.qb.from_(partial_query).select(Count("*"))
+    result = count_query.run()
+
+    return result[0][0] if result else 0
 
 
 @insights_whitelist()
