@@ -27,6 +27,11 @@ if (!filter.links) {
 	filter.links = {}
 }
 
+// set a default operator initially
+if (!filter.filter_name && !filter.default_operator) {
+	filter.default_operator = getOperatorOptions(filter.filter_type)[0]?.value
+}
+
 const tabIndex = ref(0)
 const tabs = [
 	{
@@ -95,7 +100,7 @@ function disableColumnOptions(options: ColumnOption[]) {
 }
 
 function onFilterTypeChange() {
-	filter.default_operator = undefined
+	filter.default_operator = getOperatorOptions(filter.filter_type)[0]?.value
 	filter.default_value = undefined
 	filter.links = {}
 }
