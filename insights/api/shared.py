@@ -56,7 +56,11 @@ def is_public_workbook(name: str):
 
 def has_valid_preview_key():
     # used to generate preview images of a dashboard
-    preview_key = frappe.request.headers.get("X-Insights-Preview-Key")
+    preview_key = (
+        frappe.request.headers.get("X-Insights-Preview-Key")
+        or frappe.form_dict.get("insights_preview_key")
+        or frappe.request.cookies.get("insights_preview_key")
+    )
     return preview_key and frappe.cache.get_value(f"insights_preview_key:{preview_key}")
 
 
