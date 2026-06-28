@@ -86,7 +86,10 @@ class InsightsDashboardv3(Document):
     ):
         is_guest = frappe.session.user == "Guest"
         if is_guest and not self.is_public:
-            raise frappe.PermissionError
+            from insights.api.shared import has_valid_preview_key
+
+            if not has_valid_preview_key():
+                raise frappe.PermissionError
 
         if not self.is_filter_column(query, column_name):
             frappe.throw(
@@ -136,18 +139,25 @@ class InsightsDashboardv3(Document):
         self.generate_dashboard_preview()
 
     def generate_dashboard_preview(self):
-        with generate_preview_key() as key:
-            preview = get_page_preview(
-                frappe.utils.get_url(f"/insights/shared/dashboard/{self.name}"),
-                headers={
-                    "X-Insights-Preview-Key": key,
-                },
-            )
-            file_url = create_preview_file(preview, self.name)
-            random_hash = frappe.generate_hash()[0:4]
-            file_url = f"{file_url}?{random_hash}"
-            self.db_set("preview_image", file_url)
-            return file_url
+        try:
+            with generate_preview_key() as key:
+                preview_url = frappe.utils.get_url(
+                    f"/insights/shared/dashboard/{self.name}?insights_preview_key={key}"
+                )
+                preview = get_page_preview(
+                    preview_url,
+                    headers={"X-Insights-Preview-Key": key},
+                )
+                if not is_valid_preview_image(preview):
+                    return self.preview_image
+
+                file_url = create_preview_file(preview, self.name)
+                file_url = f"{file_url}?{frappe.generate_hash()[0:4]}"
+                self.db_set("preview_image", file_url)
+                return file_url
+        except Exception:
+            frappe.log_error(title="Failed to generate dashboard preview")
+            return self.preview_image
 
     def get_acess_data(self):
         DocShare = frappe.qb.DocType("DocShare")
@@ -257,7 +267,7 @@ def get_page_preview(url: str, headers: dict | None = None) -> bytes:
         json={
             "url": url,
             "headers": headers or {},
-            "wait_for": 1000,
+            "wait_for": 3000,
         },
     )
     if response.status_code == 200:
@@ -266,6 +276,10 @@ def get_page_preview(url: str, headers: dict | None = None) -> bytes:
         exception = response.json()
         frappe.log_error(message=exception, title="Failed to generate preview")
         frappe.throw("Failed to generate preview")
+
+
+def is_valid_preview_image(content: bytes) -> bool:
+    return content[:3] == b"\xff\xd8\xff"
 
 
 def create_preview_file(content: bytes, dashboard_name: str):
@@ -298,7 +312,7 @@ def create_preview_file(content: bytes, dashboard_name: str):
 def generate_preview_key():
     try:
         key = frappe.generate_hash()
-        frappe.cache.set_value(f"insights_preview_key:{key}", True)
+        frappe.cache.set_value(f"insights_preview_key:{key}", True, expires_in_sec=300)
         yield key
     finally:
         frappe.cache.delete_value(f"insights_preview_key:{key}")

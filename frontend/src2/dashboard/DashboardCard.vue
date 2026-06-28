@@ -1,5 +1,6 @@
 <script setup lang="tsx">
 import { BarChart2, Clock, Eye, MoreVertical, RefreshCw, Bookmark } from 'lucide-vue-next'
+import { ref, watch } from 'vue'
 import { DashboardListItem } from './dashboards'
 
 interface Props {
@@ -16,6 +17,15 @@ const emit = defineEmits<{
 	'toggle-favorite': []
 	'update-preview': []
 }>()
+
+const previewFailed = ref(false)
+
+watch(
+	() => props.dashboard.preview_image,
+	() => {
+		previewFailed.value = false
+	},
+)
 </script>
 
 <template>
@@ -25,12 +35,12 @@ const emit = defineEmits<{
 			class="flex h-[150px] overflow-hidden rounded shadow transition-transform duration-200 group-hover:scale-[1.01]"
 		>
 			<img
-				v-if="dashboard.preview_image"
+				v-if="dashboard.preview_image && !previewFailed"
 				:src="dashboard.preview_image"
 				loading="lazy"
 				decoding="async"
-				onerror="this.src = ''"
-				class="object-cover opacity-80"
+				@error="previewFailed = true"
+				class="h-full w-full object-cover object-top opacity-80"
 			/>
 			<div v-else class="flex h-full w-full items-center justify-center bg-gray-50/70">
 				<Button

@@ -71,6 +71,17 @@ def continue_to_v3(context):
         "socketio_port": frappe.conf.get("socketio_port"),
     }
 
+    preview_key = frappe.form_dict.get("insights_preview_key")
+    if preview_key and frappe.cache.get_value(f"insights_preview_key:{preview_key}"):
+        # headless preview loads the SPA then calls APIs as Guest — cookie carries the key
+        frappe.local.cookie_manager.set_cookie(
+            "insights_preview_key",
+            preview_key,
+            max_age=120,
+            httponly=0,
+            samesite="Lax",
+        )
+
 
 def redirect_to_v2():
     path = frappe.request.full_path
