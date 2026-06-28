@@ -1,5 +1,5 @@
 <script setup lang="tsx">
-import { BarChart2, Clock, Eye, MoreVertical, RefreshCw, Bookmark } from 'lucide-vue-next'
+import { BarChart2, Clock, Eye, Heart, MoreVertical, RefreshCw } from 'lucide-vue-next'
 import { DashboardListItem } from './dashboards'
 
 interface Props {
@@ -76,7 +76,7 @@ const emit = defineEmits<{
 			</div>
 			<div class="flex flex-shrink-0 items-center">
 				<button @click.stop="emit('toggle-favorite')">
-					<Bookmark
+					<Heart
 						class="h-4 w-4"
 						:class="{
 							'fill-blue-500 text-blue-500 transition-all hover:scale-110 active:scale-90':
