@@ -50,6 +50,7 @@ const props = defineProps<{
 	columnWidths?: Record<string, number>
 	textWrap?: Record<string, boolean>
 	pageSize?: number
+	displayPageSize?: number
 	totalRowCount?: number
 	onPageChange?: (page: number) => void
 	currentPage?: number
@@ -216,6 +217,7 @@ const totalColumnTotal = computed(() => {
 
 const pagination = usePagination({
 	pageSize: computed(() => props.pageSize ?? 100),
+	displayPageSize: computed(() => props.displayPageSize ?? 100),
 	rowCount: computed(() => visibleRows.value?.length ?? 0),
 	totalRowCount: computed(() => props.totalRowCount),
 	currentPage: computed(() => props.currentPage),
