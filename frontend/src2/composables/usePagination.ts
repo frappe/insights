@@ -34,12 +34,12 @@ export function usePagination(options: PaginationOptions): PaginationState {
 	const cursor = useCursor(options, config)
 	const bounds = useBounds(config, cursor)
 
-	const { serverPage, clientPage, clientPageCount, fetchChunk } = cursor
+	const { serverPage, clientPage, clientPageCount, lastSubPage, fetchChunk } = cursor
 
 	function prev() {
 		if (bounds.isFirstPage.value) return
 		if (clientPage.value > 1) clientPage.value--
-		else fetchChunk(serverPage.value - 1)
+		else fetchChunk(serverPage.value - 1, lastSubPage.value)
 	}
 	function next() {
 		if (bounds.isLastPage.value) return
@@ -74,22 +74,27 @@ function useCursor(options: PaginationOptions, config: Config) {
 	)
 	const chunkOffset = computed(() => (serverPage.value - 1) * config.serverPageSize.value)
 
-	function loadChunk(page: number) {
+	function loadChunk(page: number, subPage = 1) {
 		if (page < 1 || page === serverPage.value) return
 		serverPage.value = page
-		clientPage.value = 1
+		clientPage.value = subPage
 	}
-	function fetchChunk(page: number) {
+	function fetchChunk(page: number, subPage = 1) {
 		if (page < 1) return
-		loadChunk(page)
+		loadChunk(page, subPage)
 		options.onPageChange?.(page)
 	}
+
+	// last sub-page of a full chunk — where a backward chunk hop should land
+	const lastSubPage = computed(() =>
+		Math.ceil(config.serverPageSize.value / config.displayPageSize.value)
+	)
 
 	// follow external page changes; clamp the sub-page when the chunk shrinks
 	watch(() => toValue(options.currentPage), (page) => page !== undefined && loadChunk(page))
 	watch(clientPageCount, (count) => (clientPage.value = Math.min(clientPage.value, count)))
 
-	return { serverPage, clientPage, clientPageCount, chunkOffset, fetchChunk }
+	return { serverPage, clientPage, clientPageCount, chunkOffset, lastSubPage, fetchChunk }
 }
 
 type Cursor = ReturnType<typeof useCursor>
