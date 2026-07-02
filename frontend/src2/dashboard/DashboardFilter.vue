@@ -2,7 +2,6 @@
 import { Icon } from 'frappe-ui/icons'
 import { computed, inject, reactive, watchEffect, watch } from 'vue'
 import { copy, wheneverChanges } from '../helpers'
-import dayjs from '../helpers/dayjs'
 import { FIELDTYPES } from '../helpers/constants'
 import DataTypeIcon from '../query/components/DataTypeIcon.vue'
 import { formatDateFilterValue } from '../query/components/formatting_utils'
