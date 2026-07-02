@@ -199,6 +199,12 @@ export type DropdownOption = {
 	description?: string
 }
 
+export type Preset = {
+	label: string
+	value: () => string | string[]
+	description?: () => string
+}
+
 export type GroupedDropdownOption = {
 	group: string
 	items: DropdownOption[]
