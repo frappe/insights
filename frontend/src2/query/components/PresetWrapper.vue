@@ -26,11 +26,12 @@ watch(
 	() => modelValue.value,
 	(newVal) => {
 		if (!newVal || (Array.isArray(newVal) && newVal.length === 0)) {
-			if (props.presets.length > 0 && !isCustom.value) {
-				selectPreset(props.presets[0])
-			}
-		} else if (!currentPresetMatch.value) {
+			return
+		}
+		if (!currentPresetMatch.value) {
 			isCustom.value = true
+		} else {
+			isCustom.value = false
 		}
 	},
 	{ immediate: true, deep: true },
