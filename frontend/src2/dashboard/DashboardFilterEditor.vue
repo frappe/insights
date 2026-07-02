@@ -17,7 +17,8 @@ import { ColumnOption, FilterOperator } from '../types/query.types'
 import { WorkbookDashboardFilter } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
 import { __ } from '../translation'
-import { Switch, Tabs, DatePicker, DateRangePicker } from 'frappe-ui'
+import { Switch, Tabs, DatePicker } from 'frappe-ui'
+import AbsoluteDatePicker from '../query/components/AbsoluteDatePicker.vue'
 
 const dashboard = inject<Dashboard>('dashboard')!
 const props = defineProps<{ item: WorkbookDashboardFilter }>()
@@ -280,7 +281,7 @@ function saveEdit() {
 												:modelValue="filter.default_value as string"
 												@update:modelValue="filter.default_value = $event"
 											/>
-											<DateRangePicker
+											<AbsoluteDatePicker
 												v-else-if="
 													defaultValueSelectorType === 'date_range'
 												"

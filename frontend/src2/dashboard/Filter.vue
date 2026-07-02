@@ -2,7 +2,8 @@
 import { computed, reactive } from 'vue'
 import { copy } from '../helpers'
 import { FilterType } from '../helpers/constants'
-import { DatePicker, DateRangePicker } from 'frappe-ui'
+import { DatePicker } from 'frappe-ui'
+import AbsoluteDatePicker from '../query/components/AbsoluteDatePicker.vue'
 import ColumnFilterValueSelector from '../query/components/ColumnFilterValueSelector.vue'
 import {
 	getOperatorOptions,
@@ -89,7 +90,7 @@ const dateRangeVal = computed({
 					:modelValue="state.value as string"
 					@update:modelValue="state.value = $event"
 				/>
-				<DateRangePicker
+				<AbsoluteDatePicker
 					v-else-if="valueSelectorType === 'date_range'"
 					v-model="dateRangeVal as string[]"
 				/>
