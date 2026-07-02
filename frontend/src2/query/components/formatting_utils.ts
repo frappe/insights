@@ -312,12 +312,13 @@ export function applyRankRule(
 export const formatDateRangeDescription = (from: ReturnType<typeof dayjs>, to?: ReturnType<typeof dayjs>): string => {
 	if (!from || !from.isValid()) return ''
 	const currentYear = dayjs().year()
-	const fromStr = from.year() === currentYear ? from.format('MMM D') : from.format('MMM D, YYYY')
 	if (!to || !to.isValid() || from.isSame(to, 'day')) {
-		return fromStr
+		return from.year() === currentYear ? from.format('MMM D') : from.format('MMM D, YYYY')
 	}
-	const toStr = to.year() === currentYear ? to.format('MMM D') : to.format('MMM D, YYYY')
-	return `${fromStr} - ${toStr}`
+	const sameYear = from.year() === to.year()
+	const isCurrentYear = sameYear && from.year() === currentYear
+	const formatStr = isCurrentYear ? 'MMM D' : 'MMM D, YYYY'
+	return `${from.format(formatStr)} - ${to.format(formatStr)}`
 }
 
 export function formatDateFilterValue(operator: FilterOperator, value: any): string {
