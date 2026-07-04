@@ -226,6 +226,12 @@ class InsightsQueryv3(Document):
                 frappe.PermissionError,
             )
 
+        if not is_admin(frappe.session.user) and not frappe.has_permission(self.doctype, ptype="export"):
+            frappe.throw(
+                "Your role does not have the export permission for queries. Contact your administrator.",
+                frappe.PermissionError,
+            )
+
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
 
