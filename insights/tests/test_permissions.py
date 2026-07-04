@@ -315,6 +315,28 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
                 csv_data = query_doc.download_results(format="csv")
             self.assertIsInstance(csv_data, str)
 
+    def test_download_results_requires_document_access(self):
+        workbook = create_test_workbook(USER_1)
+        query = create_test_query(USER_1, workbook.name)
+        frappe.db.set_single_value(DT.SETTINGS, "allow_download", 1)
+        self.toggle_team_permissions(True)
+
+        # USER_2 has the role-level export permission, but no access to
+        # USER_1's workbook or query, so the download must still be blocked
+        with self.as_user(USER_2):
+            self.assertTrue(frappe.has_permission(DT.QUERY, ptype="export"))
+            query_doc = frappe.get_doc(DT.QUERY, query.name)
+            with self.assertRaises(frappe.PermissionError):
+                query_doc.download_results(format="csv")
+
+        # the owner can still download their own query
+        self.toggle_team_permissions(False)
+        with self.as_user(USER_1):
+            query_doc = frappe.get_doc(DT.QUERY, query.name)
+            with db_connections():
+                csv_data = query_doc.download_results(format="csv")
+            self.assertIsInstance(csv_data, str)
+
     def test_download_results_blocked_when_globally_disabled(self):
         workbook = create_test_workbook(USER_1)
         query = create_test_query(USER_1, workbook.name)

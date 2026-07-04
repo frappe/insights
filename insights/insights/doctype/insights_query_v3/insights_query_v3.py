@@ -226,7 +226,9 @@ class InsightsQueryv3(Document):
                 frappe.PermissionError,
             )
 
-        if not is_admin(frappe.session.user) and not frappe.has_permission(self.doctype, ptype="export"):
+        if not is_admin(frappe.session.user) and not frappe.has_permission(
+            self.doctype, ptype="export", doc=self
+        ):
             frappe.throw(
                 "Your role does not have the export permission for queries. Contact your administrator.",
                 frappe.PermissionError,
