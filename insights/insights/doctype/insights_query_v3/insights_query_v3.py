@@ -230,7 +230,9 @@ class InsightsQueryv3(Document):
             self.doctype, ptype="export", doc=self
         ):
             frappe.throw(
-                "Your role does not have the export permission for queries. Contact your administrator.",
+                frappe._(
+                    "Your role does not have the export permission for queries. Contact your administrator."
+                ),
                 frappe.PermissionError,
             )
 
