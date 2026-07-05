@@ -226,8 +226,9 @@ class InsightsQueryv3(Document):
                 frappe.PermissionError,
             )
 
-        if not is_admin(frappe.session.user) and not frappe.has_permission(
-            self.doctype, ptype="export", doc=self
+        if not is_admin(frappe.session.user) and not (
+            frappe.has_permission(self.doctype, ptype="export")
+            and frappe.has_permission(self.doctype, ptype="read", doc=self)
         ):
             frappe.throw(
                 frappe._(

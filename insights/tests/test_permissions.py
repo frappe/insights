@@ -337,6 +337,32 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
                 csv_data = query_doc.download_results(format="csv")
             self.assertIsInstance(csv_data, str)
 
+    def test_download_results_allowed_with_read_only_share(self):
+        workbook = create_test_workbook(USER_1)
+        query = create_test_query(USER_1, workbook.name)
+        # keep team permissions disabled so the underlying table stays
+        # accessible; the owner/share based document restriction on
+        # workbooks & queries is enforced regardless of this setting
+        self.toggle_team_permissions(False)
+        frappe.db.set_single_value(DT.SETTINGS, "allow_download", 1)
+
+        # USER_2 is given read-only access to USER_1's workbook
+        with self.as_user(USER_1):
+            update_share_permissions(
+                workbook.name,
+                [{"user": USER_2, "read": 1, "write": 0}],
+            )
+
+        # USER_2 has the role-level export permission and read access to the
+        # shared query, so the download must succeed without write access
+        with self.as_user(USER_2):
+            self.assertTrue(frappe.has_permission(DT.QUERY, ptype="export"))
+            self.assertFalse(frappe.has_permission(DT.QUERY, ptype="write", doc=query.name))
+            query_doc = frappe.get_doc(DT.QUERY, query.name)
+            with db_connections():
+                csv_data = query_doc.download_results(format="csv")
+            self.assertIsInstance(csv_data, str)
+
     def test_download_results_blocked_when_globally_disabled(self):
         workbook = create_test_workbook(USER_1)
         query = create_test_query(USER_1, workbook.name)
