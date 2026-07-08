@@ -1255,7 +1255,7 @@ msgstr ""
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Host"
-msgstr "Gastgeber"
+msgstr "Host"
 
 #. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
