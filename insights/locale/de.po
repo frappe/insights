@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
-"POT-Creation-Date: 2026-06-14 10:34+0000\n"
-"PO-Revision-Date: 2026-06-16 18:32\n"
+"POT-Creation-Date: 2026-06-21 10:42+0000\n"
+"PO-Revision-Date: 2026-07-09 09:47\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -171,8 +171,8 @@ msgstr "Alarm gesendet"
 msgid "Alerts"
 msgstr "Alarme"
 
-#: frontend/src2/dashboard/DashboardList.vue:86
-#: frontend/src2/workbook/WorkbookList.vue:205
+#: frontend/src2/dashboard/DashboardList.vue:26
+#: frontend/src2/workbook/WorkbookList.vue:43
 msgid "All"
 msgstr "Alle"
 
@@ -384,7 +384,7 @@ msgstr "Kann ansehen"
 #: frontend/src2/charts/components/RegionMappingDialog.vue:312
 #: frontend/src2/components/ExportDialog.vue:77
 #: frontend/src2/dashboard/DashboardChartSelectorDialog.vue:73
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:161
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:163
 #: frontend/src2/dashboard/DashboardText.vue:37
 #: frontend/src2/query/components/ColumnsSelectorDialog.vue:71
 #: frontend/src2/query/components/JoinSelectorDialog.vue:384
@@ -392,7 +392,7 @@ msgstr "Kann ansehen"
 msgid "Cancel"
 msgstr "Abbrechen"
 
-#: insights/api/workbooks.py:402
+#: insights/api/workbooks.py:426
 msgid "Cannot delete a folder that is not empty. Move its contents out first."
 msgstr ""
 
@@ -456,7 +456,7 @@ msgstr ""
 msgid "Circular query reference detected while building \"{0}\""
 msgstr ""
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:241
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:243
 #: frontend/src2/query/components/FiltersSelector.vue:143
 msgid "Clear"
 msgstr "Löschen"
@@ -535,7 +535,7 @@ msgstr "Bedingung"
 
 #. Label of the config (JSON) field in DocType 'Insights Chart v3'
 #. Label of the config (JSON) field in DocType 'Insights Query Chart'
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:32
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:33
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
 #: insights/insights/doctype/insights_query_chart/insights_query_chart.json
 msgid "Config"
@@ -618,8 +618,7 @@ msgstr "In Ausdruck umwandeln"
 msgid "Copy JSON"
 msgstr "JSON kopieren"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:111
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:52
+#: frontend/src2/query/components/QueryToolbar.vue:50
 msgid "Copy Query"
 msgstr "Abfrage kopieren"
 
@@ -645,17 +644,15 @@ msgstr "Kennzahl erstellen"
 msgid "Create Team"
 msgstr "Team erstellen"
 
+#: frontend/src2/dashboard/DashboardList.vue:29
 #: frontend/src2/data_source/DataSourceList.vue:119
+#: frontend/src2/workbook/WorkbookList.vue:44
 msgid "Created"
 msgstr "Erstellt"
 
 #: frontend/src2/query/components/QueryAlertsDialog.vue:52
 msgid "Created By"
 msgstr "Erstellt von"
-
-#: frontend/src2/workbook/WorkbookList.vue:206
-msgid "Created by me"
-msgstr ""
 
 #: frontend/src2/teams/TeamList.vue:48
 msgid "Creation"
@@ -725,10 +722,18 @@ msgstr "Dashboard-Zugriff aktualisiert"
 
 #: frontend/src2/components/AppSidebar.vue:74
 #: frontend/src2/dashboard/Dashboard.vue:46
-#: frontend/src2/dashboard/DashboardList.vue:20
+#: frontend/src2/dashboard/DashboardList.vue:21
 #: frontend/src2/workbook/WorkbookSidebar.vue:75
 msgid "Dashboards"
 msgstr "Dashboards"
+
+#: frontend/src2/dashboard/DashboardList.vue:93
+msgid "Dashboards shared with you will show up here."
+msgstr ""
+
+#: frontend/src2/dashboard/DashboardList.vue:83
+msgid "Dashboards you open will show up here."
+msgstr ""
 
 #. Label of the data_backup (JSON) field in DocType 'Insights Workbook'
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
@@ -830,7 +835,7 @@ msgstr "Datum und Uhrzeit"
 msgid "Decimal"
 msgstr "Dezimal"
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:234
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:236
 msgid "Default Value"
 msgstr "Standardwert"
 
@@ -874,7 +879,7 @@ msgstr "Erledigt"
 msgid "Draft"
 msgstr "Entwurf"
 
-#: frontend/src2/charts/components/DrillDown.vue:59
+#: frontend/src2/charts/components/DrillDown.vue:60
 msgid "Drill Down"
 msgstr "Detailanalyse"
 
@@ -898,8 +903,7 @@ msgstr "Duplizieren"
 msgid "Duplicate Chart"
 msgstr "Diagramm duplizieren"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:106
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:47
+#: frontend/src2/query/components/QueryToolbar.vue:45
 msgid "Duplicate Query"
 msgstr "Abfrage duplizieren"
 
@@ -912,7 +916,7 @@ msgstr "Dauer (Sekunden)"
 msgid "Edit"
 msgstr "Bearbeiten"
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:152
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:154
 msgid "Edit Filter"
 msgstr "Filter bearbeiten"
 
@@ -940,7 +944,7 @@ msgstr "E-Mail gesendet am"
 msgid "Empty - Click 'Add Filter' to add a filter"
 msgstr "Leer - Klicken Sie auf 'Filter hinzufügen', um einen Filter hinzuzufügen"
 
-#: frontend/src2/workbook/WorkbookList.vue:128
+#: frontend/src2/workbook/WorkbookList.vue:160
 msgid "Empty Folder"
 msgstr ""
 
@@ -986,7 +990,7 @@ msgstr "Einreihen"
 msgid "Enter filename"
 msgstr "Dateinamen eingeben"
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:177
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:179
 msgid "Enter filter label..."
 msgstr "Filterbezeichnung eingeben..."
 
@@ -1013,12 +1017,11 @@ msgstr "Fehler"
 msgid "Excel"
 msgstr "Excel"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:189
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:90
+#: frontend/src2/query/components/QueryToolbar.vue:69
 msgid "Execute"
 msgstr "Ausführen"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:188
+#: frontend/src2/query/components/QueryToolbar.vue:68
 msgid "Execute ({0})"
 msgstr ""
 
@@ -1049,11 +1052,6 @@ msgstr "Erweitern"
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Expired"
 msgstr "Abgelaufen"
-
-#: frontend/src2/query/components/NativeQueryEditor.vue:119
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:60
-msgid "Explain Plan"
-msgstr ""
 
 #: frontend/src2/components/ExportDialog.vue:80
 msgid "Export"
@@ -1096,7 +1094,7 @@ msgstr "Fehlgeschlagen"
 msgid "Failed Syncs"
 msgstr ""
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:67
+#: frontend/src2/query/components/NativeQueryEditor.vue:55
 msgid "Failed to format SQL"
 msgstr "SQL-Formatierung fehlgeschlagen"
 
@@ -1113,18 +1111,16 @@ msgstr "Verarbeitung der hochgeladenen Datei fehlgeschlagen"
 msgid "Failed to setup demo data"
 msgstr "Einrichtung der Demodaten fehlgeschlagen"
 
-#: frontend/src2/dashboard/DashboardList.vue:87
+#: frontend/src2/dashboard/DashboardList.vue:28
 msgid "Favorites"
 msgstr "Favoriten"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:225
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:80
+#: frontend/src2/query/components/QueryExecutionStatus.vue:18
 #: frontend/src2/query/components/ScriptQueryEditor.vue:128
 msgid "Fetched from cache"
 msgstr "Aus Cache geladen"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:228
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:83
+#: frontend/src2/query/components/QueryExecutionStatus.vue:21
 #: frontend/src2/query/components/ScriptQueryEditor.vue:129
 msgid "Fetched in {0}s"
 msgstr "Geladen in {0}s"
@@ -1141,7 +1137,7 @@ msgstr "Dateiname"
 msgid "Filter"
 msgstr "Filter"
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:224
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:226
 msgid "Filter Icon"
 msgstr ""
 
@@ -1169,11 +1165,11 @@ msgstr "Geschäftsjahresbeginn"
 msgid "Folder"
 msgstr "Ordner"
 
-#: insights/api/workbooks.py:288
+#: insights/api/workbooks.py:312
 msgid "Folder and item must belong to the same workbook"
 msgstr "Ordner und Element müssen zum selben Arbeitsbuch gehören"
 
-#: insights/api/workbooks.py:419 insights/api/workbooks.py:432
+#: insights/api/workbooks.py:443 insights/api/workbooks.py:456
 msgid "Folder {0} does not exist"
 msgstr ""
 
@@ -1210,7 +1206,7 @@ msgstr "Fremdtabellenbezeichnung"
 msgid "Format Option"
 msgstr "Formatierungsoption"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:96
+#: frontend/src2/query/components/NativeQueryEditor.vue:65
 msgid "Format SQL"
 msgstr "SQL formatieren"
 
@@ -1285,7 +1281,7 @@ msgstr ""
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Host"
-msgstr "Host"
+msgstr "Gastgeber"
 
 #. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -1737,7 +1733,7 @@ msgstr "Schlüssel"
 #. Label of the label (Data) field in DocType 'Insights Table'
 #. Label of the label (Data) field in DocType 'Insights Table Column'
 #. Label of the label (Data) field in DocType 'Insights Table v3'
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:175
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:177
 #: insights/insights/doctype/insights_query_table/insights_query_table.json
 #: insights/insights/doctype/insights_table/insights_table.json
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -1834,7 +1830,7 @@ msgstr "Limit"
 
 #. Label of the linked_charts (Table MultiSelect) field in DocType 'Insights
 #. Dashboard v3'
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:191
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:193
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Linked Charts"
 msgstr "Verknüpfte Diagramme"
@@ -1843,6 +1839,11 @@ msgstr "Verknüpfte Diagramme"
 #: insights/insights/doctype/insights_table/insights_table.json
 msgid "Links"
 msgstr "Verknüpfungen"
+
+#: frontend/src2/dashboard/DashboardList.vue:198
+#: frontend/src2/workbook/WorkbookList.vue:261
+msgid "Load more"
+msgstr "Mehr laden"
 
 #: frontend/src2/workbook/WorkbookLineageDialog.vue:179
 msgid "Loading\\u2026"
@@ -1899,7 +1900,7 @@ msgstr "Arbeitsbuchzugriff verwalten"
 msgid "MariaDB"
 msgstr ""
 
-#: frontend/src2/dashboard/DashboardList.vue:126
+#: frontend/src2/dashboard/DashboardList.vue:78
 msgid "Mark a dashboard as favorite to see it here."
 msgstr ""
 
@@ -1964,7 +1965,7 @@ msgstr "Montag"
 msgid "Monthly"
 msgstr "Monatlich"
 
-#: frontend/src2/workbook/WorkbookList.vue:218
+#: frontend/src2/workbook/WorkbookList.vue:250
 msgid "Move to folder"
 msgstr ""
 
@@ -2002,7 +2003,7 @@ msgstr "Neues Dashboard"
 msgid "New Data Source"
 msgstr "Neue Datenquelle"
 
-#: frontend/src2/workbook/WorkbookList.vue:73
+#: frontend/src2/workbook/WorkbookList.vue:105
 msgid "New Folder"
 msgstr "Neuer Ordner"
 
@@ -2011,8 +2012,8 @@ msgid "New Query"
 msgstr "Neue Abfrage"
 
 #: frontend/src2/home/HomeQuickActions.vue:28
-#: frontend/src2/workbook/WorkbookList.vue:135
-#: frontend/src2/workbook/WorkbookList.vue:170
+#: frontend/src2/workbook/WorkbookList.vue:167
+#: frontend/src2/workbook/WorkbookList.vue:202
 msgid "New Workbook"
 msgstr "Neues Arbeitsbuch"
 
@@ -2025,13 +2026,17 @@ msgstr "Nächste Ausführung"
 msgid "No"
 msgstr "Nein"
 
-#: frontend/src2/dashboard/DashboardList.vue:121
+#: frontend/src2/dashboard/DashboardList.vue:77
 msgid "No Favorites"
 msgstr ""
 
 #: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:90
 msgid "No Queries Found"
 msgstr "Keine Abfragen gefunden"
+
+#: frontend/src2/dashboard/DashboardList.vue:82
+msgid "No Recents"
+msgstr ""
 
 #: frontend/src2/data_source/DataSourceTableList.vue:40
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:58
@@ -2042,7 +2047,7 @@ msgstr "Keine Tabellen gefunden"
 msgid "No Tables Stored"
 msgstr "Keine Tabellen gespeichert"
 
-#: frontend/src2/workbook/WorkbookList.vue:128
+#: frontend/src2/workbook/WorkbookList.vue:160
 msgid "No Workbooks"
 msgstr "Keine Arbeitsbücher"
 
@@ -2062,16 +2067,12 @@ msgstr "Keine Datenquellen zum Anzeigen."
 msgid "No data sources."
 msgstr "Keine Datenquellen."
 
-#: frontend/src2/dashboard/DashboardList.vue:127
+#: frontend/src2/dashboard/DashboardList.vue:98
 msgid "No folders or dashboards to display."
 msgstr ""
 
-#: frontend/src2/workbook/WorkbookList.vue:130
+#: frontend/src2/workbook/WorkbookList.vue:162
 msgid "No folders or workbooks here."
-msgstr ""
-
-#: frontend/src2/query/components/ExplainPlanDialog.vue:44
-msgid "No plan available. Execute the query first."
 msgstr ""
 
 #: frontend/src2/data_source/DataSourceTableList.vue:41
@@ -2106,7 +2107,7 @@ msgstr "Keine Benutzer."
 msgid "No workbooks created"
 msgstr "Keine Arbeitsbücher erstellt"
 
-#: frontend/src2/workbook/WorkbookList.vue:131
+#: frontend/src2/workbook/WorkbookList.vue:163
 msgid "No workbooks to display."
 msgstr "Keine Arbeitsbücher zum Anzeigen."
 
@@ -2121,7 +2122,9 @@ msgstr "Keine"
 msgid "Notebook"
 msgstr "Notizbuch"
 
-#: frontend/src2/dashboard/DashboardList.vue:121
+#: frontend/src2/dashboard/DashboardList.vue:87
+#: frontend/src2/dashboard/DashboardList.vue:92
+#: frontend/src2/dashboard/DashboardList.vue:97
 msgid "Nothing here"
 msgstr ""
 
@@ -2140,12 +2143,12 @@ msgstr ""
 msgid "Onboarding Complete"
 msgstr "Einrichtung abgeschlossen"
 
-#: insights/api/workbooks.py:343
+#: insights/api/workbooks.py:367
 msgid "Only an Insights Admin can manage workbook folders"
 msgstr ""
 
 #: frontend/src2/dashboard/Dashboard.vue:68
-#: frontend/src2/dashboard/DashboardList.vue:44
+#: frontend/src2/dashboard/DashboardList.vue:117
 msgid "Open Workbook"
 msgstr "Arbeitsbuch öffnen"
 
@@ -2253,7 +2256,7 @@ msgstr "Ausgangsdaten auswählen"
 msgid "Pivot"
 msgstr ""
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:41
+#: frontend/src2/query/components/NativeQueryEditor.vue:29
 msgid "Please select a data source first"
 msgstr "Bitte wählen Sie zuerst eine Datenquelle aus"
 
@@ -2350,10 +2353,6 @@ msgstr "Abfrage"
 msgid "Query Lineage"
 msgstr ""
 
-#: frontend/src2/query/components/ExplainPlanDialog.vue:15
-msgid "Query Plan"
-msgstr ""
-
 #. Label of the query_result_limit (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Query Result Limit"
@@ -2380,6 +2379,10 @@ msgstr "Rangfolge-Bedingung"
 #: frontend/src2/query/components/FormatRule.vue:225
 msgid "Ranking Rules"
 msgstr "Rangfolge-Regeln"
+
+#: frontend/src2/dashboard/DashboardList.vue:27
+msgid "Recents"
+msgstr "Kürzlich aufgerufen"
 
 #. Label of the recipients (Small Text) field in DocType 'Insights Alert'
 #: frontend/src2/query/components/AlertSetupDialog.vue:181
@@ -2414,12 +2417,11 @@ msgstr ""
 msgid "Refresh"
 msgstr "Aktualisieren"
 
-#: frontend/src2/dashboard/DashboardList.vue:49
+#: frontend/src2/dashboard/DashboardList.vue:122
 msgid "Refresh Preview"
 msgstr "Vorschau aktualisieren"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:88
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:34
+#: frontend/src2/query/components/QueryToolbar.vue:28
 msgid "Refresh Stored Tables"
 msgstr "Gespeicherte Tabellen aktualisieren"
 
@@ -2539,10 +2541,6 @@ msgstr "Ausführen"
 msgid "Run {0} of {1}"
 msgstr "Lauf {0} von {1}"
 
-#: frontend/src2/query/components/ExplainPlanDialog.vue:24
-msgid "Running {0}…"
-msgstr ""
-
 #. Label of the sql (Code) field in DocType 'Insights Query'
 #. Label of the sql (Code) field in DocType 'Insights Query Execution Log'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -2573,7 +2571,7 @@ msgstr "Beispieldaten mit Arbeitsbuch wurden erfolgreich eingerichtet"
 msgid "Saturday"
 msgstr "Samstag"
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:155
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:157
 #: frontend/src2/dashboard/DashboardText.vue:27
 #: frontend/src2/workbook/WorkbookShareDialog.vue:95
 msgid "Save"
@@ -2617,16 +2615,19 @@ msgstr "Skript-Protokoll"
 msgid "Search"
 msgstr "Suchen"
 
-#: frontend/src2/dashboard/DashboardList.vue:73
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:75
 #: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:63
-#: frontend/src2/workbook/WorkbookList.vue:192
 msgid "Search by Title"
 msgstr "Nach Titel suchen"
 
 #: frontend/src2/dashboard/DashboardChartSelectorDialog.vue:85
 msgid "Search by name"
 msgstr "Nach Name suchen"
+
+#: frontend/src2/dashboard/DashboardList.vue:159
+#: frontend/src2/workbook/WorkbookList.vue:225
+msgid "Search by title"
+msgstr "Nach Titel suchen"
 
 #: frontend/src2/workbook/WorkbookLineageDialog.vue:163
 msgid "Search nodes\\u2026"
@@ -2665,7 +2666,7 @@ msgstr "Quelle auswählen"
 msgid "Select Table"
 msgstr "Tabelle auswählen"
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:210
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:212
 msgid "Select a column"
 msgstr "Spalte auswählen"
 
@@ -2681,7 +2682,7 @@ msgstr "Wählen Sie eine Tabelle oder Abfrage aus, um mit der Erstellung Ihrer A
 msgid "Select an operation"
 msgstr "Operation auswählen"
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:253
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:255
 msgid "Select operator..."
 msgstr ""
 
@@ -2719,7 +2720,7 @@ msgstr "Richten Sie Alarme ein, um benachrichtigt zu werden, wenn eine Bedingung
 msgid "Settings"
 msgstr "Einstellungen"
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:28
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:29
 msgid "Setup"
 msgstr "Einrichtung"
 
@@ -2755,9 +2756,10 @@ msgstr "Dashboard teilen"
 msgid "Share Link"
 msgstr "Freigabelink"
 
-#: frontend/src2/workbook/WorkbookList.vue:207
-msgid "Shared with me"
-msgstr ""
+#: frontend/src2/dashboard/DashboardList.vue:30
+#: frontend/src2/workbook/WorkbookList.vue:45
+msgid "Shared"
+msgstr "Geteilt"
 
 #: frontend/src2/charts/components/FunnelChartConfigForm.vue:51
 msgid "Show Percentage"
@@ -3064,6 +3066,10 @@ msgstr ""
 msgid "This Year"
 msgstr ""
 
+#: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.py:93
+msgid "This column is not available as a filter on this dashboard"
+msgstr ""
+
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:15
 msgid "This will delete all warehouse data for <b>{0}</b> and reset the sync bookmark. Are you sure?"
 msgstr ""
@@ -3181,7 +3187,7 @@ msgstr "Dienstag"
 #. Label of the type (Data) field in DocType 'Insights Query Column'
 #. Label of the type (Select) field in DocType 'Insights Query Transform'
 #. Label of the type (Select) field in DocType 'Insights Table Column'
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:183
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:185
 #: insights/insights/doctype/insights_dashboard_item/insights_dashboard_item.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 #: insights/insights/doctype/insights_folder/insights_folder.json
@@ -3292,7 +3298,7 @@ msgstr "Validierung fehlgeschlagen"
 
 #. Label of the value (Password) field in DocType 'Insights Secret Key'
 #: frontend/src2/components/VariablesDialog.vue:85
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:293
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:295
 #: frontend/src2/query/components/FormatRule.vue:425
 #: insights/insights/doctype/insights_secret_key/insights_secret_key.json
 msgid "Value"
@@ -3342,8 +3348,7 @@ msgid "View Lineage"
 msgstr ""
 
 #: frontend/src2/charts/components/ChartBuilderToolbar.vue:55
-#: frontend/src2/query/components/NativeQueryEditor.vue:101
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:42
+#: frontend/src2/query/components/QueryToolbar.vue:40
 msgid "View SQL"
 msgstr "SQL anzeigen"
 
@@ -3380,7 +3385,7 @@ msgstr "Arbeitsbuch"
 
 #: frontend/src2/components/AppSidebar.vue:79
 #: frontend/src2/home/HomeWorkbookList.vue:36
-#: frontend/src2/workbook/WorkbookList.vue:36
+#: frontend/src2/workbook/WorkbookList.vue:37
 msgid "Workbooks"
 msgstr "Arbeitsbücher"
 
@@ -3406,16 +3411,20 @@ msgstr "Sie können Markdown verwenden, um die Nachricht zu formatieren. Verwend
 msgid "You do not have permission to access this resource"
 msgstr "Sie haben keine Berechtigung, auf diese Ressource zuzugreifen"
 
-#: insights/api/workbooks.py:211 insights/api/workbooks.py:230
-#: insights/api/workbooks.py:243 insights/api/workbooks.py:271
-#: insights/api/workbooks.py:283 insights/api/workbooks.py:297
-#: insights/api/workbooks.py:416
+#: insights/api/workbooks.py:235 insights/api/workbooks.py:254
+#: insights/api/workbooks.py:267 insights/api/workbooks.py:295
+#: insights/api/workbooks.py:307 insights/api/workbooks.py:321
+#: insights/api/workbooks.py:440
 msgid "You do not have permission to modify this workbook"
 msgstr "Sie haben keine Berechtigung, dieses Arbeitsbuch zu bearbeiten"
 
-#: insights/api/workbooks.py:107 insights/api/workbooks.py:163
+#: insights/api/workbooks.py:131 insights/api/workbooks.py:187
 msgid "You do not have permission to share this workbook"
 msgstr "Sie haben keine Berechtigung, dieses Arbeitsbuch zu teilen"
+
+#: frontend/src2/dashboard/DashboardList.vue:88
+msgid "You haven't created any dashboards yet."
+msgstr ""
 
 #: frontend/src2/home/HomeWorkbookList.vue:68
 msgid "Your workbooks will appear here. Create a new workbook to get started."
