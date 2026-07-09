@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
-"POT-Creation-Date: 2026-06-14 10:34+0000\n"
-"PO-Revision-Date: 2026-06-25 20:38\n"
+"POT-Creation-Date: 2026-06-21 10:42+0000\n"
+"PO-Revision-Date: 2026-07-09 09:47\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Swedish\n"
 "MIME-Version: 1.0\n"
@@ -171,8 +171,8 @@ msgstr "Avisering skickad"
 msgid "Alerts"
 msgstr "Aviseringar"
 
-#: frontend/src2/dashboard/DashboardList.vue:86
-#: frontend/src2/workbook/WorkbookList.vue:205
+#: frontend/src2/dashboard/DashboardList.vue:26
+#: frontend/src2/workbook/WorkbookList.vue:43
 msgid "All"
 msgstr "Alla"
 
@@ -384,7 +384,7 @@ msgstr "Kan Visa"
 #: frontend/src2/charts/components/RegionMappingDialog.vue:312
 #: frontend/src2/components/ExportDialog.vue:77
 #: frontend/src2/dashboard/DashboardChartSelectorDialog.vue:73
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:161
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:163
 #: frontend/src2/dashboard/DashboardText.vue:37
 #: frontend/src2/query/components/ColumnsSelectorDialog.vue:71
 #: frontend/src2/query/components/JoinSelectorDialog.vue:384
@@ -392,7 +392,7 @@ msgstr "Kan Visa"
 msgid "Cancel"
 msgstr "Annullera"
 
-#: insights/api/workbooks.py:402
+#: insights/api/workbooks.py:426
 msgid "Cannot delete a folder that is not empty. Move its contents out first."
 msgstr "Kan inte ta bort mapp som inte är tom. Flytta dess innehåll ut först."
 
@@ -456,7 +456,7 @@ msgstr "Välj hur stegvis synkronisering skriver rader: <b>Endast Tillägg</b> l
 msgid "Circular query reference detected while building \"{0}\""
 msgstr "Referens till cirkulär frågesökning upptäcktes vid skapande av \"{0}\""
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:241
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:243
 #: frontend/src2/query/components/FiltersSelector.vue:143
 msgid "Clear"
 msgstr "Rensa"
@@ -535,7 +535,7 @@ msgstr "Villkor"
 
 #. Label of the config (JSON) field in DocType 'Insights Chart v3'
 #. Label of the config (JSON) field in DocType 'Insights Query Chart'
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:32
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:33
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
 #: insights/insights/doctype/insights_query_chart/insights_query_chart.json
 msgid "Config"
@@ -618,8 +618,7 @@ msgstr "Konvertera till Uttryck"
 msgid "Copy JSON"
 msgstr "Kopiera JSON"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:111
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:52
+#: frontend/src2/query/components/QueryToolbar.vue:50
 msgid "Copy Query"
 msgstr "Kopiera Fråga"
 
@@ -645,17 +644,15 @@ msgstr "Skapa Åtgärd"
 msgid "Create Team"
 msgstr "Skapa Team"
 
+#: frontend/src2/dashboard/DashboardList.vue:29
 #: frontend/src2/data_source/DataSourceList.vue:119
+#: frontend/src2/workbook/WorkbookList.vue:44
 msgid "Created"
 msgstr "Skapad"
 
 #: frontend/src2/query/components/QueryAlertsDialog.vue:52
 msgid "Created By"
 msgstr "Skapad Av"
-
-#: frontend/src2/workbook/WorkbookList.vue:206
-msgid "Created by me"
-msgstr "Skapad av mig"
 
 #: frontend/src2/teams/TeamList.vue:48
 msgid "Creation"
@@ -725,10 +722,18 @@ msgstr "Översikt Panel Åtkomst Uppdaterad"
 
 #: frontend/src2/components/AppSidebar.vue:74
 #: frontend/src2/dashboard/Dashboard.vue:46
-#: frontend/src2/dashboard/DashboardList.vue:20
+#: frontend/src2/dashboard/DashboardList.vue:21
 #: frontend/src2/workbook/WorkbookSidebar.vue:75
 msgid "Dashboards"
 msgstr "Översikt Paneler"
+
+#: frontend/src2/dashboard/DashboardList.vue:93
+msgid "Dashboards shared with you will show up here."
+msgstr "Översiktpaneler som delas med dig visas här."
+
+#: frontend/src2/dashboard/DashboardList.vue:83
+msgid "Dashboards you open will show up here."
+msgstr "Översiktspaneler som du öppnar visas här."
 
 #. Label of the data_backup (JSON) field in DocType 'Insights Workbook'
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
@@ -830,7 +835,7 @@ msgstr "Datum och Tid"
 msgid "Decimal"
 msgstr "Decimal"
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:234
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:236
 msgid "Default Value"
 msgstr "Förvald Värde"
 
@@ -874,7 +879,7 @@ msgstr "Klart"
 msgid "Draft"
 msgstr "Utkast"
 
-#: frontend/src2/charts/components/DrillDown.vue:59
+#: frontend/src2/charts/components/DrillDown.vue:60
 msgid "Drill Down"
 msgstr "Visa Mer"
 
@@ -898,8 +903,7 @@ msgstr "Kopiera"
 msgid "Duplicate Chart"
 msgstr "Duplicera Diagram"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:106
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:47
+#: frontend/src2/query/components/QueryToolbar.vue:45
 msgid "Duplicate Query"
 msgstr "Duplicera Fråga"
 
@@ -912,7 +916,7 @@ msgstr "Varaktighet (sekunder)"
 msgid "Edit"
 msgstr "Redigera"
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:152
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:154
 msgid "Edit Filter"
 msgstr "Redigera Filter"
 
@@ -940,7 +944,7 @@ msgstr "E-post skickad Kl"
 msgid "Empty - Click 'Add Filter' to add a filter"
 msgstr "Tomt - Klicka på \"Lägg till filter\" för att lägga till filter"
 
-#: frontend/src2/workbook/WorkbookList.vue:128
+#: frontend/src2/workbook/WorkbookList.vue:160
 msgid "Empty Folder"
 msgstr "Tom Mapp"
 
@@ -986,7 +990,7 @@ msgstr "Lägg i kö"
 msgid "Enter filename"
 msgstr "Ange filnamn"
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:177
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:179
 msgid "Enter filter label..."
 msgstr "Ange filter etikett..."
 
@@ -1013,12 +1017,11 @@ msgstr "Fel"
 msgid "Excel"
 msgstr "Excel"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:189
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:90
+#: frontend/src2/query/components/QueryToolbar.vue:69
 msgid "Execute"
 msgstr "Kör"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:188
+#: frontend/src2/query/components/QueryToolbar.vue:68
 msgid "Execute ({0})"
 msgstr "Utför ({0})"
 
@@ -1049,11 +1052,6 @@ msgstr "Expandera"
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Expired"
 msgstr "Utgått"
-
-#: frontend/src2/query/components/NativeQueryEditor.vue:119
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:60
-msgid "Explain Plan"
-msgstr "Förklara Plan"
 
 #: frontend/src2/components/ExportDialog.vue:80
 msgid "Export"
@@ -1096,7 +1094,7 @@ msgstr "Misslyckad"
 msgid "Failed Syncs"
 msgstr "Misslyckade Synkroniseringar"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:67
+#: frontend/src2/query/components/NativeQueryEditor.vue:55
 msgid "Failed to format SQL"
 msgstr "Misslyckades med att formatera SQL"
 
@@ -1113,18 +1111,16 @@ msgstr "Misslyckades med att bearbeta uppladdad fil"
 msgid "Failed to setup demo data"
 msgstr "Misslyckades med att konfigurera demodata"
 
-#: frontend/src2/dashboard/DashboardList.vue:87
+#: frontend/src2/dashboard/DashboardList.vue:28
 msgid "Favorites"
 msgstr "Favoriter"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:225
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:80
+#: frontend/src2/query/components/QueryExecutionStatus.vue:18
 #: frontend/src2/query/components/ScriptQueryEditor.vue:128
 msgid "Fetched from cache"
 msgstr "Hämtad från cache"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:228
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:83
+#: frontend/src2/query/components/QueryExecutionStatus.vue:21
 #: frontend/src2/query/components/ScriptQueryEditor.vue:129
 msgid "Fetched in {0}s"
 msgstr "Hämtad på {0}s"
@@ -1141,7 +1137,7 @@ msgstr "Filnamn"
 msgid "Filter"
 msgstr "Filter"
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:224
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:226
 msgid "Filter Icon"
 msgstr "Filter Ikon"
 
@@ -1169,11 +1165,11 @@ msgstr "Bokföring År Start"
 msgid "Folder"
 msgstr "Mapp"
 
-#: insights/api/workbooks.py:288
+#: insights/api/workbooks.py:312
 msgid "Folder and item must belong to the same workbook"
 msgstr "Mapp och artikel måste tillhöra samma arbetsbok"
 
-#: insights/api/workbooks.py:419 insights/api/workbooks.py:432
+#: insights/api/workbooks.py:443 insights/api/workbooks.py:456
 msgid "Folder {0} does not exist"
 msgstr "Mapp {0} finns inte"
 
@@ -1210,7 +1206,7 @@ msgstr "Främmande Tabell Etikett"
 msgid "Format Option"
 msgstr "Format Alternativ"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:96
+#: frontend/src2/query/components/NativeQueryEditor.vue:65
 msgid "Format SQL"
 msgstr "Format SQL"
 
@@ -1737,7 +1733,7 @@ msgstr "Nyckel"
 #. Label of the label (Data) field in DocType 'Insights Table'
 #. Label of the label (Data) field in DocType 'Insights Table Column'
 #. Label of the label (Data) field in DocType 'Insights Table v3'
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:175
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:177
 #: insights/insights/doctype/insights_query_table/insights_query_table.json
 #: insights/insights/doctype/insights_table/insights_table.json
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -1834,7 +1830,7 @@ msgstr "Begränsa"
 
 #. Label of the linked_charts (Table MultiSelect) field in DocType 'Insights
 #. Dashboard v3'
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:191
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:193
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Linked Charts"
 msgstr "Länkade Diagram"
@@ -1843,6 +1839,11 @@ msgstr "Länkade Diagram"
 #: insights/insights/doctype/insights_table/insights_table.json
 msgid "Links"
 msgstr "Länkar"
+
+#: frontend/src2/dashboard/DashboardList.vue:198
+#: frontend/src2/workbook/WorkbookList.vue:261
+msgid "Load more"
+msgstr "Läs in mer"
 
 #: frontend/src2/workbook/WorkbookLineageDialog.vue:179
 msgid "Loading\\u2026"
@@ -1899,7 +1900,7 @@ msgstr "Hantera Arbetsbok Åtkomst"
 msgid "MariaDB"
 msgstr "MariaDB"
 
-#: frontend/src2/dashboard/DashboardList.vue:126
+#: frontend/src2/dashboard/DashboardList.vue:78
 msgid "Mark a dashboard as favorite to see it here."
 msgstr "Ange Överskt Panel som favorit för att visa den här."
 
@@ -1964,7 +1965,7 @@ msgstr "Måndag"
 msgid "Monthly"
 msgstr "Månadsvis"
 
-#: frontend/src2/workbook/WorkbookList.vue:218
+#: frontend/src2/workbook/WorkbookList.vue:250
 msgid "Move to folder"
 msgstr "Flytta till mapp"
 
@@ -2002,7 +2003,7 @@ msgstr "Ny Översikt Panel"
 msgid "New Data Source"
 msgstr "Ny Datakälla"
 
-#: frontend/src2/workbook/WorkbookList.vue:73
+#: frontend/src2/workbook/WorkbookList.vue:105
 msgid "New Folder"
 msgstr "Ny Mapp"
 
@@ -2011,8 +2012,8 @@ msgid "New Query"
 msgstr "Ny Fråga"
 
 #: frontend/src2/home/HomeQuickActions.vue:28
-#: frontend/src2/workbook/WorkbookList.vue:135
-#: frontend/src2/workbook/WorkbookList.vue:170
+#: frontend/src2/workbook/WorkbookList.vue:167
+#: frontend/src2/workbook/WorkbookList.vue:202
 msgid "New Workbook"
 msgstr "Ny Arbetsbok"
 
@@ -2025,13 +2026,17 @@ msgstr "Nästa Exekvering"
 msgid "No"
 msgstr "Nej"
 
-#: frontend/src2/dashboard/DashboardList.vue:121
+#: frontend/src2/dashboard/DashboardList.vue:77
 msgid "No Favorites"
 msgstr "Inga Favoriter"
 
 #: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:90
 msgid "No Queries Found"
 msgstr "Inga Frågor Hittades"
+
+#: frontend/src2/dashboard/DashboardList.vue:82
+msgid "No Recents"
+msgstr "Inga Senaste"
 
 #: frontend/src2/data_source/DataSourceTableList.vue:40
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:58
@@ -2042,7 +2047,7 @@ msgstr "Inga Tabeller Hittades"
 msgid "No Tables Stored"
 msgstr "Inga Tabeller Sparade"
 
-#: frontend/src2/workbook/WorkbookList.vue:128
+#: frontend/src2/workbook/WorkbookList.vue:160
 msgid "No Workbooks"
 msgstr "Inga Arbetsböcker"
 
@@ -2062,17 +2067,13 @@ msgstr "Inga datakällor att visa."
 msgid "No data sources."
 msgstr "Inga datakällor."
 
-#: frontend/src2/dashboard/DashboardList.vue:127
+#: frontend/src2/dashboard/DashboardList.vue:98
 msgid "No folders or dashboards to display."
 msgstr "Inga mappar eller översikt paneler att visa."
 
-#: frontend/src2/workbook/WorkbookList.vue:130
+#: frontend/src2/workbook/WorkbookList.vue:162
 msgid "No folders or workbooks here."
 msgstr "Inga mappar eller arbetsböcker här."
-
-#: frontend/src2/query/components/ExplainPlanDialog.vue:44
-msgid "No plan available. Execute the query first."
-msgstr "Ingen plan tillgänglig. Utför frågan först."
 
 #: frontend/src2/data_source/DataSourceTableList.vue:41
 msgid "No tables found for the selected data source."
@@ -2106,7 +2107,7 @@ msgstr "Inga användare."
 msgid "No workbooks created"
 msgstr "Inga arbetsböcker skapade"
 
-#: frontend/src2/workbook/WorkbookList.vue:131
+#: frontend/src2/workbook/WorkbookList.vue:163
 msgid "No workbooks to display."
 msgstr "Inga Arbetsböcker att visa."
 
@@ -2121,7 +2122,9 @@ msgstr "Ingen"
 msgid "Notebook"
 msgstr "Anteckningsbok"
 
-#: frontend/src2/dashboard/DashboardList.vue:121
+#: frontend/src2/dashboard/DashboardList.vue:87
+#: frontend/src2/dashboard/DashboardList.vue:92
+#: frontend/src2/dashboard/DashboardList.vue:97
 msgid "Nothing here"
 msgstr "Ingenting här"
 
@@ -2140,12 +2143,12 @@ msgstr "Gammalt Namn"
 msgid "Onboarding Complete"
 msgstr "Introduktion Klar"
 
-#: insights/api/workbooks.py:343
+#: insights/api/workbooks.py:367
 msgid "Only an Insights Admin can manage workbook folders"
 msgstr "Endast Insights administratör kan hantera arbetsbok mappar"
 
 #: frontend/src2/dashboard/Dashboard.vue:68
-#: frontend/src2/dashboard/DashboardList.vue:44
+#: frontend/src2/dashboard/DashboardList.vue:117
 msgid "Open Workbook"
 msgstr "Öppna Arbetsbok"
 
@@ -2253,7 +2256,7 @@ msgstr "Välj Start Data"
 msgid "Pivot"
 msgstr "Pivot"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:41
+#: frontend/src2/query/components/NativeQueryEditor.vue:29
 msgid "Please select a data source first"
 msgstr "Välj datakälla först"
 
@@ -2350,10 +2353,6 @@ msgstr "Fråga"
 msgid "Query Lineage"
 msgstr "Frågerad"
 
-#: frontend/src2/query/components/ExplainPlanDialog.vue:15
-msgid "Query Plan"
-msgstr "Frågeplan"
-
 #. Label of the query_result_limit (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Query Result Limit"
@@ -2380,6 +2379,10 @@ msgstr "Rangordning Villkor"
 #: frontend/src2/query/components/FormatRule.vue:225
 msgid "Ranking Rules"
 msgstr "Rangordning Regler"
+
+#: frontend/src2/dashboard/DashboardList.vue:27
+msgid "Recents"
+msgstr "Senaste"
 
 #. Label of the recipients (Small Text) field in DocType 'Insights Alert'
 #: frontend/src2/query/components/AlertSetupDialog.vue:181
@@ -2414,12 +2417,11 @@ msgstr "Referens Frågor"
 msgid "Refresh"
 msgstr "Uppdatera"
 
-#: frontend/src2/dashboard/DashboardList.vue:49
+#: frontend/src2/dashboard/DashboardList.vue:122
 msgid "Refresh Preview"
 msgstr "Uppdatera Förhandsgranskning"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:88
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:34
+#: frontend/src2/query/components/QueryToolbar.vue:28
 msgid "Refresh Stored Tables"
 msgstr "Uppdatera Sparade Tabeller"
 
@@ -2539,10 +2541,6 @@ msgstr "Kör"
 msgid "Run {0} of {1}"
 msgstr "Kör {0} av {1}"
 
-#: frontend/src2/query/components/ExplainPlanDialog.vue:24
-msgid "Running {0}…"
-msgstr "Urför {0}…"
-
 #. Label of the sql (Code) field in DocType 'Insights Query'
 #. Label of the sql (Code) field in DocType 'Insights Query Execution Log'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -2573,7 +2571,7 @@ msgstr "Exempeldata med arbetsbok har konfigurerats"
 msgid "Saturday"
 msgstr "Lördag"
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:155
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:157
 #: frontend/src2/dashboard/DashboardText.vue:27
 #: frontend/src2/workbook/WorkbookShareDialog.vue:95
 msgid "Save"
@@ -2617,16 +2615,19 @@ msgstr "Script Logg"
 msgid "Search"
 msgstr "Sök"
 
-#: frontend/src2/dashboard/DashboardList.vue:73
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:75
 #: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:63
-#: frontend/src2/workbook/WorkbookList.vue:192
 msgid "Search by Title"
 msgstr "Sök efter Benämning"
 
 #: frontend/src2/dashboard/DashboardChartSelectorDialog.vue:85
 msgid "Search by name"
 msgstr "Sök efter namn"
+
+#: frontend/src2/dashboard/DashboardList.vue:159
+#: frontend/src2/workbook/WorkbookList.vue:225
+msgid "Search by title"
+msgstr "Sök efter benämning"
 
 #: frontend/src2/workbook/WorkbookLineageDialog.vue:163
 msgid "Search nodes\\u2026"
@@ -2665,7 +2666,7 @@ msgstr "Välj Källa"
 msgid "Select Table"
 msgstr "Välj Tabell"
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:210
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:212
 msgid "Select a column"
 msgstr "Välj kolumn"
 
@@ -2681,7 +2682,7 @@ msgstr "Välj en tabell eller fråga för att börja bygga din fråga"
 msgid "Select an operation"
 msgstr "Välj åtgärd"
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:253
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:255
 msgid "Select operator..."
 msgstr "Välj operatör..."
 
@@ -2719,7 +2720,7 @@ msgstr "Konfigurera aviseringar för att få meddelanden när ett villkor är up
 msgid "Settings"
 msgstr "Inställningar"
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:28
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:29
 msgid "Setup"
 msgstr "Konfigurera"
 
@@ -2755,9 +2756,10 @@ msgstr "Dela Översikt Panel"
 msgid "Share Link"
 msgstr "Delning Länk"
 
-#: frontend/src2/workbook/WorkbookList.vue:207
-msgid "Shared with me"
-msgstr "Delade med mig"
+#: frontend/src2/dashboard/DashboardList.vue:30
+#: frontend/src2/workbook/WorkbookList.vue:45
+msgid "Shared"
+msgstr "Delad"
 
 #: frontend/src2/charts/components/FunnelChartConfigForm.vue:51
 msgid "Show Percentage"
@@ -3064,6 +3066,10 @@ msgstr "Denna Vecka"
 msgid "This Year"
 msgstr "I År"
 
+#: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.py:93
+msgid "This column is not available as a filter on this dashboard"
+msgstr "Denna kolumn är inte tillgänglig som filter på denna översiktspanel"
+
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:15
 msgid "This will delete all warehouse data for <b>{0}</b> and reset the sync bookmark. Are you sure?"
 msgstr "Detta kommer att radera all lagerdata för <b>{0}</b> och återställa synkroniseringsbokmärke. Är du säker?"
@@ -3181,7 +3187,7 @@ msgstr "Tisdag"
 #. Label of the type (Data) field in DocType 'Insights Query Column'
 #. Label of the type (Select) field in DocType 'Insights Query Transform'
 #. Label of the type (Select) field in DocType 'Insights Table Column'
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:183
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:185
 #: insights/insights/doctype/insights_dashboard_item/insights_dashboard_item.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 #: insights/insights/doctype/insights_folder/insights_folder.json
@@ -3292,7 +3298,7 @@ msgstr "Validering misslyckades"
 
 #. Label of the value (Password) field in DocType 'Insights Secret Key'
 #: frontend/src2/components/VariablesDialog.vue:85
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:293
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:295
 #: frontend/src2/query/components/FormatRule.vue:425
 #: insights/insights/doctype/insights_secret_key/insights_secret_key.json
 msgid "Value"
@@ -3342,8 +3348,7 @@ msgid "View Lineage"
 msgstr "Visa Rad"
 
 #: frontend/src2/charts/components/ChartBuilderToolbar.vue:55
-#: frontend/src2/query/components/NativeQueryEditor.vue:101
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:42
+#: frontend/src2/query/components/QueryToolbar.vue:40
 msgid "View SQL"
 msgstr "Visa SQL"
 
@@ -3380,7 +3385,7 @@ msgstr "Arbetsbok"
 
 #: frontend/src2/components/AppSidebar.vue:79
 #: frontend/src2/home/HomeWorkbookList.vue:36
-#: frontend/src2/workbook/WorkbookList.vue:36
+#: frontend/src2/workbook/WorkbookList.vue:37
 msgid "Workbooks"
 msgstr "Arbetsböcker"
 
@@ -3406,16 +3411,20 @@ msgstr "Använd markdown för att formatera meddelande. Använd dubbla asteriske
 msgid "You do not have permission to access this resource"
 msgstr "Du har inte behörighet att komma åt denna resurs"
 
-#: insights/api/workbooks.py:211 insights/api/workbooks.py:230
-#: insights/api/workbooks.py:243 insights/api/workbooks.py:271
-#: insights/api/workbooks.py:283 insights/api/workbooks.py:297
-#: insights/api/workbooks.py:416
+#: insights/api/workbooks.py:235 insights/api/workbooks.py:254
+#: insights/api/workbooks.py:267 insights/api/workbooks.py:295
+#: insights/api/workbooks.py:307 insights/api/workbooks.py:321
+#: insights/api/workbooks.py:440
 msgid "You do not have permission to modify this workbook"
 msgstr "Du har inte behörighet att ändra denna arbetsbok"
 
-#: insights/api/workbooks.py:107 insights/api/workbooks.py:163
+#: insights/api/workbooks.py:131 insights/api/workbooks.py:187
 msgid "You do not have permission to share this workbook"
 msgstr "Du har inte behörighet att dela denna arbetsbok"
+
+#: frontend/src2/dashboard/DashboardList.vue:88
+msgid "You haven't created any dashboards yet."
+msgstr "Du har inte skapat några översiktspaneler än."
 
 #: frontend/src2/home/HomeWorkbookList.vue:68
 msgid "Your workbooks will appear here. Create a new workbook to get started."
