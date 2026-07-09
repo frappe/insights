@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
-"POT-Creation-Date: 2026-06-14 10:34+0000\n"
-"PO-Revision-Date: 2026-07-02 21:25\n"
+"POT-Creation-Date: 2026-06-21 10:42+0000\n"
+"PO-Revision-Date: 2026-07-09 09:48\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Uzbek\n"
 "MIME-Version: 1.0\n"
@@ -171,8 +171,8 @@ msgstr "Ogohlantirish yuborildi"
 msgid "Alerts"
 msgstr "Ogohlantirishlar"
 
-#: frontend/src2/dashboard/DashboardList.vue:86
-#: frontend/src2/workbook/WorkbookList.vue:205
+#: frontend/src2/dashboard/DashboardList.vue:26
+#: frontend/src2/workbook/WorkbookList.vue:43
 msgid "All"
 msgstr "Hammasi"
 
@@ -384,7 +384,7 @@ msgstr "Ko'rish mumkin"
 #: frontend/src2/charts/components/RegionMappingDialog.vue:312
 #: frontend/src2/components/ExportDialog.vue:77
 #: frontend/src2/dashboard/DashboardChartSelectorDialog.vue:73
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:161
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:163
 #: frontend/src2/dashboard/DashboardText.vue:37
 #: frontend/src2/query/components/ColumnsSelectorDialog.vue:71
 #: frontend/src2/query/components/JoinSelectorDialog.vue:384
@@ -392,7 +392,7 @@ msgstr "Ko'rish mumkin"
 msgid "Cancel"
 msgstr "Bekor qilish"
 
-#: insights/api/workbooks.py:402
+#: insights/api/workbooks.py:426
 msgid "Cannot delete a folder that is not empty. Move its contents out first."
 msgstr "Bo'sh bo'lmagan papkani o'chirib bo'lmaydi. Avval uning tarkibini tashqariga ko'chiring."
 
@@ -456,7 +456,7 @@ msgstr "Incremental sinxronizatsiya qatorlarni qanday yozishini tanlang: <b>Faqa
 msgid "Circular query reference detected while building \"{0}\""
 msgstr "\"{0} \" ni yaratish paytida aylanma so'rov havolasi aniqlandi"
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:241
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:243
 #: frontend/src2/query/components/FiltersSelector.vue:143
 msgid "Clear"
 msgstr "Toza"
@@ -535,7 +535,7 @@ msgstr "Ahvoli"
 
 #. Label of the config (JSON) field in DocType 'Insights Chart v3'
 #. Label of the config (JSON) field in DocType 'Insights Query Chart'
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:32
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:33
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
 #: insights/insights/doctype/insights_query_chart/insights_query_chart.json
 msgid "Config"
@@ -618,8 +618,7 @@ msgstr "Ifodaga aylantirish"
 msgid "Copy JSON"
 msgstr "JSON nusxasini olish"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:111
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:52
+#: frontend/src2/query/components/QueryToolbar.vue:50
 msgid "Copy Query"
 msgstr "So'rovni nusxalash"
 
@@ -645,17 +644,15 @@ msgstr "O'lchov yaratish"
 msgid "Create Team"
 msgstr "Jamoa yarating"
 
+#: frontend/src2/dashboard/DashboardList.vue:29
 #: frontend/src2/data_source/DataSourceList.vue:119
+#: frontend/src2/workbook/WorkbookList.vue:44
 msgid "Created"
 msgstr "Yaratilgan"
 
 #: frontend/src2/query/components/QueryAlertsDialog.vue:52
 msgid "Created By"
 msgstr "Yaratgan"
-
-#: frontend/src2/workbook/WorkbookList.vue:206
-msgid "Created by me"
-msgstr "Men tomonidan yaratilgan"
 
 #: frontend/src2/teams/TeamList.vue:48
 msgid "Creation"
@@ -725,10 +722,18 @@ msgstr "Boshqaruv paneliga kirish yangilandi"
 
 #: frontend/src2/components/AppSidebar.vue:74
 #: frontend/src2/dashboard/Dashboard.vue:46
-#: frontend/src2/dashboard/DashboardList.vue:20
+#: frontend/src2/dashboard/DashboardList.vue:21
 #: frontend/src2/workbook/WorkbookSidebar.vue:75
 msgid "Dashboards"
 msgstr "Boshqaruv panellari"
+
+#: frontend/src2/dashboard/DashboardList.vue:93
+msgid "Dashboards shared with you will show up here."
+msgstr ""
+
+#: frontend/src2/dashboard/DashboardList.vue:83
+msgid "Dashboards you open will show up here."
+msgstr ""
 
 #. Label of the data_backup (JSON) field in DocType 'Insights Workbook'
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
@@ -830,7 +835,7 @@ msgstr "Sana vaqti"
 msgid "Decimal"
 msgstr "O'nlik kasr"
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:234
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:236
 msgid "Default Value"
 msgstr "Standart qiymat"
 
@@ -874,7 +879,7 @@ msgstr "Bajarildi"
 msgid "Draft"
 msgstr "Qoralama"
 
-#: frontend/src2/charts/components/DrillDown.vue:59
+#: frontend/src2/charts/components/DrillDown.vue:60
 msgid "Drill Down"
 msgstr "Pastga qarab burg'ulash"
 
@@ -898,8 +903,7 @@ msgstr "Dublikat"
 msgid "Duplicate Chart"
 msgstr "Takroriy jadval"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:106
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:47
+#: frontend/src2/query/components/QueryToolbar.vue:45
 msgid "Duplicate Query"
 msgstr "Takroriy so'rov"
 
@@ -912,7 +916,7 @@ msgstr "Davomiyligi (soniya)"
 msgid "Edit"
 msgstr "Tahrirlash"
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:152
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:154
 msgid "Edit Filter"
 msgstr "Filtrni tahrirlash"
 
@@ -940,7 +944,7 @@ msgstr "Elektron pochta yuborildi"
 msgid "Empty - Click 'Add Filter' to add a filter"
 msgstr "Bo'sh - Filtr qo'shish uchun \"Filtr qo'shish\" tugmasini bosing"
 
-#: frontend/src2/workbook/WorkbookList.vue:128
+#: frontend/src2/workbook/WorkbookList.vue:160
 msgid "Empty Folder"
 msgstr "Bo'sh papka"
 
@@ -986,7 +990,7 @@ msgstr "Navbatga qo'yish"
 msgid "Enter filename"
 msgstr "Fayl nomini kiriting"
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:177
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:179
 msgid "Enter filter label..."
 msgstr "Filtr yorlig'ini kiriting..."
 
@@ -1013,12 +1017,11 @@ msgstr "Xato"
 msgid "Excel"
 msgstr "Excel"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:189
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:90
+#: frontend/src2/query/components/QueryToolbar.vue:69
 msgid "Execute"
 msgstr "Bajarish"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:188
+#: frontend/src2/query/components/QueryToolbar.vue:68
 msgid "Execute ({0})"
 msgstr "Bajarish ({0})"
 
@@ -1049,11 +1052,6 @@ msgstr "Kengaytirish"
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Expired"
 msgstr "Muddati tugagan"
-
-#: frontend/src2/query/components/NativeQueryEditor.vue:119
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:60
-msgid "Explain Plan"
-msgstr "Rejani tushuntiring"
 
 #: frontend/src2/components/ExportDialog.vue:80
 msgid "Export"
@@ -1096,7 +1094,7 @@ msgstr "Muvaffaqiyatsiz"
 msgid "Failed Syncs"
 msgstr "Muvaffaqiyatsiz sinxronlashlar"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:67
+#: frontend/src2/query/components/NativeQueryEditor.vue:55
 msgid "Failed to format SQL"
 msgstr "SQL formatlashda xatolik yuz berdi"
 
@@ -1113,18 +1111,16 @@ msgstr "Yuklangan faylni qayta ishlashda xatolik yuz berdi"
 msgid "Failed to setup demo data"
 msgstr "Demo ma'lumotlarini sozlab bo'lmadi"
 
-#: frontend/src2/dashboard/DashboardList.vue:87
+#: frontend/src2/dashboard/DashboardList.vue:28
 msgid "Favorites"
 msgstr "Sevimlilar"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:225
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:80
+#: frontend/src2/query/components/QueryExecutionStatus.vue:18
 #: frontend/src2/query/components/ScriptQueryEditor.vue:128
 msgid "Fetched from cache"
 msgstr "Keshdan olindi"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:228
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:83
+#: frontend/src2/query/components/QueryExecutionStatus.vue:21
 #: frontend/src2/query/components/ScriptQueryEditor.vue:129
 msgid "Fetched in {0}s"
 msgstr "{0}s da olingan"
@@ -1141,7 +1137,7 @@ msgstr "Fayl nomi"
 msgid "Filter"
 msgstr "Filtr"
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:224
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:226
 msgid "Filter Icon"
 msgstr "Filtr belgisi"
 
@@ -1169,11 +1165,11 @@ msgstr "Moliyaviy yil boshlanishi"
 msgid "Folder"
 msgstr "Papka"
 
-#: insights/api/workbooks.py:288
+#: insights/api/workbooks.py:312
 msgid "Folder and item must belong to the same workbook"
 msgstr "Papka va element bir xil ish daftariga tegishli bo'lishi kerak"
 
-#: insights/api/workbooks.py:419 insights/api/workbooks.py:432
+#: insights/api/workbooks.py:443 insights/api/workbooks.py:456
 msgid "Folder {0} does not exist"
 msgstr "{0} papkasi mavjud emas"
 
@@ -1210,7 +1206,7 @@ msgstr "Chet el stol yorlig'i"
 msgid "Format Option"
 msgstr "Formatlash opsiyasi"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:96
+#: frontend/src2/query/components/NativeQueryEditor.vue:65
 msgid "Format SQL"
 msgstr "SQL formati"
 
@@ -1737,7 +1733,7 @@ msgstr "Kalit"
 #. Label of the label (Data) field in DocType 'Insights Table'
 #. Label of the label (Data) field in DocType 'Insights Table Column'
 #. Label of the label (Data) field in DocType 'Insights Table v3'
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:175
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:177
 #: insights/insights/doctype/insights_query_table/insights_query_table.json
 #: insights/insights/doctype/insights_table/insights_table.json
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -1834,7 +1830,7 @@ msgstr "Limit"
 
 #. Label of the linked_charts (Table MultiSelect) field in DocType 'Insights
 #. Dashboard v3'
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:191
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:193
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Linked Charts"
 msgstr "Bog'langan jadvallar"
@@ -1843,6 +1839,11 @@ msgstr "Bog'langan jadvallar"
 #: insights/insights/doctype/insights_table/insights_table.json
 msgid "Links"
 msgstr "Havolalar"
+
+#: frontend/src2/dashboard/DashboardList.vue:198
+#: frontend/src2/workbook/WorkbookList.vue:261
+msgid "Load more"
+msgstr "Ko'proq yuklang"
 
 #: frontend/src2/workbook/WorkbookLineageDialog.vue:179
 msgid "Loading\\u2026"
@@ -1899,7 +1900,7 @@ msgstr "Ish daftariga kirishni boshqarish"
 msgid "MariaDB"
 msgstr "MariaDB"
 
-#: frontend/src2/dashboard/DashboardList.vue:126
+#: frontend/src2/dashboard/DashboardList.vue:78
 msgid "Mark a dashboard as favorite to see it here."
 msgstr "Bu yerda ko'rish uchun boshqaruv panelini sevimlilar sifatida belgilang."
 
@@ -1964,7 +1965,7 @@ msgstr "Dushanba"
 msgid "Monthly"
 msgstr "Oylik"
 
-#: frontend/src2/workbook/WorkbookList.vue:218
+#: frontend/src2/workbook/WorkbookList.vue:250
 msgid "Move to folder"
 msgstr "Jildga ko'chirish"
 
@@ -2002,7 +2003,7 @@ msgstr "Yangi boshqaruv paneli"
 msgid "New Data Source"
 msgstr "Yangi ma'lumotlar manbai"
 
-#: frontend/src2/workbook/WorkbookList.vue:73
+#: frontend/src2/workbook/WorkbookList.vue:105
 msgid "New Folder"
 msgstr "Yangi papka"
 
@@ -2011,8 +2012,8 @@ msgid "New Query"
 msgstr "Yangi so'rov"
 
 #: frontend/src2/home/HomeQuickActions.vue:28
-#: frontend/src2/workbook/WorkbookList.vue:135
-#: frontend/src2/workbook/WorkbookList.vue:170
+#: frontend/src2/workbook/WorkbookList.vue:167
+#: frontend/src2/workbook/WorkbookList.vue:202
 msgid "New Workbook"
 msgstr "Yangi ish daftari"
 
@@ -2025,13 +2026,17 @@ msgstr "Keyingi ijro"
 msgid "No"
 msgstr "Yo'q"
 
-#: frontend/src2/dashboard/DashboardList.vue:121
+#: frontend/src2/dashboard/DashboardList.vue:77
 msgid "No Favorites"
 msgstr "Sevimlilar yo'q"
 
 #: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:90
 msgid "No Queries Found"
 msgstr "Hech qanday so'rov topilmadi"
+
+#: frontend/src2/dashboard/DashboardList.vue:82
+msgid "No Recents"
+msgstr ""
 
 #: frontend/src2/data_source/DataSourceTableList.vue:40
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:58
@@ -2042,7 +2047,7 @@ msgstr "Hech qanday stol topilmadi"
 msgid "No Tables Stored"
 msgstr "Stollar saqlanmadi"
 
-#: frontend/src2/workbook/WorkbookList.vue:128
+#: frontend/src2/workbook/WorkbookList.vue:160
 msgid "No Workbooks"
 msgstr "Ish daftarlari yo'q"
 
@@ -2062,17 +2067,13 @@ msgstr "Ko'rsatish uchun hech qanday ma'lumot manbalari yo'q."
 msgid "No data sources."
 msgstr "Ma'lumot manbalari yo'q."
 
-#: frontend/src2/dashboard/DashboardList.vue:127
+#: frontend/src2/dashboard/DashboardList.vue:98
 msgid "No folders or dashboards to display."
 msgstr "Ko'rsatish uchun papkalar yoki boshqaruv panellari yo'q."
 
-#: frontend/src2/workbook/WorkbookList.vue:130
+#: frontend/src2/workbook/WorkbookList.vue:162
 msgid "No folders or workbooks here."
 msgstr "Bu yerda papkalar yoki ish daftarlari yo'q."
-
-#: frontend/src2/query/components/ExplainPlanDialog.vue:44
-msgid "No plan available. Execute the query first."
-msgstr "Reja mavjud emas. Avval so'rovni bajaring."
 
 #: frontend/src2/data_source/DataSourceTableList.vue:41
 msgid "No tables found for the selected data source."
@@ -2106,7 +2107,7 @@ msgstr "Foydalanuvchilar yo'q."
 msgid "No workbooks created"
 msgstr "Hech qanday ish daftarlari yaratilmagan"
 
-#: frontend/src2/workbook/WorkbookList.vue:131
+#: frontend/src2/workbook/WorkbookList.vue:163
 msgid "No workbooks to display."
 msgstr "Ko'rsatish uchun ishchi daftar yo'q."
 
@@ -2121,7 +2122,9 @@ msgstr "Hech biri"
 msgid "Notebook"
 msgstr "Daftar"
 
-#: frontend/src2/dashboard/DashboardList.vue:121
+#: frontend/src2/dashboard/DashboardList.vue:87
+#: frontend/src2/dashboard/DashboardList.vue:92
+#: frontend/src2/dashboard/DashboardList.vue:97
 msgid "Nothing here"
 msgstr "Bu yerda hech narsa yo'q"
 
@@ -2140,12 +2143,12 @@ msgstr "Eski ism"
 msgid "Onboarding Complete"
 msgstr "Ishga qabul qilish yakunlandi"
 
-#: insights/api/workbooks.py:343
+#: insights/api/workbooks.py:367
 msgid "Only an Insights Admin can manage workbook folders"
 msgstr "Faqat Insights administratori ish daftari papkalarini boshqarishi mumkin"
 
 #: frontend/src2/dashboard/Dashboard.vue:68
-#: frontend/src2/dashboard/DashboardList.vue:44
+#: frontend/src2/dashboard/DashboardList.vue:117
 msgid "Open Workbook"
 msgstr "Ochiq ish daftari"
 
@@ -2253,7 +2256,7 @@ msgstr "Boshlang'ich ma'lumotlarni tanlang"
 msgid "Pivot"
 msgstr "Burilish"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:41
+#: frontend/src2/query/components/NativeQueryEditor.vue:29
 msgid "Please select a data source first"
 msgstr "Avval ma'lumot manbasini tanlang"
 
@@ -2350,10 +2353,6 @@ msgstr "So'rov"
 msgid "Query Lineage"
 msgstr "So'rov nasl-nasabi"
 
-#: frontend/src2/query/components/ExplainPlanDialog.vue:15
-msgid "Query Plan"
-msgstr "So'rov rejasi"
-
 #. Label of the query_result_limit (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Query Result Limit"
@@ -2380,6 +2379,10 @@ msgstr "Reyting holati"
 #: frontend/src2/query/components/FormatRule.vue:225
 msgid "Ranking Rules"
 msgstr "Reyting qoidalari"
+
+#: frontend/src2/dashboard/DashboardList.vue:27
+msgid "Recents"
+msgstr "So'nggi yangiliklar"
 
 #. Label of the recipients (Small Text) field in DocType 'Insights Alert'
 #: frontend/src2/query/components/AlertSetupDialog.vue:181
@@ -2414,12 +2417,11 @@ msgstr "Malumot so'rovlari"
 msgid "Refresh"
 msgstr "Yangilash"
 
-#: frontend/src2/dashboard/DashboardList.vue:49
+#: frontend/src2/dashboard/DashboardList.vue:122
 msgid "Refresh Preview"
 msgstr "Oldindan ko'rishni yangilash"
 
-#: frontend/src2/query/components/NativeQueryEditor.vue:88
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:34
+#: frontend/src2/query/components/QueryToolbar.vue:28
 msgid "Refresh Stored Tables"
 msgstr "Saqlangan jadvallarni yangilash"
 
@@ -2539,10 +2541,6 @@ msgstr "Yugurish"
 msgid "Run {0} of {1}"
 msgstr "{1} dan {0} ni ishga tushiring"
 
-#: frontend/src2/query/components/ExplainPlanDialog.vue:24
-msgid "Running {0}…"
-msgstr "{0}… yugurmoqda"
-
 #. Label of the sql (Code) field in DocType 'Insights Query'
 #. Label of the sql (Code) field in DocType 'Insights Query Execution Log'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -2573,7 +2571,7 @@ msgstr "Ish daftari bilan namunaviy ma'lumotlar muvaffaqiyatli sozlandi"
 msgid "Saturday"
 msgstr "Shanba"
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:155
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:157
 #: frontend/src2/dashboard/DashboardText.vue:27
 #: frontend/src2/workbook/WorkbookShareDialog.vue:95
 msgid "Save"
@@ -2617,16 +2615,19 @@ msgstr "Skript jurnali"
 msgid "Search"
 msgstr "Qidiruv"
 
-#: frontend/src2/dashboard/DashboardList.vue:73
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:75
 #: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:63
-#: frontend/src2/workbook/WorkbookList.vue:192
 msgid "Search by Title"
 msgstr "Sarlavha bo'yicha qidiruv"
 
 #: frontend/src2/dashboard/DashboardChartSelectorDialog.vue:85
 msgid "Search by name"
 msgstr "Nomi bo'yicha qidiruv"
+
+#: frontend/src2/dashboard/DashboardList.vue:159
+#: frontend/src2/workbook/WorkbookList.vue:225
+msgid "Search by title"
+msgstr ""
 
 #: frontend/src2/workbook/WorkbookLineageDialog.vue:163
 msgid "Search nodes\\u2026"
@@ -2665,7 +2666,7 @@ msgstr "Manbani tanlang"
 msgid "Select Table"
 msgstr "Jadvalni tanlang"
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:210
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:212
 msgid "Select a column"
 msgstr "Ustunni tanlang"
 
@@ -2681,7 +2682,7 @@ msgstr "So'rovingizni yaratishni boshlash uchun jadval yoki so'rovni tanlang"
 msgid "Select an operation"
 msgstr "Operatsiyani tanlang"
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:253
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:255
 msgid "Select operator..."
 msgstr "Operatorni tanlang..."
 
@@ -2719,7 +2720,7 @@ msgstr "Shart bajarilganda xabar olish uchun ogohlantirishlarni sozlang"
 msgid "Settings"
 msgstr "Sozlamalar"
 
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:28
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:29
 msgid "Setup"
 msgstr "Sozlash; o'rnatish"
 
@@ -2755,9 +2756,10 @@ msgstr "Boshqaruv panelini ulashish"
 msgid "Share Link"
 msgstr "Havolani ulashish"
 
-#: frontend/src2/workbook/WorkbookList.vue:207
-msgid "Shared with me"
-msgstr "Men bilan baham ko'rilgan"
+#: frontend/src2/dashboard/DashboardList.vue:30
+#: frontend/src2/workbook/WorkbookList.vue:45
+msgid "Shared"
+msgstr "Birgalikda"
 
 #: frontend/src2/charts/components/FunnelChartConfigForm.vue:51
 msgid "Show Percentage"
@@ -3064,6 +3066,10 @@ msgstr "Ushbu hafta"
 msgid "This Year"
 msgstr "Bu yil"
 
+#: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.py:93
+msgid "This column is not available as a filter on this dashboard"
+msgstr ""
+
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:15
 msgid "This will delete all warehouse data for <b>{0}</b> and reset the sync bookmark. Are you sure?"
 msgstr "Bu <b>{0}</b> uchun barcha ombor ma'lumotlarini o'chirib tashlaydi va sinxronizatsiya xatcho'pini qayta o'rnatadi. Ishonchingiz komilmi?"
@@ -3181,7 +3187,7 @@ msgstr "Seshanba"
 #. Label of the type (Data) field in DocType 'Insights Query Column'
 #. Label of the type (Select) field in DocType 'Insights Query Transform'
 #. Label of the type (Select) field in DocType 'Insights Table Column'
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:183
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:185
 #: insights/insights/doctype/insights_dashboard_item/insights_dashboard_item.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 #: insights/insights/doctype/insights_folder/insights_folder.json
@@ -3292,7 +3298,7 @@ msgstr "Tekshirish amalga oshmadi"
 
 #. Label of the value (Password) field in DocType 'Insights Secret Key'
 #: frontend/src2/components/VariablesDialog.vue:85
-#: frontend/src2/dashboard/DashboardFilterEditor.vue:293
+#: frontend/src2/dashboard/DashboardFilterEditor.vue:295
 #: frontend/src2/query/components/FormatRule.vue:425
 #: insights/insights/doctype/insights_secret_key/insights_secret_key.json
 msgid "Value"
@@ -3342,8 +3348,7 @@ msgid "View Lineage"
 msgstr "Nasl-nasabni ko'rish"
 
 #: frontend/src2/charts/components/ChartBuilderToolbar.vue:55
-#: frontend/src2/query/components/NativeQueryEditor.vue:101
-#: frontend/src2/query/components/QueryBuilderToolbar.vue:42
+#: frontend/src2/query/components/QueryToolbar.vue:40
 msgid "View SQL"
 msgstr "SQLni ko'rish"
 
@@ -3380,7 +3385,7 @@ msgstr "Ish daftari"
 
 #: frontend/src2/components/AppSidebar.vue:79
 #: frontend/src2/home/HomeWorkbookList.vue:36
-#: frontend/src2/workbook/WorkbookList.vue:36
+#: frontend/src2/workbook/WorkbookList.vue:37
 msgid "Workbooks"
 msgstr "Ish daftarlari"
 
@@ -3406,16 +3411,20 @@ msgstr "Xabarni formatlash uchun markdown dan foydalanishingiz mumkin. Qalin mat
 msgid "You do not have permission to access this resource"
 msgstr "Sizda ushbu resursga kirish uchun ruxsat yo'q"
 
-#: insights/api/workbooks.py:211 insights/api/workbooks.py:230
-#: insights/api/workbooks.py:243 insights/api/workbooks.py:271
-#: insights/api/workbooks.py:283 insights/api/workbooks.py:297
-#: insights/api/workbooks.py:416
+#: insights/api/workbooks.py:235 insights/api/workbooks.py:254
+#: insights/api/workbooks.py:267 insights/api/workbooks.py:295
+#: insights/api/workbooks.py:307 insights/api/workbooks.py:321
+#: insights/api/workbooks.py:440
 msgid "You do not have permission to modify this workbook"
 msgstr "Sizda ushbu ishchi daftarni o'zgartirishga ruxsat yo'q"
 
-#: insights/api/workbooks.py:107 insights/api/workbooks.py:163
+#: insights/api/workbooks.py:131 insights/api/workbooks.py:187
 msgid "You do not have permission to share this workbook"
 msgstr "Sizda ushbu ishchi daftarni ulashishga ruxsat yo'q"
+
+#: frontend/src2/dashboard/DashboardList.vue:88
+msgid "You haven't created any dashboards yet."
+msgstr ""
 
 #: frontend/src2/home/HomeWorkbookList.vue:68
 msgid "Your workbooks will appear here. Create a new workbook to get started."
