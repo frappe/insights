@@ -5,7 +5,7 @@ from insights.decorators import check_role, insights_whitelist
 
 @insights_whitelist()
 def get_queries():
-    allowed = frappe.get_list("Insights Query", pluck="name")
+    allowed = frappe.get_list("Insights Query", pluck="name", limit=0)
     if not allowed:
         return []
     Query = frappe.qb.DocType("Insights Query")

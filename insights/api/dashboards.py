@@ -49,7 +49,7 @@ def create_dashboard(title: str):
 @insights_whitelist()
 def get_dashboard_options(chart: str):
     # dashboards the caller can access that don't already contain this chart
-    dashboards = frappe.get_list("Insights Dashboard", fields=["name", "title"])
+    dashboards = frappe.get_list("Insights Dashboard", fields=["name", "title"], limit=0)
     with_chart = set(frappe.get_all("Insights Dashboard Item", filters={"chart": chart}, pluck="parent"))
     return [{"value": d.name, "label": d.title} for d in dashboards if d.name not in with_chart]
 
