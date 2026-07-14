@@ -20,10 +20,12 @@ import useWorkbook, { newWorkbookName } from './workbook'
 import { getWorkbookColumns } from './workbookListColumns'
 import useWorkbooks from './workbooks'
 import WorkbookTemplates, { WorkbookTemplate } from './WorkbookTemplates.vue'
+import { useTelemetry } from '../telemetry'
 
 const router = useRouter()
 const userStore = useUserStore()
 const workbookStore = useWorkbooks()
+const { capture } = useTelemetry()
 
 type WorkbookScope = 'all' | 'owned' | 'shared'
 
@@ -93,6 +95,11 @@ function fetchTemplates() {
 }
 wheneverChanges(() => session.user.is_admin, fetchTemplates, { immediate: true })
 
+function openLibrary() {
+	showTemplates.value = true
+	capture('workbook_library_opened')
+}
+
 const columns = getWorkbookColumns({ userStore })
 
 function onRowClick(row: any) {
@@ -142,7 +149,7 @@ watchEffect(() => {
 				v-if="templates.length"
 				:label="__('Library')"
 				variant="outline"
-				@click="showTemplates = true"
+				@click="openLibrary"
 			>
 				<template #prefix>
 					<LayoutTemplateIcon class="w-4" />
@@ -202,7 +209,7 @@ watchEffect(() => {
 							v-if="templates.length"
 							:label="__('Library')"
 							variant="outline"
-							@click="showTemplates = true"
+							@click="openLibrary"
 						>
 							<template #prefix>
 								<LayoutTemplateIcon class="w-4" />
