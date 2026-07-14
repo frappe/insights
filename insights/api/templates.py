@@ -315,7 +315,7 @@ def create_workbook_from_template(template_name: str) -> dict:
         # Commit inside the lock so the copy is visible to the next admin who
         # takes it — the lock only serializes; without the commit the next holder
         # reads a pre-insert snapshot and creates a silent duplicate.
-        frappe.db.commit()
+        frappe.db.commit()  # nosemgrep — intentional commit inside the import lock (see above)
 
     return _template_import_result(workbook_name)
 
@@ -397,7 +397,9 @@ def update_workbook_from_template(template_name: str) -> dict:
     lock_key = f"insights_template_import_{template_name.replace('/', '_')}"
     with filelock(lock_key, timeout=60):
         _update_imported_workbook(template_name, workbook_name)
-        frappe.db.commit()
+        # commit inside the lock so a concurrent caller sees the finished copy,
+        # not a half-rebuilt one
+        frappe.db.commit()  # nosemgrep — intentional commit inside the import lock
 
     return _template_import_result(workbook_name)
 
@@ -409,7 +411,7 @@ def sync_workbook_template_updates() -> None:
     registry = _discover_templates()
     # persist whatever earlier after_migrate steps left pending, so the per-copy
     # rollback below can only ever discard the copy it was updating
-    frappe.db.commit()
+    frappe.db.commit()  # nosemgrep — flush prior after_migrate work before per-copy rollbacks
     for template_name, workbook_name in get_imported_templates().items():
         entry = registry.get(template_name)
         if not entry:
@@ -429,7 +431,7 @@ def sync_workbook_template_updates() -> None:
             # commit per copy so each update is atomic — the delete-then-rebuild in
             # _update_imported_workbook either lands whole or, on failure below, is
             # rolled back, never left committed with the copy emptied
-            frappe.db.commit()
+            frappe.db.commit()  # nosemgrep — land each copy atomically (paired with the rollback below)
         except Exception:
             frappe.db.rollback()
             frappe.log_error(title=f"Failed to sync workbook template {template_name}")
