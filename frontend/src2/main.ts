@@ -8,8 +8,7 @@ import { registerControllers, registerGlobalComponents } from './globals.ts'
 import './index.css'
 import router from './router.ts'
 import { translationPlugin } from './translation.ts'
-//@ts-ignore
-import { telemetryPlugin } from 'frappe-ui/frappe'
+import telemetryPlugin from './telemetry'
 import session from './session.ts'
 
 setConfig('resourceFetcher', frappeRequest)
