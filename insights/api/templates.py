@@ -407,19 +407,29 @@ def sync_workbook_template_updates() -> None:
     with no clicks (nothing of the site's to clobber). A copy the site has edited
     is left alone — the library surfaces a manual update for it instead."""
     registry = _discover_templates()
+    # persist whatever earlier after_migrate steps left pending, so the per-copy
+    # rollback below can only ever discard the copy it was updating
+    frappe.db.commit()
     for template_name, workbook_name in get_imported_templates().items():
         entry = registry.get(template_name)
         if not entry:
             continue
         version = cint(entry["manifest"].get("version") or 1)
         imported_version = cint(frappe.db.get_value("Insights Workbook", workbook_name, "imported_version"))
-        if not imported_version:
-            # a copy imported before versioning existed: adopt the current version
-            # as its baseline (so it doesn't read as "update available"), but leave
-            # its checksum empty so it counts as customized and is never auto-updated
-            frappe.db.set_value("Insights Workbook", workbook_name, "imported_version", version)
-            continue
-        if imported_version >= version or _is_customized(workbook_name):
-            continue
-        _update_imported_workbook(template_name, workbook_name)
-    frappe.db.commit()
+        try:
+            if not imported_version:
+                # a copy imported before versioning existed: adopt the current version
+                # as its baseline (so it doesn't read as "update available"), but leave
+                # its checksum empty so it counts as customized and is never auto-updated
+                frappe.db.set_value("Insights Workbook", workbook_name, "imported_version", version)
+            elif imported_version < version and not _is_customized(workbook_name):
+                _update_imported_workbook(template_name, workbook_name)
+            else:
+                continue
+            # commit per copy so each update is atomic — the delete-then-rebuild in
+            # _update_imported_workbook either lands whole or, on failure below, is
+            # rolled back, never left committed with the copy emptied
+            frappe.db.commit()
+        except Exception:
+            frappe.db.rollback()
+            frappe.log_error(title=f"Failed to sync workbook template {template_name}")

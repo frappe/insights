@@ -17,7 +17,10 @@ from insights.api.templates import (
     sync_workbook_template_updates,
     update_workbook_from_template,
 )
-from insights.insights.doctype.insights_workbook.insights_workbook import import_workbook
+from insights.insights.doctype.insights_workbook.insights_workbook import (
+    InsightsWorkbook,
+    import_workbook,
+)
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import USER_1, create_test_user, delete_users
 from insights.tests.workbook_utils import get_workbook
@@ -301,6 +304,27 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
             sales = {t["name"]: t for t in get_workbook_templates()}[TEMPLATE]
         self.assertTrue(sales["update_available"])
         self.assertTrue(sales["customized"])
+
+    def test_migrate_sync_rolls_back_a_failed_update(self):
+        with self.as_user(ADMIN_USER), installed_apps(APPS_WITH_ERPNEXT):
+            workbook_name = create_workbook_from_template(TEMPLATE)["workbook"]
+        charts_before = frappe.get_all("Insights Chart v3", {"workbook": workbook_name}, pluck="name")
+        self.assertTrue(charts_before)
+
+        def boom(*args, **kwargs):
+            # fail mid-rebuild, after _replace_workbook_contents has dropped the children
+            raise RuntimeError("restore failed")
+
+        with (
+            bumped_version(TEMPLATE, 2),
+            patch.object(InsightsWorkbook, "restore_workbook_contents", boom),
+        ):
+            sync_workbook_template_updates()  # must swallow the failure, not raise
+
+        # the copy is left whole: children rolled back in, version not advanced
+        charts_after = frappe.get_all("Insights Chart v3", {"workbook": workbook_name}, pluck="name")
+        self.assertEqual(set(charts_after), set(charts_before))
+        self.assertEqual(frappe.db.get_value("Insights Workbook", workbook_name, "imported_version"), 1)
 
     def test_legacy_copy_without_version_adopts_current_as_baseline(self):
         with self.as_user(ADMIN_USER), installed_apps(APPS_WITH_ERPNEXT):
