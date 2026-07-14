@@ -4,6 +4,7 @@ import { CheckCircle2, LayoutTemplate } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { createToast } from '../helpers/toasts'
+import { useTelemetry } from '../telemetry'
 import { __ } from '../translation'
 
 export type WorkbookTemplate = {
@@ -38,6 +39,7 @@ const sections = computed(() => {
 })
 
 const router = useRouter()
+const { capture } = useTelemetry()
 
 // name of the template currently being imported, so only its card spins
 const importing = ref<string | null>(null)
@@ -48,6 +50,11 @@ function importTemplate(template: WorkbookTemplate) {
 		template_name: template.name,
 	})
 		.then((result: { workbook: number; dashboard: string | null }) => {
+			capture('workbook_template_imported', {
+				template: template.name,
+				app: template.app,
+				module: template.module,
+			})
 			createToast({ message: __('{0} imported', template.title), variant: 'success' })
 			router.push(
 				result.dashboard
@@ -65,6 +72,8 @@ function importTemplate(template: WorkbookTemplate) {
 }
 
 function openImported(template: WorkbookTemplate) {
+	// usage is tracked centrally via `workbook_template_used` on workbook load,
+	// which covers every open path (list, direct URL, here) — no event needed here
 	router.push(`/workbook/${template.imported_workbook}`)
 }
 </script>
