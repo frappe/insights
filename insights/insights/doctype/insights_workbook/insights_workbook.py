@@ -23,6 +23,8 @@ class InsightsWorkbook(Document):
 
         data_backup: DF.JSON | None
         from_template: DF.Data | None
+        imported_checksum: DF.Data | None
+        imported_version: DF.Int
         name: DF.Int | None
         title: DF.Data
     # end: auto-generated types

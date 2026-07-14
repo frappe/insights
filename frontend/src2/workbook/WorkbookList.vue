@@ -85,16 +85,13 @@ function openNewWorkbook() {
 // workbooks in their list once an admin imports.
 const templates = ref<WorkbookTemplate[]>([])
 const showTemplates = ref(false)
-wheneverChanges(
-	() => session.user.is_admin,
-	(isAdmin) => {
-		if (!isAdmin) return
-		call('insights.api.templates.get_workbook_templates').then(
-			(data: WorkbookTemplate[]) => (templates.value = data || []),
-		)
-	},
-	{ immediate: true },
-)
+function fetchTemplates() {
+	if (!session.user.is_admin) return
+	call('insights.api.templates.get_workbook_templates').then(
+		(data: WorkbookTemplate[]) => (templates.value = data || []),
+	)
+}
+wheneverChanges(() => session.user.is_admin, fetchTemplates, { immediate: true })
 
 const columns = getWorkbookColumns({ userStore })
 
@@ -164,7 +161,7 @@ watchEffect(() => {
 		</div>
 	</header>
 
-	<WorkbookTemplates v-model="showTemplates" :templates="templates" />
+	<WorkbookTemplates v-model="showTemplates" :templates="templates" @refresh="fetchTemplates" />
 
 	<div class="mb-4 flex h-full flex-col gap-3 overflow-auto px-5 pt-3">
 		<div class="flex items-center justify-between gap-2 overflow-visible py-1">
