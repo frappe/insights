@@ -15,7 +15,7 @@
 		/>
 		<label
 			:for="inputId"
-			class="flex items-start gap-2 text-sm font-medium leading-none cursor-pointer"
+			class="flex items-start gap-2 text-sm-medium leading-none cursor-pointer"
 			:class="{ 'cursor-not-allowed opacity-70': isDisabled }"
 		>
 			<span

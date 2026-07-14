@@ -15,7 +15,7 @@ const collapsed = ref(props.collapsed ?? false)
 		>
 			<div class="flex items-center gap-1">
 				<slot name="title-prefix" />
-				<p class="text-sm font-medium">
+				<p class="text-sm-medium">
 					{{ props.title }}
 				</p>
 				<slot name="title-suffix" />

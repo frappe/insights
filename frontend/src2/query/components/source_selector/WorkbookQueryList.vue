@@ -56,7 +56,7 @@ const listColumns = [
 
 <template>
 	<div class="flex h-full flex-col gap-2 overflow-auto p-8 px-10">
-		<h1 class="text-xl font-semibold">{{ __('Queries') }}</h1>
+		<h1 class="text-2xl-semibold">{{ __('Queries') }}</h1>
 		<div class="flex justify-between overflow-visible py-1">
 			<div class="flex gap-2">
 				<FormControl

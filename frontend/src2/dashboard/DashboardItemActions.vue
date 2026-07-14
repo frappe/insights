@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Pencil, Trash2 } from 'lucide-vue-next'
 import { inject } from 'vue'
 import { Dashboard } from './dashboard'
 import { __ } from '../translation'
@@ -10,12 +11,12 @@ const dashboard = inject('dashboard') as Dashboard
 
 const actions = [
 	{
-		icon: 'edit',
+		icon: Pencil,
 		label: __('Edit'),
 		onClick: () => (dashboard.editingItemIndex = props.itemIndex),
 	},
 	{
-		icon: 'trash',
+		icon: Trash2,
 		label: __('Delete'),
 		onClick: () => dashboard.removeItem(props.itemIndex),
 	},
@@ -29,7 +30,7 @@ const actions = [
 			class="rounded p-1.5 hover:bg-gray-700"
 			@click="action.onClick()"
 		>
-			<FeatherIcon :name="action.icon" class="h-3.5 w-3.5 text-white" />
+			<component :is="action.icon" class="h-3.5 w-3.5 text-white" />
 		</div>
 	</div>
 </template>

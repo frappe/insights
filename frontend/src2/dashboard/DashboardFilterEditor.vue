@@ -59,8 +59,8 @@ const linkOptions = computed(() => {
 		const chart = useChart(c)
 		const dependentColumns = chart.getDependentQueryColumns().map((group) => {
 			return {
-				...group,
-				items: disableColumnOptions(group.items),
+				group: group.group,
+				options: disableColumnOptions(group.items),
 			}
 		})
 		return {
@@ -159,25 +159,23 @@ function saveEdit() {
 
 <template>
 	<Dialog
-		:modelValue="dashboard.isEditingItem(props.item)"
-		@update:modelValue="!$event ? (dashboard.editingItemIndex = undefined) : true"
-		:options="{
-			title: __('Edit Filter'),
-			actions: [
-				{
-					label: __('Save'),
-					variant: 'solid',
-					disabled: editDisabled,
-					onClick: saveEdit,
-				},
-				{
-					label: __('Cancel'),
-					onClick: () => (dashboard.editingItemIndex = undefined),
-				},
-			],
-		}"
+		:open="dashboard.isEditingItem(props.item)"
+		@update:open="!$event ? (dashboard.editingItemIndex = undefined) : true"
+		:title="__('Edit Filter')"
+		:actions="[
+			{
+				label: __('Save'),
+				variant: 'solid',
+				disabled: editDisabled,
+				onClick: saveEdit,
+			},
+			{
+				label: __('Cancel'),
+				onClick: () => (dashboard.editingItemIndex = undefined),
+			},
+		]"
 	>
-		<template #body-content>
+		<template #default>
 			<div class="flex flex-col min-h-[20rem] max-h-[20rem]">
 				<Tabs v-model="tabIndex" :tabs="tabs" class="-mt-6">
 					<template #tab-panel="{ tab }">
@@ -218,14 +216,12 @@ function saveEdit() {
 										v-if="enabledLinks.includes(link.name)"
 										class="ml-auto flex-shrink-0"
 									>
-										<Autocomplete
+										<Combobox
 											class="min-w-[10rem]"
 											:placeholder="__('Select a column')"
 											:options="link.columns"
 											:modelValue="filter.links[link.name]"
-											@update:modelValue="
-												filter.links[link.name] = $event.value
-											"
+											@update:modelValue="filter.links[link.name] = $event"
 										/>
 									</div>
 								</div>

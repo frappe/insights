@@ -107,35 +107,33 @@ function toggleAlert() {
 
 <template>
 	<Dialog
-		v-model="show"
-		:disableOutsideClickToClose="alert.isdirty || alert.islocal"
-		:options="{
-			title: __('Setup Alert'),
-			size: '2xl',
-			actions: [
-				{
-					label: __('Send Test Alert'),
-					disabled: !isValidAlert || alert.loading || alert.saving,
-					loading: alert.loading,
-					onClick: testSendAlert,
-				},
-				{
-					label: alert.doc.disabled ? __('Enable Alert') : __('Disable Alert'),
-					disabled: alert.loading || alert.saving,
-					loading: alert.loading,
-					onClick: toggleAlert,
-				},
-				{
-					label: alert.islocal ? __('Create Alert') : __('Update Alert'),
-					variant: 'solid',
-					disabled: !isValidAlert || !alert.isdirty || alert.saving || alert.loading,
-					loading: alert.saving,
-					onClick: updateAlert,
-				},
-			],
-		}"
+		v-model:open="show"
+		:dismissible="!(alert.isdirty || alert.islocal)"
+		:title="__('Setup Alert')"
+		size="2xl"
+		:actions="[
+			{
+				label: __('Send Test Alert'),
+				disabled: !isValidAlert || alert.loading || alert.saving,
+				loading: alert.loading,
+				onClick: testSendAlert,
+			},
+			{
+				label: alert.doc.disabled ? __('Enable Alert') : __('Disable Alert'),
+				disabled: alert.loading || alert.saving,
+				loading: alert.loading,
+				onClick: toggleAlert,
+			},
+			{
+				label: alert.islocal ? __('Create Alert') : __('Update Alert'),
+				variant: 'solid',
+				disabled: !isValidAlert || !alert.isdirty || alert.saving || alert.loading,
+				loading: alert.saving,
+				onClick: updateAlert,
+			},
+		]"
 	>
-		<template #body-content>
+		<template #default>
 			<div class="flex flex-col gap-3 text-base">
 				<div class="flex gap-4">
 					<div class="flex flex-1 flex-col gap-3">

@@ -286,7 +286,7 @@ function setSignatureElementPosition() {
 
 				<template v-else-if="validationState === 'valid'">
 					<CheckCircle class="h-4 w-4 text-sm text-[#7c7c7c]" />
-					<div class="text-sm text-[#7c7c7c] font-medium">Valid Syntax</div>
+					<div class="text-sm-medium text-[#7c7c7c]">Valid Syntax</div>
 				</template>
 
 				<template v-else-if="validationErrors.length">
@@ -298,7 +298,7 @@ function setSignatureElementPosition() {
 								:key="index"
 								class="mb-2 last:mb-0"
 							>
-								<div class="text-sm text-[#7c7c7c] font-medium">
+								<div class="text-sm-medium text-[#7c7c7c]">
 									{{ error.message }}
 									{{ error!.hint }}
 								</div>

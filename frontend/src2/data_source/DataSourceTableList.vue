@@ -41,7 +41,7 @@ const listOptions = ref({
 			description: __('No tables found for the selected data source.'),
 			button: {
 				label: __('Refresh'),
-				iconLeft: 'refresh-ccw',
+				iconLeft: 'lucide-refresh-ccw',
 				variant: 'outline',
 				loading: tableStore.updatingDataSourceTables,
 				onClick: () =>

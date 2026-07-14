@@ -18,29 +18,26 @@ const editedText = ref(unref(props.item.text))
 
 	<Dialog
 		v-if="dashboard.isEditingItem(props.item)"
-		:modelValue="dashboard.isEditingItem(props.item)"
-		@update:modelValue="!$event ? (dashboard.editingItemIndex = undefined) : true"
-		:options="{
-			title: __('Edit Text'),
-			actions: [
-				{
-					label: __('Save'),
-					variant: 'solid',
-					disabled:
-						!editedText || editedText.trim() === '' || editedText === props.item.text,
-					onClick: () => {
-						props.item.text = editedText
-						dashboard.editingItemIndex = undefined
-					},
+		:open="dashboard.isEditingItem(props.item)"
+		@update:open="!$event ? (dashboard.editingItemIndex = undefined) : true"
+		:title="__('Edit Text')"
+		:actions="[
+			{
+				label: __('Save'),
+				variant: 'solid',
+				disabled: !editedText || editedText.trim() === '' || editedText === props.item.text,
+				onClick: () => {
+					props.item.text = editedText
+					dashboard.editingItemIndex = undefined
 				},
-				{
-					label: __('Cancel'),
-					onClick: () => (dashboard.editingItemIndex = undefined),
-				},
-			],
-		}"
+			},
+			{
+				label: __('Cancel'),
+				onClick: () => (dashboard.editingItemIndex = undefined),
+			},
+		]"
 	>
-		<template #body-content>
+		<template #default>
 			<div class="space-y-2">
 				<span class="block text-sm leading-4 text-gray-700">{{ __('Content') }}</span>
 				<TextEditor

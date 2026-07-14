@@ -124,14 +124,13 @@ watch(
 </script>
 
 <template>
-	<Popover placement="left-start" popover-class="!min-w-fit pr-5">
-		<template #target="{ togglePopover, isOpen }">
+	<Popover side="left" align="start">
+		<template #trigger>
 			<div class="group relative flex cursor-pointer items-center gap-2">
 				<Button
 					variant="outline"
 					:label="__('Add Operation')"
 					class="-ml-[14px] !h-6 !gap-1.5 bg-white !px-2 text-p-xs"
-					@click="togglePopover"
 				>
 					<template #prefix>
 						<Plus class="h-4 w-4 text-gray-700" stroke-width="1.5" />
@@ -139,8 +138,8 @@ watch(
 				</Button>
 			</div>
 		</template>
-		<template #body-main="{ togglePopover, isOpen }">
-			<div v-if="isOpen" class="flex flex-col p-1.5">
+		<template #default="{ toggle: togglePopover, isOpen }">
+			<div v-if="isOpen" class="flex min-w-fit flex-col p-1.5 pr-5">
 				<span class="flex h-6 items-center px-2 text-p-xs text-gray-500">
 					{{ __('Select an operation') }}
 				</span>

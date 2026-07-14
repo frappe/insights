@@ -21,21 +21,16 @@ wheneverChanges(
 			}
 		}
 	},
-	{ immediate: true }
+	{ immediate: true },
 )
 </script>
 
 <template>
 	<InlineFormControlLabel label="Query">
-		<Autocomplete
-			:showFooter="true"
-			:options="props.queries"
-			:modelValue="query"
-			@update:modelValue="query = $event?.value"
-		>
+		<Combobox :options="props.queries" :modelValue="query" @update:modelValue="query = $event">
 			<template #prefix>
 				<Table2 class="mr-1.5 h-4 w-4 text-gray-700" stroke-width="1.5" />
 			</template>
-		</Autocomplete>
+		</Combobox>
 	</InlineFormControlLabel>
 </template>

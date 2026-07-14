@@ -102,12 +102,12 @@ wheneverChanges(searchQuery, reload, { debounce: 300 })
 const dropdownOptions = (dashboard: DashboardListItem) => [
 	{
 		label: __('Open Workbook'),
-		icon: 'external-link',
+		icon: 'lucide-external-link',
 		onClick: () => router.push(`/workbook/${dashboard.workbook}`),
 	},
 	{
 		label: __('Refresh Preview'),
-		icon: 'refresh-cw',
+		icon: 'lucide-refresh-cw',
 		loading: store.updatingPreviewImage,
 		onClick: () => store.updatePreviewImage(dashboard.name),
 	},
@@ -181,7 +181,7 @@ watchEffect(() => {
 				v-if="!store.dashboards.length && !store.loading"
 				class="flex h-full w-full flex-col items-center justify-center text-base"
 			>
-				<div class="text-xl font-medium">{{ emptyState.title }}</div>
+				<div class="text-2xl-medium">{{ emptyState.title }}</div>
 				<div class="mt-1 text-base text-gray-600">{{ emptyState.subtitle }}</div>
 			</div>
 		</div>

@@ -86,18 +86,13 @@ const moreActions = [
 			</div>
 		</div>
 		<div class="flex items-center gap-2">
-			<Button
-				variant="ghost"
-				label="Refresh"
-				@click="() => chart.refresh(true)"
-				class="!h-6 !gap-1.5 bg-white !px-2 text-xs shadow"
-			>
+			<Button variant="outline" label="Refresh" @click="() => chart.refresh(true)">
 				<template #prefix>
 					<RefreshCcw class="h-3 w-3 text-gray-700" stroke-width="1.5" />
 				</template>
 			</Button>
 			<Dropdown placement="right" :options="moreActions">
-				<Button variant="ghost" class="!h-6 !gap-1.5 bg-white !px-2 text-xs shadow">
+				<Button variant="outline">
 					<template #icon>
 						<MoreHorizontal class="h-3 w-3 text-gray-700" stroke-width="1.5" />
 					</template>

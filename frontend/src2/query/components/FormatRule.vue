@@ -324,12 +324,12 @@ const isInvalidColumn = computed(() => {
 
 <template>
 	<div class="flex flex-col gap-1.5 relative">
-		<Autocomplete
+		<Combobox
 			:label="'Column'"
 			:placeholder="__('Column')"
 			:modelValue="format.column?.column_name"
 			:options="availableColumns"
-			@update:modelValue="onColumnChange(typeof $event === 'string' ? $event : $event?.value)"
+			@update:modelValue="onColumnChange($event)"
 		/>
 		<p v-if="isInvalidColumn" class="text-xs text-red-500">Invalid Column</p>
 	</div>
@@ -379,7 +379,7 @@ const isInvalidColumn = computed(() => {
 				>
 					<RadioGroupItem value="global" class="[&_label]:w-full">
 						<div class="flex flex-col gap-0.5">
-							<span class="text-sm font-medium">Global</span>
+							<span class="text-sm-medium">Global</span>
 							<span class="text-xs text-gray-500"
 								>Compare across all formatted columns</span
 							>
@@ -387,7 +387,7 @@ const isInvalidColumn = computed(() => {
 					</RadioGroupItem>
 					<RadioGroupItem value="local" class="[&_label]:w-full">
 						<div class="flex flex-col gap-0.5">
-							<span class="text-sm font-medium">Local</span>
+							<span class="text-sm-medium">Local</span>
 							<span class="text-xs text-gray-500"
 								>Compare within each column independently</span
 							>

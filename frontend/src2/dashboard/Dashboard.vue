@@ -55,19 +55,19 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 			</Button>
 			<Dropdown
 				placement="left"
-				:button="{ icon: 'more-vertical', variant: 'outline' }"
+				:button="{ icon: 'lucide-more-vertical', variant: 'outline' }"
 				:options="[
 					{
 						label: __('Export as PNG'),
 						variant: 'outline',
-						icon: 'download',
+						icon: 'lucide-download',
 						onClick: downloadDashboardImage,
 					},
 					canOpenWorkbook
 						? {
 								label: __('Open Workbook'),
 								variant: 'outline',
-								icon: 'external-link',
+								icon: 'lucide-external-link',
 								onClick: openWorkbook,
 						  }
 						: null,

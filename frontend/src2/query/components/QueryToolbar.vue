@@ -38,17 +38,17 @@ const moreActions = computed(() => {
 	actions.push(
 		{
 			label: __('View SQL'),
-			icon: h(Scroll, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
+			icon: h(Scroll, { class: 'h-3.5 w-3.5 text-gray-700', strokeWidth: 1.5 }),
 			onClick: () => (showViewSQLDialog.value = true),
 		},
 		{
 			label: __('Duplicate Query'),
-			icon: h(CopyPlus, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
+			icon: h(CopyPlus, { class: 'h-3.5 w-3.5 text-gray-700', strokeWidth: 1.5 }),
 			onClick: () => query.duplicate(),
 		},
 		{
 			label: __('Copy Query'),
-			icon: h(Copy, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
+			icon: h(Copy, { class: 'h-3.5 w-3.5 text-gray-700', strokeWidth: 1.5 }),
 			onClick: () => query.copy(),
 		},
 	)

@@ -190,7 +190,7 @@ watchEffect(() => {
 				<!-- skip the empty state while a fetch is in flight so it doesn't flash on tab switch -->
 				<!-- ListEmptyState already centers its slot content -->
 				<ListEmptyState v-else-if="!workbookStore.loading">
-					<div class="text-xl font-medium text-ink-gray-8">
+					<div class="text-2xl-medium text-ink-gray-8">
 						{{ __('No Workbooks') }}
 					</div>
 					<div class="mt-1 text-base text-ink-gray-5">

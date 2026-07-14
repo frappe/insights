@@ -64,7 +64,7 @@ const workbook = inject(workbookKey)
 				{ label: __('New Dashboard'), onClick: workbook.addDashboard },
 			]"
 		>
-			<Button variant="ghost" icon="plus"> </Button>
+			<Button variant="ghost" icon="lucide-plus"> </Button>
 		</Dropdown>
 	</div>
 </template>

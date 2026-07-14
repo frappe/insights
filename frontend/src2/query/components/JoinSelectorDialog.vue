@@ -242,15 +242,15 @@ function reset() {
 </script>
 
 <template>
-	<Dialog :modelValue="showDialog">
-		<template #body>
+	<Dialog :open="showDialog" bare>
+		<template #default>
 			<div class="rounded-lg bg-white px-4 pb-6 pt-5 sm:px-6">
 				<!-- Title & Close -->
 				<div class="flex items-center justify-between pb-4">
-					<h3 class="text-2xl font-semibold leading-6 text-gray-900">
+					<h3 class="text-3xl-semibold leading-6 text-gray-900">
 						{{ __('Join Table') }}
 					</h3>
-					<Button variant="ghost" @click="showDialog = false" icon="x" size="md">
+					<Button variant="ghost" @click="showDialog = false" icon="lucide-x" size="md">
 					</Button>
 				</div>
 

@@ -99,7 +99,7 @@ const filteredSchema = computed(() => {
 <template>
 	<div class="flex flex-1 flex-col overflow-hidden px-3.5 py-3">
 		<div class="mb-2 flex h-6 flex-shrink-0 items-center justify-between">
-			<div class="text-sm font-medium">Tables</div>
+			<div class="text-sm-medium">Tables</div>
 		</div>
 		<div class="mb-2 flex-shrink-0">
 			<FormControl

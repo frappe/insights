@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { __ } from '../../translation'
 import { call } from 'frappe-ui'
-import { Dialog, Button, Autocomplete, LoadingIndicator, TextInput } from 'frappe-ui'
+import { Dialog, Button, Combobox, LoadingIndicator, TextInput } from 'frappe-ui'
 import { MappingData, Region } from '../../types/chart.types'
 import { Trash2Icon } from 'lucide-vue-next'
 const props = defineProps<{
@@ -190,11 +190,12 @@ function getOptions(region: Region) {
 
 <template>
 	<Dialog
-		:modelValue="modelValue"
-		:options="{ title: __('Resolve Locations'), size: '2xl' }"
-		@update:modelValue="emit('update:modelValue', $event)"
+		:open="modelValue"
+		:title="__('Resolve Locations')"
+		size="2xl"
+		@update:open="emit('update:modelValue', $event)"
 	>
-		<template #body-content>
+		<template #default>
 			<!-- Loading State -->
 			<div v-if="loading" class="flex h-[28rem] items-center justify-center">
 				<div class="flex flex-col items-center gap-3">
@@ -209,10 +210,10 @@ function getOptions(region: Region) {
 					<!-- Unresolved Regions -->
 					<div class="flex flex-col">
 						<div class="mb-2 flex items-center gap-2">
-							<h3 class="text-sm font-medium text-gray-700">
+							<h3 class="text-sm-medium text-gray-700">
 								{{ unresolvedRegions.length }}
 							</h3>
-							<h3 class="text-sm font-bold text-gray-900">Unresolved Locations</h3>
+							<h3 class="text-sm-bold text-gray-900">Unresolved Locations</h3>
 						</div>
 						<div
 							class="h-[15rem] flex flex-col overflow-hidden rounded-md border bg-white"
@@ -236,7 +237,7 @@ function getOptions(region: Region) {
 									</p>
 
 									<div class="w-56 flex-shrink-0">
-										<Autocomplete
+										<Combobox
 											placeholder="Select region..."
 											:modelValue="localMappings[region.user_region] || ''"
 											@update:modelValue="
@@ -253,10 +254,10 @@ function getOptions(region: Region) {
 					<!-- Resolved Regions -->
 					<div class="flex flex-col">
 						<div class="mb-2 flex items-center gap-2">
-							<h3 class="text-sm font-medium text-gray-700">
+							<h3 class="text-sm-medium text-gray-700">
 								{{ manualMappings.length }}
 							</h3>
-							<h3 class="text-sm font-medium text-gray-900">Resolved</h3>
+							<h3 class="text-sm-medium text-gray-900">Resolved</h3>
 						</div>
 
 						<div class="h-[10rem] overflow-y-auto rounded-md border bg-white">
@@ -277,7 +278,7 @@ function getOptions(region: Region) {
 									</p>
 
 									<div class="w-56 flex-shrink-0">
-										<Autocomplete
+										<Combobox
 											:modelValue="mapping.mapped_to"
 											@update:modelValue="
 												updateMapping(mapping.user_region, $event)

@@ -170,21 +170,19 @@ document.title = 'Users | Insights'
 	</div>
 
 	<Dialog
-		v-model="showInviteUserDialog"
-		:options="{
-			title: __('Invite User'),
-			actions: [
-				{
-					label: __('Send Invitation'),
-					variant: 'solid',
-					disabled: !areAllEmailsValid,
-					loading: userStore.sendingInvitation,
-					onClick: sendInvitation,
-				},
-			],
-		}"
+		v-model:open="showInviteUserDialog"
+		:title="__('Invite User')"
+		:actions="[
+			{
+				label: __('Send Invitation'),
+				variant: 'solid',
+				disabled: !areAllEmailsValid,
+				loading: userStore.sendingInvitation,
+				onClick: sendInvitation,
+			},
+		]"
 	>
-		<template #body-content>
+		<template #default>
 			<div class="flex flex-col gap-4">
 				<div class="flex flex-wrap gap-1 rounded bg-gray-100 p-0.5">
 					<Button

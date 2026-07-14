@@ -12,7 +12,7 @@ const chartType = defineModel<ChartType>()
 			:key="item"
 			variant="subtle"
 			class="!justify-start"
-			:class="chartType === item ? 'bg-white shadow hover:bg-white' : ''"
+			:class="chartType === item ? 'bg-white shadow-sm hover:bg-white' : ''"
 			@click="chartType = item"
 		>
 			<div class="flex items-center gap-1.5">

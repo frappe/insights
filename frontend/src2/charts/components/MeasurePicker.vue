@@ -198,15 +198,14 @@ function handleRemove() {
 <template>
 	<div class="flex items-end gap-1 overflow-hidden">
 		<div class="flex-1 overflow-hidden">
-			<Popover>
-				<template #target="{ togglePopover, isOpen }">
+			<Popover bare match-trigger-width>
+				<template #trigger>
 					<div class="w-full space-y-1.5">
 						<div v-if="props.label" class="text-xs text-gray-600">
 							{{ props.label }}
 						</div>
 						<button
 							class="flex h-7 w-full items-center justify-between gap-2 rounded bg-gray-100 py-1 px-2 text-base transition-colors hover:bg-gray-200 focus:ring-2 focus:ring-gray-400"
-							@click="() => togglePopover()"
 						>
 							<div class="flex flex-1 items-center gap-2 overflow-hidden truncate">
 								<span v-if="measure.measure_name">
@@ -218,7 +217,7 @@ function handleRemove() {
 					</div>
 				</template>
 
-				<template #body="{ isOpen, togglePopover }">
+				<template #default="{ isOpen, toggle: togglePopover }">
 					<div
 						class="relative mt-1 overflow-hidden rounded-lg bg-white p-1.5 text-base shadow-2xl"
 					>
@@ -326,15 +325,15 @@ function handleRemove() {
 				</template>
 			</Popover>
 		</div>
-		<Popover v-if="measure.measure_name" placement="bottom-end">
-			<template #target="{ togglePopover }">
-				<Button @click="togglePopover">
+		<Popover v-if="measure.measure_name" side="bottom" align="end">
+			<template #trigger>
+				<Button>
 					<template #icon>
 						<Settings class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 					</template>
 				</Button>
 			</template>
-			<template #body-main>
+			<template #default>
 				<div class="flex w-[14rem] flex-col gap-2 p-2">
 					<InlineFormControlLabel label="Label">
 						<TextInput

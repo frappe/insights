@@ -25,7 +25,7 @@
 								: 'ml-2 w-auto opacity-100'
 						"
 					>
-						<div class="text-base font-medium leading-none text-gray-900">Insights</div>
+						<div class="text-base-medium leading-none text-gray-900">Insights</div>
 						<div class="mt-1 text-sm leading-none text-gray-700">
 							{{
 								session.user.full_name == 'Administrator'
@@ -49,19 +49,17 @@
 		</Dropdown>
 
 		<Dialog
-			v-model="showSwitchToV2Dialog"
-			:options="{
-				title: __('Switch to Insights v2'),
-				actions: [
-					{
-						label: __('Continue'),
-						variant: 'solid',
-						onClick: openInsightsV2,
-					},
-				],
-			}"
+			v-model:open="showSwitchToV2Dialog"
+			:title="__('Switch to Insights v2')"
+			:actions="[
+				{
+					label: __('Continue'),
+					variant: 'solid',
+					onClick: openInsightsV2,
+				},
+			]"
 		>
-			<template #body-content>
+			<template #default>
 				<div class="prose prose-sm mb-4">
 					<p>Switch to the old version of Insights?</p>
 				</div>
@@ -75,23 +73,21 @@
 		</Dialog>
 
 		<Dialog
-			v-model="showLoginToFCDialog"
-			:options="{
-				title: __('Login to Frappe Cloud?'),
-				message: __('Are you sure you want to login to your Frappe Cloud dashboard?'),
-				actions: [
-					{
-						label: __('Confirm'),
-						variant: 'solid',
-						loading: loggingInToFC,
-						onClick() {
-							loginToFC()
+			v-model:open="showLoginToFCDialog"
+			:title="__('Login to Frappe Cloud?')"
+			:message="__('Are you sure you want to login to your Frappe Cloud dashboard?')"
+			:actions="[
+				{
+					label: __('Confirm'),
+					variant: 'solid',
+					loading: loggingInToFC,
+					onClick() {
+						loginToFC()
 
-							showLoginToFCDialog.value = false
-						},
+						showLoginToFCDialog.value = false
 					},
-				],
-			}"
+				},
+			]"
 		/>
 	</div>
 </template>

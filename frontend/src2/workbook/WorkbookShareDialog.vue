@@ -87,20 +87,18 @@ function updatePermissions() {
 
 <template>
 	<Dialog
-		v-model="show"
-		:options="{
-			title: __('Manage Workbook Access'),
-			actions: [
-				{
-					label: __('Save'),
-					variant: 'solid',
-					disabled: saveDisabled,
-					onClick: updatePermissions,
-				},
-			],
-		}"
+		v-model:open="show"
+		:title="__('Manage Workbook Access')"
+		:actions="[
+			{
+				label: __('Save'),
+				variant: 'solid',
+				disabled: saveDisabled,
+				onClick: updatePermissions,
+			},
+		]"
 	>
-		<template #body-content>
+		<template #default>
 			<div class="-mb-4 flex flex-col gap-3 text-base">
 				<div class="flex items-center gap-3 rounded border px-3 py-2">
 					<Building2 class="h-6 w-6 text-blue-500" stroke-width="1.5" />
@@ -130,7 +128,7 @@ function updatePermissions() {
 							},
 						]"
 						:button="{
-							iconRight: 'chevron-down',
+							iconRight: 'lucide-chevron-down',
 							label: organizationAccess
 								? __(`Can {0}`, organizationAccess)
 								: __('Disabled'),
@@ -178,7 +176,7 @@ function updatePermissions() {
 							placement="right"
 							:options="accessOptions(user.email)"
 							:button="{
-								iconRight: 'chevron-down',
+								iconRight: 'lucide-chevron-down',
 								variant: 'ghost',
 								label: user.access === 'edit' ? __('Can Edit') : __('Can View'),
 							}"

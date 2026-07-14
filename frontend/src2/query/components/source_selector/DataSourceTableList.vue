@@ -68,7 +68,7 @@ const emptyState = computed(() => {
 
 <template>
 	<div class="flex h-full flex-col gap-2 overflow-auto p-8 px-10">
-		<h1 class="text-xl font-semibold">{{ dataSource?.title }}</h1>
+		<h1 class="text-2xl-semibold">{{ dataSource?.title }}</h1>
 		<div class="flex justify-between overflow-visible py-1">
 			<div class="flex gap-2">
 				<FormControl

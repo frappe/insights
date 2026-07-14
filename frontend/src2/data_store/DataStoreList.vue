@@ -59,7 +59,7 @@ const listOptions = computed(() => ({
 			button: session.user.is_admin
 				? {
 						label: __('Import Table'),
-						iconLeft: 'plus',
+						iconLeft: 'lucide-plus',
 						variant: 'solid',
 						loading: false,
 						onClick: () => (showImportTableDialog.value = true),

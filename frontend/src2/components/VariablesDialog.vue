@@ -50,18 +50,14 @@ function saveVariables() {
 </script>
 
 <template>
-	<Dialog
-		:modelValue="show"
-		@update:modelValue="show = $event"
-		:options="{ title: __('Variables'), size: 'lg' }"
-	>
-		<template #body>
+	<Dialog v-model:open="show" size="lg" bare>
+		<template #default>
 			<div class="bg-white px-4 pb-6 pt-5 sm:px-6">
 				<div class="flex items-center justify-between pb-4">
-					<h3 class="text-2xl font-semibold leading-6 text-gray-900">
+					<h3 class="text-3xl-semibold leading-6 text-gray-900">
 						{{ __('Variables') }}
 					</h3>
-					<Button variant="ghost" @click="show = false" icon="x" size="md" />
+					<Button variant="ghost" @click="show = false" icon="lucide-x" size="md" />
 				</div>
 
 				<p class="mb-5 text-p-base text-gray-600">
@@ -79,7 +75,7 @@ function saveVariables() {
 				<div class="flex flex-col overflow-hidden">
 					<div class="relative flex max-h-[20rem] flex-col overflow-y-auto">
 						<div
-							class="sticky top-0 flex gap-x-2 border-b bg-white py-2 text-p-sm font-medium text-gray-600"
+							class="sticky top-0 flex gap-x-2 border-b bg-white py-2 text-p-sm-medium text-gray-600"
 						>
 							<div class="flex flex-1 flex-shrink-0 px-2">{{ __('Name') }}</div>
 							<div class="flex flex-1 flex-shrink-0 px-2">{{ __('Value') }}</div>
@@ -110,7 +106,7 @@ function saveVariables() {
 							<div class="flex w-10 justify-end">
 								<Button
 									variant="ghost"
-									icon="x"
+									icon="lucide-x"
 									size="sm"
 									@click="removeVariable(index)"
 								/>

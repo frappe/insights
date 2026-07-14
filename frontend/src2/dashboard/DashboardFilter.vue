@@ -83,12 +83,11 @@ const label = computed(() => {
 
 <template>
 	<div class="h-8 w-full [&>div:first-child]:h-full">
-		<Popover class="h-full">
-			<template #target="{ togglePopover }">
+		<Popover class="h-full" match-trigger-width>
+			<template #trigger>
 				<Button
 					variant="outline"
 					class="flex h-full w-full !justify-start overflow-hidden text-sm shadow-sm [&>span]:truncate"
-					@click="togglePopover"
 				>
 					<template #prefix>
 						<Icon
@@ -106,8 +105,8 @@ const label = computed(() => {
 					{{ label }}
 				</Button>
 			</template>
-			<template #body-main="{ togglePopover, isOpen }">
-				<div class="w-full p-2">
+			<template #default="{ toggle: togglePopover, isOpen }">
+				<div class="p-2" :style="{ width: 'var(--reka-popover-trigger-width)' }">
 					<Filter
 						v-if="isOpen"
 						:filter-type="filter.filter_type"

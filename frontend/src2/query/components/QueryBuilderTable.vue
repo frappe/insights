@@ -73,7 +73,7 @@ function addNewColumn() {
 </script>
 
 <template>
-	<div class="relative flex w-full flex-1 flex-col overflow-hidden rounded shadow">
+	<div class="relative flex w-full flex-1 flex-col overflow-hidden rounded shadow-sm">
 		<QueryDataTable
 			:query="query"
 			:enable-column-rename="true"
@@ -90,12 +90,11 @@ function addNewColumn() {
 
 			<template #header-suffix="{ column }">
 				<div class="ml-auto pl-2">
-					<Popover placement="bottom-end">
-						<template #target="{ togglePopover, isOpen }">
+					<Popover side="bottom" align="end">
+						<template #trigger="{ isOpen }">
 							<Button
 								variant="ghost"
 								class="rounded-sm"
-								@click="togglePopover"
 								:class="isOpen ? '!bg-gray-100' : ''"
 							>
 								<template #icon>
@@ -103,7 +102,7 @@ function addNewColumn() {
 								</template>
 							</Button>
 						</template>
-						<template #body-main="{ togglePopover, isOpen }">
+						<template #default="{ toggle: togglePopover, isOpen }">
 							<div v-if="isOpen" class="flex min-w-[10rem] flex-col p-1">
 								<!-- Rename, Sort, Filter, Summarize, Describe, Pivot, Remove -->
 								<ColumnSort

@@ -58,25 +58,23 @@ function confirmSelection() {
 
 <template>
 	<Dialog
-		v-model="showDialog"
-		:options="{
-			size: 'sm',
-			title: __('Select Charts'),
-			actions: [
-				{
-					label: __('Add'),
-					variant: 'solid',
-					disabled: areNoneSelected,
-					onClick: confirmSelection,
-				},
-				{
-					label: __('Cancel'),
-					onClick: () => (showDialog = false),
-				},
-			],
-		}"
+		v-model:open="showDialog"
+		size="sm"
+		:title="__('Select Charts')"
+		:actions="[
+			{
+				label: __('Add'),
+				variant: 'solid',
+				disabled: areNoneSelected,
+				onClick: confirmSelection,
+			},
+			{
+				label: __('Cancel'),
+				onClick: () => (showDialog = false),
+			},
+		]"
 	>
-		<template #body-content>
+		<template #default>
 			<div class="-mb-5 flex flex-col gap-2 p-0.5">
 				<div class="flex gap-2">
 					<FormControl

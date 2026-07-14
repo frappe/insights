@@ -37,7 +37,7 @@ async function setupDemoData() {
 
 <template>
 	<div class="flex w-full flex-col gap-6 overflow-y-scroll p-8 px-10">
-		<h1 class="text-xl font-semibold">General</h1>
+		<h1 class="text-2xl-semibold">General</h1>
 		<SettingItem
 			label="Logo"
 			description="Appears in the top left corner of the application and in the browser tab next to the page title. Recommended size: 32x32px in PNG format."

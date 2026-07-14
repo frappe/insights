@@ -30,20 +30,18 @@ function saveChanges() {
 
 <template>
 	<Dialog
-		v-model="show"
-		:options="{
-			title: __('Share Chart'),
-			actions: [
-				{
-					label: __('Done'),
-					variant: 'solid',
-					disabled: !hasChanged,
-					onClick: saveChanges,
-				},
-			],
-		}"
+		v-model:open="show"
+		:title="__('Share Chart')"
+		:actions="[
+			{
+				label: __('Done'),
+				variant: 'solid',
+				disabled: !hasChanged,
+				onClick: saveChanges,
+			},
+		]"
 	>
-		<template #body-content>
+		<template #default>
 			<div class="space-y-3 text-base">
 				<div class="space-y-4">
 					<div class="flex items-center gap-3 rounded border px-3 py-2">
@@ -67,7 +65,7 @@ function saveChanges() {
 						<Tooltip text="Copy Link" :hoverDelay="0.1">
 							<Button
 								class="w-8 rounded-none bg-gray-200 hover:bg-gray-300"
-								icon="link-2"
+								icon="lucide-link-2"
 								@click="copyToClipboard(shareLink)"
 							>
 							</Button>
@@ -75,7 +73,7 @@ function saveChanges() {
 						<Tooltip text="Copy iFrame" :hoverDelay="0.1">
 							<Button
 								class="w-8 rounded-l-none bg-gray-200 hover:bg-gray-300"
-								icon="code"
+								icon="lucide-code"
 								@click="copyToClipboard(iFrameLink)"
 							>
 							</Button>

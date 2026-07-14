@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import Switch from '../components/Switch.vue'
 import UserSelector from '../components/UserSelector.vue'
 import { copy } from '../helpers'
 import session from '../session'
@@ -59,10 +58,10 @@ const activeTab = ref('Members')
 <template>
 	<Dialog
 		v-if="currentTeam"
-		v-model="show"
-		:options="{
-			title: __('Manage Team'),
-			actions: [
+		v-model:open="show"
+		:title="__('Manage Team')"
+		:actions="
+			[
 				{
 					label: __('Done'),
 					variant: 'solid',
@@ -85,10 +84,10 @@ const activeTab = ref('Members')
 								teamStore.deleteTeam(currentTeam.name).then(() => (show = false)),
 					  }
 					: null,
-			].filter(Boolean),
-		}"
+			].filter(Boolean)
+		"
 	>
-		<template #body-content>
+		<template #default>
 			<div class="-mb-5 flex h-[25rem] flex-col gap-4 text-base">
 				<FormControl
 					label="Team Name"
@@ -98,11 +97,14 @@ const activeTab = ref('Members')
 					class="flex-shrink-0"
 				/>
 
-				<Switch
-					:tabs="['Members', 'Access']"
+				<TabButtons
+					:options="[
+						{ label: __('Members'), value: 'Members' },
+						{ label: __('Access'), value: 'Access' },
+					]"
 					v-model="activeTab"
-					class="flex-shrink-0"
-				></Switch>
+					class="full-tabs flex-shrink-0"
+				/>
 
 				<!-- Manage Members -->
 				<div
@@ -151,7 +153,7 @@ const activeTab = ref('Members')
 							</div>
 							<Button
 								variant="ghost"
-								icon="x"
+								icon="lucide-x"
 								class="flex-shrink-0"
 								@click="removeMember(member.user)"
 							/>
@@ -191,3 +193,17 @@ const activeTab = ref('Members')
 		</template>
 	</Dialog>
 </template>
+
+<style scoped>
+/* Stretch the standard TabButtons into a full-width, equal-halves segmented bar
+   (its inner flex container is content-width by default, not reachable via props). */
+.full-tabs :deep(div) {
+	width: 100%;
+}
+.full-tabs :deep([data-slot='tab-button']) {
+	flex: 1 1 0%;
+}
+.full-tabs :deep([data-slot='tab-button'] > *) {
+	width: 100%;
+}
+</style>

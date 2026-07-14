@@ -104,7 +104,7 @@ const areFiltersUpdated = computed(() => {
 			<Dropdown
 				placement="right"
 				:button="{
-					icon: 'more-horizontal',
+					icon: 'lucide-more-horizontal',
 					variant: 'ghost',
 				}"
 				:options="[

@@ -1,6 +1,6 @@
 <template>
-	<Dialog v-model="show" :options="{ title: title }">
-		<template #body-content>
+	<Dialog v-model:open="show" :title="title">
+		<template #default>
 			<p class="text-p-base text-gray-700" v-if="message">
 				{{ message }}
 			</p>

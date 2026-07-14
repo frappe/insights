@@ -192,7 +192,7 @@ const showExpandedChartDialog = ref(false)
 	<div class="group relative h-full w-full">
 		<BaseChart
 			v-if="!loading && eChartOptions"
-			class="rounded bg-white py-1 shadow"
+			class="rounded bg-white py-1 shadow-sm"
 			:class="props.chart.doc.chart_type == 'Map' ? '[&>div:last-child]:p-4' : ''"
 			:title="props.chart.doc.title"
 			:options="eChartOptions"
@@ -249,15 +249,8 @@ const showExpandedChartDialog = ref(false)
 	>
 	</DrillDown>
 
-	<Dialog
-		v-if="chart"
-		v-model="showExpandedChartDialog"
-		:options="{
-			size: '7xl',
-			title: chart?.doc.title,
-		}"
-	>
-		<template #body>
+	<Dialog v-if="chart" v-model:open="showExpandedChartDialog" size="7xl" bare>
+		<template #default>
 			<div class="h-[85vh] w-full">
 				<ChartRenderer v-if="chart" :chart="chart" :hide-maximize="true" />
 				<div class="absolute top-2 right-2">

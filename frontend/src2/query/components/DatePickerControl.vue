@@ -65,12 +65,9 @@ const displayDate = computed(() => {
 </script>
 
 <template>
-	<Popover placement="bottom-start">
-		<template #target="{ togglePopover }">
-			<Button
-				class="w-full items-center !justify-start overflow-hidden"
-				@click="togglePopover"
-			>
+	<Popover side="bottom" align="start" match-trigger-width>
+		<template #trigger>
+			<Button class="w-full items-center !justify-start overflow-hidden">
 				<template #prefix>
 					<Calendar class="h-4 w-4 flex-shrink-0 text-gray-600" stroke-width="1.5" />
 				</template>
@@ -82,7 +79,7 @@ const displayDate = computed(() => {
 				</span>
 			</Button>
 		</template>
-		<template #body-main>
+		<template #default>
 			<div class="flex p-2">
 				<DatePicker v-model="dates" :range="props.range"></DatePicker>
 			</div>

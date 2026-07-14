@@ -3,7 +3,7 @@ import { MarkerType, Panel, Position, VueFlow, useVueFlow } from '@vue-flow/core
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 import { FormControl } from 'frappe-ui'
-import { BarChart2, DatabaseIcon, GitFork } from 'lucide-vue-next'
+import { BarChart2, DatabaseIcon, GitFork, Search } from 'lucide-vue-next'
 import { computed, inject, nextTick, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { __ } from '../translation'
@@ -143,14 +143,8 @@ function onNodeClick(_evt: MouseEvent, node: any) {
 </script>
 
 <template>
-	<Dialog
-		v-model="show"
-		:options="{
-			title: __('Query Lineage'),
-			size: '5xl',
-		}"
-	>
-		<template #body-content>
+	<Dialog v-model:open="show" :title="__('Query Lineage')" size="5xl">
+		<template #default>
 			<!-- Toolbar -->
 			<div class="mb-3 flex items-center gap-2">
 				<span class="text-sm text-gray-500">
@@ -164,7 +158,7 @@ function onNodeClick(_evt: MouseEvent, node: any) {
 						autocomplete="off"
 					>
 						<template #prefix>
-							<FeatherIcon name="search" class="h-4 w-4 text-gray-500" />
+							<Search class="h-4 w-4 text-gray-500" />
 						</template>
 					</FormControl>
 				</div>
@@ -225,7 +219,7 @@ function onNodeClick(_evt: MouseEvent, node: any) {
 									class="h-3.5 w-3.5 flex-shrink-0 text-blue-500"
 									stroke-width="1.5"
 								/>
-								<span class="truncate text-sm font-medium text-blue-900">{{
+								<span class="truncate text-sm-medium text-blue-900">{{
 									data.label
 								}}</span>
 							</div>
@@ -256,7 +250,7 @@ function onNodeClick(_evt: MouseEvent, node: any) {
 									stroke-width="1.5"
 								/>
 								<span
-									class="truncate text-sm font-medium"
+									class="truncate text-sm-medium"
 									:class="
 										data.is_chart_query ? 'text-orange-900' : 'text-green-900'
 									"

@@ -70,7 +70,7 @@ async function downloadDashboardImage() {
 		<div class="relative flex h-full w-full flex-col overflow-hidden">
 			<div class="flex items-center justify-between p-4 pb-3">
 				<ContentEditable
-					class="cursor-text rounded-sm text-lg font-semibold !text-gray-800 focus:ring-2 focus:ring-gray-700 focus:ring-offset-4"
+					class="cursor-text rounded-sm text-lg-semibold !text-gray-800 focus:ring-2 focus:ring-gray-700 focus:ring-offset-4"
 					:modelValue="dashboard.doc.title"
 					@returned="dashboard.doc.title = $event"
 					@blur="dashboard.doc.title = $event"
@@ -145,7 +145,7 @@ async function downloadDashboardImage() {
 						Done
 					</Button>
 					<Dropdown
-						:button="{ icon: 'more-horizontal', variant: 'outline' }"
+						:button="{ icon: 'lucide-more-horizontal', variant: 'outline' }"
 						:options="[
 							{
 								label: __('Force Refresh'),
@@ -155,7 +155,7 @@ async function downloadDashboardImage() {
 							{
 								label: __('Export as PNG'),
 								variant: 'outline',
-								icon: 'download',
+								icon: 'lucide-download',
 								onClick: downloadDashboardImage,
 							},
 							dashboard.editing
@@ -168,7 +168,7 @@ async function downloadDashboardImage() {
 							dashboard.editing
 								? {
 										label: __('Reset Layout'),
-										icon: 'refresh-ccw',
+										icon: 'lucide-refresh-ccw',
 										onClick: () => (
 											dashboard.discard(), (dashboard.editing = false)
 										),

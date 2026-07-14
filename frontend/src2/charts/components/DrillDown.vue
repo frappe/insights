@@ -54,14 +54,8 @@ const groupBy = debounce(_groupBy, 50)
 </script>
 
 <template>
-	<Dialog
-		v-model="show"
-		:options="{
-			title: __('Drill Down'),
-			size: '5xl',
-		}"
-	>
-		<template #body-content>
+	<Dialog v-model:open="show" :title="__('Drill Down')" size="5xl">
+		<template #default>
 			<div v-if="!isQueryReady" class="flex h-[32rem] w-full items-center justify-center">
 				<LoadingIndicator class="h-5 w-5 text-gray-600" />
 			</div>

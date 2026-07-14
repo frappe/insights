@@ -60,19 +60,18 @@ function selectDimension(option?: DimensionOption) {
 <template>
 	<div class="flex items-end gap-1 overflow-hidden">
 		<div class="flex-1 overflow-hidden">
-			<Autocomplete
+			<Combobox
 				placeholder="Select a column"
-				:showFooter="true"
 				:options="props.options"
 				:modelValue="dimension.column_name"
-				@update:modelValue="selectDimension"
+				@update:selectedOption="selectDimension"
 			>
-				<template #target="{ togglePopover }">
+				<template #trigger>
 					<div class="flex w-full flex-col gap-1.5">
 						<label v-if="props.label" class="block text-xs text-gray-600">
 							{{ props.label }}
 						</label>
-						<Button @click="togglePopover" class="w-full !justify-start">
+						<Button class="w-full !justify-start">
 							<span
 								class="truncate"
 								:class="dimension.column_name ? 'text-gray-900' : 'text-gray-500'"
@@ -88,17 +87,17 @@ function selectDimension(option?: DimensionOption) {
 						</Button>
 					</div>
 				</template>
-			</Autocomplete>
+			</Combobox>
 		</div>
-		<Popover v-if="dimension.column_name" placement="bottom-end">
-			<template #target="{ togglePopover }">
-				<Button @click="togglePopover">
+		<Popover v-if="dimension.column_name" side="bottom" align="end">
+			<template #trigger>
+				<Button>
 					<template #icon>
 						<Settings class="h-4 w-4 text-gray-700" stroke-width="1.5" />
 					</template>
 				</Button>
 			</template>
-			<template #body-main>
+			<template #default>
 				<div class="flex w-[14rem] flex-col gap-2 p-2">
 					<InlineFormControlLabel label="Label">
 						<LazyTextInput placeholder="Label" v-model="dimension.dimension_name" />

@@ -89,14 +89,8 @@ const listOptions = ref({
 </script>
 
 <template>
-	<Dialog
-		v-model="show"
-		:options="{
-			title: __('Alerts'),
-			size: '2xl',
-		}"
-	>
-		<template #body-content>
+	<Dialog v-model:open="show" :title="__('Alerts')" size="2xl">
+		<template #default>
 			<div class="flex h-[30rem] w-full flex-1 flex-col gap-3 overflow-auto text-base">
 				<div class="flex justify-between gap-2 overflow-visible py-1">
 					<FormControl :placeholder="__('Search')" v-model="searchQuery" :debounce="300">

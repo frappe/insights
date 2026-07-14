@@ -14,12 +14,14 @@ const props = defineProps<{
 </script>
 
 <template>
-	<Popover :placement="props.placement || 'right-start'">
-		<template #target="{ togglePopover, isOpen }">
+	<Popover
+		:side="(props.placement || 'right-start').split('-')[0]"
+		:align="(props.placement || 'right-start').split('-')[1] || 'start'"
+	>
+		<template #trigger="{ toggle: togglePopover, isOpen }">
 			<slot name="target" :togglePopover="togglePopover" :isOpen="isOpen">
 				<Button
 					variant="ghost"
-					@click="togglePopover"
 					class="w-full !justify-start"
 					:class="{ ' !bg-gray-100': isOpen }"
 				>
@@ -35,7 +37,7 @@ const props = defineProps<{
 				</Button>
 			</slot>
 		</template>
-		<template #body-main="{ togglePopover, isOpen }">
+		<template #default="{ toggle: togglePopover, isOpen }">
 			<ColumnFilterBody
 				v-if="isOpen"
 				:column="props.column"

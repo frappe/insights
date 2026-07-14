@@ -17,6 +17,14 @@ body {
 	z-index: 100 !important;
 }
 
+/* Combobox/MultiSelect dropdowns match their trigger width. frappe-ui applies
+   this only to input-mode Combobox; a custom #trigger (button mode) drops it and
+   exposes no prop, so restore it here. min-width only grows the panel, so narrow
+   triggers with wider content are unaffected. data-size excludes Popover content. */
+[data-slot='content'][data-size] {
+	min-width: var(--reka-combobox-trigger-width);
+}
+
 @layer components {
 	/* Works on Firefox */
 	* {
