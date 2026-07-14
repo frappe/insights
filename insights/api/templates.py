@@ -1,13 +1,15 @@
 import base64
+import hashlib
 import json
 import os
 
 import frappe
 from frappe import _
+from frappe.utils import cint
 from frappe.utils.synchronization import filelock
 
 from insights.decorators import insights_whitelist
-from insights.utils import DocShare
+from insights.utils import DocShare, deep_convert_dict_to_dict
 
 MANIFEST_REQUIRED_KEYS = ["title", "description", "required_apps", "source_doctypes"]
 
@@ -180,6 +182,16 @@ def get_workbook_templates() -> list[dict]:
         if not has_required_apps(manifest):
             continue
         group_app = _grouping_app(entry)
+        version = cint(manifest.get("version") or 1)
+        imported_workbook = imported.get(name)
+        # only the shipped version differing from the imported one is an update;
+        # only then is it worth exporting the copy to check for local edits
+        imported_version = (
+            cint(frappe.db.get_value("Insights Workbook", imported_workbook, "imported_version"))
+            if imported_workbook
+            else None
+        )
+        update_available = bool(imported_workbook) and version > imported_version
         templates.append(
             {
                 "name": name,
@@ -190,12 +202,17 @@ def get_workbook_templates() -> list[dict]:
                 # the app the template is for — its section in the library
                 "app": group_app,
                 "app_title": _app_title(group_app),
-                # absent = v1; the key that makes "update available" possible later
-                "version": manifest.get("version") or 1,
+                # absent = v1; the key that makes "update available" possible
+                "version": version,
                 "has_data": has_source_data(manifest),
                 "preview_image": get_template_preview(name),
                 # workbook the site already imported from the template, else None
-                "imported_workbook": imported.get(name),
+                "imported_workbook": imported_workbook,
+                "imported_version": imported_version,
+                "update_available": update_available,
+                # whether taking the update would overwrite local edits — the
+                # library warns before replacing a touched copy
+                "customized": update_available and _is_customized(imported_workbook),
             }
         )
     return templates
@@ -291,9 +308,130 @@ def create_workbook_from_template(template_name: str) -> dict:
         frappe.db.set_value("Insights Workbook", workbook_name, "from_template", template_name)
         _reassign_to_administrator(workbook_name)
         _share_with_organization(workbook_name)
+        # record which shipped version this copy holds, and a fingerprint of it as
+        # imported — the fingerprint is what later tells a pristine copy (safe to
+        # auto-update) from one the site has edited (update only on request)
+        _stamp_template_version(workbook_name, manifest)
         # Commit inside the lock so the copy is visible to the next admin who
         # takes it — the lock only serializes; without the commit the next holder
         # reads a pre-insert snapshot and creates a silent duplicate.
-        frappe.db.commit()
+        frappe.db.commit()  # nosemgrep — intentional commit inside the import lock (see above)
 
     return _template_import_result(workbook_name)
+
+
+def _workbook_checksum(workbook_name: str) -> str:
+    """A content fingerprint of the workbook, stable across re-reads but sensitive
+    to any edit of its queries/charts/dashboards. Compared against the value
+    stored at import to tell whether the site has touched the shipped copy.
+    `timestamp` is dropped because export() stamps it fresh every call."""
+    payload = frappe.get_doc("Insights Workbook", workbook_name).export()
+    payload.pop("timestamp", None)
+    serialized = json.dumps(payload, sort_keys=True, default=str)
+    return hashlib.sha256(serialized.encode()).hexdigest()
+
+
+def _is_customized(workbook_name: str) -> bool:
+    """True if the copy has drifted from what was imported — or if we never
+    recorded a fingerprint (a pre-versioning copy), which we treat as customized
+    so it's never silently overwritten."""
+    stored = frappe.db.get_value("Insights Workbook", workbook_name, "imported_checksum")
+    return not stored or stored != _workbook_checksum(workbook_name)
+
+
+def _stamp_template_version(workbook_name: str, manifest: dict) -> None:
+    frappe.db.set_value(
+        "Insights Workbook",
+        workbook_name,
+        {
+            "imported_version": cint(manifest.get("version") or 1),
+            "imported_checksum": _workbook_checksum(workbook_name),
+        },
+    )
+
+
+def _replace_workbook_contents(workbook_name: str, workbook_json: dict) -> None:
+    """Swap the workbook's contents for the template's, keeping the workbook's own
+    name (so URLs and shares survive). Drops the existing children and rebuilds
+    them from the shipped definition — safe on a pristine copy because there's
+    nothing of the site's to lose."""
+    workbook = deep_convert_dict_to_dict(frappe.parse_json(workbook_json))
+    for doctype in _WORKBOOK_CHILD_DOCTYPES:
+        for row in frappe.get_all(doctype, {"workbook": workbook_name}):
+            frappe.delete_doc(doctype, row.name, force=True, ignore_permissions=True)
+
+    doc = frappe.get_doc("Insights Workbook", workbook_name)
+    new_title = (workbook.get("doc") or {}).get("title")
+    if new_title:
+        doc.db_set("title", new_title)
+    doc.restore_workbook_contents(workbook, workbook_name, ignore_permissions=True)
+
+
+def _update_imported_workbook(template_name: str, workbook_name: str) -> None:
+    manifest = _resolve_template(template_name)["manifest"]
+    _replace_workbook_contents(workbook_name, get_template_workbook(template_name))
+    # rebuilt children default to the actor's ownership; hand them back to
+    # Administrator so the shared-copy invariant from import still holds
+    _reassign_to_administrator(workbook_name)
+    _stamp_template_version(workbook_name, manifest)
+
+
+@insights_whitelist(role="Insights Admin")
+def update_workbook_from_template(template_name: str) -> dict:
+    """Re-take the shipped version into the already-imported workbook, in place.
+    The library offers this when a newer version ships; a customized copy is
+    warned about client-side before the call, since this replaces its contents."""
+    manifest = _resolve_template(template_name)["manifest"]
+    if not has_required_apps(manifest):
+        frappe.throw(
+            _("Workbook template {0} requires apps that are not installed: {1}").format(
+                frappe.bold(manifest.get("title") or template_name),
+                ", ".join(manifest.get("required_apps") or []),
+            )
+        )
+
+    workbook_name = _find_imported_workbook(template_name)
+    if not workbook_name:
+        return create_workbook_from_template(template_name)
+
+    lock_key = f"insights_template_import_{template_name.replace('/', '_')}"
+    with filelock(lock_key, timeout=60):
+        _update_imported_workbook(template_name, workbook_name)
+        # commit inside the lock so a concurrent caller sees the finished copy,
+        # not a half-rebuilt one
+        frappe.db.commit()  # nosemgrep — intentional commit inside the import lock
+
+    return _template_import_result(workbook_name)
+
+
+def sync_workbook_template_updates() -> None:
+    """Run on migrate: carry a newer shipped version into pristine imported copies
+    with no clicks (nothing of the site's to clobber). A copy the site has edited
+    is left alone — the library surfaces a manual update for it instead."""
+    registry = _discover_templates()
+    # persist whatever earlier after_migrate steps left pending, so the per-copy
+    # rollback below can only ever discard the copy it was updating
+    frappe.db.commit()  # nosemgrep — flush prior after_migrate work before per-copy rollbacks
+    for template_name, workbook_name in get_imported_templates().items():
+        entry = registry.get(template_name)
+        if not entry:
+            continue
+        version = cint(entry["manifest"].get("version") or 1)
+        imported_version = cint(frappe.db.get_value("Insights Workbook", workbook_name, "imported_version"))
+        try:
+            if not imported_version:
+                # a copy imported before versioning existed: adopt the current version
+                # as its baseline (so it doesn't read as "update available"), but leave
+                # its checksum empty so it counts as customized and is never auto-updated
+                frappe.db.set_value("Insights Workbook", workbook_name, "imported_version", version)
+            elif imported_version < version and not _is_customized(workbook_name):
+                _update_imported_workbook(template_name, workbook_name)
+            else:
+                continue
+            # commit per copy so each update is atomic — the delete-then-rebuild in
+            # _update_imported_workbook either lands whole or, on failure below, is
+            # rolled back, never left committed with the copy emptied
+            frappe.db.commit()  # nosemgrep — land each copy atomically (paired with the rollback below)
+        except Exception:
+            frappe.db.rollback()
+            frappe.log_error(title=f"Failed to sync workbook template {template_name}")

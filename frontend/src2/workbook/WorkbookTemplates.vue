@@ -18,9 +18,13 @@ export type WorkbookTemplate = {
 	has_data: boolean
 	preview_image: string | null
 	imported_workbook: number | null
+	imported_version: number | null
+	update_available: boolean
+	customized: boolean
 }
 
 const props = defineProps<{ templates: WorkbookTemplate[] }>()
+const emit = defineEmits<{ refresh: [] }>()
 const show = defineModel<boolean>({ default: false })
 
 // group by the app each template is for, so an app's dashboards read as one
@@ -66,6 +70,40 @@ function importTemplate(template: WorkbookTemplate) {
 
 function openImported(template: WorkbookTemplate) {
 	router.push(`/workbook/${template.imported_workbook}`)
+}
+
+// name of the template currently updating, so only its card's button spins
+const updating = ref<string | null>(null)
+// a customized copy is confirmed before its edits are overwritten
+const confirmTarget = ref<WorkbookTemplate | null>(null)
+const showConfirm = ref(false)
+
+function updateTemplate(template: WorkbookTemplate) {
+	if (template.customized) {
+		confirmTarget.value = template
+		showConfirm.value = true
+		return
+	}
+	runUpdate(template)
+}
+
+function runUpdate(template: WorkbookTemplate) {
+	showConfirm.value = false
+	updating.value = template.name
+	call('insights.api.templates.update_workbook_from_template', {
+		template_name: template.name,
+	})
+		.then(() => {
+			createToast({ message: __('{0} updated', template.title), variant: 'success' })
+			emit('refresh')
+		})
+		.catch(() => {
+			createToast({
+				message: __('Failed to update {0}', template.title),
+				variant: 'error',
+			})
+		})
+		.finally(() => (updating.value = null))
 }
 </script>
 
@@ -134,6 +172,13 @@ function openImported(template: WorkbookTemplate) {
 									}}
 								</div>
 
+								<div
+									v-if="template.update_available"
+									class="mt-2 text-p-sm text-ink-blue-3"
+								>
+									{{ __('A newer version is available.') }}
+								</div>
+
 								<div class="mt-4 flex items-center gap-2">
 									<template v-if="template.imported_workbook">
 										<div
@@ -142,9 +187,19 @@ function openImported(template: WorkbookTemplate) {
 											<CheckCircle2 class="h-4 w-4" />
 											{{ __('Imported') }}
 										</div>
-										<Button class="ml-auto" @click="openImported(template)">
-											{{ __('Open') }}
-										</Button>
+										<div class="ml-auto flex items-center gap-2">
+											<Button
+												v-if="template.update_available"
+												:loading="updating === template.name"
+												:disabled="!!updating"
+												@click="updateTemplate(template)"
+											>
+												{{ __('Update') }}
+											</Button>
+											<Button @click="openImported(template)">
+												{{ __('Open') }}
+											</Button>
+										</div>
 									</template>
 									<Button
 										v-else
@@ -163,4 +218,22 @@ function openImported(template: WorkbookTemplate) {
 			</div>
 		</template>
 	</Dialog>
+
+	<Dialog
+		v-model="showConfirm"
+		:options="{
+			title: __('Replace your changes?'),
+			message: __(
+				'This dashboard has been edited on your site. Updating replaces its contents with the latest version — your changes will be lost.',
+			),
+			actions: [
+				{
+					label: __('Update'),
+					variant: 'solid',
+					theme: 'red',
+					onClick: () => confirmTarget && runUpdate(confirmTarget),
+				},
+			],
+		}"
+	/>
 </template>
