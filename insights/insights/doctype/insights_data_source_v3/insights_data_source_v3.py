@@ -262,12 +262,13 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             except Exception:
                 db.raw_sql("SET SESSION TRANSACTION_READ_ONLY = 1")
 
-            MAX_STATEMENT_TIMEOUT = (
-                frappe.db.get_single_value("Insights Settings", "max_execution_time", cache=True) or 180
+            from insights.insights.doctype.insights_settings.insights_settings import (
+                get_max_execution_time,
             )
+
             ## Todo: Permanent fix for this
             try:
-                db.raw_sql(f"SET MAX_STATEMENT_TIME={MAX_STATEMENT_TIMEOUT}")
+                db.raw_sql(f"SET MAX_STATEMENT_TIME={get_max_execution_time()}")
             except Exception:
                 pass
 
