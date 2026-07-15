@@ -624,6 +624,7 @@ export function getFunnelChartOptions(config: FunnelChartConfig, result: QueryRe
 		series: [
 			{
 				type: 'custom',
+				name: valueColumn,
 				emphasis: { disabled: true },
 				data: dataValues.map((val, i) => ({
 					name: categories[i],
