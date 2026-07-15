@@ -1,6 +1,6 @@
 <template>
 	<div class="flex w-[210px] select-none flex-col gap-2 bg-white text-base">
-		<div class="flex items-center justify-between text-gray-700">
+		<div class="flex items-center justify-between text-ink-gray-6">
 			<Button @click="prevMonth" icon="lucide-chevron-left" />
 			<Button @dblclick="clearDates"> {{ formatMonth() }} </Button>
 			<Button @click="nextMonth" icon="lucide-chevron-right" />
@@ -27,7 +27,7 @@
 				<div
 					v-for="(d, i) in ['S', 'M', 'T', 'W', 'T', 'F', 'S']"
 					:key="i"
-					class="flex h-[30px] w-[30px] items-center justify-center text-sm text-gray-600"
+					class="flex h-[30px] w-[30px] items-center justify-center text-sm text-ink-gray-5"
 				>
 					{{ d }}
 				</div>
@@ -38,11 +38,11 @@
 						class="flex h-[30px] w-[30px] cursor-pointer items-center justify-center text-sm"
 						:class="{
 							'font-bold': toValue(date) === toValue(today),
-							' rounded-l bg-gray-400 !font-medium':
+							' rounded-l bg-surface-gray-5 !font-medium':
 								fromDateTxt && toValue(date) === toValue(fromDateTxt),
-							' rounded-r bg-gray-400 !font-medium':
+							' rounded-r bg-surface-gray-5 !font-medium':
 								toDateTxt && toValue(date) === toValue(toDateTxt),
-							'bg-gray-100 font-medium text-gray-800': isInRange(date),
+							'bg-surface-gray-2 font-medium text-ink-gray-7': isInRange(date),
 						}"
 						@click="() => handleDateClick(date)"
 					>
@@ -50,7 +50,7 @@
 					</div>
 				</template>
 			</div>
-			<p v-if="range" class="mt-1 text-xs leading-4 text-gray-600">
+			<p v-if="range" class="mt-1 text-xs leading-4 text-ink-gray-5">
 				{{ description }}
 			</p>
 		</div>

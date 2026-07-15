@@ -91,7 +91,7 @@ const generalAccess = computed({
 		<template #default>
 			<div class="flex flex-col gap-4">
 				<div class="flex flex-col gap-2">
-					<span class="text-sm text-gray-600">General Access</span>
+					<span class="text-sm text-ink-gray-5">General Access</span>
 					<div class="flex gap-2">
 						<div class="flex-1">
 							<Combobox
@@ -125,7 +125,7 @@ const generalAccess = computed({
 					</div>
 				</div>
 
-				<hr class="my-1 border-t border-gray-200" />
+				<hr class="my-1 border-t border-outline-gray-1" />
 
 				<div class="flex flex-col">
 					<div class="mb-4 flex w-full gap-2">
@@ -144,13 +144,13 @@ const generalAccess = computed({
 							@click="addSharedUser"
 						></Button>
 					</div>
-					<span class="mb-2 text-sm text-gray-600">People with access</span>
+					<span class="mb-2 text-sm text-ink-gray-5">People with access</span>
 					<div class="flex flex-col gap-1 overflow-y-auto">
 						<div class="flex w-full items-center gap-2 py-1">
 							<Avatar size="xl" label="You" :image="session.user.user_image" />
 							<div class="flex flex-1 flex-col">
 								<div class="leading-5">You</div>
-								<div class="text-xs text-gray-600">
+								<div class="text-xs text-ink-gray-5">
 									{{ session.user.email }}
 								</div>
 							</div>
@@ -164,7 +164,7 @@ const generalAccess = computed({
 							<Avatar size="xl" :label="user.full_name" :image="user.user_image" />
 							<div class="flex flex-1 flex-col">
 								<div class="leading-5">{{ user.full_name }}</div>
-								<div class="text-xs text-gray-600">{{ user.email }}</div>
+								<div class="text-xs text-ink-gray-5">{{ user.email }}</div>
 							</div>
 							<Button
 								variant="ghost"

@@ -69,11 +69,11 @@ const displayDate = computed(() => {
 		<template #trigger>
 			<Button class="w-full items-center !justify-start overflow-hidden">
 				<template #prefix>
-					<Calendar class="h-4 w-4 flex-shrink-0 text-gray-600" stroke-width="1.5" />
+					<Calendar class="h-4 w-4 flex-shrink-0 text-ink-gray-5" stroke-width="1.5" />
 				</template>
 				<span
 					class="truncate"
-					:class="areAllDatesValid ? 'text-gray-900' : 'text-gray-600'"
+					:class="areAllDatesValid ? 'text-ink-gray-8' : 'text-ink-gray-5'"
 				>
 					{{ displayDate }}
 				</span>

@@ -116,7 +116,7 @@ const editTeam = ref<Team | null>(null)
 					@click="showCreateTeamDialog = true"
 				>
 					<template #prefix>
-						<Plus class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+						<Plus class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 					</template>
 				</Button>
 			</SettingItem>

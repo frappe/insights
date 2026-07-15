@@ -234,7 +234,7 @@ export const query_operation_types = {
 		type: 'source',
 		icon: DatabaseZap,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: SourceArgs): Source => ({ type: 'source', ...args }),
 		getDescription: (op: Source) => {
 			return op.table.type == 'table' ? `${op.table.table_name}` : `${op.table.query_name}`
@@ -245,7 +245,7 @@ export const query_operation_types = {
 		type: 'join',
 		icon: h(BlendIcon, { class: '-rotate-45' }),
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: JoinArgs): Join => ({ type: 'join', ...args }),
 		getDescription: (op: Join) => {
 			return op.table.type == 'table' ? `${op.table.table_name}` : `${op.table.query_name}`
@@ -256,7 +256,7 @@ export const query_operation_types = {
 		type: 'union',
 		icon: BetweenHorizonalStart,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: UnionArgs): Union => ({ type: 'union', ...args }),
 		getDescription: (op: Union) => {
 			return op.table.type == 'table' ? `${op.table.table_name}` : `${op.table.query_name}`
@@ -267,7 +267,7 @@ export const query_operation_types = {
 		type: 'select',
 		icon: ColumnsIcon,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: SelectArgs): Select => ({ type: 'select', ...args }),
 		getDescription: (op: Select) => {
 			return `${op.column_names.length} columns`
@@ -278,7 +278,7 @@ export const query_operation_types = {
 		type: 'remove',
 		icon: XSquareIcon,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: RemoveArgs): Remove => ({ type: 'remove', ...args }),
 		getDescription: (op: Remove) => {
 			if (op.column_names.length < 3) {
@@ -292,7 +292,7 @@ export const query_operation_types = {
 		type: 'rename',
 		icon: TextCursorInput,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: RenameArgs): Rename => ({ type: 'rename', ...args }),
 		getDescription: (op: Rename) => {
 			return `${op.column.column_name} -> ${op.new_name}`
@@ -303,7 +303,7 @@ export const query_operation_types = {
 		type: 'cast',
 		icon: Repeat,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: CastArgs): Cast => ({ type: 'cast', ...args }),
 		getDescription: (op: Cast) => {
 			return `${op.column.column_name} -> ${op.data_type}`
@@ -314,7 +314,7 @@ export const query_operation_types = {
 		type: 'filter',
 		icon: FilterIcon,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: FilterArgs): Filter => ({ type: 'filter', ...args }),
 		getDescription: (op: Filter) => {
 			// @ts-ignore
@@ -328,7 +328,7 @@ export const query_operation_types = {
 		type: 'filter_group',
 		icon: FilterIcon,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: FilterGroupArgs): FilterGroup => ({ type: 'filter_group', ...args }),
 		getDescription: (op: FilterGroup) => {
 			if (!op.filters.length) return __('empty')
@@ -345,7 +345,7 @@ export const query_operation_types = {
 		type: 'mutate',
 		icon: FunctionSquare,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: MutateArgs): Mutate => ({ type: 'mutate', ...args }),
 		getDescription: (op: Mutate) => {
 			return `${op.new_name}`
@@ -356,7 +356,7 @@ export const query_operation_types = {
 		type: 'summarize',
 		icon: Combine,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: SummarizeArgs): Summarize => ({ type: 'summarize', ...args }),
 		getDescription: (op: Summarize) => {
 			const measures = op.measures.map((m) => m.measure_name).join(', ')
@@ -369,7 +369,7 @@ export const query_operation_types = {
 		type: 'pivot_wider',
 		icon: GitBranch,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: PivotWiderArgs): PivotWider => ({ type: 'pivot_wider', ...args }),
 		getDescription: (op: PivotWider) => {
 			return __('Pivot Wider')
@@ -380,7 +380,7 @@ export const query_operation_types = {
 		type: 'order_by',
 		icon: ArrowUpDown,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: OrderByArgs): OrderBy => ({ type: 'order_by', ...args }),
 		getDescription: (op: OrderBy) => {
 			return `${op.column.column_name} ${op.direction}`
@@ -391,7 +391,7 @@ export const query_operation_types = {
 		type: 'limit',
 		icon: Indent,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (limit: number): Limit => ({ type: 'limit', limit }),
 		getDescription: (op: Limit) => {
 			return `${op.limit}`
@@ -402,7 +402,7 @@ export const query_operation_types = {
 		type: 'custom_operation',
 		icon: Braces,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: CustomOperationArgs): CustomOperation => ({
 			type: 'custom_operation',
 			...args,
@@ -416,7 +416,7 @@ export const query_operation_types = {
 		type: 'sql',
 		icon: ScrollText,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: SQLArgs): SQL => ({ type: 'sql', ...args }),
 		getDescription: (op: SQL) => {
 			return __('SQL')
@@ -427,7 +427,7 @@ export const query_operation_types = {
 		type: 'code',
 		icon: Braces,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: CodeArgs): Code => ({ type: 'code', ...args }),
 		getDescription: (op: Code) => {
 			return __('Code')

@@ -257,19 +257,19 @@ function allowDrop(event: DragEvent) {
 					variant="ghost"
 					@click="workbook.addFolder(`Untitled`, section.type)"
 				>
-					<Folder class="h-4 w-4 text-gray-600" stroke-width="1.5" />
+					<Folder class="h-4 w-4 text-ink-gray-5" stroke-width="1.5" />
 				</Button>
 				<Button class="!h-fit !p-1" variant="ghost" @click="section.add()">
-					<Plus class="h-4 w-4 text-gray-600" stroke-width="1.5" />
+					<Plus class="h-4 w-4 text-ink-gray-5" stroke-width="1.5" />
 				</Button>
 			</div>
 		</div>
 
 		<div
 			v-if="!section.items.length && !folders.length"
-			class="flex h-12 flex-col items-center justify-center rounded border border-dashed border-gray-300 py-2"
+			class="flex h-12 flex-col items-center justify-center rounded border border-dashed border-outline-gray-2 py-2"
 		>
-			<div class="text-xs text-gray-500">{{ section.emptyMessage }}</div>
+			<div class="text-xs text-ink-gray-4">{{ section.emptyMessage }}</div>
 		</div>
 
 		<div v-else class="flex flex-col border-b pb-3">
@@ -280,10 +280,10 @@ function allowDrop(event: DragEvent) {
 				/>
 
 				<div
-					class="group w-full cursor-pointer rounded transition-all hover:bg-gray-100 drag-item"
+					class="group w-full cursor-pointer rounded transition-all hover:bg-surface-gray-2 drag-item"
 					:class="[
-						section.isActive(row) ? ' bg-gray-100' : '',
-						dragOverItem === row.name ? 'bg-blue-50' : '',
+						section.isActive(row) ? ' bg-surface-gray-2' : '',
+						dragOverItem === row.name ? 'bg-surface-blue-1' : '',
 					]"
 					draggable="true"
 					@dragstart="setDraggedItem($event, row)"
@@ -303,10 +303,10 @@ function allowDrop(event: DragEvent) {
 							<p class="truncate">{{ row.title }}</p>
 						</div>
 						<button
-							class="invisible cursor-pointer rounded px-1.5 py-1 transition-all hover:bg-gray-100 group-hover:visible"
+							class="invisible cursor-pointer rounded px-1.5 py-1 transition-all hover:bg-surface-gray-2 group-hover:visible"
 							@click.prevent.stop="section.remove(row)"
 						>
-							<X class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+							<X class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 						</button>
 					</router-link>
 				</div>
@@ -322,13 +322,13 @@ function allowDrop(event: DragEvent) {
 				:key="folder.name"
 				class="mt-1 rounded transition-all"
 				:class="{
-					'bg-blue-50 ring-1 ring-blue-400': dragOverFolder === folder.name,
+					'bg-surface-blue-1 ring-1 ring-outline-blue-4': dragOverFolder === folder.name,
 				}"
 			>
 				<div
 					:class="[
-						'group flex h-7.5 cursor-pointer items-center justify-between rounded px-1.5 mb-0.5 transition-all hover:bg-gray-100',
-						editingFolderName === folder.name ? 'ring-1 ring-gray-400' : '',
+						'group flex h-7.5 cursor-pointer items-center justify-between rounded px-1.5 mb-0.5 transition-all hover:bg-surface-gray-2',
+						editingFolderName === folder.name ? 'ring-1 ring-outline-gray-3' : '',
 					]"
 					@click="editingFolderName !== folder.name && toggleFolder(folder)"
 					@dragenter="onDragEnterFolder($event, folder)"
@@ -341,14 +341,14 @@ function allowDrop(event: DragEvent) {
 							v-if="
 								!isFolderExpanded(folder.name) && editingFolderName !== folder.name
 							"
-							class="h-4 w-4 flex-shrink-0 text-gray-600"
+							class="h-4 w-4 flex-shrink-0 text-ink-gray-5"
 							stroke-width="1.5"
 						/>
 						<ChevronDown
 							v-else-if="
 								isFolderExpanded(folder.name) && editingFolderName !== folder.name
 							"
-							class="h-4 w-4 flex-shrink-0 text-gray-600"
+							class="h-4 w-4 flex-shrink-0 text-ink-gray-5"
 							stroke-width="1.5"
 						/>
 						<input
@@ -368,16 +368,16 @@ function allowDrop(event: DragEvent) {
 						class="invisible flex gap-0.5 group-hover:visible"
 					>
 						<button
-							class="cursor-pointer rounded p-1 transition-all hover:bg-gray-200"
+							class="cursor-pointer rounded p-1 transition-all hover:bg-surface-gray-3"
 							@click.stop="startRenameFolder(folder, $event)"
 						>
-							<PenLine class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
+							<PenLine class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />
 						</button>
 						<button
-							class="cursor-pointer rounded p-1 transition-all hover:bg-gray-200"
+							class="cursor-pointer rounded p-1 transition-all hover:bg-surface-gray-3"
 							@click.stop="removeFolder(folder, $event)"
 						>
-							<X class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
+							<X class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />
 						</button>
 					</div>
 				</div>
@@ -397,10 +397,10 @@ function allowDrop(event: DragEvent) {
 						/>
 
 						<div
-							class="group w-full cursor-pointer rounded transition-all hover:bg-gray-100 drag-item"
+							class="group w-full cursor-pointer rounded transition-all hover:bg-surface-gray-2 drag-item"
 							:class="[
-								section.isActive(row) ? ' bg-gray-100' : '',
-								dragOverItem === row.name ? 'bg-blue-50' : '',
+								section.isActive(row) ? ' bg-surface-gray-2' : '',
+								dragOverItem === row.name ? 'bg-surface-blue-1' : '',
 							]"
 							draggable="true"
 							@dragstart="setDraggedItem($event, row, folder.name)"
@@ -420,10 +420,10 @@ function allowDrop(event: DragEvent) {
 									<p class="truncate">{{ row.title }}</p>
 								</div>
 								<button
-									class="invisible cursor-pointer rounded px-1.5 py-1 transition-all hover:bg-gray-100 group-hover:visible"
+									class="invisible cursor-pointer rounded px-1.5 py-1 transition-all hover:bg-surface-gray-2 group-hover:visible"
 									@click.prevent.stop="section.remove(row)"
 								>
-									<X class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+									<X class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 								</button>
 							</router-link>
 						</div>

@@ -95,10 +95,10 @@ function addNewColumn() {
 							<Button
 								variant="ghost"
 								class="rounded-sm"
-								:class="isOpen ? '!bg-gray-100' : ''"
+								:class="isOpen ? '!bg-surface-gray-2' : ''"
 							>
 								<template #icon>
-									<MoreHorizontal class="h-4 w-4 text-gray-700" />
+									<MoreHorizontal class="h-4 w-4 text-ink-gray-6" />
 								</template>
 							</Button>
 						</template>
@@ -140,12 +140,12 @@ function addNewColumn() {
 					/>
 					<Button variant="ghost" class="flex-shrink-0" @click="addNewColumn(), toggle()">
 						<template #icon>
-							<Check class="size-4 text-gray-700" :stroke-width="1.5" />
+							<Check class="size-4 text-ink-gray-6" :stroke-width="1.5" />
 						</template>
 					</Button>
 					<Button variant="ghost" class="flex-shrink-0" @click="toggle">
 						<template #icon>
-							<X class="size-4 text-gray-700" :stroke-width="1.5" />
+							<X class="size-4 text-ink-gray-6" :stroke-width="1.5" />
 						</template>
 					</Button>
 				</div>

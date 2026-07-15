@@ -20,10 +20,10 @@ const workbook = inject(workbookKey)
 				:class="workbook.isActiveTab('query', idx) ? 'border-b-gray-800' : ''"
 				@click="router.push(`/workbook/${workbook.name}/query/${idx}`)"
 			>
-				<Table2 class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
+				<Table2 class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />
 				<span class="ml-2">{{ query.title }}</span>
 				<XIcon
-					class="ml-2 h-3.5 w-3.5 cursor-pointer text-gray-500 transition-all hover:text-gray-800"
+					class="ml-2 h-3.5 w-3.5 cursor-pointer text-ink-gray-4 transition-all hover:text-ink-gray-7"
 					@click.prevent.stop="workbook.removeQuery(query.name)"
 				/>
 			</button>
@@ -37,7 +37,7 @@ const workbook = inject(workbookKey)
 				<ChartIcon :chart-type="chart.chart_type" />
 				<span class="ml-2">{{ chart.title }}</span>
 				<XIcon
-					class="ml-2 h-3.5 w-3.5 cursor-pointer text-gray-500 transition-all hover:text-gray-800"
+					class="ml-2 h-3.5 w-3.5 cursor-pointer text-ink-gray-4 transition-all hover:text-ink-gray-7"
 					@click.prevent.stop="workbook.removeChart(chart.name)"
 				/>
 			</button>
@@ -48,10 +48,10 @@ const workbook = inject(workbookKey)
 				:class="workbook.isActiveTab('dashboard', idx) ? 'border-b-gray-800' : ''"
 				@click="router.push(`/workbook/${workbook.name}/dashboard/${idx}`)"
 			>
-				<LayoutPanelTop class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
+				<LayoutPanelTop class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />
 				<span class="ml-2">{{ dashboard.title }}</span>
 				<XIcon
-					class="ml-2 h-3.5 w-3.5 cursor-pointer text-gray-500 transition-all hover:text-gray-800"
+					class="ml-2 h-3.5 w-3.5 cursor-pointer text-ink-gray-4 transition-all hover:text-ink-gray-7"
 					@click.prevent.stop="workbook.removeDashboard(dashboard.name)"
 				/>
 			</button>

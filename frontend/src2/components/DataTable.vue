@@ -226,10 +226,10 @@ const pagination = usePagination({
 })
 
 const colorByPercentage = {
-	0: 'bg-white text-gray-900',
-	10: 'bg-[#338AD8]/10 text-gray-900',
-	30: 'bg-[#338AD8]/30 text-gray-900',
-	60: 'bg-[#338AD8]/60 text-gray-900',
+	0: 'bg-white text-ink-gray-8',
+	10: 'bg-[#338AD8]/10 text-ink-gray-8',
+	30: 'bg-[#338AD8]/30 text-ink-gray-8',
+	60: 'bg-[#338AD8]/60 text-ink-gray-8',
 	90: 'bg-[#338AD8]/90 text-white',
 	100: 'bg-[#338AD8] text-white',
 }
@@ -308,7 +308,7 @@ const formattingRulesByColumn = computed(() => {
 })
 
 function getColorClass(colorName: string): string {
-	if (!colorName) return 'bg-gray-500'
+	if (!colorName) return 'bg-surface-gray-6'
 
 	switch (colorName.toLowerCase()) {
 		case 'red':
@@ -318,7 +318,7 @@ function getColorClass(colorName: string): string {
 		case 'amber':
 			return 'bg-[#F8D16E] text-black'
 		default:
-			return colorName.startsWith('bg-') ? colorName : 'bg-gray-500'
+			return colorName.startsWith('bg-') ? colorName : 'bg-surface-gray-6'
 	}
 }
 
@@ -487,7 +487,7 @@ function getColorScaleClassFromFormat(colName: string, val: any, format: Formatt
 		}
 	}
 	const thresholdKey = String(selectedThreshold)
-	const bgClass = colorScale[thresholdKey]?.trim() || 'bg-gray-300'
+	const bgClass = colorScale[thresholdKey]?.trim() || 'bg-surface-gray-4'
 	return `${bgClass}`
 }
 
@@ -547,10 +547,10 @@ function toggleNewColumn() {
 	>
 		<div class="w-full flex-1 overflow-y-auto">
 			<table class="relative h-full w-full border-separate border-spacing-0">
-				<thead ref="$header" class="sticky top-0 z-10 bg-gray-50">
+				<thead ref="$header" class="sticky top-0 z-10 bg-surface-gray-1">
 					<tr v-for="headerRow in headers">
 						<td
-							class="sticky left-0 h-8 whitespace-nowrap border-b border-r bg-gray-50 px-3"
+							class="sticky left-0 h-8 whitespace-nowrap border-b border-r bg-surface-gray-1 px-3"
 							data-column-name="__index"
 							width="1px"
 						></td>
@@ -562,7 +562,9 @@ function toggleNewColumn() {
 								header.isLast && isNumberColumn(header.column.name)
 									? 'text-right'
 									: 'text-left',
-								isStickyColumn(header.column.name) ? 'sticky bg-gray-50' : '',
+								isStickyColumn(header.column.name)
+									? 'sticky bg-surface-gray-1'
+									: '',
 							]"
 							:style="{
 								...getStickyColumnStyle(header.column.name),
@@ -609,7 +611,7 @@ function toggleNewColumn() {
 								@click="toggleNewColumn"
 							>
 								<template #icon>
-									<Plus class="size-4 text-gray-700" :stroke-width="1.5" />
+									<Plus class="size-4 text-ink-gray-6" :stroke-width="1.5" />
 								</template>
 							</Button>
 							<slot
@@ -630,14 +632,14 @@ function toggleNewColumn() {
 
 					<tr v-if="props.showFilterRow">
 						<td
-							class="sticky left-0 h-8 whitespace-nowrap border-b border-r bg-gray-50 px-3"
+							class="sticky left-0 h-8 whitespace-nowrap border-b border-r bg-surface-gray-1 px-3"
 							width="1px"
 						></td>
 						<td
 							v-for="(column, idx) in props.columns"
 							:key="idx"
 							class="h-8 border-b border-r p-1"
-							:class="isStickyColumn(column.name) ? 'sticky bg-gray-50' : ''"
+							:class="isStickyColumn(column.name) ? 'sticky bg-surface-gray-1' : ''"
 							:style="{
 								...getStickyColumnStyle(column.name),
 								...getColumnWidthStyle(column.name),
@@ -648,15 +650,15 @@ function toggleNewColumn() {
 								@update:model-value="
 									(value) => (filterPerColumn[column.name] = value)
 								"
-								class="[&_input]:h-6 [&_input]:bg-gray-200/80"
+								class="[&_input]:h-6 [&_input]:bg-surface-gray-3/80"
 							>
 								<template #prefix>
-									<Search class="size-3.5 text-gray-500" :stroke-width="1.5" />
+									<Search class="size-3.5 text-ink-gray-4" :stroke-width="1.5" />
 								</template>
 								<template #suffix>
 									<LoadingIndicator
 										v-if="props.loading || props.filtering"
-										class="size-3.5 text-gray-500"
+										class="size-3.5 text-ink-gray-4"
 									/>
 								</template>
 							</LazyTextInput>
@@ -692,7 +694,7 @@ function toggleNewColumn() {
 
 						<td
 							v-for="col in props.columns"
-							class="h-8 border-b border-r px-3 text-gray-800 leading-5 py-1.5"
+							class="h-8 border-b border-r px-3 text-ink-gray-7 leading-5 py-1.5"
 							:class="[
 								getTextWrapClass(col.name),
 								isNumberColumn(col.name) ? 'tnum text-right' : 'text-left',
@@ -743,7 +745,7 @@ function toggleNewColumn() {
 						<td class="h-8 whitespace-nowrap border-r border-t px-3"></td>
 						<td
 							v-for="col in props.columns"
-							class="h-8 truncate border-r border-t px-3 font-bold text-gray-800"
+							class="h-8 truncate border-r border-t px-3 font-bold text-ink-gray-7"
 							:class="[
 								isNumberColumn(col.name) ? 'tnum text-right' : 'text-left',
 								isStickyColumn(col.name) ? 'sticky bg-white' : '',
@@ -792,8 +794,8 @@ function toggleNewColumn() {
 
 	<div v-else class="flex h-full w-full items-center justify-center">
 		<div class="flex flex-col items-center gap-2">
-			<Table2Icon class="h-16 w-16 text-gray-300" stroke-width="1.5" />
-			<p class="text-center text-gray-500">No data to display.</p>
+			<Table2Icon class="h-16 w-16 text-ink-gray-2" stroke-width="1.5" />
+			<p class="text-center text-ink-gray-4">No data to display.</p>
 		</div>
 	</div>
 
@@ -801,6 +803,6 @@ function toggleNewColumn() {
 		v-if="props.loading && !props.filtering"
 		class="absolute top-10 flex h-[calc(100%-2.5rem)] rounded-b w-full items-center justify-center bg-white/30 backdrop-blur-sm"
 	>
-		<LoadingIndicator class="h-5 w-5 text-gray-500" />
+		<LoadingIndicator class="h-5 w-5 text-ink-gray-4" />
 	</div>
 </template>

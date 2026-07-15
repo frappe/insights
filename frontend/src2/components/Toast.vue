@@ -10,10 +10,10 @@
 				</div>
 				<div>
 					<slot>
-						<p class="text-p-base-medium text-gray-900">
+						<p class="text-p-base-medium text-ink-gray-8">
 							{{ title }}
 						</p>
-						<p v-if="message" class="text-p-sm text-gray-600">
+						<p v-if="message" class="text-p-sm text-ink-gray-5">
 							<span v-if="containsHTML" v-html="message"></span>
 							<span v-else>{{ message }}</span>
 						</p>
@@ -44,16 +44,16 @@ const containsHTML = computed(() => props.message?.includes('<'))
 
 const variantClasses = computed(() => {
 	if (props.variant === 'success') {
-		return 'bg-green-50'
+		return 'bg-surface-green-1'
 	}
 	if (props.variant === 'info') {
-		return 'bg-blue-50'
+		return 'bg-surface-blue-1'
 	}
 	if (props.variant === 'warning') {
-		return 'bg-orange-50'
+		return 'bg-surface-orange-1'
 	}
 	if (props.variant === 'error') {
-		return 'bg-red-50'
+		return 'bg-surface-red-1'
 	}
 })
 

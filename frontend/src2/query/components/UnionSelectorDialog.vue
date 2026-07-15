@@ -112,7 +112,7 @@ function reset() {
 			<div class="rounded-lg bg-white px-4 pb-6 pt-5 sm:px-6">
 				<!-- Title & Close -->
 				<div class="flex items-center justify-between pb-4">
-					<h3 class="text-3xl-semibold leading-6 text-gray-900">
+					<h3 class="text-3xl-semibold leading-6 text-ink-gray-8">
 						{{ __('Append Rows') }}
 					</h3>
 					<Button variant="ghost" @click="showDialog = false" icon="lucide-x" size="md">
@@ -122,7 +122,7 @@ function reset() {
 				<!-- Fields -->
 				<div class="flex w-full flex-col gap-3 overflow-auto p-0.5 text-base">
 					<div>
-						<label class="mb-1 block text-xs text-gray-600">{{
+						<label class="mb-1 block text-xs text-ink-gray-5">{{
 							__('Select Table')
 						}}</label>
 						<Combobox

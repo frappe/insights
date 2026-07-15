@@ -198,12 +198,12 @@ function onFilterChange(filters: Record<string, string>) {
 		<template #footer-right-actions>
 			<Button v-if="enableAlerts" variant="ghost" @click="showAlertsDialog = true">
 				<template #icon>
-					<Bell class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+					<Bell class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 				</template>
 			</Button>
 			<Button v-if="session.user.can_download" variant="ghost" @click="openExport">
 				<template #icon>
-					<Download class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+					<Download class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 				</template>
 			</Button>
 		</template>

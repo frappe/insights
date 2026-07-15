@@ -23,7 +23,7 @@ const props = defineProps<{
 				<Button
 					variant="ghost"
 					class="w-full !justify-start"
-					:class="{ ' !bg-gray-100': isOpen }"
+					:class="{ ' !bg-surface-gray-2': isOpen }"
 				>
 					<template #icon>
 						<div class="flex h-7 w-full items-center gap-2 pl-2 pr-1.5 text-base">

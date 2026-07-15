@@ -103,7 +103,7 @@ function onDatePickerInput(value: string[]) {
 	<div class="flex w-[210px] flex-col divide-y text-base">
 		<div class="flex flex-col gap-1 pb-2">
 			<div
-				class="flex cursor-pointer items-center justify-between text-sm text-gray-600 hover:underline"
+				class="flex cursor-pointer items-center justify-between text-sm text-ink-gray-5 hover:underline"
 				@click="currentSection = currentSection == 'presets' ? '' : 'presets'"
 			>
 				<span> Presets </span>
@@ -122,11 +122,11 @@ function onDatePickerInput(value: string[]) {
 					:class="
 						isRangeSelected(range.value)
 							? 'outline outline-gray-500'
-							: 'hover:bg-gray-100'
+							: 'hover:bg-surface-gray-2'
 					"
 				>
 					<span>{{ range.label }}</span>
-					<span class="text-sm text-gray-600">{{ range.description }}</span>
+					<span class="text-sm text-ink-gray-5">{{ range.description }}</span>
 				</div>
 			</div>
 		</div>
@@ -134,7 +134,7 @@ function onDatePickerInput(value: string[]) {
 		<div>
 			<div class="flex flex-col gap-1 py-2">
 				<div
-					class="flex cursor-pointer items-center justify-between text-sm text-gray-600 hover:underline"
+					class="flex cursor-pointer items-center justify-between text-sm text-ink-gray-5 hover:underline"
 					@click="currentSection = currentSection == 'relative' ? '' : 'relative'"
 				>
 					<span> Relative Dates </span>
@@ -177,7 +177,7 @@ function onDatePickerInput(value: string[]) {
 		<div class="">
 			<div class="flex flex-col gap-2 pt-2">
 				<div
-					class="flex cursor-pointer items-center justify-between text-sm text-gray-600 hover:underline"
+					class="flex cursor-pointer items-center justify-between text-sm text-ink-gray-5 hover:underline"
 					@click="currentSection = currentSection == 'specific' ? '' : 'specific'"
 				>
 					<span> Specific Dates </span>

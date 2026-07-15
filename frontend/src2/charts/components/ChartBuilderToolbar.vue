@@ -30,40 +30,40 @@ provide('query', props.chart.dataQuery)
 const moreActions = [
 	{
 		label: __('Export as PNG'),
-		icon: h(ImageDown, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
+		icon: h(ImageDown, { class: 'h-3 w-3 text-ink-gray-6', strokeWidth: 1.5 }),
 		onClick: () => props.onDownload(),
 		condition: () => !!props.chartEl,
 	},
 	{
 		label: __('Share Chart'),
-		icon: h(Share2, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
+		icon: h(Share2, { class: 'h-3 w-3 text-ink-gray-6', strokeWidth: 1.5 }),
 		onClick: () => props.onShare(),
 		condition: () => !props.chart.doc.read_only,
 	},
 	{
 		label: __('Duplicate Chart'),
-		icon: h(CopyPlus, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
+		icon: h(CopyPlus, { class: 'h-3 w-3 text-ink-gray-6', strokeWidth: 1.5 }),
 		onClick: () => props.chart.duplicate(),
 	},
 	{
 		label: __('Reset Options'),
-		icon: h(XIcon, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
+		icon: h(XIcon, { class: 'h-3 w-3 text-ink-gray-6', strokeWidth: 1.5 }),
 		onClick: () => props.chart.resetConfig(),
 		condition: () => !props.chart.doc.read_only,
 	},
 	{
 		label: __('View SQL'),
-		icon: h(Scroll, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
+		icon: h(Scroll, { class: 'h-3 w-3 text-ink-gray-6', strokeWidth: 1.5 }),
 		onClick: () => (showViewSQLDialog.value = true),
 	},
 	{
 		label: __('Copy JSON'),
-		icon: h(Copy, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
+		icon: h(Copy, { class: 'h-3 w-3 text-ink-gray-6', strokeWidth: 1.5 }),
 		onClick: () => props.chart.copy(),
 	},
 	{
 		label: __('Open in Desk'),
-		icon: h(ExternalLink, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
+		icon: h(ExternalLink, { class: 'h-3 w-3 text-ink-gray-6', strokeWidth: 1.5 }),
 		onClick: () => props.chart.openInDesk(),
 		condition: () => session.user.has_desk_access,
 	},
@@ -75,7 +75,7 @@ const moreActions = [
 		<div>
 			<div
 				v-show="chart.dataQuery.result.executedSQL"
-				class="tnum flex items-center gap-2 text-sm text-gray-600"
+				class="tnum flex items-center gap-2 text-sm text-ink-gray-5"
 			>
 				<div class="h-2 w-2 rounded-full bg-green-500"></div>
 				<div>
@@ -88,13 +88,13 @@ const moreActions = [
 		<div class="flex items-center gap-2">
 			<Button variant="outline" label="Refresh" @click="() => chart.refresh(true)">
 				<template #prefix>
-					<RefreshCcw class="h-3 w-3 text-gray-700" stroke-width="1.5" />
+					<RefreshCcw class="h-3 w-3 text-ink-gray-6" stroke-width="1.5" />
 				</template>
 			</Button>
 			<Dropdown placement="right" :options="moreActions">
 				<Button variant="outline">
 					<template #icon>
-						<MoreHorizontal class="h-3 w-3 text-gray-700" stroke-width="1.5" />
+						<MoreHorizontal class="h-3 w-3 text-ink-gray-6" stroke-width="1.5" />
 					</template>
 				</Button>
 			</Dropdown>

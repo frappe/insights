@@ -67,10 +67,14 @@ function moveSortColumn(from: number, to: number) {
 						<template #icon>
 							<SortAscIcon
 								v-if="item.direction == 'asc'"
-								class="h-4 w-4 text-gray-700"
+								class="h-4 w-4 text-ink-gray-6"
 								stroke-width="1.5"
 							/>
-							<SortDescIcon v-else class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+							<SortDescIcon
+								v-else
+								class="h-4 w-4 text-ink-gray-6"
+								stroke-width="1.5"
+							/>
 						</template>
 					</Button>
 					<div class="flex-1 overflow-hidden">
@@ -93,7 +97,7 @@ function moveSortColumn(from: number, to: number) {
 						@click="removeSortColumn(index)"
 					>
 						<template #icon>
-							<X class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+							<X class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 						</template>
 					</Button>
 				</div>
@@ -105,7 +109,7 @@ function moveSortColumn(from: number, to: number) {
 			<template #trigger>
 				<Button class="w-full">
 					<template #prefix>
-						<Plus class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+						<Plus class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 					</template>
 					Add Sort
 				</Button>

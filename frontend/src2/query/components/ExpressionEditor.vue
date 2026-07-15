@@ -268,10 +268,10 @@ function setSignatureElementPosition() {
 				<p
 					v-if="currentFunctionSignature.definition"
 					v-html="currentFunctionSignature.definition"
-					class="font-mono text-p-sm text-gray-800"
+					class="font-mono text-p-sm text-ink-gray-7"
 				></p>
 				<hr v-if="currentFunctionSignature.definition" />
-				<div class="whitespace-pre-wrap font-mono text-p-sm text-gray-800">
+				<div class="whitespace-pre-wrap font-mono text-p-sm text-ink-gray-7">
 					{{ currentFunctionSignature.description }}
 				</div>
 			</template>
@@ -281,7 +281,7 @@ function setSignatureElementPosition() {
 		<transition name="fade" mode="out-in">
 			<div class="flex items-center gap-4 max-h-[10%] px-3 py-2 border-t border-b">
 				<template v-if="validationState === 'validating'">
-					<LoadingIndicator class="h-4 w-4 text-gray-500" />
+					<LoadingIndicator class="h-4 w-4 text-ink-gray-4" />
 				</template>
 
 				<template v-else-if="validationState === 'valid'">
@@ -290,7 +290,7 @@ function setSignatureElementPosition() {
 				</template>
 
 				<template v-else-if="validationErrors.length">
-					<div class="flex items-center gap-2 text-red-800">
+					<div class="flex items-center gap-2 text-ink-red-9">
 						<Info class="h-4 w-4 flex-shrink-0" />
 						<div class="flex-1">
 							<div
@@ -308,7 +308,7 @@ function setSignatureElementPosition() {
 				</template>
 
 				<template v-else>
-					<div class="text-sm text-gray-500">No output</div>
+					<div class="text-sm text-ink-gray-4">No output</div>
 				</template>
 			</div>
 		</transition>

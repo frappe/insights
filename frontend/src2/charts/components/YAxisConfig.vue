@@ -42,7 +42,7 @@ const updateColor = debounce((color: string, idx: number) => {
 	<CollapsibleSection title="Y Axis">
 		<div class="flex flex-col gap-3 pt-1">
 			<div>
-				<p class="mb-1.5 text-xs text-gray-600">Series</p>
+				<p class="mb-1.5 text-xs text-ink-gray-5">Series</p>
 				<div>
 					<DraggableList v-model:items="y_axis.series" group="series">
 						<template #item="{ item, index }">
@@ -89,7 +89,7 @@ const updateColor = debounce((color: string, idx: number) => {
 						</template>
 					</DraggableList>
 					<button
-						class="mt-1.5 text-left text-xs text-gray-600 hover:underline"
+						class="mt-1.5 text-left text-xs text-ink-gray-5 hover:underline"
 						@click="addSeries"
 					>
 						+ Add series

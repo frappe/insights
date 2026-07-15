@@ -40,15 +40,15 @@ const activeQueryName = computed(() => {
 			<template #item-icon="{ item }">
 				<ScrollText
 					v-if="item.is_native_query"
-					class="h-4 w-4 text-gray-700"
+					class="h-4 w-4 text-ink-gray-6"
 					stroke-width="1.5"
 				/>
 				<Braces
 					v-else-if="item.is_script_query"
-					class="h-4 w-4 text-gray-700"
+					class="h-4 w-4 text-ink-gray-6"
 					stroke-width="1.5"
 				/>
-				<Table2 v-else class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+				<Table2 v-else class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 			</template>
 		</WorkbookSidebarFolders>
 
@@ -83,7 +83,7 @@ const activeQueryName = computed(() => {
 			}"
 		>
 			<template #item-icon>
-				<LayoutPanelTop class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+				<LayoutPanelTop class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 			</template>
 		</WorkbookSidebarListSection>
 	</div>

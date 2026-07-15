@@ -38,7 +38,7 @@ function update() {
 			</div>
 			<div class="flex h-15 flex-col justify-center gap-1">
 				<span class="text-lg-semibold">{{ user.full_name }}</span>
-				<span class="text-base text-gray-700">{{ user.email }}</span>
+				<span class="text-base text-ink-gray-6">{{ user.email }}</span>
 			</div>
 		</div>
 		<div class="flex w-full flex-col gap-4">

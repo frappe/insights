@@ -176,7 +176,7 @@ watchEffect(() => {
 				autocomplete="off"
 			>
 				<template #prefix>
-					<SearchIcon class="h-4 w-4 text-gray-500" />
+					<SearchIcon class="h-4 w-4 text-ink-gray-4" />
 				</template>
 			</FormControl>
 			<TabButtons :buttons="scopeTabs" v-model="scope" />

@@ -244,7 +244,7 @@ Thanks,
 						`"
 					/>
 
-					<div class="mt-2 text-p-sm text-gray-600">
+					<div class="mt-2 text-p-sm text-ink-gray-5">
 						{{
 							__(
 								'You can use markdown to format the message. Use double asterisks (**) for bold text. You can use the following fields in the message:',

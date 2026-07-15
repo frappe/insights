@@ -21,7 +21,7 @@ const collapsed = ref(props.collapsed ?? false)
 				<slot name="title-suffix" />
 			</div>
 			<ChevronRight
-				class="h-4 w-4 text-gray-700 transition-all"
+				class="h-4 w-4 text-ink-gray-6 transition-all"
 				:class="{ 'rotate-90 transform': !collapsed }"
 				stroke-width="1.5"
 			/>

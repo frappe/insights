@@ -32,12 +32,12 @@ if (relativeDate.value) {
 
 watchEffect(() => {
 	if (parts.intervalType === 'Fiscal Year') parts.includeCurrent = false
-	const base = parts.span === 'Current'
-		? `${parts.span} ${parts.intervalType}`
-		: `${parts.span} ${parts.interval} ${parts.intervalType}`
-	relativeDate.value = parts.includeCurrent && parts.span !== 'Current'
-		? `${base} (include current)`
-		: base
+	const base =
+		parts.span === 'Current'
+			? `${parts.span} ${parts.intervalType}`
+			: `${parts.span} ${parts.interval} ${parts.intervalType}`
+	relativeDate.value =
+		parts.includeCurrent && parts.span !== 'Current' ? `${base} (include current)` : base
 })
 
 const toggleLabel = (span: string, intervalType: string) =>
@@ -66,9 +66,12 @@ const toggleLabel = (span: string, intervalType: string) =>
 				:options="INTERVAL_TYPE_OPTIONS"
 			/>
 		</div>
-		<div v-if="parts.span !== 'Current' && parts.intervalType !== 'Fiscal Year'" class="flex items-center gap-2">
+		<div
+			v-if="parts.span !== 'Current' && parts.intervalType !== 'Fiscal Year'"
+			class="flex items-center gap-2"
+		>
 			<Toggle size="sm" v-model="parts.includeCurrent" />
-			<span class="text-p-sm text-gray-600">
+			<span class="text-p-sm text-ink-gray-5">
 				{{ toggleLabel(parts.span, parts.intervalType) }}
 			</span>
 		</div>

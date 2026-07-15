@@ -10,7 +10,7 @@ const query = inject('query') as Query
 <template>
 	<div
 		v-show="query.result.executedSQL"
-		class="tnum flex flex-shrink-0 items-center gap-2 text-sm text-gray-600"
+		class="tnum flex flex-shrink-0 items-center gap-2 text-sm text-ink-gray-5"
 	>
 		<div class="h-2 w-2 rounded-full bg-green-500"></div>
 		<div class="flex items-center gap-1">

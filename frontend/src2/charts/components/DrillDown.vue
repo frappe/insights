@@ -57,7 +57,7 @@ const groupBy = debounce(_groupBy, 50)
 	<Dialog v-model:open="show" :title="__('Drill Down')" size="5xl">
 		<template #default>
 			<div v-if="!isQueryReady" class="flex h-[32rem] w-full items-center justify-center">
-				<LoadingIndicator class="h-5 w-5 text-gray-600" />
+				<LoadingIndicator class="h-5 w-5 text-ink-gray-5" />
 			</div>
 			<div
 				v-else
@@ -82,7 +82,7 @@ const groupBy = debounce(_groupBy, 50)
 									>
 										<template #icon>
 											<Combine
-												class="h-4 w-4 text-gray-700"
+												class="h-4 w-4 text-ink-gray-6"
 												stroke-width="1.5"
 											/>
 										</template>

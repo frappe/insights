@@ -47,8 +47,8 @@ function dismiss() {
 	<div v-if="show" class="flex flex-col gap-3 rounded-lg bg-white px-3 py-2.5 text-sm shadow-sm">
 		<div class="flex items-start justify-between">
 			<div class="flex flex-col gap-1">
-				<div class="text-p-base-medium text-gray-900">{{ __('Try demo data') }}</div>
-				<div class="text-p-xs text-gray-600">
+				<div class="text-p-base-medium text-ink-gray-8">{{ __('Try demo data') }}</div>
+				<div class="text-p-xs text-ink-gray-5">
 					Explore with sample data and a pre-built workbook
 				</div>
 			</div>

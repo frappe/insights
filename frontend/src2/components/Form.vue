@@ -53,7 +53,7 @@ defineExpose({
 				/>
 				<span
 					v-if="field.required && !form[field.name]"
-					class="absolute right-0 top-0 text-xs text-red-400"
+					class="absolute right-0 top-0 text-xs text-ink-red-5"
 				>
 					* required
 				</span>

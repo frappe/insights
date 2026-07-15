@@ -30,8 +30,8 @@ watch(searchQuery, (query) => {
 <template>
 	<div class="flex h-full flex-col overflow-hidden">
 		<div class="flex items-center space-x-2">
-			<div class="rounded bg-gray-100 p-1">
-				<Book class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+			<div class="rounded bg-surface-gray-2 p-1">
+				<Book class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 			</div>
 			<div class="text-lg">{{ __('Workbooks') }}</div>
 		</div>
@@ -45,16 +45,16 @@ watch(searchQuery, (query) => {
 				<li
 					v-for="(row, idx) in workbooks.list.data"
 					:key="idx"
-					class="flex h-10 cursor-pointer items-center gap-4 border-b transition-colors hover:bg-gray-50"
+					class="flex h-10 cursor-pointer items-center gap-4 border-b transition-colors hover:bg-surface-gray-1"
 					@click="router.push(`/workbook/${row.name}`)"
 				>
-					<ArrowUpRight class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+					<ArrowUpRight class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 					<div class="w-[50%] truncate">{{ row.title }}</div>
-					<div class="flex-1 text-sm text-gray-500">
+					<div class="flex-1 text-sm text-ink-gray-4">
 						<Avatar :label="row.owner" />
 						<span class="ml-1.5">{{ row.owner }}</span>
 					</div>
-					<div class="flex-1 text-sm text-gray-500">
+					<div class="flex-1 text-sm text-ink-gray-4">
 						{{ (dayjs(row.creation) as any).fromNow() }}
 					</div>
 				</li>
@@ -63,9 +63,13 @@ watch(searchQuery, (query) => {
 			<!-- empty state -->
 			<div v-else class="flex h-full w-full items-center justify-center">
 				<div class="flex flex-col items-center space-y-2">
-					<div class="text-lg text-gray-600">{{ __('No workbooks created') }}</div>
-					<div class="text-sm text-gray-600">
-						{{ __('Your workbooks will appear here. Create a new workbook to get started.') }}
+					<div class="text-lg text-ink-gray-5">{{ __('No workbooks created') }}</div>
+					<div class="text-sm text-ink-gray-5">
+						{{
+							__(
+								'Your workbooks will appear here. Create a new workbook to get started.',
+							)
+						}}
 					</div>
 				</div>
 			</div>

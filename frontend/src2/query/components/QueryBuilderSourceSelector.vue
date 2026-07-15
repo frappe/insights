@@ -12,13 +12,13 @@ const showSourceSelectorDialog = ref(true)
 	<div class="flex h-full w-full items-center justify-center">
 		<div class="flex items-center gap-4">
 			<div
-				class="flex flex-col items-center justify-center gap-2 rounded border border-dashed border-gray-300 p-8 text-center"
+				class="flex flex-col items-center justify-center gap-2 rounded border border-dashed border-outline-gray-2 p-8 text-center"
 			>
-				<div class="rounded-full bg-orange-50 p-3">
-					<DatabaseZap class="h-5 w-5 text-orange-500/70" stroke-width="1.5" />
+				<div class="rounded-full bg-surface-orange-1 p-3">
+					<DatabaseZap class="h-5 w-5 text-ink-orange-6/70" stroke-width="1.5" />
 				</div>
 				<p class="font-medium">No Table Selected</p>
-				<span class="text-sm leading-4 text-gray-600">
+				<span class="text-sm leading-4 text-ink-gray-5">
 					Select a source table to start building your query.
 					<br />
 					You can also select a query as a source.

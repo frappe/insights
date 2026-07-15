@@ -1,7 +1,7 @@
 <template>
 	<component
 		:is="tag"
-		class="contenteditable align-middle outline-none transition-all before:text-gray-500"
+		class="contenteditable align-middle outline-none transition-all before:text-ink-gray-4"
 		:contenteditable="disabled ? false : contenteditable"
 		:placeholder="placeholder"
 		@input="update"

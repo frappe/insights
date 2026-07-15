@@ -91,7 +91,7 @@ const listOptions = computed(() => ({
 		<div class="flex gap-2 overflow-visible py-1">
 			<FormControl :placeholder="__('Search')" v-model="searchQuery" :debounce="300">
 				<template #prefix>
-					<SearchIcon class="h-4 w-4 text-gray-500" />
+					<SearchIcon class="h-4 w-4 text-ink-gray-4" />
 				</template>
 			</FormControl>
 		</div>

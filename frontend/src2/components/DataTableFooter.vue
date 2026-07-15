@@ -33,7 +33,7 @@ async function handleFetchCount() {
 			<slot name="left">
 				<div
 					v-if="pagination && !pagination.isSinglePage.value"
-					class="flex items-center gap-1 tnum text-sm text-gray-500"
+					class="flex items-center gap-1 tnum text-sm text-ink-gray-4"
 				>
 					Showing {{ pagination.from.value }}–{{ pagination.to.value }} of
 					<template v-if="totalRowCount">
@@ -41,11 +41,11 @@ async function handleFetchCount() {
 					</template>
 					<template v-else-if="onFetchCount">
 						<template v-if="localFetchingCount">
-							<LoadingIndicator class="inline h-3.5 w-3.5 text-gray-500" />
+							<LoadingIndicator class="inline h-3.5 w-3.5 text-ink-gray-4" />
 						</template>
 						<Tooltip v-else text="Load Count">
 							<RefreshCw
-								class="inline-flex h-3.5 w-3.5 cursor-pointer transition-all hover:text-gray-800"
+								class="inline-flex h-3.5 w-3.5 cursor-pointer transition-all hover:text-ink-gray-7"
 								stroke-width="1.5"
 								@click="handleFetchCount"
 							/>
@@ -63,10 +63,10 @@ async function handleFetchCount() {
 					@click="emit('prev')"
 				>
 					<template #icon>
-						<ChevronLeft class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+						<ChevronLeft class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 					</template>
 				</Button>
-				<span class="tnum min-w-[3rem] text-center text-sm text-gray-600">
+				<span class="tnum min-w-[3rem] text-center text-sm text-ink-gray-5">
 					Page {{ pagination.currentPage.value }}
 				</span>
 				<Button
@@ -75,7 +75,7 @@ async function handleFetchCount() {
 					@click="emit('next')"
 				>
 					<template #icon>
-						<ChevronRight class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+						<ChevronRight class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 					</template>
 				</Button>
 			</template>

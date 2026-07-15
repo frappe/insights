@@ -154,14 +154,14 @@ watch(
 
 				<div class="flex flex-col gap-1">
 					<div class="flex justify-start items-center">
-						<label class="text-xs text-gray-600">Region Column</label>
+						<label class="text-xs text-ink-gray-5">Region Column</label>
 						<Button
 							variant="ghost"
 							:icon="InfoIcon"
 							@click="openRegionMappingDialog"
 							:class="{
-								'text-gray-600': unresolvedCount === 0,
-								'text-red-600': unresolvedCount !== null && unresolvedCount > 0,
+								'text-ink-gray-5': unresolvedCount === 0,
+								'text-ink-red-7': unresolvedCount !== null && unresolvedCount > 0,
 							}"
 						/>
 					</div>

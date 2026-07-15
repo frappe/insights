@@ -104,23 +104,23 @@ function resetFile() {
 			>
 				<template #default="{ progress, uploading, openFileSelector }">
 					<div
-						class="flex cursor-pointer flex-col items-center justify-center gap-3 rounded border border-dashed border-gray-400 p-12 text-base"
+						class="flex cursor-pointer flex-col items-center justify-center gap-3 rounded border border-dashed border-outline-gray-3 p-12 text-base"
 						@click="openFileSelector"
 					>
 						<FileUp
 							v-if="!uploading"
-							class="h-6 w-6 text-gray-600"
+							class="h-6 w-6 text-ink-gray-5"
 							stroke-width="1.2"
 						/>
 						<div class="text-center">
-							<p v-if="!uploading" class="text-sm-medium text-gray-800">
+							<p v-if="!uploading" class="text-sm-medium text-ink-gray-7">
 								Select a CSV, Excel, or JSON file to upload
 							</p>
-							<p v-if="!uploading" class="mt-1 text-xs text-gray-600">
+							<p v-if="!uploading" class="mt-1 text-xs text-ink-gray-5">
 								or drag and drop it here
 							</p>
 							<div v-else class="flex w-[15rem] flex-col gap-2">
-								<div class="h-2 w-full rounded-full bg-gray-200">
+								<div class="h-2 w-full rounded-full bg-surface-gray-3">
 									<div
 										class="h-2 rounded-full bg-blue-500 transition-all"
 										:style="{ width: `${progress}%` }"
@@ -146,7 +146,7 @@ function resetFile() {
 						:loading="csvData.loading"
 					>
 						<template #footer-left>
-							<p class="tnum p-1 text-sm text-gray-600">
+							<p class="tnum p-1 text-sm text-ink-gray-5">
 								Showing {{ csvData.rows.length.toLocaleString() }} of
 								{{ csvData.totalRowCount.toLocaleString() }} rows
 							</p>

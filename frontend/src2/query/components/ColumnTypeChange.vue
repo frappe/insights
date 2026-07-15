@@ -15,7 +15,11 @@ function onTypeChange(newType: ColumnDataType, togglePopover: () => void) {
 <template>
 	<Popover side="bottom" align="start">
 		<template #trigger="{ isOpen }">
-			<Button variant="ghost" class="rounded-none" :class="isOpen ? '!bg-gray-100' : ''">
+			<Button
+				variant="ghost"
+				class="rounded-none"
+				:class="isOpen ? '!bg-surface-gray-2' : ''"
+			>
 				<template #icon>
 					<DataTypeIcon :columnType="modelValue" />
 				</template>

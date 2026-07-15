@@ -17,7 +17,7 @@ const relativeDate = defineModel<string>({
 				type="text"
 				:value="relativeDate"
 				:placeholder="props.placeholder"
-				class="form-input block h-7 w-full cursor-text select-none rounded border-gray-400 text-sm placeholder-gray-500"
+				class="form-input block h-7 w-full cursor-text select-none rounded border-outline-gray-3 text-sm placeholder-ink-gray-4"
 			/>
 		</template>
 		<template #default="{ toggle: togglePopover }">

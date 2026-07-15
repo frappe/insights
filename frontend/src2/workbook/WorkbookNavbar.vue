@@ -26,12 +26,12 @@ const workbook = inject(workbookKey)!
 						text="You have read-only access to this workbook"
 					>
 						<ShieldAlert
-							class="absolute -left-6 h-4 w-4 cursor-pointer text-orange-600"
+							class="absolute -left-6 h-4 w-4 cursor-pointer text-ink-orange-7"
 							stroke-width="1.5"
 						/>
 					</Tooltip>
 					<ContentEditable
-						class="rounded-sm font-medium !text-gray-800 focus:ring-2 focus:ring-gray-700 focus:ring-offset-4"
+						class="rounded-sm font-medium !text-ink-gray-7 focus:ring-2 focus:ring-outline-gray-6 focus:ring-offset-4"
 						:modelValue="workbook.doc.title"
 						placeholder="Untitled Workbook"
 						@returned="workbook.doc.title = $event"

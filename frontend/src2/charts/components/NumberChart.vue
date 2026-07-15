@@ -127,11 +127,11 @@ function onDoubleClick(measure_name: string) {
 						:class="[
 							config.negative_is_better
 								? delta >= 0
-									? 'text-red-500'
-									: 'text-green-500'
+									? 'text-ink-red-6'
+									: 'text-ink-green-6'
 								: delta >= 0
-								  ? 'text-green-500'
-								  : 'text-red-500',
+								  ? 'text-ink-green-6'
+								  : 'text-ink-red-6',
 						]"
 					>
 						<span class="">

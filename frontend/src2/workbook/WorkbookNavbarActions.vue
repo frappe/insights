@@ -21,31 +21,10 @@ const showLineageDialog = ref(false)
 			@click="showShareDialog = true"
 		>
 			<template #prefix>
-				<Share2 class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+				<Share2 class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 			</template>
 			Share
 		</Button>
-		<!-- <Button
-			v-show="!workbook.islocal && workbook.isdirty"
-			variant="outline"
-			@click="workbook.discard()"
-		>
-			<template #prefix>
-				<Undo2 class="h-4 w-4 text-gray-700" stroke-width="1.5" />
-			</template>
-			Discard
-		</Button>
-		<Button
-			v-show="workbook.islocal || workbook.isdirty"
-			variant="solid"
-			:loading="workbook.saving"
-			@click="workbook.save()"
-		>
-			<template #prefix>
-				<Check class="h-4 w-4 text-gray-100" stroke-width="1.5" />
-			</template>
-			Save
-		</Button> -->
 		<Dropdown
 			:button="{ icon: 'lucide-more-horizontal', variant: 'outline' }"
 			placement="right"

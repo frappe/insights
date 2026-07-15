@@ -34,7 +34,7 @@ watch(
 			filter.value.operator = 'between'
 		}
 	},
-	{ deep: true }
+	{ deep: true },
 )
 
 const numberFilterDescription = computed(() => {
@@ -60,7 +60,7 @@ const numberFilterDescription = computed(() => {
 			<FormControl type="number" placeholder="Min" label="Min" v-model="filter.value[0]" />
 			<FormControl type="number" placeholder="Max" label="Max" v-model="filter.value[1]" />
 		</div>
-		<p class="mt-1 text-xs leading-4 text-gray-600">
+		<p class="mt-1 text-xs leading-4 text-ink-gray-5">
 			{{ numberFilterDescription }}
 		</p>
 	</div>
