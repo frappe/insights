@@ -25,7 +25,7 @@
 						"table": {
 							"type": "table",
 							"data_source": "Site DB",
-							"table_name": "tabGL Entry"
+							"table_name": "tabPayment Ledger Entry"
 						}
 					},
 					{
@@ -35,7 +35,7 @@
 							{
 								"column": {
 									"type": "column",
-									"column_name": "is_cancelled"
+									"column_name": "delinked"
 								},
 								"operator": "=",
 								"value": 0
@@ -65,7 +65,7 @@
 								"measure_name": "outstanding",
 								"expression": {
 									"type": "expression",
-									"expression": "sum(debit) - sum(credit)"
+									"expression": "sum(amount)"
 								},
 								"data_type": "Decimal"
 							}
@@ -73,7 +73,7 @@
 						"dimensions": [
 							{
 								"dimension_name": "against_voucher",
-								"column_name": "against_voucher",
+								"column_name": "against_voucher_no",
 								"data_type": "String"
 							}
 						]
@@ -179,7 +179,7 @@
 						"table": {
 							"type": "table",
 							"data_source": "Site DB",
-							"table_name": "tabGL Entry"
+							"table_name": "tabPayment Ledger Entry"
 						}
 					},
 					{
@@ -189,7 +189,7 @@
 							{
 								"column": {
 									"type": "column",
-									"column_name": "is_cancelled"
+									"column_name": "delinked"
 								},
 								"operator": "=",
 								"value": 0
@@ -219,7 +219,7 @@
 								"measure_name": "outstanding",
 								"expression": {
 									"type": "expression",
-									"expression": "sum(credit) - sum(debit)"
+									"expression": "sum(amount)"
 								},
 								"data_type": "Decimal"
 							}
@@ -227,7 +227,7 @@
 						"dimensions": [
 							{
 								"dimension_name": "against_voucher",
-								"column_name": "against_voucher",
+								"column_name": "against_voucher_no",
 								"data_type": "String"
 							}
 						]
@@ -978,6 +978,8 @@
 							"template-acc-c-cash-in-out": "`template-acc-cashflow`.`posting_date`",
 							"template-acc-c-inv-coll": "`template-acc-invcoll`.`posting_date`"
 						},
+						"default_operator": "within",
+						"default_value": "Last 12 months",
 						"layout": {
 							"i": "filter-date",
 							"x": 4,
