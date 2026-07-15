@@ -247,6 +247,18 @@ class InsightsDashboardv3(Document):
 
 
 def get_page_preview(url: str, headers: dict | None = None) -> bytes:
+    # Newer Frappe renders previews in-process via headless Chromium — no
+    # external service, and the site's own /assets and /files resolve locally.
+    # Older versions fall back to the preview_generator HTTP service.
+    try:
+        from frappe.utils.preview import get_preview_from_url
+    except ImportError:
+        return get_page_preview_via_service(url, headers)
+
+    return get_preview_from_url(url, wait_for=1000, headers=headers or {}, format="jpeg")
+
+
+def get_page_preview_via_service(url: str, headers: dict | None = None) -> bytes:
     PREVIEW_GENERATOR_URL = (
         frappe.conf.preview_generator_url
         or "https://preview.frappe.cloud/api/method/preview_generator.api.generate_preview_from_url"
