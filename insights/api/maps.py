@@ -86,6 +86,8 @@ def get_available_regions(map_type: str) -> dict:
 @insights_whitelist()
 def find_unresolved_regions(map_type: str, user_regions: list, chart_name: str) -> dict:
     """Find unresolved regions and suggest mappings"""
+    if chart_name and not frappe.has_permission("Insights Chart v3", ptype="read", doc=chart_name):
+        frappe.throw("You do not have access to this chart", frappe.PermissionError)
     available = extract_regions_from_geojson(map_type)
     normalized_map = {normalize(r): r for r in available}
     existing_mappings = _get_region_mappings(chart_name, map_type) if chart_name else {}

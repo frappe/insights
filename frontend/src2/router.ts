@@ -58,6 +58,13 @@ const routes = [
 		],
 	},
 	{
+		props: true,
+		name: 'OpenTemplate',
+		path: '/template/:app/:folder',
+		component: () => import('./workbook/OpenTemplate.vue'),
+		meta: { hideSidebar: true },
+	},
+	{
 		path: '/data-source',
 		name: 'DataSourceList',
 		component: () => import('./data_source/DataSourceList.vue'),

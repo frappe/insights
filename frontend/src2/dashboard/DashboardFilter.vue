@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { Icon } from 'frappe-ui/icons'
-import { computed, inject, reactive, watchEffect } from 'vue'
+import { computed, inject, reactive, watchEffect, watch } from 'vue'
 import { copy, wheneverChanges } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import DataTypeIcon from '../query/components/DataTypeIcon.vue'
-import { ColumnDataType } from '../types/query.types'
+import { ColumnDataType, FilterOperator } from '../types/query.types'
 import { WorkbookDashboardFilter } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
 import DashboardFilterEditor from './DashboardFilterEditor.vue'
@@ -14,7 +14,7 @@ const dashboard = inject<Dashboard>('dashboard')!
 const props = defineProps<{ item: WorkbookDashboardFilter }>()
 
 const filter = reactive(copy(props.item))
-watchEffect(() => Object.assign(filter, copy(props.item)))
+watchEffect(() => Object.assign(filter, props.item))
 if (!filter.links) {
 	filter.links = {}
 }
@@ -49,6 +49,18 @@ function stringValuesProvider(search: string) {
 }
 
 const filterState = reactive(copy(dashboard.filterStates[filter.filter_name] || {}))
+
+watch(
+	() => [filter.default_operator, filter.default_value],
+	([op, val]) => {
+		if (op !== null && val !== null) {
+			filterState.operator = op as FilterOperator
+			filterState.value = val
+		}
+	},
+	{ immediate: true, deep: true },
+)
+
 wheneverChanges(
 	() => filterState,
 	() => {

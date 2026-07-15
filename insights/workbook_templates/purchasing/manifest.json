@@ -1,0 +1,9 @@
+{
+	"version": 1,
+	"title": "Purchasing Overview",
+	"description": "Supplier spend, order workload and receiving risk at a glance — spend trend with month-on-month KPIs, spend by item group, top suppliers, purchase-order status mix and an overdue-POs list.",
+	"notes": "Built from submitted Purchase Invoices and Purchase Orders. Amounts are in the company's base currency and net of returns (debit notes ride along as negative rows). Order count and average order value are measured on Purchase Orders by transaction date.",
+	"module": "Buying",
+	"required_apps": ["erpnext"],
+	"source_doctypes": ["Purchase Invoice", "Purchase Invoice Item", "Purchase Order"]
+}

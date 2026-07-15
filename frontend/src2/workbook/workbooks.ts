@@ -14,14 +14,12 @@ async function getWorkbooks(
 	search_term?: string,
 	limit: number = 100,
 	scope?: 'all' | 'owned' | 'shared',
-	folder?: string | null,
 ) {
 	loading.value = true
 	const result = await call('insights.api.workbooks.get_workbooks', {
 		search_term,
 		limit,
 		scope: scope === 'all' ? null : scope,
-		folder: folder ?? null,
 	})
 	workbooks.value = result.map((workbook: any) => ({
 		...workbook,
@@ -51,7 +49,7 @@ function importWorkbook(workbook: any) {
 }
 
 export default function useWorkbookListItemStore() {
-	// the list view drives fetching (with folder/scope); no implicit fetch here,
+	// the list view drives fetching (with scope); no implicit fetch here,
 	// otherwise an unscoped "fetch all" can race with and overwrite it
 	return reactive({
 		workbooks,

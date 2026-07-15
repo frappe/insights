@@ -226,6 +226,17 @@ class InsightsQueryv3(Document):
                 frappe.PermissionError,
             )
 
+        if not is_admin(frappe.session.user) and not (
+            frappe.has_permission(self.doctype, ptype="export")
+            and frappe.has_permission(self.doctype, ptype="read", doc=self)
+        ):
+            frappe.throw(
+                frappe._(
+                    "Your role does not have the export permission for queries. Contact your administrator."
+                ),
+                frappe.PermissionError,
+            )
+
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
 
@@ -332,6 +343,12 @@ class InsightsQueryv3(Document):
 
         linked_queries = get_direct_dependencies(self.name)
         for q in linked_queries:
+            # export() recurses, so this covers the whole dependency tree
+            if not frappe.has_permission("Insights Query v3", ptype="read", doc=q):
+                frappe.throw(
+                    frappe._("You do not have access to one of the linked queries"),
+                    frappe.PermissionError,
+                )
             exported_query = frappe.get_doc("Insights Query v3", q).export()
             query["dependencies"]["queries"][q] = exported_query
 

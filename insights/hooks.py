@@ -21,13 +21,21 @@ add_to_apps_screen = [
     }
 ]
 
+# Any app can ship workbooks to Insights by pointing this hook at a directory
+# (relative to the app) holding one folder per workbook — manifest.json +
+# workbook.json + optional preview.png. Insights is its own first consumer: the
+# bundled ERPNext workbooks are discovered through the same public contract.
+# Deliberately policy-free name: how the site consumes these (import a copy
+# today, versioned updates later) can evolve without breaking the hook.
+insights_workbooks = "workbook_templates"
+
 
 # Includes in <head>
 # ------------------
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/insights/css/insights.css"
-# app_include_js = "insights.bundle.js"
+app_include_js = "insights_nudge.bundle.js"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/insights/css/insights.css"

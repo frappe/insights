@@ -12,6 +12,7 @@ from insights import notify
 from insights.api.permissions import is_private
 from insights.cache_utils import make_digest
 from insights.decorators import insights_whitelist
+from insights.utils import get_owned_file
 
 from .utils import guess_layout_for_chart
 
@@ -155,7 +156,7 @@ def get_dashboard_public_key(name):
 
 @insights_whitelist()
 def get_dashboard_file(filename: str):
-    file = frappe.get_doc("File", filename)
+    file = get_owned_file(filename)
     dashboard = file.get_content()
     dashboard = frappe.parse_json(dashboard)
     queries = [frappe.parse_json(query) for query in dashboard.get("queries").values()]
