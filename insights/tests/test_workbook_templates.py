@@ -32,6 +32,11 @@ TEMPLATE_MODULE = "Selling"
 # a committed template that ships a preview.png, so preview handling stays covered
 TEMPLATE_WITH_PREVIEW = "insights/stock"
 
+# derived from the shipped manifest so a template version bump doesn't need edits
+# scattered across every assertion; NEXT_VERSION stands in for a newer release
+TEMPLATE_VERSION = get_template_manifest(TEMPLATE)["version"]
+NEXT_VERSION = TEMPLATE_VERSION + 1
+
 # importing is admin-only for v1; two extra actors let us prove the shared-copy model
 ADMIN_USER = "workbook_template_admin@test.com"
 USER_2 = "workbook_template_user2@test.com"
@@ -104,7 +109,7 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
         # title resolves to "ERPNext" when it is, else falls back to the name.
         self.assertEqual(sales["app"], "erpnext")
         self.assertIn(sales["app_title"], ("ERPNext", "erpnext"))
-        self.assertEqual(sales["version"], 1)
+        self.assertEqual(sales["version"], TEMPLATE_VERSION)
 
         # a template that ships a preview exposes it as a data URI
         self.assertTrue(
@@ -238,13 +243,15 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
             workbook_name = create_workbook_from_template(TEMPLATE)["workbook"]
 
         # the copy remembers which shipped version it holds, and reads as pristine
-        self.assertEqual(frappe.db.get_value("Insights Workbook", workbook_name, "imported_version"), 1)
+        self.assertEqual(
+            frappe.db.get_value("Insights Workbook", workbook_name, "imported_version"), TEMPLATE_VERSION
+        )
         self.assertFalse(_is_customized(workbook_name))
 
         # same version shipped -> no update offered
         with self.as_user(USER_2), installed_apps(APPS_WITH_ERPNEXT):
             sales = {t["name"]: t for t in get_workbook_templates()}[TEMPLATE]
-        self.assertEqual(sales["imported_version"], 1)
+        self.assertEqual(sales["imported_version"], TEMPLATE_VERSION)
         self.assertFalse(sales["update_available"])
         self.assertFalse(sales["customized"])
 
@@ -252,7 +259,7 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
         with self.as_user(ADMIN_USER), installed_apps(APPS_WITH_ERPNEXT):
             create_workbook_from_template(TEMPLATE)
 
-        with installed_apps(APPS_WITH_ERPNEXT), bumped_version(TEMPLATE, 2), self.as_user(USER_2):
+        with installed_apps(APPS_WITH_ERPNEXT), bumped_version(TEMPLATE, NEXT_VERSION), self.as_user(USER_2):
             sales = {t["name"]: t for t in get_workbook_templates()}[TEMPLATE]
         self.assertTrue(sales["update_available"])
         self.assertFalse(sales["customized"])  # untouched copy
@@ -264,12 +271,18 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
             # a local edit that the update must roll back to the shipped definition
             frappe.db.set_value("Insights Chart v3", chart, "title", "Edited")
 
-        with self.as_user(ADMIN_USER), installed_apps(APPS_WITH_ERPNEXT), bumped_version(TEMPLATE, 2):
+        with (
+            self.as_user(ADMIN_USER),
+            installed_apps(APPS_WITH_ERPNEXT),
+            bumped_version(TEMPLATE, NEXT_VERSION),
+        ):
             result = update_workbook_from_template(TEMPLATE)
 
         # same workbook name (URLs/shares survive), version advanced, edit gone
         self.assertEqual(result["workbook"], workbook_name)
-        self.assertEqual(frappe.db.get_value("Insights Workbook", workbook_name, "imported_version"), 2)
+        self.assertEqual(
+            frappe.db.get_value("Insights Workbook", workbook_name, "imported_version"), NEXT_VERSION
+        )
         self.assertFalse(frappe.db.exists("Insights Chart v3", chart))
         # stays an Administrator-owned shared copy after the rebuild
         self.assertEqual(frappe.db.get_value("Insights Workbook", workbook_name, "owner"), "Administrator")
@@ -279,10 +292,12 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
         with self.as_user(ADMIN_USER), installed_apps(APPS_WITH_ERPNEXT):
             workbook_name = create_workbook_from_template(TEMPLATE)["workbook"]
 
-        with bumped_version(TEMPLATE, 2):
+        with bumped_version(TEMPLATE, NEXT_VERSION):
             sync_workbook_template_updates()
 
-        self.assertEqual(frappe.db.get_value("Insights Workbook", workbook_name, "imported_version"), 2)
+        self.assertEqual(
+            frappe.db.get_value("Insights Workbook", workbook_name, "imported_version"), NEXT_VERSION
+        )
 
     def test_migrate_sync_leaves_customized_copy_for_manual_update(self):
         with self.as_user(ADMIN_USER), installed_apps(APPS_WITH_ERPNEXT):
@@ -292,15 +307,17 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
 
         self.assertTrue(_is_customized(workbook_name))
 
-        with bumped_version(TEMPLATE, 2):
+        with bumped_version(TEMPLATE, NEXT_VERSION):
             sync_workbook_template_updates()
 
         # not silently overwritten: kept at its imported version with the edit intact
-        self.assertEqual(frappe.db.get_value("Insights Workbook", workbook_name, "imported_version"), 1)
+        self.assertEqual(
+            frappe.db.get_value("Insights Workbook", workbook_name, "imported_version"), TEMPLATE_VERSION
+        )
         self.assertEqual(frappe.db.get_value("Insights Chart v3", chart, "title"), "Locally Edited")
 
         # the library still offers the update, flagged as a clobber
-        with installed_apps(APPS_WITH_ERPNEXT), bumped_version(TEMPLATE, 2), self.as_user(USER_2):
+        with installed_apps(APPS_WITH_ERPNEXT), bumped_version(TEMPLATE, NEXT_VERSION), self.as_user(USER_2):
             sales = {t["name"]: t for t in get_workbook_templates()}[TEMPLATE]
         self.assertTrue(sales["update_available"])
         self.assertTrue(sales["customized"])
@@ -316,7 +333,7 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
             raise RuntimeError("restore failed")
 
         with (
-            bumped_version(TEMPLATE, 2),
+            bumped_version(TEMPLATE, NEXT_VERSION),
             patch.object(InsightsWorkbook, "restore_workbook_contents", boom),
         ):
             sync_workbook_template_updates()  # must swallow the failure, not raise
@@ -324,7 +341,9 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
         # the copy is left whole: children rolled back in, version not advanced
         charts_after = frappe.get_all("Insights Chart v3", {"workbook": workbook_name}, pluck="name")
         self.assertEqual(set(charts_after), set(charts_before))
-        self.assertEqual(frappe.db.get_value("Insights Workbook", workbook_name, "imported_version"), 1)
+        self.assertEqual(
+            frappe.db.get_value("Insights Workbook", workbook_name, "imported_version"), TEMPLATE_VERSION
+        )
 
     def test_legacy_copy_without_version_adopts_current_as_baseline(self):
         with self.as_user(ADMIN_USER), installed_apps(APPS_WITH_ERPNEXT):
@@ -339,7 +358,9 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
         sync_workbook_template_updates()
 
         # backfilled to the current version so it reads as up-to-date, not stale
-        self.assertEqual(frappe.db.get_value("Insights Workbook", workbook_name, "imported_version"), 1)
+        self.assertEqual(
+            frappe.db.get_value("Insights Workbook", workbook_name, "imported_version"), TEMPLATE_VERSION
+        )
 
     def test_every_committed_template_is_valid_and_importable(self):
         """CI guard: every committed manifest parses with the required keys and
