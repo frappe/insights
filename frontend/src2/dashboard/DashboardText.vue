@@ -12,8 +12,16 @@ const editedText = ref(unref(props.item.text))
 </script>
 
 <template>
-	<div class="prose max-w-none w-full text-gray-700 h-full flex items-center">
-		<div v-html="props.item.text"></div>
+	<div
+		v-if="props.item.text"
+		class="prose prose-v3 h-full w-full max-w-none overflow-auto text-ink-gray-7"
+		v-html="props.item.text"
+	></div>
+	<div
+		v-else-if="dashboard.editing"
+		class="flex h-full w-full items-center text-sm text-ink-gray-4"
+	>
+		{{ __('Empty text — click edit to add content') }}
 	</div>
 
 	<Dialog
@@ -39,7 +47,7 @@ const editedText = ref(unref(props.item.text))
 	>
 		<template #default>
 			<div class="space-y-2">
-				<span class="block text-sm leading-4 text-gray-700">{{ __('Content') }}</span>
+				<span class="block text-sm leading-4 text-ink-gray-7">{{ __('Content') }}</span>
 				<Editor
 					v-model="editedText"
 					:extensions="[RichTextKit]"
@@ -48,11 +56,11 @@ const editedText = ref(unref(props.item.text))
 					<template #default="{ editor }">
 						<EditorContent
 							:editor="editor"
-							class="min-h-[8rem] h-auto prose-sm cursor-text bg-gray-100 rounded p-2"
+							class="h-auto min-h-[8rem] cursor-text rounded bg-surface-gray-2 p-2"
 						/>
 					</template>
 				</Editor>
-				<p class="text-xs text-gray-500">{{ __('Markdown supported') }}</p>
+				<p class="text-xs text-ink-gray-5">{{ __('Markdown supported') }}</p>
 			</div>
 		</template>
 	</Dialog>
