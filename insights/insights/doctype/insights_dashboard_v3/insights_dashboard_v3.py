@@ -70,6 +70,19 @@ class InsightsDashboardv3(Document):
         d.has_workbook_access = frappe.has_permission("Insights Workbook", ptype="read", doc=self.workbook)
         return d
 
+    def after_insert(self):
+        # A dashboard created already populated (e.g. imported from a template) is
+        # never saved again, so before_save's diff-based preview never runs and it
+        # lands without a preview. Generate the initial one here when it has content.
+        if frappe.flags.in_patch or not frappe.parse_json(self.items):
+            return
+        frappe.enqueue_doc(
+            doctype=self.doctype,
+            name=self.name,
+            method="generate_dashboard_preview",
+            enqueue_after_commit=True,
+        )
+
     def before_save(self):
         self.set_linked_charts()
         self.enqueue_update_dashboard_preview()
@@ -247,6 +260,18 @@ class InsightsDashboardv3(Document):
 
 
 def get_page_preview(url: str, headers: dict | None = None) -> bytes:
+    # Newer Frappe renders previews in-process via headless Chromium — no
+    # external service, and the site's own /assets and /files resolve locally.
+    # Older versions fall back to the preview_generator HTTP service.
+    try:
+        from frappe.utils.preview import get_preview_from_url
+    except ImportError:
+        return get_page_preview_via_service(url, headers)
+
+    return get_preview_from_url(url, wait_for=1000, headers=headers or {}, format="jpeg")
+
+
+def get_page_preview_via_service(url: str, headers: dict | None = None) -> bytes:
     PREVIEW_GENERATOR_URL = (
         frappe.conf.preview_generator_url
         or "https://preview.frappe.cloud/api/method/preview_generator.api.generate_preview_from_url"

@@ -1,0 +1,1125 @@
+{
+	"version": "1.0",
+	"type": "Workbook",
+	"name": "template-erpnext-accounting",
+	"doc": {
+		"name": "template-erpnext-accounting",
+		"title": "Receivables, Payables & Cash"
+	},
+	"dependencies": {
+		"folders": [],
+		"queries": {
+			"template-acc-ar": {
+				"name": "template-acc-ar",
+				"title": "AR Open Invoices",
+				"workbook": "template-erpnext-accounting",
+				"folder": null,
+				"sort_order": 0,
+				"use_live_connection": 1,
+				"is_script_query": 0,
+				"is_builder_query": 1,
+				"is_native_query": 0,
+				"operations": [
+					{
+						"type": "source",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabGL Entry"
+						}
+					},
+					{
+						"type": "filter_group",
+						"logical_operator": "And",
+						"filters": [
+							{
+								"column": {
+									"type": "column",
+									"column_name": "is_cancelled"
+								},
+								"operator": "=",
+								"value": 0
+							},
+							{
+								"column": {
+									"type": "column",
+									"column_name": "party_type"
+								},
+								"operator": "=",
+								"value": "Customer"
+							},
+							{
+								"column": {
+									"type": "column",
+									"column_name": "against_voucher_type"
+								},
+								"operator": "=",
+								"value": "Sales Invoice"
+							}
+						]
+					},
+					{
+						"type": "summarize",
+						"measures": [
+							{
+								"measure_name": "outstanding",
+								"expression": {
+									"type": "expression",
+									"expression": "sum(debit) - sum(credit)"
+								},
+								"data_type": "Decimal"
+							}
+						],
+						"dimensions": [
+							{
+								"dimension_name": "against_voucher",
+								"column_name": "against_voucher",
+								"data_type": "String"
+							}
+						]
+					},
+					{
+						"type": "filter_group",
+						"logical_operator": "And",
+						"filters": [
+							{
+								"column": {
+									"type": "column",
+									"column_name": "outstanding"
+								},
+								"operator": ">",
+								"value": 0.5
+							}
+						]
+					},
+					{
+						"type": "join",
+						"join_type": "inner",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabSales Invoice"
+						},
+						"select_columns": [
+							{
+								"type": "column",
+								"column_name": "company"
+							},
+							{
+								"type": "column",
+								"column_name": "customer"
+							},
+							{
+								"type": "column",
+								"column_name": "due_date"
+							}
+						],
+						"join_condition": {
+							"left_column": {
+								"type": "column",
+								"column_name": "against_voucher"
+							},
+							"right_column": {
+								"type": "column",
+								"column_name": "name"
+							}
+						}
+					},
+					{
+						"type": "mutate",
+						"new_name": "days_overdue",
+						"data_type": "Integer",
+						"expression": {
+							"type": "expression",
+							"expression": "date_diff(today(), due_date, 'day')"
+						}
+					},
+					{
+						"type": "mutate",
+						"new_name": "bucket",
+						"data_type": "String",
+						"expression": {
+							"type": "expression",
+							"expression": "cases((days_overdue <= 0, '1. Not Due'), (days_overdue <= 30, '2. 1-30 Days'), (days_overdue <= 60, '3. 31-60 Days'), (days_overdue <= 90, '4. 61-90 Days'), else_='5. 90+ Days')"
+						}
+					},
+					{
+						"type": "mutate",
+						"new_name": "overdue_outstanding",
+						"data_type": "Decimal",
+						"expression": {
+							"type": "expression",
+							"expression": "if_else(days_overdue > 0, outstanding, 0)"
+						}
+					},
+					{
+						"type": "mutate",
+						"new_name": "over90_outstanding",
+						"data_type": "Decimal",
+						"expression": {
+							"type": "expression",
+							"expression": "if_else(days_overdue > 90, outstanding, 0)"
+						}
+					}
+				]
+			},
+			"template-acc-ap": {
+				"name": "template-acc-ap",
+				"title": "AP Open Invoices",
+				"workbook": "template-erpnext-accounting",
+				"folder": null,
+				"sort_order": 1,
+				"use_live_connection": 1,
+				"is_script_query": 0,
+				"is_builder_query": 1,
+				"is_native_query": 0,
+				"operations": [
+					{
+						"type": "source",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabGL Entry"
+						}
+					},
+					{
+						"type": "filter_group",
+						"logical_operator": "And",
+						"filters": [
+							{
+								"column": {
+									"type": "column",
+									"column_name": "is_cancelled"
+								},
+								"operator": "=",
+								"value": 0
+							},
+							{
+								"column": {
+									"type": "column",
+									"column_name": "party_type"
+								},
+								"operator": "=",
+								"value": "Supplier"
+							},
+							{
+								"column": {
+									"type": "column",
+									"column_name": "against_voucher_type"
+								},
+								"operator": "=",
+								"value": "Purchase Invoice"
+							}
+						]
+					},
+					{
+						"type": "summarize",
+						"measures": [
+							{
+								"measure_name": "outstanding",
+								"expression": {
+									"type": "expression",
+									"expression": "sum(credit) - sum(debit)"
+								},
+								"data_type": "Decimal"
+							}
+						],
+						"dimensions": [
+							{
+								"dimension_name": "against_voucher",
+								"column_name": "against_voucher",
+								"data_type": "String"
+							}
+						]
+					},
+					{
+						"type": "filter_group",
+						"logical_operator": "And",
+						"filters": [
+							{
+								"column": {
+									"type": "column",
+									"column_name": "outstanding"
+								},
+								"operator": ">",
+								"value": 0.5
+							}
+						]
+					},
+					{
+						"type": "rename",
+						"column": {
+							"type": "column",
+							"column_name": "against_voucher"
+						},
+						"new_name": "invoice"
+					},
+					{
+						"type": "join",
+						"join_type": "inner",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabPurchase Invoice"
+						},
+						"select_columns": [
+							{
+								"type": "column",
+								"column_name": "company"
+							},
+							{
+								"type": "column",
+								"column_name": "supplier"
+							},
+							{
+								"type": "column",
+								"column_name": "due_date"
+							}
+						],
+						"join_condition": {
+							"left_column": {
+								"type": "column",
+								"column_name": "invoice"
+							},
+							"right_column": {
+								"type": "column",
+								"column_name": "name"
+							}
+						}
+					},
+					{
+						"type": "mutate",
+						"new_name": "days_overdue",
+						"data_type": "Integer",
+						"expression": {
+							"type": "expression",
+							"expression": "date_diff(today(), due_date, 'day')"
+						}
+					},
+					{
+						"type": "mutate",
+						"new_name": "days_until_due",
+						"data_type": "Integer",
+						"expression": {
+							"type": "expression",
+							"expression": "date_diff(due_date, today(), 'day')"
+						}
+					},
+					{
+						"type": "mutate",
+						"new_name": "bucket",
+						"data_type": "String",
+						"expression": {
+							"type": "expression",
+							"expression": "cases((days_overdue <= 0, '1. Not Due'), (days_overdue <= 30, '2. 1-30 Days'), (days_overdue <= 60, '3. 31-60 Days'), (days_overdue <= 90, '4. 61-90 Days'), else_='5. 90+ Days')"
+						}
+					}
+				]
+			},
+			"template-acc-cashflow": {
+				"name": "template-acc-cashflow",
+				"title": "Payments Cash Flow",
+				"workbook": "template-erpnext-accounting",
+				"folder": null,
+				"sort_order": 2,
+				"use_live_connection": 1,
+				"is_script_query": 0,
+				"is_builder_query": 1,
+				"is_native_query": 0,
+				"operations": [
+					{
+						"type": "source",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabPayment Entry"
+						}
+					},
+					{
+						"type": "filter_group",
+						"logical_operator": "And",
+						"filters": [
+							{
+								"column": {
+									"type": "column",
+									"column_name": "docstatus"
+								},
+								"operator": "=",
+								"value": 1
+							},
+							{
+								"column": {
+									"type": "column",
+									"column_name": "payment_type"
+								},
+								"operator": "in",
+								"value": [
+									"Receive",
+									"Pay"
+								]
+							}
+						]
+					},
+					{
+						"type": "mutate",
+						"new_name": "flow",
+						"data_type": "String",
+						"expression": {
+							"type": "expression",
+							"expression": "if_else(payment_type == 'Receive', 'Cash In', 'Cash Out')"
+						}
+					},
+					{
+						"type": "mutate",
+						"new_name": "amount",
+						"data_type": "Decimal",
+						"expression": {
+							"type": "expression",
+							"expression": "if_else(payment_type == 'Receive', base_received_amount, base_paid_amount)"
+						}
+					},
+					{
+						"type": "mutate",
+						"new_name": "net_amount",
+						"data_type": "Decimal",
+						"expression": {
+							"type": "expression",
+							"expression": "if_else(payment_type == 'Receive', base_received_amount, - base_paid_amount)"
+						}
+					}
+				]
+			},
+			"template-acc-collected": {
+				"name": "template-acc-collected",
+				"title": "Collected (helper)",
+				"workbook": "template-erpnext-accounting",
+				"folder": null,
+				"sort_order": 3,
+				"use_live_connection": 1,
+				"is_script_query": 0,
+				"is_builder_query": 1,
+				"is_native_query": 0,
+				"operations": [
+					{
+						"type": "source",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabPayment Entry"
+						}
+					},
+					{
+						"type": "filter_group",
+						"logical_operator": "And",
+						"filters": [
+							{
+								"column": {
+									"type": "column",
+									"column_name": "docstatus"
+								},
+								"operator": "=",
+								"value": 1
+							},
+							{
+								"column": {
+									"type": "column",
+									"column_name": "payment_type"
+								},
+								"operator": "=",
+								"value": "Receive"
+							}
+						]
+					},
+					{
+						"type": "mutate",
+						"new_name": "metric",
+						"data_type": "String",
+						"expression": {
+							"type": "expression",
+							"expression": "ibis.literal('Collected')"
+						}
+					},
+					{
+						"type": "mutate",
+						"new_name": "amount",
+						"data_type": "Decimal",
+						"expression": {
+							"type": "expression",
+							"expression": "base_received_amount"
+						}
+					},
+					{
+						"type": "select",
+						"column_names": [
+							"company",
+							"posting_date",
+							"metric",
+							"amount"
+						]
+					}
+				]
+			},
+			"template-acc-invcoll": {
+				"name": "template-acc-invcoll",
+				"title": "Invoiced vs Collected",
+				"workbook": "template-erpnext-accounting",
+				"folder": null,
+				"sort_order": 4,
+				"use_live_connection": 1,
+				"is_script_query": 0,
+				"is_builder_query": 1,
+				"is_native_query": 0,
+				"operations": [
+					{
+						"type": "source",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabSales Invoice"
+						}
+					},
+					{
+						"type": "filter_group",
+						"logical_operator": "And",
+						"filters": [
+							{
+								"column": {
+									"type": "column",
+									"column_name": "docstatus"
+								},
+								"operator": "=",
+								"value": 1
+							}
+						]
+					},
+					{
+						"type": "mutate",
+						"new_name": "metric",
+						"data_type": "String",
+						"expression": {
+							"type": "expression",
+							"expression": "ibis.literal('Invoiced')"
+						}
+					},
+					{
+						"type": "mutate",
+						"new_name": "amount",
+						"data_type": "Decimal",
+						"expression": {
+							"type": "expression",
+							"expression": "base_grand_total"
+						}
+					},
+					{
+						"type": "select",
+						"column_names": [
+							"company",
+							"posting_date",
+							"metric",
+							"amount"
+						]
+					},
+					{
+						"type": "union",
+						"table": {
+							"type": "query",
+							"workbook": "template-erpnext-accounting",
+							"query_name": "template-acc-collected"
+						},
+						"distinct": false
+					}
+				]
+			}
+		},
+		"charts": {
+			"template-acc-c-total-ar": {
+				"name": "template-acc-c-total-ar",
+				"title": "Total AR",
+				"workbook": "template-erpnext-accounting",
+				"folder": null,
+				"sort_order": 0,
+				"query": "template-acc-ar",
+				"chart_type": "Number",
+				"config": {
+					"number_columns": [
+						{
+							"measure_name": "Total AR",
+							"column_name": "outstanding",
+							"data_type": "Decimal",
+							"aggregation": "sum"
+						}
+					],
+					"comparison": false,
+					"sparkline": false,
+					"shorten_numbers": true
+				}
+			},
+			"template-acc-c-total-ap": {
+				"name": "template-acc-c-total-ap",
+				"title": "Total AP",
+				"workbook": "template-erpnext-accounting",
+				"folder": null,
+				"sort_order": 1,
+				"query": "template-acc-ap",
+				"chart_type": "Number",
+				"config": {
+					"number_columns": [
+						{
+							"measure_name": "Total AP",
+							"column_name": "outstanding",
+							"data_type": "Decimal",
+							"aggregation": "sum"
+						}
+					],
+					"comparison": false,
+					"sparkline": false,
+					"shorten_numbers": true
+				}
+			},
+			"template-acc-c-pct-overdue": {
+				"name": "template-acc-c-pct-overdue",
+				"title": "AR Overdue %",
+				"workbook": "template-erpnext-accounting",
+				"folder": null,
+				"sort_order": 2,
+				"query": "template-acc-ar",
+				"chart_type": "Number",
+				"config": {
+					"number_columns": [
+						{
+							"measure_name": "AR Overdue",
+							"expression": {
+								"type": "expression",
+								"expression": "sum(overdue_outstanding) / sum(outstanding) * 100"
+							},
+							"data_type": "Decimal"
+						}
+					],
+					"comparison": false,
+					"sparkline": false,
+					"shorten_numbers": false,
+					"suffix": "%",
+					"decimal": 1
+				}
+			},
+			"template-acc-c-pct-over90": {
+				"name": "template-acc-c-pct-over90",
+				"title": "AR Over 90 Days %",
+				"workbook": "template-erpnext-accounting",
+				"folder": null,
+				"sort_order": 3,
+				"query": "template-acc-ar",
+				"chart_type": "Number",
+				"config": {
+					"number_columns": [
+						{
+							"measure_name": "AR Over 90 Days",
+							"expression": {
+								"type": "expression",
+								"expression": "sum(over90_outstanding) / sum(outstanding) * 100"
+							},
+							"data_type": "Decimal"
+						}
+					],
+					"comparison": false,
+					"sparkline": false,
+					"shorten_numbers": false,
+					"suffix": "%",
+					"decimal": 1
+				}
+			},
+			"template-acc-c-net-cash": {
+				"name": "template-acc-c-net-cash",
+				"title": "Net Cash Flow",
+				"workbook": "template-erpnext-accounting",
+				"folder": null,
+				"sort_order": 4,
+				"query": "template-acc-cashflow",
+				"chart_type": "Number",
+				"config": {
+					"number_columns": [
+						{
+							"measure_name": "Net Cash Flow",
+							"column_name": "net_amount",
+							"data_type": "Decimal",
+							"aggregation": "sum"
+						}
+					],
+					"comparison": false,
+					"sparkline": false,
+					"shorten_numbers": true
+				}
+			},
+			"template-acc-c-ar-ageing": {
+				"name": "template-acc-c-ar-ageing",
+				"title": "AR Ageing",
+				"workbook": "template-erpnext-accounting",
+				"folder": null,
+				"sort_order": 5,
+				"query": "template-acc-ar",
+				"chart_type": "Bar",
+				"config": {
+					"x_axis": {
+						"dimension": {
+							"dimension_name": "Ageing Bucket",
+							"column_name": "bucket",
+							"data_type": "String"
+						}
+					},
+					"y_axis": {
+						"series": [
+							{
+								"measure": {
+									"measure_name": "Outstanding",
+									"column_name": "outstanding",
+									"data_type": "Decimal",
+									"aggregation": "sum"
+								}
+							}
+						],
+						"show_data_labels": true
+					},
+					"order_by": [
+						{
+							"column": {
+								"type": "column",
+								"column_name": "Ageing Bucket"
+							},
+							"direction": "asc"
+						}
+					]
+				}
+			},
+			"template-acc-c-ap-ageing": {
+				"name": "template-acc-c-ap-ageing",
+				"title": "AP Ageing",
+				"workbook": "template-erpnext-accounting",
+				"folder": null,
+				"sort_order": 6,
+				"query": "template-acc-ap",
+				"chart_type": "Bar",
+				"config": {
+					"x_axis": {
+						"dimension": {
+							"dimension_name": "Ageing Bucket",
+							"column_name": "bucket",
+							"data_type": "String"
+						}
+					},
+					"y_axis": {
+						"series": [
+							{
+								"measure": {
+									"measure_name": "Outstanding",
+									"column_name": "outstanding",
+									"data_type": "Decimal",
+									"aggregation": "sum"
+								}
+							}
+						],
+						"show_data_labels": true
+					},
+					"order_by": [
+						{
+							"column": {
+								"type": "column",
+								"column_name": "Ageing Bucket"
+							},
+							"direction": "asc"
+						}
+					]
+				}
+			},
+			"template-acc-c-top-overdue": {
+				"name": "template-acc-c-top-overdue",
+				"title": "Top Overdue Customers",
+				"workbook": "template-erpnext-accounting",
+				"folder": null,
+				"sort_order": 7,
+				"query": "template-acc-ar",
+				"chart_type": "Table",
+				"config": {
+					"rows": [
+						{
+							"dimension_name": "Customer",
+							"column_name": "customer",
+							"data_type": "String"
+						}
+					],
+					"columns": [],
+					"values": [
+						{
+							"measure_name": "Outstanding",
+							"column_name": "outstanding",
+							"data_type": "Decimal",
+							"aggregation": "sum"
+						},
+						{
+							"measure_name": "Overdue",
+							"column_name": "overdue_outstanding",
+							"data_type": "Decimal",
+							"aggregation": "sum"
+						},
+						{
+							"measure_name": "Oldest Days",
+							"column_name": "days_overdue",
+							"data_type": "Integer",
+							"aggregation": "max"
+						}
+					],
+					"order_by": [
+						{
+							"column": {
+								"type": "column",
+								"column_name": "Overdue"
+							},
+							"direction": "desc"
+						}
+					],
+					"limit": 10
+				}
+			},
+			"template-acc-c-due-30": {
+				"name": "template-acc-c-due-30",
+				"title": "Payments Due Next 30 Days",
+				"workbook": "template-erpnext-accounting",
+				"folder": null,
+				"sort_order": 8,
+				"query": "template-acc-ap",
+				"chart_type": "Table",
+				"config": {
+					"rows": [
+						{
+							"dimension_name": "Due Date",
+							"column_name": "due_date",
+							"data_type": "Date"
+						},
+						{
+							"dimension_name": "Supplier",
+							"column_name": "supplier",
+							"data_type": "String"
+						},
+						{
+							"dimension_name": "Invoice",
+							"column_name": "invoice",
+							"data_type": "String"
+						}
+					],
+					"columns": [],
+					"values": [
+						{
+							"measure_name": "Outstanding",
+							"column_name": "outstanding",
+							"data_type": "Decimal",
+							"aggregation": "sum"
+						}
+					],
+					"filters": {
+						"logical_operator": "And",
+						"filters": [
+							{
+								"column": {
+									"type": "column",
+									"column_name": "days_until_due"
+								},
+								"operator": "<=",
+								"value": 30
+							}
+						]
+					},
+					"order_by": [
+						{
+							"column": {
+								"type": "column",
+								"column_name": "Due Date"
+							},
+							"direction": "asc"
+						}
+					],
+					"limit": 50
+				}
+			},
+			"template-acc-c-cash-in-out": {
+				"name": "template-acc-c-cash-in-out",
+				"title": "Cash In vs Out",
+				"workbook": "template-erpnext-accounting",
+				"folder": null,
+				"sort_order": 9,
+				"query": "template-acc-cashflow",
+				"chart_type": "Bar",
+				"config": {
+					"x_axis": {
+						"dimension": {
+							"dimension_name": "Month",
+							"column_name": "posting_date",
+							"data_type": "Date",
+							"granularity": "month"
+						}
+					},
+					"split_by": {
+						"dimension": {
+							"dimension_name": "Flow",
+							"column_name": "flow",
+							"data_type": "String"
+						},
+						"max_split_values": 5
+					},
+					"y_axis": {
+						"series": [
+							{
+								"measure": {
+									"measure_name": "Amount",
+									"column_name": "amount",
+									"data_type": "Decimal",
+									"aggregation": "sum"
+								}
+							}
+						]
+					},
+					"order_by": [
+						{
+							"column": {
+								"type": "column",
+								"column_name": "Month"
+							},
+							"direction": "asc"
+						}
+					]
+				}
+			},
+			"template-acc-c-inv-coll": {
+				"name": "template-acc-c-inv-coll",
+				"title": "Invoiced vs Collected",
+				"workbook": "template-erpnext-accounting",
+				"folder": null,
+				"sort_order": 10,
+				"query": "template-acc-invcoll",
+				"chart_type": "Bar",
+				"config": {
+					"x_axis": {
+						"dimension": {
+							"dimension_name": "Month",
+							"column_name": "posting_date",
+							"data_type": "Date",
+							"granularity": "month"
+						}
+					},
+					"split_by": {
+						"dimension": {
+							"dimension_name": "Metric",
+							"column_name": "metric",
+							"data_type": "String"
+						},
+						"max_split_values": 5
+					},
+					"y_axis": {
+						"series": [
+							{
+								"measure": {
+									"measure_name": "Amount",
+									"column_name": "amount",
+									"data_type": "Decimal",
+									"aggregation": "sum"
+								}
+							}
+						]
+					},
+					"order_by": [
+						{
+							"column": {
+								"type": "column",
+								"column_name": "Month"
+							},
+							"direction": "asc"
+						}
+					]
+				}
+			}
+		},
+		"dashboards": {
+			"template-acc-dashboard": {
+				"name": "template-acc-dashboard",
+				"title": "Receivables, Payables & Cash",
+				"workbook": "template-erpnext-accounting",
+				"items": [
+					{
+						"type": "filter",
+						"filter_name": "Company",
+						"filter_type": "String",
+						"icon": "building-2",
+						"links": {
+							"template-acc-c-total-ar": "`template-acc-ar`.`company`",
+							"template-acc-c-total-ap": "`template-acc-ap`.`company`",
+							"template-acc-c-net-cash": "`template-acc-cashflow`.`company`",
+							"template-acc-c-ar-ageing": "`template-acc-ar`.`company`",
+							"template-acc-c-ap-ageing": "`template-acc-ap`.`company`",
+							"template-acc-c-top-overdue": "`template-acc-ar`.`company`",
+							"template-acc-c-due-30": "`template-acc-ap`.`company`",
+							"template-acc-c-cash-in-out": "`template-acc-cashflow`.`company`",
+							"template-acc-c-inv-coll": "`template-acc-invcoll`.`company`",
+							"template-acc-c-pct-overdue": "`template-acc-ar`.`company`",
+							"template-acc-c-pct-over90": "`template-acc-ar`.`company`"
+						},
+						"layout": {
+							"i": "filter-company",
+							"x": 0,
+							"y": 0,
+							"w": 4,
+							"h": 1
+						}
+					},
+					{
+						"type": "filter",
+						"filter_name": "Date",
+						"filter_type": "Date",
+						"icon": "calendar",
+						"links": {
+							"template-acc-c-net-cash": "`template-acc-cashflow`.`posting_date`",
+							"template-acc-c-cash-in-out": "`template-acc-cashflow`.`posting_date`",
+							"template-acc-c-inv-coll": "`template-acc-invcoll`.`posting_date`"
+						},
+						"layout": {
+							"i": "filter-date",
+							"x": 4,
+							"y": 0,
+							"w": 4,
+							"h": 1
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "template-acc-c-total-ar",
+						"layout": {
+							"i": "i-total-ar",
+							"x": 0,
+							"y": 1,
+							"w": 4,
+							"h": 3
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "template-acc-c-total-ap",
+						"layout": {
+							"i": "i-total-ap",
+							"x": 4,
+							"y": 1,
+							"w": 4,
+							"h": 3
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "template-acc-c-pct-overdue",
+						"layout": {
+							"i": "i-pct-overdue",
+							"x": 8,
+							"y": 1,
+							"w": 4,
+							"h": 3
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "template-acc-c-pct-over90",
+						"layout": {
+							"i": "i-pct-over90",
+							"x": 12,
+							"y": 1,
+							"w": 4,
+							"h": 3
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "template-acc-c-net-cash",
+						"layout": {
+							"i": "i-net-cash",
+							"x": 16,
+							"y": 1,
+							"w": 4,
+							"h": 3
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "template-acc-c-ar-ageing",
+						"layout": {
+							"i": "i-ar-ageing",
+							"x": 0,
+							"y": 4,
+							"w": 10,
+							"h": 8
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "template-acc-c-ap-ageing",
+						"layout": {
+							"i": "i-ap-ageing",
+							"x": 10,
+							"y": 4,
+							"w": 10,
+							"h": 8
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "template-acc-c-cash-in-out",
+						"layout": {
+							"i": "i-cash-in-out",
+							"x": 0,
+							"y": 12,
+							"w": 10,
+							"h": 8
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "template-acc-c-inv-coll",
+						"layout": {
+							"i": "i-inv-coll",
+							"x": 10,
+							"y": 12,
+							"w": 10,
+							"h": 8
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "template-acc-c-top-overdue",
+						"layout": {
+							"i": "i-top-overdue",
+							"x": 0,
+							"y": 20,
+							"w": 10,
+							"h": 9
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "template-acc-c-due-30",
+						"layout": {
+							"i": "i-due-30",
+							"x": 10,
+							"y": 20,
+							"w": 10,
+							"h": 9
+						}
+					},
+					{
+						"type": "text",
+						"text": "",
+						"layout": {
+							"i": "ik6qat04",
+							"x": 8,
+							"y": 0,
+							"w": 12,
+							"h": 1
+						}
+					}
+				]
+			}
+		}
+	}
+}

@@ -17,7 +17,7 @@ from insights.insights.doctype.insights_team.insights_team import (
     check_table_permission,
     get_permission_filter,
 )
-from insights.utils import InsightsTable, detect_encoding
+from insights.utils import InsightsTable, detect_encoding, get_owned_file
 
 
 @insights_whitelist()
@@ -129,7 +129,7 @@ def create_table_link(
 def get_columns_from_uploaded_file(filename: str):
     import pandas as pd
 
-    file = frappe.get_doc("File", filename)
+    file = get_owned_file(filename)
     parts = file.get_extension()
     if "csv" not in parts[1]:
         frappe.throw("Only CSV files are supported")
@@ -166,7 +166,7 @@ def import_csv(
     table_import.table_label = table_label
     table_import.table_name = table_name
     table_import.if_exists = if_exists
-    table_import.source = frappe.get_doc("File", filename).file_url
+    table_import.source = get_owned_file(filename).file_url
     table_import.save()
     table_import.columns = []
     for column in columns:
@@ -218,7 +218,6 @@ def delete_data_source(data_source: str):
 
 
 @insights_whitelist()
-@redis_cache()
 def fetch_column_values(data_source: str, table: str, column: str, search_text: str | None = None):
     if not data_source or not isinstance(data_source, str):
         frappe.throw("Data Source is required")
@@ -226,12 +225,21 @@ def fetch_column_values(data_source: str, table: str, column: str, search_text: 
         frappe.throw("Table is required")
     if not column or not isinstance(column, str):
         frappe.throw("Column is required")
+    check_table_permission(data_source, table)
+    # cache keyed on args only, so resolve access before the cached read
+    return _fetch_column_values(data_source, table, column, search_text)
+
+
+@redis_cache()
+def _fetch_column_values(data_source: str, table: str, column: str, search_text: str | None = None):
     doc = frappe.get_doc("Insights Data Source", data_source)
     return doc.get_column_options(table, column, search_text)
 
 
 @insights_whitelist()
 def get_relation(data_source: str, table_one: str, table_two: str):
+    check_table_permission(data_source, table_one)
+    check_table_permission(data_source, table_two)
     table_one_doc = InsightsTable.get_doc({"data_source": data_source, "table": table_one})
     if not table_one_doc:
         frappe.throw(f"Table {table_one} not found")

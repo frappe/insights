@@ -157,6 +157,19 @@ def detect_encoding(file_path: str):
     return result["encoding"]
 
 
+def get_owned_file(filename: str):
+    """Return the File doc, ensuring the caller uploaded it (or is an admin).
+
+    The upload flow only ever reads back a file the caller just uploaded.
+    """
+    from insights.insights.doctype.insights_team.insights_team import is_admin
+
+    file = frappe.get_doc("File", filename)
+    if file.owner != frappe.session.user and not is_admin(frappe.session.user):
+        frappe.throw("You do not have access to this file", frappe.PermissionError)
+    return file
+
+
 def anonymize_data(df, columns_to_anonymize, prefix_by_column=None):
     """
     Anonymizes the data in the specified columns of a DataFrame.

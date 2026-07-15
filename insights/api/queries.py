@@ -5,6 +5,9 @@ from insights.decorators import check_role, insights_whitelist
 
 @insights_whitelist()
 def get_queries():
+    allowed = frappe.get_list("Insights Query", pluck="name", limit=0)
+    if not allowed:
+        return []
     Query = frappe.qb.DocType("Insights Query")
     QueryChart = frappe.qb.DocType("Insights Chart")
     DataSource = frappe.qb.DocType("Insights Data Source")
@@ -32,6 +35,7 @@ def get_queries():
             QueryChart.chart_type,
             DataSource.title.as_("data_source_title"),
         )
+        .where(Query.name.isin(allowed))
         .groupby(
             Query.name,
             User.full_name.as_("owner_name"),

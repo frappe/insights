@@ -19,6 +19,7 @@ from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
 from insights.insights.doctype.insights_team.insights_team import (
     check_data_source_permission,
 )
+from insights.utils import get_owned_file
 
 
 @insights_whitelist()
@@ -72,7 +73,7 @@ def update_default_version(version: str):
 
 
 def get_csv_file(filename: str):
-    file = frappe.get_doc("File", filename)
+    file = get_owned_file(filename)
     file_name = file.file_name or ""
     parts = file.get_extension()
     extension = parts[-1] if parts else ""

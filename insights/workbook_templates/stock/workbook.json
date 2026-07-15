@@ -1,0 +1,939 @@
+{
+	"version": "1.0",
+	"type": "Workbook",
+	"name": "template-stock-inventory-health",
+	"doc": {
+		"name": "template-stock-inventory-health",
+		"title": "Inventory Health"
+	},
+	"dependencies": {
+		"folders": [],
+		"queries": {
+			"template-query-stock-bins": {
+				"name": "template-query-stock-bins",
+				"title": "Stock Balances",
+				"workbook": "template-stock-inventory-health",
+				"folder": null,
+				"sort_order": 0,
+				"use_live_connection": 1,
+				"is_script_query": 0,
+				"is_builder_query": 1,
+				"is_native_query": 0,
+				"operations": [
+					{
+						"type": "source",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabBin"
+						}
+					},
+					{
+						"type": "join",
+						"join_type": "inner",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabItem"
+						},
+						"select_columns": [
+							{
+								"type": "column",
+								"column_name": "item_name"
+							},
+							{
+								"type": "column",
+								"column_name": "item_group"
+							}
+						],
+						"join_condition": {
+							"left_column": {
+								"type": "column",
+								"column_name": "item_code"
+							},
+							"right_column": {
+								"type": "column",
+								"column_name": "item_code"
+							}
+						}
+					},
+					{
+						"type": "select",
+						"column_names": [
+							"item_code",
+							"item_name",
+							"item_group",
+							"warehouse",
+							"company",
+							"actual_qty",
+							"valuation_rate",
+							"stock_value"
+						]
+					}
+				]
+			},
+			"template-query-stock-movements": {
+				"name": "template-query-stock-movements",
+				"title": "Stock Movements",
+				"workbook": "template-stock-inventory-health",
+				"folder": null,
+				"sort_order": 1,
+				"use_live_connection": 1,
+				"is_script_query": 0,
+				"is_builder_query": 1,
+				"is_native_query": 0,
+				"operations": [
+					{
+						"type": "source",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabStock Ledger Entry"
+						}
+					},
+					{
+						"type": "filter_group",
+						"logical_operator": "And",
+						"filters": [
+							{
+								"column": {
+									"type": "column",
+									"column_name": "is_cancelled"
+								},
+								"operator": "=",
+								"value": 0
+							}
+						]
+					},
+					{
+						"type": "mutate",
+						"new_name": "incoming_value",
+						"data_type": "Decimal",
+						"expression": {
+							"type": "expression",
+							"expression": "if_else(actual_qty > 0, stock_value_difference, 0)"
+						}
+					},
+					{
+						"type": "mutate",
+						"new_name": "outgoing_value",
+						"data_type": "Decimal",
+						"expression": {
+							"type": "expression",
+							"expression": "if_else(actual_qty < 0, abs(stock_value_difference), 0)"
+						}
+					},
+					{
+						"type": "select",
+						"column_names": [
+							"posting_date",
+							"company",
+							"warehouse",
+							"item_code",
+							"voucher_type",
+							"actual_qty",
+							"stock_value_difference",
+							"incoming_value",
+							"outgoing_value"
+						]
+					}
+				]
+			},
+			"template-query-stock-last-movement": {
+				"name": "template-query-stock-last-movement",
+				"title": "Last Movement Per Item",
+				"workbook": "template-stock-inventory-health",
+				"folder": null,
+				"sort_order": 2,
+				"use_live_connection": 1,
+				"is_script_query": 0,
+				"is_builder_query": 1,
+				"is_native_query": 0,
+				"operations": [
+					{
+						"type": "source",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabStock Ledger Entry"
+						}
+					},
+					{
+						"type": "filter_group",
+						"logical_operator": "And",
+						"filters": [
+							{
+								"column": {
+									"type": "column",
+									"column_name": "is_cancelled"
+								},
+								"operator": "=",
+								"value": 0
+							}
+						]
+					},
+					{
+						"type": "summarize",
+						"measures": [
+							{
+								"measure_name": "last_movement_date",
+								"column_name": "posting_date",
+								"data_type": "Date",
+								"aggregation": "max"
+							}
+						],
+						"dimensions": [
+							{
+								"dimension_name": "item_code",
+								"column_name": "item_code",
+								"data_type": "String"
+							}
+						]
+					}
+				]
+			},
+			"template-query-stock-ageing": {
+				"name": "template-query-stock-ageing",
+				"title": "Stock Ageing",
+				"workbook": "template-stock-inventory-health",
+				"folder": null,
+				"sort_order": 3,
+				"use_live_connection": 1,
+				"is_script_query": 0,
+				"is_builder_query": 1,
+				"is_native_query": 0,
+				"operations": [
+					{
+						"type": "source",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabBin"
+						}
+					},
+					{
+						"type": "join",
+						"join_type": "inner",
+						"table": {
+							"type": "query",
+							"workbook": "template-stock-inventory-health",
+							"query_name": "template-query-stock-last-movement"
+						},
+						"select_columns": [
+							{
+								"type": "column",
+								"column_name": "last_movement_date"
+							}
+						],
+						"join_condition": {
+							"left_column": {
+								"type": "column",
+								"column_name": "item_code"
+							},
+							"right_column": {
+								"type": "column",
+								"column_name": "item_code"
+							}
+						}
+					},
+					{
+						"type": "mutate",
+						"new_name": "days_since_movement",
+						"data_type": "Integer",
+						"expression": {
+							"type": "expression",
+							"expression": "date_diff(today(), last_movement_date, \"day\")"
+						}
+					},
+					{
+						"type": "mutate",
+						"new_name": "ageing_bucket",
+						"data_type": "String",
+						"expression": {
+							"type": "expression",
+							"expression": "cases((days_since_movement <= 30, \"1. 0-30 days\"), (days_since_movement <= 90, \"2. 31-90 days\"), (days_since_movement <= 180, \"3. 91-180 days\"), else_=\"4. 180+ days\")"
+						}
+					},
+					{
+						"type": "select",
+						"column_names": [
+							"item_code",
+							"warehouse",
+							"company",
+							"actual_qty",
+							"stock_value",
+							"last_movement_date",
+							"days_since_movement",
+							"ageing_bucket"
+						]
+					}
+				]
+			},
+			"template-query-stock-reorder": {
+				"name": "template-query-stock-reorder",
+				"title": "Reorder Shortfalls",
+				"workbook": "template-stock-inventory-health",
+				"folder": null,
+				"sort_order": 4,
+				"use_live_connection": 1,
+				"is_script_query": 0,
+				"is_builder_query": 1,
+				"is_native_query": 0,
+				"operations": [
+					{
+						"type": "source",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabBin"
+						}
+					},
+					{
+						"type": "join",
+						"join_type": "inner",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabItem Reorder"
+						},
+						"select_columns": [
+							{
+								"type": "column",
+								"column_name": "warehouse_reorder_level"
+							},
+							{
+								"type": "column",
+								"column_name": "warehouse_reorder_qty"
+							}
+						],
+						"join_condition": {
+							"join_expression": {
+								"type": "expression",
+								"expression": "(t1.item_code == t2.parent) & (t1.warehouse == t2.warehouse)"
+							}
+						}
+					},
+					{
+						"type": "filter_group",
+						"logical_operator": "And",
+						"filters": [
+							{
+								"column": {
+									"type": "column",
+									"column_name": "projected_qty"
+								},
+								"operator": "<",
+								"value": {
+									"type": "column",
+									"column_name": "warehouse_reorder_level"
+								}
+							}
+						]
+					},
+					{
+						"type": "select",
+						"column_names": [
+							"item_code",
+							"warehouse",
+							"company",
+							"actual_qty",
+							"projected_qty",
+							"warehouse_reorder_level",
+							"warehouse_reorder_qty"
+						]
+					}
+				]
+			}
+		},
+		"charts": {
+			"template-chart-total-stock-value": {
+				"name": "template-chart-total-stock-value",
+				"title": "Total Stock Value",
+				"workbook": "template-stock-inventory-health",
+				"folder": null,
+				"sort_order": 0,
+				"query": "template-query-stock-bins",
+				"chart_type": "Number",
+				"config": {
+					"number_columns": [
+						{
+							"measure_name": "Total Stock Value",
+							"column_name": "stock_value",
+							"data_type": "Decimal",
+							"aggregation": "sum"
+						}
+					],
+					"number_column_options": [
+						{}
+					],
+					"comparison": false,
+					"sparkline": false,
+					"shorten_numbers": true,
+					"decimal": 2,
+					"order_by": []
+				}
+			},
+			"template-chart-stock-value-change": {
+				"name": "template-chart-stock-value-change",
+				"title": "Stock Value Change",
+				"workbook": "template-stock-inventory-health",
+				"folder": null,
+				"sort_order": 1,
+				"query": "template-query-stock-movements",
+				"chart_type": "Number",
+				"config": {
+					"number_columns": [
+						{
+							"measure_name": "Stock Value Change",
+							"column_name": "stock_value_difference",
+							"data_type": "Decimal",
+							"aggregation": "sum"
+						}
+					],
+					"number_column_options": [
+						{}
+					],
+					"comparison": false,
+					"sparkline": false,
+					"shorten_numbers": true,
+					"decimal": 2,
+					"order_by": []
+				}
+			},
+			"template-chart-items-below-reorder": {
+				"name": "template-chart-items-below-reorder",
+				"title": "Items Below Reorder Level",
+				"workbook": "template-stock-inventory-health",
+				"folder": null,
+				"sort_order": 2,
+				"query": "template-query-stock-reorder",
+				"chart_type": "Number",
+				"config": {
+					"number_columns": [
+						{
+							"measure_name": "Items Below Reorder",
+							"column_name": "count",
+							"data_type": "Integer",
+							"aggregation": "count"
+						}
+					],
+					"number_column_options": [
+						{}
+					],
+					"comparison": false,
+					"sparkline": false,
+					"shorten_numbers": false,
+					"decimal": 0,
+					"order_by": []
+				}
+			},
+			"template-chart-dead-stock-value": {
+				"name": "template-chart-dead-stock-value",
+				"title": "Dead Stock Value (90d+)",
+				"workbook": "template-stock-inventory-health",
+				"folder": null,
+				"sort_order": 3,
+				"query": "template-query-stock-ageing",
+				"chart_type": "Number",
+				"config": {
+					"number_columns": [
+						{
+							"measure_name": "Dead Stock (90d+)",
+							"column_name": "stock_value",
+							"data_type": "Decimal",
+							"aggregation": "sum"
+						}
+					],
+					"number_column_options": [
+						{}
+					],
+					"comparison": false,
+					"sparkline": false,
+					"shorten_numbers": true,
+					"decimal": 2,
+					"order_by": [],
+					"filters": {
+						"logical_operator": "And",
+						"filters": [
+							{
+								"column": {
+									"type": "column",
+									"column_name": "days_since_movement"
+								},
+								"operator": ">",
+								"value": 90
+							}
+						]
+					}
+				}
+			},
+			"template-chart-stock-by-warehouse": {
+				"name": "template-chart-stock-by-warehouse",
+				"title": "Stock Value by Warehouse",
+				"workbook": "template-stock-inventory-health",
+				"folder": null,
+				"sort_order": 4,
+				"query": "template-query-stock-bins",
+				"chart_type": "Bar",
+				"config": {
+					"x_axis": {
+						"dimension": {
+							"dimension_name": "warehouse",
+							"column_name": "warehouse",
+							"data_type": "String"
+						}
+					},
+					"y_axis": {
+						"series": [
+							{
+								"measure": {
+									"measure_name": "stock_value",
+									"column_name": "stock_value",
+									"data_type": "Decimal",
+									"aggregation": "sum"
+								}
+							}
+						]
+					},
+					"order_by": [
+						{
+							"column": {
+								"type": "column",
+								"column_name": "stock_value"
+							},
+							"direction": "desc"
+						}
+					]
+				}
+			},
+			"template-chart-stock-by-item-group": {
+				"name": "template-chart-stock-by-item-group",
+				"title": "Stock Value by Item Group",
+				"workbook": "template-stock-inventory-health",
+				"folder": null,
+				"sort_order": 5,
+				"query": "template-query-stock-bins",
+				"chart_type": "Bar",
+				"config": {
+					"x_axis": {
+						"dimension": {
+							"dimension_name": "item_group",
+							"column_name": "item_group",
+							"data_type": "String"
+						}
+					},
+					"y_axis": {
+						"series": [
+							{
+								"measure": {
+									"measure_name": "stock_value",
+									"column_name": "stock_value",
+									"data_type": "Decimal",
+									"aggregation": "sum"
+								}
+							}
+						]
+					},
+					"order_by": [
+						{
+							"column": {
+								"type": "column",
+								"column_name": "stock_value"
+							},
+							"direction": "desc"
+						}
+					]
+				}
+			},
+			"template-chart-stock-ageing": {
+				"name": "template-chart-stock-ageing",
+				"title": "Stock Ageing by Value",
+				"workbook": "template-stock-inventory-health",
+				"folder": null,
+				"sort_order": 6,
+				"query": "template-query-stock-ageing",
+				"chart_type": "Bar",
+				"config": {
+					"x_axis": {
+						"dimension": {
+							"dimension_name": "ageing_bucket",
+							"column_name": "ageing_bucket",
+							"data_type": "String"
+						}
+					},
+					"y_axis": {
+						"series": [
+							{
+								"measure": {
+									"measure_name": "stock_value",
+									"column_name": "stock_value",
+									"data_type": "Decimal",
+									"aggregation": "sum"
+								}
+							}
+						]
+					},
+					"order_by": [
+						{
+							"column": {
+								"type": "column",
+								"column_name": "ageing_bucket"
+							},
+							"direction": "asc"
+						}
+					]
+				}
+			},
+			"template-chart-in-vs-out": {
+				"name": "template-chart-in-vs-out",
+				"title": "Stock In vs Out (by Value)",
+				"workbook": "template-stock-inventory-health",
+				"folder": null,
+				"sort_order": 7,
+				"query": "template-query-stock-movements",
+				"chart_type": "Bar",
+				"config": {
+					"x_axis": {
+						"dimension": {
+							"dimension_name": "posting_date",
+							"column_name": "posting_date",
+							"data_type": "Date",
+							"granularity": "month"
+						}
+					},
+					"y_axis": {
+						"series": [
+							{
+								"measure": {
+									"measure_name": "incoming_value",
+									"column_name": "incoming_value",
+									"data_type": "Decimal",
+									"aggregation": "sum"
+								}
+							},
+							{
+								"measure": {
+									"measure_name": "outgoing_value",
+									"column_name": "outgoing_value",
+									"data_type": "Decimal",
+									"aggregation": "sum"
+								}
+							}
+						]
+					},
+					"order_by": [
+						{
+							"column": {
+								"type": "column",
+								"column_name": "posting_date"
+							},
+							"direction": "asc"
+						}
+					],
+					"limit": 24
+				}
+			},
+			"template-chart-reorder-alert": {
+				"name": "template-chart-reorder-alert",
+				"title": "Reorder Alert",
+				"workbook": "template-stock-inventory-health",
+				"folder": null,
+				"sort_order": 8,
+				"query": "template-query-stock-reorder",
+				"chart_type": "Table",
+				"config": {
+					"rows": [
+						{
+							"dimension_name": "item_code",
+							"column_name": "item_code",
+							"data_type": "String"
+						},
+						{
+							"dimension_name": "warehouse",
+							"column_name": "warehouse",
+							"data_type": "String"
+						}
+					],
+					"columns": [],
+					"values": [
+						{
+							"measure_name": "actual_qty",
+							"column_name": "actual_qty",
+							"data_type": "Decimal",
+							"aggregation": "sum"
+						},
+						{
+							"measure_name": "reorder_level",
+							"column_name": "warehouse_reorder_level",
+							"data_type": "Decimal",
+							"aggregation": "sum"
+						},
+						{
+							"measure_name": "projected_qty",
+							"column_name": "projected_qty",
+							"data_type": "Decimal",
+							"aggregation": "sum"
+						}
+					],
+					"order_by": [
+						{
+							"column": {
+								"type": "column",
+								"column_name": "projected_qty"
+							},
+							"direction": "asc"
+						}
+					]
+				}
+			},
+			"template-chart-top-items": {
+				"name": "template-chart-top-items",
+				"title": "Top Items by Stock Value",
+				"workbook": "template-stock-inventory-health",
+				"folder": null,
+				"sort_order": 9,
+				"query": "template-query-stock-ageing",
+				"chart_type": "Table",
+				"config": {
+					"rows": [
+						{
+							"dimension_name": "item_code",
+							"column_name": "item_code",
+							"data_type": "String"
+						}
+					],
+					"columns": [],
+					"values": [
+						{
+							"measure_name": "qty",
+							"column_name": "actual_qty",
+							"data_type": "Decimal",
+							"aggregation": "sum"
+						},
+						{
+							"measure_name": "stock_value",
+							"column_name": "stock_value",
+							"data_type": "Decimal",
+							"aggregation": "sum"
+						},
+						{
+							"measure_name": "days_since_movement",
+							"column_name": "days_since_movement",
+							"data_type": "Integer",
+							"aggregation": "min"
+						}
+					],
+					"order_by": [
+						{
+							"column": {
+								"type": "column",
+								"column_name": "stock_value"
+							},
+							"direction": "desc"
+						}
+					],
+					"limit": 15
+				}
+			}
+		},
+		"dashboards": {
+			"template-dashboard-inventory-health": {
+				"name": "template-dashboard-inventory-health",
+				"title": "Inventory Health",
+				"workbook": "template-stock-inventory-health",
+				"items": [
+					{
+						"type": "filter",
+						"filter_name": "Posting Date",
+						"filter_type": "Date",
+						"icon": "calendar",
+						"default_operator": "within",
+						"default_value": "Last 12 Months",
+						"links": {
+							"template-chart-stock-value-change": "`template-query-stock-movements`.`posting_date`",
+							"template-chart-in-vs-out": "`template-query-stock-movements`.`posting_date`"
+						},
+						"layout": {
+							"i": "flt-date",
+							"x": 0,
+							"y": 0,
+							"w": 4,
+							"h": 1
+						}
+					},
+					{
+						"type": "filter",
+						"filter_name": "Company",
+						"filter_type": "String",
+						"icon": "building-2",
+						"links": {
+							"template-chart-total-stock-value": "`template-query-stock-bins`.`company`",
+							"template-chart-stock-value-change": "`template-query-stock-movements`.`company`",
+							"template-chart-items-below-reorder": "`template-query-stock-reorder`.`company`",
+							"template-chart-dead-stock-value": "`template-query-stock-ageing`.`company`",
+							"template-chart-stock-by-warehouse": "`template-query-stock-bins`.`company`",
+							"template-chart-stock-by-item-group": "`template-query-stock-bins`.`company`",
+							"template-chart-stock-ageing": "`template-query-stock-ageing`.`company`",
+							"template-chart-in-vs-out": "`template-query-stock-movements`.`company`",
+							"template-chart-reorder-alert": "`template-query-stock-reorder`.`company`",
+							"template-chart-top-items": "`template-query-stock-ageing`.`company`"
+						},
+						"layout": {
+							"i": "flt-company",
+							"x": 4,
+							"y": 0,
+							"w": 4,
+							"h": 1
+						}
+					},
+					{
+						"type": "filter",
+						"filter_name": "Warehouse",
+						"filter_type": "String",
+						"icon": "warehouse",
+						"links": {
+							"template-chart-total-stock-value": "`template-query-stock-bins`.`warehouse`",
+							"template-chart-stock-value-change": "`template-query-stock-movements`.`warehouse`",
+							"template-chart-items-below-reorder": "`template-query-stock-reorder`.`warehouse`",
+							"template-chart-dead-stock-value": "`template-query-stock-ageing`.`warehouse`",
+							"template-chart-stock-by-warehouse": "`template-query-stock-bins`.`warehouse`",
+							"template-chart-stock-by-item-group": "`template-query-stock-bins`.`warehouse`",
+							"template-chart-stock-ageing": "`template-query-stock-ageing`.`warehouse`",
+							"template-chart-in-vs-out": "`template-query-stock-movements`.`warehouse`",
+							"template-chart-reorder-alert": "`template-query-stock-reorder`.`warehouse`",
+							"template-chart-top-items": "`template-query-stock-ageing`.`warehouse`"
+						},
+						"layout": {
+							"i": "flt-warehouse",
+							"x": 8,
+							"y": 0,
+							"w": 4,
+							"h": 1
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "template-chart-total-stock-value",
+						"layout": {
+							"i": "c-total",
+							"x": 0,
+							"y": 1,
+							"w": 4,
+							"h": 3
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "template-chart-stock-value-change",
+						"layout": {
+							"i": "c-change",
+							"x": 4,
+							"y": 1,
+							"w": 4,
+							"h": 3
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "template-chart-items-below-reorder",
+						"layout": {
+							"i": "c-reorder-num",
+							"x": 8,
+							"y": 1,
+							"w": 4,
+							"h": 3
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "template-chart-dead-stock-value",
+						"layout": {
+							"i": "c-dead",
+							"x": 12,
+							"y": 1,
+							"w": 4,
+							"h": 3
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "template-chart-stock-by-warehouse",
+						"layout": {
+							"i": "c-by-wh",
+							"x": 0,
+							"y": 4,
+							"w": 10,
+							"h": 8
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "template-chart-stock-by-item-group",
+						"layout": {
+							"i": "c-by-ig",
+							"x": 10,
+							"y": 4,
+							"w": 10,
+							"h": 8
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "template-chart-stock-ageing",
+						"layout": {
+							"i": "c-ageing",
+							"x": 0,
+							"y": 12,
+							"w": 10,
+							"h": 8
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "template-chart-in-vs-out",
+						"layout": {
+							"i": "c-in-out",
+							"x": 10,
+							"y": 12,
+							"w": 10,
+							"h": 8
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "template-chart-reorder-alert",
+						"layout": {
+							"i": "c-reorder-tbl",
+							"x": 0,
+							"y": 20,
+							"w": 10,
+							"h": 9
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "template-chart-top-items",
+						"layout": {
+							"i": "c-top-items",
+							"x": 10,
+							"y": 20,
+							"w": 10,
+							"h": 9
+						}
+					},
+					{
+						"type": "text",
+						"text": "",
+						"layout": {
+							"i": "jgp91auh",
+							"x": 12,
+							"y": 0,
+							"w": 8,
+							"h": 1
+						}
+					}
+				]
+			}
+		}
+	}
+}

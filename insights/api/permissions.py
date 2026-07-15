@@ -6,6 +6,12 @@ from insights.decorators import insights_whitelist
 
 @insights_whitelist()
 def get_resource_access_info(resource_type: str, resource_name: str):
+    if not frappe.has_permission(resource_type, ptype="read", doc=resource_name):
+        frappe.throw("You do not have access to this resource", frappe.PermissionError)
+    return _get_resource_access_info(resource_type, resource_name)
+
+
+def _get_resource_access_info(resource_type: str, resource_name: str):
     # returns a list of authorized and unauthorized teams for a resource
     InsightsTeam = frappe.qb.DocType("Insights Team")
     InsightsTeamMember = frappe.qb.DocType("Insights Team Member")
@@ -63,10 +69,7 @@ def get_resource_access_info(resource_type: str, resource_name: str):
 
 @insights_whitelist()
 def grant_access(resource_type: str, resource_name: str, team: str):
-    if (
-        frappe.db.get_value(resource_type, resource_name, "owner")
-        == frappe.session.user
-    ):
+    if frappe.db.get_value(resource_type, resource_name, "owner") == frappe.session.user:
         team_doc = frappe.get_doc("Insights Team", team)
         team_doc.append(
             "team_permissions",
@@ -86,16 +89,10 @@ def grant_access(resource_type: str, resource_name: str, team: str):
 
 @insights_whitelist()
 def revoke_access(resource_type: str, resource_name: str, team: str):
-    if (
-        frappe.db.get_value(resource_type, resource_name, "owner")
-        == frappe.session.user
-    ):
+    if frappe.db.get_value(resource_type, resource_name, "owner") == frappe.session.user:
         team_doc = frappe.get_doc("Insights Team", team)
         for permission in team_doc.team_permissions:
-            if (
-                permission.resource_type == resource_type
-                and permission.resource_name == resource_name
-            ):
+            if permission.resource_type == resource_type and permission.resource_name == resource_name:
                 team_doc.remove(permission)
         team_doc.save(ignore_permissions=True)
 
@@ -103,6 +100,4 @@ def revoke_access(resource_type: str, resource_name: str, team: str):
 def is_private(resource_type, resource_name):
     if not frappe.db.get_single_value("Insights Settings", "enable_permissions"):
         return False
-    return bool(
-        get_resource_access_info(resource_type, resource_name).get("authorized_teams")
-    )
+    return bool(_get_resource_access_info(resource_type, resource_name).get("authorized_teams"))

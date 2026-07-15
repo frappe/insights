@@ -1,0 +1,747 @@
+{
+	"version": "1.0",
+	"type": "Workbook",
+	"name": "template-sales-performance",
+	"doc": {
+		"name": "template-sales-performance",
+		"title": "Sales Performance"
+	},
+	"dependencies": {
+		"folders": [],
+		"queries": {
+			"tq-sales-invoices": {
+				"name": "tq-sales-invoices",
+				"title": "Sales Invoices",
+				"workbook": "template-sales-performance",
+				"folder": null,
+				"sort_order": 0,
+				"use_live_connection": 1,
+				"is_script_query": 0,
+				"is_builder_query": 1,
+				"is_native_query": 0,
+				"operations": [
+					{
+						"type": "source",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabSales Invoice"
+						}
+					},
+					{
+						"type": "filter_group",
+						"logical_operator": "And",
+						"filters": [
+							{
+								"column": {
+									"type": "column",
+									"column_name": "docstatus"
+								},
+								"operator": "=",
+								"value": 1
+							}
+						]
+					}
+				]
+			},
+			"tq-sales-invoice-items": {
+				"name": "tq-sales-invoice-items",
+				"title": "Sales Invoice Items",
+				"workbook": "template-sales-performance",
+				"folder": null,
+				"sort_order": 1,
+				"use_live_connection": 1,
+				"is_script_query": 0,
+				"is_builder_query": 1,
+				"is_native_query": 0,
+				"operations": [
+					{
+						"type": "source",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabSales Invoice Item"
+						}
+					},
+					{
+						"type": "filter_group",
+						"logical_operator": "And",
+						"filters": [
+							{
+								"column": {
+									"type": "column",
+									"column_name": "docstatus"
+								},
+								"operator": "=",
+								"value": 1
+							}
+						]
+					},
+					{
+						"type": "join",
+						"join_type": "inner",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabSales Invoice"
+						},
+						"select_columns": [
+							{
+								"type": "column",
+								"column_name": "posting_date"
+							},
+							{
+								"type": "column",
+								"column_name": "company"
+							}
+						],
+						"join_condition": {
+							"left_column": {
+								"type": "column",
+								"column_name": "parent"
+							},
+							"right_column": {
+								"type": "column",
+								"column_name": "name"
+							}
+						}
+					}
+				]
+			},
+			"tq-quotations": {
+				"name": "tq-quotations",
+				"title": "Quotations",
+				"workbook": "template-sales-performance",
+				"folder": null,
+				"sort_order": 2,
+				"use_live_connection": 1,
+				"is_script_query": 0,
+				"is_builder_query": 1,
+				"is_native_query": 0,
+				"operations": [
+					{
+						"type": "source",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabQuotation"
+						}
+					},
+					{
+						"type": "filter_group",
+						"logical_operator": "And",
+						"filters": [
+							{
+								"column": {
+									"type": "column",
+									"column_name": "docstatus"
+								},
+								"operator": "=",
+								"value": 1
+							}
+						]
+					}
+				]
+			},
+			"tq-quotation-funnel": {
+				"name": "tq-quotation-funnel",
+				"title": "Quotation Funnel",
+				"workbook": "template-sales-performance",
+				"folder": null,
+				"sort_order": 3,
+				"use_live_connection": 1,
+				"is_script_query": 0,
+				"is_builder_query": 0,
+				"is_native_query": 1,
+				"operations": [
+					{
+						"type": "sql",
+						"data_source": "Site DB",
+						"raw_sql": "SELECT '1. Total' AS stage, COUNT(*) AS quotations FROM `tabQuotation` WHERE docstatus = 1\nUNION ALL\nSELECT '2. Ordered' AS stage, COUNT(*) AS quotations FROM `tabQuotation` WHERE docstatus = 1 AND status = 'Ordered'"
+					}
+				]
+			},
+			"tq-overdue-deliveries": {
+				"name": "tq-overdue-deliveries",
+				"title": "Overdue Deliveries",
+				"workbook": "template-sales-performance",
+				"folder": null,
+				"sort_order": 4,
+				"use_live_connection": 1,
+				"is_script_query": 0,
+				"is_builder_query": 1,
+				"is_native_query": 0,
+				"operations": [
+					{
+						"type": "source",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabSales Order"
+						}
+					},
+					{
+						"type": "filter_group",
+						"logical_operator": "And",
+						"filters": [
+							{
+								"column": {
+									"type": "column",
+									"column_name": "docstatus"
+								},
+								"operator": "=",
+								"value": 1
+							}
+						]
+					},
+					{
+						"type": "filter_group",
+						"logical_operator": "And",
+						"filters": [
+							{
+								"column": {
+									"type": "column",
+									"column_name": "per_delivered"
+								},
+								"operator": "<",
+								"value": 100
+							}
+						]
+					},
+					{
+						"type": "filter_group",
+						"logical_operator": "And",
+						"filters": [
+							{
+								"expression": {
+									"type": "expression",
+									"expression": "delivery_date < today()"
+								}
+							}
+						]
+					},
+					{
+						"type": "mutate",
+						"new_name": "days_late",
+						"data_type": "Integer",
+						"expression": {
+							"type": "expression",
+							"expression": "date_diff(today(), delivery_date, 'day')"
+						}
+					}
+				]
+			}
+		},
+		"charts": {
+			"tc-kpis": {
+				"name": "tc-kpis",
+				"title": "Sales KPIs",
+				"workbook": "template-sales-performance",
+				"folder": null,
+				"sort_order": 0,
+				"query": "tq-sales-invoices",
+				"chart_type": "Number",
+				"config": {
+					"number_columns": [
+						{
+							"measure_name": "Revenue",
+							"column_name": "base_net_total",
+							"data_type": "Decimal",
+							"aggregation": "sum"
+						},
+						{
+							"measure_name": "Invoices",
+							"column_name": "name",
+							"data_type": "Integer",
+							"aggregation": "count"
+						},
+						{
+							"measure_name": "Avg Invoice Value",
+							"column_name": "base_net_total",
+							"data_type": "Decimal",
+							"aggregation": "avg"
+						},
+						{
+							"measure_name": "Active Customers",
+							"column_name": "customer",
+							"data_type": "Integer",
+							"aggregation": "count_distinct"
+						}
+					],
+					"number_column_options": [
+						{
+							"prefix": "\u20b9 ",
+							"decimal": 2,
+							"shorten_numbers": true
+						},
+						{
+							"shorten_numbers": false
+						},
+						{
+							"prefix": "\u20b9 ",
+							"decimal": 2,
+							"shorten_numbers": true
+						},
+						{
+							"shorten_numbers": false
+						}
+					],
+					"comparison": true,
+					"sparkline": true,
+					"date_column": {
+						"dimension_name": "posting_date",
+						"column_name": "posting_date",
+						"data_type": "Date",
+						"granularity": "month"
+					},
+					"order_by": [
+						{
+							"column": {
+								"type": "column",
+								"column_name": "posting_date"
+							},
+							"direction": "asc"
+						}
+					],
+					"limit": 100,
+					"filters": {
+						"logical_operator": "And",
+						"filters": []
+					}
+				}
+			},
+			"tc-revenue-trend": {
+				"name": "tc-revenue-trend",
+				"title": "Revenue Trend",
+				"workbook": "template-sales-performance",
+				"folder": null,
+				"sort_order": 1,
+				"query": "tq-sales-invoices",
+				"chart_type": "Line",
+				"config": {
+					"x_axis": {
+						"dimension": {
+							"dimension_name": "posting_date",
+							"column_name": "posting_date",
+							"data_type": "Date",
+							"granularity": "month"
+						}
+					},
+					"y_axis": {
+						"series": [
+							{
+								"measure": {
+									"measure_name": "Revenue",
+									"column_name": "base_net_total",
+									"data_type": "Decimal",
+									"aggregation": "sum"
+								}
+							}
+						],
+						"show_data_labels": false
+					},
+					"order_by": [
+						{
+							"column": {
+								"type": "column",
+								"column_name": "posting_date"
+							},
+							"direction": "asc"
+						}
+					],
+					"limit": 100,
+					"filters": {
+						"logical_operator": "And",
+						"filters": []
+					}
+				}
+			},
+			"tc-revenue-by-item-group": {
+				"name": "tc-revenue-by-item-group",
+				"title": "Revenue by Item Group",
+				"workbook": "template-sales-performance",
+				"folder": null,
+				"sort_order": 2,
+				"query": "tq-sales-invoice-items",
+				"chart_type": "Donut",
+				"config": {
+					"label_column": {
+						"dimension_name": "item_group",
+						"column_name": "item_group",
+						"data_type": "String"
+					},
+					"value_column": {
+						"measure_name": "Revenue",
+						"column_name": "base_net_amount",
+						"data_type": "Decimal",
+						"aggregation": "sum"
+					},
+					"legend_position": "bottom",
+					"order_by": [],
+					"limit": 100,
+					"filters": {
+						"logical_operator": "And",
+						"filters": []
+					}
+				}
+			},
+			"tc-top-customers": {
+				"name": "tc-top-customers",
+				"title": "Top 10 Customers",
+				"workbook": "template-sales-performance",
+				"folder": null,
+				"sort_order": 3,
+				"query": "tq-sales-invoices",
+				"chart_type": "Row",
+				"config": {
+					"x_axis": {
+						"dimension": {
+							"dimension_name": "customer",
+							"column_name": "customer",
+							"data_type": "String"
+						}
+					},
+					"y_axis": {
+						"series": [
+							{
+								"measure": {
+									"measure_name": "Revenue",
+									"column_name": "base_net_total",
+									"data_type": "Decimal",
+									"aggregation": "sum"
+								}
+							}
+						]
+					},
+					"order_by": [
+						{
+							"column": {
+								"type": "column",
+								"column_name": "Revenue"
+							},
+							"direction": "desc"
+						}
+					],
+					"limit": 10,
+					"filters": {
+						"logical_operator": "And",
+						"filters": []
+					}
+				}
+			},
+			"tc-top-items": {
+				"name": "tc-top-items",
+				"title": "Top 10 Items",
+				"workbook": "template-sales-performance",
+				"folder": null,
+				"sort_order": 4,
+				"query": "tq-sales-invoice-items",
+				"chart_type": "Row",
+				"config": {
+					"x_axis": {
+						"dimension": {
+							"dimension_name": "item_name",
+							"column_name": "item_name",
+							"data_type": "String"
+						}
+					},
+					"y_axis": {
+						"series": [
+							{
+								"measure": {
+									"measure_name": "Revenue",
+									"column_name": "base_net_amount",
+									"data_type": "Decimal",
+									"aggregation": "sum"
+								}
+							}
+						]
+					},
+					"order_by": [
+						{
+							"column": {
+								"type": "column",
+								"column_name": "Revenue"
+							},
+							"direction": "desc"
+						}
+					],
+					"limit": 10,
+					"filters": {
+						"logical_operator": "And",
+						"filters": []
+					}
+				}
+			},
+			"tc-quotation-funnel": {
+				"name": "tc-quotation-funnel",
+				"title": "Quotation Funnel",
+				"workbook": "template-sales-performance",
+				"folder": null,
+				"sort_order": 5,
+				"query": "tq-quotation-funnel",
+				"chart_type": "Funnel",
+				"config": {
+					"label_column": {
+						"dimension_name": "stage",
+						"column_name": "stage",
+						"data_type": "String"
+					},
+					"value_column": {
+						"measure_name": "Quotations",
+						"column_name": "quotations",
+						"data_type": "Decimal",
+						"aggregation": "sum"
+					},
+					"show_percentage": true,
+					"label_position": "left",
+					"order_by": [],
+					"limit": 100,
+					"filters": {
+						"logical_operator": "And",
+						"filters": []
+					}
+				}
+			},
+			"tc-quotations-lost": {
+				"name": "tc-quotations-lost",
+				"title": "Quotations Lost",
+				"workbook": "template-sales-performance",
+				"folder": null,
+				"sort_order": 6,
+				"query": "tq-quotations",
+				"chart_type": "Number",
+				"config": {
+					"number_columns": [
+						{
+							"measure_name": "Quotations Lost",
+							"column_name": "name",
+							"data_type": "Integer",
+							"aggregation": "count"
+						}
+					],
+					"number_column_options": [
+						{
+							"shorten_numbers": false
+						}
+					],
+					"comparison": false,
+					"sparkline": false,
+					"order_by": [],
+					"limit": 100,
+					"filters": {
+						"logical_operator": "And",
+						"filters": [
+							{
+								"column": {
+									"type": "column",
+									"column_name": "status"
+								},
+								"operator": "=",
+								"value": "Lost"
+							}
+						]
+					}
+				}
+			},
+			"tc-overdue-deliveries": {
+				"name": "tc-overdue-deliveries",
+				"title": "Overdue Deliveries",
+				"workbook": "template-sales-performance",
+				"folder": null,
+				"sort_order": 7,
+				"query": "tq-overdue-deliveries",
+				"chart_type": "Table",
+				"config": {
+					"rows": [
+						{
+							"dimension_name": "Customer",
+							"column_name": "customer",
+							"data_type": "String"
+						},
+						{
+							"dimension_name": "Sales Order",
+							"column_name": "name",
+							"data_type": "String"
+						},
+						{
+							"dimension_name": "Delivery Date",
+							"column_name": "delivery_date",
+							"data_type": "Date"
+						}
+					],
+					"columns": [],
+					"values": [
+						{
+							"measure_name": "Days Late",
+							"column_name": "days_late",
+							"data_type": "Integer",
+							"aggregation": "max"
+						},
+						{
+							"measure_name": "Order Value",
+							"column_name": "base_grand_total",
+							"data_type": "Decimal",
+							"aggregation": "sum"
+						}
+					],
+					"order_by": [
+						{
+							"column": {
+								"type": "column",
+								"column_name": "Days Late"
+							},
+							"direction": "desc"
+						}
+					],
+					"limit": 20,
+					"filters": {
+						"logical_operator": "And",
+						"filters": []
+					}
+				}
+			}
+		},
+		"dashboards": {
+			"td-sales-performance": {
+				"name": "td-sales-performance",
+				"title": "Sales Performance",
+				"workbook": "template-sales-performance",
+				"items": [
+					{
+						"type": "filter",
+						"filter_name": "Date Range",
+						"filter_type": "Date",
+						"icon": "calendar",
+						"default_operator": "within",
+						"default_value": "Last 12 months",
+						"links": {
+							"tc-kpis": "`tq-sales-invoices`.`posting_date`",
+							"tc-revenue-trend": "`tq-sales-invoices`.`posting_date`",
+							"tc-top-customers": "`tq-sales-invoices`.`posting_date`",
+							"tc-top-items": "`tq-sales-invoice-items`.`posting_date`",
+							"tc-revenue-by-item-group": "`tq-sales-invoice-items`.`posting_date`"
+						},
+						"layout": {
+							"i": "filter-date",
+							"x": 0,
+							"y": 0,
+							"w": 4,
+							"h": 1
+						}
+					},
+					{
+						"type": "filter",
+						"filter_name": "Company",
+						"filter_type": "String",
+						"icon": "building-2",
+						"links": {
+							"tc-kpis": "`tq-sales-invoices`.`company`",
+							"tc-revenue-trend": "`tq-sales-invoices`.`company`",
+							"tc-top-customers": "`tq-sales-invoices`.`company`",
+							"tc-top-items": "`tq-sales-invoice-items`.`company`",
+							"tc-revenue-by-item-group": "`tq-sales-invoice-items`.`company`",
+							"tc-quotations-lost": "`tq-quotations`.`company`",
+							"tc-overdue-deliveries": "`tq-overdue-deliveries`.`company`"
+						},
+						"layout": {
+							"i": "filter-company",
+							"x": 4,
+							"y": 0,
+							"w": 4,
+							"h": 1
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "tc-kpis",
+						"layout": {
+							"i": "item-kpis",
+							"x": 0,
+							"y": 1,
+							"w": 20,
+							"h": 3
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "tc-revenue-trend",
+						"layout": {
+							"i": "item-revenue-trend",
+							"x": 0,
+							"y": 4,
+							"w": 12,
+							"h": 9
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "tc-revenue-by-item-group",
+						"layout": {
+							"i": "item-item-group",
+							"x": 12,
+							"y": 4,
+							"w": 8,
+							"h": 9
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "tc-top-customers",
+						"layout": {
+							"i": "item-top-customers",
+							"x": 0,
+							"y": 13,
+							"w": 10,
+							"h": 9
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "tc-top-items",
+						"layout": {
+							"i": "item-top-items",
+							"x": 10,
+							"y": 13,
+							"w": 10,
+							"h": 9
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "tc-quotation-funnel",
+						"layout": {
+							"i": "item-funnel",
+							"x": 0,
+							"y": 22,
+							"w": 12,
+							"h": 9
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "tc-quotations-lost",
+						"layout": {
+							"i": "item-lost",
+							"x": 12,
+							"y": 22,
+							"w": 8,
+							"h": 9
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "tc-overdue-deliveries",
+						"layout": {
+							"i": "item-overdue",
+							"x": 0,
+							"y": 31,
+							"w": 20,
+							"h": 9
+						}
+					}
+				]
+			}
+		}
+	}
+}

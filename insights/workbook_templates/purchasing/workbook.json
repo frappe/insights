@@ -1,0 +1,669 @@
+{
+	"version": "1.0",
+	"type": "Workbook",
+	"name": "template-purchasing-overview",
+	"doc": {
+		"name": "template-purchasing-overview",
+		"title": "Purchasing Overview"
+	},
+	"dependencies": {
+		"folders": [],
+		"queries": {
+			"tq-purchase-invoices": {
+				"name": "tq-purchase-invoices",
+				"title": "Purchase Invoices",
+				"workbook": "template-purchasing-overview",
+				"folder": null,
+				"sort_order": 0,
+				"use_live_connection": 1,
+				"is_script_query": 0,
+				"is_builder_query": 1,
+				"is_native_query": 0,
+				"operations": [
+					{
+						"type": "source",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabPurchase Invoice"
+						}
+					},
+					{
+						"type": "filter_group",
+						"logical_operator": "And",
+						"filters": [
+							{
+								"column": {
+									"type": "column",
+									"column_name": "docstatus"
+								},
+								"operator": "=",
+								"value": 1
+							}
+						]
+					}
+				]
+			},
+			"tq-purchase-invoice-items": {
+				"name": "tq-purchase-invoice-items",
+				"title": "Purchase Invoice Items",
+				"workbook": "template-purchasing-overview",
+				"folder": null,
+				"sort_order": 1,
+				"use_live_connection": 1,
+				"is_script_query": 0,
+				"is_builder_query": 1,
+				"is_native_query": 0,
+				"operations": [
+					{
+						"type": "source",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabPurchase Invoice Item"
+						}
+					},
+					{
+						"type": "filter_group",
+						"logical_operator": "And",
+						"filters": [
+							{
+								"column": {
+									"type": "column",
+									"column_name": "docstatus"
+								},
+								"operator": "=",
+								"value": 1
+							}
+						]
+					},
+					{
+						"type": "join",
+						"join_type": "inner",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabPurchase Invoice"
+						},
+						"select_columns": [
+							{
+								"type": "column",
+								"column_name": "posting_date"
+							},
+							{
+								"type": "column",
+								"column_name": "company"
+							}
+						],
+						"join_condition": {
+							"left_column": {
+								"type": "column",
+								"column_name": "parent"
+							},
+							"right_column": {
+								"type": "column",
+								"column_name": "name"
+							}
+						}
+					}
+				]
+			},
+			"tq-purchase-orders": {
+				"name": "tq-purchase-orders",
+				"title": "Purchase Orders",
+				"workbook": "template-purchasing-overview",
+				"folder": null,
+				"sort_order": 2,
+				"use_live_connection": 1,
+				"is_script_query": 0,
+				"is_builder_query": 1,
+				"is_native_query": 0,
+				"operations": [
+					{
+						"type": "source",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabPurchase Order"
+						}
+					},
+					{
+						"type": "filter_group",
+						"logical_operator": "And",
+						"filters": [
+							{
+								"column": {
+									"type": "column",
+									"column_name": "docstatus"
+								},
+								"operator": "=",
+								"value": 1
+							}
+						]
+					}
+				]
+			},
+			"tq-overdue-pos": {
+				"name": "tq-overdue-pos",
+				"title": "Overdue Purchase Orders",
+				"workbook": "template-purchasing-overview",
+				"folder": null,
+				"sort_order": 3,
+				"use_live_connection": 1,
+				"is_script_query": 0,
+				"is_builder_query": 1,
+				"is_native_query": 0,
+				"operations": [
+					{
+						"type": "source",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabPurchase Order"
+						}
+					},
+					{
+						"type": "filter_group",
+						"logical_operator": "And",
+						"filters": [
+							{
+								"column": {
+									"type": "column",
+									"column_name": "docstatus"
+								},
+								"operator": "=",
+								"value": 1
+							}
+						]
+					},
+					{
+						"type": "filter_group",
+						"logical_operator": "And",
+						"filters": [
+							{
+								"column": {
+									"type": "column",
+									"column_name": "per_received"
+								},
+								"operator": "<",
+								"value": 100
+							}
+						]
+					},
+					{
+						"type": "filter_group",
+						"logical_operator": "And",
+						"filters": [
+							{
+								"expression": {
+									"type": "expression",
+									"expression": "schedule_date < today()"
+								}
+							}
+						]
+					},
+					{
+						"type": "mutate",
+						"new_name": "days_late",
+						"data_type": "Integer",
+						"expression": {
+							"type": "expression",
+							"expression": "date_diff(today(), schedule_date, 'day')"
+						}
+					}
+				]
+			}
+		},
+		"charts": {
+			"tc-kpis-spend": {
+				"name": "tc-kpis-spend",
+				"title": "Spend KPIs",
+				"workbook": "template-purchasing-overview",
+				"folder": null,
+				"sort_order": 0,
+				"query": "tq-purchase-invoices",
+				"chart_type": "Number",
+				"config": {
+					"number_columns": [
+						{
+							"measure_name": "Spend",
+							"column_name": "base_net_total",
+							"data_type": "Decimal",
+							"aggregation": "sum"
+						},
+						{
+							"measure_name": "Active Suppliers",
+							"column_name": "supplier",
+							"data_type": "Integer",
+							"aggregation": "count_distinct"
+						}
+					],
+					"number_column_options": [
+						{
+							"prefix": "₹ ",
+							"decimal": 2,
+							"shorten_numbers": true
+						},
+						{
+							"shorten_numbers": false
+						}
+					],
+					"comparison": true,
+					"sparkline": true,
+					"date_column": {
+						"dimension_name": "posting_date",
+						"column_name": "posting_date",
+						"data_type": "Date",
+						"granularity": "month"
+					},
+					"order_by": [
+						{
+							"column": {
+								"type": "column",
+								"column_name": "posting_date"
+							},
+							"direction": "asc"
+						}
+					],
+					"limit": 100,
+					"filters": {
+						"logical_operator": "And",
+						"filters": []
+					}
+				}
+			},
+			"tc-kpis-po": {
+				"name": "tc-kpis-po",
+				"title": "Purchase Order KPIs",
+				"workbook": "template-purchasing-overview",
+				"folder": null,
+				"sort_order": 1,
+				"query": "tq-purchase-orders",
+				"chart_type": "Number",
+				"config": {
+					"number_columns": [
+						{
+							"measure_name": "PO Count",
+							"column_name": "name",
+							"data_type": "Integer",
+							"aggregation": "count"
+						},
+						{
+							"measure_name": "Avg PO Value",
+							"column_name": "base_grand_total",
+							"data_type": "Decimal",
+							"aggregation": "avg"
+						}
+					],
+					"number_column_options": [
+						{
+							"shorten_numbers": false
+						},
+						{
+							"prefix": "₹ ",
+							"decimal": 2,
+							"shorten_numbers": true
+						}
+					],
+					"comparison": true,
+					"sparkline": true,
+					"date_column": {
+						"dimension_name": "transaction_date",
+						"column_name": "transaction_date",
+						"data_type": "Date",
+						"granularity": "month"
+					},
+					"order_by": [
+						{
+							"column": {
+								"type": "column",
+								"column_name": "transaction_date"
+							},
+							"direction": "asc"
+						}
+					],
+					"limit": 100,
+					"filters": {
+						"logical_operator": "And",
+						"filters": []
+					}
+				}
+			},
+			"tc-spend-trend": {
+				"name": "tc-spend-trend",
+				"title": "Spend Trend",
+				"workbook": "template-purchasing-overview",
+				"folder": null,
+				"sort_order": 2,
+				"query": "tq-purchase-invoices",
+				"chart_type": "Line",
+				"config": {
+					"x_axis": {
+						"dimension": {
+							"dimension_name": "posting_date",
+							"column_name": "posting_date",
+							"data_type": "Date",
+							"granularity": "month"
+						}
+					},
+					"y_axis": {
+						"series": [
+							{
+								"measure": {
+									"measure_name": "Spend",
+									"column_name": "base_net_total",
+									"data_type": "Decimal",
+									"aggregation": "sum"
+								}
+							}
+						],
+						"show_data_labels": false
+					},
+					"order_by": [
+						{
+							"column": {
+								"type": "column",
+								"column_name": "posting_date"
+							},
+							"direction": "asc"
+						}
+					],
+					"limit": 100,
+					"filters": {
+						"logical_operator": "And",
+						"filters": []
+					}
+				}
+			},
+			"tc-spend-by-item-group": {
+				"name": "tc-spend-by-item-group",
+				"title": "Spend by Item Group",
+				"workbook": "template-purchasing-overview",
+				"folder": null,
+				"sort_order": 3,
+				"query": "tq-purchase-invoice-items",
+				"chart_type": "Donut",
+				"config": {
+					"label_column": {
+						"dimension_name": "item_group",
+						"column_name": "item_group",
+						"data_type": "String"
+					},
+					"value_column": {
+						"measure_name": "Spend",
+						"column_name": "base_net_amount",
+						"data_type": "Decimal",
+						"aggregation": "sum"
+					},
+					"legend_position": "bottom",
+					"order_by": [],
+					"limit": 100,
+					"filters": {
+						"logical_operator": "And",
+						"filters": []
+					}
+				}
+			},
+			"tc-top-suppliers": {
+				"name": "tc-top-suppliers",
+				"title": "Top 10 Suppliers",
+				"workbook": "template-purchasing-overview",
+				"folder": null,
+				"sort_order": 4,
+				"query": "tq-purchase-invoices",
+				"chart_type": "Row",
+				"config": {
+					"x_axis": {
+						"dimension": {
+							"dimension_name": "supplier",
+							"column_name": "supplier",
+							"data_type": "String"
+						}
+					},
+					"y_axis": {
+						"series": [
+							{
+								"measure": {
+									"measure_name": "Spend",
+									"column_name": "base_net_total",
+									"data_type": "Decimal",
+									"aggregation": "sum"
+								}
+							}
+						]
+					},
+					"order_by": [
+						{
+							"column": {
+								"type": "column",
+								"column_name": "Spend"
+							},
+							"direction": "desc"
+						}
+					],
+					"limit": 10,
+					"filters": {
+						"logical_operator": "And",
+						"filters": []
+					}
+				}
+			},
+			"tc-po-status": {
+				"name": "tc-po-status",
+				"title": "Purchase Orders by Status",
+				"workbook": "template-purchasing-overview",
+				"folder": null,
+				"sort_order": 5,
+				"query": "tq-purchase-orders",
+				"chart_type": "Donut",
+				"config": {
+					"label_column": {
+						"dimension_name": "status",
+						"column_name": "status",
+						"data_type": "String"
+					},
+					"value_column": {
+						"measure_name": "Purchase Orders",
+						"column_name": "name",
+						"data_type": "Integer",
+						"aggregation": "count"
+					},
+					"legend_position": "bottom",
+					"order_by": [],
+					"limit": 100,
+					"filters": {
+						"logical_operator": "And",
+						"filters": []
+					}
+				}
+			},
+			"tc-overdue-pos": {
+				"name": "tc-overdue-pos",
+				"title": "Overdue Purchase Orders",
+				"workbook": "template-purchasing-overview",
+				"folder": null,
+				"sort_order": 6,
+				"query": "tq-overdue-pos",
+				"chart_type": "Table",
+				"config": {
+					"rows": [
+						{
+							"dimension_name": "Supplier",
+							"column_name": "supplier",
+							"data_type": "String"
+						},
+						{
+							"dimension_name": "Purchase Order",
+							"column_name": "name",
+							"data_type": "String"
+						},
+						{
+							"dimension_name": "Required By",
+							"column_name": "schedule_date",
+							"data_type": "Date"
+						}
+					],
+					"columns": [],
+					"values": [
+						{
+							"measure_name": "Days Late",
+							"column_name": "days_late",
+							"data_type": "Integer",
+							"aggregation": "max"
+						},
+						{
+							"measure_name": "Order Value",
+							"column_name": "base_grand_total",
+							"data_type": "Decimal",
+							"aggregation": "sum"
+						}
+					],
+					"order_by": [
+						{
+							"column": {
+								"type": "column",
+								"column_name": "Days Late"
+							},
+							"direction": "desc"
+						}
+					],
+					"limit": 20,
+					"filters": {
+						"logical_operator": "And",
+						"filters": []
+					}
+				}
+			}
+		},
+		"dashboards": {
+			"td-purchasing-overview": {
+				"name": "td-purchasing-overview",
+				"title": "Purchasing Overview",
+				"workbook": "template-purchasing-overview",
+				"items": [
+					{
+						"type": "filter",
+						"filter_name": "Date Range",
+						"filter_type": "Date",
+						"icon": "calendar",
+						"default_operator": "within",
+						"default_value": "Last 12 months",
+						"links": {
+							"tc-kpis-spend": "`tq-purchase-invoices`.`posting_date`",
+							"tc-spend-trend": "`tq-purchase-invoices`.`posting_date`",
+							"tc-top-suppliers": "`tq-purchase-invoices`.`posting_date`",
+							"tc-spend-by-item-group": "`tq-purchase-invoice-items`.`posting_date`",
+							"tc-kpis-po": "`tq-purchase-orders`.`transaction_date`"
+						},
+						"layout": {
+							"i": "filter-date",
+							"x": 0,
+							"y": 0,
+							"w": 4,
+							"h": 1
+						}
+					},
+					{
+						"type": "filter",
+						"filter_name": "Company",
+						"filter_type": "String",
+						"icon": "building-2",
+						"links": {
+							"tc-kpis-spend": "`tq-purchase-invoices`.`company`",
+							"tc-spend-trend": "`tq-purchase-invoices`.`company`",
+							"tc-top-suppliers": "`tq-purchase-invoices`.`company`",
+							"tc-spend-by-item-group": "`tq-purchase-invoice-items`.`company`",
+							"tc-kpis-po": "`tq-purchase-orders`.`company`",
+							"tc-po-status": "`tq-purchase-orders`.`company`",
+							"tc-overdue-pos": "`tq-overdue-pos`.`company`"
+						},
+						"layout": {
+							"i": "filter-company",
+							"x": 4,
+							"y": 0,
+							"w": 4,
+							"h": 1
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "tc-kpis-spend",
+						"layout": {
+							"i": "item-kpis-spend",
+							"x": 0,
+							"y": 1,
+							"w": 7,
+							"h": 3
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "tc-kpis-po",
+						"layout": {
+							"i": "item-kpis-po",
+							"x": 7,
+							"y": 1,
+							"w": 7,
+							"h": 3
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "tc-spend-trend",
+						"layout": {
+							"i": "item-spend-trend",
+							"x": 0,
+							"y": 4,
+							"w": 12,
+							"h": 9
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "tc-spend-by-item-group",
+						"layout": {
+							"i": "item-item-group",
+							"x": 12,
+							"y": 4,
+							"w": 8,
+							"h": 9
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "tc-top-suppliers",
+						"layout": {
+							"i": "item-top-suppliers",
+							"x": 0,
+							"y": 13,
+							"w": 10,
+							"h": 9
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "tc-po-status",
+						"layout": {
+							"i": "item-po-status",
+							"x": 10,
+							"y": 13,
+							"w": 10,
+							"h": 9
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "tc-overdue-pos",
+						"layout": {
+							"i": "item-overdue",
+							"x": 0,
+							"y": 22,
+							"w": 20,
+							"h": 9
+						}
+					}
+				]
+			}
+		}
+	}
+}
