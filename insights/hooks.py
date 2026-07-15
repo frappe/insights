@@ -35,7 +35,7 @@ insights_workbooks = "workbook_templates"
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/insights/css/insights.css"
-# app_include_js = "insights.bundle.js"
+app_include_js = "insights_nudge.bundle.js"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/insights/css/insights.css"
