@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { TextEditor } from 'frappe-ui'
+import { Editor, EditorContent, RichTextKit } from 'frappe-ui/editor'
 import { inject, ref, unref } from 'vue'
 import { WorkbookDashboardText } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
@@ -40,14 +40,18 @@ const editedText = ref(unref(props.item.text))
 		<template #default>
 			<div class="space-y-2">
 				<span class="block text-sm leading-4 text-gray-700">{{ __('Content') }}</span>
-				<TextEditor
-					ref="textEditor"
-					:editable="true"
-					:content="editedText"
-					editor-class="min-h-[8rem] h-auto prose-sm cursor-text bg-gray-100 rounded p-2"
-					@change="editedText = $event"
+				<Editor
+					v-model="editedText"
+					:extensions="[RichTextKit]"
 					:placeholder="__('Enter your text content here...')"
-				/>
+				>
+					<template #default="{ editor }">
+						<EditorContent
+							:editor="editor"
+							class="min-h-[8rem] h-auto prose-sm cursor-text bg-gray-100 rounded p-2"
+						/>
+					</template>
+				</Editor>
 				<p class="text-xs text-gray-500">{{ __('Markdown supported') }}</p>
 			</div>
 		</template>
