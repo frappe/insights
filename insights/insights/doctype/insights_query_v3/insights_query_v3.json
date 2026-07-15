@@ -13,6 +13,15 @@
   "is_script_query",
   "is_builder_query",
   "is_native_query",
+  "section_break_snapshot",
+  "is_materialized",
+  "snapshot_refresh_frequency",
+  "column_break_snapshot",
+  "snapshot_status",
+  "snapshot_last_refreshed_at",
+  "snapshot_row_count",
+  "snapshot_error",
+  "snapshot_digest",
   "section_break_cuka",
   "operations",
   "variables",
@@ -101,6 +110,62 @@
    "fieldname": "folder",
    "fieldtype": "Data",
    "label": "folder"
+  },
+  {
+   "fieldname": "section_break_snapshot",
+   "fieldtype": "Section Break",
+   "label": "Materialization"
+  },
+  {
+   "default": "0",
+   "description": "Store this query's result in the data store and serve it from there, instead of re-running the query live on every view. Best for heavy aggregated queries.",
+   "fieldname": "is_materialized",
+   "fieldtype": "Check",
+   "label": "Materialize Results"
+  },
+  {
+   "default": "Daily",
+   "depends_on": "eval: doc.is_materialized",
+   "fieldname": "snapshot_refresh_frequency",
+   "fieldtype": "Select",
+   "label": "Refresh Frequency",
+   "options": "Daily\nHourly"
+  },
+  {
+   "fieldname": "column_break_snapshot",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "snapshot_status",
+   "fieldtype": "Select",
+   "label": "Snapshot Status",
+   "options": "\nQueued\nRunning\nCompleted\nFailed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "snapshot_last_refreshed_at",
+   "fieldtype": "Datetime",
+   "label": "Last Refreshed At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "snapshot_row_count",
+   "fieldtype": "Int",
+   "label": "Snapshot Row Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "snapshot_error",
+   "fieldtype": "Small Text",
+   "label": "Snapshot Error",
+   "read_only": 1
+  },
+  {
+   "fieldname": "snapshot_digest",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Snapshot Digest",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -114,7 +179,7 @@
    "link_fieldname": "query"
   }
  ],
- "modified": "2026-04-19 14:06:26.149575",
+ "modified": "2026-07-15 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query v3",

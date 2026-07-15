@@ -45,10 +45,17 @@ class InsightsQueryv3(Document):
 
         folder: DF.Data | None
         is_builder_query: DF.Check
+        is_materialized: DF.Check
         is_native_query: DF.Check
         is_script_query: DF.Check
         old_name: DF.Data | None
         operations: DF.JSON | None
+        snapshot_digest: DF.Data | None
+        snapshot_error: DF.SmallText | None
+        snapshot_last_refreshed_at: DF.Datetime | None
+        snapshot_refresh_frequency: DF.Literal["Daily", "Hourly"]
+        snapshot_row_count: DF.Int
+        snapshot_status: DF.Literal["", "Queued", "Running", "Completed", "Failed"]
         sort_order: DF.Int
         title: DF.Data | None
         use_live_connection: DF.Check
@@ -73,6 +80,11 @@ class InsightsQueryv3(Document):
         # Remove all edges referencing or referenced by this query
         frappe.db.delete("Insights Query Reference", {"query": self.name})
         frappe.db.delete("Insights Query Reference", {"ref_query": self.name})
+
+        if self.is_materialized:
+            from insights.insights.doctype.insights_query_v3.snapshots import drop_snapshot
+
+            drop_snapshot(self.name)
 
         # Clean up empty folders
         if self.folder:
@@ -107,6 +119,29 @@ class InsightsQueryv3(Document):
             enqueue_after_commit=True,
             now=bool(frappe.flags.in_test),
         )
+        self._handle_materialization_change()
+
+    def _handle_materialization_change(self):
+        """Keep the snapshot in step with the query: (re)build it when
+        materialization is turned on or the operations change, drop it when
+        materialization is turned off."""
+        from insights.insights.doctype.insights_query_v3.snapshots import (
+            compute_operations_digest,
+            drop_snapshot,
+            enqueue_snapshot_refresh,
+        )
+
+        before = self.get_doc_before_save()
+        was_materialized = bool(before and before.is_materialized)
+
+        if self.is_materialized:
+            operations_changed = before and compute_operations_digest(self.operations) != (
+                before.snapshot_digest or ""
+            )
+            if not was_materialized or operations_changed:
+                enqueue_snapshot_refresh(self.name)
+        elif was_materialized:
+            drop_snapshot(self.name)
 
     def cleanup_empty_folder(self, folder_name):
         """Delete folder if it has no queries or charts"""
@@ -138,8 +173,8 @@ class InsightsQueryv3(Document):
         )
         return [{"data_source": r.data_source, "table_name": r.table_name} for r in rows]
 
-    def build(self, active_operation_idx=None, use_live_connection=None):
-        builder = IbisQueryBuilder(self, active_operation_idx)
+    def build(self, active_operation_idx=None, use_live_connection=None, resolve_snapshot=True):
+        builder = IbisQueryBuilder(self, active_operation_idx, resolve_snapshot=resolve_snapshot)
         builder.use_live_connection = (
             use_live_connection if use_live_connection is not None else self.use_live_connection
         )
@@ -196,6 +231,30 @@ class InsightsQueryv3(Document):
             return raw_sql
 
         return sqlparse.format(str(raw_sql), reindent=True, keyword_case="upper")
+
+    @insights_whitelist()
+    def refresh_snapshot(self):
+        if not self.has_permission("write"):
+            frappe.throw("Not permitted to refresh this query.", frappe.PermissionError)
+        if not self.is_materialized:
+            frappe.throw("This query is not materialized.")
+
+        from insights.insights.doctype.insights_query_v3.snapshots import enqueue_snapshot_refresh
+
+        self.db_set("snapshot_status", "Queued", update_modified=False)
+        enqueue_snapshot_refresh(self.name)
+        return self.get_snapshot_status()
+
+    @insights_whitelist()
+    def get_snapshot_status(self):
+        return {
+            "is_materialized": bool(self.is_materialized),
+            "frequency": self.snapshot_refresh_frequency,
+            "status": self.snapshot_status,
+            "last_refreshed_at": self.snapshot_last_refreshed_at,
+            "row_count": self.snapshot_row_count,
+            "error": self.snapshot_error,
+        }
 
     @insights_whitelist()
     def get_count(self, active_operation_idx: int | None = None, adhoc_filters: dict | None = None):

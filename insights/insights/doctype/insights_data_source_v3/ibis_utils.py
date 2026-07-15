@@ -51,10 +51,11 @@ class CircularQueryReferenceError(frappe.ValidationError):
 
 
 class IbisQueryBuilder:
-    def __init__(self, doc, active_operation_idx=None):
+    def __init__(self, doc, active_operation_idx=None, resolve_snapshot=True):
         self.doc = doc
         self.title = self.doc.title or self.doc.name
         self.active_operation_idx = active_operation_idx
+        self.resolve_snapshot = resolve_snapshot
         self.use_live_connection = bool(doc.use_live_connection)
         self.operations = doc.operations
         self.set_operations()
@@ -70,6 +71,7 @@ class IbisQueryBuilder:
         ):
             operations = operations[: self.active_operation_idx + 1]
 
+        adhoc_op = None
         if self.doc.name in adhoc_filters_by_query:
             adhoc_filters = adhoc_filters_by_query[self.doc.name]
             if (
@@ -83,9 +85,31 @@ class IbisQueryBuilder:
                     f for f in adhoc_filters["filters"] if not f.get("expression", {}).get("type")
                 ]
                 if adhoc_filters["filters"]:
-                    operations.append(adhoc_filters)
+                    adhoc_op = adhoc_filters
+
+        # A materialized query serves its stored result: replace the whole
+        # operation chain with a single read from the snapshot table. Adhoc
+        # (dashboard) filters still apply on top — they target the query's
+        # output columns, which the snapshot preserves.
+        if self._should_read_snapshot():
+            operations = [{"type": "snapshot_source"}]
+
+        if adhoc_op:
+            operations.append(adhoc_op)
 
         self.operations = operations
+
+    def _should_read_snapshot(self) -> bool:
+        # Only serve the snapshot for a full build; previewing an intermediate
+        # operation (active_operation_idx) must always build live.
+        if not self.resolve_snapshot or self.active_operation_idx is not None:
+            return False
+        if not getattr(self.doc, "is_materialized", 0):
+            return False
+
+        from insights.insights.doctype.insights_query_v3.snapshots import snapshot_exists
+
+        return snapshot_exists(self.doc.name)
 
     def build(self) -> IbisQuery:
         if not hasattr(frappe.local, "_insights_building_queries"):
@@ -152,7 +176,26 @@ class IbisQueryBuilder:
             return self.apply_sql(operation)
         elif operation.type == "code":
             return self.apply_code(operation)
+        elif operation.type == "snapshot_source":
+            return self.apply_snapshot_source()
         return self.query
+
+    def apply_snapshot_source(self):
+        from insights.insights.doctype.insights_query_v3.snapshots import get_snapshot_table
+
+        # The snapshot hides the leaf tables from the usual per-table permission
+        # checks, so re-run them here against the query's real source tables.
+        self._check_snapshot_permissions()
+        return get_snapshot_table(self.doc.name)
+
+    def _check_snapshot_permissions(self):
+        from insights.insights.doctype.insights_team.insights_team import check_table_permission
+
+        get_source_tables = getattr(self.doc, "get_source_tables", None)
+        if not callable(get_source_tables):
+            return
+        for source in get_source_tables():
+            check_table_permission(source["data_source"], source["table_name"])
 
     def get_table_or_query(self, table_args):
         _table = None
@@ -586,10 +629,9 @@ class IbisQueryBuilder:
         raw_sql = sqlparse.format(sql=raw_sql, strip_comments=True)
         raw_sql = self._validate_native_sql(raw_sql, use_live_connection=self.use_live_connection)
 
-        check_permissions = (
-            frappe.db.get_single_value("Insights Settings", "enable_permissions")
-            or frappe.db.get_single_value("Insights Settings", "apply_user_permissions")
-        )
+        check_permissions = frappe.db.get_single_value(
+            "Insights Settings", "enable_permissions"
+        ) or frappe.db.get_single_value("Insights Settings", "apply_user_permissions")
 
         if check_permissions or not self.use_live_connection:
             tables = self._get_sql_table_names(

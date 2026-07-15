@@ -172,6 +172,7 @@ scheduler_events = {
     "hourly": [
         "insights.api.data_store.update_failed_sync_status",
         "insights.insights.doctype.insights_table_import_job.insights_table_import_job.run_scheduled_imports",
+        "insights.insights.doctype.insights_query_v3.snapshots.refresh_due_snapshots",
     ],
 }
 
