@@ -262,7 +262,7 @@ function setSignatureElementPosition() {
 		<div
 			ref="signatureElement"
 			v-show="currentFunctionSignature"
-			class="absolute flex h-fit max-h-[14rem] w-[25rem] flex-col gap-2 overflow-y-auto rounded-lg bg-white px-2.5 py-1.5 shadow-md transition-all"
+			class="absolute flex h-fit max-h-[14rem] w-[25rem] flex-col gap-2 overflow-y-auto rounded-lg bg-surface-base px-2.5 py-1.5 shadow-md transition-all"
 		>
 			<template v-if="currentFunctionSignature">
 				<p
@@ -285,8 +285,8 @@ function setSignatureElementPosition() {
 				</template>
 
 				<template v-else-if="validationState === 'valid'">
-					<CheckCircle class="h-4 w-4 text-sm text-[#7c7c7c]" />
-					<div class="text-sm-medium text-[#7c7c7c]">Valid Syntax</div>
+					<CheckCircle class="h-4 w-4 text-sm text-ink-gray-5" />
+					<div class="text-sm-medium text-ink-gray-5">Valid Syntax</div>
 				</template>
 
 				<template v-else-if="validationErrors.length">
@@ -298,7 +298,7 @@ function setSignatureElementPosition() {
 								:key="index"
 								class="mb-2 last:mb-0"
 							>
-								<div class="text-sm-medium text-[#7c7c7c]">
+								<div class="text-sm-medium text-ink-gray-5">
 									{{ error.message }}
 									{{ error!.hint }}
 								</div>
@@ -326,6 +326,16 @@ function setSignatureElementPosition() {
 	& .cm-tooltip-autocomplete {
 		position: absolute !important;
 		z-index: 50 !important;
+	}
+	& .cm-column-highlight {
+		background-color: var(--surface-gray-3) !important;
+		border-radius: 0.5rem !important;
+		padding: 1px 2px !important;
+		border: 1px solid var(--outline-gray-2) !important;
+	}
+	& .cm-scroller {
+		border-radius: 0.5rem !important;
+		border: 1px solid var(--outline-gray-2) !important;
 	}
 }
 </style>

@@ -71,7 +71,7 @@ const moreActions = [
 </script>
 
 <template>
-	<div class="flex w-full flex-shrink-0 items-center justify-between bg-white">
+	<div class="flex w-full flex-shrink-0 items-center justify-between bg-surface-base">
 		<div>
 			<div
 				v-show="chart.dataQuery.result.executedSQL"

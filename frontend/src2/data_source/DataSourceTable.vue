@@ -33,7 +33,7 @@ watchEffect(() => {
 		<div class="flex items-center gap-2"></div>
 	</header>
 
-	<div class="flex flex-1 flex-col overflow-hidden bg-white">
+	<div class="flex flex-1 flex-col overflow-hidden bg-surface-base">
 		<div v-if="table" class="flex flex-1 flex-col overflow-hidden">
 			<div class="flex flex-1 overflow-auto">
 				<DataTable

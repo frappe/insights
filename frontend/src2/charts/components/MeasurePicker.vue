@@ -219,7 +219,7 @@ function handleRemove() {
 
 				<template #default="{ isOpen, toggle: togglePopover }">
 					<div
-						class="relative mt-1 overflow-hidden rounded-lg bg-white p-1.5 text-base shadow-2xl"
+						class="relative mt-1 overflow-hidden rounded-lg bg-surface-base p-1.5 text-base shadow-2xl"
 					>
 						<template v-if="columnMeasure && !expressionMeasure">
 							<span
@@ -269,7 +269,7 @@ function handleRemove() {
 								</template>
 
 								<template v-if="columnMeasure.aggregation">
-									<div class="sticky top-0 bg-white space-y-1 p-1">
+									<div class="sticky top-0 bg-surface-base space-y-1 p-1">
 										<TextInput
 											v-model="searchQuery"
 											placeholder="Search..."
@@ -348,10 +348,13 @@ function handleRemove() {
 					<slot name="config-fields" />
 
 					<div class="flex gap-1">
-						<Button class="w-full" @click="handleRemove" theme="red">
-							<template #prefix>
-								<XIcon class="h-4 w-4 text-ink-red-8" stroke-width="1.5" />
-							</template>
+						<Button
+							class="w-full"
+							variant="outline"
+							theme="red"
+							iconLeft="lucide-x"
+							@click="handleRemove"
+						>
 							Remove
 						</Button>
 					</div>

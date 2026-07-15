@@ -73,7 +73,9 @@ function addNewColumn() {
 </script>
 
 <template>
-	<div class="relative flex w-full flex-1 flex-col overflow-hidden rounded shadow-sm">
+	<div
+		class="relative flex w-full flex-1 flex-col overflow-hidden rounded border border-outline-gray-2"
+	>
 		<QueryDataTable
 			:query="query"
 			:enable-column-rename="true"

@@ -30,7 +30,7 @@ const actions = [
 			class="rounded p-1.5 hover:bg-surface-gray-8"
 			@click="action.onClick()"
 		>
-			<component :is="action.icon" class="h-3.5 w-3.5 text-white" />
+			<component :is="action.icon" class="h-3.5 w-3.5 text-ink-gray-1" />
 		</div>
 	</div>
 </template>

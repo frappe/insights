@@ -52,7 +52,7 @@ function handleSaveVariables(variables: any[]) {
 		<div class="relative flex h-[55%] w-full flex-col rounded border">
 			<div class="flex flex-shrink-0 items-center gap-1 border-b p-1">
 				<ContentEditable
-					class="flex h-7 cursor-text items-center justify-center rounded bg-white px-2 text-base leading-7 text-ink-gray-7 focus-visible:ring-1 focus-visible:ring-outline-gray-5"
+					class="flex h-7 cursor-text items-center justify-center rounded bg-surface-base px-2 text-base leading-7 text-ink-gray-7 focus-visible:ring-1 focus-visible:ring-outline-gray-5"
 					:modelValue="query.doc.title"
 					@returned="query.doc.title = $event"
 					@blur="query.doc.title = $event"

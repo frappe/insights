@@ -17,7 +17,7 @@ const show = defineModel()
 <template>
 	<Dialog v-model:open="show" bare>
 		<template #default>
-			<div class="bg-white px-4 py-5 text-base sm:p-6">
+			<div class="bg-surface-base px-4 py-5 text-base sm:p-6">
 				<h3 class="text-lg-medium leading-6 text-ink-gray-8">
 					{{ props.title }}
 				</h3>

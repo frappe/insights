@@ -21,7 +21,9 @@
 			<span
 				class="flex h-4 w-4 aspect-square items-center justify-center rounded-full border transition-colors duration-200 ease-in-out"
 				:class="[
-					isChecked ? 'border-black bg-black' : 'border-outline-gray-2',
+					isChecked
+						? 'border-outline-gray-8 bg-surface-gray-10'
+						: 'border-outline-gray-2',
 					isDisabled && 'border-outline-gray-1 bg-surface-gray-2',
 				]"
 			>
@@ -29,7 +31,7 @@
 					class="h-2 w-2 rounded-full transition-opacity duration-200"
 					:class="[
 						isChecked ? 'opacity-100' : 'opacity-0',
-						isDisabled && isChecked ? 'bg-surface-gray-5' : 'bg-white',
+						isDisabled && isChecked ? 'bg-surface-gray-5' : 'bg-surface-base',
 					]"
 				/>
 			</span>

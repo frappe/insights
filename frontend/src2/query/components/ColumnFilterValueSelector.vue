@@ -84,7 +84,7 @@ function toggleSort() {
 			</FormControl>
 			<button
 				@click.stop="toggleSort"
-				class="flex h-7 w-7 items-center justify-center rounded border border-outline-gray-2 bg-white hover:bg-surface-gray-1"
+				class="flex h-7 w-7 items-center justify-center rounded border border-outline-gray-2 bg-surface-base hover:bg-surface-gray-1"
 				:title="sortOrder === 'asc' ? 'Sort descending' : 'Sort ascending'"
 			>
 				<component :is="sortOrder === 'asc' ? ArrowDownAZ : ArrowUpAZ" class="h-4 w-4" />

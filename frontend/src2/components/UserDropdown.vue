@@ -8,7 +8,7 @@
 						props.isCollapsed
 							? 'w-auto px-0'
 							: open
-							  ? 'w-52 bg-white px-2 shadow-sm'
+							  ? 'w-52 bg-surface-elevation-2 px-2 shadow-sm'
 							  : 'w-52 px-2 hover:bg-surface-gray-3'
 					"
 				>
@@ -93,10 +93,18 @@
 </template>
 
 <script setup lang="ts">
-import { call, Dropdown } from 'frappe-ui'
-import { ChevronDown, HelpCircle, LogOut, MessageCircle, ToggleRight } from 'lucide-vue-next'
-import { h, ref } from 'vue'
-import { showErrorToast, waitUntil } from '../helpers'
+import { call, Dropdown, useTheme } from 'frappe-ui'
+import {
+	ChevronDown,
+	HelpCircle,
+	LogOut,
+	MessageCircle,
+	Moon,
+	Sun,
+	ToggleRight,
+} from 'lucide-vue-next'
+import { computed, h, ref } from 'vue'
+import { showErrorToast } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import session from '../session'
 import FrappeCloudIcon from './Icons/FrappeCloudIcon.vue'
@@ -107,18 +115,51 @@ const props = defineProps<{ isCollapsed?: boolean }>()
 const showSwitchToV2Dialog = ref(false)
 const showLoginToFCDialog = ref(false)
 
-const userDropdownOptions = ref([
-	{
-		label: __('Documentation'),
-		icon: h(HelpCircle),
-		onClick: () => window.open('https://docs.frappe.io/insights', '_blank'),
-	},
-	{
-		label: __('Join Telegram Group'),
-		icon: h(MessageCircle),
-		onClick: () => window.open('https://t.me/frappeinsights', '_blank'),
-	},
-	{
+const { currentTheme, toggleTheme } = useTheme()
+const isDark = computed(() => currentTheme.value === 'dark')
+
+const userDropdownOptions = computed(() => {
+	const options: { label: string; icon: any; onClick: () => void }[] = [
+		{
+			label: __('Documentation'),
+			icon: h(HelpCircle),
+			onClick: () => window.open('https://docs.frappe.io/insights', '_blank'),
+		},
+		{
+			label: __('Join Telegram Group'),
+			icon: h(MessageCircle),
+			onClick: () => window.open('https://t.me/frappeinsights', '_blank'),
+		},
+	]
+
+	if (session.user.is_v2_instance) {
+		options.push({
+			label: __('Switch to Insights v2'),
+			icon: h(ToggleRight),
+			onClick: () => (showSwitchToV2Dialog.value = true),
+		})
+	}
+	if (session.user.is_admin) {
+		options.push({
+			label: __('Switch to Desk'),
+			icon: h(ToggleRight),
+			onClick: () => window.open('/app', '_blank'),
+		})
+	}
+	if (window.is_fc_site) {
+		options.push({
+			icon: h(FrappeCloudIcon),
+			label: __('Login to Frappe Cloud'),
+			onClick: () => (showLoginToFCDialog.value = true),
+		})
+	}
+
+	options.push({
+		label: isDark.value ? __('Light mode') : __('Dark mode'),
+		icon: h(isDark.value ? Sun : Moon),
+		onClick: toggleTheme,
+	})
+	options.push({
 		label: __('Log out'),
 		icon: h(LogOut),
 		onClick: () =>
@@ -127,34 +168,10 @@ const userDropdownOptions = ref([
 				message: __('Are you sure you want to log out?'),
 				onSuccess: session.logout,
 			}),
-	},
-])
-
-waitUntil(() => session.initialized).then(() => {
-	if (session.user.is_v2_instance) {
-		userDropdownOptions.value.splice(userDropdownOptions.value.length - 2, 0, {
-			label: __('Switch to Insights v2'),
-			icon: h(ToggleRight),
-			onClick: () => (showSwitchToV2Dialog.value = true),
-		})
-	}
-
-	if (session.user.is_admin) {
-		userDropdownOptions.value.splice(userDropdownOptions.value.length - 2, 0, {
-			label: __('Switch to Desk'),
-			icon: h(ToggleRight),
-			onClick: () => window.open('/app', '_blank'),
-		})
-	}
-})
-
-if (window.is_fc_site) {
-	userDropdownOptions.value.splice(userDropdownOptions.value.length - 1, 0, {
-		icon: h(FrappeCloudIcon),
-		label: __('Login to Frappe Cloud'),
-		onClick: () => (showLoginToFCDialog.value = true),
 	})
-}
+
+	return options
+})
 
 function openInsightsV2() {
 	session.updateDefaultVersion(session.user.default_version).then(() => {

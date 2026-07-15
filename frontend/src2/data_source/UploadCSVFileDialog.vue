@@ -138,7 +138,7 @@ function resetFile() {
 					<FormControl class="w-fit" label="Table Name" v-model="csvData.tablename" />
 				</div>
 				<div
-					class="relative flex h-[30rem] w-full flex-col overflow-hidden rounded border bg-white"
+					class="relative flex h-[30rem] w-full flex-col overflow-hidden rounded border bg-surface-base"
 				>
 					<DataTable
 						:columns="csvData.columns"

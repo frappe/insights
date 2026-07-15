@@ -1,5 +1,5 @@
 <template>
-	<div class="flex w-[210px] select-none flex-col gap-2 bg-white text-base">
+	<div class="flex w-[210px] select-none flex-col gap-2 bg-surface-base text-base">
 		<div class="flex items-center justify-between text-ink-gray-6">
 			<Button @click="prevMonth" icon="lucide-chevron-left" />
 			<Button @dblclick="clearDates"> {{ formatMonth() }} </Button>

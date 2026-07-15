@@ -66,7 +66,7 @@ async function downloadDashboardImage() {
 </script>
 
 <template>
-	<div class="relative flex h-full w-full overflow-hidden bg-surface-gray-1">
+	<div class="relative flex h-full w-full overflow-hidden">
 		<div class="relative flex h-full w-full flex-col overflow-hidden">
 			<div class="flex items-center justify-between p-4 pb-3">
 				<ContentEditable

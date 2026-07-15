@@ -238,7 +238,7 @@ function getVisibleTableLimit(dataSource: string) {
 		class="flex flex-col pr-2"
 		:data-source="data_source.name"
 	>
-		<div class="sticky top-0 z-10 flex items-center gap-2 bg-white py-1.5">
+		<div class="sticky top-0 z-10 flex items-center gap-2 bg-surface-base py-1.5">
 			<FormControl
 				type="checkbox"
 				:modelValue="isDataSourceSelected(data_source.name)"

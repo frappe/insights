@@ -27,7 +27,12 @@ wheneverChanges(
 
 <template>
 	<InlineFormControlLabel label="Query">
-		<Combobox :options="props.queries" :modelValue="query" @update:modelValue="query = $event">
+		<Combobox
+			class="w-full"
+			:options="props.queries"
+			:modelValue="query"
+			@update:modelValue="query = $event"
+		>
 			<template #prefix>
 				<Table2 class="mr-1.5 h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 			</template>

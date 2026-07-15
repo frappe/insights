@@ -52,7 +52,7 @@ function saveVariables() {
 <template>
 	<Dialog v-model:open="show" size="lg" bare>
 		<template #default>
-			<div class="bg-white px-4 pb-6 pt-5 sm:px-6">
+			<div class="bg-surface-base px-4 pb-6 pt-5 sm:px-6">
 				<div class="flex items-center justify-between pb-4">
 					<h3 class="text-3xl-semibold leading-6 text-ink-gray-8">
 						{{ __('Variables') }}
@@ -77,7 +77,7 @@ function saveVariables() {
 				<div class="flex flex-col overflow-hidden">
 					<div class="relative flex max-h-[20rem] flex-col overflow-y-auto">
 						<div
-							class="sticky top-0 flex gap-x-2 border-b bg-white py-2 text-p-sm-medium text-ink-gray-5"
+							class="sticky top-0 flex gap-x-2 border-b bg-surface-base py-2 text-p-sm-medium text-ink-gray-5"
 						>
 							<div class="flex flex-1 flex-shrink-0 px-2">{{ __('Name') }}</div>
 							<div class="flex flex-1 flex-shrink-0 px-2">{{ __('Value') }}</div>

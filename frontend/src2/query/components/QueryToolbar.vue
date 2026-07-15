@@ -62,7 +62,7 @@ function handleExecute() {
 </script>
 
 <template>
-	<div class="flex w-full flex-shrink-0 items-center justify-between bg-white">
+	<div class="flex w-full flex-shrink-0 items-center justify-between">
 		<slot />
 		<div class="flex items-center gap-2">
 			<Tooltip :text="__('Execute ({0})', formatShortcut('Meta+E'))">

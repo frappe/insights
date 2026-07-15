@@ -23,7 +23,7 @@
 							: 'translate-x-1',
 						props.size == 'sm' ? 'h-2.5 w-2.5' : ' h-3 w-3 ',
 					]"
-					class="inline-block transform rounded-full bg-white transition-transform"
+					class="inline-block transform rounded-full bg-surface-base transition-transform"
 				/>
 			</Switch>
 		</div>

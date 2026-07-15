@@ -2,7 +2,7 @@
 	<component
 		:is="to ? 'router-link' : 'div'"
 		class="flex h-7 cursor-pointer items-center rounded text-ink-gray-7 duration-300 ease-in-out focus:outline-none focus:transition-none focus-visible:rounded focus-visible:ring-2 focus-visible:ring-outline-gray-3"
-		:class="isActive ? 'bg-white shadow-sm' : 'hover:bg-surface-gray-2'"
+		:class="isActive ? 'bg-surface-elevation-2 shadow-sm' : 'hover:bg-surface-gray-2'"
 		v-bind="{
 			to: to ? { name: to } : null,
 			onClick: to ? null : handleClick,

@@ -43,7 +43,7 @@ function reset() {
 		bare
 	>
 		<template #default>
-			<div class="bg-white px-4 pb-6 pt-5 sm:px-6">
+			<div class="bg-surface-base px-4 pb-6 pt-5 sm:px-6">
 				<div class="flex items-center justify-between pb-4">
 					<h3 class="text-3xl-semibold leading-6 text-ink-gray-8">Custom Operation</h3>
 					<Button variant="ghost" @click="showDialog = false" icon="lucide-x" size="md">

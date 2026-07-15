@@ -216,9 +216,9 @@ function getOptions(region: Region) {
 							<h3 class="text-sm-bold text-ink-gray-8">Unresolved Locations</h3>
 						</div>
 						<div
-							class="h-[15rem] flex flex-col overflow-hidden rounded-md border bg-white"
+							class="h-[15rem] flex flex-col overflow-hidden rounded-md border bg-surface-base"
 						>
-							<div class="z-10 bg-white">
+							<div class="z-10 bg-surface-base">
 								<TextInput
 									v-model="searchQuery"
 									placeholder="Search locations"
@@ -260,7 +260,7 @@ function getOptions(region: Region) {
 							<h3 class="text-sm-medium text-ink-gray-8">Resolved</h3>
 						</div>
 
-						<div class="h-[10rem] overflow-y-auto rounded-md border bg-white">
+						<div class="h-[10rem] overflow-y-auto rounded-md border bg-surface-base">
 							<div class="flex flex-col divide-y h-full">
 								<div
 									v-if="manualMappings.length === 0"

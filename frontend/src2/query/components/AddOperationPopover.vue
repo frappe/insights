@@ -130,7 +130,7 @@ watch(
 				<Button
 					variant="outline"
 					:label="__('Add Operation')"
-					class="-ml-[14px] !h-6 !gap-1.5 bg-white !px-2 text-p-xs"
+					class="-ml-[14px] !h-6 !gap-1.5 bg-surface-base !px-2 text-p-xs"
 				>
 					<template #prefix>
 						<Plus class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />

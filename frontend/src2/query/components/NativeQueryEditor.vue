@@ -149,7 +149,9 @@ useShortcut('Meta+e', () => {
 		</div>
 
 		<!-- Right Sidebar -->
-		<div class="relative flex h-full w-[19rem] flex-shrink-0 flex-col overflow-y-auto bg-white">
+		<div
+			class="relative flex h-full w-[19rem] flex-shrink-0 flex-col overflow-y-auto bg-surface-base"
+		>
 			<QueryInfo />
 
 			<!-- Schema Explorer -->

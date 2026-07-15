@@ -11,7 +11,10 @@ const workbook = inject(workbookKey)
 </script>
 
 <template>
-	<div v-if="workbook" class="relative flex flex-shrink-0 items-center overflow-x-auto bg-white">
+	<div
+		v-if="workbook"
+		class="relative flex flex-shrink-0 items-center overflow-x-auto bg-surface-base"
+	>
 		<div class="flex">
 			<button
 				v-for="(query, idx) in workbook.doc.queries"

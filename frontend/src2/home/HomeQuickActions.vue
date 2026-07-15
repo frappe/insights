@@ -22,7 +22,7 @@ function openNewWorkbook() {
 		</div>
 		<div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
 			<div
-				class="col-span-1 flex cursor-pointer items-center justify-between rounded border border-transparent bg-white p-4 shadow transition-all hover:border-outline-gray-3"
+				class="col-span-1 flex cursor-pointer items-center justify-between rounded border border-transparent bg-surface-base p-4 shadow transition-all hover:border-outline-gray-3"
 				@click="openNewWorkbook"
 			>
 				<div class="text-lg-medium text-ink-gray-8">{{ __('New Workbook') }}</div>

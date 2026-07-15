@@ -4,7 +4,7 @@
 	position: relative !important;
 }
 .cm-gutters {
-	@apply !border-0 !bg-transparent !px-1.5 !text-xs !leading-6 !text-gray-500;
+	@apply !border-0 !bg-transparent !px-1.5 !text-xs !leading-6 !text-ink-gray-4;
 }
 .cm-foldGutter span {
 	@apply !hidden !opacity-0;
@@ -16,7 +16,7 @@
 	@apply !bg-transparent;
 }
 .cm-activeLineGutter {
-	@apply !bg-transparent text-gray-600;
+	@apply !bg-transparent text-ink-gray-5;
 }
 .cm-editor {
 	height: 100%;
@@ -26,32 +26,35 @@
 	user-select: text;
 }
 .cm-placeholder {
-	@apply !leading-6 !text-gray-500;
+	@apply !leading-6 !text-ink-gray-4;
 }
 .cm-content {
 	padding: 6px 0px !important;
 }
 .cm-scroller {
-	@apply !font-mono !leading-6 !text-gray-600;
+	/* Pin every editor to the app surface so the SQL/script editors match the
+	   expression editors instead of showing the thememirror theme's own
+	   background. The theme still supplies syntax-highlight colors. */
+	@apply !bg-surface-base !font-mono !leading-6 !text-ink-gray-5;
 }
 .cm-matchingBracket {
 	font-weight: 500 !important;
 	background: none !important;
-	border-bottom: 1px solid #000 !important;
+	border-bottom: 1px solid var(--ink-gray-8) !important;
 	outline: none !important;
 }
 .cm-focused {
 	outline: none !important;
 }
 .cm-tooltip-autocomplete {
-	@apply !rounded-lg !shadow-md !bg-white !p-1.5 !border-none;
+	@apply !rounded-lg !shadow-md !bg-surface-base !p-1.5 !border-none;
 }
 .cm-tooltip-autocomplete > ul {
 	font-family: 'Inter' !important;
 }
 .cm-tooltip-autocomplete ul li[aria-selected='true'] {
-	@apply !rounded !bg-gray-200/80;
-	color: #000 !important;
+	@apply !rounded !bg-surface-gray-3/80;
+	color: var(--ink-gray-8) !important;
 }
 .cm-completionLabel {
 	margin-right: 1rem !important;

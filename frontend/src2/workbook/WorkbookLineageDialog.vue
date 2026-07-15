@@ -168,7 +168,7 @@ function onNodeClick(_evt: MouseEvent, node: any) {
 			<div class="relative h-[520px] overflow-hidden rounded-lg border border-outline-gray-1">
 				<div
 					v-if="loading"
-					class="absolute inset-0 z-10 flex items-center justify-center bg-white/80"
+					class="absolute inset-0 z-10 flex items-center justify-center bg-surface-base/80"
 				>
 					<div class="text-sm text-ink-gray-3">{{ __('Loading\u2026') }}</div>
 				</div>
@@ -185,7 +185,7 @@ function onNodeClick(_evt: MouseEvent, node: any) {
 				>
 					<Panel
 						position="top-right"
-						class="rounded border border-outline-gray-1 bg-white p-2 shadow-sm"
+						class="rounded border border-outline-gray-1 bg-surface-base p-2 shadow-sm"
 					>
 						<div class="flex flex-col gap-1.5">
 							<div class="flex items-center gap-2">

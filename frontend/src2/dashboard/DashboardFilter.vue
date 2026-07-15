@@ -87,7 +87,7 @@ const label = computed(() => {
 			<template #trigger>
 				<Button
 					variant="outline"
-					class="flex h-full w-full !justify-start overflow-hidden text-sm shadow-sm [&>span]:truncate"
+					class="flex h-full w-full !justify-start overflow-hidden text-sm [&>span]:truncate"
 				>
 					<template #prefix>
 						<Icon

@@ -108,7 +108,7 @@ function confirmSelection() {
 					</DraggableList>
 				</div>
 
-				<p class="flex-shrink-0 bg-white pt-1.5 text-sm text-ink-gray-4">
+				<p class="flex-shrink-0 bg-surface-base pt-1.5 text-sm text-ink-gray-4">
 					{{ __('{0} columns selected', String(selectedColumns.length)) }}
 				</p>
 			</div>

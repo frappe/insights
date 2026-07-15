@@ -192,7 +192,7 @@ const showExpandedChartDialog = ref(false)
 	<div class="group relative h-full w-full">
 		<BaseChart
 			v-if="!loading && eChartOptions"
-			class="rounded bg-white py-1 shadow-sm"
+			class="rounded bg-surface-base py-1 border border-outline-gray-2"
 			:class="props.chart.doc.chart_type == 'Map' ? '[&>div:last-child]:p-4' : ''"
 			:title="props.chart.doc.title"
 			:options="eChartOptions"
@@ -206,7 +206,10 @@ const showExpandedChartDialog = ref(false)
 		/>
 		<TableChart v-else-if="chart_type == 'Table'" :chart="props.chart" />
 
-		<div v-else class="flex h-full flex-1 flex-col items-center justify-center rounded border">
+		<div
+			v-else
+			class="flex h-full flex-1 flex-col items-center justify-center rounded border border-outline-gray-2"
+		>
 			<template v-if="loading">
 				<LoadingIndicator class="h-5 w-5 text-ink-gray-4" />
 				<p class="mt-1.5 text-ink-gray-4">Loading data...</p>

@@ -685,7 +685,7 @@ function toggleNewColumn() {
 						:key="idx"
 					>
 						<td
-							class="tnum sticky left-0 h-8 whitespace-nowrap border-b border-r bg-white px-3 text-right text-xs"
+							class="tnum sticky left-0 h-8 whitespace-nowrap border-b border-r bg-surface-base px-3 text-right text-xs"
 							width="1px"
 							height="30px"
 						>
@@ -705,7 +705,7 @@ function toggleNewColumn() {
 									? 'cursor-pointer'
 									: '',
 								getCellStyleClass(col.name, row[col.name]),
-								isStickyColumn(col.name) ? 'sticky bg-white' : '',
+								isStickyColumn(col.name) ? 'sticky bg-surface-base' : '',
 							]"
 							:style="{
 								...getStickyColumnStyle(col.name),
@@ -740,7 +740,7 @@ function toggleNewColumn() {
 
 					<tr
 						v-if="props.showColumnTotals && totalPerColumn"
-						class="sticky bottom-0 border-b bg-white"
+						class="sticky bottom-0 border-b bg-surface-base"
 					>
 						<td class="h-8 whitespace-nowrap border-r border-t px-3"></td>
 						<td
@@ -748,7 +748,7 @@ function toggleNewColumn() {
 							class="h-8 truncate border-r border-t px-3 font-bold text-ink-gray-7"
 							:class="[
 								isNumberColumn(col.name) ? 'tnum text-right' : 'text-left',
-								isStickyColumn(col.name) ? 'sticky bg-white' : '',
+								isStickyColumn(col.name) ? 'sticky bg-surface-base' : '',
 							]"
 							:style="{
 								...getStickyColumnStyle(col.name),
@@ -801,7 +801,7 @@ function toggleNewColumn() {
 
 	<div
 		v-if="props.loading && !props.filtering"
-		class="absolute top-10 flex h-[calc(100%-2.5rem)] rounded-b w-full items-center justify-center bg-white/30 backdrop-blur-sm"
+		class="absolute top-10 flex h-[calc(100%-2.5rem)] rounded-b w-full items-center justify-center bg-surface-base/30 backdrop-blur-sm"
 	>
 		<LoadingIndicator class="h-5 w-5 text-ink-gray-4" />
 	</div>
