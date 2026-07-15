@@ -141,6 +141,11 @@ class TestQuerySnapshots(InsightsIntegrationTestCase):
         doc.reload()
         self.assertEqual(doc.snapshot_status, "Failed")
 
+    def test_snapshot_table_name_is_docname_verbatim(self):
+        # docnames are already unique; scrubbing would fold distinct names
+        # (hyphen vs underscore) onto the same snapshot table.
+        self.assertEqual(snapshots.snapshot_table_name("abc-DEF_123"), "abc-DEF_123")
+
     def test_scheduler_due_logic(self):
         from frappe.utils import add_to_date, now_datetime
 

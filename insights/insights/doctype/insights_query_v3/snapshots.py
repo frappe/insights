@@ -37,7 +37,10 @@ class SnapshotTooLargeError(frappe.ValidationError):
 
 
 def snapshot_table_name(query_name: str) -> str:
-    return frappe.scrub(query_name)
+    # Use the docname verbatim — it is a system-generated hash and already
+    # unique. Scrubbing would fold distinct docnames (e.g. hyphen vs underscore)
+    # onto the same table; DuckDB tolerates the docname format as an identifier.
+    return query_name
 
 
 def snapshot_exists(query_name: str) -> bool:
