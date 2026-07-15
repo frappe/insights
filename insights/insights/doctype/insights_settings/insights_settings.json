@@ -144,6 +144,8 @@
    "label": "Apply User Permissions"
   },
   {
+   "default": "60",
+   "description": "Interactive queries are cancelled after this many seconds. Applies to new connections and to live (non-data-store) queries; background imports are exempt.",
    "fieldname": "max_execution_time",
    "fieldtype": "Int",
    "label": "Max Execution Time (Seconds)"

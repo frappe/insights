@@ -7,6 +7,17 @@ import os
 import frappe
 from frappe.model.document import Document
 
+# Interactive queries block a web worker and hold a connection on the source DB,
+# so the cap is tuned for a viewer waiting on a dashboard, not for long analytics.
+# Background imports bypass this (see _disable_statement_timeout).
+DEFAULT_MAX_EXECUTION_TIME = 60
+
+
+def get_max_execution_time() -> int:
+    return frappe.db.get_single_value("Insights Settings", "max_execution_time", cache=True) or (
+        DEFAULT_MAX_EXECUTION_TIME
+    )
+
 
 class InsightsSettings(Document):
     # begin: auto-generated types
