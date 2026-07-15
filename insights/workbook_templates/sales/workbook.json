@@ -143,21 +143,132 @@
 					}
 				]
 			},
-			"tq-quotation-funnel": {
-				"name": "tq-quotation-funnel",
-				"title": "Quotation Funnel",
+			"tq-quotation-ordered": {
+				"name": "tq-quotation-ordered",
+				"title": "Quotations Ordered (helper)",
 				"workbook": "template-sales-performance",
 				"folder": null,
 				"sort_order": 3,
 				"use_live_connection": 1,
 				"is_script_query": 0,
-				"is_builder_query": 0,
-				"is_native_query": 1,
+				"is_builder_query": 1,
+				"is_native_query": 0,
 				"operations": [
 					{
-						"type": "sql",
-						"data_source": "Site DB",
-						"raw_sql": "SELECT '1. Total' AS stage, COUNT(*) AS quotations FROM `tabQuotation` WHERE docstatus = 1\nUNION ALL\nSELECT '2. Ordered' AS stage, COUNT(*) AS quotations FROM `tabQuotation` WHERE docstatus = 1 AND status = 'Ordered'"
+						"type": "source",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabQuotation"
+						}
+					},
+					{
+						"type": "filter_group",
+						"logical_operator": "And",
+						"filters": [
+							{
+								"column": {
+									"type": "column",
+									"column_name": "docstatus"
+								},
+								"operator": "=",
+								"value": 1
+							},
+							{
+								"column": {
+									"type": "column",
+									"column_name": "status"
+								},
+								"operator": "=",
+								"value": "Ordered"
+							}
+						]
+					},
+					{
+						"type": "summarize",
+						"measures": [
+							{
+								"measure_name": "quotations",
+								"column_name": "count",
+								"data_type": "Integer",
+								"aggregation": "count"
+							}
+						],
+						"dimensions": []
+					},
+					{
+						"type": "mutate",
+						"new_name": "stage",
+						"data_type": "String",
+						"expression": {
+							"type": "expression",
+							"expression": "ibis.literal('2. Ordered')"
+						}
+					}
+				]
+			},
+			"tq-quotation-funnel": {
+				"name": "tq-quotation-funnel",
+				"title": "Quotation Funnel",
+				"workbook": "template-sales-performance",
+				"folder": null,
+				"sort_order": 4,
+				"use_live_connection": 1,
+				"is_script_query": 0,
+				"is_builder_query": 1,
+				"is_native_query": 0,
+				"operations": [
+					{
+						"type": "source",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabQuotation"
+						}
+					},
+					{
+						"type": "filter_group",
+						"logical_operator": "And",
+						"filters": [
+							{
+								"column": {
+									"type": "column",
+									"column_name": "docstatus"
+								},
+								"operator": "=",
+								"value": 1
+							}
+						]
+					},
+					{
+						"type": "summarize",
+						"measures": [
+							{
+								"measure_name": "quotations",
+								"column_name": "count",
+								"data_type": "Integer",
+								"aggregation": "count"
+							}
+						],
+						"dimensions": []
+					},
+					{
+						"type": "mutate",
+						"new_name": "stage",
+						"data_type": "String",
+						"expression": {
+							"type": "expression",
+							"expression": "ibis.literal('1. Total')"
+						}
+					},
+					{
+						"type": "union",
+						"table": {
+							"type": "query",
+							"workbook": "template-sales-performance",
+							"query_name": "tq-quotation-ordered"
+						},
+						"distinct": false
 					}
 				]
 			},
@@ -166,7 +277,7 @@
 				"title": "Overdue Deliveries",
 				"workbook": "template-sales-performance",
 				"folder": null,
-				"sort_order": 4,
+				"sort_order": 5,
 				"use_live_connection": 1,
 				"is_script_query": 0,
 				"is_builder_query": 1,
