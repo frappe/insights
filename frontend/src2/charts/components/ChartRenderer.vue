@@ -144,6 +144,7 @@ async function handleMapChartClick(params: any) {
 	// If multiple territories map to this region, upgrade = to IN
 	const matchingList = Array.from(entry.rawValues)
 	if (matchingList.length > 1) {
+		let mutated = false
 		// Use the raw schema column name — this matches filter.column.column_name
 		// set by getFiltersForDimension(dim, value) via column(dim.column_name)
 		const schemaColName = mapConfig.value.location_column?.column_name
@@ -159,10 +160,14 @@ async function handleMapChartClick(params: any) {
 						) {
 							filter.operator = 'in'
 							filter.value = matchingList
+							mutated = true
 						}
 					}
 				}
 			}
+		}
+		if (!mutated) {
+			return null
 		}
 	}
 
