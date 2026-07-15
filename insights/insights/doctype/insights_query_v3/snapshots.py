@@ -62,11 +62,16 @@ def compute_operations_digest(operations) -> str:
 
 
 def enqueue_snapshot_refresh(query_name: str, now: bool = False) -> None:
+    # Always a background job. It must not run inline as a side effect of a
+    # save/import (e.g. importing a template): the query may execute against a
+    # source that is slow or, in a bare test site, absent — and that must never
+    # break the save. Callers that need a synchronous refresh call
+    # refresh_snapshot() directly.
     frappe.enqueue(
         "insights.insights.doctype.insights_query_v3.snapshots.refresh_snapshot",
         queue="long",
         query_name=query_name,
-        now=now or bool(frappe.flags.in_test),
+        now=now,
         enqueue_after_commit=True,
         job_id=f"insights-snapshot-refresh-{query_name}",
         deduplicate=True,

@@ -235,9 +235,9 @@ class InsightsQueryv3(Document):
     @insights_whitelist()
     def refresh_snapshot(self):
         if not self.has_permission("write"):
-            frappe.throw("Not permitted to refresh this query.", frappe.PermissionError)
+            frappe.throw(frappe._("Not permitted to refresh this query."), frappe.PermissionError)
         if not self.is_materialized:
-            frappe.throw("This query is not materialized.")
+            frappe.throw(frappe._("This query is not materialized."))
 
         from insights.insights.doctype.insights_query_v3.snapshots import enqueue_snapshot_refresh
 
