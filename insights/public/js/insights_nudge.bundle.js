@@ -111,8 +111,12 @@
 		track("workspace_dashboard_nudge_shown", ws, cfg);
 	}
 
+	let retryTimer = null;
 	function tryShow(attempt) {
 		attempt = attempt || 0;
+		// Supersede any pending retry: a fresh call (e.g. a fast navigation) owns the
+		// banner now, so stale chains can't double-render it or re-fire "shown".
+		clearTimeout(retryTimer);
 		const ws = currentWorkspace();
 		const cfg = ws && DASHBOARDS[ws];
 		if (!cfg || suggestionsDisabled() || !allowed() || dismissed(ws))
@@ -120,7 +124,8 @@
 
 		const anchor = findAnchor();
 		if (!anchor) {
-			if (attempt < 20) setTimeout(() => tryShow(attempt + 1), 100); // workspace renders async
+			if (attempt < 20)
+				retryTimer = setTimeout(() => tryShow(attempt + 1), 100); // workspace renders async
 			return;
 		}
 		removeBanner();
