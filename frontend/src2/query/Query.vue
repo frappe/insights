@@ -7,7 +7,7 @@ import ScriptQueryEditor from './components/ScriptQueryEditor.vue'
 import useQuery from './query'
 import { waitUntil } from '../helpers'
 // @ts-ignore
-import { useTelemetry } from 'frappe-ui/frappe'
+import { useTelemetry } from '../telemetry'
 
 const { capture } = useTelemetry()
 const props = defineProps<{ query_name: string }>()

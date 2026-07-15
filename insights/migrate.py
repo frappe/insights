@@ -11,6 +11,13 @@ def after_migrate():
     except Exception:
         frappe.log_error(title="Error creating Admin Team")
 
+    try:
+        from insights.api.templates import sync_workbook_template_updates
+
+        sync_workbook_template_updates()
+    except Exception:
+        frappe.log_error(title="Error syncing workbook template updates")
+
 
 def create_admin_team():
     if not frappe.db.exists("Insights Team", "Admin"):
@@ -21,4 +28,3 @@ def create_admin_team():
                 "team_members": [{"user": "Administrator"}],
             }
         ).insert(ignore_permissions=True)
-

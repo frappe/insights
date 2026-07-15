@@ -20,10 +20,12 @@ import useWorkbook, { newWorkbookName } from './workbook'
 import { getWorkbookColumns } from './workbookListColumns'
 import useWorkbooks from './workbooks'
 import WorkbookTemplates, { WorkbookTemplate } from './WorkbookTemplates.vue'
+import { useTelemetry } from '../telemetry'
 
 const router = useRouter()
 const userStore = useUserStore()
 const workbookStore = useWorkbooks()
+const { capture } = useTelemetry()
 
 type WorkbookScope = 'all' | 'owned' | 'shared'
 
@@ -85,16 +87,18 @@ function openNewWorkbook() {
 // workbooks in their list once an admin imports.
 const templates = ref<WorkbookTemplate[]>([])
 const showTemplates = ref(false)
-wheneverChanges(
-	() => session.user.is_admin,
-	(isAdmin) => {
-		if (!isAdmin) return
-		call('insights.api.templates.get_workbook_templates').then(
-			(data: WorkbookTemplate[]) => (templates.value = data || []),
-		)
-	},
-	{ immediate: true },
-)
+function fetchTemplates() {
+	if (!session.user.is_admin) return
+	call('insights.api.templates.get_workbook_templates').then(
+		(data: WorkbookTemplate[]) => (templates.value = data || []),
+	)
+}
+wheneverChanges(() => session.user.is_admin, fetchTemplates, { immediate: true })
+
+function openLibrary() {
+	showTemplates.value = true
+	capture('workbook_library_opened')
+}
 
 const columns = getWorkbookColumns({ userStore })
 
@@ -145,7 +149,7 @@ watchEffect(() => {
 				v-if="templates.length"
 				:label="__('Library')"
 				variant="outline"
-				@click="showTemplates = true"
+				@click="openLibrary"
 			>
 				<template #prefix>
 					<LayoutTemplateIcon class="w-4" />
@@ -164,7 +168,7 @@ watchEffect(() => {
 		</div>
 	</header>
 
-	<WorkbookTemplates v-model="showTemplates" :templates="templates" />
+	<WorkbookTemplates v-model="showTemplates" :templates="templates" @refresh="fetchTemplates" />
 
 	<div class="mb-4 flex h-full flex-col gap-3 overflow-auto px-5 pt-3">
 		<div class="flex items-center justify-between gap-2 overflow-visible py-1">
@@ -205,7 +209,7 @@ watchEffect(() => {
 							v-if="templates.length"
 							:label="__('Library')"
 							variant="outline"
-							@click="showTemplates = true"
+							@click="openLibrary"
 						>
 							<template #prefix>
 								<LayoutTemplateIcon class="w-4" />
