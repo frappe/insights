@@ -1,6 +1,6 @@
 import { reactive, ref, toRefs } from 'vue'
 // @ts-ignore
-import { useTelemetry } from '../telemetry'
+import { useTelemetry } from 'frappe-ui/frappe'
 import useChart from '../charts/chart'
 import {
 	getUniqueId,

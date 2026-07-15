@@ -20,7 +20,7 @@ import useWorkbook, { newWorkbookName } from './workbook'
 import { getWorkbookColumns } from './workbookListColumns'
 import useWorkbooks from './workbooks'
 import WorkbookTemplates, { WorkbookTemplate } from './WorkbookTemplates.vue'
-import { useTelemetry } from '../telemetry'
+import { useTelemetry } from 'frappe-ui/frappe'
 
 const router = useRouter()
 const userStore = useUserStore()
