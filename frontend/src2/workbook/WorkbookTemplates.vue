@@ -148,7 +148,7 @@ function runUpdate(template: WorkbookTemplate) {
 									v-if="template.preview_image"
 									:src="template.preview_image"
 									:alt="template.title"
-									class="h-full w-full object-cover"
+									class="h-full w-full object-cover object-top"
 								/>
 								<div v-else class="flex h-full w-full items-center justify-center">
 									<LayoutTemplate
