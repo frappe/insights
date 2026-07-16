@@ -119,10 +119,10 @@ function runUpdate(template: WorkbookTemplate) {
 <template>
 	<Dialog v-model="show" :options="{ title: __('Workbook Library'), size: '4xl' }">
 		<template #body-content>
-			<p class="mb-5 text-p-base text-ink-gray-6">
+			<p class="mb-5 text-p-base text-ink-gray-6 -mt-3">
 				{{
 					__(
-						"Prebuilt workbooks your installed apps bring to Insights. Import one to add it to your site's workbooks — everyone can use it.",
+						'Ready-made dashboards bundled with your installed apps. Import one to add it to your workbooks — it becomes available to everyone on your site.',
 					)
 				}}
 			</p>
@@ -142,13 +142,13 @@ function runUpdate(template: WorkbookTemplate) {
 							class="col-span-1 flex flex-col overflow-hidden rounded border border-outline-gray-1 bg-surface-white"
 						>
 							<div
-								class="h-32 w-full border-b border-outline-gray-1 bg-surface-gray-1"
+								class="h-52 w-full border-b border-outline-gray-1 bg-surface-gray-1"
 							>
 								<img
 									v-if="template.preview_image"
 									:src="template.preview_image"
 									:alt="template.title"
-									class="h-full w-full object-cover"
+									class="h-full w-full object-cover object-top"
 								/>
 								<div v-else class="flex h-full w-full items-center justify-center">
 									<LayoutTemplate
