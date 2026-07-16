@@ -1,6 +1,14 @@
-import frappe
+from unittest.mock import patch
 
-from insights.insights.doctype.insights_data_source_v3.ibis_utils import IbisQueryBuilder
+import frappe
+import ibis
+
+import insights
+from insights.insights.doctype.insights_data_source_v3 import ibis_utils
+from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
+    IbisQueryBuilder,
+    _get_single_backend,
+)
 from insights.tests.base import InsightsIntegrationTestCase
 
 
@@ -95,3 +103,50 @@ results = [
             self.build_query(operations)
 
         self.assertIn("Supported granularities: second, minute, hour", str(exc.exception))
+
+
+class TestMixedBackendError(InsightsIntegrationTestCase):
+    """A query that spans two backends must fail with an actionable message
+    instead of ibis's bare 'Multiple backends found for this expression'."""
+
+    def _two_backend_join(self):
+        left = ibis.sqlite.connect()
+        left.create_table("left_tbl", {"id": [1, 2, 3]})
+        right = ibis.duckdb.connect()
+        right.create_table("right_tbl", {"id": [1, 2, 3]})
+        lt, rt = left.table("left_tbl"), right.table("right_tbl")
+        return left, right, lt.join(rt, lt.id == rt.id)
+
+    def test_single_backend_resolves_normally(self):
+        left, _right, _expr = self._two_backend_join()
+        self.assertIsNotNone(_get_single_backend(left.table("left_tbl")))
+
+    def test_stored_and_live_mix_names_the_live_source(self):
+        left, right, expr = self._two_backend_join()
+        insights.db_connections["mixed_backend_live"] = left
+        self.addCleanup(insights.db_connections.pop, "mixed_backend_live", None)
+
+        # treat the right (duckdb) backend as the warehouse/stored side
+        with patch.object(ibis_utils, "is_warehouse", lambda backend: backend is right):
+            with self.assertRaises(frappe.ValidationError) as exc:
+                _get_single_backend(expr)
+
+        message = frappe.utils.strip_html(str(exc.exception))
+        self.assertIn("stored data", message)
+        self.assertIn("mixed_backend_live", message)
+        self.assertIn("data store", message)
+
+    def test_multiple_live_sources_are_listed(self):
+        left, right, expr = self._two_backend_join()
+        insights.db_connections["live_source_a"] = left
+        insights.db_connections["live_source_b"] = right
+        self.addCleanup(insights.db_connections.pop, "live_source_a", None)
+        self.addCleanup(insights.db_connections.pop, "live_source_b", None)
+
+        with self.assertRaises(frappe.ValidationError) as exc:
+            _get_single_backend(expr)
+
+        message = frappe.utils.strip_html(str(exc.exception))
+        self.assertIn("different data sources", message)
+        self.assertIn("live_source_a", message)
+        self.assertIn("live_source_b", message)

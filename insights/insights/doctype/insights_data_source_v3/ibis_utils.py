@@ -951,6 +951,77 @@ def clamp(value, lo: int, hi: int) -> int:
         return lo
 
 
+def _get_single_backend(query: IbisQuery):
+    """Resolve the single backend a query runs against.
+
+    ibis raises a bare "Multiple backends found for this expression" when an
+    expression spans more than one connection (e.g. a materialized query or a
+    data-store table, which live in the DuckDB warehouse, joined with live
+    tables; or tables from two different data sources). Translate that into an
+    actionable message that names what got mixed and how to resolve it.
+    """
+    try:
+        return query.get_backend()
+    except ibis.common.exceptions.IbisError as e:
+        if "Multiple backends" not in str(e):
+            raise
+        _throw_mixed_backend_error(query)
+
+
+def _throw_mixed_backend_error(query: IbisQuery):
+    try:
+        backends, _has_unbound = query._find_backends()
+    except Exception:
+        backends = []
+
+    has_stored = any(is_warehouse(b) for b in backends)
+    live_sources = _live_source_labels(b for b in backends if not is_warehouse(b))
+    sources = ", ".join(live_sources)
+
+    if has_stored and live_sources:
+        frappe.throw(
+            title=frappe._("Cannot combine stored and live data"),
+            msg=frappe._(
+                "This query combines stored data (a materialized query or a table imported to "
+                "the data store) with live tables from {0}. Data from different places cannot be "
+                "queried together in one query. Import the live tables into the data store so "
+                "everything is queried from the same place."
+            ).format(sources or frappe._("a data source")),
+        )
+
+    if len(live_sources) > 1:
+        frappe.throw(
+            title=frappe._("Cannot combine data sources"),
+            msg=frappe._(
+                "This query joins tables from different data sources ({0}), which cannot be "
+                "queried together directly. Import them into the data store so they can be "
+                "queried together."
+            ).format(sources),
+        )
+
+    frappe.throw(
+        title=frappe._("Cannot combine data from different sources"),
+        msg=frappe._(
+            "This query combines tables that are stored in different places, which cannot be "
+            "queried together directly. Import the tables into the data store so they can all "
+            "be queried from one place."
+        ),
+    )
+
+
+def _live_source_labels(backends) -> list[str]:
+    """Best-effort data-source names for live (non-warehouse) backends."""
+    connections = insights.db_connections
+    labels = []
+    for backend in backends:
+        label = next((name for name, con in connections.items() if con is backend), None)
+        if label:
+            label = frappe.db.get_value("Insights Data Source v3", label, "title") or label
+        if label and label not in labels:
+            labels.append(label)
+    return labels
+
+
 def execute_ibis_query(
     query: IbisQuery,
     page=1,
@@ -974,7 +1045,7 @@ def execute_ibis_query(
         # TODO: throw better error message
         raise
 
-    backend = query.get_backend()
+    backend = _get_single_backend(query)
     if cache:
         backend_id = backend.db_identity if backend else None
         cache_key = make_digest(sql, backend_id)

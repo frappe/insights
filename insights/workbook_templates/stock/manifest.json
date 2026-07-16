@@ -1,8 +1,8 @@
 {
-	"version": 2,
+	"version": 3,
 	"title": "Inventory Health",
 	"description": "Stock value, ageing and reorder health — value by warehouse and item group, incoming vs outgoing movement, a reorder alert list and top items by value.",
-	"notes": "Built from live Bin balances and Stock Ledger Entries. Values are in the company's base currency and reflect the site's current valuation state (backdated or un-reposted entries can skew Bin values). Stock ageing and dead-stock use an item-level last-movement proxy, not FIFO lot ageing. Stock movement and last-movement queries are materialized (refreshed daily) so the dashboard reads a stored result instead of scanning the Stock Ledger live on every view.",
+	"notes": "Built from live Bin balances and Stock Ledger Entries. Values are in the company's base currency and reflect the site's current valuation state (backdated or un-reposted entries can skew values). Stock ageing uses a last-movement proxy per item and warehouse, not FIFO lot ageing. The stock-movement and stock-balance queries are materialized (refreshed daily) so the dashboard reads a stored result instead of scanning the Stock Ledger live on every view. Stock ageing derives its balances and dates from the same stored result, so its quantities are consistent with the snapshot rather than mixing live Bin values with a stored date.",
 	"module": "Stock",
 	"required_apps": [
 		"erpnext"
