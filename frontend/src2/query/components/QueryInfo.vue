@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { dayjs } from 'frappe-ui'
-import { computed, inject } from 'vue'
+import { inject } from 'vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { confirmDialog } from '../../helpers/confirm_dialog'
 import { Query } from '../query'
@@ -23,22 +22,6 @@ function toggleLiveConnection(enable: boolean) {
 		},
 	})
 }
-
-const snapshotRefreshing = computed(
-	() =>
-		query.refreshingSnapshot ||
-		query.doc.snapshot_status === 'Queued' ||
-		query.doc.snapshot_status === 'Running',
-)
-
-const snapshotStatusLabel = computed(() => {
-	if (snapshotRefreshing.value) return 'Refreshing…'
-	if (query.doc.snapshot_status === 'Failed') return 'Last refresh failed'
-	if (query.doc.snapshot_last_refreshed_at) {
-		return `Updated ${dayjs(query.doc.snapshot_last_refreshed_at).fromNow()}`
-	}
-	return 'Not built yet'
-})
 </script>
 
 <template>
@@ -59,39 +42,6 @@ const snapshotStatusLabel = computed(() => {
 				:modelValue="!query.doc.use_live_connection"
 				@update:modelValue="toggleLiveConnection"
 			/>
-			<Toggle
-				label="Materialize Results"
-				description="Store this query's result and serve it from the data store instead of re-running the query on every view. Best for heavy aggregated queries."
-				v-model="query.doc.is_materialized"
-			/>
-			<template v-if="query.doc.is_materialized">
-				<InlineFormControlLabel label="Refresh Frequency">
-					<FormControl
-						type="select"
-						v-model="query.doc.snapshot_refresh_frequency"
-						:options="['Daily', 'Hourly']"
-					/>
-				</InlineFormControlLabel>
-				<div class="flex items-center justify-between">
-					<div
-						class="text-xs"
-						:class="
-							query.doc.snapshot_status === 'Failed'
-								? 'text-ink-red-3'
-								: 'text-ink-gray-5'
-						"
-						:title="query.doc.snapshot_error || ''"
-					>
-						{{ snapshotStatusLabel }}
-					</div>
-					<Button
-						label="Refresh"
-						icon-left="refresh-cw"
-						:loading="snapshotRefreshing"
-						@click="query.refreshSnapshot"
-					/>
-				</div>
-			</template>
 		</div>
 	</div>
 </template>

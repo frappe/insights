@@ -141,6 +141,25 @@ class TestQuerySnapshots(InsightsIntegrationTestCase):
         doc.reload()
         self.assertEqual(doc.snapshot_status, "Failed")
 
+    def test_only_admin_can_toggle_materialization(self):
+        from insights.tests.factories import create_user
+
+        non_admin = create_user("snapshot-nonadmin@example.com", roles=["Insights User"])
+        doc = frappe.get_doc(
+            {
+                "doctype": "Insights Query v3",
+                "workbook": self.workbook.name,
+                "title": "Perm Test",
+                "is_materialized": 1,
+                "operations": frappe.as_json([SOURCE_OP]),
+            }
+        )
+        with self.as_user(non_admin.name):
+            with self.assertRaises(frappe.PermissionError):
+                doc._validate_materialization_is_admin_only()
+        # an admin (Administrator, restored after the context) is allowed
+        doc._validate_materialization_is_admin_only()
+
     def test_snapshot_table_name_is_docname_verbatim(self):
         # docnames are already unique; scrubbing would fold distinct names
         # (hyphen vs underscore) onto the same snapshot table.

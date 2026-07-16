@@ -92,6 +92,23 @@ class InsightsQueryv3(Document):
 
     def validate(self):
         self._validate_no_circular_dependency()
+        self._validate_materialization_is_admin_only()
+
+    def _validate_materialization_is_admin_only(self):
+        """Materialization is an infrastructure setting (it runs background jobs
+        and reads live source tables), so only admins may turn it on or off."""
+        before = self.get_doc_before_save()
+        was_materialized = bool(before and before.is_materialized)
+        if was_materialized == bool(self.is_materialized):
+            return
+
+        from insights.insights.doctype.insights_team.insights_team import is_admin
+
+        if not is_admin(frappe.session.user):
+            frappe.throw(
+                frappe._("Only admins can change materialization settings."),
+                frappe.PermissionError,
+            )
 
     def _validate_no_circular_dependency(self):
         """Raise an error if the current operations would create a circular query reference."""
@@ -234,8 +251,10 @@ class InsightsQueryv3(Document):
 
     @insights_whitelist()
     def refresh_snapshot(self):
-        if not self.has_permission("write"):
-            frappe.throw(frappe._("Not permitted to refresh this query."), frappe.PermissionError)
+        from insights.insights.doctype.insights_team.insights_team import is_admin
+
+        if not is_admin(frappe.session.user):
+            frappe.throw(frappe._("Only admins can refresh a materialized query."), frappe.PermissionError)
         if not self.is_materialized:
             frappe.throw(frappe._("This query is not materialized."))
 

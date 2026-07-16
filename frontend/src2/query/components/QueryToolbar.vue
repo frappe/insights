@@ -1,11 +1,20 @@
 <script setup lang="ts">
-import { Copy, CopyPlus, MoreHorizontal, PlayIcon, RefreshCw, Scroll } from 'lucide-vue-next'
+import {
+	Copy,
+	CopyPlus,
+	Database,
+	MoreHorizontal,
+	PlayIcon,
+	RefreshCw,
+	Scroll,
+} from 'lucide-vue-next'
 import { computed, h, inject, ref } from 'vue'
 import { Tooltip } from 'frappe-ui'
 import { formatShortcut } from '../../composables/useShortcut'
 import session from '../../session'
 import { __ } from '../../translation'
 import { Query } from '../query'
+import SnapshotSettingsDialog from './SnapshotSettingsDialog.vue'
 import ViewSQLDialog from './ViewSQLDialog.vue'
 
 const props = withDefaults(
@@ -19,6 +28,7 @@ const props = withDefaults(
 const query = inject('query') as Query
 
 const showViewSQLDialog = ref(false)
+const showSnapshotSettingsDialog = ref(false)
 
 const moreActions = computed(() => {
 	const actions: any[] = []
@@ -28,6 +38,14 @@ const moreActions = computed(() => {
 			label: __('Refresh Stored Tables'),
 			icon: h(RefreshCw, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
 			onClick: query.refreshStoredTables,
+		})
+	}
+
+	if (session.user.is_admin) {
+		actions.push({
+			label: __('Materialization'),
+			icon: h(Database, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
+			onClick: () => (showSnapshotSettingsDialog.value = true),
 		})
 	}
 
@@ -83,4 +101,8 @@ function handleExecute() {
 	</div>
 
 	<ViewSQLDialog v-if="showViewSQLDialog" v-model="showViewSQLDialog" />
+	<SnapshotSettingsDialog
+		v-if="showSnapshotSettingsDialog"
+		v-model="showSnapshotSettingsDialog"
+	/>
 </template>
