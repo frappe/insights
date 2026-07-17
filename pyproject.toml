@@ -24,6 +24,9 @@ dependencies = [
     "psycopg[binary]",
 ]
 
+[tool.bench.frappe-dependencies]
+frappe = ">=15.0.0"
+
 [project.optional-dependencies]
 test = [
     "coverage~=7.10.0",
