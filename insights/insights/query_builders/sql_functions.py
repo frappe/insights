@@ -1,3 +1,4 @@
+import datetime
 import operator
 from contextlib import suppress
 
@@ -6,9 +7,7 @@ from frappe.utils.data import (
     add_to_date,
     get_date_str,
     get_first_day,
-    get_first_day_of_week,
     get_last_day,
-    get_last_day_of_week,
     get_quarter_ending,
     get_quarter_start,
     get_year_ending,
@@ -279,6 +278,31 @@ def get_descendants(node, tree, include_self=False):
             .where(Tree.c.rgt <= lft_rgt.c.rgt)
         )
     )
+
+
+WEEKDAYS = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+]
+
+
+def get_week_start_day_index():
+    day = frappe.db.get_single_value("Insights Settings", "week_starts_on") or "Monday"
+    return WEEKDAYS.index(day)
+
+
+def get_first_day_of_week(date):
+    date = getdate(date)
+    return date - datetime.timedelta(days=(date.weekday() - get_week_start_day_index()) % 7)
+
+
+def get_last_day_of_week(date):
+    return get_first_day_of_week(date) + datetime.timedelta(days=6)
 
 
 def get_current_date_range(unit):
