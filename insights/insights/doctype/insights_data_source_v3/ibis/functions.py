@@ -8,7 +8,10 @@ from frappe.utils import now_datetime
 from ibis import _
 
 from insights.insights.doctype.insights_query.utils import infer_type_from_list
-from insights.insights.query_builders.sql_functions import handle_timespan
+from insights.insights.query_builders.sql_functions import (
+    get_week_start_day_index,
+    handle_timespan,
+)
 
 
 # aggregate functions
@@ -1194,17 +1197,7 @@ def week_start(column: ir.DateValue):
     - week_start(order_date)
     """
 
-    week_start_day = frappe.db.get_single_value("Insights Settings", "week_starts_on") or "Monday"
-    days = [
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-        "Sunday",
-    ]
-    week_starts_on = days.index(week_start_day)
+    week_starts_on = get_week_start_day_index()
     date = column.truncate("D")
     day_of_week = date.day_of_week.index().cast("int32")
     adjusted_week_start = (day_of_week - week_starts_on + 7) % 7
