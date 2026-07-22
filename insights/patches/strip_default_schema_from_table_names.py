@@ -1,5 +1,3 @@
-from contextlib import suppress
-
 import frappe
 
 import insights
@@ -23,7 +21,7 @@ def execute():
     sources = frappe.get_all(
         "Insights Data Source v3",
         filters={"database_type": "PostgreSQL"},
-        fields=["name", "schema", "is_frappe_db", "is_site_db"],
+        fields=["name", "schema"],
     )
 
     for source in sources:
@@ -47,10 +45,7 @@ def unqualify_source(source, prefix):
 
     update_queries(source.name, renames)
     update_query_references(source.name, renames)
-
-    if source.is_frappe_db or source.is_site_db:
-        with suppress(Exception):
-            frappe.get_doc("Insights Data Source v3", source.name).update_table_links(force=True)
+    update_table_links(source.name, renames)
 
 
 def rename_tables(data_source, prefix) -> dict[str, str]:
@@ -167,3 +162,24 @@ def update_query_references(data_source, renames):
             new_table,
             update_modified=False,
         )
+
+
+def update_table_links(data_source, renames):
+    """Rename the tables a link points at.
+
+    Links have always been generated from the bare doctype name ("tabUser"), which is why
+    they never matched a qualified table in the first place — renaming the tables is what
+    makes them line up again. This only has anything to do for links written while the
+    source still spanned several schemas. Rewriting them in place (rather than rebuilding
+    from the remote) keeps the migration offline: the database this source points at is
+    routinely unreachable while `bench migrate` runs.
+    """
+    for old_table, new_table in renames.items():
+        for field in ("left_table", "right_table"):
+            frappe.db.set_value(
+                "Insights Table Link v3",
+                {"data_source": data_source, field: old_table},
+                field,
+                new_table,
+                update_modified=False,
+            )
