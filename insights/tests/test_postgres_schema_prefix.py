@@ -12,8 +12,12 @@ stored before that must still resolve, which is what these tests pin down.
 from unittest.mock import patch
 
 import frappe
+import pandas as pd
 from frappe.tests.utils import FrappeTestCase
 
+from insights.insights.doctype.insights_data_source_v3.connectors.frappe_db import (
+    get_frappedb_table_links,
+)
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
     InsightsDataSourcev3,
 )
@@ -39,6 +43,35 @@ class FakeBackend:
     def table(self, name, database=None):
         self.requested.append((name, database))
         return f"{database}.{name}"
+
+
+class FakeFieldTable:
+    """Stands in for an ibis table of docfields — every expression yields the same rows."""
+
+    def __init__(self, rows):
+        self.rows = rows
+
+    def select(self, *args, **kwargs):
+        return self
+
+    def filter(self, *args):
+        return self
+
+    def execute(self):
+        return pd.DataFrame(self.rows)
+
+
+class FakeFrappeBackend:
+    """Serves the two field tables `get_frappedb_table_links` reads."""
+
+    def __init__(self, docfields=(), custom_fields=()):
+        self.rows = {
+            "tabDocField": list(docfields),
+            "tabCustom Field": list(custom_fields),
+        }
+
+    def table(self, name, database=None):
+        return FakeFieldTable(self.rows[name])
 
 
 def make_data_source(schema=None):
@@ -125,3 +158,84 @@ class TestSchemaQualifiedDoctypeMapping(FrappeTestCase):
 
         self.assertIn("name", allowed)
         self.assertIn("email", allowed)
+
+
+DOCFIELDS = [
+    {
+        "fieldname": "customer",
+        "fieldtype": "Link",
+        "options": "Customer",
+        "parent": "Sales Invoice",
+    },
+    {
+        "fieldname": "items",
+        "fieldtype": "Table",
+        "options": "Sales Invoice Item",
+        "parent": "Sales Invoice",
+    },
+]
+CUSTOM_FIELDS = [
+    {
+        "fieldname": "sales_person",
+        "fieldtype": "Link",
+        "options": "Sales Person",
+        "parent": "Sales Invoice",
+    },
+]
+
+
+class TestFrappeDbTableLinks(FrappeTestCase):
+    """Links have to name their tables exactly as `Insights Table v3` stores them."""
+
+    def get_links(self, data_source):
+        backend = FakeFrappeBackend(DOCFIELDS, CUSTOM_FIELDS)
+        with patch.object(InsightsDataSourcev3, "_get_ibis_backend", return_value=backend):
+            return get_frappedb_table_links(data_source)
+
+    def test_links_are_unqualified_for_a_single_schema(self):
+        links = self.get_links(make_data_source())
+
+        self.assertEqual(
+            links,
+            [
+                {
+                    "left_table": "tabCustomer",
+                    "left_column": "name",
+                    "right_table": "tabSales Invoice",
+                    "right_column": "customer",
+                },
+                {
+                    "left_table": "tabSales Invoice",
+                    "left_column": "name",
+                    "right_table": "tabSales Invoice Item",
+                    "right_column": "parent",
+                },
+                {
+                    "left_table": "tabSales Person",
+                    "left_column": "name",
+                    "right_table": "tabSales Invoice",
+                    "right_column": "sales_person",
+                },
+            ],
+        )
+
+    def test_links_are_qualified_when_schemas_can_collide(self):
+        # tables are stored qualified here, so links that named `tabX` would never match
+        links = self.get_links(make_data_source(schema="public, sales"))
+
+        self.assertTrue(
+            all(
+                link[side].startswith("public.tab")
+                for link in links
+                for side in ("left_table", "right_table")
+            ),
+            links,
+        )
+
+    def test_mariadb_links_are_never_qualified(self):
+        data_source = make_data_source()
+        data_source.database_type = "MariaDB"
+
+        links = self.get_links(data_source)
+
+        self.assertEqual(links[0]["left_table"], "tabCustomer")
