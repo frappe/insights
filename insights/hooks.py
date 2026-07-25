@@ -169,6 +169,9 @@ scheduler_events = {
     "daily": [
         "insights.api.data_store.sync_tables",
     ],
+    "weekly": [
+        "insights.insights.doctype.insights_data_source_v3.data_warehouse.cleanup_data_store",
+    ],
     "hourly": [
         "insights.api.data_store.update_failed_sync_status",
         "insights.insights.doctype.insights_table_import_job.insights_table_import_job.run_scheduled_imports",
