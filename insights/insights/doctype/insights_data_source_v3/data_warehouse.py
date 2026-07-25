@@ -765,7 +765,7 @@ def cleanup_data_store():
     # DuckDB work is not part of this transaction: commit the docs first so a
     # later failure leaves an orphan for next week, not a `stored` table whose
     # warehouse table has already been dropped.
-    frappe.db.commit()
+    frappe.db.commit()  # nosemgrep
 
     orphans = drop_orphan_warehouse_tables()
     compacted = compact_warehouse()
