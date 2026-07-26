@@ -8,6 +8,8 @@ const props = defineProps({
 	title: { type: String, required: false },
 	subtitle: { type: String, required: false },
 	options: { type: Object, required: true },
+	title_font_size: { type: Number, default: 18 },
+	title_color: { type: String, default: '#000000' },
 	onClick: { type: Function, required: false },
 })
 
@@ -80,7 +82,13 @@ function downloadChart() {
 
 <template>
 	<div class="flex h-full w-full flex-col rounded">
-		<ChartTitle v-if="title" :title="title" />
+		<ChartTitle
+			v-if="title"
+			:title="title"
+			:title_font_size="props.title_font_size"
+			:title_color="props.title_color"
+		/>
+
 		<div ref="chartRef" class="w-full flex-1 overflow-hidden">
 			<slot></slot>
 		</div>

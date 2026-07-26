@@ -8,6 +8,7 @@ const props = defineProps({
 	title: { type: String, required: false },
 	subtitle: { type: String, required: false },
 	options: { type: Object, required: true },
+	title_font_size: { type: Number, default: 18 },
 })
 
 let eChart = null
@@ -30,7 +31,7 @@ watch(
 		eChart.clear()
 		eChart.setOption(props.options)
 	},
-	{ deep: true }
+	{ deep: true },
 )
 
 defineExpose({ downloadChart })
@@ -51,7 +52,7 @@ function downloadChart() {
 
 <template>
 	<div class="flex h-full w-full flex-col rounded">
-		<ChartTitle v-if="title" :title="title" />
+		<ChartTitle v-if="title" :title="title" :title_font_size="title_font_size" />
 		<div ref="chartRef" class="w-full flex-1 overflow-hidden">
 			<slot></slot>
 		</div>

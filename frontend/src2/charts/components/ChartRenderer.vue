@@ -197,6 +197,8 @@ const showExpandedChartDialog = ref(false)
 			:title="props.chart.doc.title"
 			:options="eChartOptions"
 			:onClick="onChartElementClick"
+			:title_font_size="props.chart.doc.config.title_font_size"
+			:title_color="props.chart.doc.config.title_color"
 		/>
 		<NumberChart
 			v-else-if="!loading && chart_type == 'Number'"
