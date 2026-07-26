@@ -32,7 +32,7 @@ async function handleFetchCount() {
 		<div class="flex flex-1 items-center">
 			<slot name="left">
 				<div
-					v-if="pagination && !pagination.isSinglePage.value"
+					v-if="pagination && pagination.to.value > 0"
 					class="flex items-center gap-1 tnum text-sm text-gray-500"
 				>
 					Showing {{ pagination.from.value }}–{{ pagination.to.value }} of
@@ -56,7 +56,7 @@ async function handleFetchCount() {
 			</slot>
 		</div>
 		<div class="flex items-center gap-1">
-			<template v-if="pagination && !pagination.isSinglePage.value">
+			<template v-if="pagination">
 				<Button
 					variant="ghost"
 					:disabled="pagination.isFirstPage.value"

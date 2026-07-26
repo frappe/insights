@@ -14,20 +14,31 @@ export type DataSourceTable = {
 const tables = ref<Record<string, DataSourceTable[]>>({})
 
 const loading = ref(false)
-export async function getTables(data_source?: string, search_term?: string, limit: number = 100) {
+export async function getTables(data_source?: string, search_term?: string, limit: number = 100, offset: number = 0) {
 	loading.value = true
 	const _tables = await call('insights.api.data_sources.get_data_source_tables', {
 		data_source,
 		search_term,
 		limit,
+		offset,
 	})
 	loading.value = false
-	if (data_source) {
-		tables.value[data_source] = _tables
+
+	const key = data_source || '__all'
+	if (offset === 0) {
+		tables.value[key] = _tables
 	} else {
-		tables.value['__all'] = _tables
+		if (!tables.value[key]) tables.value[key] = []
+		tables.value[key].push(..._tables)
 	}
 	return _tables
+}
+
+export async function getTablesCount(data_source?: string, search_term?: string) {
+	return await call('insights.api.data_sources.get_data_source_tables_count', {
+		data_source,
+		search_term,
+	})
 }
 
 const fetchingTable = ref(false)
@@ -142,6 +153,7 @@ export default function useTableStore() {
 		tables,
 		loading,
 		getTables,
+		getTablesCount,
 		getRowCount,
 		getOptions: getTableOptions,
 

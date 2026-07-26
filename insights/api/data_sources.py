@@ -1,5 +1,6 @@
 import frappe
 from frappe.utils.caching import redis_cache, site_cache
+from pypika.functions import Count
 
 from insights import notify
 from insights.decorators import insights_whitelist, validate_type
@@ -303,7 +304,9 @@ def get_all_data_sources():
 
 @insights_whitelist()
 @validate_type
-def get_data_source_tables(data_source: str | None = None, search_term: str | None = None, limit: int = 100):
+def get_data_source_tables(
+    data_source: str | None = None, search_term: str | None = None, limit: int = 100, offset: int = 0
+):
     tables = frappe.get_list(
         "Insights Table v3",
         filters={
@@ -315,6 +318,8 @@ def get_data_source_tables(data_source: str | None = None, search_term: str | No
         },
         fields=["name", "table", "label", "data_source", "last_synced_on"],
         limit=limit,
+        start=offset,
+        order_by="name asc",
     )
 
     ret = []
@@ -331,6 +336,28 @@ def get_data_source_tables(data_source: str | None = None, search_term: str | No
             )
         )
     return ret
+
+
+@insights_whitelist()
+@validate_type
+def get_data_source_tables_count(data_source: str | None = None, search_term: str | None = None):
+    partial_query = frappe.get_list(
+        "Insights Table v3",
+        filters={
+            "data_source": data_source or ["is", "set"],
+        },
+        or_filters={
+            "label": ["is", "set"] if not search_term else ["like", f"%{search_term}%"],
+            "table": ["is", "set"] if not search_term else ["like", f"%{search_term}%"],
+        },
+        fields=["name"],
+        run=0,
+    )
+
+    count_query = frappe.qb.from_(partial_query).select(Count("*"))
+    result = count_query.run()
+
+    return result[0][0] if result else 0
 
 
 @insights_whitelist()
