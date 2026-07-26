@@ -4,6 +4,7 @@ import { computed, inject, reactive, watchEffect, watch } from 'vue'
 import { copy, wheneverChanges } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import DataTypeIcon from '../query/components/DataTypeIcon.vue'
+import { formatDateFilterValue } from '../query/components/formatting_utils'
 import { ColumnDataType, FilterOperator } from '../types/query.types'
 import { WorkbookDashboardFilter } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
@@ -72,9 +73,14 @@ wheneverChanges(
 const label = computed(() => {
 	let _label = filter.filter_name
 	if (filterState.operator && filterState.value) {
-		const value_str = Array.isArray(filterState.value)
-			? filterState.value.join(', ')
-			: filterState.value
+		let value_str = ''
+		if (filter.filter_type === 'Date') {
+			value_str = formatDateFilterValue(filterState.operator, filterState.value)
+		} else {
+			value_str = Array.isArray(filterState.value)
+				? filterState.value.join(', ')
+				: String(filterState.value)
+		}
 		_label += ` ${filterState.operator} ${value_str}`
 	}
 	return _label

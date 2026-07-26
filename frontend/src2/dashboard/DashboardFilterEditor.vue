@@ -17,7 +17,8 @@ import { ColumnOption, FilterOperator } from '../types/query.types'
 import { WorkbookDashboardFilter } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
 import { __ } from '../translation'
-import { Switch, Tabs, DatePicker, DateRangePicker } from 'frappe-ui'
+import { Switch, Tabs, DatePicker } from 'frappe-ui'
+import AbsoluteDatePicker from '../query/components/AbsoluteDatePicker.vue'
 
 const dashboard = inject<Dashboard>('dashboard')!
 const props = defineProps<{ item: WorkbookDashboardFilter }>()
@@ -25,6 +26,11 @@ const props = defineProps<{ item: WorkbookDashboardFilter }>()
 const filter = reactive(copy(props.item))
 if (!filter.links) {
 	filter.links = {}
+}
+
+// set a default operator initially
+if (!filter.filter_name && !filter.default_operator) {
+	filter.default_operator = getOperatorOptions(filter.filter_type)[0]?.value
 }
 
 const tabIndex = ref(0)
@@ -95,7 +101,7 @@ function disableColumnOptions(options: ColumnOption[]) {
 }
 
 function onFilterTypeChange() {
-	filter.default_operator = undefined
+	filter.default_operator = getOperatorOptions(filter.filter_type)[0]?.value
 	filter.default_value = undefined
 	filter.links = {}
 }
@@ -275,7 +281,7 @@ function saveEdit() {
 												:modelValue="filter.default_value as string"
 												@update:modelValue="filter.default_value = $event"
 											/>
-											<DateRangePicker
+											<AbsoluteDatePicker
 												v-else-if="
 													defaultValueSelectorType === 'date_range'
 												"

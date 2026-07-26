@@ -1,4 +1,5 @@
-import { Column } from "../../types/query.types";
+import { Column, FilterOperator } from "../../types/query.types";
+import dayjs from '../../helpers/dayjs'
 
 export type ConditionalColor = 'red' | 'amber' | 'green'
 
@@ -306,4 +307,34 @@ export function applyRankRule(
         default:
             return false;
     }
+}
+
+export const formatDateRangeDescription = (from: ReturnType<typeof dayjs>, to?: ReturnType<typeof dayjs>): string => {
+	if (!from || !from.isValid()) return ''
+	const currentYear = dayjs().year()
+	if (!to || !to.isValid() || from.isSame(to, 'day')) {
+		return from.year() === currentYear ? from.format('MMM D') : from.format('MMM D, YYYY')
+	}
+	const sameYear = from.year() === to.year()
+	const isCurrentYear = sameYear && from.year() === currentYear
+	const formatStr = isCurrentYear ? 'MMM D' : 'MMM D, YYYY'
+	return `${from.format(formatStr)} - ${to.format(formatStr)}`
+}
+
+export function formatDateFilterValue(operator: FilterOperator, value: any): string {
+	if (!value || (Array.isArray(value) && value.length === 0)) return ''
+	if (operator === 'within' && typeof value === 'string') {
+		return value
+	}
+	if (operator === 'between') {
+		const arr = typeof value === 'string' ? value.split(',') : value
+		if (Array.isArray(arr)) {
+			if (arr[0] && !arr[1]) return formatDateRangeDescription(dayjs(arr[0].trim()))
+			if (arr[0] && arr[1]) return formatDateRangeDescription(dayjs(arr[0].trim()), dayjs(arr[1].trim()))
+		}
+	}
+	if (typeof value === 'string' && dayjs(value).isValid()) {
+		return formatDateRangeDescription(dayjs(value))
+	}
+	return Array.isArray(value) ? value.join(', ') : String(value)
 }

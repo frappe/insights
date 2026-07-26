@@ -11,6 +11,7 @@ import {
 import { column } from '../helpers'
 import useQuery from '../query'
 import DatePickerControl from './DatePickerControl.vue'
+import AbsoluteDatePickerControl from './AbsoluteDatePickerControl.vue'
 import { getFilterType, getOperatorOptions, getValueSelectorType } from './filter_utils'
 import RelativeDatePickerControl from './RelativeDatePickerControl.vue'
 
@@ -124,15 +125,14 @@ const fetchColumnValues = debounce((searchTxt: string) => {
 				:modelValue="[filter.value as string]"
 				@update:modelValue="filter.value = $event[0]"
 			/>
-			<DatePickerControl
+			<AbsoluteDatePickerControl
 				v-else-if="valueSelectorType === 'date_range'"
-				:range="true"
-				v-model="(filter.value as string[])"
+				v-model="filter.value as string[]"
 				placeholder="Select Date"
 			/>
 			<RelativeDatePickerControl
 				v-else-if="valueSelectorType === 'relative_date'"
-				v-model="(filter.value as string)"
+				v-model="filter.value as string"
 				placeholder="Relative Date"
 			/>
 			<Autocomplete
