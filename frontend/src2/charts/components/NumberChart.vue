@@ -53,6 +53,10 @@ const cards = computed(() => {
 		const decimal = getNumberOption(idx, 'decimal')
 		const color = getNumberOption(idx, 'color')
 		const shorten_numbers = getNumberOption(idx, 'shorten_numbers')
+		const label_bold = getNumberOption(idx, 'label_bold')
+		const label_italic = getNumberOption(idx, 'label_italic')
+		const label_color = getNumberOption(idx, 'label_color')
+		const label_size = getNumberOption(idx, 'label_size')
 
 		return {
 			measure_name,
@@ -64,6 +68,10 @@ const cards = computed(() => {
 			prefix,
 			suffix,
 			color,
+			label_bold,
+			label_italic,
+			label_color,
+			label_size,
 		}
 	})
 })
@@ -105,6 +113,10 @@ function onDoubleClick(measure_name: string) {
 					prefix,
 					suffix,
 					color,
+					label_bold,
+					label_italic,
+					label_color,
+					label_size,
 				} in cards"
 				:key="measure_name"
 				class="flex max-h-[140px] items-center gap-2 overflow-hidden rounded bg-white px-6 pt-5 shadow cursor-pointer"
@@ -112,7 +124,15 @@ function onDoubleClick(measure_name: string) {
 				@dblclick="onDoubleClick(measure_name)"
 			>
 				<div class="flex w-full flex-col">
-					<span class="truncate text-sm font-medium">
+					<span
+						class="truncate text-sm font-medium"
+						:style="{
+							fontWeight: label_bold ? 'bold' : '500',
+							fontStyle: label_italic ? 'italic' : 'normal',
+							color: label_color || undefined,
+							fontSize: label_size ? `${label_size}px` : undefined,
+						}"
+					>
 						{{ measure_name }}
 					</span>
 					<div
