@@ -93,7 +93,46 @@ export type NumberColumnOptions = {
 	prefix?: string
 	suffix?: string
 	color?: string
+	icon?: string
 }
+
+import { EMOJIS } from './emojis'
+
+export const ICONS = [
+	'users',
+	'dollar-sign',
+	'users-up',
+	'trending-up',
+	'activity',
+	'bar-chart-3',
+	'pie-chart',
+	'target',
+	'award',
+	'star',
+	'heart',
+	'zap',
+	'globe',
+	'home',
+	'box',
+	'truck',
+	'phone',
+	'mail',
+	'calendar',
+	'clock',
+	'percentage',
+	'arrow-up-circle',
+	'arrow-down-circle',
+	'check-circle',
+	'alert-triangle',
+	'none'
+] as const
+
+export const ALL_ICONS = [...ICONS, ...EMOJIS] as const
+
+export type IconName = string
+
+export { iconMap } from './iconMap'
+
 
 export type DonutChartConfig = {
 	label_column: Dimension
