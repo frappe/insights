@@ -3,12 +3,24 @@ import { computed, watch } from 'vue'
 import QueryDataTable from '../../query/components/QueryDataTable.vue'
 import { column } from '../../query/helpers'
 import { TableChartConfig } from '../../types/chart.types'
-import { SortDirection } from '../../types/query.types'
+import { DataFormat, SortDirection } from '../../types/query.types'
 import { Chart } from '../chart'
 import ChartTitle from './ChartTitle.vue'
 
 const props = defineProps<{ chart: Chart }>()
 const tableConfig = computed(() => props.chart.doc.config as TableChartConfig)
+
+// Maps a value column to its display format (e.g. percent) so the table can
+// render a rate measure as `59%` instead of `0.59`.
+const columnFormats = computed(() => {
+	const formats: Record<string, DataFormat> = {}
+	tableConfig.value.values?.forEach((measure) => {
+		if (measure?.measure_name && measure.format) {
+			formats[measure.measure_name] = measure.format
+		}
+	})
+	return formats
+})
 
 function onSortChange(column_name: string, sort_order: SortDirection) {
 	const existingOrder = props.chart.doc.config.order_by.find(
@@ -49,6 +61,7 @@ function onSortChange(column_name: string, sort_order: SortDirection) {
 			:sticky-columns="tableConfig.sticky_columns"
 			:column-widths="tableConfig.column_widths"
 			:text-wrap="tableConfig.text_wrap"
+			:column-formats="columnFormats"
 			:replace-nulls-with-zeros="true"
 		></QueryDataTable>
 	</div>

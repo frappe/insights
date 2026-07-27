@@ -21,7 +21,13 @@ import {
 	text_rules,
 } from '../query/components/formatting_utils'
 import { matchesFilter, parseFilterString } from '../query/helpers'
-import { QueryResultColumn, QueryResultRow, SortDirection, SortOrder } from '../types/query.types'
+import {
+	DataFormat,
+	QueryResultColumn,
+	QueryResultRow,
+	SortDirection,
+	SortOrder,
+} from '../types/query.types'
 import DataTableColumn from './DataTableColumn.vue'
 import DataTableFooter from './DataTableFooter.vue'
 import LazyTextInput from './LazyTextInput.vue'
@@ -49,6 +55,7 @@ const props = defineProps<{
 	stickyColumns?: string[]
 	columnWidths?: Record<string, number>
 	textWrap?: Record<string, boolean>
+	columnFormats?: Record<string, DataFormat>
 	pageSize?: number
 	displayPageSize?: number
 	totalRowCount?: number
@@ -517,10 +524,13 @@ function getCellStyleClass(colName: string, val: any): string {
 	return ''
 }
 
-function _formatNumber(value: any) {
+function _formatNumber(value: any, columnName?: string) {
 	const isNull = value === null || value === undefined
 	if (isNull) {
 		return props.replaceNullsWithZeros ? 0 : 'null'
+	}
+	if (columnName && props.columnFormats?.[columnName] === 'percent') {
+		return `${formatNumber(value * 100)}%`
 	}
 	return props.compactNumbers ? getShortNumber(value) : formatNumber(value)
 }
@@ -713,7 +723,7 @@ function toggleNewColumn() {
 							@dblclick="isNumberColumn(col.name) && props.onDrilldown?.(col, row)"
 						>
 							<template v-if="isNumberColumn(col.name)">
-								{{ _formatNumber(row[col.name]) }}
+								{{ _formatNumber(row[col.name], col.name) }}
 							</template>
 							<template v-else-if="isUrl(row[col.name])">
 								<a :href="row[col.name]" target="_blank" class="underline">
@@ -755,7 +765,7 @@ function toggleNewColumn() {
 						>
 							{{
 								isNumberColumn(col.name)
-									? _formatNumber(totalPerColumn[col.name])
+									? _formatNumber(totalPerColumn[col.name], col.name)
 									: ''
 							}}
 						</td>

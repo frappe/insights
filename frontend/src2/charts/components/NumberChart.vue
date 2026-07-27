@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { formatNumber, getShortNumber } from '../../helpers'
 import { NumberChartConfig, NumberColumnOptions } from '../../types/chart.types'
-import { QueryResult, QueryResultColumn, QueryResultRow } from '../../types/query.types'
+import { DataFormat, QueryResult, QueryResultColumn, QueryResultRow } from '../../types/query.types'
 import Sparkline from './Sparkline.vue'
 
 const props = defineProps<{
@@ -53,13 +53,16 @@ const cards = computed(() => {
 		const decimal = getNumberOption(idx, 'decimal')
 		const color = getNumberOption(idx, 'color')
 		const shorten_numbers = getNumberOption(idx, 'shorten_numbers')
+		const format = config.value.number_columns.find((c) => c.measure_name === measure_name)
+			?.format
 
 		return {
 			measure_name,
 			values: numberValues,
-			currentValue: getFormattedValue(currentValue, decimal, shorten_numbers),
-			previousValue: getFormattedValue(previousValue, decimal, shorten_numbers),
+			currentValue: getFormattedValue(currentValue, decimal, shorten_numbers, format),
+			previousValue: getFormattedValue(previousValue, decimal, shorten_numbers, format),
 			delta,
+			// percentDelta is already a percentage change, so it keeps the default format
 			percentDelta: getFormattedValue(percentDelta, decimal, shorten_numbers),
 			prefix,
 			suffix,
@@ -68,8 +71,16 @@ const cards = computed(() => {
 	})
 })
 
-const getFormattedValue = (value: number, decimal?: number, shorten_numbers?: boolean) => {
+const getFormattedValue = (
+	value: number,
+	decimal?: number,
+	shorten_numbers?: boolean,
+	format?: DataFormat,
+) => {
 	if (isNaN(value)) return 0
+	if (format === 'percent') {
+		return `${formatNumber(value * 100, decimal)}%`
+	}
 	if (shorten_numbers) {
 		return getShortNumber(value, decimal)
 	}
