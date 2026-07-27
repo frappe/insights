@@ -87,26 +87,24 @@ function updatePermissions() {
 
 <template>
 	<Dialog
-		v-model="show"
-		:options="{
-			title: __('Manage Workbook Access'),
-			actions: [
-				{
-					label: __('Save'),
-					variant: 'solid',
-					disabled: saveDisabled,
-					onClick: updatePermissions,
-				},
-			],
-		}"
+		v-model:open="show"
+		:title="__('Manage Workbook Access')"
+		:actions="[
+			{
+				label: __('Save'),
+				variant: 'solid',
+				disabled: saveDisabled,
+				onClick: updatePermissions,
+			},
+		]"
 	>
-		<template #body-content>
+		<template #default>
 			<div class="-mb-4 flex flex-col gap-3 text-base">
 				<div class="flex items-center gap-3 rounded border px-3 py-2">
-					<Building2 class="h-6 w-6 text-blue-500" stroke-width="1.5" />
+					<Building2 class="h-6 w-6 text-ink-blue-6" stroke-width="1.5" />
 					<div class="flex flex-1 flex-col">
-						<div class="font-medium leading-5 text-gray-800">Organization Access</div>
-						<div class="text-sm text-gray-700">
+						<div class="font-medium leading-5 text-ink-gray-7">Organization Access</div>
+						<div class="text-sm text-ink-gray-6">
 							{{
 								organizationAccess
 									? `All users in your organization can ${organizationAccess}`
@@ -130,14 +128,14 @@ function updatePermissions() {
 							},
 						]"
 						:button="{
-							iconRight: 'chevron-down',
+							iconRight: 'lucide-chevron-down',
 							label: organizationAccess
 								? __(`Can {0}`, organizationAccess)
 								: __('Disabled'),
 						}"
 					/>
 				</div>
-				<hr class="my-2 border-t border-gray-200" />
+				<hr class="my-2 border-t border-outline-gray-1" />
 				<div class="flex w-full gap-2">
 					<div class="flex-1">
 						<UserSelector
@@ -170,7 +168,7 @@ function updatePermissions() {
 						/>
 						<div class="flex flex-1 flex-col">
 							<div class="leading-5">{{ user.full_name }}</div>
-							<div class="text-xs text-gray-600">{{ user.email }}</div>
+							<div class="text-xs text-ink-gray-5">{{ user.email }}</div>
 						</div>
 						<Dropdown
 							v-if="user.email !== session.user.email"
@@ -178,7 +176,7 @@ function updatePermissions() {
 							placement="right"
 							:options="accessOptions(user.email)"
 							:button="{
-								iconRight: 'chevron-down',
+								iconRight: 'lucide-chevron-down',
 								variant: 'ghost',
 								label: user.access === 'edit' ? __('Can Edit') : __('Can View'),
 							}"
@@ -194,7 +192,7 @@ function updatePermissions() {
 
 					<div
 						v-if="userPermissions.filter((u) => u.access).length === 0"
-						class="rounded border border-dashed border-gray-300 px-32 py-6 text-center text-sm text-gray-500"
+						class="rounded border border-dashed border-outline-gray-2 px-32 py-6 text-center text-sm text-ink-gray-4"
 					>
 						{{
 							organizationAccess

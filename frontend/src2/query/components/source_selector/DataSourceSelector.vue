@@ -24,14 +24,14 @@ const dataSourceOptions = computed(() => {
 </script>
 
 <template>
-	<Autocomplete
+	<Combobox
 		class="!w-fit"
 		:options="dataSourceOptions"
 		:modelValue="currentSourceName"
-		@update:modelValue="currentSourceName = $event?.value || ''"
+		@update:modelValue="currentSourceName = $event || ''"
 	>
-		<template #target="{ togglePopover }">
-			<Button variant="outline" @click="togglePopover">
+		<template #trigger>
+			<Button variant="outline">
 				<template #prefix>
 					<Database class="h-3.5 w-3.5 flex-shrink-0" stroke-width="1.5" />
 				</template>
@@ -43,5 +43,5 @@ const dataSourceOptions = computed(() => {
 				</template>
 			</Button>
 		</template>
-	</Autocomplete>
+	</Combobox>
 </template>

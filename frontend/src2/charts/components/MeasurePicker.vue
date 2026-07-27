@@ -198,34 +198,33 @@ function handleRemove() {
 <template>
 	<div class="flex items-end gap-1 overflow-hidden">
 		<div class="flex-1 overflow-hidden">
-			<Popover>
-				<template #target="{ togglePopover, isOpen }">
+			<Popover bare match-trigger-width>
+				<template #trigger>
 					<div class="w-full space-y-1.5">
-						<div v-if="props.label" class="text-xs text-gray-600">
+						<div v-if="props.label" class="text-xs text-ink-gray-5">
 							{{ props.label }}
 						</div>
 						<button
-							class="flex h-7 w-full items-center justify-between gap-2 rounded bg-gray-100 py-1 px-2 text-base transition-colors hover:bg-gray-200 focus:ring-2 focus:ring-gray-400"
-							@click="() => togglePopover()"
+							class="flex h-7 w-full items-center justify-between gap-2 rounded bg-surface-gray-2 py-1 px-2 text-base transition-colors hover:bg-surface-gray-3 focus:ring-2 focus:ring-outline-gray-3"
 						>
 							<div class="flex flex-1 items-center gap-2 overflow-hidden truncate">
 								<span v-if="measure.measure_name">
 									{{ measure.measure_name }}
 								</span>
-								<span v-else class="text-gray-500"> Select a column </span>
+								<span v-else class="text-ink-gray-4"> Select a column </span>
 							</div>
 						</button>
 					</div>
 				</template>
 
-				<template #body="{ isOpen, togglePopover }">
+				<template #default="{ isOpen, toggle: togglePopover }">
 					<div
-						class="relative mt-1 overflow-hidden rounded-lg bg-white p-1.5 text-base shadow-2xl"
+						class="relative mt-1 overflow-hidden rounded-lg bg-surface-base p-1.5 text-base shadow-2xl"
 					>
 						<template v-if="columnMeasure && !expressionMeasure">
 							<span
 								v-if="!columnMeasure.aggregation"
-								class="block px-1.5 py-0.5 text-p-xs text-gray-600"
+								class="block px-1.5 py-0.5 text-p-xs text-ink-gray-5"
 							>
 								Select a Function
 							</span>
@@ -236,12 +235,12 @@ function handleRemove() {
 								<Button class="!h-6 !w-6" @click.prevent.stop="resetAggregation">
 									<template #icon>
 										<ChevronLeft
-											class="h-4 w-4 text-gray-700"
+											class="h-4 w-4 text-ink-gray-6"
 											stroke-width="1.5"
 										/>
 									</template>
 								</Button>
-								<span class="block px-1.5 py-0.5 text-p-xs text-gray-600">
+								<span class="block px-1.5 py-0.5 text-p-xs text-ink-gray-5">
 									{{ getAggregationLabel(columnMeasure.aggregation) }}
 								</span>
 							</div>
@@ -250,7 +249,7 @@ function handleRemove() {
 									<div
 										v-for="option in aggregationOptions"
 										:key="option.value"
-										class="flex h-7 flex-shrink-0 cursor-pointer items-center justify-between rounded px-2.5 text-base hover:bg-gray-100"
+										class="flex h-7 flex-shrink-0 cursor-pointer items-center justify-between rounded px-2.5 text-base hover:bg-surface-gray-2"
 										@click.prevent.stop="
 											() => {
 												if (!columnMeasure) return
@@ -262,7 +261,7 @@ function handleRemove() {
 										<span>{{ option.label }}</span>
 										<span v-if="option.value === columnMeasure.aggregation">
 											<Check
-												class="h-4 w-4 text-gray-700"
+												class="h-4 w-4 text-ink-gray-6"
 												stroke-width="1.5"
 											/>
 										</span>
@@ -270,7 +269,7 @@ function handleRemove() {
 								</template>
 
 								<template v-if="columnMeasure.aggregation">
-									<div class="sticky top-0 bg-white space-y-1 p-1">
+									<div class="sticky top-0 bg-surface-base space-y-1 p-1">
 										<TextInput
 											v-model="searchQuery"
 											placeholder="Search..."
@@ -280,7 +279,7 @@ function handleRemove() {
 									<div
 										v-for="option in filteredColumnOptions"
 										:key="option.value"
-										class="flex h-7 flex-shrink-0 cursor-pointer items-center justify-between rounded px-2.5 text-base hover:bg-gray-100"
+										class="flex h-7 flex-shrink-0 cursor-pointer items-center justify-between rounded px-2.5 text-base hover:bg-surface-gray-2"
 										@click.prevent.stop="
 											() => {
 												;(measure as ColumnMeasure).column_name =
@@ -294,7 +293,7 @@ function handleRemove() {
 										<span>{{ option.label }}</span>
 										<span v-if="option.value === columnMeasure.column_name">
 											<Check
-												class="h-4 w-4 text-gray-700"
+												class="h-4 w-4 text-ink-gray-6"
 												stroke-width="1.5"
 											/>
 										</span>
@@ -316,7 +315,7 @@ function handleRemove() {
 								<template #prefix>
 									<component
 										:is="expressionMeasure ? Edit : Plus"
-										class="h-4 w-4 text-gray-700"
+										class="h-4 w-4 text-ink-gray-6"
 										stroke-width="1.5"
 									/>
 								</template>
@@ -326,15 +325,15 @@ function handleRemove() {
 				</template>
 			</Popover>
 		</div>
-		<Popover v-if="measure.measure_name" placement="bottom-end">
-			<template #target="{ togglePopover }">
-				<Button @click="togglePopover">
+		<Popover v-if="measure.measure_name" side="bottom" align="end">
+			<template #trigger>
+				<Button>
 					<template #icon>
-						<Settings class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+						<Settings class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 					</template>
 				</Button>
 			</template>
-			<template #body-main>
+			<template #default>
 				<div class="flex w-[14rem] flex-col gap-2 p-2">
 					<InlineFormControlLabel label="Label">
 						<TextInput
@@ -349,10 +348,13 @@ function handleRemove() {
 					<slot name="config-fields" />
 
 					<div class="flex gap-1">
-						<Button class="w-full" @click="handleRemove" theme="red">
-							<template #prefix>
-								<XIcon class="h-4 w-4 text-red-700" stroke-width="1.5" />
-							</template>
+						<Button
+							class="w-full"
+							variant="outline"
+							theme="red"
+							iconLeft="lucide-x"
+							@click="handleRemove"
+						>
 							Remove
 						</Button>
 					</div>
@@ -361,7 +363,7 @@ function handleRemove() {
 		</Popover>
 		<Button v-else @click="emit('remove')">
 			<template #icon>
-				<XIcon class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+				<XIcon class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 			</template>
 		</Button>
 	</div>

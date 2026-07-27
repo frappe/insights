@@ -54,7 +54,7 @@ wheneverChanges(
 	<ChartRenderer v-if="chart" :chart="chart" />
 
 	<div v-else class="flex h-full flex-1 flex-col items-center justify-center rounded border">
-		<AlertTriangle class="h-8 w-8 text-gray-500" stroke-width="1" />
-		<p class="text-p-base text-gray-500">Chart not found</p>
+		<AlertTriangle class="h-8 w-8 text-ink-gray-4" stroke-width="1" />
+		<p class="text-p-base text-ink-gray-4">Chart not found</p>
 	</div>
 </template>

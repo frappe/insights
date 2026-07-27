@@ -179,7 +179,7 @@ To setup the repository locally follow the steps mentioned below:
 |-----------------|-------------------------------------|--------------|
 | main            | version-14, version-15              | v18+         |
 | version-3       | version-14, version-15              | v18+         |
-| develop         | develop                             | v18+         |
+| develop         | develop                             | v20+         |
 
 > Note: Frappe v14 supports Node v14 and above, but Insights requires Node v18 and above. So, while using Insights with Frappe v14, please ensure that Node v18+ is installed.
 

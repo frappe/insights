@@ -8,21 +8,20 @@ const query = inject('query') as Query
 </script>
 
 <template>
-	<Popover placement="bottom-start">
-		<template #target="{ togglePopover, isOpen }">
+	<Popover side="bottom" align="start">
+		<template #trigger="{ isOpen }">
 			<Button
 				variant="ghost"
 				size="lg"
 				class="rounded-none"
-				:class="{ 'bg-gray-100': isOpen }"
-				@click="togglePopover"
+				:class="{ 'bg-surface-gray-2': isOpen }"
 			>
 				<template #icon>
-					<ColumnsIcon class="h-5 w-5 text-gray-700" stroke-width="1.5" />
+					<ColumnsIcon class="h-5 w-5 text-ink-gray-6" stroke-width="1.5" />
 				</template>
 			</Button>
 		</template>
-		<template #body-main="{ togglePopover, isOpen }">
+		<template #default="{ toggle: togglePopover, isOpen }">
 			<div class="flex flex-col p-2">
 				<!-- select all -->
 				<div class="mb-2 flex items-center gap-1">

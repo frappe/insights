@@ -33,7 +33,9 @@ function onSortChange(column_name: string, sort_order: SortDirection) {
 </script>
 
 <template>
-	<div class="flex h-full w-full flex-col divide-y overflow-hidden rounded bg-white shadow">
+	<div
+		class="flex h-full w-full flex-col divide-y overflow-hidden rounded bg-surface-base border border-outline-gray-2"
+	>
 		<ChartTitle :title="props.chart.doc.title" />
 		<QueryDataTable
 			:query="props.chart.dataQuery"

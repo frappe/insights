@@ -111,8 +111,8 @@ const dateRangeVal = computed({
 			</div>
 		</template>
 		<div class="flex justify-end gap-2">
-			<Button icon="x" @click="clearFilter"></Button>
-			<Button icon="check" variant="solid" @click="applyFilter"></Button>
+			<Button icon="lucide-x" @click="clearFilter"></Button>
+			<Button icon="lucide-check" variant="solid" @click="applyFilter"></Button>
 		</div>
 	</div>
 </template>

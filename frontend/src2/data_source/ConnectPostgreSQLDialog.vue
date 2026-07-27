@@ -125,8 +125,8 @@ const submitButton = computed(() => {
 </script>
 
 <template>
-	<Dialog v-model="show" :options="{ title: __('Connect to PostgreSQL') }">
-		<template #body-content>
+	<Dialog v-model:open="show" :title="__('Connect to PostgreSQL')">
+		<template #default>
 			<Form
 				ref="form"
 				class="flex-1"

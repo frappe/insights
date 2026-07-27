@@ -1,7 +1,7 @@
 <template>
 	<SwitchGroup v-bind="$attrs">
 		<div class="flex items-center justify-between text-sm">
-			<SwitchLabel v-if="$props.label" class="mr-4 select-none text-xs text-gray-600">
+			<SwitchLabel v-if="$props.label" class="mr-4 select-none text-xs text-ink-gray-5">
 				{{ $props.label }}
 			</SwitchLabel>
 			<Switch
@@ -9,7 +9,7 @@
 				@update:modelValue="enabled = Boolean($event)"
 				class="relative inline-flex items-center rounded-full transition-colors"
 				:class="[
-					enabled ? 'bg-gray-900' : 'bg-gray-300',
+					enabled ? 'bg-surface-gray-10' : 'bg-surface-gray-4',
 					props.size === 'sm' ? 'h-4 w-6.5' : 'h-4.5 w-8',
 				]"
 				:disabled="props.disabled"
@@ -23,7 +23,7 @@
 							: 'translate-x-1',
 						props.size == 'sm' ? 'h-2.5 w-2.5' : ' h-3 w-3 ',
 					]"
-					class="inline-block transform rounded-full bg-white transition-transform"
+					class="inline-block transform rounded-full bg-surface-base transition-transform"
 				/>
 			</Switch>
 		</div>

@@ -133,7 +133,7 @@ function onListChange(
 	<div class="flex flex-col px-3.5 pt-3">
 		<div class="mb-1 flex h-6 items-center justify-between">
 			<div class="flex items-center gap-1">
-				<div class="text-sm font-medium">{{ section.title }}</div>
+				<div class="text-sm-medium">{{ section.title }}</div>
 			</div>
 			<div v-if="!editingFolderName" class="flex gap-1">
 				<Button

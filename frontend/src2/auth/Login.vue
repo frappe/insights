@@ -1,5 +1,5 @@
 <template>
-	<LoginBox class="bg-gray-50" title="Log in to your account">
+	<LoginBox class="bg-surface-gray-1" title="Log in to your account">
 		<form class="flex flex-col" @submit.prevent="makeLoginRequest">
 			<FormControl
 				label="Email"

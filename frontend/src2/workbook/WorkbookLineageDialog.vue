@@ -3,7 +3,7 @@ import { MarkerType, Panel, Position, VueFlow, useVueFlow } from '@vue-flow/core
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 import { FormControl } from 'frappe-ui'
-import { BarChart2, DatabaseIcon, GitFork } from 'lucide-vue-next'
+import { BarChart2, DatabaseIcon, GitFork, Search } from 'lucide-vue-next'
 import { computed, inject, nextTick, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { __ } from '../translation'
@@ -143,17 +143,11 @@ function onNodeClick(_evt: MouseEvent, node: any) {
 </script>
 
 <template>
-	<Dialog
-		v-model="show"
-		:options="{
-			title: __('Query Lineage'),
-			size: '5xl',
-		}"
-	>
-		<template #body-content>
+	<Dialog v-model:open="show" :title="__('Query Lineage')" size="5xl">
+		<template #default>
 			<!-- Toolbar -->
 			<div class="mb-3 flex items-center gap-2">
-				<span class="text-sm text-gray-500">
+				<span class="text-sm text-ink-gray-4">
 					{{ visibleNodes.length }} {{ __('nodes') }}, {{ visibleEdges.length }}
 					{{ __('edges') }}
 				</span>
@@ -164,19 +158,19 @@ function onNodeClick(_evt: MouseEvent, node: any) {
 						autocomplete="off"
 					>
 						<template #prefix>
-							<FeatherIcon name="search" class="h-4 w-4 text-gray-500" />
+							<Search class="h-4 w-4 text-ink-gray-4" />
 						</template>
 					</FormControl>
 				</div>
 			</div>
 
 			<!-- Canvas -->
-			<div class="relative h-[520px] overflow-hidden rounded-lg border border-gray-200">
+			<div class="relative h-[520px] overflow-hidden rounded-lg border border-outline-gray-1">
 				<div
 					v-if="loading"
-					class="absolute inset-0 z-10 flex items-center justify-center bg-white/80"
+					class="absolute inset-0 z-10 flex items-center justify-center bg-surface-base/80"
 				>
-					<div class="text-sm text-gray-400">{{ __('Loading\u2026') }}</div>
+					<div class="text-sm text-ink-gray-3">{{ __('Loading\u2026') }}</div>
 				</div>
 
 				<VueFlow
@@ -186,31 +180,31 @@ function onNodeClick(_evt: MouseEvent, node: any) {
 					:edges-updatable="false"
 					:delete-key-code="null"
 					fit-view-on-init
-					class="bg-gray-50"
+					class="bg-surface-gray-1"
 					@node-click="onNodeClick"
 				>
 					<Panel
 						position="top-right"
-						class="rounded border border-gray-200 bg-white p-2 shadow-sm"
+						class="rounded border border-outline-gray-1 bg-surface-base p-2 shadow-sm"
 					>
 						<div class="flex flex-col gap-1.5">
 							<div class="flex items-center gap-2">
 								<span
-									class="size-2.5 rounded-full bg-blue-100 border border-blue-200"
+									class="size-2.5 rounded-full bg-surface-blue-2 border border-outline-blue-2"
 								></span>
-								<span class="text-sm text-gray-600">{{ __('Table') }}</span>
+								<span class="text-sm text-ink-gray-5">{{ __('Table') }}</span>
 							</div>
 							<div class="flex items-center gap-2">
 								<span
-									class="size-2.5 rounded-full bg-green-100 border border-green-200"
+									class="size-2.5 rounded-full bg-surface-green-2 border border-outline-green-2"
 								></span>
-								<span class="text-sm text-gray-600">{{ __('Query') }}</span>
+								<span class="text-sm text-ink-gray-5">{{ __('Query') }}</span>
 							</div>
 							<div class="flex items-center gap-2">
 								<span
-									class="size-2.5 rounded-full bg-orange-100 border border-orange-200"
+									class="size-2.5 rounded-full bg-surface-orange-2 border border-outline-orange-2"
 								></span>
-								<span class="text-sm text-gray-600">{{ __('Chart') }}</span>
+								<span class="text-sm text-ink-gray-5">{{ __('Chart') }}</span>
 							</div>
 						</div>
 					</Panel>
@@ -218,18 +212,18 @@ function onNodeClick(_evt: MouseEvent, node: any) {
 					<!-- Table node -->
 					<template #node-table="{ data }">
 						<div
-							class="flex w-52 flex-col gap-0.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5 shadow-sm"
+							class="flex w-52 flex-col gap-0.5 rounded-lg border border-outline-blue-2 bg-surface-blue-1 px-3 py-2.5 shadow-sm"
 						>
 							<div class="flex items-center gap-1.5">
 								<DatabaseIcon
-									class="h-3.5 w-3.5 flex-shrink-0 text-blue-500"
+									class="h-3.5 w-3.5 flex-shrink-0 text-ink-blue-6"
 									stroke-width="1.5"
 								/>
-								<span class="truncate text-sm font-medium text-blue-900">{{
+								<span class="truncate text-sm-medium text-ink-blue-10">{{
 									data.label
 								}}</span>
 							</div>
-							<span class="truncate pl-5 text-xs text-blue-500">{{
+							<span class="truncate pl-5 text-xs text-ink-blue-6">{{
 								data.data_source
 							}}</span>
 						</div>
@@ -241,8 +235,8 @@ function onNodeClick(_evt: MouseEvent, node: any) {
 							class="flex w-52 flex-col gap-0.5 rounded-lg border px-3 py-2.5 shadow-sm transition-shadow hover:shadow-md"
 							:class="[
 								data.is_chart_query
-									? 'border-orange-200 bg-orange-50'
-									: 'border-green-200 bg-green-50',
+									? 'border-outline-orange-2 bg-surface-orange-1'
+									: 'border-outline-green-2 bg-surface-green-1',
 								{ 'cursor-pointer': data.name },
 							]"
 						>
@@ -251,14 +245,18 @@ function onNodeClick(_evt: MouseEvent, node: any) {
 									:is="data.is_chart_query ? BarChart2 : GitFork"
 									class="h-3.5 w-3.5 flex-shrink-0"
 									:class="
-										data.is_chart_query ? 'text-orange-600' : 'text-green-600'
+										data.is_chart_query
+											? 'text-ink-orange-7'
+											: 'text-ink-green-7'
 									"
 									stroke-width="1.5"
 								/>
 								<span
-									class="truncate text-sm font-medium"
+									class="truncate text-sm-medium"
 									:class="
-										data.is_chart_query ? 'text-orange-900' : 'text-green-900'
+										data.is_chart_query
+											? 'text-ink-orange-10'
+											: 'text-ink-green-10'
 									"
 									>{{ data.is_chart_query ? data.chart_title : data.label }}</span
 								>

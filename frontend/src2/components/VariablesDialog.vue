@@ -50,28 +50,26 @@ function saveVariables() {
 </script>
 
 <template>
-	<Dialog
-		:modelValue="show"
-		@update:modelValue="show = $event"
-		:options="{ title: __('Variables'), size: 'lg' }"
-	>
-		<template #body>
-			<div class="bg-white px-4 pb-6 pt-5 sm:px-6">
+	<Dialog v-model:open="show" size="lg" bare>
+		<template #default>
+			<div class="bg-surface-base px-4 pb-6 pt-5 sm:px-6">
 				<div class="flex items-center justify-between pb-4">
-					<h3 class="text-2xl font-semibold leading-6 text-gray-900">
+					<h3 class="text-3xl-semibold leading-6 text-ink-gray-8">
 						{{ __('Variables') }}
 					</h3>
-					<Button variant="ghost" @click="show = false" icon="x" size="md" />
+					<Button variant="ghost" @click="show = false" icon="lucide-x" size="md" />
 				</div>
 
-				<p class="mb-5 text-p-base text-gray-600">
+				<p class="mb-5 text-p-base text-ink-gray-5">
 					{{
 						__(
 							'Variables are used to store sensitive information such as API keys and credentials. They can be referenced and combined in your script just like any other variable. For eg.',
 						)
 					}}
 					<br />
-					<code class="rounded bg-gray-100 px-1 my-1 py-0.5 text-p-sm text-gray-800">
+					<code
+						class="rounded bg-surface-gray-2 px-1 my-1 py-0.5 text-p-sm text-ink-gray-7"
+					>
 						formatted_api_key = f'token {api_key}:{api_secret}'
 					</code>
 				</p>
@@ -79,7 +77,7 @@ function saveVariables() {
 				<div class="flex flex-col overflow-hidden">
 					<div class="relative flex max-h-[20rem] flex-col overflow-y-auto">
 						<div
-							class="sticky top-0 flex gap-x-2 border-b bg-white py-2 text-p-sm font-medium text-gray-600"
+							class="sticky top-0 flex gap-x-2 border-b bg-surface-base py-2 text-p-sm-medium text-ink-gray-5"
 						>
 							<div class="flex flex-1 flex-shrink-0 px-2">{{ __('Name') }}</div>
 							<div class="flex flex-1 flex-shrink-0 px-2">{{ __('Value') }}</div>
@@ -89,11 +87,11 @@ function saveVariables() {
 						<div
 							v-for="(variable, index) in variables"
 							:key="index"
-							class="flex gap-x-2 border-b border-gray-100 py-1"
+							class="flex gap-x-2 border-b border-outline-gray-1 py-1"
 						>
 							<div class="flex flex-1 flex-shrink-0">
 								<input
-									class="w-full rounded-sm border-none bg-transparent px-2 py-2 text-base focus:bg-gray-100 focus:outline-none focus:ring-0"
+									class="w-full rounded-sm border-none bg-transparent px-2 py-2 text-base focus:bg-surface-gray-2 focus:outline-none focus:ring-0"
 									type="text"
 									v-model="variable.variable_name"
 									:placeholder="__('e.g. api_key')"
@@ -102,7 +100,7 @@ function saveVariables() {
 							<div class="flex flex-1 flex-shrink-0">
 								<input
 									type="password"
-									class="w-full rounded-sm border-none bg-transparent px-2 py-2 text-base focus:bg-gray-100 focus:outline-none focus:ring-0"
+									class="w-full rounded-sm border-none bg-transparent px-2 py-2 text-base focus:bg-surface-gray-2 focus:outline-none focus:ring-0"
 									v-model="variable.variable_value"
 									placeholder="**********************"
 								/>
@@ -110,7 +108,7 @@ function saveVariables() {
 							<div class="flex w-10 justify-end">
 								<Button
 									variant="ghost"
-									icon="x"
+									icon="lucide-x"
 									size="sm"
 									@click="removeVariable(index)"
 								/>
@@ -118,7 +116,7 @@ function saveVariables() {
 						</div>
 
 						<div v-if="variables.length === 0" class="flex justify-center py-8">
-							<span class="text-p-sm text-gray-400">No variables added</span>
+							<span class="text-p-sm text-ink-gray-3">No variables added</span>
 						</div>
 					</div>
 

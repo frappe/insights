@@ -1,6 +1,6 @@
 import { reactive, ref, toRefs } from 'vue'
 // @ts-ignore
-import { useTelemetry } from '../telemetry'
+import { useTelemetry } from 'frappe-ui/frappe'
 import useChart from '../charts/chart'
 import {
 	getUniqueId,
@@ -91,7 +91,7 @@ function makeDashboard(name: string) {
 				x: 0,
 				y: maxY,
 				w: 10,
-				h: 1,
+				h: 2,
 			},
 		})
 		editingItemIndex.value = dashboard.doc.items.length - 1

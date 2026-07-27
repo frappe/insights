@@ -192,7 +192,7 @@ const showExpandedChartDialog = ref(false)
 	<div class="group relative h-full w-full">
 		<BaseChart
 			v-if="!loading && eChartOptions"
-			class="rounded bg-white py-1 shadow"
+			class="rounded bg-surface-base py-1 border border-outline-gray-2"
 			:class="props.chart.doc.chart_type == 'Map' ? '[&>div:last-child]:p-4' : ''"
 			:title="props.chart.doc.title"
 			:options="eChartOptions"
@@ -206,10 +206,13 @@ const showExpandedChartDialog = ref(false)
 		/>
 		<TableChart v-else-if="chart_type == 'Table'" :chart="props.chart" />
 
-		<div v-else class="flex h-full flex-1 flex-col items-center justify-center rounded border">
+		<div
+			v-else
+			class="flex h-full flex-1 flex-col items-center justify-center rounded border border-outline-gray-2"
+		>
 			<template v-if="loading">
-				<LoadingIndicator class="h-5 w-5 text-gray-500" />
-				<p class="mt-1.5 text-gray-500">Loading data...</p>
+				<LoadingIndicator class="h-5 w-5 text-ink-gray-4" />
+				<p class="mt-1.5 text-ink-gray-4">Loading data...</p>
 			</template>
 			<template v-else-if="chart.dataQuery.isServerBusy">
 				<Button
@@ -218,13 +221,13 @@ const showExpandedChartDialog = ref(false)
 					label="Server is busy, click to retry"
 				>
 					<template #prefix>
-						<RefreshCcw class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+						<RefreshCcw class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 					</template>
 				</Button>
 			</template>
 			<template v-else>
 				<ChartSectionEmptySvg></ChartSectionEmptySvg>
-				<p class="text-gray-500">
+				<p class="text-ink-gray-4">
 					Pick a chart type and configure options to see the chart here
 				</p>
 			</template>
@@ -236,7 +239,7 @@ const showExpandedChartDialog = ref(false)
 			:class="chart_type == 'Table' ? 'p-1.5' : 'p-2'"
 		>
 			<Button variant="ghost" @click="showExpandedChartDialog = true">
-				<Maximize class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
+				<Maximize class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />
 			</Button>
 		</div>
 	</div>
@@ -249,21 +252,14 @@ const showExpandedChartDialog = ref(false)
 	>
 	</DrillDown>
 
-	<Dialog
-		v-if="chart"
-		v-model="showExpandedChartDialog"
-		:options="{
-			size: '7xl',
-			title: chart?.doc.title,
-		}"
-	>
-		<template #body>
+	<Dialog v-if="chart" v-model:open="showExpandedChartDialog" size="7xl" bare>
+		<template #default>
 			<div class="h-[85vh] w-full">
 				<ChartRenderer v-if="chart" :chart="chart" :hide-maximize="true" />
 				<div class="absolute top-2 right-2">
 					<Button variant="ghost" @click="showExpandedChartDialog = false">
 						<template #icon>
-							<XIcon class="size-4 text-gray-700" />
+							<XIcon class="size-4 text-ink-gray-6" />
 						</template>
 					</Button>
 				</div>

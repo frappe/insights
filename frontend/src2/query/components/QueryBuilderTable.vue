@@ -73,7 +73,9 @@ function addNewColumn() {
 </script>
 
 <template>
-	<div class="relative flex w-full flex-1 flex-col overflow-hidden rounded shadow">
+	<div
+		class="relative flex w-full flex-1 flex-col overflow-hidden rounded border border-outline-gray-2"
+	>
 		<QueryDataTable
 			:query="query"
 			:enable-column-rename="true"
@@ -90,20 +92,19 @@ function addNewColumn() {
 
 			<template #header-suffix="{ column }">
 				<div class="ml-auto pl-2">
-					<Popover placement="bottom-end">
-						<template #target="{ togglePopover, isOpen }">
+					<Popover side="bottom" align="end">
+						<template #trigger="{ isOpen }">
 							<Button
 								variant="ghost"
 								class="rounded-sm"
-								@click="togglePopover"
-								:class="isOpen ? '!bg-gray-100' : ''"
+								:class="isOpen ? '!bg-surface-gray-2' : ''"
 							>
 								<template #icon>
-									<MoreHorizontal class="h-4 w-4 text-gray-700" />
+									<MoreHorizontal class="h-4 w-4 text-ink-gray-6" />
 								</template>
 							</Button>
 						</template>
-						<template #body-main="{ togglePopover, isOpen }">
+						<template #default="{ toggle: togglePopover, isOpen }">
 							<div v-if="isOpen" class="flex min-w-[10rem] flex-col p-1">
 								<!-- Rename, Sort, Filter, Summarize, Describe, Pivot, Remove -->
 								<ColumnSort
@@ -141,12 +142,12 @@ function addNewColumn() {
 					/>
 					<Button variant="ghost" class="flex-shrink-0" @click="addNewColumn(), toggle()">
 						<template #icon>
-							<Check class="size-4 text-gray-700" :stroke-width="1.5" />
+							<Check class="size-4 text-ink-gray-6" :stroke-width="1.5" />
 						</template>
 					</Button>
 					<Button variant="ghost" class="flex-shrink-0" @click="toggle">
 						<template #icon>
-							<X class="size-4 text-gray-700" :stroke-width="1.5" />
+							<X class="size-4 text-ink-gray-6" :stroke-width="1.5" />
 						</template>
 					</Button>
 				</div>

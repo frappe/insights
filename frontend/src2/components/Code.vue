@@ -24,9 +24,10 @@ import { MySQL, sql } from '@codemirror/lang-sql'
 import { syntaxTree } from '@codemirror/language'
 import { linter } from '@codemirror/lint'
 import { Decoration, EditorView, ViewPlugin } from '@codemirror/view'
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { Codemirror } from 'vue-codemirror'
-import { tomorrow } from 'thememirror'
+import { dracula, tomorrow } from 'thememirror'
+import { useTheme } from 'frappe-ui'
 
 const props = defineProps({
 	modelValue: String,
@@ -189,22 +190,12 @@ const validationLinter = linter((view) => {
 	return diagnostics
 })
 
-const extensions = [language, closeBrackets(), tomorrow, validationLinter]
-
-if (props.multiLine) {
-	extensions.push(EditorView.lineWrapping)
-}
-
-if (props.columnNames && props.columnNames.length > 0) {
-	extensions.push(columnHighlighter)
-}
-
 const autocompletionOptions = {
 	activateOnTyping: true,
 	closeOnBlur: false,
 	maxRenderedOptions: 10,
 	icons: false,
-	optionClass: () => 'flex h-7 !px-2 items-center rounded !text-gray-600',
+	optionClass: () => 'flex h-7 !px-2 items-center rounded !text-ink-gray-5',
 }
 if (props.completions) {
 	autocompletionOptions.override = [
@@ -213,7 +204,26 @@ if (props.completions) {
 		},
 	]
 }
-extensions.push(autocompletion(autocompletionOptions))
+
+// Editor theme follows the app theme so the code surface flips with dark mode
+// instead of staying on the light `tomorrow` palette.
+const { currentTheme } = useTheme()
+const extensions = computed(() => {
+	const exts = [
+		language,
+		closeBrackets(),
+		currentTheme.value === 'dark' ? dracula : tomorrow,
+		validationLinter,
+		autocompletion(autocompletionOptions),
+	]
+	if (props.multiLine) {
+		exts.push(EditorView.lineWrapping)
+	}
+	if (props.columnNames && props.columnNames.length > 0) {
+		exts.push(columnHighlighter)
+	}
+	return exts
+})
 
 defineExpose({
 	get cursorPos() {

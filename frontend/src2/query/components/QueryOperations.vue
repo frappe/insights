@@ -35,7 +35,7 @@ const operations = computed(() => {
 
 const Element = (_: any, { slots }: any) => {
 	return (
-		<div class="w-fit truncate rounded border border-orange-200 bg-orange-50 px-1 py-0.5 font-mono text-xs text-orange-800 opacity-90">
+		<div class="w-fit truncate rounded border border-outline-orange-2 bg-surface-orange-1 px-1 py-0.5 font-mono text-xs text-ink-orange-9 opacity-90">
 			{slots.default?.()}
 		</div>
 	)
@@ -55,7 +55,7 @@ const SourceInfo = (props: any) => {
 	const is_table = source.table.type === 'table'
 
 	return (
-		<div class="flex items-baseline gap-1 text-gray-700">
+		<div class="flex items-baseline gap-1 text-ink-gray-6">
 			<p>Select</p>
 			<Element>{source_name}</Element>
 			<p>{is_table ? 'table' : 'query'}</p>
@@ -71,7 +71,7 @@ const JoinInfo = (props: any) => {
 	const is_table = join.table.type === 'table'
 
 	return (
-		<div class="flex flex-wrap items-baseline gap-1 text-gray-700">
+		<div class="flex flex-wrap items-baseline gap-1 text-ink-gray-6">
 			<Element>{join_type}</Element>
 			<p>join</p>
 			<Element>{join_name}</Element>
@@ -88,7 +88,7 @@ const UnionInfo = (props: any) => {
 			: getQueryTitle(union.table.query_name)
 
 	return (
-		<div class="flex flex-wrap items-baseline gap-1 text-gray-700">
+		<div class="flex flex-wrap items-baseline gap-1 text-ink-gray-6">
 			<p>Append</p>
 			<Element>{union_name}</Element>
 			<p>table</p>
@@ -101,7 +101,7 @@ const SelectInfo = (props: any) => {
 	const column_names = select.column_names
 
 	return (
-		<div class="flex flex-wrap items-baseline gap-1 text-gray-700">
+		<div class="flex flex-wrap items-baseline gap-1 text-ink-gray-6">
 			<p>Select</p>
 			<Element>{column_names.length} columns</Element>
 		</div>
@@ -113,7 +113,7 @@ const RemoveInfo = (props: any) => {
 	const column_names = remove.column_names
 
 	return (
-		<div class="flex flex-wrap items-baseline gap-1 text-gray-700">
+		<div class="flex flex-wrap items-baseline gap-1 text-ink-gray-6">
 			<p>Remove</p>
 			<Element>{column_names.length} columns</Element>
 		</div>
@@ -126,7 +126,7 @@ const RenameInfo = (props: any) => {
 	const new_name = rename.new_name
 
 	return (
-		<div class="flex flex-wrap items-baseline gap-1 text-gray-700">
+		<div class="flex flex-wrap items-baseline gap-1 text-ink-gray-6">
 			<p>Rename</p>
 			<Element>{column_name}</Element>
 			<p>to</p>
@@ -141,7 +141,7 @@ const CastInfo = (props: any) => {
 	const new_type = cast.data_type
 
 	return (
-		<div class="flex flex-wrap items-baseline gap-1 text-gray-700">
+		<div class="flex flex-wrap items-baseline gap-1 text-ink-gray-6">
 			<p>Convert</p>
 			<Element>{column_name}</Element>
 			<p>to</p>
@@ -160,7 +160,7 @@ const FilterInfo = (props: any) => {
 		.map((f) => f.column.column_name)
 
 	return (
-		<div class="flex flex-wrap items-baseline gap-1 text-gray-700">
+		<div class="flex flex-wrap items-baseline gap-1 text-ink-gray-6">
 			<p>Filter</p>
 			{filtered_columns.map((column, idx) => (
 				<Element>{column}</Element>
@@ -177,7 +177,7 @@ const MutateInfo = (props: any) => {
 	const column_name = mutate.new_name
 
 	return (
-		<div class="flex flex-wrap items-baseline gap-1 text-gray-700">
+		<div class="flex flex-wrap items-baseline gap-1 text-ink-gray-6">
 			<p>Calculate</p>
 			<Element>{column_name}</Element>
 		</div>
@@ -190,7 +190,7 @@ const SummarizeInfo = (props: any) => {
 	const dimensions = summarize.dimensions
 
 	return (
-		<div class="flex flex-wrap items-baseline gap-1 text-gray-700">
+		<div class="flex flex-wrap items-baseline gap-1 text-ink-gray-6">
 			<p>Summarize</p>
 			{measures.map((measure, idx) => (
 				<Element>{measure.measure_name}</Element>
@@ -210,7 +210,7 @@ const PivotWiderInfo = (props: any) => {
 	const columns = pivot.columns
 
 	return (
-		<div class="flex flex-wrap items-baseline gap-1 text-gray-700">
+		<div class="flex flex-wrap items-baseline gap-1 text-ink-gray-6">
 			<p>Pivot</p>
 			{values.map((measure, idx) => (
 				<Element>{measure.measure_name}</Element>
@@ -233,7 +233,7 @@ const OrderByInfo = (props: any) => {
 	const sort_order = sort.direction
 
 	return (
-		<div class="flex flex-wrap items-baseline gap-1 text-gray-700">
+		<div class="flex flex-wrap items-baseline gap-1 text-ink-gray-6">
 			<p>Sort</p>
 			<Element>{column_name}</Element>
 			<p>{sort_order}</p>
@@ -246,7 +246,7 @@ const LimitInfo = (props: any) => {
 	const limit_value = limit.limit
 
 	return (
-		<div class="flex flex-wrap items-baseline gap-1 text-gray-700">
+		<div class="flex flex-wrap items-baseline gap-1 text-ink-gray-6">
 			<p>Limit to</p>
 			<Element>{limit_value}</Element>
 			<p>rows</p>
@@ -258,7 +258,7 @@ const CustomOperationInfo = (props: any) => {
 	const custom_operation = props.custom_operation as CustomOperation
 
 	return (
-		<div class="flex flex-wrap items-baseline gap-1 text-gray-700">
+		<div class="flex flex-wrap items-baseline gap-1 text-ink-gray-6">
 			<p>Apply</p>
 			<Element>{custom_operation.expression.expression}</Element>
 		</div>
@@ -270,11 +270,13 @@ const CustomOperationInfo = (props: any) => {
 	<div v-if="query.doc.operations.length" class="flex w-full flex-col px-3.5 py-3">
 		<div class="mb-2 flex h-6 items-center justify-between">
 			<div class="flex items-center gap-1">
-				<div class="text-sm font-medium">Operations</div>
+				<div class="text-sm-medium">Operations</div>
 			</div>
 			<div></div>
 		</div>
-		<div class="relative ml-3 flex flex-col-reverse gap-3 border-l border-gray-300 text-sm">
+		<div
+			class="relative ml-3 flex flex-col-reverse gap-3 border-l border-outline-gray-2 text-sm"
+		>
 			<template v-for="(op, idx) in operations" :key="idx">
 				<div
 					class="group relative flex cursor-pointer select-none items-start gap-2"
@@ -283,11 +285,11 @@ const CustomOperationInfo = (props: any) => {
 					@dblclick="query.setActiveEditIndex(idx)"
 				>
 					<div
-						class="-ml-[14px] h-fit flex-shrink-0 rounded border border-gray-400 bg-white p-1"
+						class="-ml-[14px] h-fit flex-shrink-0 rounded border border-outline-gray-3 bg-surface-base p-1"
 					>
 						<component
 							:is="op.meta.icon"
-							class="h-4 w-4 text-gray-600"
+							class="h-4 w-4 text-ink-gray-5"
 							stroke-width="1.5"
 						/>
 					</div>
@@ -314,14 +316,14 @@ const CustomOperationInfo = (props: any) => {
 							/>
 						</div>
 						<div
-							class="absolute right-0 flex h-full flex-shrink-0 items-center bg-white opacity-0 transition-all group-hover:opacity-100"
+							class="absolute right-0 flex h-full flex-shrink-0 items-center bg-surface-base opacity-0 transition-all group-hover:opacity-100"
 						>
 							<Button
 								variant="ghost"
 								@click.prevent.stop="query.removeOperation(idx)"
 							>
 								<template #icon>
-									<XIcon class="h-3.5 w-3.5 text-gray-500" />
+									<XIcon class="h-3.5 w-3.5 text-ink-gray-4" />
 								</template>
 							</Button>
 						</div>

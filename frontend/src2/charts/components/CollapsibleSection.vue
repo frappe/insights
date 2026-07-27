@@ -10,18 +10,18 @@ const collapsed = ref(props.collapsed ?? false)
 <template>
 	<div class="flex flex-col" :class="collapsed ? '' : 'pb-3.5'">
 		<button
-			class="sticky top-0 flex cursor-pointer items-center gap-1 bg-white py-3"
+			class="sticky top-0 flex cursor-pointer items-center gap-1 bg-surface-base py-3"
 			@click="collapsed = !collapsed"
 		>
 			<div class="flex items-center gap-1">
 				<slot name="title-prefix" />
-				<p class="text-sm font-medium">
+				<p class="text-sm-medium">
 					{{ props.title }}
 				</p>
 				<slot name="title-suffix" />
 			</div>
 			<ChevronRight
-				class="h-4 w-4 text-gray-700 transition-all"
+				class="h-4 w-4 text-ink-gray-6 transition-all"
 				:class="{ 'rotate-90 transform': !collapsed }"
 				stroke-width="1.5"
 			/>

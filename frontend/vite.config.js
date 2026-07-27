@@ -4,6 +4,51 @@ import frappeui from 'frappe-ui/vite'
 import path from 'path'
 import { defineConfig } from 'vite'
 
+// Pre-bundled below to avoid a dev-only duplicate prosemirror-state instance
+// (TipTap "keyed plugin" error). Keep in sync with frappe-ui's @tiptap/* deps.
+const tiptapDeps = [
+	'@tiptap/core',
+	'@tiptap/vue-3',
+	'@tiptap/starter-kit',
+	'@tiptap/suggestion',
+	'@tiptap/markdown',
+	'@tiptap/extensions',
+	'@tiptap/extension-blockquote',
+	'@tiptap/extension-bold',
+	'@tiptap/extension-bubble-menu',
+	'@tiptap/extension-code',
+	'@tiptap/extension-code-block',
+	'@tiptap/extension-code-block-lowlight',
+	'@tiptap/extension-color',
+	'@tiptap/extension-document',
+	'@tiptap/extension-hard-break',
+	'@tiptap/extension-heading',
+	'@tiptap/extension-highlight',
+	'@tiptap/extension-horizontal-rule',
+	'@tiptap/extension-image',
+	'@tiptap/extension-italic',
+	'@tiptap/extension-link',
+	'@tiptap/extension-list',
+	'@tiptap/extension-mention',
+	'@tiptap/extension-node-range',
+	'@tiptap/extension-paragraph',
+	'@tiptap/extension-placeholder',
+	'@tiptap/extension-strike',
+	'@tiptap/extension-table',
+	'@tiptap/extension-task-item',
+	'@tiptap/extension-task-list',
+	'@tiptap/extension-text',
+	'@tiptap/extension-text-align',
+	'@tiptap/extension-text-style',
+	'@tiptap/extension-typography',
+	'@tiptap/extension-underline',
+	// @tiptap/pm exposes only subpaths
+	'@tiptap/pm/state',
+	'@tiptap/pm/view',
+	'@tiptap/pm/model',
+	'@tiptap/pm/tables',
+]
+
 export default defineConfig({
 	plugins: [
 		frappeui({
@@ -50,11 +95,12 @@ export default defineConfig({
 		},
 		include: [
 			'feather-icons',
-			'showdown',
 			'tailwind.config.js',
 			'highlight.js/lib/core',
 			'echarts/core',
+			...tiptapDeps,
 		],
+		exclude: ['frappe-ui'],
 	},
 	define: {
 		// enable hydration mismatch details in production build

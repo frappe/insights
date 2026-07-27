@@ -54,26 +54,17 @@ const groupBy = debounce(_groupBy, 50)
 </script>
 
 <template>
-	<Dialog
-		v-model="show"
-		:options="{
-			title: __('Drill Down'),
-			size: '5xl',
-		}"
-	>
-		<template #body-content>
+	<Dialog v-model:open="show" :title="__('Drill Down')" size="5xl">
+		<template #default>
 			<div v-if="!isQueryReady" class="flex h-[32rem] w-full items-center justify-center">
-				<LoadingIndicator class="h-5 w-5 text-gray-600" />
+				<LoadingIndicator class="h-5 w-5 text-ink-gray-5" />
 			</div>
-			<div
-				v-else
-				class="relative flex h-[32rem] w-full flex-1 gap-4 overflow-hidden bg-white"
-			>
+			<div v-else class="relative flex h-[32rem] w-full flex-1 gap-4 overflow-hidden">
 				<div class="flex h-full flex-1 flex-col gap-2 overflow-hidden p-0.5">
 					<QueryToolbar>
 						<QueryExecutionStatus />
 					</QueryToolbar>
-					<div class="flex flex-1 overflow-hidden rounded border">
+					<div class="flex flex-1 overflow-hidden rounded border border-outline-gray-2">
 						<QueryDataTable
 							:enable-sort="true"
 							:enable-drill-down="true"
@@ -88,7 +79,7 @@ const groupBy = debounce(_groupBy, 50)
 									>
 										<template #icon>
 											<Combine
-												class="h-4 w-4 text-gray-700"
+												class="h-4 w-4 text-ink-gray-6"
 												stroke-width="1.5"
 											/>
 										</template>
@@ -99,7 +90,7 @@ const groupBy = debounce(_groupBy, 50)
 					</div>
 				</div>
 				<div
-					class="relative flex h-full w-[17rem] flex-shrink-0 overflow-y-auto rounded border bg-white"
+					class="relative flex h-full w-[17rem] flex-shrink-0 overflow-y-auto rounded border border-outline-gray-2"
 				>
 					<QueryOperations />
 				</div>

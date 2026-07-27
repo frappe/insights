@@ -90,12 +90,12 @@ function confirmSelections() {
 </script>
 
 <template>
-	<Dialog :modelValue="showDialog" :options="{ size: '2xl' }">
-		<template #body>
-			<div class="min-w-[36rem] rounded-lg bg-white px-4 pb-6 pt-5 text-base sm:px-6">
+	<Dialog :open="showDialog" size="2xl" bare>
+		<template #default>
+			<div class="min-w-[36rem] rounded-lg bg-surface-base px-4 pb-6 pt-5 text-base sm:px-6">
 				<div class="flex items-center justify-between pb-4">
-					<h3 class="text-2xl font-semibold leading-6 text-gray-900">Pivot</h3>
-					<Button variant="ghost" @click="showDialog = false" icon="x" size="md" />
+					<h3 class="text-3xl-semibold leading-6 text-ink-gray-8">Pivot</h3>
+					<Button variant="ghost" @click="showDialog = false" icon="lucide-x" size="md" />
 				</div>
 
 				<div class="flex flex-col gap-4">
@@ -103,7 +103,7 @@ function confirmSelections() {
 					<div class="flex gap-4">
 						<!-- Rows -->
 						<div class="flex-1 flex-shrink-0">
-							<p class="mb-1.5 text-p-sm text-gray-600">Rows</p>
+							<p class="mb-1.5 text-p-sm text-ink-gray-5">Rows</p>
 							<div class="flex flex-col gap-2">
 								<DimensionPicker
 									v-for="(row, idx) in rows"
@@ -114,7 +114,7 @@ function confirmSelections() {
 								/>
 							</div>
 							<button
-								class="mt-1.5 text-left text-xs text-gray-600 hover:underline"
+								class="mt-1.5 text-left text-xs text-ink-gray-5 hover:underline"
 								@click="addRow"
 							>
 								+ Add
@@ -123,7 +123,7 @@ function confirmSelections() {
 
 						<!-- Columns -->
 						<div class="flex-1 flex-shrink-0">
-							<p class="mb-1.5 text-p-sm text-gray-600">Columns</p>
+							<p class="mb-1.5 text-p-sm text-ink-gray-5">Columns</p>
 							<div class="flex flex-col gap-2">
 								<DimensionPicker
 									v-for="(col, idx) in columns"
@@ -134,7 +134,7 @@ function confirmSelections() {
 								/>
 							</div>
 							<button
-								class="mt-1.5 text-left text-xs text-gray-600 hover:underline"
+								class="mt-1.5 text-left text-xs text-ink-gray-5 hover:underline"
 								@click="addColumn"
 							>
 								+ Add
@@ -143,7 +143,7 @@ function confirmSelections() {
 
 						<!-- Values -->
 						<div class="flex-1 flex-shrink-0">
-							<p class="mb-1.5 text-p-sm text-gray-600">Values</p>
+							<p class="mb-1.5 text-p-sm text-ink-gray-5">Values</p>
 							<div class="flex flex-col gap-2">
 								<MeasurePicker
 									v-for="(value, idx) in values"
@@ -154,7 +154,7 @@ function confirmSelections() {
 								/>
 							</div>
 							<button
-								class="mt-1.5 text-left text-xs text-gray-600 hover:underline"
+								class="mt-1.5 text-left text-xs text-ink-gray-5 hover:underline"
 								@click="addValue"
 							>
 								+ Add

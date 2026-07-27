@@ -324,20 +324,20 @@ const isInvalidColumn = computed(() => {
 
 <template>
 	<div class="flex flex-col gap-1.5 relative">
-		<Autocomplete
+		<Combobox
 			:label="'Column'"
 			:placeholder="__('Column')"
 			:modelValue="format.column?.column_name"
 			:options="availableColumns"
-			@update:modelValue="onColumnChange(typeof $event === 'string' ? $event : $event?.value)"
+			@update:modelValue="onColumnChange($event)"
 		/>
-		<p v-if="isInvalidColumn" class="text-xs text-red-500">Invalid Column</p>
+		<p v-if="isInvalidColumn" class="text-xs text-ink-red-6">Invalid Column</p>
 	</div>
 
 	<template v-if="!isInvalidColumn">
 		<div v-if="props.formatMode === 'color_scale'" class="w-full flex flex-col gap-4">
 			<div>
-				<h3 class="text-sm text-gray-600 mb-3">Color</h3>
+				<h3 class="text-sm text-ink-gray-5 mb-3">Color</h3>
 				<RadioGroup
 					name="color-scale"
 					:modelValue="(format as color_scale).colorScale"
@@ -370,7 +370,7 @@ const isInvalidColumn = computed(() => {
 
 			<div>
 				<div class="flex items-center gap-2 mb-3">
-					<h3 class="text-sm text-gray-600">Scale Scope</h3>
+					<h3 class="text-sm text-ink-gray-5">Scale Scope</h3>
 				</div>
 				<RadioGroup
 					name="scale-scope"
@@ -379,16 +379,16 @@ const isInvalidColumn = computed(() => {
 				>
 					<RadioGroupItem value="global" class="[&_label]:w-full">
 						<div class="flex flex-col gap-0.5">
-							<span class="text-sm font-medium">Global</span>
-							<span class="text-xs text-gray-500"
+							<span class="text-sm-medium">Global</span>
+							<span class="text-xs text-ink-gray-4"
 								>Compare across all formatted columns</span
 							>
 						</div>
 					</RadioGroupItem>
 					<RadioGroupItem value="local" class="[&_label]:w-full">
 						<div class="flex flex-col gap-0.5">
-							<span class="text-sm font-medium">Local</span>
-							<span class="text-xs text-gray-500"
+							<span class="text-sm-medium">Local</span>
+							<span class="text-xs text-ink-gray-4"
 								>Compare within each column independently</span
 							>
 						</div>
@@ -455,7 +455,7 @@ const isInvalidColumn = computed(() => {
 					@update:modelValue="onOperatorChange($event)"
 				/>
 				<template v-if="isDateValueRule">
-					<h3 class="text-sm text-gray-600">Date Value</h3>
+					<h3 class="text-sm text-ink-gray-5">Date Value</h3>
 					<template v-if="(format as date_rules).operator === 'date_between'">
 						<!-- todo: find a proper fix for datepicker v-model -->
 						<DatePicker

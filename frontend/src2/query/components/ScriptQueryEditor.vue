@@ -52,7 +52,7 @@ function handleSaveVariables(variables: any[]) {
 		<div class="relative flex h-[55%] w-full flex-col rounded border">
 			<div class="flex flex-shrink-0 items-center gap-1 border-b p-1">
 				<ContentEditable
-					class="flex h-7 cursor-text items-center justify-center rounded bg-white px-2 text-base leading-7 text-gray-800 focus-visible:ring-1 focus-visible:ring-gray-600"
+					class="flex h-7 cursor-text items-center justify-center rounded bg-surface-base px-2 text-base leading-7 text-ink-gray-7 focus-visible:ring-1 focus-visible:ring-outline-gray-5"
 					:modelValue="query.doc.title"
 					@returned="query.doc.title = $event"
 					@blur="query.doc.title = $event"
@@ -76,15 +76,15 @@ function handleSaveVariables(variables: any[]) {
 				>
 					<div
 						v-if="showLogs"
-						class="flex h-full w-[30rem] flex-shrink-0 flex-col overflow-hidden bg-gray-50 p-3"
+						class="flex h-full w-[30rem] flex-shrink-0 flex-col overflow-hidden bg-surface-gray-1 p-3"
 					>
-						<div class="font-mono text-sm uppercase text-gray-600">
+						<div class="font-mono text-sm uppercase text-ink-gray-5">
 							{{ __('Logs') }}
 						</div>
 						<div class="mt-2 flex w-full flex-col gap-2 overflow-y-auto font-mono">
 							<div v-for="(log, index) in scriptLogs" :key="index" class="flex gap-2">
-								<div class="text-gray-400">[{{ index + 1 }}]</div>
-								<div class="text-gray-500">{{ log }}</div>
+								<div class="text-ink-gray-3">[{{ index + 1 }}]</div>
+								<div class="text-ink-gray-4">{{ log }}</div>
 							</div>
 						</div>
 					</div>
@@ -93,7 +93,7 @@ function handleSaveVariables(variables: any[]) {
 			<div class="flex flex-shrink-0 gap-1 border-t p-1">
 				<Button @click="() => query.execute()" :label="__('Run')">
 					<template #prefix>
-						<Play class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
+						<Play class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />
 					</template>
 				</Button>
 				<Dropdown
@@ -121,7 +121,7 @@ function handleSaveVariables(variables: any[]) {
 
 		<div
 			v-show="query.result.executedSQL"
-			class="tnum flex flex-shrink-0 items-center gap-2 text-sm text-gray-600"
+			class="tnum flex flex-shrink-0 items-center gap-2 text-sm text-ink-gray-5"
 		>
 			<div class="h-2 w-2 rounded-full bg-green-500"></div>
 			<div class="flex items-center gap-1">

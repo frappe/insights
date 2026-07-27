@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { SearchIcon } from 'lucide-vue-next'
-import { computed, ref, watchEffect } from 'vue'
+import { computed } from 'vue'
 import useUserStore from '../users/users'
 
 const props = defineProps<{
@@ -10,23 +10,10 @@ const props = defineProps<{
 const selectedUserEmail = defineModel<string>()
 
 const userStore = useUserStore()
-const searchTxt = ref('')
-watchEffect(() => {
-	searchTxt.value = selectedUserEmail.value || ''
-})
 const filteredUsers = computed(() => {
 	return userStore.users
-		.filter((user) => {
-			if (!user.enabled) return false
-			if (!searchTxt.value) return true
-			return (
-				user.full_name.toLowerCase().includes(searchTxt.value.toLowerCase()) ||
-				user.email.toLowerCase().includes(searchTxt.value.toLowerCase())
-			)
-		})
-		.filter((user) => {
-			return !props.hideUsers?.includes(user.email)
-		})
+		.filter((user) => user.enabled)
+		.filter((user) => !props.hideUsers?.includes(user.email))
 		.map((user) => {
 			return {
 				...user,
@@ -39,31 +26,19 @@ const filteredUsers = computed(() => {
 </script>
 
 <template>
-	<Autocomplete
-		:hide-search="true"
-		:autofocus="false"
+	<Combobox
+		class="w-full"
 		:modelValue="selectedUserEmail"
-		@update:modelValue="selectedUserEmail = $event?.value"
+		@update:modelValue="selectedUserEmail = $event"
 		:options="filteredUsers"
+		:placeholder="props.placeholder || 'Search user...'"
 	>
-		<template #target="{ open }">
-			<FormControl
-				class="w-full"
-				type="text"
-				:placeholder="props.placeholder || 'Search user...'"
-				autocomplete="off"
-				v-model="searchTxt"
-				@update:modelValue="open"
-				@focus="open"
-			>
-				<template #prefix>
-					<SearchIcon class="h-4 w-4 text-gray-500" stroke-width="1.5" />
-				</template>
-			</FormControl>
+		<template #prefix>
+			<SearchIcon class="h-4 w-4 text-ink-gray-4" stroke-width="1.5" />
 		</template>
 
-		<template #item-prefix="{ option }">
-			<Avatar size="sm" :label="option.label" :image="option.user_image" />
+		<template #item-prefix="{ item }">
+			<Avatar size="sm" :label="item.label" :image="item.user_image" />
 		</template>
-	</Autocomplete>
+	</Combobox>
 </template>

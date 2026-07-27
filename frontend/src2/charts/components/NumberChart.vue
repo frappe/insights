@@ -107,12 +107,12 @@ function onDoubleClick(measure_name: string) {
 					color,
 				} in cards"
 				:key="measure_name"
-				class="flex max-h-[140px] items-center gap-2 overflow-hidden rounded bg-white px-6 pt-5 shadow cursor-pointer"
+				class="flex max-h-[140px] items-center gap-2 overflow-hidden rounded bg-surface-base px-6 pt-5 border border-outline-gray-2 cursor-pointer"
 				:class="config.comparison ? 'pb-6' : 'pb-3'"
 				@dblclick="onDoubleClick(measure_name)"
 			>
 				<div class="flex w-full flex-col">
-					<span class="truncate text-sm font-medium">
+					<span class="truncate text-sm-medium">
 						{{ measure_name }}
 					</span>
 					<div
@@ -123,15 +123,15 @@ function onDoubleClick(measure_name: string) {
 					</div>
 					<div
 						v-if="config.comparison"
-						class="flex items-center gap-1 text-xs font-medium"
+						class="flex items-center gap-1 text-xs-medium"
 						:class="[
 							config.negative_is_better
 								? delta >= 0
-									? 'text-red-500'
-									: 'text-green-500'
+									? 'text-ink-red-6'
+									: 'text-ink-green-6'
 								: delta >= 0
-								  ? 'text-green-500'
-								  : 'text-red-500',
+								  ? 'text-ink-green-6'
+								  : 'text-ink-red-6',
 						]"
 					>
 						<span class="">

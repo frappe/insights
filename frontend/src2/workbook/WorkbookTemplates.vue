@@ -4,7 +4,7 @@ import { CheckCircle2, LayoutTemplate } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { createToast } from '../helpers/toasts'
-import { useTelemetry } from '../telemetry'
+import { useTelemetry } from 'frappe-ui/frappe'
 import { __ } from '../translation'
 
 export type WorkbookTemplate = {
@@ -117,8 +117,8 @@ function runUpdate(template: WorkbookTemplate) {
 </script>
 
 <template>
-	<Dialog v-model="show" :options="{ title: __('Workbook Library'), size: '4xl' }">
-		<template #body-content>
+	<Dialog v-model:open="show" :title="__('Workbook Library')" size="4xl">
+		<template #default>
 			<p class="mb-5 text-p-base text-ink-gray-6 -mt-3">
 				{{
 					__(
@@ -132,14 +132,14 @@ function runUpdate(template: WorkbookTemplate) {
 				<!-- one section per app, headed by the app's title — a single app
 				just reads as one section -->
 				<div v-for="section in sections" :key="section.app" class="mb-6 last:mb-0">
-					<div class="mb-2.5 text-p-sm font-medium text-ink-gray-5">
+					<div class="mb-2.5 text-p-sm-medium text-ink-gray-5">
 						{{ section.app }}
 					</div>
 					<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 						<div
 							v-for="template in section.items"
 							:key="template.name"
-							class="col-span-1 flex flex-col overflow-hidden rounded border border-outline-gray-1 bg-surface-white"
+							class="col-span-1 flex flex-col overflow-hidden rounded border border-outline-gray-1 bg-surface-base"
 						>
 							<div
 								class="h-52 w-full border-b border-outline-gray-1 bg-surface-gray-1"
@@ -159,7 +159,7 @@ function runUpdate(template: WorkbookTemplate) {
 							</div>
 							<div class="flex flex-1 flex-col p-4">
 								<div class="flex items-center justify-between gap-2">
-									<div class="truncate text-base font-medium text-ink-gray-9">
+									<div class="truncate text-base-medium text-ink-gray-9">
 										{{ template.title }}
 									</div>
 									<Badge v-if="template.module" theme="gray">
@@ -172,7 +172,7 @@ function runUpdate(template: WorkbookTemplate) {
 
 								<div
 									v-if="!template.has_data && !template.imported_workbook"
-									class="mt-2 text-p-sm text-ink-amber-3"
+									class="mt-2 text-p-sm text-ink-amber-6"
 								>
 									{{
 										__(
@@ -191,7 +191,7 @@ function runUpdate(template: WorkbookTemplate) {
 								<div class="mt-4 flex items-center gap-2">
 									<template v-if="template.imported_workbook">
 										<div
-											class="flex items-center gap-1 text-p-sm text-ink-green-3"
+											class="flex items-center gap-1 text-p-sm text-ink-green-6"
 										>
 											<CheckCircle2 class="h-4 w-4" />
 											{{ __('Imported') }}
@@ -229,20 +229,20 @@ function runUpdate(template: WorkbookTemplate) {
 	</Dialog>
 
 	<Dialog
-		v-model="showConfirm"
-		:options="{
-			title: __('Replace your changes?'),
-			message: __(
+		v-model:open="showConfirm"
+		:title="__('Replace your changes?')"
+		:message="
+			__(
 				'This dashboard has been edited on your site. Updating replaces its contents with the latest version — your changes will be lost.',
-			),
-			actions: [
-				{
-					label: __('Update'),
-					variant: 'solid',
-					theme: 'red',
-					onClick: () => confirmTarget && runUpdate(confirmTarget),
-				},
-			],
-		}"
+			)
+		"
+		:actions="[
+			{
+				label: __('Update'),
+				variant: 'solid',
+				theme: 'red',
+				onClick: () => confirmTarget && runUpdate(confirmTarget),
+			},
+		]"
 	/>
 </template>

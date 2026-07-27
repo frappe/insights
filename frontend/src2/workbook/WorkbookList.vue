@@ -20,7 +20,7 @@ import useWorkbook, { newWorkbookName } from './workbook'
 import { getWorkbookColumns } from './workbookListColumns'
 import useWorkbooks from './workbooks'
 import WorkbookTemplates, { WorkbookTemplate } from './WorkbookTemplates.vue'
-import { useTelemetry } from '../telemetry'
+import { useTelemetry } from 'frappe-ui/frappe'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -180,7 +180,7 @@ watchEffect(() => {
 				autocomplete="off"
 			>
 				<template #prefix>
-					<SearchIcon class="h-4 w-4 text-gray-500" />
+					<SearchIcon class="h-4 w-4 text-ink-gray-4" />
 				</template>
 			</FormControl>
 			<TabButtons :buttons="scopeTabs" v-model="scope" />
@@ -194,7 +194,7 @@ watchEffect(() => {
 				<!-- skip the empty state while a fetch is in flight so it doesn't flash on tab switch -->
 				<!-- ListEmptyState already centers its slot content -->
 				<ListEmptyState v-else-if="!workbookStore.loading">
-					<div class="text-xl font-medium text-ink-gray-8">
+					<div class="text-2xl-medium text-ink-gray-8">
 						{{ __('No Workbooks') }}
 					</div>
 					<div class="mt-1 text-base text-ink-gray-5">

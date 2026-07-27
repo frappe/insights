@@ -33,7 +33,7 @@ watchEffect(() => {
 		<div class="flex items-center gap-2"></div>
 	</header>
 
-	<div class="flex flex-1 flex-col overflow-hidden bg-white">
+	<div class="flex flex-1 flex-col overflow-hidden bg-surface-base">
 		<div v-if="table" class="flex flex-1 flex-col overflow-hidden">
 			<div class="flex flex-1 overflow-auto">
 				<DataTable
@@ -42,7 +42,7 @@ watchEffect(() => {
 					:rows="table.rows"
 				>
 					<template #footer-left>
-						<p class="tnum p-1 text-sm text-gray-600">
+						<p class="tnum p-1 text-sm text-ink-gray-5">
 							Showing only the first 100 rows
 						</p>
 					</template>
@@ -51,10 +51,10 @@ watchEffect(() => {
 		</div>
 		<div
 			v-else
-			class="flex h-full w-full flex-col items-center justify-center rounded bg-gray-50"
+			class="flex h-full w-full flex-col items-center justify-center rounded bg-surface-gray-1"
 		>
-			<LoadingIndicator class="mb-2 w-8 text-gray-500" />
-			<div class="text-lg text-gray-600">Loading table data...</div>
+			<LoadingIndicator class="mb-2 w-8 text-ink-gray-4" />
+			<div class="text-lg text-ink-gray-5">Loading table data...</div>
 		</div>
 	</div>
 </template>

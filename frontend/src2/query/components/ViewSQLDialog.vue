@@ -11,12 +11,8 @@ const query = inject('query') as Query
 </script>
 
 <template>
-	<Dialog
-		v-model="showDialog"
-		:options="{ title: __('Generated SQL'), size: '3xl' }"
-		:dismissable="true"
-	>
-		<template #body-content>
+	<Dialog v-model:open="showDialog" :title="__('Generated SQL')" size="3xl" :dismissable="true">
+		<template #default>
 			<div class="relative">
 				<div class="max-h-[50vh] overflow-y-auto rounded border text-base">
 					<Code
@@ -27,7 +23,7 @@ const query = inject('query') as Query
 					/>
 				</div>
 				<Button
-					icon="copy"
+					icon="lucide-copy"
 					variant="outline"
 					class="absolute bottom-2 right-2"
 					@click="copyToClipboard(query.result.executedSQL)"

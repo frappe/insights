@@ -8,8 +8,8 @@
 						props.isCollapsed
 							? 'w-auto px-0'
 							: open
-							  ? 'w-52 bg-white px-2 shadow-sm'
-							  : 'w-52 px-2 hover:bg-gray-200'
+							  ? 'w-52 bg-surface-elevation-2 px-2 shadow-sm'
+							  : 'w-52 px-2 hover:bg-surface-gray-3'
 					"
 				>
 					<img
@@ -25,8 +25,8 @@
 								: 'ml-2 w-auto opacity-100'
 						"
 					>
-						<div class="text-base font-medium leading-none text-gray-900">Insights</div>
-						<div class="mt-1 text-sm leading-none text-gray-700">
+						<div class="text-base-medium leading-none text-ink-gray-8">Insights</div>
+						<div class="mt-1 text-sm leading-none text-ink-gray-6">
 							{{
 								session.user.full_name == 'Administrator'
 									? __(session.user.full_name)
@@ -42,39 +42,45 @@
 								: 'ml-2 w-auto opacity-100'
 						"
 					>
-						<ChevronDown class="h-4 w-4 text-gray-600" aria-hidden="true" />
+						<ChevronDown class="h-4 w-4 text-ink-gray-5" aria-hidden="true" />
 					</div>
 				</button>
 			</template>
 		</Dropdown>
 
 		<Dialog
-			v-model="showLoginToFCDialog"
-			:options="{
-				title: __('Login to Frappe Cloud?'),
-				message: __('Are you sure you want to login to your Frappe Cloud dashboard?'),
-				actions: [
-					{
-						label: __('Confirm'),
-						variant: 'solid',
-						loading: loggingInToFC,
-						onClick() {
-							loginToFC()
+			v-model:open="showLoginToFCDialog"
+			:title="__('Login to Frappe Cloud?')"
+			:message="__('Are you sure you want to login to your Frappe Cloud dashboard?')"
+			:actions="[
+				{
+					label: __('Confirm'),
+					variant: 'solid',
+					loading: loggingInToFC,
+					onClick() {
+						loginToFC()
 
-							showLoginToFCDialog.value = false
-						},
+						showLoginToFCDialog.value = false
 					},
-				],
-			}"
+				},
+			]"
 		/>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { call, Dropdown } from 'frappe-ui'
-import { ChevronDown, HelpCircle, LogOut, MessageCircle, ToggleRight } from 'lucide-vue-next'
-import { h, ref } from 'vue'
-import { showErrorToast, waitUntil } from '../helpers'
+import { call, Dropdown, useTheme } from 'frappe-ui'
+import {
+	ChevronDown,
+	HelpCircle,
+	LogOut,
+	MessageCircle,
+	Moon,
+	Sun,
+	ToggleRight,
+} from 'lucide-vue-next'
+import { computed, h, ref } from 'vue'
+import { showErrorToast } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import session from '../session'
 import FrappeCloudIcon from './Icons/FrappeCloudIcon.vue'
@@ -84,18 +90,44 @@ const props = defineProps<{ isCollapsed?: boolean }>()
 
 const showLoginToFCDialog = ref(false)
 
-const userDropdownOptions = ref([
-	{
-		label: __('Documentation'),
-		icon: h(HelpCircle),
-		onClick: () => window.open('https://docs.frappe.io/insights', '_blank'),
-	},
-	{
-		label: __('Join Telegram Group'),
-		icon: h(MessageCircle),
-		onClick: () => window.open('https://t.me/frappeinsights', '_blank'),
-	},
-	{
+const { currentTheme, toggleTheme } = useTheme()
+const isDark = computed(() => currentTheme.value === 'dark')
+
+const userDropdownOptions = computed(() => {
+	const options: { label: string; icon: any; onClick: () => void }[] = [
+		{
+			label: __('Documentation'),
+			icon: h(HelpCircle),
+			onClick: () => window.open('https://docs.frappe.io/insights', '_blank'),
+		},
+		{
+			label: __('Join Telegram Group'),
+			icon: h(MessageCircle),
+			onClick: () => window.open('https://t.me/frappeinsights', '_blank'),
+		},
+	]
+
+	if (session.user.is_admin) {
+		options.push({
+			label: __('Switch to Desk'),
+			icon: h(ToggleRight),
+			onClick: () => window.open('/app', '_blank'),
+		})
+	}
+	if (window.is_fc_site) {
+		options.push({
+			icon: h(FrappeCloudIcon),
+			label: __('Login to Frappe Cloud'),
+			onClick: () => (showLoginToFCDialog.value = true),
+		})
+	}
+
+	options.push({
+		label: isDark.value ? __('Light mode') : __('Dark mode'),
+		icon: h(isDark.value ? Sun : Moon),
+		onClick: toggleTheme,
+	})
+	options.push({
 		label: __('Log out'),
 		icon: h(LogOut),
 		onClick: () =>
@@ -104,26 +136,10 @@ const userDropdownOptions = ref([
 				message: __('Are you sure you want to log out?'),
 				onSuccess: session.logout,
 			}),
-	},
-])
-
-waitUntil(() => session.initialized).then(() => {
-	if (session.user.is_admin) {
-		userDropdownOptions.value.splice(userDropdownOptions.value.length - 2, 0, {
-			label: __('Switch to Desk'),
-			icon: h(ToggleRight),
-			onClick: () => window.open('/app', '_blank'),
-		})
-	}
-})
-
-if (window.is_fc_site) {
-	userDropdownOptions.value.splice(userDropdownOptions.value.length - 1, 0, {
-		icon: h(FrappeCloudIcon),
-		label: __('Login to Frappe Cloud'),
-		onClick: () => (showLoginToFCDialog.value = true),
 	})
-}
+
+	return options
+})
 
 const loggingInToFC = ref(false)
 function loginToFC() {

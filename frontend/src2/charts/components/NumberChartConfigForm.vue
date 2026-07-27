@@ -68,7 +68,7 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 	<CollapsibleSection title="Options">
 		<div class="flex flex-col gap-3 pt-1">
 			<div>
-				<p class="mb-1.5 text-xs text-gray-600">Columns</p>
+				<p class="mb-1.5 text-xs text-ink-gray-5">Columns</p>
 				<div>
 					<DraggableList v-model:items="config.number_columns" group="numbers">
 						<template #item="{ item, index }">
@@ -129,7 +129,7 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 						</template>
 					</DraggableList>
 					<button
-						class="mt-1.5 text-left text-xs text-gray-600 hover:underline"
+						class="mt-1.5 text-left text-xs text-ink-gray-5 hover:underline"
 						@click="config.number_columns.push({} as any)"
 					>
 						+ Add column

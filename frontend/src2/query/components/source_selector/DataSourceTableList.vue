@@ -28,7 +28,7 @@ const listColumns = [
 		label: __('Table'),
 		key: 'table_name',
 		width: 2,
-		prefix: () => h(Table2Icon, { class: 'h-4 w-4 text-gray-600' }),
+		prefix: () => h(Table2Icon, { class: 'h-4 w-4 text-ink-gray-5' }),
 	},
 	{
 		label: __('Data Source'),
@@ -68,7 +68,7 @@ const emptyState = computed(() => {
 
 <template>
 	<div class="flex h-full flex-col gap-2 overflow-auto p-8 px-10">
-		<h1 class="text-xl font-semibold">{{ dataSource?.title }}</h1>
+		<h1 class="text-2xl-semibold">{{ dataSource?.title }}</h1>
 		<div class="flex justify-between overflow-visible py-1">
 			<div class="flex gap-2">
 				<FormControl
@@ -77,7 +77,7 @@ const emptyState = computed(() => {
 					autocomplete="off"
 				>
 					<template #prefix>
-						<SearchIcon class="h-4 w-4 text-gray-500" />
+						<SearchIcon class="h-4 w-4 text-ink-gray-4" />
 					</template>
 				</FormControl>
 			</div>
@@ -89,7 +89,7 @@ const emptyState = computed(() => {
 					@click="tableStore.updateDataSourceTables(props.data_source)"
 				>
 					<template #prefix>
-						<RefreshCcw class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+						<RefreshCcw class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 					</template>
 				</Button>
 			</div>

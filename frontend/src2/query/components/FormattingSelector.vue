@@ -44,10 +44,11 @@ const hasChanged = computed(() => {
 </script>
 
 <template>
-	<div class="min-w-[20rem] rounded-lg bg-white px-4 pb-6 pt-5 sm:px-6">
+	<div class="min-w-[20rem] rounded-lg bg-surface-base px-4 pb-6 pt-5 sm:px-6">
 		<div class="flex items-center justify-between pb-4">
-			<h3 class="text-2xl font-semibold leading-6 text-gray-900">Formatting Rule</h3>
-			<Button variant="ghost" @click="() => emit('close')" icon="x" size="md"> </Button>
+			<h3 class="text-3xl-semibold leading-6 text-ink-gray-8">Formatting Rule</h3>
+			<Button variant="ghost" @click="() => emit('close')" icon="lucide-x" size="md">
+			</Button>
 		</div>
 
 		<div class="flex flex-col gap-3">

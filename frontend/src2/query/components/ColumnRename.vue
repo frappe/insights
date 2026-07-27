@@ -15,13 +15,12 @@ function onRename() {
 </script>
 
 <template>
-	<Popover placement="right-start">
-		<template #target="{ togglePopover, isOpen }">
+	<Popover side="right" align="start">
+		<template #trigger="{ isOpen }">
 			<Button
 				variant="ghost"
-				@click="togglePopover"
 				class="w-full !justify-start"
-				:class="{ ' !bg-gray-100': isOpen }"
+				:class="{ ' !bg-surface-gray-2': isOpen }"
 			>
 				<template #icon>
 					<div class="flex w-full items-center gap-2 px-1.5 text-base">
@@ -34,12 +33,16 @@ function onRename() {
 				</template>
 			</Button>
 		</template>
-		<template #body-main="{ togglePopover }">
+		<template #default="{ toggle: togglePopover }">
 			<div class="flex flex-col gap-2 px-2.5 py-2">
 				<FormControl v-model="newName" label="New Column Name" />
 				<div class="flex justify-end gap-1">
-					<Button @click="togglePopover" icon="x"></Button>
-					<Button variant="solid" icon="check" @click=";[onRename(), togglePopover()]">
+					<Button @click="togglePopover" icon="lucide-x"></Button>
+					<Button
+						variant="solid"
+						icon="lucide-check"
+						@click=";[onRename(), togglePopover()]"
+					>
 					</Button>
 				</div>
 			</div>

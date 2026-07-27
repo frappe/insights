@@ -76,15 +76,15 @@ function toggleSort() {
 				class="flex-1"
 			>
 				<template #prefix>
-					<SearchIcon class="h-4 w-4 text-gray-400" />
+					<SearchIcon class="h-4 w-4 text-ink-gray-3" />
 				</template>
 				<template #suffix>
-					<LoadingIndicator v-if="fetchingValues" class="h-4 w-4 text-gray-600" />
+					<LoadingIndicator v-if="fetchingValues" class="h-4 w-4 text-ink-gray-5" />
 				</template>
 			</FormControl>
 			<button
 				@click.stop="toggleSort"
-				class="flex h-7 w-7 items-center justify-center rounded border border-gray-300 bg-white hover:bg-gray-50"
+				class="flex h-7 w-7 items-center justify-center rounded border border-outline-gray-2 bg-surface-base hover:bg-surface-gray-1"
 				:title="sortOrder === 'asc' ? 'Sort descending' : 'Sort ascending'"
 			>
 				<component :is="sortOrder === 'asc' ? ArrowDownAZ : ArrowUpAZ" class="h-4 w-4" />
@@ -94,7 +94,7 @@ function toggleSort() {
 			<div
 				v-for="(value, idx) in sortedValues.slice(0, 50)"
 				:key="value || idx"
-				class="flex cursor-pointer items-center justify-between gap-2 rounded px-1 py-1.5 text-base hover:bg-gray-100"
+				class="flex cursor-pointer items-center justify-between gap-2 rounded px-1 py-1.5 text-base hover:bg-surface-gray-2"
 				@click.prevent.stop="toggleValue(value)"
 			>
 				<Checkbox

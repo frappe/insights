@@ -25,7 +25,7 @@
 					:w="layout.w"
 					:h="layout.h"
 				>
-					<pre class="h-full w-full rounded bg-white p-4 shadow">
+					<pre class="h-full w-full rounded bg-surface-base p-4 shadow-sm">
 						{{ { i: layout.i, x: layout.x, y: layout.y, w: layout.w, h: layout.h } }}
 					</pre
 					>
@@ -74,7 +74,7 @@ const options = reactive({
 
 <style>
 .vgl-layout {
-	--vgl-placeholder-bg: #b1b1b1;
+	--vgl-placeholder-bg: var(--ink-gray-5);
 	--vgl-placeholder-opacity: 15%;
 	--vgl-placeholder-z-index: 2;
 
@@ -84,7 +84,7 @@ const options = reactive({
 	--vgl-item-dragging-opacity: 100%;
 
 	--vgl-resizer-size: 10px;
-	--vgl-resizer-border-color: #444;
+	--vgl-resizer-border-color: var(--outline-gray-5);
 	--vgl-resizer-border-width: 2px;
 }
 

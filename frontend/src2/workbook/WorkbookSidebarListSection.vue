@@ -22,26 +22,28 @@ function setDraggedItem(event: DragEvent, row: any) {
 	<div class="flex flex-col px-3.5 pt-3">
 		<div class="mb-1 flex h-6 items-center justify-between">
 			<div class="flex items-center gap-1">
-				<div class="text-sm font-medium">{{ section.title }}</div>
+				<div class="text-sm-medium">{{ section.title }}</div>
 			</div>
 			<div>
 				<Button class="!h-fit !p-1" variant="ghost" @click="section.add()">
-					<Plus class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+					<Plus class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 				</Button>
 			</div>
 		</div>
 		<div
 			v-if="!section.items.length"
-			class="flex h-12 flex-col items-center justify-center rounded border border-dashed border-gray-300 py-2"
+			class="flex h-12 flex-col items-center justify-center rounded border border-dashed border-outline-gray-2 py-2"
 		>
-			<div class="text-xs text-gray-500">{{ section.emptyMessage }}</div>
+			<div class="text-xs text-ink-gray-4">{{ section.emptyMessage }}</div>
 		</div>
 		<div v-else class="flex flex-col border-b pb-3">
 			<div
 				v-for="(row, idx) in section.items"
 				:key="row[section.itemKey]"
-				class="group w-full cursor-pointer rounded transition-all hover:bg-gray-100"
-				:class="section.isActive(row) ? ' bg-gray-100' : ' hover:border-gray-300'"
+				class="group w-full cursor-pointer rounded transition-all hover:bg-surface-gray-2"
+				:class="
+					section.isActive(row) ? ' bg-surface-gray-2' : ' hover:border-outline-gray-2'
+				"
 				draggable="true"
 				@dragstart="setDraggedItem($event, row)"
 			>
@@ -56,10 +58,10 @@ function setDraggedItem(event: DragEvent, row: any) {
 						<p class="truncate">{{ row.title }}</p>
 					</div>
 					<button
-						class="invisible cursor-pointer rounded px-1.5 py-1 transition-all hover:bg-gray-100 group-hover:visible"
+						class="invisible cursor-pointer rounded px-1.5 py-1 transition-all hover:bg-surface-gray-2 group-hover:visible"
 						@click.prevent.stop="section.remove(row)"
 					>
-						<X class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+						<X class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 					</button>
 				</router-link>
 			</div>

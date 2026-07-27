@@ -51,8 +51,8 @@ const activeTab = shallowRef<Tab>(tabGroups[0].tabs[0])
 </script>
 
 <template>
-	<Dialog v-model="showDialog" :options="{ size: '4xl' }">
-		<template #body>
+	<Dialog v-model:open="showDialog" size="4xl" bare>
+		<template #default>
 			<div class="relative flex text-base" :style="{ height: 'calc(100vh - 12rem)' }">
 				<TabbedSidebarLayout
 					:title="__('Settings')"

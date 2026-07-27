@@ -1,30 +1,26 @@
 <template>
 	<div class="m-2 flex transition duration-200 ease-out">
-		<div :class="['w-[22rem] rounded bg-white p-3 shadow-md', variantClasses]">
+		<div :class="['w-[22rem] rounded bg-surface-base p-3 shadow-md', variantClasses]">
 			<div class="flex items-start">
-				<div v-if="icon || variantIcon" class="mr-2 pt-1">
-					<FeatherIcon
-						:name="icon || variantIcon"
+				<div v-if="iconComponent" class="mr-2 pt-1">
+					<component
+						:is="iconComponent"
 						:class="['h-4 w-4 rounded-full', variantIconClasses, iconClasses]"
 					/>
 				</div>
 				<div>
 					<slot>
-						<p class="text-p-base font-medium text-gray-900">
+						<p class="text-p-base-medium text-ink-gray-8">
 							{{ title }}
 						</p>
-						<p v-if="message" class="text-p-sm text-gray-600">
+						<p v-if="message" class="text-p-sm text-ink-gray-5">
 							<span v-if="containsHTML" v-html="message"></span>
 							<span v-else>{{ message }}</span>
 						</p>
 					</slot>
 				</div>
 				<div class="ml-auto pl-2">
-					<slot name="actions">
-						<!-- <button class="grid h-5 w-5 place-items-center rounded hover:bg-gray-100">
-							<FeatherIcon name="x" class="h-4 w-4 text-gray-700" />
-						</button> -->
-					</slot>
+					<slot name="actions" />
 				</div>
 			</div>
 		</div>
@@ -32,14 +28,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { Check, CircleAlert, Info, X } from 'lucide-vue-next'
+import { computed, type Component } from 'vue'
 import { ToastVariant } from '../helpers/toasts'
 
 const props = defineProps<{
 	title: string
 	message?: string
 	variant: ToastVariant
-	icon?: string
+	icon?: Component
 	iconClasses?: string
 }>()
 
@@ -47,33 +44,35 @@ const containsHTML = computed(() => props.message?.includes('<'))
 
 const variantClasses = computed(() => {
 	if (props.variant === 'success') {
-		return 'bg-green-50'
+		return 'bg-surface-green-1'
 	}
 	if (props.variant === 'info') {
-		return 'bg-blue-50'
+		return 'bg-surface-blue-1'
 	}
 	if (props.variant === 'warning') {
-		return 'bg-orange-50'
+		return 'bg-surface-orange-1'
 	}
 	if (props.variant === 'error') {
-		return 'bg-red-50'
+		return 'bg-surface-red-1'
 	}
 })
 
 const variantIcon = computed(() => {
 	if (props.variant === 'success') {
-		return 'check'
+		return Check
 	}
 	if (props.variant === 'info') {
-		return 'info'
+		return Info
 	}
 	if (props.variant === 'warning') {
-		return 'alert-circle'
+		return CircleAlert
 	}
 	if (props.variant === 'error') {
-		return 'x'
+		return X
 	}
 })
+
+const iconComponent = computed(() => props.icon || variantIcon.value)
 
 const variantIconClasses = computed(() => {
 	if (props.variant === 'success') {

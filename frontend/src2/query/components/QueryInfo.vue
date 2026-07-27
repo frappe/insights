@@ -28,7 +28,7 @@ function toggleLiveConnection(enable: boolean) {
 	<div class="flex flex-col px-3.5 pt-3">
 		<div class="mb-1 flex h-6 items-center justify-between">
 			<div class="flex items-center gap-1">
-				<div class="text-sm font-medium">Details</div>
+				<div class="text-sm-medium">Details</div>
 			</div>
 			<div></div>
 		</div>

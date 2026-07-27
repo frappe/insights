@@ -86,15 +86,15 @@ const fetchColumnValues = debounce((searchTxt: string) => {
 
 <template>
 	<div class="flex flex-1 gap-2">
-		<div id="column_name" class="!min-w-[140px] flex-1 flex-shrink-0">
-			<Autocomplete
+		<div id="column_name" class="flex-1 flex-shrink-0">
+			<Combobox
 				placeholder="Column"
 				:modelValue="filter.column.column_name"
 				:options="props.columnOptions"
-				@update:modelValue="onColumnChange($event?.value)"
+				@update:modelValue="onColumnChange($event)"
 			/>
 		</div>
-		<div id="operator" class="!min-w-[100px] flex-1">
+		<div id="operator" class="flex-1">
 			<FormControl
 				type="select"
 				placeholder="Operator"
@@ -104,7 +104,7 @@ const fetchColumnValues = debounce((searchTxt: string) => {
 				@update:modelValue="onOperatorChange($event)"
 			/>
 		</div>
-		<div id="value" class="!min-w-[140px] flex-1 flex-shrink-0">
+		<div id="value" class="flex-1 flex-shrink-0">
 			<FormControl
 				v-if="valueSelectorType === 'text'"
 				v-model="filter.value"
@@ -127,24 +127,23 @@ const fetchColumnValues = debounce((searchTxt: string) => {
 			<DatePickerControl
 				v-else-if="valueSelectorType === 'date_range'"
 				:range="true"
-				v-model="(filter.value as string[])"
+				v-model="filter.value as string[]"
 				placeholder="Select Date"
 			/>
 			<RelativeDatePickerControl
 				v-else-if="valueSelectorType === 'relative_date'"
-				v-model="(filter.value as string)"
+				v-model="filter.value as string"
 				placeholder="Relative Date"
 			/>
-			<Autocomplete
+			<MultiSelect
 				v-else-if="valueSelectorType === 'select'"
 				class="max-w-[200px]"
 				placeholder="Value"
-				:multiple="true"
-				:modelValue="filter.value || []"
-				:options="distinctColumnValues"
+				:modelValue="(filter.value as string[]) || []"
+				:options="distinctColumnValues.map((v: any) => ({ label: String(v), value: v }))"
 				:loading="fetchingValues"
 				@update:query="fetchColumnValues"
-				@update:modelValue="filter.value = $event?.map((v: any) => v.value) || []"
+				@update:modelValue="filter.value = $event || []"
 			/>
 			<FormControl v-else disabled />
 		</div>

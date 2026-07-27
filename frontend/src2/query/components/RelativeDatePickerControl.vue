@@ -11,17 +11,16 @@ const relativeDate = defineModel<string>({
 
 <template>
 	<Popover class="flex w-full [&>div:first-child]:w-full">
-		<template #target="{ togglePopover }">
+		<template #trigger>
 			<input
 				readonly
 				type="text"
 				:value="relativeDate"
 				:placeholder="props.placeholder"
-				@focus="togglePopover()"
-				class="form-input block h-7 w-full cursor-text select-none rounded border-gray-400 text-sm placeholder-gray-500"
+				class="form-input block h-7 w-full cursor-text select-none rounded border-outline-gray-3 text-sm placeholder-ink-gray-4"
 			/>
 		</template>
-		<template #body-main="{ togglePopover }">
+		<template #default="{ toggle: togglePopover }">
 			<div class="flex flex-col p-2">
 				<RelativeDatePicker v-model="relativeDate" />
 				<div class="mt-2 flex justify-end">

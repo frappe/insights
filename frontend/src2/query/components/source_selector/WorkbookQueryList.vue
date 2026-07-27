@@ -32,7 +32,7 @@ const listColumns = [
 		label: __('Title'),
 		key: 'title',
 		width: 2,
-		prefix: () => h(Table2Icon, { class: 'h-4 w-4 text-gray-600' }),
+		prefix: () => h(Table2Icon, { class: 'h-4 w-4 text-ink-gray-5' }),
 	},
 	{
 		label: __('Source'),
@@ -56,7 +56,7 @@ const listColumns = [
 
 <template>
 	<div class="flex h-full flex-col gap-2 overflow-auto p-8 px-10">
-		<h1 class="text-xl font-semibold">{{ __('Queries') }}</h1>
+		<h1 class="text-2xl-semibold">{{ __('Queries') }}</h1>
 		<div class="flex justify-between overflow-visible py-1">
 			<div class="flex gap-2">
 				<FormControl
@@ -65,7 +65,7 @@ const listColumns = [
 					autocomplete="off"
 				>
 					<template #prefix>
-						<SearchIcon class="h-4 w-4 text-gray-500" />
+						<SearchIcon class="h-4 w-4 text-ink-gray-4" />
 					</template>
 				</FormControl>
 			</div>

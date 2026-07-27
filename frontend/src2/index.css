@@ -2,7 +2,18 @@
 @import './styles/codemirror.css';
 
 body {
-	@apply text-base;
+	/* Base ink color so any text without an explicit text-ink-* class still
+	   flips with the theme instead of falling back to default black. */
+	@apply text-base text-ink-gray-8;
+}
+
+/* Focus-ring offset gap should match the surface, not Tailwind's default white,
+   so rings with `ring-offset-*` flip with the theme (editable titles, table
+   column headers). Unlayered so it wins over Tailwind's base default. */
+*,
+::before,
+::after {
+	--tw-ring-offset-color: var(--surface-base);
 }
 
 .tnum {
@@ -17,11 +28,19 @@ body {
 	z-index: 100 !important;
 }
 
+/* Combobox/MultiSelect dropdowns match their trigger width. frappe-ui applies
+   this only to input-mode Combobox; a custom #trigger (button mode) drops it and
+   exposes no prop, so restore it here. min-width only grows the panel, so narrow
+   triggers with wider content are unaffected. data-size excludes Popover content. */
+[data-slot='content'][data-size] {
+	min-width: var(--reka-combobox-trigger-width);
+}
+
 @layer components {
 	/* Works on Firefox */
 	* {
 		scrollbar-width: thin;
-		scrollbar-color: #c0c6cc #ebeef0;
+		scrollbar-color: var(--surface-gray-5) var(--surface-gray-2);
 	}
 
 	html {
@@ -30,13 +49,13 @@ body {
 
 	/* Works on Chrome, Edge, and Safari */
 	*::-webkit-scrollbar-thumb {
-		background: #e2e8f0;
+		background: var(--surface-gray-5);
 		border-radius: 6px;
 	}
 
 	*::-webkit-scrollbar-track,
 	*::-webkit-scrollbar-corner {
-		background: #f8fafc;
+		background: var(--surface-gray-2);
 	}
 
 	*::-webkit-scrollbar {
@@ -62,4 +81,8 @@ body {
 
 .lucide {
 	stroke-width: 1.5;
+}
+
+.border {
+	@apply border-outline-gray-2;
 }

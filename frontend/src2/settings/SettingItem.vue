@@ -8,8 +8,8 @@ const props = defineProps<{
 <template>
 	<div class="flex items-start justify-between gap-8">
 		<div class="flex w-3/4 flex-col">
-			<span class="text-p-base font-medium">{{ label }}</span>
-			<span class="text-p-sm text-gray-600">
+			<span class="text-p-base-medium">{{ label }}</span>
+			<span class="text-p-sm text-ink-gray-5">
 				{{ description }}
 			</span>
 		</div>

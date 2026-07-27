@@ -58,25 +58,23 @@ function confirmSelection() {
 
 <template>
 	<Dialog
-		v-model="showDialog"
-		:options="{
-			size: 'sm',
-			title: __('Select Charts'),
-			actions: [
-				{
-					label: __('Add'),
-					variant: 'solid',
-					disabled: areNoneSelected,
-					onClick: confirmSelection,
-				},
-				{
-					label: __('Cancel'),
-					onClick: () => (showDialog = false),
-				},
-			],
-		}"
+		v-model:open="showDialog"
+		size="sm"
+		:title="__('Select Charts')"
+		:actions="[
+			{
+				label: __('Add'),
+				variant: 'solid',
+				disabled: areNoneSelected,
+				onClick: confirmSelection,
+			},
+			{
+				label: __('Cancel'),
+				onClick: () => (showDialog = false),
+			},
+		]"
 	>
-		<template #body-content>
+		<template #default>
 			<div class="-mb-5 flex flex-col gap-2 p-0.5">
 				<div class="flex gap-2">
 					<FormControl
@@ -86,7 +84,7 @@ function confirmSelection() {
 						v-model="searchQuery"
 					>
 						<template #prefix>
-							<SearchIcon class="h-4 w-4 text-gray-500" />
+							<SearchIcon class="h-4 w-4 text-ink-gray-4" />
 						</template>
 					</FormControl>
 					<Button @click="toggleSelectAll">
@@ -102,7 +100,7 @@ function confirmSelection() {
 				>
 					<template v-for="chart in filteredCharts" :key="chart.name">
 						<div
-							class="flex h-7 flex-shrink-0 cursor-pointer items-center justify-between rounded px-2 p-4 hover:bg-gray-100"
+							class="flex h-7 flex-shrink-0 cursor-pointer items-center justify-between rounded px-2 p-4 hover:bg-surface-gray-2"
 							@click="toggleChart(chart)"
 						>
 							<div class="flex items-center gap-2 py-4">
@@ -116,7 +114,7 @@ function confirmSelection() {
 								class="h-4 w-4 flex flex-shrink-0"
 								stroke-width="1.5"
 								:is="isSelected(chart) ? CheckSquare : SquareIcon"
-								:class="isSelected(chart) ? 'text-gray-900' : 'text-gray-600'"
+								:class="isSelected(chart) ? 'text-ink-gray-8' : 'text-ink-gray-5'"
 							/>
 						</div>
 					</template>

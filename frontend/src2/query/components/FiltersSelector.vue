@@ -67,7 +67,7 @@ const areFiltersUpdated = computed(() => {
 		class="mb-3 flex items-start justify-between gap-2"
 	>
 		<div class="flex flex-1 items-start gap-2">
-			<div class="flex h-7 w-15 flex-shrink-0 items-center text-base text-gray-600">
+			<div class="flex h-7 w-15 flex-shrink-0 items-center text-base text-ink-gray-5">
 				<span v-if="i == 0">Where</span>
 				<Button
 					v-else
@@ -81,7 +81,7 @@ const areFiltersUpdated = computed(() => {
 					"
 				>
 					<template #prefix>
-						<RefreshCcw class="h-3 w-3 text-gray-700" stroke-width="1.5" />
+						<RefreshCcw class="h-3 w-3 text-ink-gray-6" stroke-width="1.5" />
 					</template>
 					{{ filterGroup.logical_operator.toLowerCase() }}
 				</Button>
@@ -104,7 +104,7 @@ const areFiltersUpdated = computed(() => {
 			<Dropdown
 				placement="right"
 				:button="{
-					icon: 'more-horizontal',
+					icon: 'lucide-more-horizontal',
 					variant: 'ghost',
 				}"
 				:options="[
@@ -130,13 +130,13 @@ const areFiltersUpdated = computed(() => {
 			/>
 		</div>
 	</div>
-	<div v-else class="mb-3 flex h-7 items-center px-0 text-sm text-gray-600">
+	<div v-else class="mb-3 flex h-7 items-center px-0 text-sm text-ink-gray-5">
 		{{ __("Empty - Click 'Add Filter' to add a filter") }}
 	</div>
 	<div class="mt-2 flex items-center justify-between gap-2">
 		<Button @click="addFilter" :label="__('Add Filter')">
 			<template #prefix>
-				<PlusIcon class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+				<PlusIcon class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 			</template>
 		</Button>
 		<div class="flex items-center gap-2">

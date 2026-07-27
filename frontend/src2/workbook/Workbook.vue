@@ -86,15 +86,15 @@ watchEffect(() => {
 				<component :is="Component" />
 				<div v-if="false" class="flex flex-1 items-center justify-center">
 					<div class="flex flex-col items-center gap-4">
-						<AlertOctagon class="h-16 w-16 text-gray-400" stroke-width="1" />
+						<AlertOctagon class="h-16 w-16 text-ink-gray-3" stroke-width="1" />
 						<p
 							v-if="workbook.doc.queries.length"
-							class="text-center text-lg leading-4 text-gray-500"
+							class="text-center text-lg leading-4 text-ink-gray-4"
 						>
 							This tab doesn't exist <br />
 							Try switching to another tab
 						</p>
-						<p v-else class="text-center text-lg leading-5 text-gray-500">
+						<p v-else class="text-center text-lg leading-5 text-ink-gray-4">
 							You haven't added any queries yet <br />
 							Click on the "+" button to add a new query
 						</p>

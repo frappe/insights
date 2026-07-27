@@ -38,7 +38,7 @@ watch(
 		getRowCount(table.data_source, table.table_name).then((count) => {
 			table.table_row_count = count
 		})
-	}
+	},
 )
 
 function cancelImport() {
@@ -56,24 +56,24 @@ function importTable() {
 </script>
 
 <template>
-	<Dialog v-model="show" :options="{ title: __('Import Table'), size: 'md' }">
-		<template #body-content>
+	<Dialog v-model:open="show" :title="__('Import Table')" size="md">
+		<template #default>
 			<div class="flex w-full flex-col gap-2">
 				<div class="flex flex-col gap-4">
-					<Autocomplete
+					<Combobox
 						label="Data Source"
 						placeholder="Select Data Source"
 						:modelValue="table.data_source"
-						@update:modelValue="table.data_source = $event?.value"
+						@update:modelValue="table.data_source = $event"
 						:options="getDataSourceOptions()"
 					/>
-					<Autocomplete
+					<Combobox
 						label="Table"
 						placeholder="Select Table"
-						v-model:query="dataSourceTableQuery"
+						@update:query="dataSourceTableQuery = $event"
 						:disabled="!table.data_source"
 						:modelValue="table.table_name"
-						@update:modelValue="table.table_name = $event?.value"
+						@update:modelValue="table.table_name = $event"
 						:options="tableOptions"
 					/>
 					<div v-if="table.table_name">
@@ -82,7 +82,7 @@ function importTable() {
 							label="No. of rows to import"
 							v-model="table.row_limit"
 						/>
-						<p class="mt-1 text-xs text-gray-500">
+						<p class="mt-1 text-xs text-ink-gray-4">
 							Selected table has {{ formatNumber(table.table_row_count) }} rows.
 						</p>
 					</div>

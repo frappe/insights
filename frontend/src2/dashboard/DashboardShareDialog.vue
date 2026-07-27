@@ -4,7 +4,6 @@ import { computed, inject, ref, unref } from 'vue'
 import UserSelector from '../components/UserSelector.vue'
 import { copy, copyToClipboard } from '../helpers'
 import session from '../session'
-import { DropdownOption } from '../types/query.types'
 import useUserStore from '../users/users'
 import { Dashboard } from './dashboard'
 import { createToast } from '../helpers/toasts'
@@ -69,37 +68,34 @@ const generalAccess = computed({
 		if (organizationAccess.value) return 'organization'
 		return 'specific'
 	},
-	set: (option: DropdownOption) => {
-		isPublic.value = option.value == 'anyone'
-		organizationAccess.value = option.value == 'organization'
+	set: (value: string) => {
+		isPublic.value = value == 'anyone'
+		organizationAccess.value = value == 'organization'
 	},
 })
 </script>
 
 <template>
 	<Dialog
-		v-model="show"
-		:options="{
-			title: __('Share Dashboard'),
-			actions: [
-				{
-					label: __('Done'),
-					variant: 'solid',
-					disabled: !hasChanged,
-					onClick: saveChanges,
-				},
-			],
-		}"
+		v-model:open="show"
+		:title="__('Share Dashboard')"
+		:actions="[
+			{
+				label: __('Done'),
+				variant: 'solid',
+				disabled: !hasChanged,
+				onClick: saveChanges,
+			},
+		]"
 	>
-		<template #body-content>
+		<template #default>
 			<div class="flex flex-col gap-4">
 				<div class="flex flex-col gap-2">
-					<span class="text-sm text-gray-600">General Access</span>
+					<span class="text-sm text-ink-gray-5">General Access</span>
 					<div class="flex gap-2">
 						<div class="flex-1">
-							<Autocomplete
+							<Combobox
 								placeholder="Select an option"
-								:hide-search="true"
 								v-model="generalAccess"
 								:options="[
 									{
@@ -116,18 +112,20 @@ const generalAccess = computed({
 									},
 								]"
 							>
-							</Autocomplete>
+							</Combobox>
 						</div>
 						<Tooltip text="Copy Link" :hoverDelay="0.1">
-							<Button icon="link-2" @click="copyToClipboard(shareLink)"> </Button>
+							<Button icon="lucide-link-2" @click="copyToClipboard(shareLink)">
+							</Button>
 						</Tooltip>
 						<Tooltip text="Copy Embed" :hoverDelay="0.1">
-							<Button icon="code" @click="copyToClipboard(iFrameLink)"> </Button>
+							<Button icon="lucide-code" @click="copyToClipboard(iFrameLink)">
+							</Button>
 						</Tooltip>
 					</div>
 				</div>
 
-				<hr class="my-1 border-t border-gray-200" />
+				<hr class="my-1 border-t border-outline-gray-1" />
 
 				<div class="flex flex-col">
 					<div class="mb-4 flex w-full gap-2">
@@ -146,13 +144,13 @@ const generalAccess = computed({
 							@click="addSharedUser"
 						></Button>
 					</div>
-					<span class="mb-2 text-sm text-gray-600">People with access</span>
+					<span class="mb-2 text-sm text-ink-gray-5">People with access</span>
 					<div class="flex flex-col gap-1 overflow-y-auto">
 						<div class="flex w-full items-center gap-2 py-1">
 							<Avatar size="xl" label="You" :image="session.user.user_image" />
 							<div class="flex flex-1 flex-col">
 								<div class="leading-5">You</div>
-								<div class="text-xs text-gray-600">
+								<div class="text-xs text-ink-gray-5">
 									{{ session.user.email }}
 								</div>
 							</div>
@@ -166,11 +164,11 @@ const generalAccess = computed({
 							<Avatar size="xl" :label="user.full_name" :image="user.user_image" />
 							<div class="flex flex-1 flex-col">
 								<div class="leading-5">{{ user.full_name }}</div>
-								<div class="text-xs text-gray-600">{{ user.email }}</div>
+								<div class="text-xs text-ink-gray-5">{{ user.email }}</div>
 							</div>
 							<Button
 								variant="ghost"
-								icon="x"
+								icon="lucide-x"
 								@click="peopleWithAccess.splice(peopleWithAccess.indexOf(user), 1)"
 							></Button>
 						</div>

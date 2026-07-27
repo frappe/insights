@@ -80,7 +80,7 @@ const editTeam = ref<Team | null>(null)
 
 <template>
 	<div class="flex w-full flex-col gap-6 overflow-y-scroll p-8 px-10">
-		<h1 class="text-xl font-semibold">Permissions</h1>
+		<h1 class="text-2xl-semibold">Permissions</h1>
 
 		<SettingItem
 			label="Enable"
@@ -116,7 +116,7 @@ const editTeam = ref<Team | null>(null)
 					@click="showCreateTeamDialog = true"
 				>
 					<template #prefix>
-						<Plus class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+						<Plus class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 					</template>
 				</Button>
 			</SettingItem>

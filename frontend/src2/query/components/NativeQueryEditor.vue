@@ -63,7 +63,7 @@ async function format() {
 const extraActions = () => [
 	{
 		label: __('Format SQL'),
-		icon: h(Wand2, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
+		icon: h(Wand2, { class: 'h-3 w-3 text-ink-gray-6', strokeWidth: 1.5 }),
 		onClick: () => format(),
 	},
 ]
@@ -149,7 +149,9 @@ useShortcut('Meta+e', () => {
 		</div>
 
 		<!-- Right Sidebar -->
-		<div class="relative flex h-full w-[19rem] flex-shrink-0 flex-col overflow-y-auto bg-white">
+		<div
+			class="relative flex h-full w-[19rem] flex-shrink-0 flex-col overflow-y-auto bg-surface-base"
+		>
 			<QueryInfo />
 
 			<!-- Schema Explorer -->
