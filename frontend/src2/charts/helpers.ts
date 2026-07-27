@@ -602,13 +602,28 @@ function getDonutChartData(
 
 export function getFunnelChartOptions(config: FunnelChartConfig, result: QueryResult) {
 	const rows = result.rows
-
-	const labelColumn = config.label_column.dimension_name
-	const valueColumn = config.value_column.measure_name
 	const show_percentage = config.show_percentage ?? true
 
-	const categories = rows.map((r) => r[labelColumn] as string)
-	const dataValues = rows.map((r) => r[valueColumn] as number)
+	// Measures mode: each measure is a stage. The data_query aggregates them with
+	// no group-by, so the result is a single row with one column per measure.
+	const measures = config.measures?.filter((m) => m.measure_name)
+
+	let categories: string[]
+	let dataValues: number[]
+	let seriesName: string
+
+	if (measures?.length) {
+		const row = rows[0] || {}
+		categories = measures.map((m) => m.measure_name)
+		dataValues = measures.map((m) => Number(row[m.measure_name]) || 0)
+		seriesName = 'Funnel'
+	} else {
+		const labelColumn = config.label_column?.dimension_name as string
+		const valueColumn = config.value_column?.measure_name as string
+		categories = rows.map((r) => r[labelColumn] as string)
+		dataValues = rows.map((r) => r[valueColumn] as number)
+		seriesName = valueColumn
+	}
 
 	const count = dataValues.length
 	const colors = Array.from({ length: count }, (_, i) => {
@@ -676,7 +691,7 @@ export function getFunnelChartOptions(config: FunnelChartConfig, result: QueryRe
 		series: [
 			{
 				type: 'custom',
-				name: valueColumn,
+				name: seriesName,
 				emphasis: { disabled: true },
 				data: dataValues.map((val, i) => ({
 					name: categories[i],

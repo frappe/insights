@@ -21,6 +21,7 @@ import {
 	BubbleChartConfig,
 	CHARTS,
 	DonutChartConfig,
+	FunnelChartConfig,
 	MapChartConfig,
 	NumberChartConfig,
 	TableChartConfig,
@@ -139,7 +140,7 @@ function makeChart(name: string) {
 			}
 		}
 
-		if (chart.doc.chart_type === 'Donut' || chart.doc.chart_type === 'Funnel') {
+		if (chart.doc.chart_type === 'Donut') {
 			const config = chart.doc.config as DonutChartConfig
 			if (!config.label_column?.column_name) {
 				messages.push({
@@ -151,6 +152,19 @@ function makeChart(name: string) {
 				messages.push({
 					variant: 'error',
 					message: __('Value column is required'),
+				})
+			}
+		}
+
+		if (chart.doc.chart_type === 'Funnel') {
+			const config = chart.doc.config as FunnelChartConfig
+			// Measures mode needs at least one measure; grouped mode needs label + value.
+			if (config.measures?.some((m) => m.measure_name)) {
+				// valid measures-mode config
+			} else if (!config.label_column?.column_name || !config.value_column?.measure_name) {
+				messages.push({
+					variant: 'error',
+					message: __('Add a measure, or set a label and value column'),
 				})
 			}
 		}
@@ -226,8 +240,12 @@ function makeChart(name: string) {
 			addNumberChartOperation(query)
 		}
 
-		if (chart.doc.chart_type === 'Donut' || chart.doc.chart_type === 'Funnel') {
+		if (chart.doc.chart_type === 'Donut') {
 			addDonutChartOperation(query)
+		}
+
+		if (chart.doc.chart_type === 'Funnel') {
+			addFunnelChartOperation(query)
 		}
 
 		if (chart.doc.chart_type === 'Table') {
@@ -277,6 +295,32 @@ function makeChart(name: string) {
 	function addDonutChartOperation(query: Query) {
 		const config = chart.doc.config as DonutChartConfig
 
+		query.addSummarize({
+			measures: [config.value_column],
+			dimensions: [config.label_column],
+		})
+		query.addOrderBy({
+			column: column(config.value_column.measure_name),
+			direction: 'desc',
+		})
+	}
+
+	function addFunnelChartOperation(query: Query) {
+		const config = chart.doc.config as FunnelChartConfig
+
+		// Measures mode: each measure is a stage, aggregated over the whole
+		// result with no group-by (mirrors the Number chart's data_query).
+		const measures = config.measures?.filter((m) => m.measure_name)
+		if (measures?.length) {
+			query.addSummarize({
+				measures,
+				dimensions: [],
+			})
+			return
+		}
+
+		// Grouped (long-format) mode: one row per stage, ordered by value.
+		if (!config.value_column?.measure_name || !config.label_column?.column_name) return
 		query.addSummarize({
 			measures: [config.value_column],
 			dimensions: [config.label_column],
