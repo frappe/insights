@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Calendar, Check } from 'lucide-vue-next'
 import { h, inject, watchEffect } from 'vue'
-import { FIELDTYPES, granularityOptions } from '../../helpers/constants'
+import { FIELDTYPES, getGranularityOptions } from '../../helpers/constants'
 import QueryDataTable from '../../query/components/QueryDataTable.vue'
 import { column } from '../../query/helpers'
 import { SortDirection } from '../../types/query.types'
@@ -18,14 +18,14 @@ watchEffect(() => {
 
 function onSortChange(column_name: string, sort_order: SortDirection) {
 	const existingOrder = chart.doc.config.order_by.find(
-		(order) => order.column.column_name === column_name
+		(order) => order.column.column_name === column_name,
 	)
 	if (existingOrder) {
 		if (sort_order) {
 			existingOrder.direction = sort_order
 		} else {
 			chart.doc.config.order_by = chart.doc.config.order_by.filter(
-				(order) => order.column.column_name !== column_name
+				(order) => order.column.column_name !== column_name,
 			)
 		}
 	} else {
@@ -37,8 +37,8 @@ function onSortChange(column_name: string, sort_order: SortDirection) {
 	}
 }
 
-function getDateGranularityOptions(column_name: string) {
-	return granularityOptions.map((option) => {
+function getDateGranularityOptions(column_name: string, column_type: string) {
+	return getGranularityOptions(column_type).map((option) => {
 		const _option = { ...option } as any
 		_option.onClick = () => chart.updateGranularity(column_name, option.value)
 		_option.icon =
@@ -69,7 +69,7 @@ function getDateGranularityOptions(column_name: string) {
 			<template #header-suffix="{ column }">
 				<Dropdown
 					v-if="FIELDTYPES.DATE.includes(column.type)"
-					:options="getDateGranularityOptions(column.name)"
+					:options="getDateGranularityOptions(column.name, column.type)"
 				>
 					<Button variant="ghost" class="rounded-none">
 						<template #icon>

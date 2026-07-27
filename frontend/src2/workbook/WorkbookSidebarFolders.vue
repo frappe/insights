@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ChevronDown, ChevronRight, Plus, X , Folder, PenLine } from 'lucide-vue-next'
+import { Folder, FolderOpen, FolderPlus, PenLine, Plus, X } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
+import Draggable from 'vuedraggable'
 import type { WorkbookChart, WorkbookFolder, WorkbookQuery } from '../types/workbook.types'
 import { workbookKey } from './workbook'
 
@@ -17,6 +18,10 @@ const section = defineProps<{
 }>()
 
 const workbook = inject(workbookKey)!
+
+// One shared group so items can be dragged freely between the root list and
+// any folder list of the same section type.
+const dragGroup = computed(() => `${section.type}-items`)
 
 const folders = computed(() => {
 	return (workbook.doc.folders || []).filter((f) => f.type === section.type)
@@ -67,7 +72,6 @@ function removeFolder(folder: WorkbookFolder, event: Event) {
 
 const editingFolderName = ref<string | null>(null)
 const editingFolderTitle = ref('')
-const renameFolderInput = ref<HTMLInputElement | null>(null)
 
 function startRenameFolder(folder: WorkbookFolder, event: Event) {
 	event.stopPropagation()
@@ -75,7 +79,9 @@ function startRenameFolder(folder: WorkbookFolder, event: Event) {
 	editingFolderTitle.value = folder.title
 	// Focus input on next tick
 	setTimeout(() => {
-		const input = document.querySelector(`input[data-folder="${folder.name}"]`) as HTMLInputElement
+		const input = document.querySelector(
+			`input[data-folder="${folder.name}"]`,
+		) as HTMLInputElement
 		if (input) {
 			input.focus()
 			input.select()
@@ -91,155 +97,35 @@ function finishRenameFolder(folder: WorkbookFolder) {
 	editingFolderName.value = null
 }
 
-const draggedItem = ref<{ type: string; item: any; folder?: string } | null>(null)
-const dragOverFolder = ref<string | null>(null)
-const dragOverItem = ref<string | null>(null)
-const dragPosition = ref<'before' | 'after' | null>(null)
-
-function setDraggedItem(event: DragEvent, row: any, folder?: string) {
-	if (!event.dataTransfer) return
-	draggedItem.value = { type: section.type, item: row, folder }
-	const data = JSON.stringify(draggedItem.value)
-	event.dataTransfer.setData('text/plain', data)
-	event.dataTransfer.effectAllowed = 'move'
-
-	const target = event.currentTarget as HTMLElement
-	target.classList.add('dragging')
-}
-
-function onDragEnd(event: DragEvent) {
-	const target = event.currentTarget as HTMLElement
-	target.classList.remove('dragging')
-	draggedItem.value = null
-	dragOverFolder.value = null
-	dragOverItem.value = null
-	dragPosition.value = null
-}
-
-function onDragOverItem(event: DragEvent, item: any) {
-	if (!draggedItem.value || draggedItem.value.type !== section.type) return
-	if (draggedItem.value.item.name === item.name) return
-
-	event.preventDefault()
-	const target = event.currentTarget as HTMLElement
-	const rect = target.getBoundingClientRect()
-	const midpoint = rect.top + rect.height / 2
-
-	if (event.clientY < midpoint) {
-		dragPosition.value = 'before'
+// vuedraggable emits `change` with one of moved/added/removed. We rebuild the
+// affected list's order from that event, write sort_order + folder onto the
+// (shared) item objects so the computeds re-derive without a snap-back, and
+// persist. A cross-list move fires `removed` on the source and `added` on the
+// target; we persist only from the `added` (and same-list `moved`) side, which
+// already carries the moved item with its new folder. The `removed` side is
+// ignored so we don't issue a second, racing write for the source list.
+function onListChange(
+	currentList: (WorkbookQuery | WorkbookChart)[],
+	event: any,
+	folderName: string | null,
+) {
+	const list = [...currentList]
+	if (event.moved) {
+		const [moved] = list.splice(event.moved.oldIndex, 1)
+		list.splice(event.moved.newIndex, 0, moved)
+	} else if (event.added) {
+		list.splice(event.added.newIndex, 0, event.added.element)
 	} else {
-		dragPosition.value = 'after'
-	}
-	dragOverItem.value = item.name
-}
-
-function onDragLeaveItem() {
-	dragOverItem.value = null
-	dragPosition.value = null
-}
-
-function onDropOnItem(event: DragEvent, targetItem: any, targetFolder?: string) {
-	event.preventDefault()
-	event.stopPropagation()
-
-	if (!draggedItem.value || draggedItem.value.type !== section.type) return
-	if (draggedItem.value.item.name === targetItem.name) {
-		dragOverItem.value = null
-		dragPosition.value = null
 		return
 	}
 
-	const targetContext = targetFolder
-		? folderItems.value[targetFolder] || []
-		: rootItems.value
-
-	const draggedItemName = draggedItem.value.item.name
-	const targetIdx = targetContext.findIndex((i) => i.name === targetItem.name)
-
-	// remove dragged item from context(if it exists)
-	const contextWithoutDragged = targetContext.filter(i => i.name !== draggedItemName)
-	let insertIdx = targetIdx
-
-	// adjust insert index if the dragged item was before the target
-	const draggedIdx = targetContext.findIndex(i => i.name === draggedItemName)
-	if (draggedIdx !== -1 && draggedIdx < targetIdx) {
-		insertIdx--
-	}
-
-	if (dragPosition.value === 'after') {
-		insertIdx++
-	}
-	const newOrder = [...contextWithoutDragged]
-	newOrder.splice(insertIdx, 0, { name: draggedItemName })
-
-	const updates = newOrder.map((item, index) => ({
-		type: section.type,
-		name: item.name,
-		sort_order: index,
-		folder: targetFolder || null
-	}))
-
-	workbook.updateSortOrder(updates).then(() => {
-		workbook.load()
+	const updates = list.map((item, index) => {
+		item.sort_order = index
+		item.folder = folderName
+		return { type: section.type, name: item.name, sort_order: index, folder: folderName }
 	})
 
-	dragOverItem.value = null
-	dragPosition.value = null
-}
-
-function onDragEnterFolder(event: DragEvent, folder: WorkbookFolder) {
-	event.stopPropagation()
-	if (draggedItem.value?.type === section.type) {
-		dragOverFolder.value = folder.name
-	}
-}
-
-function onDragLeaveFolder(event: DragEvent) {
-	const relatedTarget = event.relatedTarget as HTMLElement
-	const currentTarget = event.currentTarget as HTMLElement
-
-	if (relatedTarget && currentTarget.contains(relatedTarget)) {
-		return
-	}
-
-	dragOverFolder.value = null
-}
-
-function onDropFolder(event: DragEvent, targetFolder: WorkbookFolder) {
-	event.preventDefault()
-	event.stopPropagation()
-	dragOverFolder.value = null
-
-	if (!draggedItem.value || draggedItem.value.type !== section.type) return
-	const targetFolderId = targetFolder.name
-
-	//move if not already in this folder
-	if (draggedItem.value.item.folder === targetFolderId) {
-		return
-	}
-
-	const itemsInFolder = folderItems.value[targetFolderId] || []
-	// place at the end of the folder
-	let newSortOrder = 0
-	if (itemsInFolder.length > 0) {
-		const lastItem = itemsInFolder[itemsInFolder.length - 1]
-			newSortOrder = lastItem.sort_order + 1
-	}
-
-	const updates = [{
-		type: section.type,
-		name: draggedItem.value.item.name,
-		sort_order: newSortOrder,
-		folder: targetFolderId
-	}]
-
-	workbook.updateSortOrder(updates).then(() => {
-		workbook.load()
-		})
-}
-
-function allowDrop(event: DragEvent) {
-	event.preventDefault()
+	workbook.updateSortOrder(updates)
 }
 </script>
 
@@ -255,200 +141,192 @@ function allowDrop(event: DragEvent) {
 					variant="ghost"
 					@click="workbook.addFolder(`Untitled`, section.type)"
 				>
-				<Folder class="h-4 w-4 text-gray-600" stroke-width="1.5" />
+					<FolderPlus class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 				</Button>
-				<Button 
-					class="!h-fit !p-1" 
-					variant="ghost" 
-					@click="section.add()">
-				<Plus class="h-4 w-4 text-gray-600" stroke-width="1.5" />
+				<Button class="!h-fit !p-1" variant="ghost" @click="section.add()">
+					<Plus class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 				</Button>
 			</div>
 		</div>
 
 		<div
 			v-if="!section.items.length && !folders.length"
-			class="flex h-12 flex-col items-center justify-center rounded border border-dashed border-gray-300 py-2"
+			class="flex h-12 flex-col items-center justify-center rounded border border-dashed border-outline-gray-2 py-2"
 		>
-			<div class="text-xs text-gray-500">{{ section.emptyMessage }}</div>
+			<div class="text-xs text-ink-gray-4">{{ section.emptyMessage }}</div>
 		</div>
 
 		<div v-else class="flex flex-col border-b pb-3">
-			<div
-				v-for="row in rootItems"
-				:key="row.name"
-				class="relative"
+			<Draggable
+				:model-value="rootItems"
+				:group="dragGroup"
+				item-key="name"
+				class="min-h-6"
+				:animation="150"
+				:delay="150"
+				:delay-on-touch-only="true"
+				:touch-start-threshold="5"
+				:empty-insert-threshold="20"
+				ghost-class="sortable-ghost"
+				chosen-class="sortable-chosen"
+				@change="(e: any) => onListChange(rootItems, e, null)"
 			>
-				<div
-					v-if="dragOverItem === row.name && dragPosition === 'before'"
-					class="absolute -top-0.5 left-0 right-0 h-0.5 bg-blue-500 transition-all"
-				/>
-
-				<div
-					class="group w-full cursor-pointer rounded transition-all hover:bg-gray-100 drag-item"
-					:class="[
-						section.isActive(row) ? ' bg-gray-100' : '',
-						dragOverItem === row.name ? 'bg-blue-50' : ''
-					]"
-					draggable="true"
-					@dragstart="setDraggedItem($event, row)"
-					@dragend="onDragEnd"
-					@dragover="onDragOverItem($event, row)"
-					@dragleave="onDragLeaveItem"
-					@drop="onDropOnItem($event, row)"
-				>
-					<router-link
-						:to="route(row)"
-						class="flex h-7.5 items-center justify-between rounded pl-1.5 text-sm"
-					>
-						<div class="flex gap-1.5 overflow-hidden">
-							<div class="flex-shrink-0">
-								<slot name="item-icon" :item="row" />
-							</div>
-							<p class="truncate">{{ row.title }}</p>
-						</div>
-						<button
-							class="invisible cursor-pointer rounded px-1.5 py-1 transition-all hover:bg-gray-100 group-hover:visible"
-							@click.prevent.stop="section.remove(row)"
-						>
-							<X class="h-4 w-4 text-gray-700" stroke-width="1.5" />
-						</button>
-					</router-link>
-				</div>
-
-				<div
-					v-if="dragOverItem === row.name && dragPosition === 'after'"
-					class="absolute -bottom-0.5 left-0 right-0 h-0.5 bg-blue-500 transition-all"
-				/>
-			</div>
-
-			<div
-				v-for="folder in sortedFolders"
-				:key="folder.name"
-				class="mt-1 rounded transition-all"
-				:class="{
-					'bg-blue-50 ring-1 ring-blue-400': dragOverFolder === folder.name
-				}"
-			>
-				<div
-					:class="['group flex h-7.5 cursor-pointer items-center justify-between rounded px-1.5 mb-0.5 transition-all hover:bg-gray-100', 
-					editingFolderName === folder.name ? 'ring-1 ring-gray-400' : '']"
-					@click="editingFolderName !== folder.name && toggleFolder(folder)"
-					@dragenter="onDragEnterFolder($event, folder)"
-					@dragleave="onDragLeaveFolder"
-					@drop="onDropFolder($event, folder)"
-					@dragover="allowDrop"
-				>
-					<div class="flex items-center gap-1.5 overflow-hidden">
-						<ChevronRight
-							v-if="!isFolderExpanded(folder.name) && editingFolderName !== folder.name"
-							class="h-4 w-4 flex-shrink-0 text-gray-600"
-							stroke-width="1.5"
-						/>
-						<ChevronDown
-							v-else-if="isFolderExpanded(folder.name) && editingFolderName !== folder.name"
-							class="h-4 w-4 flex-shrink-0 text-gray-600"
-							stroke-width="1.5"
-						/>
-						<input
-							v-if="editingFolderName === folder.name"
-							v-model="editingFolderTitle"
-							:data-folder="folder.name"
-							class="flex-1 truncate text-sm outline-none border-none bg-transparent w-full "
-							@click.stop
-							@blur="finishRenameFolder(folder)"
-							@keydown.enter="finishRenameFolder(folder)"
-							@keydown.esc="editingFolderName = null"
-						/>
-						<p v-else class="flex-1 truncate text-sm">{{ folder.title }}</p>
-					</div>
-					<div v-if="editingFolderName !== folder.name" class="invisible flex gap-0.5 group-hover:visible">
-						<button
-							class="cursor-pointer rounded p-1 transition-all hover:bg-gray-200"
-							@click.stop="startRenameFolder(folder, $event)"
-						>
-							<PenLine class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
-						</button>
-						<button
-							class="cursor-pointer rounded p-1 transition-all hover:bg-gray-200"
-							@click.stop="removeFolder(folder, $event)"
-						>
-							<X class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
-						</button>
-					</div>
-				</div>
-
-				<div
-					v-if="isFolderExpanded(folder.name) && folderItems[folder.name]"
-					class="ml-3 rounded"
-					@dragenter="onDragEnterFolder($event, folder)"
-					@dragleave="onDragLeaveFolder"
-					@drop="onDropFolder($event, folder)"
-					@dragover="allowDrop"
-				>
+				<template #item="{ element: row }">
 					<div
-						v-for="row in folderItems[folder.name]"
-						:key="row.name"
-						class="relative"
+						class="group w-full cursor-pointer rounded transition-all hover:bg-surface-gray-2"
+						:class="section.isActive(row) ? 'bg-surface-gray-3' : ''"
 					>
-						<div
-							v-if="dragOverItem === row.name && dragPosition === 'before'"
-							class="absolute -top-0.5 left-0 right-0 h-0.5 bg-blue-500 transition-all"
-						/>
-
-						<div
-							class="group w-full cursor-pointer rounded transition-all hover:bg-gray-100 drag-item"
-							:class="[
-								section.isActive(row) ? ' bg-gray-100' : '',
-								dragOverItem === row.name ? 'bg-blue-50' : ''
-							]"
-							draggable="true"
-							@dragstart="setDraggedItem($event, row, folder.name)"
-							@dragend="onDragEnd"
-							@dragover="onDragOverItem($event, row)"
-							@dragleave="onDragLeaveItem"
-							@drop="onDropOnItem($event, row, folder.name)"
+						<router-link
+							:to="route(row)"
+							class="flex h-7.5 items-center justify-between rounded pl-1.5 text-sm"
 						>
-							<router-link
-								:to="route(row)"
-								class="flex h-7.5 items-center justify-between rounded pl-1.5 text-sm"
-							>
-								<div class="flex gap-1.5 overflow-hidden">
-									<div class="flex-shrink-0">
-										<slot name="item-icon" :item="row" />
-									</div>
-									<p class="truncate">{{ row.title }}</p>
+							<div class="flex gap-1.5 overflow-hidden">
+								<div class="flex-shrink-0">
+									<slot name="item-icon" :item="row" />
 								</div>
-								<button
-									class="invisible cursor-pointer rounded px-1.5 py-1 transition-all hover:bg-gray-100 group-hover:visible"
-									@click.prevent.stop="section.remove(row)"
-								>
-									<X class="h-4 w-4 text-gray-700" stroke-width="1.5" />
-								</button>
-							</router-link>
-						</div>
-
-						<div
-							v-if="dragOverItem === row.name && dragPosition === 'after'"
-							class="absolute -bottom-0.5 left-0 right-0 h-0.5 bg-blue-500 transition-all"
-						/>
+								<p class="truncate">{{ row.title }}</p>
+							</div>
+							<button
+								class="invisible cursor-pointer rounded px-1.5 py-1 transition-all hover:bg-surface-gray-3 group-hover:visible"
+								@click.prevent.stop="section.remove(row)"
+							>
+								<X class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
+							</button>
+						</router-link>
 					</div>
-				</div>
+				</template>
+			</Draggable>
+
+			<div v-for="folder in sortedFolders" :key="folder.name" class="rounded transition-all">
+				<Draggable
+					:model-value="folderItems[folder.name] || []"
+					:group="dragGroup"
+					item-key="name"
+					class="drop-folder"
+					:animation="150"
+					:delay="150"
+					:delay-on-touch-only="true"
+					:touch-start-threshold="5"
+					:empty-insert-threshold="20"
+					ghost-class="sortable-ghost"
+					chosen-class="sortable-chosen"
+					@change="
+						(e: any) => onListChange(folderItems[folder.name] || [], e, folder.name)
+					"
+				>
+					<template #header>
+						<div
+							:class="[
+								'folder-header group flex h-7.5 cursor-pointer items-center justify-between rounded px-1.5 transition-all hover:bg-surface-gray-2',
+								editingFolderName === folder.name
+									? 'ring-1 ring-outline-gray-3'
+									: '',
+							]"
+							@click="editingFolderName !== folder.name && toggleFolder(folder)"
+						>
+							<div class="flex items-center gap-1.5 overflow-hidden">
+								<FolderOpen
+									v-if="isFolderExpanded(folder.name)"
+									class="h-4 w-4 flex-shrink-0 text-ink-gray-5"
+									stroke-width="1.5"
+								/>
+								<Folder
+									v-else
+									class="h-4 w-4 flex-shrink-0 text-ink-gray-5"
+									stroke-width="1.5"
+								/>
+								<input
+									v-if="editingFolderName === folder.name"
+									v-model="editingFolderTitle"
+									:data-folder="folder.name"
+									class="flex-1 truncate text-sm outline-none border-none bg-transparent w-full"
+									@click.stop
+									@blur="finishRenameFolder(folder)"
+									@keydown.enter="finishRenameFolder(folder)"
+									@keydown.esc="editingFolderName = null"
+								/>
+								<p v-else class="flex-1 truncate text-sm">{{ folder.title }}</p>
+							</div>
+							<div
+								v-if="editingFolderName !== folder.name"
+								class="invisible flex gap-0.5 group-hover:visible"
+							>
+								<button
+									class="cursor-pointer rounded p-1 transition-all hover:bg-surface-gray-3"
+									@click.stop="startRenameFolder(folder, $event)"
+								>
+									<PenLine
+										class="h-3.5 w-3.5 text-ink-gray-6"
+										stroke-width="1.5"
+									/>
+								</button>
+								<button
+									class="cursor-pointer rounded p-1 transition-all hover:bg-surface-gray-3"
+									@click.stop="removeFolder(folder, $event)"
+								>
+									<X class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />
+								</button>
+							</div>
+						</div>
+					</template>
+
+					<template #footer>
+						<div
+							v-if="
+								isFolderExpanded(folder.name) && !folderItems[folder.name]?.length
+							"
+							class="ml-[22px] flex h-7.5 items-center pl-1.5 text-sm text-ink-gray-3"
+						>
+							{{ __('Empty') }}
+						</div>
+					</template>
+
+					<template #item="{ element: row }">
+						<div v-show="isFolderExpanded(folder.name)" class="ml-[22px]">
+							<div
+								class="group w-full cursor-pointer rounded transition-all hover:bg-surface-gray-2"
+								:class="section.isActive(row) ? 'bg-surface-gray-3' : ''"
+							>
+								<router-link
+									:to="route(row)"
+									class="flex h-7.5 items-center justify-between rounded pl-1.5 text-sm"
+								>
+									<div class="flex gap-1.5 overflow-hidden">
+										<div class="flex-shrink-0">
+											<slot name="item-icon" :item="row" />
+										</div>
+										<p class="truncate">{{ row.title }}</p>
+									</div>
+									<button
+										class="invisible cursor-pointer rounded px-1.5 py-1 transition-all hover:bg-surface-gray-3 group-hover:visible"
+										@click.prevent.stop="section.remove(row)"
+									>
+										<X class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
+									</button>
+								</router-link>
+							</div>
+						</div>
+					</template>
+				</Draggable>
 			</div>
 		</div>
 	</div>
 </template>
 
 <style scoped>
-.drag-item.dragging {
-	opacity: 0.4;
-	transform: scale(0.98);
+.sortable-ghost {
+	@apply rounded bg-surface-gray-3 opacity-60;
 }
 
-.drag-item {
-	transition:
-		opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-		transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-		background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+.sortable-chosen {
+	@apply opacity-90;
+}
+
+/* Highlight the whole folder while a dragged item hovers inside it, so dropping
+   reads as "into this folder" rather than "below it" — the placeholder alone is
+   ambiguous, especially when the folder is collapsed (where v-show already hides
+   the placeholder, leaving the header highlight as the only drop-target signal). */
+.drop-folder:has(.sortable-ghost) .folder-header {
+	@apply bg-surface-gray-3 ring-1 ring-outline-gray-3;
 }
 </style>

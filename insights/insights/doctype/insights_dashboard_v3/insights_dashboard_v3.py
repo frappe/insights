@@ -9,8 +9,8 @@ import requests
 from frappe.model.document import Document
 from frappe.query_builder import Interval
 from frappe.query_builder.functions import Now
+from frappe.utils.telemetry import capture
 
-from insights.api.telemetry import capture_event
 from insights.utils import DocShare, File
 
 
@@ -70,6 +70,19 @@ class InsightsDashboardv3(Document):
         d.has_workbook_access = frappe.has_permission("Insights Workbook", ptype="read", doc=self.workbook)
         return d
 
+    def after_insert(self):
+        # A dashboard created already populated (e.g. imported from a template) is
+        # never saved again, so before_save's diff-based preview never runs and it
+        # lands without a preview. Generate the initial one here when it has content.
+        if frappe.flags.in_patch or not frappe.parse_json(self.items):
+            return
+        frappe.enqueue_doc(
+            doctype=self.doctype,
+            name=self.name,
+            method="generate_dashboard_preview",
+            enqueue_after_commit=True,
+        )
+
     def before_save(self):
         self.set_linked_charts()
         self.enqueue_update_dashboard_preview()
@@ -88,27 +101,29 @@ class InsightsDashboardv3(Document):
         if is_guest and not self.is_public:
             raise frappe.PermissionError
 
-        if not self.has_permission("write"):
-            self.check_linked_filters(query, column_name)
+        if not self.is_filter_column(query, column_name):
+            frappe.throw(
+                frappe._("This column is not available as a filter on this dashboard"),
+                frappe.PermissionError,
+            )
 
         doc = frappe.get_cached_doc("Insights Query v3", query)
         return doc.get_distinct_column_values(
             column_name, search_term=search_term, adhoc_filters=adhoc_filters
         )
 
-    def check_linked_filters(self, query, column_name):
+    def is_filter_column(self, query, column_name):
+        # a filter links a column as "links": { '<chart>': "`<query>`.`<column>`" }
+        pattern = "^`([^`]+)`\\.`([^`]+)`$"
         items = frappe.parse_json(self.items)
-        filters = [item for item in items if item["type"] == "filter"]
-        for f in filters:
-            # check if there is a filter which has "link": { 'chart': "`<query>`.`<column>`" }
-            linked_columns = f.get("links", {}).values()
-            pattern = "^`([^`]+)`\\.`([^`]+)`$"
-            for linked_column in linked_columns:
+        for item in items:
+            if item["type"] != "filter":
+                continue
+            for linked_column in item.get("links", {}).values():
                 match = re.match(pattern, linked_column)
-                if match and match.groups()[0] == query and match.groups()[1] == column_name:
+                if match and match.groups() == (query, column_name):
                     return True
-
-        raise frappe.PermissionError
+        return False
 
     def enqueue_update_dashboard_preview(self):
         if self.is_new() or not self.get_doc_before_save() or frappe.flags.in_patch:
@@ -239,12 +254,24 @@ class InsightsDashboardv3(Document):
         self.db_set("is_public", is_public)
 
         if people_with_access:
-            capture_event("dashboard_shared_with_user")
+            capture("dashboard_shared_with_user", "insights")
         if is_public:
-            capture_event("dashboard_set_public")
+            capture("dashboard_set_public", "insights")
 
 
 def get_page_preview(url: str, headers: dict | None = None) -> bytes:
+    # Newer Frappe renders previews in-process via headless Chromium — no
+    # external service, and the site's own /assets and /files resolve locally.
+    # Older versions fall back to the preview_generator HTTP service.
+    try:
+        from frappe.utils.preview import get_preview_from_url
+    except ImportError:
+        return get_page_preview_via_service(url, headers)
+
+    return get_preview_from_url(url, wait_for=1000, headers=headers or {}, format="jpeg")
+
+
+def get_page_preview_via_service(url: str, headers: dict | None = None) -> bytes:
     PREVIEW_GENERATOR_URL = (
         frappe.conf.preview_generator_url
         or "https://preview.frappe.cloud/api/method/preview_generator.api.generate_preview_from_url"

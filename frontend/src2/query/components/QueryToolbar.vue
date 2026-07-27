@@ -1,33 +1,27 @@
 <script setup lang="ts">
-import { useTimeAgo } from '@vueuse/core'
-import {
-	Copy,
-	CopyPlus,
-	MoreHorizontal,
-	PlayIcon,
-	RefreshCw,
-	Scroll,
-	ScanSearch,
-} from 'lucide-vue-next'
+import { Copy, CopyPlus, MoreHorizontal, PlayIcon, RefreshCw, Scroll } from 'lucide-vue-next'
 import { computed, h, inject, ref } from 'vue'
-import { Query } from '../query'
-import { __ } from '../../translation'
-import ExplainPlanDialog from './ExplainPlanDialog.vue'
-import ViewSQLDialog from './ViewSQLDialog.vue'
+import { Tooltip } from 'frappe-ui'
+import { formatShortcut } from '../../composables/useShortcut'
 import session from '../../session'
+import { __ } from '../../translation'
+import { Query } from '../query'
+import ViewSQLDialog from './ViewSQLDialog.vue'
+
+const props = withDefaults(
+	defineProps<{
+		onExecute?: () => void
+		extraActions?: () => any[]
+	}>(),
+	{ onExecute: undefined, extraActions: undefined },
+)
 
 const query = inject('query') as Query
 
 const showViewSQLDialog = ref(false)
-const showExplainDialog = ref(false)
-
-async function openExplainDialog() {
-	showExplainDialog.value = true
-	await query.explainQuery()
-}
 
 const moreActions = computed(() => {
-	const actions = []
+	const actions: any[] = []
 
 	if (!query.doc.use_live_connection && session.user.is_admin) {
 		actions.push({
@@ -35,6 +29,10 @@ const moreActions = computed(() => {
 			icon: h(RefreshCw, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
 			onClick: query.refreshStoredTables,
 		})
+	}
+
+	if (props.extraActions) {
+		actions.push(...props.extraActions())
 	}
 
 	actions.push(
@@ -55,43 +53,25 @@ const moreActions = computed(() => {
 		},
 	)
 
-	if (session.user.is_admin) {
-		actions.push({
-			label: __('Explain Plan'),
-			icon: h(ScanSearch, { class: 'h-3 w-3 text-gray-700', strokeWidth: 1.5 }),
-			onClick: openExplainDialog,
-		})
-	}
-
 	return actions
 })
+
+function handleExecute() {
+	props.onExecute ? props.onExecute() : query.execute(true)
+}
 </script>
 
 <template>
 	<div class="flex w-full flex-shrink-0 items-center justify-between bg-white">
-		<div>
-			<div
-				v-show="query.result.executedSQL"
-				class="tnum flex items-center gap-2 text-sm text-gray-600"
-			>
-				<div class="h-2 w-2 rounded-full bg-green-500"></div>
-				<div class="flex items-center gap-1">
-					<span v-if="query.result.timeTaken == -1">
-						{{ __('Fetched from cache') }}
-					</span>
-					<span v-else>
-						{{ __('Fetched in {0}s', String(query.result.timeTaken)) }}
-					</span>
-					<span> {{ useTimeAgo(query.result.lastExecutedAt).value }} </span>
-				</div>
-			</div>
-		</div>
+		<slot />
 		<div class="flex items-center gap-2">
-			<Button variant="outline" :label="__('Execute')" @click="() => query.execute(true)">
-				<template #prefix>
-					<PlayIcon class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
-				</template>
-			</Button>
+			<Tooltip :text="__('Execute ({0})', formatShortcut('Meta+E'))">
+				<Button variant="outline" :label="__('Execute')" @click="handleExecute">
+					<template #prefix>
+						<PlayIcon class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
+					</template>
+				</Button>
+			</Tooltip>
 			<Dropdown placement="right" :options="moreActions">
 				<Button variant="outline">
 					<template #icon>
@@ -103,5 +83,4 @@ const moreActions = computed(() => {
 	</div>
 
 	<ViewSQLDialog v-if="showViewSQLDialog" v-model="showViewSQLDialog" />
-	<ExplainPlanDialog v-if="showExplainDialog" v-model="showExplainDialog" />
 </template>

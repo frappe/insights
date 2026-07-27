@@ -107,10 +107,8 @@ def sync_query_references(query_name: str, operations) -> None:
     from frappe.model.document import bulk_insert
 
     ops = frappe.parse_json(operations) or []
-    frappe.db.delete("Insights Query Reference", {"query": query_name})
 
     docs = []
-
     all_table_deps = extract_table_deps_from_operations(ops) + extract_table_deps_from_sql_operations(ops)
     for tbl in all_table_deps:
         ref = frappe.new_doc("Insights Query Reference")
@@ -129,6 +127,7 @@ def sync_query_references(query_name: str, operations) -> None:
         ref.ref_query = dep_query
         docs.append(ref)
 
+    frappe.db.delete("Insights Query Reference", {"query": query_name})
     if docs:
         bulk_insert("Insights Query Reference", docs)
 

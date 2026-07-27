@@ -16,6 +16,7 @@ function makeSettings() {
 			doctype,
 			owner: '',
 			enable_permissions: false,
+			allow_download: true,
 			allowed_origins: '',
 			max_records_to_sync: 10_00_000,
 			max_memory_usage: 512,
@@ -44,6 +45,7 @@ type InsightsSettings = {
 	doctype: string
 	owner: string
 	enable_permissions: boolean
+	allow_download: boolean
 	allowed_origins: string
 	max_records_to_sync: number
 	max_memory_usage: number

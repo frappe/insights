@@ -35,7 +35,17 @@ class TestWarehouse(InsightsIntegrationTestCase):
                 with suppress(Exception):
                     db.disconnect()
 
-    def patched_write_connection(self, db):
+    @contextmanager
+    def patched_warehouse(self):
+        with self.warehouse_db() as db:
+            with patch.object(
+                insights.warehouse,
+                "get_write_connection",
+                self._patched_write_connection(db),
+            ):
+                yield db
+
+    def _patched_write_connection(self, db):
         @contextmanager
         def get_write_connection(database=None, timeout=30):
             if database:
@@ -44,78 +54,68 @@ class TestWarehouse(InsightsIntegrationTestCase):
 
         return get_write_connection
 
+    def write_to_table(self, db, table_name, rows, mode="replace", **kwargs):
+        with WarehouseTableWriter(
+            table_name,
+            table_schema=self.make_schema(),
+            database="main",
+            mode=mode,
+            **kwargs,
+        ) as writer:
+            writer.insert(self.make_frame(rows))
+            return writer.commit()
+
     def read_rows(self, db, table_name):
         rows = db.table(table_name).order_by("id").execute()
         rows["modified"] = rows["modified"].dt.strftime("%Y-%m-%d %H:%M:%S")
         return rows.to_dict("records")
 
-    def test_writer_creates_table_on_first_commit(self):
-        with self.warehouse_db() as db:
-            with patch.object(
-                insights.warehouse,
-                "get_write_connection",
-                self.patched_write_connection(db),
-            ):
-                with WarehouseTableWriter(
-                    "warehouse_writer_create",
-                    table_schema=self.make_schema(),
-                    database="main",
-                    mode="replace",
-                ) as writer:
-                    writer.insert(
-                        self.make_frame(
-                            [
-                                {"id": 1, "value": "alpha", "modified": "2024-01-01 00:00:00"},
-                                {"id": 2, "value": "beta", "modified": "2024-01-02 00:00:00"},
-                            ]
-                        )
-                    )
-                    rows_written = writer.commit()
+    def test_writer_replace_mode(self):
+        with self.patched_warehouse() as db:
+            # First write — creates the table
+            rows_written = self.write_to_table(
+                db,
+                "t",
+                [
+                    {"id": 1, "value": "alpha", "modified": "2024-01-01 00:00:00"},
+                    {"id": 2, "value": "beta", "modified": "2024-01-02 00:00:00"},
+                ],
+            )
             self.assertEqual(rows_written, 2)
             self.assertEqual(
-                self.read_rows(db, "warehouse_writer_create"),
+                self.read_rows(db, "t"),
                 [
                     {"id": 1, "value": "alpha", "modified": "2024-01-01 00:00:00"},
                     {"id": 2, "value": "beta", "modified": "2024-01-02 00:00:00"},
                 ],
             )
 
-    def test_writer_append_mode_keeps_existing_rows(self):
-        with self.warehouse_db() as db:
-            with patch.object(
-                insights.warehouse,
-                "get_write_connection",
-                self.patched_write_connection(db),
-            ):
-                with WarehouseTableWriter(
-                    "warehouse_writer_append",
-                    table_schema=self.make_schema(),
-                    database="main",
-                    mode="replace",
-                ) as writer:
-                    writer.insert(
-                        self.make_frame([{"id": 1, "value": "alpha", "modified": "2024-01-01 00:00:00"}])
-                    )
-                    writer.commit()
+            # Second write — table already exists; replace must overwrite, not silently drop data
+            rows_written = self.write_to_table(
+                db, "t", [{"id": 3, "value": "new", "modified": "2024-02-01 00:00:00"}]
+            )
+            self.assertEqual(rows_written, 1)
+            self.assertEqual(
+                self.read_rows(db, "t"),
+                [{"id": 3, "value": "new", "modified": "2024-02-01 00:00:00"}],
+            )
 
-                with WarehouseTableWriter(
-                    "warehouse_writer_append",
-                    table_schema=self.make_schema(),
-                    database="main",
-                    mode="append",
-                ) as writer:
-                    writer.insert(
-                        self.make_frame(
-                            [
-                                {"id": 2, "value": "beta", "modified": "2024-01-02 00:00:00"},
-                                {"id": 3, "value": "gamma", "modified": "2024-01-03 00:00:00"},
-                            ]
-                        )
-                    )
-                    rows_written = writer.commit()
+    def test_writer_append_mode_keeps_existing_rows(self):
+        with self.patched_warehouse() as db:
+            self.write_to_table(db, "t", [{"id": 1, "value": "alpha", "modified": "2024-01-01 00:00:00"}])
+
+            rows_written = self.write_to_table(
+                db,
+                "t",
+                [
+                    {"id": 2, "value": "beta", "modified": "2024-01-02 00:00:00"},
+                    {"id": 3, "value": "gamma", "modified": "2024-01-03 00:00:00"},
+                ],
+                mode="append",
+            )
             self.assertEqual(rows_written, 2)
             self.assertEqual(
-                self.read_rows(db, "warehouse_writer_append"),
+                self.read_rows(db, "t"),
                 [
                     {"id": 1, "value": "alpha", "modified": "2024-01-01 00:00:00"},
                     {"id": 2, "value": "beta", "modified": "2024-01-02 00:00:00"},
@@ -124,43 +124,23 @@ class TestWarehouse(InsightsIntegrationTestCase):
             )
 
     def test_writer_upsert_mode_updates_matching_primary_keys(self):
-        with self.warehouse_db() as db:
-            with patch.object(
-                insights.warehouse,
-                "get_write_connection",
-                self.patched_write_connection(db),
-            ):
-                with WarehouseTableWriter(
-                    "warehouse_writer_upsert",
-                    table_schema=self.make_schema(),
-                    database="main",
-                    mode="replace",
-                ) as writer:
-                    writer.insert(
-                        self.make_frame([{"id": 1, "value": "alpha", "modified": "2024-01-01 00:00:00"}])
-                    )
-                    writer.commit()
+        with self.patched_warehouse() as db:
+            self.write_to_table(db, "t", [{"id": 1, "value": "alpha", "modified": "2024-01-01 00:00:00"}])
 
-                with WarehouseTableWriter(
-                    "warehouse_writer_upsert",
-                    table_schema=self.make_schema(),
-                    database="main",
-                    mode="upsert",
-                    primary_key_column="id",
-                    cursor_column="modified",
-                ) as writer:
-                    writer.insert(
-                        self.make_frame(
-                            [
-                                {"id": 1, "value": "updated", "modified": "2024-01-02 00:00:00"},
-                                {"id": 2, "value": "beta", "modified": "2024-01-02 00:00:00"},
-                            ]
-                        )
-                    )
-                    rows_written = writer.commit()
+            rows_written = self.write_to_table(
+                db,
+                "t",
+                [
+                    {"id": 1, "value": "updated", "modified": "2024-01-02 00:00:00"},
+                    {"id": 2, "value": "beta", "modified": "2024-01-02 00:00:00"},
+                ],
+                mode="upsert",
+                primary_key_column="id",
+                cursor_column="modified",
+            )
             self.assertEqual(rows_written, 2)
             self.assertEqual(
-                self.read_rows(db, "warehouse_writer_upsert"),
+                self.read_rows(db, "t"),
                 [
                     {"id": 1, "value": "updated", "modified": "2024-01-02 00:00:00"},
                     {"id": 2, "value": "beta", "modified": "2024-01-02 00:00:00"},

@@ -1,0 +1,16 @@
+{
+	"version": 2,
+	"title": "Receivables, Payables & Cash",
+	"description": "AR/AP ageing, a collections worklist and a cash-flow view for receivables, payables and cash.",
+	"notes": "Built from submitted Sales/Purchase Invoices, Payment Entries and the Payment Ledger (delinked=0), so payment-rounding residuals don't inflate receivables/payables. AR/AP outstanding is read from the Payment Ledger Entry rather than reconstructed from GL, which is far cheaper on large sites. Snapshot figures are as-of-today in the company's base currency; the date filter drives the cash-flow trends.",
+	"module": "Accounts",
+	"required_apps": [
+		"erpnext"
+	],
+	"source_doctypes": [
+		"Sales Invoice",
+		"Purchase Invoice",
+		"Payment Entry",
+		"Payment Ledger Entry"
+	]
+}

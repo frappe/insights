@@ -1,52 +1,156 @@
 import frappe
+from frappe.query_builder.functions import Count, Max
 
 from insights.decorators import insights_whitelist, validate_type
 
 
 @insights_whitelist()
-def get_dashboards(search_term: str | None = None, limit: int = 50, get_favorites: bool = False):
+def get_dashboards(
+    search_term: str | None = None,
+    limit: int = 50,
+    get_favorites: bool = False,
+    scope: str | None = None,
+):
+    """Return dashboards accessible to the current user.
+
+    scope (a personal lens):
+        "owned"  -> only dashboards created by the current user
+        "shared" -> only dashboards created by someone else (still permission filtered)
+    """
+    filters = {}
+    if get_favorites:
+        filters["_liked_by"] = ["like", f"%{frappe.session.user}%"]
+
+    if scope == "owned":
+        filters["owner"] = frappe.session.user
+    elif scope == "shared":
+        filters["owner"] = ["!=", frappe.session.user]
+
     dashboards = frappe.get_list(
         "Insights Dashboard v3",
         or_filters={
             "name": ["like", f"%{search_term}%" if search_term else "%"],
             "title": ["like", f"%{search_term}%" if search_term else "%"],
         },
-        filters={"_liked_by": ["like", f"%{frappe.session.user}%"]} if get_favorites else {},
-        fields=[
-            "name",
-            "title",
-            "workbook",
-            "creation",
-            "modified",
-            "preview_image",
-            "items",
-            "_liked_by",
-        ],
+        filters=filters,
+        fields=DASHBOARD_LIST_FIELDS,
         order_by="creation desc",
-        limit=limit if not get_favorites else 0,
+        limit=limit,
     )
 
-    for dashboard in dashboards:
-        items = frappe.parse_json(dashboard["items"])
-        charts = [item for item in items if item["type"] == "chart"]
-        dashboard["charts"] = len(charts)
-        dashboard["views"] = frappe.db.count(
-            "View Log",
-            filters={
-                "reference_doctype": "Insights Dashboard v3",
-                "reference_name": dashboard.name,
-            },
-        )
-        if dashboard._liked_by:
-            dashboard["is_favourite"] = frappe.session.user in frappe.as_json(dashboard._liked_by)
-        del dashboard["items"]
-
+    _enrich_dashboards(dashboards)
     return dashboards
+
+
+@insights_whitelist()
+def get_recent_dashboards(search_term: str | None = None, limit: int = 20):
+    """Dashboards the current user viewed most recently, newest first.
+
+    Recency comes from the per-user View Log (populated by `track_view` on
+    every dashboard open), so it spans folders and reflects opens from
+    anywhere, not just this list.
+    """
+    view_log = frappe.qb.DocType("View Log")
+    recent = (
+        frappe.qb.from_(view_log)
+        .select(view_log.reference_name, Max(view_log.modified).as_("last_viewed"))
+        .where(
+            (view_log.viewed_by == frappe.session.user)
+            & (view_log.reference_doctype == "Insights Dashboard v3")
+        )
+        .groupby(view_log.reference_name)
+        .orderby(Max(view_log.modified), order=frappe.qb.desc)
+        .limit(limit)
+        .run(as_dict=True)
+    )
+    order = {row.reference_name: i for i, row in enumerate(recent)}
+    if not order:
+        return []
+
+    dashboards = frappe.get_list(
+        "Insights Dashboard v3",
+        or_filters={
+            "name": ["like", f"%{search_term}%" if search_term else "%"],
+            "title": ["like", f"%{search_term}%" if search_term else "%"],
+        },
+        filters={"name": ["in", list(order.keys())]},
+        fields=DASHBOARD_LIST_FIELDS,
+        limit=0,
+    )
+
+    _enrich_dashboards(dashboards)
+    # get_list ignores the View Log order and silently drops dashboards the user
+    # can no longer access, so re-sort by recency over what survived
+    dashboards.sort(key=lambda dashboard: order[dashboard.name])
+    return dashboards
+
+
+DASHBOARD_LIST_FIELDS = [
+    "name",
+    "title",
+    "workbook",
+    "creation",
+    "modified",
+    "preview_image",
+    "_liked_by",
+]
+
+
+def _enrich_dashboards(dashboards):
+    # batch counts into one grouped query each instead of per-dashboard queries
+    # (avoids N+1s over the whole list)
+    names = [dashboard.name for dashboard in dashboards]
+    view_counts = _dashboard_view_counts(names)
+    chart_counts = _dashboard_chart_counts(names)
+    user = frappe.session.user
+    for dashboard in dashboards:
+        dashboard["charts"] = chart_counts.get(str(dashboard.name), 0)
+        dashboard["views"] = view_counts.get(str(dashboard.name), 0)
+        if dashboard._liked_by:
+            dashboard["is_favourite"] = user in frappe.as_json(dashboard._liked_by)
+
+
+def _dashboard_view_counts(names: list[str]) -> dict[str, int]:
+    if not names:
+        return {}
+    view_log = frappe.qb.DocType("View Log")
+    rows = (
+        frappe.qb.from_(view_log)
+        .select(view_log.reference_name, Count(view_log.name).as_("views"))
+        .where(
+            (view_log.reference_doctype == "Insights Dashboard v3")
+            # reference_name is stored as a string; cast names to match
+            & view_log.reference_name.isin([str(name) for name in names])
+        )
+        .groupby(view_log.reference_name)
+        .run(as_dict=True)
+    )
+    return {str(row.reference_name): row.views for row in rows}
+
+
+def _dashboard_chart_counts(names: list[str]) -> dict[str, int]:
+    # one chart == one row in the `linked_charts` child table (rebuilt from
+    # `items` on every save), so count rows per parent instead of parsing items
+    if not names:
+        return {}
+    linked_chart = frappe.qb.DocType("Insights Dashboard Chart v3")
+    rows = (
+        frappe.qb.from_(linked_chart)
+        .select(linked_chart.parent, Count(linked_chart.name).as_("charts"))
+        .where(
+            (linked_chart.parenttype == "Insights Dashboard v3")
+            & linked_chart.parent.isin([str(name) for name in names])
+        )
+        .groupby(linked_chart.parent)
+        .run(as_dict=True)
+    )
+    return {str(row.parent): row.charts for row in rows}
 
 
 @insights_whitelist()
 @validate_type
 def update_dashboard_preview(dashboard_name: str):
+    frappe.has_permission("Insights Dashboard v3", ptype="read", doc=dashboard_name, throw=True)
     dashboard = frappe.get_doc("Insights Dashboard v3", dashboard_name)
     file_url = dashboard.generate_dashboard_preview()
     return file_url

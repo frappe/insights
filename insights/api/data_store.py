@@ -7,32 +7,30 @@ from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_ta
 @insights_whitelist()
 @validate_type
 def get_data_store_tables(data_source: str | None = None, search_term: str | None = None, limit: int = 100):
-    Table = frappe.qb.DocType("Insights Table v3")
-    DataSource = frappe.qb.DocType("Insights Data Source v3")
-
-    tables = (
-        frappe.qb.from_(Table)
-        .left_join(DataSource)
-        .on(Table.data_source == DataSource.name)
-        .select(
-            Table.name,
-            Table.table,
-            Table.label,
-            Table.data_source,
-            Table.last_synced_on,
-            DataSource.database_type,
-        )
-        .where(
-            (Table.stored == 1)
-            & (Table.data_source == data_source if data_source else Table.data_source.like("%"))
-            & (
-                (Table.label == search_term if search_term else Table.label.like("%"))
-                | (Table.table == search_term if search_term else Table.table.like("%"))
-            )
-        )
-        .limit(limit)
-        .run(as_dict=True)
+    filters = {"stored": 1}
+    if data_source:
+        filters["data_source"] = data_source
+    or_filters = (
+        {"label": ["like", f"%{search_term}%"], "table": ["like", f"%{search_term}%"]}
+        if search_term
+        else None
     )
+    # get_list applies get_permission_query_conditions, keeping tables scoped to the caller
+    tables = frappe.get_list(
+        "Insights Table v3",
+        filters=filters,
+        or_filters=or_filters,
+        fields=["name", "table", "label", "data_source", "last_synced_on"],
+        limit=limit,
+    )
+    database_types = {
+        d.name: d.database_type
+        for d in frappe.get_all(
+            "Insights Data Source v3",
+            filters={"name": ["in", list({t.data_source for t in tables})]},
+            fields=["name", "database_type"],
+        )
+    }
 
     ret = []
     for table in tables:
@@ -43,7 +41,7 @@ def get_data_store_tables(data_source: str | None = None, search_term: str | Non
                     "label": table.label,
                     "table_name": table.table,
                     "data_source": table.data_source,
-                    "database_type": table.database_type,
+                    "database_type": database_types.get(table.data_source),
                     "last_synced_on": table.last_synced_on,
                 }
             )

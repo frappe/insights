@@ -144,3 +144,11 @@ export function isValidNumber(value: any) {
 		!isNaN(parseFloat(value))
 	)
 }
+
+// dateRangePicker string/array conversion
+export function normalizeDateRange(val: any) {
+	if (typeof val === 'string') {
+		return val.split(',')
+	}
+	return val
+}

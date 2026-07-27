@@ -1,133 +1,131 @@
 <script setup lang="tsx">
-import { Avatar, Breadcrumbs, ListView } from 'frappe-ui'
-import { Building2, Eye, Lock, PlusIcon, SearchIcon, Shield } from 'lucide-vue-next'
+import { useMagicKeys, useStorage, whenever } from '@vueuse/core'
+import {
+	Breadcrumbs,
+	ListEmptyState,
+	ListHeader,
+	ListRows,
+	ListView,
+	TabButtons,
+	call,
+} from 'frappe-ui'
+import { LayoutTemplate as LayoutTemplateIcon, PlusIcon, SearchIcon } from 'lucide-vue-next'
 import { computed, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { wheneverChanges } from '../helpers'
-import { WorkbookListItem } from '../types/workbook.types'
+import session from '../session'
+import { __ } from '../translation'
 import useUserStore from '../users/users'
 import useWorkbook, { newWorkbookName } from './workbook'
+import { getWorkbookColumns } from './workbookListColumns'
 import useWorkbooks from './workbooks'
-import { useMagicKeys, whenever } from '@vueuse/core'
-import { __ } from '../translation'
+import WorkbookTemplates, { WorkbookTemplate } from './WorkbookTemplates.vue'
+import { useTelemetry } from '../telemetry'
 
 const router = useRouter()
+const userStore = useUserStore()
 const workbookStore = useWorkbooks()
-const workbooks = computed(() => workbookStore.workbooks)
+const { capture } = useTelemetry()
 
+type WorkbookScope = 'all' | 'owned' | 'shared'
+
+const scopeTabs: { label: string; value: WorkbookScope }[] = [
+	{ label: __('All'), value: 'all' },
+	{ label: __('Created'), value: 'owned' },
+	{ label: __('Shared'), value: 'shared' },
+]
+
+// persist the chosen scope locally so it survives reloads
+const scope = useStorage<WorkbookScope>('insights:workbook-scope', 'all')
 const searchQuery = ref('')
-wheneverChanges(searchQuery, () => workbookStore.getWorkbooks(searchQuery.value), {
-	debounce: 300,
-	immediate: true,
-})
 
+// "Load more" grows the page size and refetches
+const PAGE_SIZE = 20
+const limit = ref(PAGE_SIZE)
+const hasMore = computed(() => workbookStore.workbooks.length >= limit.value)
+
+async function refresh() {
+	workbookStore.getWorkbooks(searchQuery.value, limit.value, scope.value)
+}
+
+// reset pagination for a new query (scope/search change)
+function reload() {
+	limit.value = PAGE_SIZE
+	refresh()
+}
+
+function loadMore() {
+	limit.value += PAGE_SIZE
+	refresh()
+}
+
+// reset the list when the scope changes so a slow fetch can't keep showing the
+// previous scope's workbooks; search keeps previous data (no flicker)
+wheneverChanges(
+	() => scope.value,
+	() => {
+		workbookStore.workbooks = []
+		reload()
+	},
+	{ immediate: true },
+)
+wheneverChanges(searchQuery, reload, { debounce: 300 })
+
+// ---- create workbook ----
 const creatingWorkbook = ref(false)
 function openNewWorkbook() {
 	creatingWorkbook.value = true
-	const workbook = useWorkbook(newWorkbookName())
-	workbook
+	useWorkbook(newWorkbookName())
 		.insert()
-		.then((doc) => {
-			router.push(`/workbook/${doc.name}`)
-		})
-		.finally(() => {
-			creatingWorkbook.value = false
-		})
+		.then((doc) => router.push(`/workbook/${doc.name}`))
+		.finally(() => (creatingWorkbook.value = false))
 }
 
-const userStore = useUserStore()
-const listOptions = ref({
-	columns: [
-		{
-			label: __('Title'),
-			key: 'title',
-			width: 4,
-		},
-		{
-			label: __('Access'),
-			key: 'shared_with',
-			width: 2,
-			getLabel: (props: any) => {
-				const workbook = props.row as WorkbookListItem
-				if (workbook.shared_with_organization) {
-					return 'Everyone'
-				}
-				if (workbook.shared_with.length === 0) {
-					return 'Private'
-				}
-				return workbook.shared_with.length > 1
-					? `${workbook.shared_with.length} people`
-					: userStore.getName(workbook.shared_with[0])
-			},
-			prefix: (props: any) => {
-				const workbook = props.row as WorkbookListItem
-				if (workbook.shared_with_organization) {
-					return <Building2 class="h-3.5 w-3.5 text-blue-500" />
-				}
-				if (workbook.shared_with.length === 0) {
-					return <Lock class="h-3.5 w-3.5 text-orange-500" />
-				}
-				return <Shield class="h-3.5 w-3.5 text-green-500" />
-			},
-		},
-		{
-			label: __('Views'),
-			key: 'views',
-			width: 1.5,
-			getLabel: (props: any) => {},
-			prefix: (props: any) => {
-				const workbook = props.row as WorkbookListItem
-				return (
-					<div class="flex gap-1">
-						<Eye class="h-3.5 w-3.5 text-gray-600" stroke-width="1.5" />
-						<span class="font-mono text-sm text-gray-700">{workbook.views}</span>
-					</div>
-				)
-			},
-		},
-		{
-			label: __('Owner'),
-			key: 'owner',
-			width: 2,
-			getLabel(props: any) {
-				const workbook = props.row as WorkbookListItem
-				const user = userStore.getUser(workbook.owner)
-				return user?.full_name || workbook.owner
-			},
-			prefix: (props: any) => {
-				const workbook = props.row as WorkbookListItem
-				const user = userStore.getUser(workbook.owner)
-				return <Avatar size="md" label={workbook.owner} image={user?.user_image} />
-			},
-		},
-		{ label: __('Modified'), key: 'modified_from_now', width: 2 },
-	],
-	rows: workbooks,
+// workbook library (the prebuilt workbooks installed apps seed) — a permanent
+// "Library" button surfaces it whenever the library is non-empty. importing is an admin
+// action for v1, so only admins fetch it; non-admins just receive the shared
+// workbooks in their list once an admin imports.
+const templates = ref<WorkbookTemplate[]>([])
+const showTemplates = ref(false)
+function fetchTemplates() {
+	if (!session.user.is_admin) return
+	call('insights.api.templates.get_workbook_templates').then(
+		(data: WorkbookTemplate[]) => (templates.value = data || []),
+	)
+}
+wheneverChanges(() => session.user.is_admin, fetchTemplates, { immediate: true })
+
+function openLibrary() {
+	showTemplates.value = true
+	capture('workbook_library_opened')
+}
+
+const columns = getWorkbookColumns({ userStore })
+
+function onRowClick(row: any) {
+	router.push(`/workbook/${row.name}`)
+}
+
+const listOptions = computed(() => ({
+	columns,
+	rows: workbookStore.workbooks,
 	rowKey: 'name',
 	options: {
 		showTooltip: false,
-		getRowRoute: (workbook: WorkbookListItem) => ({
-			path: `/workbook/${workbook.name}`,
-		}),
+		onRowClick,
+		// actions are rendered via the ListEmptyState slot below — the built-in
+		// supports only one button, and we want New + Library side by side
 		emptyState: {
 			title: __('No Workbooks'),
 			description: __('No workbooks to display.'),
-			button: {
-				label: __('New Workbook'),
-				variant: 'solid',
-				onClick: openNewWorkbook,
-				loading: creatingWorkbook,
-			},
 		},
 	},
-})
+}))
 
 const keys = useMagicKeys()
 const cmdV = keys['Meta+V']
 whenever(cmdV, () => {
-	if (!navigator.clipboard) {
-		return
-	}
+	if (!navigator.clipboard) return
 	navigator.clipboard.readText().then((text) => {
 		try {
 			const json = JSON.parse(text)
@@ -148,6 +146,16 @@ watchEffect(() => {
 		<Breadcrumbs :items="[{ label: __('Workbooks'), route: '/workbook' }]" />
 		<div class="flex items-center gap-2">
 			<Button
+				v-if="templates.length"
+				:label="__('Library')"
+				variant="outline"
+				@click="openLibrary"
+			>
+				<template #prefix>
+					<LayoutTemplateIcon class="w-4" />
+				</template>
+			</Button>
+			<Button
 				:label="__('New Workbook')"
 				variant="solid"
 				@click="openNewWorkbook"
@@ -160,10 +168,13 @@ watchEffect(() => {
 		</div>
 	</header>
 
-	<div class="mb-4 flex h-full flex-col gap-3 overflow-auto px-5 py-3">
-		<div class="flex gap-2 overflow-visible py-1">
+	<WorkbookTemplates v-model="showTemplates" :templates="templates" @refresh="fetchTemplates" />
+
+	<div class="mb-4 flex h-full flex-col gap-3 overflow-auto px-5 pt-3">
+		<div class="flex items-center justify-between gap-2 overflow-visible py-1">
 			<FormControl
-				:placeholder="__('Search by Title')"
+				class="w-64"
+				:placeholder="__('Search by title')"
 				v-model="searchQuery"
 				:debounce="300"
 				autocomplete="off"
@@ -172,7 +183,59 @@ watchEffect(() => {
 					<SearchIcon class="h-4 w-4 text-gray-500" />
 				</template>
 			</FormControl>
+			<TabButtons :buttons="scopeTabs" v-model="scope" />
 		</div>
-		<ListView class="h-full" v-bind="listOptions"> </ListView>
+		<!-- flex parent so ListView (whose root is flex-1) fills the height, which
+		lets the empty state center vertically instead of collapsing to the top -->
+		<div class="flex w-full flex-1 flex-col">
+			<ListView class="h-full" v-bind="listOptions">
+				<ListHeader />
+				<ListRows v-if="workbookStore.workbooks.length" />
+				<!-- skip the empty state while a fetch is in flight so it doesn't flash on tab switch -->
+				<!-- ListEmptyState already centers its slot content -->
+				<ListEmptyState v-else-if="!workbookStore.loading">
+					<div class="text-xl font-medium text-ink-gray-8">
+						{{ __('No Workbooks') }}
+					</div>
+					<div class="mt-1 text-base text-ink-gray-5">
+						{{
+							templates.length
+								? __('Create a workbook, or start from a prebuilt one.')
+								: __('No workbooks to display.')
+						}}
+					</div>
+					<div class="mt-4 flex items-center gap-2">
+						<Button
+							v-if="templates.length"
+							:label="__('Library')"
+							variant="outline"
+							@click="openLibrary"
+						>
+							<template #prefix>
+								<LayoutTemplateIcon class="w-4" />
+							</template>
+						</Button>
+						<Button
+							v-if="scope !== 'shared'"
+							:label="__('New Workbook')"
+							variant="solid"
+							:loading="creatingWorkbook"
+							@click="openNewWorkbook"
+						>
+							<template #prefix>
+								<PlusIcon class="w-4" />
+							</template>
+						</Button>
+					</div>
+				</ListEmptyState>
+			</ListView>
+			<div v-if="hasMore" class="flex pt-3">
+				<Button
+					:label="__('Load more')"
+					:loading="workbookStore.loading"
+					@click="loadMore"
+				/>
+			</div>
+		</div>
 	</div>
 </template>

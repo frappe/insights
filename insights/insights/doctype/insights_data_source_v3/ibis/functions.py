@@ -8,7 +8,10 @@ import pandas as pd
 from frappe.utils import now_datetime
 from ibis import _
 
-from insights.insights.query_builders.sql_functions import handle_timespan
+from insights.insights.query_builders.sql_functions import (
+    get_week_start_day_index,
+    handle_timespan,
+)
 
 
 # aggregate functions
@@ -556,7 +559,7 @@ def textsplit(column: ir.StringColumn, delimiter: str, max_splits: int):
     """
     query = frappe.flags.current_ibis_query
     if query is None:
-        frappe.throw("Query not found")
+        return column  # return original column if query is not found
 
     column_name = column.get_name() if hasattr(column, "get_name") else str(column)
 
@@ -564,6 +567,81 @@ def textsplit(column: ir.StringColumn, delimiter: str, max_splits: int):
         query = query.mutate(**{f"{column_name}_split_{i + 1}": column.split(delimiter)[i]})
 
     return query
+
+
+JSON_VALUE_TYPES = {
+    "string": "string",
+    "text": "string",
+    "int": "int64",
+    "integer": "int64",
+    "float": "float64",
+    "decimal": "float64",
+    "number": "float64",
+    "bool": "boolean",
+    "boolean": "boolean",
+    "date": "date",
+    "datetime": "timestamp",
+    "timestamp": "timestamp",
+}
+
+
+def _json_text(column: ir.StringColumn, path: str):
+    """Walk a dotted `path` into a JSON string column and return it as text.
+
+    Returns SQL NULL for both a missing key and an explicit JSON ``null`` — casting
+    JSON to string otherwise yields the literal text ``'null'``, which silently
+    poisons comparisons and type inference. Numeric path segments index arrays.
+    """
+    value = normalize_json(column).cast("json")
+    for segment in str(path).split("."):
+        if not segment:
+            continue
+        value = value[int(segment)] if segment.lstrip("-").isdigit() else value[segment]
+
+    text = value.cast("string")
+    # strip the quotes JSON puts around string values
+    text = ibis.cases(
+        (
+            text.startswith('"') & text.endswith('"'),
+            text.substr(1, text.length() - 2),
+        ),
+        (text.startswith('"'), text.substr(1)),
+        (text.endswith('"'), text.substr(0, text.length() - 1)),
+        else_=text,
+    )
+    return (text == "null").ifelse(ibis.null(), text)
+
+
+def json_value(column: ir.StringColumn, path: str, type: str = "string"):
+    """
+    def json_value(column, path, type='string')
+
+    Read a single value out of a JSON column as a regular column.
+
+    Unlike json_extract, this returns a value you can use anywhere — inside filters,
+    summaries or other expressions — and you say what the type is instead of it being
+    guessed. A missing key or a JSON null gives an empty value. Use dots to reach
+    nested keys, and numbers to pick out of a list.
+
+    Types: string, int, float, bool, date, timestamp
+
+    Examples:
+    - json_value(properties, 'product')
+    - json_value(properties, 'address.city')
+    - json_value(properties, 'items.0.name')
+    - json_value(payload, 'amount', 'float')
+    - json_value(payload, 'signed_up_at', 'timestamp')
+    """
+    text = _json_text(column, path)
+
+    target = JSON_VALUE_TYPES.get(str(type).lower())
+    if target is None:
+        frappe.throw(
+            f"Invalid type '{type}' for json_value. Valid types: {', '.join(sorted(set(JSON_VALUE_TYPES)))}"
+        )
+
+    # try_cast so a stray malformed value becomes empty instead of failing the query
+    return text if target == "string" else text.try_cast(target)
 
 
 def json_extract(column: ir.StringColumn, *field_names: str):
@@ -578,25 +656,9 @@ def json_extract(column: ir.StringColumn, *field_names: str):
     """
     query = frappe.flags.current_ibis_query
     if query is None:
-        frappe.throw("Query not found")
+        return column  # return original column if query is not found
 
-    json_column = column.cast("json")
-
-    # cast JSON values to string and remove quotes
-    clean_columns = {}
-    for field in field_names:
-        clean_col = json_column[field].cast("string")
-        # manually remove quotes for better compatibility
-        clean_col = ibis.cases(
-            (
-                clean_col.startswith('"') & clean_col.endswith('"'),
-                clean_col.substr(1, clean_col.length() - 2),
-            ),
-            (clean_col.startswith('"'), clean_col.substr(1)),
-            (clean_col.endswith('"'), clean_col.substr(0, clean_col.length() - 1)),
-            else_=clean_col,
-        )
-        clean_columns[field] = clean_col
+    clean_columns = {field: _json_text(column, field) for field in field_names}
 
     data = query.select(**clean_columns).limit(50).execute()
 
@@ -605,12 +667,36 @@ def json_extract(column: ir.StringColumn, *field_names: str):
         values = data[field].tolist()
 
         if values:
+            # infer_type_from_list speaks Frappe's type names ("Integer"), which ibis
+            # cannot coerce — translate before casting
             inferred_type = infer_type_from_list(values)
-            clean_col = clean_col.try_cast(inferred_type)
+            target = JSON_VALUE_TYPES.get(str(inferred_type).lower(), "string")
+            if target != "string":
+                clean_col = clean_col.try_cast(target)
 
         query = query.mutate({field: clean_col})
 
     return query
+
+
+def normalize_json(column: ir.StringColumn):
+    """
+    def normalize_json(column)
+
+    Normalize a JSON string by replacing single quotes with double quotes and unescaping escaped single quotes.
+
+    Examples:
+    - normalize_json(api_response)
+    """
+    return (
+        column
+        # opening quote: a ' that follows {  [  ,  or  :
+        .re_replace(r"([{\[,:]\s*)'", r'\1"')
+        # closing quote: a ' that precedes }  ]  ,  or  :
+        .re_replace(r"'(\s*[}\],:])", r'"\1')
+        # unescape Python's \' (apostrophe inside a single-quoted value)
+        .re_replace(r"\\'", "'")
+    )
 
 
 # date functions
@@ -977,6 +1063,23 @@ def if_null(column, value):
     return ibis.coalesce(column, value)
 
 
+def null_if(column, value):
+    """
+    def null_if(column, value)
+
+    Treat a placeholder value as empty.
+
+    Useful when a source writes something like an empty string or 'undefined'
+    instead of leaving the value blank, which would otherwise be counted as a
+    real value.
+
+    Examples:
+    - null_if(team, '')
+    - null_if(city, 'undefined')
+    """
+    return (column == value).ifelse(ibis.null(), column)
+
+
 def asc(column):
     """
     def asc(column)
@@ -1174,17 +1277,7 @@ def week_start(column: ir.DateValue):
     - week_start(order_date)
     """
 
-    week_start_day = frappe.db.get_single_value("Insights Settings", "week_starts_on") or "Monday"
-    days = [
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-        "Sunday",
-    ]
-    week_starts_on = days.index(week_start_day)
+    week_starts_on = get_week_start_day_index()
     date = column.truncate("D")
     day_of_week = date.day_of_week.index().cast("int32")
     adjusted_week_start = (day_of_week - week_starts_on + 7) % 7

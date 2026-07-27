@@ -1,0 +1,9 @@
+{
+	"version": 2,
+	"title": "Sales Performance",
+	"description": "Revenue, customers and fulfilment at a glance — revenue trend with month-on-month KPIs, top customers and items, a quotation-to-order funnel and an overdue-deliveries list.",
+	"notes": "Built from submitted Sales Invoices, Quotations and Sales Orders. Amounts are in the company's base currency and net of returns. POS invoices are reflected only after POS closing.",
+	"module": "Selling",
+	"required_apps": ["erpnext"],
+	"source_doctypes": ["Sales Invoice", "Sales Invoice Item", "Sales Order", "Quotation"]
+}

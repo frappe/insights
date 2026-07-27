@@ -100,7 +100,13 @@ class InsightsQueryv3(Document):
             )
 
     def on_update(self):
-        sync_query_references(self.name, self.operations)
+        frappe.enqueue(
+            sync_query_references,
+            query_name=self.name,
+            operations=self.operations,
+            enqueue_after_commit=True,
+            now=bool(frappe.flags.in_test),
+        )
 
     def cleanup_empty_folder(self, folder_name):
         """Delete folder if it has no queries or charts"""
@@ -210,6 +216,27 @@ class InsightsQueryv3(Document):
     def download_results(
         self, format: str = "csv", active_operation_idx: int | None = None, adhoc_filters: dict | None = None
     ):
+        from insights.insights.doctype.insights_team.insights_team import is_admin
+
+        if not is_admin(frappe.session.user) and not frappe.db.get_single_value(
+            "Insights Settings", "allow_download"
+        ):
+            frappe.throw(
+                "You are not allowed to download data. Contact your administrator.",
+                frappe.PermissionError,
+            )
+
+        if not is_admin(frappe.session.user) and not (
+            frappe.has_permission(self.doctype, ptype="export")
+            and frappe.has_permission(self.doctype, ptype="read", doc=self)
+        ):
+            frappe.throw(
+                frappe._(
+                    "Your role does not have the export permission for queries. Contact your administrator."
+                ),
+                frappe.PermissionError,
+            )
+
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
 
@@ -316,6 +343,12 @@ class InsightsQueryv3(Document):
 
         linked_queries = get_direct_dependencies(self.name)
         for q in linked_queries:
+            # export() recurses, so this covers the whole dependency tree
+            if not frappe.has_permission("Insights Query v3", ptype="read", doc=q):
+                frappe.throw(
+                    frappe._("You do not have access to one of the linked queries"),
+                    frappe.PermissionError,
+                )
             exported_query = frappe.get_doc("Insights Query v3", q).export()
             query["dependencies"]["queries"][q] = exported_query
 
@@ -327,40 +360,6 @@ class InsightsQueryv3(Document):
         new_query.title = f"{self.title} (Copy)"
         new_query.insert()
         return new_query.name
-
-    @insights_whitelist(role="Insights Admin")
-    def explain(self, active_operation_idx: int | None = None):
-        """Return EXPLAIN (ANALYZE for data store, plain for live) output for this query."""
-        ibis_query = self.build(active_operation_idx)
-
-        from insights.insights.doctype.insights_data_source_v3.data_warehouse import is_warehouse
-
-        backend = ibis_query.get_backend()
-        use_analyze = is_warehouse(backend)
-
-        sql_text = str(ibis.to_sql(ibis_query))
-        prefix = "EXPLAIN ANALYZE" if use_analyze else "EXPLAIN"
-
-        try:
-            result = backend.raw_sql(f"{prefix} {sql_text}")
-            rows = result.fetchall()
-            desc = result.description
-        except Exception as e:
-            frappe.throw(f"EXPLAIN failed: {e}")
-
-        if use_analyze:
-            plan = "\n".join(filter(None, (row[1] for row in rows)))
-        else:
-            import pandas as pd
-
-            headers = [d[0] for d in desc]
-            df = pd.DataFrame(rows, columns=headers).fillna("NULL").astype(str)
-            plan = df.to_markdown(index=False, tablefmt="pipe")
-
-        return {
-            "plan": plan,
-            "is_analyze": use_analyze,
-        }
 
     @insights_whitelist(role="Insights Admin")
     def refresh_stored_tables(self):

@@ -49,7 +49,7 @@ watchEffect(() => {
 })
 
 function emptyDimension(): Dimension {
-	return { column_name: '', data_type: 'String', granularity: 'month', dimension_name: '' }
+	return { column_name: '', data_type: 'String', granularity: undefined, dimension_name: '' }
 }
 
 function addRow() {

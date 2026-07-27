@@ -2,13 +2,15 @@
 # For license information, please see license.txt
 
 
+from contextlib import suppress
+
 import frappe
 import frappe.utils
 from frappe.model.document import Document
 from frappe.query_builder import Interval
 from frappe.query_builder.functions import Now
+from frappe.utils.telemetry import capture
 
-from insights.api.telemetry import capture_event
 from insights.utils import deep_convert_dict_to_dict
 
 
@@ -22,6 +24,9 @@ class InsightsWorkbook(Document):
         from frappe.types import DF
 
         data_backup: DF.JSON | None
+        from_template: DF.Data | None
+        imported_checksum: DF.Data | None
+        imported_version: DF.Int
         name: DF.Int | None
         title: DF.Data
     # end: auto-generated types
@@ -46,7 +51,7 @@ class InsightsWorkbook(Document):
             frappe.delete_doc("Insights Folder", f.name, force=True, ignore_permissions=True)
 
     def after_insert(self):
-        capture_event("workbook_created")
+        capture("workbook_created", "insights")
 
         # If this is a restored workbook (has data_backup) then restore child documents
         if not self.data_backup:
@@ -249,6 +254,16 @@ class InsightsWorkbook(Document):
         )
         if not last_viewed_recently:
             self.add_viewed(force=True)
+
+        # adoption signal for library workbooks; interval dedupes to once/user/site/day
+        if self.from_template:
+            with suppress(Exception):
+                capture(
+                    "workbook_template_used",
+                    "insights",
+                    properties={"template": self.from_template},
+                    interval="1d",
+                )
 
     @frappe.whitelist()
     def export(self):

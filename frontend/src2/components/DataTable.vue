@@ -50,6 +50,7 @@ const props = defineProps<{
 	columnWidths?: Record<string, number>
 	textWrap?: Record<string, boolean>
 	pageSize?: number
+	displayPageSize?: number
 	totalRowCount?: number
 	onPageChange?: (page: number) => void
 	currentPage?: number
@@ -216,6 +217,7 @@ const totalColumnTotal = computed(() => {
 
 const pagination = usePagination({
 	pageSize: computed(() => props.pageSize ?? 100),
+	displayPageSize: computed(() => props.displayPageSize ?? 100),
 	rowCount: computed(() => visibleRows.value?.length ?? 0),
 	totalRowCount: computed(() => props.totalRowCount),
 	currentPage: computed(() => props.currentPage),
@@ -225,11 +227,11 @@ const pagination = usePagination({
 
 const colorByPercentage = {
 	0: 'bg-white text-gray-900',
-	10: 'bg-blue-100 text-blue-900',
-	30: 'bg-blue-200 text-blue-900',
-	60: 'bg-blue-300 text-blue-900',
-	90: 'bg-blue-400 text-blue-900',
-	100: 'bg-blue-500 text-white',
+	10: 'bg-[#338AD8]/10 text-gray-900',
+	30: 'bg-[#338AD8]/30 text-gray-900',
+	60: 'bg-[#338AD8]/60 text-gray-900',
+	90: 'bg-[#338AD8]/90 text-white',
+	100: 'bg-[#338AD8] text-white',
 }
 
 const colorByValues = computed(() => {

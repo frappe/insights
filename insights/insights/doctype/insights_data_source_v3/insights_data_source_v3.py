@@ -8,10 +8,10 @@ from contextlib import contextmanager
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils.telemetry import capture
 from ibis import BaseBackend
 
 import insights
-from insights.api.telemetry import capture_event
 from insights.insights.doctype.insights_table_link_v3.insights_table_link_v3 import (
     InsightsTableLinkv3,
 )
@@ -82,7 +82,7 @@ class InsightsDataSourceDocument:
 
     def after_insert(self):
         if not self.is_site_db:
-            capture_event("data_source_created")
+            capture("data_source_created", "insights")
 
     def on_update(self):
         if self.type == "REST API":
@@ -262,12 +262,13 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             except Exception:
                 db.raw_sql("SET SESSION TRANSACTION_READ_ONLY = 1")
 
-            MAX_STATEMENT_TIMEOUT = (
-                frappe.db.get_single_value("Insights Settings", "max_execution_time", cache=True) or 180
+            from insights.insights.doctype.insights_settings.insights_settings import (
+                get_max_execution_time,
             )
+
             ## Todo: Permanent fix for this
             try:
-                db.raw_sql(f"SET MAX_STATEMENT_TIME={MAX_STATEMENT_TIMEOUT}")
+                db.raw_sql(f"SET MAX_STATEMENT_TIME={get_max_execution_time()}")
             except Exception:
                 pass
 
@@ -356,8 +357,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         if not contains_special_chars:
             return db.list_tables()
 
-        quoted_db_name = f"{db.dialect.QUOTE_START}{database_name}{db.dialect.QUOTE_END}"
-        return db.list_tables(database=quoted_db_name)
+        return db.list_tables(database=database_name)
 
     @frappe.whitelist()
     def test_connection(self, raise_exception: bool | None = False):

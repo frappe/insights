@@ -71,7 +71,7 @@ function addDimension() {
 	dimensions.value.push({
 		column_name: '',
 		data_type: 'String',
-		granularity: 'month',
+		granularity: undefined,
 		dimension_name: '',
 	})
 }

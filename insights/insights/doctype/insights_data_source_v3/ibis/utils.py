@@ -7,6 +7,7 @@ import traceback
 import frappe
 import ibis
 import ibis.expr.types as ir
+from frappe.utils.safe_exec import SERVER_SCRIPT_FILE_PREFIX, safe_exec
 from ibis import selectors as s
 from jedi import Script
 
@@ -372,7 +373,7 @@ def validate_types(expression: str, columns: list[dict]):
     try:
         validation_table = ibis.table(schema, name="validation_table")
         eval_context = eval_script(validation_table, schema)
-        exec(expression, {"__builtins__": {}}, eval_context)
+        safe_exec(expression, eval_context, restrict_commit_rollback=True)
         return {"is_valid": True, "errors": []}
 
     except (AttributeError, TypeError) as e:
@@ -406,7 +407,7 @@ def validate_types(expression: str, columns: list[dict]):
 def get_error_line(tb) -> int:
     if tb:
         for frame in traceback.extract_tb(tb):
-            if frame.filename == "<string>":
+            if frame.filename == "<string>" or frame.filename.startswith(SERVER_SCRIPT_FILE_PREFIX):
                 return frame.lineno
     return 1
 

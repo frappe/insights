@@ -101,8 +101,8 @@ jobs:
         run: |
           bench get-app insights $GITHUB_WORKSPACE --skip-assets
           bench setup requirements --dev
+          bench config set-common-config -c server_script_enabled 1
           bench new-site --db-root-password "$DB_ROOT_PASSWORD" --admin-password "$ADMIN_PASSWORD" "$SITE_NAME"
-          bench --site "$SITE_NAME" set-config server_script_enabled 1 --parse
           bench --site "$SITE_NAME" install-app insights
           bench build
         env:

@@ -6,13 +6,30 @@ from insights.utils import DocShare
 
 
 @insights_whitelist()
-def get_workbooks(search_term: str | None = None, limit: int = 100):
+def get_workbooks(
+    search_term: str | None = None,
+    limit: int = 100,
+    scope: str | None = None,
+):
+    """Return workbooks accessible to the current user.
+
+    scope:
+        "owned"  -> only workbooks owned by the current user
+        "shared" -> only workbooks owned by someone else (still permission filtered)
+        None     -> all accessible workbooks
+    """
+    filters = {}
+    if scope == "owned":
+        filters["owner"] = frappe.session.user
+    elif scope == "shared":
+        filters["owner"] = ["!=", frappe.session.user]
+
+    or_filters = {"title": ["like", f"%{search_term}%"]} if search_term else None
+
     workbooks = frappe.get_list(
         "Insights Workbook",
-        or_filters={
-            "owner": ["like", f"%{search_term}%" if search_term else "%"],
-            "title": ["like", f"%{search_term}%" if search_term else "%"],
-        },
+        filters=filters,
+        or_filters=or_filters,
         fields=[
             "name",
             "title",
@@ -37,33 +54,57 @@ def get_workbooks(search_term: str | None = None, limit: int = 100):
         views = [view for view in workbook_views if str(view["reference_name"]) == str(workbook["name"])]
         workbook["views"] = len(views)
 
+    # batch the share lookups into two grouped queries instead of ~2 per
+    # workbook (avoids an N+1 over the whole list)
+    org_shared, shared_users = _workbook_shares(workbook_names)
     for workbook in workbooks:
-        organization_has_access = frappe.db.exists(
-            "DocShare",
-            {
-                "share_doctype": "Insights Workbook",
-                "share_name": workbook["name"],
-                "everyone": 1,
-                "read": 1,
-            },
-        )
-        if organization_has_access:
+        # share_name is stored as a string; workbook name may be an int — cast to match
+        name = str(workbook["name"])
+        if name in org_shared:
             workbook["shared_with_organization"] = True
             continue
+        workbook["shared_with"] = [user for user in shared_users.get(name, []) if user != workbook["owner"]]
 
-        shared_with = frappe.get_all(
+    return workbooks
+
+
+def _workbook_shares(names: list[str]) -> tuple[set, dict]:
+    """Return (org-shared workbook names, {workbook name -> [users it's read-shared with]}).
+
+    Two queries for the whole list instead of an exists-check + fetch per workbook.
+    Keys are stringified since DocShare.share_name is stored as a string.
+    """
+    if not names:
+        return set(), {}
+
+    org_shared = {
+        str(name)
+        for name in frappe.get_all(
             "DocShare",
             filters={
                 "share_doctype": "Insights Workbook",
-                "share_name": workbook["name"],
-                "user": ["!=", workbook["owner"]],
+                "share_name": ["in", names],
+                "everyone": 1,
                 "read": 1,
             },
-            pluck="user",
+            pluck="share_name",
         )
-        workbook["shared_with"] = shared_with
+    }
 
-    return workbooks
+    shared_users: dict[str, list] = {}
+    rows = frappe.get_all(
+        "DocShare",
+        filters={
+            "share_doctype": "Insights Workbook",
+            "share_name": ["in", names],
+            "read": 1,
+        },
+        fields=["share_name", "user"],
+    )
+    for row in rows:
+        shared_users.setdefault(str(row["share_name"]), []).append(row["user"])
+
+    return org_shared, shared_users
 
 
 @insights_whitelist()

@@ -9,7 +9,6 @@ readme = "README.md"
 dynamic = ["version"]
 dependencies = [
     "pandas~=2.3.3",
-    "tabulate",
     "SQLAlchemy==2.0.41",
     "python-telegram-bot==21.4",
     "duckdb~=1.4.3",
@@ -22,7 +21,11 @@ dependencies = [
     "ibis-framework[postgres]",
     # "ibis-framework[mssql]",
     # "ibis-framework[bigquery]",
+    "psycopg[binary]",
 ]
+
+[tool.bench.frappe-dependencies]
+frappe = ">=15.0.0"
 
 [project.optional-dependencies]
 test = [

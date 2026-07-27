@@ -18,7 +18,7 @@ import {
 } from 'lucide-vue-next'
 import { h } from 'vue'
 import { copy } from '../helpers'
-import { FIELDTYPES, GranularityType } from '../helpers/constants'
+import { FIELDTYPES, getDefaultGranularity, GranularityType } from '../helpers/constants'
 import dayjs from '../helpers/dayjs'
 import useSettings from '../settings/settings'
 import {
@@ -154,6 +154,20 @@ export function getFormattedRows(result: QueryResult, operations: Operation[]) {
 export function getFormattedDate(date: string, granularity: string) {
 	if (!date) return ''
 
+	const isTimeOnlyValue = /^\d{1,2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(date)
+	if (isTimeOnlyValue) {
+		const timeFormats: Record<string, string> = {
+			second: 'h:mm:ss A',
+			minute: 'h:mm A',
+			hour: 'h:00 A',
+		}
+
+		if (!timeFormats[granularity]) return date
+
+		const parsed = dayjs(date, ['HH:mm:ss.SSSSSS', 'HH:mm:ss', 'HH:mm'], true)
+		return parsed.isValid() ? parsed.format(timeFormats[granularity]) : date
+	}
+
 	if (granularity === 'fiscal_year') {
 		const d = dayjs(date)
 		const fiscalYearStart = session.user.fiscal_year_start
@@ -206,11 +220,10 @@ export function getDimensions(columns: QueryResultColumn[]): Dimension[] {
 }
 
 export function makeDimension(column: QueryResultColumn): Dimension {
-	const isDate = FIELDTYPES.DATE.includes(column.type)
 	return {
 		column_name: column.name,
 		data_type: column.type as DimensionDataType,
-		granularity: isDate ? 'month' : undefined,
+		granularity: getDefaultGranularity(column.type),
 		dimension_name: column.name,
 	}
 }
