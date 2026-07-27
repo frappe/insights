@@ -12,8 +12,6 @@ type SessionUser = {
 	can_download: boolean
 	country: string
 	locale: string
-	is_v2_instance: boolean
-	default_version: 'v3' | 'v2' | ''
 	has_desk_access?: boolean
 	has_demo_data: boolean
 	fiscal_year_start: string
@@ -30,8 +28,6 @@ const emptyUser: SessionUser = {
 	can_download: true,
 	country: '',
 	locale: 'en-US',
-	is_v2_instance: false,
-	default_version: '',
 	has_demo_data: false,
 	fiscal_year_start: '01-04-2020',
 }
@@ -43,7 +39,6 @@ const session = reactive({
 	isAuthorized: computed(() => false),
 	initialize,
 	fetchSessionInfo,
-	updateDefaultVersion,
 	login,
 	logout,
 	resetSession,
@@ -68,16 +63,10 @@ async function fetchSessionInfo() {
 		...userInfo,
 		is_admin: Boolean(userInfo.is_admin),
 		is_user: Boolean(userInfo.is_user),
-		is_v2_instance: Boolean(userInfo.is_v2_instance),
 		has_desk_access: Boolean(userInfo.has_desk_access),
 		has_demo_data: Boolean(userInfo.has_demo_data),
 		can_download: Boolean(userInfo.can_download),
 	})
-}
-
-function updateDefaultVersion(version: SessionUser['default_version']) {
-	session.user.default_version = version
-	return call('insights.api.update_default_version', { version })
 }
 
 async function login(email: string, password: string) {

@@ -1,67 +1,7 @@
 import frappe
 from frappe.query_builder.functions import Count, Max
 
-from insights.api.permissions import is_private
 from insights.decorators import insights_whitelist, validate_type
-
-
-@insights_whitelist()
-def get_dashboard_list():
-    dashboards = frappe.get_list(
-        "Insights Dashboard",
-        fields=["name", "title", "modified", "_liked_by"],
-    )
-    for dashboard in dashboards:
-        if dashboard._liked_by:
-            dashboard["is_favourite"] = frappe.session.user in frappe.as_json(dashboard._liked_by)
-        dashboard["charts"] = frappe.get_all(
-            "Insights Dashboard Item",
-            filters={
-                "parent": dashboard.name,
-                "item_type": ["not in", ["Text", "Filter"]],
-            },
-            pluck="parent",
-        )
-        dashboard["charts_count"] = len(dashboard["charts"])
-        dashboard["view_count"] = frappe.db.count(
-            "View Log",
-            filters={
-                "reference_doctype": "Insights Dashboard",
-                "reference_name": dashboard.name,
-            },
-        )
-
-        dashboard["is_private"] = is_private("Insights Dashboard", dashboard.name)
-
-    return dashboards
-
-
-@insights_whitelist()
-def create_dashboard(title: str):
-    dashboard = frappe.get_doc({"doctype": "Insights Dashboard", "title": title})
-    dashboard.insert()
-    return {
-        "name": dashboard.name,
-        "title": dashboard.title,
-    }
-
-
-@insights_whitelist()
-def get_dashboard_options(chart: str):
-    # dashboards the caller can access that don't already contain this chart
-    dashboards = frappe.get_list("Insights Dashboard", fields=["name", "title"], limit=0)
-    with_chart = set(frappe.get_all("Insights Dashboard Item", filters={"chart": chart}, pluck="parent"))
-    return [{"value": d.name, "label": d.title} for d in dashboards if d.name not in with_chart]
-
-
-@insights_whitelist()
-def add_chart_to_dashboard(dashboard: str, chart: str):
-    dashboard = frappe.get_doc("Insights Dashboard", dashboard)
-    dashboard.add_chart(chart)
-    dashboard.save()
-
-
-# v3 API
 
 
 @insights_whitelist()

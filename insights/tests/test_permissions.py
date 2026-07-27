@@ -1,9 +1,11 @@
 import frappe
+import frappe.share
 from frappe.permissions import update_permission_property
 
 from insights.api.workbooks import get_share_permissions, update_share_permissions
 from insights.decorators import insights_whitelist
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
+from insights.insights.doctype.insights_team.insights_team import clear_cache as clear_team_cache
 from insights.permissions import PERMISSION_DOCTYPES
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import (
@@ -21,7 +23,6 @@ from insights.tests.permissions_utils import (
     USER_1,
     USER_2,
     cleanup_test_fixtures,
-    clear_team_cache,
     create_test_data_sources,
     create_test_tables,
     create_test_teams,

@@ -1,10 +1,10 @@
-import router from '@/router'
-import { __ } from '../translation'
 import { useTimeAgo } from '@vueuse/core'
 import { call } from 'frappe-ui'
 import { reactive, ref } from 'vue'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import { createToast } from '../helpers/toasts'
+import router from '../router'
+import { __ } from '../translation'
 import { WorkbookListItem } from '../types/workbook.types'
 
 const workbooks = ref<WorkbookListItem[]>([])
