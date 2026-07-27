@@ -1,3 +1,5 @@
+import sys
+
 import frappe
 
 
@@ -40,4 +42,6 @@ If you have already migrated or do not have any active usage, please set the fol
 """
 
     print(message)
-    exit(1)
+    # SystemExit escapes patch_handler's `except Exception`, so `--skip-failing`
+    # can't silently bypass the block
+    sys.exit(1)
