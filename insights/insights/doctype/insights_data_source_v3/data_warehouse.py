@@ -2,7 +2,7 @@ import os
 import shutil
 import tempfile
 import time
-from collections.abc import Generator
+from collections.abc import Generator, Sequence
 from contextlib import contextmanager, suppress
 from pathlib import Path
 
@@ -16,6 +16,7 @@ from frappe.utils import add_days, get_datetime, get_files_path, now, now_dateti
 from frappe.utils.background_jobs import is_job_enqueued
 from ibis import _
 from ibis.backends.duckdb import Backend as DuckDBBackend
+from ibis.backends.sql.datatypes import DuckDBType
 from ibis.common.exceptions import TableNotFound
 from ibis.expr.types import Expr, Table
 
@@ -37,6 +38,10 @@ CLEANUP_LOCK_TIMEOUT = 15 * 60
 # Rebuilding the file is only worth the disk and time above these thresholds.
 COMPACT_MIN_FILE_SIZE = 100 * 1024 * 1024
 COMPACT_MIN_FREE_RATIO = 0.2
+
+
+def quote_ident(name: str) -> str:
+    return '"' + name.replace('"', '""') + '"'
 
 
 class Warehouse:
@@ -215,6 +220,7 @@ class WarehouseTableWriter:
                 merged = db.read_parquet(parquet_glob)
 
                 if self._table_exists(db) and self.mode in ("append", "upsert"):
+                    self._add_missing_columns(db, merged)
                     if self.mode == "append":
                         db.insert(self.table_name, merged)
                     elif self.mode == "upsert":
@@ -239,31 +245,43 @@ class WarehouseTableWriter:
         except Exception:
             return False
 
+    def _add_missing_columns(self, db: DuckDBBackend, incoming: Table) -> None:
+        """Add columns the source has gained since the last import.
+
+        ibis inserts by name only while the source columns are a subset of the
+        target's; a new source column otherwise falls back to positional order.
+        """
+        existing_schema = db.table(self.table_name).schema()
+
+        for name, dtype in incoming.schema().items():
+            if name in existing_schema:
+                continue
+            column_type = DuckDBType.to_string(dtype)
+            self._log(f"New column '{name}' ({column_type}), adding it to '{self.table_name}'")
+            table = quote_ident(self.table_name)
+            db.raw_sql(f"ALTER TABLE {table} ADD COLUMN {quote_ident(name)} {column_type}")
+
     def _upsert(self, db: DuckDBBackend, incoming: Table) -> None:
         if not self.primary_key_column or not self.cursor_column:
             raise RuntimeError("Upsert mode requires both cursor and primary key columns")
 
         source_query = ibis.to_sql(incoming, dialect="duckdb", pretty=False)
-        merge_stmt = self._build_merge_statement(source_query)
+        merge_stmt = self._build_merge_statement(source_query, incoming.schema().names)
         self._log(f"MERGE Query:\n{merge_stmt}")
         db.raw_sql(merge_stmt)
 
-    def _build_merge_statement(self, source_query: str) -> str:
+    def _build_merge_statement(self, source_query: str, columns: Sequence[str]) -> str:
         source_alias = "source"
         target_alias = "target"
-
-        def quote_ident(name: str) -> str:
-            return '"' + name.replace('"', '""') + '"'
 
         def qualified_column(name: str, table: str) -> str:
             return f"{table}.{quote_ident(name)}"
 
         assignments = ", ".join(
-            f"{quote_ident(name)} = {qualified_column(name, source_alias)}"
-            for name in self.table_schema.names
+            f"{quote_ident(name)} = {qualified_column(name, source_alias)}" for name in columns
         )
-        insert_columns = ", ".join(quote_ident(name) for name in self.table_schema.names)
-        insert_values = ", ".join(qualified_column(name, source_alias) for name in self.table_schema.names)
+        insert_columns = ", ".join(quote_ident(name) for name in columns)
+        insert_values = ", ".join(qualified_column(name, source_alias) for name in columns)
 
         return (
             f"MERGE INTO {quote_ident(self.table_name)} AS {target_alias} "
