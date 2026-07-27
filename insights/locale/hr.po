@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-06-21 10:42+0000\n"
-"PO-Revision-Date: 2026-07-09 09:47\n"
+"PO-Revision-Date: 2026-07-10 10:32\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -729,11 +729,11 @@ msgstr "Nadzorne Table"
 
 #: frontend/src2/dashboard/DashboardList.vue:93
 msgid "Dashboards shared with you will show up here."
-msgstr ""
+msgstr "Nadzorne ploče koje su podijeljene s vama prikazat će se ovdje."
 
 #: frontend/src2/dashboard/DashboardList.vue:83
 msgid "Dashboards you open will show up here."
-msgstr ""
+msgstr "Nadzorne ploče koje otvorite prikazat će se ovdje."
 
 #. Label of the data_backup (JSON) field in DocType 'Insights Workbook'
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
@@ -2036,7 +2036,7 @@ msgstr "Nema pronađenih Upita"
 
 #: frontend/src2/dashboard/DashboardList.vue:82
 msgid "No Recents"
-msgstr ""
+msgstr "Nema Nedavnih"
 
 #: frontend/src2/data_source/DataSourceTableList.vue:40
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:58
@@ -3068,7 +3068,7 @@ msgstr "Ove Godine"
 
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.py:93
 msgid "This column is not available as a filter on this dashboard"
-msgstr ""
+msgstr "Ovaj stupac nije dostupan kao filtar na ovoj nadzornoj ploči"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:15
 msgid "This will delete all warehouse data for <b>{0}</b> and reset the sync bookmark. Are you sure?"
@@ -3424,7 +3424,7 @@ msgstr "Nemate dopuštenje za dijeljenje ove radne knjige"
 
 #: frontend/src2/dashboard/DashboardList.vue:88
 msgid "You haven't created any dashboards yet."
-msgstr ""
+msgstr "Još niste izradili nijednu nadzornu ploču."
 
 #: frontend/src2/home/HomeWorkbookList.vue:68
 msgid "Your workbooks will appear here. Create a new workbook to get started."
