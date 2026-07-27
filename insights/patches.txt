@@ -1,10 +1,10 @@
 [pre_model_sync]
 insights.patches.check_legacy_v2_data_before_upgrade #2
-insights.patches.normalize_workbook
+insights.patches.normalize_workbook #6
 
 [post_model_sync]
-insights.insights.doctype.insights_data_source_v3.patches.copy_data_sources
-insights.insights.doctype.insights_table_v3.patches.force_sync_tables
+insights.insights.doctype.insights_data_source_v3.patches.copy_data_sources #v4
+insights.insights.doctype.insights_table_v3.patches.force_sync_tables #5
 insights.patches.enable_data_store
 insights.insights.doctype.insights_data_source_v3.patches.set_type
 execute:frappe.db.set_single_value("Insights Settings", "apply_user_permissions", 1) #2

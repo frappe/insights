@@ -5,16 +5,8 @@ from frappe.permissions import update_permission_property
 from insights.api.workbooks import get_share_permissions, update_share_permissions
 from insights.decorators import insights_whitelist
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
-from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 from insights.insights.doctype.insights_team.insights_team import clear_cache as clear_team_cache
 from insights.permissions import PERMISSION_DOCTYPES
-
-TEST_DS_TITLE = "Test DuckDB"
-TEST_DS_NAME = frappe.scrub(TEST_DS_TITLE)
-TEST_TABLE1_NAME = get_table_name(TEST_DS_NAME, "table1")
-TEST_TABLE2_NAME = get_table_name(TEST_DS_NAME, "table2")
-TEST_TABLE3_NAME = get_table_name(TEST_DS_NAME, "table3")
-
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import (
     DT,
