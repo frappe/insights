@@ -119,10 +119,10 @@ function runUpdate(template: WorkbookTemplate) {
 <template>
 	<Dialog v-model:open="show" :title="__('Workbook Library')" size="4xl">
 		<template #default>
-			<p class="mb-5 text-p-base text-ink-gray-6">
+			<p class="mb-5 text-p-base text-ink-gray-6 -mt-3">
 				{{
 					__(
-						"Prebuilt workbooks your installed apps bring to Insights. Import one to add it to your site's workbooks — everyone can use it.",
+						'Ready-made dashboards bundled with your installed apps. Import one to add it to your workbooks — it becomes available to everyone on your site.',
 					)
 				}}
 			</p>
@@ -142,13 +142,13 @@ function runUpdate(template: WorkbookTemplate) {
 							class="col-span-1 flex flex-col overflow-hidden rounded border border-outline-gray-1 bg-surface-base"
 						>
 							<div
-								class="h-32 w-full border-b border-outline-gray-1 bg-surface-gray-1"
+								class="h-52 w-full border-b border-outline-gray-1 bg-surface-gray-1"
 							>
 								<img
 									v-if="template.preview_image"
 									:src="template.preview_image"
 									:alt="template.title"
-									class="h-full w-full object-cover"
+									class="h-full w-full object-cover object-top"
 								/>
 								<div v-else class="flex h-full w-full items-center justify-center">
 									<LayoutTemplate
@@ -229,20 +229,20 @@ function runUpdate(template: WorkbookTemplate) {
 	</Dialog>
 
 	<Dialog
-		v-model="showConfirm"
-		:options="{
-			title: __('Replace your changes?'),
-			message: __(
+		v-model:open="showConfirm"
+		:title="__('Replace your changes?')"
+		:message="
+			__(
 				'This dashboard has been edited on your site. Updating replaces its contents with the latest version — your changes will be lost.',
-			),
-			actions: [
-				{
-					label: __('Update'),
-					variant: 'solid',
-					theme: 'red',
-					onClick: () => confirmTarget && runUpdate(confirmTarget),
-				},
-			],
-		}"
+			)
+		"
+		:actions="[
+			{
+				label: __('Update'),
+				variant: 'solid',
+				theme: 'red',
+				onClick: () => confirmTarget && runUpdate(confirmTarget),
+			},
+		]"
 	/>
 </template>

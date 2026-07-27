@@ -94,10 +94,6 @@ after_request = ["insights.insights.doctype.insights_data_source_v3.insights_dat
 
 fixtures = [
     {
-        "dt": "Insights Data Source",
-        "filters": {"name": ("in", ["Site DB", "Query Store"])},
-    },
-    {
         "dt": "Insights Data Source v3",
         "filters": {"name": "Site DB"},
     },
@@ -169,6 +165,9 @@ scheduler_events = {
     "daily": [
         "insights.api.data_store.sync_tables",
     ],
+    "weekly": [
+        "insights.insights.doctype.insights_data_source_v3.data_warehouse.cleanup_data_store",
+    ],
     "hourly": [
         "insights.api.data_store.update_failed_sync_status",
         "insights.insights.doctype.insights_table_import_job.insights_table_import_job.run_scheduled_imports",
@@ -234,5 +233,4 @@ page_renderer = "insights.utils.InsightsPageRenderer"
 
 website_route_rules = [
     {"from_route": "/insights/<path:app_path>", "to_route": "insights"},
-    {"from_route": "/insights_v2/<path:app_path>", "to_route": "insights_v2"},
 ]

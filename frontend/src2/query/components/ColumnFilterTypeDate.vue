@@ -3,7 +3,7 @@ import { wheneverChanges } from '../../helpers'
 import { __ } from '../../translation'
 import dayjs from '../../helpers/dayjs'
 import { ChevronDown, ChevronRight } from 'lucide-vue-next'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import useSettings from '../../settings/settings'
 import { FilterOperator, FilterValue, QueryResultColumn } from '../../types/query.types'
 import DatePicker from './DatePicker.vue'
@@ -27,47 +27,68 @@ wheneverChanges(currentSection, () => {
 	}
 })
 
+const settings = useSettings()
+
 const getValue = (date: Date) =>
 	date.toLocaleDateString('en-US', {
 		month: 'short',
 		day: 'numeric',
 	})
-const todayValue = getValue(new Date())
-const [weekStart, weekEnd] = [dayjs().startOf('week').toDate(), dayjs().endOf('week').toDate()]
-const [monthStart, monthEnd] = [dayjs().startOf('month').toDate(), dayjs().endOf('month').toDate()]
-const [qtrStart, qtrEnd] = [dayjs().startOf('quarter').toDate(), dayjs().endOf('quarter').toDate()]
-const [yearStart, yearEnd] = [dayjs().startOf('year').toDate(), dayjs().endOf('year').toDate()]
-const fiscal_year_start = useSettings().doc.fiscal_year_start || '04-01-1999'
-const [fiscalYearStart, fiscalYearEnd] = [
-	dayjs(fiscal_year_start).toDate(),
-	dayjs(fiscal_year_start).add(1, 'year').subtract(1, 'day').toDate(),
-]
+type Day = ReturnType<typeof dayjs>
+const getRange = (start: Day, end: Day) => `${getValue(start.toDate())} - ${getValue(end.toDate())}`
 
-const thisWeekValue = `${getValue(weekStart)} - ${getValue(weekEnd)}`
-const thisMonthValue = `${getValue(monthStart)} - ${getValue(monthEnd)}`
-const thisQuarterValue = `${getValue(qtrStart)} - ${getValue(qtrEnd)}`
-const thisYearValue = `${getValue(yearStart)} - ${getValue(yearEnd)}`
-const thisFYValue = `${getValue(fiscalYearStart)} - ${getValue(fiscalYearEnd)}`
+const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+function startOfWeek() {
+	const weekStartsOn = WEEKDAYS.indexOf(settings.doc.week_starts_on || 'Monday')
+	// dayjs counts days from Sunday, WEEKDAYS from Monday
+	const today = dayjs()
+	const dayOfWeek = (today.day() + 6) % 7
+	return today.subtract((dayOfWeek - weekStartsOn + 7) % 7, 'day')
+}
 
-const predefinedRanges = [
-	{ label: __('Today'), value: 'Day', description: todayValue },
-	{ label: __('This Week'), value: 'Week', description: thisWeekValue },
-	{ label: __('This Month'), value: 'Month', description: thisMonthValue },
-	{ label: __('This Quarter'), value: 'Quarter', description: thisQuarterValue },
-	{ label: __('This Year'), value: 'Year', description: thisYearValue },
-	{ label: __('This FY'), value: 'Fiscal Year', description: thisFYValue },
-	// last 7 days
-	// last 30 days
-	// last 90 days
-	// last 3 months
-	// last 6 months
-	// last 12 months
-	// last month
-	// last year
-	// month to date
-	// year to date
-	// all time
-]
+const predefinedRanges = computed(() => {
+	const weekStart = startOfWeek()
+	const fyStart = dayjs(settings.doc.fiscal_year_start || '04-01-1999')
+	return [
+		{ label: __('Today'), value: 'Day', description: getValue(new Date()) },
+		{
+			label: __('This Week'),
+			value: 'Week',
+			description: getRange(weekStart, weekStart.add(6, 'day')),
+		},
+		{
+			label: __('This Month'),
+			value: 'Month',
+			description: getRange(dayjs().startOf('month'), dayjs().endOf('month')),
+		},
+		{
+			label: __('This Quarter'),
+			value: 'Quarter',
+			description: getRange(dayjs().startOf('quarter'), dayjs().endOf('quarter')),
+		},
+		{
+			label: __('This Year'),
+			value: 'Year',
+			description: getRange(dayjs().startOf('year'), dayjs().endOf('year')),
+		},
+		{
+			label: __('This FY'),
+			value: 'Fiscal Year',
+			description: getRange(fyStart, fyStart.add(1, 'year').subtract(1, 'day')),
+		},
+		// last 7 days
+		// last 30 days
+		// last 90 days
+		// last 3 months
+		// last 6 months
+		// last 12 months
+		// last month
+		// last year
+		// month to date
+		// year to date
+		// all time
+	]
+})
 
 function onPredefinedRangeInput(rangeValue: string) {
 	filter.value = { operator: 'within', value: ['Current', rangeValue] }

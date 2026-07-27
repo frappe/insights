@@ -58,6 +58,38 @@ def open_local_duckdb(
 
 
 @contextmanager
+def local_duckdb_write_lock(
+    path: str,
+    cache_key: str,
+    timeout: int = 30,
+) -> Generator[None, None, None]:
+    """Serialize write access to a local DuckDB file.
+
+    Holds a file-level lock and evicts the cached read-only connection for
+    cache_key, so the caller is free to open the file for writing — or to
+    replace the file altogether, as the warehouse compaction does.
+
+    Args:
+        path: Absolute path to the .duckdb file.
+        cache_key: The key under which the read connection is cached in
+            insights.db_connections (typically the data source name).
+        timeout: Seconds to wait for the file lock before giving up.
+    """
+    from frappe.utils.synchronization import filelock
+
+    import insights
+
+    lock_name = f"insights_duckdb_write_{frappe.scrub(os.path.basename(path))}"
+    with filelock(lock_name, timeout=timeout):
+        with suppress(Exception):
+            cached = insights.db_connections.pop(cache_key, None)
+            if cached:
+                cached.disconnect()
+
+        yield
+
+
+@contextmanager
 def local_duckdb_write_connection(
     path: str,
     cache_key: str,
@@ -81,17 +113,7 @@ def local_duckdb_write_connection(
         allowed_dir: Directory to allow external file access from.
         timeout: Seconds to wait for the file lock before giving up.
     """
-    from frappe.utils.synchronization import filelock
-
-    import insights
-
-    lock_name = f"insights_duckdb_write_{frappe.scrub(os.path.basename(path))}"
-    with filelock(lock_name, timeout=timeout):
-        with suppress(Exception):
-            cached = insights.db_connections.pop(cache_key, None)
-            if cached:
-                cached.disconnect()
-
+    with local_duckdb_write_lock(path, cache_key, timeout=timeout):
         db = open_local_duckdb(
             path,
             read_only=False,

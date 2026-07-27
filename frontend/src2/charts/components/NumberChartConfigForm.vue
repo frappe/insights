@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import ColorInput from '@/components/Controls/ColorInput.vue'
 import { debounce } from 'frappe-ui'
 import { computed, watchEffect } from 'vue'
+import ColorInput from '../../components/ColorInput.vue'
 import DraggableList from '../../components/DraggableList.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { FIELDTYPES } from '../../helpers/constants'

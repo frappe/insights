@@ -49,30 +49,6 @@
 		</Dropdown>
 
 		<Dialog
-			v-model:open="showSwitchToV2Dialog"
-			:title="__('Switch to Insights v2')"
-			:actions="[
-				{
-					label: __('Continue'),
-					variant: 'solid',
-					onClick: openInsightsV2,
-				},
-			]"
-		>
-			<template #default>
-				<div class="prose prose-sm mb-4">
-					<p>Switch to the old version of Insights?</p>
-				</div>
-				<FormControl
-					type="checkbox"
-					:label="__('Set Insights v2 as default')"
-					:modelValue="session.user.default_version === 'v2'"
-					@update:modelValue="session.user.default_version = $event ? 'v2' : ''"
-				/>
-			</template>
-		</Dialog>
-
-		<Dialog
 			v-model:open="showLoginToFCDialog"
 			:title="__('Login to Frappe Cloud?')"
 			:message="__('Are you sure you want to login to your Frappe Cloud dashboard?')"
@@ -112,7 +88,6 @@ import { __ } from '../translation'
 
 const props = defineProps<{ isCollapsed?: boolean }>()
 
-const showSwitchToV2Dialog = ref(false)
 const showLoginToFCDialog = ref(false)
 
 const { currentTheme, toggleTheme } = useTheme()
@@ -132,13 +107,6 @@ const userDropdownOptions = computed(() => {
 		},
 	]
 
-	if (session.user.is_v2_instance) {
-		options.push({
-			label: __('Switch to Insights v2'),
-			icon: h(ToggleRight),
-			onClick: () => (showSwitchToV2Dialog.value = true),
-		})
-	}
 	if (session.user.is_admin) {
 		options.push({
 			label: __('Switch to Desk'),
@@ -172,12 +140,6 @@ const userDropdownOptions = computed(() => {
 
 	return options
 })
-
-function openInsightsV2() {
-	session.updateDefaultVersion(session.user.default_version).then(() => {
-		window.location.href = '/insights_v2'
-	})
-}
 
 const loggingInToFC = ref(false)
 function loginToFC() {
