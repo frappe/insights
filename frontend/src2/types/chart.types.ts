@@ -31,6 +31,15 @@ export type YAxis = {
 	show_axis_label?: boolean
 	show_data_labels?: boolean
 	show_scrollbar?: boolean
+	reference_lines?: ReferenceLine[]
+}
+export type ReferenceLine = {
+	// 'y' draws a horizontal line at a measure value, 'x' a vertical line at a category/date value
+	axis?: 'x' | 'y'
+	value?: number | string
+	label?: string
+	color?: string
+	dashed?: boolean
 }
 export type Series = {
 	name?: string

@@ -11,6 +11,7 @@ import {
 	FunnelChartConfig,
 	LineChartConfig,
 	MapChartConfig,
+	ReferenceLine,
 	SankeyChartConfig,
 	Series,
 	SeriesLine,
@@ -99,6 +100,8 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 
 	const colors = getColors()
 
+	const markLine = getReferenceMarkLine(config.y_axis.reference_lines)
+
 	const chartSeries = number_columns.map((c, idx) => {
 		const serie = getSerie(config, c.name) as SeriesLine
 
@@ -139,6 +142,8 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 			labelLayout: { hideOverlap: true },
 			itemStyle: { color: color },
 			areaStyle: show_area ? getAreaStyle(color) : undefined,
+			// draw reference lines once, on the first series only
+			markLine: idx === 0 ? markLine : undefined,
 			...(hide_from_chart
 				? {
 						lineStyle: { opacity: 0 },
@@ -246,6 +251,8 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 
 	const colors = getColors()
 
+	const markLine = getReferenceMarkLine(config.y_axis.reference_lines, swapAxes)
+
 	const chartSeries = number_columns.map((c, idx) => {
 		const serie = getSerie(config, c.name)
 		const is_right_axis = serie.align === 'Right'
@@ -284,6 +291,8 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 				fontSize: 11,
 			},
 			barGap: config.y_axis.overlap ? '-100%' : undefined,
+			// draw reference lines once, on the first series only
+			markLine: idx === 0 ? markLine : undefined,
 			labelLayout: { hideOverlap: true },
 			yAxisIndex: is_right_axis ? 1 : 0,
 			lineStyle: hide_from_chart ? { opacity: 0 } : undefined,
@@ -397,6 +406,49 @@ function getYAxis(options: YAxisCustomizeOptions = {}) {
 		},
 		min: options.normalized ? 0 : options.min || undefined,
 		max: options.normalized ? 100 : options.max || undefined,
+	}
+}
+
+// Builds a single ECharts `markLine` from the configured reference lines. It is
+// attached to one series so the lines are drawn once, not once per series.
+// A 'y' line is horizontal (at a measure value); an 'x' line is vertical (at a
+// category/date value). `swapAxes` (Row chart) flips which ECharts axis each maps to.
+function getReferenceMarkLine(reference_lines?: ReferenceLine[], swapAxes = false) {
+	if (!reference_lines?.length) return undefined
+
+	const data = reference_lines
+		.filter((line) => line.value !== undefined && line.value !== null && line.value !== '')
+		.map((line) => {
+			const onValueAxis = (line.axis || 'y') === 'y'
+			// the value axis is yAxis normally, but becomes xAxis when axes are swapped
+			const axisKey = onValueAxis === !swapAxes ? 'yAxis' : 'xAxis'
+			const rawValue = onValueAxis ? Number(line.value) : line.value
+
+			const entry: any = {
+				[axisKey]: rawValue,
+				lineStyle: {
+					type: line.dashed ? 'dashed' : 'solid',
+					width: 1.5,
+					...(line.color ? { color: line.color } : {}),
+				},
+			}
+			if (line.label) {
+				entry.label = {
+					show: true,
+					position: 'insideEndTop',
+					formatter: line.label,
+					...(line.color ? { color: line.color } : {}),
+				}
+			}
+			return entry
+		})
+
+	if (!data.length) return undefined
+
+	return {
+		silent: true,
+		symbol: 'none',
+		data,
 	}
 }
 
