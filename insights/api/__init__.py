@@ -4,7 +4,6 @@
 import os
 
 import frappe
-from frappe.defaults import get_user_default
 from frappe.handler import is_valid_http_method, is_whitelisted
 from frappe.monitor import add_data_to_monitor
 
@@ -55,7 +54,6 @@ def get_user_info():
         # TODO: move to `get_session_info` since not user specific
         "country": frappe.db.get_single_value("System Settings", "country"),
         "locale": locale,
-        "default_version": get_user_default("insights_default_version", frappe.session.user),
         "has_desk_access": user.get("user_type") == "System User",
         "has_demo_data": has_demo_data,
         "fiscal_year_start": frappe.db.get_single_value("Insights Settings", "fiscal_year_start")
