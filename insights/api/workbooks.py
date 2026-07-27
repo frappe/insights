@@ -189,20 +189,6 @@ def update_share_permissions(
         if share.user and share.user not in allowed_users:
             frappe.delete_doc("DocShare", share.name, ignore_permissions=True)
 
-    existing_shares = frappe.get_all(
-        "DocShare",
-        filters={
-            "share_doctype": "Insights Workbook",
-            "share_name": workbook_name,
-        },
-        fields=["name", "user", "everyone"],
-    )
-
-    allowed_users = {permission["user"] for permission in user_permissions}
-    for share in existing_shares:
-        if share.user and share.user not in allowed_users:
-            frappe.delete_doc("DocShare", share.name, ignore_permissions=True)
-
     for permission in user_permissions:
         doc = DocShare.get_or_create_doc(
             share_doctype="Insights Workbook",
