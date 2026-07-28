@@ -36,6 +36,8 @@ export type YAxis = {
 export type ReferenceLine = {
 	// 'y' draws a horizontal line at a measure value, 'x' a vertical line at a category/date value
 	axis?: 'x' | 'y'
+	// which value axis a 'y' line targets on a dual-axis chart; defaults to the primary (left)
+	align?: 'Left' | 'Right'
 	value?: number | string
 	label?: string
 	color?: string
