@@ -443,19 +443,23 @@ function assignReferenceMarkLines(
 	if (!reference_lines?.length) return perSeries
 
 	const rightHost = seriesAligns.findIndex((a) => a === 'Right')
-	const primaryHost = Math.max(
-		seriesAligns.findIndex((a) => a !== 'Right'),
-		0,
-	)
+	const leftHost = seriesAligns.findIndex((a) => a !== 'Right')
+	const primaryHost = leftHost !== -1 ? leftHost : 0
 
-	const rightLines =
-		rightHost !== -1
-			? reference_lines.filter((l) => (l.axis || 'y') === 'y' && l.align === 'Right')
-			: []
-	const primaryLines = reference_lines.filter((l) => !rightLines.includes(l))
-
-	perSeries[primaryHost] = getReferenceMarkLine(primaryLines, swapAxes)
-	if (rightHost !== -1) perSeries[rightHost] = getReferenceMarkLine(rightLines, swapAxes)
+	// Group lines by the series index that hosts their target axis, then build one
+	// markLine per host. Grouping (rather than one assignment per axis) keeps every line
+	// even when both hosts collapse to the same series — e.g. when every series is
+	// right-aligned, primary and right host are both index 0.
+	const linesByHost = new Map<number, ReferenceLine[]>()
+	for (const line of reference_lines) {
+		const wantsRight = (line.axis || 'y') === 'y' && line.align === 'Right'
+		const host = wantsRight && rightHost !== -1 ? rightHost : primaryHost
+		if (!linesByHost.has(host)) linesByHost.set(host, [])
+		linesByHost.get(host)!.push(line)
+	}
+	for (const [host, lines] of linesByHost) {
+		perSeries[host] = getReferenceMarkLine(lines, swapAxes)
+	}
 	return perSeries
 }
 
