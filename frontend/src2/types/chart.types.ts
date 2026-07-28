@@ -31,6 +31,17 @@ export type YAxis = {
 	show_axis_label?: boolean
 	show_data_labels?: boolean
 	show_scrollbar?: boolean
+	reference_lines?: ReferenceLine[]
+}
+export type ReferenceLine = {
+	// 'y' draws a horizontal line at a measure value, 'x' a vertical line at a category/date value
+	axis?: 'x' | 'y'
+	// which value axis a 'y' line targets on a dual-axis chart; defaults to the primary (left)
+	align?: 'Left' | 'Right'
+	value?: number | string
+	label?: string
+	color?: string
+	dashed?: boolean
 }
 export type Series = {
 	name?: string
@@ -103,8 +114,12 @@ export type DonutChartConfig = {
 	show_inline_labels?: boolean
 }
 export type FunnelChartConfig = {
-	label_column: Dimension
-	value_column: Measure
+	// Measures mode: each measure is one funnel stage, aggregated over the whole
+	// result with no group-by (stage label = measure name). Takes precedence when set.
+	measures?: Measure[]
+	// Grouped (long-format) mode: group `label_column` and read `value_column` per row.
+	label_column?: Dimension
+	value_column?: Measure
 	show_percentage?: boolean
 }
 

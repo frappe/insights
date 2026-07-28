@@ -11,6 +11,7 @@ import {
 	FunnelChartConfig,
 	LineChartConfig,
 	MapChartConfig,
+	ReferenceLine,
 	SankeyChartConfig,
 	Series,
 	SeriesLine,
@@ -73,7 +74,12 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 	const _columns = result.columns
 	const _rows = result.rows
 
-	const number_columns = _columns.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
+	// The x-axis dimension is a result column too; when it is numeric (e.g. an Integer
+	// day offset) it must not be picked up as a plotted series alongside the measures.
+	const x_dimension_name = config.x_axis.dimension.dimension_name
+	const number_columns = _columns.filter(
+		(c) => FIELDTYPES.NUMBER.includes(c.type) && c.name !== x_dimension_name,
+	)
 	const show_scrollbar = config.y_axis.show_scrollbar || false
 
 	const xAxis = getXAxis(config.x_axis)
@@ -162,7 +168,10 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 		color: colors,
 		xAxis,
 		yAxis,
-		series: chartSeries,
+		series: [
+			...chartSeries,
+			...getReferenceLineSeries(config.y_axis.reference_lines, hasRightAxis),
+		],
 		tooltip: getTooltip({
 			xAxisIsDate,
 			granularity,
@@ -200,7 +209,12 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 	const _columns = result.columns
 	const _rows = result.rows
 
-	const number_columns = _columns.filter((c) => FIELDTYPES.NUMBER.includes(c.type))
+	// The x-axis dimension is a result column too; when it is numeric (e.g. an Integer
+	// day offset) it must not be picked up as a plotted series alongside the measures.
+	const x_dimension_name = config.x_axis.dimension.dimension_name
+	const number_columns = _columns.filter(
+		(c) => FIELDTYPES.NUMBER.includes(c.type) && c.name !== x_dimension_name,
+	)
 	const show_scrollbar = config.y_axis.show_scrollbar || false
 
 	const xAxis = getXAxis(config.x_axis)
@@ -308,7 +322,10 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 		xAxis: swapAxes ? yAxis : xAxis,
 		yAxis: swapAxes ? xAxis : yAxis,
 		dataZoom: getDataZoom(show_scrollbar, swapAxes),
-		series: chartSeries,
+		series: [
+			...chartSeries,
+			...getReferenceLineSeries(config.y_axis.reference_lines, hasRightAxis, swapAxes),
+		],
 		tooltip: getTooltip({
 			xAxisIsDate,
 			granularity,
@@ -397,6 +414,89 @@ function getYAxis(options: YAxisCustomizeOptions = {}) {
 		},
 		min: options.normalized ? 0 : options.min || undefined,
 		max: options.normalized ? 100 : options.max || undefined,
+	}
+}
+
+// Reference lines are drawn as markLines on their own empty series, one per value axis
+// they target, instead of on a plotted series. A markLine inherits the axis and the
+// visibility of its host, so hosting on real data would put a line on the wrong scale and
+// let a legend toggle take it away with the series. A 'y' line targets the left axis, or
+// the right one when align === 'Right'; 'x' (category) lines have no left/right and ride
+// with the left group. Append the result to `series` after the legend is built so these
+// hosts stay out of it.
+function getReferenceLineSeries(
+	reference_lines: ReferenceLine[] | undefined,
+	hasRightAxis: boolean,
+	swapAxes = false,
+) {
+	if (!reference_lines?.length) return []
+
+	const targetsRight = (line: ReferenceLine) =>
+		hasRightAxis && (line.axis || 'y') === 'y' && line.align === 'Right'
+
+	// the value axis is the yAxis normally, but becomes the xAxis when axes are swapped
+	const axisIndexKey = swapAxes ? 'xAxisIndex' : 'yAxisIndex'
+
+	return [
+		{ axisIndex: 0, lines: reference_lines.filter((l) => !targetsRight(l)) },
+		{ axisIndex: 1, lines: reference_lines.filter(targetsRight) },
+	]
+		.map(({ axisIndex, lines }) => {
+			const markLine = getReferenceMarkLine(lines, swapAxes)
+			return markLine
+				? {
+						type: 'line',
+						name: `_reference_lines_${axisIndex}`,
+						data: [],
+						silent: true,
+						[axisIndexKey]: axisIndex,
+						markLine,
+				  }
+				: undefined
+		})
+		.filter(Boolean)
+}
+
+// A 'y' line is horizontal (at a measure value); an 'x' line is vertical (at a
+// category/date value). `swapAxes` (Row chart) flips which ECharts axis each maps to.
+function getReferenceMarkLine(reference_lines?: ReferenceLine[], swapAxes = false) {
+	if (!reference_lines?.length) return undefined
+
+	const data = reference_lines
+		.filter((line) => line.value !== undefined && line.value !== null && line.value !== '')
+		.map((line) => {
+			const onValueAxis = (line.axis || 'y') === 'y'
+			// the value axis is yAxis normally, but becomes xAxis when axes are swapped
+			const axisKey = onValueAxis === !swapAxes ? 'yAxis' : 'xAxis'
+			const rawValue = onValueAxis ? Number(line.value) : line.value
+			// a neutral gray by default, so a reference line doesn't read as another measure
+			const color = line.color || '#6b7280'
+
+			const entry: any = {
+				[axisKey]: rawValue,
+				lineStyle: {
+					type: line.dashed ? 'dashed' : 'solid',
+					width: 1.5,
+					color,
+				},
+			}
+			if (line.label) {
+				entry.label = {
+					show: true,
+					position: 'insideEndTop',
+					formatter: line.label,
+					color,
+				}
+			}
+			return entry
+		})
+
+	if (!data.length) return undefined
+
+	return {
+		silent: true,
+		symbol: 'none',
+		data,
 	}
 }
 
@@ -550,13 +650,28 @@ function getDonutChartData(
 
 export function getFunnelChartOptions(config: FunnelChartConfig, result: QueryResult) {
 	const rows = result.rows
-
-	const labelColumn = config.label_column.dimension_name
-	const valueColumn = config.value_column.measure_name
 	const show_percentage = config.show_percentage ?? true
 
-	const categories = rows.map((r) => r[labelColumn] as string)
-	const dataValues = rows.map((r) => r[valueColumn] as number)
+	// Measures mode: each measure is a stage. The data_query aggregates them with
+	// no group-by, so the result is a single row with one column per measure.
+	const measures = config.measures?.filter((m) => m.measure_name)
+
+	let categories: string[]
+	let dataValues: number[]
+	let seriesName: string
+
+	if (measures?.length) {
+		const row = rows[0] || {}
+		categories = measures.map((m) => m.measure_name)
+		dataValues = measures.map((m) => Number(row[m.measure_name]) || 0)
+		seriesName = 'Funnel'
+	} else {
+		const labelColumn = config.label_column?.dimension_name as string
+		const valueColumn = config.value_column?.measure_name as string
+		categories = rows.map((r) => r[labelColumn] as string)
+		dataValues = rows.map((r) => r[valueColumn] as number)
+		seriesName = valueColumn
+	}
 
 	const count = dataValues.length
 	const colors = Array.from({ length: count }, (_, i) => {
@@ -624,7 +739,7 @@ export function getFunnelChartOptions(config: FunnelChartConfig, result: QueryRe
 		series: [
 			{
 				type: 'custom',
-				name: valueColumn,
+				name: seriesName,
 				emphasis: { disabled: true },
 				data: dataValues.map((val, i) => ({
 					name: categories[i],

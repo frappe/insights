@@ -258,6 +258,7 @@ function updateTextWrap(column_name: string, wrap: boolean | undefined) {
 						<MeasurePicker
 							:model-value="item"
 							:column-options="props.columnOptions"
+							:enable-format="true"
 							@update:model-value="Object.assign(item, $event || {})"
 							@remove="config.values.splice(index, 1)"
 						/>
