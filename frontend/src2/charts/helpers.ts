@@ -105,11 +105,6 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 
 	const colors = getColors()
 
-	const seriesAligns = number_columns.map((c) =>
-		getSerie(config, c.name).align === 'Right' ? 'Right' : 'Left',
-	) as ('Left' | 'Right')[]
-	const markLines = assignReferenceMarkLines(config.y_axis.reference_lines, seriesAligns, false)
-
 	const chartSeries = number_columns.map((c, idx) => {
 		const serie = getSerie(config, c.name) as SeriesLine
 
@@ -150,8 +145,6 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 			labelLayout: { hideOverlap: true },
 			itemStyle: { color: color },
 			areaStyle: show_area ? getAreaStyle(color) : undefined,
-			// each reference line is hosted on a series bound to the axis it targets
-			markLine: markLines[idx],
 			...(hide_from_chart
 				? {
 						lineStyle: { opacity: 0 },
@@ -175,7 +168,10 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 		color: colors,
 		xAxis,
 		yAxis,
-		series: chartSeries,
+		series: [
+			...chartSeries,
+			...getReferenceLineSeries(config.y_axis.reference_lines, hasRightAxis),
+		],
 		tooltip: getTooltip({
 			xAxisIsDate,
 			granularity,
@@ -264,11 +260,6 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 
 	const colors = getColors()
 
-	const seriesAligns = number_columns.map((c) =>
-		getSerie(config, c.name).align === 'Right' ? 'Right' : 'Left',
-	) as ('Left' | 'Right')[]
-	const markLines = assignReferenceMarkLines(config.y_axis.reference_lines, seriesAligns, swapAxes)
-
 	const chartSeries = number_columns.map((c, idx) => {
 		const serie = getSerie(config, c.name)
 		const is_right_axis = serie.align === 'Right'
@@ -307,8 +298,6 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 				fontSize: 11,
 			},
 			barGap: config.y_axis.overlap ? '-100%' : undefined,
-			// each reference line is hosted on a series bound to the axis it targets
-			markLine: markLines[idx],
 			labelLayout: { hideOverlap: true },
 			yAxisIndex: is_right_axis ? 1 : 0,
 			lineStyle: hide_from_chart ? { opacity: 0 } : undefined,
@@ -333,7 +322,10 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 		xAxis: swapAxes ? yAxis : xAxis,
 		yAxis: swapAxes ? xAxis : yAxis,
 		dataZoom: getDataZoom(show_scrollbar, swapAxes),
-		series: chartSeries,
+		series: [
+			...chartSeries,
+			...getReferenceLineSeries(config.y_axis.reference_lines, hasRightAxis, swapAxes),
+		],
 		tooltip: getTooltip({
 			xAxisIsDate,
 			granularity,
@@ -425,44 +417,48 @@ function getYAxis(options: YAxisCustomizeOptions = {}) {
 	}
 }
 
-// Builds a single ECharts `markLine` from the configured reference lines. It is
-// attached to one series so the lines are drawn once, not once per series.
-// A 'y' line is horizontal (at a measure value); an 'x' line is vertical (at a
-// category/date value). `swapAxes` (Row chart) flips which ECharts axis each maps to.
-// A markLine inherits the axis of the series it is attached to. So on a dual-axis chart,
-// host each reference line on a series bound to the axis it targets — a 'y' line defaults
-// to the primary (left) axis, or the right axis when align === 'Right'; 'x' (category)
-// lines have no left/right and ride with the primary group. Returns, per series index, the
-// markLine to attach (or undefined). Single-axis charts host everything on the first series.
-function assignReferenceMarkLines(
+// Reference lines are drawn as markLines on their own empty series, one per value axis
+// they target, instead of on a plotted series. A markLine inherits the axis and the
+// visibility of its host, so hosting on real data would put a line on the wrong scale and
+// let a legend toggle take it away with the series. A 'y' line targets the left axis, or
+// the right one when align === 'Right'; 'x' (category) lines have no left/right and ride
+// with the left group. Append the result to `series` after the legend is built so these
+// hosts stay out of it.
+function getReferenceLineSeries(
 	reference_lines: ReferenceLine[] | undefined,
-	seriesAligns: ('Left' | 'Right')[],
-	swapAxes: boolean,
+	hasRightAxis: boolean,
+	swapAxes = false,
 ) {
-	const perSeries: (ReturnType<typeof getReferenceMarkLine>)[] = seriesAligns.map(() => undefined)
-	if (!reference_lines?.length) return perSeries
+	if (!reference_lines?.length) return []
 
-	const rightHost = seriesAligns.findIndex((a) => a === 'Right')
-	const leftHost = seriesAligns.findIndex((a) => a !== 'Right')
-	const primaryHost = leftHost !== -1 ? leftHost : 0
+	const targetsRight = (line: ReferenceLine) =>
+		hasRightAxis && (line.axis || 'y') === 'y' && line.align === 'Right'
 
-	// Group lines by the series index that hosts their target axis, then build one
-	// markLine per host. Grouping (rather than one assignment per axis) keeps every line
-	// even when both hosts collapse to the same series — e.g. when every series is
-	// right-aligned, primary and right host are both index 0.
-	const linesByHost = new Map<number, ReferenceLine[]>()
-	for (const line of reference_lines) {
-		const wantsRight = (line.axis || 'y') === 'y' && line.align === 'Right'
-		const host = wantsRight && rightHost !== -1 ? rightHost : primaryHost
-		if (!linesByHost.has(host)) linesByHost.set(host, [])
-		linesByHost.get(host)!.push(line)
-	}
-	for (const [host, lines] of linesByHost) {
-		perSeries[host] = getReferenceMarkLine(lines, swapAxes)
-	}
-	return perSeries
+	// the value axis is the yAxis normally, but becomes the xAxis when axes are swapped
+	const axisIndexKey = swapAxes ? 'xAxisIndex' : 'yAxisIndex'
+
+	return [
+		{ axisIndex: 0, lines: reference_lines.filter((l) => !targetsRight(l)) },
+		{ axisIndex: 1, lines: reference_lines.filter(targetsRight) },
+	]
+		.map(({ axisIndex, lines }) => {
+			const markLine = getReferenceMarkLine(lines, swapAxes)
+			return markLine
+				? {
+						type: 'line',
+						name: `_reference_lines_${axisIndex}`,
+						data: [],
+						silent: true,
+						[axisIndexKey]: axisIndex,
+						markLine,
+				  }
+				: undefined
+		})
+		.filter(Boolean)
 }
 
+// A 'y' line is horizontal (at a measure value); an 'x' line is vertical (at a
+// category/date value). `swapAxes` (Row chart) flips which ECharts axis each maps to.
 function getReferenceMarkLine(reference_lines?: ReferenceLine[], swapAxes = false) {
 	if (!reference_lines?.length) return undefined
 
@@ -473,13 +469,15 @@ function getReferenceMarkLine(reference_lines?: ReferenceLine[], swapAxes = fals
 			// the value axis is yAxis normally, but becomes xAxis when axes are swapped
 			const axisKey = onValueAxis === !swapAxes ? 'yAxis' : 'xAxis'
 			const rawValue = onValueAxis ? Number(line.value) : line.value
+			// a neutral gray by default, so a reference line doesn't read as another measure
+			const color = line.color || '#6b7280'
 
 			const entry: any = {
 				[axisKey]: rawValue,
 				lineStyle: {
 					type: line.dashed ? 'dashed' : 'solid',
 					width: 1.5,
-					...(line.color ? { color: line.color } : {}),
+					color,
 				},
 			}
 			if (line.label) {
@@ -487,7 +485,7 @@ function getReferenceMarkLine(reference_lines?: ReferenceLine[], swapAxes = fals
 					show: true,
 					position: 'insideEndTop',
 					formatter: line.label,
-					...(line.color ? { color: line.color } : {}),
+					color,
 				}
 			}
 			return entry

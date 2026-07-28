@@ -165,6 +165,16 @@ function removeReferenceLine(index: number) {
 											]"
 										/>
 									</InlineFormControlLabel>
+									<InlineFormControlLabel
+										v-if="(line.axis || 'y') === 'y'"
+										label="Align"
+									>
+										<FormControl
+											type="select"
+											v-model="line.align"
+											:options="['Left', 'Right']"
+										/>
+									</InlineFormControlLabel>
 									<InlineFormControlLabel label="Label">
 										<FormControl
 											type="text"
