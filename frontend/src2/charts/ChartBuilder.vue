@@ -56,7 +56,7 @@ function downloadChart() {
 		console.warn('Chart element not found')
 		return
 	}
-	return downloadImage(chartEl.value, chart.doc.title, 2, {
+	return downloadImage(chartEl.value, `${chart.doc.title}.png`, 2, {
 		filter: (element: HTMLElement) => {
 			return !element?.classList?.contains('absolute')
 		},

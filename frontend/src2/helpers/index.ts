@@ -1,7 +1,7 @@
 import { watchDebounced } from '@vueuse/core'
 import { __ } from '../translation'
-import domtoimage from 'dom-to-image'
 import { isEqual } from 'es-toolkit'
+import { toPng } from 'html-to-image'
 import { call, debounce } from 'frappe-ui'
 import { Socket } from 'socket.io-client'
 import {
@@ -149,29 +149,25 @@ export function showErrorToast(err: Error, raise = true) {
 }
 
 export function downloadImage(element: HTMLElement, filename: string, scale = 2, options = {}) {
-	return domtoimage
-		.toPng(element, {
-			height: element.scrollHeight * scale,
-			width: element.scrollWidth * scale,
-			style: {
-				transform: 'scale(' + scale + ')',
-				transformOrigin: 'top left',
-				width: element.scrollWidth + 'px',
-				height: element.scrollHeight + 'px',
-			},
-			bgColor: 'white',
-			...options,
+	return toPng(element, {
+		width: element.scrollWidth,
+		height: element.scrollHeight,
+		pixelRatio: scale,
+		backgroundColor: 'white',
+		style: {
+			width: `${element.scrollWidth}px`,
+			height: `${element.scrollHeight}px`,
+			overflow: 'visible',
+		},
+		...options,
+	})
+		.then((dataUrl) => {
+			const link = document.createElement('a')
+			link.download = filename
+			link.href = dataUrl
+			link.click()
 		})
-		.then(function (dataUrl: string) {
-			const img = new Image()
-			img.src = dataUrl
-			img.onload = async () => {
-				const link = document.createElement('a')
-				link.download = filename
-				link.href = img.src
-				link.click()
-			}
-		})
+		.catch((err) => showErrorToast(err, false))
 }
 
 export function formatNumber(number: number, precision = 0) {
