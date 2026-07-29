@@ -242,7 +242,10 @@ function makeWorkbook(name: string) {
 							message: __('Workbook duplicated successfully'),
 							variant: 'success',
 						})
-						window.location.href = `/insights/workbook/${name}`
+						window.location.href = router.resolve({
+							name: 'Workbook',
+							params: { workbook_name: name },
+						}).href
 					})
 					.catch(showErrorToast)
 			},

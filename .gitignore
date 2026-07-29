@@ -173,8 +173,7 @@ node_modules
 *debug.log
 insights/docs/current
 insights/public/frontend
-insights/www/insights.html
-insights/www/insights_v2.html
+insights/www/_insights.html
 .nyc_output
 coverage/
 

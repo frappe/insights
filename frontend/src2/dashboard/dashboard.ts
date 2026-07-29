@@ -2,6 +2,7 @@ import { reactive, ref, toRefs } from 'vue'
 // @ts-ignore
 import { useTelemetry } from 'frappe-ui/frappe'
 import useChart from '../charts/chart'
+import router from '../router'
 import {
 	getUniqueId,
 	safeJSONParse,
@@ -319,10 +320,11 @@ function makeDashboard(name: string) {
 	}
 
 	function getShareLink() {
-		return (
-			dashboard.doc.share_link ||
-			`${window.location.origin}/insights/shared/dashboard/${dashboard.doc.name}`
-		)
+		const { href } = router.resolve({
+			name: 'SharedDashboard',
+			params: { dashboard_name: dashboard.doc.name },
+		})
+		return dashboard.doc.share_link || `${window.location.origin}${href}`
 	}
 
 	function updateAccess(data: {

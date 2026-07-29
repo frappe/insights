@@ -11,7 +11,11 @@
 	if (window.__insights_nudge_loaded) return;
 	window.__insights_nudge_loaded = true;
 
-	const BASE = "/insights"; // v3 frontend base route
+	// v3 frontend base route — site config can move the app off /insights, so read
+	// the effective route from boot instead of hardcoding it.
+	const BASE =
+		(frappe.boot.app_data || []).find((a) => a.app_name === "insights")
+			?.app_route || "/insights";
 	const ALLOWED_ROLES = ["Insights Admin"];
 
 	// Workspace -> shipped workbook template. `template` is the folder under

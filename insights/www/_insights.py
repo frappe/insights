@@ -4,6 +4,8 @@
 
 import frappe
 
+from insights.hooks import insights_path
+
 no_cache = 1
 
 
@@ -22,4 +24,5 @@ def get_context(context):
         "site_name": frappe.local.site,
         "is_fc_site": is_fc_site(),
         "socketio_port": frappe.conf.get("socketio_port"),
+        "insights_path": f"/{insights_path}",
     }

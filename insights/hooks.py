@@ -1,3 +1,5 @@
+import frappe
+
 app_name = "insights"
 app_title = "Insights"
 app_publisher = "Frappe Technologies Pvt. Ltd."
@@ -10,13 +12,16 @@ app_license = "GNU GPLv3"
 export_python_type_annotations = True
 require_type_annotated_api_methods = True
 
+# Sites that already serve something at /insights (e.g. a website page) can move
+# the app elsewhere by setting `insights_path` in site config.
+insights_path = frappe.conf.insights_path or "insights"
 
 add_to_apps_screen = [
     {
         "name": "insights",
         "logo": "/assets/insights/frontend/insights-logo.png",
         "title": "Insights",
-        "route": "/insights",
+        "route": f"/{insights_path}",
         "has_permission": "insights.permissions.check_app_permission",
     }
 ]
@@ -232,5 +237,6 @@ before_tests = "insights.tests.utils.before_tests"
 page_renderer = "insights.utils.InsightsPageRenderer"
 
 website_route_rules = [
-    {"from_route": "/insights/<path:app_path>", "to_route": "insights"},
+    {"from_route": f"/{insights_path}/<path:app_path>", "to_route": "_insights"},
+    {"from_route": f"/{insights_path}", "to_route": "_insights"},
 ]
