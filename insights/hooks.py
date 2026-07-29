@@ -13,8 +13,9 @@ export_python_type_annotations = True
 require_type_annotated_api_methods = True
 
 # Sites that already serve something at /insights (e.g. a website page) can move
-# the app elsewhere by setting `insights_path` in site config.
-insights_path = frappe.conf.insights_path or "insights"
+# the app elsewhere by setting `insights_path` in site config. Stored without
+# slashes so everything below can build paths as f"/{insights_path}".
+insights_path = (frappe.conf.insights_path or "insights").strip("/") or "insights"
 
 add_to_apps_screen = [
     {
