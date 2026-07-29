@@ -10,6 +10,7 @@ from insights.insights.doctype.insights_team.insights_team import (
     get_teams as get_user_teams,
 )
 from insights.insights.doctype.insights_team.insights_team import is_admin
+from insights.utils import get_app_url
 
 
 @insights_whitelist()
@@ -213,7 +214,7 @@ def accept_invitation(key: str):
     if invitation.status == "Accepted":
         frappe.local.login_manager.login_as(invitation.email)
         frappe.local.response["type"] = "redirect"
-        frappe.local.response["location"] = "/insights"
+        frappe.local.response["location"] = get_app_url()
 
 
 @insights_whitelist(role="Insights Admin")

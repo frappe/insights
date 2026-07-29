@@ -11,7 +11,7 @@ from frappe.query_builder import Interval
 from frappe.query_builder.functions import Now
 from frappe.utils.telemetry import capture
 
-from insights.utils import DocShare, File
+from insights.utils import DocShare, File, get_app_url
 
 
 class InsightsDashboardv3(Document):
@@ -151,7 +151,7 @@ class InsightsDashboardv3(Document):
     def generate_dashboard_preview(self):
         with generate_preview_key() as key:
             preview = get_page_preview(
-                frappe.utils.get_url(f"/insights/shared/dashboard/{self.name}"),
+                frappe.utils.get_url(get_app_url(f"/shared/dashboard/{self.name}")),
                 headers={
                     "X-Insights-Preview-Key": key,
                 },

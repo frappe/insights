@@ -430,7 +430,11 @@ function makeChart(name: string) {
 	}
 
 	function getShareLink() {
-		return `${window.location.origin}/insights/shared/chart/${chart.doc.name}`
+		const { href } = router.resolve({
+			name: 'SharedChart',
+			params: { chart_name: chart.doc.name },
+		})
+		return `${window.location.origin}${href}`
 	}
 
 	function getDependentQueries() {

@@ -9,6 +9,12 @@ import pandas as pd
 from frappe.model.base_document import BaseDocument
 from frappe.website.page_renderers.template_page import TemplatePage
 
+from insights.hooks import insights_path
+
+
+def get_app_url(path: str = "") -> str:
+    return f"/{insights_path}{path}"
+
 
 class DoctypeBase(BaseDocument):
     doctype: str
@@ -164,8 +170,8 @@ class InsightsPageRenderer(TemplatePage):
             path = self.path
 
         embed_urls = [
-            "/insights/public",
-            "/insights/shared",
+            get_app_url("/public"),
+            get_app_url("/shared"),
         ]
         if not any(path.startswith(url) for url in embed_urls):
             return False

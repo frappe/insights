@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory, RouteLocation } from 'vue-router'
+import { APP_PATH } from './app_path.ts'
 import session from './session.ts'
 
 const routes = [
@@ -114,7 +115,7 @@ const routes = [
 ]
 
 let router = createRouter({
-	history: createWebHistory('/insights'),
+	history: createWebHistory(APP_PATH),
 	// @ts-ignore
 	routes,
 })
