@@ -21,15 +21,21 @@
 	// Workspace -> shipped workbook template. `template` is the folder under
 	// insights/workbook_templates/; the id is `insights/<template>`. The link opens
 	// it via the SPA resolver, which lazily imports it (idempotent) on first open.
+	//
+	// A workspace only reaches its own page (and this banner) when its sidebar starts
+	// with a "Home" item linking back to itself — otherwise the desk lands on the first
+	// report instead. "Financial Reports" has no such item, so the accounting nudge
+	// hangs off "Accounting" too, which is where Accounts users actually land.
+	const ACCOUNTING = {
+		title: "Receivables, Payables & Cash",
+		template: "accounting",
+	};
 	const DASHBOARDS = {
 		Selling: { title: "Sales Performance", template: "sales" },
 		Buying: { title: "Purchasing Overview", template: "purchasing" },
 		Stock: { title: "Stock & Inventory", template: "stock" },
-		// "Accounts" module spans several workspaces — nudge from the reporting one.
-		"Financial Reports": {
-			title: "Receivables, Payables & Cash",
-			template: "accounting",
-		},
+		Accounting: ACCOUNTING,
+		"Financial Reports": ACCOUNTING,
 	};
 
 	const templateId = (cfg) => `insights/${cfg.template}`;
@@ -41,8 +47,11 @@
 	// workspace nudges (setup_promotional_banners) on the same System Settings flag.
 	const suggestionsDisabled = () =>
 		cint(frappe.sys_defaults?.disable_product_suggestion);
-	const dismissKey = (ws) => `insights:nudge:${frappe.session.user}:${ws}`;
-	const dismissed = (ws) => localStorage.getItem(dismissKey(ws)) === "1";
+	// Keyed on the template, not the workspace: the suggestion is the dashboard, so
+	// dismissing it on one workspace must not leave it armed on a sibling.
+	const dismissKey = (cfg) =>
+		`insights:nudge:${frappe.session.user}:${templateId(cfg)}`;
+	const dismissed = (cfg) => localStorage.getItem(dismissKey(cfg)) === "1";
 	const esc = (s) => frappe.utils.escape_html(s);
 
 	// Self-guards on frappe.boot.enable_telemetry; no-ops when telemetry is off.
@@ -104,7 +113,7 @@
 			track("workspace_dashboard_nudge_clicked", ws, cfg),
 		);
 		el.querySelector(".insights-nudge__x").addEventListener("click", () => {
-			localStorage.setItem(dismissKey(ws), "1");
+			localStorage.setItem(dismissKey(cfg), "1");
 			el.remove();
 			track("workspace_dashboard_nudge_dismissed", ws, cfg);
 		});
@@ -123,7 +132,7 @@
 		clearTimeout(retryTimer);
 		const ws = currentWorkspace();
 		const cfg = ws && DASHBOARDS[ws];
-		if (!cfg || suggestionsDisabled() || !allowed() || dismissed(ws))
+		if (!cfg || suggestionsDisabled() || !allowed() || dismissed(cfg))
 			return removeBanner();
 
 		const anchor = findAnchor();
