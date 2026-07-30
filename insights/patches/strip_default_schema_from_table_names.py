@@ -63,10 +63,13 @@ def rename_tables(data_source, prefix) -> dict[str, str]:
 
         if frappe.db.exists("Insights Table v3", new_name):
             # an unqualified record already exists — drop the duplicate
-            frappe.delete_doc("Insights Table v3", row.name, force=True, ignore_permissions=True)
+            discard_table(data_source, row)
             renames[row.table] = new_table
             continue
 
+        # renaming by hand rather than through `frappe.rename_doc`: every referrer is
+        # rewritten below anyway, and this keeps the migration from touching the remote
+        # database, which is routinely unreachable while `bench migrate` runs.
         frappe.db.set_value(
             "Insights Table v3",
             row.name,
@@ -92,6 +95,22 @@ def rename_tables(data_source, prefix) -> dict[str, str]:
         renames[row.table] = new_table
 
     return renames
+
+
+def discard_table(data_source, row):
+    """Delete a qualified record whose unqualified counterpart already exists.
+
+    Deleting an `Insights Table v3` doesn't clean up after itself, so drop the imported
+    data and the permissions pointing at it here — the surviving record has its own.
+    """
+    if row.stored:
+        insights.warehouse.get_table(data_source, row.table).drop()
+
+    frappe.db.delete(
+        "Insights Resource Permission",
+        {"resource_type": "Insights Table v3", "resource_name": row.name},
+    )
+    frappe.delete_doc("Insights Table v3", row.name, force=True, ignore_permissions=True)
 
 
 def rename_warehouse_table(data_source, old_table, new_table) -> bool:
@@ -167,12 +186,9 @@ def update_query_references(data_source, renames):
 def update_table_links(data_source, renames):
     """Rename the tables a link points at.
 
-    Links have always been generated from the bare doctype name ("tabUser"), which is why
-    they never matched a qualified table in the first place — renaming the tables is what
-    makes them line up again. This only has anything to do for links written while the
-    source still spanned several schemas. Rewriting them in place (rather than rebuilding
-    from the remote) keeps the migration offline: the database this source points at is
-    routinely unreachable while `bench migrate` runs.
+    Links were always generated from the bare doctype name ("tabUser"), which is why they
+    never matched a qualified table to begin with — so this only has anything to do for
+    links written after the source stopped spanning several schemas.
     """
     for old_table, new_table in renames.items():
         for field in ("left_table", "right_table"):
