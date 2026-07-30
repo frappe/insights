@@ -496,7 +496,11 @@ def _get_referencing_queries(data_source: str, table_name: str) -> list[dict]:
 
 
 def strip_schema_prefix(table_name: str) -> str:
+<<<<<<< HEAD
     """Drop the `<schema>.` prefix postgres table names used to always have.
+=======
+    """Drop the `<schema>.` prefix postgres table names used to always carry.
+>>>>>>> baaf264 (fix: only qualify postgres table names when schemas can collide (#1254))
 
     The frappe table -> doctype mapping below needs the bare `tab`-prefixed name, so
     `public.tabUser` has to resolve to the `User` doctype and not blow up in `get_meta`.
@@ -507,6 +511,7 @@ def strip_schema_prefix(table_name: str) -> str:
     return table if separator and table.startswith("tab") else table_name
 
 
+<<<<<<< HEAD
 def is_site_db(data_source: str) -> bool:
     return bool(frappe.db.get_value("Insights Data Source v3", data_source, "is_site_db", cache=True))
 
@@ -521,6 +526,10 @@ def apply_user_permissions(t: Table, data_source, table_name, user=None):
 
     if not is_site_db(data_source):
         # external databases and uploads have no Frappe permissions to filter by
+=======
+def apply_user_permissions(t: Table, data_source, table_name):
+    if frappe.flags.get("insights_for_public_access"):
+>>>>>>> baaf264 (fix: only qualify postgres table names when schemas can collide (#1254))
         return t
 
     table_name = strip_schema_prefix(table_name)
@@ -537,6 +546,7 @@ def apply_user_permissions(t: Table, data_source, table_name, user=None):
         )
     return desk
 
+<<<<<<< HEAD
 
 def desk_rows(t: Table, data_source, table_name, user) -> Table | None:
     """The rows of `t` that desk lets `user` read: all of `t`, a filtered `t`, or None."""
@@ -546,6 +556,10 @@ def desk_rows(t: Table, data_source, table_name, user) -> Table | None:
 
 def desk_predicate(t: Table, data_source, table_name, user):
     """The rows desk lets `user` read, as a condition: `True` for all, `None` for none."""
+=======
+    table_name = strip_schema_prefix(table_name)
+
+>>>>>>> baaf264 (fix: only qualify postgres table names when schemas can collide (#1254))
     if table_name == "tabSingles":
         single_doctypes = frappe.get_all("DocType", filters={"issingle": 1}, pluck="name")
         allowed_single_doctypes = set(single_doctypes) & readable_doctypes(user)

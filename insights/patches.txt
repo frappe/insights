@@ -12,6 +12,7 @@ insights.patches.migrate_warehouse_tables_to_schemas
 insights.patches.fix_table_link_names
 insights.patches.backfill_query_references
 execute:frappe.db.set_single_value("Insights Settings", "allow_download", 1)
+<<<<<<< HEAD
 insights.patches.strip_default_schema_from_table_names
 insights.patches.hash_invitation_keys
 insights.patches.backfill_permission_user
@@ -52,3 +53,7 @@ insights.patches.set_data_store_limits
 insights.patches.mark_v3_users
 insights.patches.clear_standard_dashboard_previews
 insights.patches.detach_dashboard_previews
+=======
+insights.patches.requalify_workbook_templates
+insights.patches.strip_default_schema_from_table_names
+>>>>>>> baaf264 (fix: only qualify postgres table names when schemas can collide (#1254))
