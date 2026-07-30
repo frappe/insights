@@ -1,35 +1,35 @@
 /**
  * Nudges ERPNext admins toward the prebuilt Insights dashboard for the module
- * workspace they're viewing (Selling, Buying, Stock, Financial Reports).
+ * workspace they're viewing.
  *
- * Loaded on every desk page via `app_include_js` (hooks.py). Client Scripts are
- * DocType-scoped and never run on workspaces, so this app-level bundle is the
- * only place the banner can hook in. Kept tiny and gated early — it renders
- * nothing unless the route, role and dismissal checks all pass.
+ * Loaded on every desk page via `app_include_js` (hooks.py): Client Scripts are
+ * DocType-scoped and never run on workspaces, so this is the only place the
+ * banner can hook in.
  */
 (function () {
 	if (window.__insights_nudge_loaded) return;
 	window.__insights_nudge_loaded = true;
 
-	// v3 frontend base route — site config can move the app off /insights, so read
-	// the effective route from boot instead of hardcoding it.
+	// site config can move the app off /insights
 	const BASE =
 		(frappe.boot.app_data || []).find((a) => a.app_name === "insights")
 			?.app_route || "/insights";
 	const ALLOWED_ROLES = ["Insights Admin"];
 
-	// Workspace -> shipped workbook template. `template` is the folder under
-	// insights/workbook_templates/; the id is `insights/<template>`. The link opens
-	// it via the SPA resolver, which lazily imports it (idempotent) on first open.
+	// A workspace only reaches its own page (and this banner) when its sidebar
+	// starts with a "Home" item linking back to itself — otherwise the desk lands
+	// on the first report instead. "Financial Reports" has no such item, so the
+	// accounting nudge hangs off "Accounting" too.
+	const ACCOUNTING = {
+		title: "Receivables, Payables & Cash",
+		template: "accounting",
+	};
 	const DASHBOARDS = {
 		Selling: { title: "Sales Performance", template: "sales" },
 		Buying: { title: "Purchasing Overview", template: "purchasing" },
 		Stock: { title: "Stock & Inventory", template: "stock" },
-		// "Accounts" module spans several workspaces — nudge from the reporting one.
-		"Financial Reports": {
-			title: "Receivables, Payables & Cash",
-			template: "accounting",
-		},
+		Accounting: ACCOUNTING,
+		"Financial Reports": ACCOUNTING,
 	};
 
 	const templateId = (cfg) => `insights/${cfg.template}`;
@@ -37,15 +37,17 @@
 
 	const allowed = () =>
 		ALLOWED_ROLES.some((r) => (frappe.user_roles || []).includes(r));
-	// Site-wide opt-out for promotional banners — Frappe gates its own CRM/Helpdesk
-	// workspace nudges (setup_promotional_banners) on the same System Settings flag.
+	// Frappe gates its own CRM/Helpdesk workspace nudges on the same flag.
 	const suggestionsDisabled = () =>
 		cint(frappe.sys_defaults?.disable_product_suggestion);
-	const dismissKey = (ws) => `insights:nudge:${frappe.session.user}:${ws}`;
-	const dismissed = (ws) => localStorage.getItem(dismissKey(ws)) === "1";
+	// Keyed on the template, not the workspace, so dismissing the suggestion once
+	// covers every workspace that offers it.
+	const dismissKey = (cfg) =>
+		`insights:nudge:${frappe.session.user}:${templateId(cfg)}`;
+	const dismissed = (cfg) => localStorage.getItem(dismissKey(cfg)) === "1";
 	const esc = (s) => frappe.utils.escape_html(s);
 
-	// Self-guards on frappe.boot.enable_telemetry; no-ops when telemetry is off.
+	// no-ops when telemetry is off
 	const track = (event, ws, cfg) =>
 		frappe.telemetry?.capture(event, "insights", {
 			workspace: ws,
@@ -63,10 +65,10 @@
 			.forEach((el) => el.remove());
 	}
 
-	// The visible workspace's main section. Workspaces share one reused body and
-	// rebuild the editorjs content on each nav, so anchor against the stable direct
-	// child `.editor-js-container` — a deep `.codex-editor` ref isn't a child of the
-	// section and throws on client-side nav (only firstChild-fallback works on refresh).
+	// Workspaces share one reused body and rebuild the editorjs content on each
+	// nav, so anchor against the stable direct child `.editor-js-container` — a
+	// deep `.codex-editor` ref isn't a child of the section and throws on
+	// client-side nav (only firstChild-fallback works on refresh).
 	function findAnchor() {
 		const sections = document.querySelectorAll(".layout-main-section");
 		for (const s of sections) {
@@ -104,7 +106,7 @@
 			track("workspace_dashboard_nudge_clicked", ws, cfg),
 		);
 		el.querySelector(".insights-nudge__x").addEventListener("click", () => {
-			localStorage.setItem(dismissKey(ws), "1");
+			localStorage.setItem(dismissKey(cfg), "1");
 			el.remove();
 			track("workspace_dashboard_nudge_dismissed", ws, cfg);
 		});
@@ -118,12 +120,12 @@
 	let retryTimer = null;
 	function tryShow(attempt) {
 		attempt = attempt || 0;
-		// Supersede any pending retry: a fresh call (e.g. a fast navigation) owns the
-		// banner now, so stale chains can't double-render it or re-fire "shown".
+		// Supersede any pending retry: a fresh call (e.g. a fast navigation) owns
+		// the banner now, so stale chains can't double-render it or re-fire "shown".
 		clearTimeout(retryTimer);
 		const ws = currentWorkspace();
 		const cfg = ws && DASHBOARDS[ws];
-		if (!cfg || suggestionsDisabled() || !allowed() || dismissed(ws))
+		if (!cfg || suggestionsDisabled() || !allowed() || dismissed(cfg))
 			return removeBanner();
 
 		const anchor = findAnchor();
