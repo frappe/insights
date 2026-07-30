@@ -10,14 +10,7 @@
 	if (window.__insights_nudge_loaded) return;
 	window.__insights_nudge_loaded = true;
 
-<<<<<<< HEAD
 	const BASE = "/insights"; // v3 frontend base route
-=======
-	// site config can move the app off /insights
-	const BASE =
-		(frappe.boot.app_data || []).find((a) => a.app_name === "insights")
-			?.app_route || "/insights";
->>>>>>> 1a78fa66 (fix: show the accounting nudge on the Accounting workspace (#1265))
 	const ALLOWED_ROLES = ["Insights Admin"];
 
 	// A workspace only reaches its own page (and this banner) when its sidebar
