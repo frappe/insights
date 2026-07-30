@@ -284,6 +284,18 @@ def _get_referencing_queries(data_source: str, table_name: str) -> list[dict]:
     )
 
 
+def strip_schema_prefix(table_name: str) -> str:
+    """Drop the `<schema>.` prefix postgres table names used to always carry.
+
+    The frappe table -> doctype mapping below needs the bare `tab`-prefixed name, so
+    `public.tabUser` has to resolve to the `User` doctype and not blow up in `get_meta`.
+    Names are unqualified since frappe/insights#1195, but a source the patch couldn't
+    migrate still has to work.
+    """
+    _schema, separator, table = table_name.partition(".")
+    return table if separator and table.startswith("tab") else table_name
+
+
 def apply_user_permissions(t: Table, data_source, table_name):
     if frappe.flags.get("insights_for_public_access"):
         return t
@@ -293,6 +305,8 @@ def apply_user_permissions(t: Table, data_source, table_name):
 
     if not frappe.db.get_single_value("Insights Settings", "apply_user_permissions", cache=True):
         return t
+
+    table_name = strip_schema_prefix(table_name)
 
     if table_name == "tabSingles":
         single_doctypes = frappe.get_all("DocType", filters={"issingle": 1}, pluck="name")
