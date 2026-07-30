@@ -285,10 +285,12 @@ def _get_referencing_queries(data_source: str, table_name: str) -> list[dict]:
 
 
 def strip_schema_prefix(table_name: str) -> str:
-    """Drop the `<schema>.` prefix a postgres data source adds when it spans several schemas.
+    """Drop the `<schema>.` prefix postgres table names used to always carry.
 
     The frappe table -> doctype mapping below needs the bare `tab`-prefixed name, so
     `public.tabUser` has to resolve to the `User` doctype and not blow up in `get_meta`.
+    Names are unqualified since frappe/insights#1195, but a source the patch couldn't
+    migrate still has to work.
     """
     _schema, separator, table = table_name.partition(".")
     return table if separator and table.startswith("tab") else table_name

@@ -144,6 +144,17 @@ class TestPostgresSchemaPrefix(FrappeTestCase):
 
         self.assertEqual(backend.requested, [("v1.2 metrics", "public")])
 
+    def test_formatting_a_name_is_the_inverse_of_splitting_it(self):
+        for ds in (make_data_source(), make_data_source(schema="sales")):
+            self.assertEqual(ds.format_table_name("orders"), "orders")
+            self.assertEqual(ds.split_table_name(ds.format_table_name("orders"))[1], "orders")
+
+        multi = make_data_source(schema="public, sales")
+        self.assertEqual(multi.format_table_name("orders", "sales"), "sales.orders")
+        self.assertEqual(multi.split_table_name("sales.orders"), ("sales", "orders"))
+        # no schema given — frappe tables live in the first one configured
+        self.assertEqual(multi.format_table_name("tabUser"), "public.tabUser")
+
 
 class TestSchemaQualifiedDoctypeMapping(FrappeTestCase):
     def test_strip_schema_prefix(self):

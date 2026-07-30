@@ -344,8 +344,18 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         """
         return self.database_type == "PostgreSQL" and len(self.get_postgres_schemas()) > 1
 
+    def format_table_name(self, table: str, schema: str | None = None) -> str:
+        """Name `table` the way `get_table_list` does, so it matches `Insights Table v3`.
+
+        `schema` defaults to the first one configured, which is where a frappe database
+        keeps its tables.
+        """
+        if not self.qualify_table_names():
+            return table
+        return f"{schema or self.get_postgres_schemas()[0]}.{table}"
+
     def split_table_name(self, table_name: str) -> tuple[str, str]:
-        """Resolve `(schema, table)` for a postgres table name.
+        """Resolve `(schema, table)` for a postgres table name — inverse of `format_table_name`.
 
         Names are only qualified when the data source spans multiple schemas, but names
         stored before that was the case may still carry the prefix — so accept both.
@@ -370,13 +380,10 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             return db.list_tables(database=self.schema)
 
         if self.database_type == "PostgreSQL":
-            qualify = self.qualify_table_names()
             tables = []
             for schema in self.get_postgres_schemas():
                 schema_tables = db.list_tables(database=(database_name, schema))
-                if qualify:
-                    schema_tables = [f"{schema}.{table}" for table in schema_tables]
-                tables.extend(schema_tables)
+                tables.extend(self.format_table_name(table, schema) for table in schema_tables)
             return tables
 
         contains_special_chars = re.search(r"[^a-zA-Z0-9_]", database_name)

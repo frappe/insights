@@ -126,13 +126,9 @@ def get_frappedb_table_links(data_source):
     standard_links = standard_links.to_dict(orient="records")
     custom_links = custom_links.to_dict(orient="records")
 
-    # links must name tables exactly as `Insights Table v3` stores them, which on a postgres
-    # source spanning several schemas means qualifying them with the schema holding the
-    # frappe tables (the first one configured).
-    prefix = f"{data_source.get_postgres_schemas()[0]}." if data_source.qualify_table_names() else ""
-
+    # links must name tables exactly as `Insights Table v3` stores them, or they never match
     def table_name(doctype):
-        return f"{prefix}tab{doctype}"
+        return data_source.format_table_name(f"tab{doctype}")
 
     all_links = []
     for link_row in standard_links + custom_links:
