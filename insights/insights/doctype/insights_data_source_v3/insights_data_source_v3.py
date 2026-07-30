@@ -330,6 +330,42 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
 
         frappe.throw(f"Unsupported database type: {self.database_type}")
 
+    def get_postgres_schemas(self) -> list[str]:
+        """Schemas this data source reads from, as a comma separated list in `schema`."""
+        schemas = [s.strip() for s in (self.schema or "").split(",") if s.strip()]
+        return schemas or ["public"]
+
+    def qualify_table_names(self) -> bool:
+        """Whether table names should carry a `<schema>.` prefix.
+
+        Only useful when the data source spans more than one schema — with a single schema
+        there is nothing to disambiguate and the prefix just leaks into the UI and breaks the
+        table -> doctype mapping for frappe databases (frappe/insights#1195).
+        """
+        return self.database_type == "PostgreSQL" and len(self.get_postgres_schemas()) > 1
+
+    def format_table_name(self, table: str, schema: str | None = None) -> str:
+        """Name `table` the way `get_table_list` does, so it matches `Insights Table v3`.
+
+        `schema` defaults to the first one configured, which is where a frappe database
+        keeps its tables.
+        """
+        if not self.qualify_table_names():
+            return table
+        return f"{schema or self.get_postgres_schemas()[0]}.{table}"
+
+    def split_table_name(self, table_name: str) -> tuple[str, str]:
+        """Resolve `(schema, table)` for a postgres table name — inverse of `format_table_name`.
+
+        Names are only qualified when the data source spans multiple schemas, but names
+        stored before that was the case may still carry the prefix — so accept both.
+        """
+        schemas = self.get_postgres_schemas()
+        schema, separator, table = table_name.partition(".")
+        if separator and schema in schemas:
+            return schema, table
+        return schemas[0], table_name
+
     def get_table_list(self):
         db = self._get_ibis_backend()
 
@@ -344,13 +380,10 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             return db.list_tables(database=self.schema)
 
         if self.database_type == "PostgreSQL":
-            schema = self.schema or "public"
-            schemas = schema.split(",")
             tables = []
-            for schema in schemas:
+            for schema in self.get_postgres_schemas():
                 schema_tables = db.list_tables(database=(database_name, schema))
-                schema_tables = [f"{schema}.{table}" for table in schema_tables]
-                tables.extend(schema_tables)
+                tables.extend(self.format_table_name(table, schema) for table in schema_tables)
             return tables
 
         contains_special_chars = re.search(r"[^a-zA-Z0-9_]", database_name)
@@ -440,8 +473,8 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
 
     def get_ibis_table(self, table_name):
         remote_db = self._get_ibis_backend()
-        if self.database_type == "PostgreSQL" and "." in table_name:
-            schema, table = table_name.split(".")
+        if self.database_type == "PostgreSQL":
+            schema, table = self.split_table_name(table_name)
             return remote_db.table(table, database=schema)
         if self.type == "REST API":
             return remote_db.table(table_name, database=self.schema)
