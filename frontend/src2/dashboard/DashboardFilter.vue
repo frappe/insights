@@ -50,15 +50,16 @@ function stringValuesProvider(search: string) {
 
 const filterState = reactive(copy(dashboard.filterStates[filter.filter_name] || {}))
 
+// no `immediate` — on mount, filterState must keep the restored state from dashboard.filterStates
 watch(
 	() => [filter.default_operator, filter.default_value],
 	([op, val]) => {
-		if (op !== null && val !== null) {
+		if (op != null && val != null) {
 			filterState.operator = op as FilterOperator
 			filterState.value = val
 		}
 	},
-	{ immediate: true, deep: true },
+	{ deep: true },
 )
 
 wheneverChanges(
