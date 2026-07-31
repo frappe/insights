@@ -62,12 +62,25 @@ function rangeProvider() {
 // for, and that one falls back to the type icon.
 const iconClass = computed(() => filterIconClass(filter.value.icon))
 
+<<<<<<< HEAD
 // The store is where this filter is set, and the control reads it rather than a
 // copy of it: the same filter is unset elsewhere (a card's "Reset filters"),
 // and a control answering a copy would still read as set and push the value it
 // kept back on the next keystroke.
 const filterState = computed<{ operator?: FilterOperator; value?: FilterValue }>(
 	() => props.dashboard.filters[filter.value.filter_name] || {},
+=======
+// no `immediate` — on mount, filterState must keep the restored state from dashboard.filterStates
+watch(
+	() => [filter.default_operator, filter.default_value],
+	([op, val]) => {
+		if (op != null && val != null) {
+			filterState.operator = op as FilterOperator
+			filterState.value = val
+		}
+	},
+	{ deep: true },
+>>>>>>> ff0d2b6 (fix: dashboard filters applied but not shown after reopen (#1268))
 )
 
 function setFilter(operator?: FilterOperator, value?: FilterValue) {
