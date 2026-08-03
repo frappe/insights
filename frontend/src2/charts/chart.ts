@@ -12,7 +12,7 @@ import { GranularityType } from '../helpers/constants'
 import useDocumentResource from '../helpers/resource'
 import { createToast } from '../helpers/toasts'
 import { column, count, query_table } from '../query/helpers'
-import useQuery, { Query } from '../query/query'
+import useQuery, { makeAdhocQuery, Query } from '../query/query'
 import router from '../router'
 import { __ } from '../translation'
 import {
@@ -68,7 +68,7 @@ function makeChart(name: string) {
 		const isValid = validateConfig()
 		if (!isValid) return
 
-		const query = useQuery('new-query-' + getUniqueId())
+		const query = makeAdhocQuery()
 		addSourceOperation(query)
 		addFilterOperation(query)
 		addChartOperation(query)
