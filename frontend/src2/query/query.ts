@@ -19,6 +19,7 @@ import { createToast } from '../helpers/toasts'
 import { __ } from '../translation'
 import router from '../router'
 import session from '../session'
+import { isServerBusyError, scheduleQueryExecution } from './execution_queue'
 import {
 	AdhocFilters,
 	CodeArgs,
@@ -163,6 +164,9 @@ export function makeQuery(name: string) {
 	let currentExecutionToken = 0
 
 	const adhocFilters = ref<AdhocFilters>()
+	// set by whoever owns the layout, so a screenful of queries runs in a sensible
+	// order once they outnumber the free slots
+	const executionPriority = ref<number>()
 	async function execute(force: boolean = false, page_size?: number) {
 		if (!query.islocal) {
 			await waitUntil(() => query.isloaded)
@@ -195,17 +199,21 @@ export function makeQuery(name: string) {
 
 		executing.value = true
 		const token = ++currentExecutionToken
-		return query
-			.call('execute', {
-				active_operation_idx: activeOperationIdx.value,
-				adhoc_filters: adhocFilters.value,
-				force: Boolean(force),
-				page: currentPage.value,
-				page_size: pageSize.value,
-			})
+		// discard the result if a newer execution has superseded this one
+		const isStale = () => token !== currentExecutionToken
+		return scheduleQueryExecution(
+			() =>
+				query.call('execute', {
+					active_operation_idx: activeOperationIdx.value,
+					adhoc_filters: adhocFilters.value,
+					force: Boolean(force),
+					page: currentPage.value,
+					page_size: pageSize.value,
+				}),
+			{ isStale, priority: executionPriority.value }
+		)
 		.then((response: any) => {
-			// Discard stale responses — a newer execution has superseded this one
-			if (token !== currentExecutionToken) return
+			if (isStale()) return
 			if (!response) return
 
 			result.value.executedSQL = response.sql
@@ -235,14 +243,12 @@ export function makeQuery(name: string) {
 			result.value.lastExecutedAt = new Date()
 		})
 			.catch((err) => {
-				if (err.status === 503 && err.message && err.message.includes('ServiceUnavailableError')) {
-					isServerBusy.value = true
-				}
-				if (token !== currentExecutionToken) return
+				if (isStale()) return
+				isServerBusy.value = isServerBusyError(err)
 				result.value = { ...EMPTY_RESULT }
 			})
 			.finally(() => {
-				if (token !== currentExecutionToken) return
+				if (isStale()) return
 				executing.value = false
 				lastExecutionArgs = {
 					operations: currentOperations.value,
@@ -271,11 +277,12 @@ export function makeQuery(name: string) {
 		}
 
 		fetchingCount.value = true
-		return query
-			.call('get_count', {
+		return scheduleQueryExecution(() =>
+			query.call('get_count', {
 				active_operation_idx: activeOperationIdx.value,
 				adhoc_filters: adhocFilters.value,
 			})
+		)
 			.then((count: number) => {
 				result.value.totalRowCount = count || 0
 			})
@@ -1135,6 +1142,7 @@ export function makeQuery(name: string) {
 		currentOperations,
 		activeEditOperation,
 		adhocFilters,
+		executionPriority,
 
 		autoExecute,
 		executing,
