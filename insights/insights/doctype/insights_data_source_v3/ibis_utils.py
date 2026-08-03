@@ -981,7 +981,10 @@ def execute_ibis_query(
     return result, time_taken
 
 
-@concurrent_limit()
+# reject immediately instead of waiting for a slot: a blocked request holds on to a
+# web thread, so waiting here is what starves the pool when a dashboard executes all
+# of its charts at once. The frontend retries on the 503.
+@concurrent_limit(wait_timeout=0)
 def _execute_live_query(query: IbisQuery):
     start = time.monotonic()
     result = query.execute()
