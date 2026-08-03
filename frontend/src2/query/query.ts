@@ -164,6 +164,9 @@ export function makeQuery(name: string) {
 	let currentExecutionToken = 0
 
 	const adhocFilters = ref<AdhocFilters>()
+	// set by whoever owns the layout, so a screenful of queries runs in a sensible
+	// order once they outnumber the free slots
+	const executionPriority = ref<number>()
 	async function execute(force: boolean = false, page_size?: number) {
 		if (!query.islocal) {
 			await waitUntil(() => query.isloaded)
@@ -207,7 +210,7 @@ export function makeQuery(name: string) {
 					page: currentPage.value,
 					page_size: pageSize.value,
 				}),
-			isStale
+			{ isStale, priority: executionPriority.value }
 		)
 		.then((response: any) => {
 			if (isStale()) return
@@ -1139,6 +1142,7 @@ export function makeQuery(name: string) {
 		currentOperations,
 		activeEditOperation,
 		adhocFilters,
+		executionPriority,
 
 		autoExecute,
 		executing,

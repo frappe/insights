@@ -10,25 +10,35 @@ const RETRY_BASE_DELAY = 1000
 // isn't free - back off to a steady interval instead of polling ever faster
 const MAX_RETRY_DELAY = 8000
 
+type Waiter = { priority: number; resume: () => void }
+
 let inFlight = 0
-const waiting: Array<() => void> = []
+const waiting: Waiter[] = []
 
 class StaleExecutionError extends Error {}
 
-function acquireSlot(): Promise<void> {
+function acquireSlot(priority: number): Promise<void> {
 	if (inFlight < MAX_IN_FLIGHT) {
 		inFlight++
 		return Promise.resolve()
 	}
-	return new Promise((resolve) => waiting.push(resolve))
+	return new Promise((resume) => waiting.push({ priority, resume }))
 }
 
 function releaseSlot() {
-	// hand the slot straight to the next in line, so it can't be taken by a
-	// caller that arrives in between
-	const next = waiting.shift()
-	if (next) return next()
-	inFlight--
+	if (!waiting.length) {
+		inFlight--
+		return
+	}
+
+	let next = 0
+	for (let i = 1; i < waiting.length; i++) {
+		// strictly lower, so equal priorities keep their arrival order
+		if (waiting[i].priority < waiting[next].priority) next = i
+	}
+	// hand the slot straight over, so it can't be taken by a caller that
+	// arrives in between
+	waiting.splice(next, 1)[0].resume()
 }
 
 export function isServerBusyError(err: any) {
@@ -49,14 +59,18 @@ function retryDelay(attempt: number) {
  * giving up and surfacing the error.
  *
  * `isStale` lets a superseded execution drop out instead of spending a slot on a
- * result nobody is waiting for.
+ * result nobody is waiting for. `priority` orders the waiting calls, lowest first -
+ * dashboard charts pass their position so the top of the page loads before the
+ * bottom. Calls that are already running are not preempted.
  */
 export async function scheduleQueryExecution<T>(
 	run: () => Promise<T>,
-	isStale?: () => boolean,
+	options: { isStale?: () => boolean; priority?: number } = {},
 ): Promise<T> {
+	const { isStale, priority = 0 } = options
+
 	for (let attempt = 1; ; attempt++) {
-		await acquireSlot()
+		await acquireSlot(priority)
 		try {
 			if (isStale?.()) throw new StaleExecutionError()
 			return await run()
