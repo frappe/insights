@@ -86,6 +86,12 @@ export default function useQuery(name: string) {
 	return query
 }
 
+// throwaway queries are never looked up by name, so keep them out of the shared
+// cache, otherwise every chart refresh/drill-down leaks an entry for the session
+export function makeAdhocQuery() {
+	return makeQuery('new-query-' + getUniqueId())
+}
+
 export function makeQuery(name: string) {
 	const query = getQueryResource(name)
 
@@ -796,7 +802,7 @@ export function makeQuery(name: string) {
 			drillDownFilters = getDrillDownFiltersForSummarize(ops, sliceIdx, col, currRow)
 		}
 
-		const drill_down_query = useQuery('new-query-' + getUniqueId())
+		const drill_down_query = makeAdhocQuery()
 		drill_down_query.doc.title = 'Drill Down'
 		drill_down_query.doc.use_live_connection = query.doc.use_live_connection
 		drill_down_query.autoExecute = true
