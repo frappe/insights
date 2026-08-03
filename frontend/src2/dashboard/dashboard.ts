@@ -214,7 +214,18 @@ function makeDashboard(name: string) {
 	function refreshChart(chart_name: string, force = false) {
 		const chart = useChart(chart_name)
 		chart.dataQuery.adhocFilters = getAdhocFilters(chart_name)
+		chart.dataQuery.executionPriority = getLayoutRank(chart_name)
 		chart.refresh(force)
+	}
+
+	// charts reach the queue in whatever order their docs finish loading, so rank
+	// them by grid position instead: top row first, left to right within a row
+	function getLayoutRank(chart_name: string) {
+		const item = dashboard.doc.items.find(
+			(item) => item.type === 'chart' && item.chart === chart_name
+		)
+		if (!item) return undefined
+		return item.layout.y * grid_cols + item.layout.x
 	}
 
 	function getAdhocFilters(chart_name: string, exclude_filter_name?: string) {
