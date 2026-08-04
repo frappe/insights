@@ -1,7 +1,7 @@
 # Build ownership and island preset
 
 Type: grilling
-Status: open
+Status: resolved
 
 ## Question
 
@@ -35,3 +35,59 @@ frappe-ui copy, so Insights carries no closure pins of its own.
   import, how is that enforced, and what is the size budget?
 - Stylesheet delivery: `adoptedStyleSheets` shared across shadow roots rather
   than a `<link>` per root.
+
+## Answer
+
+**Apps own their island builds; framework publishes the preset and the
+runtime.** `bench build` already distributes build work per app, and a
+universal framework builder would make every consumer app's dependency
+graph a framework build problem. Freeze-per-major removed the one real
+argument for central builds: with true externals an island links to the
+runtime at page load, so a stale island is old-but-compatible, not broken.
+
+**Islands link to the runtime through an import map, as native ESM.** Desk
+emits an import map in the page head — `vue`, `vue-router`, `frappe-ui`,
+`echarts`, … mapped to hashed runtime files, generated from assets.json at
+render — and loads islands via dynamic `import()` instead of
+`frappe.require`. The consumer contract is one line in any bundler: build
+ESM, leave the closure as bare imports. Runtime packages become separate
+hashed files, individually cacheable. This is also the convergence path
+from the runtime-version-policy ticket: a Vue-frontend app that later
+wants framework's runtime adopts the same map. Desk changes are
+framework-side; the legacy esbuild pipeline is untouched and classic
+bundles coexist with module islands on the same page. Island output stays
+in `sites/assets/<app>/dist`, registered in assets.json.
+
+**The generic enforcement is a size budget, not import rules.** What
+counts as "the SPA graph" is app-local knowledge, so the preset ships a
+per-entry size gate (budget set from the first clean measured build plus
+slack — the 2.3 MB figure came from a coupled entry no one should build
+again). The import-boundary lint that names the offending chain is an
+app-local aid; the preset may expose a `forbiddenImports` slot, but the
+budget is the contract. Insights adds its own boundary lint as part of
+decoupling `charts/chart.ts`-style modules from the router.
+
+**CSS splits along the same line as the JS.** Framework builds one runtime
+CSS artifact — preflight, `:host`-rewritten design tokens, and every
+utility frappe-ui's own source uses — and `mountVueIsland` applies it to
+each island's shadow root as a shared constructable stylesheet
+(`adoptedStyleSheets`): fetched once, parsed once, one sheet object across
+all roots. An island's own CSS shrinks to the utilities its templates use
+(the preset's Tailwind config scans app source only) and is adopted after
+the runtime sheet so app styles win ties. The runtime CSS is part of the
+append-only surface: restyling mid-major is fine, removing tokens or
+classes is a breaking change.
+
+**Dev loop: preset watch mode + `hot_update` soft re-mount.** Output lands
+in `sites/assets` as normal; frappe's existing build events re-run the
+mount, which `mountVueIsland`'s teardown already makes safe. This is the
+house pattern (Studio's disk→DB→editor sync in frappe/studio#197 rides the
+same watch-plus-realtime shape). Vite dev-server HMR stays a purely
+additive, app-local upgrade — a dev-only import map override touches no
+contract surface.
+
+**Framework deliverables out of this ticket:** the runtime JS artifact
+(the closure as hashed ESM files), the runtime CSS artifact, the import
+map emitted by desk, the module island loader, and the npm-installable
+Vite preset (externals, `:root`→`:host`, Tailwind config, ESM/CSS output,
+assets.json registration, size gate, watch mode).
