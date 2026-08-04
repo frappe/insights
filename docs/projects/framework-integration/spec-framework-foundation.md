@@ -236,18 +236,28 @@ neighboring framework tests already use.
 
 ## Further Notes
 
-- **frappe-ui prerequisite PR.** The POC's linked frappe-ui checkout (branch
-  `frappe-ui-desk-poc`, based on beta.29) carries three commits that must land
-  upstream before islands work without a `link:` dependency. One: the
-  `usePortalTarget` inject composable — a host-level portal default wired into
-  the overlay components, with precedence explicit `portalTo` prop > host
-  inject > reka-ui default. Main only has the per-component `portalTo` prop,
-  which does not cover the island case (the mount helper sets one target per
-  shadow root, islands pass nothing). Two: the companion fix that applies the
-  target in popover and timepicker. Three: the lucide icons Vite plugin
-  extracted to its own export — the preset imports it, and main only ships the
-  combined module. Until this PR merges and releases, the framework branch
-  keeps the `link:` checkout arrangement.
+- **frappe-ui prerequisite PR.** Three problems must be solved upstream in
+  frappe-ui before islands work without a `link:` dependency. One: a
+  host-level portal default — the mount helper sets one portal target per
+  shadow root, islands pass nothing, and an explicit `portalTo` prop still
+  wins. Main only has the per-component `portalTo` prop, which does not cover
+  this. Two: the overlay components that ignore the portal target today
+  (popover, timepicker) must honor it. Three: the lucide icons Vite plugin
+  needs its own export — the preset imports it, and main only ships the
+  combined module. The POC's linked frappe-ui checkout (branch
+  `frappe-ui-desk-poc`, based on beta.29) holds reference implementations of
+  all three (`usePortalTarget` with precedence explicit prop > host inject >
+  reka-ui default). Solve them fresh on a new branch off frappe-ui `main` —
+  read the reference, do not rebase or cherry-pick it. Until this PR merges
+  and releases, the framework branch keeps a `link:` checkout of frappe-ui.
+- **Start the framework branch from scratch** off frappe `develop`. Do not
+  carry POC commits forward. The POC branches stay untouched as reference —
+  some findings live only in their code (the one-Vue dedupe resolution, the
+  type-macro handling for compiling frappe-ui from source, teardown
+  ordering). The two build-bug fixes below sit uncommitted in the POC
+  working tree, and the script-ordering one may dissolve: with apps building
+  their own islands through the preset, framework's build scripts may not
+  need an islands step at all.
 - **Two known POC build bugs** for whoever touches the legacy pipeline:
   `autoprefixer` is required but undeclared in framework's `package.json`, and
   the `production` script's argument ordering makes `bench build --app X`
