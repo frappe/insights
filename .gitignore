@@ -186,5 +186,8 @@ todo
 frontend/package-lock.json
 .opencode/package-lock.json
 frontend/components.d.ts
-docs/
+docs/**
+!docs/projects/
+!docs/projects/framework-integration/
+!docs/projects/framework-integration/**
 scripts/
