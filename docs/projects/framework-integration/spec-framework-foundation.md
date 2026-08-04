@@ -165,7 +165,13 @@ mount(el, { host, props, on }) → { update(props), unmount() }
 
 ### Vite preset
 
-- Published as an npm package. It carries: the runtime externals, the
+- Lives in `@framework/ui` (the framework's npm package at `apps/frappe/ui`),
+  beside its existing `./vite` export. Not in frappe-ui — frappe-ui stays a
+  generic component library, and the preset is framework-tied (externals
+  contract, assets.json registration, size budget, `:host` rewrite). The
+  preset computes the externals closure at build time from the installed
+  frappe-ui's package.json and lockfile, so the list cannot drift.
+- It carries: the runtime externals, the
   `:root`→`:host` token rewrite, a Tailwind config scanning app source only,
   ESM output with extracted CSS, output into the app's standard built-assets
   directory, and assets.json registration.
