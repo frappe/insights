@@ -169,8 +169,12 @@ mount(el, { host, props, on }) → { update(props), unmount() }
   beside its existing `./vite` export. Not in frappe-ui — frappe-ui stays a
   generic component library, and the preset is framework-tied (externals
   contract, assets.json registration, size budget, `:host` rewrite). The
-  preset computes the externals closure at build time from the installed
-  frappe-ui's package.json and lockfile, so the list cannot drift.
+  preset reads the externals closure from the runtime's registered assets.json
+  keys — the same enumeration the runtime build writes and the import map is
+  generated from. One list, three consumers, no drift. (A package.json walk was
+  measured and rejected: it overcounts build tooling declared as runtime
+  dependencies and cannot express subpath specifiers, which are most of the
+  closure's entries.)
 - It carries: the runtime externals, the
   `:root`→`:host` token rewrite, a Tailwind config scanning app source only,
   ESM output with extracted CSS, output into the app's standard built-assets
