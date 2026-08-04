@@ -65,6 +65,10 @@ Resolved tickets:
 - [Mount and renderer API](issues/04-v1-contract-surface.md) — islands are hook-declared (`ui_islands`) and mounted through one generic `frappe.ui.mount_island(name, el, context)`; the envelope is structured by ownership (`host` framework-injected ambient, `props`/`on` island-specific, generic `update`/`unmount` handle, `configure(app)` fixes the app-config gap); references are logical ids (`{app}/{name}` for shipped content, resolved by Insights — hash docnames never cross the boundary); the renderer toggle is one framework-owned bridge that retires without an Insights release. "Island" is the ratified term, in `CONTEXT.md`.
 - **Ownership split** (settled during ticket 02) — framework owns the desk page shell, the mount contract, the shared runtime (Vue + frappe-ui + chart primitives), and the renderer toggle; Insights provides doctypes, engine, and a mountable UI artifact built against framework-provided externals. The seam is one call: framework's page asks Insights to mount into an element with host context. The Insights→desk bridge (is Insights installed? is the flag on? is this an Insights dashboard?) lives in framework, so Insights never knows about the fallback.
 
+The framework-side foundation is specced from these tickets:
+[spec-framework-foundation.md](spec-framework-foundation.md) (`ready-for-agent`).
+The Insights-side spec waits on tickets 03 and 09.
+
 ## Not yet specified
 
 - **Datasets as first-class shippable units** — apps ship curated queries/models
