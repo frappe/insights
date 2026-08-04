@@ -236,12 +236,18 @@ neighboring framework tests already use.
 
 ## Further Notes
 
-- **Portal contract prerequisite.** Overlays teleport to `<body>` unless a
-  portal target is injected. Two unmerged frappe-ui commits from the POC fix
-  this and rebase onto current frappe-ui with mechanical conflicts only (main
-  standardized on a `portalTo` prop). Upstreaming them is a small, separate
-  frappe-ui PR — a prerequisite for overlay-bearing islands, tracked outside
-  this spec.
+- **frappe-ui prerequisite PR.** The POC's linked frappe-ui checkout (branch
+  `frappe-ui-desk-poc`, based on beta.29) carries three commits that must land
+  upstream before islands work without a `link:` dependency. One: the
+  `usePortalTarget` inject composable — a host-level portal default wired into
+  the overlay components, with precedence explicit `portalTo` prop > host
+  inject > reka-ui default. Main only has the per-component `portalTo` prop,
+  which does not cover the island case (the mount helper sets one target per
+  shadow root, islands pass nothing). Two: the companion fix that applies the
+  target in popover and timepicker. Three: the lucide icons Vite plugin
+  extracted to its own export — the preset imports it, and main only ships the
+  combined module. Until this PR merges and releases, the framework branch
+  keeps the `link:` checkout arrangement.
 - **Two known POC build bugs** for whoever touches the legacy pipeline:
   `autoprefixer` is required but undeclared in framework's `package.json`, and
   the `production` script's argument ordering makes `bench build --app X`
