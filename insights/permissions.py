@@ -33,6 +33,15 @@ TEAM_BASED_PERMISSION_DOCTYPES = [
     "Insights Chart v3",
 ]
 
+# content that carries a visibility ladder (`visibility` + `visible_to_roles`)
+VISIBILITY_LADDER_DOCTYPES = [
+    "Insights Chart v3",
+    "Insights Dashboard v3",
+]
+
+# rungs that admit a viewer without naming them
+OPEN_AUDIENCES = ["Everyone", "Public"]
+
 
 class InsightsPermissions:
     def __init__(self, user=None):
@@ -48,6 +57,10 @@ class InsightsPermissions:
     @cached_property
     def team_permissions_enabled(self):
         return frappe.db.get_single_value("Insights Settings", "enable_permissions")
+
+    @cached_property
+    def user_roles(self):
+        return frappe.get_roles(self.user)
 
     def get_permission_query_conditions(self, doctype: str) -> str:
         if doctype not in PERMISSION_DOCTYPES:
@@ -122,6 +135,56 @@ class InsightsPermissions:
         if doctype == "Insights Alert":
             query = self._build_alert_permission_query(ptype)
         return query
+
+    def _build_audience_query(self, doctype, ptype):
+        """Returns a query to get docs whose declared audience admits this user.
+
+        The visibility ladder is one grant source beside owner, DocShare and
+        the workbook/dashboard links. It is view-only: no rung ever grants
+        write or share, and no rung consults the `Insights User` role.
+        """
+        if ptype != "read" or doctype not in VISIBILITY_LADDER_DOCTYPES:
+            return None
+
+        Content = frappe.qb.DocType(doctype)
+
+        if self.user == "Guest":
+            # the ladder is strict, so a guest only ever reaches the top rung
+            return frappe.qb.from_(Content).select(Content.name).where(Content.visibility == "Public")
+
+        query = frappe.qb.from_(Content).select(Content.name)
+        admits_user = Content.visibility.isin(OPEN_AUDIENCES)
+
+        roles = [role for role in self.user_roles if role != "Guest"]
+        if roles:
+            HasRole = frappe.qb.DocType("Has Role")
+            NamedRoles = (
+                frappe.qb.from_(HasRole)
+                .select(HasRole.parent.as_("name"))
+                .where(
+                    (HasRole.parenttype == doctype)
+                    & (HasRole.parentfield == "visible_to_roles")
+                    & (HasRole.role.isin(roles))
+                )
+            )
+            query = query.left_join(NamedRoles).on(Content.name == NamedRoles.name)
+            admits_user = admits_user | (
+                (Content.visibility == "Specific Roles") & NamedRoles.name.isnotnull()
+            )
+
+        return query.where(admits_user)
+
+    def _with_audience_grant(self, query, Content, doctype, ptype, granted):
+        """Adds the visibility ladder to a doctype's grant sources"""
+        audience = self._build_audience_query(doctype, ptype)
+        if audience is None:
+            return query.where(granted)
+
+        return (
+            query.left_join(audience)
+            .on(Content.name == audience.name)
+            .where(granted | audience.name.isnotnull())
+        )
 
     def _build_source_permission_query(self, ptype):
         # if team permissions are not enabled, all data sources are accessible
@@ -229,7 +292,7 @@ class InsightsPermissions:
 
         AllowedDashboards = self._build_resource_query("Insights Dashboard v3")
 
-        return (
+        query = (
             frappe.qb.from_(Dashboard)
             .select(Dashboard.name)
             .left_join(OwnedDashboards)
@@ -240,13 +303,15 @@ class InsightsPermissions:
             .on(Dashboard.name == LinkedWithAllowedWorkbooks.name)
             .left_join(AllowedDashboards)
             .on(Dashboard.name == AllowedDashboards.name)
-            .where(
-                OwnedDashboards.name.isnotnull()
-                | SharedDashboards.share_name.isnotnull()
-                | LinkedWithAllowedWorkbooks.name.isnotnull()
-                | AllowedDashboards.name.isnotnull()
-            )
         )
+        granted = (
+            OwnedDashboards.name.isnotnull()
+            | SharedDashboards.share_name.isnotnull()
+            | LinkedWithAllowedWorkbooks.name.isnotnull()
+            | AllowedDashboards.name.isnotnull()
+        )
+
+        return self._with_audience_grant(query, Dashboard, "Insights Dashboard v3", ptype, granted)
 
     def _build_chart_permission_query(self, ptype):
         DocShare = frappe.qb.DocType("DocShare")
@@ -289,7 +354,7 @@ class InsightsPermissions:
 
         AllowedCharts = self._build_resource_query("Insights Chart v3")
 
-        return (
+        query = (
             frappe.qb.from_(Chart)
             .select(Chart.name)
             .left_join(OwnedCharts)
@@ -302,14 +367,18 @@ class InsightsPermissions:
             .on(Chart.name == LinkedWithAllowedDashboards.name)
             .left_join(AllowedCharts)
             .on(Chart.name == AllowedCharts.name)
-            .where(
-                OwnedCharts.name.isnotnull()
-                | SharedCharts.share_name.isnotnull()
-                | LinkedWithAllowedWorkbooks.name.isnotnull()
-                | LinkedWithAllowedDashboards.name.isnotnull()
-                | AllowedCharts.name.isnotnull()
-            )
         )
+        granted = (
+            OwnedCharts.name.isnotnull()
+            | SharedCharts.share_name.isnotnull()
+            | LinkedWithAllowedWorkbooks.name.isnotnull()
+            # a chart on a dashboard inherits the dashboard's audience,
+            # downward only — see _build_dashboard_permission_query
+            | LinkedWithAllowedDashboards.name.isnotnull()
+            | AllowedCharts.name.isnotnull()
+        )
+
+        return self._with_audience_grant(query, Chart, "Insights Chart v3", ptype, granted)
 
     def _build_query_permission_query(self, ptype):
         Query = frappe.qb.DocType("Insights Query v3")

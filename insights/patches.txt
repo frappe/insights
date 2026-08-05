@@ -14,3 +14,4 @@ insights.patches.backfill_query_references
 execute:frappe.db.set_single_value("Insights Settings", "allow_download", 1)
 insights.patches.requalify_workbook_templates
 insights.patches.strip_default_schema_from_table_names
+insights.patches.set_visibility_from_is_public
