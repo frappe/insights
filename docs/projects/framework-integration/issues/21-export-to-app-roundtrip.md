@@ -76,3 +76,23 @@ One wart left: a re-export that drops a chart from the dashboard leaves the old
 file behind. Sync would keep shipping it, so a developer deletes it in git —
 which is visible in the diff, and deleting files a developer may have written
 by hand seemed the worse default.
+
+2026-08-05 — the UI slice is in. "Export to app…" sits in the workbook's
+overflow menu, in `WorkbookNavbarActions.vue`, and shows only while a dashboard
+tab is open on a developer bench. Opening a dashboard is what asks the bench
+for the targets, once per session. A bench that never authors one never asks,
+and a bench that answers `developer_mode: false` grows no export surface at
+all.
+
+The dialog takes an app and a bundle. The bundle is one the app already ships
+or a new folder, whose name the dialog checks against the same pattern the
+backend enforces before it makes the call. Success replaces the form with the
+report: each item as `Chart · insights/todo-status-breakdown` over the path it
+took in the app, and the count of files written under that.
+
+After a successful export the dialog is not dismissible, and Done is the only
+way out. By then the dashboard, its charts and their queries belong to the
+bundle's container workbook. The tab the author is on is gone, and every
+resource this tab holds is stale, so Done reloads the workbook — what
+"Duplicate Workbook" already does, for the same reason. The author is left with
+the same workbook, one dashboard lighter.
