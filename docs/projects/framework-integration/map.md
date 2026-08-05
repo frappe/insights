@@ -70,7 +70,8 @@ Resolved tickets:
 
 The framework-side foundation is specced from these tickets:
 [spec-framework-foundation.md](spec-framework-foundation.md) (`ready-for-agent`).
-Tickets 03 and 09 are resolved, so the Insights-side spec is unblocked.
+The Insights-side foundation is specced from tickets 03, 04, 05, and 09:
+[spec-insights-foundation.md](spec-insights-foundation.md) (`ready-for-agent`).
 
 ## Not yet specified
 
