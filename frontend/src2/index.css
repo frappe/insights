@@ -20,12 +20,13 @@ body {
 	font-feature-settings: 'tnum';
 }
 
-.dialog-overlay {
-	z-index: 100;
-}
-
-[data-reka-popper-content-wrapper] {
-	z-index: 100 !important;
+/* Contain the app's own z-indexes (sticky headers, CodeMirror tooltips) so they
+   can't compete with dialogs and popovers, which portal to the body. Without a
+   stacking context here they escape to the root and paint over the portal; with
+   one, body order alone layers app < dialog < popover, so neither needs a
+   z-index. */
+#app {
+	isolation: isolate;
 }
 
 /* Combobox/MultiSelect dropdowns match their trigger width. frappe-ui applies
