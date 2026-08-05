@@ -52,15 +52,23 @@ class TestUserPermissionColumns(FrappeTestCase):
     def test_apply_column_permissions_keeps_only_allowed(self):
         t = ibis.memtable({"name": ["a"], "secret": ["x"], "_assign": ["[]"]})
 
+        calls = []
         original = table_module.get_permitted_columns_for_table
-        table_module.get_permitted_columns_for_table = lambda _name: {"name", "_assign"}
+
+        def stub(name, user=None):
+            calls.append((name, user))
+            return {"name", "_assign"}
+
+        table_module.get_permitted_columns_for_table = stub
         try:
-            result = apply_column_permissions(t, "tabSomething")
+            result = apply_column_permissions(t, "tabSomething", "jane@example.com")
         finally:
             table_module.get_permitted_columns_for_table = original
 
         # `secret` is dropped; original column order is preserved.
         self.assertEqual(list(result.columns), ["name", "_assign"])
+        # the declared authority's user decides the columns, not the session user
+        self.assertEqual(calls, [("tabSomething", "jane@example.com")])
 
     def test_apply_column_permissions_no_op_when_nothing_permitted(self):
         # With an empty allowed set we must NOT emit `select([])` (invalid in ibis); the
@@ -68,7 +76,7 @@ class TestUserPermissionColumns(FrappeTestCase):
         t = ibis.memtable({"name": ["a"], "secret": ["x"]})
 
         original = table_module.get_permitted_columns_for_table
-        table_module.get_permitted_columns_for_table = lambda _name: set()
+        table_module.get_permitted_columns_for_table = lambda _name, _user=None: set()
         try:
             result = apply_column_permissions(t, "tabSomething")
         finally:

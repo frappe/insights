@@ -4,6 +4,7 @@
 import frappe
 from frappe.model.document import Document
 
+from insights.insights.doctype.insights_data_source_v3.data_authority import data_authority_of
 from insights.insights.doctype.insights_query_v3.insights_query_v3 import import_query
 from insights.utils import deep_convert_dict_to_dict
 
@@ -19,6 +20,7 @@ class InsightsChartv3(Document):
 
         chart_type: DF.Data | None
         config: DF.JSON | None
+        data_authority: DF.Literal["Viewer", "Author"]
         data_query: DF.Link | None
         folder: DF.Data | None
         is_public: DF.Check
@@ -76,6 +78,47 @@ class InsightsChartv3(Document):
         )
         doc.db_insert()
         self.data_query = doc.name
+
+    @frappe.whitelist()
+    def get_data(
+        self,
+        force: bool = False,
+        page: int = 1,
+        page_size: int = 100,
+        adhoc_filters: dict | None = None,
+    ):
+        """Fetch this chart's rows under the authority declared on this document.
+
+        A request may name a chart but must not describe one: `run_doc_method` builds
+        `self` out of the request payload, so the stored chart is re-read here and it
+        alone decides the authority and the query that runs under it.
+        """
+        chart = frappe.get_doc(self.doctype, self.name)
+        query = frappe.get_doc("Insights Query v3", chart.get_data_query())
+        with data_authority_of(chart):
+            return query.execute(
+                force=force,
+                page=page,
+                page_size=page_size,
+                adhoc_filters=adhoc_filters,
+            )
+
+    def get_data_query(self):
+        """The query that produces the chart's rows.
+
+        `data_query` holds the chart-shaped query (source query plus the chart's own
+        summarize/order operations). It stays empty until the chart is configured, so
+        fall back to the source query.
+        """
+        if self.data_query:
+            operations = frappe.db.get_value("Insights Query v3", self.data_query, "operations")
+            if frappe.parse_json(operations or "[]"):
+                return self.data_query
+
+        if not self.query:
+            frappe.throw(f"Chart {self.name} has no query to fetch data from")
+
+        return self.query
 
     @frappe.whitelist()
     def export(self):

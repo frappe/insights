@@ -309,8 +309,8 @@ def get_table_restrictions(data_source, table, user=None):
     return table_restrictions
 
 
-def apply_table_restrictions(table, data_source, table_name):
-    restrictions = get_table_restrictions(data_source, table_name)
+def apply_table_restrictions(table, data_source, table_name, user=None):
+    restrictions = get_table_restrictions(data_source, table_name, user=user)
     if not restrictions:
         return table
 
