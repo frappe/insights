@@ -30,6 +30,22 @@
 					}
 				]
 			}
+		},
+		{
+			"files": ["src2/charts/chart.ts", "src2/query/query.ts", "src2/dashboard/dashboard.ts"],
+			"rules": {
+				"no-restricted-imports": [
+					"error",
+					{
+						"patterns": [
+							{
+								"group": ["**/workbook/workbook", "**/workbook/workbook.ts"],
+								"message": "The item stores must not import the workbook store — the workbook is the builder's aggregate, and an island mounts an item with no builder around it. Workbook-coupled behaviour belongs in workbook/workbook_items."
+							}
+						]
+					}
+				]
+			}
 		}
 	]
 }

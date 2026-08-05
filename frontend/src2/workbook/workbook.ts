@@ -5,7 +5,6 @@ import { computed, InjectionKey, reactive, toRefs } from 'vue'
 import useChart, { newChart } from '../charts/chart'
 import useDashboard, { newDashboard } from '../dashboard/dashboard'
 import {
-	copy,
 	copyToClipboard,
 	getUniqueId,
 	safeJSONParse,
@@ -16,6 +15,7 @@ import {
 import { confirmDialog } from '../helpers/confirm_dialog'
 import useDocumentResource from '../helpers/resource'
 import { createToast } from '../helpers/toasts'
+import { getLinkedQueries } from '../query/linked_queries'
 import useQuery, { newQuery } from '../query/query'
 import router from '../router'
 import session from '../session'
@@ -448,31 +448,4 @@ export function getWorkbookResource(name: string) {
 export function newWorkbookName() {
 	const unique_id = getUniqueId()
 	return `new-workbook-${unique_id}`
-}
-
-export function getLinkedQueries(query_name: string, _visited: Set<string> = new Set()): string[] {
-	if (_visited.has(query_name)) return []
-	_visited.add(query_name)
-
-	const query = useQuery(query_name)
-	const linkedQueries = new Set<string>()
-
-	if (!query.isloaded) {
-		console.log('Operations not loaded yet for query', query_name)
-	}
-
-	const operations = copy(query.currentOperations)
-	if (query.activeEditIndex > -1) {
-		operations.splice(query.activeEditIndex)
-	}
-
-	operations.forEach((op) => {
-		if ('table' in op && 'type' in op.table && op.table.type === 'query') {
-			linkedQueries.add(op.table.query_name)
-		}
-	})
-
-	linkedQueries.forEach((q) => getLinkedQueries(q, _visited).forEach((q) => linkedQueries.add(q)))
-
-	return Array.from(linkedQueries)
 }

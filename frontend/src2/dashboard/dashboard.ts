@@ -22,7 +22,6 @@ import {
 	WorkbookDashboardFilter,
 	WorkbookDashboardItem,
 } from '../types/workbook.types'
-import useWorkbook from '../workbook/workbook'
 
 const dashboards = new Map<string, Dashboard>()
 
@@ -366,21 +365,6 @@ function makeDashboard(name: string) {
 			return acc
 		}, {} as typeof filterStates.value)
 		Object.assign(filterStates.value, defaultFilters)
-
-		wheneverChanges(
-			() => dashboard.doc.title,
-			() => {
-				if (!dashboard.doc.workbook) return
-				const workbook = useWorkbook(dashboard.doc.workbook)
-				for (const d of workbook.doc.dashboards) {
-					if (d.name === dashboard.doc.name) {
-						d.title = dashboard.doc.title
-						break
-					}
-				}
-			},
-			{ debounce: 500 }
-		)
 	})
 
 	return reactive({

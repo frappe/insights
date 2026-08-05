@@ -6,6 +6,7 @@ import { formatShortcut } from '../../composables/useShortcut'
 import session from '../../session'
 import { __ } from '../../translation'
 import { Query } from '../query'
+import { duplicateWorkbookItem } from '../../workbook/workbook_items'
 import ViewSQLDialog from './ViewSQLDialog.vue'
 
 const props = withDefaults(
@@ -44,7 +45,7 @@ const moreActions = computed(() => {
 		{
 			label: __('Duplicate Query'),
 			icon: h(CopyPlus, { class: 'h-3.5 w-3.5 text-ink-gray-6', strokeWidth: 1.5 }),
-			onClick: () => query.duplicate(),
+			onClick: () => duplicateWorkbookItem(query, 'query'),
 		},
 		{
 			label: __('Copy Query'),

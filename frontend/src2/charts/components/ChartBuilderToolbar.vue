@@ -16,6 +16,7 @@ import { h, provide, ref } from 'vue'
 import session from '../../session'
 import { __ } from '../../translation'
 import ViewSQLDialog from '../../query/components/ViewSQLDialog.vue'
+import { duplicateWorkbookItem } from '../../workbook/workbook_items'
 
 const props = defineProps<{
 	chart: any
@@ -43,7 +44,7 @@ const moreActions = [
 	{
 		label: __('Duplicate Chart'),
 		icon: h(CopyPlus, { class: 'h-3 w-3 text-ink-gray-6', strokeWidth: 1.5 }),
-		onClick: () => props.chart.duplicate(),
+		onClick: () => duplicateWorkbookItem(props.chart, 'chart'),
 	},
 	{
 		label: __('Reset Options'),

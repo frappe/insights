@@ -14,7 +14,6 @@ import {
 } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import { FIELDTYPES } from '../helpers/constants'
-import { navigate } from '../helpers/navigation'
 import useDocumentResource from '../helpers/resource'
 import { createToast } from '../helpers/toasts'
 import { __ } from '../translation'
@@ -51,7 +50,6 @@ import {
 	aggregations,
 } from '../types/query.types'
 import { InsightsQueryv3, QueryVariable } from '../types/workbook.types'
-import useWorkbook from '../workbook/workbook'
 import {
 	cast,
 	code,
@@ -1052,20 +1050,6 @@ export function makeQuery(name: string) {
 		})
 	}
 
-	function duplicateQuery() {
-		const workbook = useWorkbook(query.doc.workbook)
-		return query
-			.call('duplicate')
-			.then((newQueryName: string) => {
-				createToast({
-					title: __('Query duplicated'),
-					variant: 'success',
-				})
-				navigate(`/workbook/${query.doc.workbook}/query/${newQueryName}`)
-			})
-			.then(workbook.load)
-	}
-
 	const history = useDebouncedRefHistory(
 		// @ts-ignore
 		computed({
@@ -1120,23 +1104,6 @@ export function makeQuery(name: string) {
 	watch(currentOperations, () => {
 		currentPage.value = 1
 		result.value.totalRowCount = 0
-	})
-
-	waitUntil(() => query.isloaded).then(() => {
-		wheneverChanges(
-			() => query.doc.title,
-			() => {
-				if (!query.doc.workbook) return
-				const workbook = useWorkbook(query.doc.workbook)
-				for (const q of workbook.doc.queries) {
-					if (q.name === query.doc.name) {
-						q.title = query.doc.title
-						break
-					}
-				}
-			},
-			{ debounce: 500 }
-		)
 	})
 
 	return reactive({
@@ -1205,7 +1172,6 @@ export function makeQuery(name: string) {
 
 		getDrillDownQuery,
 		copy: copyQuery,
-		duplicate: duplicateQuery,
 
 		history,
 		canUndo() {

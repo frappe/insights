@@ -9,9 +9,8 @@ import {
 	wheneverChanges,
 } from '../helpers'
 import { GranularityType } from '../helpers/constants'
-import { navigate, resolveHref } from '../helpers/navigation'
+import { resolveHref } from '../helpers/navigation'
 import useDocumentResource from '../helpers/resource'
-import { createToast } from '../helpers/toasts'
 import { column, count, query_table } from '../query/helpers'
 import useQuery, { makeAdhocQuery, Query } from '../query/query'
 import { __ } from '../translation'
@@ -27,7 +26,7 @@ import {
 	TableChartConfig,
 } from '../types/chart.types'
 import { InsightsChartv3 } from '../types/workbook.types'
-import useWorkbook, { getLinkedQueries } from '../workbook/workbook'
+import { getLinkedQueries } from '../query/linked_queries'
 import {
 	ensureConfigSlots,
 	handleOldXAxisConfig,
@@ -494,20 +493,6 @@ function makeChart(name: string) {
 		copyToClipboard(chart.call('export').then((data) => JSON.stringify(data, null, 2)))
 	}
 
-	function duplicateChart() {
-		const workbook = useWorkbook(chart.doc.workbook)
-		return chart
-			.call('duplicate')
-			.then((newChartName: string) => {
-				createToast({
-					title: __('Chart duplicated'),
-					variant: 'success',
-				})
-				navigate(`/workbook/${chart.doc.workbook}/chart/${newChartName}`)
-			})
-			.then(workbook.load)
-	}
-
 	const history = useDebouncedRefHistory(
 		// @ts-ignore
 		computed({
@@ -520,23 +505,6 @@ function makeChart(name: string) {
 			debounce: 500,
 		}
 	)
-
-	waitUntil(() => chart.isloaded).then(() => {
-		wheneverChanges(
-			() => chart.doc.title,
-			() => {
-				if (!chart.doc.workbook) return
-				const workbook = useWorkbook(chart.doc.workbook)
-				for (const c of workbook.doc.charts) {
-					if (c.name === chart.doc.name) {
-						c.title = chart.doc.title
-						break
-					}
-				}
-			},
-			{ debounce: 500 }
-		)
-	})
 
 	return reactive({
 		...toRefs(chart),
@@ -554,7 +522,6 @@ function makeChart(name: string) {
 		getDependentQueryColumns,
 
 		copy: copyChart,
-		duplicate: duplicateChart,
 		openInDesk: () => window.open(`/app/insights-chart-v3/${chart.doc.name}`, '_blank'),
 
 		history,

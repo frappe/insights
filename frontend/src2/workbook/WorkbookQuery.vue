@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { inject, ref } from 'vue'
 import Query from '../query/Query.vue'
+import useQuery from '../query/query'
 import { workbookKey } from './workbook'
+import { mirrorTitleToWorkbook } from './workbook_items'
 import { useRouter } from 'vue-router'
 const props = defineProps<{ workbook_name?: string; query_name: string }>()
 
@@ -18,6 +20,8 @@ if (
 	query_name.value = workbook.doc.queries[index].name
 	router.replace(`/workbook/${workbook.doc.name}/query/${query_name.value}`)
 }
+
+mirrorTitleToWorkbook(useQuery(query_name.value), 'query')
 </script>
 
 <template>
