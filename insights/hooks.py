@@ -41,6 +41,7 @@ insights_workbooks = "workbook_templates"
 # page renders Insights or the legacy dashboard is the framework's call.
 ui_islands = {
     "insights.chart": "insights_chart",
+    "insights.dashboard": "insights_dashboard",
 }
 
 
@@ -103,6 +104,7 @@ app_include_js = "insights_nudge.bundle.js"
 # before_install = "insights.install.before_install"
 after_install = "insights.migrate.after_migrate"
 after_migrate = "insights.migrate.after_migrate"
+before_app_uninstall = "insights.bundles.before_app_uninstall"
 
 after_request = ["insights.insights.doctype.insights_data_source_v3.insights_data_source_v3.after_request"]
 
@@ -166,7 +168,20 @@ has_permission = {
 doc_events = {
     "User": {
         "on_change": "insights.insights.doctype.insights_team.insights_team.update_admin_team",
-    }
+    },
+    # standard (bundle-shipped) content is read-only outside developer mode
+    "Insights Query v3": {
+        "validate": "insights.bundles.block_standard_edits",
+        "on_trash": "insights.bundles.block_standard_deletes",
+    },
+    "Insights Chart v3": {
+        "validate": "insights.bundles.block_standard_edits",
+        "on_trash": "insights.bundles.block_standard_deletes",
+    },
+    "Insights Dashboard v3": {
+        "validate": "insights.bundles.block_standard_edits",
+        "on_trash": "insights.bundles.block_standard_deletes",
+    },
 }
 
 # Scheduled Tasks
