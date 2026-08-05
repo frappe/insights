@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { Badge, Tooltip } from 'frappe-ui'
-import { computed, inject, ref, unref } from 'vue'
+import { computed, inject, ref } from 'vue'
 import UserSelector from '../components/UserSelector.vue'
+import VisibilitySelector from '../components/VisibilitySelector.vue'
 import { copy, copyToClipboard } from '../helpers'
 import session from '../session'
+import { Visibility } from '../types/workbook.types'
 import useUserStore from '../users/users'
 import { Dashboard } from './dashboard'
 import { createToast } from '../helpers/toasts'
@@ -13,9 +15,17 @@ const show = defineModel()
 
 const dashboard = inject('dashboard') as Dashboard
 
-const isPublic = ref(unref(dashboard.doc.is_public))
+const visibility = ref<Visibility>(declaredVisibility())
+const visibleToRoles = ref((dashboard.doc.visible_to_roles || []).map((r) => r.role))
 const peopleWithAccess = ref(copy(dashboard.doc.people_with_access))
-const organizationAccess = ref(unref(dashboard.doc.is_shared_with_organization))
+
+function declaredVisibility(): Visibility {
+	const declared = dashboard.doc.visibility
+	if (declared && declared !== 'Private') return declared
+	// dashboards shared with the organization before the ladder existed
+	if (dashboard.doc.is_shared_with_organization) return 'Everyone'
+	return 'Private'
+}
 
 const shareLink = computed(() => dashboard.getShareLink())
 const iFrameLink = computed(() => {
@@ -24,22 +34,27 @@ const iFrameLink = computed(() => {
 
 const hasChanged = computed(() => {
 	const prev = {
-		is_public: isPublic.value,
+		visibility: visibility.value,
+		visible_to_roles: visibleToRoles.value,
 		people_with_access: peopleWithAccess.value.map((u) => u.email),
-		is_shared_with_organization: organizationAccess.value,
 	}
 	const next = {
-		is_public: dashboard.doc.is_public,
+		visibility: declaredVisibility(),
+		visible_to_roles: (dashboard.doc.visible_to_roles || []).map((r) => r.role),
 		people_with_access: dashboard.doc.people_with_access.map((u) => u.email),
-		is_shared_with_organization: dashboard.doc.is_shared_with_organization,
 	}
 	return JSON.stringify(prev) !== JSON.stringify(next)
 })
 
-function saveChanges() {
-	dashboard.updateAccess({
-		is_public: isPublic.value,
-		is_shared_with_organization: organizationAccess.value,
+async function saveChanges() {
+	dashboard.doc.visibility = visibility.value
+	dashboard.doc.visible_to_roles = visibleToRoles.value.map((role) => ({ role }))
+	await dashboard.save()
+	await dashboard.updateAccess({
+		// the ladder owns the audience; these two mirror its top rungs until
+		// is_public retires with the template migration (ticket 23)
+		is_public: visibility.value === 'Public',
+		is_shared_with_organization: visibility.value === 'Everyone',
 		people_with_access: peopleWithAccess.value.map((u) => u.email),
 	})
 	createToast({
@@ -61,18 +76,6 @@ function addSharedUser() {
 	})
 	selectedUserEmail.value = ''
 }
-
-const generalAccess = computed({
-	get: () => {
-		if (isPublic.value) return 'anyone'
-		if (organizationAccess.value) return 'organization'
-		return 'specific'
-	},
-	set: (value: string) => {
-		isPublic.value = value == 'anyone'
-		organizationAccess.value = value == 'organization'
-	},
-})
 </script>
 
 <template>
@@ -90,30 +93,8 @@ const generalAccess = computed({
 	>
 		<template #default>
 			<div class="flex flex-col gap-4">
-				<div class="flex flex-col gap-2">
-					<span class="text-sm text-ink-gray-5">General Access</span>
-					<div class="flex gap-2">
-						<div class="flex-1">
-							<Combobox
-								placeholder="Select an option"
-								v-model="generalAccess"
-								:options="[
-									{
-										label: __('Anyone with the link can view'),
-										value: 'anyone',
-									},
-									{
-										label: __('Anyone in the organization can view'),
-										value: 'organization',
-									},
-									{
-										label: __('Specific people can view'),
-										value: 'specific',
-									},
-								]"
-							>
-							</Combobox>
-						</div>
+				<VisibilitySelector v-model:visibility="visibility" v-model:roles="visibleToRoles">
+					<template #actions>
 						<Tooltip text="Copy Link" :hoverDelay="0.1">
 							<Button icon="lucide-link-2" @click="copyToClipboard(shareLink)">
 							</Button>
@@ -122,8 +103,8 @@ const generalAccess = computed({
 							<Button icon="lucide-code" @click="copyToClipboard(iFrameLink)">
 							</Button>
 						</Tooltip>
-					</div>
-				</div>
+					</template>
+				</VisibilitySelector>
 
 				<hr class="my-1 border-t border-outline-gray-1" />
 

@@ -7,6 +7,11 @@ export interface QueryVariable {
 	variable_value: string
 }
 
+// the visibility ladder is strict: each rung includes the previous
+export type Visibility = 'Private' | 'Specific Roles' | 'Everyone' | 'Public'
+export type VisibleToRole = { role: string }
+export type DataAuthority = 'Viewer' | 'Author'
+
 export type WorkbookListItem = {
 	title: string
 	name: string
@@ -92,6 +97,9 @@ export type InsightsChartv3 = {
 	sort_order: number
 	folder?: string | null
 	is_public: boolean
+	visibility: Visibility
+	visible_to_roles: VisibleToRole[]
+	data_authority: DataAuthority
 	operations: Operation[]
 	use_live_connection?: boolean
 	config: ChartConfig & {
@@ -112,6 +120,8 @@ export type InsightsDashboardv3 = {
 	preview_image?: string
 	share_link?: string
 	is_public: boolean
+	visibility: Visibility
+	visible_to_roles: VisibleToRole[]
 	is_shared_with_organization: boolean
 	people_with_access: {
 		email: string

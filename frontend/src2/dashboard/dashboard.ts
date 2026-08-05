@@ -409,6 +409,8 @@ const INITIAL_DOC: InsightsDashboardv3 = {
 	workbook: '',
 	items: [],
 	is_public: false,
+	visibility: 'Private',
+	visible_to_roles: [],
 	is_shared_with_organization: false,
 	people_with_access: [],
 	read_only: false,

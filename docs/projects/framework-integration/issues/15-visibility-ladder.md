@@ -39,3 +39,35 @@ view-only — editing stays on the authoring axis, unchanged.
       the controller
 - [ ] The `is_public` migration lands and the shared pages keep working
 - [ ] No viewing path consults the `Insights User` role
+
+## Comments
+
+2026-08-05 — built. The ladder is one grant source in `InsightsPermissions`
+(`_build_audience_query`, folded into the chart and dashboard grant queries by
+`_with_audience_grant`), so `has_doc_permission` and
+`get_permission_query_conditions` answer from the same shape. It returns
+nothing unless `ptype` is `read`, so the ladder never grants write or share.
+Guests are cut to the `Public` rung inside the query. The chart cascade needed
+no work: the existing linked-dashboard grant now carries the dashboard's
+audience, and there is no reverse join, so it stays downward only.
+
+`is_public` keeps its value and its readers. The patch
+(`insights.patches.set_visibility_from_is_public`) only moves public content
+onto the `Public` rung; the field retirement and the shared-page guest checks
+complete with ticket 23. The share dialogs write `is_public` (and, for
+dashboards, the organization DocShare) as mirrors of the top two rungs so the
+existing shared pages keep working meanwhile.
+
+One gap is outside this ticket's files. Frappe's controller hooks can only
+deny — "Controllers can only deny permission, they can not explicitly grant any
+permission that wasn't already present" (`frappe/permissions.py`). Both content
+doctypes only grant `read` to `Insights User` and `Insights Admin`, so a desk
+user with no Insights role never reaches the controller and
+`frappe.has_permission` answers `False` before the ladder is consulted. For
+ticket 17's endpoints to work, `Insights Chart v3` and `Insights Dashboard v3`
+need `read`-only permission rows for `All` and `Guest` in their doctype JSON,
+with the controller and the query conditions narrowing them — which they now
+do, per rung. Note the side effect: doctype-level `read` becomes true for
+everyone, which flips the chart and dashboard rows of
+`test_permissions_for_non_insights_user`; list results stay correct because
+`get_permission_query_conditions` returns only audience-admitted docs.
