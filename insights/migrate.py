@@ -18,6 +18,16 @@ def after_migrate():
     except Exception:
         frappe.log_error(title="Error syncing workbook template updates")
 
+    # every app's shipped analytics, reconciled into documents. sync_bundles
+    # isolates each app itself; this catch is for discovery blowing up before
+    # any app is reached.
+    try:
+        from insights.bundles import sync_bundles
+
+        sync_bundles()
+    except Exception:
+        frappe.log_error(title="Error syncing Insights bundles")
+
 
 def create_admin_team():
     if not frappe.db.exists("Insights Team", "Admin"):
