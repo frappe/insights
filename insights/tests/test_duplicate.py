@@ -9,7 +9,9 @@ import json
 
 import frappe
 
+from insights.api.bundles import duplicate_bundle as duplicate_bundle_through_the_api
 from insights.api.bundles import duplicate_dashboard as duplicate_through_the_api
+from insights.api.bundles import get_standard_content
 from insights.bundles import sync_app_bundles as sync
 from insights.duplicate import duplicate_dashboard
 from insights.insights.doctype.insights_data_source_v3.data_authority import get_authority_user_for
@@ -19,6 +21,7 @@ from insights.tests.factories import DT, as_user, create_user, delete_users, del
 from insights.tests.test_bundles import (
     APP,
     BUNDLE,
+    BUNDLE_TITLE,
     CHART,
     CHART_QUERY,
     DASHBOARD,
@@ -36,6 +39,10 @@ AUTHOR = "duplicate_author@test.com"
 VIEWER = "duplicate_viewer@test.com"
 
 COPY_WORKBOOK_TITLE = "Bundle Sync Sales Overview (copy)"
+COPY_BUNDLE_TITLE = f"{BUNDLE_TITLE} (copy)"
+
+# a second dashboard over the chart the fixture already ships
+SECOND_DASHBOARD = "bst_sales_overview_alt"
 
 
 class TestDuplicateToEdit(InsightsIntegrationTestCase):
@@ -56,6 +63,7 @@ class TestDuplicateToEdit(InsightsIntegrationTestCase):
     @classmethod
     def cleanup(cls):
         delete_workbooks(title_prefix=COPY_WORKBOOK_TITLE)
+        delete_workbooks(title_prefix=COPY_BUNDLE_TITLE)
         delete_users(AUTHOR, VIEWER)
 
     def before_test(self):
@@ -260,3 +268,71 @@ class TestDuplicateToEdit(InsightsIntegrationTestCase):
         with as_user(AUTHOR):
             with self.assertRaises(ContentNotAvailableError):
                 duplicate_through_the_api(dashboard=f"{APP}/no_such_dashboard")
+
+    # ------------------------------------------------ the bundle, taken whole
+
+    def ship_a_second_dashboard(self):
+        """The fixture plus a second dashboard over the same chart — what makes
+        the shared part of the closure visible."""
+        self.files[f"dashboard/{SECOND_DASHBOARD}.json"] = {
+            "title": "Bundle Sync Sales Overview II",
+            "items": [{"id": "chart-1", "type": "chart", "chart": CHART}],
+            "visibility": "Everyone",
+        }
+        write_bundle(BUNDLE, self.files)
+        self.ship()
+
+    def test_duplicating_a_bundle_lands_its_dashboards_in_one_workbook(self):
+        self.ship_a_second_dashboard()
+        container = self.standard(DASHBOARD).workbook
+
+        with as_user(AUTHOR):
+            result = duplicate_bundle_through_the_api(workbook=container)
+
+        workbook = result["workbook"]
+        self.assertEqual(frappe.db.get_value(DT.WORKBOOK, workbook, "title"), COPY_BUNDLE_TITLE)
+        self.assertEqual(frappe.db.get_value(DT.WORKBOOK, workbook, "owner"), AUTHOR)
+        self.assertNotEqual(str(workbook), str(container))
+        self.assertEqual(frappe.db.count(DT.DASHBOARD, {"workbook": workbook}), 2)
+
+        # the chart both dashboards carry, and the queries under it, are copied
+        # once and shared — not once per dashboard
+        self.assertEqual(frappe.db.count(DT.CHART, {"workbook": workbook}), 1)
+        self.assertEqual(frappe.db.count(DT.QUERY, {"workbook": workbook}), 2)
+
+        chart = frappe.db.get_value(DT.CHART, {"workbook": workbook})
+        for name in frappe.get_all(DT.DASHBOARD, {"workbook": workbook}, pluck="name"):
+            items = frappe.parse_json(frappe.db.get_value(DT.DASHBOARD, name, "items"))
+            self.assertEqual(items[0]["chart"], chart)
+
+    def test_a_workbook_of_the_sites_own_is_not_a_bundle_to_duplicate(self):
+        self.ship()
+        mine = frappe.get_doc({"doctype": DT.WORKBOOK, "title": "Not a bundle"}).insert()
+
+        with as_user(AUTHOR), self.assertRaises(ContentNotAvailableError):
+            duplicate_bundle_through_the_api(workbook=mine.name)
+
+    # ----------------------------------------------------------- the library
+
+    def test_the_library_lists_a_bundle_the_audience_admits(self):
+        self.ship()
+        with as_user(AUTHOR):
+            listed = {bundle["title"]: bundle for bundle in get_standard_content()}
+
+        self.assertIn(BUNDLE_TITLE, listed)
+        bundle = listed[BUNDLE_TITLE]
+        self.assertEqual(bundle["app"], APP)
+        self.assertEqual(str(bundle["workbook"]), str(self.standard(DASHBOARD).workbook))
+        self.assertEqual(
+            [dashboard["logical_id"] for dashboard in bundle["dashboards"]],
+            [f"{APP}/{DASHBOARD}"],
+        )
+        self.assertEqual(bundle["dashboards"][0]["slug"], DASHBOARD)
+
+    def test_the_library_leaves_out_what_the_audience_does_not_admit(self):
+        self.files[f"dashboard/{DASHBOARD}.json"]["visibility"] = "Private"
+        write_bundle(BUNDLE, self.files)
+        self.ship()
+
+        with as_user(AUTHOR):
+            self.assertNotIn(BUNDLE_TITLE, [bundle["title"] for bundle in get_standard_content()])

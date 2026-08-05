@@ -7,9 +7,7 @@
  "field_order": [
   "title",
   "data_backup",
-  "from_template",
-  "imported_version",
-  "imported_checksum"
+  "from_template"
  ],
  "fields": [
   {
@@ -27,24 +25,11 @@
    "read_only": 1
   },
   {
+   "description": "The retired workbook template this copy was imported from. History only — nothing reads it to decide anything.",
    "fieldname": "from_template",
    "fieldtype": "Data",
    "hidden": 1,
    "label": "From Template",
-   "read_only": 1
-  },
-  {
-   "fieldname": "imported_version",
-   "fieldtype": "Int",
-   "hidden": 1,
-   "label": "Imported Version",
-   "read_only": 1
-  },
-  {
-   "fieldname": "imported_checksum",
-   "fieldtype": "Data",
-   "hidden": 1,
-   "label": "Imported Checksum",
    "read_only": 1
   }
  ],

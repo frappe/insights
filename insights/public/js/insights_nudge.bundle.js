@@ -20,30 +20,31 @@
 	// starts with a "Home" item linking back to itself — otherwise the desk lands
 	// on the first report instead. "Financial Reports" has no such item, so the
 	// accounting nudge hangs off "Accounting" too.
+	// Each dashboard ships in a bundle and exists on every site after migrate,
+	// so the link is just its slug — no import to trigger, nothing to prepare.
 	const ACCOUNTING = {
 		title: "Receivables, Payables & Cash",
-		template: "accounting",
+		slug: "receivables-payables-cash",
 	};
 	const DASHBOARDS = {
-		Selling: { title: "Sales Performance", template: "sales" },
-		Buying: { title: "Purchasing Overview", template: "purchasing" },
-		Stock: { title: "Stock & Inventory", template: "stock" },
+		Selling: { title: "Sales Performance", slug: "sales-performance" },
+		Buying: { title: "Purchasing Overview", slug: "purchasing-overview" },
+		Stock: { title: "Inventory Health", slug: "inventory-health" },
 		Accounting: ACCOUNTING,
 		"Financial Reports": ACCOUNTING,
 	};
 
-	const templateId = (cfg) => `insights/${cfg.template}`;
-	const openUrl = (cfg) => `${BASE}/template/${templateId(cfg)}`;
+	const openUrl = (cfg) => `${BASE}/dashboards/${cfg.slug}`;
 
 	const allowed = () =>
 		ALLOWED_ROLES.some((r) => (frappe.user_roles || []).includes(r));
 	// Frappe gates its own CRM/Helpdesk workspace nudges on the same flag.
 	const suggestionsDisabled = () =>
 		cint(frappe.sys_defaults?.disable_product_suggestion);
-	// Keyed on the template, not the workspace, so dismissing the suggestion once
+	// Keyed on the dashboard, not the workspace, so dismissing the suggestion once
 	// covers every workspace that offers it.
 	const dismissKey = (cfg) =>
-		`insights:nudge:${frappe.session.user}:${templateId(cfg)}`;
+		`insights:nudge:${frappe.session.user}:${cfg.slug}`;
 	const dismissed = (cfg) => localStorage.getItem(dismissKey(cfg)) === "1";
 	const esc = (s) => frappe.utils.escape_html(s);
 
@@ -51,7 +52,7 @@
 	const track = (event, ws, cfg) =>
 		frappe.telemetry?.capture(event, "insights", {
 			workspace: ws,
-			template: templateId(cfg),
+			dashboard: cfg.slug,
 		});
 
 	function currentWorkspace() {

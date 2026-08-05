@@ -54,11 +54,13 @@ from insights.bundles import (
     FORMAT_VERSION,
     ITEM_TYPES,
     JSON_FIELDS,
+    LINK_COLUMN,
     MANIFEST,
     NAME_PATTERN,
     QUERY,
     BundleError,
     SyncReport,
+    dashboard_closure,
     discover_bundles,
     sync_app_bundles,
 )
@@ -66,10 +68,6 @@ from insights.bundles import (
 # the whole of a dashboard item's layout the format carries. A grid leaves
 # bookkeeping of its own behind (`moved`), which is neither content nor stable.
 LAYOUT_FIELDS = ("i", "x", "y", "w", "h")
-
-# `{"<chart>": "`<query>`.`<column>`"}` — a filter's link, both sides logical in
-# a file and both sides a docname on a site
-LINK_COLUMN = re.compile(r"^`([^`]+)`\.`([^`]+)`$")
 
 
 @dataclass
@@ -106,7 +104,7 @@ def export_dashboard(
     _require_developer_mode()
     _require_installed(app)
 
-    docs = _closure(dashboard)
+    docs = dashboard_closure(dashboard)
     for doc in docs:
         doc.check_permission("write")
 
@@ -166,75 +164,6 @@ def _require_developer_mode() -> None:
 def _require_installed(app: str) -> None:
     if app not in frappe.get_installed_apps():
         frappe.throw(_("{0} is not installed on this site.").format(app))
-
-
-# ----------------------------------------------------------------- closure
-
-
-def _closure(dashboard: str) -> list[Document]:
-    """Everything a dashboard needs, in the order a bundle wants it written.
-
-    The edges are the ones sync remaps on the way in: a dashboard's chart
-    items, a chart's `query` and `data_query`, and the queries a query reads.
-    A chart is blind without its `data_query` — that is where its summarize and
-    order live — so it is closure, not an extra.
-    """
-    doc = _get(DASHBOARD, dashboard)
-
-    charts: list[Document] = []
-    seen: set[str] = set()
-    for entry in frappe.parse_json(doc.items or "[]"):
-        chart = entry.get("chart")
-        if entry.get("type") == "chart" and chart and chart not in seen:
-            seen.add(chart)
-            charts.append(_get(CHART, chart))
-
-    queries: list[Document] = []
-    done: set[str] = set()
-    visiting: set[str] = set()
-
-    def visit(name: str) -> None:
-        if name in done:
-            return
-        if name in visiting:
-            raise BundleError(_("Queries reference each other in a cycle, at {0}").format(name))
-        visiting.add(name)
-        query = _get(QUERY, name)
-        for ref in _referenced_queries(query):
-            visit(ref)
-        visiting.discard(name)
-        done.add(name)
-        queries.append(query)
-
-    for chart in charts:
-        for ref in (chart.query, chart.data_query):
-            if ref:
-                visit(str(ref))
-
-    return queries + charts + [doc]
-
-
-def _referenced_queries(query: Document) -> list[str]:
-    refs = []
-
-    def walk(node):
-        if isinstance(node, dict):
-            if node.get("query_name"):
-                refs.append(str(node["query_name"]))
-            for value in node.values():
-                walk(value)
-        elif isinstance(node, list):
-            for value in node:
-                walk(value)
-
-    walk(frappe.parse_json(query.operations or "[]"))
-    return refs
-
-
-def _get(doctype: str, name: str) -> Document:
-    if not frappe.db.exists(doctype, name):
-        raise BundleError(_("{0} {1} is missing, so this dashboard cannot be exported").format(doctype, name))
-    return frappe.get_doc(doctype, name)
 
 
 # ------------------------------------------------------------ logical names

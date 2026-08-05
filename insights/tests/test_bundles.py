@@ -15,9 +15,11 @@ import frappe
 
 from insights.bundles import (
     FORMAT_VERSION,
+    LINK_COLUMN,
     BundleError,
     before_app_uninstall,
     discover_bundles,
+    query_references,
     sync_app_bundles,
     sync_bundles,
 )
@@ -121,6 +123,26 @@ def remove_bundles():
         shutil.rmtree(os.path.join(bundle_root(), folder), ignore_errors=True)
 
 
+def references_of(item) -> list[str]:
+    """Every logical name one bundle file names — the edges sync has to resolve."""
+    data = item.data
+    if item.doctype == DT.QUERY:
+        return [str(name) for name in query_references(data.get("operations"))]
+
+    if item.doctype == DT.CHART:
+        return [data[field] for field in ("query", "data_query") if data.get(field)]
+
+    references = []
+    for entry in data.get("items") or []:
+        if entry.get("type") == "chart" and entry.get("chart"):
+            references.append(entry["chart"])
+        for chart, column in (entry.get("links") or {}).items():
+            match = LINK_COLUMN.match(column or "")
+            if match:
+                references += [chart, match.group(1)]
+    return references
+
+
 @contextmanager
 def developer_mode(enabled):
     previous = frappe.conf.developer_mode
@@ -190,12 +212,19 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
     def all_shipped_ids(self):
         return sorted(self.logical_id(name) for name in SHIPPED)
 
+    def mine(self, logical_ids):
+        """The fixture's ids out of a report. Insights ships real bundles of its
+        own beside the fixture, so a report is only ever asserted on the part of
+        it this test wrote."""
+        fixture = set(self.all_shipped_ids())
+        return sorted(logical_id for logical_id in logical_ids if logical_id in fixture)
+
     # --------------------------------------------------------------- tests
 
     def test_sync_creates_standard_documents_in_a_container_workbook(self):
         report = self.sync()
 
-        self.assertEqual(sorted(report.created), self.all_shipped_ids())
+        self.assertEqual(self.mine(report.created), self.all_shipped_ids())
         self.assertEqual(report.errors, [])
 
         workbooks = set()
@@ -223,13 +252,39 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
         self.assertEqual(self.doc(DASHBOARD).visibility, "Everyone")
 
     def test_discovery_reads_apps_off_disk(self):
-        bundles = discover_bundles(APP)
-        self.assertEqual([b.key for b in bundles], [f"{APP}/{BUNDLE}"])
-        self.assertEqual(bundles[0].title, BUNDLE_TITLE)
-        self.assertEqual(len(bundles[0].items), 4)
+        bundles = {b.key: b for b in discover_bundles(APP)}
+        fixture = bundles[f"{APP}/{BUNDLE}"]
+        self.assertEqual(fixture.title, BUNDLE_TITLE)
+        self.assertEqual(len(fixture.items), 4)
 
         # an app that ships nothing is not a special case, it is the common one
         self.assertEqual(discover_bundles("frappe"), [])
+
+    def test_the_bundles_insights_ships_are_readable(self):
+        """CI guard over the committed bundles: they parse, their names are legal
+        and unique across the app, and every reference names an item the app
+        ships. What sync would refuse, this refuses first — and it holds on a
+        site without the apps those bundles need, where sync ships nothing."""
+        shipped = [b for b in discover_bundles(APP) if b.folder not in (BUNDLE, OTHER_BUNDLE)]
+        self.assertTrue(shipped, "Insights ships no bundles of its own")
+
+        names = {}
+        for bundle in shipped:
+            self.assertTrue(bundle.title, f"{bundle.key} has no title")
+            self.assertLessEqual(bundle.format_version, FORMAT_VERSION)
+            self.assertTrue(bundle.items, f"{bundle.key} ships nothing")
+            for item in bundle.items:
+                self.assertNotIn(item.name, names, f"{item.logical_id} is shipped twice")
+                names[item.name] = item
+
+        for bundle in shipped:
+            for item in bundle.items:
+                for reference in references_of(item):
+                    self.assertIn(
+                        reference,
+                        names,
+                        f"{item.logical_id} references '{reference}', which the app does not ship",
+                    )
 
     def test_references_resolve_to_site_documents(self):
         self.sync()
@@ -261,7 +316,7 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
         report = self.sync()
 
         self.assertFalse(report.changed)
-        self.assertEqual(sorted(report.unchanged), self.all_shipped_ids())
+        self.assertEqual(self.mine(report.unchanged), self.all_shipped_ids())
         self.assertEqual(self.modified_of(), before)
 
     def test_a_changed_file_updates_only_its_document(self):
@@ -273,7 +328,7 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
         report = self.sync()
 
         self.assertEqual(report.updated, [self.logical_id(SOURCE_QUERY)])
-        self.assertEqual(len(report.unchanged), 3)
+        self.assertEqual(len(self.mine(report.unchanged)), 3)
         self.assertEqual(self.doc(SOURCE_QUERY).title, "Bundle Sync Sales (revised)")
         self.assertNotEqual(self.doc(SOURCE_QUERY).modified, before[SOURCE_QUERY])
         self.assertEqual(self.doc(CHART).modified, before[CHART])
@@ -297,7 +352,7 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
         write_bundle(BUNDLE, self.files, required_apps=["no_such_app"])
         report = self.sync()
 
-        self.assertEqual(sorted(report.deleted), self.all_shipped_ids())
+        self.assertEqual(self.mine(report.deleted), self.all_shipped_ids())
         for name in SHIPPED:
             self.assertIsNone(self.docname(name), f"{name} should have gone with its bundle")
 
@@ -316,7 +371,7 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
 
         report = before_app_uninstall(APP)
 
-        self.assertEqual(sorted(report.deleted), self.all_shipped_ids())
+        self.assertEqual(self.mine(report.deleted), self.all_shipped_ids())
         for name in SHIPPED:
             self.assertIsNone(self.docname(name), f"{name} should have gone with its app")
 

@@ -27,14 +27,6 @@ add_to_apps_screen = [
     }
 ]
 
-# Any app can ship workbooks to Insights by pointing this hook at a directory
-# (relative to the app) holding one folder per workbook — manifest.json +
-# workbook.json + optional preview.png. Insights is its own first consumer: the
-# bundled ERPNext workbooks are discovered through the same public contract.
-# Deliberately policy-free name: how the site consumes these (import a copy
-# today, versioned updates later) can evolve without breaking the hook.
-insights_workbooks = "workbook_templates"
-
 # UI units the framework can mount into a host page, keyed by the asset base name
 # the island build registers in assets.json (`<base>.island.js` / `.island.css`,
 # built by `yarn build:islands`). Registration is unconditional — whether a desk

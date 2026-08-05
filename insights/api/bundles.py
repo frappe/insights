@@ -7,10 +7,12 @@ Both ends of shipped content are authoring, not viewing, so they sit behind the
 Insights role like the rest of the builder. Export refuses outside a
 developer-mode bench — the machinery in `insights.bundle_export` enforces both,
 whatever calls it. Duplicate is the other direction and runs on any site: it is
-the only way to change shipped content, which is read-only once it lands.
+the only way to change shipped content, which is read-only once it lands. The
+gallery browses what a site was shipped and duplicates a bundle whole; the
+island duplicates one dashboard.
 """
 
-from insights import bundle_export, duplicate
+from insights import bundle_export, bundles, duplicate
 from insights.decorators import insights_whitelist
 
 
@@ -43,3 +45,18 @@ def duplicate_dashboard(dashboard: str) -> dict:
     the read check inside says they may have this dashboard.
     """
     return duplicate.duplicate_dashboard(dashboard)
+
+
+@insights_whitelist()
+def get_standard_content() -> list[dict]:
+    """The shipped bundles this site has, for the gallery to browse."""
+    return bundles.standard_content()
+
+
+@insights_whitelist()
+def duplicate_bundle(workbook: str) -> dict:
+    """Copy a bundle's shipped dashboards into a new workbook the caller owns.
+
+    The gallery's action, and the same two gates as `duplicate_dashboard`.
+    """
+    return duplicate.duplicate_bundle(workbook)

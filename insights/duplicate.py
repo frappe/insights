@@ -14,6 +14,11 @@ name, and the queries those charts read, including each chart's `data_query`
 and any query a query reads. That is the same closure export writes into a
 bundle, so this uses that walk rather than growing a second one.
 
+Two entry points, one copy. `duplicate_dashboard` is what the island's overflow
+offers on a single shipped dashboard; `duplicate_bundle` is what the gallery
+offers on a whole bundle, which lands on a site as one container workbook. The
+second is the first over every dashboard in the bundle, into one workbook.
+
 The copy carries the `logical_id` it was made from. That is provenance and
 nothing else — it says which shipped item this document started as, which is
 what a real customization model (ticket 10) needs to line a fork up against the
@@ -39,15 +44,16 @@ create.
 import frappe
 from frappe import _
 
-from insights.bundle_export import LINK_COLUMN, _closure
 from insights.bundles import (
     CARRIED_FIELDS,
     CHART,
     CHILD_FIELDS,
     DASHBOARD,
+    LINK_COLUMN,
     QUERY,
+    dashboard_closure,
 )
-from insights.resolver import resolve_for_read
+from insights.resolver import ContentNotAvailableError, resolve_for_read
 
 WORKBOOK = "Insights Workbook"
 PRIVATE = "Private"
@@ -65,21 +71,62 @@ def duplicate_dashboard(reference: str) -> dict:
     open the copy in the builder.
     """
     name = resolve_for_read(DASHBOARD, reference)
-    source = frappe.get_doc(DASHBOARD, name)
-    docs = _closure(name)
+    title = frappe.db.get_value(DASHBOARD, name, "title")
 
-    workbook = frappe.new_doc(WORKBOOK)
-    workbook.title = _("{0} (copy)").format(source.title or _("Dashboard"))
-    workbook.insert()
-
-    # keyed by (doctype, docname): the closure is written queries first, then
-    # charts, then the dashboard, so every reference is already copied when the
-    # document holding it is written
+    workbook = _new_workbook(title or _("Dashboard"))
     copies: dict[tuple[str, str], str] = {}
-    for doc in docs:
-        copies[(doc.doctype, str(doc.name))] = _copy(doc, workbook.name, copies)
+    _copy_closure(name, workbook, copies)
 
-    return {"workbook": workbook.name, "dashboard": copies[(DASHBOARD, name)]}
+    return {"workbook": workbook, "dashboard": copies[(DASHBOARD, name)]}
+
+
+def duplicate_bundle(workbook: str) -> dict:
+    """Copy a bundle's shipped dashboards into one workbook the caller owns.
+
+    A bundle lands on a site as one container workbook, hence the argument. Same
+    semantics as `duplicate_dashboard`, with one `copies` map across all of them
+    so a query two dashboards read is copied once and shared.
+
+    The read check is per dashboard, not on the workbook: a container is
+    Administrator-owned and nobody's to read, while the audience the dashboards
+    declare is what admits a viewer.
+    """
+    dashboards = frappe.get_list(
+        DASHBOARD,
+        filters={"workbook": workbook, "is_standard": 1},
+        order_by="creation asc",
+        pluck="name",
+    )
+    if not dashboards:
+        frappe.throw(_("This content is not available"), exc=ContentNotAvailableError)
+
+    copy = _new_workbook(frappe.db.get_value(WORKBOOK, workbook, "title") or _("Workbook"))
+    copies: dict[tuple[str, str], str] = {}
+    for dashboard in dashboards:
+        _copy_closure(resolve_for_read(DASHBOARD, dashboard), copy, copies)
+
+    return {"workbook": copy, "dashboard": copies[(DASHBOARD, dashboards[0])]}
+
+
+def _new_workbook(title: str) -> str:
+    workbook = frappe.new_doc(WORKBOOK)
+    workbook.title = _("{0} (copy)").format(title)
+    workbook.insert()
+    return workbook.name
+
+
+def _copy_closure(dashboard: str, workbook: str, copies: dict) -> None:
+    """One dashboard's closure into `workbook`, recording what each copy became.
+
+    `copies` is keyed by (doctype, docname). The closure comes back queries
+    first, then charts, then the dashboard, so every reference is already copied
+    when the document holding it is written — and an item already in the map
+    (shared with a dashboard copied before it) is not copied twice.
+    """
+    for doc in dashboard_closure(dashboard):
+        key = (doc.doctype, str(doc.name))
+        if key not in copies:
+            copies[key] = _copy(doc, workbook, copies)
 
 
 def _copy(doc, workbook: str, copies: dict) -> str:

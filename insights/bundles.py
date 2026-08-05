@@ -42,6 +42,7 @@ from dataclasses import dataclass, field
 
 import frappe
 from frappe import _
+from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import cint
 from frappe.website.utils import cleanup_page_name
@@ -112,6 +113,10 @@ CHILD_FIELDS = {"variables", "visible_to_roles"}
 # a logical name travels into a logical id, a slug and a file name, so keep it
 # to the intersection of what all three accept
 NAME_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
+
+# `{"<chart>": "`<query>`.`<column>`"}` — a filter's link, both sides logical in
+# a file and both sides a docname on a site
+LINK_COLUMN = re.compile(r"^`([^`]+)`\.`([^`]+)`$")
 
 CONTAINER_KEY = "insights_bundle_workbook:"
 
@@ -250,6 +255,63 @@ def _read_json(path: str) -> dict:
         raise BundleError(f"{path} is not valid JSON: {e}") from e
     except OSError as e:
         raise BundleError(f"{path} cannot be read: {e}") from e
+
+
+# ---------------------------------------------------------------- closure
+
+
+def dashboard_closure(dashboard: str) -> list[Document]:
+    """Everything a dashboard needs, in the order a bundle wants it written.
+
+    The edges are the ones sync remaps on the way in: a dashboard's chart items,
+    a chart's `query` and `data_query`, and the queries a query reads. A chart is
+    blind without its `data_query` — that is where its summarize and order live —
+    so it is closure, not an extra.
+
+    One definition, because the two things that copy a dashboard are the same
+    walk: export writes the closure into an app's bundle, and duplicate writes it
+    into a workbook of the caller's own. A second walk would drift the first time
+    an edge is added.
+    """
+    doc = _existing_doc(DASHBOARD, dashboard)
+
+    charts: list[Document] = []
+    seen: set[str] = set()
+    for entry in frappe.parse_json(doc.items or "[]"):
+        chart = entry.get("chart")
+        if entry.get("type") == "chart" and chart and chart not in seen:
+            seen.add(chart)
+            charts.append(_existing_doc(CHART, chart))
+
+    queries: list[Document] = []
+    done: set[str] = set()
+    visiting: set[str] = set()
+
+    def visit(name: str) -> None:
+        if name in done:
+            return
+        if name in visiting:
+            raise BundleError(_("Queries reference each other in a cycle, at {0}").format(name))
+        visiting.add(name)
+        query = _existing_doc(QUERY, name)
+        for ref in query_references(frappe.parse_json(query.operations or "[]")):
+            visit(str(ref))
+        visiting.discard(name)
+        done.add(name)
+        queries.append(query)
+
+    for chart in charts:
+        for ref in (chart.query, chart.data_query):
+            if ref:
+                visit(str(ref))
+
+    return queries + charts + [doc]
+
+
+def _existing_doc(doctype: str, name: str) -> Document:
+    if not frappe.db.exists(doctype, name):
+        raise BundleError(_("{0} {1} is missing, so this dashboard is incomplete").format(doctype, name))
+    return frappe.get_doc(doctype, name)
 
 
 # ------------------------------------------------------------------- sync
@@ -412,7 +474,7 @@ def _sort_queries(queries: list[BundleItem]) -> list[BundleItem]:
         if item.name in visiting:
             raise BundleError(f"queries reference each other in a cycle, at {item.logical_id}")
         visiting.add(item.name)
-        for ref in _query_references(item.data.get("operations")):
+        for ref in query_references(item.data.get("operations")):
             if ref in shipped:
                 visit(shipped[ref])
         visiting.discard(item.name)
@@ -424,7 +486,7 @@ def _sort_queries(queries: list[BundleItem]) -> list[BundleItem]:
     return ordered
 
 
-def _query_references(operations) -> list[str]:
+def query_references(operations) -> list[str]:
     """Every query a query's operations read from. Source, join and union all
     carry `{"type": "query", "query_name": ...}`, at depths this walk does not
     need to know."""
@@ -568,7 +630,7 @@ def _resolve_dashboard_items(item: BundleItem, items, name_map: dict[str, str]):
             # links are { "<chart>": "`<query>`.`<column>`" }, both sides logical
             links = {}
             for chart, column in entry["links"].items():
-                match = re.match(r"^`([^`]+)`\.`([^`]+)`$", column or "")
+                match = LINK_COLUMN.match(column or "")
                 if not match:
                     continue
                 query, column_name = match.groups()
@@ -693,6 +755,60 @@ def _container_workbook(bundle: Bundle) -> str:
     frappe.db.set_value("Insights Workbook", workbook.name, "owner", "Administrator", update_modified=False)
     frappe.db.set_global(key, workbook.name)
     return workbook.name
+
+
+def standard_content() -> list[dict]:
+    """The shipped bundles on this site, as a gallery shows them.
+
+    One entry per container workbook — a bundle is what an app ships and a
+    container is what it landed as, so the container is the unit a site sees and
+    duplicates. Only dashboards are listed: they are what a bundle is browsed
+    by, and the charts and queries under them are reached through them.
+
+    Read through `frappe.get_list` — the permission-checking one — so the
+    visibility ladder decides what is in the list. A bundle whose dashboards do
+    not admit this user is not in it at all.
+    """
+    dashboards = frappe.get_list(
+        DASHBOARD,
+        filters={"is_standard": 1, "logical_id": ("is", "set")},
+        fields=["name", "title", "slug", "logical_id", "workbook"],
+        order_by="creation asc",
+    )
+
+    bundles: dict[str, dict] = {}
+    for dashboard in dashboards:
+        app = dashboard.logical_id.split("/", 1)[0]
+        bundle = bundles.setdefault(
+            str(dashboard.workbook),
+            {
+                "workbook": dashboard.workbook,
+                "title": frappe.db.get_value("Insights Workbook", dashboard.workbook, "title"),
+                "app": app,
+                "app_title": _app_title(app),
+                "dashboards": [],
+            },
+        )
+        bundle["dashboards"].append(
+            {
+                "name": dashboard.name,
+                "title": dashboard.title,
+                "slug": dashboard.slug,
+                "logical_id": dashboard.logical_id,
+            }
+        )
+
+    return sorted(bundles.values(), key=lambda bundle: (bundle["app_title"], bundle["title"] or ""))
+
+
+def _app_title(app: str) -> str:
+    """The app's display title, for attribution. Falls back to the package name:
+    reading the title imports the app, and a broken one should not take the
+    whole list down."""
+    try:
+        return (frappe.get_hooks("app_title", app_name=app) or [app])[0]
+    except Exception:
+        return app
 
 
 def _cleanup_containers(app: str, keep: set[str]) -> None:

@@ -13,13 +13,12 @@ import { LayoutTemplate as LayoutTemplateIcon, PlusIcon, SearchIcon } from 'luci
 import { computed, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { wheneverChanges } from '../helpers'
-import session from '../session'
 import { __ } from '../translation'
 import useUserStore from '../users/users'
 import useWorkbook, { newWorkbookName } from './workbook'
 import { getWorkbookColumns } from './workbookListColumns'
 import useWorkbooks from './workbooks'
-import WorkbookTemplates, { WorkbookTemplate } from './WorkbookTemplates.vue'
+import WorkbookLibrary, { StandardBundle } from './WorkbookLibrary.vue'
 import { useTelemetry } from 'frappe-ui/frappe'
 
 const router = useRouter()
@@ -81,22 +80,17 @@ function openNewWorkbook() {
 		.finally(() => (creatingWorkbook.value = false))
 }
 
-// workbook library (the prebuilt workbooks installed apps seed) — a permanent
-// "Library" button surfaces it whenever the library is non-empty. importing is an admin
-// action for v1, so only admins fetch it; non-admins just receive the shared
-// workbooks in their list once an admin imports.
-const templates = ref<WorkbookTemplate[]>([])
-const showTemplates = ref(false)
-function fetchTemplates() {
-	if (!session.user.is_admin) return
-	call('insights.api.templates.get_workbook_templates').then(
-		(data: WorkbookTemplate[]) => (templates.value = data || []),
-	)
-}
-wheneverChanges(() => session.user.is_admin, fetchTemplates, { immediate: true })
+// the dashboards installed apps ship, already on this site — a permanent
+// "Library" button surfaces them whenever there are any. The list is filtered
+// server-side by what the user's audience admits, so there is no role gate here.
+const bundles = ref<StandardBundle[]>([])
+const showLibrary = ref(false)
+call('insights.api.bundles.get_standard_content').then(
+	(data: StandardBundle[]) => (bundles.value = data || []),
+)
 
 function openLibrary() {
-	showTemplates.value = true
+	showLibrary.value = true
 	capture('workbook_library_opened')
 }
 
@@ -146,7 +140,7 @@ watchEffect(() => {
 		<Breadcrumbs :items="[{ label: __('Workbooks'), route: '/workbook' }]" />
 		<div class="flex items-center gap-2">
 			<Button
-				v-if="templates.length"
+				v-if="bundles.length"
 				:label="__('Library')"
 				variant="outline"
 				@click="openLibrary"
@@ -168,7 +162,7 @@ watchEffect(() => {
 		</div>
 	</header>
 
-	<WorkbookTemplates v-model="showTemplates" :templates="templates" @refresh="fetchTemplates" />
+	<WorkbookLibrary v-model="showLibrary" :bundles="bundles" />
 
 	<div class="mb-4 flex h-full flex-col gap-3 overflow-auto px-5 pt-3">
 		<div class="flex items-center justify-between gap-2 overflow-visible py-1">
@@ -199,14 +193,14 @@ watchEffect(() => {
 					</div>
 					<div class="mt-1 text-base text-ink-gray-5">
 						{{
-							templates.length
+							bundles.length
 								? __('Create a workbook, or start from a prebuilt one.')
 								: __('No workbooks to display.')
 						}}
 					</div>
 					<div class="mt-4 flex items-center gap-2">
 						<Button
-							v-if="templates.length"
+							v-if="bundles.length"
 							:label="__('Library')"
 							variant="outline"
 							@click="openLibrary"

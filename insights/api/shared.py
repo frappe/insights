@@ -2,6 +2,7 @@ import frappe
 from frappe.query_builder import DocType
 
 from insights.decorators import validate_type
+from insights.resolver import DASHBOARD, resolve
 
 public_doctypes = [
     "Insights Dashboard v3",
@@ -133,12 +134,17 @@ def is_public_query(name: str):
 @frappe.whitelist(allow_guest=True)
 @validate_type
 def get_dashboard_name(dashboard_name: str):
-    name = dashboard_name
-    if not frappe.db.exists("Insights Dashboard v3", name):
-        new_name = frappe.db.exists("Insights Dashboard v3", {"old_name": name})
-        if new_name:
-            name = new_name
-    return name
+    """The docname behind whatever the SPA's dashboard route was given.
+
+    The resolver answers docname, slug and logical id, which is what makes a
+    shipped dashboard's slug a working URL. A v2 name that was renamed on the way
+    to v3 is the one form it does not know, so that lookup stays here.
+    """
+    return (
+        resolve(DASHBOARD, dashboard_name)
+        or frappe.db.exists(DASHBOARD, {"old_name": dashboard_name})
+        or dashboard_name
+    )
 
 
 @frappe.whitelist(allow_guest=True)

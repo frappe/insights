@@ -25,8 +25,6 @@ class InsightsWorkbook(Document):
 
         data_backup: DF.JSON | None
         from_template: DF.Data | None
-        imported_checksum: DF.Data | None
-        imported_version: DF.Int
         name: DF.Int | None
         title: DF.Data
     # end: auto-generated types
@@ -255,7 +253,8 @@ class InsightsWorkbook(Document):
         if not last_viewed_recently:
             self.add_viewed(force=True)
 
-        # adoption signal for library workbooks; interval dedupes to once/user/site/day
+        # whether the copies the retired template library made are still in use;
+        # interval dedupes to once/user/site/day
         if self.from_template:
             with suppress(Exception):
                 capture(
