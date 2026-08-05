@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { AlertTriangle } from 'lucide-vue-next'
+import { AlertTriangle, RefreshCcw } from 'lucide-vue-next'
 import { computed, watch } from 'vue'
 import ChartBody from '../charts/components/ChartBody.vue'
+import ChartTitle from '../charts/components/ChartTitle.vue'
 import { __ } from '../translation'
 import { useViewerChart, ViewerFilters } from './viewer'
 
@@ -14,8 +15,14 @@ const props = defineProps<{
 	// what lets filter state reach the query — a chart named on its own has no
 	// filters to route.
 	dashboard?: string
+	// only the filters that reach this card, so an empty card can say whether a
+	// filter is the reason
 	filters?: ViewerFilters
+	// bumped by the page's refresh action
+	refreshToken?: number
 }>()
+
+const emit = defineEmits<{ loaded: [executedAt: Date]; resetFilters: [] }>()
 
 const viewer = computed(() =>
 	useViewerChart(props.chart, {
@@ -24,11 +31,25 @@ const viewer = computed(() =>
 	}),
 )
 
+const filtered = computed(() => Boolean(props.filters && Object.keys(props.filters).length))
+
 watch(viewer, (current) => current.load(), { immediate: true })
+
+// by content, not by identity: the page hands each card a fresh object whenever
+// any filter moves, and only the cards this one reaches should fetch again
 watch(
-	() => props.filters,
+	() => JSON.stringify(props.filters || {}),
 	() => viewer.value.load(),
-	{ deep: true },
+)
+
+watch(
+	() => props.refreshToken,
+	() => viewer.value.load(true),
+)
+
+watch(
+	() => viewer.value.executedAt.value,
+	(executedAt) => executedAt && emit('loaded', executedAt),
 )
 </script>
 
@@ -36,10 +57,15 @@ watch(
 	<div class="h-full w-full">
 		<div
 			v-if="viewer.failed.value"
-			class="flex h-full w-full flex-col items-center justify-center gap-1 rounded border border-outline-gray-2 bg-surface-base"
+			class="flex h-full w-full flex-col items-center justify-center gap-2 rounded border border-outline-gray-2 bg-surface-base"
 		>
 			<AlertTriangle class="h-6 w-6 text-ink-gray-4" stroke-width="1" />
 			<p class="text-p-base text-ink-gray-5">{{ __('This chart is not available') }}</p>
+			<Button variant="outline" :label="__('Retry')" @click="viewer.load(true)">
+				<template #prefix>
+					<RefreshCcw class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
+				</template>
+			</Button>
 		</div>
 
 		<div
@@ -47,6 +73,25 @@ watch(
 			class="h-full w-full animate-pulse rounded border border-outline-gray-2 bg-surface-gray-2"
 		/>
 
-		<ChartBody v-else :chart="viewer.chart" />
+		<!-- a card with no rows says so itself: the builder's empty state talks
+		     about configuring the chart, which is not this reader's problem -->
+		<div
+			v-else-if="viewer.empty.value"
+			class="flex h-full w-full flex-col overflow-hidden rounded border border-outline-gray-2 bg-surface-base"
+		>
+			<ChartTitle :title="viewer.chart.doc.title" />
+			<div class="flex flex-1 flex-col items-center justify-center gap-2 p-2">
+				<p class="text-p-base text-ink-gray-5">{{ __('No data') }}</p>
+				<Button
+					v-if="filtered"
+					variant="outline"
+					:label="__('Reset filters')"
+					@click="emit('resetFilters')"
+				/>
+			</div>
+		</div>
+
+		<!-- read-only: sorting is a query, and a viewer has no way to ask for one -->
+		<ChartBody v-else :chart="viewer.chart" readonly />
 	</div>
 </template>

@@ -23,12 +23,18 @@ if (!window.csrf_token && window.frappe?.csrf_token) {
 }
 
 // The island has no router, so the viewer's navigation seam opens Insights in a
-// new tab instead. Only string routes resolve — a named SPA route (the share
-// link) yields nothing, and the island surfaces no affordance for it.
+// new tab instead. The href is absolute: it leaves this page for another app on
+// the same site, and a desk page is not the SPA's base. Only string routes
+// resolve — a named SPA route (the share link) yields nothing, and the island
+// surfaces no affordance for it.
+function insightsHref(to: unknown) {
+	return typeof to === 'string' ? `${window.location.origin}${APP_PATH}${to}` : ''
+}
+
 setNavigationProvider({
-	resolveHref: (to) => (typeof to === 'string' ? `${APP_PATH}${to}` : ''),
+	resolveHref: insightsHref,
 	navigate: (to) => {
-		const href = typeof to === 'string' ? `${APP_PATH}${to}` : ''
+		const href = insightsHref(to)
 		if (href) window.open(href, '_blank')
 	},
 })

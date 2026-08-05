@@ -37,7 +37,11 @@ import TableChart from './TableChart.vue'
 // The chart itself: the type it is, the data it has, and the states in between.
 // Segment clicks are reported, never handled — drill-down is a dialog the caller
 // offers, so it is the caller that carries it.
-const props = defineProps<{ chart: Chart }>()
+//
+// `readonly` is for a surface that cannot change the chart: a table's sort
+// rewrites the chart's order and re-runs its query, which a viewer holds neither
+// half of, so the control is not offered rather than offered and dead.
+const props = defineProps<{ chart: Chart; readonly?: boolean }>()
 const emit = defineEmits<{ drillDown: [query: Query] }>()
 
 const chart_type = computed(() => props.chart.doc.chart_type)
@@ -204,6 +208,7 @@ async function onNumberChartDrillDown(column: any, row: any) {
 		<TableChart
 			v-else-if="chart_type == 'Table'"
 			:chart="props.chart"
+			:readonly="props.readonly"
 			@drill-down="emit('drillDown', $event)"
 		/>
 

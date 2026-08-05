@@ -8,7 +8,7 @@ import { Query } from '../../query/query'
 import { Chart } from '../chart'
 import ChartTitle from './ChartTitle.vue'
 
-const props = defineProps<{ chart: Chart }>()
+const props = defineProps<{ chart: Chart; readonly?: boolean }>()
 defineEmits<{ drillDown: [query: Query] }>()
 const tableConfig = computed(() => props.chart.doc.config as TableChartConfig)
 
@@ -59,8 +59,8 @@ function onSortChange(column_name: string, sort_order: SortDirection) {
 			:compact-numbers="tableConfig.compact_numbers"
 			:enable-color-scale="tableConfig.enable_color_scale"
 			:format-group="tableConfig.conditional_formatting"
-			:enable-sort="true"
-			:enable-drill-down="true"
+			:enable-sort="!props.readonly"
+			:enable-drill-down="!props.readonly"
 			@drill-down="$emit('drillDown', $event)"
 			:on-sort-change="onSortChange"
 			:sticky-columns="tableConfig.sticky_columns"

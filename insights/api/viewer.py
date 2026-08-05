@@ -24,6 +24,7 @@ import frappe
 from frappe import _
 
 from insights.decorators import validate_type
+from insights.insights.doctype.insights_data_source_v3.data_authority import data_authority_of
 from insights.permissions import check_app_permission
 from insights.resolver import CHART, DASHBOARD, ContentNotAvailableError, resolve, resolve_for_read
 
@@ -38,6 +39,7 @@ FILTER_LINK_PATTERN = r"^`([^`]+)`\.`([^`]+)`$"
 def get_dashboard(dashboard: str):
     """A dashboard as a viewer surface needs it: what to lay out, and what it may offer."""
     doc = frappe.get_doc(DASHBOARD, resolve_for_read(DASHBOARD, dashboard))
+    editable = can_edit(doc)
 
     return {
         "name": doc.name,
@@ -46,7 +48,10 @@ def get_dashboard(dashboard: str):
         "items": [present_item(item) for item in frappe.parse_json(doc.items) or []],
         "vertical_compact_layout": bool(doc.vertical_compact_layout),
         "modified": doc.modified,
-        "can_edit": can_edit(doc),
+        "can_edit": editable,
+        # where "Edit in Insights" lands: the builder is workbook-scoped. It is the
+        # one piece of authoring structure here, so only an editor is told it
+        "workbook": doc.workbook if editable else None,
         # standard content is read-only on a site, so duplicating is the only way
         # to change it — and changing it means an authoring seat
         "can_duplicate": bool(doc.is_standard) and check_app_permission(),
@@ -102,6 +107,47 @@ def get_chart_data(
         "time_taken": result["time_taken"],
         "executed_at": frappe.utils.now(),
     }
+
+
+@frappe.whitelist(allow_guest=True)
+@validate_type
+def get_filter_values(dashboard: str, filter_name: str, search_term: str | None = None):
+    """The values a filter on this dashboard offers.
+
+    A viewer names the filter; the column behind it is looked up here, because the
+    link that names it is exactly what never crosses the boundary. The lookup runs
+    under the authority of the chart the filter is linked to, so the values on
+    offer are the ones that user is allowed to see.
+    """
+    dashboard_name = resolve_for_read(DASHBOARD, dashboard)
+    chart, query, column = filter_source(dashboard_name, filter_name)
+
+    query_doc = frappe.get_cached_doc(QUERY, query)
+    # the whitelisted method carries an `Insights User` role check, which is the
+    # SPA's boundary and not this one: a viewer surface holds no role by
+    # definition, and the read was already settled above. The undecorated method
+    # is the same computation without that gate. The doctype should split the
+    # check off the method instead — see ticket 18.
+    distinct_column_values = query_doc.get_distinct_column_values.__wrapped__
+
+    with data_authority_of(frappe.get_doc(CHART, chart)):
+        return distinct_column_values(query_doc, column, search_term=search_term)
+
+
+def filter_source(dashboard: str, filter_name: str) -> tuple[str, str, str]:
+    """The chart, query and column a named dashboard filter reads its values from."""
+    items = frappe.parse_json(frappe.db.get_value(DASHBOARD, dashboard, "items") or "[]")
+
+    for item in items:
+        if item.get("type") != "filter" or item.get("filter_name") != filter_name:
+            continue
+
+        for chart, link in (item.get("links") or {}).items():
+            match = re.match(FILTER_LINK_PATTERN, link) if link else None
+            if match and is_on_dashboard(chart, dashboard):
+                return chart, *match.groups()
+
+    not_available()
 
 
 def resolve_chart(chart: str, dashboard: str | None) -> str:
@@ -161,13 +207,16 @@ def present_item(item: dict) -> dict:
         presented["text"] = item.get("text")
     elif item.get("type") == "filter":
         # `links` stays behind: it names the query and the column a filter
-        # applies to, and routing a filter is the server's job
+        # applies to, and routing a filter is the server's job. Which cards a
+        # filter changes is presentation — it decides what refetches and which
+        # empty card can blame a filter — so the chart names alone come out.
         presented.update(
             {
                 "filter_name": item.get("filter_name"),
                 "filter_type": item.get("filter_type"),
                 "default_operator": item.get("default_operator"),
                 "default_value": item.get("default_value"),
+                "charts": [chart for chart, link in (item.get("links") or {}).items() if link],
             }
         )
 

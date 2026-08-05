@@ -17,8 +17,8 @@ await buildIslands({
 		'src2/islands/**/*.{vue,ts}',
 		'src2/components/**/*.vue',
 		'src2/charts/components/{BaseChart,ChartBody,ChartSectionEmptySvg,ChartTitle,NumberChart,Sparkline,TableChart}.vue',
-		'src2/query/components/QueryDataTable.vue',
-		'src2/dashboard/VueGridLayout.vue',
+		'src2/query/components/{ColumnFilterValueSelector,DataTypeIcon,NumberFilterPicker,QueryDataTable,RelativeDatePicker}.vue',
+		'src2/dashboard/{Filter,FilterControl,VueGridLayout}.vue',
 	],
 	// Pinned from the first clean dashboard build — 91.1 kB JS + 43.2 kB CSS —
 	// plus room for the presentation ticket still to land. The preset's 256 kB

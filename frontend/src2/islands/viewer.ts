@@ -22,6 +22,10 @@ export type ViewerDashboardItem = {
 	filter_type?: FilterType
 	default_operator?: FilterOperator
 	default_value?: FilterValue
+	// the cards this filter changes. Which column it lands on stays server-side;
+	// the names are what the bar needs to refetch the right cards and what lets an
+	// empty card say a filter caused it
+	charts?: string[]
 }
 
 export type ViewerDashboard = {
@@ -33,6 +37,9 @@ export type ViewerDashboard = {
 	modified: string
 	can_edit: boolean
 	can_duplicate: boolean
+	// where editing happens — the builder is workbook-scoped. Null for anyone who
+	// cannot edit, which is everyone the island is built for
+	workbook: string | null
 }
 
 // dashboard filter state, keyed by filter name. Which query a filter lands on is
@@ -41,6 +48,15 @@ export type ViewerFilters = Record<string, { operator: FilterOperator; value: Fi
 
 export function fetchDashboard(dashboard: string): Promise<ViewerDashboard> {
 	return call('insights.api.viewer.get_dashboard', { dashboard })
+}
+
+/** The values a filter offers. The column behind it is the server's to know. */
+export function fetchFilterValues(
+	dashboard: string,
+	filter_name: string,
+	search_term?: string,
+): Promise<string[]> {
+	return call('insights.api.viewer.get_filter_values', { dashboard, filter_name, search_term })
 }
 
 export type ViewerChartOptions = {
@@ -63,6 +79,10 @@ export function useViewerChart(reference: string, options: ViewerChartOptions = 
 	const loaded = ref(false)
 	const executing = ref(true)
 	const failed = ref(false)
+	// when the rows on screen were produced. It is the card that knows, so the
+	// page's freshness stamp is read off the cards
+	const executedAt = ref<Date>()
+	const empty = computed(() => loaded.value && !result.value.rows.length)
 
 	async function load(force = false) {
 		executing.value = true
@@ -95,6 +115,7 @@ export function useViewerChart(reference: string, options: ViewerChartOptions = 
 				timeTaken: response.time_taken,
 				lastExecutedAt: new Date(response.executed_at),
 			}
+			executedAt.value = result.value.lastExecutedAt
 			loaded.value = true
 		} catch (error) {
 			failed.value = true
@@ -139,7 +160,7 @@ export function useViewerChart(reference: string, options: ViewerChartOptions = 
 		}),
 	}) as unknown as Chart
 
-	return { chart, load, loaded, executing, failed }
+	return { chart, load, loaded, executing, failed, empty, executedAt }
 }
 
 export type ViewerChart = ReturnType<typeof useViewerChart>

@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import frappe
 
-from insights.api.viewer import get_chart, get_chart_data, get_dashboard
+from insights.api.viewer import get_chart, get_chart_data, get_dashboard, get_filter_values
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
 from insights.resolver import ContentNotAvailableError
 from insights.tests.base import InsightsIntegrationTestCase
@@ -358,3 +358,50 @@ class TestViewerAPI(InsightsIntegrationTestCase):
         )
 
         self.assertEqual(self.descriptions(result), [AUTHOR_TODOS[0]])
+
+    def test_a_filter_names_the_charts_it_changes(self):
+        _, chart, dashboard = self.make_content(visibility="Everyone")
+
+        with as_user(DESK_USER):
+            response = get_dashboard(dashboard=dashboard.name)
+
+        filter_item = next(item for item in response["items"] if item["type"] == "filter")
+        # enough to refetch just those cards and to let an empty card blame the
+        # filter, without saying which column it lands on
+        self.assertEqual(filter_item["charts"], [chart.name])
+        self.assertEqual(filter_item["filter_type"], "String")
+
+    def test_filter_values_come_from_the_linked_column(self):
+        _, chart, dashboard = self.make_content(visibility="Everyone")
+        chart.db_set("data_authority", "Author", update_modified=False)
+
+        with as_user(DESK_USER), db_connections():
+            values = get_filter_values(dashboard=dashboard.name, filter_name="Description")
+            searched = get_filter_values(
+                dashboard=dashboard.name, filter_name="Description", search_term="author 1"
+            )
+
+        self.assertEqual(sorted(values), sorted(AUTHOR_TODOS))
+        self.assertEqual(searched, [AUTHOR_TODOS[0]])
+
+    def test_filter_values_answer_like_any_other_reference(self):
+        _, _, dashboard = self.make_content(visibility="Everyone")
+
+        with as_user(DESK_USER), self.assertRaises(ContentNotAvailableError):
+            get_filter_values(dashboard=dashboard.name, filter_name="No Such Filter")
+
+        _, _, private = self.make_content(visibility="Private", title="Viewer API Private Dashboard")
+
+        with as_user(OUTSIDER), self.assertRaises(ContentNotAvailableError):
+            get_filter_values(dashboard=private.name, filter_name="Description")
+
+    # what an editor is told
+
+    def test_only_an_editor_is_told_where_editing_happens(self):
+        _, _, dashboard = self.make_content(visibility="Everyone")
+
+        with as_user(AUTHOR):
+            self.assertEqual(get_dashboard(dashboard=dashboard.name)["workbook"], dashboard.workbook)
+
+        with as_user(DESK_USER):
+            self.assertIsNone(get_dashboard(dashboard=dashboard.name)["workbook"])

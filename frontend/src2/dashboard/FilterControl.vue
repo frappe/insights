@@ -1,0 +1,84 @@
+<script setup lang="ts">
+import { Icon } from 'frappe-ui/icons'
+import { X } from 'lucide-vue-next'
+import { computed } from 'vue'
+import { FIELDTYPES, FilterType } from '../helpers/constants'
+import DataTypeIcon from '../query/components/DataTypeIcon.vue'
+import { isFilterApplied } from '../query/components/filter_utils'
+import { ColumnDataType, FilterOperator, FilterValue } from '../types/query.types'
+import Filter from './Filter.vue'
+
+// One filter, as the reader meets it: a control that names itself when it is
+// empty and shows what it is holding when it is not. Where the state lives and
+// which column it lands on are the caller's business — the dashboard builder
+// keeps them in its store, a viewer surface has neither.
+const props = defineProps<{
+	filterName: string
+	filterType: FilterType
+	icon?: string
+	valuesProvider: (search: string) => Promise<string[]>
+}>()
+
+const operator = defineModel<FilterOperator>('operator')
+const value = defineModel<FilterValue>('value')
+
+const FILTER_TYPES = {
+	String: FIELDTYPES.TEXT,
+	Number: FIELDTYPES.NUMBER,
+	Date: FIELDTYPES.DATE,
+}
+
+const applied = computed(() => isFilterApplied(props.filterType, operator.value, value.value))
+
+const label = computed(() => {
+	if (!applied.value) return props.filterName
+	if (value.value === undefined) return `${props.filterName} ${operator.value}`
+	const value_str = Array.isArray(value.value) ? value.value.join(', ') : value.value
+	return `${props.filterName} ${operator.value} ${value_str}`
+})
+
+function clear() {
+	operator.value = undefined
+	value.value = undefined
+}
+</script>
+
+<template>
+	<div class="h-8 [&>div:first-child]:h-full">
+		<Popover class="h-full" match-trigger-width>
+			<template #trigger>
+				<Button
+					:variant="applied ? 'subtle' : 'outline'"
+					class="flex h-full w-full !justify-start overflow-hidden text-sm [&>span]:truncate"
+				>
+					<template #prefix>
+						<Icon v-if="props.icon" :name="props.icon" class="h-4 w-4 flex-shrink-0" />
+						<DataTypeIcon
+							v-else-if="props.filterType"
+							:column-type="FILTER_TYPES[props.filterType][0] as ColumnDataType"
+							class="h-4 w-4 flex-shrink-0"
+							stroke-width="1.5"
+						/>
+					</template>
+					{{ label }}
+					<template v-if="applied" #suffix>
+						<!-- inside the trigger, so the click must not also open the popover -->
+						<X class="h-3.5 w-3.5 flex-shrink-0 text-ink-gray-5" @click.stop="clear" />
+					</template>
+				</Button>
+			</template>
+			<template #default="{ toggle: togglePopover, isOpen }">
+				<div class="p-2" :style="{ width: 'var(--reka-popover-trigger-width)' }">
+					<Filter
+						v-if="isOpen"
+						:filter-type="props.filterType"
+						:valuesProvider="props.valuesProvider"
+						v-model:operator="operator"
+						v-model:value="value"
+						@close="() => togglePopover()"
+					/>
+				</div>
+			</template>
+		</Popover>
+	</div>
+</template>
