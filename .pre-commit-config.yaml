@@ -1,5 +1,6 @@
 exclude: 'node_modules|.git'
 default_stages: [pre-commit]
+default_install_hook_types: [pre-commit, commit-msg]
 fail_fast: false
 
 
@@ -34,6 +35,15 @@ repos:
     hooks:
       - id: prettier
         types_or: [javascript, vue, scss]
+
+  # same commitlint.config.cjs that semantic-release reads to cut versions
+  - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
+    rev: v9.26.0
+    hooks:
+      - id: commitlint
+        stages: [commit-msg]
+        # v9 dropped the CJS entry point that commitlint 19 resolves the preset through
+        additional_dependencies: ["conventional-changelog-conventionalcommits@7.0.2"]
 
 ci:
     autoupdate_schedule: weekly
