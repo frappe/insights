@@ -13,9 +13,14 @@
   "column_break_mgwd",
   "chart_type",
   "is_public",
+  "visibility",
+  "visible_to_roles",
+  "data_authority",
   "section_break_vmvi",
   "config",
-  "old_name"
+  "old_name",
+  "logical_id",
+  "is_standard"
  ],
  "fields": [
   {
@@ -93,6 +98,42 @@
    "fieldname": "folder",
    "fieldtype": "Data",
    "label": "folder"
+  },
+  {
+   "default": "Private",
+   "fieldname": "visibility",
+   "fieldtype": "Select",
+   "label": "Visibility",
+   "options": "Private\nSpecific Roles\nEveryone\nPublic"
+  },
+  {
+   "depends_on": "eval:doc.visibility === 'Specific Roles'",
+   "fieldname": "visible_to_roles",
+   "fieldtype": "Table MultiSelect",
+   "label": "Visible To Roles",
+   "options": "Has Role"
+  },
+  {
+   "default": "Viewer",
+   "fieldname": "data_authority",
+   "fieldtype": "Select",
+   "label": "Data Authority",
+   "options": "Viewer\nAuthor"
+  },
+  {
+   "description": "Shipped content identity ({app}/{name}), set by bundle sync",
+   "fieldname": "logical_id",
+   "fieldtype": "Data",
+   "label": "Logical ID",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_standard",
+   "fieldtype": "Check",
+   "label": "Is Standard",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,

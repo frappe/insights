@@ -5,17 +5,22 @@
  "engine": "InnoDB",
  "field_order": [
   "title",
+  "slug",
   "preview_image",
   "share_link",
   "column_break_owsx",
   "workbook",
   "is_public",
+  "visibility",
+  "visible_to_roles",
   "vertical_compact_layout",
   "section_break_lgpd",
   "items",
   "section_break_aocd",
   "linked_charts",
-  "old_name"
+  "old_name",
+  "logical_id",
+  "is_standard"
  ],
  "fields": [
   {
@@ -86,6 +91,41 @@
    "fieldname": "vertical_compact_layout",
    "fieldtype": "Check",
    "label": "Vertical Compact Layout"
+  },
+  {
+   "fieldname": "slug",
+   "fieldtype": "Data",
+   "label": "Slug",
+   "search_index": 1
+  },
+  {
+   "default": "Private",
+   "fieldname": "visibility",
+   "fieldtype": "Select",
+   "label": "Visibility",
+   "options": "Private\nSpecific Roles\nEveryone\nPublic"
+  },
+  {
+   "depends_on": "eval:doc.visibility === 'Specific Roles'",
+   "fieldname": "visible_to_roles",
+   "fieldtype": "Table MultiSelect",
+   "label": "Visible To Roles",
+   "options": "Has Role"
+  },
+  {
+   "description": "Shipped content identity ({app}/{name}), set by bundle sync",
+   "fieldname": "logical_id",
+   "fieldtype": "Data",
+   "label": "Logical ID",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_standard",
+   "fieldtype": "Check",
+   "label": "Is Standard",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
