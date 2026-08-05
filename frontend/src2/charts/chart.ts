@@ -28,7 +28,12 @@ import {
 } from '../types/chart.types'
 import { InsightsChartv3 } from '../types/workbook.types'
 import useWorkbook, { getLinkedQueries } from '../workbook/workbook'
-import { handleOldXAxisConfig, handleOldYAxisConfig, setDimensionNames } from './helpers'
+import {
+	ensureConfigSlots,
+	handleOldXAxisConfig,
+	handleOldYAxisConfig,
+	setDimensionNames,
+} from './helpers'
 
 const charts = new Map<string, Chart>()
 
@@ -56,6 +61,8 @@ function makeChart(name: string) {
 		if (!chart.isloaded) return {} as Query
 		return useQuery(chart.doc.data_query)
 	})
+
+	const isConfigValid = computed(() => validateConfig())
 	async function refresh(force?: boolean, reload?: boolean) {
 		if (reload) {
 			await chart.load()
@@ -65,8 +72,7 @@ function makeChart(name: string) {
 			() => chart.isloaded && dataQuery.value.isloaded && useQuery(chart.doc.query).isloaded
 		)
 
-		const isValid = validateConfig()
-		if (!isValid) return
+		if (!isConfigValid.value) return
 
 		const query = makeAdhocQuery()
 		addSourceOperation(query)
@@ -122,7 +128,7 @@ function makeChart(name: string) {
 					message: __('X-axis is required'),
 				})
 			}
-			if (config.x_axis.dimension.column_name === config.split_by?.dimension.column_name) {
+			if (config.x_axis.dimension.column_name === config.split_by?.dimension?.column_name) {
 				messages.push({
 					variant: 'error',
 					message: __('X-axis and Split by cannot be the same'),
@@ -474,14 +480,13 @@ function makeChart(name: string) {
 	watch(
 		() => chart.doc.chart_type,
 		(newType: string, oldType: string) => {
-			if (newType === oldType) return
-			if (!newType || !oldType) return
-			if (
-				(AXIS_CHARTS.includes(newType) && !AXIS_CHARTS.includes(oldType)) ||
-				(!AXIS_CHARTS.includes(newType) && AXIS_CHARTS.includes(oldType))
-			) {
+			if (!newType || newType === oldType) return
+			const crossesAxisBoundary =
+				oldType && AXIS_CHARTS.includes(newType) !== AXIS_CHARTS.includes(oldType)
+			if (crossesAxisBoundary) {
 				resetConfig()
 			}
+			ensureConfigSlots(chart.doc.config, newType)
 		}
 	)
 
@@ -537,6 +542,7 @@ function makeChart(name: string) {
 		...toRefs(chart),
 
 		dataQuery,
+		isConfigValid,
 
 		refresh,
 		updateGranularity,
@@ -626,6 +632,7 @@ function transformChartDoc(doc: any) {
 	}
 
 	doc.config = setDimensionNames(doc.config)
+	doc.config = ensureConfigSlots(doc.config, doc.chart_type)
 
 	return doc
 }
