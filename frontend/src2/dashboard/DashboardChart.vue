@@ -2,10 +2,10 @@
 import { Button } from 'frappe-ui'
 import { AlertTriangle, Maximize, XIcon } from 'lucide-vue-next'
 import { computed, inject, provide, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import useChart from '../charts/chart'
 import ChartRenderer from '../charts/components/ChartRenderer.vue'
 import { waitUntil, wheneverChanges } from '../helpers'
+import { navigate } from '../helpers/navigation'
 import { WorkbookDashboardChart } from '../types/workbook.types'
 import { workbookKey } from '../workbook/workbook'
 import { Dashboard } from './dashboard'
@@ -37,14 +37,13 @@ if (props.item.chart) {
 	})
 }
 
-const router = useRouter()
 const workbook = inject(workbookKey, null)
 wheneverChanges(
 	() => dashboard.isEditingItem(props.item),
 	(editing: boolean) => {
 		if (!workbook) return
 		if (editing) {
-			router.push(`/workbook/${workbook.doc.name}/chart/${props.item.chart}`)
+			navigate(`/workbook/${workbook.doc.name}/chart/${props.item.chart}`)
 		}
 	},
 )

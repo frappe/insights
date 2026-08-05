@@ -8,6 +8,7 @@
 	},
 	"scripts": {
 		"dev": "vite",
+		"lint": "eslint --no-eslintrc -c .eslintrc.boundaries.json --ext .js,.ts,.vue src2",
 		"serve": "vite preview",
 		"build": "vite build -l warn --base=/assets/insights/frontend/ && yarn copy-html-entry",
 		"copy-html-entry": "cp ../insights/public/frontend/index.html ../insights/www/_insights.html"
@@ -43,6 +44,7 @@
 		"@iconify/utils": "2.3.0",
 		"@playwright/test": "^1.32.1",
 		"@tailwindcss/container-queries": "^0.1.1",
+		"@typescript-eslint/parser": "^8.66.0",
 		"@vitejs/plugin-vue": "^4.2.3",
 		"@vitejs/plugin-vue-jsx": "^3.0.1",
 		"autoprefixer": "^10.4.7",

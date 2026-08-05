@@ -14,10 +14,10 @@ import {
 } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import { FIELDTYPES } from '../helpers/constants'
+import { navigate } from '../helpers/navigation'
 import useDocumentResource from '../helpers/resource'
 import { createToast } from '../helpers/toasts'
 import { __ } from '../translation'
-import router from '../router'
 import session from '../session'
 import { isServerBusyError, scheduleQueryExecution } from './execution_queue'
 import {
@@ -1061,7 +1061,7 @@ export function makeQuery(name: string) {
 					title: __('Query duplicated'),
 					variant: 'success',
 				})
-				router.push(`/workbook/${query.doc.workbook}/query/${newQueryName}`)
+				navigate(`/workbook/${query.doc.workbook}/query/${newQueryName}`)
 			})
 			.then(workbook.load)
 	}

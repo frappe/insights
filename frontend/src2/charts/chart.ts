@@ -9,11 +9,11 @@ import {
 	wheneverChanges,
 } from '../helpers'
 import { GranularityType } from '../helpers/constants'
+import { navigate, resolveHref } from '../helpers/navigation'
 import useDocumentResource from '../helpers/resource'
 import { createToast } from '../helpers/toasts'
 import { column, count, query_table } from '../query/helpers'
 import useQuery, { makeAdhocQuery, Query } from '../query/query'
-import router from '../router'
 import { __ } from '../translation'
 import {
 	AXIS_CHARTS,
@@ -436,7 +436,7 @@ function makeChart(name: string) {
 	}
 
 	function getShareLink() {
-		const { href } = router.resolve({
+		const href = resolveHref({
 			name: 'SharedChart',
 			params: { chart_name: chart.doc.name },
 		})
@@ -503,7 +503,7 @@ function makeChart(name: string) {
 					title: __('Chart duplicated'),
 					variant: 'success',
 				})
-				router.push(`/workbook/${chart.doc.workbook}/chart/${newChartName}`)
+				navigate(`/workbook/${chart.doc.workbook}/chart/${newChartName}`)
 			})
 			.then(workbook.load)
 	}

@@ -1,0 +1,35 @@
+{
+	"parser": "vue-eslint-parser",
+	"parserOptions": {
+		"parser": "@typescript-eslint/parser",
+		"ecmaVersion": 2021,
+		"sourceType": "module",
+		"ecmaFeatures": { "jsx": true }
+	},
+	"overrides": [
+		{
+			"files": ["src2/charts/**", "src2/dashboard/**", "src2/query/**"],
+			"excludedFiles": ["src2/dashboard/DashboardList.vue"],
+			"rules": {
+				"no-restricted-imports": [
+					"error",
+					{
+						"patterns": [
+							{
+								"group": ["**/router", "**/router.ts"],
+								"message": "The viewer graph must not import the SPA router — it drags every routed page into the bundle and an island mounts without a router. Use helpers/navigation instead."
+							}
+						],
+						"paths": [
+							{
+								"name": "vue-router",
+								"importNames": ["useRouter", "useRoute"],
+								"message": "The viewer graph must not depend on a router instance — an island mounts without one. Use helpers/navigation instead."
+							}
+						]
+					}
+				]
+			}
+		}
+	]
+}

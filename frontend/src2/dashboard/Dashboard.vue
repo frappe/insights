@@ -2,8 +2,8 @@
 import { Breadcrumbs, call } from 'frappe-ui'
 import { RefreshCcw } from 'lucide-vue-next'
 import { computed, provide, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { downloadImage, waitUntil, wheneverChanges } from '../helpers'
+import { navigate } from '../helpers/navigation'
 import useDashboard from './dashboard'
 import { __ } from '../translation'
 import DashboardItem from './DashboardItem.vue'
@@ -20,9 +20,8 @@ const dashboard = useDashboard(dashboard_name)
 provide('dashboard', dashboard)
 dashboard.refresh()
 
-const router = useRouter()
 function openWorkbook() {
-	router.push(`/workbook/${dashboard.doc.workbook}`)
+	navigate(`/workbook/${dashboard.doc.workbook}`)
 }
 await waitUntil(() => dashboard.isloaded)
 
