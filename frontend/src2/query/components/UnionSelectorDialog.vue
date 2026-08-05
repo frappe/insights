@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, reactive } from 'vue'
 import { UnionArgs } from '../../types/query.types'
-import { workbookKey } from '../../workbook/workbook'
+import { workbookKey } from '../../workbook/workbook_key'
 import { query_table, table } from '../helpers'
 import { Query } from '../query'
 import { useTableOptions } from './join_utils'

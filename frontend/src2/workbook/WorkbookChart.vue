@@ -2,7 +2,7 @@
 import { inject, ref } from 'vue'
 import ChartBuilder from '../charts/ChartBuilder.vue'
 import useChart from '../charts/chart'
-import { workbookKey } from './workbook'
+import { workbookKey } from './workbook_key'
 import { mirrorTitleToWorkbook } from './workbook_items'
 import { useRouter } from 'vue-router'
 

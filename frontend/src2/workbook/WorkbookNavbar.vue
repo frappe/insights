@@ -2,7 +2,7 @@
 import { Badge } from 'frappe-ui'
 import { inject } from 'vue'
 import ContentEditable from '../components/ContentEditable.vue'
-import { workbookKey } from './workbook'
+import { workbookKey } from './workbook_key'
 import WorkbookNavbarActions from './WorkbookNavbarActions.vue'
 import { PencilIcon, PencilOff, PenOff, ShieldAlert } from 'lucide-vue-next'
 

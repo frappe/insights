@@ -17,7 +17,7 @@ import {
 	Summarize,
 	Union,
 } from '../../types/query.types'
-import { workbookKey } from '../../workbook/workbook'
+import { workbookKey } from '../../workbook/workbook_key'
 import { query_operation_types } from '../helpers'
 import { Query } from '../query'
 import AddOperationPopover from './AddOperationPopover.vue'

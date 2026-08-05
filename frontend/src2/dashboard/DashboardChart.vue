@@ -7,7 +7,7 @@ import ChartRenderer from '../charts/components/ChartRenderer.vue'
 import { waitUntil, wheneverChanges } from '../helpers'
 import { navigate } from '../helpers/navigation'
 import { WorkbookDashboardChart } from '../types/workbook.types'
-import { workbookKey } from '../workbook/workbook'
+import { workbookKey } from '../workbook/workbook_key'
 import { Dashboard } from './dashboard'
 
 const props = defineProps<{ item: WorkbookDashboardChart }>()

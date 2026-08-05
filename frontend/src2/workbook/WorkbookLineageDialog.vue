@@ -7,7 +7,8 @@ import { BarChart2, DatabaseIcon, GitFork, Search } from 'lucide-vue-next'
 import { computed, inject, nextTick, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { __ } from '../translation'
-import { Workbook, workbookKey } from './workbook'
+import type { Workbook } from './workbook'
+import { workbookKey } from './workbook_key'
 
 const show = defineModel<boolean>()
 

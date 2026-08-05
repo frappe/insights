@@ -2,7 +2,7 @@
 import { inject, ref } from 'vue'
 import DashboardBuilder from '../dashboard/DashboardBuilder.vue'
 import useDashboard from '../dashboard/dashboard'
-import { workbookKey } from './workbook'
+import { workbookKey } from './workbook_key'
 import { mirrorTitleToWorkbook } from './workbook_items'
 import { useRouter } from 'vue-router'
 

@@ -3,7 +3,7 @@ import { Folder, FolderOpen, FolderPlus, PenLine, Plus, X } from 'lucide-vue-nex
 import { computed, inject, ref } from 'vue'
 import Draggable from 'vuedraggable'
 import type { WorkbookChart, WorkbookFolder, WorkbookQuery } from '../types/workbook.types'
-import { workbookKey } from './workbook'
+import { workbookKey } from './workbook_key'
 
 const section = defineProps<{
 	title: string

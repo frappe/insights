@@ -1,7 +1,7 @@
 import { call } from 'frappe-ui'
 import { __ } from '../translation'
 import { useTelemetry } from 'frappe-ui/frappe'
-import { computed, InjectionKey, reactive, toRefs } from 'vue'
+import { computed, reactive, toRefs } from 'vue'
 import useChart, { newChart } from '../charts/chart'
 import useDashboard, { newDashboard } from '../dashboard/dashboard'
 import {
@@ -406,7 +406,6 @@ function makeWorkbook(name: string) {
 }
 
 export type Workbook = ReturnType<typeof makeWorkbook>
-export const workbookKey = Symbol() as InjectionKey<Workbook>
 
 export function getWorkbookResource(name: string) {
 	const doctype = 'Insights Workbook'

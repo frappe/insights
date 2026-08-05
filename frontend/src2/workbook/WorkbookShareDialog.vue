@@ -7,7 +7,8 @@ import { createToast } from '../helpers/toasts'
 import session from '../session'
 import { ShareAccess, WorkbookSharePermission } from '../types/workbook.types'
 import useUserStore from '../users/users'
-import { Workbook, workbookKey } from './workbook'
+import type { Workbook } from './workbook'
+import { workbookKey } from './workbook_key'
 
 const show = defineModel()
 const originalOrganizationAccess = ref<'view' | 'edit'>()
