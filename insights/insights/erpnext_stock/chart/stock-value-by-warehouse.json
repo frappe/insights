@@ -1,0 +1,40 @@
+{
+ "chart_type": "Bar",
+ "config": {
+  "order_by": [
+   {
+    "column": {
+     "column_name": "stock_value",
+     "type": "column"
+    },
+    "direction": "desc"
+   }
+  ],
+  "x_axis": {
+   "dimension": {
+    "column_name": "warehouse",
+    "data_type": "String",
+    "dimension_name": "warehouse"
+   }
+  },
+  "y_axis": {
+   "series": [
+    {
+     "measure": {
+      "aggregation": "sum",
+      "column_name": "stock_value",
+      "data_type": "Decimal",
+      "measure_name": "stock_value"
+     }
+    }
+   ]
+  }
+ },
+ "data_authority": "Viewer",
+ "data_query": "stock-value-by-warehouse_data",
+ "query": "stock-balances",
+ "sort_order": 4,
+ "title": "Stock Value by Warehouse",
+ "visibility": "Private",
+ "visible_to_roles": []
+}

@@ -1,0 +1,27 @@
+{
+ "chart_type": "Number",
+ "config": {
+  "comparison": false,
+  "decimal": 1,
+  "number_columns": [
+   {
+    "data_type": "Decimal",
+    "expression": {
+     "expression": "sum(over90_outstanding) / sum(outstanding) * 100",
+     "type": "expression"
+    },
+    "measure_name": "AR Over 90 Days"
+   }
+  ],
+  "shorten_numbers": false,
+  "sparkline": false,
+  "suffix": "%"
+ },
+ "data_authority": "Viewer",
+ "data_query": "ar-over-90-days_data",
+ "query": "ar-open-invoices",
+ "sort_order": 3,
+ "title": "AR Over 90 Days %",
+ "visibility": "Private",
+ "visible_to_roles": []
+}

@@ -1,0 +1,129 @@
+{
+ "items": [
+  {
+   "default_operator": "within",
+   "default_value": "Last 12 months",
+   "filter_name": "Date Range",
+   "filter_type": "Date",
+   "icon": "calendar",
+   "layout": {
+    "h": 1,
+    "i": "filter-date-range",
+    "w": 4,
+    "x": 0,
+    "y": 0
+   },
+   "links": {
+    "purchase-order-kpis": "`purchase-orders`.`transaction_date`",
+    "spend-by-item-group": "`purchase-invoice-items`.`posting_date`",
+    "spend-kpis": "`purchase-invoices`.`posting_date`",
+    "spend-trend": "`purchase-invoices`.`posting_date`",
+    "top-10-suppliers": "`purchase-invoices`.`posting_date`"
+   },
+   "type": "filter"
+  },
+  {
+   "filter_name": "Company",
+   "filter_type": "String",
+   "icon": "building-2",
+   "layout": {
+    "h": 1,
+    "i": "filter-company",
+    "w": 4,
+    "x": 4,
+    "y": 0
+   },
+   "links": {
+    "overdue-purchase-orders": "`overdue-purchase-orders_source`.`company`",
+    "purchase-order-kpis": "`purchase-orders`.`company`",
+    "purchase-orders-by-status": "`purchase-orders`.`company`",
+    "spend-by-item-group": "`purchase-invoice-items`.`company`",
+    "spend-kpis": "`purchase-invoices`.`company`",
+    "spend-trend": "`purchase-invoices`.`company`",
+    "top-10-suppliers": "`purchase-invoices`.`company`"
+   },
+   "type": "filter"
+  },
+  {
+   "chart": "spend-kpis",
+   "layout": {
+    "h": 3,
+    "i": "chart-spend-kpis",
+    "w": 7,
+    "x": 0,
+    "y": 1
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "purchase-order-kpis",
+   "layout": {
+    "h": 3,
+    "i": "chart-purchase-order-kpis",
+    "w": 7,
+    "x": 7,
+    "y": 1
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "spend-trend",
+   "layout": {
+    "h": 9,
+    "i": "chart-spend-trend",
+    "w": 12,
+    "x": 0,
+    "y": 4
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "spend-by-item-group",
+   "layout": {
+    "h": 9,
+    "i": "chart-spend-by-item-group",
+    "w": 8,
+    "x": 12,
+    "y": 4
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "top-10-suppliers",
+   "layout": {
+    "h": 9,
+    "i": "chart-top-10-suppliers",
+    "w": 10,
+    "x": 0,
+    "y": 13
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "purchase-orders-by-status",
+   "layout": {
+    "h": 9,
+    "i": "chart-purchase-orders-by-status",
+    "w": 10,
+    "x": 10,
+    "y": 13
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "overdue-purchase-orders",
+   "layout": {
+    "h": 9,
+    "i": "chart-overdue-purchase-orders",
+    "w": 20,
+    "x": 0,
+    "y": 22
+   },
+   "type": "chart"
+  }
+ ],
+ "title": "Purchasing Overview",
+ "vertical_compact_layout": 0,
+ "visibility": "Private",
+ "visible_to_roles": []
+}

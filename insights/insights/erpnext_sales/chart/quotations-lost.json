@@ -1,0 +1,42 @@
+{
+ "chart_type": "Number",
+ "config": {
+  "comparison": false,
+  "filters": {
+   "filters": [
+    {
+     "column": {
+      "column_name": "status",
+      "type": "column"
+     },
+     "operator": "=",
+     "value": "Lost"
+    }
+   ],
+   "logical_operator": "And"
+  },
+  "limit": 100,
+  "number_column_options": [
+   {
+    "shorten_numbers": false
+   }
+  ],
+  "number_columns": [
+   {
+    "aggregation": "count",
+    "column_name": "name",
+    "data_type": "Integer",
+    "measure_name": "Quotations Lost"
+   }
+  ],
+  "order_by": [],
+  "sparkline": false
+ },
+ "data_authority": "Viewer",
+ "data_query": "quotations-lost_data",
+ "query": "quotations",
+ "sort_order": 6,
+ "title": "Quotations Lost",
+ "visibility": "Private",
+ "visible_to_roles": []
+}

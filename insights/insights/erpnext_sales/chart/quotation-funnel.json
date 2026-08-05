@@ -1,0 +1,31 @@
+{
+ "chart_type": "Funnel",
+ "config": {
+  "filters": {
+   "filters": [],
+   "logical_operator": "And"
+  },
+  "label_column": {
+   "column_name": "stage",
+   "data_type": "String",
+   "dimension_name": "stage"
+  },
+  "label_position": "left",
+  "limit": 100,
+  "order_by": [],
+  "show_percentage": true,
+  "value_column": {
+   "aggregation": "sum",
+   "column_name": "quotations",
+   "data_type": "Decimal",
+   "measure_name": "Quotations"
+  }
+ },
+ "data_authority": "Viewer",
+ "data_query": "quotation-funnel_data",
+ "query": "quotation-funnel_source",
+ "sort_order": 5,
+ "title": "Quotation Funnel",
+ "visibility": "Private",
+ "visible_to_roles": []
+}

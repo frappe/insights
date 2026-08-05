@@ -1,0 +1,49 @@
+{
+ "chart_type": "Bar",
+ "config": {
+  "order_by": [
+   {
+    "column": {
+     "column_name": "Month",
+     "type": "column"
+    },
+    "direction": "asc"
+   }
+  ],
+  "split_by": {
+   "dimension": {
+    "column_name": "metric",
+    "data_type": "String",
+    "dimension_name": "Metric"
+   },
+   "max_split_values": 5
+  },
+  "x_axis": {
+   "dimension": {
+    "column_name": "posting_date",
+    "data_type": "Date",
+    "dimension_name": "Month",
+    "granularity": "month"
+   }
+  },
+  "y_axis": {
+   "series": [
+    {
+     "measure": {
+      "aggregation": "sum",
+      "column_name": "amount",
+      "data_type": "Decimal",
+      "measure_name": "Amount"
+     }
+    }
+   ]
+  }
+ },
+ "data_authority": "Viewer",
+ "data_query": "invoiced-vs-collected_data",
+ "query": "invoiced-vs-collected_source",
+ "sort_order": 10,
+ "title": "Invoiced vs Collected",
+ "visibility": "Private",
+ "visible_to_roles": []
+}

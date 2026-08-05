@@ -1,0 +1,51 @@
+{
+ "is_builder_query": 1,
+ "is_native_query": 0,
+ "is_script_query": 0,
+ "operations": [
+  {
+   "table": {
+    "data_source": "Site DB",
+    "table_name": "tabStock Ledger Entry",
+    "type": "table"
+   },
+   "type": "source"
+  },
+  {
+   "filters": [
+    {
+     "column": {
+      "column_name": "is_cancelled",
+      "type": "column"
+     },
+     "operator": "=",
+     "value": 0
+    }
+   ],
+   "logical_operator": "And",
+   "type": "filter_group"
+  },
+  {
+   "dimensions": [
+    {
+     "column_name": "item_code",
+     "data_type": "String",
+     "dimension_name": "item_code"
+    }
+   ],
+   "measures": [
+    {
+     "aggregation": "max",
+     "column_name": "posting_date",
+     "data_type": "Date",
+     "measure_name": "last_movement_date"
+    }
+   ],
+   "type": "summarize"
+  }
+ ],
+ "sort_order": 2,
+ "title": "Last Movement Per Item",
+ "use_live_connection": 1,
+ "variables": []
+}

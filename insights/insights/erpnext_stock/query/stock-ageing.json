@@ -1,0 +1,75 @@
+{
+ "is_builder_query": 1,
+ "is_native_query": 0,
+ "is_script_query": 0,
+ "operations": [
+  {
+   "table": {
+    "data_source": "Site DB",
+    "table_name": "tabBin",
+    "type": "table"
+   },
+   "type": "source"
+  },
+  {
+   "join_condition": {
+    "left_column": {
+     "column_name": "item_code",
+     "type": "column"
+    },
+    "right_column": {
+     "column_name": "item_code",
+     "type": "column"
+    }
+   },
+   "join_type": "inner",
+   "select_columns": [
+    {
+     "column_name": "last_movement_date",
+     "type": "column"
+    }
+   ],
+   "table": {
+    "query_name": "last-movement-per-item",
+    "type": "query",
+    "workbook": 0
+   },
+   "type": "join"
+  },
+  {
+   "data_type": "Integer",
+   "expression": {
+    "expression": "date_diff(today(), last_movement_date, \"day\")",
+    "type": "expression"
+   },
+   "new_name": "days_since_movement",
+   "type": "mutate"
+  },
+  {
+   "data_type": "String",
+   "expression": {
+    "expression": "cases((days_since_movement <= 30, \"1. 0-30 days\"), (days_since_movement <= 90, \"2. 31-90 days\"), (days_since_movement <= 180, \"3. 91-180 days\"), else_=\"4. 180+ days\")",
+    "type": "expression"
+   },
+   "new_name": "ageing_bucket",
+   "type": "mutate"
+  },
+  {
+   "column_names": [
+    "item_code",
+    "warehouse",
+    "company",
+    "actual_qty",
+    "stock_value",
+    "last_movement_date",
+    "days_since_movement",
+    "ageing_bucket"
+   ],
+   "type": "select"
+  }
+ ],
+ "sort_order": 3,
+ "title": "Stock Ageing",
+ "use_live_connection": 1,
+ "variables": []
+}

@@ -1,0 +1,61 @@
+{
+ "is_builder_query": 1,
+ "is_native_query": 0,
+ "is_script_query": 0,
+ "operations": [
+  {
+   "table": {
+    "data_source": "Site DB",
+    "table_name": "tabBin",
+    "type": "table"
+   },
+   "type": "source"
+  },
+  {
+   "join_condition": {
+    "left_column": {
+     "column_name": "item_code",
+     "type": "column"
+    },
+    "right_column": {
+     "column_name": "item_code",
+     "type": "column"
+    }
+   },
+   "join_type": "inner",
+   "select_columns": [
+    {
+     "column_name": "item_name",
+     "type": "column"
+    },
+    {
+     "column_name": "item_group",
+     "type": "column"
+    }
+   ],
+   "table": {
+    "data_source": "Site DB",
+    "table_name": "tabItem",
+    "type": "table"
+   },
+   "type": "join"
+  },
+  {
+   "column_names": [
+    "item_code",
+    "item_name",
+    "item_group",
+    "warehouse",
+    "company",
+    "actual_qty",
+    "valuation_rate",
+    "stock_value"
+   ],
+   "type": "select"
+  }
+ ],
+ "sort_order": 0,
+ "title": "Stock Balances",
+ "use_live_connection": 1,
+ "variables": []
+}

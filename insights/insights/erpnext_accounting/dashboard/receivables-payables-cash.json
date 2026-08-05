@@ -1,0 +1,186 @@
+{
+ "items": [
+  {
+   "filter_name": "Company",
+   "filter_type": "String",
+   "icon": "building-2",
+   "layout": {
+    "h": 1,
+    "i": "filter-company",
+    "w": 4,
+    "x": 0,
+    "y": 0
+   },
+   "links": {
+    "ap-ageing": "`ap-open-invoices`.`company`",
+    "ar-ageing": "`ar-open-invoices`.`company`",
+    "ar-over-90-days": "`ar-open-invoices`.`company`",
+    "ar-overdue": "`ar-open-invoices`.`company`",
+    "cash-in-vs-out": "`payments-cash-flow`.`company`",
+    "invoiced-vs-collected": "`invoiced-vs-collected_source`.`company`",
+    "net-cash-flow": "`payments-cash-flow`.`company`",
+    "payments-due-next-30-days": "`ap-open-invoices`.`company`",
+    "top-overdue-customers": "`ar-open-invoices`.`company`",
+    "total-ap": "`ap-open-invoices`.`company`",
+    "total-ar": "`ar-open-invoices`.`company`"
+   },
+   "type": "filter"
+  },
+  {
+   "default_operator": "within",
+   "default_value": "Last 12 months",
+   "filter_name": "Date",
+   "filter_type": "Date",
+   "icon": "calendar",
+   "layout": {
+    "h": 1,
+    "i": "filter-date",
+    "w": 4,
+    "x": 4,
+    "y": 0
+   },
+   "links": {
+    "cash-in-vs-out": "`payments-cash-flow`.`posting_date`",
+    "invoiced-vs-collected": "`invoiced-vs-collected_source`.`posting_date`",
+    "net-cash-flow": "`payments-cash-flow`.`posting_date`"
+   },
+   "type": "filter"
+  },
+  {
+   "chart": "total-ar",
+   "layout": {
+    "h": 3,
+    "i": "chart-total-ar",
+    "w": 4,
+    "x": 0,
+    "y": 1
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "total-ap",
+   "layout": {
+    "h": 3,
+    "i": "chart-total-ap",
+    "w": 4,
+    "x": 4,
+    "y": 1
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "ar-overdue",
+   "layout": {
+    "h": 3,
+    "i": "chart-ar-overdue",
+    "w": 4,
+    "x": 8,
+    "y": 1
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "ar-over-90-days",
+   "layout": {
+    "h": 3,
+    "i": "chart-ar-over-90-days",
+    "w": 4,
+    "x": 12,
+    "y": 1
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "net-cash-flow",
+   "layout": {
+    "h": 3,
+    "i": "chart-net-cash-flow",
+    "w": 4,
+    "x": 16,
+    "y": 1
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "ar-ageing",
+   "layout": {
+    "h": 8,
+    "i": "chart-ar-ageing",
+    "w": 10,
+    "x": 0,
+    "y": 4
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "ap-ageing",
+   "layout": {
+    "h": 8,
+    "i": "chart-ap-ageing",
+    "w": 10,
+    "x": 10,
+    "y": 4
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "cash-in-vs-out",
+   "layout": {
+    "h": 8,
+    "i": "chart-cash-in-vs-out",
+    "w": 10,
+    "x": 0,
+    "y": 12
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "invoiced-vs-collected",
+   "layout": {
+    "h": 8,
+    "i": "chart-invoiced-vs-collected",
+    "w": 10,
+    "x": 10,
+    "y": 12
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "top-overdue-customers",
+   "layout": {
+    "h": 9,
+    "i": "chart-top-overdue-customers",
+    "w": 10,
+    "x": 0,
+    "y": 20
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "payments-due-next-30-days",
+   "layout": {
+    "h": 9,
+    "i": "chart-payments-due-next-30-days",
+    "w": 10,
+    "x": 10,
+    "y": 20
+   },
+   "type": "chart"
+  },
+  {
+   "layout": {
+    "h": 1,
+    "i": "text-14",
+    "w": 12,
+    "x": 8,
+    "y": 0
+   },
+   "text": "",
+   "type": "text"
+  }
+ ],
+ "title": "Receivables, Payables & Cash",
+ "vertical_compact_layout": 0,
+ "visibility": "Private",
+ "visible_to_roles": []
+}

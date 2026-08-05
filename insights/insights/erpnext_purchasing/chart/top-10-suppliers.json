@@ -1,0 +1,45 @@
+{
+ "chart_type": "Row",
+ "config": {
+  "filters": {
+   "filters": [],
+   "logical_operator": "And"
+  },
+  "limit": 10,
+  "order_by": [
+   {
+    "column": {
+     "column_name": "Spend",
+     "type": "column"
+    },
+    "direction": "desc"
+   }
+  ],
+  "x_axis": {
+   "dimension": {
+    "column_name": "supplier",
+    "data_type": "String",
+    "dimension_name": "supplier"
+   }
+  },
+  "y_axis": {
+   "series": [
+    {
+     "measure": {
+      "aggregation": "sum",
+      "column_name": "base_net_total",
+      "data_type": "Decimal",
+      "measure_name": "Spend"
+     }
+    }
+   ]
+  }
+ },
+ "data_authority": "Viewer",
+ "data_query": "top-10-suppliers_data",
+ "query": "purchase-invoices",
+ "sort_order": 4,
+ "title": "Top 10 Suppliers",
+ "visibility": "Private",
+ "visible_to_roles": []
+}

@@ -1,0 +1,152 @@
+{
+ "is_builder_query": 1,
+ "is_native_query": 0,
+ "is_script_query": 0,
+ "operations": [
+  {
+   "table": {
+    "data_source": "Site DB",
+    "table_name": "tabPayment Ledger Entry",
+    "type": "table"
+   },
+   "type": "source"
+  },
+  {
+   "filters": [
+    {
+     "column": {
+      "column_name": "delinked",
+      "type": "column"
+     },
+     "operator": "=",
+     "value": 0
+    },
+    {
+     "column": {
+      "column_name": "party_type",
+      "type": "column"
+     },
+     "operator": "=",
+     "value": "Customer"
+    },
+    {
+     "column": {
+      "column_name": "against_voucher_type",
+      "type": "column"
+     },
+     "operator": "=",
+     "value": "Sales Invoice"
+    }
+   ],
+   "logical_operator": "And",
+   "type": "filter_group"
+  },
+  {
+   "dimensions": [
+    {
+     "column_name": "against_voucher_no",
+     "data_type": "String",
+     "dimension_name": "against_voucher"
+    }
+   ],
+   "measures": [
+    {
+     "data_type": "Decimal",
+     "expression": {
+      "expression": "sum(amount)",
+      "type": "expression"
+     },
+     "measure_name": "outstanding"
+    }
+   ],
+   "type": "summarize"
+  },
+  {
+   "filters": [
+    {
+     "column": {
+      "column_name": "outstanding",
+      "type": "column"
+     },
+     "operator": ">",
+     "value": 0.5
+    }
+   ],
+   "logical_operator": "And",
+   "type": "filter_group"
+  },
+  {
+   "join_condition": {
+    "left_column": {
+     "column_name": "against_voucher",
+     "type": "column"
+    },
+    "right_column": {
+     "column_name": "name",
+     "type": "column"
+    }
+   },
+   "join_type": "inner",
+   "select_columns": [
+    {
+     "column_name": "company",
+     "type": "column"
+    },
+    {
+     "column_name": "customer",
+     "type": "column"
+    },
+    {
+     "column_name": "due_date",
+     "type": "column"
+    }
+   ],
+   "table": {
+    "data_source": "Site DB",
+    "table_name": "tabSales Invoice",
+    "type": "table"
+   },
+   "type": "join"
+  },
+  {
+   "data_type": "Integer",
+   "expression": {
+    "expression": "date_diff(today(), due_date, 'day')",
+    "type": "expression"
+   },
+   "new_name": "days_overdue",
+   "type": "mutate"
+  },
+  {
+   "data_type": "String",
+   "expression": {
+    "expression": "cases((days_overdue <= 0, '1. Not Due'), (days_overdue <= 30, '2. 1-30 Days'), (days_overdue <= 60, '3. 31-60 Days'), (days_overdue <= 90, '4. 61-90 Days'), else_='5. 90+ Days')",
+    "type": "expression"
+   },
+   "new_name": "bucket",
+   "type": "mutate"
+  },
+  {
+   "data_type": "Decimal",
+   "expression": {
+    "expression": "if_else(days_overdue > 0, outstanding, 0)",
+    "type": "expression"
+   },
+   "new_name": "overdue_outstanding",
+   "type": "mutate"
+  },
+  {
+   "data_type": "Decimal",
+   "expression": {
+    "expression": "if_else(days_overdue > 90, outstanding, 0)",
+    "type": "expression"
+   },
+   "new_name": "over90_outstanding",
+   "type": "mutate"
+  }
+ ],
+ "sort_order": 0,
+ "title": "AR Open Invoices",
+ "use_live_connection": 1,
+ "variables": []
+}

@@ -1,0 +1,73 @@
+{
+ "is_builder_query": 1,
+ "is_native_query": 0,
+ "is_script_query": 0,
+ "operations": [
+  {
+   "table": {
+    "data_source": "Site DB",
+    "table_name": "tabBin",
+    "type": "table"
+   },
+   "type": "source"
+  },
+  {
+   "join_condition": {
+    "join_expression": {
+     "expression": "(t1.item_code == t2.parent) & (t1.warehouse == t2.warehouse)",
+     "type": "expression"
+    }
+   },
+   "join_type": "inner",
+   "select_columns": [
+    {
+     "column_name": "warehouse_reorder_level",
+     "type": "column"
+    },
+    {
+     "column_name": "warehouse_reorder_qty",
+     "type": "column"
+    }
+   ],
+   "table": {
+    "data_source": "Site DB",
+    "table_name": "tabItem Reorder",
+    "type": "table"
+   },
+   "type": "join"
+  },
+  {
+   "filters": [
+    {
+     "column": {
+      "column_name": "projected_qty",
+      "type": "column"
+     },
+     "operator": "<",
+     "value": {
+      "column_name": "warehouse_reorder_level",
+      "type": "column"
+     }
+    }
+   ],
+   "logical_operator": "And",
+   "type": "filter_group"
+  },
+  {
+   "column_names": [
+    "item_code",
+    "warehouse",
+    "company",
+    "actual_qty",
+    "projected_qty",
+    "warehouse_reorder_level",
+    "warehouse_reorder_qty"
+   ],
+   "type": "select"
+  }
+ ],
+ "sort_order": 4,
+ "title": "Reorder Shortfalls",
+ "use_live_connection": 1,
+ "variables": []
+}

@@ -1,0 +1,78 @@
+{
+ "chart_type": "Number",
+ "config": {
+  "comparison": true,
+  "date_column": {
+   "column_name": "posting_date",
+   "data_type": "Date",
+   "dimension_name": "posting_date",
+   "granularity": "month"
+  },
+  "filters": {
+   "filters": [],
+   "logical_operator": "And"
+  },
+  "limit": 100,
+  "number_column_options": [
+   {
+    "decimal": 2,
+    "prefix": "₹ ",
+    "shorten_numbers": true
+   },
+   {
+    "shorten_numbers": false
+   },
+   {
+    "decimal": 2,
+    "prefix": "₹ ",
+    "shorten_numbers": true
+   },
+   {
+    "shorten_numbers": false
+   }
+  ],
+  "number_columns": [
+   {
+    "aggregation": "sum",
+    "column_name": "base_net_total",
+    "data_type": "Decimal",
+    "measure_name": "Revenue"
+   },
+   {
+    "aggregation": "count",
+    "column_name": "name",
+    "data_type": "Integer",
+    "measure_name": "Invoices"
+   },
+   {
+    "aggregation": "avg",
+    "column_name": "base_net_total",
+    "data_type": "Decimal",
+    "measure_name": "Avg Invoice Value"
+   },
+   {
+    "aggregation": "count_distinct",
+    "column_name": "customer",
+    "data_type": "Integer",
+    "measure_name": "Active Customers"
+   }
+  ],
+  "order_by": [
+   {
+    "column": {
+     "column_name": "posting_date",
+     "type": "column"
+    },
+    "direction": "asc"
+   }
+  ],
+  "sparkline": true
+ },
+ "data_authority": "Viewer",
+ "data_query": "sales-kpis_data",
+ "query": "sales-invoices",
+ "sort_order": 0,
+ "title": "Sales KPIs",
+ "visibility": "Private",
+ "visible_to_roles": []
+}

@@ -1,0 +1,62 @@
+{
+ "is_builder_query": 1,
+ "is_native_query": 0,
+ "is_script_query": 0,
+ "operations": [
+  {
+   "table": {
+    "data_source": "Site DB",
+    "table_name": "tabPurchase Invoice Item",
+    "type": "table"
+   },
+   "type": "source"
+  },
+  {
+   "filters": [
+    {
+     "column": {
+      "column_name": "docstatus",
+      "type": "column"
+     },
+     "operator": "=",
+     "value": 1
+    }
+   ],
+   "logical_operator": "And",
+   "type": "filter_group"
+  },
+  {
+   "join_condition": {
+    "left_column": {
+     "column_name": "parent",
+     "type": "column"
+    },
+    "right_column": {
+     "column_name": "name",
+     "type": "column"
+    }
+   },
+   "join_type": "inner",
+   "select_columns": [
+    {
+     "column_name": "posting_date",
+     "type": "column"
+    },
+    {
+     "column_name": "company",
+     "type": "column"
+    }
+   ],
+   "table": {
+    "data_source": "Site DB",
+    "table_name": "tabPurchase Invoice",
+    "type": "table"
+   },
+   "type": "join"
+  }
+ ],
+ "sort_order": 1,
+ "title": "Purchase Invoice Items",
+ "use_live_connection": 1,
+ "variables": []
+}

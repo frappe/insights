@@ -1,0 +1,49 @@
+{
+ "chart_type": "Bar",
+ "config": {
+  "order_by": [
+   {
+    "column": {
+     "column_name": "Month",
+     "type": "column"
+    },
+    "direction": "asc"
+   }
+  ],
+  "split_by": {
+   "dimension": {
+    "column_name": "flow",
+    "data_type": "String",
+    "dimension_name": "Flow"
+   },
+   "max_split_values": 5
+  },
+  "x_axis": {
+   "dimension": {
+    "column_name": "posting_date",
+    "data_type": "Date",
+    "dimension_name": "Month",
+    "granularity": "month"
+   }
+  },
+  "y_axis": {
+   "series": [
+    {
+     "measure": {
+      "aggregation": "sum",
+      "column_name": "amount",
+      "data_type": "Decimal",
+      "measure_name": "Amount"
+     }
+    }
+   ]
+  }
+ },
+ "data_authority": "Viewer",
+ "data_query": "cash-in-vs-out_data",
+ "query": "payments-cash-flow",
+ "sort_order": 9,
+ "title": "Cash In vs Out",
+ "visibility": "Private",
+ "visible_to_roles": []
+}

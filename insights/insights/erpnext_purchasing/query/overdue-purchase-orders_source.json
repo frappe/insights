@@ -1,0 +1,68 @@
+{
+ "is_builder_query": 1,
+ "is_native_query": 0,
+ "is_script_query": 0,
+ "operations": [
+  {
+   "table": {
+    "data_source": "Site DB",
+    "table_name": "tabPurchase Order",
+    "type": "table"
+   },
+   "type": "source"
+  },
+  {
+   "filters": [
+    {
+     "column": {
+      "column_name": "docstatus",
+      "type": "column"
+     },
+     "operator": "=",
+     "value": 1
+    }
+   ],
+   "logical_operator": "And",
+   "type": "filter_group"
+  },
+  {
+   "filters": [
+    {
+     "column": {
+      "column_name": "per_received",
+      "type": "column"
+     },
+     "operator": "<",
+     "value": 100
+    }
+   ],
+   "logical_operator": "And",
+   "type": "filter_group"
+  },
+  {
+   "filters": [
+    {
+     "expression": {
+      "expression": "schedule_date < today()",
+      "type": "expression"
+     }
+    }
+   ],
+   "logical_operator": "And",
+   "type": "filter_group"
+  },
+  {
+   "data_type": "Integer",
+   "expression": {
+    "expression": "date_diff(today(), schedule_date, 'day')",
+    "type": "expression"
+   },
+   "new_name": "days_late",
+   "type": "mutate"
+  }
+ ],
+ "sort_order": 3,
+ "title": "Overdue Purchase Orders",
+ "use_live_connection": 1,
+ "variables": []
+}

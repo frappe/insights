@@ -1,0 +1,33 @@
+{
+ "is_builder_query": 1,
+ "is_native_query": 0,
+ "is_script_query": 0,
+ "operations": [
+  {
+   "table": {
+    "data_source": "Site DB",
+    "table_name": "tabQuotation",
+    "type": "table"
+   },
+   "type": "source"
+  },
+  {
+   "filters": [
+    {
+     "column": {
+      "column_name": "docstatus",
+      "type": "column"
+     },
+     "operator": "=",
+     "value": 1
+    }
+   ],
+   "logical_operator": "And",
+   "type": "filter_group"
+  }
+ ],
+ "sort_order": 2,
+ "title": "Quotations",
+ "use_live_connection": 1,
+ "variables": []
+}

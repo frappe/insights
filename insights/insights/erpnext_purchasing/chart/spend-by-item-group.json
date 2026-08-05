@@ -1,0 +1,30 @@
+{
+ "chart_type": "Donut",
+ "config": {
+  "filters": {
+   "filters": [],
+   "logical_operator": "And"
+  },
+  "label_column": {
+   "column_name": "item_group",
+   "data_type": "String",
+   "dimension_name": "item_group"
+  },
+  "legend_position": "bottom",
+  "limit": 100,
+  "order_by": [],
+  "value_column": {
+   "aggregation": "sum",
+   "column_name": "base_net_amount",
+   "data_type": "Decimal",
+   "measure_name": "Spend"
+  }
+ },
+ "data_authority": "Viewer",
+ "data_query": "spend-by-item-group_data",
+ "query": "purchase-invoice-items",
+ "sort_order": 3,
+ "title": "Spend by Item Group",
+ "visibility": "Private",
+ "visible_to_roles": []
+}

@@ -1,0 +1,50 @@
+{
+ "chart_type": "Table",
+ "config": {
+  "columns": [],
+  "limit": 15,
+  "order_by": [
+   {
+    "column": {
+     "column_name": "stock_value",
+     "type": "column"
+    },
+    "direction": "desc"
+   }
+  ],
+  "rows": [
+   {
+    "column_name": "item_code",
+    "data_type": "String",
+    "dimension_name": "item_code"
+   }
+  ],
+  "values": [
+   {
+    "aggregation": "sum",
+    "column_name": "actual_qty",
+    "data_type": "Decimal",
+    "measure_name": "qty"
+   },
+   {
+    "aggregation": "sum",
+    "column_name": "stock_value",
+    "data_type": "Decimal",
+    "measure_name": "stock_value"
+   },
+   {
+    "aggregation": "min",
+    "column_name": "days_since_movement",
+    "data_type": "Integer",
+    "measure_name": "days_since_movement"
+   }
+  ]
+ },
+ "data_authority": "Viewer",
+ "data_query": "top-items-by-stock-value_data",
+ "query": "stock-ageing",
+ "sort_order": 9,
+ "title": "Top Items by Stock Value",
+ "visibility": "Private",
+ "visible_to_roles": []
+}

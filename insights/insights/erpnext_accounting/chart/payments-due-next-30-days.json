@@ -1,0 +1,61 @@
+{
+ "chart_type": "Table",
+ "config": {
+  "columns": [],
+  "filters": {
+   "filters": [
+    {
+     "column": {
+      "column_name": "days_until_due",
+      "type": "column"
+     },
+     "operator": "<=",
+     "value": 30
+    }
+   ],
+   "logical_operator": "And"
+  },
+  "limit": 50,
+  "order_by": [
+   {
+    "column": {
+     "column_name": "Due Date",
+     "type": "column"
+    },
+    "direction": "asc"
+   }
+  ],
+  "rows": [
+   {
+    "column_name": "due_date",
+    "data_type": "Date",
+    "dimension_name": "Due Date"
+   },
+   {
+    "column_name": "supplier",
+    "data_type": "String",
+    "dimension_name": "Supplier"
+   },
+   {
+    "column_name": "invoice",
+    "data_type": "String",
+    "dimension_name": "Invoice"
+   }
+  ],
+  "values": [
+   {
+    "aggregation": "sum",
+    "column_name": "outstanding",
+    "data_type": "Decimal",
+    "measure_name": "Outstanding"
+   }
+  ]
+ },
+ "data_authority": "Viewer",
+ "data_query": "payments-due-next-30-days_data",
+ "query": "ap-open-invoices",
+ "sort_order": 8,
+ "title": "Payments Due Next 30 Days",
+ "visibility": "Private",
+ "visible_to_roles": []
+}

@@ -1,0 +1,23 @@
+{
+ "chart_type": "Number",
+ "config": {
+  "comparison": false,
+  "number_columns": [
+   {
+    "aggregation": "sum",
+    "column_name": "outstanding",
+    "data_type": "Decimal",
+    "measure_name": "Total AR"
+   }
+  ],
+  "shorten_numbers": true,
+  "sparkline": false
+ },
+ "data_authority": "Viewer",
+ "data_query": "total-ar_data",
+ "query": "ar-open-invoices",
+ "sort_order": 0,
+ "title": "Total AR",
+ "visibility": "Private",
+ "visible_to_roles": []
+}

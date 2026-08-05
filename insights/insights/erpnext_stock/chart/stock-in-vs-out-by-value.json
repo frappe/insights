@@ -1,0 +1,50 @@
+{
+ "chart_type": "Bar",
+ "config": {
+  "limit": 24,
+  "order_by": [
+   {
+    "column": {
+     "column_name": "posting_date",
+     "type": "column"
+    },
+    "direction": "asc"
+   }
+  ],
+  "x_axis": {
+   "dimension": {
+    "column_name": "posting_date",
+    "data_type": "Date",
+    "dimension_name": "posting_date",
+    "granularity": "month"
+   }
+  },
+  "y_axis": {
+   "series": [
+    {
+     "measure": {
+      "aggregation": "sum",
+      "column_name": "incoming_value",
+      "data_type": "Decimal",
+      "measure_name": "incoming_value"
+     }
+    },
+    {
+     "measure": {
+      "aggregation": "sum",
+      "column_name": "outgoing_value",
+      "data_type": "Decimal",
+      "measure_name": "outgoing_value"
+     }
+    }
+   ]
+  }
+ },
+ "data_authority": "Viewer",
+ "data_query": "stock-in-vs-out-by-value_data",
+ "query": "stock-movements",
+ "sort_order": 7,
+ "title": "Stock In vs Out (by Value)",
+ "visibility": "Private",
+ "visible_to_roles": []
+}

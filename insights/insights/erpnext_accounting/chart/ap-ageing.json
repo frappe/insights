@@ -1,0 +1,41 @@
+{
+ "chart_type": "Bar",
+ "config": {
+  "order_by": [
+   {
+    "column": {
+     "column_name": "Ageing Bucket",
+     "type": "column"
+    },
+    "direction": "asc"
+   }
+  ],
+  "x_axis": {
+   "dimension": {
+    "column_name": "bucket",
+    "data_type": "String",
+    "dimension_name": "Ageing Bucket"
+   }
+  },
+  "y_axis": {
+   "series": [
+    {
+     "measure": {
+      "aggregation": "sum",
+      "column_name": "outstanding",
+      "data_type": "Decimal",
+      "measure_name": "Outstanding"
+     }
+    }
+   ],
+   "show_data_labels": true
+  }
+ },
+ "data_authority": "Viewer",
+ "data_query": "ap-ageing_data",
+ "query": "ap-open-invoices",
+ "sort_order": 6,
+ "title": "AP Ageing",
+ "visibility": "Private",
+ "visible_to_roles": []
+}

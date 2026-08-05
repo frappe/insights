@@ -1,0 +1,58 @@
+{
+ "chart_type": "Table",
+ "config": {
+  "columns": [],
+  "filters": {
+   "filters": [],
+   "logical_operator": "And"
+  },
+  "limit": 20,
+  "order_by": [
+   {
+    "column": {
+     "column_name": "Days Late",
+     "type": "column"
+    },
+    "direction": "desc"
+   }
+  ],
+  "rows": [
+   {
+    "column_name": "supplier",
+    "data_type": "String",
+    "dimension_name": "Supplier"
+   },
+   {
+    "column_name": "name",
+    "data_type": "String",
+    "dimension_name": "Purchase Order"
+   },
+   {
+    "column_name": "schedule_date",
+    "data_type": "Date",
+    "dimension_name": "Required By"
+   }
+  ],
+  "values": [
+   {
+    "aggregation": "max",
+    "column_name": "days_late",
+    "data_type": "Integer",
+    "measure_name": "Days Late"
+   },
+   {
+    "aggregation": "sum",
+    "column_name": "base_grand_total",
+    "data_type": "Decimal",
+    "measure_name": "Order Value"
+   }
+  ]
+ },
+ "data_authority": "Viewer",
+ "data_query": "overdue-purchase-orders_data",
+ "query": "overdue-purchase-orders_source",
+ "sort_order": 6,
+ "title": "Overdue Purchase Orders",
+ "visibility": "Private",
+ "visible_to_roles": []
+}

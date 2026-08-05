@@ -1,0 +1,45 @@
+{
+ "chart_type": "Row",
+ "config": {
+  "filters": {
+   "filters": [],
+   "logical_operator": "And"
+  },
+  "limit": 10,
+  "order_by": [
+   {
+    "column": {
+     "column_name": "Revenue",
+     "type": "column"
+    },
+    "direction": "desc"
+   }
+  ],
+  "x_axis": {
+   "dimension": {
+    "column_name": "customer",
+    "data_type": "String",
+    "dimension_name": "customer"
+   }
+  },
+  "y_axis": {
+   "series": [
+    {
+     "measure": {
+      "aggregation": "sum",
+      "column_name": "base_net_total",
+      "data_type": "Decimal",
+      "measure_name": "Revenue"
+     }
+    }
+   ]
+  }
+ },
+ "data_authority": "Viewer",
+ "data_query": "top-10-customers_data",
+ "query": "sales-invoices",
+ "sort_order": 3,
+ "title": "Top 10 Customers",
+ "visibility": "Private",
+ "visible_to_roles": []
+}

@@ -1,0 +1,140 @@
+{
+ "items": [
+  {
+   "default_operator": "within",
+   "default_value": "Last 12 months",
+   "filter_name": "Date Range",
+   "filter_type": "Date",
+   "icon": "calendar",
+   "layout": {
+    "h": 1,
+    "i": "filter-date-range",
+    "w": 4,
+    "x": 0,
+    "y": 0
+   },
+   "links": {
+    "revenue-by-item-group": "`sales-invoice-items`.`posting_date`",
+    "revenue-trend": "`sales-invoices`.`posting_date`",
+    "sales-kpis": "`sales-invoices`.`posting_date`",
+    "top-10-customers": "`sales-invoices`.`posting_date`",
+    "top-10-items": "`sales-invoice-items`.`posting_date`"
+   },
+   "type": "filter"
+  },
+  {
+   "filter_name": "Company",
+   "filter_type": "String",
+   "icon": "building-2",
+   "layout": {
+    "h": 1,
+    "i": "filter-company",
+    "w": 4,
+    "x": 4,
+    "y": 0
+   },
+   "links": {
+    "overdue-deliveries": "`overdue-deliveries_source`.`company`",
+    "quotations-lost": "`quotations`.`company`",
+    "revenue-by-item-group": "`sales-invoice-items`.`company`",
+    "revenue-trend": "`sales-invoices`.`company`",
+    "sales-kpis": "`sales-invoices`.`company`",
+    "top-10-customers": "`sales-invoices`.`company`",
+    "top-10-items": "`sales-invoice-items`.`company`"
+   },
+   "type": "filter"
+  },
+  {
+   "chart": "sales-kpis",
+   "layout": {
+    "h": 3,
+    "i": "chart-sales-kpis",
+    "w": 20,
+    "x": 0,
+    "y": 1
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "revenue-trend",
+   "layout": {
+    "h": 9,
+    "i": "chart-revenue-trend",
+    "w": 12,
+    "x": 0,
+    "y": 4
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "revenue-by-item-group",
+   "layout": {
+    "h": 9,
+    "i": "chart-revenue-by-item-group",
+    "w": 8,
+    "x": 12,
+    "y": 4
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "top-10-customers",
+   "layout": {
+    "h": 9,
+    "i": "chart-top-10-customers",
+    "w": 10,
+    "x": 0,
+    "y": 13
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "top-10-items",
+   "layout": {
+    "h": 9,
+    "i": "chart-top-10-items",
+    "w": 10,
+    "x": 10,
+    "y": 13
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "quotation-funnel",
+   "layout": {
+    "h": 9,
+    "i": "chart-quotation-funnel",
+    "w": 12,
+    "x": 0,
+    "y": 22
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "quotations-lost",
+   "layout": {
+    "h": 9,
+    "i": "chart-quotations-lost",
+    "w": 8,
+    "x": 12,
+    "y": 22
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "overdue-deliveries",
+   "layout": {
+    "h": 9,
+    "i": "chart-overdue-deliveries",
+    "w": 20,
+    "x": 0,
+    "y": 31
+   },
+   "type": "chart"
+  }
+ ],
+ "title": "Sales Performance",
+ "vertical_compact_layout": 0,
+ "visibility": "Private",
+ "visible_to_roles": []
+}

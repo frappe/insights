@@ -1,0 +1,28 @@
+{
+ "chart_type": "Number",
+ "config": {
+  "comparison": false,
+  "decimal": 2,
+  "number_column_options": [
+   {}
+  ],
+  "number_columns": [
+   {
+    "aggregation": "sum",
+    "column_name": "stock_value_difference",
+    "data_type": "Decimal",
+    "measure_name": "Stock Value Change"
+   }
+  ],
+  "order_by": [],
+  "shorten_numbers": true,
+  "sparkline": false
+ },
+ "data_authority": "Viewer",
+ "data_query": "stock-value-change_data",
+ "query": "stock-movements",
+ "sort_order": 1,
+ "title": "Stock Value Change",
+ "visibility": "Private",
+ "visible_to_roles": []
+}

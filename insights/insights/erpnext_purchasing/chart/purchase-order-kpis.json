@@ -1,0 +1,58 @@
+{
+ "chart_type": "Number",
+ "config": {
+  "comparison": true,
+  "date_column": {
+   "column_name": "transaction_date",
+   "data_type": "Date",
+   "dimension_name": "transaction_date",
+   "granularity": "month"
+  },
+  "filters": {
+   "filters": [],
+   "logical_operator": "And"
+  },
+  "limit": 100,
+  "number_column_options": [
+   {
+    "shorten_numbers": false
+   },
+   {
+    "decimal": 2,
+    "prefix": "₹ ",
+    "shorten_numbers": true
+   }
+  ],
+  "number_columns": [
+   {
+    "aggregation": "count",
+    "column_name": "name",
+    "data_type": "Integer",
+    "measure_name": "PO Count"
+   },
+   {
+    "aggregation": "avg",
+    "column_name": "base_grand_total",
+    "data_type": "Decimal",
+    "measure_name": "Avg PO Value"
+   }
+  ],
+  "order_by": [
+   {
+    "column": {
+     "column_name": "transaction_date",
+     "type": "column"
+    },
+    "direction": "asc"
+   }
+  ],
+  "sparkline": true
+ },
+ "data_authority": "Viewer",
+ "data_query": "purchase-order-kpis_data",
+ "query": "purchase-orders",
+ "sort_order": 1,
+ "title": "Purchase Order KPIs",
+ "visibility": "Private",
+ "visible_to_roles": []
+}

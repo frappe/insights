@@ -1,0 +1,28 @@
+{
+ "chart_type": "Number",
+ "config": {
+  "comparison": false,
+  "decimal": 0,
+  "number_column_options": [
+   {}
+  ],
+  "number_columns": [
+   {
+    "aggregation": "count",
+    "column_name": "count",
+    "data_type": "Integer",
+    "measure_name": "Items Below Reorder"
+   }
+  ],
+  "order_by": [],
+  "shorten_numbers": false,
+  "sparkline": false
+ },
+ "data_authority": "Viewer",
+ "data_query": "items-below-reorder-level_data",
+ "query": "reorder-shortfalls",
+ "sort_order": 2,
+ "title": "Items Below Reorder Level",
+ "visibility": "Private",
+ "visible_to_roles": []
+}

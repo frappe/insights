@@ -1,0 +1,47 @@
+{
+ "chart_type": "Line",
+ "config": {
+  "filters": {
+   "filters": [],
+   "logical_operator": "And"
+  },
+  "limit": 100,
+  "order_by": [
+   {
+    "column": {
+     "column_name": "posting_date",
+     "type": "column"
+    },
+    "direction": "asc"
+   }
+  ],
+  "x_axis": {
+   "dimension": {
+    "column_name": "posting_date",
+    "data_type": "Date",
+    "dimension_name": "posting_date",
+    "granularity": "month"
+   }
+  },
+  "y_axis": {
+   "series": [
+    {
+     "measure": {
+      "aggregation": "sum",
+      "column_name": "base_net_total",
+      "data_type": "Decimal",
+      "measure_name": "Spend"
+     }
+    }
+   ],
+   "show_data_labels": false
+  }
+ },
+ "data_authority": "Viewer",
+ "data_query": "spend-trend_data",
+ "query": "purchase-invoices",
+ "sort_order": 2,
+ "title": "Spend Trend",
+ "visibility": "Private",
+ "visible_to_roles": []
+}

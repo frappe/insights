@@ -1,0 +1,27 @@
+{
+ "chart_type": "Number",
+ "config": {
+  "comparison": false,
+  "decimal": 1,
+  "number_columns": [
+   {
+    "data_type": "Decimal",
+    "expression": {
+     "expression": "sum(overdue_outstanding) / sum(outstanding) * 100",
+     "type": "expression"
+    },
+    "measure_name": "AR Overdue"
+   }
+  ],
+  "shorten_numbers": false,
+  "sparkline": false,
+  "suffix": "%"
+ },
+ "data_authority": "Viewer",
+ "data_query": "ar-overdue_data",
+ "query": "ar-open-invoices",
+ "sort_order": 2,
+ "title": "AR Overdue %",
+ "visibility": "Private",
+ "visible_to_roles": []
+}

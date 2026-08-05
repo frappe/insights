@@ -1,0 +1,23 @@
+{
+ "chart_type": "Number",
+ "config": {
+  "comparison": false,
+  "number_columns": [
+   {
+    "aggregation": "sum",
+    "column_name": "outstanding",
+    "data_type": "Decimal",
+    "measure_name": "Total AP"
+   }
+  ],
+  "shorten_numbers": true,
+  "sparkline": false
+ },
+ "data_authority": "Viewer",
+ "data_query": "total-ap_data",
+ "query": "ap-open-invoices",
+ "sort_order": 1,
+ "title": "Total AP",
+ "visibility": "Private",
+ "visible_to_roles": []
+}

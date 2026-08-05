@@ -1,0 +1,50 @@
+{
+ "chart_type": "Table",
+ "config": {
+  "columns": [],
+  "limit": 10,
+  "order_by": [
+   {
+    "column": {
+     "column_name": "Overdue",
+     "type": "column"
+    },
+    "direction": "desc"
+   }
+  ],
+  "rows": [
+   {
+    "column_name": "customer",
+    "data_type": "String",
+    "dimension_name": "Customer"
+   }
+  ],
+  "values": [
+   {
+    "aggregation": "sum",
+    "column_name": "outstanding",
+    "data_type": "Decimal",
+    "measure_name": "Outstanding"
+   },
+   {
+    "aggregation": "sum",
+    "column_name": "overdue_outstanding",
+    "data_type": "Decimal",
+    "measure_name": "Overdue"
+   },
+   {
+    "aggregation": "max",
+    "column_name": "days_overdue",
+    "data_type": "Integer",
+    "measure_name": "Oldest Days"
+   }
+  ]
+ },
+ "data_authority": "Viewer",
+ "data_query": "top-overdue-customers_data",
+ "query": "ar-open-invoices",
+ "sort_order": 7,
+ "title": "Top Overdue Customers",
+ "visibility": "Private",
+ "visible_to_roles": []
+}

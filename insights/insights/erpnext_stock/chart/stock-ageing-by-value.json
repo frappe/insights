@@ -1,0 +1,40 @@
+{
+ "chart_type": "Bar",
+ "config": {
+  "order_by": [
+   {
+    "column": {
+     "column_name": "ageing_bucket",
+     "type": "column"
+    },
+    "direction": "asc"
+   }
+  ],
+  "x_axis": {
+   "dimension": {
+    "column_name": "ageing_bucket",
+    "data_type": "String",
+    "dimension_name": "ageing_bucket"
+   }
+  },
+  "y_axis": {
+   "series": [
+    {
+     "measure": {
+      "aggregation": "sum",
+      "column_name": "stock_value",
+      "data_type": "Decimal",
+      "measure_name": "stock_value"
+     }
+    }
+   ]
+  }
+ },
+ "data_authority": "Viewer",
+ "data_query": "stock-ageing-by-value_data",
+ "query": "stock-ageing",
+ "sort_order": 6,
+ "title": "Stock Ageing by Value",
+ "visibility": "Private",
+ "visible_to_roles": []
+}

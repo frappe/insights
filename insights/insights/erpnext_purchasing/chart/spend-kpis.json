@@ -1,0 +1,58 @@
+{
+ "chart_type": "Number",
+ "config": {
+  "comparison": true,
+  "date_column": {
+   "column_name": "posting_date",
+   "data_type": "Date",
+   "dimension_name": "posting_date",
+   "granularity": "month"
+  },
+  "filters": {
+   "filters": [],
+   "logical_operator": "And"
+  },
+  "limit": 100,
+  "number_column_options": [
+   {
+    "decimal": 2,
+    "prefix": "₹ ",
+    "shorten_numbers": true
+   },
+   {
+    "shorten_numbers": false
+   }
+  ],
+  "number_columns": [
+   {
+    "aggregation": "sum",
+    "column_name": "base_net_total",
+    "data_type": "Decimal",
+    "measure_name": "Spend"
+   },
+   {
+    "aggregation": "count_distinct",
+    "column_name": "supplier",
+    "data_type": "Integer",
+    "measure_name": "Active Suppliers"
+   }
+  ],
+  "order_by": [
+   {
+    "column": {
+     "column_name": "posting_date",
+     "type": "column"
+    },
+    "direction": "asc"
+   }
+  ],
+  "sparkline": true
+ },
+ "data_authority": "Viewer",
+ "data_query": "spend-kpis_data",
+ "query": "purchase-invoices",
+ "sort_order": 0,
+ "title": "Spend KPIs",
+ "visibility": "Private",
+ "visible_to_roles": []
+}

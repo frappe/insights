@@ -1,0 +1,28 @@
+{
+ "chart_type": "Number",
+ "config": {
+  "comparison": false,
+  "decimal": 2,
+  "number_column_options": [
+   {}
+  ],
+  "number_columns": [
+   {
+    "aggregation": "sum",
+    "column_name": "stock_value",
+    "data_type": "Decimal",
+    "measure_name": "Total Stock Value"
+   }
+  ],
+  "order_by": [],
+  "shorten_numbers": true,
+  "sparkline": false
+ },
+ "data_authority": "Viewer",
+ "data_query": "total-stock-value_data",
+ "query": "stock-balances",
+ "sort_order": 0,
+ "title": "Total Stock Value",
+ "visibility": "Private",
+ "visible_to_roles": []
+}
