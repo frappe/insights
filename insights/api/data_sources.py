@@ -1,8 +1,5 @@
 import frappe
-<<<<<<< HEAD
-from frappe.utils.caching import redis_cache, site_cache
-=======
->>>>>>> 4e00ceee (fix: apply user permissions in data source exploration (#1279))
+from frappe.utils.caching import redis_cache
 
 from insights import notify
 from insights.decorators import insights_whitelist, validate_type
@@ -351,15 +348,8 @@ def get_permitted_ibis_table(data_source: str, table_name: str):
 @insights_whitelist()
 @validate_type
 def get_data_source_table(data_source: str, table_name: str):
-<<<<<<< HEAD
-    check_table_permission(data_source, table_name)
-    ds = frappe.get_doc("Insights Data Source v3", data_source)
-    q = ds.get_ibis_table(table_name).head(100)
-    data, time_taken = execute_ibis_query(q, cache_expiry=24 * 60 * 60)
-=======
     q = get_permitted_ibis_table(data_source, table_name).head(100)
     data, _ = execute_ibis_query(q, cache_expiry=24 * 60 * 60)
->>>>>>> 4e00ceee (fix: apply user permissions in data source exploration (#1279))
 
     return {
         "table_name": table_name,
