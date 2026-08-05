@@ -1,4 +1,5 @@
-// The island's data path: `insights.api.viewer`, and nothing else.
+// The island's data path: `insights.api.viewer`, plus the one write a reader can
+// make (duplicate, below).
 //
 // An island mounts for a desk user who may hold no Insights role, so it names
 // the content and the server decides what runs — unlike the SPA, which reaches
@@ -57,6 +58,19 @@ export function fetchFilterValues(
 	search_term?: string,
 ): Promise<string[]> {
 	return call('insights.api.viewer.get_filter_values', { dashboard, filter_name, search_term })
+}
+
+/** Where a duplicate landed: the workbook it made, and the dashboard inside it. */
+export type DuplicatedDashboard = { workbook: string; dashboard: string }
+
+/**
+ * Copy a dashboard's closure into a workbook of the caller's own.
+ *
+ * Shipped content is read-only on a site, so this is the only way to change it.
+ * The server decides who may: an authoring seat, and read on the dashboard.
+ */
+export function duplicateDashboard(dashboard: string): Promise<DuplicatedDashboard> {
+	return call('insights.api.bundles.duplicate_dashboard', { dashboard })
 }
 
 export type ViewerChartOptions = {

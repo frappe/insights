@@ -1,0 +1,182 @@
+# Copyright (c) 2025, Frappe Technologies Pvt. Ltd. and contributors
+# For license information, please see license.txt
+
+"""Duplicate to edit: the customization floor.
+
+Standard content is read-only on a site, so taking a copy is the only way to
+change a shipped dashboard. The copy is an ordinary user document — owned by
+whoever asked for it, in a workbook of their own, editable — and it is never
+handed back for the shipped logical id: the resolver keys that lookup on
+`is_standard`, which a copy is not.
+
+What is copied is the dashboard's closure: the dashboard, the charts its items
+name, and the queries those charts read, including each chart's `data_query`
+and any query a query reads. That is the same closure export writes into a
+bundle, so this uses that walk rather than growing a second one.
+
+The copy carries the `logical_id` it was made from. That is provenance and
+nothing else — it says which shipped item this document started as, which is
+what a real customization model (ticket 10) needs to line a fork up against the
+original it drifted from.
+
+Two things are deliberately not carried over the same way:
+
+- **The audience does not come along.** A shipped `visibility` is the vendor's
+  declaration about the original; a copy is the duplicator's own draft, so it
+  starts at `Private` and is published, if ever, by its new owner. Duplicating
+  is not a way to re-publish someone else's audience.
+- **`data_authority` does come along, but the authority *user* changes.** The
+  authority is how the content is meant to run, so it is copied as declared. The
+  user it resolves to is the document owner (see `data_authority.py`), and the
+  copy's owner is the duplicator — so an `Author` chart in a copy runs under the
+  person who duplicated it, never under whoever owned the original. A copy can
+  therefore never show rows its owner could not already reach.
+
+The source is only ever read here. Nothing below saves a document it did not
+create.
+"""
+
+import frappe
+from frappe import _
+
+from insights.bundle_export import LINK_COLUMN, _closure
+from insights.bundles import (
+    CARRIED_FIELDS,
+    CHART,
+    CHILD_FIELDS,
+    DASHBOARD,
+    QUERY,
+)
+from insights.resolver import resolve_for_read
+
+WORKBOOK = "Insights Workbook"
+PRIVATE = "Private"
+
+
+def duplicate_dashboard(reference: str) -> dict:
+    """Copy a dashboard's closure into a new workbook the caller owns.
+
+    `reference` is any form the resolver accepts, read-checked the same way
+    every other consumer path reads content. The read on the dashboard is the
+    whole check: its audience is what carries the charts on it, and the queries
+    behind those charts are exactly what a viewer is never handed directly.
+
+    Returns the workbook and the dashboard copy inside it — what it takes to
+    open the copy in the builder.
+    """
+    name = resolve_for_read(DASHBOARD, reference)
+    source = frappe.get_doc(DASHBOARD, name)
+    docs = _closure(name)
+
+    workbook = frappe.new_doc(WORKBOOK)
+    workbook.title = _("{0} (copy)").format(source.title or _("Dashboard"))
+    workbook.insert()
+
+    # keyed by (doctype, docname): the closure is written queries first, then
+    # charts, then the dashboard, so every reference is already copied when the
+    # document holding it is written
+    copies: dict[tuple[str, str], str] = {}
+    for doc in docs:
+        copies[(doc.doctype, str(doc.name))] = _copy(doc, workbook.name, copies)
+
+    return {"workbook": workbook.name, "dashboard": copies[(DASHBOARD, name)]}
+
+
+def _copy(doc, workbook: str, copies: dict) -> str:
+    """One document as the caller's own, references repointed at the copies.
+
+    `CARRIED_FIELDS` is the whole of what comes across — the same set a bundle
+    ships, which is content and only content. Everything else on the document is
+    site-side (the workbook, folders, previews), derived by a controller (a
+    dashboard's slug and linked charts, a chart's empty `data_query`), or
+    identity, which this function decides.
+    """
+    copy = frappe.new_doc(doc.doctype)
+    for fieldname in CARRIED_FIELDS[doc.doctype]:
+        copy.set(fieldname, _value(doc, fieldname, workbook, copies))
+
+    copy.workbook = workbook
+    # what it was made from, without the standing that came with it
+    copy.logical_id = doc.get("logical_id")
+    copy.is_standard = 0
+    copy.insert()
+    return copy.name
+
+
+def _value(doc, fieldname: str, workbook: str, copies: dict):
+    if fieldname == "visibility":
+        return PRIVATE
+    if fieldname == "visible_to_roles":
+        return []
+    if fieldname in CHILD_FIELDS:
+        return [row.as_dict(no_default_fields=True) for row in doc.get(fieldname) or []]
+    if fieldname == "operations":
+        return frappe.as_json(_operations(doc, workbook, copies))
+    if fieldname == "items":
+        return frappe.as_json(_items(doc, copies))
+    if doc.doctype == CHART and fieldname in ("query", "data_query"):
+        return _copy_of(QUERY, doc.get(fieldname), copies) if doc.get(fieldname) else None
+
+    return doc.get(fieldname)
+
+
+def _operations(doc, workbook: str, copies: dict):
+    """A query's operations, reading from the copies instead of the originals.
+
+    The workbook id riding along beside a query reference is site state the
+    builder puts there; it follows the copy into its new workbook.
+    """
+
+    def walk(node):
+        if isinstance(node, dict):
+            if node.get("query_name"):
+                node["query_name"] = _copy_of(QUERY, node["query_name"], copies)
+                if "workbook" in node:
+                    node["workbook"] = workbook
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                walk(value)
+
+    operations = frappe.parse_json(doc.get("operations") or "[]")
+    walk(operations)
+    return operations
+
+
+def _items(doc, copies: dict):
+    """A dashboard's items, pointed at the copied charts and queries."""
+    items = frappe.parse_json(doc.get("items") or "[]")
+    for entry in items:
+        if entry.get("type") == "chart" and entry.get("chart"):
+            entry["chart"] = _copy_of(CHART, entry["chart"], copies)
+
+        if entry.get("type") == "filter":
+            entry["links"] = _links(entry.get("links"), copies)
+    return items
+
+
+def _links(links, copies: dict) -> dict:
+    """Filter links, keeping only the ones the copy can honour.
+
+    A link naming a chart that is not on the dashboard, or a query no chart on
+    it reads, does nothing on the original either — it is left behind rather
+    than carried as a reference into content it cannot reach.
+    """
+    copied = {}
+    for chart, column in (links or {}).items():
+        match = LINK_COLUMN.match(column or "")
+        query = copies.get((QUERY, match.group(1))) if match else None
+        target = copies.get((CHART, str(chart)))
+        if query and target:
+            copied[target] = f"`{query}`.`{match.group(2)}`"
+    return copied
+
+
+def _copy_of(doctype: str, docname, copies: dict) -> str:
+    name = copies.get((doctype, str(docname)))
+    if not name:
+        # the closure is what the dashboard needs; a reference outside it means
+        # the walk and this copy disagree, and half a copy is worse than none
+        frappe.throw(_("{0} {1} is referenced by this dashboard but was not copied").format(doctype, docname))
+    return name

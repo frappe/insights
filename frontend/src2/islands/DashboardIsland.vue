@@ -6,7 +6,7 @@ import dayjs from '../helpers/dayjs'
 import { navigate } from '../helpers/navigation'
 import { __ } from '../translation'
 import { readFilters, writeFilters } from './filter_storage'
-import { fetchDashboard, ViewerDashboard, ViewerFilters } from './viewer'
+import { duplicateDashboard, fetchDashboard, ViewerDashboard, ViewerFilters } from './viewer'
 import ViewerChart from './ViewerChart.vue'
 import ViewerFilterBar from './ViewerFilterBar.vue'
 
@@ -79,14 +79,24 @@ const freshness = computed(() => {
 	return times.length ? dayjs(Math.min(...times)).format('h:mm a') : ''
 })
 
+const duplicating = ref(false)
+const duplicateFailed = ref(false)
+
 const menuOptions = computed(() => {
-	// ticket 22 adds "Duplicate to edit" here, on `doc.can_duplicate`
 	return [
 		doc.value?.can_edit && doc.value?.workbook
 			? {
 					label: __('Edit in Insights'),
 					icon: 'lucide-external-link',
 					onClick: openBuilder,
+			  }
+			: null,
+		// shipped content is read-only, so a copy is the only way to change it
+		doc.value?.can_duplicate
+			? {
+					label: duplicating.value ? __('Duplicating...') : __('Duplicate to edit'),
+					icon: 'lucide-copy',
+					onClick: duplicate,
 			  }
 			: null,
 	].filter(Boolean)
@@ -96,6 +106,25 @@ function openBuilder() {
 	if (!doc.value?.workbook) return
 	// the island has no router: the navigation adapter opens Insights in a new tab
 	navigate(`/workbook/${doc.value.workbook}/dashboard/${doc.value.name}`)
+}
+
+// The copy is the caller's own document in a workbook of their own, so it lands
+// in the builder rather than here. Copying a closure is a handful of inserts,
+// but it is a round trip either way: the title row says so while it runs, and
+// says so if it failed — the menu is closed by then and there is nowhere else
+// on this page for the answer to go.
+async function duplicate() {
+	if (!doc.value || duplicating.value) return
+	duplicating.value = true
+	duplicateFailed.value = false
+	try {
+		const copy = await duplicateDashboard(doc.value.name)
+		navigate(`/workbook/${copy.workbook}/dashboard/${copy.dashboard}`)
+	} catch (error) {
+		duplicateFailed.value = true
+	} finally {
+		duplicating.value = false
+	}
 }
 </script>
 
@@ -116,7 +145,16 @@ function openBuilder() {
 			<div class="flex items-center justify-between gap-2 px-4 pt-4">
 				<div class="flex items-baseline gap-2 overflow-hidden">
 					<h1 class="truncate text-lg font-medium text-ink-gray-8">{{ doc.title }}</h1>
-					<span v-if="freshness" class="flex-shrink-0 text-p-sm text-ink-gray-5">
+					<span v-if="duplicating" class="flex-shrink-0 text-p-sm text-ink-gray-5">
+						{{ __('Duplicating...') }}
+					</span>
+					<span
+						v-else-if="duplicateFailed"
+						class="flex-shrink-0 text-p-sm text-ink-red-6"
+					>
+						{{ __('Could not duplicate this dashboard') }}
+					</span>
+					<span v-else-if="freshness" class="flex-shrink-0 text-p-sm text-ink-gray-5">
 						{{ __('as of') }} {{ freshness }}
 					</span>
 				</div>
