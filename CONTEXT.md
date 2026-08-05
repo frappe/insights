@@ -78,6 +78,26 @@ shared runtime. Declared via the `ui_islands` hook; Insights ships `insights.das
 and `insights.chart`.
 _Avoid_: widget, block, embed (embed = the public iframe-sharing feature)
 
+**Bundle**:
+The unit an app ships analytics in — an `insights/<bundle>/` folder holding one JSON
+file per named item in typed subfolders (`query/`, `chart/`, `dashboard/`), plus a
+`bundle.json`. References inside a bundle are logical names, never docnames. The
+folder organizes; it does not identify, so item names are flat across an app.
+_Avoid_: template (the retired import-a-copy channel), package
+
+**Standard content**:
+What a bundle becomes on a site: real documents, flagged `is_standard`, identified
+by `{app}/{name}` — synced on migrate, so shipped content exists everywhere and a
+reference to it never dangles. Read-only outside developer mode; a site that wants
+it different duplicates.
+_Avoid_: imported workbook, shipped copy
+
+**Slug**:
+A dashboard's readable URL handle (`sales-performance`), assigned once and only
+ever used from outside. The resolver accepts it beside the logical id and the
+docname; nothing internal references it.
+_Avoid_: route, permalink
+
 ### Sharing & governance
 
 **Visibility**:
@@ -97,10 +117,6 @@ A named group of users that grants access to resources (data sources, tables).
 
 **Resource Permission**:
 A grant tying a team to one specific resource.
-
-**Template**:
-A pre-built workbook shipped by any installed app via the `insights_workbook_templates`
-hook; imported as one shared, Administrator-owned copy per site.
 
 **Alert**:
 A scheduled check on a query's results that notifies recipients (email or Telegram)
