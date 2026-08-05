@@ -1506,6 +1506,36 @@ export function setDimensionNames(config: any) {
 	return config
 }
 
+// Every saved config passes through here before anything reads it: the option
+// builders reach into the slots without guarding, and a config saved by an older
+// version may not have them. The chart store runs it on load, and the viewer
+// endpoint's config runs it too — a card drawn on a desk page and the same card
+// in the builder must not disagree about what an old chart looks like.
+export function normalizeChartConfig(config: any, chart_type: string) {
+	config.order_by = config.order_by || []
+	config.limit = config.limit || 100
+
+	if ('x_axis' in config && config.x_axis) {
+		config.x_axis = handleOldXAxisConfig(config.x_axis)
+	}
+	if ('y_axis' in config && Array.isArray(config.y_axis)) {
+		config.y_axis = handleOldYAxisConfig(config.y_axis)
+	}
+	if ('split_by' in config && config.split_by) {
+		config.split_by = handleOldXAxisConfig(config.split_by)
+	}
+	if (chart_type === 'Funnel') {
+		config.label_position = config.label_position || 'left'
+	}
+	if (chart_type === 'Donut') {
+		config.legend_position = config.legend_position || 'bottom'
+	}
+
+	config = setDimensionNames(config)
+	config = ensureConfigSlots(config, chart_type)
+	return config
+}
+
 export function getGranularity(dimension_name: string, config: ChartConfig) {
 	if ('x_axis' in config && config.x_axis.dimension.dimension_name === dimension_name) {
 		return config.x_axis.dimension.granularity

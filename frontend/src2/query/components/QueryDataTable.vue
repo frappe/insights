@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Button } from 'frappe-ui'
-import { Bell, Download } from 'lucide-vue-next'
+import { Download } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import DataTable from '../../components/DataTable.vue'
 import ExportDialog from '../../components/ExportDialog.vue'
@@ -14,13 +14,10 @@ import {
 
 import { column, filter_group, parseFilterString } from '../helpers'
 import { Query } from '../query'
-import AlertSetupDialog from './AlertSetupDialog.vue'
-import QueryAlertsDialog from './QueryAlertsDialog.vue'
 import session from '../../session'
 
 const props = defineProps<{
 	query: Query
-	enableAlerts?: boolean
 	enableColumnRename?: boolean
 	enableSort?: boolean
 	enableDrillDown?: boolean
@@ -91,9 +88,6 @@ async function onDrillDown(column: QueryResultColumn, row: QueryResultRow) {
 	const query = await props.query.getDrillDownQuery(column, row)
 	if (query) emit('drillDown', query)
 }
-
-const showAlertsDialog = ref(false)
-const currentAlertName = ref('')
 
 // Export dialog state
 const showExportDialog = ref(false)
@@ -195,12 +189,12 @@ function onFilterChange(filters: Record<string, string>) {
 			<slot name="header-suffix" :column="column" />
 		</template>
 		<template #footer-right-actions>
-			<Button v-if="enableAlerts" variant="ghost" @click="showAlertsDialog = true">
-				<template #icon>
-					<Bell class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
-				</template>
-			</Button>
-			<Button v-if="session.user.can_download" variant="ghost" @click="openExport">
+			<slot name="footer-actions" />
+			<Button
+				v-if="session.user.can_download && props.query.exportResults"
+				variant="ghost"
+				@click="openExport"
+			>
 				<template #icon>
 					<Download class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 				</template>
@@ -217,21 +211,5 @@ function onFilterChange(filters: Record<string, string>) {
 		:default-filename="exportDefaultName"
 		@export="onExport"
 		@cancel="props.query.cancelDownload"
-	/>
-
-	<QueryAlertsDialog
-		v-if="showAlertsDialog"
-		v-model="showAlertsDialog"
-		:query="props.query"
-		@set-current-alert-name="currentAlertName = $event"
-	>
-	</QueryAlertsDialog>
-
-	<AlertSetupDialog
-		v-if="currentAlertName"
-		:modelValue="Boolean(currentAlertName)"
-		@update:model-value="!$event ? (currentAlertName = '') : undefined"
-		:query="props.query"
-		:alert_name="currentAlertName"
 	/>
 </template>

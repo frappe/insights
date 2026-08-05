@@ -1,51 +1,14 @@
 <script setup lang="ts">
-import { AlertTriangle } from 'lucide-vue-next'
-import { computed, watch } from 'vue'
-import useChart from '../charts/chart'
-import ChartBody from '../charts/components/ChartBody.vue'
-import { __ } from '../translation'
-import { AdhocFilters } from '../types/query.types'
+import ViewerChart from './ViewerChart.vue'
+import { ViewerFilters } from './viewer'
 
-const props = defineProps<{ chart: string; filters?: AdhocFilters }>()
-
-const chart = computed(() => useChart(props.chart))
-
-// Either the document is on its way, or the load failed and there is nothing to
-// render. The store reports both through the same two flags.
-const loading = computed(() => chart.value.loading)
-const failed = computed(() => !chart.value.loading && !chart.value.isloaded)
-
-watch(
-	[() => props.chart, () => props.filters, () => chart.value.isloaded],
-	() => {
-		const current = chart.value
-		// A viewer never writes the chart back.
-		current.autoSave = false
-		if (!current.isloaded) return
-		current.dataQuery.adhocFilters = props.filters
-		current.refresh()
-	},
-	{ immediate: true, deep: true },
-)
+// The card is all this island is. Everything it does — load, skeleton, degrade —
+// is what a card on the dashboard grid does, so the two share one component.
+defineProps<{ chart: string; dashboard?: string; filters?: ViewerFilters }>()
 </script>
 
 <template>
-	<div class="h-full w-full">
-		<div
-			v-if="failed"
-			class="flex h-full w-full flex-col items-center justify-center gap-1 rounded border border-outline-gray-2 bg-surface-base"
-		>
-			<AlertTriangle class="h-6 w-6 text-ink-gray-4" stroke-width="1" />
-			<p class="text-p-base text-ink-gray-5">{{ __('This chart is not available') }}</p>
-		</div>
-
-		<div
-			v-else-if="loading"
-			class="h-full w-full animate-pulse rounded border border-outline-gray-2 bg-surface-gray-2"
-		/>
-
-		<ChartBody v-else :chart="chart" />
-	</div>
+	<ViewerChart :chart="chart" :dashboard="dashboard" :filters="filters" />
 </template>
 
 <style>

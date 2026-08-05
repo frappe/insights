@@ -4,7 +4,8 @@ import { RefreshCcw } from 'lucide-vue-next'
 import { computed } from 'vue'
 import { titleCase } from '../../helpers'
 import { FIELDTYPES } from '../../helpers/constants.ts'
-import { EMPTY_RESULT, Query } from '../../query/query'
+import { EMPTY_RESULT } from '../../query/helpers'
+import { Query } from '../../query/query'
 import {
 	BarChartConfig,
 	BubbleChartConfig,

@@ -2,6 +2,7 @@
 import { Calendar, Check } from 'lucide-vue-next'
 import { h, inject, ref, watchEffect } from 'vue'
 import { FIELDTYPES, getGranularityOptions } from '../../helpers/constants'
+import QueryAlerts from '../../query/components/QueryAlerts.vue'
 import QueryDataTable from '../../query/components/QueryDataTable.vue'
 import { Query } from '../../query/query'
 import DrillDown from './DrillDown.vue'
@@ -70,12 +71,15 @@ function getDateGranularityOptions(column_name: string, column_type: string) {
 	>
 		<QueryDataTable
 			:query="chart.dataQuery"
-			:enable-alerts="true"
 			:enable-sort="true"
 			:enable-drill-down="true"
 			@drill-down="openDrillDown"
 			:on-sort-change="onSortChange"
 		>
+			<template #footer-actions>
+				<QueryAlerts :query="chart.dataQuery" />
+			</template>
+
 			<template #header-suffix="{ column }">
 				<Dropdown
 					v-if="FIELDTYPES.DATE.includes(column.type)"

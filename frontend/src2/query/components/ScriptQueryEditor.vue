@@ -9,6 +9,7 @@ import { attachRealtimeListener, wheneverChanges } from '../../helpers'
 import session from '../../session'
 import { __ } from '../../translation'
 import { Query } from '../query'
+import QueryAlerts from './QueryAlerts.vue'
 import QueryDataTable from './QueryDataTable.vue'
 
 const query = inject<Query>('query')!
@@ -132,7 +133,11 @@ function handleSaveVariables(variables: any[]) {
 		</div>
 
 		<div class="relative flex w-full flex-1 flex-col overflow-hidden rounded border">
-			<QueryDataTable :query="query" :enable-alerts="true" />
+			<QueryDataTable :query="query">
+				<template #footer-actions>
+					<QueryAlerts :query="query" />
+				</template>
+			</QueryDataTable>
 		</div>
 	</div>
 	<VariablesDialog

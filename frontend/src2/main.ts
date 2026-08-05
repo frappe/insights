@@ -1,6 +1,5 @@
 import { frappeRequest, setConfig, useTheme } from 'frappe-ui'
 import { spritePlugin } from 'frappe-ui/icons'
-import { GridItem, GridLayout } from 'grid-layout-plus'
 import { createPinia } from 'pinia'
 import { createApp, watchEffect } from 'vue'
 import App from './App.vue'
@@ -29,8 +28,6 @@ setNavigationProvider({
 	navigate: (to) => router.push(to),
 })
 app.use(spritePlugin)
-app.component('grid-layout', GridLayout)
-app.component('grid-item', GridItem)
 
 const stop = watchEffect(() => {
 	if (session.isLoggedIn) {

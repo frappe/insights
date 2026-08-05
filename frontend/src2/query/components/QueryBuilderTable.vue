@@ -15,6 +15,7 @@ import ColumnFilter from './ColumnFilter.vue'
 import ColumnRemove from './ColumnRemove.vue'
 import ColumnSort from './ColumnSort.vue'
 import ColumnTypeChange from './ColumnTypeChange.vue'
+import QueryAlerts from './QueryAlerts.vue'
 import QueryDataTable from './QueryDataTable.vue'
 import DrillDown from '../../charts/components/DrillDown.vue'
 import ExpressionEditor from './ExpressionEditor.vue'
@@ -87,11 +88,14 @@ function addNewColumn() {
 		<QueryDataTable
 			:query="query"
 			:enable-column-rename="true"
-			:enable-alerts="true"
 			:enable-new-column="true"
 			:enable-drill-down="true"
 			@drill-down="openDrillDown"
 		>
+			<template #footer-actions>
+				<QueryAlerts :query="query" />
+			</template>
+
 			<template #header-prefix="{ column }">
 				<ColumnTypeChange
 					:model-value="column.type"

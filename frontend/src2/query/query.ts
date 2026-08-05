@@ -55,6 +55,7 @@ import {
 	code,
 	column,
 	custom_operation,
+	EMPTY_RESULT,
 	expression,
 	filter_group,
 	getDimensions,
@@ -1181,17 +1182,6 @@ export function makeQuery(name: string) {
 			return !activeEditIndex.value && !executing.value
 		},
 	})
-}
-
-export const EMPTY_RESULT: QueryResult = {
-	executedSQL: '',
-	totalRowCount: 0,
-	rows: [],
-	formattedRows: [],
-	columns: [],
-	columnOptions: [],
-	timeTaken: 0,
-	lastExecutedAt: new Date(),
 }
 
 export type Query = ReturnType<typeof makeQuery>

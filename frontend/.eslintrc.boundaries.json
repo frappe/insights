@@ -8,6 +8,34 @@
 	},
 	"overrides": [
 		{
+			"files": ["src2/islands/**"],
+			"rules": {
+				"no-restricted-imports": [
+					"error",
+					{
+						"patterns": [
+							{
+								"group": [
+									"**/router",
+									"**/router.ts",
+									"**/workbook/workbook",
+									"**/workbook/workbook.ts"
+								],
+								"message": "An island entry graph must not import the SPA router or the workbook store — an island mounts with neither. The item stores are refused by the island build instead, which sees the graph after types are erased, so `import type` from them stays fine."
+							}
+						],
+						"paths": [
+							{
+								"name": "vue-router",
+								"importNames": ["useRouter", "useRoute"],
+								"message": "The viewer graph must not depend on a router instance — an island mounts without one. Use helpers/navigation instead."
+							}
+						]
+					}
+				]
+			}
+		},
+		{
 			"files": ["src2/charts/**", "src2/dashboard/**", "src2/query/**"],
 			"excludedFiles": ["src2/dashboard/DashboardList.vue"],
 			"rules": {

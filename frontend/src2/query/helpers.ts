@@ -108,21 +108,48 @@ export const expression = (expression: string): Expression => ({
 // 	order_by: options.order_by,
 // })
 
-export function getFormattedRows(result: QueryResult, operations: Operation[]) {
-	if (!result.rows?.length || !result.columns?.length) return []
+// Here rather than in the query store: the island renders a result without ever
+// building a query, and importing the store for a blank one pulls the whole
+// execution path — socket, queue, autosave — into the island bundle.
+export const EMPTY_RESULT: QueryResult = {
+	executedSQL: '',
+	totalRowCount: 0,
+	rows: [],
+	formattedRows: [],
+	columns: [],
+	columnOptions: [],
+	timeTaken: 0,
+	lastExecutedAt: new Date(),
+}
 
-	const rows = copy(result.rows)
-	const columns = copy(result.columns)
+export function getFormattedRows(result: QueryResult, operations: Operation[]) {
+	return formatResultRows(result, getColumnGranularity(operations))
+}
+
+// The grain a date column was grouped by, per column. A viewer never receives
+// the operations, so the server sends it this map instead — same shape, so the
+// formatting below stays one implementation.
+export function getColumnGranularity(operations: Operation[]) {
 	const _operations = copy(operations)
 	const summarize_step = _operations.reverse().find((op) => op.type === 'summarize')
 	const pivot_step = _operations.reverse().find((op) => op.type === 'pivot_wider')
 
-	const getGranularity = (column_name: string) => {
-		const dim =
-			summarize_step?.dimensions.find((dim) => dim.dimension_name === column_name) ||
-			pivot_step?.rows.find((dim) => dim.dimension_name === column_name)
-		return dim ? dim.granularity : null
-	}
+	const granularity: Record<string, string> = {}
+	const dimensions = [...(summarize_step?.dimensions || []), ...(pivot_step?.rows || [])]
+	dimensions.forEach((dim) => {
+		if (dim.granularity && !granularity[dim.dimension_name]) {
+			granularity[dim.dimension_name] = dim.granularity
+		}
+	})
+	return granularity
+}
+
+export function formatResultRows(result: QueryResult, granularityByColumn: Record<string, string>) {
+	if (!result.rows?.length || !result.columns?.length) return []
+
+	const rows = copy(result.rows)
+	const columns = copy(result.columns)
+	const getGranularity = (column_name: string) => granularityByColumn[column_name] || null
 
 	const formattedRows = rows.map((row) => {
 		const formattedRow = { ...row }

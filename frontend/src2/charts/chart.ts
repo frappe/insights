@@ -29,9 +29,7 @@ import { InsightsChartv3 } from '../types/workbook.types'
 import { getLinkedQueries } from '../query/linked_queries'
 import {
 	ensureConfigSlots,
-	handleOldXAxisConfig,
-	handleOldYAxisConfig,
-	setDimensionNames,
+	normalizeChartConfig,
 } from './helpers'
 
 const charts = new Map<string, Chart>()
@@ -578,31 +576,7 @@ function transformChartDoc(doc: any) {
 				filters: [],
 				logical_operator: 'And',
 		  }
-	doc.config.order_by = doc.config.order_by || []
-	doc.config.limit = doc.config.limit || 100
-
-	if ('x_axis' in doc.config && doc.config.x_axis) {
-		// @ts-ignore
-		doc.config.x_axis = handleOldXAxisConfig(doc.config.x_axis)
-	}
-	if ('y_axis' in doc.config && Array.isArray(doc.config.y_axis)) {
-		// @ts-ignore
-		doc.config.y_axis = handleOldYAxisConfig(doc.config.y_axis)
-	}
-	if ('split_by' in doc.config && doc.config.split_by) {
-		// @ts-ignore
-		doc.config.split_by = handleOldXAxisConfig(doc.config.split_by)
-	}
-	if (doc.chart_type === 'Funnel') {
-		// @ts-ignore
-		doc.config.label_position = doc.config.label_position || 'left'
-	}
-	if (doc.chart_type === 'Donut') {
-		doc.config.legend_position = doc.config.legend_position || 'bottom'
-	}
-
-	doc.config = setDimensionNames(doc.config)
-	doc.config = ensureConfigSlots(doc.config, doc.chart_type)
+	doc.config = normalizeChartConfig(doc.config, doc.chart_type)
 
 	return doc
 }
