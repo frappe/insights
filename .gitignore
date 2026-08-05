@@ -186,5 +186,12 @@ todo
 frontend/package-lock.json
 .opencode/package-lock.json
 frontend/components.d.ts
-docs/
 scripts/
+
+# Effort docs under docs/projects/ are branch-scoped: they live on the feature
+# branch and are removed when it merges. See docs/agents/issue-tracker.md.
+# These paths are local-only and are never committed.
+docs/archive/
+docs/research/
+docs/projects/workbook_agent/
+docs/projects/gemstaging-doctype-drift/
