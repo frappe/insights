@@ -173,14 +173,17 @@ doc_events = {
     # standard (bundle-shipped) content is read-only outside developer mode
     "Insights Query v3": {
         "validate": "insights.bundles.block_standard_edits",
+        "on_update": "insights.bundle_export.write_back",
         "on_trash": "insights.bundles.block_standard_deletes",
     },
     "Insights Chart v3": {
         "validate": "insights.bundles.block_standard_edits",
+        "on_update": "insights.bundle_export.write_back",
         "on_trash": "insights.bundles.block_standard_deletes",
     },
     "Insights Dashboard v3": {
         "validate": "insights.bundles.block_standard_edits",
+        "on_update": "insights.bundle_export.write_back",
         "on_trash": "insights.bundles.block_standard_deletes",
     },
 }
