@@ -1,4 +1,4 @@
-import { graphic } from 'echarts/core'
+import { graphic } from 'echarts'
 import { ellipsis, formatNumber, getShortNumber, toTitleCase } from '../helpers'
 import { FIELDTYPES, isCalendarDateType } from '../helpers/constants'
 import { getFormattedDate } from '../query/helpers'

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { graphic } from 'echarts/core'
+import { graphic } from 'echarts'
 import { getColors } from '../colors'
 import BaseChart from './BaseChart.vue'
 import { computed } from 'vue'

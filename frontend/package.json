@@ -11,6 +11,7 @@
 		"lint": "eslint --no-eslintrc -c .eslintrc.boundaries.json --ext .js,.ts,.vue src2",
 		"serve": "vite preview",
 		"build": "vite build -l warn --base=/assets/insights/frontend/ && yarn copy-html-entry",
+		"build:islands": "node build-islands.mjs --production",
 		"copy-html-entry": "cp ../insights/public/frontend/index.html ../insights/www/_insights.html"
 	},
 	"dependencies": {
@@ -41,6 +42,7 @@
 		"vuedraggable": "^4.1.0"
 	},
 	"devDependencies": {
+		"@framework/ui": "link:../../frappe/ui",
 		"@iconify/utils": "2.3.0",
 		"@playwright/test": "^1.32.1",
 		"@tailwindcss/container-queries": "^0.1.1",

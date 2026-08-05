@@ -2,7 +2,6 @@
 import { Button } from 'frappe-ui'
 import { Bell, Download } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
-import DrillDown from '../../charts/components/DrillDown.vue'
 import DataTable from '../../components/DataTable.vue'
 import ExportDialog from '../../components/ExportDialog.vue'
 import {
@@ -28,6 +27,8 @@ const props = defineProps<{
 	enableNewColumn?: boolean
 	onSortChange?: (column_name: string, sort_order: SortDirection) => void
 }>()
+
+const emit = defineEmits<{ drillDown: [query: Query] }>()
 
 const isFiltering = ref(false)
 watch(
@@ -84,13 +85,11 @@ function onSortChange(column_name: string, sort_order: SortDirection) {
 	})
 }
 
-const showDrillDown = ref(false)
-const drillDownQuery = ref<Query>()
+// The table reports the drill-down, it does not open it: the drill-down dialog is
+// the query editor, and only a caller that offers the affordance should carry it.
 async function onDrillDown(column: QueryResultColumn, row: QueryResultRow) {
-	drillDownQuery.value = await props.query.getDrillDownQuery(column, row)
-	if (drillDownQuery.value) {
-		showDrillDown.value = true
-	}
+	const query = await props.query.getDrillDownQuery(column, row)
+	if (query) emit('drillDown', query)
 }
 
 const showAlertsDialog = ref(false)
@@ -219,14 +218,6 @@ function onFilterChange(filters: Record<string, string>) {
 		@export="onExport"
 		@cancel="props.query.cancelDownload"
 	/>
-
-	<DrillDown
-		v-if="drillDownQuery"
-		v-model="showDrillDown"
-		@update:model-value="!$event ? (drillDownQuery = undefined) : undefined"
-		:query="drillDownQuery"
-	>
-	</DrillDown>
 
 	<QueryAlertsDialog
 		v-if="showAlertsDialog"

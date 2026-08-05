@@ -35,6 +35,14 @@ add_to_apps_screen = [
 # today, versioned updates later) can evolve without breaking the hook.
 insights_workbooks = "workbook_templates"
 
+# UI units the framework can mount into a host page, keyed by the asset base name
+# the island build registers in assets.json (`<base>.island.js` / `.island.css`,
+# built by `yarn build:islands`). Registration is unconditional — whether a desk
+# page renders Insights or the legacy dashboard is the framework's call.
+ui_islands = {
+    "insights.chart": "insights_chart",
+}
+
 
 # Includes in <head>
 # ------------------

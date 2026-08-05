@@ -1,14 +1,23 @@
 <script setup lang="ts">
 import { Calendar, Check } from 'lucide-vue-next'
-import { h, inject, watchEffect } from 'vue'
+import { h, inject, ref, watchEffect } from 'vue'
 import { FIELDTYPES, getGranularityOptions } from '../../helpers/constants'
 import QueryDataTable from '../../query/components/QueryDataTable.vue'
+import { Query } from '../../query/query'
+import DrillDown from './DrillDown.vue'
 import { column } from '../../query/helpers'
 import { SortDirection } from '../../types/query.types'
 import { Chart } from '../chart'
 import { getGranularity } from '../helpers'
 
 const chart = inject('chart') as Chart
+
+const drillDownQuery = ref<Query>()
+const showDrillDown = ref(false)
+function openDrillDown(query: Query) {
+	drillDownQuery.value = query
+	showDrillDown.value = true
+}
 
 watchEffect(() => {
 	if (!chart.doc.config.order_by) {
@@ -64,6 +73,7 @@ function getDateGranularityOptions(column_name: string, column_type: string) {
 			:enable-alerts="true"
 			:enable-sort="true"
 			:enable-drill-down="true"
+			@drill-down="openDrillDown"
 			:on-sort-change="onSortChange"
 		>
 			<template #header-suffix="{ column }">
@@ -80,4 +90,12 @@ function getDateGranularityOptions(column_name: string, column_type: string) {
 			</template>
 		</QueryDataTable>
 	</div>
+
+	<DrillDown
+		v-if="drillDownQuery"
+		v-model="showDrillDown"
+		@update:modelValue="!$event ? (drillDownQuery = undefined) : undefined"
+		:query="drillDownQuery"
+	>
+	</DrillDown>
 </template>

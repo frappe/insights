@@ -16,10 +16,18 @@ import ColumnRemove from './ColumnRemove.vue'
 import ColumnSort from './ColumnSort.vue'
 import ColumnTypeChange from './ColumnTypeChange.vue'
 import QueryDataTable from './QueryDataTable.vue'
+import DrillDown from '../../charts/components/DrillDown.vue'
 import ExpressionEditor from './ExpressionEditor.vue'
 import { copy } from '../../helpers'
 
 const query = inject('query') as Query
+
+const drillDownQuery = ref<Query>()
+const showDrillDown = ref(false)
+function openDrillDown(query: Query) {
+	drillDownQuery.value = query
+	showDrillDown.value = true
+}
 
 function onTypeChange(column: QueryResultColumn, new_type: ColumnDataType) {
 	if (new_type === column.type) return
@@ -82,6 +90,7 @@ function addNewColumn() {
 			:enable-alerts="true"
 			:enable-new-column="true"
 			:enable-drill-down="true"
+			@drill-down="openDrillDown"
 		>
 			<template #header-prefix="{ column }">
 				<ColumnTypeChange
@@ -154,4 +163,12 @@ function addNewColumn() {
 			</template>
 		</QueryDataTable>
 	</div>
+
+	<DrillDown
+		v-if="drillDownQuery"
+		v-model="showDrillDown"
+		@update:modelValue="!$event ? (drillDownQuery = undefined) : undefined"
+		:query="drillDownQuery"
+	>
+	</DrillDown>
 </template>

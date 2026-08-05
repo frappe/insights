@@ -4,10 +4,12 @@ import QueryDataTable from '../../query/components/QueryDataTable.vue'
 import { column } from '../../query/helpers'
 import { TableChartConfig } from '../../types/chart.types'
 import { DataFormat, SortDirection } from '../../types/query.types'
+import { Query } from '../../query/query'
 import { Chart } from '../chart'
 import ChartTitle from './ChartTitle.vue'
 
 const props = defineProps<{ chart: Chart }>()
+defineEmits<{ drillDown: [query: Query] }>()
 const tableConfig = computed(() => props.chart.doc.config as TableChartConfig)
 
 // Maps a value column to its display format (e.g. percent) so the table can
@@ -59,6 +61,7 @@ function onSortChange(column_name: string, sort_order: SortDirection) {
 			:format-group="tableConfig.conditional_formatting"
 			:enable-sort="true"
 			:enable-drill-down="true"
+			@drill-down="$emit('drillDown', $event)"
 			:on-sort-change="onSortChange"
 			:sticky-columns="tableConfig.sticky_columns"
 			:column-widths="tableConfig.column_widths"

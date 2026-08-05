@@ -43,6 +43,13 @@ wheneverChanges(
 
 provide('query', props.query)
 
+const drillDownQuery = ref<Query>()
+const showDrillDown = ref(false)
+function openDrillDown(query: Query) {
+	drillDownQuery.value = query
+	showDrillDown.value = true
+}
+
 function _groupBy(column: QueryResultColumn) {
 	props.query.addSummarize({
 		dimensions: [makeDimension(column)],
@@ -68,6 +75,7 @@ const groupBy = debounce(_groupBy, 50)
 						<QueryDataTable
 							:enable-sort="true"
 							:enable-drill-down="true"
+							@drill-down="openDrillDown"
 							:query="props.query"
 						>
 							<template #header-prefix="{ column }">
@@ -97,4 +105,12 @@ const groupBy = debounce(_groupBy, 50)
 			</div>
 		</template>
 	</Dialog>
+
+	<DrillDown
+		v-if="drillDownQuery"
+		v-model="showDrillDown"
+		@update:modelValue="!$event ? (drillDownQuery = undefined) : undefined"
+		:query="drillDownQuery"
+	>
+	</DrillDown>
 </template>
