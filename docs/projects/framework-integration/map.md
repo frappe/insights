@@ -97,6 +97,27 @@ Resolved tickets:
   Framework gains `Page.toggle_page_head(show)`; `host` gains `breadcrumbs`
   (ancestors only), `navigate` and `set_title`. No island→shell channel was
   built — the island draws its own title. Amends ticket 05's page layout.
+- [Who derives a chart's query?](issues/27-chart-query-derivation-owner.md) —
+  the server, from `config`, at execution time; nothing persisted (option 4).
+  Preview already round-trips, so derivation moves to the other end of an
+  existing call: one endpoint family, chart name or inline config in, rows plus
+  derived operations out; the client keeps zero derivation (SQL display and
+  drill-down consume server-sent ops). The `data_query` artifact retires
+  completely — field, cached query documents, permission rows, and
+  `<chart>_data.json`, which leaves the format before it freezes. Route:
+  parity-proven Python deriver → read paths switch → preview endpoint +
+  client derivation deleted → retirement patch.
+- [One dashboard renderer, one chart renderer](issues/31-one-dashboard-one-chart-renderer.md)
+  — the viewer is the foundation; the builder becomes a viewer that can also
+  write. `useViewerChart` generalizes into the one chart-read store (saved-name
+  feed and inline-config feed); the `Chart`-aggregate adapter and `chart.ts`'s
+  result half die; the renderer family below `ChartBody` survives as the one
+  card set. One `DashboardView` in `dashboard/` owns grid, cards, filters, and
+  capability-gated chrome; entry points (island, SPA route, public route) are
+  ~20-line navigation shims. Viewer endpoints already serve guests through the
+  ladder, so the public page needs no permission work — only the preview-image
+  key moves into the controller. Order: shared/public first, SPA read page,
+  builder last riding ticket 27 step 3.
 - **Ownership split** (settled during ticket 02) — framework owns the desk page shell, the mount contract, the shared runtime (Vue + frappe-ui + chart primitives), and the renderer toggle; Insights provides doctypes, engine, and a mountable UI artifact built against framework-provided externals. The seam is one call: framework's page asks Insights to mount into an element with host context. The Insights→desk bridge (is Insights installed? is the flag on? is this an Insights dashboard?) lives in framework, so Insights never knows about the fallback.
 
 The framework-side foundation is specced from these tickets:
@@ -130,15 +151,12 @@ proved the contract but surfaced three model questions (tickets 24, 25, 26),
 gating the refactor of the branch, not its feasibility. All three are resolved
 and indexed under Decisions so far. The reshape is specced from them:
 [spec-branch-reshape.md](spec-branch-reshape.md) (`ready-for-agent`).
+Tickets 27 and 31 resolved together on 2026-08-06 and specced as
+[spec-one-renderer.md](spec-one-renderer.md) (`ready-for-agent`, lands after
+the reshape).
 
 Still open in this wave:
 
-- [Who derives a chart's query?](issues/27-chart-query-derivation-owner.md) —
-  raised while repairing the shipped bundles, every one of which drew its source
-  table instead of its chart. A chart's data query is derived only in
-  `chart.ts`, and the server treats that client-side cache as content. The
-  content is repaired and the silent fallback is gone; who owns the derivation
-  is not decided.
 - [Which lockfile is the runtime version authority?](issues/28-runtime-version-authority.md)
   — raised when every frappe-ui island died at import. Ticket 07 says framework's
   lockfile governs the whole closure, but `link:./frappe-ui` lets the walk cross
@@ -152,11 +170,6 @@ Still open in this wave:
   the breadcrumb trail and desk routing. The third was designed rather than
   patched and widened the slot from values to capabilities; the rule that stops
   the fourth still does not exist.
-- [One dashboard renderer, one chart renderer](issues/31-one-dashboard-one-chart-renderer.md)
-  — the foundation branch added a second dashboard implementation (islands
-  viewer) beside the builder's, and a second chart-card path. Leaning: the
-  viewer is the foundation, the builder is the viewer plus an editing layer,
-  shared/public renders the viewer. The data-layer half hangs on ticket 27.
 
 ## Not yet specified
 

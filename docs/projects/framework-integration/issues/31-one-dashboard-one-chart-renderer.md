@@ -1,7 +1,7 @@
 # 31 — One dashboard renderer, one chart renderer
 
 Type: grilling
-Status: open
+Status: resolved
 Blocked by: none
 
 ## Question
@@ -54,3 +54,70 @@ The answer must name the migration order and what dies: `SharedDashboard.vue`'s
 builder coupling first (lowest risk), the builder's read path last. Blocked by
 nothing, but resolve ticket 27 first or together — the data-layer half of this
 question is mostly that ticket.
+
+## Answer
+
+Ratified 2026-08-06 (grilling, together with ticket 27 — resolved first, and
+its answer forces this one's data layer).
+
+A counting correction first: there are **four** surfaces, not three. The
+builder (`DashboardBuilder.vue`), the SPA read page (`dashboard/Dashboard.vue`,
+grid disabled), the public page (`SharedDashboard.vue`), and the desk island.
+The middle two already ride the builder stack with edit off.
+
+**The viewer is the foundation.** The alternative — promote the builder stack
+— is disqualified by ticket 27 alone: that stack's core is client derivation,
+which is scheduled to die. Concretely:
+
+- `useViewerChart` (`islands/viewer.ts`) generalizes into **the** chart-read
+  store, with two feeds behind one interface: a saved chart name (viewer
+  endpoints — desk, shared, SPA read page) or inline unsaved config (ticket
+  27's preview endpoint — builder only). Both return rows plus derived
+  operations, so the store is identical above the fetch.
+- The `Chart`-aggregate adapter at the bottom of `viewer.ts` — the object
+  stubbing `addOrderBy: () => {}` and friends — dies. The renderer family
+  (`ChartBody` down) takes the read store natively; it survives as the one
+  set of card components.
+- `charts/chart.ts` shrinks to authoring state: the document, config editing,
+  save. Its derivation-and-result half goes with ticket 27 step 3.
+- The inversion: today the viewer fakes being a builder; after, the builder
+  is a viewer that can also write.
+
+**One surface, shims for entry points.** One `DashboardView` component, living
+in `dashboard/` as that folder's core, owns everything inside the page: grid,
+cards, filter bar, and the chrome actions (refresh, PNG export, Edit /
+Open Workbook, Duplicate). Chrome is gated by what `get_dashboard` grants
+(`can_edit`, `can_duplicate`, `workbook`, the ladder rung) — a property of
+the surface, never of the host. A capability the server didn't grant doesn't
+render; same rule on every surface. The entry points shrink to mount shims
+(~20 lines), allowed to carry only navigation context:
+
+- **Island shim** (`islands/`) — desk mount lifecycle, host ambient (ticket
+  29's contract).
+- **SPA route shim** — breadcrumbs and `document.title`; only the SPA has a
+  route hierarchy.
+- **Public route shim** — reference resolution from the URL, nothing else.
+
+The test for any future line: if it renders inside the page box, it goes in
+`DashboardView` behind a capability; only navigation context may live in a
+shim.
+
+**No permission work needed.** `insights.api.viewer` is already
+`allow_guest=True` end to end — access is the visibility ladder, and a guest
+reaches the Public rung through the same code path as everyone else. The one
+loose end: the preview-image key (`X-Insights-Preview-Key`) lives in
+`shared.py`'s ladder and moves into the permission controller with step 1.
+
+**Migration order**, each step leaving the app whole:
+
+1. **Shared/public page → viewer surface.** Dies: the public page's builder
+   coupling, then `api/shared`'s dashboard read path once nothing calls it.
+2. **SPA read page → the same surface**, keeping its chrome via capabilities.
+   Dies: its `useDashboard` read path.
+3. **Builder → the shared store**, riding ticket 27 step 3. Dies: `chart.ts`'s
+   derivation half, the `Chart` adapter in `viewer.ts`, and
+   `DashboardChart.vue`/`ChartRenderer.vue`'s store coupling.
+
+Steps 1–2 do not wait on ticket 27; only step 3 does. Out of scope, tracked
+elsewhere: drill-down on read surfaces (ticket 11), frappe-ui charts v2 as the
+card primitive.

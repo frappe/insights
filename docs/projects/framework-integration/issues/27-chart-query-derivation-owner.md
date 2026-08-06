@@ -1,7 +1,7 @@
 # 27 — Who derives a chart's query?
 
 Type: grilling
-Status: open
+Status: resolved
 Blocked by: none
 
 ## Question
@@ -79,9 +79,67 @@ could ship behind first.
 
 ## Acceptance criteria
 
-- [ ] A ratified owner for the derivation, with the builder's preview path stated
+- [x] A ratified owner for the derivation, with the builder's preview path stated
       (round trip, or client derivation as a pure display of a server contract)
-- [ ] The fate of the `data_query` link and its documents named
-- [ ] What the shipping format carries per chart, stated against ticket 24's
+- [x] The fate of the `data_query` link and its documents named
+- [x] What the shipping format carries per chart, stated against ticket 24's
       workbook format
-- [ ] A first step that is shippable on its own
+- [x] A first step that is shippable on its own
+
+## Answer
+
+Ratified 2026-08-06 (grilling, together with ticket 31).
+
+**Option 4. The server derives a chart's query from `config` at execution
+time. Nothing is persisted.** Option 1 was rejected as a waypoint: once the
+server can derive, persisting the result buys nothing except a staleness bug
+class. Option 3 survives only as the loud throw already shipped.
+
+**The preview path.** A finding dissolved the cost the ticket feared: the
+builder's preview already round-trips on every config change — the client only
+derives operations JSON, execution was always a server call. Moving derivation
+server-side moves computation to the other end of a call that already happens.
+Preview latency is unchanged to first order.
+
+The contract is one endpoint family: a saved chart name, or inline unsaved
+config plus the source query reference, in; rows plus the **derived
+operations** out. The client keeps zero derivation. The two remaining client
+dependents re-home onto the response: the SQL display renders what the server
+sent, and drill-down (`query/query.ts` `getDrillDownQuery`) forks the
+server-sent operations instead of client-derived ones. The derived operations
+cross the wire only on the authoring endpoint — the viewer contract still
+never ships operations (drill-down on read surfaces stays ticket 11's
+business).
+
+A correction to this ticket's own text, found while grilling: the builder's
+"pipeline editing" does not edit the data query as a query. Sort and
+granularity in `ChartBuilderTable.vue` write to `chart.doc.config` and the
+derivation re-runs. There is no user-facing pipeline surface to preserve.
+
+**The artifact retires completely** — five cuts, one refactor, no transitional
+field:
+
+1. `Insights Chart v3.data_query` dropped; `set_data_query`/`get_data_query`
+   deleted; `get_data()` calls the deriver on `config`.
+2. A patch deletes every `Insights Query v3` document a chart's `data_query`
+   references — pure caches, chart-owned, referenced nowhere else.
+3. `permissions.py` loses its data-query rows (a grant source dying — its row
+   leaves the table, per ticket 26's rule).
+4. The shipped format: a chart ships one file; `<chart>_data.json` dies and
+   sync stops reading it. No compatibility read — this lands before the
+   format freezes, same rule as `bundle.json` → `workbook.json` (ticket 24).
+5. `duplicate.py` and export drop their data-query handling.
+
+**The route**, each step shippable on its own:
+
+1. **Port the deriver, prove it by parity.** Python derivation (config →
+   operations JSON, seven chart types) plus a test that runs it against every
+   chart whose cache is populated — the four shipped workbooks and dev-site
+   content — and diffs derived against stored operations. The caches become
+   the port's fixture set before they die.
+2. **Switch the read paths.** `get_data()` and `viewer.get_chart_data` derive
+   instead of reading the cache. The client still writes it; nothing reads it.
+3. **Preview endpoint, delete the client derivation.** `chart.ts` loses
+   `addSourceOperation` and friends; SQL display and drill-down consume
+   server-sent operations. This is where ticket 31's data layer becomes real.
+4. **Retire the artifact** — the five cuts and the deletion patch.
