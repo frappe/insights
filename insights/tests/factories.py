@@ -130,6 +130,344 @@ def create_test_chart(owner, workbook, query=None, title=TEST_CHART_TITLE):
     return frappe.get_doc(DT.CHART, chart.name)
 
 
+def chart_derivation_fixtures():
+    """Chart configs paired with the operations the browser derived from them.
+
+    The shipped workbooks are the honest oracle for the derivation — they were
+    written by the builder — but they only use seven of the shapes. These close
+    the gap: the chart types and the branches no shipped chart reaches. Each
+    `operations` list is read off the browser's derivation, so it is an oracle
+    only for as long as that derivation exists.
+
+    `query` is the source query's name, which the parity check does not resolve.
+    """
+    revenue = {
+        "aggregation": "sum",
+        "column_name": "base_net_total",
+        "data_type": "Decimal",
+        "measure_name": "Revenue",
+    }
+    territory = {
+        "column_name": "territory",
+        "data_type": "String",
+        "dimension_name": "territory",
+    }
+
+    return [
+        {
+            "title": "Revenue by Territory",
+            "chart_type": "Map",
+            "query": "sales-invoices",
+            "config": {
+                "filters": {"filters": [], "logical_operator": "And"},
+                "limit": 100,
+                "order_by": [],
+                "map_type": "world",
+                "location_column": territory,
+                "value_column": revenue,
+            },
+            "operations": [
+                _source_operation("sales-invoices"),
+                {"type": "summarize", "measures": [revenue], "dimensions": [territory]},
+            ],
+        },
+        {
+            "title": "Customer Value vs Volume",
+            "chart_type": "Bubble",
+            "query": "sales-invoices",
+            "config": {
+                "filters": {"filters": [], "logical_operator": "And"},
+                "limit": 100,
+                "order_by": [],
+                "xAxis": revenue,
+                "yAxis": {
+                    "aggregation": "count",
+                    "column_name": "name",
+                    "data_type": "Integer",
+                    "measure_name": "Invoices",
+                },
+                "size_column": {
+                    "aggregation": "avg",
+                    "column_name": "base_net_total",
+                    "data_type": "Decimal",
+                    "measure_name": "Avg Invoice Value",
+                },
+                "dimension": {
+                    "column_name": "customer",
+                    "data_type": "String",
+                    "dimension_name": "customer",
+                },
+                "quadrant_column": territory,
+                "show_quadrants": True,
+            },
+            "operations": [
+                _source_operation("sales-invoices"),
+                {
+                    "type": "summarize",
+                    "measures": [
+                        revenue,
+                        {
+                            "aggregation": "count",
+                            "column_name": "name",
+                            "data_type": "Integer",
+                            "measure_name": "Invoices",
+                        },
+                        {
+                            "aggregation": "avg",
+                            "column_name": "base_net_total",
+                            "data_type": "Decimal",
+                            "measure_name": "Avg Invoice Value",
+                        },
+                    ],
+                    "dimensions": [
+                        {
+                            "column_name": "customer",
+                            "data_type": "String",
+                            "dimension_name": "customer",
+                        },
+                        territory,
+                    ],
+                },
+            ],
+        },
+        {
+            # measures mode: no group-by at all, one row carrying every stage
+            "title": "Sales Pipeline",
+            "chart_type": "Funnel",
+            "query": "quotations",
+            "config": {
+                "filters": {"filters": [], "logical_operator": "And"},
+                "limit": 100,
+                "order_by": [],
+                "show_percentage": True,
+                "measures": [
+                    {
+                        "aggregation": "count",
+                        "column_name": "name",
+                        "data_type": "Integer",
+                        "measure_name": "Quotations",
+                    },
+                    {
+                        "data_type": "Integer",
+                        "expression": {
+                            "type": "expression",
+                            "expression": "count_if(status == 'Ordered')",
+                        },
+                        "measure_name": "Ordered",
+                    },
+                ],
+            },
+            "operations": [
+                _source_operation("quotations"),
+                {
+                    "type": "summarize",
+                    "measures": [
+                        {
+                            "aggregation": "count",
+                            "column_name": "name",
+                            "data_type": "Integer",
+                            "measure_name": "Quotations",
+                        },
+                        {
+                            "data_type": "Integer",
+                            "expression": {
+                                "type": "expression",
+                                "expression": "count_if(status == 'Ordered')",
+                            },
+                            "measure_name": "Ordered",
+                        },
+                    ],
+                    "dimensions": [],
+                },
+            ],
+        },
+        {
+            # a table with columns pivots instead of summarizing
+            "title": "Revenue by Item Group and Month",
+            "chart_type": "Table",
+            "query": "sales-invoice-items",
+            "config": {
+                "filters": {
+                    "filters": [
+                        {
+                            "column": {"type": "column", "column_name": "base_net_amount"},
+                            "operator": ">",
+                            "value": 0,
+                        }
+                    ],
+                    "logical_operator": "And",
+                },
+                "limit": 50,
+                "max_column_values": 6,
+                "order_by": [{"column": {"type": "column", "column_name": "Item Group"}, "direction": "asc"}],
+                "rows": [
+                    {
+                        "column_name": "item_group",
+                        "data_type": "String",
+                        "dimension_name": "Item Group",
+                    }
+                ],
+                "columns": [
+                    {
+                        "column_name": "posting_date",
+                        "data_type": "Date",
+                        "dimension_name": "Month",
+                        "granularity": "month",
+                    }
+                ],
+                "values": [
+                    {
+                        "aggregation": "sum",
+                        "column_name": "base_net_amount",
+                        "data_type": "Decimal",
+                        "measure_name": "Revenue",
+                    }
+                ],
+            },
+            "operations": [
+                _source_operation("sales-invoice-items"),
+                {
+                    "type": "filter_group",
+                    "logical_operator": "And",
+                    "filters": [
+                        {
+                            "column": {"type": "column", "column_name": "base_net_amount"},
+                            "operator": ">",
+                            "value": 0,
+                        }
+                    ],
+                },
+                {
+                    "type": "pivot_wider",
+                    "rows": [
+                        {
+                            "column_name": "item_group",
+                            "data_type": "String",
+                            "dimension_name": "Item Group",
+                        }
+                    ],
+                    "columns": [
+                        {
+                            "column_name": "posting_date",
+                            "data_type": "Date",
+                            "dimension_name": "Month",
+                            "granularity": "month",
+                        }
+                    ],
+                    "values": [
+                        {
+                            "aggregation": "sum",
+                            "column_name": "base_net_amount",
+                            "data_type": "Decimal",
+                            "measure_name": "Revenue",
+                        }
+                    ],
+                    "max_column_values": 6,
+                },
+                {
+                    "type": "order_by",
+                    "column": {"type": "column", "column_name": "Item Group"},
+                    "direction": "asc",
+                },
+            ],
+        },
+        {
+            # the chart sorts by its own measure, and the config sorts by it the
+            # other way: one order-by survives, the config's
+            "title": "Smallest Item Groups",
+            "chart_type": "Donut",
+            "query": "sales-invoice-items",
+            "config": {
+                "filters": {"filters": [], "logical_operator": "And"},
+                "limit": 100,
+                "legend_position": "bottom",
+                "order_by": [{"column": {"type": "column", "column_name": "Revenue"}, "direction": "asc"}],
+                "label_column": {
+                    "column_name": "item_group",
+                    "data_type": "String",
+                    "dimension_name": "item_group",
+                },
+                "value_column": {
+                    "aggregation": "sum",
+                    "column_name": "base_net_amount",
+                    "data_type": "Decimal",
+                    "measure_name": "Revenue",
+                },
+            },
+            "operations": [
+                _source_operation("sales-invoice-items"),
+                {
+                    "type": "summarize",
+                    "measures": [
+                        {
+                            "aggregation": "sum",
+                            "column_name": "base_net_amount",
+                            "data_type": "Decimal",
+                            "measure_name": "Revenue",
+                        }
+                    ],
+                    "dimensions": [
+                        {
+                            "column_name": "item_group",
+                            "data_type": "String",
+                            "dimension_name": "item_group",
+                        }
+                    ],
+                },
+                {
+                    "type": "order_by",
+                    "column": {"type": "column", "column_name": "Revenue"},
+                    "direction": "asc",
+                },
+            ],
+        },
+        {
+            # no measure on the y-axis: the chart counts rows
+            "title": "Invoices by Status",
+            "chart_type": "Bar",
+            "query": "sales-invoices",
+            "config": {
+                "filters": {"filters": [], "logical_operator": "And"},
+                "limit": 100,
+                "order_by": [],
+                "x_axis": {
+                    "dimension": {
+                        "column_name": "status",
+                        "data_type": "String",
+                        "dimension_name": "status",
+                    }
+                },
+                "y_axis": {"series": []},
+            },
+            "operations": [
+                _source_operation("sales-invoices"),
+                {
+                    "type": "summarize",
+                    "measures": [
+                        {
+                            "column_name": "count",
+                            "data_type": "Integer",
+                            "aggregation": "count",
+                            "measure_name": "count_of_rows",
+                        }
+                    ],
+                    "dimensions": [
+                        {
+                            "column_name": "status",
+                            "data_type": "String",
+                            "dimension_name": "status",
+                        }
+                    ],
+                },
+            ],
+        },
+    ]
+
+
+def _source_operation(query):
+    return {"type": "source", "table": {"type": "query", "workbook": 0, "query_name": query}}
+
+
 def create_test_dashboard(owner, workbook, chart=None, title=TEST_DASHBOARD_TITLE):
     with as_user(owner):
         items = []
