@@ -1,7 +1,7 @@
 # 13 — Navigation seam: decouple the viewer graph from the SPA router
 
 Type: task
-Status: ready-for-agent
+Status: resolved
 Blocked by: none — can start immediately
 Spec: [spec-insights-foundation.md](../spec-insights-foundation.md), "Island entries and router decoupling"
 
@@ -25,10 +25,24 @@ This is a prefactor. SPA behavior does not change.
 
 ## Acceptance criteria
 
-- [ ] No module in the chart or dashboard viewer graph imports the SPA router
-- [ ] Navigation resolves through the injected seam, with the SPA router as
+- [x] No module in the chart or dashboard viewer graph imports the SPA router
+- [x] Navigation resolves through the injected seam, with the SPA router as
       the default provider
-- [ ] The lint fails when a viewer-graph module imports the router, and passes
+- [x] The lint fails when a viewer-graph module imports the router, and passes
       on the decoupled graph
-- [ ] Existing navigation still works in the SPA: open chart in workbook,
+- [x] Existing navigation still works in the SPA: open chart in workbook,
       navigate after duplicating a chart, dashboard navigation
+
+## Comments
+
+2026-08-05 — done. `frontend/src2/helpers/navigation.ts` holds the seam
+(`setNavigationProvider`, `resolveHref`, `navigate`); the SPA registers its
+router on it from `main.ts`. `frontend/.eslintrc.boundaries.json` bans
+`**/router` imports and `vue-router`'s `useRouter`/`useRoute` under
+`src2/charts/**`, `src2/dashboard/**` and `src2/query/**` (the SPA's
+`DashboardList.vue` is the one excluded file), and `yarn lint` runs it.
+Two follow-on refactors finished the decoupling: `9bf881b3` moved the item
+stores' workbook-duplicate/title-mirror calls out of `chart.ts`/`query.ts`/
+`dashboard.ts` into `workbook/workbook_items.ts`, and `0ce16c88` moved the
+workbook injection key out of the workbook store so `DashboardChart.vue`
+no longer pulls in the router transitively through it.

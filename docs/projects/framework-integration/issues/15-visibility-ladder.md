@@ -1,7 +1,7 @@
 # 15 — Visibility ladder
 
 Type: task
-Status: ready-for-agent
+Status: resolved
 Blocked by: none — can start immediately
 Spec: [spec-insights-foundation.md](../spec-insights-foundation.md), "Visibility ladder"
 
@@ -29,16 +29,16 @@ view-only — editing stays on the authoring axis, unchanged.
 
 ## Acceptance criteria
 
-- [ ] Both doctypes carry `visibility` and `visible_to_roles`, declared
+- [x] Both doctypes carry `visibility` and `visible_to_roles`, declared
       through the share dialog
-- [ ] Matrix tests pass: each rung × chart/dashboard × member, non-member,
+- [x] Matrix tests pass: each rung × chart/dashboard × member, non-member,
       and guest, through `frappe.has_permission`
-- [ ] A chart inherits its dashboard's audience, downward only; a standalone
+- [x] A chart inherits its dashboard's audience, downward only; a standalone
       chart uses its own declaration
-- [ ] A guest reads `Public` content and nothing below it, decided inside
+- [x] A guest reads `Public` content and nothing below it, decided inside
       the controller
-- [ ] The `is_public` migration lands and the shared pages keep working
-- [ ] No viewing path consults the `Insights User` role
+- [x] The `is_public` migration lands and the shared pages keep working
+- [x] No viewing path consults the `Insights User` role
 
 ## Comments
 

@@ -1,7 +1,7 @@
 # 18 — Island presentation: the full viewer UX
 
 Type: task
-Status: ready-for-agent
+Status: resolved
 Blocked by: 17
 Spec: [spec-insights-foundation.md](../spec-insights-foundation.md), "Island presentation and the desk-page split"
 

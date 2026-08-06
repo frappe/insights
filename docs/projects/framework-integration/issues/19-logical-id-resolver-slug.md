@@ -1,7 +1,7 @@
 # 19 — Logical-id resolver and slug
 
 Type: task
-Status: ready-for-agent
+Status: resolved
 Blocked by: none — can start immediately
 Spec: [spec-insights-foundation.md](../spec-insights-foundation.md), "Logical ids and the resolver"
 
@@ -27,9 +27,21 @@ same answer, so the resolver leaks no existence information.
 
 ## Acceptance criteria
 
-- [ ] Each reference form — logical id, slug, docname — resolves to the
+- [x] Each reference form — logical id, slug, docname — resolves to the
       right document
-- [ ] An unknown reference and a denied read return the same answer
-- [ ] Slugs auto-generate from the title, are unique, and are editable on
+- [x] An unknown reference and a denied read return the same answer
+- [x] Slugs auto-generate from the title, are unique, and are editable on
       site-authored dashboards
-- [ ] A user copy is never returned for a shipped logical id
+- [x] A user copy is never returned for a shipped logical id
+
+## Comments
+
+2026-08-05 — done. `insights/resolver.py` (`resolve`, `resolve_for_read`)
+discriminates by shape — a slash is a logical id, otherwise docname then
+slug — and `resolve_for_read` raises the same `ContentNotAvailableError` for
+an unknown reference and a denied read. `_by_logical_id` keys on
+`{logical_id, is_standard: 1}`, so a duplicate carrying the same logical id
+never answers for it. `InsightsDashboardv3.set_slug` derives the slug from
+the title only when empty and uniquifies it with
+`append_number_if_name_exists`; the field stays editable afterward. Covered
+by `insights/tests/test_resolver.py`.

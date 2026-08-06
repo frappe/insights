@@ -1,7 +1,7 @@
 # 14 — Tracer bullet: a minimal `insights.chart` island
 
 Type: task
-Status: ready-for-agent
+Status: resolved
 Blocked by: 12, 13
 Spec: [spec-insights-foundation.md](../spec-insights-foundation.md), "Island entries and router decoupling"
 
@@ -28,13 +28,13 @@ in adopted stylesheets — the island renders with the host page's fonts.
 
 ## Acceptance criteria
 
-- [ ] The island build emits ESM assets with `.island.js` / `.island.css`
+- [x] The island build emits ESM assets with `.island.js` / `.island.css`
       keys registered in assets.json
-- [ ] `ui_islands` declares `insights.chart`
-- [ ] The built entry's bare imports are limited to runtime-registered
+- [x] `ui_islands` declares `insights.chart`
+- [x] The built entry's bare imports are limited to runtime-registered
       specifiers, and the build passes the size budget
-- [ ] The chart renders inside a shadow root on a desk page on the test site
-- [ ] The island follows a mid-session theme switch through `host.theme`
-- [ ] `update(props)` re-renders without a re-mount, and `unmount` is
+- [x] The chart renders inside a shadow root on a desk page on the test site
+- [x] The island follows a mid-session theme switch through `host.theme`
+- [x] `update(props)` re-renders without a re-mount, and `unmount` is
       idempotent
-- [ ] The SPA build target still builds and works unchanged
+- [x] The SPA build target still builds and works unchanged

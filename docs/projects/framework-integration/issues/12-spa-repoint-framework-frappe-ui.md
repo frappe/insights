@@ -1,7 +1,7 @@
 # 12 — Repoint the SPA at framework's frappe-ui
 
 Type: task
-Status: ready-for-agent
+Status: resolved
 Blocked by: none — can start immediately
 Spec: [spec-insights-foundation.md](../spec-insights-foundation.md), "One frappe-ui version"
 
@@ -18,13 +18,13 @@ ticket absorbs any breakage the bump surfaces.
 
 ## Acceptance criteria
 
-- [ ] The frontend consumes frappe-ui from the framework checkout through a
+- [x] The frontend consumes frappe-ui from the framework checkout through a
       link dependency, with a note recording that the pinned version returns
       when framework's frappe-ui release exists
-- [ ] The production build succeeds with one frappe-ui in the graph
-- [ ] The SPA works on the test site: login, open a workbook, run a query,
+- [x] The production build succeeds with one frappe-ui in the graph
+- [x] The SPA works on the test site: login, open a workbook, run a query,
       render a chart and a dashboard
-- [ ] The dev server works
+- [x] The dev server works
 
 ## Comments
 

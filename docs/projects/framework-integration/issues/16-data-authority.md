@@ -1,7 +1,7 @@
 # 16 — Data authority
 
 Type: task
-Status: ready-for-agent
+Status: resolved
 Blocked by: none — can start immediately
 Spec: [spec-insights-foundation.md](../spec-insights-foundation.md), "Data authority"
 
@@ -25,13 +25,27 @@ the underlying rows.
 
 ## Acceptance criteria
 
-- [ ] `Insights Chart v3` carries `data_authority`, default `Viewer`,
+- [x] `Insights Chart v3` carries `data_authority`, default `Viewer`,
       declared in the authoring UI
-- [ ] Under `Viewer`, two users with different row access get different rows
+- [x] Under `Viewer`, two users with different row access get different rows
       from the same chart
-- [ ] Under `Author`, a viewer gets the author's rows without the session
+- [x] Under `Author`, a viewer gets the author's rows without the session
       user changing
-- [ ] No request parameter can override the declared authority — a test
+- [x] No request parameter can override the declared authority — a test
       proves the wire cannot flip it
-- [ ] The wide-audience + `Author` combination requires the loud
+- [x] The wide-audience + `Author` combination requires the loud
       confirmation in the UI
+
+## Comments
+
+2026-08-05 — done. `insights/insights/doctype/insights_data_source_v3/data_authority.py`
+is the seam: `get_authority_user_for` reads `data_authority` and `owner`
+straight from the database by doctype/name, never from the in-memory document
+`run_doc_method` builds off the request, so no wire parameter reaches it.
+`InsightsChartv3.get_data` re-reads the stored chart and runs the query inside
+`data_authority_of(chart)`, which sets `frappe.local.insights_authority_user`
+for `InsightsTablev3.get_ibis_table` to apply instead of the session user —
+`frappe.set_user` is never called. `insights/tests/test_data_authority.py`
+covers both rungs and the wire-override case. `0aef7b78` adds the
+`data_authority` control to `ChartShareDialog.vue` with the loud confirmation
+on `Public`/`Everyone` + `Author`.

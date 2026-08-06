@@ -1,7 +1,7 @@
 # 20 — Bundle shipping and declarative reconcile
 
 Type: task
-Status: ready-for-agent
+Status: resolved
 Blocked by: 19
 Spec: [spec-insights-foundation.md](../spec-insights-foundation.md), "Bundle format and shipping" and "Sync: declarative reconcile"
 

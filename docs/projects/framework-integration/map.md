@@ -66,12 +66,60 @@ Resolved tickets:
 - [Content lifecycle: author → ship → customize](issues/03-content-lifecycle.md) — one shipping channel: apps ship bundles of typed named documents (`insights/<bundle>/`, one JSON per query/chart/dashboard, logical-name references, workbook stays out of the format), synced as read-only standard docs via declarative reconcile; authoring = builder + "Export to app" + developer-mode round-trip, released through git; one append-only format major in `bundle.json`; template import-a-copy machinery retires. Customization split out to [Site customization of shipped content](issues/10-site-customization-of-shipped-content.md) with Duplicate as the interim floor.
 - [Data access for desk-rendered content](issues/09-desk-data-access.md) — three-axis model (authoring / visibility / data authority), semantics only, store-agnostic. The gate is a visibility ladder (`Private | Specific Roles | Everyone | Public`) declared as fields on chart and dashboard, enforced through one `frappe.has_permission` seam — no `Insights User` role in the viewing path. `data_authority: Viewer | Author` defaults to `Viewer`, doc-declared, engine-enforced. Viewing implies no Insights access. Drill-down exposes the chart's query rows under the chart's authority, never the query definition.
 - [Desk dashboard page UX](issues/05-desk-dashboard-page-ux.md) — viewer-first page rendering Insights dashboards only (legacy widgets never enter the island; legacy page stays behind the flag). Entry: workspace sidebar items + slug routes (`/app/dashboard/<app>/<name>` shipped, `/app/dashboard/<slug>` site-authored; docname stays hash, slug editable, internal references stay on logical ids). Edit = "Edit in Insights" new-tab, rights-gated; "Duplicate to edit" for shipped. Per-card async states; denied leaks no existence. Drill split to [Drill-down interaction](issues/11-drill-down-interaction.md) as a common Insights+desk layer; prototype dropped as already-proven.
+- [Shipping unit: bundle, or shipped workbook?](issues/24-shipping-unit-bundle-or-workbook.md)
+  — the shipping unit is the workbook; "bundle" dies. Manifest becomes
+  `workbook.json` (same keys); `Insights Workbook` carries `standard_id` +
+  `is_standard` and syncs as the fourth reconciled doctype; the folder name is
+  promoted to workbook identity; a standard workbook admits only standard items,
+  so the container site global and its cleanup machinery die via patch. Renames
+  `logical_id` → `standard_id` everywhere (amends ticket 04's vocabulary).
+- [Workbook item lists: stored or derived?](issues/25-workbook-item-list-model.md)
+  — derived, permanently; ratified rather than built (the server had already
+  moved via `normalize_workbook.py` + the `as_dict` derivation). Ordering
+  authority is `sort_order`/`folder` on items; lists ride the workbook fetch.
+  The client-side residue (title mirror, index routes, reload-after-duplicate)
+  is non-gating debt handed to the parked workbook-state-model effort.
+- [The viewer seat: an Insights Viewer role?](issues/26-viewer-seat-role.md)
+  — rejected. The seat means authoring (`check_app_permission` gates the
+  builder SPA, never viewing); the ladder permanently owns audience on every
+  surface; `Everyone` deliberately means any signed-in site user, with
+  `Specific Roles` for narrower. The grant-source table is the controller's
+  named model — a new source must earn a row, not a join. Two inputs recorded
+  for the parked unified-permission-store effort: the table as its read-side
+  starting spec, and team resource grants on content doctypes as a retirement
+  candidate.
 - **Ownership split** (settled during ticket 02) — framework owns the desk page shell, the mount contract, the shared runtime (Vue + frappe-ui + chart primitives), and the renderer toggle; Insights provides doctypes, engine, and a mountable UI artifact built against framework-provided externals. The seam is one call: framework's page asks Insights to mount into an element with host context. The Insights→desk bridge (is Insights installed? is the flag on? is this an Insights dashboard?) lives in framework, so Insights never knows about the fallback.
 
 The framework-side foundation is specced from these tickets:
 [spec-framework-foundation.md](spec-framework-foundation.md) (`ready-for-agent`).
 The Insights-side foundation is specced from tickets 03, 04, 05, and 09:
 [spec-insights-foundation.md](spec-insights-foundation.md) (`ready-for-agent`).
+
+## Implementation — the foundation branch, 2026-08-05
+
+Tickets 12–23 built the Insights-side and SPA-side foundation the specs above
+called for. Implementation tasks, not decisions — one line per ticket for what
+shipped, not how:
+
+- [Repoint the SPA at framework's frappe-ui](issues/12-spa-repoint-framework-frappe-ui.md) — `frontend/package.json` links frappe-ui from the framework checkout (branch `desk-islands`); production and dev builds work with one frappe-ui in the graph.
+- [Navigation seam: decouple the viewer graph from the SPA router](issues/13-navigation-seam-router-decoupling.md) — the chart and dashboard stores resolve navigation through an injected `helpers/navigation` seam; an app-local ESLint boundary keeps the router and the workbook store out of the viewer graph.
+- [Tracer bullet: a minimal `insights.chart` island](issues/14-chart-island-tracer.md) — the first island builds, registers under `ui_islands`, and mounts a chart in a shadow root on a desk page, live theme switch and idempotent unmount included.
+- [Visibility ladder](issues/15-visibility-ladder.md) — `visibility`/`visible_to_roles` on chart and dashboard, enforced as one grant source inside `InsightsPermissions`; `is_public` migrates onto the `Public` rung.
+- [Data authority](issues/16-data-authority.md) — `data_authority: Viewer | Author` on `Insights Chart v3`, read off the stored document and enforced in `InsightsTablev3.get_ibis_table`; no wire parameter can override it.
+- [Dashboard island and viewer endpoints](issues/17-dashboard-island-viewer-endpoints.md) — role-free viewer endpoints serve dashboard, chart, and chart data by resolver reference; the `insights.dashboard` island renders the saved grid with per-card skeletons.
+- [Island presentation: the full viewer UX](issues/18-island-presentation-polish.md) — sticky filter bar, freshness/refresh, per-card empty/error states, the quiet denied state, and the rights-gated "Edit in Insights" menu.
+- [Logical-id resolver and slug](issues/19-logical-id-resolver-slug.md) — `insights/resolver.py` resolves logical id, slug, or docname to a document, with a denied read indistinguishable from an unknown reference.
+- [Bundle shipping and declarative reconcile](issues/20-bundle-shipping-reconcile.md) — `insights/bundles.py` reconciles an app's `insights/<bundle>/` folders into standard documents on migrate and app-install, idempotently.
+- [Export to app and the developer-mode round-trip](issues/21-export-to-app-roundtrip.md) — "Export to app…" in the workbook menu writes a dashboard's closure into a bundle; a developer-mode save on a standard doc writes back to the same file.
+- [Duplicate to edit](issues/22-duplicate-to-edit.md) — the v1 customization floor: duplicating a shipped dashboard copies its closure into a private, user-owned workbook.
+- [Template migration and glossary](issues/23-template-migration-glossary.md) — the four ERPNext templates re-ship as bundles; the version/checksum update channel and the import ceremony retire; `CONTEXT.md` gains Bundle, Standard content, and Slug.
+
+## Second wave — resolved 2026-08-06
+
+Raised by the 2026-08-06 review of the foundation branch: the implementation
+proved the contract but surfaced three model questions (tickets 24, 25, 26),
+gating the refactor of the branch, not its feasibility. All three are resolved
+and indexed under Decisions so far — the branch reshape is unblocked.
 
 ## Not yet specified
 
@@ -107,5 +155,8 @@ The Insights-side foundation is specced from tickets 03, 04, 05, and 09:
   permission-model overhaul with a possible framework RFC) — its own future
   effort. The [desk data access](issues/09-desk-data-access.md) decision is
   store-agnostic behind the `has_permission` seam, so the store can land
-  without touching the integration contract. First recorded requirement:
-  role-based edit grants.
+  without touching the integration contract. Recorded requirements and inputs:
+  role-based edit grants; the grant-source table from
+  [ticket 26](issues/26-viewer-seat-role.md) as the read-side starting spec;
+  team resource grants on content doctypes as a retirement candidate (teams
+  govern data objects only).

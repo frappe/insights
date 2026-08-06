@@ -1,7 +1,7 @@
 # 23 — Template migration and glossary
 
 Type: task
-Status: ready-for-agent
+Status: resolved
 Blocked by: 21, 22
 Spec: [spec-insights-foundation.md](../spec-insights-foundation.md), "Migration"
 

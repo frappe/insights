@@ -1,7 +1,7 @@
 # 22 — Duplicate to edit
 
 Type: task
-Status: ready-for-agent
+Status: resolved
 Blocked by: 17, 20
 Spec: [spec-insights-foundation.md](../spec-insights-foundation.md), "Customization floor"
 

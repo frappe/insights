@@ -1,7 +1,7 @@
 # 17 — Dashboard island and viewer endpoints
 
 Type: task
-Status: ready-for-agent
+Status: resolved
 Blocked by: 14, 15, 19
 Spec: [spec-insights-foundation.md](../spec-insights-foundation.md), "Viewer data endpoints" and "Island presentation and the desk-page split"
 

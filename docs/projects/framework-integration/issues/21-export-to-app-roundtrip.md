@@ -1,7 +1,7 @@
 # 21 — Export to app and the developer-mode round-trip
 
 Type: task
-Status: ready-for-agent
+Status: resolved
 Blocked by: 20
 Spec: [spec-insights-foundation.md](../spec-insights-foundation.md), "Authoring flows"
 
