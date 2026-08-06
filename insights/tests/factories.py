@@ -131,15 +131,20 @@ def create_test_chart(owner, workbook, query=None, title=TEST_CHART_TITLE):
 
 
 def chart_derivation_fixtures():
-    """Chart configs paired with the operations the browser derived from them.
+    """Chart configs paired with the operations they must derive into.
 
-    The shipped workbooks are the honest oracle for the derivation — they were
-    written by the builder — but they only use seven of the shapes. These close
-    the gap: the chart types and the branches no shipped chart reaches. Each
-    `operations` list is read off the browser's derivation, so it is an oracle
-    only for as long as that derivation exists.
+    One case per chart type, plus the branches within a type that produce a
+    different shape — a funnel counting measures instead of grouping, a table
+    that pivots, a chart whose config sorts by its own measure. The list is what
+    says a type derives at all, so a new chart type belongs here on the day it
+    lands.
 
-    `query` is the source query's name, which the parity check does not resolve.
+    The shapes were the browser's while the browser derived them, and the
+    shipped workbooks carried its output chart by chart. That output is written
+    out here instead: read once off the derivations that were checked against
+    it, and from here on an expectation this codebase owns.
+
+    `query` is the source query's name, which the derivation does not resolve.
     """
     revenue = {
         "aggregation": "sum",
@@ -461,72 +466,219 @@ def chart_derivation_fixtures():
                 },
             ],
         },
+        {
+            # one number over the whole result: measures, no dimension
+            "title": "Total AP",
+            "chart_type": "Number",
+            "query": "ap-open-invoices",
+            "config": {
+                "comparison": False,
+                "shorten_numbers": True,
+                "sparkline": False,
+                "number_columns": [
+                    {
+                        "aggregation": "sum",
+                        "column_name": "outstanding",
+                        "data_type": "Decimal",
+                        "measure_name": "Total AP",
+                    }
+                ],
+            },
+            "operations": [
+                _source_operation("ap-open-invoices"),
+                {
+                    "type": "summarize",
+                    "measures": [
+                        {
+                            "aggregation": "sum",
+                            "column_name": "outstanding",
+                            "data_type": "Decimal",
+                            "measure_name": "Total AP",
+                        }
+                    ],
+                    "dimensions": [],
+                },
+            ],
+        },
+        {
+            # a date dimension carries its granularity into the summarize
+            "title": "Spend Trend",
+            "chart_type": "Line",
+            "query": "purchase-invoices",
+            "config": {
+                "filters": {"filters": [], "logical_operator": "And"},
+                "limit": 100,
+                "order_by": [
+                    {"column": {"type": "column", "column_name": "posting_date"}, "direction": "asc"}
+                ],
+                "x_axis": {
+                    "dimension": {
+                        "column_name": "posting_date",
+                        "data_type": "Date",
+                        "dimension_name": "posting_date",
+                        "granularity": "month",
+                    }
+                },
+                "y_axis": {
+                    "series": [
+                        {
+                            "measure": {
+                                "aggregation": "sum",
+                                "column_name": "base_net_total",
+                                "data_type": "Decimal",
+                                "measure_name": "Spend",
+                            }
+                        }
+                    ],
+                    "show_data_labels": False,
+                },
+            },
+            "operations": [
+                _source_operation("purchase-invoices"),
+                {
+                    "type": "summarize",
+                    "measures": [
+                        {
+                            "aggregation": "sum",
+                            "column_name": "base_net_total",
+                            "data_type": "Decimal",
+                            "measure_name": "Spend",
+                        }
+                    ],
+                    "dimensions": [
+                        {
+                            "column_name": "posting_date",
+                            "data_type": "Date",
+                            "dimension_name": "posting_date",
+                            "granularity": "month",
+                        }
+                    ],
+                },
+                {
+                    "type": "order_by",
+                    "column": {"type": "column", "column_name": "posting_date"},
+                    "direction": "asc",
+                },
+            ],
+        },
+        {
+            # a top-N list: sorted by the measure the summarize just wrote
+            "title": "Top 10 Suppliers",
+            "chart_type": "Row",
+            "query": "purchase-invoices",
+            "config": {
+                "filters": {"filters": [], "logical_operator": "And"},
+                "limit": 10,
+                "order_by": [{"column": {"type": "column", "column_name": "Spend"}, "direction": "desc"}],
+                "x_axis": {
+                    "dimension": {
+                        "column_name": "supplier",
+                        "data_type": "String",
+                        "dimension_name": "supplier",
+                    }
+                },
+                "y_axis": {
+                    "series": [
+                        {
+                            "measure": {
+                                "aggregation": "sum",
+                                "column_name": "base_net_total",
+                                "data_type": "Decimal",
+                                "measure_name": "Spend",
+                            }
+                        }
+                    ]
+                },
+            },
+            "operations": [
+                _source_operation("purchase-invoices"),
+                {
+                    "type": "summarize",
+                    "measures": [
+                        {
+                            "aggregation": "sum",
+                            "column_name": "base_net_total",
+                            "data_type": "Decimal",
+                            "measure_name": "Spend",
+                        }
+                    ],
+                    "dimensions": [
+                        {
+                            "column_name": "supplier",
+                            "data_type": "String",
+                            "dimension_name": "supplier",
+                        }
+                    ],
+                },
+                {
+                    "type": "order_by",
+                    "column": {"type": "column", "column_name": "Spend"},
+                    "direction": "desc",
+                },
+            ],
+        },
+        {
+            # the value is aggregated per source-and-target pair, which is the
+            # one row a Sankey link is
+            "title": "Territory to Item Group",
+            "chart_type": "Sankey",
+            "query": "sales-invoice-items",
+            "config": {
+                "filters": {"filters": [], "logical_operator": "And"},
+                "limit": 100,
+                "order_by": [],
+                "orient": "horizontal",
+                "node_align": "justify",
+                "source_column": {
+                    "column_name": "territory",
+                    "data_type": "String",
+                    "dimension_name": "territory",
+                },
+                "target_column": {
+                    "column_name": "item_group",
+                    "data_type": "String",
+                    "dimension_name": "item_group",
+                },
+                "value_column": {
+                    "aggregation": "sum",
+                    "column_name": "base_net_amount",
+                    "data_type": "Decimal",
+                    "measure_name": "Revenue",
+                },
+            },
+            "operations": [
+                _source_operation("sales-invoice-items"),
+                {
+                    "type": "summarize",
+                    "measures": [
+                        {
+                            "aggregation": "sum",
+                            "column_name": "base_net_amount",
+                            "data_type": "Decimal",
+                            "measure_name": "Revenue",
+                        }
+                    ],
+                    "dimensions": [
+                        {
+                            "column_name": "territory",
+                            "data_type": "String",
+                            "dimension_name": "territory",
+                        },
+                        {
+                            "column_name": "item_group",
+                            "data_type": "String",
+                            "dimension_name": "item_group",
+                        },
+                    ],
+                },
+            ],
+        },
     ]
 
 
-def sankey_derivation_case():
-    """A Sankey config paired with the operations it must derive from now on.
-
-    Not an oracle case, which is why it sits apart from the fixtures above. The
-    browser never derived a Sankey query: the chart type shipped with a config
-    form and a renderer but no builder, so it drew whatever its source query
-    returned. The operations here are the shape it was given afterwards, written
-    by hand — they say what Sankey must do, not what it used to do.
-    """
-    return {
-        "title": "Territory to Item Group",
-        "chart_type": "Sankey",
-        "query": "sales-invoice-items",
-        "config": {
-            "filters": {"filters": [], "logical_operator": "And"},
-            "limit": 100,
-            "order_by": [],
-            "orient": "horizontal",
-            "node_align": "justify",
-            "source_column": {
-                "column_name": "territory",
-                "data_type": "String",
-                "dimension_name": "territory",
-            },
-            "target_column": {
-                "column_name": "item_group",
-                "data_type": "String",
-                "dimension_name": "item_group",
-            },
-            "value_column": {
-                "aggregation": "sum",
-                "column_name": "base_net_amount",
-                "data_type": "Decimal",
-                "measure_name": "Revenue",
-            },
-        },
-        "operations": [
-            _source_operation("sales-invoice-items"),
-            {
-                "type": "summarize",
-                "measures": [
-                    {
-                        "aggregation": "sum",
-                        "column_name": "base_net_amount",
-                        "data_type": "Decimal",
-                        "measure_name": "Revenue",
-                    }
-                ],
-                "dimensions": [
-                    {
-                        "column_name": "territory",
-                        "data_type": "String",
-                        "dimension_name": "territory",
-                    },
-                    {
-                        "column_name": "item_group",
-                        "data_type": "String",
-                        "dimension_name": "item_group",
-                    },
-                ],
-            },
-        ],
-    }
+def derivation_case(chart_type: str) -> dict:
+    """The fixture for one chart type, for a check that is about that type."""
+    return next(case for case in chart_derivation_fixtures() if case["chart_type"] == chart_type)
 
 
 def _source_operation(query):
