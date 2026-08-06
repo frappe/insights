@@ -426,7 +426,7 @@ def import_query(query, workbook):
         new_query.sort_order = max_sort_order + 1
     new_query.insert()
 
-    if str(workbook) == str(query.doc.workbook) or not query.dependencies.queries:
+    if workbook == query.doc.workbook or not query.dependencies.queries:
         return new_query.name
 
     # if query is copied to a new workbook, all the dependencies will be copied as well
