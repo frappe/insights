@@ -20,11 +20,14 @@ await buildIslands({
 		'src2/query/components/{ColumnFilterValueSelector,DataTypeIcon,NumberFilterPicker,QueryDataTable,RelativeDatePicker}.vue',
 		'src2/dashboard/{Filter,FilterControl,VueGridLayout}.vue',
 	],
-	// Pinned from the first clean dashboard build — 91.1 kB JS + 43.2 kB CSS —
-	// plus room for the presentation ticket still to land. The preset's 256 kB
-	// default is a backstop; this one is close enough to bite when an entry picks
-	// up a graph it has no business in.
-	budget: 160 * 1024,
+	// The SPA's plugin. Without it NumberChart's `@xl:` columns compile to nothing.
+	tailwindPlugins: ['@tailwindcss/container-queries'],
+	// 18 kB of typography the runtime sheet already carries — the shadow root
+	// adopts both, runtime first, so text items render off that copy.
+	blocklist: ['prose', 'prose-v3'],
+	// Pinned from the measured dashboard build plus slack, so it bites when an
+	// entry picks up a graph it has no business in.
+	budget: 152 * 1024,
 	// The budget catches a recoupled entry late and by weight; these name the
 	// recouplings. Each drags something a viewer cannot do: routed pages, the
 	// builder aggregate, or a role-gated resource load. Checked after vite erases
