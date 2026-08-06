@@ -2,6 +2,7 @@ import { reactive, ref, toRefs } from 'vue'
 // @ts-ignore
 import { useTelemetry } from 'frappe-ui/frappe'
 import useChart from '../charts/chart'
+import useChartPreview from '../charts/chart_preview'
 import {
 	getUniqueId,
 	safeJSONParse,
@@ -212,10 +213,10 @@ function makeDashboard(name: string) {
 	}
 
 	function refreshChart(chart_name: string, force = false) {
-		const chart = useChart(chart_name)
-		chart.dataQuery.adhocFilters = getAdhocFilters(chart_name)
-		chart.dataQuery.executionPriority = getLayoutRank(chart_name)
-		chart.refresh(force)
+		const preview = useChartPreview(useChart(chart_name))
+		preview.adhocFilters = getAdhocFilters(chart_name)
+		preview.executionPriority = getLayoutRank(chart_name)
+		preview.load(force)
 	}
 
 	// charts reach the queue in whatever order their docs finish loading, so rank

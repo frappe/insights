@@ -18,7 +18,7 @@ import {
 	AXIS_CHARTS,
 	AxisChartConfig,
 } from '../../types/chart.types'
-import { Chart } from '../chart'
+import { ChartRead } from '../chart_read'
 import {
 	getBarChartOptions,
 	getBubbleChartOptions,
@@ -39,23 +39,20 @@ import TableChart from './TableChart.vue'
 // offers, so it is the caller that carries it.
 //
 // `readonly` is for a surface that cannot change the chart: a table's sort
-// rewrites the chart's order and re-runs its query, which a viewer holds neither
+// rewrites the chart's config and re-runs its query, which a viewer holds neither
 // half of, so the control is not offered rather than offered and dead.
-const props = defineProps<{ chart: Chart; readonly?: boolean }>()
+const props = defineProps<{ chart: ChartRead; readonly?: boolean }>()
 const emit = defineEmits<{ drillDown: [query: Query] }>()
 
 const chart_type = computed(() => props.chart.doc.chart_type)
 const config = computed(() => props.chart.doc.config)
-const result = computed(() => props.chart.dataQuery.result || { ...EMPTY_RESULT })
-const loading = computed(
-	() =>
-		!props.chart.isloaded || !props.chart.dataQuery.isloaded || props.chart.dataQuery.executing,
-)
+const result = computed(() => props.chart.result || { ...EMPTY_RESULT })
+const loading = computed(() => props.chart.executing)
 
 const eChartOptions = computed(() => {
 	// the result outlives a chart type switch, so without this the option builders
 	// would run against the incoming type's still-empty config
-	if (!props.chart.isConfigValid) return
+	if (props.chart.configErrors.length) return
 	if (!result.value.columns?.length) return
 	if (chart_type.value === 'Bar' || chart_type.value === 'Row') {
 		return getBarChartOptions(
@@ -151,7 +148,7 @@ function handleMapChartClick(params: any) {
 
 	if (!matchedRow) return null
 
-	return props.chart.dataQuery.getDrillDownQuery(locationColumn.value, matchedRow)
+	return props.chart.getDrillDownQuery(locationColumn.value, matchedRow)
 }
 
 function handleGeneralChartClick(params: any) {
@@ -169,7 +166,7 @@ function handleGeneralChartClick(params: any) {
 	const row = result.value.formattedRows[dataIndex]
 	const column = result.value.columns.find((c) => c.name === params.seriesName)
 
-	return column ? props.chart.dataQuery.getDrillDownQuery(column, row) : null
+	return column ? props.chart.getDrillDownQuery(column, row) : null
 }
 
 async function onChartElementClick(params: any) {
@@ -184,7 +181,7 @@ async function onChartElementClick(params: any) {
 }
 
 async function onNumberChartDrillDown(column: any, row: any) {
-	const query = await props.chart.dataQuery.getDrillDownQuery(column, row)
+	const query = await props.chart.getDrillDownQuery(column, row)
 	if (query) emit('drillDown', query)
 }
 </script>
@@ -220,10 +217,10 @@ async function onNumberChartDrillDown(column: any, row: any) {
 				<LoadingIndicator class="h-5 w-5 text-ink-gray-4" />
 				<p class="mt-1.5 text-ink-gray-4">Loading data...</p>
 			</template>
-			<template v-else-if="chart.dataQuery.isServerBusy">
+			<template v-else-if="chart.serverBusy">
 				<Button
 					variant="outline"
-					@click="chart.refresh(true)"
+					@click="chart.load(true)"
 					label="Server is busy, click to retry"
 				>
 					<template #prefix>

@@ -5,10 +5,10 @@ import { column } from '../../query/helpers'
 import { TableChartConfig } from '../../types/chart.types'
 import { DataFormat, SortDirection } from '../../types/query.types'
 import { Query } from '../../query/query'
-import { Chart } from '../chart'
+import { ChartRead } from '../chart_read'
 import ChartTitle from './ChartTitle.vue'
 
-const props = defineProps<{ chart: Chart; readonly?: boolean }>()
+const props = defineProps<{ chart: ChartRead; readonly?: boolean }>()
 defineEmits<{ drillDown: [query: Query] }>()
 const tableConfig = computed(() => props.chart.doc.config as TableChartConfig)
 
@@ -52,7 +52,7 @@ function onSortChange(column_name: string, sort_order: SortDirection) {
 	>
 		<ChartTitle :title="props.chart.doc.title" />
 		<QueryDataTable
-			:query="props.chart.dataQuery"
+			:query="props.chart"
 			:show-filter-row="tableConfig.show_filter_row"
 			:show-column-totals="tableConfig.show_column_totals"
 			:show-row-totals="tableConfig.show_row_totals"

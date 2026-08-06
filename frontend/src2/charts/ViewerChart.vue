@@ -5,7 +5,7 @@ import ChartBody from './components/ChartBody.vue'
 import ChartTitle from './components/ChartTitle.vue'
 import { __ } from '../translation'
 import type { ViewerFilters } from '../dashboard/viewer'
-import { useViewerChart } from './viewer'
+import { useSavedChart } from './chart_read'
 
 // One chart card, on a dashboard grid or on its own. It owns its whole
 // lifecycle — its own request, its own skeleton, its own failure — so a card
@@ -29,7 +29,7 @@ const props = defineProps<{
 const emit = defineEmits<{ loaded: [executedAt: Date]; resetFilters: [] }>()
 
 const viewer = computed(() =>
-	useViewerChart(props.chart, {
+	useSavedChart(props.chart, {
 		dashboard: props.dashboard,
 		filters: () => props.filters,
 		priority: props.priority,
@@ -53,7 +53,7 @@ watch(
 )
 
 watch(
-	() => viewer.value.executedAt.value,
+	() => viewer.value.executedAt,
 	(executedAt) => executedAt && emit('loaded', executedAt),
 )
 </script>
@@ -61,7 +61,7 @@ watch(
 <template>
 	<div class="h-full w-full">
 		<div
-			v-if="viewer.failed.value"
+			v-if="viewer.failed"
 			class="flex h-full w-full flex-col items-center justify-center gap-2 rounded border border-outline-gray-2 bg-surface-base"
 		>
 			<AlertTriangle class="h-6 w-6 text-ink-gray-4" stroke-width="1" />
@@ -74,17 +74,17 @@ watch(
 		</div>
 
 		<div
-			v-else-if="!viewer.loaded.value"
+			v-else-if="!viewer.ready"
 			class="h-full w-full animate-pulse rounded border border-outline-gray-2 bg-surface-gray-2"
 		/>
 
 		<!-- a card with no rows says so itself: the builder's empty state talks
 		     about configuring the chart, which is not this reader's problem -->
 		<div
-			v-else-if="viewer.empty.value"
+			v-else-if="viewer.empty"
 			class="flex h-full w-full flex-col overflow-hidden rounded border border-outline-gray-2 bg-surface-base"
 		>
-			<ChartTitle :title="viewer.chart.doc.title" />
+			<ChartTitle :title="viewer.doc.title" />
 			<div class="flex flex-1 flex-col items-center justify-center gap-2 p-2">
 				<p class="text-p-base text-ink-gray-5">{{ __('No data') }}</p>
 				<Button
@@ -97,6 +97,6 @@ watch(
 		</div>
 
 		<!-- read-only: sorting is a query, and a viewer has no way to ask for one -->
-		<ChartBody v-else :chart="viewer.chart" readonly />
+		<ChartBody v-else :chart="viewer" readonly />
 	</div>
 </template>

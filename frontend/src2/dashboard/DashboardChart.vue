@@ -3,6 +3,7 @@ import { Button } from 'frappe-ui'
 import { AlertTriangle, Maximize, XIcon } from 'lucide-vue-next'
 import { computed, inject, provide, ref } from 'vue'
 import useChart from '../charts/chart'
+import useChartPreview from '../charts/chart_preview'
 import ChartRenderer from '../charts/components/ChartRenderer.vue'
 import { waitUntil, wheneverChanges } from '../helpers'
 import { navigate } from '../helpers/navigation'
@@ -17,12 +18,15 @@ const chart = computed(() => {
 	if (!props.item.chart) return null
 	return useChart(props.item.chart)
 })
+// the builder's own card, drawn from the config being edited rather than from
+// the saved chart, so an unsaved edit shows here too
+const preview = computed(() => (chart.value ? useChartPreview(chart.value) : null))
 
 if (props.item.chart) {
 	provide('chartName', props.item.chart)
 
 	waitUntil(() => Boolean(chart.value?.isloaded)).then(() => {
-		if (!chart.value?.dataQuery.result.executedSQL) {
+		if (!preview.value?.result.executedSQL) {
 			dashboard.refreshChart(props.item.chart)
 		}
 
@@ -50,7 +54,7 @@ wheneverChanges(
 </script>
 
 <template>
-	<ChartRenderer v-if="chart" :chart="chart" />
+	<ChartRenderer v-if="preview" :chart="preview" />
 
 	<div v-else class="flex h-full flex-1 flex-col items-center justify-center rounded border">
 		<AlertTriangle class="h-8 w-8 text-ink-gray-4" stroke-width="1" />

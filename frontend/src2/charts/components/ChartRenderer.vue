@@ -3,13 +3,13 @@ import { Button } from 'frappe-ui'
 import { Maximize, XIcon } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { Query } from '../../query/query'
-import { Chart } from '../chart'
+import { ChartRead } from '../chart_read'
 import ChartBody from './ChartBody.vue'
 import DrillDown from './DrillDown.vue'
 
 // The chart with the affordances the builder and the SPA give it: expand, and
 // drill down into the rows behind a segment. The chart itself is ChartBody.
-const props = defineProps<{ chart: Chart; hideMaximize?: boolean }>()
+const props = defineProps<{ chart: ChartRead; hideMaximize?: boolean }>()
 
 const drillDownQuery = ref<Query>()
 const showDrillDown = ref(false)
