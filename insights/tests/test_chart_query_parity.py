@@ -83,3 +83,31 @@ class TestChartQueryParity(unittest.TestCase):
 
         self.assertTrue(config_errors("Bar", "", {}), "a chart with no source query")
         self.assertTrue(config_errors("Treemap", "some-query", {}), "an unknown chart type")
+
+    def test_a_config_whose_slots_hold_the_wrong_thing_is_reported_not_raised(self):
+        """A slot names a column or a measure. One holding a bare string names nothing.
+
+        Unconfigured means the config cannot derive, and a slot of the wrong kind
+        is a config that cannot derive — so it comes back as an error the caller
+        can show, the same as an empty slot, never as an exception out of the
+        deriver.
+        """
+        drawable = {
+            "x_axis": {"dimension": {"column_name": "status", "data_type": "String"}},
+            "y_axis": {"series": []},
+        }
+        self.assertEqual(config_errors("Bar", "some-query", drawable), [])
+
+        for slot, value in [
+            ("x_axis", "status"),
+            ("x_axis", {"dimension": "status"}),
+            ("y_axis", ["count"]),
+            ("y_axis", {"series": [{"measure": "count"}]}),
+            ("filters", "status = 'Open'"),
+            ("order_by", [{"column": "status", "direction": "asc"}]),
+            ("rows", ["status"]),
+        ]:
+            with self.subTest(slot=slot, value=value):
+                self.assertTrue(config_errors("Bar", "some-query", {**drawable, slot: value}))
+
+        self.assertTrue(config_errors("Bar", "some-query", "status"), "a config that is not an object")

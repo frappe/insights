@@ -31,8 +31,9 @@ DEFAULT_MAX_COLUMN_VALUES = 10
 def derive_operations(chart_type: str, query: str, config: dict | None) -> list[dict]:
     """The operations JSON this chart executes.
 
-    Call `config_errors` first — a config that cannot derive gives operations
-    that draw the wrong thing rather than nothing.
+    Call `config_errors` first. Every slot below is read for what it names, so a
+    config that has not passed those checks either draws the wrong thing or is
+    not a shape this can read at all.
     """
     config = _config_for_derivation(config, chart_type)
 
@@ -46,10 +47,10 @@ def derive_operations(chart_type: str, query: str, config: dict | None) -> list[
 def config_errors(chart_type: str, query: str, config: dict | None) -> list[str]:
     """Why this chart cannot be drawn, empty when it can.
 
-    Everything a shape needs to name a column: no query, no chart type, or a
-    slot the chart type reads and the config leaves empty.
+    Everything a shape needs to name a column: no query, no chart type, a slot
+    holding something that names nothing, or a slot the chart type reads and the
+    config leaves empty.
     """
-    config = _config_for_derivation(config, chart_type)
     errors = []
 
     if not query:
@@ -58,6 +59,14 @@ def config_errors(chart_type: str, query: str, config: dict | None) -> list[str]
         errors.append(_("Chart type is required"))
     if chart_type not in CHART_TYPES:
         errors.append(_("Invalid chart type: {0}").format(chart_type))
+
+    # a slot of the wrong kind is read no further: every check below reads slots
+    # for what they name, which is only possible once they are the right kind
+    malformed = _malformed_slots(config)
+    if malformed:
+        return errors + malformed
+
+    config = _config_for_derivation(config, chart_type)
 
     if chart_type in AXIS_CHARTS:
         x_axis = config.get("x_axis") or {}
@@ -301,14 +310,7 @@ def _config_for_derivation(config: dict | None, chart_type: str) -> dict:
     builder repairs them on load, so a config that never went through a recent
     builder session still has to derive the same operations here.
     """
-    config = copy.deepcopy(config) if config else {}
-
-    if config.get("x_axis"):
-        config["x_axis"] = _axis_with_dimension(config["x_axis"])
-    if config.get("split_by"):
-        config["split_by"] = _axis_with_dimension(config["split_by"])
-    if isinstance(config.get("y_axis"), list):
-        config["y_axis"] = {"series": [{"measure": measure} for measure in config["y_axis"]]}
+    config = _older_shapes_repaired(copy.deepcopy(config) if config else {})
 
     for dimension in [
         (config.get("x_axis") or {}).get("dimension"),
@@ -325,11 +327,88 @@ def _config_for_derivation(config: dict | None, chart_type: str) -> dict:
     return config
 
 
-def _axis_with_dimension(axis: dict) -> dict:
+def _older_shapes_repaired(config: dict) -> dict:
+    """The slots an older release wrote differently, in today's shape.
+
+    A slot holding something no repair understands is left as it is, for
+    `config_errors` to report.
+    """
+    if config.get("x_axis"):
+        config["x_axis"] = _axis_with_dimension(config["x_axis"])
+    if config.get("split_by"):
+        config["split_by"] = _axis_with_dimension(config["split_by"])
+    if isinstance(config.get("y_axis"), list):
+        config["y_axis"] = {"series": [{"measure": measure} for measure in config["y_axis"]]}
+
+    return config
+
+
+def _axis_with_dimension(axis) -> dict:
     """An axis used to be the dimension itself, before it grew display options."""
-    if axis.get("column_name"):
+    if isinstance(axis, dict) and axis.get("column_name"):
         return {"dimension": axis}
     return axis
+
+
+# every slot derivation reads, and the kind of thing it must hold to be read: a
+# dict names one thing — a column, a measure, a filter group — and a list names
+# several, each item naming one. Nested slots are read the same way, one level in.
+SLOT_SHAPES = {
+    "x_axis": {"dimension": {}},
+    "split_by": {"dimension": {}},
+    "y_axis": {"series": [{"measure": {}}]},
+    "date_column": {},
+    "label_column": {},
+    "value_column": {},
+    "location_column": {},
+    "xAxis": {},
+    "yAxis": {},
+    "size_column": {},
+    "dimension": {},
+    "quadrant_column": {},
+    "filters": {"filters": [{}]},
+    "number_columns": [{}],
+    "measures": [{}],
+    "rows": [{}],
+    "columns": [{}],
+    "values": [{}],
+    "order_by": [{"column": {}}],
+}
+
+
+def _malformed_slots(config: dict | None) -> list[str]:
+    """The slots holding something derivation cannot read.
+
+    A slot that holds a bare string where a column belongs names nothing, and no
+    repair can make it name something — the chart is misconfigured, the same as
+    one with the slot left empty. Reporting it is what lets the checks in
+    `config_errors`, and derivation after them, ask a slot what it names.
+    """
+    if not config:
+        return []
+    if not isinstance(config, dict):
+        return [_("Chart config must be an object")]
+
+    return _slot_errors(_older_shapes_repaired(copy.deepcopy(config)), SLOT_SHAPES, "")
+
+
+def _slot_errors(value, shape, slot: str) -> list[str]:
+    if not value:
+        return []
+
+    if isinstance(shape, list):
+        if not isinstance(value, list):
+            return [_("{0} is malformed").format(slot)]
+        return [error for item in value for error in _slot_errors(item, shape[0], slot)]
+
+    if not isinstance(value, dict):
+        return [_("{0} is malformed").format(slot)]
+
+    return [
+        error
+        for key, inner in shape.items()
+        for error in _slot_errors(value.get(key), inner, f"{slot}.{key}" if slot else key)
+    ]
 
 
 def _named_measures(measures) -> list[dict]:
