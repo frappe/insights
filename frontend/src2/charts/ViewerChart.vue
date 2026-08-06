@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { AlertTriangle, RefreshCcw } from 'lucide-vue-next'
 import { computed, watch } from 'vue'
-import ChartBody from '../charts/components/ChartBody.vue'
-import ChartTitle from '../charts/components/ChartTitle.vue'
+import ChartBody from './components/ChartBody.vue'
+import ChartTitle from './components/ChartTitle.vue'
 import { __ } from '../translation'
-import { useViewerChart, ViewerFilters } from './viewer'
+import type { ViewerFilters } from '../dashboard/viewer'
+import { useViewerChart } from './viewer'
 
 // One chart card, on a dashboard grid or on its own. It owns its whole
 // lifecycle — its own request, its own skeleton, its own failure — so a card

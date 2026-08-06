@@ -60,6 +60,47 @@
 			}
 		},
 		{
+			"files": [
+				"src2/islands/DashboardIsland.vue",
+				"src2/dashboard/Dashboard.vue",
+				"src2/dashboard/SharedDashboard.vue"
+			],
+			"rules": {
+				"no-restricted-imports": [
+					"error",
+					{
+						"patterns": [
+							{
+								"group": [
+									"**/router",
+									"**/router.ts",
+									"**/workbook/workbook",
+									"**/workbook/workbook.ts"
+								],
+								"message": "The viewer graph must not import the SPA router or the workbook store — it drags every routed page into the bundle and an island mounts with neither."
+							},
+							{
+								"group": [
+									"./*.vue",
+									"**/dashboard/*.vue",
+									"!./DashboardView.vue",
+									"!**/dashboard/DashboardView.vue"
+								],
+								"message": "An entry point mounts DashboardView and draws nothing itself. Anything that renders inside the page box — the grid, a card, the filter bar, an action — belongs in DashboardView, behind the capability the server granted for it. A shim carries navigation context only."
+							}
+						],
+						"paths": [
+							{
+								"name": "vue-router",
+								"importNames": ["useRouter", "useRoute"],
+								"message": "The viewer graph must not depend on a router instance — an island mounts without one. Use helpers/navigation instead."
+							}
+						]
+					}
+				]
+			}
+		},
+		{
 			"files": ["src2/charts/chart.ts", "src2/query/query.ts", "src2/dashboard/dashboard.ts"],
 			"rules": {
 				"no-restricted-imports": [

@@ -1,80 +1,15 @@
-// The island's data path: `insights.api.viewer`, plus the one write a reader can
-// make (duplicate, below).
-//
-// An island mounts for a desk user who may hold no Insights role, so it names
-// the content and the server decides what runs — unlike the SPA, which reaches
-// documents through role-gated resources and rebuilds each chart's query in the
-// browser. The query behind a chart never comes back.
+// One chart as a viewer reads it: the config it draws itself from, and the rows
+// the server ran for it. Both come from `insights.api.viewer`, which takes the
+// chart by name — a reader never says what query to run.
 
 import { call } from 'frappe-ui'
 import { computed, reactive, ref } from 'vue'
-import type { Chart } from '../charts/chart'
-import { normalizeChartConfig } from '../charts/helpers'
+import type { Chart } from './chart'
+import { normalizeChartConfig } from './helpers'
+import type { ViewerFilters } from '../dashboard/viewer'
 import { scheduleQueryExecution } from '../query/execution_queue'
 import { EMPTY_RESULT, formatResultRows } from '../query/helpers'
-import type { Layout } from '../types/workbook.types'
-import type { FilterOperator, FilterType, FilterValue, QueryResult } from '../types/query.types'
-
-export type ViewerDashboardItem = {
-	type: 'chart' | 'text' | 'filter'
-	layout: Layout
-	chart?: string
-	text?: string
-	filter_name?: string
-	filter_type?: FilterType
-	// the icon its author picked for it, by lucide name
-	icon?: string
-	default_operator?: FilterOperator
-	default_value?: FilterValue
-	// the cards this filter changes. Which column it lands on stays server-side;
-	// the names are what the bar needs to refetch the right cards and what lets an
-	// empty card say a filter caused it
-	charts?: string[]
-}
-
-export type ViewerDashboard = {
-	name: string
-	slug: string
-	title: string
-	items: ViewerDashboardItem[]
-	vertical_compact_layout: boolean
-	modified: string
-	can_edit: boolean
-	can_duplicate: boolean
-	// where editing happens — the builder is workbook-scoped. Null for anyone who
-	// cannot edit, which is everyone the island is built for
-	workbook: string | null
-}
-
-// dashboard filter state, keyed by filter name. Which query a filter lands on is
-// the server's business — the links that say so never reach a viewer.
-export type ViewerFilters = Record<string, { operator: FilterOperator; value: FilterValue }>
-
-export function fetchDashboard(dashboard: string): Promise<ViewerDashboard> {
-	return call('insights.api.viewer.get_dashboard', { dashboard })
-}
-
-/** The values a filter offers. The column behind it is the server's to know. */
-export function fetchFilterValues(
-	dashboard: string,
-	filter_name: string,
-	search_term?: string,
-): Promise<string[]> {
-	return call('insights.api.viewer.get_filter_values', { dashboard, filter_name, search_term })
-}
-
-/** Where a duplicate landed: the workbook it made, and the dashboard inside it. */
-export type DuplicatedDashboard = { workbook: string; dashboard: string }
-
-/**
- * Copy a dashboard's closure into a workbook of the caller's own.
- *
- * Shipped content is read-only on a site, so this is the only way to change it.
- * The server decides who may: an authoring seat, and read on the dashboard.
- */
-export function duplicateDashboard(dashboard: string): Promise<DuplicatedDashboard> {
-	return call('insights.api.bundles.duplicate_dashboard', { dashboard })
-}
+import type { QueryResult } from '../types/query.types'
 
 export type ViewerChartOptions = {
 	// the dashboard the chart is being viewed on, if any. It carries the chart's

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import ViewerChart from './ViewerChart.vue'
-import { ViewerFilters } from './viewer'
+import ViewerChart from '../charts/ViewerChart.vue'
+import type { ViewerFilters } from '../dashboard/viewer'
 
 // The card is all this island is. Everything it does — load, skeleton, degrade —
 // is what a card on the dashboard grid does, so the two share one component.

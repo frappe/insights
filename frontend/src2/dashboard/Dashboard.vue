@@ -1,94 +1,26 @@
 <script setup lang="ts">
-import { Breadcrumbs, call } from 'frappe-ui'
-import { RefreshCcw } from 'lucide-vue-next'
-import { computed, provide, ref } from 'vue'
-import { downloadImage, waitUntil, wheneverChanges } from '../helpers'
-import { navigate } from '../helpers/navigation'
-import useDashboard from './dashboard'
+import { call } from 'frappe-ui'
+import DashboardView from './DashboardView.vue'
 import { __ } from '../translation'
-import DashboardItem from './DashboardItem.vue'
-import VueGridLayout from './VueGridLayout.vue'
-import { useStorage } from '@vueuse/core'
 
+// The dashboard page inside Insights. It shows what every other surface shows,
+// so all it adds is where this page sits in the app: the trail above it, and the
+// name of the tab it is open in.
 const props = defineProps<{ name: string }>()
 
-const dashboard_name = await call('insights.api.shared.get_dashboard_name', {
+// A v2 name that survived the rename to v3 is the one reference form the viewer
+// does not know, so the route's name is resolved before it is handed over.
+const dashboard = (await call('insights.api.shared.get_dashboard_name', {
 	dashboard_name: props.name,
-})
+})) as string
 
-const dashboard = useDashboard(dashboard_name)
-provide('dashboard', dashboard)
-dashboard.refresh()
+const crumbs = [{ label: __('Dashboards'), route: '/dashboards' }]
 
-function openWorkbook() {
-	navigate(`/workbook/${dashboard.doc.workbook}`)
+function setTitle(title: string) {
+	document.title = `${title} | Insights`
 }
-await waitUntil(() => dashboard.isloaded)
-
-document.title = `${dashboard.doc.title} | Insights`
-
-const canOpenWorkbook = ref(dashboard.doc.has_workbook_access)
-
-const dashboardContainer = ref<HTMLElement | null>(null)
-async function downloadDashboardImage() {
-	if (!dashboardContainer.value) return
-	await downloadImage(dashboardContainer.value, `${dashboard.doc.title}.png`)
-}
-
-const verticalCompact = useStorage('dashboard_vertical_compact', true)
 </script>
 
 <template>
-	<header class="flex h-12 items-center justify-between border-b py-2.5 pl-5 pr-2">
-		<Breadcrumbs
-			:items="[
-				{ label: __('Dashboards'), route: '/dashboards' },
-				{ label: dashboard.doc.title, route: `/dashboards/${dashboard.doc.name}` },
-			]"
-		/>
-		<div class="flex items-center gap-2">
-			<Button variant="outline" @click="() => dashboard.refresh(true)" :label="__('Refresh')">
-				<template #prefix>
-					<RefreshCcw class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
-				</template>
-			</Button>
-			<Dropdown
-				placement="left"
-				:button="{ icon: 'lucide-more-vertical', variant: 'outline' }"
-				:options="[
-					{
-						label: __('Export as PNG'),
-						variant: 'outline',
-						icon: 'lucide-download',
-						onClick: downloadDashboardImage,
-					},
-					canOpenWorkbook
-						? {
-								label: __('Open Workbook'),
-								variant: 'outline',
-								icon: 'lucide-external-link',
-								onClick: openWorkbook,
-						  }
-						: null,
-				]"
-			/>
-		</div>
-	</header>
-
-	<div class="relative flex h-full w-full overflow-hidden">
-		<div ref="dashboardContainer" class="flex-1 overflow-y-auto p-4">
-			<VueGridLayout
-				v-if="dashboard.doc.items.length > 0"
-				class="h-fit w-full"
-				:cols="20"
-				:disabled="true"
-				:verticalCompact="verticalCompact"
-				:modelValue="dashboard.doc.items.map((item) => item.layout)"
-			>
-				<template #item="{ index }">
-					<DashboardItem :index="index" :item="dashboard.doc.items[index]" />
-				</template>
-			</VueGridLayout>
-		</div>
-	</div>
+	<DashboardView :dashboard="dashboard" :breadcrumbs="crumbs" @title="setTitle" />
 </template>

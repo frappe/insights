@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reactive, watch } from 'vue'
-import FilterControl from '../dashboard/FilterControl.vue'
+import FilterControl from './FilterControl.vue'
 import { isFilterApplied } from '../query/components/filter_utils'
 import { __ } from '../translation'
 import type { FilterType } from '../helpers/constants'
