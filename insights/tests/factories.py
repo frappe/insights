@@ -464,6 +464,71 @@ def chart_derivation_fixtures():
     ]
 
 
+def sankey_derivation_case():
+    """A Sankey config paired with the operations it must derive from now on.
+
+    Not an oracle case, which is why it sits apart from the fixtures above. The
+    browser never derived a Sankey query: the chart type shipped with a config
+    form and a renderer but no builder, so it drew whatever its source query
+    returned. The operations here are the shape it was given afterwards, written
+    by hand — they say what Sankey must do, not what it used to do.
+    """
+    return {
+        "title": "Territory to Item Group",
+        "chart_type": "Sankey",
+        "query": "sales-invoice-items",
+        "config": {
+            "filters": {"filters": [], "logical_operator": "And"},
+            "limit": 100,
+            "order_by": [],
+            "orient": "horizontal",
+            "node_align": "justify",
+            "source_column": {
+                "column_name": "territory",
+                "data_type": "String",
+                "dimension_name": "territory",
+            },
+            "target_column": {
+                "column_name": "item_group",
+                "data_type": "String",
+                "dimension_name": "item_group",
+            },
+            "value_column": {
+                "aggregation": "sum",
+                "column_name": "base_net_amount",
+                "data_type": "Decimal",
+                "measure_name": "Revenue",
+            },
+        },
+        "operations": [
+            _source_operation("sales-invoice-items"),
+            {
+                "type": "summarize",
+                "measures": [
+                    {
+                        "aggregation": "sum",
+                        "column_name": "base_net_amount",
+                        "data_type": "Decimal",
+                        "measure_name": "Revenue",
+                    }
+                ],
+                "dimensions": [
+                    {
+                        "column_name": "territory",
+                        "data_type": "String",
+                        "dimension_name": "territory",
+                    },
+                    {
+                        "column_name": "item_group",
+                        "data_type": "String",
+                        "dimension_name": "item_group",
+                    },
+                ],
+            },
+        ],
+    }
+
+
 def _source_operation(query):
     return {"type": "source", "table": {"type": "query", "workbook": 0, "query_name": query}}
 

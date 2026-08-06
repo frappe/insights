@@ -15,7 +15,7 @@ from pathlib import Path
 
 import insights
 from insights.insights.doctype.insights_chart_v3.chart_query import config_errors, derive_operations
-from insights.tests.factories import chart_derivation_fixtures
+from insights.tests.factories import chart_derivation_fixtures, sankey_derivation_case
 
 BUNDLES = Path(insights.__file__).parent / "insights"
 
@@ -67,17 +67,22 @@ class TestChartQueryParity(unittest.TestCase):
             self.assert_derives(fixture["title"], fixture, fixture["operations"])
 
     def test_every_chart_type_is_covered(self):
-        """The port is only checked where a case exists, so count the types."""
+        """A derivation is only checked where a case exists, so count the types.
+
+        Sankey is counted here too, from the case below, even though it is not a
+        parity case — every type must have somewhere that says what it derives.
+        """
         covered = {chart["chart_type"] for _, chart, _ in shipped_charts()}
         covered |= {fixture["chart_type"] for fixture in chart_derivation_fixtures()}
+        covered.add(sankey_derivation_case()["chart_type"])
 
         self.assertEqual(
             covered,
-            {"Bar", "Line", "Row", "Number", "Donut", "Funnel", "Table", "Map", "Bubble"},
+            {"Bar", "Line", "Row", "Number", "Donut", "Funnel", "Table", "Map", "Bubble", "Sankey"},
         )
 
     def test_a_config_that_names_no_columns_cannot_be_drawn(self):
-        for chart_type in ("Bar", "Number", "Donut", "Funnel", "Table", "Map", "Bubble"):
+        for chart_type in ("Bar", "Number", "Donut", "Funnel", "Table", "Map", "Bubble", "Sankey"):
             with self.subTest(chart_type=chart_type):
                 self.assertTrue(config_errors(chart_type, "some-query", {}))
 
@@ -111,3 +116,28 @@ class TestChartQueryParity(unittest.TestCase):
                 self.assertTrue(config_errors("Bar", "some-query", {**drawable, slot: value}))
 
         self.assertTrue(config_errors("Bar", "some-query", "status"), "a config that is not an object")
+
+
+class TestSankeyDerivation(unittest.TestCase):
+    """What Sankey derives now, which is not what the browser derived.
+
+    Every other case in this file diffs the port against the browser. Sankey has
+    no browser derivation to diff against — the type shipped without a builder,
+    so it drew its source query as it came. This is the derivation it was given
+    afterwards: a change of behaviour, checked on its own terms.
+    """
+
+    def test_sankey_groups_by_source_and_target(self):
+        case = sankey_derivation_case()
+
+        self.assertEqual(config_errors(case["chart_type"], case["query"], case["config"]), [])
+        derived = derive_operations(case["chart_type"], case["query"], case["config"])
+        self.assertEqual(comparable(derived), comparable(case["operations"]))
+
+    def test_sankey_needs_a_source_a_target_and_a_value(self):
+        case = sankey_derivation_case()
+
+        for slot in ("source_column", "target_column", "value_column"):
+            with self.subTest(slot=slot):
+                config = {**case["config"], slot: {}}
+                self.assertTrue(config_errors("Sankey", case["query"], config))

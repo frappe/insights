@@ -23,6 +23,7 @@ import {
 	FunnelChartConfig,
 	MapChartConfig,
 	NumberChartConfig,
+	SankeyChartConfig,
 	TableChartConfig,
 } from '../types/chart.types'
 import { InsightsChartv3 } from '../types/workbook.types'
@@ -218,6 +219,28 @@ function makeChart(name: string) {
 			}
 		}
 
+		if (chart.doc.chart_type === 'Sankey') {
+			const config = chart.doc.config as SankeyChartConfig
+			if (!config.source_column?.column_name) {
+				messages.push({
+					variant: 'error',
+					message: __('Source column is required'),
+				})
+			}
+			if (!config.target_column?.column_name) {
+				messages.push({
+					variant: 'error',
+					message: __('Target column is required'),
+				})
+			}
+			if (!config.value_column?.measure_name) {
+				messages.push({
+					variant: 'error',
+					message: __('Value column is required'),
+				})
+			}
+		}
+
 		return !messages.length
 	}
 
@@ -261,6 +284,10 @@ function makeChart(name: string) {
 
 		if (chart.doc.chart_type === 'Bubble') {
 			addBubbleChartOperation(query)
+		}
+
+		if (chart.doc.chart_type === 'Sankey') {
+			addSankeyChartOperation(query)
 		}
 	}
 
@@ -364,6 +391,15 @@ function makeChart(name: string) {
 		query.addSummarize({
 			measures: [config.value_column],
 			dimensions: dimensions,
+		})
+	}
+
+	function addSankeyChartOperation(query: Query) {
+		const config = chart.doc.config as SankeyChartConfig
+		// a link is one row per source and target, so the two of them group it
+		query.addSummarize({
+			measures: [config.value_column],
+			dimensions: [config.source_column, config.target_column],
 		})
 	}
 

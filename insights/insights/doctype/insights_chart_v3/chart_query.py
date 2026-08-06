@@ -111,6 +111,14 @@ def config_errors(chart_type: str, query: str, config: dict | None) -> list[str]
         if not (config.get("yAxis") or {}).get("measure_name"):
             errors.append(_("Y-axis is required"))
 
+    if chart_type == "Sankey":
+        if not (config.get("source_column") or {}).get("column_name"):
+            errors.append(_("Source column is required"))
+        if not (config.get("target_column") or {}).get("column_name"):
+            errors.append(_("Target column is required"))
+        if not (config.get("value_column") or {}).get("measure_name"):
+            errors.append(_("Value column is required"))
+
     return errors
 
 
@@ -132,6 +140,8 @@ def _add_chart_operation(operations: list[dict], chart_type: str, config: dict):
         _add_map_operation(operations, config)
     elif chart_type == "Bubble":
         _add_bubble_operation(operations, config)
+    elif chart_type == "Sankey":
+        _add_sankey_operation(operations, config)
 
 
 def _add_axis_operation(operations: list[dict], config: dict):
@@ -214,6 +224,16 @@ def _add_map_operation(operations: list[dict], config: dict):
         _summarize(
             measures=[config.get("value_column") or {}],
             dimensions=[config.get("location_column") or {}],
+        )
+    )
+
+
+def _add_sankey_operation(operations: list[dict], config: dict):
+    # a link is one row per source and target, so the two of them group it
+    operations.append(
+        _summarize(
+            measures=[config.get("value_column") or {}],
+            dimensions=[config.get("source_column") or {}, config.get("target_column") or {}],
         )
     )
 
@@ -361,6 +381,8 @@ SLOT_SHAPES = {
     "label_column": {},
     "value_column": {},
     "location_column": {},
+    "source_column": {},
+    "target_column": {},
     "xAxis": {},
     "yAxis": {},
     "size_column": {},
