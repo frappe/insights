@@ -14,10 +14,14 @@ import {
 
 import { column, filter_group, parseFilterString } from '../helpers'
 import { Query } from '../query'
+import { ResultTable } from '../result_table'
 import session from '../../session'
 
+// `query` is whatever produced the rows — a query store, or a chart read store
+// that holds a result and none of the authoring half. What it does not offer is
+// not drawn.
 const props = defineProps<{
-	query: Query
+	query: ResultTable
 	enableColumnRename?: boolean
 	enableSort?: boolean
 	enableDrillDown?: boolean
@@ -40,22 +44,26 @@ const rows = computed(() => props.query.result.formattedRows)
 const previewRowCount = computed(() => props.query.result.rows.length)
 const totalRowCount = computed(() => props.query.result.totalRowCount || undefined)
 
+// a source with no paging of its own holds the whole result already
+const currentPage = computed(() => props.query.currentPage ?? 1)
+const pageSize = computed(() => props.query.pageSize ?? previewRowCount.value + 1)
+
 // When the entire result fits on one page, filter client-side (instant, no round-trip)
 const isSinglePage = computed(
-	() => props.query.currentPage === 1 && previewRowCount.value < props.query.pageSize,
+	() => currentPage.value === 1 && previewRowCount.value < pageSize.value,
 )
 
 function onRename(column_name: string, new_name: string) {
 	new_name = new_name.trim()
 	if (new_name === column_name) return
 	if (!new_name) return
-	props.query.renameColumn(column_name, new_name)
+	props.query.renameColumn?.(column_name, new_name)
 }
 
 const sortOrder = computed(() => {
 	const _sortOrder = {} as Record<string, SortDirection>
 
-	props.query.currentOperations.forEach((operation) => {
+	props.query.currentOperations?.forEach((operation) => {
 		if (operation.type === 'order_by') {
 			const column_name = operation.column.column_name
 			const direction = operation.direction
@@ -73,10 +81,10 @@ function onSortChange(column_name: string, sort_order: SortDirection) {
 	}
 
 	if (!sort_order) {
-		props.query.removeOrderBy(column_name)
+		props.query.removeOrderBy?.(column_name)
 		return
 	}
-	props.query.addOrderBy({
+	props.query.addOrderBy?.({
 		column: column(column_name),
 		direction: sort_order,
 	})
@@ -85,7 +93,7 @@ function onSortChange(column_name: string, sort_order: SortDirection) {
 // The table reports the drill-down, it does not open it: the drill-down dialog is
 // the query editor, and only a caller that offers the affordance should carry it.
 async function onDrillDown(column: QueryResultColumn, row: QueryResultRow) {
-	const query = await props.query.getDrillDownQuery(column, row)
+	const query = await props.query.getDrillDownQuery?.(column, row)
 	if (query) emit('drillDown', query)
 }
 
@@ -113,11 +121,11 @@ watch(
 )
 
 function onExport(format: 'csv' | 'excel', filename: string) {
-	props.query.exportResults(format, filename)
+	props.query.exportResults?.(format, filename)
 }
 
 function onPageChange(page: number) {
-	props.query.goToPage(page)
+	props.query.goToPage?.(page)
 }
 
 function onFilterChange(filters: Record<string, string>) {
@@ -145,7 +153,7 @@ function onFilterChange(filters: Record<string, string>) {
 		}
 	})
 
-	if (allRules.length) {
+	if (allRules.length && props.query.name) {
 		adhocFilters[props.query.name] = filter_group({
 			logical_operator: 'And',
 			filters: allRules,
@@ -155,22 +163,22 @@ function onFilterChange(filters: Record<string, string>) {
 	props.query.adhocFilters = adhocFilters
 
 	isFiltering.value = true
-	props.query.goToPage(1)
+	props.query.goToPage?.(1)
 }
 </script>
 
 <template>
 	<DataTable
-		v-if="props.query.isloaded || props.query.islocal"
+		v-if="props.query.ready"
 		:loading="props.query.executing && !isFiltering"
 		:filtering="props.query.executing && isFiltering"
 		:columns="columns"
 		:rows="rows"
 		:enable-pagination="true"
-		:page-size="props.query.pageSize"
+		:page-size="pageSize"
 		:total-row-count="totalRowCount"
-		:current-page="props.query.currentPage"
-		:on-page-change="onPageChange"
+		:current-page="currentPage"
+		:on-page-change="props.query.goToPage ? onPageChange : undefined"
 		:on-fetch-count="props.query.fetchResultCount"
 		:on-filter-change="isSinglePage ? undefined : onFilterChange"
 		:on-export="props.query.exportResults"
@@ -210,6 +218,6 @@ function onFilterChange(filters: Record<string, string>) {
 		:downloading="props.query.downloading"
 		:default-filename="exportDefaultName"
 		@export="onExport"
-		@cancel="props.query.cancelDownload"
+		@cancel="props.query.cancelDownload?.()"
 	/>
 </template>

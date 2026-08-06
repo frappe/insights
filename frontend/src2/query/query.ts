@@ -769,279 +769,16 @@ export function makeQuery(name: string) {
 			})
 	}
 
-	async function getDrillDownQuery(col: QueryResultColumn, row: QueryResultRow) {
-		if (!session.isLoggedIn) {
-			return
-		}
-
-		const rowIndex = result.value.formattedRows.findIndex((r) => r === row)
-		const currRow = result.value.rows[rowIndex]
-
-		// Get the effective operations — inlining source query ops if needed
-		const operations = await getEffectiveOperationsForDrillDown(
-			copy(query.doc.operations),
-			currRow,
+	function getDrillDownQuery(col: QueryResultColumn, row: QueryResultRow) {
+		return makeDrillDownQuery(
+			{
+				operations: query.doc.operations,
+				result: result.value,
+				use_live_connection: query.doc.use_live_connection,
+			},
 			col,
+			row,
 		)
-		if (!operations) {
-			// error toast was already shown
-			return
-		}
-
-		const { ops, filters: inheritedFilters } = operations
-
-		// Now find the last summarize/pivot in the resolved operations
-		const reversedOps = ops.slice().reverse()
-
-		let drillDownFilters: FilterArgs[] = []
-		let sliceIdx = -1
-
-		const lastPivotIdx = reversedOps.findIndex((op: Operation) => op.type === 'pivot_wider')
-		if (lastPivotIdx !== -1) {
-			sliceIdx = reversedOps.length - lastPivotIdx - 1
-			drillDownFilters = getDrillDownFiltersForPivot(ops, sliceIdx, col, currRow)
-		}
-
-		const lastSummarizeIdx = reversedOps.findIndex((op: Operation) => op.type === 'summarize')
-		if (lastSummarizeIdx !== -1) {
-			sliceIdx = reversedOps.length - lastSummarizeIdx - 1
-			drillDownFilters = getDrillDownFiltersForSummarize(ops, sliceIdx, col, currRow)
-		}
-
-		const drill_down_query = makeAdhocQuery()
-		drill_down_query.doc.title = 'Drill Down'
-		drill_down_query.doc.use_live_connection = query.doc.use_live_connection
-		drill_down_query.autoExecute = true
-
-		drill_down_query.setOperations(ops.slice(0, sliceIdx))
-		drill_down_query.addFilterGroup({
-			logical_operator: 'And',
-			filters: [...inheritedFilters, ...drillDownFilters],
-		})
-
-		return drill_down_query
-	}
-
-	/**
-	 * Returns the effective operations list for drill-down.
-	 *
-	 * If the current operations already have a summarize/pivot, return them as-is.
-	 * Otherwise, if the source is another query, inline that source query's operations
-	 * (prepending any filters from the current query) so the drill-down can find the
-	 * source query's summarize and slice through it.
-	 *
-	 * Returns null and shows a toast if drill-down is not possible.
-	 */
-	async function getEffectiveOperationsForDrillDown(
-		operations: Operation[],
-		currRow: QueryResultRow,
-		col: QueryResultColumn,
-		_visitedQueries: Set<string> = new Set(),
-	): Promise<{ ops: Operation[]; filters: FilterArgs[] } | null> {
-		// If there's a local summarize/pivot, no inlining needed
-		const hasSummarizeOrPivot = operations.find(
-			(op) => op.type === 'summarize' || op.type === 'pivot_wider',
-		)
-		if (hasSummarizeOrPivot) {
-			// Basic validation
-			if (!result.value.columns?.length) {
-				createToast({
-					title: __('Failed to drill down'),
-					message: 'No columns found in the result',
-					variant: 'warning',
-				})
-				return null
-			}
-			if (!currRow) {
-				createToast({
-					title: __('Failed to drill down'),
-					message: 'Row not found',
-					variant: 'warning',
-				})
-				return null
-			}
-			return { ops: operations, filters: [] }
-		}
-
-		// No local summarize/pivot — check if the source is another query
-		const sourceOp = operations.find((op) => op.type === 'source') as Source | undefined
-		if (
-			!sourceOp ||
-			sourceOp.table.type !== 'query'
-		) {
-			createToast({
-				title: __('Failed to drill down'),
-				message: __('Drill down is only supported on summarized data'),
-				variant: 'warning',
-			})
-			return null
-		}
-
-		const sourceQueryName = sourceOp.table.query_name
-
-		// Guard against circular references
-		if (_visitedQueries.has(sourceQueryName)) {
-			createToast({
-				title: __('Failed to drill down'),
-				message: __('Drill down is only supported on summarized data'),
-				variant: 'warning',
-			})
-			return null
-		}
-
-		// Load the source query's operations
-		const sourceQuery = useQuery(sourceQueryName)
-		await waitUntil(() => sourceQuery.isloaded)
-
-		const sourceOps = copy(sourceQuery.doc.operations)
-
-		// Merge: source query's operations + any filter_groups from the current query
-		// (filters applied on top of the source query should still be respected)
-		const mergedOps = [
-			...sourceOps,
-			...operations.filter((op) => op.type === 'filter_group'),
-		]
-
-		// Recursively resolve — the source query might itself have a query source
-		return getEffectiveOperationsForDrillDown(
-			mergedOps,
-			currRow,
-			col,
-			_visitedQueries.add(sourceQueryName),
-		)
-	}
-
-	function getFiltersForDimension(dim: Dimension, value: string) {
-		const filters: FilterRule[] = []
-
-		if (!FIELDTYPES.DATE.includes(dim.data_type)) {
-			filters.push({
-				column: column(dim.column_name),
-				operator: '=',
-				value: value,
-			})
-		}
-
-		if (FIELDTYPES.DATE.includes(dim.data_type)) {
-			if (!value) {
-				filters.push({ column: column(dim.column_name), operator: 'is_not_set', value: '' })
-				return filters
-			}
-
-			const start = dayjs(value)
-			// since fiscal year is not supported in dayjs
-			// we will treat it as year for drill down purposes
-			const granularity = dim.granularity === 'fiscal_year' ? 'year' : dim.granularity
-
-			filters.push({
-				column: column(dim.column_name),
-				operator: '>=',
-				value: start.format('YYYY-MM-DD HH:mm:ss'),
-			})
-
-			if (granularity) {
-				const end = start.clone().add(1, granularity)
-				filters.push({
-					column: column(dim.column_name),
-					operator: '<',
-					value: end.format('YYYY-MM-DD HH:mm:ss'),
-				})
-			}
-		}
-
-		return filters
-	}
-
-	function getFiltersForMeasure(measure: Measure, columnName: string) {
-		if (
-			measure.measure_name !== columnName ||
-			'expression' in measure === false ||
-			!measure.expression
-		) {
-			return []
-		}
-
-		// patterns to match to extract the condition
-		// 1. count_if(order_status == 'delivered')
-		// 2. count_if(order_status == 'delivered', order_id)
-		// 3. sum_if(order_status == 'delivered', order_id)
-		// 4. distinct_count_if(order_status == 'delivered', order_id)
-		const exp = measure.expression.expression
-		const patterns = [
-			/^count_if\(([^,]+),\s*([^)]+)\)$/,
-			/^count_if\(([^,]+)\)$/,
-			/^sum_if\(([^,]+),\s*([^)]+)\)$/,
-			/^distinct_count_if\(([^,]+),\s*([^)]+)\)$/,
-		]
-		const pattern = patterns.find((p) => exp.match(p))
-		if (pattern) {
-			const match = exp.match(pattern)
-			if (match) {
-				const condition = match[1].trim()
-				return [
-					{
-						expression: expression(condition),
-					},
-				]
-			}
-		}
-
-		return []
-	}
-
-	function getDrillDownFiltersForSummarize(
-		operations: Operation[],
-		summarizeIdx: number,
-		col: QueryResultColumn,
-		row: QueryResultRow
-	) {
-		const filters: FilterArgs[] = []
-		const summarizeOperation = operations[summarizeIdx] as Summarize
-		summarizeOperation.dimensions.forEach((c) => {
-			filters.push(...getFiltersForDimension(c, row[c.dimension_name]))
-		})
-
-		summarizeOperation.measures.forEach((m) => {
-			filters.push(...getFiltersForMeasure(m, col.name))
-		})
-
-		return filters
-	}
-
-	function getDrillDownFiltersForPivot(
-		operations: Operation[],
-		pivotIdx: number,
-		col: QueryResultColumn,
-		row: QueryResultRow
-	) {
-		const pivotOperation = operations[pivotIdx] as PivotWiderArgs
-
-		const filters: FilterArgs[] = []
-		pivotOperation.rows.forEach((c) => {
-			filters.push(...getFiltersForDimension(c, row[c.dimension_name]))
-		})
-
-		const pivotColumnValues = col.name.split('___').reverse()
-		// each value in the pivot column values corresponds to a column in the pivot operation "columns"
-		// for eg. if the pivot column values are ["A", "B", "C"], then these values correspond to
-		// pivotOperation.columns[0], pivotOperation.columns[1], pivotOperation.columns[2]
-		pivotOperation.columns.forEach((c, idx) => {
-			if (pivotColumnValues[idx]) {
-				filters.push(...getFiltersForDimension(c, pivotColumnValues[idx]))
-			}
-		})
-
-		// if there are more than one value then there are two headers in the pivot table
-		// the last one displays the measure name, so we get the current measure name from pivotColumnValues
-		const selectedValueColumn =
-			pivotOperation.values.length == 1
-				? pivotOperation.values[0].measure_name
-				: (pivotColumnValues[pivotColumnValues.length - 1] as string)
-		pivotOperation.values.forEach((m) => {
-			return filters.push(...getFiltersForMeasure(m, selectedValueColumn))
-		})
-
-		return filters
 	}
 
 
@@ -1109,6 +846,10 @@ export function makeQuery(name: string) {
 
 	return reactive({
 		...toRefs(query),
+
+		// a saved query has a document to wait for, a throwaway one never does —
+		// either way this is when there is something to draw a table from
+		ready: computed(() => query.isloaded || query.islocal),
 
 		activeOperationIdx,
 		activeEditIndex,
@@ -1185,6 +926,292 @@ export function makeQuery(name: string) {
 }
 
 export type Query = ReturnType<typeof makeQuery>
+
+// What a drill-down forks: the operations that produced a result, and the result
+// they produced. A query store hands over its own; a chart hands over the ones
+// the server derived for it, so the drill result always agrees with the card it
+// came from.
+export type DrillDownSource = {
+	operations: Operation[]
+	result: QueryResult
+	use_live_connection?: boolean
+}
+
+export async function makeDrillDownQuery(
+	source: DrillDownSource,
+	col: QueryResultColumn,
+	row: QueryResultRow,
+): Promise<Query | undefined> {
+	if (!session.isLoggedIn) {
+		return
+	}
+
+	const rowIndex = source.result.formattedRows.findIndex((r) => r === row)
+	const currRow = source.result.rows[rowIndex]
+
+	// Get the effective operations — inlining source query ops if needed
+	const operations = await getEffectiveOperationsForDrillDown(
+		copy(source.operations),
+		currRow,
+		col,
+		source.result,
+	)
+	if (!operations) {
+		// error toast was already shown
+		return
+	}
+
+	const { ops, filters: inheritedFilters } = operations
+
+	// Now find the last summarize/pivot in the resolved operations
+	const reversedOps = ops.slice().reverse()
+
+	let drillDownFilters: FilterArgs[] = []
+	let sliceIdx = -1
+
+	const lastPivotIdx = reversedOps.findIndex((op: Operation) => op.type === 'pivot_wider')
+	if (lastPivotIdx !== -1) {
+		sliceIdx = reversedOps.length - lastPivotIdx - 1
+		drillDownFilters = getDrillDownFiltersForPivot(ops, sliceIdx, col, currRow)
+	}
+
+	const lastSummarizeIdx = reversedOps.findIndex((op: Operation) => op.type === 'summarize')
+	if (lastSummarizeIdx !== -1) {
+		sliceIdx = reversedOps.length - lastSummarizeIdx - 1
+		drillDownFilters = getDrillDownFiltersForSummarize(ops, sliceIdx, col, currRow)
+	}
+
+	const drill_down_query = makeAdhocQuery()
+	drill_down_query.doc.title = 'Drill Down'
+	drill_down_query.doc.use_live_connection = source.use_live_connection
+	drill_down_query.autoExecute = true
+
+	drill_down_query.setOperations(ops.slice(0, sliceIdx))
+	drill_down_query.addFilterGroup({
+		logical_operator: 'And',
+		filters: [...inheritedFilters, ...drillDownFilters],
+	})
+
+	return drill_down_query
+}
+
+/**
+ * Returns the effective operations list for drill-down.
+ *
+ * If the current operations already have a summarize/pivot, return them as-is.
+ * Otherwise, if the source is another query, inline that source query's operations
+ * (prepending any filters from the current query) so the drill-down can find the
+ * source query's summarize and slice through it.
+ *
+ * Returns null and shows a toast if drill-down is not possible.
+ */
+async function getEffectiveOperationsForDrillDown(
+	operations: Operation[],
+	currRow: QueryResultRow,
+	col: QueryResultColumn,
+	result: QueryResult,
+	_visitedQueries: Set<string> = new Set(),
+): Promise<{ ops: Operation[]; filters: FilterArgs[] } | null> {
+	// If there's a local summarize/pivot, no inlining needed
+	const hasSummarizeOrPivot = operations.find(
+		(op) => op.type === 'summarize' || op.type === 'pivot_wider',
+	)
+	if (hasSummarizeOrPivot) {
+		// Basic validation
+		if (!result.columns?.length) {
+			createToast({
+				title: __('Failed to drill down'),
+				message: 'No columns found in the result',
+				variant: 'warning',
+			})
+			return null
+		}
+		if (!currRow) {
+			createToast({
+				title: __('Failed to drill down'),
+				message: 'Row not found',
+				variant: 'warning',
+			})
+			return null
+		}
+		return { ops: operations, filters: [] }
+	}
+
+	// No local summarize/pivot — check if the source is another query
+	const sourceOp = operations.find((op) => op.type === 'source') as Source | undefined
+	if (!sourceOp || sourceOp.table.type !== 'query') {
+		createToast({
+			title: __('Failed to drill down'),
+			message: __('Drill down is only supported on summarized data'),
+			variant: 'warning',
+		})
+		return null
+	}
+
+	const sourceQueryName = sourceOp.table.query_name
+
+	// Guard against circular references
+	if (_visitedQueries.has(sourceQueryName)) {
+		createToast({
+			title: __('Failed to drill down'),
+			message: __('Drill down is only supported on summarized data'),
+			variant: 'warning',
+		})
+		return null
+	}
+
+	// Load the source query's operations
+	const sourceQuery = useQuery(sourceQueryName)
+	await waitUntil(() => sourceQuery.isloaded)
+
+	const sourceOps = copy(sourceQuery.doc.operations)
+
+	// Merge: source query's operations + any filter_groups from the current query
+	// (filters applied on top of the source query should still be respected)
+	const mergedOps = [...sourceOps, ...operations.filter((op) => op.type === 'filter_group')]
+
+	// Recursively resolve — the source query might itself have a query source
+	return getEffectiveOperationsForDrillDown(
+		mergedOps,
+		currRow,
+		col,
+		result,
+		_visitedQueries.add(sourceQueryName),
+	)
+}
+
+function getFiltersForDimension(dim: Dimension, value: string) {
+	const filters: FilterRule[] = []
+
+	if (!FIELDTYPES.DATE.includes(dim.data_type)) {
+		filters.push({
+			column: column(dim.column_name),
+			operator: '=',
+			value: value,
+		})
+	}
+
+	if (FIELDTYPES.DATE.includes(dim.data_type)) {
+		if (!value) {
+			filters.push({ column: column(dim.column_name), operator: 'is_not_set', value: '' })
+			return filters
+		}
+
+		const start = dayjs(value)
+		// since fiscal year is not supported in dayjs
+		// we will treat it as year for drill down purposes
+		const granularity = dim.granularity === 'fiscal_year' ? 'year' : dim.granularity
+
+		filters.push({
+			column: column(dim.column_name),
+			operator: '>=',
+			value: start.format('YYYY-MM-DD HH:mm:ss'),
+		})
+
+		if (granularity) {
+			const end = start.clone().add(1, granularity)
+			filters.push({
+				column: column(dim.column_name),
+				operator: '<',
+				value: end.format('YYYY-MM-DD HH:mm:ss'),
+			})
+		}
+	}
+
+	return filters
+}
+
+function getFiltersForMeasure(measure: Measure, columnName: string) {
+	if (
+		measure.measure_name !== columnName ||
+		'expression' in measure === false ||
+		!measure.expression
+	) {
+		return []
+	}
+
+	// patterns to match to extract the condition
+	// 1. count_if(order_status == 'delivered')
+	// 2. count_if(order_status == 'delivered', order_id)
+	// 3. sum_if(order_status == 'delivered', order_id)
+	// 4. distinct_count_if(order_status == 'delivered', order_id)
+	const exp = measure.expression.expression
+	const patterns = [
+		/^count_if\(([^,]+),\s*([^)]+)\)$/,
+		/^count_if\(([^,]+)\)$/,
+		/^sum_if\(([^,]+),\s*([^)]+)\)$/,
+		/^distinct_count_if\(([^,]+),\s*([^)]+)\)$/,
+	]
+	const pattern = patterns.find((p) => exp.match(p))
+	if (pattern) {
+		const match = exp.match(pattern)
+		if (match) {
+			const condition = match[1].trim()
+			return [
+				{
+					expression: expression(condition),
+				},
+			]
+		}
+	}
+
+	return []
+}
+
+function getDrillDownFiltersForSummarize(
+	operations: Operation[],
+	summarizeIdx: number,
+	col: QueryResultColumn,
+	row: QueryResultRow,
+) {
+	const filters: FilterArgs[] = []
+	const summarizeOperation = operations[summarizeIdx] as Summarize
+	summarizeOperation.dimensions.forEach((c) => {
+		filters.push(...getFiltersForDimension(c, row[c.dimension_name]))
+	})
+
+	summarizeOperation.measures.forEach((m) => {
+		filters.push(...getFiltersForMeasure(m, col.name))
+	})
+
+	return filters
+}
+
+function getDrillDownFiltersForPivot(
+	operations: Operation[],
+	pivotIdx: number,
+	col: QueryResultColumn,
+	row: QueryResultRow,
+) {
+	const pivotOperation = operations[pivotIdx] as PivotWiderArgs
+
+	const filters: FilterArgs[] = []
+	pivotOperation.rows.forEach((c) => {
+		filters.push(...getFiltersForDimension(c, row[c.dimension_name]))
+	})
+
+	const pivotColumnValues = col.name.split('___').reverse()
+	// each value in the pivot column values corresponds to a column in the pivot operation "columns"
+	// for eg. if the pivot column values are ["A", "B", "C"], then these values correspond to
+	// pivotOperation.columns[0], pivotOperation.columns[1], pivotOperation.columns[2]
+	pivotOperation.columns.forEach((c, idx) => {
+		if (pivotColumnValues[idx]) {
+			filters.push(...getFiltersForDimension(c, pivotColumnValues[idx]))
+		}
+	})
+
+	// if there are more than one value then there are two headers in the pivot table
+	// the last one displays the measure name, so we get the current measure name from pivotColumnValues
+	const selectedValueColumn =
+		pivotOperation.values.length == 1
+			? pivotOperation.values[0].measure_name
+			: (pivotColumnValues[pivotColumnValues.length - 1] as string)
+	pivotOperation.values.forEach((m) => {
+		return filters.push(...getFiltersForMeasure(m, selectedValueColumn))
+	})
+
+	return filters
+}
 
 const INITIAL_DOC: InsightsQueryv3 = {
 	doctype: 'Insights Query v3',
