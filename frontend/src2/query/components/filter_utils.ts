@@ -12,6 +12,8 @@ export function getOperatorOptions(filterType: FilterType) {
 	if (filterType === 'String') {
 		options.push({ label: __('is'), value: 'in' }) // value selector
 		options.push({ label: __('is not'), value: 'not_in' }) // value selector
+		options.push({ label: __('equals'), value: '=' }) // text
+		options.push({ label: __('not equals'), value: '!=' }) // text
 		options.push({ label: __('contains'), value: 'contains' }) // text
 		options.push({ label: __('does not contain'), value: 'not_contains' }) // text
 		options.push({ label: __('starts with'), value: 'starts_with' }) // text
