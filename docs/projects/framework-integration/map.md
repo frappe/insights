@@ -129,6 +129,12 @@ Still open in this wave:
   `chart.ts`, and the server treats that client-side cache as content. The
   content is repaired and the silent fallback is gone; who owns the derivation
   is not decided.
+- [Which lockfile is the runtime version authority?](issues/28-runtime-version-authority.md)
+  — raised when every frappe-ui island died at import. Ticket 07 says framework's
+  lockfile governs the whole closure, but `link:./frappe-ui` lets the walk cross
+  into a tree a second lockfile governs. The build now fails loudly on a bad
+  crossing; the second authority stands, and 07's "runtime skew is unreachable"
+  is false as written.
 
 ## Not yet specified
 
