@@ -16,3 +16,4 @@ insights.patches.requalify_workbook_templates
 insights.patches.strip_default_schema_from_table_names
 insights.patches.set_visibility_from_is_public
 insights.patches.retire_workbook_template_updates
+insights.patches.repair_sankey_value_aggregation
