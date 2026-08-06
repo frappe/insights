@@ -10,9 +10,9 @@ handed back for the shipped logical id: the resolver keys that lookup on
 `is_standard`, which a copy is not.
 
 What is copied is the dashboard's closure: the dashboard, the charts its items
-name, and the queries those charts read, including each chart's `data_query`
-and any query a query reads. That is the same closure export writes into a
-bundle, so this uses that walk rather than growing a second one.
+name, the queries those charts read and any query a query reads. That is the
+same closure export writes into a bundle, so this uses that walk rather than
+growing a second one.
 
 Two entry points, one copy. `duplicate_dashboard` is what the island's overflow
 offers on a single shipped dashboard; `duplicate_bundle` is what the gallery
@@ -135,8 +135,8 @@ def _copy(doc, workbook: str, copies: dict) -> str:
     `CARRIED_FIELDS` is the whole of what comes across — the same set a bundle
     ships, which is content and only content. Everything else on the document is
     site-side (the workbook, folders, previews), derived by a controller (a
-    dashboard's slug and linked charts, a chart's empty `data_query`), or
-    identity, which this function decides.
+    dashboard's slug and linked charts), or identity, which this function
+    decides.
     """
     copy = frappe.new_doc(doc.doctype)
     for fieldname in CARRIED_FIELDS[doc.doctype]:
@@ -161,7 +161,7 @@ def _value(doc, fieldname: str, workbook: str, copies: dict):
         return frappe.as_json(_operations(doc, workbook, copies))
     if fieldname == "items":
         return frappe.as_json(_items(doc, copies))
-    if doc.doctype == CHART and fieldname in ("query", "data_query"):
+    if doc.doctype == CHART and fieldname == "query":
         return _copy_of(QUERY, doc.get(fieldname), copies) if doc.get(fieldname) else None
 
     return doc.get(fieldname)

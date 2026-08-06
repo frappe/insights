@@ -36,7 +36,6 @@
   }
  },
  "data_authority": "Viewer",
- "data_query": "top-10-items_data",
  "query": "sales-invoice-items",
  "sort_order": 4,
  "title": "Top 10 Items",

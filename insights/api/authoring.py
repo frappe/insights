@@ -70,8 +70,8 @@ def get_chart_data(
     chart.config = frappe.as_json(config or {})
 
     operations = chart.get_operations()
-    data_query = chart.get_query()
-    result = data_query.execute(
+    chart_query = chart.get_query()
+    result = chart_query.execute(
         force=force,
         page=page,
         page_size=page_size or (config or {}).get("limit") or 100,
@@ -90,5 +90,5 @@ def get_chart_data(
         "sql": result["sql"],
         # a drill-down forks the operations above, and has to run against the
         # same connection the chart did
-        "use_live_connection": bool(data_query.use_live_connection),
+        "use_live_connection": bool(chart_query.use_live_connection),
     }

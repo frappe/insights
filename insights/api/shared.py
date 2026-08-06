@@ -113,10 +113,7 @@ def is_public_query(name: str):
     # find a public chart that is linked with this query
     linked_charts = frappe.get_all(
         "Insights Chart v3",
-        or_filters=[
-            ["query", "=", name],
-            ["data_query", "=", name],
-        ],
+        filters={"query": name},
         pluck="name",
     )
     public_charts = get_public_charts()

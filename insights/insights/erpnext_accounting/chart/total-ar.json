@@ -14,7 +14,6 @@
   "sparkline": false
  },
  "data_authority": "Viewer",
- "data_query": "total-ar_data",
  "query": "ar-open-invoices",
  "sort_order": 0,
  "title": "Total AR",

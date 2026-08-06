@@ -49,7 +49,6 @@
   "sparkline": true
  },
  "data_authority": "Viewer",
- "data_query": "spend-kpis_data",
  "query": "purchase-invoices",
  "sort_order": 0,
  "title": "Spend KPIs",

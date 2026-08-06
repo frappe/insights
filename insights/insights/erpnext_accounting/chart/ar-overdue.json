@@ -18,7 +18,6 @@
   "suffix": "%"
  },
  "data_authority": "Viewer",
- "data_query": "ar-overdue_data",
  "query": "ar-open-invoices",
  "sort_order": 2,
  "title": "AR Overdue %",

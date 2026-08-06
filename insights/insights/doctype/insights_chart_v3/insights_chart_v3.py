@@ -25,7 +25,6 @@ class InsightsChartv3(Document):
         chart_type: DF.Data | None
         config: DF.JSON | None
         data_authority: DF.Literal["Viewer", "Author"]
-        data_query: DF.Link | None
         folder: DF.Data | None
         is_public: DF.Check
         old_name: DF.Data | None
@@ -45,12 +44,7 @@ class InsightsChartv3(Document):
         d.read_only = not self.has_permission("write")
         return d
 
-    def before_save(self):
-        self.set_data_query()
-
     def on_trash(self):
-        frappe.delete_doc("Insights Query v3", self.data_query, force=True, ignore_permissions=True)
-
         # Clean up empty folders
         if self.folder:
             self.cleanup_empty_folder(self.folder)
@@ -70,18 +64,6 @@ class InsightsChartv3(Document):
 
         if not has_items:
             frappe.delete_doc("Insights Folder", folder_name, force=True, ignore_permissions=True)
-
-    def set_data_query(self):
-        if self.data_query:
-            return
-        doc = frappe.get_doc(
-            {
-                "doctype": "Insights Query v3",
-                "workbook": self.workbook,
-            }
-        )
-        doc.db_insert()
-        self.data_query = doc.name
 
     @frappe.whitelist()
     def get_data(
@@ -175,7 +157,6 @@ class InsightsChartv3(Document):
     def duplicate(self):
         new_chart = frappe.copy_doc(self)
         new_chart.title = f"{self.title} (Copy)"
-        new_chart.data_query = None
         new_chart.insert()
         return new_chart.name
 

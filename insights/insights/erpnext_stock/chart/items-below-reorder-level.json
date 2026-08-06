@@ -19,7 +19,6 @@
   "sparkline": false
  },
  "data_authority": "Viewer",
- "data_query": "items-below-reorder-level_data",
  "query": "reorder-shortfalls",
  "sort_order": 2,
  "title": "Items Below Reorder Level",

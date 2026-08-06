@@ -31,7 +31,6 @@
   }
  },
  "data_authority": "Viewer",
- "data_query": "stock-value-by-warehouse_data",
  "query": "stock-balances",
  "sort_order": 4,
  "title": "Stock Value by Warehouse",

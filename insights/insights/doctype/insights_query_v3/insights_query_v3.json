@@ -123,15 +123,11 @@
  "index_web_pages_for_search": 1,
  "links": [
   {
-   "link_doctype": "Insights Chart v3",
-   "link_fieldname": "data_query"
-  },
-  {
    "link_doctype": "Insights Query Reference",
    "link_fieldname": "query"
   }
  ],
- "modified": "2026-04-19 14:06:26.149575",
+ "modified": "2026-08-07 11:20:14.000000",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query v3",

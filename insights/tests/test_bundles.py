@@ -32,11 +32,11 @@ BUNDLE = "bundle_sync_test"
 OTHER_BUNDLE = "bundle_sync_test_alt"
 BUNDLE_TITLE = "Bundle Sync Test"
 
+BASE_QUERY = "bst_todos"
 SOURCE_QUERY = "bst_sales"
-CHART_QUERY = "bst_sales_by_month"
 CHART = "bst_sales_chart"
 DASHBOARD = "bst_sales_overview"
-SHIPPED = (SOURCE_QUERY, CHART_QUERY, CHART, DASHBOARD)
+SHIPPED = (BASE_QUERY, SOURCE_QUERY, CHART, DASHBOARD)
 
 
 def bundle_root() -> str:
@@ -46,8 +46,8 @@ def bundle_root() -> str:
 def bundle_files() -> dict:
     """One shipped bundle, exercising every reference the format carries."""
     return {
-        f"query/{SOURCE_QUERY}.json": {
-            "title": "Bundle Sync Sales",
+        f"query/{BASE_QUERY}.json": {
+            "title": "Bundle Sync Todos",
             "use_live_connection": 1,
             "is_builder_query": 1,
             "operations": [
@@ -57,8 +57,8 @@ def bundle_files() -> dict:
                 }
             ],
         },
-        f"query/{CHART_QUERY}.json": {
-            "title": "Bundle Sync Sales by Month",
+        f"query/{SOURCE_QUERY}.json": {
+            "title": "Bundle Sync Sales",
             "use_live_connection": 1,
             "is_builder_query": 1,
             "operations": [
@@ -67,14 +67,13 @@ def bundle_files() -> dict:
                     # a query reads another query by logical name. The workbook id
                     # beside it is not part of the format, but a round-tripped
                     # export carries one, and sync repoints it at the container.
-                    "table": {"type": "query", "query_name": SOURCE_QUERY, "workbook": 0},
+                    "table": {"type": "query", "query_name": BASE_QUERY, "workbook": 0},
                 }
             ],
         },
         f"chart/{CHART}.json": {
             "title": "Bundle Sync Sales Chart",
             "query": SOURCE_QUERY,
-            "data_query": CHART_QUERY,
             "chart_type": "Bar",
             # counts the source query's rows by status: the least a Bar chart can
             # carry and still draw
@@ -135,7 +134,7 @@ def references_of(item) -> list[str]:
         return [str(name) for name in query_references(data.get("operations"))]
 
     if item.doctype == DT.CHART:
-        return [data[field] for field in ("query", "data_query") if data.get(field)]
+        return [data["query"]] if data.get("query") else []
 
     references = []
     for entry in data.get("items") or []:
@@ -193,8 +192,8 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
 
     def doctype_of(self, name):
         return {
+            BASE_QUERY: DT.QUERY,
             SOURCE_QUERY: DT.QUERY,
-            CHART_QUERY: DT.QUERY,
             CHART: DT.CHART,
             DASHBOARD: DT.DASHBOARD,
         }[name]
@@ -294,15 +293,14 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
     def test_references_resolve_to_site_documents(self):
         self.sync()
 
-        source, chart_query = self.doc(SOURCE_QUERY), self.doc(CHART_QUERY)
+        base, source = self.doc(BASE_QUERY), self.doc(SOURCE_QUERY)
         chart, dashboard = self.doc(CHART), self.doc(DASHBOARD)
 
         self.assertEqual(chart.query, source.name)
-        self.assertEqual(chart.data_query, chart_query.name)
 
-        table = frappe.parse_json(chart_query.operations)[0]["table"]
-        self.assertEqual(table["query_name"], source.name)
-        self.assertEqual(str(table["workbook"]), str(chart_query.workbook))
+        table = frappe.parse_json(source.operations)[0]["table"]
+        self.assertEqual(table["query_name"], base.name)
+        self.assertEqual(str(table["workbook"]), str(source.workbook))
 
         items = frappe.parse_json(dashboard.items)
         self.assertEqual(items[0]["chart"], chart.name)
@@ -370,7 +368,6 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
         copy = frappe.copy_doc(chart)
         copy.is_standard = 0
         copy.workbook = mine.name
-        copy.data_query = None
         copy.title = f"{chart.title} (Copy)"
         copy.insert()
 

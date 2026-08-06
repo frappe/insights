@@ -19,7 +19,6 @@
   "sparkline": false
  },
  "data_authority": "Viewer",
- "data_query": "total-stock-value_data",
  "query": "stock-balances",
  "sort_order": 0,
  "title": "Total Stock Value",

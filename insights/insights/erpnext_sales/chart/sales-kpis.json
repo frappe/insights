@@ -69,7 +69,6 @@
   "sparkline": true
  },
  "data_authority": "Viewer",
- "data_query": "sales-kpis_data",
  "query": "sales-invoices",
  "sort_order": 0,
  "title": "Sales KPIs",

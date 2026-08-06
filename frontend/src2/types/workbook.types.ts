@@ -92,7 +92,6 @@ export type InsightsChartv3 = {
 	title: string
 	workbook: string
 	query: string
-	data_query: string
 	chart_type: ChartType
 	sort_order: number
 	folder?: string | null

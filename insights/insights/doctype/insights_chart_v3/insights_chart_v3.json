@@ -7,7 +7,6 @@
   "title",
   "workbook",
   "query",
-  "data_query",
   "sort_order",
   "folder",
   "column_break_mgwd",
@@ -74,14 +73,6 @@
    "search_index": 1
   },
   {
-   "fieldname": "data_query",
-   "fieldtype": "Link",
-   "label": "Data Query",
-   "options": "Insights Query v3",
-   "read_only": 1,
-   "search_index": 1
-  },
-  {
    "fieldname": "old_name",
    "fieldtype": "Data",
    "label": "Old Name",
@@ -138,7 +129,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-18 02:38:53.314449",
+ "modified": "2026-08-07 11:20:14.000000",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Chart v3",

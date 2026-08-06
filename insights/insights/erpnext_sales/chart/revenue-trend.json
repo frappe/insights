@@ -38,7 +38,6 @@
   }
  },
  "data_authority": "Viewer",
- "data_query": "revenue-trend_data",
  "query": "sales-invoices",
  "sort_order": 1,
  "title": "Revenue Trend",

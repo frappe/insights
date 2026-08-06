@@ -653,8 +653,8 @@ export function getFunnelChartOptions(config: FunnelChartConfig, result: QueryRe
 	const rows = result.rows
 	const show_percentage = config.show_percentage ?? true
 
-	// Measures mode: each measure is a stage. The data_query aggregates them with
-	// no group-by, so the result is a single row with one column per measure.
+	// Measures mode: each measure is a stage. The chart's query aggregates them
+	// with no group-by, so the result is a single row with one column per measure.
 	const measures = config.measures?.filter((m) => m.measure_name)
 
 	let categories: string[]

@@ -3,7 +3,7 @@ import { MarkerType, Panel, Position, VueFlow, useVueFlow } from '@vue-flow/core
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 import { FormControl } from 'frappe-ui'
-import { BarChart2, DatabaseIcon, GitFork, Search } from 'lucide-vue-next'
+import { DatabaseIcon, GitFork, Search } from 'lucide-vue-next'
 import { computed, inject, nextTick, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { __ } from '../translation'
@@ -27,7 +27,6 @@ type RawNode = {
 	name?: string
 	workbook?: string
 	data_source?: string
-	chart_title?: string
 }
 type RawEdge = { id: string; source: string; target: string }
 
@@ -50,12 +49,7 @@ const visibleNodeIds = computed(() => {
 	const q = searchQuery.value.toLowerCase()
 	const matched = new Set(
 		allNodes.value
-			.filter(
-				(n) =>
-					n.label.toLowerCase().includes(q) ||
-					n.id.toLowerCase().includes(q) ||
-					(n.chart_title?.toLowerCase().includes(q) ?? false),
-			)
+			.filter((n) => n.label.toLowerCase().includes(q) || n.id.toLowerCase().includes(q))
 			.map((n) => n.id),
 	)
 	return new Set([...base].filter((id) => matched.has(id)))
@@ -201,12 +195,6 @@ function onNodeClick(_evt: MouseEvent, node: any) {
 								></span>
 								<span class="text-sm text-ink-gray-5">{{ __('Query') }}</span>
 							</div>
-							<div class="flex items-center gap-2">
-								<span
-									class="size-2.5 rounded-full bg-surface-orange-2 border border-outline-orange-2"
-								></span>
-								<span class="text-sm text-ink-gray-5">{{ __('Chart') }}</span>
-							</div>
 						</div>
 					</Panel>
 
@@ -233,34 +221,17 @@ function onNodeClick(_evt: MouseEvent, node: any) {
 					<!-- Query node -->
 					<template #node-query="{ data }">
 						<div
-							class="flex w-52 flex-col gap-0.5 rounded-lg border px-3 py-2.5 shadow-sm transition-shadow hover:shadow-md"
-							:class="[
-								data.is_chart_query
-									? 'border-outline-orange-2 bg-surface-orange-1'
-									: 'border-outline-green-2 bg-surface-green-1',
-								{ 'cursor-pointer': data.name },
-							]"
+							class="flex w-52 flex-col gap-0.5 rounded-lg border border-outline-green-2 bg-surface-green-1 px-3 py-2.5 shadow-sm transition-shadow hover:shadow-md"
+							:class="{ 'cursor-pointer': data.name }"
 						>
 							<div class="flex items-center gap-1.5">
-								<component
-									:is="data.is_chart_query ? BarChart2 : GitFork"
-									class="h-3.5 w-3.5 flex-shrink-0"
-									:class="
-										data.is_chart_query
-											? 'text-ink-orange-7'
-											: 'text-ink-green-7'
-									"
+								<GitFork
+									class="h-3.5 w-3.5 flex-shrink-0 text-ink-green-7"
 									stroke-width="1.5"
 								/>
-								<span
-									class="truncate text-sm-medium"
-									:class="
-										data.is_chart_query
-											? 'text-ink-orange-10'
-											: 'text-ink-green-10'
-									"
-									>{{ data.is_chart_query ? data.chart_title : data.label }}</span
-								>
+								<span class="truncate text-sm-medium text-ink-green-10">{{
+									data.label
+								}}</span>
 							</div>
 						</div>
 					</template>

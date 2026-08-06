@@ -52,7 +52,6 @@
   ]
  },
  "data_authority": "Viewer",
- "data_query": "payments-due-next-30-days_data",
  "query": "ap-open-invoices",
  "sort_order": 8,
  "title": "Payments Due Next 30 Days",

@@ -21,7 +21,6 @@
   }
  },
  "data_authority": "Viewer",
- "data_query": "purchase-orders-by-status_data",
  "query": "purchase-orders",
  "sort_order": 5,
  "title": "Purchase Orders by Status",

@@ -49,7 +49,6 @@
   ]
  },
  "data_authority": "Viewer",
- "data_query": "overdue-deliveries_data",
  "query": "overdue-deliveries_source",
  "sort_order": 7,
  "title": "Overdue Deliveries",

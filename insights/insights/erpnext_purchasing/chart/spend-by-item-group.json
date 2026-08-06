@@ -21,7 +21,6 @@
   }
  },
  "data_authority": "Viewer",
- "data_query": "spend-by-item-group_data",
  "query": "purchase-invoice-items",
  "sort_order": 3,
  "title": "Spend by Item Group",

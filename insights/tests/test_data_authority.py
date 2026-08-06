@@ -232,7 +232,7 @@ class TestDataAuthority(InsightsIntegrationTestCase):
                     args={"data_authority": "Author"},
                 )
 
-    def test_forged_data_query_cannot_run_under_the_author(self):
+    def test_a_forged_query_reference_cannot_run_under_the_author(self):
         """The chart names the query too — a payload cannot point it elsewhere."""
         self.set_authority("Author")
 
@@ -258,7 +258,7 @@ class TestDataAuthority(InsightsIntegrationTestCase):
             ).insert()
 
         forged = frappe.get_doc(DT.CHART, self.chart.name).as_dict()
-        forged.update({"data_query": other.name, "query": other.name})
+        forged.update({"query": other.name})
 
         with as_user(VIEWER), db_connections(), as_http_request():
             result = insights_run_doc_method(

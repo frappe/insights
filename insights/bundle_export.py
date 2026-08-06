@@ -11,9 +11,8 @@ normal app release, so both halves of the round trip live on a developer bench
 and nowhere else.
 
 Export takes a dashboard's closure — the dashboard, the charts its items name,
-and the queries those charts read, including each chart's `data_query` and any
-query a query reads — writes one JSON file per item, and flags the documents
-standard. It then runs sync over the app it exported into. That last step is
+the queries those charts read and any query a query reads — writes one JSON
+file per item, and flags the documents standard. It then runs sync over the app it exported into. That last step is
 the point: after export the site's documents *are* the app's standard
 documents, so they have to sit where a fresh install would put them (the
 bundle's container workbook, references resolved, item keys as shipped). Sync
@@ -181,13 +180,10 @@ def _assign_names(app: str, docs: list[Document]) -> dict[tuple[str, str], str]:
     taken = _taken_names(app, docs)
     names: dict[tuple[str, str], str] = {}
 
-    # charts before their queries: a chart's `data_query` has no title of its
-    # own (the controller mints it empty), so it is named after the chart
-    owners = {str(doc.data_query): doc for doc in docs if doc.doctype == CHART and doc.data_query}
-    for doc in sorted(docs, key=lambda d: list(ITEM_TYPES.values()).index(d.doctype), reverse=True):
+    for doc in docs:
         assigned = _existing_name(doc)
         if not assigned:
-            base = _base_name(doc, owners, names)
+            base = _scrub(doc.get("title")) or _folder_of(doc.doctype)
             assigned = base if base not in taken else _suffixed(base, taken)
         taken.add(assigned)
         names[(doc.doctype, doc.name)] = assigned
@@ -197,13 +193,6 @@ def _assign_names(app: str, docs: list[Document]) -> dict[tuple[str, str], str]:
 def _existing_name(doc: Document) -> str | None:
     name = (doc.get("logical_id") or "").split("/", 1)
     return name[1] if len(name) == 2 and NAME_PATTERN.match(name[1] or "") else None
-
-
-def _base_name(doc: Document, owners: dict[str, Document], names: dict) -> str:
-    owner = owners.get(doc.name)
-    if owner is not None and not doc.get("title"):
-        return f"{names[(CHART, owner.name)]}_data"
-    return _scrub(doc.get("title")) or _folder_of(doc.doctype)
 
 
 def _scrub(title: str | None) -> str:
@@ -260,7 +249,7 @@ def serialize(doc: Document, name_of) -> dict:
             data[fieldname] = _child_rows(doc, fieldname)
         elif fieldname in JSON_FIELDS:
             data[fieldname] = _json_field(doc, fieldname, name_of)
-        elif doc.doctype == CHART and fieldname in ("query", "data_query"):
+        elif doc.doctype == CHART and fieldname == "query":
             data[fieldname] = name_of(QUERY, doc.get(fieldname)) if doc.get(fieldname) else ""
         else:
             data[fieldname] = _scalar(doc, fieldname)

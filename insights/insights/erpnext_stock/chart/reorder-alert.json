@@ -45,7 +45,6 @@
   ]
  },
  "data_authority": "Viewer",
- "data_query": "reorder-alert_data",
  "query": "reorder-shortfalls",
  "sort_order": 8,
  "title": "Reorder Alert",

@@ -41,7 +41,6 @@
   }
  },
  "data_authority": "Viewer",
- "data_query": "stock-in-vs-out-by-value_data",
  "query": "stock-movements",
  "sort_order": 7,
  "title": "Stock In vs Out (by Value)",

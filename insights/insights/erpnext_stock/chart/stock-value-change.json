@@ -19,7 +19,6 @@
   "sparkline": false
  },
  "data_authority": "Viewer",
- "data_query": "stock-value-change_data",
  "query": "stock-movements",
  "sort_order": 1,
  "title": "Stock Value Change",

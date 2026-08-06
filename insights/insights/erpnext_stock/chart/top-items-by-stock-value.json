@@ -41,7 +41,6 @@
   ]
  },
  "data_authority": "Viewer",
- "data_query": "top-items-by-stock-value_data",
  "query": "stock-ageing",
  "sort_order": 9,
  "title": "Top Items by Stock Value",

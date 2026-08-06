@@ -14,7 +14,6 @@
   "sparkline": false
  },
  "data_authority": "Viewer",
- "data_query": "net-cash-flow_data",
  "query": "payments-cash-flow",
  "sort_order": 4,
  "title": "Net Cash Flow",

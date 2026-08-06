@@ -34,18 +34,19 @@ APP = "insights"
 BUNDLE = "bundle_export_test"
 OTHER_BUNDLE = "bundle_export_test_alt"
 
+BASE_TITLE = "Bundle Export Todos"
 SOURCE_TITLE = "Bundle Export Sales"
 CHART_TITLE = "Bundle Export Sales Chart"
 DASHBOARD_TITLE = "Bundle Export Sales Overview"
 
+BASE = "bundle-export-todos"
 SOURCE = "bundle-export-sales"
 CHART = "bundle-export-sales-chart"
-DATA_QUERY = f"{CHART}_data"
 DASHBOARD = "bundle-export-sales-overview"
 
 FILES = {
+    BASE: f"query/{BASE}.json",
     SOURCE: f"query/{SOURCE}.json",
-    DATA_QUERY: f"query/{DATA_QUERY}.json",
     CHART: f"chart/{CHART}.json",
     DASHBOARD: f"dashboard/{DASHBOARD}.json",
 }
@@ -101,6 +102,23 @@ class TestInsightsBundleExport(InsightsIntegrationTestCase):
         self.workbook = frappe.get_doc(
             {"doctype": DT.WORKBOOK, "title": "Bundle Export Test Workbook"}
         ).insert()
+        self.base = frappe.get_doc(
+            {
+                "doctype": DT.QUERY,
+                "title": BASE_TITLE,
+                "workbook": self.workbook.name,
+                "use_live_connection": 1,
+                "is_builder_query": 1,
+                "operations": [
+                    {
+                        "type": "source",
+                        "table": {"type": "table", "data_source": "Site DB", "table_name": "tabToDo"},
+                    }
+                ],
+            }
+        ).insert()
+        # the chart reads a query that reads another one — the reference chain
+        # export has to follow
         self.source = frappe.get_doc(
             {
                 "doctype": DT.QUERY,
@@ -111,7 +129,11 @@ class TestInsightsBundleExport(InsightsIntegrationTestCase):
                 "operations": [
                     {
                         "type": "source",
-                        "table": {"type": "table", "data_source": "Site DB", "table_name": "tabToDo"},
+                        "table": {
+                            "type": "query",
+                            "query_name": self.base.name,
+                            "workbook": self.workbook.name,
+                        },
                     }
                 ],
             }
@@ -133,21 +155,6 @@ class TestInsightsBundleExport(InsightsIntegrationTestCase):
                 "visible_to_roles": [{"role": "Insights User"}],
             }
         ).insert()
-
-        # the chart-shaped query the controller mints: untitled, and reading
-        # the chart's source query — the reference chain export has to follow
-        self.data_query = frappe.get_doc(DT.QUERY, self.chart.data_query)
-        self.data_query.operations = [
-            {
-                "type": "source",
-                "table": {
-                    "type": "query",
-                    "query_name": self.source.name,
-                    "workbook": self.workbook.name,
-                },
-            }
-        ]
-        self.data_query.save()
 
         self.dashboard = frappe.get_doc(
             {
@@ -204,8 +211,8 @@ class TestInsightsBundleExport(InsightsIntegrationTestCase):
 
     def doctype_of(self, name):
         return {
+            BASE: DT.QUERY,
             SOURCE: DT.QUERY,
-            DATA_QUERY: DT.QUERY,
             CHART: DT.CHART,
             DASHBOARD: DT.DASHBOARD,
         }[name]
@@ -243,11 +250,10 @@ class TestInsightsBundleExport(InsightsIntegrationTestCase):
         # references are logical names, on every edge sync remaps
         chart = self.read(CHART)
         self.assertEqual(chart["query"], SOURCE)
-        self.assertEqual(chart["data_query"], DATA_QUERY)
         self.assertEqual(chart["visible_to_roles"], ["Insights User"])
 
-        table = self.read(DATA_QUERY)["operations"][0]["table"]
-        self.assertEqual(table["query_name"], SOURCE)
+        table = self.read(SOURCE)["operations"][0]["table"]
+        self.assertEqual(table["query_name"], BASE)
         self.assertEqual(table["workbook"], 0)
 
         items = self.read(DASHBOARD)["items"]

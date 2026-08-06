@@ -424,13 +424,13 @@ class InsightsPermissions:
 
         Chart = frappe.qb.DocType("Insights Chart v3")
         AllowedCharts = self._build_chart_permission_query(ptype)
-        AllowedCharts = AllowedCharts.select(Chart.data_query, Chart.query)
+        AllowedCharts = AllowedCharts.select(Chart.query)
 
         LinkedWithAllowedCharts = (
             frappe.qb.from_(Query)
             .select(Query.name)
             .left_join(AllowedCharts)
-            .on((Query.name == AllowedCharts.data_query) | (Query.name == AllowedCharts.query))
+            .on(Query.name == AllowedCharts.query)
             .where(AllowedCharts.name.isnotnull())
         )
 

@@ -20,10 +20,10 @@ from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import DT, as_user, create_user, delete_users, delete_workbooks
 from insights.tests.test_bundles import (
     APP,
+    BASE_QUERY,
     BUNDLE,
     BUNDLE_TITLE,
     CHART,
-    CHART_QUERY,
     DASHBOARD,
     SHIPPED,
     SOURCE_QUERY,
@@ -92,8 +92,8 @@ class TestDuplicateToEdit(InsightsIntegrationTestCase):
 
     def standard(self, name):
         doctype = {
+            BASE_QUERY: DT.QUERY,
             SOURCE_QUERY: DT.QUERY,
-            CHART_QUERY: DT.QUERY,
             CHART: DT.CHART,
             DASHBOARD: DT.DASHBOARD,
         }[name]
@@ -110,8 +110,8 @@ class TestDuplicateToEdit(InsightsIntegrationTestCase):
         queries = frappe.get_all(DT.QUERY, filters={"workbook": workbook}, fields=["name", "logical_id"])
         by_logical_id = {row.logical_id: row.name for row in queries}
         return {
+            BASE_QUERY: frappe.get_doc(DT.QUERY, by_logical_id[f"{APP}/{BASE_QUERY}"]),
             SOURCE_QUERY: frappe.get_doc(DT.QUERY, by_logical_id[f"{APP}/{SOURCE_QUERY}"]),
-            CHART_QUERY: frappe.get_doc(DT.QUERY, by_logical_id[f"{APP}/{CHART_QUERY}"]),
             CHART: frappe.get_doc(DT.CHART, frappe.db.get_value(DT.CHART, {"workbook": workbook})),
             DASHBOARD: frappe.get_doc(
                 DT.DASHBOARD, frappe.db.get_value(DT.DASHBOARD, {"workbook": workbook})
@@ -145,16 +145,14 @@ class TestDuplicateToEdit(InsightsIntegrationTestCase):
         self.ship()
         result = self.duplicate_as(AUTHOR)
         copies = self.copies_in(result["workbook"])
-        source, chart_query = copies[SOURCE_QUERY], copies[CHART_QUERY]
+        base, source = copies[BASE_QUERY], copies[SOURCE_QUERY]
         chart, dashboard = copies[CHART], copies[DASHBOARD]
 
         self.assertEqual(chart.query, source.name)
-        # the chart-shaped query is closure, not an extra: without it the copy
-        # draws the source query's rows and the chart's configuration means nothing
-        self.assertEqual(chart.data_query, chart_query.name)
 
-        table = frappe.parse_json(chart_query.operations)[0]["table"]
-        self.assertEqual(table["query_name"], source.name)
+        # the query behind the chart's query came along too, reading the copy
+        table = frappe.parse_json(source.operations)[0]["table"]
+        self.assertEqual(table["query_name"], base.name)
         self.assertEqual(str(table["workbook"]), str(result["workbook"]))
 
         items = frappe.parse_json(dashboard.items)
@@ -163,7 +161,7 @@ class TestDuplicateToEdit(InsightsIntegrationTestCase):
 
         # and nothing points back at the shipped documents
         serialized = json.dumps(
-            [chart.as_dict(), chart_query.operations, dashboard.items],
+            [chart.as_dict(), source.operations, dashboard.items],
             default=str,
         )
         for original in (self.standard(name).name for name in SHIPPED):

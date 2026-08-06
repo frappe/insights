@@ -150,7 +150,6 @@ const INITIAL_DOC: InsightsChartv3 = {
 	title: '',
 	workbook: '',
 	query: '',
-	data_query: '',
 	chart_type: '',
 	sort_order: 0,
 	is_public: false,

@@ -33,7 +33,6 @@
   "sparkline": false
  },
  "data_authority": "Viewer",
- "data_query": "quotations-lost_data",
  "query": "quotations",
  "sort_order": 6,
  "title": "Quotations Lost",

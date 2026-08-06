@@ -49,7 +49,6 @@
   ]
  },
  "data_authority": "Viewer",
- "data_query": "overdue-purchase-orders_data",
  "query": "overdue-purchase-orders_source",
  "sort_order": 6,
  "title": "Overdue Purchase Orders",

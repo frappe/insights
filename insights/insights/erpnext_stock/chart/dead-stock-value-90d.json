@@ -32,7 +32,6 @@
   "sparkline": false
  },
  "data_authority": "Viewer",
- "data_query": "dead-stock-value-90d_data",
  "query": "stock-ageing",
  "sort_order": 3,
  "title": "Dead Stock Value (90d+)",

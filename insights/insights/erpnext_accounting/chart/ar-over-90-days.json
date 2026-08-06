@@ -18,7 +18,6 @@
   "suffix": "%"
  },
  "data_authority": "Viewer",
- "data_query": "ar-over-90-days_data",
  "query": "ar-open-invoices",
  "sort_order": 3,
  "title": "AR Over 90 Days %",

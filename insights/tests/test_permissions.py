@@ -264,19 +264,16 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         chart = frappe.get_doc(DT.CHART, chart.name)
 
         self.assert_not_visible_to(USER_2, DT.QUERY, query.name)
-        self.assert_not_visible_to(USER_2, DT.QUERY, chart.data_query)
 
         with self.as_user(USER_1):
             share_chart(chart.name, USER_2)
 
         self.assert_visible_to(USER_2, DT.QUERY, query.name)
-        self.assert_visible_to(USER_2, DT.QUERY, chart.data_query)
 
         with self.as_user(USER_1):
             unshare_chart(chart.name, USER_2)
 
         self.assert_not_visible_to(USER_2, DT.QUERY, query.name)
-        self.assert_not_visible_to(USER_2, DT.QUERY, chart.data_query)
 
         dashboard = create_test_dashboard(
             USER_1,
@@ -288,7 +285,6 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
             update_dashboard_access(dashboard.name, [USER_2])
 
         self.assert_visible_to(USER_2, DT.QUERY, query.name)
-        self.assert_visible_to(USER_2, DT.QUERY, chart.data_query)
 
         with self.as_user(NON_INSIGHTS_USER):
             with self.assertRaises(frappe.PermissionError):

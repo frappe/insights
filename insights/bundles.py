@@ -87,10 +87,6 @@ CARRIED_FIELDS = {
     CHART: (
         "title",
         "query",
-        # the chart-shaped query (source plus the chart's own summarize/order).
-        # A chart that ships one names it like any other reference; a chart that
-        # does not gets an empty one from the controller.
-        "data_query",
         "chart_type",
         "config",
         "sort_order",
@@ -264,9 +260,8 @@ def dashboard_closure(dashboard: str) -> list[Document]:
     """Everything a dashboard needs, in the order a bundle wants it written.
 
     The edges are the ones sync remaps on the way in: a dashboard's chart items,
-    a chart's `query` and `data_query`, and the queries a query reads. A chart is
-    blind without its `data_query` — that is where its summarize and order live —
-    so it is closure, not an extra.
+    a chart's source query, and the queries a query reads. What the chart makes
+    of those rows is in its config, which travels on the chart itself.
 
     One definition, because the two things that copy a dashboard are the same
     walk: export writes the closure into an app's bundle, and duplicate writes it
@@ -301,9 +296,8 @@ def dashboard_closure(dashboard: str) -> list[Document]:
         queries.append(query)
 
     for chart in charts:
-        for ref in (chart.query, chart.data_query):
-            if ref:
-                visit(str(ref))
+        if chart.query:
+            visit(str(chart.query))
 
     return queries + charts + [doc]
 
@@ -355,7 +349,7 @@ def sync_app_bundles(app: str, report: SyncReport | None = None) -> SyncReport:
     """Reconcile one app's bundles."""
     report = report if report is not None else SyncReport()
 
-    with _bundle_sync():
+    with bundle_sync():
         _reconcile_app(app, report)
     return report
 
@@ -567,10 +561,8 @@ def _values_for(
             _resolve_query_operations(item, frappe.parse_json(values["operations"]), name_map, workbook)
         )
 
-    if item.doctype == CHART:
-        for fieldname in ("query", "data_query"):
-            if data.get(fieldname):
-                values[fieldname] = _reference(item, data[fieldname], name_map)
+    if item.doctype == CHART and data.get("query"):
+        values["query"] = _reference(item, data["query"], name_map)
 
     if item.doctype == DASHBOARD:
         items = frappe.parse_json(values.get("items") or "[]")
@@ -707,8 +699,8 @@ def _delete_documents(rows: list[tuple[str, str, str]], report: SyncReport) -> N
             doc = frappe.get_doc(doctype, name)
             doc.flags.in_bundle_sync = True
             doc.delete(ignore_permissions=True, force=True)
-        # a document a controller already took with the one that owned it — a
-        # chart's data_query — is still one this reconcile removed
+        # a document a controller already took with the one that referenced it
+        # is still one this reconcile removed
         report.deleted.append(logical_id)
 
 
@@ -716,7 +708,7 @@ def before_app_uninstall(app_name: str) -> SyncReport:
     """An app that leaves takes its analytics with it. Duplicates a site made
     are user documents and stay."""
     report = SyncReport()
-    with _bundle_sync():
+    with bundle_sync():
         rows = [
             (doctype, name, logical_id)
             for logical_id, found in _standard_documents(app_name).items()
@@ -848,13 +840,14 @@ def _is_empty(workbook: str) -> bool:
 
 
 @contextmanager
-def _bundle_sync():
-    """Mark a whole reconcile as sync's own work.
+def bundle_sync():
+    """Mark a whole run as the app's own maintenance of the content it ships.
 
     The per-document `flags.in_bundle_sync` covers what sync writes itself, but a
-    controller can cascade into a second standard document — deleting a chart
-    deletes the `data_query` it owns — and that one is loaded fresh, without
-    flags. So the bypass is request-scoped for the length of a run as well.
+    controller can cascade into a second standard document, and that one is
+    loaded fresh, without flags. So the bypass is request-scoped for the length
+    of a run — which is also what it takes to remove shipped documents anywhere
+    outside a sync, that being the same work under a different trigger.
     """
     previous = frappe.flags.in_bundle_sync
     frappe.flags.in_bundle_sync = True

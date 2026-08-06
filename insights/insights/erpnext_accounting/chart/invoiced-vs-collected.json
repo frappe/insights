@@ -40,7 +40,6 @@
   }
  },
  "data_authority": "Viewer",
- "data_query": "invoiced-vs-collected_data",
  "query": "invoiced-vs-collected_source",
  "sort_order": 10,
  "title": "Invoiced vs Collected",
