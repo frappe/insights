@@ -87,3 +87,14 @@ logical name, app-qualified on collision), the resolver accepts logical id,
 slug, and docname, and the URL pattern is picked when the framework-side
 shell is built. Leading candidate: one flat `/app/dashboard/<slug>` route.
 The rest of this answer stands.
+
+2026-08-06 — the pattern, picked while building the framework-side shell:
+`/app/dashboard-view/<reference>`, the route desk dashboards already live
+at. `/app/dashboard/<slug>` was rejected because `dashboard` is the
+`Dashboard` doctype's own route. Rendering inside the existing page means
+every workspace link written so far keeps working and upgrades silently,
+and desk gains no second dashboard route — the standalone
+`insights-dashboard` page is gone. The page asks
+`frappe.ui.get_dashboard_renderer(reference)` and branches on the answer: a
+reference naming an existing `Dashboard` is legacy, everything else is
+handed to Insights verbatim for the resolver to work out.
