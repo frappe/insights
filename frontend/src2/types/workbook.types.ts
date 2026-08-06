@@ -160,5 +160,6 @@ export type ShareAccess = 'view' | 'edit' | undefined
 export type WorkbookSharePermission = {
 	email: string
 	full_name: string
+	user_image?: string
 	access: ShareAccess
 }
