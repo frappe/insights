@@ -114,12 +114,21 @@ shipped, not how:
 - [Duplicate to edit](issues/22-duplicate-to-edit.md) — the v1 customization floor: duplicating a shipped dashboard copies its closure into a private, user-owned workbook.
 - [Template migration and glossary](issues/23-template-migration-glossary.md) — the four ERPNext templates re-ship as bundles; the version/checksum update channel and the import ceremony retire; `CONTEXT.md` gains Bundle, Standard content, and Slug.
 
-## Second wave — resolved 2026-08-06
+## Second wave — 2026-08-06
 
 Raised by the 2026-08-06 review of the foundation branch: the implementation
 proved the contract but surfaced three model questions (tickets 24, 25, 26),
 gating the refactor of the branch, not its feasibility. All three are resolved
 and indexed under Decisions so far — the branch reshape is unblocked.
+
+Still open in this wave:
+
+- [Who derives a chart's query?](issues/27-chart-query-derivation-owner.md) —
+  raised while repairing the shipped bundles, every one of which drew its source
+  table instead of its chart. A chart's data query is derived only in
+  `chart.ts`, and the server treats that client-side cache as content. The
+  content is repaired and the silent fallback is gone; who owns the derivation
+  is not decided.
 
 ## Not yet specified
 
