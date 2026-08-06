@@ -26,9 +26,5 @@ mirrorTitleToWorkbook(useDashboard(dashboard_name.value), 'dashboard')
 </script>
 
 <template>
-	<DashboardBuilder
-		:dashboard_name="dashboard_name"
-		:charts="workbook.doc.charts"
-		:queries="workbook.doc.queries"
-	/>
+	<DashboardBuilder :dashboard_name="dashboard_name" :charts="workbook.doc.charts" />
 </template>

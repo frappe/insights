@@ -206,12 +206,6 @@ function makeDashboard(name: string) {
 		})
 	}
 
-	function refresh(force = false) {
-		dashboard.doc.items
-			.filter((item) => item.type === 'chart')
-			.forEach((item) => refreshChart(item.chart, force))
-	}
-
 	function refreshChart(chart_name: string, force = false) {
 		const preview = useChartPreview(useChart(chart_name))
 		preview.adhocFilters = getAdhocFilters(chart_name)
@@ -384,7 +378,6 @@ function makeDashboard(name: string) {
 		removeItem,
 		normalizeLayout,
 
-		refresh,
 		refreshChart,
 
 		getAdhocFilters,

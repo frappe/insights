@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Button } from 'frappe-ui'
 import { AlertTriangle, Maximize, XIcon } from 'lucide-vue-next'
-import { computed, inject, provide, ref } from 'vue'
+import { computed, inject, provide, watch } from 'vue'
 import useChart from '../charts/chart'
 import useChartPreview from '../charts/chart_preview'
 import ChartRenderer from '../charts/components/ChartRenderer.vue'
@@ -11,7 +11,8 @@ import { WorkbookDashboardChart } from '../types/workbook.types'
 import { workbookKey } from '../workbook/workbook_key'
 import { Dashboard } from './dashboard'
 
-const props = defineProps<{ item: WorkbookDashboardChart }>()
+const props = defineProps<{ item: WorkbookDashboardChart; refreshToken?: number }>()
+const emit = defineEmits<{ loaded: [executedAt: Date] }>()
 const dashboard = inject<Dashboard>('dashboard')!
 
 const chart = computed(() => {
@@ -40,6 +41,19 @@ if (props.item.chart) {
 		)
 	})
 }
+
+// the page's one refresh, on the card that knows what to re-run
+watch(
+	() => props.refreshToken,
+	() => props.item.chart && dashboard.refreshChart(props.item.chart, true),
+)
+
+// when these rows were produced. The page's freshness stamp is the oldest of
+// its cards, so every card says.
+watch(
+	() => preview.value?.executedAt,
+	(executedAt) => executedAt && emit('loaded', executedAt),
+)
 
 const workbook = inject(workbookKey, null)
 wheneverChanges(

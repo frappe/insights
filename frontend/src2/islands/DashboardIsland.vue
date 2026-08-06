@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import DashboardView from '../dashboard/DashboardView.vue'
-import type { ViewerFilters } from '../dashboard/viewer'
+import { useSavedDashboard, type ViewerFilters } from '../dashboard/viewer'
 import { useHost } from './host'
 
 // Where a dashboard sits on a desk page. Everything the page shows is
 // `DashboardView`'s; this carries the one thing only the host knows — where the
 // reader came from, and how to name the tab they are on.
-defineProps<{ dashboard: string; filters?: ViewerFilters }>()
+const props = defineProps<{ dashboard: string; filters?: ViewerFilters }>()
+
+const source = useSavedDashboard(props.dashboard)
 
 const host = useHost()
 
@@ -31,10 +33,5 @@ function setTitle(title: string) {
 </script>
 
 <template>
-	<DashboardView
-		:dashboard="dashboard"
-		:filters="filters"
-		:breadcrumbs="crumbs"
-		@title="setTitle"
-	/>
+	<DashboardView :source="source" :filters="filters" :breadcrumbs="crumbs" @title="setTitle" />
 </template>

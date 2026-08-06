@@ -63,6 +63,7 @@
 			"files": [
 				"src2/islands/DashboardIsland.vue",
 				"src2/dashboard/Dashboard.vue",
+				"src2/dashboard/DashboardBuilder.vue",
 				"src2/dashboard/SharedDashboard.vue"
 			],
 			"rules": {
@@ -86,7 +87,7 @@
 									"!./DashboardView.vue",
 									"!**/dashboard/DashboardView.vue"
 								],
-								"message": "An entry point mounts DashboardView and draws nothing itself. Anything that renders inside the page box — the grid, a card, the filter bar, an action — belongs in DashboardView, behind the capability the server granted for it. A shim carries navigation context only."
+								"message": "An entry point mounts DashboardView and draws nothing itself. Anything that renders inside the page box — the grid, a card, the filter bar, an action — belongs in DashboardView, behind the capability its feed carries. A shim names the feed it reads from and carries navigation context, nothing more."
 							}
 						],
 						"paths": [

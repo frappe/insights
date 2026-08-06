@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { call } from 'frappe-ui'
 import DashboardView from './DashboardView.vue'
+import { useSavedDashboard } from './viewer'
 
 // A dashboard reached by its public link. The viewer endpoints are the same ones
 // the desk island and the in-app page use, and they decide access through the
@@ -17,11 +18,13 @@ const dashboard = (await call('insights.api.shared.get_dashboard_name', {
 	dashboard_name: props.dashboard_name,
 })) as string
 
+const source = useSavedDashboard(dashboard)
+
 function setTitle(title: string) {
 	document.title = `${title} | Insights`
 }
 </script>
 
 <template>
-	<DashboardView :dashboard="dashboard" @title="setTitle" />
+	<DashboardView :source="source" @title="setTitle" />
 </template>

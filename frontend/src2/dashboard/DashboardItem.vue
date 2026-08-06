@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject } from 'vue'
+import { computed, inject } from 'vue'
 import {
 	WorkbookDashboardChart,
 	WorkbookDashboardFilter,
@@ -11,11 +11,23 @@ import DashboardChart from './DashboardChart.vue'
 import DashboardFilter from './DashboardFilter.vue'
 import DashboardItemActions from './DashboardItemActions.vue'
 import DashboardText from './DashboardText.vue'
+import type { DashboardCellProps } from './viewer'
 
-const props = defineProps<{
-	index: number
-	item: WorkbookDashboardItem
-}>()
+// One cell of a dashboard grid, as its author gets it: the same card a reader
+// sees, drawn from the config being edited, with the affordances to change it.
+//
+// `filters` and `priority` are the page's answers for a reader, and this cell
+// has better ones: the document it is editing carries the links that route a
+// filter, which is what a reader is never given, and the store ranks the cards
+// off the same document.
+const props = defineProps<DashboardCellProps>()
+
+defineEmits<{ loaded: [executedAt: Date]; resetFilters: [] }>()
+
+// the live document item, which is what the editors below write to. The page
+// hands it over as a viewer would read it, because that is the one shape both
+// feeds answer with.
+const item = computed(() => props.item as unknown as WorkbookDashboardItem)
 
 const dashboard = inject('dashboard') as Dashboard
 </script>
@@ -31,24 +43,23 @@ const dashboard = inject('dashboard') as Dashboard
 			"
 		>
 			<DashboardChart
-				v-if="props.item.type == 'chart'"
-				:item="props.item as WorkbookDashboardChart"
+				v-if="item.type == 'chart'"
+				:item="item as WorkbookDashboardChart"
+				:refresh-token="props.refreshToken"
+				@loaded="$emit('loaded', $event)"
 			/>
 
-			<DashboardText
-				v-else-if="props.item.type === 'text'"
-				:item="props.item as WorkbookDashboardText"
-			/>
+			<DashboardText v-else-if="item.type === 'text'" :item="item as WorkbookDashboardText" />
 
 			<DashboardFilter
-				v-else-if="props.item.type === 'filter'"
-				:item="props.item as WorkbookDashboardFilter"
+				v-else-if="item.type === 'filter'"
+				:item="item as WorkbookDashboardFilter"
 			/>
 		</div>
 		<DashboardItemActions
 			v-if="dashboard.editing"
 			class="absolute top-0 right-0 opacity-0 group-hover:opacity-100"
-			:item-index="index"
+			:item-index="props.index"
 		/>
 	</div>
 </template>

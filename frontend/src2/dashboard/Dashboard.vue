@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { call } from 'frappe-ui'
 import DashboardView from './DashboardView.vue'
+import { useSavedDashboard } from './viewer'
 import { __ } from '../translation'
 
 // The dashboard page inside Insights. It shows what every other surface shows,
@@ -14,6 +15,8 @@ const dashboard = (await call('insights.api.shared.get_dashboard_name', {
 	dashboard_name: props.name,
 })) as string
 
+const source = useSavedDashboard(dashboard)
+
 const crumbs = [{ label: __('Dashboards'), route: '/dashboards' }]
 
 function setTitle(title: string) {
@@ -22,5 +25,5 @@ function setTitle(title: string) {
 </script>
 
 <template>
-	<DashboardView :dashboard="dashboard" :breadcrumbs="crumbs" @title="setTitle" />
+	<DashboardView :source="source" :breadcrumbs="crumbs" @title="setTitle" />
 </template>
