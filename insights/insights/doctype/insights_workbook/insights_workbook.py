@@ -7,11 +7,16 @@ from contextlib import suppress
 import frappe
 import frappe.utils
 from frappe.model.document import Document
+from frappe.model.naming import getseries
 from frappe.query_builder import Interval
 from frappe.query_builder.functions import Now
 from frappe.utils.telemetry import capture
 
 from insights.utils import deep_convert_dict_to_dict
+
+# `tabSeries` key the workbook counter lives under. The patch that moved this doctype
+# off `autoincrement` seeds the same key, so the two must not drift.
+WORKBOOK_SERIES_KEY = "Insights Workbook"
 
 
 class InsightsWorkbook(Document):
@@ -27,12 +32,17 @@ class InsightsWorkbook(Document):
         from_template: DF.Data | None
         imported_checksum: DF.Data | None
         imported_version: DF.Int
-        name: DF.Int | None
         title: DF.Data
     # end: auto-generated types
 
+    def autoname(self):
+        # plain numbers, carrying on from where `autoincrement` left off. The name has to
+        # be a string: every column that references a workbook is varchar, and postgres
+        # refuses to compare those against an integer name.
+        self.name = getseries(WORKBOOK_SERIES_KEY, 1)
+
     def before_save(self):
-        self.title = self.title or f"Workbook {frappe.utils.cint(self.name)}"
+        self.title = self.title or f"Workbook {self.name}"
 
     def on_trash(self):
         try:
