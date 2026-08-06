@@ -2,9 +2,44 @@
  "is_builder_query": 0,
  "is_native_query": 0,
  "is_script_query": 0,
- "operations": [],
+ "operations": [
+  {
+   "table": {
+    "query_name": "quotation-funnel_source",
+    "type": "query",
+    "workbook": 0
+   },
+   "type": "source"
+  },
+  {
+   "dimensions": [
+    {
+     "column_name": "stage",
+     "data_type": "String",
+     "dimension_name": "stage"
+    }
+   ],
+   "measures": [
+    {
+     "aggregation": "sum",
+     "column_name": "quotations",
+     "data_type": "Decimal",
+     "measure_name": "Quotations"
+    }
+   ],
+   "type": "summarize"
+  },
+  {
+   "column": {
+    "column_name": "Quotations",
+    "type": "column"
+   },
+   "direction": "desc",
+   "type": "order_by"
+  }
+ ],
  "sort_order": 0,
  "title": "",
- "use_live_connection": 0,
+ "use_live_connection": 1,
  "variables": []
 }

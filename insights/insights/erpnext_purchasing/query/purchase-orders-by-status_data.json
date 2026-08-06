@@ -2,9 +2,44 @@
  "is_builder_query": 0,
  "is_native_query": 0,
  "is_script_query": 0,
- "operations": [],
+ "operations": [
+  {
+   "table": {
+    "query_name": "purchase-orders",
+    "type": "query",
+    "workbook": 0
+   },
+   "type": "source"
+  },
+  {
+   "dimensions": [
+    {
+     "column_name": "status",
+     "data_type": "String",
+     "dimension_name": "status"
+    }
+   ],
+   "measures": [
+    {
+     "aggregation": "count",
+     "column_name": "name",
+     "data_type": "Integer",
+     "measure_name": "Purchase Orders"
+    }
+   ],
+   "type": "summarize"
+  },
+  {
+   "column": {
+    "column_name": "Purchase Orders",
+    "type": "column"
+   },
+   "direction": "desc",
+   "type": "order_by"
+  }
+ ],
  "sort_order": 0,
  "title": "",
- "use_live_connection": 0,
+ "use_live_connection": 1,
  "variables": []
 }

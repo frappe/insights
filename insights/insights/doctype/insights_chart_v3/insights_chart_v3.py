@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 from insights.insights.doctype.insights_data_source_v3.data_authority import data_authority_of
@@ -106,19 +107,27 @@ class InsightsChartv3(Document):
     def get_data_query(self):
         """The query that produces the chart's rows.
 
-        `data_query` holds the chart-shaped query (source query plus the chart's own
-        summarize/order operations). It stays empty until the chart is configured, so
-        fall back to the source query.
+        `data_query` holds the chart-shaped query: the source query plus the chart's
+        own summarize and order operations. It is the only query that answers what a
+        chart draws. This used to fall back to the source query when the chart-shaped
+        one was empty, which is how a whole shipped bundle came to render its source
+        tables — every number wrong and nothing said so. A chart with no operations
+        on its data query is unconfigured, and that is an error, not a row set.
         """
-        if self.data_query:
-            operations = frappe.db.get_value("Insights Query v3", self.data_query, "operations")
-            if frappe.parse_json(operations or "[]"):
-                return self.data_query
+        operations = (
+            frappe.db.get_value("Insights Query v3", self.data_query, "operations")
+            if self.data_query
+            else None
+        )
+        if not frappe.parse_json(operations or "[]"):
+            frappe.throw(
+                _(
+                    "Chart {0} has no operations on its data query. Open it in Insights to configure it."
+                ).format(frappe.bold(self.title or self.name)),
+                title=_("Chart is not configured"),
+            )
 
-        if not self.query:
-            frappe.throw(f"Chart {self.name} has no query to fetch data from")
-
-        return self.query
+        return self.data_query
 
     @frappe.whitelist()
     def export(self):
@@ -177,7 +186,7 @@ def import_chart(chart, workbook):
     if str(workbook) == str(chart.doc.workbook) or not chart.dependencies.queries:
         return new_chart.name
 
-    for _, exported_query in chart.dependencies.queries.items():
+    for exported_query in chart.dependencies.queries.values():
         name = import_query(exported_query, workbook=new_chart.workbook)
         new_chart.db_set("query", name, update_modified=False)
 

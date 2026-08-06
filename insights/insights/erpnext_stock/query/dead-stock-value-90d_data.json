@@ -2,9 +2,44 @@
  "is_builder_query": 0,
  "is_native_query": 0,
  "is_script_query": 0,
- "operations": [],
+ "operations": [
+  {
+   "table": {
+    "query_name": "stock-ageing",
+    "type": "query",
+    "workbook": 0
+   },
+   "type": "source"
+  },
+  {
+   "filters": [
+    {
+     "column": {
+      "column_name": "days_since_movement",
+      "type": "column"
+     },
+     "operator": ">",
+     "value": 90
+    }
+   ],
+   "logical_operator": "And",
+   "type": "filter_group"
+  },
+  {
+   "dimensions": [],
+   "measures": [
+    {
+     "aggregation": "sum",
+     "column_name": "stock_value",
+     "data_type": "Decimal",
+     "measure_name": "Dead Stock (90d+)"
+    }
+   ],
+   "type": "summarize"
+  }
+ ],
  "sort_order": 0,
  "title": "",
- "use_live_connection": 0,
+ "use_live_connection": 1,
  "variables": []
 }

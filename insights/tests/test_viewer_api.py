@@ -46,6 +46,31 @@ def todo_operations():
     ]
 
 
+def chart_operations(query):
+    """What a configured chart's data query holds: its source query, then the
+    chart's own summarize. Nothing reads a chart off the source query."""
+    return [
+        {
+            "type": "source",
+            "table": {"type": "query", "query_name": query, "workbook": 0},
+        },
+        {
+            "type": "summarize",
+            "dimensions": [
+                {"dimension_name": "description", "column_name": "description", "data_type": "String"}
+            ],
+            "measures": [
+                {
+                    "measure_name": "count",
+                    "column_name": "name",
+                    "aggregation": "count",
+                    "data_type": "Integer",
+                }
+            ],
+        },
+    ]
+
+
 class TestViewerAPI(InsightsIntegrationTestCase):
     SAVEPOINT = "test_viewer_api"
 
@@ -106,12 +131,22 @@ class TestViewerAPI(InsightsIntegrationTestCase):
                     "workbook": workbook.name,
                     "query": query.name,
                     "chart_type": "Table",
-                    "config": {"limit": 50},
+                    "config": {"limit": 50, "rows": [{"column_name": "description"}]},
                     # a chart of its own stays private: the dashboard's audience
                     # is what has to carry it
                     "visibility": "Private",
                 }
             ).insert()
+            # the builder derives this the moment a chart is configured; a
+            # fixture without it is an unconfigured chart, not a shortcut
+            frappe.db.set_value(
+                DT.QUERY,
+                chart.data_query,
+                {
+                    "operations": frappe.as_json(chart_operations(query.name)),
+                    "use_live_connection": 1,
+                },
+            )
             dashboard = frappe.get_doc(
                 {
                     "doctype": DT.DASHBOARD,
@@ -199,6 +234,18 @@ class TestViewerAPI(InsightsIntegrationTestCase):
         # `Viewer` is the engine's native permission application, so a roleless
         # viewer sees none of the author's rows
         self.assertEqual(self.descriptions(result), [])
+
+    def test_an_unconfigured_chart_says_so_instead_of_drawing_its_source(self):
+        _, chart, dashboard = self.make_content(visibility="Everyone")
+        chart.db_set("data_authority", "Author", update_modified=False)
+        # a chart whose data query was never derived. Falling back to the source
+        # query here drew the raw table and called it the chart
+        frappe.db.set_value(DT.QUERY, chart.data_query, "operations", "[]")
+
+        with self.assertRaises(frappe.ValidationError) as raised:
+            self.fetch_data(DESK_USER, chart.name, dashboard.name, force=True)
+
+        self.assertIn("no operations on its data query", str(raised.exception))
 
     # the cascade
 

@@ -2,9 +2,44 @@
  "is_builder_query": 0,
  "is_native_query": 0,
  "is_script_query": 0,
- "operations": [],
+ "operations": [
+  {
+   "table": {
+    "query_name": "purchase-invoice-items",
+    "type": "query",
+    "workbook": 0
+   },
+   "type": "source"
+  },
+  {
+   "dimensions": [
+    {
+     "column_name": "item_group",
+     "data_type": "String",
+     "dimension_name": "item_group"
+    }
+   ],
+   "measures": [
+    {
+     "aggregation": "sum",
+     "column_name": "base_net_amount",
+     "data_type": "Decimal",
+     "measure_name": "Spend"
+    }
+   ],
+   "type": "summarize"
+  },
+  {
+   "column": {
+    "column_name": "Spend",
+    "type": "column"
+   },
+   "direction": "desc",
+   "type": "order_by"
+  }
+ ],
  "sort_order": 0,
  "title": "",
- "use_live_connection": 0,
+ "use_live_connection": 1,
  "variables": []
 }
