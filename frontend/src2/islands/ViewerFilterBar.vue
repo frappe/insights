@@ -9,8 +9,10 @@ import { fetchFilterValues, ViewerDashboardItem, ViewerFilters } from './viewer'
 
 type DraftState = { operator?: FilterOperator; value?: FilterValue }
 
-// The one surface a pure viewer acts on. It is not a grid cell: filters sit
-// above the cards and stay in reach while the page scrolls.
+// The one surface a pure viewer acts on. It is not a grid cell: filters sit in
+// the page's header band, above the cards, and stay in reach while the grid
+// scrolls under them. The band owns the spacing — this is a row inside it, not
+// a surface that positions itself.
 const props = defineProps<{
 	dashboard: string
 	items: ViewerDashboardItem[]
@@ -61,13 +63,14 @@ defineExpose({ reset })
 </script>
 
 <template>
-	<div class="sticky top-0 z-10 flex flex-wrap items-center gap-2 bg-surface-base px-4 py-2.5">
+	<div class="flex flex-wrap items-center gap-2">
 		<FilterControl
 			v-for="item in props.items"
 			:key="item.filter_name"
 			class="w-fit min-w-36 max-w-64"
 			:filter-name="item.filter_name!"
 			:filter-type="item.filter_type as FilterType"
+			:icon="item.icon"
 			:values-provider="
 				(search: string) => fetchFilterValues(props.dashboard, item.filter_name!, search)
 			"

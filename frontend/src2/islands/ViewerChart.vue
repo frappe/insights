@@ -18,6 +18,9 @@ const props = defineProps<{
 	// only the filters that reach this card, so an empty card can say whether a
 	// filter is the reason
 	filters?: ViewerFilters
+	// where this card sits on the grid. The execution queue serves the lowest
+	// first, so a throttled page fills in from the top.
+	priority?: number
 	// bumped by the page's refresh action
 	refreshToken?: number
 }>()
@@ -28,6 +31,7 @@ const viewer = computed(() =>
 	useViewerChart(props.chart, {
 		dashboard: props.dashboard,
 		filters: () => props.filters,
+		priority: props.priority,
 	}),
 )
 

@@ -6,7 +6,13 @@ import dayjs from '../helpers/dayjs'
 import { navigate } from '../helpers/navigation'
 import { __ } from '../translation'
 import { readFilters, writeFilters } from './filter_storage'
-import { duplicateDashboard, fetchDashboard, ViewerDashboard, ViewerFilters } from './viewer'
+import {
+	duplicateDashboard,
+	fetchDashboard,
+	ViewerDashboard,
+	ViewerDashboardItem,
+	ViewerFilters,
+} from './viewer'
 import ViewerChart from './ViewerChart.vue'
 import ViewerFilterBar from './ViewerFilterBar.vue'
 
@@ -14,9 +20,12 @@ import ViewerFilterBar from './ViewerFilterBar.vue'
 // request and is drawn straight away; every card then fetches on its own, so
 // one slow or failing card never holds up the rest.
 //
-// A reader gets two things to do here: filter, and click a chart. Everything
-// else on the page reports state.
+// The page hands this a bounded box (desk's `dashboard-view-island-page` shell)
+// and it fills it: a header band that stays, one scrolling body under it. That
+// is what lets the grid scroll without desk's page scrolling too.
 const props = defineProps<{ dashboard: string; filters?: ViewerFilters }>()
+
+const GRID_COLS = 20
 
 const doc = ref<ViewerDashboard>()
 const loading = ref(true)
@@ -71,6 +80,12 @@ const filtersByChart = computed(() => {
 	})
 	return byChart
 })
+
+// Cards reach the execution queue in whatever order they mount, so rank them by
+// grid position instead: top row first, left to right within a row.
+function layoutRank(item: ViewerDashboardItem) {
+	return item.layout.y * GRID_COLS + item.layout.x
+}
 
 // when what is on screen was produced. Cards fetch on their own, so the honest
 // stamp for the page is the oldest of them.
@@ -129,10 +144,10 @@ async function duplicate() {
 </script>
 
 <template>
-	<div class="w-full">
+	<div class="flex h-full w-full flex-col overflow-hidden">
 		<div
 			v-if="unavailable"
-			class="flex min-h-64 w-full items-center justify-center p-4 text-p-base text-ink-gray-5"
+			class="flex w-full flex-1 items-center justify-center p-4 text-p-base text-ink-gray-5"
 		>
 			{{ __('This dashboard is not available') }}
 		</div>
@@ -142,84 +157,104 @@ async function duplicate() {
 		</div>
 
 		<template v-else-if="doc">
-			<div class="flex items-center justify-between gap-2 px-4 pt-4">
-				<div class="flex items-baseline gap-2 overflow-hidden">
-					<h1 class="truncate text-lg font-medium text-ink-gray-8">{{ doc.title }}</h1>
-					<span v-if="duplicating" class="flex-shrink-0 text-p-sm text-ink-gray-5">
-						{{ __('Duplicating...') }}
-					</span>
-					<span
-						v-else-if="duplicateFailed"
-						class="flex-shrink-0 text-p-sm text-ink-red-6"
-					>
-						{{ __('Could not duplicate this dashboard') }}
-					</span>
-					<span v-else-if="freshness" class="flex-shrink-0 text-p-sm text-ink-gray-5">
-						{{ __('as of') }} {{ freshness }}
-					</span>
-				</div>
-				<div class="flex flex-shrink-0 items-center gap-1">
-					<Button variant="ghost" :label="__('Refresh')" @click="refreshToken++">
-						<template #prefix>
-							<RefreshCcw class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
-						</template>
-					</Button>
-					<Dropdown v-if="menuOptions.length" placement="right" :options="menuOptions">
-						<Button variant="ghost">
-							<template #icon>
-								<MoreHorizontal
-									class="h-4 w-4 text-ink-gray-6"
-									stroke-width="1.5"
-								/>
+			<!-- The header band. It sits outside the scrolling body rather than
+			     sticking to the top of it: a `sticky` bar sticks to whichever
+			     ancestor scrolls, which on a desk page was the page itself, so
+			     the filters slid under desk's own head while the grid moved
+			     beneath them. -->
+			<div class="flex flex-shrink-0 flex-col gap-3 border-b border-outline-gray-1 px-4 py-3">
+				<div class="flex items-center justify-between gap-2">
+					<div class="flex items-baseline gap-2 overflow-hidden">
+						<h1 class="truncate text-lg font-medium text-ink-gray-8">
+							{{ doc.title }}
+						</h1>
+						<span v-if="duplicating" class="flex-shrink-0 text-p-sm text-ink-gray-5">
+							{{ __('Duplicating...') }}
+						</span>
+						<span
+							v-else-if="duplicateFailed"
+							class="flex-shrink-0 text-p-sm text-ink-red-6"
+						>
+							{{ __('Could not duplicate this dashboard') }}
+						</span>
+						<span v-else-if="freshness" class="flex-shrink-0 text-p-sm text-ink-gray-5">
+							{{ __('as of') }} {{ freshness }}
+						</span>
+					</div>
+					<div class="flex flex-shrink-0 items-center gap-1">
+						<Button variant="ghost" :label="__('Refresh')" @click="refreshToken++">
+							<template #prefix>
+								<RefreshCcw class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 							</template>
 						</Button>
-					</Dropdown>
+						<Dropdown
+							v-if="menuOptions.length"
+							placement="right"
+							:options="menuOptions"
+						>
+							<Button variant="ghost">
+								<template #icon>
+									<MoreHorizontal
+										class="h-4 w-4 text-ink-gray-6"
+										stroke-width="1.5"
+									/>
+								</template>
+							</Button>
+						</Dropdown>
+					</div>
 				</div>
-			</div>
 
-			<ViewerFilterBar
-				v-if="filterItems.length"
-				ref="filterBar"
-				:key="doc.name"
-				v-model="filters"
-				:dashboard="doc.name"
-				:items="filterItems"
-			/>
+				<ViewerFilterBar
+					v-if="filterItems.length"
+					ref="filterBar"
+					:key="doc.name"
+					v-model="filters"
+					:dashboard="doc.name"
+					:items="filterItems"
+				/>
+			</div>
 
 			<div
 				v-if="!items.length"
-				class="flex min-h-64 w-full items-center justify-center p-4 text-p-base text-ink-gray-5"
+				class="flex w-full flex-1 items-center justify-center p-4 text-p-base text-ink-gray-5"
 			>
 				{{ __('This dashboard is empty') }}
 			</div>
 
-			<VueGridLayout
-				v-else
-				class="h-fit w-full px-4 pb-4"
-				:cols="20"
-				:disabled="true"
-				:verticalCompact="doc.vertical_compact_layout"
-				:modelValue="items.map((item) => item.layout)"
-			>
-				<template #item="{ index }">
-					<div class="flex h-full w-full items-center justify-start p-2">
-						<ViewerChart
-							v-if="items[index].type === 'chart'"
-							:chart="items[index].chart!"
-							:dashboard="doc.name"
-							:filters="filtersByChart[items[index].chart!]"
-							:refresh-token="refreshToken"
-							@loaded="executedAt[items[index].chart!] = $event"
-							@reset-filters="filterBar?.reset()"
-						/>
-						<div
-							v-else-if="items[index].type === 'text'"
-							class="prose prose-v3 h-full w-full max-w-none overflow-auto text-ink-gray-7"
-							v-html="items[index].text"
-						/>
-					</div>
-				</template>
-			</VueGridLayout>
+			<!-- The one scroller on the page. The padding belongs here and not on
+			     the grid: vue-grid-layout reads its own `offsetWidth` to size a
+			     column, which is the padding box, and then lays the columns out
+			     inside the padding — so the rightmost card ended 16px past the
+			     page. -->
+			<div v-else class="flex-1 overflow-y-auto p-4">
+				<VueGridLayout
+					class="h-fit w-full"
+					:cols="GRID_COLS"
+					:disabled="true"
+					:verticalCompact="doc.vertical_compact_layout"
+					:modelValue="items.map((item) => item.layout)"
+				>
+					<template #item="{ index }">
+						<div class="flex h-full w-full items-center justify-start p-2">
+							<ViewerChart
+								v-if="items[index].type === 'chart'"
+								:chart="items[index].chart!"
+								:dashboard="doc.name"
+								:filters="filtersByChart[items[index].chart!]"
+								:priority="layoutRank(items[index])"
+								:refresh-token="refreshToken"
+								@loaded="executedAt[items[index].chart!] = $event"
+								@reset-filters="filterBar?.reset()"
+							/>
+							<div
+								v-else-if="items[index].type === 'text'"
+								class="prose prose-v3 h-full w-full max-w-none overflow-auto text-ink-gray-7"
+								v-html="items[index].text"
+							/>
+						</div>
+					</template>
+				</VueGridLayout>
+			</div>
 		</template>
 	</div>
 </template>

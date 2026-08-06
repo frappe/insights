@@ -10,6 +10,7 @@ import { call } from 'frappe-ui'
 import { computed, reactive, ref } from 'vue'
 import type { Chart } from '../charts/chart'
 import { normalizeChartConfig } from '../charts/helpers'
+import { scheduleQueryExecution } from '../query/execution_queue'
 import { EMPTY_RESULT, formatResultRows } from '../query/helpers'
 import type { Layout } from '../types/workbook.types'
 import type { FilterOperator, FilterType, FilterValue, QueryResult } from '../types/query.types'
@@ -21,6 +22,8 @@ export type ViewerDashboardItem = {
 	text?: string
 	filter_name?: string
 	filter_type?: FilterType
+	// the icon its author picked for it, by lucide name
+	icon?: string
 	default_operator?: FilterOperator
 	default_value?: FilterValue
 	// the cards this filter changes. Which column it lands on stays server-side;
@@ -78,6 +81,9 @@ export type ViewerChartOptions = {
 	// audience and is what makes filter state routable.
 	dashboard?: string
 	filters?: () => ViewerFilters | undefined
+	// where this card sits on the grid, so the queue serves the top of the page
+	// before the bottom
+	priority?: number
 }
 
 export function useViewerChart(reference: string, options: ViewerChartOptions = {}) {
@@ -98,9 +104,14 @@ export function useViewerChart(reference: string, options: ViewerChartOptions = 
 	const executedAt = ref<Date>()
 	const empty = computed(() => loaded.value && !result.value.rows.length)
 
+	let currentLoad = 0
+
 	async function load(force = false) {
 		executing.value = true
 		failed.value = false
+
+		const token = ++currentLoad
+		const isStale = () => token !== currentLoad
 
 		// config and rows are two round trips on purpose: the card draws its
 		// frame from the first and fills in with the second
@@ -108,19 +119,30 @@ export function useViewerChart(reference: string, options: ViewerChartOptions = 
 			chart: reference,
 			dashboard: options.dashboard,
 		})
-		const data = call('insights.api.viewer.get_chart_data', {
-			chart: reference,
-			dashboard: options.dashboard,
-			filters: options.filters?.(),
-			force,
-		})
+		// Every card on a dashboard fires at once, and the server's query limiter
+		// turns the surplus away with a 503 rather than queueing them. Nothing is
+		// wrong when that happens — the card waits its turn and asks again, on the
+		// same queue the builder's charts use. A real failure is not retried and
+		// reaches the card immediately.
+		const data = scheduleQueryExecution(
+			() =>
+				call('insights.api.viewer.get_chart_data', {
+					chart: reference,
+					dashboard: options.dashboard,
+					filters: options.filters?.(),
+					force,
+				}),
+			{ isStale, priority: options.priority },
+		)
 
 		try {
 			const chart_doc = await config
+			if (isStale()) return
 			Object.assign(doc, chart_doc)
 			doc.config = normalizeChartConfig(chart_doc.config || {}, chart_doc.chart_type)
 
 			const response = await data
+			if (isStale()) return
 			const rows = { ...EMPTY_RESULT, columns: response.columns, rows: response.rows }
 			result.value = {
 				...rows,
@@ -132,10 +154,14 @@ export function useViewerChart(reference: string, options: ViewerChartOptions = 
 			executedAt.value = result.value.lastExecutedAt
 			loaded.value = true
 		} catch (error) {
+			// a load a newer one has superseded is not a failure — and while it
+			// waited in the queue it dropped out rather than spending a slot on a
+			// result nobody is waiting for
+			if (isStale()) return
 			failed.value = true
 			result.value = { ...EMPTY_RESULT }
 		} finally {
-			executing.value = false
+			if (!isStale()) executing.value = false
 		}
 	}
 

@@ -214,6 +214,7 @@ def present_item(item: dict) -> dict:
             {
                 "filter_name": item.get("filter_name"),
                 "filter_type": item.get("filter_type"),
+                "icon": item.get("icon"),
                 "default_operator": item.get("default_operator"),
                 "default_value": item.get("default_value"),
                 "charts": [chart for chart, link in (item.get("links") or {}).items() if link],

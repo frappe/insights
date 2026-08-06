@@ -30,6 +30,14 @@ const FILTER_TYPES = {
 
 const applied = computed(() => isFilterApplied(props.filterType, operator.value, value.value))
 
+// frappe-ui's `Icon` is a reference into a sprite an SPA plugin puts in
+// `document.body`, which no desk page has and no shadow root could reach. So in
+// an island the author's icon paints an empty box and the type icon is drawn
+// instead. Shipping the sprite was the alternative: 457 kB for a few glyphs.
+const iconAvailable = computed(
+	() => Boolean(props.icon) && Boolean(document.getElementById('lucide-sprite')),
+)
+
 const label = computed(() => {
 	if (!applied.value) return props.filterName
 	if (value.value === undefined) return `${props.filterName} ${operator.value}`
@@ -52,7 +60,11 @@ function clear() {
 					class="flex h-full w-full !justify-start overflow-hidden text-sm [&>span]:truncate"
 				>
 					<template #prefix>
-						<Icon v-if="props.icon" :name="props.icon" class="h-4 w-4 flex-shrink-0" />
+						<Icon
+							v-if="iconAvailable"
+							:name="props.icon!"
+							class="h-4 w-4 flex-shrink-0"
+						/>
 						<DataTypeIcon
 							v-else-if="props.filterType"
 							:column-type="FILTER_TYPES[props.filterType][0] as ColumnDataType"

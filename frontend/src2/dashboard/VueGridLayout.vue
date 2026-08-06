@@ -75,6 +75,16 @@ const options = reactive({
 
 <style>
 .vgl-layout {
+	/*
+	 * grid-layout-plus positions every item absolutely and declares this in a
+	 * stylesheet it injects into `document.head` on import. That never reaches a
+	 * shadow root, so inside an island the items fell back to the initial
+	 * containing block: they were laid out against the page, no ancestor's
+	 * overflow could clip them, and the desk page grew to the height of the
+	 * whole grid. Restated here, where the island's own sheet carries it.
+	 */
+	position: relative;
+
 	--vgl-placeholder-bg: var(--ink-gray-5);
 	--vgl-placeholder-opacity: 15%;
 	--vgl-placeholder-z-index: 2;
