@@ -123,7 +123,12 @@ class TestInsightsBundleExport(InsightsIntegrationTestCase):
                 "workbook": self.workbook.name,
                 "query": self.source.name,
                 "chart_type": "Bar",
-                "config": {"x_axis": "status"},
+                # counts the source query's rows by status: the least a Bar chart
+                # can carry and still draw
+                "config": {
+                    "x_axis": {"dimension": {"column_name": "status", "data_type": "String"}},
+                    "y_axis": {"series": []},
+                },
                 "visibility": "Specific Roles",
                 "visible_to_roles": [{"role": "Insights User"}],
             }
