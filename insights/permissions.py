@@ -42,6 +42,24 @@ VISIBILITY_LADDER_DOCTYPES = [
 # rungs that admit a viewer without naming them
 OPEN_AUDIENCES = ["Everyone", "Public"]
 
+# what the browser that takes a dashboard's preview image carries
+PREVIEW_KEY_HEADER = "X-Insights-Preview-Key"
+
+
+def has_valid_preview_key():
+    """Whether this request is the site taking a picture of its own page.
+
+    The dashboard controller mints the key, renders the page in a headless
+    browser and drops the key again, so it is alive for the length of one shot
+    and nobody outside the server ever sees it. It is a read grant and nothing
+    more: the request reads the page as a viewer would, and writes nothing.
+    """
+    if not frappe.request:
+        return False
+
+    key = frappe.request.headers.get(PREVIEW_KEY_HEADER)
+    return bool(key) and bool(frappe.cache.get_value(f"insights_preview_key:{key}"))
+
 
 class InsightsPermissions:
     def __init__(self, user=None):
@@ -55,6 +73,10 @@ class InsightsPermissions:
         return is_admin(self.user)
 
     @cached_property
+    def has_preview_key(self):
+        return has_valid_preview_key()
+
+    @cached_property
     def team_permissions_enabled(self):
         return frappe.db.get_single_value("Insights Settings", "enable_permissions")
 
@@ -66,7 +88,7 @@ class InsightsPermissions:
         if doctype not in PERMISSION_DOCTYPES:
             return ""
 
-        if self.is_admin:
+        if self.is_admin or self.has_preview_key:
             return ""
 
         if doctype == "Insights Team":
@@ -88,6 +110,11 @@ class InsightsPermissions:
             return True
 
         if self.is_admin:
+            return True
+
+        # the preview browser reads a dashboard the way any viewer does, under a
+        # key this site minted moments ago and holds only while the shot is taken
+        if ptype == "read" and self.has_preview_key:
             return True
 
         is_new = not doc.name or doc.is_new()

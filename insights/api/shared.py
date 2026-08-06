@@ -2,6 +2,7 @@ import frappe
 from frappe.query_builder import DocType
 
 from insights.decorators import validate_type
+from insights.permissions import has_valid_preview_key
 from insights.resolver import DASHBOARD, resolve
 
 public_doctypes = [
@@ -53,12 +54,6 @@ def is_public_workbook(name: str):
             "name": ["in", public_charts],
         },
     )
-
-
-def has_valid_preview_key():
-    # used to generate preview images of a dashboard
-    preview_key = frappe.request.headers.get("X-Insights-Preview-Key")
-    return preview_key and frappe.cache.get_value(f"insights_preview_key:{preview_key}")
 
 
 @validate_type
