@@ -39,6 +39,7 @@ FILTER_LINK_PATTERN = r"^`([^`]+)`\.`([^`]+)`$"
 def get_dashboard(dashboard: str):
     """A dashboard as a viewer surface needs it: what to lay out, and what it may offer."""
     doc = frappe.get_doc(DASHBOARD, resolve_for_read(DASHBOARD, dashboard))
+    count_view(doc)
     editable = can_edit(doc)
 
     return {
@@ -182,6 +183,23 @@ def not_available():
 def is_on_dashboard(chart: str, dashboard: str) -> bool:
     items = frappe.parse_json(frappe.db.get_value(DASHBOARD, dashboard, "items") or "[]")
     return any(item.get("type") == "chart" and item.get("chart") == chart for item in items)
+
+
+def count_view(doc):
+    """Record that this reader opened this dashboard, for their own "Recents".
+
+    Opening a dashboard is the same act on every surface, so it counts on every
+    surface: the desk island, the public link and the app's own page all reach a
+    dashboard through here, and a reader looking for what they read last does
+    not care which page they read it on. The dashboard keeps the counting — it
+    already drops repeats within five minutes.
+
+    A guest is skipped: `Recents` is per user, and every guest is the same user.
+    """
+    if frappe.session.user == "Guest":
+        return
+
+    doc.track_view()
 
 
 def can_edit(doc) -> bool:

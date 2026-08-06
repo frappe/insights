@@ -340,6 +340,26 @@ class TestViewerAPI(InsightsIntegrationTestCase):
             self.assertEqual(get_dashboard(dashboard=dashboard.name)["name"], dashboard.name)
             self.assertEqual(get_chart(chart=chart.name, dashboard=dashboard.name)["name"], chart.name)
 
+    def test_opening_a_dashboard_counts_as_a_view_for_everyone_but_a_guest(self):
+        """What a reader saw last is the same question on every surface.
+
+        A guest is left out: the view log is per user, and every guest is the
+        same user.
+        """
+        _, _, dashboard = self.make_content(visibility="Public")
+
+        with as_user(DESK_USER):
+            get_dashboard(dashboard=dashboard.name)
+        with as_user(GUEST):
+            get_dashboard(dashboard=dashboard.name)
+
+        viewers = frappe.get_all(
+            "View Log",
+            filters={"reference_doctype": DT.DASHBOARD, "reference_name": dashboard.name},
+            pluck="viewed_by",
+        )
+        self.assertEqual(viewers, [DESK_USER])
+
     # references
 
     def test_a_dashboard_resolves_by_docname_slug_and_logical_id(self):
