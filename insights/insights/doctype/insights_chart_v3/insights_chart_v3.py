@@ -5,9 +5,12 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 
+from insights.insights.doctype.insights_chart_v3.chart_query import config_errors, derive_operations
 from insights.insights.doctype.insights_data_source_v3.data_authority import data_authority_of
 from insights.insights.doctype.insights_query_v3.insights_query_v3 import import_query
 from insights.utils import deep_convert_dict_to_dict
+
+QUERY = "Insights Query v3"
 
 
 class InsightsChartv3(Document):
@@ -95,7 +98,7 @@ class InsightsChartv3(Document):
         alone decides the authority and the query that runs under it.
         """
         chart = frappe.get_doc(self.doctype, self.name)
-        query = frappe.get_doc("Insights Query v3", chart.get_data_query())
+        query = chart.get_query()
         with data_authority_of(chart):
             return query.execute(
                 force=force,
@@ -104,30 +107,44 @@ class InsightsChartv3(Document):
                 adhoc_filters=adhoc_filters,
             )
 
-    def get_data_query(self):
-        """The query that produces the chart's rows.
+    def get_query(self):
+        """A query document for this chart's operations, made to run and thrown away.
 
-        `data_query` holds the chart-shaped query: the source query plus the chart's
-        own summarize and order operations. It is the only query that answers what a
-        chart draws. This used to fall back to the source query when the chart-shaped
-        one was empty, which is how a whole shipped bundle came to render its source
-        tables — every number wrong and nothing said so. A chart with no operations
-        on its data query is unconfigured, and that is an error, not a row set.
+        Nothing about it is worth keeping: the operations follow from the config, so
+        the config is the only copy. It is never inserted, and it names the source
+        query as its execution reference so a chart run still counts as usage of the
+        tables it read.
         """
-        operations = (
-            frappe.db.get_value("Insights Query v3", self.data_query, "operations")
-            if self.data_query
-            else None
-        )
-        if not frappe.parse_json(operations or "[]"):
+        query = frappe.new_doc(QUERY)
+        query.name = self.name
+        query.title = self.title
+        query.workbook = self.workbook
+        query.operations = frappe.as_json(self.get_operations())
+        query.use_live_connection = frappe.db.get_value(QUERY, self.query, "use_live_connection")
+        query.flags.execution_reference = self.query
+        return query
+
+    def get_operations(self):
+        """The operations that produce the chart's rows.
+
+        The source query, the chart's own filters, its summarize or pivot, and its
+        sort — derived here from the config every time the chart runs. This used to
+        be read off a second query document the browser filled in, and a chart no
+        browser had visited fell back to drawing its source query: a whole shipped
+        bundle rendered raw tables, every number wrong and nothing said so. A config
+        that cannot be drawn is an error, not a row set.
+        """
+        config = frappe.parse_json(self.config or "{}")
+        errors = config_errors(self.chart_type, self.query, config)
+        if errors:
             frappe.throw(
-                _(
-                    "Chart {0} has no operations on its data query. Open it in Insights to configure it."
-                ).format(frappe.bold(self.title or self.name)),
+                _("Chart {0} is not configured: {1}. Open it in Insights to configure it.").format(
+                    frappe.bold(self.title or self.name), ", ".join(errors)
+                ),
                 title=_("Chart is not configured"),
             )
 
-        return self.data_query
+        return derive_operations(self.chart_type, self.query, config)
 
     @frappe.whitelist()
     def export(self):

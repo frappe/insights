@@ -125,18 +125,22 @@ class TestDataAuthority(InsightsIntegrationTestCase):
                     "workbook": workbook.name,
                     "query": query.name,
                     "chart_type": "Table",
-                    "config": {},
+                    # one row per description, which is the column these tests read
+                    "config": {
+                        "rows": [
+                            {
+                                "column_name": "description",
+                                "dimension_name": "description",
+                                "data_type": "String",
+                            }
+                        ],
+                        "columns": [],
+                        "values": [],
+                        "order_by": [],
+                    },
                 }
             ).insert()
             update_share_permissions(workbook.name, [{"user": VIEWER, "read": 1, "write": 0}])
-
-        # the chart's own data query mirrors the source query, which is what the
-        # frontend persists once a chart is configured
-        frappe.db.set_value(
-            DT.QUERY,
-            chart.data_query,
-            {"operations": frappe.as_json(todo_operations()), "use_live_connection": 1},
-        )
 
         return workbook, query, frappe.get_doc(DT.CHART, chart.name)
 

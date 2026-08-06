@@ -46,29 +46,23 @@ def todo_operations():
     ]
 
 
-def chart_operations(query):
-    """What a configured chart's data query holds: its source query, then the
-    chart's own summarize. Nothing reads a chart off the source query."""
-    return [
-        {
-            "type": "source",
-            "table": {"type": "query", "query_name": query, "workbook": 0},
-        },
-        {
-            "type": "summarize",
-            "dimensions": [
-                {"dimension_name": "description", "column_name": "description", "data_type": "String"}
-            ],
-            "measures": [
-                {
-                    "measure_name": "count",
-                    "column_name": "name",
-                    "aggregation": "count",
-                    "data_type": "Integer",
-                }
-            ],
-        },
-    ]
+def table_config():
+    """A configured chart: one row per description, counted. The rows a chart
+    draws follow from this alone — nothing else describes its query."""
+    return {
+        "limit": 50,
+        "rows": [{"dimension_name": "description", "column_name": "description", "data_type": "String"}],
+        "columns": [],
+        "values": [
+            {
+                "measure_name": "count",
+                "column_name": "name",
+                "aggregation": "count",
+                "data_type": "Integer",
+            }
+        ],
+        "order_by": [],
+    }
 
 
 class TestViewerAPI(InsightsIntegrationTestCase):
@@ -131,22 +125,12 @@ class TestViewerAPI(InsightsIntegrationTestCase):
                     "workbook": workbook.name,
                     "query": query.name,
                     "chart_type": "Table",
-                    "config": {"limit": 50, "rows": [{"column_name": "description"}]},
+                    "config": table_config(),
                     # a chart of its own stays private: the dashboard's audience
                     # is what has to carry it
                     "visibility": "Private",
                 }
             ).insert()
-            # the builder derives this the moment a chart is configured; a
-            # fixture without it is an unconfigured chart, not a shortcut
-            frappe.db.set_value(
-                DT.QUERY,
-                chart.data_query,
-                {
-                    "operations": frappe.as_json(chart_operations(query.name)),
-                    "use_live_connection": 1,
-                },
-            )
             dashboard = frappe.get_doc(
                 {
                     "doctype": DT.DASHBOARD,
@@ -238,14 +222,52 @@ class TestViewerAPI(InsightsIntegrationTestCase):
     def test_an_unconfigured_chart_says_so_instead_of_drawing_its_source(self):
         _, chart, dashboard = self.make_content(visibility="Everyone")
         chart.db_set("data_authority", "Author", update_modified=False)
-        # a chart whose data query was never derived. Falling back to the source
-        # query here drew the raw table and called it the chart
-        frappe.db.set_value(DT.QUERY, chart.data_query, "operations", "[]")
+        # a table chart that names no rows. Falling back to the source query here
+        # drew the raw table and called it the chart
+        chart.db_set("config", frappe.as_json({"limit": 50}), update_modified=False)
 
         with self.assertRaises(frappe.ValidationError) as raised:
             self.fetch_data(DESK_USER, chart.name, dashboard.name, force=True)
 
-        self.assertIn("no operations on its data query", str(raised.exception))
+        self.assertIn("is not configured", str(raised.exception))
+        self.assertIn("Rows are required", str(raised.exception))
+
+    def test_chart_data_follows_the_config_with_nothing_to_refresh(self):
+        _, chart, dashboard = self.make_content(visibility="Everyone")
+        chart.db_set("data_authority", "Author", update_modified=False)
+
+        self.assertEqual(
+            self.descriptions(self.fetch_data(DESK_USER, chart.name, dashboard.name)), sorted(AUTHOR_TODOS)
+        )
+
+        # the config is the whole description of the query, so editing it is all
+        # it takes — no builder session, no second document to keep in step
+        config = table_config()
+        config["rows"] = [{"column_name": "status", "dimension_name": "status", "data_type": "String"}]
+        chart.db_set("config", frappe.as_json(config), update_modified=False)
+
+        result = self.fetch_data(DESK_USER, chart.name, dashboard.name)
+
+        self.assertEqual([column["name"] for column in result["columns"]], ["status", "count"])
+
+    def test_the_grain_a_date_column_is_grouped_by_comes_from_the_config(self):
+        _, chart, dashboard = self.make_content(visibility="Everyone")
+        chart.db_set("data_authority", "Author", update_modified=False)
+
+        config = table_config()
+        config["rows"] = [
+            {
+                "column_name": "creation",
+                "dimension_name": "creation",
+                "data_type": "Datetime",
+                "granularity": "month",
+            }
+        ]
+        chart.db_set("config", frappe.as_json(config), update_modified=False)
+
+        result = self.fetch_data(DESK_USER, chart.name, dashboard.name)
+
+        self.assertEqual(result["granularity"], {"creation": "month"})
 
     # the cascade
 

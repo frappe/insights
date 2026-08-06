@@ -237,10 +237,8 @@ def column_granularity(chart) -> dict:
     The grain lives in the query's summarize or pivot step. The step itself
     never crosses the wire — only the grain, per column.
     """
-    operations = frappe.parse_json(frappe.db.get_value(QUERY, chart.get_data_query(), "operations") or "[]")
-
     granularity = {}
-    for operation in operations:
+    for operation in chart.get_operations():
         if operation.get("type") == "summarize":
             dimensions = operation.get("dimensions") or []
         elif operation.get("type") == "pivot_wider":
