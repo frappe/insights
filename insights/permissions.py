@@ -33,6 +33,24 @@ TEAM_BASED_PERMISSION_DOCTYPES = [
     "Insights Chart v3",
 ]
 
+INSIGHTS_ROLES = ("Insights User", "Insights Admin")
+
+
+def get_insights_users():
+    """Everyone who may use Insights: an enabled holder of an Insights role.
+
+    One definition serves both sides of sharing - the picker lists this set and
+    `validate_shareable_users` accepts it - so a name the picker offers is never
+    refused when the share is saved. Administrator is left out: it is nobody to
+    browse for, though it can still own a workbook and be granted access to one.
+    """
+    from frappe.utils.user import get_users_with_role
+
+    users = set()
+    for role in INSIGHTS_ROLES:
+        users.update(get_users_with_role(role))
+    return users
+
 
 class InsightsPermissions:
     def __init__(self, user=None):

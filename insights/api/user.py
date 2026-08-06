@@ -10,44 +10,66 @@ from insights.insights.doctype.insights_team.insights_team import (
     get_teams as get_user_teams,
 )
 from insights.insights.doctype.insights_team.insights_team import is_admin
+from insights.permissions import get_insights_users
+
+# the roster is a directory to share from, so it carries what a picker shows
+# and nothing else
+USER_FIELDS = ["name", "full_name", "email", "last_active", "user_image", "enabled"]
+
+
+def user_lookup_allowed():
+    """Whether members may look each other up. On unless a site turns it off.
+
+    The setting reads as off, not unset, on a site that never saved it: a Check
+    is absent from `tabSingles` until the doc is first saved, and
+    `get_single_value` casts a missing value to 0. Naming the setting for the
+    exception is what keeps the default on.
+    """
+    return not frappe.db.get_single_value("Insights Settings", "disable_user_lookup")
 
 
 @insights_whitelist()
 def get_users(search_term: str | None = None):
-    """Returns full_name, email, type, teams, last_active"""
+    """Returns full_name, email, type, last_active; admins also get teams and pending invites"""
 
-    perm_enabled = frappe.db.get_single_value("Insights Settings", "enable_permissions")
-    if perm_enabled and not is_admin(frappe.session.user):
-        user_info = frappe.db.get_value(
-            "User",
-            frappe.session.user,
-            ["name", "full_name", "email", "last_active", "user_image", "enabled"],
-            as_dict=True,
-        )
-        user_info["type"] = "User"
-        user_info["teams"] = get_user_teams(frappe.session.user)
-        return [user_info]
+    caller_is_admin = is_admin(frappe.session.user)
+    if not caller_is_admin and not user_lookup_allowed():
+        # sharing still works on a site that opted out - the owner names an
+        # address instead of picking one
+        own_profile = frappe.db.get_value("User", frappe.session.user, USER_FIELDS, as_dict=True)
+        own_profile["type"] = "User"
+        return [own_profile]
 
-    insights_admins = get_users_with_role("Insights Admin")
-    insights_users = get_users_with_role("Insights User")
-
-    additional_filters = {}
+    or_filters = {}
     if search_term:
-        additional_filters = {
+        # a name or an address, not both - the picker offers "search by name or
+        # email", so a match on either is a hit
+        or_filters = {
             "full_name": ["like", f"%{search_term}%"],
             "email": ["like", f"%{search_term}%"],
         }
 
-    users = frappe.get_list(
+    # read without a permission check on purpose: `insights_whitelist` has
+    # already settled that the caller belongs here, the cohort filter bounds the
+    # rows, and USER_FIELDS bounds the columns. Listing `User` through the
+    # framework instead would need a `select` grant that no field permission can
+    # narrow, because `User` is a core doctype and those skip field filtering
+    users = frappe.get_all(
         "User",
-        fields=["name", "full_name", "email", "last_active", "user_image", "enabled"],
-        filters={
-            "name": ["in", list(set(insights_users + insights_admins))],
-            **additional_filters,
-        },
+        fields=USER_FIELDS,
+        filters={"name": ["in", list(get_insights_users())]},
+        or_filters=or_filters,
     )
+
+    insights_admins = get_users_with_role("Insights Admin")
     for user in users:
         user["type"] = "Admin" if user.name in insights_admins else "User"
+
+    # team membership and pending invitations are for managing users, not sharing
+    if not caller_is_admin:
+        return users
+
+    for user in users:
         user["teams"] = get_user_teams(user.name)
 
     invitations = frappe.get_list(

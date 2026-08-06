@@ -26,6 +26,21 @@ async function getUsers(search_term = '') {
 	})
 }
 
+// a search result is a slice of the roster, so it is merged in rather than
+// swapped for it - names already on screen must survive the next keystroke
+const searching = ref(false)
+async function searchUsers(search_term = '') {
+	searching.value = true
+	return call('insights.api.user.get_users', { search_term })
+		.then((res) => {
+			const matches = res as User[]
+			const known = new Set(users.value.map((u) => u.email))
+			users.value = users.value.concat(matches.filter((u) => !known.has(u.email)))
+			return matches
+		})
+		.finally(() => (searching.value = false))
+}
+
 function getUser(email: string) {
 	return users.value.find((user) => user.email === email)
 }
@@ -100,6 +115,8 @@ export default function useUserStore() {
 		users,
 		loading,
 		getUsers,
+		searchUsers,
+		searching,
 		getUser,
 		getName,
 		getImage,
