@@ -98,3 +98,13 @@ and desk gains no second dashboard route — the standalone
 `frappe.ui.get_dashboard_renderer(reference)` and branches on the answer: a
 reference naming an existing `Dashboard` is legacy, everything else is
 handed to Insights verbatim for the resolver to work out.
+
+2026-08-06 — the page layout is amended by
+[ticket 30](30-desk-page-head-ownership.md). This answer put the title,
+freshness and the rights-gated overflow in a "quiet title row" drawn by the
+island, under desk's own page head. Desk now draws no head on this route: the
+island owns the whole page, and its header carries a breadcrumb trail
+(ancestors from `host.breadcrumbs`, the dashboard's name as the last crumb)
+alongside the freshness, refresh and overflow this answer specified. The
+content priority is unchanged — grid first, filters, then the quiet header —
+and so is the rule that a pure viewer sees only filter and click-a-chart.

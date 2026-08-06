@@ -88,6 +88,15 @@ Resolved tickets:
   for the parked unified-permission-store effort: the table as its read-side
   starting spec, and team resource grants on content doctypes as a retirement
   candidate.
+- [Who draws the desk page head?](issues/30-desk-page-head-ownership.md) — the
+  island owns the whole desk page and desk draws no head on that route. Three
+  findings decided it: desk's breadcrumbs are page-head markup (`page.html`), not
+  navbar chrome; v16 already moved global chrome to the workspace dock (logo,
+  search, notifications, user menu); and the `frappe.ui.Page` is what the sidebar
+  and dock resolve visibility against, so the page stays and only its head goes.
+  Framework gains `Page.toggle_page_head(show)`; `host` gains `breadcrumbs`
+  (ancestors only), `navigate` and `set_title`. No island→shell channel was
+  built — the island draws its own title. Amends ticket 05's page layout.
 - **Ownership split** (settled during ticket 02) — framework owns the desk page shell, the mount contract, the shared runtime (Vue + frappe-ui + chart primitives), and the renderer toggle; Insights provides doctypes, engine, and a mountable UI artifact built against framework-provided externals. The seam is one call: framework's page asks Insights to mount into an element with host context. The Insights→desk bridge (is Insights installed? is the flag on? is this an Insights dashboard?) lives in framework, so Insights never knows about the fallback.
 
 The framework-side foundation is specced from these tickets:
@@ -119,7 +128,8 @@ shipped, not how:
 Raised by the 2026-08-06 review of the foundation branch: the implementation
 proved the contract but surfaced three model questions (tickets 24, 25, 26),
 gating the refactor of the branch, not its feasibility. All three are resolved
-and indexed under Decisions so far — the branch reshape is unblocked.
+and indexed under Decisions so far. The reshape is specced from them:
+[spec-branch-reshape.md](spec-branch-reshape.md) (`ready-for-agent`).
 
 Still open in this wave:
 
@@ -136,10 +146,17 @@ Still open in this wave:
   crossing; the second authority stands, and 07's "runtime skew is unreachable"
   is false as written.
 - [What ambient does the host owe an island?](issues/29-host-ambient-for-islands.md)
-  — ticket 04 gave the envelope a `host` slot without saying what goes in it. Two
-  instances found while building the viewer: frappe-ui icons need a sprite no
-  shadow root can reach, and number formatting drops Indian grouping the SPA
-  applies. Both have a floor; the rule that stops the third does not exist.
+  — ticket 04 gave the envelope a `host` slot without saying what goes in it.
+  Three instances now: frappe-ui icons need a sprite no shadow root can reach,
+  number formatting drops Indian grouping the SPA applies, and ticket 30 added
+  the breadcrumb trail and desk routing. The third was designed rather than
+  patched and widened the slot from values to capabilities; the rule that stops
+  the fourth still does not exist.
+- [One dashboard renderer, one chart renderer](issues/31-one-dashboard-one-chart-renderer.md)
+  — the foundation branch added a second dashboard implementation (islands
+  viewer) beside the builder's, and a second chart-card path. Leaning: the
+  viewer is the foundation, the builder is the viewer plus an editing layer,
+  shared/public renders the viewer. The data-layer half hangs on ticket 27.
 
 ## Not yet specified
 

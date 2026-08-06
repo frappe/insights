@@ -58,3 +58,29 @@ instance.
 Whatever is chosen has to work for a Vue-frontend app embed too, not only desk
 ([ticket 06](06-vue-app-embed-ux.md)) — the host differs, the ambient need does
 not.
+
+## Comments
+
+2026-08-06 — a third instance, and the first one designed rather than patched.
+
+[Ticket 30](30-desk-page-head-ownership.md) gave the dashboard island the whole
+desk page, so the island now draws the breadcrumb trail desk used to draw in its
+page head. It cannot know that trail: where the reader came from is the host's
+knowledge, and routing back to it is the host's capability — a click inside a
+shadow root is retargeted to the island's host element, so desk's own anchor
+delegation never sees it. Naming the browser tab turned out to be the same
+shape: desk keeps an unread count as a title prefix over a title it remembers,
+so an island assigning `document.title` has its title put back the next time
+that count moves. Three fields went into `host`: `breadcrumbs`, `navigate` and
+`set_title`.
+
+This instance lands squarely in the "**`host` carries it**" candidate above, and
+it widens that candidate in a way the rule now has to cover: `host` was framed as
+values (locale, timezone, theme), and `navigate` is a capability. The working
+line for the rule, from three instances: **the host owes an island what the page
+knows or can do that the shadow root cannot reach — values and capabilities
+alike — and it is the same for every island on that page.** Icons stay the
+exception that proves it, since an asset is the runtime's to carry, not the
+host's.
+
+Unchanged: this is still unratified, and the icon sprite still has only a floor.
