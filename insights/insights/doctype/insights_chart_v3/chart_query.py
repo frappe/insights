@@ -44,6 +44,29 @@ def derive_operations(chart_type: str, query: str, config: dict | None) -> list[
     return operations
 
 
+def column_granularity(operations: list[dict]) -> dict:
+    """The grain each date column was grouped by, so a client can format it.
+
+    The grain lives in the summarize or pivot step. A viewer never receives the
+    step itself, so this map is what it gets instead — one grain per column.
+    """
+    granularity = {}
+    for operation in operations:
+        if operation.get("type") == "summarize":
+            dimensions = operation.get("dimensions") or []
+        elif operation.get("type") == "pivot_wider":
+            dimensions = operation.get("rows") or []
+        else:
+            continue
+
+        for dimension in dimensions:
+            if dimension.get("granularity"):
+                name = dimension.get("dimension_name") or dimension.get("column_name")
+                granularity[name] = dimension["granularity"]
+
+    return granularity
+
+
 def config_errors(chart_type: str, query: str, config: dict | None) -> list[str]:
     """Why this chart cannot be drawn, empty when it can.
 

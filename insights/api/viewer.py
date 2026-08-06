@@ -24,6 +24,7 @@ import frappe
 from frappe import _
 
 from insights.decorators import validate_type
+from insights.insights.doctype.insights_chart_v3.chart_query import column_granularity
 from insights.insights.doctype.insights_data_source_v3.data_authority import data_authority_of
 from insights.permissions import check_app_permission
 from insights.resolver import CHART, DASHBOARD, ContentNotAvailableError, resolve, resolve_for_read
@@ -104,7 +105,7 @@ def get_chart_data(
     return {
         "columns": result["columns"],
         "rows": result["rows"],
-        "granularity": column_granularity(doc),
+        "granularity": column_granularity(doc.get_operations()),
         "time_taken": result["time_taken"],
         "executed_at": frappe.utils.now(),
     }
@@ -247,29 +248,6 @@ def present_config(config) -> dict:
     config = frappe.parse_json(config or "{}")
     config.pop("filters", None)
     return config
-
-
-def column_granularity(chart) -> dict:
-    """The grain each date column was grouped by, so the client can format it.
-
-    The grain lives in the query's summarize or pivot step. The step itself
-    never crosses the wire — only the grain, per column.
-    """
-    granularity = {}
-    for operation in chart.get_operations():
-        if operation.get("type") == "summarize":
-            dimensions = operation.get("dimensions") or []
-        elif operation.get("type") == "pivot_wider":
-            dimensions = operation.get("rows") or []
-        else:
-            continue
-
-        for dimension in dimensions:
-            if dimension.get("granularity"):
-                name = dimension.get("dimension_name") or dimension.get("column_name")
-                granularity[name] = dimension["granularity"]
-
-    return granularity
 
 
 def adhoc_filters_for(dashboard: str, chart: str, filter_states: dict | None) -> dict | None:
