@@ -1,6 +1,7 @@
 import frappe
 from frappe.permissions import update_permission_property
 
+from insights.api.user import USER_FIELDS, get_users, user_lookup_allowed
 from insights.api.workbooks import get_share_permissions, update_share_permissions
 from insights.decorators import insights_whitelist
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
@@ -143,6 +144,103 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
             update_share_permissions(workbook.name, [])
 
         self.assert_not_visible_to(USER_2, DT.WORKBOOK, workbook.name)
+
+    def test_workbook_owner_can_look_up_users_to_share_with(self):
+        # the share picker reads this roster, so an owner without an admin role
+        # must find the other Insights users in it - with or without team permissions
+        for team_permissions in (False, True):
+            with self.subTest(team_permissions=team_permissions):
+                self.toggle_team_permissions(team_permissions)
+                with self.as_user(USER_1):
+                    emails = [user["email"] for user in get_users()]
+
+                self.assertIn(USER_2, emails)
+                self.assertIn(ADMIN, emails)
+                self.assertNotIn(NON_INSIGHTS_USER, emails)
+
+    def test_roster_carries_nothing_but_directory_fields(self):
+        # the api is the only way into `User`, so its field list is the whole
+        # exposure - no phone number or api key may ride along
+        with self.as_user(USER_1):
+            users = get_users()
+
+        self.assertTrue(users)
+        for user in users:
+            self.assertEqual(set(user.keys()), set(USER_FIELDS) | {"type"})
+
+    def test_users_are_found_by_name_or_by_email(self):
+        # the two are alternatives: matching a name must not also require the
+        # address to match
+        with self.as_user(USER_1):
+            by_email = [user["email"] for user in get_users("user1")]
+            by_name = [user["email"] for user in get_users("Insights User")]
+
+        self.assertIn(USER_1, by_email)
+        self.assertNotIn(USER_2, by_email)
+        self.assertIn(USER_1, by_name)
+        self.assertIn(USER_2, by_name)
+
+    def test_user_lookup_is_on_for_a_site_that_never_set_it(self):
+        # a Check stays out of `tabSingles` until the doc is first saved, and
+        # `get_single_value` casts the missing value to 0. A setting named for
+        # permission would therefore read as "off" on every existing site, so
+        # the setting has to name the exception instead.
+        frappe.db.sql(
+            "delete from `tabSingles` where doctype = %s and field = %s",
+            (DT.SETTINGS, "disable_user_lookup"),
+        )
+        frappe.db.value_cache.pop(DT.SETTINGS, None)
+
+        self.assertTrue(user_lookup_allowed())
+        with self.as_user(USER_1):
+            self.assertIn(USER_2, [user["email"] for user in get_users()])
+
+    def test_user_lookup_can_be_turned_off(self):
+        # an open-signup site turns the roster off; sharing then works by naming
+        # an address rather than picking one, so the roster may hold only the caller
+        frappe.db.set_single_value(DT.SETTINGS, "disable_user_lookup", 1)
+        self.addCleanup(frappe.db.set_single_value, DT.SETTINGS, "disable_user_lookup", 0)
+
+        with self.as_user(USER_1):
+            self.assertEqual([user["email"] for user in get_users()], [USER_1])
+
+        # an admin still manages users, so the roster stays whole for them
+        with self.as_user(ADMIN):
+            self.assertIn(USER_2, [user["email"] for user in get_users()])
+
+    def test_workbook_owned_by_administrator_can_still_be_shared(self):
+        # a template import leaves Administrator owning the workbook, and the
+        # owner rides along on every share update the dialog sends back
+        workbook = create_test_workbook("Administrator")
+
+        update_share_permissions(
+            workbook.name,
+            [
+                {"user": "Administrator", "read": 1, "write": 1},
+                {"user": USER_1, "read": 1, "write": 0},
+            ],
+        )
+
+        self.assert_visible_to(USER_1, DT.WORKBOOK, workbook.name)
+
+    def test_workbook_cannot_be_shared_with_a_non_insights_user(self):
+        workbook = create_test_workbook(USER_1)
+
+        with self.as_user(USER_1):
+            with self.assertRaisesRegex(frappe.ValidationError, "not an Insights user"):
+                update_share_permissions(
+                    workbook.name,
+                    [{"user": NON_INSIGHTS_USER, "read": 1, "write": 0}],
+                )
+
+    def test_team_membership_is_listed_for_admins_only(self):
+        self.toggle_team_permissions(True)
+
+        with self.as_user(USER_1):
+            self.assertNotIn("teams", get_users()[0])
+
+        with self.as_user(ADMIN):
+            self.assertIn("teams", get_users()[0])
 
     def test_permission_for_dashboard(self):
         workbook = create_test_workbook(USER_1)

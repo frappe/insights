@@ -1,11 +1,16 @@
 <script setup lang="ts">
+import { watchDebounced } from '@vueuse/core'
 import { SearchIcon } from 'lucide-vue-next'
 import { computed, ref, watchEffect } from 'vue'
-import useUserStore from '../users/users'
+import { __ } from '../translation'
+import useUserStore, { User } from '../users/users'
 
 const props = defineProps<{
 	placeholder?: string
 	hideUsers?: string[]
+	// only for pickers whose server side rejects an address that belongs to
+	// nobody - otherwise a typo becomes a silent grant
+	allowCustomEmail?: boolean
 }>()
 const selectedUserEmail = defineModel<string>()
 
@@ -14,27 +19,41 @@ const searchTxt = ref('')
 watchEffect(() => {
 	searchTxt.value = selectedUserEmail.value || ''
 })
-const filteredUsers = computed(() => {
-	return userStore.users
-		.filter((user) => {
-			if (!user.enabled) return false
-			if (!searchTxt.value) return true
-			return (
-				user.full_name.toLowerCase().includes(searchTxt.value.toLowerCase()) ||
-				user.email.toLowerCase().includes(searchTxt.value.toLowerCase())
-			)
+
+const matches = ref<User[]>([])
+watchDebounced(
+	searchTxt,
+	() => {
+		const term = searchTxt.value
+		userStore.searchUsers(term).then((res) => {
+			// a slow answer for an earlier term must not replace a later one
+			if (term === searchTxt.value) matches.value = res
 		})
-		.filter((user) => {
-			return !props.hideUsers?.includes(user.email)
-		})
-		.map((user) => {
-			return {
-				...user,
-				label: user.full_name,
-				value: user.email,
-				description: user.email,
-			}
-		})
+	},
+	{ debounce: 300, immediate: true },
+)
+
+const isEmail = (value: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value.trim())
+
+const options = computed(() => {
+	const hidden = new Set(props.hideUsers || [])
+	const found = matches.value
+		.filter((user) => user.enabled && !hidden.has(user.email))
+		.map((user) => ({
+			...user,
+			label: user.full_name,
+			value: user.email,
+			description: user.email,
+		}))
+
+	const address = searchTxt.value.trim()
+	if (!props.allowCustomEmail || found.length || !isEmail(address) || hidden.has(address)) {
+		return found
+	}
+
+	// nobody to browse here, so let the address stand on its own - the server
+	// decides whether it belongs to an Insights user
+	return [{ label: address, value: address, description: __('Share with this address') }]
 })
 </script>
 
@@ -44,7 +63,7 @@ const filteredUsers = computed(() => {
 		:autofocus="false"
 		:modelValue="selectedUserEmail"
 		@update:modelValue="selectedUserEmail = $event?.value"
-		:options="filteredUsers"
+		:options="options"
 	>
 		<template #target="{ open }">
 			<FormControl

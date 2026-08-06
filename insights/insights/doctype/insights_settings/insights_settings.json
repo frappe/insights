@@ -11,6 +11,7 @@
   "allow_download",
   "enable_data_store",
   "apply_user_permissions",
+  "disable_user_lookup",
   "allowed_origins",
   "max_records_to_sync",
   "max_memory_usage",
@@ -142,6 +143,13 @@
    "fieldname": "apply_user_permissions",
    "fieldtype": "Check",
    "label": "Apply User Permissions"
+  },
+  {
+   "default": "0",
+   "description": "Stops members from finding each other by name or email when sharing. Turn this on for a site where anyone can sign up.",
+   "fieldname": "disable_user_lookup",
+   "fieldtype": "Check",
+   "label": "Disable User Lookup"
   },
   {
    "default": "60",
