@@ -135,6 +135,11 @@ Still open in this wave:
   into a tree a second lockfile governs. The build now fails loudly on a bad
   crossing; the second authority stands, and 07's "runtime skew is unreachable"
   is false as written.
+- [What ambient does the host owe an island?](issues/29-host-ambient-for-islands.md)
+  — ticket 04 gave the envelope a `host` slot without saying what goes in it. Two
+  instances found while building the viewer: frappe-ui icons need a sprite no
+  shadow root can reach, and number formatting drops Indian grouping the SPA
+  applies. Both have a floor; the rule that stops the third does not exist.
 
 ## Not yet specified
 
