@@ -19,7 +19,7 @@ await buildIslands({
 		'src2/charts/ViewerChart.vue',
 		'src2/charts/components/{BaseChart,ChartBody,ChartSectionEmptySvg,ChartTitle,NumberChart,Sparkline,TableChart}.vue',
 		'src2/query/components/{ColumnFilterValueSelector,DataTypeIcon,NumberFilterPicker,QueryDataTable,RelativeDatePicker}.vue',
-		'src2/dashboard/{DashboardView,Filter,FilterControl,ViewerFilterBar,ViewerItem,VueGridLayout}.vue',
+		'src2/dashboard/{DashboardView,Filter,FilterControl,ViewerItem,VueGridLayout}.vue',
 	],
 	// The SPA's plugin. Without it NumberChart's `@xl:` columns compile to nothing.
 	tailwindPlugins: ['@tailwindcss/container-queries'],

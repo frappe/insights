@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Icon } from 'frappe-ui/icons'
-import { X } from 'lucide-vue-next'
 import { computed } from 'vue'
 import { FIELDTYPES, FilterType } from '../helpers/constants'
 import DataTypeIcon from '../query/components/DataTypeIcon.vue'
@@ -8,10 +7,11 @@ import { isFilterApplied } from '../query/components/filter_utils'
 import { ColumnDataType, FilterOperator, FilterValue } from '../types/query.types'
 import Filter from './Filter.vue'
 
-// One filter, as the reader meets it: a control that names itself when it is
+// One filter, as the reader meets it: a grid cell that names itself when it is
 // empty and shows what it is holding when it is not. Where the state lives and
-// which column it lands on are the caller's business — the dashboard builder
-// keeps them in its store, a viewer surface has neither.
+// which column it lands on are the caller's business, and that is the whole of
+// what the two feeds differ by — the builder keeps both in its store, a read
+// surface asks the server by filter name.
 const props = defineProps<{
 	filterName: string
 	filterType: FilterType
@@ -44,11 +44,6 @@ const label = computed(() => {
 	const value_str = Array.isArray(value.value) ? value.value.join(', ') : value.value
 	return `${props.filterName} ${operator.value} ${value_str}`
 })
-
-function clear() {
-	operator.value = undefined
-	value.value = undefined
-}
 </script>
 
 <template>
@@ -56,7 +51,7 @@ function clear() {
 		<Popover class="h-full" match-trigger-width>
 			<template #trigger>
 				<Button
-					:variant="applied ? 'subtle' : 'outline'"
+					variant="outline"
 					class="flex h-full w-full !justify-start overflow-hidden text-sm [&>span]:truncate"
 				>
 					<template #prefix>
@@ -73,10 +68,6 @@ function clear() {
 						/>
 					</template>
 					{{ label }}
-					<template v-if="applied" #suffix>
-						<!-- inside the trigger, so the click must not also open the popover -->
-						<X class="h-3.5 w-3.5 flex-shrink-0 text-ink-gray-5" @click.stop="clear" />
-					</template>
 				</Button>
 			</template>
 			<template #default="{ toggle: togglePopover, isOpen }">

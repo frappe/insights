@@ -12,9 +12,12 @@
 
 import { call } from 'frappe-ui'
 import { markRaw, reactive, type Component } from 'vue'
+import type { FilterType } from '../helpers/constants'
 import { navigate } from '../helpers/navigation'
-import type { FilterOperator, FilterType, FilterValue } from '../types/query.types'
+import { isFilterApplied } from '../query/components/filter_utils'
+import type { FilterOperator, FilterValue } from '../types/query.types'
 import type { Layout } from '../types/workbook.types'
+import { readFilters, writeFilters } from './filter_storage'
 import ViewerItem from './ViewerItem.vue'
 
 export type ViewerDashboardItem = {
@@ -29,8 +32,8 @@ export type ViewerDashboardItem = {
 	default_operator?: FilterOperator
 	default_value?: FilterValue
 	// the cards this filter changes. Which column it lands on stays server-side;
-	// the names are what the bar needs to refetch the right cards and what lets an
-	// empty card say a filter caused it
+	// the names are what the page needs to refetch the right cards and what lets
+	// an empty card say a filter caused it
 	charts?: string[]
 }
 
@@ -53,6 +56,21 @@ export type ViewerDashboard = {
 // dashboard filter state, keyed by filter name. Which query a filter lands on is
 // the server's business — the links that say so never reach a viewer.
 export type ViewerFilters = Record<string, { operator: FilterOperator; value: FilterValue }>
+
+export type ViewerFilterState = ViewerFilters[string]
+
+/** The state a dashboard's own filter defaults describe. */
+export function defaultFilters(items: ViewerDashboardItem[]): ViewerFilters {
+	const defaults: ViewerFilters = {}
+	items.forEach((item) => {
+		if (item.type !== 'filter') return
+		const operator = item.default_operator
+		const value = item.default_value
+		if (!isFilterApplied(item.filter_type!, operator, value)) return
+		defaults[item.filter_name!] = { operator: operator!, value: value! }
+	})
+	return defaults
+}
 
 /**
  * One grid cell, as the page hands it over.
@@ -115,10 +133,14 @@ export type DashboardSource = {
 	unavailable: boolean
 	name: string
 	title: string
-	// the cards, in the order the grid lays them out
-	gridItems: ViewerDashboardItem[]
-	// the filters offered above the grid
-	barItems: ViewerDashboardItem[]
+	// every cell, in the order the grid lays them out — a filter is one of them,
+	// in the position its author gave it
+	items: ViewerDashboardItem[]
+	// where the filters start on this surface
+	filters: ViewerFilters
+	// remembering where a reader left them. Absent where the document's own
+	// defaults are the answer
+	saveFilters?: (filters: ViewerFilters) => void
 	verticalCompact: boolean
 	cell: Component
 	// reaching the builder from here. Absent for a reader who cannot edit — and
@@ -140,8 +162,8 @@ export function useSavedDashboard(dashboard: string): DashboardSource {
 		unavailable: false,
 		name: '',
 		title: '',
-		gridItems: [],
-		barItems: [],
+		items: [],
+		filters: {},
 		verticalCompact: true,
 		cell: markRaw(ViewerItem),
 	})
@@ -152,12 +174,12 @@ export function useSavedDashboard(dashboard: string): DashboardSource {
 		.then((doc) => {
 			source.name = doc.name
 			source.title = doc.title
-			// Filter items hold their place in the saved layout, but the filter bar
-			// is its own surface above the grid, not a grid cell. Dropping them lets
-			// the grid compact the gap away.
-			source.gridItems = doc.items.filter((item) => item.type !== 'filter')
-			source.barItems = doc.items.filter((item) => item.type === 'filter')
+			source.items = doc.items
 			source.verticalCompact = doc.vertical_compact_layout
+			// a reader comes back to the filters they left, over the defaults the
+			// author set. Nothing on the server holds per-user view state
+			source.filters = { ...defaultFilters(doc.items), ...readFilters(doc.name) }
+			source.saveFilters = (filters) => writeFilters(doc.name, filters)
 			if (doc.can_edit && doc.workbook) {
 				const workbook = doc.workbook
 				source.openBuilder = () => navigate(`/workbook/${workbook}/dashboard/${doc.name}`)

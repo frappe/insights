@@ -20,7 +20,7 @@ import type { Layout, WorkbookChart } from '../types/workbook.types'
 import useDashboard from './dashboard'
 import DashboardEditActions from './DashboardEditActions.vue'
 import DashboardItem from './DashboardItem.vue'
-import type { DashboardSource, ViewerDashboardItem } from './viewer'
+import { defaultFilters, type DashboardSource, type ViewerDashboardItem } from './viewer'
 
 /** The charts this dashboard may draw from — the workbook's, not the site's. */
 export const chartOptionsKey = 'dashboardChartOptions'
@@ -57,12 +57,11 @@ export function useDashboardAuthoring(name: string, charts: WorkbookChart[]): Da
 		unavailable: false,
 		name: computed(() => dashboard.doc.name),
 		title: computed(() => dashboard.doc.title),
-		// A filter is a grid cell here and a bar chip on every read surface: its
-		// links are authored on the card, and the bar has nowhere to author them.
-		// So the whole document goes to the grid and the bar stays empty. The page
-		// above does not know the difference.
-		gridItems: computed(() => dashboard.doc.items as ViewerDashboardItem[]),
-		barItems: [],
+		items: computed(() => dashboard.doc.items as ViewerDashboardItem[]),
+		// An author sees the default they set, not what they last picked: a default
+		// is a property of the document, and checking it is why they set one. So
+		// nothing is remembered here and nothing is saved.
+		filters: computed(() => defaultFilters(dashboard.doc.items as ViewerDashboardItem[])),
 		verticalCompact,
 		cell: markRaw(DashboardItem),
 
