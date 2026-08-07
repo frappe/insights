@@ -26,8 +26,21 @@ def get_app_version():
     return frappe.get_attr("insights" + ".__version__")
 
 
-@insights_whitelist()
+@frappe.whitelist(allow_guest=True)
 def get_user_info():
+    """Who the caller is, what they may do, and how to render for them.
+
+    Every surface asks this, so it answers everyone: the app's own page, the desk
+    island — which mounts for a user who may hold no Insights role at all — and
+    the public link, where the caller is a guest. The role is what the answer
+    reports, not what it takes to ask: refusing a reader without a seat is a
+    strange way to tell them they have no seat, and it took the locale down with
+    it, leaving those two surfaces formatting every number as `en-US`.
+
+    `country`, `locale` and `fiscal_year_start` describe the site rather than the
+    user. They stay here because everything that draws a number or a date needs
+    them, and one call every surface makes beats a second endpoint.
+    """
     roles = frappe.get_roles()
     is_user = "Insights User" in roles
     is_admin = "Insights Admin" in roles
@@ -51,7 +64,6 @@ def get_user_info():
         "is_admin": is_admin,
         "is_user": is_user or frappe.session.user == "Administrator",
         "can_download": is_admin or bool(frappe.db.get_single_value("Insights Settings", "allow_download")),
-        # TODO: move to `get_session_info` since not user specific
         "country": frappe.db.get_single_value("System Settings", "country"),
         "locale": locale,
         "has_desk_access": user.get("user_type") == "System User",

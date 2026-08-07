@@ -2,10 +2,14 @@
 // holds per-user view state, so the browser keeps it — scoped by user, because a
 // shared workstation must not hand one person's view to the next.
 
+import { getCurrentUser } from '../session'
 import type { ViewerFilters } from './viewer'
 
+// The user comes from the session cookie, which every page carries. `window.frappe`
+// would only answer inside desk, so the SPA pages wrote everyone's filters under
+// `Guest` and one reader lost them on the way between a desk page and Insights.
 function key(dashboard: string) {
-	return `insights:dashboard-filters:${window.frappe?.session?.user || 'Guest'}:${dashboard}`
+	return `insights:dashboard-filters:${getCurrentUser()}:${dashboard}`
 }
 
 export function readFilters(dashboard: string): ViewerFilters {

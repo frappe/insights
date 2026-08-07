@@ -7,6 +7,7 @@ import type { App } from 'vue'
 import { APP_PATH } from '../app_path'
 import { registerGlobalComponents } from '../globals'
 import { setNavigationProvider } from '../helpers/navigation'
+import session from '../session'
 
 declare global {
 	interface Window {
@@ -39,8 +40,17 @@ setNavigationProvider({
 	},
 })
 
-/** Mount `component` through the shell, forwarding the context desk gave us. */
-export function mountIsland(component: any, el: HTMLElement, context: Record<string, any>) {
+/**
+ * Mount `component` through the shell, forwarding the context desk gave us.
+ *
+ * The session is settled first, the way the SPA settles it in its router guard,
+ * because an island draws numbers and dates the moment it has rows and the
+ * reader's locale is not something a chart re-reads later. A session we could
+ * not fetch is not worth an empty page, so a failure draws on the defaults.
+ */
+export async function mountIsland(component: any, el: HTMLElement, context: Record<string, any>) {
+	await session.initialize().catch(() => {})
+
 	return window.frappe.ui.mount_vue_island(el, {
 		...context,
 		component,
