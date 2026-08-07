@@ -59,6 +59,7 @@ from insights.bundles import (
     QUERY,
     BundleError,
     SyncReport,
+    _folder_of,
     dashboard_closure,
     discover_bundles,
     sync_app_bundles,
@@ -221,10 +222,6 @@ def _taken_names(app: str, docs: list[Document]) -> set[str]:
         ):
             taken.add(logical_id.split("/", 1)[1])
     return taken - {name for doc in docs if (name := _existing_name(doc))}
-
-
-def _folder_of(doctype: str) -> str:
-    return next(folder for folder, dt in ITEM_TYPES.items() if dt == doctype)
 
 
 def _check_name(name: str, what: str) -> None:
