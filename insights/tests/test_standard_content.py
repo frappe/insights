@@ -1,9 +1,9 @@
-"""Bundle shipping and declarative reconcile.
+"""Standard content: shipping a workbook, and the declarative reconcile.
 
-The fixture bundle is written to disk at runtime, inside the Insights app's own
-`insights/` directory — the same place any other app would ship one. Discovery
-walks genuinely installed apps, so a faked app would never be found; `insights`
-is the only app a test can be sure is installed.
+The fixture workbook is written to disk at runtime, inside the Insights app's
+own `insights/` directory — the same place any other app would ship one.
+Discovery walks genuinely installed apps, so a faked app would never be found;
+`insights` is the only app a test can be sure is installed.
 """
 
 import json
@@ -13,42 +13,42 @@ from contextlib import contextmanager
 
 import frappe
 
-from insights.bundles import (
+from insights.resolver import resolve
+from insights.standard_content import (
     FORMAT_VERSION,
     LINK_COLUMN,
     MANIFEST,
-    BundleError,
+    StandardContentError,
     before_app_uninstall,
-    discover_bundles,
+    discover_shipped_workbooks,
     query_references,
-    sync_app_bundles,
-    sync_bundles,
+    sync_app_content,
+    sync_standard_content,
 )
-from insights.resolver import resolve
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import DT
 
 APP = "insights"
-BUNDLE = "bundle_sync_test"
-OTHER_BUNDLE = "bundle_sync_test_alt"
-BUNDLE_TITLE = "Bundle Sync Test"
+FOLDER = "sync_test"
+OTHER_FOLDER = "sync_test_alt"
+WORKBOOK_TITLE = "Sync Test"
 
-BASE_QUERY = "bst_todos"
-SOURCE_QUERY = "bst_sales"
-CHART = "bst_sales_chart"
-DASHBOARD = "bst_sales_overview"
+BASE_QUERY = "st_todos"
+SOURCE_QUERY = "st_sales"
+CHART = "st_sales_chart"
+DASHBOARD = "st_sales_overview"
 SHIPPED = (BASE_QUERY, SOURCE_QUERY, CHART, DASHBOARD)
 
 
-def bundle_root() -> str:
+def shipped_root() -> str:
     return frappe.get_app_path(APP, "insights")
 
 
-def bundle_files() -> dict:
-    """One shipped bundle, exercising every reference the format carries."""
+def workbook_files() -> dict:
+    """One shipped workbook, exercising every reference the format carries."""
     return {
         f"query/{BASE_QUERY}.json": {
-            "title": "Bundle Sync Todos",
+            "title": "Sync Test Todos",
             "use_live_connection": 1,
             "is_builder_query": 1,
             "operations": [
@@ -59,7 +59,7 @@ def bundle_files() -> dict:
             ],
         },
         f"query/{SOURCE_QUERY}.json": {
-            "title": "Bundle Sync Sales",
+            "title": "Sync Test Sales",
             "use_live_connection": 1,
             "is_builder_query": 1,
             "operations": [
@@ -73,7 +73,7 @@ def bundle_files() -> dict:
             ],
         },
         f"chart/{CHART}.json": {
-            "title": "Bundle Sync Sales Chart",
+            "title": "Sync Test Sales Chart",
             "query": SOURCE_QUERY,
             "chart_type": "Bar",
             # counts the source query's rows by status: the least a Bar chart can
@@ -89,7 +89,7 @@ def bundle_files() -> dict:
             "shipped_by_a_later_release": True,
         },
         f"dashboard/{DASHBOARD}.json": {
-            "title": "Bundle Sync Sales Overview",
+            "title": "Sync Test Sales Overview",
             "items": [
                 {"id": "chart-1", "type": "chart", "chart": CHART},
                 {
@@ -103,8 +103,8 @@ def bundle_files() -> dict:
     }
 
 
-def write_bundle(folder: str, files: dict, title=BUNDLE_TITLE, required_apps=None, format_version=None):
-    path = os.path.join(bundle_root(), folder)
+def write_workbook(folder: str, files: dict, title=WORKBOOK_TITLE, required_apps=None, format_version=None):
+    path = os.path.join(shipped_root(), folder)
     shutil.rmtree(path, ignore_errors=True)
     os.makedirs(path)
 
@@ -123,13 +123,13 @@ def write_bundle(folder: str, files: dict, title=BUNDLE_TITLE, required_apps=Non
             json.dump(data, f)
 
 
-def remove_bundles():
-    for folder in (BUNDLE, OTHER_BUNDLE):
-        shutil.rmtree(os.path.join(bundle_root(), folder), ignore_errors=True)
+def remove_fixtures():
+    for folder in (FOLDER, OTHER_FOLDER):
+        shutil.rmtree(os.path.join(shipped_root(), folder), ignore_errors=True)
 
 
 def references_of(item) -> list[str]:
-    """Every logical name one bundle file names — the edges sync has to resolve."""
+    """Every logical name one shipped file names — the edges sync has to resolve."""
     data = item.data
     if item.doctype == DT.QUERY:
         return [str(name) for name in query_references(data.get("operations"))]
@@ -158,17 +158,17 @@ def developer_mode(enabled):
         frappe.conf.developer_mode = previous
 
 
-class TestInsightsBundles(InsightsIntegrationTestCase):
-    SAVEPOINT = "test_insights_bundles"
+class TestStandardContent(InsightsIntegrationTestCase):
+    SAVEPOINT = "test_insights_standard_content"
 
     @classmethod
     def before_class(cls):
         # a crashed run can leave the fixture behind; it is a fixed name
-        remove_bundles()
+        remove_fixtures()
 
     @classmethod
     def after_class(cls):
-        remove_bundles()
+        remove_fixtures()
 
     def before_test(self):
         # a plain site, not a developer bench, is the condition to hold sync to:
@@ -177,23 +177,23 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
         off.__enter__()
         self.addCleanup(off.__exit__, None, None, None)
 
-        self.files = bundle_files()
-        write_bundle(BUNDLE, self.files)
+        self.files = workbook_files()
+        write_workbook(FOLDER, self.files)
 
     def after_test(self):
-        remove_bundles()
+        remove_fixtures()
 
     # ------------------------------------------------------------- helpers
 
     def sync(self):
-        return sync_app_bundles(APP)
+        return sync_app_content(APP)
 
     def standard_id(self, name):
         return f"{APP}/{name}"
 
     def doctype_of(self, name):
         return {
-            BUNDLE: DT.WORKBOOK,
+            FOLDER: DT.WORKBOOK,
             BASE_QUERY: DT.QUERY,
             SOURCE_QUERY: DT.QUERY,
             CHART: DT.CHART,
@@ -218,10 +218,10 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
     def all_shipped_ids(self):
         # the workbook is shipped too, and its logical name is the folder — so a
         # report that leaves it out is a reconcile that missed it
-        return sorted(self.standard_id(name) for name in (BUNDLE, *SHIPPED))
+        return sorted(self.standard_id(name) for name in (FOLDER, *SHIPPED))
 
     def mine(self, standard_ids):
-        """The fixture's ids out of a report. Insights ships real bundles of its
+        """The fixture's ids out of a report. Insights ships real workbooks of its
         own beside the fixture, so a report is only ever asserted on the part of
         it this test wrote."""
         fixture = set(self.all_shipped_ids())
@@ -246,14 +246,14 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
         # the workbook is shipped content like everything in it: one per folder,
         # titled from workbook.json, flagged standard and owned by the site
         self.assertEqual(len(workbooks), 1)
-        container = self.doc(BUNDLE)
+        container = self.doc(FOLDER)
         self.assertEqual(str(container.name), workbooks.pop())
-        self.assertEqual(container.title, BUNDLE_TITLE)
+        self.assertEqual(container.title, WORKBOOK_TITLE)
         self.assertEqual(container.owner, "Administrator")
         self.assertEqual(container.is_standard, 1)
 
         # its logical name is the folder, so identity is the repo layout
-        self.assertEqual(container.standard_id, f"{APP}/{BUNDLE}")
+        self.assertEqual(container.standard_id, f"{APP}/{FOLDER}")
 
         # the shipped dashboard's external key is its logical name
         self.assertEqual(self.doc(DASHBOARD).slug, DASHBOARD)
@@ -267,24 +267,24 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
 
     def test_a_retitled_manifest_retitles_the_workbook(self):
         self.sync()
-        before = self.doc(BUNDLE).name
+        before = self.doc(FOLDER).name
 
-        write_bundle(BUNDLE, self.files, title="Bundle Sync Test Renamed")
+        write_workbook(FOLDER, self.files, title="Sync Test Renamed")
         report = self.sync()
 
-        after = self.doc(BUNDLE)
+        after = self.doc(FOLDER)
         # retitled in place: the folder is the identity, so the title is just a
         # field that changed, and nothing inside the workbook moves
         self.assertEqual(str(after.name), str(before))
-        self.assertEqual(after.title, "Bundle Sync Test Renamed")
-        self.assertEqual(self.mine(report.updated), [f"{APP}/{BUNDLE}"])
+        self.assertEqual(after.title, "Sync Test Renamed")
+        self.assertEqual(self.mine(report.updated), [f"{APP}/{FOLDER}"])
         self.assertEqual(self.mine(report.created), [])
 
     def test_a_removed_folder_deletes_the_workbook_and_its_contents(self):
         self.sync()
-        container = str(self.doc(BUNDLE).name)
+        container = str(self.doc(FOLDER).name)
 
-        shutil.rmtree(os.path.join(bundle_root(), BUNDLE), ignore_errors=True)
+        shutil.rmtree(os.path.join(shipped_root(), FOLDER), ignore_errors=True)
         report = self.sync()
 
         self.assertEqual(self.mine(report.deleted), self.all_shipped_ids())
@@ -294,36 +294,40 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
 
         # deletion reverses the creation order, so the workbook goes last — by
         # then it is empty, which is why it can go at all
-        self.assertEqual(report.deleted[-1], f"{APP}/{BUNDLE}")
+        self.assertEqual(report.deleted[-1], f"{APP}/{FOLDER}")
 
     def test_discovery_reads_apps_off_disk(self):
-        bundles = {b.key: b for b in discover_bundles(APP)}
-        fixture = bundles[f"{APP}/{BUNDLE}"]
-        self.assertEqual(fixture.title, BUNDLE_TITLE)
+        shipped = {workbook.key: workbook for workbook in discover_shipped_workbooks(APP)}
+        fixture = shipped[f"{APP}/{FOLDER}"]
+        self.assertEqual(fixture.title, WORKBOOK_TITLE)
         self.assertEqual(len(fixture.items), 4)
 
         # an app that ships nothing is not a special case, it is the common one
-        self.assertEqual(discover_bundles("frappe"), [])
+        self.assertEqual(discover_shipped_workbooks("frappe"), [])
 
-    def test_the_bundles_insights_ships_are_readable(self):
-        """CI guard over the committed bundles: they parse, their names are legal
-        and unique across the app, and every reference names an item the app
-        ships. What sync would refuse, this refuses first — and it holds on a
-        site without the apps those bundles need, where sync ships nothing."""
-        shipped = [b for b in discover_bundles(APP) if b.folder not in (BUNDLE, OTHER_BUNDLE)]
-        self.assertTrue(shipped, "Insights ships no bundles of its own")
+    def test_the_workbooks_insights_ships_are_readable(self):
+        """CI guard over the committed workbooks: they parse, their names are
+        legal and unique across the app, and every reference names an item the
+        app ships. What sync would refuse, this refuses first — and it holds on a
+        site without the apps those workbooks need, where sync ships nothing."""
+        shipped = [
+            workbook
+            for workbook in discover_shipped_workbooks(APP)
+            if workbook.folder not in (FOLDER, OTHER_FOLDER)
+        ]
+        self.assertTrue(shipped, "Insights ships no workbooks of its own")
 
         names = {}
-        for bundle in shipped:
-            self.assertTrue(bundle.title, f"{bundle.key} has no title")
-            self.assertLessEqual(bundle.format_version, FORMAT_VERSION)
-            self.assertTrue(bundle.items, f"{bundle.key} ships nothing")
-            for item in bundle.items:
+        for workbook in shipped:
+            self.assertTrue(workbook.title, f"{workbook.key} has no title")
+            self.assertLessEqual(workbook.format_version, FORMAT_VERSION)
+            self.assertTrue(workbook.items, f"{workbook.key} ships nothing")
+            for item in workbook.items:
                 self.assertNotIn(item.name, names, f"{item.standard_id} is shipped twice")
                 names[item.name] = item
 
-        for bundle in shipped:
-            for item in bundle.items:
+        for workbook in shipped:
+            for item in workbook.items:
                 for reference in references_of(item):
                     self.assertIn(
                         reference,
@@ -366,20 +370,20 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
         # the container is what a second run has to find again: miss it and every
         # shipped document is rewritten into a new one
         self.assertEqual(self.doc(CHART).workbook, container)
-        self.assertEqual(frappe.db.count(DT.WORKBOOK, {"standard_id": f"{APP}/{BUNDLE}"}), 1)
+        self.assertEqual(frappe.db.count(DT.WORKBOOK, {"standard_id": f"{APP}/{FOLDER}"}), 1)
 
     def test_a_changed_file_updates_only_its_document(self):
         self.sync()
         before = self.modified_of()
 
-        self.files[f"query/{SOURCE_QUERY}.json"]["title"] = "Bundle Sync Sales (revised)"
-        write_bundle(BUNDLE, self.files)
+        self.files[f"query/{SOURCE_QUERY}.json"]["title"] = "Sync Test Sales (revised)"
+        write_workbook(FOLDER, self.files)
         report = self.sync()
 
         self.assertEqual(report.updated, [self.standard_id(SOURCE_QUERY)])
         # the other three items and the workbook they live in
         self.assertEqual(len(self.mine(report.unchanged)), 4)
-        self.assertEqual(self.doc(SOURCE_QUERY).title, "Bundle Sync Sales (revised)")
+        self.assertEqual(self.doc(SOURCE_QUERY).title, "Sync Test Sales (revised)")
         self.assertNotEqual(self.doc(SOURCE_QUERY).modified, before[SOURCE_QUERY])
         self.assertEqual(self.doc(CHART).modified, before[CHART])
 
@@ -388,7 +392,7 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
         dashboard = self.docname(DASHBOARD)
 
         del self.files[f"dashboard/{DASHBOARD}.json"]
-        write_bundle(BUNDLE, self.files)
+        write_workbook(FOLDER, self.files)
         report = self.sync()
 
         self.assertEqual(report.deleted, [self.standard_id(DASHBOARD)])
@@ -396,22 +400,22 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
         self.assertIsNotNone(self.docname(CHART))
         self.assertIsNotNone(self.docname(SOURCE_QUERY))
 
-    def test_a_bundle_whose_required_app_is_missing_ships_nothing(self):
+    def test_a_workbook_whose_required_app_is_missing_ships_nothing(self):
         self.sync()
 
-        write_bundle(BUNDLE, self.files, required_apps=["no_such_app"])
+        write_workbook(FOLDER, self.files, required_apps=["no_such_app"])
         report = self.sync()
 
         self.assertEqual(self.mine(report.deleted), self.all_shipped_ids())
         for name in SHIPPED:
-            self.assertIsNone(self.docname(name), f"{name} should have gone with its bundle")
+            self.assertIsNone(self.docname(name), f"{name} should have gone with its workbook")
 
     def test_uninstall_deletes_standard_documents_and_spares_user_copies(self):
         self.sync()
         chart = self.doc(CHART)
         container = chart.workbook
 
-        mine = frappe.get_doc({"doctype": DT.WORKBOOK, "title": "Bundle Sync User Workbook"}).insert()
+        mine = frappe.get_doc({"doctype": DT.WORKBOOK, "title": "Sync Test User Workbook"}).insert()
         copy = frappe.copy_doc(chart)
         copy.is_standard = 0
         copy.workbook = mine.name
@@ -470,7 +474,7 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
 
     def test_a_shipped_workbook_admits_only_what_its_app_ships(self):
         self.sync()
-        container = str(self.doc(BUNDLE).name)
+        container = str(self.doc(FOLDER).name)
 
         with developer_mode(False):
             # a query of the site's own, made directly in the shipped workbook
@@ -484,7 +488,7 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
             self.assertRaises(frappe.ValidationError, folder.insert)
 
             # and an item that already exists, moved across
-            mine = frappe.get_doc({"doctype": DT.WORKBOOK, "title": "Bundle Sync Mine"}).insert()
+            mine = frappe.get_doc({"doctype": DT.WORKBOOK, "title": "Sync Test Mine"}).insert()
             moved = frappe.get_doc(
                 {"doctype": DT.QUERY, "title": "Moved in later", "workbook": mine.name}
             ).insert()
@@ -498,7 +502,7 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
             self.assertEqual(str(moved.workbook), str(mine.name))
 
     def test_a_taken_slug_is_app_qualified_with_a_warning(self):
-        workbook = frappe.get_doc({"doctype": DT.WORKBOOK, "title": "Bundle Sync Slug Holder"}).insert()
+        workbook = frappe.get_doc({"doctype": DT.WORKBOOK, "title": "Sync Test Slug Holder"}).insert()
         frappe.get_doc(
             {"doctype": DT.DASHBOARD, "title": DASHBOARD, "workbook": workbook.name, "items": []}
         ).insert()
@@ -510,28 +514,28 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
         self.assertEqual(resolve(DT.DASHBOARD, f"{APP}-{DASHBOARD}"), self.docname(DASHBOARD))
 
     def test_one_name_shipped_twice_by_an_app_fails_loudly(self):
-        # a second bundle, same app, same logical name — and a different doctype,
-        # to show the namespace is flat across types too
-        write_bundle(OTHER_BUNDLE, {f"chart/{SOURCE_QUERY}.json": {"title": "Clashing Chart"}})
+        # a second shipped workbook, same app, same logical name — and a different
+        # doctype, to show the namespace is flat across types too
+        write_workbook(OTHER_FOLDER, {f"chart/{SOURCE_QUERY}.json": {"title": "Clashing Chart"}})
 
-        with self.assertRaises(BundleError):
-            sync_bundles([APP], strict=True)
+        with self.assertRaises(StandardContentError):
+            sync_standard_content([APP], strict=True)
 
         # unstrict, the app is rolled back whole: nothing half-shipped
-        report = sync_bundles([APP])
+        report = sync_standard_content([APP])
         self.assertTrue(report.errors)
         self.assertEqual(report.created, [])
         for name in SHIPPED:
             self.assertIsNone(self.docname(name), f"{name} should not have been shipped")
 
     def test_a_later_format_version_is_refused(self):
-        write_bundle(BUNDLE, self.files, format_version=FORMAT_VERSION + 1)
+        write_workbook(FOLDER, self.files, format_version=FORMAT_VERSION + 1)
 
-        with self.assertRaises(BundleError):
-            sync_bundles([APP], strict=True)
+        with self.assertRaises(StandardContentError):
+            sync_standard_content([APP], strict=True)
 
     def test_sync_over_the_installed_apps_reports_no_errors(self):
-        report = sync_bundles()
+        report = sync_standard_content()
 
         self.assertEqual(report.errors, [])
         self.assertTrue(set(self.all_shipped_ids()) <= set(report.created))

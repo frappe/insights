@@ -35,7 +35,7 @@
    "read_only": 1
   },
   {
-   "description": "Shipped content identity ({app}/{folder}), set by bundle sync",
+   "description": "Shipped content identity ({app}/{folder}), set by standard content sync",
    "fieldname": "standard_id",
    "fieldtype": "Data",
    "label": "Standard ID",

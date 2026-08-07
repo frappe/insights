@@ -20,7 +20,7 @@
 	// starts with a "Home" item linking back to itself — otherwise the desk lands
 	// on the first report instead. "Financial Reports" has no such item, so the
 	// accounting nudge hangs off "Accounting" too.
-	// Each dashboard ships in a bundle and exists on every site after migrate,
+	// Each dashboard is standard content and exists on every site after migrate,
 	// so the link is just its slug — no import to trigger, nothing to prepare.
 	const ACCOUNTING = {
 		title: "Receivables, Payables & Cash",

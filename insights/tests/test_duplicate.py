@@ -1,6 +1,6 @@
 """Duplicate to edit: the user copy of shipped content.
 
-The fixture is the shipping bundle `test_bundles` writes to disk, synced the way
+The fixture is the workbook `test_standard_content` ships to disk, synced the way
 a migrate would sync it — the copy is only interesting against content a site
 cannot edit, and that is the only way to have some.
 """
@@ -9,28 +9,28 @@ import json
 
 import frappe
 
-from insights.api.bundles import duplicate_bundle as duplicate_bundle_through_the_api
-from insights.api.bundles import duplicate_dashboard as duplicate_through_the_api
-from insights.api.bundles import get_standard_content
-from insights.bundles import sync_app_bundles as sync
+from insights.api.standard_content import duplicate_dashboard as duplicate_through_the_api
+from insights.api.standard_content import duplicate_workbook as duplicate_workbook_through_the_api
+from insights.api.standard_content import get_standard_content
 from insights.duplicate import duplicate_dashboard
 from insights.insights.doctype.insights_data_source_v3.data_authority import get_authority_user_for
 from insights.resolver import ContentNotAvailableError, resolve
+from insights.standard_content import sync_app_content as sync
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import DT, as_user, create_user, delete_users, delete_workbooks
-from insights.tests.test_bundles import (
+from insights.tests.test_standard_content import (
     APP,
     BASE_QUERY,
-    BUNDLE,
-    BUNDLE_TITLE,
     CHART,
     DASHBOARD,
+    FOLDER,
     SHIPPED,
     SOURCE_QUERY,
-    bundle_files,
+    WORKBOOK_TITLE,
     developer_mode,
-    remove_bundles,
-    write_bundle,
+    remove_fixtures,
+    workbook_files,
+    write_workbook,
 )
 
 # holds an authoring seat, and is in the shipped dashboard's audience (`Everyone`)
@@ -38,11 +38,11 @@ AUTHOR = "duplicate_author@test.com"
 # in the same audience, with no Insights role at all — the desk viewer
 VIEWER = "duplicate_viewer@test.com"
 
-COPY_WORKBOOK_TITLE = "Bundle Sync Sales Overview (copy)"
-COPY_BUNDLE_TITLE = f"{BUNDLE_TITLE} (copy)"
+COPY_WORKBOOK_TITLE = "Sync Test Sales Overview (copy)"
+COPY_SHIPPED_TITLE = f"{WORKBOOK_TITLE} (copy)"
 
 # a second dashboard over the chart the fixture already ships
-SECOND_DASHBOARD = "bst_sales_overview_alt"
+SECOND_DASHBOARD = "st_sales_overview_alt"
 
 
 class TestDuplicateToEdit(InsightsIntegrationTestCase):
@@ -50,20 +50,20 @@ class TestDuplicateToEdit(InsightsIntegrationTestCase):
 
     @classmethod
     def before_class(cls):
-        remove_bundles()
+        remove_fixtures()
         cls.cleanup()
         create_user(AUTHOR, first_name="Duplicate", last_name="Author", roles="Insights User")
         create_user(VIEWER, first_name="Duplicate", last_name="Viewer")
 
     @classmethod
     def after_class(cls):
-        remove_bundles()
+        remove_fixtures()
         cls.cleanup()
 
     @classmethod
     def cleanup(cls):
         delete_workbooks(title_prefix=COPY_WORKBOOK_TITLE)
-        delete_workbooks(title_prefix=COPY_BUNDLE_TITLE)
+        delete_workbooks(title_prefix=COPY_SHIPPED_TITLE)
         delete_users(AUTHOR, VIEWER)
 
     def before_test(self):
@@ -73,16 +73,16 @@ class TestDuplicateToEdit(InsightsIntegrationTestCase):
         off.__enter__()
         self.addCleanup(off.__exit__, None, None, None)
 
-        self.files = bundle_files()
-        write_bundle(BUNDLE, self.files)
+        self.files = workbook_files()
+        write_workbook(FOLDER, self.files)
 
     def after_test(self):
-        remove_bundles()
+        remove_fixtures()
 
     # ------------------------------------------------------------- helpers
 
     def ship(self):
-        """Sync the fixture bundle, the way a migrate would.
+        """Sync the fixture workbook, the way a migrate would.
 
         Called inside a test and never from `before_test`: the savepoint that
         rolls a test back is taken after the fixtures run, so content shipped
@@ -127,8 +127,8 @@ class TestDuplicateToEdit(InsightsIntegrationTestCase):
         workbook = frappe.get_doc(DT.WORKBOOK, result["workbook"])
         self.assertEqual(workbook.title, COPY_WORKBOOK_TITLE)
         self.assertEqual(workbook.owner, AUTHOR)
-        # never the bundle's container: a copy left in it would keep the
-        # container alive after the bundle that made it is gone
+        # never the shipped workbook: a copy left in it would keep that workbook
+        # alive after the app stops shipping it
         self.assertNotEqual(str(workbook.name), str(self.standard(DASHBOARD).workbook))
 
         copies = self.copies_in(workbook.name)
@@ -195,7 +195,7 @@ class TestDuplicateToEdit(InsightsIntegrationTestCase):
         result = self.duplicate_as(AUTHOR)
 
         self.assertEqual({name: self.standard(name).modified for name in SHIPPED}, before)
-        self.assertEqual(self.standard(CHART).title, "Bundle Sync Sales Chart")
+        self.assertEqual(self.standard(CHART).title, "Sync Test Sales Chart")
 
         # the copy carries the Standard ID, and the id still resolves to the standard
         self.assertEqual(resolve(DT.DASHBOARD, f"{APP}/{DASHBOARD}"), originals[DASHBOARD])
@@ -255,7 +255,7 @@ class TestDuplicateToEdit(InsightsIntegrationTestCase):
     def test_an_authoring_user_outside_the_audience_may_not(self):
         self.ship()
         self.files[f"dashboard/{DASHBOARD}.json"]["visibility"] = "Private"
-        write_bundle(BUNDLE, self.files)
+        write_workbook(FOLDER, self.files)
         sync(APP)
 
         with as_user(AUTHOR), self.assertRaises(ContentNotAvailableError):
@@ -267,30 +267,30 @@ class TestDuplicateToEdit(InsightsIntegrationTestCase):
             with self.assertRaises(ContentNotAvailableError):
                 duplicate_through_the_api(dashboard=f"{APP}/no_such_dashboard")
 
-    # ------------------------------------------------ the bundle, taken whole
+    # -------------------------------------- the shipped workbook, taken whole
 
     def ship_a_second_dashboard(self):
         """The fixture plus a second dashboard over the same chart — what makes
         the shared part of the closure visible."""
         self.files[f"dashboard/{SECOND_DASHBOARD}.json"] = {
-            "title": "Bundle Sync Sales Overview II",
+            "title": "Sync Test Sales Overview II",
             "items": [{"id": "chart-1", "type": "chart", "chart": CHART}],
             "visibility": "Everyone",
         }
-        write_bundle(BUNDLE, self.files)
+        write_workbook(FOLDER, self.files)
         self.ship()
 
-    def test_duplicating_a_bundle_lands_its_dashboards_in_one_workbook(self):
+    def test_duplicating_a_shipped_workbook_lands_its_dashboards_in_one_workbook(self):
         self.ship_a_second_dashboard()
-        container = self.standard(DASHBOARD).workbook
+        shipped = self.standard(DASHBOARD).workbook
 
         with as_user(AUTHOR):
-            result = duplicate_bundle_through_the_api(workbook=container)
+            result = duplicate_workbook_through_the_api(workbook=shipped)
 
         workbook = result["workbook"]
-        self.assertEqual(frappe.db.get_value(DT.WORKBOOK, workbook, "title"), COPY_BUNDLE_TITLE)
+        self.assertEqual(frappe.db.get_value(DT.WORKBOOK, workbook, "title"), COPY_SHIPPED_TITLE)
         self.assertEqual(frappe.db.get_value(DT.WORKBOOK, workbook, "owner"), AUTHOR)
-        self.assertNotEqual(str(workbook), str(container))
+        self.assertNotEqual(str(workbook), str(shipped))
         self.assertEqual(frappe.db.count(DT.DASHBOARD, {"workbook": workbook}), 2)
 
         # the chart both dashboards carry, and the queries under it, are copied
@@ -303,34 +303,34 @@ class TestDuplicateToEdit(InsightsIntegrationTestCase):
             items = frappe.parse_json(frappe.db.get_value(DT.DASHBOARD, name, "items"))
             self.assertEqual(items[0]["chart"], chart)
 
-    def test_a_workbook_of_the_sites_own_is_not_a_bundle_to_duplicate(self):
+    def test_a_workbook_of_the_sites_own_is_not_shipped_content_to_duplicate(self):
         self.ship()
-        mine = frappe.get_doc({"doctype": DT.WORKBOOK, "title": "Not a bundle"}).insert()
+        mine = frappe.get_doc({"doctype": DT.WORKBOOK, "title": "Not shipped by anyone"}).insert()
 
         with as_user(AUTHOR), self.assertRaises(ContentNotAvailableError):
-            duplicate_bundle_through_the_api(workbook=mine.name)
+            duplicate_workbook_through_the_api(workbook=mine.name)
 
     # ----------------------------------------------------------- the library
 
-    def test_the_library_lists_a_bundle_the_audience_admits(self):
+    def test_the_library_lists_a_workbook_the_audience_admits(self):
         self.ship()
         with as_user(AUTHOR):
-            listed = {bundle["title"]: bundle for bundle in get_standard_content()}
+            listed = {entry["title"]: entry for entry in get_standard_content()}
 
-        self.assertIn(BUNDLE_TITLE, listed)
-        bundle = listed[BUNDLE_TITLE]
-        self.assertEqual(bundle["app"], APP)
-        self.assertEqual(str(bundle["workbook"]), str(self.standard(DASHBOARD).workbook))
+        self.assertIn(WORKBOOK_TITLE, listed)
+        entry = listed[WORKBOOK_TITLE]
+        self.assertEqual(entry["app"], APP)
+        self.assertEqual(str(entry["workbook"]), str(self.standard(DASHBOARD).workbook))
         self.assertEqual(
-            [dashboard["standard_id"] for dashboard in bundle["dashboards"]],
+            [dashboard["standard_id"] for dashboard in entry["dashboards"]],
             [f"{APP}/{DASHBOARD}"],
         )
-        self.assertEqual(bundle["dashboards"][0]["slug"], DASHBOARD)
+        self.assertEqual(entry["dashboards"][0]["slug"], DASHBOARD)
 
     def test_the_library_leaves_out_what_the_audience_does_not_admit(self):
         self.files[f"dashboard/{DASHBOARD}.json"]["visibility"] = "Private"
-        write_bundle(BUNDLE, self.files)
+        write_workbook(FOLDER, self.files)
         self.ship()
 
         with as_user(AUTHOR):
-            self.assertNotIn(BUNDLE_TITLE, [bundle["title"] for bundle in get_standard_content()])
+            self.assertNotIn(WORKBOOK_TITLE, [entry["title"] for entry in get_standard_content()])

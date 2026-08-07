@@ -11,13 +11,13 @@ handed back for the shipped Standard ID: the resolver keys that lookup on
 
 What is copied is the dashboard's closure: the dashboard, the charts its items
 name, the queries those charts read and any query a query reads. That is the
-same closure export writes into a bundle, so this uses that walk rather than
+same closure export writes into an app, so this uses that walk rather than
 growing a second one.
 
 Two entry points, one copy. `duplicate_dashboard` is what the island's overflow
-offers on a single shipped dashboard; `duplicate_bundle` is what the gallery
-offers on a whole bundle, which lands on a site as one container workbook. The
-second is the first over every dashboard in the bundle, into one workbook.
+offers on a single shipped dashboard; `duplicate_workbook` is what the gallery
+offers on a whole shipped workbook. The second is the first over every dashboard
+in that workbook, into one workbook of the caller's own.
 
 The copy carries the `standard_id` it was made from. That is provenance and
 nothing else — it says which shipped item this document started as, which is
@@ -44,7 +44,8 @@ create.
 import frappe
 from frappe import _
 
-from insights.bundles import (
+from insights.resolver import ContentNotAvailableError, resolve_for_read
+from insights.standard_content import (
     CARRIED_FIELDS,
     CHART,
     CHILD_FIELDS,
@@ -53,7 +54,6 @@ from insights.bundles import (
     QUERY,
     dashboard_closure,
 )
-from insights.resolver import ContentNotAvailableError, resolve_for_read
 
 WORKBOOK = "Insights Workbook"
 PRIVATE = "Private"
@@ -80,14 +80,13 @@ def duplicate_dashboard(reference: str) -> dict:
     return {"workbook": workbook, "dashboard": copies[(DASHBOARD, name)]}
 
 
-def duplicate_bundle(workbook: str) -> dict:
-    """Copy a bundle's shipped dashboards into one workbook the caller owns.
+def duplicate_workbook(workbook: str) -> dict:
+    """Copy a shipped workbook's dashboards into one workbook the caller owns.
 
-    A bundle lands on a site as one container workbook, hence the argument. Same
-    semantics as `duplicate_dashboard`, with one `copies` map across all of them
-    so a query two dashboards read is copied once and shared.
+    Same semantics as `duplicate_dashboard`, with one `copies` map across all of
+    them so a query two dashboards read is copied once and shared.
 
-    The read check is per dashboard, not on the workbook: a container is
+    The read check is per dashboard, not on the workbook: a shipped workbook is
     Administrator-owned and nobody's to read, while the audience the dashboards
     declare is what admits a viewer.
     """
@@ -132,7 +131,7 @@ def _copy_closure(dashboard: str, workbook: str, copies: dict) -> None:
 def _copy(doc, workbook: str, copies: dict) -> str:
     """One document as the caller's own, references repointed at the copies.
 
-    `CARRIED_FIELDS` is the whole of what comes across — the same set a bundle
+    `CARRIED_FIELDS` is the whole of what comes across — the same set an app
     ships, which is content and only content. Everything else on the document is
     site-side (the workbook, folders, previews), derived by a controller (a
     dashboard's slug and linked charts), or identity, which this function

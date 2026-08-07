@@ -18,7 +18,7 @@ import useUserStore from '../users/users'
 import useWorkbook, { newWorkbookName } from './workbook'
 import { getWorkbookColumns } from './workbookListColumns'
 import useWorkbooks from './workbooks'
-import WorkbookLibrary, { StandardBundle } from './WorkbookLibrary.vue'
+import WorkbookLibrary, { StandardWorkbook } from './WorkbookLibrary.vue'
 import { useTelemetry } from 'frappe-ui/frappe'
 
 const router = useRouter()
@@ -83,10 +83,10 @@ function openNewWorkbook() {
 // the dashboards installed apps ship, already on this site — a permanent
 // "Library" button surfaces them whenever there are any. The list is filtered
 // server-side by what the user's audience admits, so there is no role gate here.
-const bundles = ref<StandardBundle[]>([])
+const shippedWorkbooks = ref<StandardWorkbook[]>([])
 const showLibrary = ref(false)
-call('insights.api.bundles.get_standard_content').then(
-	(data: StandardBundle[]) => (bundles.value = data || []),
+call('insights.api.standard_content.get_standard_content').then(
+	(data: StandardWorkbook[]) => (shippedWorkbooks.value = data || []),
 )
 
 function openLibrary() {
@@ -140,7 +140,7 @@ watchEffect(() => {
 		<Breadcrumbs :items="[{ label: __('Workbooks'), route: '/workbook' }]" />
 		<div class="flex items-center gap-2">
 			<Button
-				v-if="bundles.length"
+				v-if="shippedWorkbooks.length"
 				:label="__('Library')"
 				variant="outline"
 				@click="openLibrary"
@@ -162,7 +162,7 @@ watchEffect(() => {
 		</div>
 	</header>
 
-	<WorkbookLibrary v-model="showLibrary" :bundles="bundles" />
+	<WorkbookLibrary v-model="showLibrary" :workbooks="shippedWorkbooks" />
 
 	<div class="mb-4 flex h-full flex-col gap-3 overflow-auto px-5 pt-3">
 		<div class="flex items-center justify-between gap-2 overflow-visible py-1">
@@ -193,14 +193,14 @@ watchEffect(() => {
 					</div>
 					<div class="mt-1 text-base text-ink-gray-5">
 						{{
-							bundles.length
+							shippedWorkbooks.length
 								? __('Create a workbook, or start from a prebuilt one.')
 								: __('No workbooks to display.')
 						}}
 					</div>
 					<div class="mt-4 flex items-center gap-2">
 						<Button
-							v-if="bundles.length"
+							v-if="shippedWorkbooks.length"
 							:label="__('Library')"
 							variant="outline"
 							@click="openLibrary"

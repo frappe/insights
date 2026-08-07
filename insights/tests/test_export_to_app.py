@@ -3,7 +3,7 @@
 The fixture content is authored the way a developer authors it — an ordinary
 workbook with a query, a chart and a dashboard — and exported into the Insights
 app's own `insights/` directory, the same place any other app would ship a
-bundle from.
+workbook from.
 
 The invariant the whole file circles is that after an export the site's
 documents *are* the app's standard documents: a sync straight afterwards has
@@ -21,28 +21,28 @@ from contextlib import contextmanager
 
 import frappe
 
-from insights import bundle_export
-from insights.api.bundles import get_export_targets
-from insights.bundle_export import export_dashboard, write_back
-from insights.bundles import CARRIED_FIELDS, ITEM_TYPES, MANIFEST, sync_app_bundles
+from insights import export_to_app
+from insights.api.standard_content import get_export_targets
+from insights.export_to_app import export_dashboard, write_back
 from insights.resolver import resolve
+from insights.standard_content import CARRIED_FIELDS, ITEM_TYPES, MANIFEST, sync_app_content
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import DT
-from insights.tests.test_bundles import bundle_root, developer_mode
+from insights.tests.test_standard_content import developer_mode, shipped_root
 
 APP = "insights"
-BUNDLE = "bundle_export_test"
-OTHER_BUNDLE = "bundle_export_test_alt"
+FOLDER = "export_test"
+OTHER_FOLDER = "export_test_alt"
 
-BASE_TITLE = "Bundle Export Todos"
-SOURCE_TITLE = "Bundle Export Sales"
-CHART_TITLE = "Bundle Export Sales Chart"
-DASHBOARD_TITLE = "Bundle Export Sales Overview"
+BASE_TITLE = "Export Test Todos"
+SOURCE_TITLE = "Export Test Sales"
+CHART_TITLE = "Export Test Sales Chart"
+DASHBOARD_TITLE = "Export Test Sales Overview"
 
-BASE = "bundle-export-todos"
-SOURCE = "bundle-export-sales"
-CHART = "bundle-export-sales-chart"
-DASHBOARD = "bundle-export-sales-overview"
+BASE = "export-test-todos"
+SOURCE = "export-test-sales"
+CHART = "export-test-sales-chart"
+DASHBOARD = "export-test-sales-overview"
 
 FILES = {
     BASE: f"query/{BASE}.json",
@@ -52,9 +52,9 @@ FILES = {
 }
 
 
-def remove_bundles():
-    for folder in (BUNDLE, OTHER_BUNDLE):
-        shutil.rmtree(os.path.join(bundle_root(), folder), ignore_errors=True)
+def remove_fixtures():
+    for folder in (FOLDER, OTHER_FOLDER):
+        shutil.rmtree(os.path.join(shipped_root(), folder), ignore_errors=True)
 
 
 @contextmanager
@@ -66,7 +66,7 @@ def write_back_hooked():
     not by calling the handler.
     """
     hooks = frappe.get_doc_hooks()
-    handler = "insights.bundle_export.write_back"
+    handler = "insights.export_to_app.write_back"
     added = []
     for doctype in ITEM_TYPES.values():
         handlers = hooks.setdefault(doctype, {}).setdefault("on_update", [])
@@ -80,28 +80,26 @@ def write_back_hooked():
             handlers.remove(handler)
 
 
-class TestInsightsBundleExport(InsightsIntegrationTestCase):
-    SAVEPOINT = "test_insights_bundle_export"
+class TestExportToApp(InsightsIntegrationTestCase):
+    SAVEPOINT = "test_insights_export_to_app"
 
     @classmethod
     def before_class(cls):
         # a crashed run can leave the fixture behind; it is a fixed name
-        remove_bundles()
+        remove_fixtures()
 
     @classmethod
     def after_class(cls):
-        remove_bundles()
+        remove_fixtures()
 
     def before_test(self):
-        # export is an authoring surface, and authoring bundles happens on a
-        # developer bench and nowhere else
+        # export is an authoring surface, and authoring shipped content happens
+        # on a developer bench and nowhere else
         on = developer_mode(True)
         on.__enter__()
         self.addCleanup(on.__exit__, None, None, None)
 
-        self.workbook = frappe.get_doc(
-            {"doctype": DT.WORKBOOK, "title": "Bundle Export Test Workbook"}
-        ).insert()
+        self.workbook = frappe.get_doc({"doctype": DT.WORKBOOK, "title": "Export Test Workbook"}).insert()
         self.base = frappe.get_doc(
             {
                 "doctype": DT.QUERY,
@@ -186,15 +184,15 @@ class TestInsightsBundleExport(InsightsIntegrationTestCase):
         ).insert()
 
     def after_test(self):
-        remove_bundles()
+        remove_fixtures()
 
     # ------------------------------------------------------------- helpers
 
     def export(self, **kwargs):
-        return export_dashboard(self.dashboard.name, APP, bundle=BUNDLE, **kwargs)
+        return export_dashboard(self.dashboard.name, APP, folder=FOLDER, **kwargs)
 
     def path(self, relative_path):
-        return os.path.join(bundle_root(), BUNDLE, relative_path)
+        return os.path.join(shipped_root(), FOLDER, relative_path)
 
     def content(self, name):
         with open(self.path(FILES[name])) as f:
@@ -260,15 +258,15 @@ class TestInsightsBundleExport(InsightsIntegrationTestCase):
         self.assertEqual(items[0]["chart"], CHART)
         self.assertEqual(items[1]["links"], {CHART: f"`{SOURCE}`.`status`"})
 
-        # and the documents are the app's now: standard, in the bundle's
-        # container workbook, addressable by Standard ID
-        containers = set()
+        # and the documents are the app's now: standard, in the workbook the app
+        # ships, addressable by Standard ID
+        shipped = set()
         for name in FILES:
             doc = self.doc(name)
             self.assertEqual(doc.is_standard, 1)
-            containers.add(str(doc.workbook))
-        self.assertEqual(len(containers), 1)
-        self.assertNotIn(str(self.workbook.name), containers)
+            shipped.add(str(doc.workbook))
+        self.assertEqual(len(shipped), 1)
+        self.assertNotIn(str(self.workbook.name), shipped)
 
         self.assertEqual(resolve(DT.DASHBOARD, self.standard_id(DASHBOARD)), self.doc(DASHBOARD).name)
         self.assertEqual(resolve(DT.CHART, self.standard_id(CHART)), self.doc(CHART).name)
@@ -277,7 +275,7 @@ class TestInsightsBundleExport(InsightsIntegrationTestCase):
         self.export()
         before = {name: self.doc(name).modified for name in FILES}
 
-        report = sync_app_bundles(APP)
+        report = sync_app_content(APP)
 
         self.assertFalse(report.changed, f"created {report.created}, updated {report.updated}")
         self.assertTrue(set(self.all_standard_ids()) <= set(report.unchanged))
@@ -309,10 +307,10 @@ class TestInsightsBundleExport(InsightsIntegrationTestCase):
         self.assertEqual([item["layout"]["i"] for item in self.read(DASHBOARD)["items"]], keys)
 
     def test_a_taken_logical_name_gets_a_deterministic_suffix(self):
-        os.makedirs(os.path.join(bundle_root(), OTHER_BUNDLE, "query"), exist_ok=True)
-        with open(os.path.join(bundle_root(), OTHER_BUNDLE, MANIFEST), "w") as f:
-            json.dump({"title": "Bundle Export Alt", "required_apps": [], "format_version": 1}, f)
-        with open(os.path.join(bundle_root(), OTHER_BUNDLE, "query", f"{SOURCE}.json"), "w") as f:
+        os.makedirs(os.path.join(shipped_root(), OTHER_FOLDER, "query"), exist_ok=True)
+        with open(os.path.join(shipped_root(), OTHER_FOLDER, MANIFEST), "w") as f:
+            json.dump({"title": "Export Test Alt", "required_apps": [], "format_version": 1}, f)
+        with open(os.path.join(shipped_root(), OTHER_FOLDER, "query", f"{SOURCE}.json"), "w") as f:
             json.dump({"title": "Something Else Called Sales"}, f)
 
         report = self.export()
@@ -325,7 +323,7 @@ class TestInsightsBundleExport(InsightsIntegrationTestCase):
         with developer_mode(False):
             self.assertRaises(frappe.ValidationError, self.export)
 
-        self.assertFalse(os.path.isdir(os.path.join(bundle_root(), BUNDLE)))
+        self.assertFalse(os.path.isdir(os.path.join(shipped_root(), FOLDER)))
         self.assertFalse(frappe.db.get_value(DT.DASHBOARD, self.dashboard.name, "is_standard"))
 
     def test_export_needs_the_target_app_installed(self):
@@ -342,7 +340,7 @@ class TestInsightsBundleExport(InsightsIntegrationTestCase):
 
         expected = before | {"title": f"{DASHBOARD_TITLE} (revised)"}
         # the same serializer as export, so a builder save is a one-line diff
-        self.assertEqual(self.content(DASHBOARD), bundle_export.dumps(expected))
+        self.assertEqual(self.content(DASHBOARD), export_to_app.dumps(expected))
 
     def test_nothing_is_written_back_outside_developer_mode(self):
         self.export()
@@ -358,11 +356,11 @@ class TestInsightsBundleExport(InsightsIntegrationTestCase):
 
         self.assertEqual(self.on_disk(), before)
 
-    def test_export_targets_lists_the_apps_and_their_bundles(self):
+    def test_export_targets_lists_the_apps_and_the_workbooks_they_ship(self):
         self.export()
 
         targets = get_export_targets()
 
         self.assertTrue(targets["developer_mode"])
         insights = next(app for app in targets["apps"] if app["app"] == APP)
-        self.assertIn(BUNDLE, [bundle["folder"] for bundle in insights["bundles"]])
+        self.assertIn(FOLDER, [workbook["folder"] for workbook in insights["workbooks"]])

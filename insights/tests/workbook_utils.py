@@ -36,7 +36,7 @@ def get_workbook(name):
     return workbook
 
 
-def create_workbook_bundle(owner, title, include_secondary_items=False, include_folders=False):
+def create_workbook_with_content(owner, title, include_secondary_items=False, include_folders=False):
     workbook = create_test_workbook(owner, title=title)
     query = create_test_query(owner, workbook.name, title=f"{title} Query 1")
     chart = create_test_chart(owner, workbook.name, query.name, title=f"{title} Chart 1")
@@ -47,7 +47,7 @@ def create_workbook_bundle(owner, title, include_secondary_items=False, include_
         title=f"{title} Dashboard 1",
     )
 
-    bundle = {
+    content = {
         "workbook": workbook,
         "query": query,
         "chart": chart,
@@ -56,31 +56,31 @@ def create_workbook_bundle(owner, title, include_secondary_items=False, include_
     }
 
     if include_secondary_items:
-        bundle["secondary_query"] = create_test_query(
+        content["secondary_query"] = create_test_query(
             owner,
             workbook.name,
             title=f"{title} Query 2",
         )
-        bundle["secondary_chart"] = create_test_chart(
+        content["secondary_chart"] = create_test_chart(
             owner,
             workbook.name,
-            bundle["secondary_query"].name,
+            content["secondary_query"].name,
             title=f"{title} Chart 2",
         )
 
     if include_folders:
         with as_user(owner):
-            bundle["folders"]["query"] = create_folder(
+            content["folders"]["query"] = create_folder(
                 workbook.name,
                 f"{title} Query Folder",
                 "query",
             )
-            bundle["folders"]["chart"] = create_folder(
+            content["folders"]["chart"] = create_folder(
                 workbook.name,
                 f"{title} Chart Folder",
                 "chart",
             )
-            move_item_to_folder("query", query.name, bundle["folders"]["query"])
-            move_item_to_folder("chart", chart.name, bundle["folders"]["chart"])
+            move_item_to_folder("query", query.name, content["folders"]["query"])
+            move_item_to_folder("chart", chart.name, content["folders"]["chart"])
 
-    return bundle
+    return content

@@ -17,8 +17,8 @@ def execute():
 
     `from_template` stays. It is the only record of where a copy came from, and
     it decides nothing: a copy is not a duplicate of anything this site ships,
-    so it gets no provenance `standard_id` either — the bundles carry per-document
-    identities that the copy's documents never held.
+    so it gets no provenance `standard_id` either — standard content carries
+    per-document identities that the copy's documents never held.
     """
     doctype = "Insights Workbook"
     # the empty value of each column's own type — an orphan column is still NOT NULL

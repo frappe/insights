@@ -113,7 +113,7 @@ class InsightsChartv3(Document):
         sort — derived here from the config every time the chart runs. This used to
         be read off a second query document the browser filled in, and a chart no
         browser had visited fell back to drawing its source query: a whole shipped
-        bundle rendered raw tables, every number wrong and nothing said so. A config
+        workbook rendered raw tables, every number wrong and nothing said so. A config
         that cannot be drawn is an error, not a row set.
         """
         config = frappe.parse_json(self.config or "{}")

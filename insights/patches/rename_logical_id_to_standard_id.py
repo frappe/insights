@@ -1,7 +1,7 @@
 import frappe
 from frappe.model.utils.rename_field import rename_field
 
-from insights.bundles import CHART, DASHBOARD, QUERY, WORKBOOK
+from insights.standard_content import CHART, DASHBOARD, QUERY, WORKBOOK
 
 # every doctype that carries the identity of shipped content
 IDENTIFIED = (WORKBOOK, QUERY, CHART, DASHBOARD)

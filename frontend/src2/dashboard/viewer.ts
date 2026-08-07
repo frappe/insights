@@ -255,5 +255,5 @@ export type DuplicatedDashboard = { workbook: string; dashboard: string }
  * The server decides who may: an authoring seat, and read on the dashboard.
  */
 export function duplicateDashboard(dashboard: string): Promise<DuplicatedDashboard> {
-	return call('insights.api.bundles.duplicate_dashboard', { dashboard })
+	return call('insights.api.standard_content.duplicate_dashboard', { dashboard })
 }

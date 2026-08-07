@@ -5,35 +5,36 @@
 
 Both ends of shipped content are authoring, not viewing, so they sit behind the
 Insights role like the rest of the builder. Export refuses outside a
-developer-mode bench — the machinery in `insights.bundle_export` enforces both,
+developer-mode bench — the machinery in `insights.export_to_app` enforces both,
 whatever calls it. Duplicate is the other direction and runs on any site: it is
 the only way to change shipped content, which is read-only once it lands. The
-gallery browses what a site was shipped and duplicates a bundle whole; the
-island duplicates one dashboard.
+gallery browses what a site was shipped and duplicates a shipped workbook whole;
+the island duplicates one dashboard.
 """
 
-from insights import bundle_export, bundles, duplicate
+from insights import duplicate, export_to_app, standard_content
 from insights.decorators import insights_whitelist
 
 
 @insights_whitelist()
 def get_export_targets() -> dict:
-    """The apps an export can go into, the bundles they already ship, and
+    """The apps an export can go into, the workbooks they already ship, and
     whether this bench allows exporting at all."""
-    return bundle_export.export_targets()
+    return export_to_app.export_targets()
 
 
 @insights_whitelist()
 def export_dashboard(
-    dashboard: str, app: str, bundle: str | None = None, bundle_title: str | None = None
+    dashboard: str, app: str, folder: str | None = None, workbook_title: str | None = None
 ) -> dict:
-    """Write a dashboard's closure into an app's bundle and flag it standard.
+    """Write a dashboard's closure into a workbook an app ships, and flag it standard.
 
-    `bundle` names the folder inside the app's `insights/` directory and
-    defaults to the dashboard's logical name; `bundle_title` titles a bundle
-    this export creates, and is ignored for one that already exists.
+    `folder` names the shipped workbook's folder inside the app's `insights/`
+    directory and defaults to the dashboard's logical name; `workbook_title`
+    titles a workbook this export creates, and is ignored for one that already
+    exists.
     """
-    report = bundle_export.export_dashboard(dashboard, app, bundle=bundle, bundle_title=bundle_title)
+    report = export_to_app.export_dashboard(dashboard, app, folder=folder, workbook_title=workbook_title)
     return report.as_dict()
 
 
@@ -49,14 +50,14 @@ def duplicate_dashboard(dashboard: str) -> dict:
 
 @insights_whitelist()
 def get_standard_content() -> list[dict]:
-    """The shipped bundles this site has, for the gallery to browse."""
-    return bundles.standard_content()
+    """The shipped workbooks this site has, for the gallery to browse."""
+    return standard_content.gallery()
 
 
 @insights_whitelist()
-def duplicate_bundle(workbook: str) -> dict:
-    """Copy a bundle's shipped dashboards into a new workbook the caller owns.
+def duplicate_workbook(workbook: str) -> dict:
+    """Copy a shipped workbook's dashboards into a new workbook the caller owns.
 
     The gallery's action, and the same two gates as `duplicate_dashboard`.
     """
-    return duplicate.duplicate_bundle(workbook)
+    return duplicate.duplicate_workbook(workbook)

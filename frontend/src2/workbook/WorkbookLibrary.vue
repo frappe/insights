@@ -7,8 +7,8 @@ import { useRouter } from 'vue-router'
 import { createToast } from '../helpers/toasts'
 import { __ } from '../translation'
 
-/** A bundle an installed app ships, as it landed on this site. */
-export type StandardBundle = {
+/** A workbook an installed app ships, as it landed on this site. */
+export type StandardWorkbook = {
 	workbook: number
 	title: string
 	app: string
@@ -16,17 +16,17 @@ export type StandardBundle = {
 	dashboards: { name: string; title: string; slug: string; standard_id: string }[]
 }
 
-const props = defineProps<{ bundles: StandardBundle[] }>()
+const props = defineProps<{ workbooks: StandardWorkbook[] }>()
 const show = defineModel<boolean>({ default: false })
 
 // group by the app the content is for, so an app's dashboards read as one
 // attributed section rather than one undifferentiated list
 const sections = computed(() => {
-	const byApp = new Map<string, StandardBundle[]>()
-	for (const bundle of props.bundles) {
-		const group = byApp.get(bundle.app_title) ?? []
-		group.push(bundle)
-		byApp.set(bundle.app_title, group)
+	const byApp = new Map<string, StandardWorkbook[]>()
+	for (const shipped of props.workbooks) {
+		const group = byApp.get(shipped.app_title) ?? []
+		group.push(shipped)
+		byApp.set(shipped.app_title, group)
 	}
 	return [...byApp.entries()]
 		.map(([app, items]) => ({ app, items }))
@@ -36,15 +36,15 @@ const sections = computed(() => {
 const router = useRouter()
 const { capture } = useTelemetry()
 
-// the bundle currently being copied, so only its button spins
+// the workbook currently being copied, so only its button spins
 const duplicating = ref<number | null>(null)
 
-function duplicate(bundle: StandardBundle) {
-	duplicating.value = bundle.workbook
-	call('insights.api.bundles.duplicate_bundle', { workbook: bundle.workbook })
+function duplicate(shipped: StandardWorkbook) {
+	duplicating.value = shipped.workbook
+	call('insights.api.standard_content.duplicate_workbook', { workbook: shipped.workbook })
 		.then((result: { workbook: number; dashboard: string | null }) => {
-			capture('standard_bundle_duplicated', { app: bundle.app, bundle: bundle.title })
-			createToast({ message: __('{0} copied', bundle.title), variant: 'success' })
+			capture('standard_workbook_duplicated', { app: shipped.app, workbook: shipped.title })
+			createToast({ message: __('{0} copied', shipped.title), variant: 'success' })
 			router.push(
 				result.dashboard
 					? `/workbook/${result.workbook}/dashboard/${result.dashboard}`
@@ -53,14 +53,14 @@ function duplicate(bundle: StandardBundle) {
 		})
 		.catch(() => {
 			createToast({
-				message: __('Failed to copy {0}', bundle.title),
+				message: __('Failed to copy {0}', shipped.title),
 				variant: 'error',
 			})
 		})
 		.finally(() => (duplicating.value = null))
 }
 
-function open(dashboard: StandardBundle['dashboards'][number]) {
+function open(dashboard: StandardWorkbook['dashboards'][number]) {
 	show.value = false
 	router.push(`/dashboards/${dashboard.slug || dashboard.name}`)
 }
@@ -85,24 +85,24 @@ function open(dashboard: StandardBundle['dashboards'][number]) {
 					</div>
 					<div class="flex flex-col gap-3">
 						<div
-							v-for="bundle in section.items"
-							:key="bundle.workbook"
+							v-for="shipped in section.items"
+							:key="shipped.workbook"
 							class="rounded border border-outline-gray-1 bg-surface-base p-4"
 						>
 							<div class="flex items-center justify-between gap-3">
 								<div class="truncate text-base-medium text-ink-gray-9">
-									{{ bundle.title }}
+									{{ shipped.title }}
 								</div>
 								<Button
 									:label="__('Duplicate')"
-									:loading="duplicating === bundle.workbook"
+									:loading="duplicating === shipped.workbook"
 									:disabled="!!duplicating"
-									@click="duplicate(bundle)"
+									@click="duplicate(shipped)"
 								/>
 							</div>
 							<div class="mt-2 flex flex-wrap items-center gap-1">
 								<Button
-									v-for="dashboard in bundle.dashboards"
+									v-for="dashboard in shipped.dashboards"
 									:key="dashboard.name"
 									variant="ghost"
 									:label="dashboard.title"

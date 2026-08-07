@@ -112,7 +112,7 @@
    "options": "Viewer\nAuthor"
   },
   {
-   "description": "Shipped content identity ({app}/{name}), set by bundle sync",
+   "description": "Shipped content identity ({app}/{name}), set by standard content sync",
    "fieldname": "standard_id",
    "fieldtype": "Data",
    "label": "Standard ID",

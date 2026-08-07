@@ -11,15 +11,15 @@ def after_migrate():
     except Exception:
         frappe.log_error(title="Error creating Admin Team")
 
-    # every app's shipped analytics, reconciled into documents. sync_bundles
-    # isolates each app itself; this catch is for discovery blowing up before
-    # any app is reached.
+    # every app's shipped analytics, reconciled into documents.
+    # sync_standard_content isolates each app itself; this catch is for discovery
+    # blowing up before any app is reached.
     try:
-        from insights.bundles import sync_bundles
+        from insights.standard_content import sync_standard_content
 
-        sync_bundles()
+        sync_standard_content()
     except Exception:
-        frappe.log_error(title="Error syncing Insights bundles")
+        frappe.log_error(title="Error syncing Insights standard content")
 
 
 def create_admin_team():

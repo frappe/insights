@@ -191,7 +191,7 @@ def can_edit(doc) -> bool:
     """Everything editing takes: rights on the document, and a seat in the app.
 
     Shipped content answers no even to its owner — it is read-only on a site
-    outside developer mode (`insights.bundles.block_standard_edits`), and
+    outside developer mode (`insights.standard_content.block_standard_edits`), and
     `can_duplicate` is the affordance that replaces it.
     """
     if doc.is_standard and not frappe.conf.developer_mode:

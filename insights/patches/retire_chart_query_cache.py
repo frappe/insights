@@ -1,6 +1,6 @@
 import frappe
 
-from insights.bundles import bundle_sync
+from insights.standard_content import standard_content_sync
 
 CHART = "Insights Chart v3"
 QUERY = "Insights Query v3"
@@ -26,7 +26,7 @@ def execute():
     same release *adds* would not be a column yet, and loading a query document
     selects the whole of its meta. That is not hypothetical: run before the
     sync, this patch dies on `is_standard` on any site that has not migrated
-    since bundles landed. The documents have to go through their controller,
+    since standard content landed. The documents have to go through their controller,
     which is what takes an alert set on one and the query's reference edges with
     it, so the schema the controller expects has to be the one that is there.
 
@@ -55,7 +55,7 @@ def execute():
 
     # shipped charts cache like any other, and their caches are standard content
     # this app is retiring — the same work as a sync, under a different trigger
-    with bundle_sync():
+    with standard_content_sync():
         for name in cached:
             frappe.delete_doc(QUERY, name, force=True, ignore_permissions=True, delete_permanently=True)
 

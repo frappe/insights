@@ -7,8 +7,8 @@ A reference is what a consumer app, a desk route or a bookmark carries. Four
 forms are accepted for a dashboard, three for a chart:
 
     Standard ID  `{app}/{name}`  the identity of shipped content, the field
-                                 bundle sync writes; the only form that crosses
-                                 the contract boundary
+                                 standard content sync writes; the only form
+                                 that crosses the contract boundary
     docname      the hash primary key, site-local
     slug         the cosmetic, human-readable dashboard key
     v2 name      the primary key this document carried before the rename to v3,
@@ -56,9 +56,9 @@ def resolve(doctype: str, reference: str) -> str | None:
     """Return the document name a reference points at, or None.
 
     A pure lookup: it applies the standard-document policy but checks no
-    permission. Server-side callers that have already established access (bundle
-    sync, migrations, admin tooling) use this. Anything answering a user request
-    uses `resolve_for_read`.
+    permission. Server-side callers that have already established access
+    (standard content sync, migrations, admin tooling) use this. Anything
+    answering a user request uses `resolve_for_read`.
     """
     if doctype not in RESOLVABLE_DOCTYPES:
         raise ValueError(f"{doctype} cannot be resolved by reference")

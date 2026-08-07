@@ -1,6 +1,6 @@
 import frappe
 
-from insights.bundles import WORKBOOK
+from insights.standard_content import WORKBOOK
 
 
 def execute():

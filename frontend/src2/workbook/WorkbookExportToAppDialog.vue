@@ -5,49 +5,49 @@ import { computed, ref, watch } from 'vue'
 import { getErrorMessage } from '../helpers'
 import { __ } from '../translation'
 import {
-	BUNDLE_NAME_PATTERN,
 	ExportReport,
+	FOLDER_NAME_PATTERN,
 	exportDashboard,
 	exportTargets,
 	itemLabel,
-	toBundleName,
+	toFolderName,
 } from './export_targets'
 
 const props = defineProps<{ dashboard: string; title: string }>()
 const emit = defineEmits<{ exported: [ExportReport] }>()
 const show = defineModel<boolean>()
 
-const NEW_BUNDLE = '__new__'
+const NEW_WORKBOOK = '__new__'
 
 const apps = computed(() => exportTargets.value?.apps || [])
 const appTitle = (name: string) => apps.value.find((a) => a.app === name)?.title || name
 // no default app: every installed app is a target, and picking the wrong one
 // writes files into someone else's repo
 const app = ref('')
-const bundles = computed(() => apps.value.find((a) => a.app === app.value)?.bundles || [])
+const workbooks = computed(() => apps.value.find((a) => a.app === app.value)?.workbooks || [])
 
-const bundle = ref(NEW_BUNDLE)
-const newBundleName = ref(toBundleName(props.title))
-const newBundleTitle = ref(props.title)
+const workbook = ref(NEW_WORKBOOK)
+const newFolder = ref(toFolderName(props.title))
+const newTitle = ref(props.title)
 
-// bundles belong to the app, so a switch cannot keep the old choice
-watch(app, () => (bundle.value = NEW_BUNDLE))
+// a shipped workbook belongs to its app, so a switch cannot keep the old choice
+watch(app, () => (workbook.value = NEW_WORKBOOK))
 
 const appOptions = computed(() => [
 	{ label: __('Select an app'), value: '' },
 	...apps.value.map((a) => ({ label: a.title, value: a.app })),
 ])
-const bundleOptions = computed(() => [
-	...bundles.value.map((b) => ({ label: `${b.title} (${b.folder})`, value: b.folder })),
-	{ label: __('New bundle…'), value: NEW_BUNDLE },
+const workbookOptions = computed(() => [
+	...workbooks.value.map((w) => ({ label: `${w.title} (${w.folder})`, value: w.folder })),
+	{ label: __('New workbook…'), value: NEW_WORKBOOK },
 ])
 
-const isNewBundle = computed(() => bundle.value === NEW_BUNDLE)
+const isNewWorkbook = computed(() => workbook.value === NEW_WORKBOOK)
 const nameError = computed(() => {
-	if (!isNewBundle.value) return ''
-	if (!newBundleName.value) return __('Enter a folder name for the new bundle')
-	if (!BUNDLE_NAME_PATTERN.test(newBundleName.value)) {
-		return __('A bundle folder must be lowercase letters, digits, "-" or "_"')
+	if (!isNewWorkbook.value) return ''
+	if (!newFolder.value) return __('Enter a folder name for the new workbook')
+	if (!FOLDER_NAME_PATTERN.test(newFolder.value)) {
+		return __('A workbook folder must be lowercase letters, digits, "-" or "_"')
 	}
 	return ''
 })
@@ -64,8 +64,8 @@ function submit() {
 	exportDashboard({
 		dashboard: props.dashboard,
 		app: app.value,
-		bundle: isNewBundle.value ? newBundleName.value : bundle.value,
-		bundle_title: isNewBundle.value ? newBundleTitle.value : undefined,
+		folder: isNewWorkbook.value ? newFolder.value : workbook.value,
+		workbook_title: isNewWorkbook.value ? newTitle.value : undefined,
 	})
 		.then((response) => (report.value = response))
 		.catch((e: any) => (error.value = getErrorMessage(e)))
@@ -112,26 +112,26 @@ const actions = computed(() => {
 				<p class="text-p-sm text-ink-gray-6">
 					{{
 						__(
-							'Writes this dashboard, its charts and their queries into the app as standard content. The dashboard moves out of this workbook and into the bundle.',
+							'Writes this dashboard, its charts and their queries into the app as standard content. The dashboard leaves this workbook for the one the app ships.',
 						)
 					}}
 				</p>
 				<FormControl type="select" :label="__('App')" v-model="app" :options="appOptions" />
 				<FormControl
 					type="select"
-					:label="__('Bundle')"
-					v-model="bundle"
-					:options="bundleOptions"
+					:label="__('Workbook')"
+					v-model="workbook"
+					:options="workbookOptions"
 				/>
-				<template v-if="isNewBundle">
+				<template v-if="isNewWorkbook">
 					<FormControl
-						:label="__('Bundle Folder')"
-						v-model="newBundleName"
+						:label="__('Workbook Folder')"
+						v-model="newFolder"
 						placeholder="sales_reports"
 					/>
 					<FormControl
-						:label="__('Bundle Title')"
-						v-model="newBundleTitle"
+						:label="__('Workbook Title')"
+						v-model="newTitle"
 						placeholder="Sales Reports"
 					/>
 					<ErrorMessage :message="nameError" />
@@ -148,7 +148,7 @@ const actions = computed(() => {
 					<p class="text-p-sm text-ink-gray-7">
 						{{
 							__(
-								"{0} is now standard content of {1}. It has moved out of this workbook into the bundle's workbook — commit the files below to ship it.",
+								'{0} is now standard content of {1}. It has left this workbook for the one {1} ships — commit the files below to ship it.',
 								props.title,
 								appTitle(report.app),
 							)
@@ -157,7 +157,7 @@ const actions = computed(() => {
 				</div>
 				<div class="flex flex-col gap-1">
 					<div class="text-sm-medium text-ink-gray-7">
-						{{ __('{0}/{1}', report.app, report.bundle) }}
+						{{ __('{0}/{1}', report.app, report.folder) }}
 					</div>
 					<div
 						class="flex max-h-64 flex-col divide-y divide-outline-gray-1 overflow-y-auto rounded border border-outline-gray-2"
@@ -177,7 +177,7 @@ const actions = computed(() => {
 						{{
 							report.written.length
 								? __('{0} files written', String(report.written.length))
-								: __('No file changed — the bundle already matched')
+								: __('No file changed — the app already ships exactly this')
 						}}
 					</div>
 				</div>

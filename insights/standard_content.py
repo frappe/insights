@@ -1,9 +1,9 @@
 # Copyright (c) 2025, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-"""Bundles: how an app ships analytics, and how a site reconciles them.
+"""Standard content: how an app ships analytics, and how a site reconciles them.
 
-An app ships content as files under `<app>/insights/<bundle>/`, the folder
+An app ships a workbook as files under `<app>/insights/<folder>/`, the folder
 idiom Studio and Builder already use:
 
     erpnext/insights/selling/
@@ -14,11 +14,11 @@ idiom Studio and Builder already use:
 
 One file is one document. The file name is the item's logical name, the folder
 above it names the doctype, and `{app}/{name}` — the `standard_id` the resolver
-looks up — is the identity. That namespace is flat per app: bundle folders
-organize, they do not identify, so two bundles in one app may not ship the same
+looks up — is the identity. That namespace is flat per app: a shipped workbook
+organizes, it does not identify, so two of them in one app may not ship the same
 name. References inside the files (dashboard -> chart, chart -> query, query ->
 query) are logical names; docnames are site-local hashes and never appear in a
-bundle.
+shipped file.
 
 Sync reconciles those files into real documents on migrate. It is declarative:
 the files are the truth, so a new file is created, a changed file is updated, and
@@ -52,8 +52,8 @@ QUERY = "Insights Query v3"
 CHART = "Insights Chart v3"
 DASHBOARD = "Insights Dashboard v3"
 
-# the directory an app ships its bundles in, relative to its package
-BUNDLE_DIR = "insights"
+# the directory an app ships its workbooks in, relative to its package
+SHIPPED_DIR = "insights"
 
 # the manifest is the workbook's file: a shipped folder is a workbook, so the
 # file that titles it carries its name. Recognized under this name only — the
@@ -62,7 +62,7 @@ BUNDLE_DIR = "insights"
 MANIFEST = "workbook.json"
 
 # owned by Insights, append-only within a major: an importer tolerates keys it
-# does not know, and refuses a bundle written for a later major
+# does not know, and refuses a workbook written for a later major
 FORMAT_VERSION = 1
 
 # item folder -> doctype. One subfolder of a shipped workbook per doctype.
@@ -77,7 +77,7 @@ ITEM_TYPES = {
 # order. Deletion reverses this, so the workbook goes last and always empty.
 SYNC_ORDER = (WORKBOOK, *ITEM_TYPES.values())
 
-# the fields a bundle carries per doctype. Everything else on the document is
+# the fields a shipped file carries per doctype. Everything else on the document is
 # either site-side (workbook, folder, preview_image), derived by a controller
 # (linked_charts, read back off the resolved items), or identity the sync owns
 # (standard_id, is_standard, slug).
@@ -128,16 +128,17 @@ NAME_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 LINK_COLUMN = re.compile(r"^`([^`]+)`\.`([^`]+)`$")
 
 
-class BundleError(frappe.ValidationError):
-    """A bundle the site cannot honour: malformed files, an unknown format
+class StandardContentError(frappe.ValidationError):
+    """Content the site cannot honour: malformed files, an unknown format
     version, a duplicate logical name, a reference to an item that is not there.
-    Raised per app, and caught per app by `sync_bundles` unless it runs strict."""
+    Raised per app, and caught per app by `sync_standard_content` unless it runs
+    strict."""
 
 
 @dataclass(frozen=True)
-class BundleItem:
+class ShippedItem:
     app: str
-    bundle: str
+    folder: str
     doctype: str
     name: str
     data: dict
@@ -148,20 +149,20 @@ class BundleItem:
 
 
 @dataclass
-class Bundle:
+class ShippedWorkbook:
     app: str
     folder: str
     path: str
     title: str
     required_apps: list[str]
     format_version: int
-    items: list[BundleItem]
+    items: list[ShippedItem]
 
     @property
     def key(self) -> str:
         return f"{self.app}/{self.folder}"
 
-    def as_item(self) -> BundleItem:
+    def as_item(self) -> ShippedItem:
         """The workbook this folder ships, as an item like any other.
 
         Its logical name is the folder name, so its Standard ID is the folder's
@@ -170,9 +171,9 @@ class Bundle:
         folder and a chart of the same name a clash worth failing on: one
         Standard ID names one document.
         """
-        return BundleItem(
+        return ShippedItem(
             app=self.app,
-            bundle=self.folder,
+            folder=self.folder,
             doctype=WORKBOOK,
             name=self.folder,
             data={"title": self.title},
@@ -196,50 +197,50 @@ class SyncReport:
 # ---------------------------------------------------------------- discovery
 
 
-def discover_bundles(app: str) -> list[Bundle]:
-    """The bundles an app ships, read off disk.
+def discover_shipped_workbooks(app: str) -> list[ShippedWorkbook]:
+    """The workbooks an app ships, read off disk.
 
     Discovery walks genuinely installed apps and their directories. Reading an
     app's hooks would import it, which is both a cost and a lie on a site where
     the app is only half there — the files are the contract, so look at files.
     """
-    root = _bundle_root(app)
+    root = _shipped_root(app)
     if not root:
         return []
 
-    bundles = []
+    shipped = []
     for folder in sorted(os.listdir(root)):
         path = os.path.join(root, folder)
         if not os.path.isfile(os.path.join(path, MANIFEST)):
             continue
-        bundles.append(_load_bundle(app, folder, path))
-    return bundles
+        shipped.append(_load_shipped_workbook(app, folder, path))
+    return shipped
 
 
-def _bundle_root(app: str) -> str | None:
+def _shipped_root(app: str) -> str | None:
     try:
-        root = frappe.get_app_path(app, BUNDLE_DIR)
+        root = frappe.get_app_path(app, SHIPPED_DIR)
     except Exception:
         # an installed-but-unimportable app ships nothing we can read
         return None
     return root if os.path.isdir(root) else None
 
 
-def _load_bundle(app: str, folder: str, path: str) -> Bundle:
+def _load_shipped_workbook(app: str, folder: str, path: str) -> ShippedWorkbook:
     manifest = _read_json(os.path.join(path, MANIFEST))
     if not isinstance(manifest, dict):
-        raise BundleError(f"{app}/{folder}: {MANIFEST} must be an object")
+        raise StandardContentError(f"{app}/{folder}: {MANIFEST} must be an object")
 
     version = cint(manifest.get("format_version") or 1)
     if version > FORMAT_VERSION:
-        raise BundleError(
-            f"{app}/{folder} is written for bundle format {version}, "
+        raise StandardContentError(
+            f"{app}/{folder} is written for shipping format {version}, "
             f"this Insights understands {FORMAT_VERSION}"
         )
 
     required_apps = manifest.get("required_apps") or []
     if not isinstance(required_apps, list):
-        raise BundleError(f"{app}/{folder}: required_apps must be a list")
+        raise StandardContentError(f"{app}/{folder}: required_apps must be a list")
 
     items = []
     for type_folder, doctype in ITEM_TYPES.items():
@@ -251,16 +252,16 @@ def _load_bundle(app: str, folder: str, path: str) -> Bundle:
                 continue
             name = file_name[: -len(".json")]
             if not NAME_PATTERN.match(name):
-                raise BundleError(
+                raise StandardContentError(
                     f"{app}/{folder}/{type_folder}/{file_name}: "
                     "a logical name must be lowercase letters, digits, '-' or '_'"
                 )
             data = _read_json(os.path.join(type_path, file_name))
             if not isinstance(data, dict):
-                raise BundleError(f"{app}/{folder}/{type_folder}/{file_name} must be an object")
-            items.append(BundleItem(app=app, bundle=folder, doctype=doctype, name=name, data=data))
+                raise StandardContentError(f"{app}/{folder}/{type_folder}/{file_name} must be an object")
+            items.append(ShippedItem(app=app, folder=folder, doctype=doctype, name=name, data=data))
 
-    return Bundle(
+    return ShippedWorkbook(
         app=app,
         folder=folder,
         path=path,
@@ -276,25 +277,25 @@ def _read_json(path: str) -> dict:
         with open(path) as f:
             return json.load(f)
     except json.JSONDecodeError as e:
-        raise BundleError(f"{path} is not valid JSON: {e}") from e
+        raise StandardContentError(f"{path} is not valid JSON: {e}") from e
     except OSError as e:
-        raise BundleError(f"{path} cannot be read: {e}") from e
+        raise StandardContentError(f"{path} cannot be read: {e}") from e
 
 
 # ---------------------------------------------------------------- closure
 
 
 def dashboard_closure(dashboard: str) -> list[Document]:
-    """Everything a dashboard needs, in the order a bundle wants it written.
+    """Everything a dashboard needs, in the order a shipped file wants it written.
 
     The edges are the ones sync remaps on the way in: a dashboard's chart items,
     a chart's source query, and the queries a query reads. What the chart makes
     of those rows is in its config, which travels on the chart itself.
 
     One definition, because the two things that copy a dashboard are the same
-    walk: export writes the closure into an app's bundle, and duplicate writes it
-    into a workbook of the caller's own. A second walk would drift the first time
-    an edge is added.
+    walk: export writes the closure into an app's workbook, and duplicate writes
+    it into a workbook of the caller's own. A second walk would drift the first
+    time an edge is added.
     """
     doc = _existing_doc(DASHBOARD, dashboard)
 
@@ -314,7 +315,7 @@ def dashboard_closure(dashboard: str) -> list[Document]:
         if name in done:
             return
         if name in visiting:
-            raise BundleError(_("Queries reference each other in a cycle, at {0}").format(name))
+            raise StandardContentError(_("Queries reference each other in a cycle, at {0}").format(name))
         visiting.add(name)
         query = _existing_doc(QUERY, name)
         for ref in query_references(frappe.parse_json(query.operations or "[]")):
@@ -332,65 +333,68 @@ def dashboard_closure(dashboard: str) -> list[Document]:
 
 def _existing_doc(doctype: str, name: str) -> Document:
     if not frappe.db.exists(doctype, name):
-        raise BundleError(_("{0} {1} is missing, so this dashboard is incomplete").format(doctype, name))
+        raise StandardContentError(
+            _("{0} {1} is missing, so this dashboard is incomplete").format(doctype, name)
+        )
     return frappe.get_doc(doctype, name)
 
 
 # ------------------------------------------------------------------- sync
 
 
-def sync_bundles(apps: list[str] | None = None, strict: bool = False) -> SyncReport:
-    """Reconcile every installed app's bundles into documents.
+def sync_standard_content(apps: list[str] | None = None, strict: bool = False) -> SyncReport:
+    """Reconcile every installed app's shipped workbooks into documents.
 
-    Each app is reconciled inside its own savepoint, so a bundle one app cannot
+    Each app is reconciled inside its own savepoint, so content one app cannot
     ship leaves the others — and the migrate that called this — untouched. That
     failure is logged and recorded on the report; `strict=True` re-raises it
     instead, which is what tests and a developer's own bench want.
 
-    An app, not a bundle, is the unit of isolation, because reconcile is only
-    correct on the whole of what an app ships: the flat name namespace is
-    checked across an app's bundles, and an item whose file could not be read is
-    indistinguishable from one that was removed. Half an app is worse than none.
+    An app, not a workbook, is the unit of isolation, because reconcile is only
+    correct on the whole of what an app ships: the flat name namespace is checked
+    across every workbook an app ships, and an item whose file could not be read
+    is indistinguishable from one that was removed. Half an app is worse than
+    none.
     """
     report = SyncReport()
     for app in apps or frappe.get_installed_apps():
-        savepoint = f"insights_bundles_{app}"
+        savepoint = f"insights_standard_content_{app}"
         frappe.db.savepoint(savepoint)
         try:
-            sync_app_bundles(app, report)
+            sync_app_content(app, report)
         except Exception as e:
             frappe.db.rollback(save_point=savepoint)
             report.errors.append(f"{app}: {e}")
             if strict:
                 raise
-            frappe.log_error(title=f"Failed to sync Insights bundles of {app}", message=str(e))
+            frappe.log_error(title=f"Failed to sync Insights standard content of {app}", message=str(e))
     return report
 
 
 def after_app_install(app_name: str) -> SyncReport:
     """An app that arrives brings its analytics with it — the same reconcile as
     migrate, one app wide, and isolated the same way."""
-    return sync_bundles([app_name])
+    return sync_standard_content([app_name])
 
 
-def sync_app_bundles(app: str, report: SyncReport | None = None) -> SyncReport:
-    """Reconcile one app's bundles."""
+def sync_app_content(app: str, report: SyncReport | None = None) -> SyncReport:
+    """Reconcile the workbooks one app ships."""
     report = report if report is not None else SyncReport()
 
-    with bundle_sync():
+    with standard_content_sync():
         _reconcile_app(app, report)
     return report
 
 
 def _reconcile_app(app: str, report: SyncReport) -> None:
-    bundles = discover_bundles(app)
+    shipped = discover_shipped_workbooks(app)
     existing = _standard_documents(app)
-    if not bundles and not existing:
+    if not shipped and not existing:
         # the common case by far: an app that ships no analytics
         return
 
-    live_bundles = [b for b in bundles if _has_required_apps(b)]
-    desired = _desired_items(app, live_bundles)
+    live = [workbook for workbook in shipped if _has_required_apps(workbook)]
+    desired = _desired_items(app, live)
 
     # a Standard ID must name one document; if an older sync (or a restore) left
     # two, the oldest keeps the id and the rest are cleaned up as stale
@@ -415,7 +419,7 @@ def _reconcile_app(app: str, report: SyncReport) -> None:
     for item in _in_dependency_order(desired.values()):
         docname = resolved.get(item.standard_id)
         is_workbook = item.doctype == WORKBOOK
-        container = None if is_workbook else containers[f"{item.app}/{item.bundle}"]
+        container = None if is_workbook else containers[f"{item.app}/{item.folder}"]
         applied = _apply(item, docname, _values_for(item, name_map, container, docname, report), report)
         if is_workbook:
             containers[item.standard_id] = applied
@@ -425,24 +429,24 @@ def _reconcile_app(app: str, report: SyncReport) -> None:
     _delete_documents(stale, report)
 
 
-def _has_required_apps(bundle: Bundle) -> bool:
-    """A bundle whose required apps are not all installed is not shipped here —
+def _has_required_apps(workbook: ShippedWorkbook) -> bool:
+    """A workbook whose required apps are not all installed is not shipped here —
     and if it was shipped before, its documents go, the same as any item whose
     file disappeared. The content is about data that is no longer on the site."""
-    return set(bundle.required_apps) <= set(frappe.get_installed_apps())
+    return set(workbook.required_apps) <= set(frappe.get_installed_apps())
 
 
-def _desired_items(app: str, bundles: list[Bundle]) -> dict[str, BundleItem]:
+def _desired_items(app: str, workbooks: list[ShippedWorkbook]) -> dict[str, ShippedItem]:
     """Every item the app ships, keyed by Standard ID. Fails loudly on a
-    duplicate name: the namespace is flat per app, so two bundles cannot both
-    claim one, and neither can a chart and a query."""
-    desired: dict[str, BundleItem] = {}
-    for bundle in bundles:
-        for item in (bundle.as_item(), *bundle.items):
+    duplicate name: the namespace is flat per app, so two shipped workbooks
+    cannot both claim one, and neither can a chart and a query."""
+    desired: dict[str, ShippedItem] = {}
+    for workbook in workbooks:
+        for item in (workbook.as_item(), *workbook.items):
             clash = desired.get(item.standard_id)
             if clash:
                 shipped_in = f"{_location_of(clash)} and {_location_of(item)}"
-                raise BundleError(f"{item.standard_id} is shipped twice: {shipped_in}")
+                raise StandardContentError(f"{item.standard_id} is shipped twice: {shipped_in}")
             desired[item.standard_id] = item
     return desired
 
@@ -451,12 +455,12 @@ def _folder_of(doctype: str) -> str:
     return next(folder for folder, dt in ITEM_TYPES.items() if dt == doctype)
 
 
-def _location_of(item: BundleItem) -> str:
+def _location_of(item: ShippedItem) -> str:
     """Where an item's file sits, for an error a developer has to go and fix.
     A workbook's file is the manifest, not a file in a doctype subfolder."""
     if item.doctype == WORKBOOK:
-        return f"{item.bundle}/{MANIFEST}"
-    return f"{item.bundle}/{_folder_of(item.doctype)}"
+        return f"{item.folder}/{MANIFEST}"
+    return f"{item.folder}/{_folder_of(item.doctype)}"
 
 
 def _standard_documents(app: str) -> dict[str, list[tuple[str, str]]]:
@@ -480,12 +484,12 @@ def _standard_documents(app: str) -> dict[str, list[tuple[str, str]]]:
     return found
 
 
-def _in_dependency_order(items) -> list[BundleItem]:
+def _in_dependency_order(items) -> list[ShippedItem]:
     """The workbook, then queries, then charts, then dashboards — and queries
     among themselves in reference order, so a query that reads another one is
     written after it. Then every reference can be resolved to a docname as it is
     written, and no item needs a second pass."""
-    by_type: dict[str, list[BundleItem]] = {doctype: [] for doctype in SYNC_ORDER}
+    by_type: dict[str, list[ShippedItem]] = {doctype: [] for doctype in SYNC_ORDER}
     for item in items:
         by_type[item.doctype].append(item)
 
@@ -496,17 +500,17 @@ def _in_dependency_order(items) -> list[BundleItem]:
     return ordered
 
 
-def _sort_queries(queries: list[BundleItem]) -> list[BundleItem]:
+def _sort_queries(queries: list[ShippedItem]) -> list[ShippedItem]:
     shipped = {item.name: item for item in queries}
-    ordered: list[BundleItem] = []
+    ordered: list[ShippedItem] = []
     done: set[str] = set()
     visiting: set[str] = set()
 
-    def visit(item: BundleItem):
+    def visit(item: ShippedItem):
         if item.name in done:
             return
         if item.name in visiting:
-            raise BundleError(f"queries reference each other in a cycle, at {item.standard_id}")
+            raise StandardContentError(f"queries reference each other in a cycle, at {item.standard_id}")
         visiting.add(item.name)
         for ref in query_references(item.data.get("operations")):
             if ref in shipped:
@@ -543,21 +547,21 @@ def query_references(operations) -> list[str]:
 # ------------------------------------------------------- writing documents
 
 
-def _apply(item: BundleItem, docname: str | None, values: dict, report: SyncReport) -> str:
+def _apply(item: ShippedItem, docname: str | None, values: dict, report: SyncReport) -> str:
     if docname:
         doc = frappe.get_doc(item.doctype, docname)
         if not _differs(doc, values):
             report.unchanged.append(item.standard_id)
             return docname
         doc.update(values)
-        doc.flags.in_bundle_sync = True
+        doc.flags.in_standard_content_sync = True
         doc.save(ignore_permissions=True)
         report.updated.append(item.standard_id)
         return doc.name
 
     doc = frappe.new_doc(item.doctype)
     doc.update(values)
-    doc.flags.in_bundle_sync = True
+    doc.flags.in_standard_content_sync = True
     doc.insert(ignore_permissions=True)
     # shipped content belongs to the site, not to whoever ran the migrate
     frappe.db.set_value(item.doctype, doc.name, "owner", "Administrator", update_modified=False)
@@ -566,7 +570,7 @@ def _apply(item: BundleItem, docname: str | None, values: dict, report: SyncRepo
 
 
 def _values_for(
-    item: BundleItem,
+    item: ShippedItem,
     name_map: dict[str, str],
     workbook: str | None,
     docname: str | None,
@@ -576,7 +580,7 @@ def _values_for(
 
     Identity (`standard_id`, `is_standard`) and the container (`workbook`) are
     part of the wanted values, not set once at creation, so an item that moves
-    between bundles moves its document with it. A workbook is its own
+    between shipped workbooks moves its document with it. A workbook is its own
     container and gets no `workbook` of its own.
     """
     data = item.data
@@ -627,18 +631,18 @@ def _child_rows(fieldname: str, value) -> list[dict]:
         elif isinstance(row, dict):
             rows.append(dict(row))
         else:
-            raise BundleError(f"{fieldname} must be a list of objects, found {type(row).__name__}")
+            raise StandardContentError(f"{fieldname} must be a list of objects, found {type(row).__name__}")
     return rows
 
 
-def _reference(item: BundleItem, ref: str, name_map: dict[str, str]) -> str:
+def _reference(item: ShippedItem, ref: str, name_map: dict[str, str]) -> str:
     name = name_map.get(ref)
     if not name:
-        raise BundleError(f"{item.standard_id} references '{ref}', which the app does not ship")
+        raise StandardContentError(f"{item.standard_id} references '{ref}', which the app does not ship")
     return name
 
 
-def _resolve_query_operations(item: BundleItem, operations, name_map: dict[str, str], workbook: str):
+def _resolve_query_operations(item: ShippedItem, operations, name_map: dict[str, str], workbook: str):
     def walk(node):
         if isinstance(node, dict):
             if node.get("query_name"):
@@ -655,7 +659,7 @@ def _resolve_query_operations(item: BundleItem, operations, name_map: dict[str, 
     return operations
 
 
-def _resolve_dashboard_items(item: BundleItem, items, name_map: dict[str, str]):
+def _resolve_dashboard_items(item: ShippedItem, items, name_map: dict[str, str]):
     for entry in items:
         if entry.get("type") == "chart" and entry.get("chart"):
             entry["chart"] = _reference(item, entry["chart"], name_map)
@@ -710,7 +714,7 @@ def _scalar(value) -> str:
 # ------------------------------------------------------------------ slugs
 
 
-def _slug_for(item: BundleItem, docname: str | None, report: SyncReport) -> str:
+def _slug_for(item: ShippedItem, docname: str | None, report: SyncReport) -> str:
     """A shipped dashboard's external key: its logical name, app-qualified if
     something already holds that slug. Assigned once — the logical name is the
     identity and never changes, so neither does the slug."""
@@ -741,7 +745,7 @@ def _delete_documents(rows: list[tuple[str, str, str]], report: SyncReport) -> N
     for doctype, name, standard_id in sorted(rows, key=lambda row: order.index(row[0])):
         if frappe.db.exists(doctype, name):
             doc = frappe.get_doc(doctype, name)
-            doc.flags.in_bundle_sync = True
+            doc.flags.in_standard_content_sync = True
             doc.delete(ignore_permissions=True, force=True)
         # a document a controller already took with the one that referenced it
         # is still one this reconcile removed
@@ -752,7 +756,7 @@ def before_app_uninstall(app_name: str) -> SyncReport:
     """An app that leaves takes its analytics with it. Duplicates a site made
     are user documents and stay."""
     report = SyncReport()
-    with bundle_sync():
+    with standard_content_sync():
         rows = [
             (doctype, name, standard_id)
             for standard_id, found in _standard_documents(app_name).items()
@@ -765,7 +769,7 @@ def before_app_uninstall(app_name: str) -> SyncReport:
 # ------------------------------------------------------------ the gallery
 
 
-def standard_content() -> list[dict]:
+def gallery() -> list[dict]:
     """The shipped workbooks on this site, as a gallery shows them.
 
     One entry per shipped workbook — it is the unit an app ships and the unit a
@@ -836,21 +840,21 @@ def _app_title(app: str) -> str:
 
 
 @contextmanager
-def bundle_sync():
+def standard_content_sync():
     """Mark a whole run as the app's own maintenance of the content it ships.
 
-    The per-document `flags.in_bundle_sync` covers what sync writes itself, but a
-    controller can cascade into a second standard document, and that one is
-    loaded fresh, without flags. So the bypass is request-scoped for the length
-    of a run — which is also what it takes to remove shipped documents anywhere
-    outside a sync, that being the same work under a different trigger.
+    The per-document `flags.in_standard_content_sync` covers what sync writes
+    itself, but a controller can cascade into a second standard document, and
+    that one is loaded fresh, without flags. So the bypass is request-scoped for
+    the length of a run — which is also what it takes to remove shipped documents
+    anywhere outside a sync, that being the same work under a different trigger.
     """
-    previous = frappe.flags.in_bundle_sync
-    frappe.flags.in_bundle_sync = True
+    previous = frappe.flags.in_standard_content_sync
+    frappe.flags.in_standard_content_sync = True
     try:
         yield
     finally:
-        frappe.flags.in_bundle_sync = previous
+        frappe.flags.in_standard_content_sync = previous
 
 
 def block_standard_edits(doc, method=None):
@@ -918,4 +922,8 @@ def _is_standard(doc) -> bool:
 
 
 def _sync_or_developer(doc) -> bool:
-    return bool(doc.flags.in_bundle_sync or frappe.flags.in_bundle_sync or frappe.conf.developer_mode)
+    return bool(
+        doc.flags.in_standard_content_sync
+        or frappe.flags.in_standard_content_sync
+        or frappe.conf.developer_mode
+    )

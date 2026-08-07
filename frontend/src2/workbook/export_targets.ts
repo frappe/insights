@@ -1,8 +1,8 @@
 import { call } from 'frappe-ui'
 import { computed, ref } from 'vue'
 
-export type ExportBundle = { folder: string; title: string }
-export type ExportApp = { app: string; title: string; bundles: ExportBundle[] }
+export type ExportWorkbook = { folder: string; title: string }
+export type ExportApp = { app: string; title: string; workbooks: ExportWorkbook[] }
 export type ExportTargets = { developer_mode: boolean; apps: ExportApp[] }
 
 export type ExportedItem = {
@@ -13,7 +13,7 @@ export type ExportedItem = {
 }
 export type ExportReport = {
 	app: string
-	bundle: string
+	folder: string
 	items: ExportedItem[]
 	written: string[]
 }
@@ -28,7 +28,7 @@ export const canExportToApp = computed(() => Boolean(targets.value?.developer_mo
 
 export function loadExportTargets() {
 	if (!request) {
-		request = call('insights.api.bundles.get_export_targets')
+		request = call('insights.api.standard_content.get_export_targets')
 			.then((response: ExportTargets) => (targets.value = response))
 			// a bench that cannot answer has no export surface, and saying so in
 			// a toast would only alarm the users who can never use one
@@ -40,10 +40,10 @@ export function loadExportTargets() {
 export function exportDashboard(args: {
 	dashboard: string
 	app: string
-	bundle?: string
-	bundle_title?: string
+	folder?: string
+	workbook_title?: string
 }): Promise<ExportReport> {
-	return call('insights.api.bundles.export_dashboard', args)
+	return call('insights.api.standard_content.export_dashboard', args)
 }
 
 // "Insights Chart v3 → insights/sales_chart" reads as neither, so name the item
@@ -53,13 +53,13 @@ export function itemLabel(item: ExportedItem) {
 	return `${kind} · ${item.standard_id}`
 }
 
-export const BUNDLE_NAME_PATTERN = /^[a-z0-9][a-z0-9_-]*$/
+export const FOLDER_NAME_PATTERN = /^[a-z0-9][a-z0-9_-]*$/
 
-export function toBundleName(title: string) {
+export function toFolderName(title: string) {
 	const name = (title || '')
 		.toLowerCase()
 		.replace(/[^a-z0-9_-]+/g, '-')
 		.replace(/-{2,}/g, '-')
 		.replace(/^[-_]+|[-_]+$/g, '')
-	return BUNDLE_NAME_PATTERN.test(name) ? name : ''
+	return FOLDER_NAME_PATTERN.test(name) ? name : ''
 }

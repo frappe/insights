@@ -29,8 +29,8 @@ const activeDashboard = computed(() => {
 watch(activeDashboard, (dashboard) => dashboard && loadExportTargets(), { immediate: true })
 
 function afterExport() {
-	// the dashboard, its charts and their queries now belong to the bundle's
-	// workbook, so every cached resource in this tab is stale and the tab the
+	// the dashboard, its charts and their queries now belong to the workbook the
+	// app ships, so every cached resource in this tab is stale and the tab the
 	// user is on is gone: reload the workbook rather than patch the pieces
 	window.location.href = router.resolve({
 		name: 'Workbook',

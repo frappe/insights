@@ -12,7 +12,7 @@ from frappe.query_builder.functions import Now
 from frappe.utils.telemetry import capture
 from frappe.website.utils import cleanup_page_name
 
-from insights.bundles import LINK_COLUMN
+from insights.standard_content import LINK_COLUMN
 from insights.utils import DocShare, File, get_app_url
 
 

@@ -1,24 +1,24 @@
 # Copyright (c) 2025, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-"""Export: documents back into an app's bundle files, the inverse of sync.
+"""Export: documents back into an app's shipped files, the inverse of sync.
 
-`bundles.py` reads an app's files and writes documents, on every site that
-installs the app. This module reads a developer's own documents and writes the
-files, once, on the bench where the content was authored. The blessed release
-path is author in the builder -> export into the app repo -> git review ->
-normal app release, so both halves of the round trip live on a developer bench
-and nowhere else.
+`standard_content.py` reads an app's files and writes documents, on every site
+that installs the app. This module reads a developer's own documents and writes
+the files, once, on the bench where the content was authored. The blessed
+release path is author in the builder -> export into the app repo -> git review
+-> normal app release, so both halves of the round trip live on a developer
+bench and nowhere else.
 
 Export takes a dashboard's closure — the dashboard, the charts its items name,
 the queries those charts read and any query a query reads — writes one JSON
 file per item, and flags the documents standard. It then runs sync over the app it exported into. That last step is
 the point: after export the site's documents *are* the app's standard
-documents, so they have to sit where a fresh install would put them (the
-bundle's container workbook, references resolved, item keys as shipped). Sync
-is what knows all of that, and running it means export never learns it twice.
-The invariant to hold on to is that a second `sync_bundles()` straight after an
-export changes nothing.
+documents, so they have to sit where a fresh install would put them (the shipped
+workbook, references resolved, item keys as shipped). Sync is what knows all of
+that, and running it means export never learns it twice. The invariant to hold
+on to is that a second `sync_standard_content()` straight after an export
+changes nothing.
 
 A file carries only `CARRIED_FIELDS`, with references as logical names and
 nothing site-local: no `modified`, no `owner`, no docnames, no cached results,
@@ -44,8 +44,7 @@ from frappe.model.document import Document
 from frappe.utils import cint
 from frappe.website.utils import cleanup_page_name
 
-from insights.bundles import (
-    BUNDLE_DIR,
+from insights.standard_content import (
     CARRIED_FIELDS,
     CHART,
     CHILD_FIELDS,
@@ -57,12 +56,13 @@ from insights.bundles import (
     MANIFEST,
     NAME_PATTERN,
     QUERY,
-    BundleError,
+    SHIPPED_DIR,
+    StandardContentError,
     SyncReport,
     _folder_of,
     dashboard_closure,
-    discover_bundles,
-    sync_app_bundles,
+    discover_shipped_workbooks,
+    sync_app_content,
 )
 
 # the whole of a dashboard item's layout the format carries. A grid leaves
@@ -75,7 +75,7 @@ class ExportReport:
     """What one export did — the items it wrote, and the sync that adopted them."""
 
     app: str
-    bundle: str
+    folder: str
     items: list[dict] = field(default_factory=list)
     written: list[str] = field(default_factory=list)
     sync: SyncReport | None = None
@@ -92,14 +92,15 @@ class ExportReport:
 
 
 def export_dashboard(
-    dashboard: str, app: str, bundle: str | None = None, bundle_title: str | None = None
+    dashboard: str, app: str, folder: str | None = None, workbook_title: str | None = None
 ) -> ExportReport:
-    """Write a dashboard's closure into `app`'s bundle and flag it standard.
+    """Write a dashboard's closure into a workbook `app` ships, and flag it standard.
 
-    `bundle` is the folder inside the app's `insights/` directory; it defaults
-    to the dashboard's own logical name. An item that already lives in one of
-    the app's bundles is rewritten where it is — a bundle is organization, and
-    export is not the place to reorganize.
+    `folder` is the shipped workbook's folder inside the app's `insights/`
+    directory; it defaults to the dashboard's own logical name. An item that
+    already lives in one of the app's shipped workbooks is rewritten where it is
+    — a shipped workbook is organization, and export is not the place to
+    reorganize.
     """
     _require_developer_mode()
     _require_installed(app)
@@ -109,16 +110,16 @@ def export_dashboard(
         doc.check_permission("write")
 
     names = _assign_names(app, docs)
-    bundle = bundle or names[(DASHBOARD, docs[-1].name)]
-    _check_name(bundle, "bundle folder")
+    folder = folder or names[(DASHBOARD, docs[-1].name)]
+    _check_name(folder, "workbook folder")
 
-    report = ExportReport(app, bundle)
-    _write_manifest(app, bundle, bundle_title, report)
+    report = ExportReport(app, folder)
+    _write_manifest(app, folder, workbook_title, report)
 
     def name_of(doctype: str, docname: str) -> str:
         name = names.get((doctype, str(docname)))
         if not name:
-            raise BundleError(
+            raise StandardContentError(
                 _("{0} {1} is referenced by this dashboard but is not part of what it exports").format(
                     doctype, docname
                 )
@@ -127,7 +128,7 @@ def export_dashboard(
 
     for doc in docs:
         name = names[(doc.doctype, doc.name)]
-        path = _item_path(app, doc.doctype, name, bundle)
+        path = _item_path(app, doc.doctype, name, folder)
         _write(path, dumps(serialize(doc, name_of)), report)
         report.items.append(
             {
@@ -137,9 +138,9 @@ def export_dashboard(
                 "path": os.path.relpath(path, frappe.get_app_path(app)),
             }
         )
-        # flagged by hand, not through the document: this is identity the
-        # bundle owns, and writing it must not touch `modified` — the very
-        # field the files are kept clean of
+        # flagged by hand, not through the document: this is identity the app
+        # owns, and writing it must not touch `modified` — the very field the
+        # files are kept clean of
         frappe.db.set_value(
             doc.doctype,
             doc.name,
@@ -147,9 +148,9 @@ def export_dashboard(
             update_modified=False,
         )
 
-    # and now the site holds them the way an install would: in the bundle's
-    # container workbook, references resolved, item keys as shipped
-    report.sync = sync_app_bundles(app)
+    # and now the site holds them the way an install would: in the shipped
+    # workbook, references resolved, item keys as shipped
+    report.sync = sync_app_content(app)
     return report
 
 
@@ -213,7 +214,7 @@ def _suffixed(base: str, taken: set[str]) -> str:
 def _taken_names(app: str, docs: list[Document]) -> set[str]:
     """Every logical name the app has already spoken for — on disk and on the
     site — less the ones the documents being exported hold themselves."""
-    taken = {item.name for bundle in discover_bundles(app) for item in bundle.items}
+    taken = {item.name for shipped in discover_shipped_workbooks(app) for item in shipped.items}
     for doctype in ITEM_TYPES.values():
         for standard_id in frappe.get_all(
             doctype,
@@ -235,7 +236,7 @@ def _check_name(name: str, what: str) -> None:
 def serialize(doc: Document, name_of) -> dict:
     """One document as the file that ships it.
 
-    Only `CARRIED_FIELDS`, all of them, always: a bundle file is the whole of
+    Only `CARRIED_FIELDS`, all of them, always: a shipped file is the whole of
     what the format carries, not a delta, so a flag a vendor clears reaches the
     sites that already have it set. `name_of` turns a docname into the logical
     name that stands in for it — the only form a file may hold.
@@ -312,7 +313,7 @@ def _export_items(items, name_of):
 
     The key is `layout.i`, the identity the grid already gives an item, made
     the vendor's: derived from what the item names, so it reads in a diff, is
-    the same on every site that installs the bundle, and comes back the same on
+    the same on every site that installs the app, and comes back the same on
     the next export. A text block names nothing, so its key is positional — it
     is also the one item type nothing ever references.
     """
@@ -360,35 +361,35 @@ def _export_layout(layout, key: str) -> dict:
 # ------------------------------------------------------------------- files
 
 
-def _write_manifest(app: str, bundle: str, title: str | None, report: ExportReport) -> None:
-    path = os.path.join(_bundle_path(app, bundle), MANIFEST)
+def _write_manifest(app: str, folder: str, title: str | None, report: ExportReport) -> None:
+    path = os.path.join(_workbook_path(app, folder), MANIFEST)
     if os.path.isfile(path):
-        # an existing bundle's manifest is the vendor's: its title and its
+        # an existing workbook's manifest is the vendor's: its title and its
         # required apps are decisions export has no business revisiting
         return
     manifest = {
-        "title": title or bundle.replace("_", " ").replace("-", " ").title(),
+        "title": title or folder.replace("_", " ").replace("-", " ").title(),
         "required_apps": [],
         "format_version": FORMAT_VERSION,
     }
     _write(path, dumps(manifest), report)
 
 
-def _item_path(app: str, doctype: str, name: str, bundle: str) -> str:
+def _item_path(app: str, doctype: str, name: str, folder: str) -> str:
     return _existing_file(app, doctype, name) or os.path.join(
-        _bundle_path(app, bundle), _folder_of(doctype), f"{name}.json"
+        _workbook_path(app, folder), _folder_of(doctype), f"{name}.json"
     )
 
 
-def _bundle_path(app: str, bundle: str) -> str:
-    return os.path.join(frappe.get_app_path(app, BUNDLE_DIR), bundle)
+def _workbook_path(app: str, folder: str) -> str:
+    return os.path.join(frappe.get_app_path(app, SHIPPED_DIR), folder)
 
 
 def _existing_file(app: str, doctype: str, name: str) -> str | None:
-    """Where the app already ships this item, if it does. A bundle folder
-    organizes, it does not identify, so an item that moved bundles by hand is
-    rewritten where the developer put it."""
-    root = frappe.get_app_path(app, BUNDLE_DIR)
+    """Where the app already ships this item, if it does. A shipped workbook
+    organizes, it does not identify, so an item a developer moved between them by
+    hand is rewritten where they put it."""
+    root = frappe.get_app_path(app, SHIPPED_DIR)
     if not os.path.isdir(root):
         return None
     for folder in sorted(os.listdir(root)):
@@ -435,7 +436,7 @@ def write_back(doc, method=None) -> bool:
         return False
     if not doc.get("is_standard") or not doc.get("standard_id"):
         return False
-    if doc.flags.in_bundle_sync or frappe.flags.in_bundle_sync:
+    if doc.flags.in_standard_content_sync or frappe.flags.in_standard_content_sync:
         # sync wrote this document *from* the file it would write back to
         return False
 
@@ -448,9 +449,9 @@ def write_back(doc, method=None) -> bool:
 
     try:
         content = dumps(serialize(doc, _shipped_name))
-    except BundleError as e:
+    except StandardContentError as e:
         # a reference to content the app does not ship: the document is ahead of
-        # its bundle, and half a file is worse than a stale one
+        # what the app carries, and half a file is worse than a stale one
         message = _("{0} was not written back to {1}: {2}").format(doc.name, app, e)
         frappe.logger("insights").warning(message)
         frappe.msgprint(message, alert=True)
@@ -462,7 +463,7 @@ def write_back(doc, method=None) -> bool:
 def _shipped_name(doctype: str, docname: str) -> str:
     standard_id = frappe.db.get_value(doctype, docname, "standard_id") if docname else None
     if not standard_id:
-        raise BundleError(_("{0} {1} is not shipped by any app").format(doctype, docname))
+        raise StandardContentError(_("{0} {1} is not shipped by any app").format(doctype, docname))
     return standard_id.split("/", 1)[1]
 
 
@@ -470,21 +471,24 @@ def _shipped_name(doctype: str, docname: str) -> str:
 
 
 def export_targets() -> dict:
-    """The apps an export can go into, and the bundles they already ship —
+    """The apps an export can go into, and the workbooks they already ship —
     what an "Export to app…" dialog needs to offer, and whether it may."""
     apps = []
     for app in frappe.get_installed_apps():
         try:
-            bundles = [{"folder": b.folder, "title": b.title} for b in discover_bundles(app)]
-        except BundleError:
-            # a bundle this bench cannot read is a problem for sync to report,
+            workbooks = [
+                {"folder": shipped.folder, "title": shipped.title}
+                for shipped in discover_shipped_workbooks(app)
+            ]
+        except StandardContentError:
+            # content this bench cannot read is a problem for sync to report,
             # not a reason to hide the app from an export dialog
-            bundles = []
+            workbooks = []
         apps.append(
             {
                 "app": app,
                 "title": (frappe.get_hooks("app_title", app_name=app) or [app])[0],
-                "bundles": bundles,
+                "workbooks": workbooks,
             }
         )
     return {"developer_mode": bool(frappe.conf.developer_mode), "apps": apps}

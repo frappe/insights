@@ -96,8 +96,8 @@ app_include_js = "insights_nudge.bundle.js"
 # before_install = "insights.install.before_install"
 after_install = "insights.migrate.after_migrate"
 after_migrate = "insights.migrate.after_migrate"
-after_app_install = "insights.bundles.after_app_install"
-before_app_uninstall = "insights.bundles.before_app_uninstall"
+after_app_install = "insights.standard_content.after_app_install"
+before_app_uninstall = "insights.standard_content.before_app_uninstall"
 
 after_request = ["insights.insights.doctype.insights_data_source_v3.insights_data_source_v3.after_request"]
 
@@ -162,43 +162,43 @@ doc_events = {
     "User": {
         "on_change": "insights.insights.doctype.insights_team.insights_team.update_admin_team",
     },
-    # standard (bundle-shipped) content is read-only outside developer mode.
+    # standard (app-shipped) content is read-only outside developer mode.
     # The workbook takes the guards but not `write_back`: its file is the
     # manifest, which the export machinery does not write item-wise.
     "Insights Workbook": {
-        "validate": "insights.bundles.block_standard_edits",
-        "on_trash": "insights.bundles.block_standard_deletes",
+        "validate": "insights.standard_content.block_standard_edits",
+        "on_trash": "insights.standard_content.block_standard_deletes",
     },
     # `block_standard_edits` first: for a standard document "this is read-only"
     # is the truer answer than "this workbook is not yours"
     "Insights Query v3": {
         "validate": [
-            "insights.bundles.block_standard_edits",
-            "insights.bundles.block_foreign_workbook_members",
+            "insights.standard_content.block_standard_edits",
+            "insights.standard_content.block_foreign_workbook_members",
         ],
-        "on_update": "insights.bundle_export.write_back",
-        "on_trash": "insights.bundles.block_standard_deletes",
+        "on_update": "insights.export_to_app.write_back",
+        "on_trash": "insights.standard_content.block_standard_deletes",
     },
     "Insights Chart v3": {
         "validate": [
-            "insights.bundles.block_standard_edits",
-            "insights.bundles.block_foreign_workbook_members",
+            "insights.standard_content.block_standard_edits",
+            "insights.standard_content.block_foreign_workbook_members",
         ],
-        "on_update": "insights.bundle_export.write_back",
-        "on_trash": "insights.bundles.block_standard_deletes",
+        "on_update": "insights.export_to_app.write_back",
+        "on_trash": "insights.standard_content.block_standard_deletes",
     },
     "Insights Dashboard v3": {
         "validate": [
-            "insights.bundles.block_standard_edits",
-            "insights.bundles.block_foreign_workbook_members",
+            "insights.standard_content.block_standard_edits",
+            "insights.standard_content.block_foreign_workbook_members",
         ],
-        "on_update": "insights.bundle_export.write_back",
-        "on_trash": "insights.bundles.block_standard_deletes",
+        "on_update": "insights.export_to_app.write_back",
+        "on_trash": "insights.standard_content.block_standard_deletes",
     },
     # the format ships no folders, so any folder in a shipped workbook is the
     # site's own — the guard is the whole of this doctype's involvement
     "Insights Folder": {
-        "validate": "insights.bundles.block_foreign_workbook_members",
+        "validate": "insights.standard_content.block_foreign_workbook_members",
     },
 }
 
