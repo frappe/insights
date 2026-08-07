@@ -71,8 +71,6 @@ function applyChanges() {
 	chart.doc.visibility = visibility.value
 	chart.doc.visible_to_roles = visibleToRoles.value.map((role) => ({ role }))
 	chart.doc.data_authority = dataAuthority.value
-	// mirrors the top rung until is_public retires with the template migration
-	chart.doc.is_public = visibility.value === 'Public'
 	show.value = false
 }
 </script>

@@ -95,7 +95,6 @@ export type InsightsChartv3 = {
 	chart_type: ChartType
 	sort_order: number
 	folder?: string | null
-	is_public: boolean
 	visibility: Visibility
 	visible_to_roles: VisibleToRole[]
 	data_authority: DataAuthority
@@ -118,7 +117,6 @@ export type InsightsDashboardv3 = {
 	items: WorkbookDashboardItem[]
 	preview_image?: string
 	share_link?: string
-	is_public: boolean
 	visibility: Visibility
 	visible_to_roles: VisibleToRole[]
 	is_shared_with_organization: boolean

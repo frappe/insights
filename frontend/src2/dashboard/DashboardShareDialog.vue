@@ -51,9 +51,9 @@ async function saveChanges() {
 	dashboard.doc.visible_to_roles = visibleToRoles.value.map((role) => ({ role }))
 	await dashboard.save()
 	await dashboard.updateAccess({
-		// the ladder owns the audience; these two mirror its top rungs until
-		// is_public retires with the template migration (ticket 23)
-		is_public: visibility.value === 'Public',
+		// the ladder owns the audience; the org DocShare mirrors its `Everyone`
+		// rung, because a share is what dashboards had before the ladder and what
+		// `declaredVisibility` above still reads for them
 		is_shared_with_organization: visibility.value === 'Everyone',
 		people_with_access: peopleWithAccess.value.map((u) => u.email),
 	})

@@ -7,7 +7,6 @@ import frappe
 from frappe.handler import is_valid_http_method, is_whitelisted
 from frappe.monitor import add_data_to_monitor
 
-from insights.api.shared import is_public
 from insights.decorators import insights_whitelist, validate_type
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     get_columns_from_schema,
@@ -181,28 +180,35 @@ def _read_uploaded_table(db, file_path: str, ext: str):
         frappe.throw("Failed to read CSV data from uploaded file. Please try again.")
 
 
-@frappe.whitelist(allow_guest=True)
+# The two generic doc endpoints the authoring surfaces are built on. Reading is
+# not their job: a viewer names content to `insights.api.viewer`, which decides
+# access through the visibility ladder. So these grant nothing a caller's own
+# permissions do not already carry, and no guest reaches them.
+
+
+@frappe.whitelist()
 @validate_type
 def get_doc(doctype: str, name: str | int):
-    try:
-        from frappe.client import get as _get_doc
+    from frappe.client import get as _get_doc
 
-        return _get_doc(doctype, name)
-    except frappe.PermissionError:
-        if not is_public(doctype, name):
-            raise
-        return frappe.get_doc(doctype, name).as_dict()
+    return _get_doc(doctype, name)
 
 
-def _execute_doc_method(doc, method: str, args: dict | None = None, ignore_permissions=False):
+@frappe.whitelist()
+def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
+    docs = frappe.parse_json(docs)
+    if not docs.get("doctype") or not docs.get("name"):
+        raise frappe.ValidationError("Invalid document")
+
+    doc = frappe.get_doc(docs)
     args = frappe.parse_json(args)
+
     method_obj = getattr(doc, method)
     fn = getattr(method_obj, "__func__", method_obj)
 
-    if not ignore_permissions:
-        doc.check_permission("read")
-        is_whitelisted(fn)
-        is_valid_http_method(fn)
+    doc.check_permission("read")
+    is_whitelisted(fn)
+    is_valid_http_method(fn)
 
     new_kwargs = frappe.get_newargs(fn, args or {})
     response = doc.run_method(method, **new_kwargs)
@@ -210,43 +216,3 @@ def _execute_doc_method(doc, method: str, args: dict | None = None, ignore_permi
     frappe.response["message"] = response
     add_data_to_monitor(methodname=method)
     return response
-
-
-@frappe.whitelist(allow_guest=True)
-def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
-    doc = frappe.parse_json(docs)
-    doctype = doc.get("doctype")
-    name = doc.get("name")
-
-    if not doctype or not name:
-        raise frappe.ValidationError("Invalid document")
-
-    try:
-        docs = frappe.parse_json(docs)
-        doc = frappe.get_doc(docs)
-        return _execute_doc_method(doc, method, args)
-
-    except frappe.PermissionError:
-        if not is_public(doctype, name):
-            raise frappe.PermissionError("You don't have permission to access this document")
-        if not is_public_method(doctype, method):
-            raise frappe.PermissionError("You don't have permission to access this method")
-
-        doc = frappe.get_doc(doctype, name)
-        frappe.flags.insights_for_public_access = True
-        try:
-            return _execute_doc_method(doc, method, args, ignore_permissions=True)
-        finally:
-            frappe.flags.insights_for_public_access = False
-
-
-def is_public_method(doctype: str, method: str):
-    public_methods = {
-        "Insights Query v3": ["execute", "download_results"],
-        "Insights Dashboard v3": ["get_distinct_column_values", "track_view"],
-    }
-
-    if doctype in public_methods and method in public_methods[doctype]:
-        return True
-
-    return False

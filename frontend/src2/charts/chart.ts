@@ -152,7 +152,6 @@ const INITIAL_DOC: InsightsChartv3 = {
 	query: '',
 	chart_type: '',
 	sort_order: 0,
-	is_public: false,
 	visibility: 'Private',
 	visible_to_roles: [],
 	data_authority: 'Viewer',

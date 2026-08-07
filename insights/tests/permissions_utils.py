@@ -109,7 +109,6 @@ def delete_test_teams():
 def update_dashboard_access(dashboard_name, people_with_access):
     frappe.get_doc(DT.DASHBOARD, dashboard_name).update_access(
         {
-            "is_public": 0,
             "is_shared_with_organization": 0,
             "people_with_access": people_with_access,
         }

@@ -16,7 +16,6 @@ from ibis.backends.duckdb import Backend as DuckDBBackend
 import insights
 from insights.insights.doctype.insights_data_source_v3.data_authority import (
     get_authority_user,
-    has_declared_authority,
 )
 from insights.utils import InsightsDataSourcev3
 
@@ -306,11 +305,6 @@ def strip_schema_prefix(table_name: str) -> str:
 
 def apply_user_permissions(t: Table, data_source, table_name, user=None):
     user = user or get_authority_user()
-
-    # a declared authority outranks the legacy public-access bypass: content on the
-    # Public rung is meant to run under its author, not with permissions switched off
-    if frappe.flags.get("insights_for_public_access") and not has_declared_authority():
-        return t
 
     if not frappe.db.get_value("Insights Data Source v3", data_source, "is_site_db", cache=True):
         # external databases and uploads carry no Frappe permissions to filter by

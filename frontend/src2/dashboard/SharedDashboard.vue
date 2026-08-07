@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { call } from 'frappe-ui'
 import DashboardView from './DashboardView.vue'
 import { useSavedDashboard } from './viewer'
 
@@ -12,13 +11,9 @@ import { useSavedDashboard } from './viewer'
 // back to.
 const props = defineProps<{ dashboard_name: string }>()
 
-// The link may carry a slug, a docname, or a v2 name that survived the rename to
-// v3. Only the last is a form the viewer cannot resolve for itself.
-const dashboard = (await call('insights.api.shared.get_dashboard_name', {
-	dashboard_name: props.dashboard_name,
-})) as string
-
-const source = useSavedDashboard(dashboard)
+// The route's reference goes over as it arrived: the viewer resolves every form
+// a link can carry.
+const source = useSavedDashboard(props.dashboard_name)
 
 function setTitle(title: string) {
 	document.title = `${title} | Insights`

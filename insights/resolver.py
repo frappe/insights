@@ -3,14 +3,16 @@
 
 """Turns a content reference into a site-local document name.
 
-A reference is what a consumer app, a desk route or a bookmark carries. Three
-forms are accepted for a dashboard, two for a chart:
+A reference is what a consumer app, a desk route or a bookmark carries. Four
+forms are accepted for a dashboard, three for a chart:
 
     logical id  `{app}/{name}`  the identity of shipped content, the field
                                 bundle sync writes; the only form that crosses
                                 the contract boundary
     docname     the hash primary key, site-local
     slug        the cosmetic, human-readable dashboard key
+    v2 name     the primary key this document carried before the rename to v3,
+                kept in `old_name` so a link shared back then still opens
 
 The forms are discriminated by shape, not by trying every lookup and hoping:
 
@@ -19,9 +21,9 @@ The forms are discriminated by shape, not by trying every lookup and hoping:
     a slug is neither
 
 So the precedence is: slash -> logical id, exclusively. Otherwise docname
-first, then slug. A slug that happens to equal another dashboard's hash name
-resolves to that dashboard — internal identity wins, and nothing internal
-references a slug anyway.
+first, then slug, then the v2 name. A slug that happens to equal another
+dashboard's hash name resolves to that dashboard — internal identity wins, and
+nothing internal references a slug anyway.
 
 A logical id resolves to the standard document, always. A duplicate of shipped
 content is an ordinary user document with its own identity and is never handed
@@ -68,7 +70,7 @@ def resolve(doctype: str, reference: str) -> str | None:
     if "/" in reference:
         return _by_logical_id(doctype, reference)
 
-    return _by_docname(doctype, reference) or _by_slug(doctype, reference)
+    return _by_docname(doctype, reference) or _by_slug(doctype, reference) or _by_old_name(doctype, reference)
 
 
 def resolve_for_read(doctype: str, reference: str) -> str:
@@ -108,3 +110,9 @@ def _by_slug(doctype: str, reference: str) -> str | None:
     # slugs are unique by construction (see the dashboard controller); the
     # ordering only keeps the answer stable if an old row ever escaped that
     return frappe.db.get_value(doctype, {"slug": reference}, "name", order_by="creation asc")
+
+
+def _by_old_name(doctype: str, reference: str) -> str | None:
+    # last, because a v2 name is history: a document that still answers to its
+    # current name must never be reached through some other document's past
+    return frappe.db.get_value(doctype, {"old_name": reference}, "name", order_by="creation asc")
