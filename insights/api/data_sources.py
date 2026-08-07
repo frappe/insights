@@ -414,6 +414,7 @@ def make_data_source(data_source):
     ds.username = data_source.username
     ds.password = data_source.password
     ds.database_name = data_source.database_name
+    ds.schema = data_source.schema
     ds.use_ssl = data_source.use_ssl
     ds.connection_string = data_source.connection_string
     return ds
