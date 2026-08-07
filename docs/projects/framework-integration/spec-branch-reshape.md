@@ -1,6 +1,11 @@
 # Spec: foundation-branch reshape — the workbook as shipping unit
 
-Status: ready-for-agent
+Status: shipped 2026-08-07, in six commits:
+`f73cf967` the manifest rename, `7e467107` the workbook as fourth reconciled
+doctype, `18ae4068` the membership guard, `557671c1` `standard_id`,
+`bb936049` the permission docstring, `08592f36` the vocabulary. Two follow-ons
+the work itself raised: `e100ad99` the grep gate, `9cf21466` the manifest
+write-back.
 Re-specced: 2026-08-07, against two rounds of work that landed while this spec
 waited — [spec-one-renderer.md](spec-one-renderer.md) in full, then a sync-race
 fix and an `is_public` retirement. Both rounds shrank this reshape. See Further

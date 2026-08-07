@@ -175,6 +175,27 @@ user-facing strings in the Export dialog that the spec had said would not
 change; and the grep gate learns that a JavaScript asset bundle is not a
 shipping unit.
 
+**The reshape shipped the same day**, in six commits — see
+[spec-branch-reshape.md](spec-branch-reshape.md) for the map of commit to
+section. The format is unfrozen no longer: `workbook.json` and `{app}/{folder}`
+identity are its first public shape, so an app may now ship content against the
+branch.
+
+Three findings came out of the work rather than the spec, and are worth keeping:
+
+- **Writing the grant-source table down found two grant sources missing from
+  it** — `query -> alert` inheritance, and team membership on `Insights Team`,
+  neither of which ticket 26 knew about. That is the drift the docstring exists
+  to stop, caught on its first day.
+- **A permission leak, fixed** (`536ae175`): an empty team list matched every
+  team's resource grants instead of none, so a user in no team read every
+  dashboard, chart, data source and table granted to any team — with team
+  permissions *enabled*. `TEAM_BASED_PERMISSION_DOCTYPES` went with it: unread,
+  and its claim was untrue.
+- **Reconciling the workbook put it in the content's flat per-app namespace**,
+  so a folder and a chart of the same name is now a clash that fails loudly.
+  That is the Standard ID rule made enforceable, not a new restriction.
+
 Still open in this wave:
 
 - [Which lockfile is the runtime version authority?](issues/28-runtime-version-authority.md)

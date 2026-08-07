@@ -885,8 +885,9 @@ def block_foreign_workbook_members(doc, method=None):
     because the workbook is empty by then: everything in it was standard, so
     everything in it went first. Let a site put one query of its own in there
     and deletion has to choose between destroying the site's work and leaving
-    an orphan — the branch `_cleanup_containers` used to carry. The guard is
-    what removes the choice.
+    an orphan. Sync used to carry that choice as a branch, keeping a workbook a
+    site had written into and merely clearing its identity. The guard is what
+    removed the need for it.
 
     It reads the workbook rather than the document, so it catches every way in:
     a new query, a folder (which the format does not ship at all, so any folder
