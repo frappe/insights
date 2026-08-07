@@ -45,6 +45,9 @@ const loading = computed(
 )
 
 const eChartOptions = computed(() => {
+	// the result outlives a chart type switch, so without this the option builders
+	// would run against the incoming type's still-empty config
+	if (!props.chart.isConfigValid) return
 	if (!result.value.columns?.length) return
 	if (chart_type.value === 'Bar' || chart_type.value === 'Row') {
 		return getBarChartOptions(
