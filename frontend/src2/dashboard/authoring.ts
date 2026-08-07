@@ -1,11 +1,11 @@
 // The dashboard page's other feed: the document being edited, rather than a
 // saved dashboard named to the server.
 //
-// It has to be a feed of its own because of what a viewer must never receive. A
-// filter's links name the query and the column it applies to, and the builder
-// edits them — so the builder cannot read its page through the viewer endpoint,
-// which strips exactly that. It reads the document instead, and everything above
-// the fetch is the same page.
+// It has to be a feed of its own because the builder needs a document it can
+// write. It saves, it adds and removes items, and it tracks what is being
+// edited — none of which a rendering response can carry, whatever that response
+// includes. So it loads the document resource and everything above the fetch is
+// the same page.
 //
 // It lives apart from `viewer.ts` for the same reason `chart_preview` lives
 // apart from `chart_read`: the editing layer drags in the workbook's stores and
