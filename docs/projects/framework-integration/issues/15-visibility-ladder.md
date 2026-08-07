@@ -58,6 +58,19 @@ complete with ticket 23. The share dialogs write `is_public` (and, for
 dashboards, the organization DocShare) as mirrors of the top two rungs so the
 existing shared pages keep working meanwhile.
 
+2026-08-07 — `is_public` retired. It read as a second access system beside the
+ladder, so `insights/api/shared.py` is gone whole: the `is_public` walk, the
+`check_public_access` helper, the duplicate preview-key check, and both
+`get_*_name` endpoints. The `old_name` lookup those two carried moved into
+`resolver.resolve` as a fourth reference form, which is where every other form
+already lives — the three route components now hand their raw reference to the
+viewer. `insights.api.get_doc` and `run_doc_method` lose the public fallback and
+`allow_guest`; nothing guest-facing called them, since ticket 17's endpoints are
+what the shared pages read through. `frappe.flags.insights_for_public_access`
+went with the fallback that set it, and so did its three readers in
+`insights_table_v3` and `insights_team`. The share dialogs stop mirroring the
+top rung, and the field keeps its value with nothing reading it.
+
 One gap is outside this ticket's files. Frappe's controller hooks can only
 deny — "Controllers can only deny permission, they can not explicitly grant any
 permission that wasn't already present" (`frappe/permissions.py`). Both content
