@@ -8,7 +8,7 @@ export type ExportTargets = { developer_mode: boolean; apps: ExportApp[] }
 export type ExportedItem = {
 	doctype: string
 	docname: string
-	logical_id: string
+	standard_id: string
 	path: string
 }
 export type ExportReport = {
@@ -50,7 +50,7 @@ export function exportDashboard(args: {
 // the way the builder does and let the path say the rest
 export function itemLabel(item: ExportedItem) {
 	const kind = item.doctype.replace(/^Insights /, '').replace(/ v3$/, '')
-	return `${kind} · ${item.logical_id}`
+	return `${kind} · ${item.standard_id}`
 }
 
 export const BUNDLE_NAME_PATTERN = /^[a-z0-9][a-z0-9_-]*$/

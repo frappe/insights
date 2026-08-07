@@ -97,7 +97,7 @@ class TestDuplicateToEdit(InsightsIntegrationTestCase):
             CHART: DT.CHART,
             DASHBOARD: DT.DASHBOARD,
         }[name]
-        docname = frappe.db.get_value(doctype, {"logical_id": f"{APP}/{name}", "is_standard": 1}, "name")
+        docname = frappe.db.get_value(doctype, {"standard_id": f"{APP}/{name}", "is_standard": 1}, "name")
         self.assertIsNotNone(docname, f"{APP}/{name} was not synced")
         return frappe.get_doc(doctype, docname)
 
@@ -107,11 +107,11 @@ class TestDuplicateToEdit(InsightsIntegrationTestCase):
 
     def copies_in(self, workbook):
         """The copy's documents, keyed the way the fixture names the originals."""
-        queries = frappe.get_all(DT.QUERY, filters={"workbook": workbook}, fields=["name", "logical_id"])
-        by_logical_id = {row.logical_id: row.name for row in queries}
+        queries = frappe.get_all(DT.QUERY, filters={"workbook": workbook}, fields=["name", "standard_id"])
+        by_standard_id = {row.standard_id: row.name for row in queries}
         return {
-            BASE_QUERY: frappe.get_doc(DT.QUERY, by_logical_id[f"{APP}/{BASE_QUERY}"]),
-            SOURCE_QUERY: frappe.get_doc(DT.QUERY, by_logical_id[f"{APP}/{SOURCE_QUERY}"]),
+            BASE_QUERY: frappe.get_doc(DT.QUERY, by_standard_id[f"{APP}/{BASE_QUERY}"]),
+            SOURCE_QUERY: frappe.get_doc(DT.QUERY, by_standard_id[f"{APP}/{SOURCE_QUERY}"]),
             CHART: frappe.get_doc(DT.CHART, frappe.db.get_value(DT.CHART, {"workbook": workbook})),
             DASHBOARD: frappe.get_doc(
                 DT.DASHBOARD, frappe.db.get_value(DT.DASHBOARD, {"workbook": workbook})
@@ -174,7 +174,7 @@ class TestDuplicateToEdit(InsightsIntegrationTestCase):
         for name, copy in copies.items():
             self.assertEqual(copy.is_standard, 0, f"the {name} copy must not be standard content")
             # provenance: which shipped item this document started as
-            self.assertEqual(copy.logical_id, f"{APP}/{name}")
+            self.assertEqual(copy.standard_id, f"{APP}/{name}")
 
         # and the read-only guard that stops the original does not stop the copy
         with as_user(AUTHOR):
@@ -197,7 +197,7 @@ class TestDuplicateToEdit(InsightsIntegrationTestCase):
         self.assertEqual({name: self.standard(name).modified for name in SHIPPED}, before)
         self.assertEqual(self.standard(CHART).title, "Bundle Sync Sales Chart")
 
-        # the copy carries the logical id, and the id still resolves to the standard
+        # the copy carries the Standard ID, and the id still resolves to the standard
         self.assertEqual(resolve(DT.DASHBOARD, f"{APP}/{DASHBOARD}"), originals[DASHBOARD])
         self.assertEqual(resolve(DT.CHART, f"{APP}/{CHART}"), originals[CHART])
         self.assertNotEqual(resolve(DT.DASHBOARD, f"{APP}/{DASHBOARD}"), result["dashboard"])
@@ -322,7 +322,7 @@ class TestDuplicateToEdit(InsightsIntegrationTestCase):
         self.assertEqual(bundle["app"], APP)
         self.assertEqual(str(bundle["workbook"]), str(self.standard(DASHBOARD).workbook))
         self.assertEqual(
-            [dashboard["logical_id"] for dashboard in bundle["dashboards"]],
+            [dashboard["standard_id"] for dashboard in bundle["dashboards"]],
             [f"{APP}/{DASHBOARD}"],
         )
         self.assertEqual(bundle["dashboards"][0]["slug"], DASHBOARD)

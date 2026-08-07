@@ -18,7 +18,7 @@
   "variables",
   "section_break_oujt",
   "old_name",
-  "logical_id",
+  "standard_id",
   "is_standard"
  ],
  "fields": [
@@ -106,9 +106,9 @@
   },
   {
    "description": "Shipped content identity ({app}/{name}), set by bundle sync",
-   "fieldname": "logical_id",
+   "fieldname": "standard_id",
    "fieldtype": "Data",
-   "label": "Logical ID",
+   "label": "Standard ID",
    "read_only": 1,
    "search_index": 1
   },

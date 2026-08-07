@@ -49,13 +49,13 @@ class TestInsightsResolver(InsightsIntegrationTestCase):
         query = create_test_query(USER_1, workbook.name)
         return create_test_chart(USER_1, workbook.name, query.name)
 
-    def ship(self, doctype, name, logical_id=SHIPPED_ID, is_standard=1):
+    def ship(self, doctype, name, standard_id=SHIPPED_ID, is_standard=1):
         doc = frappe.get_doc(doctype, name)
-        doc.db_set("logical_id", logical_id, update_modified=False)
+        doc.db_set("standard_id", standard_id, update_modified=False)
         doc.db_set("is_standard", is_standard, update_modified=False)
         return doc
 
-    def test_dashboard_resolves_by_docname_slug_and_logical_id(self):
+    def test_dashboard_resolves_by_docname_slug_and_standard_id(self):
         dashboard = self.make_dashboard(title="Resolver Test Docname Form")
         self.ship(DT.DASHBOARD, dashboard.name)
 
@@ -63,7 +63,7 @@ class TestInsightsResolver(InsightsIntegrationTestCase):
         self.assertEqual(resolve(DASHBOARD, "resolver-test-docname-form"), dashboard.name)
         self.assertEqual(resolve(DASHBOARD, SHIPPED_ID), dashboard.name)
 
-    def test_chart_resolves_by_docname_and_logical_id_only(self):
+    def test_chart_resolves_by_docname_and_standard_id_only(self):
         chart = self.make_chart()
         self.ship(DT.CHART, chart.name)
 
@@ -88,9 +88,9 @@ class TestInsightsResolver(InsightsIntegrationTestCase):
             errors = []
             for reference in (
                 dashboard.name,  # exists, not readable by USER_2
-                SHIPPED_ID,  # same document, by its logical id
+                SHIPPED_ID,  # same document, by its Standard ID
                 "resolver-test-denied-dashboard",  # same document, by its slug
-                "resolver_test_app/no_such_thing",  # no such logical id
+                "resolver_test_app/no_such_thing",  # no such Standard ID
                 "no-such-slug",  # no such slug
                 frappe.generate_hash(length=10),  # no such docname
             ):

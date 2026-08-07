@@ -17,7 +17,7 @@ def execute():
 
     `from_template` stays. It is the only record of where a copy came from, and
     it decides nothing: a copy is not a duplicate of anything this site ships,
-    so it gets no provenance `logical_id` either — the bundles carry per-document
+    so it gets no provenance `standard_id` either — the bundles carry per-document
     identities that the copy's documents never held.
     """
     doctype = "Insights Workbook"

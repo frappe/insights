@@ -18,5 +18,6 @@ insights.patches.set_visibility_from_is_public
 insights.patches.retire_workbook_template_updates
 insights.patches.repair_sankey_value_aggregation
 insights.patches.retire_chart_query_cache
+insights.patches.rename_logical_id_to_standard_id
 insights.patches.move_bundle_containers_to_logical_id
 insights.patches.flag_shipped_workbooks_standard

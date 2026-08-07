@@ -13,7 +13,7 @@ export type StandardBundle = {
 	title: string
 	app: string
 	app_title: string
-	dashboards: { name: string; title: string; slug: string; logical_id: string }[]
+	dashboards: { name: string; title: string; slug: string; standard_id: string }[]
 }
 
 const props = defineProps<{ bundles: StandardBundle[] }>()

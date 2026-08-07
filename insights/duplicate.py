@@ -6,7 +6,7 @@
 Standard content is read-only on a site, so taking a copy is the only way to
 change a shipped dashboard. The copy is an ordinary user document — owned by
 whoever asked for it, in a workbook of their own, editable — and it is never
-handed back for the shipped logical id: the resolver keys that lookup on
+handed back for the shipped Standard ID: the resolver keys that lookup on
 `is_standard`, which a copy is not.
 
 What is copied is the dashboard's closure: the dashboard, the charts its items
@@ -19,7 +19,7 @@ offers on a single shipped dashboard; `duplicate_bundle` is what the gallery
 offers on a whole bundle, which lands on a site as one container workbook. The
 second is the first over every dashboard in the bundle, into one workbook.
 
-The copy carries the `logical_id` it was made from. That is provenance and
+The copy carries the `standard_id` it was made from. That is provenance and
 nothing else — it says which shipped item this document started as, which is
 what a real customization model (ticket 10) needs to line a fork up against the
 original it drifted from.
@@ -144,7 +144,7 @@ def _copy(doc, workbook: str, copies: dict) -> str:
 
     copy.workbook = workbook
     # what it was made from, without the standing that came with it
-    copy.logical_id = doc.get("logical_id")
+    copy.standard_id = doc.get("standard_id")
     copy.is_standard = 0
     copy.insert()
     return copy.name

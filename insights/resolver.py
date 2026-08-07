@@ -6,26 +6,26 @@
 A reference is what a consumer app, a desk route or a bookmark carries. Four
 forms are accepted for a dashboard, three for a chart:
 
-    logical id  `{app}/{name}`  the identity of shipped content, the field
-                                bundle sync writes; the only form that crosses
-                                the contract boundary
-    docname     the hash primary key, site-local
-    slug        the cosmetic, human-readable dashboard key
-    v2 name     the primary key this document carried before the rename to v3,
-                kept in `old_name` so a link shared back then still opens
+    Standard ID  `{app}/{name}`  the identity of shipped content, the field
+                                 bundle sync writes; the only form that crosses
+                                 the contract boundary
+    docname      the hash primary key, site-local
+    slug         the cosmetic, human-readable dashboard key
+    v2 name      the primary key this document carried before the rename to v3,
+                 kept in `old_name` so a link shared back then still opens
 
 The forms are discriminated by shape, not by trying every lookup and hoping:
 
-    a logical id contains a slash — no other form ever does
+    a Standard ID contains a slash — no other form ever does
     a docname is an existing primary key
     a slug is neither
 
-So the precedence is: slash -> logical id, exclusively. Otherwise docname
+So the precedence is: slash -> Standard ID, exclusively. Otherwise docname
 first, then slug, then the v2 name. A slug that happens to equal another
 dashboard's hash name resolves to that dashboard — internal identity wins, and
 nothing internal references a slug anyway.
 
-A logical id resolves to the standard document, always. A duplicate of shipped
+A Standard ID resolves to the standard document, always. A duplicate of shipped
 content is an ordinary user document with its own identity and is never handed
 back for the id it was copied from.
 """
@@ -37,7 +37,7 @@ DASHBOARD = "Insights Dashboard v3"
 CHART = "Insights Chart v3"
 
 # The doctypes this resolver serves, and whether they carry a slug. Charts are
-# mounted by logical id or docname only. Queries are addressed by name from
+# mounted by Standard ID or docname only. Queries are addressed by name from
 # inside a chart, never from outside, so they are absent by design.
 RESOLVABLE_DOCTYPES = {
     DASHBOARD: True,
@@ -68,7 +68,7 @@ def resolve(doctype: str, reference: str) -> str | None:
         return None
 
     if "/" in reference:
-        return _by_logical_id(doctype, reference)
+        return _by_standard_id(doctype, reference)
 
     return _by_docname(doctype, reference) or _by_slug(doctype, reference) or _by_old_name(doctype, reference)
 
@@ -88,12 +88,12 @@ def resolve_for_read(doctype: str, reference: str) -> str:
     return name
 
 
-def _by_logical_id(doctype: str, reference: str) -> str | None:
+def _by_standard_id(doctype: str, reference: str) -> str | None:
     # is_standard is part of the key, not a filter on the result: a user copy
-    # carries the logical id it was duplicated from, and must never answer for it
+    # carries the Standard ID it was duplicated from, and must never answer for it
     return frappe.db.get_value(
         doctype,
-        {"logical_id": reference, "is_standard": 1},
+        {"standard_id": reference, "is_standard": 1},
         "name",
         order_by="creation asc",
     )

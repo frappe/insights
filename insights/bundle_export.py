@@ -81,8 +81,8 @@ class ExportReport:
     sync: SyncReport | None = None
 
     @property
-    def logical_ids(self) -> list[str]:
-        return [item["logical_id"] for item in self.items]
+    def standard_ids(self) -> list[str]:
+        return [item["standard_id"] for item in self.items]
 
     def as_dict(self) -> dict:
         return asdict(self)
@@ -133,7 +133,7 @@ def export_dashboard(
             {
                 "doctype": doc.doctype,
                 "docname": doc.name,
-                "logical_id": f"{app}/{name}",
+                "standard_id": f"{app}/{name}",
                 "path": os.path.relpath(path, frappe.get_app_path(app)),
             }
         )
@@ -143,7 +143,7 @@ def export_dashboard(
         frappe.db.set_value(
             doc.doctype,
             doc.name,
-            {"logical_id": f"{app}/{name}", "is_standard": 1},
+            {"standard_id": f"{app}/{name}", "is_standard": 1},
             update_modified=False,
         )
 
@@ -172,9 +172,9 @@ def _require_installed(app: str) -> None:
 def _assign_names(app: str, docs: list[Document]) -> dict[tuple[str, str], str]:
     """A logical name per document, keyed by (doctype, docname).
 
-    A name is derived from the title, kept to what a logical id, a slug and a
+    A name is derived from the title, kept to what a Standard ID, a slug and a
     file name all accept, and assigned once: a document that already carries a
-    logical id keeps that name forever, because the id is what every consumer
+    Standard ID keeps that name forever, because the id is what every consumer
     outside Insights holds on to. Within an app the namespace is flat, so a name
     something else already claims gets a numbered suffix.
     """
@@ -192,7 +192,7 @@ def _assign_names(app: str, docs: list[Document]) -> dict[tuple[str, str], str]:
 
 
 def _existing_name(doc: Document) -> str | None:
-    name = (doc.get("logical_id") or "").split("/", 1)
+    name = (doc.get("standard_id") or "").split("/", 1)
     return name[1] if len(name) == 2 and NAME_PATTERN.match(name[1] or "") else None
 
 
@@ -215,12 +215,12 @@ def _taken_names(app: str, docs: list[Document]) -> set[str]:
     site — less the ones the documents being exported hold themselves."""
     taken = {item.name for bundle in discover_bundles(app) for item in bundle.items}
     for doctype in ITEM_TYPES.values():
-        for logical_id in frappe.get_all(
+        for standard_id in frappe.get_all(
             doctype,
-            filters={"is_standard": 1, "logical_id": ("like", f"{app}/%")},
-            pluck="logical_id",
+            filters={"is_standard": 1, "standard_id": ("like", f"{app}/%")},
+            pluck="standard_id",
         ):
-            taken.add(logical_id.split("/", 1)[1])
+            taken.add(standard_id.split("/", 1)[1])
     return taken - {name for doc in docs if (name := _existing_name(doc))}
 
 
@@ -433,13 +433,13 @@ def write_back(doc, method=None) -> bool:
         return False
     if doc.doctype not in ITEM_TYPES.values():
         return False
-    if not doc.get("is_standard") or not doc.get("logical_id"):
+    if not doc.get("is_standard") or not doc.get("standard_id"):
         return False
     if doc.flags.in_bundle_sync or frappe.flags.in_bundle_sync:
         # sync wrote this document *from* the file it would write back to
         return False
 
-    app, _sep, name = doc.logical_id.partition("/")
+    app, _sep, name = doc.standard_id.partition("/")
     if not name or app not in frappe.get_installed_apps():
         return False
     path = _existing_file(app, doc.doctype, name)
@@ -460,10 +460,10 @@ def write_back(doc, method=None) -> bool:
 
 
 def _shipped_name(doctype: str, docname: str) -> str:
-    logical_id = frappe.db.get_value(doctype, docname, "logical_id") if docname else None
-    if not logical_id:
+    standard_id = frappe.db.get_value(doctype, docname, "standard_id") if docname else None
+    if not standard_id:
         raise BundleError(_("{0} {1} is not shipped by any app").format(doctype, docname))
-    return logical_id.split("/", 1)[1]
+    return standard_id.split("/", 1)[1]
 
 
 # --------------------------------------------------------- export targets

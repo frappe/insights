@@ -8,7 +8,7 @@
   "title",
   "data_backup",
   "from_template",
-  "logical_id",
+  "standard_id",
   "is_standard"
  ],
  "fields": [
@@ -35,10 +35,10 @@
    "read_only": 1
   },
   {
-   "description": "Shipped content identity ({app}/{bundle}), set by bundle sync",
-   "fieldname": "logical_id",
+   "description": "Shipped content identity ({app}/{folder}), set by bundle sync",
+   "fieldname": "standard_id",
    "fieldtype": "Data",
-   "label": "Logical ID",
+   "label": "Standard ID",
    "read_only": 1,
    "search_index": 1
   },

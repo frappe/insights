@@ -13,7 +13,7 @@ idiom Studio and Builder already use:
         dashboard/sales_overview.json
 
 One file is one document. The file name is the item's logical name, the folder
-above it names the doctype, and `{app}/{name}` — the `logical_id` the resolver
+above it names the doctype, and `{app}/{name}` — the `standard_id` the resolver
 looks up — is the identity. That namespace is flat per app: bundle folders
 organize, they do not identify, so two bundles in one app may not ship the same
 name. References inside the files (dashboard -> chart, chart -> query, query ->
@@ -29,7 +29,7 @@ duplicate of shipped content is an ordinary user document.
 
 The workbook is the fourth reconciled doctype, not site-side scaffolding: the
 folder is a workbook, `workbook.json` is its file, and the folder name is its
-`logical_id`. It reconciles like everything else — created, retitled and
+`standard_id`. It reconciles like everything else — created, retitled and
 deleted from the same declarative pass — so it comes first in `SYNC_ORDER`,
 because its items land inside it, and last in deletion, when it is empty.
 """
@@ -80,7 +80,7 @@ SYNC_ORDER = (WORKBOOK, *ITEM_TYPES.values())
 # the fields a bundle carries per doctype. Everything else on the document is
 # either site-side (workbook, folder, preview_image), derived by a controller
 # (linked_charts, read back off the resolved items), or identity the sync owns
-# (logical_id, is_standard, slug).
+# (standard_id, is_standard, slug).
 # The audience declaration ships with the content — it is the vendor's, and a
 # site that wants a different one duplicates.
 CARRIED_FIELDS = {
@@ -119,7 +119,7 @@ CARRIED_FIELDS = {
 JSON_FIELDS = {"operations", "config", "items"}
 CHILD_FIELDS = {"variables", "visible_to_roles"}
 
-# a logical name travels into a logical id, a slug and a file name, so keep it
+# a logical name travels into a Standard ID, a slug and a file name, so keep it
 # to the intersection of what all three accept
 NAME_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 
@@ -143,7 +143,7 @@ class BundleItem:
     data: dict
 
     @property
-    def logical_id(self) -> str:
+    def standard_id(self) -> str:
         return f"{self.app}/{self.name}"
 
 
@@ -164,7 +164,7 @@ class Bundle:
     def as_item(self) -> BundleItem:
         """The workbook this folder ships, as an item like any other.
 
-        Its logical name is the folder name, so its logical id is the folder's
+        Its logical name is the folder name, so its Standard ID is the folder's
         key and identity is visible in the app's repo layout. That puts it in
         the same flat per-app namespace as the content, which is what makes a
         folder and a chart of the same name a clash worth failing on: one
@@ -392,33 +392,33 @@ def _reconcile_app(app: str, report: SyncReport) -> None:
     live_bundles = [b for b in bundles if _has_required_apps(b)]
     desired = _desired_items(app, live_bundles)
 
-    # a logical id must name one document; if an older sync (or a restore) left
+    # a Standard ID must name one document; if an older sync (or a restore) left
     # two, the oldest keeps the id and the rest are cleaned up as stale
     resolved: dict[str, str] = {}
     stale: list[tuple[str, str, str]] = []
-    for logical_id, rows in existing.items():
-        item = desired.get(logical_id)
+    for standard_id, rows in existing.items():
+        item = desired.get(standard_id)
         for doctype, name in rows:
-            if item and item.doctype == doctype and logical_id not in resolved:
-                resolved[logical_id] = name
+            if item and item.doctype == doctype and standard_id not in resolved:
+                resolved[standard_id] = name
             else:
-                stale.append((doctype, name, logical_id))
+                stale.append((doctype, name, standard_id))
 
     # names of items already on the site, so a reference to an item created
     # later in this run still resolves once its turn comes
-    name_map = {logical_id.split("/", 1)[1]: name for logical_id, name in resolved.items()}
+    name_map = {standard_id.split("/", 1)[1]: name for standard_id, name in resolved.items()}
 
     # filled by the workbooks as they are written; they come first in the order,
     # so every item that follows finds the container it belongs to
     containers: dict[str, str] = {}
 
     for item in _in_dependency_order(desired.values()):
-        docname = resolved.get(item.logical_id)
+        docname = resolved.get(item.standard_id)
         is_workbook = item.doctype == WORKBOOK
         container = None if is_workbook else containers[f"{item.app}/{item.bundle}"]
         applied = _apply(item, docname, _values_for(item, name_map, container, docname, report), report)
         if is_workbook:
-            containers[item.logical_id] = applied
+            containers[item.standard_id] = applied
         else:
             name_map[item.name] = applied
 
@@ -433,17 +433,17 @@ def _has_required_apps(bundle: Bundle) -> bool:
 
 
 def _desired_items(app: str, bundles: list[Bundle]) -> dict[str, BundleItem]:
-    """Every item the app ships, keyed by logical id. Fails loudly on a
+    """Every item the app ships, keyed by Standard ID. Fails loudly on a
     duplicate name: the namespace is flat per app, so two bundles cannot both
     claim one, and neither can a chart and a query."""
     desired: dict[str, BundleItem] = {}
     for bundle in bundles:
         for item in (bundle.as_item(), *bundle.items):
-            clash = desired.get(item.logical_id)
+            clash = desired.get(item.standard_id)
             if clash:
                 shipped_in = f"{_location_of(clash)} and {_location_of(item)}"
-                raise BundleError(f"{item.logical_id} is shipped twice: {shipped_in}")
-            desired[item.logical_id] = item
+                raise BundleError(f"{item.standard_id} is shipped twice: {shipped_in}")
+            desired[item.standard_id] = item
     return desired
 
 
@@ -460,23 +460,23 @@ def _location_of(item: BundleItem) -> str:
 
 
 def _standard_documents(app: str) -> dict[str, list[tuple[str, str]]]:
-    """The app's standard documents, keyed by logical id, oldest first.
+    """The app's standard documents, keyed by Standard ID, oldest first.
 
-    Only `is_standard` documents: a duplicate carries the logical id it was
+    Only `is_standard` documents: a duplicate carries the Standard ID it was
     copied from, and must never be mistaken for the shipped original.
     """
     found: dict[str, list[tuple[str, str]]] = {}
     for doctype in SYNC_ORDER:
         rows = frappe.get_all(
             doctype,
-            filters={"is_standard": 1, "logical_id": ("is", "set")},
-            fields=["name", "logical_id"],
+            filters={"is_standard": 1, "standard_id": ("is", "set")},
+            fields=["name", "standard_id"],
             order_by="creation asc, name asc",
         )
         for row in rows:
-            if row.logical_id.split("/", 1)[0] != app:
+            if row.standard_id.split("/", 1)[0] != app:
                 continue
-            found.setdefault(row.logical_id, []).append((doctype, row.name))
+            found.setdefault(row.standard_id, []).append((doctype, row.name))
     return found
 
 
@@ -506,7 +506,7 @@ def _sort_queries(queries: list[BundleItem]) -> list[BundleItem]:
         if item.name in done:
             return
         if item.name in visiting:
-            raise BundleError(f"queries reference each other in a cycle, at {item.logical_id}")
+            raise BundleError(f"queries reference each other in a cycle, at {item.standard_id}")
         visiting.add(item.name)
         for ref in query_references(item.data.get("operations")):
             if ref in shipped:
@@ -547,12 +547,12 @@ def _apply(item: BundleItem, docname: str | None, values: dict, report: SyncRepo
     if docname:
         doc = frappe.get_doc(item.doctype, docname)
         if not _differs(doc, values):
-            report.unchanged.append(item.logical_id)
+            report.unchanged.append(item.standard_id)
             return docname
         doc.update(values)
         doc.flags.in_bundle_sync = True
         doc.save(ignore_permissions=True)
-        report.updated.append(item.logical_id)
+        report.updated.append(item.standard_id)
         return doc.name
 
     doc = frappe.new_doc(item.doctype)
@@ -561,7 +561,7 @@ def _apply(item: BundleItem, docname: str | None, values: dict, report: SyncRepo
     doc.insert(ignore_permissions=True)
     # shipped content belongs to the site, not to whoever ran the migrate
     frappe.db.set_value(item.doctype, doc.name, "owner", "Administrator", update_modified=False)
-    report.created.append(item.logical_id)
+    report.created.append(item.standard_id)
     return doc.name
 
 
@@ -574,14 +574,14 @@ def _values_for(
 ) -> dict:
     """The document fields this item wants, references already resolved.
 
-    Identity (`logical_id`, `is_standard`) and the container (`workbook`) are
+    Identity (`standard_id`, `is_standard`) and the container (`workbook`) are
     part of the wanted values, not set once at creation, so an item that moves
     between bundles moves its document with it. A workbook is its own
     container and gets no `workbook` of its own.
     """
     data = item.data
     values = {
-        "logical_id": item.logical_id,
+        "standard_id": item.standard_id,
         "is_standard": 1,
     }
     if workbook is not None:
@@ -634,7 +634,7 @@ def _child_rows(fieldname: str, value) -> list[dict]:
 def _reference(item: BundleItem, ref: str, name_map: dict[str, str]) -> str:
     name = name_map.get(ref)
     if not name:
-        raise BundleError(f"{item.logical_id} references '{ref}', which the app does not ship")
+        raise BundleError(f"{item.standard_id} references '{ref}', which the app does not ship")
     return name
 
 
@@ -722,7 +722,7 @@ def _slug_for(item: BundleItem, docname: str | None, report: SyncReport) -> str:
         return base
 
     qualified = cleanup_page_name(f"{item.app}-{item.name}")
-    warning = f"slug '{base}' is taken, shipping {item.logical_id} as '{qualified}'"
+    warning = f"slug '{base}' is taken, shipping {item.standard_id} as '{qualified}'"
     report.warnings.append(warning)
     frappe.logger("insights").warning(warning)
     # the dashboard controller adds a numbered suffix if even this is taken
@@ -738,14 +738,14 @@ def _delete_documents(rows: list[tuple[str, str, str]], report: SyncReport) -> N
     does: a standard workbook holds only standard items, so everything it held
     was in this same list."""
     order = list(SYNC_ORDER)[::-1]
-    for doctype, name, logical_id in sorted(rows, key=lambda row: order.index(row[0])):
+    for doctype, name, standard_id in sorted(rows, key=lambda row: order.index(row[0])):
         if frappe.db.exists(doctype, name):
             doc = frappe.get_doc(doctype, name)
             doc.flags.in_bundle_sync = True
             doc.delete(ignore_permissions=True, force=True)
         # a document a controller already took with the one that referenced it
         # is still one this reconcile removed
-        report.deleted.append(logical_id)
+        report.deleted.append(standard_id)
 
 
 def before_app_uninstall(app_name: str) -> SyncReport:
@@ -754,8 +754,8 @@ def before_app_uninstall(app_name: str) -> SyncReport:
     report = SyncReport()
     with bundle_sync():
         rows = [
-            (doctype, name, logical_id)
-            for logical_id, found in _standard_documents(app_name).items()
+            (doctype, name, standard_id)
+            for standard_id, found in _standard_documents(app_name).items()
             for doctype, name in found
         ]
         _delete_documents(rows, report)
@@ -779,14 +779,14 @@ def standard_content() -> list[dict]:
     """
     workbooks = frappe.get_all(
         WORKBOOK,
-        filters={"is_standard": 1, "logical_id": ("is", "set")},
-        fields=["name", "title", "logical_id"],
+        filters={"is_standard": 1, "standard_id": ("is", "set")},
+        fields=["name", "title", "standard_id"],
         order_by="creation asc",
     )
     dashboards = frappe.get_list(
         DASHBOARD,
-        filters={"is_standard": 1, "logical_id": ("is", "set")},
-        fields=["name", "title", "slug", "logical_id", "workbook"],
+        filters={"is_standard": 1, "standard_id": ("is", "set")},
+        fields=["name", "title", "slug", "standard_id", "workbook"],
         order_by="creation asc",
     )
 
@@ -797,7 +797,7 @@ def standard_content() -> list[dict]:
                 "name": dashboard.name,
                 "title": dashboard.title,
                 "slug": dashboard.slug,
-                "logical_id": dashboard.logical_id,
+                "standard_id": dashboard.standard_id,
             }
         )
 
@@ -808,7 +808,7 @@ def standard_content() -> list[dict]:
             # every dashboard in it is hidden from this user, so the workbook is
             # too — an empty card would say the content exists
             continue
-        app = workbook.logical_id.split("/", 1)[0]
+        app = workbook.standard_id.split("/", 1)[0]
         listed.append(
             {
                 "workbook": workbook.name,

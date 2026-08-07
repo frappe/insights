@@ -206,7 +206,7 @@ class TestInsightsBundleExport(InsightsIntegrationTestCase):
     def on_disk(self):
         return {name: self.content(name) for name in FILES}
 
-    def logical_id(self, name):
+    def standard_id(self, name):
         return f"{APP}/{name}"
 
     def doctype_of(self, name):
@@ -219,13 +219,13 @@ class TestInsightsBundleExport(InsightsIntegrationTestCase):
 
     def doc(self, name):
         docname = frappe.db.get_value(
-            self.doctype_of(name), {"logical_id": self.logical_id(name), "is_standard": 1}, "name"
+            self.doctype_of(name), {"standard_id": self.standard_id(name), "is_standard": 1}, "name"
         )
-        self.assertIsNotNone(docname, f"{self.logical_id(name)} was not exported")
+        self.assertIsNotNone(docname, f"{self.standard_id(name)} was not exported")
         return frappe.get_doc(self.doctype_of(name), docname)
 
-    def all_logical_ids(self):
-        return sorted(self.logical_id(name) for name in FILES)
+    def all_standard_ids(self):
+        return sorted(self.standard_id(name) for name in FILES)
 
     def dashboard_items(self):
         return frappe.parse_json(self.doc(DASHBOARD).items)
@@ -235,7 +235,7 @@ class TestInsightsBundleExport(InsightsIntegrationTestCase):
     def test_export_writes_the_closure_and_flags_it_standard(self):
         report = self.export()
 
-        self.assertEqual(sorted(report.logical_ids), self.all_logical_ids())
+        self.assertEqual(sorted(report.standard_ids), self.all_standard_ids())
         for relative_path in FILES.values():
             self.assertTrue(os.path.isfile(self.path(relative_path)), f"{relative_path} was not written")
         with open(self.path(MANIFEST)) as f:
@@ -261,7 +261,7 @@ class TestInsightsBundleExport(InsightsIntegrationTestCase):
         self.assertEqual(items[1]["links"], {CHART: f"`{SOURCE}`.`status`"})
 
         # and the documents are the app's now: standard, in the bundle's
-        # container workbook, addressable by logical id
+        # container workbook, addressable by Standard ID
         containers = set()
         for name in FILES:
             doc = self.doc(name)
@@ -270,8 +270,8 @@ class TestInsightsBundleExport(InsightsIntegrationTestCase):
         self.assertEqual(len(containers), 1)
         self.assertNotIn(str(self.workbook.name), containers)
 
-        self.assertEqual(resolve(DT.DASHBOARD, self.logical_id(DASHBOARD)), self.doc(DASHBOARD).name)
-        self.assertEqual(resolve(DT.CHART, self.logical_id(CHART)), self.doc(CHART).name)
+        self.assertEqual(resolve(DT.DASHBOARD, self.standard_id(DASHBOARD)), self.doc(DASHBOARD).name)
+        self.assertEqual(resolve(DT.CHART, self.standard_id(CHART)), self.doc(CHART).name)
 
     def test_sync_after_export_changes_nothing(self):
         self.export()
@@ -280,7 +280,7 @@ class TestInsightsBundleExport(InsightsIntegrationTestCase):
         report = sync_app_bundles(APP)
 
         self.assertFalse(report.changed, f"created {report.created}, updated {report.updated}")
-        self.assertTrue(set(self.all_logical_ids()) <= set(report.unchanged))
+        self.assertTrue(set(self.all_standard_ids()) <= set(report.unchanged))
         self.assertEqual({name: self.doc(name).modified for name in FILES}, before)
 
     def test_a_re_export_is_byte_identical(self):
@@ -291,7 +291,7 @@ class TestInsightsBundleExport(InsightsIntegrationTestCase):
 
         self.assertEqual(self.on_disk(), before)
         self.assertEqual(report.written, [], "an export that changes nothing writes nothing")
-        self.assertEqual(sorted(report.logical_ids), self.all_logical_ids())
+        self.assertEqual(sorted(report.standard_ids), self.all_standard_ids())
 
     def test_dashboard_items_carry_stable_keys(self):
         self.export()
@@ -317,7 +317,7 @@ class TestInsightsBundleExport(InsightsIntegrationTestCase):
 
         report = self.export()
 
-        self.assertIn(self.logical_id(f"{SOURCE}-2"), report.logical_ids)
+        self.assertIn(self.standard_id(f"{SOURCE}-2"), report.standard_ids)
         self.assertTrue(os.path.isfile(self.path(f"query/{SOURCE}-2.json")))
         self.assertEqual(self.read(CHART)["query"], f"{SOURCE}-2")
 

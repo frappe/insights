@@ -160,8 +160,8 @@ class TestViewerAPI(InsightsIntegrationTestCase):
             frappe.get_doc(DT.DASHBOARD, dashboard.name),
         )
 
-    def ship(self, doc, logical_id=SHIPPED_ID):
-        doc.db_set("logical_id", logical_id, update_modified=False)
+    def ship(self, doc, standard_id=SHIPPED_ID):
+        doc.db_set("standard_id", standard_id, update_modified=False)
         doc.db_set("is_standard", 1, update_modified=False)
         return frappe.get_doc(doc.doctype, doc.name)
 
@@ -362,7 +362,7 @@ class TestViewerAPI(InsightsIntegrationTestCase):
 
     # references
 
-    def test_a_dashboard_resolves_by_docname_slug_and_logical_id(self):
+    def test_a_dashboard_resolves_by_docname_slug_and_standard_id(self):
         _, _, dashboard = self.make_content(visibility="Everyone", title="Viewer API Referenced Dashboard")
         dashboard = self.ship(dashboard)
 
@@ -372,9 +372,9 @@ class TestViewerAPI(InsightsIntegrationTestCase):
 
         self.assertEqual(dashboard.slug, "viewer-api-referenced-dashboard")
 
-    def test_a_chart_resolves_by_docname_and_logical_id(self):
+    def test_a_chart_resolves_by_docname_and_standard_id(self):
         _, chart, dashboard = self.make_content(visibility="Everyone")
-        chart = self.ship(chart, logical_id="viewer_api_test_app/todo_chart")
+        chart = self.ship(chart, standard_id="viewer_api_test_app/todo_chart")
 
         with as_user(DESK_USER):
             for reference in (chart.name, "viewer_api_test_app/todo_chart"):

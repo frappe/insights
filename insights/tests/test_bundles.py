@@ -188,7 +188,7 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
     def sync(self):
         return sync_app_bundles(APP)
 
-    def logical_id(self, name):
+    def standard_id(self, name):
         return f"{APP}/{name}"
 
     def doctype_of(self, name):
@@ -203,13 +203,13 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
     def docname(self, name):
         return frappe.db.get_value(
             self.doctype_of(name),
-            {"logical_id": self.logical_id(name), "is_standard": 1},
+            {"standard_id": self.standard_id(name), "is_standard": 1},
             "name",
         )
 
     def doc(self, name):
         docname = self.docname(name)
-        self.assertIsNotNone(docname, f"{self.logical_id(name)} was not synced")
+        self.assertIsNotNone(docname, f"{self.standard_id(name)} was not synced")
         return frappe.get_doc(self.doctype_of(name), docname)
 
     def modified_of(self, names=SHIPPED):
@@ -218,14 +218,14 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
     def all_shipped_ids(self):
         # the workbook is shipped too, and its logical name is the folder — so a
         # report that leaves it out is a reconcile that missed it
-        return sorted(self.logical_id(name) for name in (BUNDLE, *SHIPPED))
+        return sorted(self.standard_id(name) for name in (BUNDLE, *SHIPPED))
 
-    def mine(self, logical_ids):
+    def mine(self, standard_ids):
         """The fixture's ids out of a report. Insights ships real bundles of its
         own beside the fixture, so a report is only ever asserted on the part of
         it this test wrote."""
         fixture = set(self.all_shipped_ids())
-        return sorted(logical_id for logical_id in logical_ids if logical_id in fixture)
+        return sorted(standard_id for standard_id in standard_ids if standard_id in fixture)
 
     # --------------------------------------------------------------- tests
 
@@ -239,7 +239,7 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
         for name in SHIPPED:
             doc = self.doc(name)
             self.assertEqual(doc.is_standard, 1, f"{name} should be standard")
-            self.assertEqual(doc.logical_id, self.logical_id(name))
+            self.assertEqual(doc.standard_id, self.standard_id(name))
             self.assertEqual(doc.owner, "Administrator")
             workbooks.add(str(doc.workbook))
 
@@ -253,7 +253,7 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
         self.assertEqual(container.is_standard, 1)
 
         # its logical name is the folder, so identity is the repo layout
-        self.assertEqual(container.logical_id, f"{APP}/{BUNDLE}")
+        self.assertEqual(container.standard_id, f"{APP}/{BUNDLE}")
 
         # the shipped dashboard's external key is its logical name
         self.assertEqual(self.doc(DASHBOARD).slug, DASHBOARD)
@@ -319,7 +319,7 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
             self.assertLessEqual(bundle.format_version, FORMAT_VERSION)
             self.assertTrue(bundle.items, f"{bundle.key} ships nothing")
             for item in bundle.items:
-                self.assertNotIn(item.name, names, f"{item.logical_id} is shipped twice")
+                self.assertNotIn(item.name, names, f"{item.standard_id} is shipped twice")
                 names[item.name] = item
 
         for bundle in shipped:
@@ -328,7 +328,7 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
                     self.assertIn(
                         reference,
                         names,
-                        f"{item.logical_id} references '{reference}', which the app does not ship",
+                        f"{item.standard_id} references '{reference}', which the app does not ship",
                     )
 
     def test_references_resolve_to_site_documents(self):
@@ -348,9 +348,9 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
         self.assertEqual(items[1]["links"], {chart.name: f"`{source.name}`.`status`"})
         self.assertEqual([row.chart for row in dashboard.linked_charts], [chart.name])
 
-        # and the logical ids are what a consumer outside Insights references
-        self.assertEqual(resolve(DT.DASHBOARD, self.logical_id(DASHBOARD)), dashboard.name)
-        self.assertEqual(resolve(DT.CHART, self.logical_id(CHART)), chart.name)
+        # and the Standard IDs are what a consumer outside Insights references
+        self.assertEqual(resolve(DT.DASHBOARD, self.standard_id(DASHBOARD)), dashboard.name)
+        self.assertEqual(resolve(DT.CHART, self.standard_id(CHART)), chart.name)
         self.assertEqual(resolve(DT.DASHBOARD, dashboard.slug), dashboard.name)
 
     def test_resync_writes_nothing(self):
@@ -366,7 +366,7 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
         # the container is what a second run has to find again: miss it and every
         # shipped document is rewritten into a new one
         self.assertEqual(self.doc(CHART).workbook, container)
-        self.assertEqual(frappe.db.count(DT.WORKBOOK, {"logical_id": f"{APP}/{BUNDLE}"}), 1)
+        self.assertEqual(frappe.db.count(DT.WORKBOOK, {"standard_id": f"{APP}/{BUNDLE}"}), 1)
 
     def test_a_changed_file_updates_only_its_document(self):
         self.sync()
@@ -376,7 +376,7 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
         write_bundle(BUNDLE, self.files)
         report = self.sync()
 
-        self.assertEqual(report.updated, [self.logical_id(SOURCE_QUERY)])
+        self.assertEqual(report.updated, [self.standard_id(SOURCE_QUERY)])
         # the other three items and the workbook they live in
         self.assertEqual(len(self.mine(report.unchanged)), 4)
         self.assertEqual(self.doc(SOURCE_QUERY).title, "Bundle Sync Sales (revised)")
@@ -391,7 +391,7 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
         write_bundle(BUNDLE, self.files)
         report = self.sync()
 
-        self.assertEqual(report.deleted, [self.logical_id(DASHBOARD)])
+        self.assertEqual(report.deleted, [self.standard_id(DASHBOARD)])
         self.assertFalse(frappe.db.exists(DT.DASHBOARD, dashboard))
         self.assertIsNotNone(self.docname(CHART))
         self.assertIsNotNone(self.docname(SOURCE_QUERY))
@@ -424,9 +424,9 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
         for name in SHIPPED:
             self.assertIsNone(self.docname(name), f"{name} should have gone with its app")
 
-        # the copy keeps the logical id it was made from, and keeps existing
+        # the copy keeps the Standard ID it was made from, and keeps existing
         self.assertTrue(frappe.db.exists(DT.CHART, copy.name))
-        self.assertEqual(frappe.db.get_value(DT.CHART, copy.name, "logical_id"), self.logical_id(CHART))
+        self.assertEqual(frappe.db.get_value(DT.CHART, copy.name, "standard_id"), self.standard_id(CHART))
         # an emptied container is site state with nothing left in it
         self.assertFalse(frappe.db.exists(DT.WORKBOOK, container))
         self.assertTrue(frappe.db.exists(DT.WORKBOOK, mine.name))

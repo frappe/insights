@@ -33,11 +33,11 @@ class InsightsDashboardv3(Document):
         is_standard: DF.Check
         items: DF.JSON | None
         linked_charts: DF.TableMultiSelect[InsightsDashboardChartv3]
-        logical_id: DF.Data | None
         old_name: DF.Data | None
         preview_image: DF.Data | None
         share_link: DF.Data | None
         slug: DF.Data | None
+        standard_id: DF.Data | None
         title: DF.Data | None
         vertical_compact_layout: DF.Check
         workbook: DF.Link

@@ -164,7 +164,7 @@ const actions = computed(() => {
 					>
 						<div
 							v-for="item in report.items"
-							:key="item.logical_id"
+							:key="item.standard_id"
 							class="flex flex-col px-3 py-2"
 						>
 							<div class="text-sm text-ink-gray-8">
