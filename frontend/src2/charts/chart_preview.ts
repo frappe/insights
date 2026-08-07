@@ -31,12 +31,16 @@ function makeChartPreview(chart: Chart) {
 
 	return makeChartRead({
 		doc: computed(() => chart.doc as ChartReadDoc),
-		fetchData: (force, adhocFilters) => {
+		fetchData: (force, filterContext) => {
 			const request = {
 				chart_type: chart.doc.chart_type,
 				query: chart.doc.query,
 				config: chart.doc.config,
-				adhoc_filters: adhocFilters,
+				// unrouted: the server reads the links and decides which query
+				// each filter lands on, the same way it does for a reader
+				chart_name: filterContext?.chart,
+				dashboard_items: filterContext?.items,
+				filters: filterContext?.filters,
 				page_size: chart.doc.config.limit || 100,
 			}
 			// the config is watched deeply, so an edit that leaves the request the

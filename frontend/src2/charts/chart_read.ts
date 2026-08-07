@@ -25,8 +25,20 @@ import type {
 	QueryResultColumn,
 	QueryResultRow,
 } from '../types/query.types'
-import type { InsightsChartv3 } from '../types/workbook.types'
+import type { InsightsChartv3, WorkbookDashboardItem } from '../types/workbook.types'
 import { normalizeChartConfig } from './helpers'
+
+/**
+ * What a card on the builder's dashboard grid needs to have the grid's filters
+ * applied to it. It goes to the server unrouted: the links that say which query
+ * a filter lands on are read there, for a reader and an author alike. The
+ * builder sends the items because it is editing ones it has not saved.
+ */
+export type DashboardFilterContext = {
+	chart: string
+	items: WorkbookDashboardItem[]
+	filters: ViewerFilters
+}
 
 // everything a card draws the picture from. The builder's own document is one of
 // these, which is what lets the preview feed read straight off what is being edited
@@ -49,6 +61,8 @@ type ChartDataResponse = {
 	operations?: Operation[]
 	sql?: string
 	use_live_connection?: boolean
+	// where the grid's filters landed, as the server routed them
+	adhoc_filters?: AdhocFilters
 }
 
 export type ChartFeed = {
@@ -56,7 +70,10 @@ export type ChartFeed = {
 	// the saved feed draws its frame from a second round trip; the preview feed
 	// already holds the document it is editing
 	fetchDoc?: () => Promise<void>
-	fetchData: (force: boolean, adhocFilters?: AdhocFilters) => Promise<ChartDataResponse | undefined>
+	fetchData: (
+		force: boolean,
+		filterContext?: DashboardFilterContext,
+	) => Promise<ChartDataResponse | undefined>
 	// forking what the server ran into a drill query is authoring, and so is the
 	// query editor it opens in. The feed that receives the operations is the feed
 	// that carries it — a read surface has neither, which is ticket 11's business.
@@ -72,6 +89,9 @@ export function makeChartRead(feed: ChartFeed, priority?: number) {
 	// what the server ran, on the feed that is allowed to say. Drill-down forks it.
 	const operations = ref<Operation[]>([])
 	const useLiveConnection = ref(false)
+	// where the grid's filters landed, as the server routed them. A drill-down
+	// forks the operations above and needs the same narrowing applied to them.
+	const routedFilters = ref<AdhocFilters>()
 	// why the chart cannot be drawn yet, as the server read the config
 	const configErrors = ref<string[]>([])
 
@@ -86,7 +106,7 @@ export function makeChartRead(feed: ChartFeed, priority?: number) {
 
 	// both set by whoever owns the layout the card sits in
 	const executionPriority = ref(priority)
-	const adhocFilters = ref<AdhocFilters>()
+	const filterContext = ref<DashboardFilterContext>()
 
 	let currentLoad = 0
 
@@ -104,7 +124,7 @@ export function makeChartRead(feed: ChartFeed, priority?: number) {
 		// wrong when that happens — the card waits its turn and asks again, on the
 		// same queue the query builder uses. A real failure is not retried and
 		// reaches the card immediately.
-		const dataLoad = scheduleQueryExecution(() => feed.fetchData(force, adhocFilters.value), {
+		const dataLoad = scheduleQueryExecution(() => feed.fetchData(force, filterContext.value), {
 			isStale,
 			priority: executionPriority.value,
 		})
@@ -143,6 +163,7 @@ export function makeChartRead(feed: ChartFeed, priority?: number) {
 			}
 			operations.value = response.operations || []
 			useLiveConnection.value = Boolean(response.use_live_connection)
+			routedFilters.value = response.adhoc_filters
 			executedAt.value = result.value.lastExecutedAt
 			ready.value = true
 		} catch (error) {
@@ -180,6 +201,7 @@ export function makeChartRead(feed: ChartFeed, priority?: number) {
 		// the whole result comes back in one response, so the table it feeds has
 		// one page and filters over the rows it holds
 		currentOperations: operations,
+		routedFilters,
 		configErrors,
 
 		ready,
@@ -189,7 +211,7 @@ export function makeChartRead(feed: ChartFeed, priority?: number) {
 		empty,
 		executedAt,
 		executionPriority,
-		adhocFilters,
+		filterContext,
 
 		load,
 		getDrillDownQuery,

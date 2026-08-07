@@ -44,6 +44,7 @@ const canMaximize = computed(
 		v-model="showDrillDown"
 		@update:modelValue="!$event ? (drillDownQuery = undefined) : undefined"
 		:query="drillDownQuery"
+		:adhoc-filters="props.chart.routedFilters"
 	>
 	</DrillDown>
 

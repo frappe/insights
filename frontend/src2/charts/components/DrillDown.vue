@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { debounce } from 'frappe-ui'
 import { Combine } from 'lucide-vue-next'
-import { inject, provide, ref, nextTick } from 'vue'
+import { provide, ref, nextTick } from 'vue'
 import { wheneverChanges } from '../../helpers'
 import QueryExecutionStatus from '../../query/components/QueryExecutionStatus.vue'
 import QueryToolbar from '../../query/components/QueryToolbar.vue'
@@ -9,19 +9,16 @@ import QueryDataTable from '../../query/components/QueryDataTable.vue'
 import QueryOperations from '../../query/components/QueryOperations.vue'
 import { count, makeDimension } from '../../query/helpers'
 import { Query } from '../../query/query'
-import { QueryResultColumn } from '../../types/query.types'
-import { Dashboard } from '../../dashboard/dashboard'
+import { AdhocFilters, QueryResultColumn } from '../../types/query.types'
 import { __ } from '../../translation'
 
-const props = defineProps<{ query: Query }>()
+// `adhocFilters` is where the card's own filters landed, as the server routed
+// them. It is carried in rather than worked out here, so a drill shows the rows
+// the card was showing without a second reading of the dashboard's links.
+const props = defineProps<{ query: Query; adhocFilters?: AdhocFilters }>()
 
-const dashboard = inject<Dashboard>('dashboard')!
-const chartName = inject<string>('chartName', '')
-if (dashboard && chartName) {
-	const adhocFilters = dashboard.getAdhocFilters(chartName)
-	if (adhocFilters) {
-		props.query.adhocFilters = adhocFilters
-	}
+if (props.adhocFilters) {
+	props.query.adhocFilters = props.adhocFilters
 }
 
 const show = defineModel<boolean>()
@@ -111,6 +108,7 @@ const groupBy = debounce(_groupBy, 50)
 		v-model="showDrillDown"
 		@update:modelValue="!$event ? (drillDownQuery = undefined) : undefined"
 		:query="drillDownQuery"
+		:adhoc-filters="props.adhocFilters"
 	>
 	</DrillDown>
 </template>

@@ -18,21 +18,17 @@ behind a chart never cross this boundary: the client says which chart, the
 server decides what runs.
 """
 
-import re
-
 import frappe
 from frappe import _
 
 from insights.decorators import validate_type
 from insights.insights.doctype.insights_chart_v3.chart_query import column_granularity
+from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import route_filters
 from insights.insights.doctype.insights_data_source_v3.data_authority import data_authority_of
 from insights.permissions import check_app_permission
 from insights.resolver import CHART, DASHBOARD, ContentNotAvailableError, resolve, resolve_for_read
 
 QUERY = "Insights Query v3"
-
-# a filter item links a chart as "links": { '<chart>': "`<query>`.`<column>`" }
-FILTER_LINK_PATTERN = r"^`([^`]+)`\.`([^`]+)`$"
 
 
 @frappe.whitelist(allow_guest=True)
@@ -94,7 +90,8 @@ def get_chart_data(
 
     adhoc_filters = None
     if dashboard:
-        adhoc_filters = adhoc_filters_for(resolve_for_read(DASHBOARD, dashboard), name, filters)
+        items = frappe.db.get_value(DASHBOARD, resolve_for_read(DASHBOARD, dashboard), "items")
+        adhoc_filters = route_filters(items, name, filters)
 
     result = doc.get_data(
         force=force,
@@ -121,8 +118,11 @@ def get_filter_values(dashboard: str, filter_name: str, search_term: str | None 
     under the authority of the chart the filter is linked to, so the values on
     offer are the ones that user is allowed to see.
     """
-    dashboard_name = resolve_for_read(DASHBOARD, dashboard)
-    chart, query, column = filter_source(dashboard_name, filter_name)
+    doc = frappe.get_doc(DASHBOARD, resolve_for_read(DASHBOARD, dashboard))
+    source = doc.filter_source(filter_name)
+    if not source:
+        not_available()
+    chart, query, column = source
 
     query_doc = frappe.get_cached_doc(QUERY, query)
     # the whitelisted method carries an `Insights User` role check, which is the
@@ -134,22 +134,6 @@ def get_filter_values(dashboard: str, filter_name: str, search_term: str | None 
 
     with data_authority_of(frappe.get_doc(CHART, chart)):
         return distinct_column_values(query_doc, column, search_term=search_term)
-
-
-def filter_source(dashboard: str, filter_name: str) -> tuple[str, str, str]:
-    """The chart, query and column a named dashboard filter reads its values from."""
-    items = frappe.parse_json(frappe.db.get_value(DASHBOARD, dashboard, "items") or "[]")
-
-    for item in items:
-        if item.get("type") != "filter" or item.get("filter_name") != filter_name:
-            continue
-
-        for chart, link in (item.get("links") or {}).items():
-            match = re.match(FILTER_LINK_PATTERN, link) if link else None
-            if match and is_on_dashboard(chart, dashboard):
-                return chart, *match.groups()
-
-    not_available()
 
 
 def resolve_chart(chart: str, dashboard: str | None) -> str:
@@ -248,40 +232,3 @@ def present_config(config) -> dict:
     config = frappe.parse_json(config or "{}")
     config.pop("filters", None)
     return config
-
-
-def adhoc_filters_for(dashboard: str, chart: str, filter_states: dict | None) -> dict | None:
-    """Dashboard filter state, routed to the queries the filters are linked to."""
-    if not filter_states:
-        return None
-
-    items = frappe.parse_json(frappe.db.get_value(DASHBOARD, dashboard, "items") or "[]")
-    filters_by_query = {}
-
-    for item in items:
-        if item.get("type") != "filter":
-            continue
-
-        state = filter_states.get(item.get("filter_name")) or {}
-        if not state.get("operator"):
-            continue
-
-        link = (item.get("links") or {}).get(chart)
-        match = re.match(FILTER_LINK_PATTERN, link) if link else None
-        if not match:
-            continue
-
-        query, column = match.groups()
-        group = filters_by_query.setdefault(
-            query, {"type": "filter_group", "logical_operator": "And", "filters": []}
-        )
-        group["filters"].append(
-            {
-                "type": "filter",
-                "column": {"type": "column", "column_name": column},
-                "operator": state["operator"],
-                "value": state.get("value"),
-            }
-        )
-
-    return filters_by_query or None

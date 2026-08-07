@@ -12,16 +12,28 @@ import {
 } from '../helpers'
 import { resolveHref } from '../helpers/navigation'
 import useDocumentResource from '../helpers/resource'
-import { isFilterValid } from '../query/components/filter_utils'
-import { column, filter_group } from '../query/helpers'
 import session from '../session'
-import { AdhocFilters, FilterArgs, FilterGroup, FilterOperator, FilterValue } from '../types/query.types'
+import { FilterArgs, FilterOperator, FilterValue } from '../types/query.types'
 import {
 	InsightsDashboardv3,
 	WorkbookChart,
 	WorkbookDashboardFilter,
 	WorkbookDashboardItem,
 } from '../types/workbook.types'
+import { defaultFilters, type ViewerDashboardItem } from './viewer'
+
+/**
+ * A filter link, `` `query`.`column` ``, split back into its two halves.
+ *
+ * The only client-side reader of the format, and only the filter editor needs
+ * it: it previews values for a link the document has not saved, and the server
+ * will not serve those — nothing has made that column a filter yet. Every other
+ * surface names the filter and lets the server find the column behind it.
+ */
+export function parseFilterLink(link: string) {
+	const match = link?.match(/^`([^`]+)`\.`([^`]+)`$/)
+	return match ? { query: match[1], column: match[2] } : null
+}
 
 const dashboards = new Map<string, Dashboard>()
 
@@ -205,9 +217,21 @@ function makeDashboard(name: string) {
 		})
 	}
 
+	// The card sends what the grid holds, not what it worked out from it: which
+	// query a filter lands on is read off the links server-side, the one place it
+	// is read for a reader too. The items travel because the builder is editing
+	// ones the document has not saved.
+	function filterContextFor(chart_name: string) {
+		return {
+			chart: chart_name,
+			items: dashboard.doc.items,
+			filters: filterStates.value,
+		}
+	}
+
 	function refreshChart(chart_name: string, force = false) {
 		const preview = useChartPreview(useChart(chart_name))
-		preview.adhocFilters = getAdhocFilters(chart_name)
+		preview.filterContext = filterContextFor(chart_name)
 		preview.executionPriority = getLayoutRank(chart_name)
 		preview.load(force)
 	}
@@ -220,49 +244,6 @@ function makeDashboard(name: string) {
 		)
 		if (!item) return undefined
 		return item.layout.y * grid_cols + item.layout.x
-	}
-
-	function getAdhocFilters(chart_name: string, exclude_filter_name?: string) {
-		const filtersApplied = dashboard.doc.items.filter(
-			(item) =>
-				item.type === 'filter' &&
-				'links' in item &&
-				item.links[chart_name] &&
-				(!exclude_filter_name || item.filter_name !== exclude_filter_name)
-		)
-
-		if (filtersApplied.length === 0) return
-
-		const filtersByQuery = {} as AdhocFilters
-
-		function addFilterToQuery(query_name: string, filter: FilterArgs) {
-			if (!filtersByQuery[query_name]) {
-				filtersByQuery[query_name] = filter_group({
-					logical_operator: 'And',
-					filters: [],
-				})
-			}
-			filtersByQuery[query_name].filters.push(filter)
-		}
-
-		filtersApplied.forEach((item) => {
-			const filterItem = item as WorkbookDashboardFilter
-			const linkedColumn = getColumnFromFilterLink(filterItem.links[chart_name])
-			if (!linkedColumn) return
-
-			const filterState = filterStates.value[filterItem.filter_name] || {}
-
-			const filter = {
-				column: column(linkedColumn.column),
-				operator: filterState.operator,
-				value: filterState.value,
-			}
-
-			if (isFilterValid(filter, filterItem.filter_type)) {
-				addFilterToQuery(linkedColumn.query, filter)
-			}
-		})
-		return filtersByQuery
 	}
 
 	function updateFilterState(filter_name: string, operator?: FilterOperator, value?: FilterValue) {
@@ -296,30 +277,14 @@ function makeDashboard(name: string) {
 		filteredCharts.forEach((chart_name) => refreshChart(chart_name))
 	}
 
-	function getColumnFromFilterLink(linkedColumn: string) {
-		const sep = '`'
-		// `query`.`column`
-		const pattern = new RegExp(`^${sep}([^${sep}]+)${sep}\\.${sep}([^${sep}]+)${sep}$`)
-		const match = linkedColumn.match(pattern)
-		if (!match || match.length < 3) return null
-
-		return {
-			query: match[1],
-			column: match[2],
-		}
-	}
-
-	function getDistinctColumnValues(
-		query: string,
-		column: string,
-		search_term?: string,
-		adhocFilters?: Record<string, FilterGroup>
-	) {
+	// The filter names itself and the server finds the column behind it. What the
+	// rest of the grid holds goes along unrouted, so the list narrows to what the
+	// other filters leave — the server leaves this filter out of its own list.
+	function getDistinctColumnValues(filter_name: string, search_term?: string, chart_name?: string) {
 		return dashboard.call('get_distinct_column_values', {
-			query: query,
-			column_name: column,
+			filter_name,
 			search_term,
-			adhoc_filters: adhocFilters,
+			filter_context: chart_name ? filterContextFor(chart_name) : undefined,
 		})
 	}
 
@@ -332,7 +297,6 @@ function makeDashboard(name: string) {
 	}
 
 	function updateAccess(data: {
-		is_public: boolean
 		is_shared_with_organization: boolean
 		people_with_access: string[]
 	}) {
@@ -347,19 +311,13 @@ function makeDashboard(name: string) {
 	// nothing between visits: a default is set to be looked at, and an author who
 	// had to clear last session's leftovers to see it would never trust what the
 	// grid shows. Remembering belongs to the reader, and `filter_storage` keeps it.
+	//
+	// The page's own `filters` are seeded from the same call in `authoring.ts`, but
+	// seeding them is not enough: the cards a builder draws read this store and
+	// ignore the prop, so a default the two disagreed on would apply on the read
+	// surface and not here.
 	waitUntil(() => dashboard.isloaded).then(() => {
-		const defaultFilters = dashboard.doc.items.reduce((acc, item) => {
-			if (item.type != 'filter') return acc
-			const filterItem = item as WorkbookDashboardFilter
-			if (filterItem.default_operator && filterItem.default_value) {
-				acc[filterItem.filter_name] = {
-					operator: filterItem.default_operator,
-					value: filterItem.default_value,
-				}
-			}
-			return acc
-		}, {} as typeof filterStates.value)
-		Object.assign(filterStates.value, defaultFilters)
+		Object.assign(filterStates.value, defaultFilters(dashboard.doc.items as ViewerDashboardItem[]))
 	})
 
 	return reactive({
@@ -380,11 +338,8 @@ function makeDashboard(name: string) {
 
 		refreshChart,
 
-		getAdhocFilters,
-
 		updateFilterState,
 		applyFilter,
-		getColumnFromFilterLink,
 
 		getDistinctColumnValues,
 		updateAccess,
@@ -402,7 +357,6 @@ const INITIAL_DOC: InsightsDashboardv3 = {
 	title: '',
 	workbook: '',
 	items: [],
-	is_public: false,
 	visibility: 'Private',
 	visible_to_roles: [],
 	is_shared_with_organization: false,

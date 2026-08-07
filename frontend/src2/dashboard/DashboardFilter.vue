@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, inject, reactive, watchEffect, watch } from 'vue'
+import { inject, reactive, watchEffect, watch } from 'vue'
 import { copy, wheneverChanges } from '../helpers'
-import { FilterOperator } from '../types/query.types'
 import { WorkbookDashboardFilter } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
 import DashboardFilterEditor from './DashboardFilterEditor.vue'
 import FilterControl from './FilterControl.vue'
+import { defaultFilterState } from './viewer'
 
 const dashboard = inject<Dashboard>('dashboard')!
 const props = defineProps<{ item: WorkbookDashboardFilter }>()
@@ -16,27 +16,13 @@ if (!filter.links) {
 	filter.links = {}
 }
 
-const sourceColumn = computed(() => {
-	const firstChart = Object.keys(filter.links)[0]
-	if (!firstChart) return
-	const linkedColumn = filter.links[firstChart]
-	return dashboard.getColumnFromFilterLink(linkedColumn)
-})
-
+// The filter names itself. Which column it reads is the server's to look up —
+// the link that says so is the one thing a reader is never handed, so there is
+// one lookup rather than one per surface.
 function stringValuesProvider(search: string) {
-	if (!sourceColumn.value) return Promise.resolve([])
-
 	const firstLinkedChart = Object.keys(filter.links)?.[0]
-	const adhocFilters = firstLinkedChart
-		? dashboard.getAdhocFilters(firstLinkedChart, filter.filter_name)
-		: undefined
-
-	return dashboard.getDistinctColumnValues(
-		sourceColumn.value.query,
-		sourceColumn.value.column,
-		search,
-		adhocFilters,
-	)
+	if (!firstLinkedChart) return Promise.resolve([])
+	return dashboard.getDistinctColumnValues(filter.filter_name, search, firstLinkedChart)
 }
 
 const filterState = reactive(copy(dashboard.filterStates[filter.filter_name] || {}))
@@ -44,11 +30,11 @@ const filterState = reactive(copy(dashboard.filterStates[filter.filter_name] || 
 // no `immediate` — on mount, filterState must keep the restored state from dashboard.filterStates
 watch(
 	() => [filter.default_operator, filter.default_value],
-	([op, val]) => {
-		if (op != null && val != null) {
-			filterState.operator = op as FilterOperator
-			filterState.value = val
-		}
+	() => {
+		const state = defaultFilterState(filter)
+		if (!state) return
+		filterState.operator = state.operator
+		filterState.value = state.value
 	},
 	{ deep: true },
 )

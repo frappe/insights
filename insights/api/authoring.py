@@ -27,6 +27,7 @@ from insights.insights.doctype.insights_chart_v3.chart_query import (
     column_granularity,
     config_errors,
 )
+from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import route_filters
 from insights.permissions import check_app_permission
 
 CHART = "Insights Chart v3"
@@ -39,7 +40,9 @@ def get_chart_data(
     chart_type: str,
     query: str,
     config: dict | None = None,
-    adhoc_filters: dict | None = None,
+    chart_name: str | None = None,
+    dashboard_items: list | None = None,
+    filters: dict | None = None,
     page: int = 1,
     page_size: int | None = None,
     force: bool = False,
@@ -50,11 +53,23 @@ def get_chart_data(
     config errors come back in the response so the card can say what is missing
     and keep the last picture on screen. A saved chart throws instead — nobody
     is editing it, so an unfilled slot there is a chart that cannot be drawn.
+
+    A card on the builder's dashboard grid also sends `dashboard_items`, the
+    filter `filters` state and the `chart_name` those items link by. Routing
+    them is `route_filters`' job, the same one `insights.api.viewer` calls — the
+    builder is editing items it has not saved, and that is the only reason it
+    sends them rather than naming a dashboard. It does not widen this door: what
+    comes back are filters keyed by the queries the links name, and a query the
+    chart does not read matches nothing in its graph. The endpoint used to take
+    the routed dict straight from the client, so the client now says strictly
+    less than it did.
     """
     if not check_app_permission():
         frappe.throw(_("You do not have permission to access this resource"), frappe.PermissionError)
 
     frappe.has_permission(QUERY, ptype="read", doc=query, throw=True)
+
+    adhoc_filters = route_filters(dashboard_items, chart_name, filters) if chart_name else None
 
     errors = config_errors(chart_type, query, config)
     if errors:
@@ -91,4 +106,8 @@ def get_chart_data(
         # a drill-down forks the operations above, and has to run against the
         # same connection the chart did
         "use_live_connection": bool(chart_query.use_live_connection),
+        # what the grid's filters routed to, so a drill-down narrows to the same
+        # rows the card was showing. The author may already read the SQL these
+        # ran as, so this says nothing new to them
+        "adhoc_filters": adhoc_filters,
     }

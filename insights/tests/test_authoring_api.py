@@ -196,6 +196,58 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
         self.assertEqual(result["granularity"], {"creation": "month"})
 
+    # dashboard filters, routed by the same function the viewer door uses
+
+    def grid_items(self, chart: str, query: str, column: str = "description"):
+        """A grid holding one chart card and one filter linked to it."""
+        return [
+            {"type": "chart", "chart": chart, "layout": {"i": "1", "x": 0, "y": 0, "w": 10, "h": 8}},
+            {
+                "type": "filter",
+                "filter_name": "Description",
+                "filter_type": "String",
+                "links": {chart: f"`{query}`.`{column}`"},
+                "layout": {"i": "2", "x": 0, "y": 0, "w": 4, "h": 1},
+            },
+        ]
+
+    def test_the_grids_filters_reach_the_preview(self):
+        query, chart = self.make_content()
+
+        result = self.preview(
+            AUTHOR,
+            chart_type="Table",
+            query=query.name,
+            config=table_config(),
+            chart_name=chart.name,
+            dashboard_items=self.grid_items(chart.name, query.name),
+            filters={"Description": {"operator": "contains", "value": "author 1"}},
+            force=True,
+        )
+
+        # the builder sends the grid it is editing and nothing else: which query
+        # the filter lands on is read off the links here, as it is for a reader
+        self.assertEqual(self.descriptions(result), [AUTHOR_TODOS[0]])
+
+    def test_a_filter_linked_to_another_card_leaves_this_one_alone(self):
+        query, chart = self.make_content()
+        items = self.grid_items(chart.name, query.name)
+        items[1]["links"] = {"some-other-chart": f"`{query.name}`.`description`"}
+
+        result = self.preview(
+            AUTHOR,
+            chart_type="Table",
+            query=query.name,
+            config=table_config(),
+            chart_name=chart.name,
+            dashboard_items=items,
+            filters={"Description": {"operator": "contains", "value": "author 1"}},
+            force=True,
+        )
+
+        # a link that names a card this preview is not drawing routes nowhere
+        self.assertEqual(self.descriptions(result), sorted(AUTHOR_TODOS))
+
     # the gate
 
     def test_a_reader_without_an_authoring_seat_is_refused(self):
