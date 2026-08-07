@@ -162,7 +162,13 @@ doc_events = {
     "User": {
         "on_change": "insights.insights.doctype.insights_team.insights_team.update_admin_team",
     },
-    # standard (bundle-shipped) content is read-only outside developer mode
+    # standard (bundle-shipped) content is read-only outside developer mode.
+    # The workbook takes the guards but not `write_back`: its file is the
+    # manifest, which the export machinery does not write item-wise.
+    "Insights Workbook": {
+        "validate": "insights.bundles.block_standard_edits",
+        "on_trash": "insights.bundles.block_standard_deletes",
+    },
     "Insights Query v3": {
         "validate": "insights.bundles.block_standard_edits",
         "on_update": "insights.bundle_export.write_back",

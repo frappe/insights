@@ -27,13 +27,11 @@ finds nothing changed writes nothing, not even a `modified` timestamp. Documents
 a site's users made are never touched — only `is_standard` documents are, and a
 duplicate of shipped content is an ordinary user document.
 
-The v3 builder is workbook-centric, so shipped documents need a workbook to
-live in. `workbook.json` titles it and the folder identifies it, but the
-workbook is still built site-side rather than reconciled from the file like
-every other document here: sync keeps one Administrator-owned workbook per
-bundle, carrying the bundle key as its `logical_id` — the same identity the
-content doctypes carry (see `_container_workbook`). Making it the fourth
-reconciled doctype is the next step of the reshape, not this one.
+The workbook is the fourth reconciled doctype, not site-side scaffolding: the
+folder is a workbook, `workbook.json` is its file, and the folder name is its
+`logical_id`. It reconciles like everything else — created, retitled and
+deleted from the same declarative pass — so it comes first in `SYNC_ORDER`,
+because its items land inside it, and last in deletion, when it is empty.
 """
 
 import json
@@ -49,6 +47,7 @@ from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import cint
 from frappe.website.utils import cleanup_page_name
 
+WORKBOOK = "Insights Workbook"
 QUERY = "Insights Query v3"
 CHART = "Insights Chart v3"
 DASHBOARD = "Insights Dashboard v3"
@@ -66,13 +65,17 @@ MANIFEST = "workbook.json"
 # does not know, and refuses a bundle written for a later major
 FORMAT_VERSION = 1
 
-# item folder -> doctype, in dependency order. Creation follows this order and
-# deletion reverses it, so a reference never dangles mid-sync.
+# item folder -> doctype. One subfolder of a shipped workbook per doctype.
 ITEM_TYPES = {
     "query": QUERY,
     "chart": CHART,
     "dashboard": DASHBOARD,
 }
+
+# every doctype sync reconciles, in creation order: the workbook first, because
+# everything else lands inside it, then the file-backed items in dependency
+# order. Deletion reverses this, so the workbook goes last and always empty.
+SYNC_ORDER = (WORKBOOK, *ITEM_TYPES.values())
 
 # the fields a bundle carries per doctype. Everything else on the document is
 # either site-side (workbook, folder, preview_image), derived by a controller
@@ -81,6 +84,9 @@ ITEM_TYPES = {
 # The audience declaration ships with the content — it is the vendor's, and a
 # site that wants a different one duplicates.
 CARRIED_FIELDS = {
+    # the manifest's only shipped key; `required_apps` and `format_version` ride
+    # in the same file but are shipping metadata and never land on the document
+    WORKBOOK: ("title",),
     QUERY: (
         "title",
         "operations",
@@ -154,6 +160,23 @@ class Bundle:
     @property
     def key(self) -> str:
         return f"{self.app}/{self.folder}"
+
+    def as_item(self) -> BundleItem:
+        """The workbook this folder ships, as an item like any other.
+
+        Its logical name is the folder name, so its logical id is the folder's
+        key and identity is visible in the app's repo layout. That puts it in
+        the same flat per-app namespace as the content, which is what makes a
+        folder and a chart of the same name a clash worth failing on: one
+        Standard ID names one document.
+        """
+        return BundleItem(
+            app=self.app,
+            bundle=self.folder,
+            doctype=WORKBOOK,
+            name=self.folder,
+            data={"title": self.title},
+        )
 
 
 @dataclass
@@ -381,19 +404,25 @@ def _reconcile_app(app: str, report: SyncReport) -> None:
             else:
                 stale.append((doctype, name, logical_id))
 
-    containers = {b.key: _container_workbook(b) for b in live_bundles if b.items}
-
     # names of items already on the site, so a reference to an item created
     # later in this run still resolves once its turn comes
     name_map = {logical_id.split("/", 1)[1]: name for logical_id, name in resolved.items()}
 
+    # filled by the workbooks as they are written; they come first in the order,
+    # so every item that follows finds the container it belongs to
+    containers: dict[str, str] = {}
+
     for item in _in_dependency_order(desired.values()):
         docname = resolved.get(item.logical_id)
-        values = _values_for(item, name_map, containers[f"{item.app}/{item.bundle}"], docname, report)
-        name_map[item.name] = _apply(item, docname, values, report)
+        is_workbook = item.doctype == WORKBOOK
+        container = None if is_workbook else containers[f"{item.app}/{item.bundle}"]
+        applied = _apply(item, docname, _values_for(item, name_map, container, docname, report), report)
+        if is_workbook:
+            containers[item.logical_id] = applied
+        else:
+            name_map[item.name] = applied
 
     _delete_documents(stale, report)
-    _cleanup_containers(app, {b.key for b in live_bundles if b.items})
 
 
 def _has_required_apps(bundle: Bundle) -> bool:
@@ -409,20 +438,25 @@ def _desired_items(app: str, bundles: list[Bundle]) -> dict[str, BundleItem]:
     claim one, and neither can a chart and a query."""
     desired: dict[str, BundleItem] = {}
     for bundle in bundles:
-        for item in bundle.items:
+        for item in (bundle.as_item(), *bundle.items):
             clash = desired.get(item.logical_id)
             if clash:
-                raise BundleError(
-                    f"{item.logical_id} is shipped twice: "
-                    f"{clash.bundle}/{_folder_of(clash.doctype)} and "
-                    f"{item.bundle}/{_folder_of(item.doctype)}"
-                )
+                shipped_in = f"{_location_of(clash)} and {_location_of(item)}"
+                raise BundleError(f"{item.logical_id} is shipped twice: {shipped_in}")
             desired[item.logical_id] = item
     return desired
 
 
 def _folder_of(doctype: str) -> str:
     return next(folder for folder, dt in ITEM_TYPES.items() if dt == doctype)
+
+
+def _location_of(item: BundleItem) -> str:
+    """Where an item's file sits, for an error a developer has to go and fix.
+    A workbook's file is the manifest, not a file in a doctype subfolder."""
+    if item.doctype == WORKBOOK:
+        return f"{item.bundle}/{MANIFEST}"
+    return f"{item.bundle}/{_folder_of(item.doctype)}"
 
 
 def _standard_documents(app: str) -> dict[str, list[tuple[str, str]]]:
@@ -432,7 +466,7 @@ def _standard_documents(app: str) -> dict[str, list[tuple[str, str]]]:
     copied from, and must never be mistaken for the shipped original.
     """
     found: dict[str, list[tuple[str, str]]] = {}
-    for doctype in ITEM_TYPES.values():
+    for doctype in SYNC_ORDER:
         rows = frappe.get_all(
             doctype,
             filters={"is_standard": 1, "logical_id": ("is", "set")},
@@ -447,17 +481,18 @@ def _standard_documents(app: str) -> dict[str, list[tuple[str, str]]]:
 
 
 def _in_dependency_order(items) -> list[BundleItem]:
-    """Queries, then charts, then dashboards — and queries among themselves in
-    reference order, so a query that reads another one is written after it. Then
-    every reference can be resolved to a docname as it is written, and no item
-    needs a second pass."""
-    by_type = {folder: [] for folder in ITEM_TYPES}
+    """The workbook, then queries, then charts, then dashboards — and queries
+    among themselves in reference order, so a query that reads another one is
+    written after it. Then every reference can be resolved to a docname as it is
+    written, and no item needs a second pass."""
+    by_type: dict[str, list[BundleItem]] = {doctype: [] for doctype in SYNC_ORDER}
     for item in items:
-        by_type[_folder_of(item.doctype)].append(item)
+        by_type[item.doctype].append(item)
 
-    ordered = _sort_queries(sorted(by_type["query"], key=lambda i: i.name))
-    ordered += sorted(by_type["chart"], key=lambda i: i.name)
-    ordered += sorted(by_type["dashboard"], key=lambda i: i.name)
+    ordered = sorted(by_type[WORKBOOK], key=lambda i: i.name)
+    ordered += _sort_queries(sorted(by_type[QUERY], key=lambda i: i.name))
+    ordered += sorted(by_type[CHART], key=lambda i: i.name)
+    ordered += sorted(by_type[DASHBOARD], key=lambda i: i.name)
     return ordered
 
 
@@ -533,7 +568,7 @@ def _apply(item: BundleItem, docname: str | None, values: dict, report: SyncRepo
 def _values_for(
     item: BundleItem,
     name_map: dict[str, str],
-    workbook: str,
+    workbook: str | None,
     docname: str | None,
     report: SyncReport,
 ) -> dict:
@@ -541,14 +576,16 @@ def _values_for(
 
     Identity (`logical_id`, `is_standard`) and the container (`workbook`) are
     part of the wanted values, not set once at creation, so an item that moves
-    between bundles moves its document with it.
+    between bundles moves its document with it. A workbook is its own
+    container and gets no `workbook` of its own.
     """
     data = item.data
     values = {
         "logical_id": item.logical_id,
         "is_standard": 1,
-        "workbook": workbook,
     }
+    if workbook is not None:
+        values["workbook"] = workbook
 
     for fieldname in CARRIED_FIELDS[item.doctype]:
         if fieldname not in data:
@@ -697,8 +734,10 @@ def _slug_for(item: BundleItem, docname: str | None, report: SyncReport) -> str:
 
 def _delete_documents(rows: list[tuple[str, str, str]], report: SyncReport) -> None:
     """Delete standard documents, dashboards first, so nothing is deleted while
-    something still points at it."""
-    order = list(ITEM_TYPES.values())[::-1]
+    something still points at it. The workbook goes last, and is empty when it
+    does: a standard workbook holds only standard items, so everything it held
+    was in this same list."""
+    order = list(SYNC_ORDER)[::-1]
     for doctype, name, logical_id in sorted(rows, key=lambda row: order.index(row[0])):
         if frappe.db.exists(doctype, name):
             doc = frappe.get_doc(doctype, name)
@@ -720,51 +759,30 @@ def before_app_uninstall(app_name: str) -> SyncReport:
             for doctype, name in found
         ]
         _delete_documents(rows, report)
-        _cleanup_containers(app_name, keep=set())
     return report
 
 
-# -------------------------------------------------- the container workbook
-
-
-def _container_workbook(bundle: Bundle) -> str:
-    """The workbook a bundle's documents live in: one per bundle, owned by
-    Administrator, titled from `workbook.json`, created here rather than
-    reconciled from the file.
-
-    Which workbook belongs to which bundle is site state, and it is kept where
-    the three content doctypes keep theirs: a `logical_id` on the document, the
-    bundle key. Sync writes the container and its identity in one transaction,
-    so a run that is rolled back leaves neither.
-    """
-    name = frappe.db.get_value(
-        "Insights Workbook", {"logical_id": bundle.key}, "name", order_by="creation asc"
-    )
-    if name:
-        if frappe.db.get_value("Insights Workbook", name, "title") != bundle.title:
-            frappe.db.set_value("Insights Workbook", name, "title", bundle.title, update_modified=False)
-        return name
-
-    workbook = frappe.new_doc("Insights Workbook")
-    workbook.title = bundle.title
-    workbook.logical_id = bundle.key
-    workbook.insert(ignore_permissions=True)
-    frappe.db.set_value("Insights Workbook", workbook.name, "owner", "Administrator", update_modified=False)
-    return workbook.name
+# ------------------------------------------------------------ the gallery
 
 
 def standard_content() -> list[dict]:
-    """The shipped bundles on this site, as a gallery shows them.
+    """The shipped workbooks on this site, as a gallery shows them.
 
-    One entry per container workbook — a bundle is what an app ships and a
-    container is what it landed as, so the container is the unit a site sees and
-    duplicates. Only dashboards are listed: they are what a bundle is browsed
-    by, and the charts and queries under them are reached through them.
+    One entry per shipped workbook — it is the unit an app ships and the unit a
+    site duplicates. Only dashboards are listed under it: they are what a
+    workbook is browsed by, and the charts and queries beneath them are reached
+    through them.
 
     Read through `frappe.get_list` — the permission-checking one — so the
-    visibility ladder decides what is in the list. A bundle whose dashboards do
-    not admit this user is not in it at all.
+    visibility ladder decides what is in the list. A workbook whose dashboards
+    do not admit this user is not in it at all.
     """
+    workbooks = frappe.get_all(
+        WORKBOOK,
+        filters={"is_standard": 1, "logical_id": ("is", "set")},
+        fields=["name", "title", "logical_id"],
+        order_by="creation asc",
+    )
     dashboards = frappe.get_list(
         DASHBOARD,
         filters={"is_standard": 1, "logical_id": ("is", "set")},
@@ -772,20 +790,9 @@ def standard_content() -> list[dict]:
         order_by="creation asc",
     )
 
-    bundles: dict[str, dict] = {}
+    by_workbook: dict[str, list[dict]] = {}
     for dashboard in dashboards:
-        app = dashboard.logical_id.split("/", 1)[0]
-        bundle = bundles.setdefault(
-            str(dashboard.workbook),
-            {
-                "workbook": dashboard.workbook,
-                "title": frappe.db.get_value("Insights Workbook", dashboard.workbook, "title"),
-                "app": app,
-                "app_title": _app_title(app),
-                "dashboards": [],
-            },
-        )
-        bundle["dashboards"].append(
+        by_workbook.setdefault(str(dashboard.workbook), []).append(
             {
                 "name": dashboard.name,
                 "title": dashboard.title,
@@ -794,7 +801,25 @@ def standard_content() -> list[dict]:
             }
         )
 
-    return sorted(bundles.values(), key=lambda bundle: (bundle["app_title"], bundle["title"] or ""))
+    listed = []
+    for workbook in workbooks:
+        shown = by_workbook.get(str(workbook.name))
+        if not shown:
+            # every dashboard in it is hidden from this user, so the workbook is
+            # too — an empty card would say the content exists
+            continue
+        app = workbook.logical_id.split("/", 1)[0]
+        listed.append(
+            {
+                "workbook": workbook.name,
+                "title": workbook.title,
+                "app": app,
+                "app_title": _app_title(app),
+                "dashboards": shown,
+            }
+        )
+
+    return sorted(listed, key=lambda entry: (entry["app_title"], entry["title"] or ""))
 
 
 def _app_title(app: str) -> str:
@@ -805,42 +830,6 @@ def _app_title(app: str) -> str:
         return (frappe.get_hooks("app_title", app_name=app) or [app])[0]
     except Exception:
         return app
-
-
-def _cleanup_containers(app: str, keep: set[str]) -> None:
-    """Drop the containers of bundles the app no longer ships. An empty one is
-    deleted outright; one a site put its own work into is left alone and merely
-    forgotten, so nothing of the site's is destroyed by a bundle going away."""
-    for bundle_key, workbook in _containers_of(app).items():
-        if bundle_key in keep:
-            continue
-        if _is_empty(workbook):
-            frappe.delete_doc("Insights Workbook", workbook, force=True, ignore_permissions=True)
-        else:
-            # left with the site's own work in it, and no longer a container
-            frappe.db.set_value("Insights Workbook", workbook, "logical_id", None, update_modified=False)
-
-
-def _containers_of(app: str) -> dict[str, str]:
-    rows = frappe.get_all(
-        "Insights Workbook",
-        filters={"logical_id": ("like", f"{app}/%")},
-        fields=["name", "logical_id"],
-        order_by="creation asc",
-    )
-    containers: dict[str, str] = {}
-    for row in rows:
-        # oldest wins, the same one `_container_workbook` resolves to
-        if row.logical_id.split("/", 1)[0] == app:
-            containers.setdefault(row.logical_id, row.name)
-    return containers
-
-
-def _is_empty(workbook: str) -> bool:
-    return not any(
-        frappe.db.exists(doctype, {"workbook": workbook})
-        for doctype in (*ITEM_TYPES.values(), "Insights Folder")
-    )
 
 
 # ------------------------------------------------- standard-doc protection

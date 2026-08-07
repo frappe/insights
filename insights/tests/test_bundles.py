@@ -193,6 +193,7 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
 
     def doctype_of(self, name):
         return {
+            BUNDLE: DT.WORKBOOK,
             BASE_QUERY: DT.QUERY,
             SOURCE_QUERY: DT.QUERY,
             CHART: DT.CHART,
@@ -215,7 +216,9 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
         return {name: self.doc(name).modified for name in names}
 
     def all_shipped_ids(self):
-        return sorted(self.logical_id(name) for name in SHIPPED)
+        # the workbook is shipped too, and its logical name is the folder — so a
+        # report that leaves it out is a reconcile that missed it
+        return sorted(self.logical_id(name) for name in (BUNDLE, *SHIPPED))
 
     def mine(self, logical_ids):
         """The fixture's ids out of a report. Insights ships real bundles of its
@@ -226,7 +229,7 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
 
     # --------------------------------------------------------------- tests
 
-    def test_sync_creates_standard_documents_in_a_container_workbook(self):
+    def test_sync_creates_standard_documents_in_a_shipped_workbook(self):
         report = self.sync()
 
         self.assertEqual(self.mine(report.created), self.all_shipped_ids())
@@ -240,20 +243,17 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
             self.assertEqual(doc.owner, "Administrator")
             workbooks.add(str(doc.workbook))
 
-        # one container per bundle, titled from workbook.json and site-owned
+        # the workbook is shipped content like everything in it: one per folder,
+        # titled from workbook.json, flagged standard and owned by the site
         self.assertEqual(len(workbooks), 1)
-        container = workbooks.pop()
-        self.assertEqual(frappe.db.get_value(DT.WORKBOOK, container, "title"), BUNDLE_TITLE)
-        self.assertEqual(frappe.db.get_value(DT.WORKBOOK, container, "owner"), "Administrator")
+        container = self.doc(BUNDLE)
+        self.assertEqual(str(container.name), workbooks.pop())
+        self.assertEqual(container.title, BUNDLE_TITLE)
+        self.assertEqual(container.owner, "Administrator")
+        self.assertEqual(container.is_standard, 1)
 
-        # which workbook holds the bundle is on the workbook, in the same
-        # transaction as the workbook itself — a later run has to find this one
-        # and not make a second, so it is read back the way sync reads it
-        self.assertEqual(frappe.db.get_value(DT.WORKBOOK, container, "logical_id"), f"{APP}/{BUNDLE}")
-        self.assertEqual(
-            str(frappe.db.get_value(DT.WORKBOOK, {"logical_id": f"{APP}/{BUNDLE}"}, "name")),
-            container,
-        )
+        # its logical name is the folder, so identity is the repo layout
+        self.assertEqual(container.logical_id, f"{APP}/{BUNDLE}")
 
         # the shipped dashboard's external key is its logical name
         self.assertEqual(self.doc(DASHBOARD).slug, DASHBOARD)
@@ -264,6 +264,37 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
         self.assertEqual([row.role for row in chart.visible_to_roles], ["Insights User"])
         self.assertEqual(chart.data_authority, "Author")
         self.assertEqual(self.doc(DASHBOARD).visibility, "Everyone")
+
+    def test_a_retitled_manifest_retitles_the_workbook(self):
+        self.sync()
+        before = self.doc(BUNDLE).name
+
+        write_bundle(BUNDLE, self.files, title="Bundle Sync Test Renamed")
+        report = self.sync()
+
+        after = self.doc(BUNDLE)
+        # retitled in place: the folder is the identity, so the title is just a
+        # field that changed, and nothing inside the workbook moves
+        self.assertEqual(str(after.name), str(before))
+        self.assertEqual(after.title, "Bundle Sync Test Renamed")
+        self.assertEqual(self.mine(report.updated), [f"{APP}/{BUNDLE}"])
+        self.assertEqual(self.mine(report.created), [])
+
+    def test_a_removed_folder_deletes_the_workbook_and_its_contents(self):
+        self.sync()
+        container = str(self.doc(BUNDLE).name)
+
+        shutil.rmtree(os.path.join(bundle_root(), BUNDLE), ignore_errors=True)
+        report = self.sync()
+
+        self.assertEqual(self.mine(report.deleted), self.all_shipped_ids())
+        self.assertFalse(frappe.db.exists(DT.WORKBOOK, container))
+        for name in SHIPPED:
+            self.assertIsNone(self.docname(name), f"{name} outlived its workbook")
+
+        # deletion reverses the creation order, so the workbook goes last — by
+        # then it is empty, which is why it can go at all
+        self.assertEqual(report.deleted[-1], f"{APP}/{BUNDLE}")
 
     def test_discovery_reads_apps_off_disk(self):
         bundles = {b.key: b for b in discover_bundles(APP)}
@@ -346,7 +377,8 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
         report = self.sync()
 
         self.assertEqual(report.updated, [self.logical_id(SOURCE_QUERY)])
-        self.assertEqual(len(self.mine(report.unchanged)), 3)
+        # the other three items and the workbook they live in
+        self.assertEqual(len(self.mine(report.unchanged)), 4)
         self.assertEqual(self.doc(SOURCE_QUERY).title, "Bundle Sync Sales (revised)")
         self.assertNotEqual(self.doc(SOURCE_QUERY).modified, before[SOURCE_QUERY])
         self.assertEqual(self.doc(CHART).modified, before[CHART])

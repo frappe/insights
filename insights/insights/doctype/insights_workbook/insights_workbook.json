@@ -8,7 +8,8 @@
   "title",
   "data_backup",
   "from_template",
-  "logical_id"
+  "logical_id",
+  "is_standard"
  ],
  "fields": [
   {
@@ -40,6 +41,13 @@
    "label": "Logical ID",
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_standard",
+   "fieldtype": "Check",
+   "label": "Is Standard",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
