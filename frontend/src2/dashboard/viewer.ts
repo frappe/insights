@@ -59,15 +59,25 @@ export type ViewerFilters = Record<string, { operator: FilterOperator; value: Fi
 
 export type ViewerFilterState = ViewerFilters[string]
 
+/**
+ * The state one filter's own defaults describe, or nothing where they describe
+ * none. `isFilterApplied` is what decides — an author who defaulted a filter to
+ * `is set` set a default, and there is no value to go with it.
+ */
+export function defaultFilterState(item: ViewerDashboardItem): ViewerFilterState | undefined {
+	const operator = item.default_operator
+	const value = item.default_value
+	if (!isFilterApplied(item.filter_type!, operator, value)) return
+	return { operator: operator!, value: value! }
+}
+
 /** The state a dashboard's own filter defaults describe. */
 export function defaultFilters(items: ViewerDashboardItem[]): ViewerFilters {
 	const defaults: ViewerFilters = {}
 	items.forEach((item) => {
 		if (item.type !== 'filter') return
-		const operator = item.default_operator
-		const value = item.default_value
-		if (!isFilterApplied(item.filter_type!, operator, value)) return
-		defaults[item.filter_name!] = { operator: operator!, value: value! }
+		const state = defaultFilterState(item)
+		if (state) defaults[item.filter_name!] = state
 	})
 	return defaults
 }
