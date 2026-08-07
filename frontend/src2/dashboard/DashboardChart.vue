@@ -70,7 +70,12 @@ wheneverChanges(
 <template>
 	<ChartRenderer v-if="preview" :chart="preview" />
 
-	<div v-else class="flex h-full flex-1 flex-col items-center justify-center rounded border">
+	<!-- not one of the card's states: a grid item that names no chart has no store
+	     to be loading, failed or empty. It is the layout that is wrong, not a read. -->
+	<div
+		v-else
+		class="flex h-full flex-1 flex-col items-center justify-center rounded border border-outline-gray-2"
+	>
 		<AlertTriangle class="h-8 w-8 text-ink-gray-4" stroke-width="1" />
 		<p class="text-p-base text-ink-gray-4">Chart not found</p>
 	</div>
