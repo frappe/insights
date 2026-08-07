@@ -42,11 +42,17 @@ second read path, so every read of Insights content is now decided here. The
 The rule the table is written for: a new grant source must earn a row here
 before it earns a join in this file.
 
-Three things the table does not say:
+Four things the table does not say:
 
 - Actions fold. `has_doc_permission` is asked for read, share or write, and
   anything that is neither read nor share is asked as write. The list seam asks
   for read and nothing else.
+- Two of the rows answer to a site setting. With `enable_permissions` off, data
+  sources and tables are open to every Insights user and no membership is read
+  at all, which empties the team resource grant and the team membership rows
+  both — a non-admin sees no team while the setting is off. With it on, a team
+  grant reaches the members of the granting team and nobody else, so a user who
+  belongs to no team draws nothing from either row.
 - A document that does not exist yet has nothing to enumerate, so the controller
   admits it. The one exception is a new query, chart or dashboard that names a
   workbook, where the workbook's grant decides.
@@ -74,16 +80,6 @@ PERMISSION_DOCTYPES = [
     "Insights Chart v3",
     "Insights Dashboard v3",
     "Insights Alert",
-]
-
-# if team permissions are not enabled,
-# then these doctypes are accessible to all insights users
-TEAM_BASED_PERMISSION_DOCTYPES = [
-    "Insights Data Source v3",
-    "Insights Table v3",
-    "Insights Team",
-    "Insights Dashboard v3",
-    "Insights Chart v3",
 ]
 
 # content that carries a visibility ladder (`visibility` + `visible_to_roles`)
@@ -117,6 +113,9 @@ def has_valid_preview_key():
 class InsightsPermissions:
     def __init__(self, user=None):
         self.user = user or frappe.session.user
+        # the teams whose grants this user carries. Empty when the user belongs
+        # to no team, and empty when team permissions are off site-wide: both
+        # mean the same thing to every reader below, which is no team grant.
         self.user_teams = []
         if self.team_permissions_enabled:
             self.user_teams = get_teams(self.user)
@@ -145,6 +144,8 @@ class InsightsPermissions:
             return ""
 
         if doctype == "Insights Team":
+            # membership is the whole grant here, so a user with no teams sees
+            # no team — the same answer `has_doc_permission` gives below
             if not self.user_teams:
                 return "(`tabInsights Team`.name is NULL)"
 
@@ -529,15 +530,24 @@ class InsightsPermissions:
         )
 
     def _build_resource_query(self, doctype):
+        """Returns the resources of this doctype that this user's teams hold.
+
+        A team grant is a team's to give, so it reaches the members of the
+        granting team and nobody else. No teams therefore names nothing here,
+        whether the user belongs to no team or team permissions are off.
+        """
         Resource = frappe.qb.DocType("Insights Resource Permission")
+        query = frappe.qb.from_(Resource).select(Resource.resource_name.as_("name"))
 
-        condition = (Resource.resource_type == doctype) & (Resource.resource_name.isnotnull())
         if not self.user_teams:
-            condition = condition & (Resource.parent.isnotnull())
-        else:
-            condition = condition & (Resource.parent.isin(self.user_teams))
+            # `IN ()` is not valid SQL, so the empty set is spelled out
+            return query.where(Resource.name.isnull())
 
-        return frappe.qb.from_(Resource).select(Resource.resource_name.as_("name")).where(condition)
+        return query.where(
+            (Resource.resource_type == doctype)
+            & (Resource.resource_name.isnotnull())
+            & (Resource.parent.isin(self.user_teams))
+        )
 
 
 def has_doc_permission(doc, ptype, user):
