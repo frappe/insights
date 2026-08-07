@@ -1,6 +1,59 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+"""Who may read or change Insights content, and on which grant.
+
+Frappe asks this module two questions. `get_permission_query_conditions` names
+the documents a list may show. `has_doc_permission` answers for one document.
+Both run through `InsightsPermissions`, so a grant one seam honors the other
+honors too.
+
+The branching below is three eras layered — teams, then workbook sharing, then
+the visibility ladder — but one rule holds under all of it: a grant is the union
+of enumerable sources, per doctype and per action.
+
+Two grants enumerate nothing. They answer for the whole controller and return,
+so they stand above the union as bypasses:
+
+    Bypass                           Applies to                  Actions
+    Admin (`is_admin`)               every permissioned doctype  all
+    Preview key (`has_preview_key`)  every permissioned doctype  read only
+
+The rest are sources. Each one names documents, and a doctype's grant is what
+its sources add up to:
+
+    Source                         Applies to                          Actions
+    Ownership                      everything                          all
+    DocShare                       workbook, dashboard, chart          per share flags
+    Container inheritance          workbook -> items,                  follows container
+                                   dashboard -> chart,
+                                   chart -> query, query -> alert
+    Team resource grant            source, table — and dashboard,      all
+                                   chart (legacy)
+    Team membership                team                                all
+    Audience ladder                dashboard, chart                    read only
+    Seat (`check_app_permission`)  the authoring SPA, not documents    —
+
+The table is exhaustive: a grant that is not in it does not exist. That closed
+only recently. `3c0d5edb` retired the `is_public` walk and `api/shared.py`, the
+second read path, so every read of Insights content is now decided here. The
+`is_public` column stays on the content doctypes, with nothing reading it.
+
+The rule the table is written for: a new grant source must earn a row here
+before it earns a join in this file.
+
+Three things the table does not say:
+
+- Actions fold. `has_doc_permission` is asked for read, share or write, and
+  anything that is neither read nor share is asked as write. The list seam asks
+  for read and nothing else.
+- A document that does not exist yet has nothing to enumerate, so the controller
+  admits it. The one exception is a new query, chart or dashboard that names a
+  workbook, where the workbook's grant decides.
+- Ownership is a source for every doctype on the document seam, but the list
+  seam builds no owner branch for data sources and tables. Teams alone say which
+  of those a list may show.
+"""
 
 from functools import cached_property
 
@@ -496,6 +549,14 @@ def get_permission_query_conditions(user, doctype):
 
 
 def check_app_permission():
+    """The authoring gate: may this person enter the builder?
+
+    It answers for the app, not for a document, and it is never consulted for
+    viewing. A dashboard's audience is the visibility ladder's business, and the
+    reading surfaces mount for people who hold no Insights role at all. Editing
+    is both questions at once — write rights on the document AND a seat — and
+    `can_edit` in `api/viewer.py` is the one place that conjunction is made.
+    """
     if frappe.session.user == "Administrator":
         return True
 
