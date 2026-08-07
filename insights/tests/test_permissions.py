@@ -120,6 +120,27 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         self.assert_readable(USER_1, DT.DASHBOARD, dashboard.name)
         self.assert_readable(USER_1, DT.CHART, chart.name)
 
+    def test_team_data_grant_does_not_reach_a_user_with_no_team(self):
+        """The same rule on the data objects, which is where it matters most.
+
+        `test_permission_on_team_based_doctype_with_team_permissions_enabled`
+        checks the same user, but it asks before any grant row exists and then
+        only re-checks the member. Asking after the grant is what catches a
+        resource query that reads an empty team list as "every team".
+        """
+        create_test_data_sources()
+        create_test_tables()
+        team = create_test_teams()
+        self.toggle_team_permissions(True)
+        self.grant_to_team(team, DT.DATA_SOURCE, TEST_DS)
+        self.grant_to_team(team, DT.TABLE, TEST_TABLE1)
+
+        self.assert_not_readable(USER_2, DT.DATA_SOURCE, TEST_DS)
+        self.assert_not_readable(USER_2, DT.TABLE, TEST_TABLE1)
+        # and the grant still works for the team it was made to
+        self.assert_readable(USER_1, DT.DATA_SOURCE, TEST_DS)
+        self.assert_readable(USER_1, DT.TABLE, TEST_TABLE1)
+
     def test_permissions_for_non_insights_user(self):
         # charts and dashboards carry doctype-level read for everyone: the
         # visibility ladder narrows access per document, so viewing needs no
