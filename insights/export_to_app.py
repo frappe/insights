@@ -57,9 +57,12 @@ from insights.standard_content import (
     NAME_PATTERN,
     QUERY,
     SHIPPED_DIR,
+    SYNC_ORDER,
+    WORKBOOK,
     StandardContentError,
     SyncReport,
     _folder_of,
+    _read_json,
     dashboard_closure,
     discover_shipped_workbooks,
     sync_app_content,
@@ -429,10 +432,15 @@ def write_back(doc, method=None) -> bool:
     Silent where there is nothing to write to — the document's app is not on
     this bench, or the file is gone. Export is what creates files; a save is
     not the moment to invent one.
+
+    Every reconciled doctype comes through here, the workbook included: it is
+    one document with one file, and a retitle sync would otherwise undo on the
+    next migrate. Where its file is and what it holds differ, and that is all
+    (`_standard_file`, `_file_content`).
     """
     if not frappe.conf.developer_mode:
         return False
-    if doc.doctype not in ITEM_TYPES.values():
+    if doc.doctype not in SYNC_ORDER:
         return False
     if not doc.get("is_standard") or not doc.get("standard_id"):
         return False
@@ -443,21 +451,48 @@ def write_back(doc, method=None) -> bool:
     app, _sep, name = doc.standard_id.partition("/")
     if not name or app not in frappe.get_installed_apps():
         return False
-    path = _existing_file(app, doc.doctype, name)
+    path = _standard_file(app, doc.doctype, name)
     if not path:
         return False
 
     try:
-        content = dumps(serialize(doc, _shipped_name))
+        content = _file_content(doc, path)
     except StandardContentError as e:
-        # a reference to content the app does not ship: the document is ahead of
-        # what the app carries, and half a file is worse than a stale one
+        # a reference to content the app does not ship, or a file this bench
+        # cannot read: the file and the document are out of step, and half a
+        # file is worse than a stale one
         message = _("{0} was not written back to {1}: {2}").format(doc.name, app, e)
         frappe.logger("insights").warning(message)
         frappe.msgprint(message, alert=True)
         return False
 
     return _write(path, content)
+
+
+def _standard_file(app: str, doctype: str, name: str) -> str | None:
+    """The file one standard document came from. A workbook's is the manifest
+    at the root of the folder its Standard ID names; an item's is a file in a
+    doctype subfolder, wherever in the app it currently sits."""
+    if doctype == WORKBOOK:
+        path = os.path.join(_workbook_path(app, name), MANIFEST)
+        return path if os.path.isfile(path) else None
+    return _existing_file(app, doctype, name)
+
+
+def _file_content(doc, path: str) -> str:
+    """A document, as the bytes of its file.
+
+    An item's file is the whole of what the format carries, so it is written
+    from the document alone. A manifest is not: `required_apps` and
+    `format_version` ride in it as shipping metadata and never land on the
+    document, so the file on disk is amended rather than rewritten. Canonical
+    serialization either way, so the keys a save does not touch come back
+    exactly as they were.
+    """
+    data = serialize(doc, _shipped_name)
+    if doc.doctype == WORKBOOK:
+        data = _read_json(path) | data
+    return dumps(data)
 
 
 def _shipped_name(doctype: str, docname: str) -> str:

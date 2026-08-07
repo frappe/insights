@@ -9,9 +9,9 @@ The invariant the whole file circles is that after an export the site's
 documents *are* the app's standard documents: a sync straight afterwards has
 nothing to do.
 
-`write_back` runs on `on_update`, which `hooks.py` must register (see the three
-entries in `write_back_hooked`). The tests install it on the live hook table so
-they exercise the real save path either way.
+`write_back` runs on `on_update`, which `hooks.py` must register for every
+reconciled doctype (see `write_back_hooked`). The tests install it on the live
+hook table so they exercise the real save path either way.
 """
 
 import json
@@ -25,7 +25,7 @@ from insights import export_to_app
 from insights.api.standard_content import get_export_targets
 from insights.export_to_app import export_dashboard, write_back
 from insights.resolver import resolve
-from insights.standard_content import CARRIED_FIELDS, ITEM_TYPES, MANIFEST, sync_app_content
+from insights.standard_content import CARRIED_FIELDS, MANIFEST, SYNC_ORDER, sync_app_content
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import DT
 from insights.tests.test_standard_content import developer_mode, shipped_root
@@ -59,7 +59,11 @@ def remove_fixtures():
 
 @contextmanager
 def write_back_hooked():
-    """The three `doc_events` entries `hooks.py` needs, on the live hook table.
+    """The `doc_events` entries `hooks.py` needs, on the live hook table.
+
+    One per reconciled doctype, the workbook included: its file is the folder's
+    manifest, and a retitle that never reached it would be reverted by the next
+    sync.
 
     Standard content is only editable on a developer bench, so this is the one
     place the round trip can be exercised end to end — through a real save,
@@ -68,7 +72,7 @@ def write_back_hooked():
     hooks = frappe.get_doc_hooks()
     handler = "insights.export_to_app.write_back"
     added = []
-    for doctype in ITEM_TYPES.values():
+    for doctype in SYNC_ORDER:
         handlers = hooks.setdefault(doctype, {}).setdefault("on_update", [])
         if handler not in handlers:
             handlers.append(handler)
@@ -203,6 +207,18 @@ class TestExportToApp(InsightsIntegrationTestCase):
 
     def on_disk(self):
         return {name: self.content(name) for name in FILES}
+
+    def manifest(self):
+        with open(self.path(MANIFEST)) as f:
+            return f.read()
+
+    def shipped_workbook(self):
+        # the workbook's logical name is the folder it ships from
+        docname = frappe.db.get_value(
+            DT.WORKBOOK, {"standard_id": self.standard_id(FOLDER), "is_standard": 1}, "name"
+        )
+        self.assertIsNotNone(docname, f"{self.standard_id(FOLDER)} was not exported")
+        return frappe.get_doc(DT.WORKBOOK, docname)
 
     def standard_id(self, name):
         return f"{APP}/{name}"
@@ -341,6 +357,32 @@ class TestExportToApp(InsightsIntegrationTestCase):
         expected = before | {"title": f"{DASHBOARD_TITLE} (revised)"}
         # the same serializer as export, so a builder save is a one-line diff
         self.assertEqual(self.content(DASHBOARD), export_to_app.dumps(expected))
+
+    def test_retitling_a_standard_workbook_writes_its_manifest_back(self):
+        self.export()
+        before = json.loads(self.manifest())
+        revised = "Export Test Workbook (revised)"
+
+        with write_back_hooked():
+            workbook = self.shipped_workbook()
+            workbook.title = revised
+            workbook.save()
+
+        # the title is the manifest's only shipped key; `required_apps` and
+        # `format_version` are shipping metadata that never reach the document,
+        # and a save must not be able to drop them
+        self.assertEqual(self.manifest(), export_to_app.dumps(before | {"title": revised}))
+        manifest = json.loads(self.manifest())
+        self.assertEqual(manifest["title"], revised)
+        self.assertEqual(manifest["required_apps"], before["required_apps"])
+        self.assertEqual(manifest["format_version"], before["format_version"])
+
+        # and the file now says what the document says, so the next migrate has
+        # nothing to reconcile — the rename survives it
+        report = sync_app_content(APP)
+        self.assertIn(self.standard_id(FOLDER), report.unchanged)
+        self.assertFalse(report.changed, f"created {report.created}, updated {report.updated}")
+        self.assertEqual(self.shipped_workbook().title, revised)
 
     def test_nothing_is_written_back_outside_developer_mode(self):
         self.export()

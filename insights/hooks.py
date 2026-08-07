@@ -162,11 +162,12 @@ doc_events = {
     "User": {
         "on_change": "insights.insights.doctype.insights_team.insights_team.update_admin_team",
     },
-    # standard (app-shipped) content is read-only outside developer mode.
-    # The workbook takes the guards but not `write_back`: its file is the
-    # manifest, which the export machinery does not write item-wise.
+    # standard (app-shipped) content is read-only outside developer mode, and on
+    # a developer bench a save writes its file back. The workbook's file is the
+    # folder's manifest; the rest is the same round trip.
     "Insights Workbook": {
         "validate": "insights.standard_content.block_standard_edits",
+        "on_update": "insights.export_to_app.write_back",
         "on_trash": "insights.standard_content.block_standard_deletes",
     },
     # `block_standard_edits` first: for a standard document "this is read-only"
