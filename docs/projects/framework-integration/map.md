@@ -150,10 +150,30 @@ Raised by the 2026-08-06 review of the foundation branch: the implementation
 proved the contract but surfaced three model questions (tickets 24, 25, 26),
 gating the refactor of the branch, not its feasibility. All three are resolved
 and indexed under Decisions so far. The reshape is specced from them:
-[spec-branch-reshape.md](spec-branch-reshape.md) (`ready-for-agent`).
+[spec-branch-reshape.md](spec-branch-reshape.md) (`ready-for-agent`,
+re-specced 2026-08-07 — see below).
 Tickets 27 and 31 resolved together on 2026-08-06 and specced as
-[spec-one-renderer.md](spec-one-renderer.md) (`ready-for-agent`, lands after
-the reshape).
+[spec-one-renderer.md](spec-one-renderer.md), which **shipped 2026-08-07**,
+all five steps: the Python deriver, the read-path switch, `DashboardView`
+with the preview key moved into the controller, the builder on the read
+store, and the cache retirement patch.
+
+Both specs said the reshape lands first. One-renderer landed first anyway,
+which cost nothing — it removed code the reshape would have renamed. Three
+further commits then took work off the reshape, each for its own reason:
+`29a1e82f` moved the container workbook's identity onto the document to fix a
+sync race (this spec's identity pin and its migration patch, built early),
+`3c0d5edb` retired `is_public` and `api/shared.py` so every read now goes
+through the permission controller, and `454d8716` removed a duplicated helper.
+
+The reshape was re-specced 2026-08-07 against the branch as it now stands. What
+changed: the workbook already carries its identity, so only `is_standard` and
+the field rename remain; the grant-source table is exhaustive and splits
+bypasses from sources, with a preview-key row; the resolver has four reference
+forms, not three; the rename scope grows to one-renderer's suites and to seven
+user-facing strings in the Export dialog that the spec had said would not
+change; and the grep gate learns that a JavaScript asset bundle is not a
+shipping unit.
 
 Still open in this wave:
 

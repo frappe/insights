@@ -1,9 +1,11 @@
 # Spec: one renderer — the server derives, the viewer is the foundation
 
-Status: ready-for-agent
-Target: the Insights foundation branch, after
-[spec-branch-reshape.md](spec-branch-reshape.md) lands (that reshape renames
-modules this spec touches).
+Status: shipped 2026-08-07 — all five steps under Order of work.
+Target: the Insights foundation branch. This spec said it should land after
+[spec-branch-reshape.md](spec-branch-reshape.md), because that reshape renames
+modules this spec touches. It landed first instead, and the cost was the
+reverse of the one feared: this spec deleted code the reshape would otherwise
+have had to rename.
 
 Sources: the resolved tickets
 [27](issues/27-chart-query-derivation-owner.md) (query derivation owner) and
@@ -207,6 +209,8 @@ were produced".
   as oracle and candidate — it is also the first test coverage the seven
   chart types have ever had. Do not skip it to save time; it is what makes
   step 2 safe.
-- Steps 1–2 and step 3 are independent lines; step 4 needs both. If the
-  reshape spec and this one are in flight together, land the reshape first —
-  it renames the sync/export modules this spec edits.
+- Steps 1–2 and step 3 are independent lines; step 4 needs both. This spec
+  told an agent to land the reshape first, because it renames the sync and
+  export modules edited here. That ordering was not followed and did not
+  matter: the overlap is five files, and in each one this spec removed code
+  rather than adding to what the reshape must rename.
