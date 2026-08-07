@@ -7,7 +7,6 @@ import {
 	getUniqueId,
 	safeJSONParse,
 	showErrorToast,
-	store,
 	waitUntil,
 	wheneverChanges,
 } from '../helpers'
@@ -344,9 +343,10 @@ function makeDashboard(name: string) {
 	}
 
 
-	const key = `insights:dashboard-filter-states-${name}`
-	filterStates.value = store(key, () => filterStates.value)
-
+	// The builder starts from the defaults the document carries and remembers
+	// nothing between visits: a default is set to be looked at, and an author who
+	// had to clear last session's leftovers to see it would never trust what the
+	// grid shows. Remembering belongs to the reader, and `filter_storage` keeps it.
 	waitUntil(() => dashboard.isloaded).then(() => {
 		const defaultFilters = dashboard.doc.items.reduce((acc, item) => {
 			if (item.type != 'filter') return acc
