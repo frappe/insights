@@ -169,20 +169,36 @@ doc_events = {
         "validate": "insights.bundles.block_standard_edits",
         "on_trash": "insights.bundles.block_standard_deletes",
     },
+    # `block_standard_edits` first: for a standard document "this is read-only"
+    # is the truer answer than "this workbook is not yours"
     "Insights Query v3": {
-        "validate": "insights.bundles.block_standard_edits",
+        "validate": [
+            "insights.bundles.block_standard_edits",
+            "insights.bundles.block_foreign_workbook_members",
+        ],
         "on_update": "insights.bundle_export.write_back",
         "on_trash": "insights.bundles.block_standard_deletes",
     },
     "Insights Chart v3": {
-        "validate": "insights.bundles.block_standard_edits",
+        "validate": [
+            "insights.bundles.block_standard_edits",
+            "insights.bundles.block_foreign_workbook_members",
+        ],
         "on_update": "insights.bundle_export.write_back",
         "on_trash": "insights.bundles.block_standard_deletes",
     },
     "Insights Dashboard v3": {
-        "validate": "insights.bundles.block_standard_edits",
+        "validate": [
+            "insights.bundles.block_standard_edits",
+            "insights.bundles.block_foreign_workbook_members",
+        ],
         "on_update": "insights.bundle_export.write_back",
         "on_trash": "insights.bundles.block_standard_deletes",
+    },
+    # the format ships no folders, so any folder in a shipped workbook is the
+    # site's own — the guard is the whole of this doctype's involvement
+    "Insights Folder": {
+        "validate": "insights.bundles.block_foreign_workbook_members",
     },
 }
 

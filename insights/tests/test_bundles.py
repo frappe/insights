@@ -468,6 +468,35 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
 
         self.assertEqual(frappe.db.get_value(DT.CHART, chart.name, "title"), "Edited on a developer bench")
 
+    def test_a_shipped_workbook_admits_only_what_its_app_ships(self):
+        self.sync()
+        container = str(self.doc(BUNDLE).name)
+
+        with developer_mode(False):
+            # a query of the site's own, made directly in the shipped workbook
+            own = frappe.get_doc(
+                {"doctype": DT.QUERY, "title": "Mine, in someone else's workbook", "workbook": container}
+            )
+            self.assertRaises(frappe.ValidationError, own.insert)
+
+            # a folder, which the format does not ship at all
+            folder = frappe.get_doc({"doctype": "Insights Folder", "title": "Mine", "workbook": container})
+            self.assertRaises(frappe.ValidationError, folder.insert)
+
+            # and an item that already exists, moved across
+            mine = frappe.get_doc({"doctype": DT.WORKBOOK, "title": "Bundle Sync Mine"}).insert()
+            moved = frappe.get_doc(
+                {"doctype": DT.QUERY, "title": "Moved in later", "workbook": mine.name}
+            ).insert()
+            moved.workbook = container
+            self.assertRaises(frappe.ValidationError, moved.save)
+
+            # the way out is the rule read backwards: move it, and it saves
+            moved.reload()
+            moved.title = "Still mine, still where it belongs"
+            moved.save()
+            self.assertEqual(str(moved.workbook), str(mine.name))
+
     def test_a_taken_slug_is_app_qualified_with_a_warning(self):
         workbook = frappe.get_doc({"doctype": DT.WORKBOOK, "title": "Bundle Sync Slug Holder"}).insert()
         frappe.get_doc(

@@ -873,6 +873,36 @@ def block_standard_deletes(doc, method=None):
     frappe.throw(_("Standard content is read-only. It is removed when its app is uninstalled."))
 
 
+def block_foreign_workbook_members(doc, method=None):
+    """A shipped workbook holds only what its app ships.
+
+    This is the invariant that makes reconcile-deletion ordinary. An app that
+    stops shipping a folder has its workbook deleted, and that is only safe
+    because the workbook is empty by then: everything in it was standard, so
+    everything in it went first. Let a site put one query of its own in there
+    and deletion has to choose between destroying the site's work and leaving
+    an orphan — the branch `_cleanup_containers` used to carry. The guard is
+    what removes the choice.
+
+    It reads the workbook rather than the document, so it catches every way in:
+    a new query, a folder (which the format does not ship at all, so any folder
+    there is the site's), and an existing item moved across. The way out of a
+    mistake is the same rule read backwards — change the workbook, and the save
+    goes through.
+    """
+    if not doc.get("workbook") or _sync_or_developer(doc):
+        return
+
+    if not frappe.db.get_value(WORKBOOK, doc.workbook, "is_standard"):
+        return
+
+    frappe.throw(
+        _("{0} is shipped by an app and holds only its content. Duplicate it to make your own.").format(
+            frappe.bold(frappe.db.get_value(WORKBOOK, doc.workbook, "title") or _("This workbook"))
+        )
+    )
+
+
 def _is_standard(doc) -> bool:
     """True for a document that is standard now or was before this save — so
     clearing the flag is itself an edit of standard content, not a way around
