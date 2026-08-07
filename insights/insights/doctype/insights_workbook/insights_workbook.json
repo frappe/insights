@@ -7,7 +7,8 @@
  "field_order": [
   "title",
   "data_backup",
-  "from_template"
+  "from_template",
+  "logical_id"
  ],
  "fields": [
   {
@@ -25,12 +26,20 @@
    "read_only": 1
   },
   {
-   "description": "The retired workbook template this copy was imported from. History only — nothing reads it to decide anything.",
+   "description": "The retired workbook template this copy was imported from. History only \u2014 nothing reads it to decide anything.",
    "fieldname": "from_template",
    "fieldtype": "Data",
    "hidden": 1,
    "label": "From Template",
    "read_only": 1
+  },
+  {
+   "description": "Shipped content identity ({app}/{bundle}), set by bundle sync",
+   "fieldname": "logical_id",
+   "fieldtype": "Data",
+   "label": "Logical ID",
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "index_web_pages_for_search": 1,

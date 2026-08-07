@@ -30,8 +30,8 @@ duplicate of shipped content is an ordinary user document.
 The container workbook is the one site-side artifact the format does not
 describe. The v3 builder is workbook-centric, so shipped documents need a
 workbook to live in; sync keeps one Administrator-owned workbook per bundle,
-titled from `bundle.json`, and remembers it as a site global (see
-`_container_workbook` for why that, and what would replace it).
+titled from `bundle.json` and carrying the bundle key as its `logical_id` — the
+same identity the content doctypes carry (see `_container_workbook`).
 """
 
 import json
@@ -113,8 +113,6 @@ NAME_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 # `{"<chart>": "`<query>`.`<column>`"}` — a filter's link, both sides logical in
 # a file and both sides a docname on a site
 LINK_COLUMN = re.compile(r"^`([^`]+)`\.`([^`]+)`$")
-
-CONTAINER_KEY = "insights_bundle_workbook:"
 
 
 class BundleError(frappe.ValidationError):
@@ -727,15 +725,14 @@ def _container_workbook(bundle: Bundle) -> str:
     Administrator, titled from `bundle.json`, created here and not part of the
     shipping format.
 
-    Which workbook belongs to which bundle is site state, and the honest home
-    for it is a `logical_id` on Insights Workbook, beside the one the three
-    content doctypes already carry. Until that field exists it is kept as a
-    site global, so this is the only place that has to change.
+    Which workbook belongs to which bundle is site state, and it is kept where
+    the three content doctypes keep theirs: a `logical_id` on the document, the
+    bundle key. Sync writes the container and its identity in one transaction,
+    so a run that is rolled back leaves neither.
     """
-    key = CONTAINER_KEY + bundle.key
-    name = frappe.db.get_global(key)
-    if name:
-        name = frappe.db.exists("Insights Workbook", name)
+    name = frappe.db.get_value(
+        "Insights Workbook", {"logical_id": bundle.key}, "name", order_by="creation asc"
+    )
     if name:
         if frappe.db.get_value("Insights Workbook", name, "title") != bundle.title:
             frappe.db.set_value("Insights Workbook", name, "title", bundle.title, update_modified=False)
@@ -743,9 +740,9 @@ def _container_workbook(bundle: Bundle) -> str:
 
     workbook = frappe.new_doc("Insights Workbook")
     workbook.title = bundle.title
+    workbook.logical_id = bundle.key
     workbook.insert(ignore_permissions=True)
     frappe.db.set_value("Insights Workbook", workbook.name, "owner", "Administrator", update_modified=False)
-    frappe.db.set_global(key, workbook.name)
     return workbook.name
 
 
@@ -810,22 +807,25 @@ def _cleanup_containers(app: str, keep: set[str]) -> None:
     for bundle_key, workbook in _containers_of(app).items():
         if bundle_key in keep:
             continue
-        if frappe.db.exists("Insights Workbook", workbook) and _is_empty(workbook):
+        if _is_empty(workbook):
             frappe.delete_doc("Insights Workbook", workbook, force=True, ignore_permissions=True)
-        frappe.defaults.clear_default(key=CONTAINER_KEY + bundle_key, parent="__global")
+        else:
+            # left with the site's own work in it, and no longer a container
+            frappe.db.set_value("Insights Workbook", workbook, "logical_id", None, update_modified=False)
 
 
 def _containers_of(app: str) -> dict[str, str]:
     rows = frappe.get_all(
-        "DefaultValue",
-        filters={"parent": "__global", "defkey": ("like", f"{CONTAINER_KEY}%")},
-        fields=["defkey", "defvalue"],
+        "Insights Workbook",
+        filters={"logical_id": ("like", f"{app}/%")},
+        fields=["name", "logical_id"],
+        order_by="creation asc",
     )
-    containers = {}
+    containers: dict[str, str] = {}
     for row in rows:
-        bundle_key = row.defkey[len(CONTAINER_KEY) :]
-        if bundle_key.split("/", 1)[0] == app:
-            containers[bundle_key] = row.defvalue
+        # oldest wins, the same one `_container_workbook` resolves to
+        if row.logical_id.split("/", 1)[0] == app:
+            containers.setdefault(row.logical_id, row.name)
     return containers
 
 

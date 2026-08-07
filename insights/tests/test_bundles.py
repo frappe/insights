@@ -245,6 +245,15 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
         self.assertEqual(frappe.db.get_value(DT.WORKBOOK, container, "title"), BUNDLE_TITLE)
         self.assertEqual(frappe.db.get_value(DT.WORKBOOK, container, "owner"), "Administrator")
 
+        # which workbook holds the bundle is on the workbook, in the same
+        # transaction as the workbook itself — a later run has to find this one
+        # and not make a second, so it is read back the way sync reads it
+        self.assertEqual(frappe.db.get_value(DT.WORKBOOK, container, "logical_id"), f"{APP}/{BUNDLE}")
+        self.assertEqual(
+            str(frappe.db.get_value(DT.WORKBOOK, {"logical_id": f"{APP}/{BUNDLE}"}, "name")),
+            container,
+        )
+
         # the shipped dashboard's external key is its logical name
         self.assertEqual(self.doc(DASHBOARD).slug, DASHBOARD)
 
@@ -315,12 +324,17 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
     def test_resync_writes_nothing(self):
         self.sync()
         before = self.modified_of()
+        container = self.doc(CHART).workbook
 
         report = self.sync()
 
         self.assertFalse(report.changed)
         self.assertEqual(self.mine(report.unchanged), self.all_shipped_ids())
         self.assertEqual(self.modified_of(), before)
+        # the container is what a second run has to find again: miss it and every
+        # shipped document is rewritten into a new one
+        self.assertEqual(self.doc(CHART).workbook, container)
+        self.assertEqual(frappe.db.count(DT.WORKBOOK, {"logical_id": f"{APP}/{BUNDLE}"}), 1)
 
     def test_a_changed_file_updates_only_its_document(self):
         self.sync()

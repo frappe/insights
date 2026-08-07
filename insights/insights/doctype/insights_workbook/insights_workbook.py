@@ -25,6 +25,7 @@ class InsightsWorkbook(Document):
 
         data_backup: DF.JSON | None
         from_template: DF.Data | None
+        logical_id: DF.Data | None
         name: DF.Int | None
         title: DF.Data
     # end: auto-generated types
