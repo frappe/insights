@@ -7,7 +7,7 @@ An app ships content as files under `<app>/insights/<bundle>/`, the folder
 idiom Studio and Builder already use:
 
     erpnext/insights/selling/
-        bundle.json                     title, required_apps, format_version
+        workbook.json                   title, required_apps, format_version
         query/monthly_sales.json
         chart/monthly_sales_by_item.json
         dashboard/sales_overview.json
@@ -27,11 +27,13 @@ finds nothing changed writes nothing, not even a `modified` timestamp. Documents
 a site's users made are never touched — only `is_standard` documents are, and a
 duplicate of shipped content is an ordinary user document.
 
-The container workbook is the one site-side artifact the format does not
-describe. The v3 builder is workbook-centric, so shipped documents need a
-workbook to live in; sync keeps one Administrator-owned workbook per bundle,
-titled from `bundle.json` and carrying the bundle key as its `logical_id` — the
-same identity the content doctypes carry (see `_container_workbook`).
+The v3 builder is workbook-centric, so shipped documents need a workbook to
+live in. `workbook.json` titles it and the folder identifies it, but the
+workbook is still built site-side rather than reconciled from the file like
+every other document here: sync keeps one Administrator-owned workbook per
+bundle, carrying the bundle key as its `logical_id` — the same identity the
+content doctypes carry (see `_container_workbook`). Making it the fourth
+reconciled doctype is the next step of the reshape, not this one.
 """
 
 import json
@@ -53,7 +55,12 @@ DASHBOARD = "Insights Dashboard v3"
 
 # the directory an app ships its bundles in, relative to its package
 BUNDLE_DIR = "insights"
-MANIFEST = "bundle.json"
+
+# the manifest is the workbook's file: a shipped folder is a workbook, so the
+# file that titles it carries its name. Recognized under this name only — the
+# format has no compatibility read, because nothing has shipped against it yet
+# and this rename is why nothing may until it lands.
+MANIFEST = "workbook.json"
 
 # owned by Insights, append-only within a major: an importer tolerates keys it
 # does not know, and refuses a bundle written for a later major
@@ -722,8 +729,8 @@ def before_app_uninstall(app_name: str) -> SyncReport:
 
 def _container_workbook(bundle: Bundle) -> str:
     """The workbook a bundle's documents live in: one per bundle, owned by
-    Administrator, titled from `bundle.json`, created here and not part of the
-    shipping format.
+    Administrator, titled from `workbook.json`, created here rather than
+    reconciled from the file.
 
     Which workbook belongs to which bundle is site state, and it is kept where
     the three content doctypes keep theirs: a `logical_id` on the document, the

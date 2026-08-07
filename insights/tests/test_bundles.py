@@ -16,6 +16,7 @@ import frappe
 from insights.bundles import (
     FORMAT_VERSION,
     LINK_COLUMN,
+    MANIFEST,
     BundleError,
     before_app_uninstall,
     discover_bundles,
@@ -112,7 +113,7 @@ def write_bundle(folder: str, files: dict, title=BUNDLE_TITLE, required_apps=Non
         "required_apps": required_apps or [],
         "format_version": format_version or FORMAT_VERSION,
     }
-    with open(os.path.join(path, "bundle.json"), "w") as f:
+    with open(os.path.join(path, MANIFEST), "w") as f:
         json.dump(manifest, f)
 
     for relative_path, data in files.items():
@@ -239,7 +240,7 @@ class TestInsightsBundles(InsightsIntegrationTestCase):
             self.assertEqual(doc.owner, "Administrator")
             workbooks.add(str(doc.workbook))
 
-        # one container per bundle, titled from bundle.json and site-owned
+        # one container per bundle, titled from workbook.json and site-owned
         self.assertEqual(len(workbooks), 1)
         container = workbooks.pop()
         self.assertEqual(frappe.db.get_value(DT.WORKBOOK, container, "title"), BUNDLE_TITLE)

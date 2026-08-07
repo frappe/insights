@@ -24,7 +24,7 @@ import frappe
 from insights import bundle_export
 from insights.api.bundles import get_export_targets
 from insights.bundle_export import export_dashboard, write_back
-from insights.bundles import CARRIED_FIELDS, ITEM_TYPES, sync_app_bundles
+from insights.bundles import CARRIED_FIELDS, ITEM_TYPES, MANIFEST, sync_app_bundles
 from insights.resolver import resolve
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import DT
@@ -238,7 +238,7 @@ class TestInsightsBundleExport(InsightsIntegrationTestCase):
         self.assertEqual(sorted(report.logical_ids), self.all_logical_ids())
         for relative_path in FILES.values():
             self.assertTrue(os.path.isfile(self.path(relative_path)), f"{relative_path} was not written")
-        with open(self.path("bundle.json")) as f:
+        with open(self.path(MANIFEST)) as f:
             self.assertEqual(json.load(f)["format_version"], 1)
 
         # the whole of what the format carries, and nothing else: no modified,
@@ -310,7 +310,7 @@ class TestInsightsBundleExport(InsightsIntegrationTestCase):
 
     def test_a_taken_logical_name_gets_a_deterministic_suffix(self):
         os.makedirs(os.path.join(bundle_root(), OTHER_BUNDLE, "query"), exist_ok=True)
-        with open(os.path.join(bundle_root(), OTHER_BUNDLE, "bundle.json"), "w") as f:
+        with open(os.path.join(bundle_root(), OTHER_BUNDLE, MANIFEST), "w") as f:
             json.dump({"title": "Bundle Export Alt", "required_apps": [], "format_version": 1}, f)
         with open(os.path.join(bundle_root(), OTHER_BUNDLE, "query", f"{SOURCE}.json"), "w") as f:
             json.dump({"title": "Something Else Called Sales"}, f)
