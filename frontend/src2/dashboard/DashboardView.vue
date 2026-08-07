@@ -171,10 +171,13 @@ function exportImage() {
 		     may not see this dashboard still gets a way back. It sits outside the
 		     scrolling body rather than sticking to the top of it, so the grid
 		     scrolls under it and the page around it does not move. -->
+		<!-- 48px is desk's `--page-head-height`: this header stands in for the page
+		     head desk hides, so it has to be the same band an ordinary desk page
+		     draws, not merely a similar one. -->
 		<div
-			class="flex flex-shrink-0 items-center justify-between gap-2 border-b border-outline-gray-1 px-4 py-3"
+			class="flex h-12 flex-shrink-0 items-center justify-between gap-2 border-b border-outline-gray-1 px-4"
 		>
-			<div class="flex min-w-0 items-center gap-2">
+			<div class="flex min-w-0 items-baseline gap-2">
 				<!-- renaming is a capability like any other: where it is granted
 				     the title is the control, and where it is not there is a
 				     trail with the title at the end of it -->
@@ -213,7 +216,7 @@ function exportImage() {
 				<component v-if="source.authoring" :is="source.authoring.actions" />
 				<Button
 					v-if="!source.authoring?.editing"
-					variant="ghost"
+					variant="subtle"
 					:label="__('Refresh')"
 					@click="refreshToken++"
 				>
@@ -222,7 +225,7 @@ function exportImage() {
 					</template>
 				</Button>
 				<Dropdown v-if="menuOptions.length" placement="right" :options="menuOptions">
-					<Button variant="ghost">
+					<Button variant="subtle">
 						<template #icon>
 							<MoreHorizontal class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 						</template>
