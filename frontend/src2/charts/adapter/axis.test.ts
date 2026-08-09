@@ -124,10 +124,10 @@ describe('a split Dimension', () => {
 				splitBy: { dimension: 'region', into: ['North', 'South'] },
 			}).y,
 		).toEqual([
-			'North___revenue',
-			'North___margin',
-			'South___revenue',
-			'South___margin',
+			'revenue___North',
+			'revenue___South',
+			'margin___North',
+			'margin___South',
 		])
 	})
 

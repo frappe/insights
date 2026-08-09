@@ -115,10 +115,11 @@ export function axisChart(spec: AxisChartSpec): ChartAdapterInput {
 function valueColumns(measures: MeasureSpecObject[], into?: string[]): string[] {
 	if (!into) return measures.map((measure) => measure.name)
 	// A lone Measure leaves the split values standing on their own; several of
-	// them need the Measure's name beside each value to stay apart.
+	// them need the Measure's name beside each value to stay apart. The Measure
+	// leads, because `pivot_wider` names a column `values_from` first.
 	if (measures.length === 1) return into
-	return into.flatMap((value) =>
-		measures.map((measure) => `${value}___${measure.name}`),
+	return measures.flatMap((measure) =>
+		into.map((value) => `${measure.name}___${value}`),
 	)
 }
 
