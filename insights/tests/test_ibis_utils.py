@@ -4,15 +4,20 @@ from insights.insights.doctype.insights_data_source_v3.ibis_utils import IbisQue
 from insights.tests.base import InsightsIntegrationTestCase
 
 
-class TestIbisQueryBuilderGranularity(InsightsIntegrationTestCase):
+class IbisQueryBuilderTestCase(InsightsIntegrationTestCase):
     def make_query_doc(self, operations):
         return frappe._dict(
-            name="Ibis Time Granularity Test",
-            title="Ibis Time Granularity Test",
+            name=self.__class__.__name__,
+            title=self.__class__.__name__,
             use_live_connection=0,
             operations=frappe.as_json(operations),
         )
 
+    def build_query(self, operations):
+        return IbisQueryBuilder(self.make_query_doc(operations)).build()
+
+
+class TestIbisQueryBuilderGranularity(IbisQueryBuilderTestCase):
     def make_time_source_operations(self):
         return [
             {
@@ -31,9 +36,6 @@ results = [
                 "data_type": "Time",
             },
         ]
-
-    def build_query(self, operations):
-        return IbisQueryBuilder(self.make_query_doc(operations)).build()
 
     def test_summary_query_groups_time_values_by_supported_granularities(self):
         cases = [
@@ -95,3 +97,50 @@ results = [
             self.build_query(operations)
 
         self.assertIn("Supported granularities: second, minute, hour", str(exc.exception))
+
+
+class TestIbisPivotWider(IbisQueryBuilderTestCase):
+    def pivot_totals(self, sales, max_column_values):
+        """Revenue by month split by region, one column total per region kept."""
+        operations = [
+            {"type": "code", "code": f"results = {sales}"},
+            {
+                "type": "pivot_wider",
+                "rows": [{"column_name": "month", "data_type": "String", "dimension_name": "month"}],
+                "columns": [{"column_name": "region", "data_type": "String", "dimension_name": "region"}],
+                "values": [
+                    {
+                        "column_name": "amount",
+                        "data_type": "Integer",
+                        "aggregation": "sum",
+                        "measure_name": "revenue",
+                    }
+                ],
+                "max_column_values": max_column_values,
+            },
+        ]
+
+        result = self.build_query(operations).execute()
+        return result.drop(columns=["month"]).sum().to_dict()
+
+    def test_pivot_keeps_the_biggest_split_value_out_of_others(self):
+        # "zulu" sorts last but sells the most, so an alphabetical cut would
+        # hide the biggest series inside "Others"
+        sales = [
+            {"month": "2026-01", "region": "alpha", "amount": 10},
+            {"month": "2026-01", "region": "bravo", "amount": 5},
+            {"month": "2026-01", "region": "zulu", "amount": 100},
+            {"month": "2026-02", "region": "alpha", "amount": 20},
+            {"month": "2026-02", "region": "zulu", "amount": 200},
+        ]
+
+        self.assertEqual(self.pivot_totals(sales, 2), {"alpha": 30, "zulu": 300, "Others": 5})
+
+    def test_pivot_adds_no_others_column_when_it_cuts_nothing(self):
+        # as many regions as the cap allows, so "Others" would hold nothing
+        sales = [
+            {"month": "2026-01", "region": "alpha", "amount": 10},
+            {"month": "2026-02", "region": "zulu", "amount": 200},
+        ]
+
+        self.assertEqual(self.pivot_totals(sales, 2), {"alpha": 10, "zulu": 200})

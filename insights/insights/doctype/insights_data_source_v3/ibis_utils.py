@@ -540,13 +540,13 @@ class IbisQueryBuilder:
             max_names = pivot_args.get("max_column_values", 10)
             max_names = int(max_names)
             max_names = max(1, min(max_names, 100))
-            names = self.query.select(names_from).order_by(names_from).distinct().limit(max_names).execute()
-            names = names.fillna("null").values
+            value_names = [value.get_name() for value in values]
+            names, has_tail = self.get_top_pivot_names(names_from, value_names, max_names)
 
             # If we've limited the number of distinct column values, bucket the
             # remaining values into an "Others" group so charts show the rest.
             # This currently supports the common case of a single pivot column.
-            if len(names) == max_names and len(columns) == 1:
+            if has_tail and len(columns) == 1:
                 selected_names = [str(v) for v in names.flatten()]
 
                 col_name = columns[0].get_name()
@@ -571,6 +571,31 @@ class IbisQueryBuilder:
             )
 
         return self.query
+
+    def get_top_pivot_names(self, names_from, value_names, max_names):
+        """The distinct column values a pivot keeps, and whether it cut any.
+
+        Everything the cut leaves out lands in "Others", so this ranking decides
+        which series a chart draws. Rank by the measure, not by the value's own
+        name: alphabetical order buries the largest series in the tail. Several
+        measures rank by the first. With none, the pivot only shows which groups
+        exist, so the number of rows ranks them.
+
+        The names come back in their own ascending order, which becomes the
+        column order. A split on a date stays chronological that way.
+        """
+        rank = getattr(self.query, value_names[0]).sum() if value_names else self.query.count()
+        ranked = self.query.aggregate(**{"__rank__": rank}, by=names_from)
+        # names_from breaks a tie, so an equal measure keeps the same set every run
+        ranked = ranked.order_by([ibis.desc("__rank__"), *names_from])
+        # one past the cap tells a real cut apart from a set that just fits, which
+        # keeps an empty "Others" column out of the result
+        ranked = ranked.limit(max_names + 1)
+
+        top = ranked.execute()
+        has_tail = len(top) > max_names
+        top = top.head(max_names).sort_values(names_from, na_position="last")
+        return top[names_from].fillna("null").values, has_tail
 
     def apply_custom_operation(self, operation):
         return self.evaluate_expression(operation.expression.expression)
