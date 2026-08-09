@@ -19,7 +19,10 @@ await buildIslands({
 		'src2/charts/ViewerChart.vue',
 		'src2/charts/adapter/*.vue',
 		'src2/charts/components/{ChartBody,ChartSectionEmptySvg,MapChart,TableChart}.vue',
-		'src2/query/components/{ColumnFilterValueSelector,DataTypeIcon,NumberFilterPicker,RelativeDatePicker}.vue',
+		// the drill a reader is offered. AuthoringDrillDown and DrillQuery are the
+		// builder's half and stay out.
+		'src2/charts/drill/{ChartDrillDown,DrillBreakdown,DrillDialog,DrillMenu,DrillRecords}.vue',
+		'src2/query/components/{ColumnFilterValueSelector,DataTypeIcon,NumberFilterPicker,QueryDataTable,RelativeDatePicker}.vue',
 		'src2/dashboard/{DashboardView,Filter,FilterControl,StaticGridLayout,ViewerItem}.vue',
 	],
 	// The SPA's plugin. Without it the Number grid's `@xl:` columns compile to nothing.
