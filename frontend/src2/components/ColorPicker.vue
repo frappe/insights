@@ -155,8 +155,14 @@ const align = computed(() => (props.placement.split('-')[1] || 'center') as Popo
 const isOpen = ref(false)
 function togglePopover() {
 	isOpen.value = !isOpen.value
-	setSelectorPosition(modelColor.value)
 }
+
+// The popover mounts its content only while open, so the maps do not exist at
+// the moment the picker opens. Position the selectors when the element itself
+// appears, rather than betting on how many ticks reka's portal takes.
+watch(colorMap, (el) => {
+	if (el) setSelectorPosition(modelColor.value)
+})
 
 const emit = defineEmits(['update:modelValue'])
 
@@ -176,6 +182,7 @@ if (!isSupported.value) {
 }
 
 const setColorSelectorPosition = (color: HashString) => {
+	if (!colorMap.value) return
 	const { width, height } = colorMap.value.getBoundingClientRect()
 	const { s, v } = HexToHSV(color)
 	let x = clamp(s * width, 0, width)
@@ -184,6 +191,7 @@ const setColorSelectorPosition = (color: HashString) => {
 }
 
 const setHueSelectorPosition = (color: HashString) => {
+	if (!hueMap.value) return
 	const { width } = hueMap.value.getBoundingClientRect()
 	const { h } = HexToHSV(color)
 	const left = (h / 360) * width
@@ -264,6 +272,7 @@ const hue = computed(() => {
 
 const updateColor = () => {
 	nextTick(() => {
+		if (!colorMap.value) return
 		const colorMapBounds = colorMap.value.getBoundingClientRect()
 		const s = Math.round((colorSelectorPosition.value.x / colorMapBounds.width) * 100)
 		const v = 100 - Math.round((colorSelectorPosition.value.y / colorMapBounds.height) * 100)
