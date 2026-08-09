@@ -1,8 +1,14 @@
 import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
 import frappeui from 'frappe-ui/vite'
+import fs from 'node:fs'
 import path from 'path'
-import { defineConfig } from 'vite'
+import { defineConfig, searchForWorkspaceRoot } from 'vite'
+
+// The real directory behind the frappe-ui link, which lives in the framework
+// checkout — outside this app. The dev server refuses to serve files from
+// there unless told, and the only ones it is asked for are the Inter woff2s.
+const frappeUIRoot = fs.realpathSync(path.resolve(__dirname, 'node_modules/frappe-ui'))
 
 // Pre-bundled below to avoid a dev-only duplicate prosemirror-state instance
 // (TipTap "keyed plugin" error). Keep in sync with frappe-ui's @tiptap/* deps.
@@ -64,6 +70,12 @@ export default defineConfig({
 	],
 	server: {
 		allowedHosts: true,
+		fs: {
+			// Without this the font 403s, Inter never loads, and every screen
+			// silently falls back to system sans — in dev only, because the
+			// build copies the woff2 into its own assets.
+			allow: [searchForWorkspaceRoot(process.cwd()), frappeUIRoot],
+		},
 	},
 	esbuild: { loader: 'ts' },
 	resolve: {
