@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { IconPicker } from 'frappe-ui/experimental'
+import FilterIconPicker from './FilterIconPicker.vue'
 import { computed, inject, reactive, ref } from 'vue'
 import useChart from '../charts/chart'
 import useQuery from '../query/query'
@@ -232,7 +232,7 @@ function saveEdit() {
 								<label class="block text-xs text-ink-gray-5">{{
 									__('Filter Icon')
 								}}</label>
-								<IconPicker v-model="filter.icon" />
+								<FilterIconPicker v-model="filter.icon" />
 							</div>
 							<div
 								v-if="filter.filter_type"

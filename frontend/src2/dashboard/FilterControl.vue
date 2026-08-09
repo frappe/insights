@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { Icon } from 'frappe-ui/experimental'
 import { computed } from 'vue'
 import { FIELDTYPES, FilterType } from '../helpers/constants'
 import DataTypeIcon from '../query/components/DataTypeIcon.vue'
 import { isFilterApplied } from '../query/components/filter_utils'
 import { ColumnDataType, FilterOperator, FilterValue } from '../types/query.types'
 import Filter from './Filter.vue'
+import { filterIconClass } from './filter_icons'
 
 // One filter, as the reader meets it: a grid cell that names itself when it is
 // empty and shows what it is holding when it is not. Where the state lives and
@@ -30,13 +30,11 @@ const FILTER_TYPES = {
 
 const applied = computed(() => isFilterApplied(props.filterType, operator.value, value.value))
 
-// frappe-ui's `Icon` is a reference into a sprite an SPA plugin puts in
-// `document.body`, which no desk page has and no shadow root could reach. So in
-// an island the author's icon paints an empty box and the type icon is drawn
-// instead. Shipping the sprite was the alternative: 457 kB for a few glyphs.
-const iconAvailable = computed(
-	() => Boolean(props.icon) && Boolean(document.getElementById('lucide-sprite')),
-)
+// The author's icon is a `lucide-*` class Tailwind baked into the stylesheet,
+// so it draws wherever the stylesheet reaches — the SPA and a desk island's
+// shadow root alike. A filter authored against the old sprite may name a glyph
+// this build has no CSS for, and that one falls back to the type icon.
+const iconClass = computed(() => filterIconClass(props.icon))
 
 const label = computed(() => {
 	if (!applied.value) return props.filterName
@@ -55,11 +53,7 @@ const label = computed(() => {
 					class="flex h-full w-full !justify-start overflow-hidden text-sm [&>span]:truncate"
 				>
 					<template #prefix>
-						<Icon
-							v-if="iconAvailable"
-							:name="props.icon!"
-							class="h-4 w-4 flex-shrink-0"
-						/>
+						<span v-if="iconClass" :class="iconClass" class="h-4 w-4 flex-shrink-0" />
 						<DataTypeIcon
 							v-else-if="props.filterType"
 							:column-type="FILTER_TYPES[props.filterType][0] as ColumnDataType"

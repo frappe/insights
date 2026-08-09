@@ -1,5 +1,4 @@
 import { frappeRequest, setConfig, useColorScheme } from 'frappe-ui'
-import { spritePlugin } from 'frappe-ui/experimental'
 import { createPinia } from 'pinia'
 import { createApp, watchEffect } from 'vue'
 import App from './App.vue'
@@ -27,7 +26,6 @@ setNavigationProvider({
 	resolveHref: (to) => router.resolve(to).href,
 	navigate: (to) => router.push(to),
 })
-app.use(spritePlugin)
 
 const stop = watchEffect(() => {
 	if (session.isLoggedIn) {
@@ -48,4 +46,4 @@ registerGlobalComponents(app)
 registerControllers(app)
 
 app.mount('#app')
-app.use(translationPlugin);
+app.use(translationPlugin)
