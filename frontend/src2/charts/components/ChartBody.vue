@@ -29,7 +29,6 @@ import {
 import BaseChart from './BaseChart.vue'
 import ChartSectionEmptySvg from './ChartSectionEmptySvg.vue'
 import NumberChart from './NumberChart.vue'
-import TableChart from './TableChart.vue'
 
 // The chart itself: the type it is, the data it has, and every state in between.
 // One card, one state machine — a surface that draws a chart card draws this,
@@ -70,6 +69,8 @@ const adapted = computed(() => {
 		config: config.value,
 		result: result.value,
 		title: props.chart.doc.title,
+		readonly: props.readonly,
+		executing: props.chart.executing,
 	})
 })
 
@@ -117,15 +118,9 @@ const drawn = computed<Drawn | undefined>(() => {
 const filler = computed(() => drawn.value?.filler)
 const eChartOptions = computed(() => drawn.value?.options)
 
-// Number and Table draw themselves straight off the result; every other type
-// needs the adapter or the option builders to have produced something
-const drawable = computed(
-	() =>
-		Boolean(filler.value) ||
-		Boolean(eChartOptions.value) ||
-		chart_type.value === 'Number' ||
-		chart_type.value === 'Table',
-)
+// there is a picture: either the adapter named a filler for it, or one of the
+// types still on the scaffold built its own option
+const drawable = computed(() => Boolean(filler.value) || Boolean(eChartOptions.value))
 
 // A table that already has rows keeps them while the next run is in flight.
 // Every other type blanks, so this is a restoration and not a rule: a table on a
@@ -304,16 +299,10 @@ async function onNumberChartDrillDown(column: any, row: QueryResultRow) {
 					:onClick="onChartElementClick"
 				/>
 				<NumberChart
-					v-else-if="chart_type == 'Number'"
+					v-else
 					:config="config as NumberChartConfig"
 					:result="result"
 					@drill-down="onNumberChartDrillDown"
-				/>
-				<TableChart
-					v-else
-					:chart="props.chart"
-					:readonly="props.readonly"
-					@drill-down="emit('drillDown', $event)"
 				/>
 			</template>
 

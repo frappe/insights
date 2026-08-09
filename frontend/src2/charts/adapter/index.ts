@@ -62,6 +62,7 @@ import { adaptFunnelChart } from './funnel'
 import { adaptMapChart } from './map'
 import { adaptNumberChart } from './number'
 import { adaptSankeyChart } from './sankey'
+import { adaptTableChart } from './table'
 import type { ChartAdapter, ChartAdapterInput, ChartFiller } from './types'
 
 export type {
@@ -72,8 +73,7 @@ export type {
 	DrillDownTarget,
 } from './types'
 
-// The types that have moved onto v2. The rest still draw through the card's
-// scaffold, which goes when the last of them lands here.
+// Every chart type, and the one function that adapts it.
 const ADAPTERS: Partial<Record<ChartType, ChartAdapter>> = {
 	Bar: adaptBarChart,
 	Line: adaptLineChart,
@@ -84,6 +84,7 @@ const ADAPTERS: Partial<Record<ChartType, ChartAdapter>> = {
 	Bubble: adaptBubbleChart,
 	Sankey: adaptSankeyChart,
 	Map: adaptMapChart,
+	Table: adaptTableChart,
 }
 
 export function adaptChart(input: ChartAdapterInput): ChartFiller | undefined {

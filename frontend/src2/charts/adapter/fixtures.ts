@@ -9,6 +9,10 @@
 
 import type { GranularityType } from '../../helpers/constants'
 import type {
+	ConditionalColor,
+	FormatGroupArgs,
+} from '../../query/components/formatting_utils'
+import type {
 	AxisChartType,
 	ChartConfig,
 	ReferenceLine,
@@ -16,6 +20,7 @@ import type {
 } from '../../types/chart.types'
 import type {
 	ColumnDataType,
+	DataFormat,
 	Dimension,
 	Measure,
 	QueryResult,
@@ -543,6 +548,107 @@ export function mapChart(spec: MapChartSpec): ChartAdapterInput {
 			})),
 		),
 	}
+}
+
+export type TableMeasureSpec = string | { name: string; format?: DataFormat }
+
+export type TableChartSpec = {
+	title?: string
+	/** The Dimensions each row is grouped by. They head the row. */
+	rows?: DimensionSpec[]
+	/**
+	 * The Dimension the values are pivoted across, and the columns the server
+	 * sent back for it — the pivot happens there, so the table only reads it.
+	 */
+	pivot?: { dimension: DimensionSpec; into: string[] }
+	values: TableMeasureSpec[]
+	/** The values of the first row Dimension, one per row. */
+	categories?: any[]
+	/** The order the Chart itself asks for, which the sort arrows are read off. */
+	sortedBy?: { column: string; direction: 'asc' | 'desc' }[]
+	filterRow?: boolean
+	rowTotals?: boolean
+	columnTotals?: boolean
+	compactNumbers?: boolean
+	colorScale?: boolean
+	/** A cell rule the author set, e.g. red wherever revenue falls under target. */
+	highlight?: { column: string; below: number; color: ConditionalColor }
+	stickyColumns?: string[]
+	columnWidths?: Record<string, number>
+	textWrap?: Record<string, boolean>
+}
+
+export function tableChart(spec: TableChartSpec): ChartAdapterInput {
+	const rows = (spec.rows ?? ['region']).map(toDimension)
+	const pivot = spec.pivot ? toDimension(spec.pivot.dimension) : undefined
+	const values = spec.values.map(toTableMeasure)
+	const valueNames = valueColumns(
+		values.map((measure) => ({ name: measure.measure_name })),
+		spec.pivot?.into,
+	)
+	const categories = spec.categories ?? defaultCategories(rows[0])
+
+	const config = {
+		rows,
+		columns: pivot ? [pivot] : [],
+		values,
+		order_by: (spec.sortedBy || []).map((order) => ({
+			column: { type: 'column', column_name: order.column },
+			direction: order.direction,
+		})),
+		...(spec.filterRow ? { show_filter_row: true } : {}),
+		...(spec.rowTotals ? { show_row_totals: true } : {}),
+		...(spec.columnTotals ? { show_column_totals: true } : {}),
+		...(spec.compactNumbers ? { compact_numbers: true } : {}),
+		...(spec.colorScale ? { enable_color_scale: true } : {}),
+		...(spec.highlight ? { conditional_formatting: cellRule(spec.highlight) } : {}),
+		...(spec.stickyColumns ? { sticky_columns: spec.stickyColumns } : {}),
+		...(spec.columnWidths ? { column_widths: spec.columnWidths } : {}),
+		...(spec.textWrap ? { text_wrap: spec.textWrap } : {}),
+	} as unknown as ChartConfig
+
+	const resultColumns: QueryResultColumn[] = [
+		...rows.map(columnOfDimension),
+		...valueNames.map((name): QueryResultColumn => ({ name, type: 'Decimal' })),
+	]
+	const resultRows = categories.map((category, index) => {
+		const row: Record<string, any> = {}
+		rows.forEach((dimension, position) => {
+			row[dimension.dimension_name] = position === 0 ? category : `${category} ${position}`
+		})
+		valueNames.forEach((name, position) => {
+			row[name] = (index + 1) * 10 + position
+		})
+		return row
+	})
+
+	return {
+		chart_type: 'Table',
+		title: spec.title,
+		config,
+		result: resultWith(resultColumns, resultRows),
+	}
+}
+
+function cellRule(highlight: NonNullable<TableChartSpec['highlight']>): FormatGroupArgs {
+	const target = { type: 'column' as const, column_name: highlight.column }
+	return {
+		formats: [
+			{
+				mode: 'cell_rules',
+				column: target,
+				operator: '<',
+				value: highlight.below,
+				color: highlight.color,
+			},
+		],
+		columns: [target],
+	}
+}
+
+function toTableMeasure(measure: TableMeasureSpec): Measure {
+	if (typeof measure === 'string') return toMeasure(measure)
+	return toMeasure(measure.name, measure.format)
 }
 
 function toMeasure(name: string, format?: 'currency' | 'percent'): Measure {

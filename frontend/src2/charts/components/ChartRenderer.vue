@@ -30,8 +30,7 @@ const canMaximize = computed(
 
 		<div
 			v-if="canMaximize"
-			class="absolute top-0 right-0 opacity-0 transition-opacity group-hover:opacity-100"
-			:class="chart.doc.chart_type == 'Table' ? 'p-1.5' : 'p-2'"
+			class="absolute top-0 right-0 p-2 opacity-0 transition-opacity group-hover:opacity-100"
 		>
 			<Button variant="ghost" @click="showExpandedChartDialog = true">
 				<Maximize class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />

@@ -13,6 +13,17 @@ export type ChartAdapterInput = {
 	result: QueryResult
 	/** Printed by the chrome. It belongs to the Chart, not to its config. */
 	title?: string
+	/**
+	 * The surface cannot change the Chart. A control that rewrites the config —
+	 * a table's sort — is left out rather than drawn dead.
+	 */
+	readonly?: boolean
+	/**
+	 * The next run is in flight. Only a filler that keeps its last picture while
+	 * it reloads has anything to say about this; the rest are replaced by the
+	 * card's loading state before they are asked.
+	 */
+	executing?: boolean
 }
 
 /** The point a reader clicked, as a drill-down reads it. */
