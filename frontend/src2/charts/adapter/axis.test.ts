@@ -63,12 +63,6 @@ describe('the three axis types', () => {
 		expect(adaptChart(axisChart({ type: 'Bar', dimension: '', measures: ['revenue'] }))).toBeUndefined()
 		expect(adaptChart(axisChart({ type: 'Bar', dimension: 'region', measures: [] }))).toBeUndefined()
 	})
-
-	it('leaves a type it has not moved to whatever draws it today', () => {
-		expect(
-			adaptChart({ ...axisChart({ type: 'Bar', dimension: 'region', measures: ['revenue'] }), chart_type: 'Donut' }),
-		).toBeUndefined()
-	})
 })
 
 describe('the category axis', () => {

@@ -15,7 +15,6 @@ export type AxisChartConfig = {
 
 export type XAxis = {
 	dimension: Dimension
-	label_rotation?: number
 }
 
 export type SplitBy = {
@@ -30,7 +29,6 @@ export type YAxis = {
 	axis_label?: string
 	show_axis_label?: boolean
 	show_data_labels?: boolean
-	show_scrollbar?: boolean
 	reference_lines?: ReferenceLine[]
 }
 export type ReferenceLine = {

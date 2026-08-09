@@ -17,11 +17,12 @@ await buildIslands({
 		'src2/islands/**/*.{vue,ts}',
 		'src2/components/**/*.vue',
 		'src2/charts/ViewerChart.vue',
-		'src2/charts/components/{BaseChart,ChartBody,ChartSectionEmptySvg,ChartTitle,NumberChart,Sparkline,TableChart}.vue',
-		'src2/query/components/{ColumnFilterValueSelector,DataTypeIcon,NumberFilterPicker,QueryDataTable,RelativeDatePicker}.vue',
+		'src2/charts/adapter/*.vue',
+		'src2/charts/components/{ChartBody,ChartSectionEmptySvg,MapChart,TableChart}.vue',
+		'src2/query/components/{ColumnFilterValueSelector,DataTypeIcon,NumberFilterPicker,RelativeDatePicker}.vue',
 		'src2/dashboard/{DashboardView,Filter,FilterControl,ViewerItem,VueGridLayout}.vue',
 	],
-	// The SPA's plugin. Without it NumberChart's `@xl:` columns compile to nothing.
+	// The SPA's plugin. Without it the Number grid's `@xl:` columns compile to nothing.
 	tailwindPlugins: ['@tailwindcss/container-queries'],
 	// 18 kB of typography the runtime sheet already carries — the shadow root
 	// adopts both, runtime first, so text items render off that copy.

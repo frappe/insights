@@ -4,31 +4,11 @@ import { ChartCard, ChartContainer } from 'frappe-ui/charts'
 import { AlertTriangle, RefreshCcw } from 'lucide-vue-next'
 import { computed, shallowRef, watch } from 'vue'
 import { __ } from '../../translation'
-import { titleCase } from '../../helpers'
-import { FIELDTYPES } from '../../helpers/constants.ts'
 import { EMPTY_RESULT } from '../../query/helpers'
 import { Query } from '../../query/query'
-import {
-	BubbleChartConfig,
-	DonutChartConfig,
-	FunnelChartConfig,
-	MapChartConfig,
-	NumberChartConfig,
-	SankeyChartConfig,
-} from '../../types/chart.types'
-import { QueryResultRow } from '../../types/query.types'
 import { adaptChart, type DrillDownTarget } from '../adapter'
 import { ChartRead } from '../chart_read'
-import {
-	getBubbleChartOptions,
-	getDonutChartOptions,
-	getFunnelChartOptions,
-	getMapChartOptions,
-	getSankeyChartOptions,
-} from '../helpers'
-import BaseChart from './BaseChart.vue'
 import ChartSectionEmptySvg from './ChartSectionEmptySvg.vue'
-import NumberChart from './NumberChart.vue'
 
 // The chart itself: the type it is, the data it has, and every state in between.
 // One card, one state machine — a surface that draws a chart card draws this,
@@ -74,53 +54,21 @@ const adapted = computed(() => {
 	})
 })
 
-// SCAFFOLD: the types that have not moved onto the standard chart family yet.
-// Each still builds its own echarts option or draws its own surface. This block,
-// and the branch that reaches it, go with the last of them.
-const builtOptions = computed(() => {
-	if (props.chart.configErrors.length) return
-	if (!result.value.columns?.length) return
-	if (chart_type.value === 'Donut') {
-		return getDonutChartOptions(config.value as DonutChartConfig, result.value)
-	}
-	if (chart_type.value === 'Funnel') {
-		return getFunnelChartOptions(config.value as FunnelChartConfig, result.value)
-	}
-	if (chart_type.value === 'Map') {
-		return getMapChartOptions(config.value as MapChartConfig, result.value)
-	}
-	if (chart_type.value === 'Bubble') {
-		return getBubbleChartOptions(config.value as BubbleChartConfig, result.value)
-	}
-	if (chart_type.value === 'Sankey') {
-		return getSankeyChartOptions(config.value as SankeyChartConfig, result.value)
-	}
-})
-
 // The store holds on to the rows when the server answers with config errors, so
 // the card goes on showing what it last drew while a slot is being filled — the
 // adapter cannot run against a config the server refused, but its last output is
 // still a true picture of those rows. A type switch is not that case: the
 // picture belongs to the type that drew it.
-type Drawn = { chart_type: string; filler?: ReturnType<typeof adaptChart>; options?: object }
+type Drawn = { chart_type: string; filler: NonNullable<ReturnType<typeof adaptChart>> }
 const lastDrawn = shallowRef<Drawn>()
-watch([adapted, builtOptions], ([filler, options]) => {
-	if (filler || options) lastDrawn.value = { chart_type: chart_type.value, filler, options }
+watch(adapted, (filler) => {
+	if (filler) lastDrawn.value = { chart_type: chart_type.value, filler }
 })
 
-const drawn = computed<Drawn | undefined>(() => {
-	if (!props.chart.configErrors.length) {
-		return { chart_type: chart_type.value, filler: adapted.value, options: builtOptions.value }
-	}
-	return lastDrawn.value?.chart_type === chart_type.value ? lastDrawn.value : undefined
+const filler = computed(() => {
+	if (!props.chart.configErrors.length) return adapted.value
+	return lastDrawn.value?.chart_type === chart_type.value ? lastDrawn.value.filler : undefined
 })
-
-const filler = computed(() => drawn.value?.filler)
-const eChartOptions = computed(() => drawn.value?.options)
-
-// there is a picture: either the adapter named a filler for it, or one of the
-// types still on the scaffold built its own option
-const drawable = computed(() => Boolean(filler.value) || Boolean(eChartOptions.value))
 
 // A table that already has rows keeps them while the next run is in flight.
 // Every other type blanks, so this is a restoration and not a rule: a table on a
@@ -140,7 +88,7 @@ const state = computed(() => {
 	if (props.chart.failed) return props.chart.serverBusy ? 'serverBusy' : 'failed'
 	if (props.chart.executing && !keepsLastPicture.value) return 'loading'
 	if (props.chart.empty) return 'empty'
-	return drawable.value ? 'chart' : 'unconfigured'
+	return filler.value ? 'chart' : 'unconfigured'
 })
 
 // Any non-empty string puts the container in its error state. The slot below
@@ -176,99 +124,6 @@ async function drillDownInto(target: DrillDownTarget | undefined | null) {
 	const query = await props.chart.getDrillDownQuery(column, row)
 	if (query) emit('drillDown', query)
 }
-
-const mapConfig = computed(() => props.chart.doc.config as MapChartConfig)
-
-// If columns don't change we shouldn't search for this on every click
-const locationColumn = computed(() => {
-	return result.value.columns.find(
-		(c) =>
-			FIELDTYPES.DIMENSION.includes(c.type) &&
-			c.name === mapConfig.value.location_column?.column_name,
-	)
-})
-
-// Runs only when data changes
-const locationRowIndex = computed(() => {
-	const index = new Map<string, any>()
-	const col = locationColumn.value
-
-	if (!col) return { index, reverseMap: new Map<string, string>() }
-
-	// computed mappings for faster acess
-	const mappings = mapConfig.value.region_mappings?.[mapConfig.value.map_type || 'world'] || {}
-	const reverseMap = new Map<string, string>()
-
-	for (const [userValue, mappedRegion] of Object.entries(mappings)) {
-		reverseMap.set(titleCase(mappedRegion as string), userValue)
-	}
-
-	// Index the rows
-	result.value.formattedRows.forEach((row) => {
-		const rawValue = row[col.name]?.toString()
-		if (!rawValue) return
-
-		const normalizedRowValue = titleCase(rawValue)
-		//	case 1: Index by Direct Match (Auto-mapped)
-		// Key: "United States" -> Row(United States)
-		index.set(normalizedRowValue, row)
-
-		//case 2: Index by config mapping
-		// If this row is "usa" and config maps == "usa" -> "United States"
-		// we also want the key "United States" to point to this row
-		const mappedName = mappings[rawValue]
-		if (mappedName) {
-			index.set(titleCase(mappedName as string), row)
-		}
-	})
-
-	return { index, reverseMap }
-})
-
-function handleMapChartClick(params: any) {
-	if (!locationColumn.value) return null
-
-	const clickedLocation = params.name
-	const normalizedClick = titleCase(clickedLocation)
-
-	const { index, reverseMap } = locationRowIndex.value
-	// Lookup directly
-	let matchedRow = index.get(normalizedClick)
-
-	if (!matchedRow) {
-		const originalUserVal = reverseMap.get(normalizedClick)
-		if (originalUserVal) {
-			matchedRow = index.get(titleCase(originalUserVal))
-		}
-	}
-
-	if (!matchedRow) return null
-
-	return props.chart.getDrillDownQuery(locationColumn.value, matchedRow)
-}
-
-function handleGeneralChartClick(params: any) {
-	const row = result.value.formattedRows[params.dataIndex]
-	const column = result.value.columns.find((c) => c.name === params.seriesName)
-
-	return column ? props.chart.getDrillDownQuery(column, row) : null
-}
-
-async function onChartElementClick(params: any) {
-	if (params.componentType !== 'series') return
-
-	const query =
-		chart_type.value === 'Map'
-			? await handleMapChartClick(params)
-			: await handleGeneralChartClick(params)
-
-	if (query) emit('drillDown', query)
-}
-
-async function onNumberChartDrillDown(column: any, row: QueryResultRow) {
-	const query = await props.chart.getDrillDownQuery(column, row)
-	if (query) emit('drillDown', query)
-}
 </script>
 
 <template>
@@ -287,29 +142,10 @@ async function onNumberChartDrillDown(column: any, row: QueryResultRow) {
 		</div>
 
 		<div class="min-h-0 w-full flex-1">
-			<!-- SCAFFOLD: a type the adapter has not taken over draws its own card.
-			     Goes with the last of them. -->
-			<template v-if="state === 'chart' && !filler">
-				<BaseChart
-					v-if="eChartOptions"
-					class="rounded bg-surface-base py-1 border border-outline-gray-2"
-					:class="chart_type == 'Map' ? '[&>div:last-child]:p-4' : ''"
-					:title="props.chart.doc.title"
-					:options="eChartOptions"
-					:onClick="onChartElementClick"
-				/>
-				<NumberChart
-					v-else
-					:config="config as NumberChartConfig"
-					:result="result"
-					@drill-down="onNumberChartDrillDown"
-				/>
-			</template>
-
 			<!-- a card still filling in is a placeholder to a reader, not a message:
 			     a dashboard fills in card by card and the grid should hold its shape -->
 			<div
-				v-else-if="state === 'loading' && props.readonly"
+				v-if="state === 'loading' && props.readonly"
 				class="h-full w-full animate-pulse rounded-7 border border-outline-gray-1 bg-surface-gray-2"
 			/>
 
