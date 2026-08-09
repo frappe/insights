@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { compactLayouts, placeGrid, stackLayouts, type GridLayoutItem } from './grid_placement'
+import {
+	compactLayouts,
+	placeGrid,
+	resolveLayouts,
+	stackLayouts,
+	type GridLayoutItem,
+} from './grid_placement'
 
 // A cell, named so a case reads as the grid it describes.
 function cell(i: string, x: number, y: number, w: number, h: number): GridLayoutItem {
@@ -44,8 +50,89 @@ describe('stackLayouts', () => {
 	})
 
 	it('stacks in reading order, top row first and then left to right', () => {
-		const stacked = stackLayouts([cell('right', 6, 0, 6, 2), cell('below', 0, 4, 12, 2), cell('left', 0, 0, 6, 2)])
+		const stacked = stackLayouts([
+			cell('right', 6, 0, 6, 2),
+			cell('below', 0, 4, 12, 2),
+			cell('left', 0, 0, 6, 2),
+		])
 		expect(stacked.map((item) => item.i)).toEqual(['left', 'right', 'below'])
+	})
+})
+
+describe('resolveLayouts', () => {
+	// the cell under the pointer, and the grid it was dropped onto
+	const dragged = (x: number, y: number) => cell('dragged', x, y, 6, 2)
+
+	it('leaves the dragged cell where the pointer put it', () => {
+		const settled = resolveLayouts([dragged(0, 0), cell('b', 0, 0, 6, 2)], {
+			pinned: 'dragged',
+			verticalCompact: false,
+		})
+		expect(settled[0]).toEqual(dragged(0, 0))
+	})
+
+	it('pushes the cell it landed on out from under it', () => {
+		const settled = resolveLayouts([dragged(0, 0), cell('b', 0, 0, 6, 2)], {
+			pinned: 'dragged',
+			verticalCompact: false,
+		})
+		expect(settled[1]).toEqual(cell('b', 0, 2, 6, 2))
+	})
+
+	it('leaves a cell it did not land on alone', () => {
+		const settled = resolveLayouts([dragged(0, 0), cell('right', 6, 0, 6, 2)], {
+			pinned: 'dragged',
+			verticalCompact: false,
+		})
+		expect(settled[1]).toEqual(cell('right', 6, 0, 6, 2))
+	})
+
+	it('cascades a push down through the cells below', () => {
+		const settled = resolveLayouts(
+			[dragged(0, 0), cell('b', 0, 0, 6, 2), cell('c', 0, 2, 6, 2)],
+			{ pinned: 'dragged', verticalCompact: false },
+		)
+		expect(settled[1]).toEqual(cell('b', 0, 2, 6, 2))
+		expect(settled[2]).toEqual(cell('c', 0, 4, 6, 2))
+	})
+
+	it('closes the gap a push opened when the dashboard asks for compaction', () => {
+		// nothing is dropped on 'low', so compaction pulls it to the top
+		const settled = resolveLayouts([dragged(6, 0), cell('low', 0, 8, 6, 2)], {
+			pinned: 'dragged',
+			verticalCompact: true,
+		})
+		expect(settled[1]).toEqual(cell('low', 0, 0, 6, 2))
+	})
+
+	it('rests a pushed cell under the dragged one, not back on top of it', () => {
+		const settled = resolveLayouts([dragged(0, 0), cell('b', 0, 0, 6, 2)], {
+			pinned: 'dragged',
+			verticalCompact: true,
+		})
+		expect(settled[1]).toEqual(cell('b', 0, 2, 6, 2))
+	})
+
+	it('settles the same way however the pointer arrived', () => {
+		const grid = [dragged(0, 4), cell('b', 0, 0, 6, 2), cell('c', 0, 2, 6, 2)]
+		const options = { pinned: 'dragged', verticalCompact: true }
+		// resolving a settled grid again must not push anything further down
+		expect(resolveLayouts(resolveLayouts(grid, options), options)).toEqual(
+			resolveLayouts(grid, options),
+		)
+	})
+
+	it('hands the cells back in the order it got them', () => {
+		const settled = resolveLayouts([cell('c', 0, 9, 6, 2), cell('a', 0, 0, 6, 2)], {
+			verticalCompact: true,
+		})
+		expect(settled.map((item) => item.i)).toEqual(['c', 'a'])
+	})
+
+	it('leaves the caller its own array', () => {
+		const grid = [dragged(0, 0), cell('b', 0, 0, 6, 2)]
+		resolveLayouts(grid, { pinned: 'dragged', verticalCompact: true })
+		expect(grid[1]).toEqual(cell('b', 0, 0, 6, 2))
 	})
 })
 
