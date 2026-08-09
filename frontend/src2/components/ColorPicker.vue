@@ -6,6 +6,13 @@
 		:align="align"
 		bare
 	>
+		<!--
+			This wrapper is reka's trigger, so it toggles on any click that reaches
+			it. Opening is left to the caller's `togglePopover` instead, so that
+			only the element the caller nominates opens the picker — a click in the
+			rest of the target, a text field say, must not. Whatever calls
+			`togglePopover` therefore has to stop the click here.
+		-->
 		<template #trigger>
 			<div class="w-full">
 				<slot name="target" :togglePopover="togglePopover" :isOpen="isOpen"></slot>

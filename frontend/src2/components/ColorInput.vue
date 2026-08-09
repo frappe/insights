@@ -9,9 +9,11 @@
 				@update:modelValue="handleColorChange"
 			>
 				<template #prefix>
+					<!-- .stop, or the click also reaches the popover trigger wrapping
+					     this input and toggles straight back. -->
 					<div
 						class="ml-2 h-4 w-4 rounded shadow-sm"
-						@click="togglePopover"
+						@click.stop="togglePopover"
 						:style="{ background: value || unsetSwatch }"
 					></div>
 				</template>
@@ -22,7 +24,7 @@
 						variant="ghost"
 						size="sm"
 						icon="lucide-x"
-						@click="clearValue"
+						@click.stop="clearValue"
 					/>
 				</template>
 			</TextInput>
