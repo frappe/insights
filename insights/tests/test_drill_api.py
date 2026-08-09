@@ -1,4 +1,5 @@
 import json
+from unittest.mock import patch
 
 import frappe
 
@@ -275,6 +276,41 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         # the fixtures are made in one breath, so a month bucket holds them all
         self.assertEqual(len(result["rows"]), 1)
         self.assertEqual(result["rows"][0]["count_of_rows"], len(AUTHOR_TODOS))
+
+    def test_a_breakdown_is_cut_to_a_ranking(self):
+        """The level answers which slice explains the number, so it ranks a few.
+
+        The cut is proven against a smaller bound than the shipped one: the
+        fixtures hold three descriptions, and committing twenty-odd more would
+        put them in front of every other test in this class.
+        """
+        _, chart, dashboard = self.make_content()
+
+        with patch("insights.insights.doctype.insights_chart_v3.chart_drill.BREAKDOWN_SIZE", 2):
+            result = self.drill(
+                DESK_USER,
+                chart.name,
+                dashboard.name,
+                drill_stack=[breakdown_level("description", measure="count_of_rows")],
+            )
+
+        self.assertEqual(len(result["rows"]), 2)
+        # the dialog says "top 2 of 3", so the count has to see past the cut
+        self.assertEqual(result["total_row_count"], 3)
+
+    def test_a_records_level_is_not_cut_to_a_ranking(self):
+        """A records page is bounded by the page size, not the ranking size."""
+        _, chart, dashboard = self.make_content()
+
+        with patch("insights.insights.doctype.insights_chart_v3.chart_drill.BREAKDOWN_SIZE", 1):
+            result = self.drill(
+                DESK_USER,
+                chart.name,
+                dashboard.name,
+                drill_stack=[records_level(measure="count_of_rows")],
+            )
+
+        self.assertEqual(len(result["rows"]), 3)
 
     def test_a_breakdown_carries_the_measure_the_click_landed_on(self):
         _, chart, dashboard = self.make_content(

@@ -53,14 +53,19 @@ const crumbs = computed(() => [
 
 /**
  * What the reader is seeing, out of what there is. Real paging is not built —
- * the honest thing until someone hits the bound is to say where it is.
+ * the honest thing until someone hits the bound is to say where it is. A
+ * breakdown is cut to a ranking rather than paged, so it says "top".
  */
 const bound = computed(() => {
 	if (!props.data) return ''
 	const shown = props.data.rows.length
 	const total = props.data.total_row_count
-	if (!total || total <= shown) return __('{0} rows', shown.toLocaleString())
-	return __('{0} of {1} rows', shown.toLocaleString(), total.toLocaleString())
+	const unit = breakdown.value ? __('groups') : __('rows')
+	if (!total || total <= shown) return `${shown.toLocaleString()} ${unit}`
+	if (breakdown.value) {
+		return __('top {0} of {1} {2}', shown.toLocaleString(), total.toLocaleString(), unit)
+	}
+	return __('{0} of {1} {2}', shown.toLocaleString(), total.toLocaleString(), unit)
 })
 </script>
 

@@ -38,9 +38,13 @@ DATA_SOURCE = "Insights Data Source v3"
 RECORDS = "records"
 BREAKDOWN = "breakdown"
 
-# what a records level shows and a breakdown level ranks. The dialog states the
-# bound it draws; real pagination waits for someone to hit it
+# what a records level shows. The dialog states the bound it draws; real
+# pagination waits for someone to hit it
 PAGE_SIZE = 100
+
+# what a breakdown ranks. The level answers "which slice explains this", and a
+# ranking stops being readable long before a page of rows does
+BREAKDOWN_SIZE = 20
 
 # the columns a segment can be broken down by, and the ones whose values name a
 # bucket rather than a moment
@@ -132,14 +136,16 @@ def drill_data(
         last = drill_stack[-1]
         action = _action(last)
         drilled = [*sliced, _filter_group(_segment_filters(drill_stack, step, surface))]
+        page_size = PAGE_SIZE
         if action["type"] == BREAKDOWN:
             drilled += _breakdown(action["dimension"], _clicked(last), step, surface)
+            page_size = BREAKDOWN_SIZE
 
         query = chart.get_query(operations=drilled)
         # a level is fetched once and then kept by the dialog for as long as it
         # is open, so back and crumb pops never come here. What does come here
         # is a viewer asking what a number is made of right now
-        result = query.execute(adhoc_filters=adhoc_filters, page_size=PAGE_SIZE, force=True)
+        result = query.execute(adhoc_filters=adhoc_filters, page_size=page_size, force=True)
         # the dialog shows one page and says so: "100 of 1,240" needs the 1,240
         total_row_count = query.count_rows(adhoc_filters=adhoc_filters)
 
