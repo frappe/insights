@@ -113,15 +113,18 @@ const fillerEvents = computed(() => {
 	)
 })
 
+// A resolver answers with the raw row, which is what a drill-down reads, so
+// nothing is looked up on the way out. A column it names and the result does not
+// carry is a mapping bug in the adapter, not a click on nothing — a click that
+// resolves to nothing is reported as `undefined` above.
 async function drillDownInto(target: DrillDownTarget | undefined | null) {
 	if (!target) return
 	const column = result.value.columns.find((c) => c.name === target.column)
-	if (!column) return
-	// A drill-down identifies its row inside `formattedRows`, and a chart is drawn
-	// from the raw ones, so the two are matched by position.
-	const row = result.value.formattedRows[result.value.rows.indexOf(target.row)]
-	if (!row) return
-	const query = await props.chart.getDrillDownQuery(column, row)
+	if (!column) {
+		console.warn(`[insights] Cannot drill down: no result column named "${target.column}".`)
+		return
+	}
+	const query = await props.chart.getDrillDownQuery(column, target.row)
 	if (query) emit('drillDown', query)
 }
 </script>

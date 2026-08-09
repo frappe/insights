@@ -1,4 +1,4 @@
-import { column } from '../../query/helpers'
+import { column, rawRowOf } from '../../query/helpers'
 import type { FormatGroupArgs } from '../../query/components/formatting_utils'
 import type { TableChartConfig } from '../../types/chart.types'
 import type {
@@ -91,10 +91,10 @@ export function adaptTableChart(input: ChartAdapterInput): ChartFiller | undefin
 		component: TableChart,
 		props,
 		drillDown: {
-			// A row is drawn formatted and drilled into raw, and the two are
-			// parallel arrays, so the one is read at the other's position.
+			// The one type drawn from the formatted rows, so the one resolver that
+			// crosses back to the raw one a drill-down reads.
 			cellClick: (event: TableCellEvent) => {
-				const row = result.rows[result.formattedRows.indexOf(event.row)]
+				const row = rawRowOf(result, event.row)
 				return row ? { column: event.column.name, row } : undefined
 			},
 		},

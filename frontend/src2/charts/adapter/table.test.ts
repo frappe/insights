@@ -163,6 +163,21 @@ describe('drilling into a cell', () => {
 		).toEqual({ column: 'revenue', row: input.result.rows[1] })
 	})
 
+	// Only the rows the table was handed have a raw row behind them. A row from
+	// anywhere else drills into nothing — and `rawRowOf` says so out loud, because
+	// there is no reading of the data under which this is a click on empty space.
+	it('drills into nothing from a row the result does not carry', () => {
+		const input = tableChart({ rows: ['category'], values: ['revenue'] })
+		const filler = adapt(input)
+
+		expect(
+			filler.drillDown!.cellClick({
+				column: input.result.columns[1],
+				row: { category: 'Total', revenue: 999 },
+			}),
+		).toBeUndefined()
+	})
+
 	it('is not offered to a reader, who has nothing to open it in', () => {
 		const props = adapt({ ...tableChart({ values: ['revenue'] }), readonly: true }).props
 		expect(props.drillable).toBeUndefined()

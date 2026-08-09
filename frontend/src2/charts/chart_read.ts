@@ -77,6 +77,7 @@ export type ChartFeed = {
 	// forking what the server ran into a drill query is authoring, and so is the
 	// query editor it opens in. The feed that receives the operations is the feed
 	// that carries it — a read surface has neither, which is ticket 11's business.
+	// `row` is the raw row, as a chart's own click events report it.
 	drillDown?: (
 		source: DrillDownSource,
 		column: QueryResultColumn,

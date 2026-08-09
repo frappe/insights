@@ -366,4 +366,29 @@ describe('drilling into a point', () => {
 			}),
 		).toEqual({ column: 'revenue', row })
 	})
+
+	// The column a split segment names is a pivoted one, which only the result
+	// carries — a drill-down that named the Measure would fail to find it there.
+	it('names the pivoted column a split segment was drawn from', () => {
+		const input = axisChart({
+			type: 'Bar',
+			dimension: 'month',
+			measures: ['revenue', 'profit'],
+			splitBy: { dimension: 'department', into: ['Men', 'Women'] },
+		})
+		const filler = adaptChart(input)!
+		const row = input.result.rows[0]
+
+		for (const series of filler.props.y as string[]) {
+			const target = filler.drillDown!.datapointClick({
+				seriesName: series,
+				dataIndex: 0,
+				value: row[series],
+				row,
+			})
+			expect(target).toEqual({ column: series, row })
+			// what the card then looks the column up by
+			expect(input.result.columns.map((c) => c.name)).toContain(target!.column)
+		}
+	})
 })

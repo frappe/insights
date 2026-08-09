@@ -52,6 +52,7 @@ import {
 	PivotWiderArgs,
 	QueryResult,
 	QueryResultColumn,
+	QueryResultRow,
 	QueryTableArgs,
 	Remove,
 	RemoveArgs,
@@ -178,6 +179,27 @@ export function formatResultRows(result: QueryResult, granularityByColumn: Recor
 	})
 	return formattedRows
 }
+/**
+ * The row `formatResultRows` produced this one from. A surface that draws the
+ * formatted rows — a table — reports the row it drew, and everything downstream
+ * of a click reads the raw values, so the crossing happens once, here.
+ *
+ * The two are parallel arrays, so the raw row is the formatted one's position.
+ * A row from anywhere else has no position, which is a caller bug rather than a
+ * click on nothing: it says so instead of returning quietly.
+ */
+export function rawRowOf(
+	result: QueryResult,
+	formattedRow: QueryResultRow,
+): QueryResultRow | undefined {
+	const index = result.formattedRows.indexOf(formattedRow)
+	const row = index === -1 ? undefined : result.rows[index]
+	if (!row) {
+		console.warn('[insights] No result row behind the row that was clicked.', formattedRow)
+	}
+	return row
+}
+
 export function getFormattedDate(date: string, granularity: string) {
 	if (!date) return ''
 

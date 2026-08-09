@@ -43,6 +43,7 @@ export type ResultTable = {
 	addOrderBy?: (args: OrderByArgs) => void
 	removeOrderBy?: (column_name: string) => void
 
+	/** `row` is the raw row, not the formatted one the table drew. */
 	getDrillDownQuery?: (
 		column: QueryResultColumn,
 		row: QueryResultRow,

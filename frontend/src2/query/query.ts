@@ -769,6 +769,7 @@ export function makeQuery(name: string) {
 			})
 	}
 
+	/** `row` is the raw row; see `makeDrillDownQuery`. */
 	function getDrillDownQuery(col: QueryResultColumn, row: QueryResultRow) {
 		return makeDrillDownQuery(
 			{
@@ -937,17 +938,20 @@ export type DrillDownSource = {
 	use_live_connection?: boolean
 }
 
+/**
+ * `row` is the raw row, as it stands in `source.result.rows`: the filters below
+ * are built from the values that were queried, never from the printed ones. A
+ * surface that draws the formatted rows crosses back with `rawRowOf` before it
+ * asks — one crossing, at the surface that knows it drew a formatted row.
+ */
 export async function makeDrillDownQuery(
 	source: DrillDownSource,
 	col: QueryResultColumn,
-	row: QueryResultRow,
+	currRow: QueryResultRow,
 ): Promise<Query | undefined> {
 	if (!session.isLoggedIn) {
 		return
 	}
-
-	const rowIndex = source.result.formattedRows.findIndex((r) => r === row)
-	const currRow = source.result.rows[rowIndex]
 
 	// Get the effective operations — inlining source query ops if needed
 	const operations = await getEffectiveOperationsForDrillDown(
