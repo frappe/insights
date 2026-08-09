@@ -339,6 +339,27 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         self.assertEqual([column["name"] for column in result["columns"]], ["priority", "Todos"])
         self.assertEqual([(row["priority"], row["Todos"]) for row in result["rows"]], [("Medium", 2)])
 
+    def test_a_breakdown_here_says_how_to_draw_it_too(self):
+        query, _ = self.make_content()
+
+        ordered = self.drill(
+            AUTHOR,
+            query=query.name,
+            operations=summarized_operations(),
+            drill_stack=[breakdown_level("creation", measure="Todos")],
+        )
+        ranked = self.drill(
+            AUTHOR,
+            query=query.name,
+            operations=summarized_operations(),
+            drill_stack=[breakdown_level("priority", measure="Todos")],
+        )
+
+        # the two fields the viewer door reports, on the door the builder uses:
+        # one dialog draws both, so it must not have to know which fed it
+        self.assertEqual((ordered["ordered"], ordered["granularity"]), (True, "minute"))
+        self.assertEqual((ranked["ordered"], ranked["granularity"]), (False, None))
+
     def test_the_answer_carries_the_pipeline_the_level_opens_as(self):
         query, _ = self.make_content()
 

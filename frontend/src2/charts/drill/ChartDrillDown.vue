@@ -8,6 +8,7 @@ import {
 	breakdownCandidates,
 	columnLabel,
 	declaredDimensionColumns,
+	grainsFor,
 	makeDrillStack,
 	segmentOf,
 	type DrillAction,
@@ -58,9 +59,18 @@ const pending = ref<{ segment: DrillSegment; point: { x: number; y: number } }>(
 const clickedChart = computed<DrillChart>(() => {
 	const action = stack.current?.level.action
 	if (action && 'breakdown' in action) {
-		return breakdownChart(action.breakdown, action.measure || '', data.value?.columns || [])
+		return breakdownChart(action.breakdown, action.measure || '', data.value || { columns: [] })
 	}
 	return props.subject.chart
+})
+
+// The grains the level being read can be asked for. A breakdown of anything but
+// a date has none, and the dialog draws no control where there is nothing to
+// choose between.
+const grains = computed(() => {
+	const action = stack.current?.level.action
+	if (!action || !('breakdown' in action)) return []
+	return grainsFor(props.subject.dimensions, action.breakdown)
 })
 
 const candidates = computed<DrillDimension[]>(() =>
@@ -105,6 +115,13 @@ function chooseBreakdown(dimension: DrillDimension) {
 function dismissMenu() {
 	pending.value = undefined
 	if (!open.value) emit('close')
+}
+
+// A grain is a different question about the same level, so it re-asks the level
+// instead of descending. The reader stays exactly where they are.
+function regrain(granularity: string) {
+	stack.regrain(granularity)
+	load()
 }
 
 function popTo(depth: number) {
@@ -167,9 +184,11 @@ async function load() {
 		:stack="stack"
 		:title="props.subject.title"
 		:data="data"
+		:grains="grains"
 		:loading="loading"
 		:failed="failed"
 		@segment-click="(click) => offerMenu(click, clickedChart)"
+		@regrain="regrain"
 		@pop-to="popTo"
 		@closed="emit('close')"
 	>

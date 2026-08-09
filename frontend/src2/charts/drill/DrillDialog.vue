@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Breadcrumbs, Button, Dialog, LoadingIndicator } from 'frappe-ui'
-import { AlertTriangle, ChevronLeft } from 'lucide-vue-next'
+import { Breadcrumbs, Button, Dialog, Dropdown, LoadingIndicator } from 'frappe-ui'
+import { AlertTriangle, ChevronDown, ChevronLeft } from 'lucide-vue-next'
 import { computed } from 'vue'
 import { __ } from '../../translation'
 import DrillBreakdown from './DrillBreakdown.vue'
@@ -20,6 +20,8 @@ const props = defineProps<{
 	stack: DrillStack
 	title: string
 	data?: DrillLevelData
+	/** the grains this level could be asked for. Empty unless it is a date. */
+	grains?: readonly { label: string; value: string }[]
 	loading?: boolean
 	failed?: boolean
 }>()
@@ -28,6 +30,8 @@ const emit = defineEmits<{
 	segmentClick: [click: ChartSegmentClick]
 	// eslint-disable-next-line no-unused-vars
 	popTo: [depth: number]
+	// eslint-disable-next-line no-unused-vars
+	regrain: [granularity: string]
 	/** after the dialog has gone, so the path it held goes with it */
 	closed: []
 }>()
@@ -51,17 +55,38 @@ const crumbs = computed(() => [
 	})),
 ])
 
+// A Dimension with an order of its own is read in that order, at a grain. The
+// server picks one from the span it is looking at; this says which, and lets the
+// reader ask for another. Nothing to choose on a ranked breakdown or on records.
+const ordered = computed(() => Boolean(breakdown.value && props.data?.ordered))
+const grain = computed(
+	() => props.grains?.find((option) => option.value === props.data?.granularity),
+)
+
+const grainOptions = computed(() =>
+	(props.grains || []).map((option) => ({
+		label: option.label,
+		selected: option.value === grain.value?.value,
+		onClick: () => emit('regrain', option.value),
+	})),
+)
+
 /**
  * What the reader is seeing, out of what there is. Real paging is not built —
- * the honest thing until someone hits the bound is to say where it is. A
- * breakdown is cut to a ranking rather than paged, so it says "top".
+ * the honest thing until someone hits the bound is to say where it is. Which
+ * few came back is the level's own reading: a ranked breakdown is cut to the
+ * biggest slices, and an ordered one to the most recent stretch — so one says
+ * "top" and the other says "latest".
  */
 const bound = computed(() => {
 	if (!props.data) return ''
 	const shown = props.data.rows.length
 	const total = props.data.total_row_count
-	const unit = breakdown.value ? __('groups') : __('rows')
+	const unit = breakdown.value ? (ordered.value ? __('periods') : __('groups')) : __('rows')
 	if (!total || total <= shown) return `${shown.toLocaleString()} ${unit}`
+	if (ordered.value) {
+		return __('latest {0} of {1} {2}', shown.toLocaleString(), total.toLocaleString(), unit)
+	}
 	if (breakdown.value) {
 		return __('top {0} of {1} {2}', shown.toLocaleString(), total.toLocaleString(), unit)
 	}
@@ -83,6 +108,19 @@ const bound = computed(() => {
 					</template>
 				</Button>
 				<Breadcrumbs class="min-w-0" :items="crumbs" />
+				<!-- the grain the level is being read at, beside the crumb that names
+				     it: it is part of where the reader is, not an action on the level -->
+				<Dropdown v-if="ordered && grainOptions.length" :options="grainOptions">
+					<Button
+						variant="ghost"
+						class="flex-shrink-0"
+						:label="grain?.label || __('Grain')"
+					>
+						<template #suffix>
+							<ChevronDown class="h-4 w-4 text-ink-gray-5" stroke-width="1.5" />
+						</template>
+					</Button>
+				</Dropdown>
 				<!-- what a surface may do with the level it is reading. Empty on a
 				     reading surface, which has nothing to offer beyond the ladder. -->
 				<div class="ml-auto flex flex-shrink-0 items-center gap-2 pl-2">

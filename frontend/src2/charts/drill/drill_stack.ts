@@ -13,7 +13,7 @@
 // empty set. Nothing past `segmentOf` knows which type was clicked.
 
 import { computed, reactive, shallowRef } from 'vue'
-import { FIELDTYPES } from '../../helpers/constants'
+import { FIELDTYPES, getGranularityOptions } from '../../helpers/constants'
 import { getFormattedDate } from '../../query/helpers'
 import { AXIS_CHARTS } from '../../types/chart.types'
 import type {
@@ -58,9 +58,13 @@ export type DrillFilter = {
  * needs it too, because a Measure can carry a condition of its own ("count the
  * overdue ones"), and rows that ignored it would not add up to the number that
  * was clicked.
+ *
+ * `granularity` is what the reader asked a date breakdown for. Left off, the
+ * server picks the grain the segment's span deserves; said, it wins. So the
+ * absent field is not "no grain" — it is "you choose", and the answer says which.
  */
 export type DrillAction =
-	| { breakdown: string; measure?: string }
+	| { breakdown: string; measure?: string; granularity?: string }
 	| { records: true; measure?: string }
 
 export type DrillLevel = {
@@ -325,24 +329,20 @@ export function segmentOf(chart: DrillChart, target: DrillDownTarget): DrillSegm
 }
 
 /**
- * The grain a level's date columns are printed at.
+ * The grain a records level's date columns are printed at.
  *
- * A grouped date is printed at the grain it was grouped by, and the response
- * says which. A records level groups nothing, so its dates have no grain to
- * carry — and printed raw they read as machine output. The column's own type is
- * the honest grain there: a `Date` is a day, a `Datetime` is a moment.
+ * A records level groups nothing, so its dates carry no grain of their own —
+ * and printed raw they read as machine output. The column's own type is the
+ * honest grain there: a `Date` is a day, a `Datetime` is a moment. A grouped
+ * date is a different reading: the answer names the one grain it grouped by,
+ * and the chart drawing it is told directly.
  */
-export function drillGranularity(
-	columns: QueryResultColumn[],
-	grouped: Record<string, string> = {},
-): Record<string, string> {
+export function drillGranularity(columns: QueryResultColumn[]): Record<string, string> {
 	const byType: Record<string, string> = { Date: 'day', Datetime: 'second', Time: 'second' }
 
-	const granularity = { ...grouped }
+	const granularity: Record<string, string> = {}
 	for (const column of columns) {
-		if (!granularity[column.name] && byType[column.type]) {
-			granularity[column.name] = byType[column.type]
-		}
+		if (byType[column.type]) granularity[column.name] = byType[column.type]
 	}
 	return granularity
 }
@@ -385,6 +385,18 @@ export function breakdownCandidates(
 		})
 }
 
+/**
+ * The grains a breakdown column can be read at.
+ *
+ * The candidates carry each column's type, so the grains a reader may ask for
+ * are known without another call — and they are the grains the rest of the app
+ * offers for that type, not a list of the drill's own. Empty for anything that
+ * is not a date, which is also every breakdown that comes back ranked.
+ */
+export function grainsFor(dimensions: DrillDimension[], column: string) {
+	return getGranularityOptions(dimensions.find((candidate) => candidate.name === column)?.type)
+}
+
 // ---------------------------------------------------------------------------
 // The stack
 // ---------------------------------------------------------------------------
@@ -412,7 +424,16 @@ export type DrillCrumb = {
 export type DrillLevelData = {
 	columns: QueryResultColumn[]
 	rows: QueryResultRow[]
-	granularity?: Record<string, string>
+	/**
+	 * Whether the Dimension this level broke down has an order of its own. A date
+	 * does; a status does not. It decides the whole reading: an ordered level came
+	 * back in that order, cut to the most recent stretch, and a ranked one came
+	 * back biggest first. The server answers it — no client sniffs a column type
+	 * to guess at it, because the cut and the reading have to agree.
+	 */
+	ordered?: boolean
+	/** the grain an ordered breakdown was grouped by, whoever chose it */
+	granularity?: string | null
 	/** how many rows there are behind the bounded few that came back */
 	total_row_count?: number
 	/** only on a records level, and only when the convention held */
@@ -496,6 +517,27 @@ export function makeDrillStack() {
 
 		push: (entry: DrillEntry) => {
 			entries.value = [...entries.value, entry]
+		},
+		/**
+		 * The level the reader is standing on, asked for again at a grain they
+		 * chose. It replaces the level rather than pushing one: a grain is how this
+		 * level reads, not a step below it, so the trail and the way back out are
+		 * the same afterwards as before.
+		 *
+		 * The answer already held is left where it is. It answers the level as it
+		 * was asked then, and an answer is filed under the whole path — so a level
+		 * whose action has changed simply has none yet, and the dialog fetches.
+		 */
+		regrain: (granularity: string) => {
+			const entry = entries.value[entries.value.length - 1]
+			const action = entry?.level.action
+			if (!action || !('breakdown' in action)) return
+
+			const regrained = {
+				...entry,
+				level: { ...entry.level, action: { ...action, granularity } },
+			}
+			entries.value = [...entries.value.slice(0, -1), regrained]
 		},
 		/** Pop to `depth` levels. Deeper answers are kept — the reader may return. */
 		popTo: (depth: number) => {

@@ -8,9 +8,9 @@ import type { DrillLevelData } from './drill_stack'
 import { segmentClickEvents, type ChartSegmentClick, type ClickPoint } from './segment_click'
 
 // One breakdown level: the clicked Measure across the chosen Dimension, drawn by
-// the Row chart the dashboard already uses. It goes through `adaptChart` like any
-// card, so a click inside it comes back through the same resolver a card's click
-// does — which is what makes the next level ride a path that already exists.
+// the chart the answer's own reading calls for. It goes through `adaptChart` like
+// any card, so a click inside it comes back through the same resolver a card's
+// click does — which is what makes the next level ride a path that already exists.
 const props = defineProps<{
 	data: DrillLevelData
 	dimension: string
@@ -19,7 +19,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{ segmentClick: [click: ChartSegmentClick] }>()
 
-const chart = computed(() => breakdownChart(props.dimension, props.measure, props.data.columns))
+const chart = computed(() => breakdownChart(props.dimension, props.measure, props.data))
 
 const result = computed<QueryResult>(() => ({
 	...EMPTY_RESULT,

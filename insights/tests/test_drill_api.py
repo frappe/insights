@@ -32,9 +32,26 @@ AUTHOR_TODOS = {
 }
 OUTSIDER_TODO = f"{TODO_PREFIX} outsider open high"
 
+# the todos the ordered tests break down: dated, spread unevenly over one year,
+# so chronological order and a ranking by the measure disagree about every
+# position. The prefix shares no words with `TODO_PREFIX`, so the two sets never
+# land in the same query
+TIMELINE_PREFIX = "Drill API Dated"
+TIMELINE_TODOS = {
+    f"{TIMELINE_PREFIX} january": ("2024-01-15", "Low"),
+    f"{TIMELINE_PREFIX} february one": ("2024-02-15", "Low"),
+    f"{TIMELINE_PREFIX} february two": ("2024-02-16", "Low"),
+    f"{TIMELINE_PREFIX} february three": ("2024-02-17", "High"),
+    f"{TIMELINE_PREFIX} june": ("2024-06-15", "Low"),
+    f"{TIMELINE_PREFIX} december": ("2024-12-15", "High"),
+}
+# what those dates hold, month by month, oldest first
+TIMELINE_MONTHS = ["2024-01-01", "2024-02-01", "2024-06-01", "2024-12-01"]
+TIMELINE_COUNTS = [1, 3, 1, 1]
 
-def todo_operations():
-    """A query over `tabToDo`, narrowed to this module's fixtures."""
+
+def todo_operations(prefix=TODO_PREFIX):
+    """A query over `tabToDo`, narrowed to one of this module's fixture sets."""
     return [
         {
             "type": "source",
@@ -44,7 +61,7 @@ def todo_operations():
             "type": "filter",
             "column": {"type": "column", "column_name": "description"},
             "operator": "contains",
-            "value": TODO_PREFIX,
+            "value": prefix,
         },
     ]
 
@@ -92,11 +109,12 @@ def records_level(filters=None, measure=None):
     return {"segment_filters": filters or [], "action": {"records": True, "measure": measure}}
 
 
-def breakdown_level(dimension_name, filters=None, measure=None):
-    return {
-        "segment_filters": filters or [],
-        "action": {"breakdown": dimension_name, "measure": measure},
-    }
+def breakdown_level(dimension_name, filters=None, measure=None, granularity=None):
+    action = {"breakdown": dimension_name, "measure": measure}
+    if granularity:
+        action["granularity"] = granularity
+
+    return {"segment_filters": filters or [], "action": action}
 
 
 def equals(column, value):
@@ -119,15 +137,18 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         for description, (status, priority) in AUTHOR_TODOS.items():
             cls.make_todo(description, status, priority, AUTHOR)
         cls.make_todo(OUTSIDER_TODO, "Open", "High", OUTSIDER)
+        for description, (date, priority) in TIMELINE_TODOS.items():
+            cls.make_todo(description, "Open", priority, AUTHOR, date=date)
 
     @classmethod
-    def make_todo(cls, description, status, priority, allocated_to):
+    def make_todo(cls, description, status, priority, allocated_to, date=None):
         frappe.get_doc(
             {
                 "doctype": "ToDo",
                 "description": description,
                 "status": status,
                 "priority": priority,
+                "date": date,
                 "allocated_to": allocated_to,
                 "assigned_by": "Administrator",
             }
@@ -141,10 +162,11 @@ class TestDrillAPI(InsightsIntegrationTestCase):
     @classmethod
     def cleanup(cls):
         delete_workbooks(title_prefix=WORKBOOK_TITLE)
-        for todo in frappe.get_all(
-            "ToDo", filters={"description": ["like", f"%{TODO_PREFIX}%"]}, pluck="name"
-        ):
-            frappe.delete_doc("ToDo", todo, force=True, ignore_permissions=True)
+        for prefix in (TODO_PREFIX, TIMELINE_PREFIX):
+            for todo in frappe.get_all(
+                "ToDo", filters={"description": ["like", f"%{prefix}%"]}, pluck="name"
+            ):
+                frappe.delete_doc("ToDo", todo, force=True, ignore_permissions=True)
         delete_users(AUTHOR, OUTSIDER, DESK_USER)
 
     # fixtures
@@ -224,6 +246,14 @@ class TestDrillAPI(InsightsIntegrationTestCase):
     def column_names(self, result):
         return [column["name"] for column in result["columns"]]
 
+    def buckets(self, result, column="date"):
+        """The dimension values of a breakdown, in the order they came back."""
+        return [str(row[column])[:10] for row in result["rows"]]
+
+    def timeline(self, **kwargs):
+        """A chart over the dated fixtures, which is what the ordered tests click."""
+        return self.make_content(operations=todo_operations(TIMELINE_PREFIX), **kwargs)
+
     # the two things a level can ask for
 
     def test_a_records_level_returns_the_rows_behind_the_segment(self):
@@ -273,9 +303,10 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             drill_stack=[breakdown_level("creation", measure="count_of_rows")],
         )
 
-        # the fixtures are made in one breath, so a month bucket holds them all
-        self.assertEqual(len(result["rows"]), 1)
-        self.assertEqual(result["rows"][0]["count_of_rows"], len(AUTHOR_TODOS))
+        # the fixtures are made in one breath, so the span asks for the finest
+        # grain the ladder offers and they all land within a bucket of it
+        self.assertEqual(result["granularity"], "minute")
+        self.assertEqual(sum(row["count_of_rows"] for row in result["rows"]), len(AUTHOR_TODOS))
 
     def test_a_breakdown_is_cut_to_a_ranking(self):
         """The level answers which slice explains the number, so it ranks a few.
@@ -311,6 +342,132 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             )
 
         self.assertEqual(len(result["rows"]), 3)
+
+    # the order a breakdown comes back in
+    #
+    # One rule: a dimension with an order of its own is shown in that order, and
+    # a dimension without one is ranked by the measure.
+
+    def test_a_dimension_with_an_order_of_its_own_is_shown_in_it(self):
+        _, chart, dashboard = self.timeline()
+
+        result = self.drill(DESK_USER, chart.name, dashboard.name, drill_stack=[breakdown_level("date")])
+
+        # a ranking would put February first and read as noise; a series reads
+        # forwards, whatever the sizes along it
+        self.assertEqual(self.buckets(result), TIMELINE_MONTHS)
+        self.assertEqual([row["count_of_rows"] for row in result["rows"]], TIMELINE_COUNTS)
+
+    def test_a_dimension_without_one_is_still_ranked_by_the_measure(self):
+        _, chart, dashboard = self.timeline()
+
+        result = self.drill(DESK_USER, chart.name, dashboard.name, drill_stack=[breakdown_level("priority")])
+
+        # biggest first, which is the only reading a set of labels has
+        self.assertEqual(
+            [(row["priority"], row["count_of_rows"]) for row in result["rows"]],
+            [("Low", 4), ("High", 2)],
+        )
+
+    def test_the_answer_says_which_way_its_rows_run_and_what_they_are_bucketed_by(self):
+        _, chart, dashboard = self.timeline()
+
+        ordered = self.drill(DESK_USER, chart.name, dashboard.name, drill_stack=[breakdown_level("date")])
+        ranked = self.drill(DESK_USER, chart.name, dashboard.name, drill_stack=[breakdown_level("priority")])
+        records = self.drill(DESK_USER, chart.name, dashboard.name, drill_stack=[records_level()])
+
+        # the client draws by what it is told, never by a column type it guesses from
+        self.assertEqual((ordered["ordered"], ordered["granularity"]), (True, "month"))
+        self.assertEqual((ranked["ordered"], ranked["granularity"]), (False, None))
+        self.assertEqual((records["ordered"], records["granularity"]), (False, None))
+
+    def test_the_grain_follows_the_span_of_the_segment_being_drilled(self):
+        """A fixed default is arbitrary: one month of data is not ten years of it."""
+        _, chart, dashboard = self.timeline()
+
+        year = self.drill(DESK_USER, chart.name, dashboard.name, drill_stack=[breakdown_level("date")])
+        february = self.drill(
+            DESK_USER,
+            chart.name,
+            dashboard.name,
+            drill_stack=[
+                breakdown_level(
+                    "date",
+                    filters=[{"column": "description", "operator": "contains", "value": "february"}],
+                )
+            ],
+        )
+
+        # eleven months of fixtures read by the month; three days of them by the day
+        self.assertEqual(year["granularity"], "month")
+        self.assertEqual(february["granularity"], "day")
+        self.assertEqual(self.buckets(february), ["2024-02-15", "2024-02-16", "2024-02-17"])
+
+    def test_an_ordered_breakdown_is_cut_to_its_most_recent_stretch(self):
+        """Never a top-N by measure, which would take buckets out of the middle."""
+        _, chart, dashboard = self.timeline()
+
+        with patch("insights.insights.doctype.insights_chart_v3.chart_drill.BREAKDOWN_SIZE", 2):
+            result = self.drill(
+                DESK_USER,
+                chart.name,
+                dashboard.name,
+                drill_stack=[breakdown_level("date", granularity="month")],
+            )
+
+        # the two most recent months, still forwards. A ranking would have kept
+        # February, the biggest, and left a hole where June was
+        self.assertEqual(self.buckets(result), TIMELINE_MONTHS[-2:])
+        self.assertEqual(result["total_row_count"], len(TIMELINE_MONTHS))
+
+    def test_a_grain_the_caller_names_outranks_the_derived_one(self):
+        _, chart, dashboard = self.timeline()
+
+        result = self.drill(
+            DESK_USER,
+            chart.name,
+            dashboard.name,
+            drill_stack=[breakdown_level("date", granularity="year")],
+        )
+
+        # the reader changed the grain on the level, so the span has no say
+        self.assertEqual(result["granularity"], "year")
+        self.assertEqual(self.buckets(result), ["2024-01-01"])
+        self.assertEqual(result["rows"][0]["count_of_rows"], len(TIMELINE_TODOS))
+
+    def test_a_grain_the_column_cannot_admit_is_refused(self):
+        timed = [
+            *todo_operations(TIMELINE_PREFIX),
+            {"type": "cast", "column": {"type": "column", "column_name": "creation"}, "data_type": "Time"},
+        ]
+        _, chart, dashboard = self.make_content()
+        _, timed_chart, timed_dashboard = self.make_content(operations=timed)
+
+        refused = (
+            # a Time has no date part to take a month out of
+            (timed_chart, timed_dashboard, breakdown_level("creation", granularity="month")),
+            # and a label has no order at all, so no grain can bucket it
+            (chart, dashboard, breakdown_level("priority", granularity="month")),
+            (chart, dashboard, breakdown_level("creation", granularity="fortnight")),
+        )
+        for on_chart, on_dashboard, level in refused:
+            with self.assertRaises(frappe.ValidationError) as raised:
+                self.drill(DESK_USER, on_chart.name, on_dashboard.name, drill_stack=[level])
+            self.assertIn("cannot be broken down by", str(raised.exception))
+
+    def test_a_time_column_is_bucketed_by_a_grain_it_has(self):
+        """Hour, minute and second are all a column with no date part admits."""
+        timed = [
+            *todo_operations(),
+            {"type": "cast", "column": {"type": "column", "column_name": "creation"}, "data_type": "Time"},
+        ]
+        _, chart, dashboard = self.make_content(operations=timed)
+
+        result = self.drill(DESK_USER, chart.name, dashboard.name, drill_stack=[breakdown_level("creation")])
+
+        self.assertTrue(result["ordered"])
+        # the fixtures are made in one breath, so the ladder floors on its finest
+        self.assertEqual(result["granularity"], "second")
 
     def test_a_breakdown_carries_the_measure_the_click_landed_on(self):
         _, chart, dashboard = self.make_content(

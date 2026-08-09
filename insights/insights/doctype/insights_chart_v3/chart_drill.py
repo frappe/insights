@@ -24,6 +24,7 @@ the same walk either way.
 """
 
 import re
+from datetime import date, datetime, time, timedelta
 
 import frappe
 from frappe import _
@@ -42,19 +43,70 @@ BREAKDOWN = "breakdown"
 # pagination waits for someone to hit it
 PAGE_SIZE = 100
 
-# what a breakdown ranks. The level answers "which slice explains this", and a
-# ranking stops being readable long before a page of rows does
+# what a breakdown holds. The level answers "which slice explains this" or "how
+# did this move", and either stops being readable long before a page of rows does
 BREAKDOWN_SIZE = 20
 
-# the columns a segment can be broken down by, and the ones whose values name a
-# bucket rather than a moment
+# the columns a segment can be broken down by
 DIMENSION_TYPES = ("String", "Date", "Datetime", "Time")
-DATE_TYPES = ("Date", "Datetime", "Time")
 
-# A moment grouped by itself is not a grouping: break a Datetime down raw and
-# every row lands in its own second. The grains match the ones the config UI
-# defaults to, in `frontend/src2/helpers/constants.ts`.
-DEFAULT_GRANULARITY = {"Date": "month", "Datetime": "month", "Time": "hour"}
+# A dimension that carries an order of its own is shown in that order; one that
+# carries none is ranked by the measure. Dates and times are the ordered ones —
+# a moment has a before and an after, and the question a series answers is how a
+# number moved, not which of its slices is biggest.
+ORDERED_TYPES = ("Date", "Datetime", "Time")
+
+# how long each grain runs, in seconds
+SECOND = 1
+MINUTE = 60 * SECOND
+HOUR = 60 * MINUTE
+DAY = 24 * HOUR
+WEEK = 7 * DAY
+MONTH = 30 * DAY
+QUARTER = 91 * DAY
+YEAR = 365 * DAY
+
+# Every grain an ordered column can be grouped by, coarsening, against the
+# length the derivation reckons it in. One table does both jobs: it is the
+# ladder a derived grain climbs, and it is what a caller-named one is checked
+# against. A `Time` has no date part, so the calendar grains cannot apply to it.
+#
+# The lengths are deliberately approximate — they only decide which rung a span
+# lands on, never a bucket boundary, which the engine's calendar owns. A grain
+# with no length is one a reader may ask for and the derivation will never pick:
+# a second-by-second breakdown reads as noise at any span, sub-day grains say
+# nothing about a Date, and which year a business counts by is its own decision
+# rather than a consequence of how much time a segment covers.
+GRAINS = {
+    "Date": {
+        "second": None,
+        "minute": None,
+        "hour": None,
+        "day": DAY,
+        "week": WEEK,
+        "month": MONTH,
+        "quarter": QUARTER,
+        "year": YEAR,
+        "fiscal_year": None,
+    },
+    "Datetime": {
+        "second": None,
+        "minute": MINUTE,
+        "hour": HOUR,
+        "day": DAY,
+        "week": WEEK,
+        "month": MONTH,
+        "quarter": QUARTER,
+        "year": YEAR,
+        "fiscal_year": None,
+    },
+    "Time": {"second": SECOND, "minute": MINUTE, "hour": HOUR},
+}
+
+# the two ends of the segment a grain is derived from, named so the aggregate
+# that reads them can be told apart from anything the surface already carries
+SPAN_START = "drill_span_start"
+SPAN_END = "drill_span_end"
 
 # a filter can only narrow what the surface already exposes, so the whole
 # operator set is open; naming one the engine does not have is a caller error
@@ -135,12 +187,14 @@ def drill_data(
 
         last = drill_stack[-1]
         action = _action(last)
-        drilled = [*sliced, _filter_group(_segment_filters(drill_stack, step, surface))]
+        segment = [*sliced, _filter_group(_segment_filters(drill_stack, step, surface))]
         page_size = PAGE_SIZE
+        breakdown = None
         if action["type"] == BREAKDOWN:
-            drilled += _breakdown(action["dimension"], _clicked(last), step, surface)
+            breakdown = _breakdown(chart, segment, action, step, surface, adhoc_filters)
             page_size = BREAKDOWN_SIZE
 
+        drilled = [*segment, *breakdown["operations"]] if breakdown else segment
         query = chart.get_query(operations=drilled)
         # a level is fetched once and then kept by the dialog for as long as it
         # is open, so back and crumb pops never come here. What does come here
@@ -149,10 +203,19 @@ def drill_data(
         # the dialog shows one page and says so: "100 of 1,240" needs the 1,240
         total_row_count = query.count_rows(adhoc_filters=adhoc_filters)
 
+    ordered = bool(breakdown and breakdown["ordered"])
+
     response = {
         "columns": result["columns"],
-        "rows": result["rows"],
+        # the page of a series was taken from its recent end, and a series reads
+        # forwards
+        "rows": list(reversed(result["rows"])) if ordered else result["rows"],
         "total_row_count": total_row_count,
+        # what the client draws this answer by, said outright rather than left
+        # to be inferred from a column type: which way the rows run, and the
+        # grain they were grouped by
+        "ordered": ordered,
+        "granularity": breakdown["granularity"] if breakdown else None,
         "time_taken": result["time_taken"],
         "executed_at": frappe.utils.now(),
     }
@@ -208,7 +271,14 @@ def _action(level: dict) -> dict:
     if action.get(RECORDS):
         return {"type": RECORDS}
     if action.get(BREAKDOWN):
-        return {"type": BREAKDOWN, "dimension": action[BREAKDOWN]}
+        return {
+            "type": BREAKDOWN,
+            "dimension": action[BREAKDOWN],
+            "measure": action.get("measure"),
+            # the reader changed the grain on the level. Their choice outranks
+            # the one the segment's own span suggests
+            "granularity": action.get("granularity"),
+        }
 
     frappe.throw(_("A drill level asks either for records or for a breakdown by a dimension"))
 
@@ -218,32 +288,134 @@ def _clicked(level: dict) -> str | None:
     return (level.get("action") or {}).get("measure")
 
 
-def _breakdown(dimension: str, clicked: str | None, step: dict, surface: list[dict]) -> list[dict]:
-    """Group what is left by one more column of the surface, biggest first."""
-    column = _surface_column(dimension, surface)
-    measures = _clicked_measures(clicked, step)
+def _breakdown(chart, segment: list[dict], action: dict, step: dict, surface: list[dict], adhoc_filters):
+    """Group what is left by one more column of the surface.
+
+    Which order it comes back in is the whole of the level's rule. A dimension
+    that carries an order of its own is shown in that order; one that carries
+    none is ranked by the measure, biggest first. Ranking a series of months by
+    their size reads as noise, and cutting one to a top twenty takes buckets out
+    of the middle of it, leaving a timeline full of holes.
+    """
+    column = _surface_column(action["dimension"], surface)
+    measures = _clicked_measures(action["measure"], step)
+    ordered = column["type"] in ORDERED_TYPES
 
     dimension = {
         "column_name": column["name"],
         "dimension_name": column["name"],
         "data_type": column["type"],
     }
-    if column["type"] in DEFAULT_GRANULARITY:
-        dimension["granularity"] = DEFAULT_GRANULARITY[column["type"]]
+    granularity = _granularity(chart, segment, column, action["granularity"], adhoc_filters)
+    if granularity:
+        dimension["granularity"] = granularity
 
     summarize = {
         "type": "summarize",
         "measures": measures,
         "dimensions": [dimension],
     }
-    # the ranking is the whole point of the level, and it is also what makes the
-    # page the dialog shows the top of the list rather than an arbitrary slice
+    # what makes the page the dialog shows the end worth reading rather than an
+    # arbitrary slice: the top of the ranking, or the recent end of the series
     order_by = {
         "type": "order_by",
-        "column": {"type": "column", "column_name": measures[0]["measure_name"]},
+        "column": {
+            "type": "column",
+            "column_name": column["name"] if ordered else measures[0]["measure_name"],
+        },
         "direction": "desc",
     }
-    return [summarize, order_by]
+    return {"operations": [summarize, order_by], "ordered": ordered, "granularity": granularity}
+
+
+# the grain an ordered breakdown groups by
+
+
+def _granularity(chart, segment: list[dict], column: dict, named: str | None, adhoc_filters) -> str | None:
+    """The grain this breakdown buckets by: the caller's, or the segment's own.
+
+    A moment grouped by itself is not a grouping — break a Datetime down raw and
+    every row lands in its own second — so an ordered dimension always groups by
+    one. A caller names it when the reader changes the grain on the level, and
+    otherwise it follows the span of the segment being drilled, which is the
+    only thing that knows whether it covers ten minutes or ten years.
+    """
+    grains = GRAINS.get(column["type"]) or {}
+
+    if named:
+        if named not in grains:
+            frappe.throw(_("{0} cannot be broken down by {1}").format(column["name"], named))
+        return named
+
+    if not grains:
+        return None
+
+    return _derived_grain(grains, _span_seconds(chart, segment, column, adhoc_filters))
+
+
+def _derived_grain(grains: dict, seconds: float) -> str:
+    """The finest grain whose buckets fit the span into one window.
+
+    Coarsen until they do: a window holds `BREAKDOWN_SIZE` buckets, and a span
+    that starts partway through one spills into another. Nothing coarser than
+    the ladder's last rung exists, so a span that outgrows it is exactly what
+    the window is there for.
+    """
+    ladder = {grain: length for grain, length in grains.items() if length}
+
+    for grain, length in ladder.items():
+        if seconds / length + 1 <= BREAKDOWN_SIZE:
+            return grain
+
+    return list(ladder)[-1]
+
+
+def _span_seconds(chart, segment: list[dict], column: dict, adhoc_filters) -> float:
+    """How much time the segment covers.
+
+    One aggregate over the rows the breakdown is about to group — the segment's
+    span and not the chart's, so drilling one month of a ten-year series gets a
+    grain that fits the month.
+    """
+    measures = [
+        {
+            "measure_name": name,
+            "column_name": column["name"],
+            "aggregation": aggregation,
+            "data_type": column["type"],
+        }
+        for name, aggregation in ((SPAN_START, "min"), (SPAN_END, "max"))
+    ]
+    query = chart.get_query(
+        operations=[*segment, {"type": "summarize", "measures": measures, "dimensions": []}]
+    )
+    rows = query.execute(adhoc_filters=adhoc_filters, page_size=1, force=True)["rows"]
+    ends = rows[0] if rows else {}
+
+    start, end = ends.get(SPAN_START), ends.get(SPAN_END)
+    if start is None or end is None:
+        return 0
+
+    return abs((_moment(end) - _moment(start)).total_seconds())
+
+
+def _moment(value) -> datetime:
+    """A value read off an ordered column, as one point on a line.
+
+    A `Time` comes back as an offset into a day rather than a moment, which
+    subtraction will not mix with the rest — and which day it is offset into
+    does not matter to a difference.
+    """
+    if isinstance(value, timedelta):
+        return datetime.min + value
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, time):
+        return datetime.combine(datetime.min, value)
+    if isinstance(value, date):
+        return datetime.combine(value, time.min)
+
+    return get_datetime(str(value))
 
 
 # the segment
@@ -321,7 +493,7 @@ def _timestamp(value) -> str:
 
 
 def _is_bucket(dimension: dict | None) -> bool:
-    return bool(dimension and dimension.get("granularity") and dimension.get("data_type") in DATE_TYPES)
+    return bool(dimension and dimension.get("granularity") and dimension.get("data_type") in ORDERED_TYPES)
 
 
 # what the aggregating step named

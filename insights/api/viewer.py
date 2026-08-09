@@ -120,13 +120,19 @@ def get_drill_data(
     the segment it clicked as `segment_filters` — dimension values as plain
     (column, operator, literal) triples — and an `action`, either
     `{"records": true}` or `{"breakdown": column}`, which may also name the
-    `measure` the click landed on. The segments accumulate down the stack and
-    the last level's action shapes the answer.
+    `measure` the click landed on and, on a breakdown, the `granularity` the
+    reader chose. The segments accumulate down the stack and the last level's
+    action shapes the answer.
 
     Which chart is all the request says about the query. The server re-derives
     the chart's operations, cuts them before the step that aggregated the rows,
     and refuses any column that is not on the surface underneath it: the wire
     cannot widen what a chart exposes.
+
+    The answer says how it should be drawn — `ordered`, whether the rows run in
+    an order of their own rather than a ranking, and `granularity`, the grain
+    they were bucketed by — so a client never has to work either out from a
+    column type.
     """
     if not can_drill():
         frappe.throw(_("Sign in to see what is behind this chart"), exc=frappe.PermissionError)

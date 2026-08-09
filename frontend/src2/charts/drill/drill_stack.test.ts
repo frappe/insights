@@ -13,6 +13,7 @@ import {
 	breakdownCandidates,
 	declaredDimensionColumns,
 	drillGranularity,
+	grainsFor,
 	makeDrillStack,
 	queryResultChart,
 	segmentOf,
@@ -350,6 +351,96 @@ describe('what the dialog has already been told', () => {
 	})
 })
 
+describe('reading a level at another grain', () => {
+	// A breakdown by a date comes back in that date's own order, at a grain the
+	// server picked from the span. Asking for another is the same level, asked
+	// again — the ladder is unchanged and the reader has not gone anywhere.
+	const byDate: DrillEntry = {
+		level: {
+			segment_filters: [{ column: 'status', operator: '=', value: 'Overdue' }],
+			action: { breakdown: 'due_date', measure: 'count' },
+		},
+		segmentLabel: 'Overdue',
+		actionLabel: 'by Due Date',
+	}
+
+	it('says the grain on the level itself, so the server is told what to group by', () => {
+		const stack = makeDrillStack()
+		stack.push(byDate)
+		stack.regrain('week')
+		expect(stack.levels).toEqual([
+			{
+				segment_filters: [{ column: 'status', operator: '=', value: 'Overdue' }],
+				action: { breakdown: 'due_date', measure: 'count', granularity: 'week' },
+			},
+		])
+	})
+
+	it('replaces the level instead of descending, so back still goes where it went', () => {
+		const stack = makeDrillStack()
+		stack.push(overdue)
+		stack.push(byDate)
+		stack.regrain('quarter')
+		expect(stack.depth).toBe(2)
+		expect(stack.crumbs.map((crumb) => crumb.label)).toEqual([
+			'Overdue',
+			'by Region',
+			'Overdue',
+			'by Due Date',
+		])
+		stack.pop()
+		expect(stack.levels).toEqual([overdue.level])
+	})
+
+	it('says nothing about a level that groups nothing', () => {
+		const stack = makeDrillStack()
+		stack.push(west)
+		stack.regrain('week')
+		expect(stack.levels).toEqual([west.level])
+	})
+
+	it('holds an answer against the grain it was asked at', () => {
+		// The same level at another grain is another question, so the rows already
+		// held are not an answer to it — and going back to a grain already asked
+		// for costs nothing, exactly as retracing does.
+		const weekly = { columns: [], rows: [{ due_date: '2026-03-02', count: 4 }] }
+		const stack = makeDrillStack()
+		stack.push(byDate)
+		stack.remember({ columns: [], rows: [{ due_date: '2026-03-01', count: 30 }] })
+
+		stack.regrain('week')
+		expect(stack.answer()).toBeUndefined()
+		stack.remember(weekly)
+
+		stack.regrain('quarter')
+		expect(stack.answer()).toBeUndefined()
+
+		stack.regrain('week')
+		expect(stack.answer()).toEqual(weekly)
+	})
+})
+
+describe('the grains a breakdown can be read at', () => {
+	const dimensions: DrillDimension[] = [
+		{ name: 'due_date', type: 'Date' },
+		{ name: 'creation', type: 'Datetime' },
+		{ name: 'status', type: 'String' },
+	]
+
+	it('offers the calendar grains for a date', () => {
+		expect(grainsFor(dimensions, 'due_date').map((grain) => grain.value)).toContain('month')
+		expect(grainsFor(dimensions, 'creation').map((grain) => grain.value)).toContain('fiscal_year')
+	})
+
+	it('offers none for a column with no order of its own', () => {
+		expect(grainsFor(dimensions, 'status')).toEqual([])
+	})
+
+	it('offers none for a column the response never carried', () => {
+		expect(grainsFor(dimensions, 'owner')).toEqual([])
+	})
+})
+
 describe('a query result read as a chart', () => {
 	const status = { dimension_name: 'status', column_name: 'status', data_type: 'String' as const }
 	const priority = {
@@ -412,18 +503,14 @@ describe('a query result read as a chart', () => {
 	})
 })
 
-describe('the grain a level prints its dates at', () => {
+describe('the grain a records level prints its dates at', () => {
 	const columns = [
 		{ name: 'creation', type: 'Datetime' as const },
 		{ name: 'due_date', type: 'Date' as const },
 		{ name: 'description', type: 'String' as const },
 	]
 
-	it('keeps the grain a grouped column was grouped by', () => {
-		expect(drillGranularity(columns, { creation: 'month' }).creation).toBe('month')
-	})
-
-	it('falls back to what the column type honestly is, so a records date reads as a date', () => {
+	it('reads what the column type honestly is, so a records date reads as a date', () => {
 		const granularity = drillGranularity(columns)
 		expect(granularity.creation).toBe('second')
 		expect(granularity.due_date).toBe('day')

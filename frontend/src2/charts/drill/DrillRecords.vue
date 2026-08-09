@@ -29,10 +29,7 @@ const table = computed<ResultTable>(() => {
 		executing: false,
 		result: {
 			...result,
-			formattedRows: formatResultRows(
-				result,
-				drillGranularity(props.data.columns, props.data.granularity),
-			),
+			formattedRows: formatResultRows(result, drillGranularity(props.data.columns)),
 			totalRowCount: props.data.total_row_count ?? props.data.rows.length,
 		},
 	}
