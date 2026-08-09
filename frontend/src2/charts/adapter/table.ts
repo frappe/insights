@@ -68,11 +68,12 @@ export function adaptTableChart(input: ChartAdapterInput): ChartFiller | undefin
 
 	if (input.executing) props.loading = true
 	// The sort is a config edit the server re-derives the query from, so it is
-	// offered only where both halves are held.
+	// offered only where both halves are held. Drilling is not: a reader inspects
+	// a cell without changing anything, so every surface offers it.
 	if (!input.readonly) {
 		props.onSortChange = (column_name, direction) => sortBy(config, column_name, direction)
-		props.drillable = true
 	}
+	props.drillable = true
 
 	if (config.show_filter_row) props.showFilterRow = true
 	if (config.show_column_totals) props.showColumnTotals = true

@@ -200,6 +200,11 @@ function onFilterChange(filters: Record<string, string>) {
 		<template #header-suffix="{ column }">
 			<slot name="header-suffix" :column="column" />
 		</template>
+		<!-- only rendered when a caller fills it, so the table stays the width of
+		     its columns everywhere else -->
+		<template v-if="$slots['row-action']" #row-action="{ row }">
+			<slot name="row-action" :row="row" />
+		</template>
 		<template #footer-right-actions>
 			<slot name="footer-actions" />
 			<Button

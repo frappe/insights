@@ -178,8 +178,11 @@ describe('drilling into a cell', () => {
 		).toBeUndefined()
 	})
 
-	it('is not offered to a reader, who has nothing to open it in', () => {
+	// Inspecting a cell changes nothing about the Chart, so it is offered wherever
+	// the Chart is drawn — unlike the sort beside it, which rewrites the config.
+	it('is offered to a reader too, who inspects without rewriting anything', () => {
 		const props = adapt({ ...tableChart({ values: ['revenue'] }), readonly: true }).props
-		expect(props.drillable).toBeUndefined()
+		expect(props.drillable).toBe(true)
+		expect(props.onSortChange).toBeUndefined()
 	})
 })

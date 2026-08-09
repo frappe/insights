@@ -26,6 +26,7 @@ import type {
 	QueryResultRow,
 } from '../types/query.types'
 import type { InsightsChartv3, WorkbookDashboardItem } from '../types/workbook.types'
+import type { DrillDimension } from './drill/drill_stack'
 import { normalizeChartConfig } from './helpers'
 
 /**
@@ -63,6 +64,10 @@ type ChartDataResponse = {
 	use_live_connection?: boolean
 	// where the grid's filters landed, as the server routed them
 	adhoc_filters?: AdhocFilters
+	// what a segment click may break the card down by. It rides along with the
+	// rows because a menu that has to ask first puts a round trip in the one place
+	// latency is felt — between the click and the menu.
+	drill?: { dimensions: DrillDimension[] }
 }
 
 export type ChartFeed = {
@@ -95,6 +100,8 @@ export function makeChartRead(feed: ChartFeed, priority?: number) {
 	const routedFilters = ref<AdhocFilters>()
 	// why the chart cannot be drawn yet, as the server read the config
 	const configErrors = ref<string[]>([])
+	// the columns a segment click may break this card down by
+	const drillDimensions = ref<DrillDimension[]>([])
 
 	const ready = ref(false)
 	const executing = ref(true)
@@ -165,6 +172,7 @@ export function makeChartRead(feed: ChartFeed, priority?: number) {
 			operations.value = response.operations || []
 			useLiveConnection.value = Boolean(response.use_live_connection)
 			routedFilters.value = response.adhoc_filters
+			drillDimensions.value = response.drill?.dimensions || []
 			executedAt.value = result.value.lastExecutedAt
 			ready.value = true
 		} catch (error) {
@@ -204,6 +212,7 @@ export function makeChartRead(feed: ChartFeed, priority?: number) {
 		currentOperations: operations,
 		routedFilters,
 		configErrors,
+		drillDimensions,
 
 		ready,
 		executing,

@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import ChartBody from './components/ChartBody.vue'
 import type { ViewerFilters } from '../dashboard/viewer'
+import session from '../session'
 import { useSavedChart } from './chart_read'
+import ChartDrillDown from './drill/ChartDrillDown.vue'
+import type { ChartSegmentClick } from './drill/segment_click'
 
 // One chart card, on a dashboard grid or on its own. It owns its whole
 // lifecycle — its own request, its own reloads — so a card that cannot load
@@ -54,6 +57,18 @@ watch(
 	() => viewer.value.executedAt,
 	(executedAt) => executedAt && emit('loaded', executedAt),
 )
+
+// Drilling is row exploration, and an anonymous reader is not offered it — a
+// public chart stays a picture. The endpoint refuses Guest as well; this is so
+// nothing is drawn that would only answer with a refusal.
+const clicked = ref<ChartSegmentClick>()
+function onSegmentClick(click: ChartSegmentClick) {
+	if (!session.isLoggedIn) return
+	clicked.value = click
+}
+
+// A new card is a new drill: the stack belongs to the click that started it.
+watch(viewer, () => (clicked.value = undefined))
 </script>
 
 <template>
@@ -64,7 +79,19 @@ watch(
 			:chart="viewer"
 			readonly
 			:filtered="filtered"
+			@segment-click="onSegmentClick"
 			@reset-filters="emit('resetFilters')"
+		/>
+
+		<!-- keyed on the click, so every drill starts from an empty stack -->
+		<ChartDrillDown
+			v-if="clicked"
+			:chart="viewer"
+			:reference="props.chart"
+			:dashboard="props.dashboard"
+			:filters="props.filters"
+			:clicked="clicked"
+			@close="clicked = undefined"
 		/>
 	</div>
 </template>

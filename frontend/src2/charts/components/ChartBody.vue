@@ -8,6 +8,7 @@ import { EMPTY_RESULT } from '../../query/helpers'
 import { Query } from '../../query/query'
 import { adaptChart, type DrillDownTarget } from '../adapter'
 import { ChartRead } from '../chart_read'
+import { segmentClickEvents, type ChartSegmentClick, type ClickPoint } from '../drill/segment_click'
 import ChartSectionEmptySvg from './ChartSectionEmptySvg.vue'
 
 // The chart itself: the type it is, the data it has, and every state in between.
@@ -33,7 +34,13 @@ const props = defineProps<{
 	// Only a surface that owns filter state can say, and only it can reset them.
 	filtered?: boolean
 }>()
-const emit = defineEmits<{ drillDown: [query: Query]; resetFilters: [] }>()
+const emit = defineEmits<{
+	// where the reader pointed, for a surface that offers the drill menu
+	segmentClick: [click: ChartSegmentClick]
+	// the authoring fork of the same click. It retires with the old drill dialog.
+	drillDown: [query: Query]
+	resetFilters: []
+}>()
 
 const chart_type = computed(() => props.chart.doc.chart_type)
 const config = computed(() => props.chart.doc.config)
@@ -102,35 +109,37 @@ const failure = computed(() => {
 // The events a filler reports a click through, bound without knowing which chart
 // type emits which. The adapter names them and turns each payload into the point
 // behind it.
-const fillerEvents = computed(() => {
-	const resolvers = filler.value?.drillDown
-	if (!resolvers) return {}
-	return Object.fromEntries(
-		Object.entries(resolvers).map(([event, resolve]) => [
-			event,
-			(payload: any) => drillDownInto(resolve(payload)),
-		]),
-	)
-})
+const fillerEvents = computed(() =>
+	segmentClickEvents(filler.value, result.value.columns, reportSegment),
+)
+
+// echarts hands over the datapoint and not the event that reached it, so the
+// point the menu opens at is read off the click on its way in. The capture phase
+// is what puts it there before the chart's own handler runs.
+const clickedAt = shallowRef<ClickPoint>({ x: 0, y: 0 })
+function rememberPoint(event: MouseEvent) {
+	clickedAt.value = { x: event.clientX, y: event.clientY }
+}
 
 // A resolver answers with the raw row, which is what a drill-down reads, so
-// nothing is looked up on the way out. A column it names and the result does not
-// carry is a mapping bug in the adapter, not a click on nothing — a click that
-// resolves to nothing is reported as `undefined` above.
-async function drillDownInto(target: DrillDownTarget | undefined | null) {
-	if (!target) return
+// nothing is looked up on the way out.
+function reportSegment(target: DrillDownTarget) {
+	emit('segmentClick', { target, point: clickedAt.value })
+	forkDrillQuery(target)
+}
+
+// The authoring fork: the builder's own dialog is a query editor, so only a feed
+// that carries the operations can open one. It retires with that dialog.
+async function forkDrillQuery(target: DrillDownTarget) {
 	const column = result.value.columns.find((c) => c.name === target.column)
-	if (!column) {
-		console.warn(`[insights] Cannot drill down: no result column named "${target.column}".`)
-		return
-	}
+	if (!column) return
 	const query = await props.chart.getDrillDownQuery(column, target.row)
 	if (query) emit('drillDown', query)
 }
 </script>
 
 <template>
-	<div class="flex h-full w-full flex-col">
+	<div class="flex h-full w-full flex-col" @click.capture="rememberPoint">
 		<!-- the errors name slots in the config, so only a surface that can fill
 		     them has any use for them. It sits above the picture rather than in
 		     place of it, because the picture under it is still the last one the

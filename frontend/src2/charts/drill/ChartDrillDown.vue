@@ -1,0 +1,184 @@
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import type { ViewerFilters } from '../../dashboard/viewer'
+import { __ } from '../../translation'
+import type { ChartRead } from '../chart_read'
+import { breakdownChart } from './breakdown_chart'
+import DrillDialog from './DrillDialog.vue'
+import DrillMenu from './DrillMenu.vue'
+import { fetchDrillData } from './drill_api'
+import {
+	breakdownCandidates,
+	columnLabel,
+	declaredDimensionColumns,
+	makeDrillStack,
+	segmentOf,
+	type DrillAction,
+	type DrillChart,
+	type DrillDimension,
+	type DrillLevelData,
+	type DrillSegment,
+} from './drill_stack'
+import type { ChartSegmentClick } from './segment_click'
+
+// The drill, as a card offers it: a menu where the reader pointed, and one
+// dialog behind whichever item they chose.
+//
+// A card mounts this and hands over the click. Everything past that lives here
+// and dies with it — the stack is ephemeral by design, so closing is all it
+// takes to forget the path.
+const props = defineProps<{
+	/** the card's store, for the config a click is read against and the candidates */
+	chart: ChartRead
+	/** the saved chart, as `get_chart_data` was told it */
+	reference: string
+	/** the dashboard the card sits on. It carries the audience and the filters. */
+	dashboard?: string
+	/** the filter state the card was showing, so the rows agree with the number */
+	filters?: ViewerFilters
+	/** the click that opened this */
+	clicked: ChartSegmentClick
+}>()
+
+const emit = defineEmits<{ close: [] }>()
+
+const stack = makeDrillStack()
+const open = ref(false)
+const data = ref<DrillLevelData>()
+const loading = ref(false)
+const failed = ref(false)
+
+// what the menu is currently offering to split, and where it is drawn
+const pending = ref<{ segment: DrillSegment; point: { x: number; y: number } }>()
+
+const sourceChart = computed<DrillChart>(() => ({
+	chart_type: props.chart.doc.chart_type,
+	config: props.chart.doc.config,
+}))
+
+// The level being read is the chart a click inside the dialog is read against.
+// A records level has nothing to click, so there is nothing to read it against.
+const clickedChart = computed<DrillChart>(() => {
+	const action = stack.current?.level.action
+	if (action && 'breakdown' in action) {
+		return breakdownChart(action.breakdown, action.measure || '', data.value?.columns || [])
+	}
+	return sourceChart.value
+})
+
+const candidates = computed<DrillDimension[]>(() =>
+	breakdownCandidates(
+		props.chart.drillDimensions || [],
+		[...stack.pinned, ...(pending.value?.segment.pins || [])],
+		declaredDimensionColumns(sourceChart.value),
+	),
+)
+
+function offerMenu(click: ChartSegmentClick, chart: DrillChart) {
+	pending.value = { segment: segmentOf(chart, click.target), point: click.point }
+}
+
+offerMenu(props.clicked, sourceChart.value)
+
+function descend(action: DrillAction) {
+	const offered = pending.value
+	if (!offered) return
+	pending.value = undefined
+
+	stack.push({
+		level: { segment_filters: offered.segment.filters, action },
+		segmentLabel: offered.segment.label,
+		actionLabel:
+			'records' in action ? __('Records') : `${__('by')} ${columnLabel(action.breakdown)}`,
+	})
+	open.value = true
+	load()
+}
+
+function chooseRecords() {
+	descend({ records: true, measure: pending.value?.segment.measure })
+}
+
+function chooseBreakdown(dimension: DrillDimension) {
+	descend({ breakdown: dimension.name, measure: pending.value?.segment.measure })
+}
+
+// Dismissing the menu without choosing is the whole of the interaction when
+// nothing is open behind it.
+function dismissMenu() {
+	pending.value = undefined
+	if (!open.value) emit('close')
+}
+
+function popTo(depth: number) {
+	if (depth <= 0) {
+		open.value = false
+		return
+	}
+	stack.popTo(depth)
+	load()
+}
+
+// Every load claims the answer slot, cached or not: a pop that costs nothing
+// still has to disown a request that is still out, or its rows would land under
+// the level the reader popped back to.
+let inFlight = 0
+async function load() {
+	const token = ++inFlight
+
+	// a level already answered for costs nothing to return to
+	const remembered = stack.answer()
+	if (remembered) {
+		data.value = remembered
+		loading.value = false
+		failed.value = false
+		return
+	}
+
+	loading.value = true
+	failed.value = false
+	try {
+		const answer = await fetchDrillData({
+			chart: props.reference,
+			dashboard: props.dashboard,
+			filters: props.filters,
+			drill_stack: stack.levels,
+		})
+		if (token !== inFlight) return
+		stack.remember(answer)
+		data.value = answer
+	} catch (error) {
+		if (token !== inFlight) return
+		console.error('[insights] Could not drill down.', error)
+		failed.value = true
+		data.value = undefined
+	} finally {
+		if (token === inFlight) loading.value = false
+	}
+}
+</script>
+
+<template>
+	<DrillMenu
+		v-if="pending"
+		:point="pending.point"
+		:dimensions="candidates"
+		@records="chooseRecords"
+		@breakdown="chooseBreakdown"
+		@close="dismissMenu"
+	/>
+
+	<!-- Both ways out are the same way out: nothing here is kept, so once the
+	     dialog is gone the card is back to where it started. -->
+	<DrillDialog
+		v-model="open"
+		:stack="stack"
+		:title="props.chart.doc.title"
+		:data="data"
+		:loading="loading"
+		:failed="failed"
+		@segment-click="(click) => offerMenu(click, clickedChart)"
+		@pop-to="popTo"
+		@closed="emit('close')"
+	/>
+</template>
