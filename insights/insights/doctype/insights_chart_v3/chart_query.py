@@ -169,7 +169,7 @@ def _add_chart_operation(operations: list[dict], chart_type: str, config: dict):
 
 def _add_axis_operation(operations: list[dict], config: dict):
     series = (config.get("y_axis") or {}).get("series") or []
-    values = _named_measures(s.get("measure") for s in series) or [_count()]
+    values = _named_measures(s.get("measure") for s in series) or [count_of_rows()]
 
     x_dimension = (config.get("x_axis") or {}).get("dimension") or {}
     split_by = (config.get("split_by") or {}).get("dimension") or {}
@@ -298,7 +298,8 @@ def _order_by(column_name: str, direction: str) -> dict:
     }
 
 
-def _count() -> dict:
+def count_of_rows() -> dict:
+    """The measure a chart draws when it declares none of its own."""
     return {
         "column_name": "count",
         "data_type": "Integer",

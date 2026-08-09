@@ -22,6 +22,7 @@ import frappe
 from frappe import _
 
 from insights.decorators import validate_type
+from insights.insights.doctype.insights_chart_v3.chart_drill import drill_data, drill_dimensions
 from insights.insights.doctype.insights_chart_v3.chart_query import column_granularity
 from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import route_filters
 from insights.insights.doctype.insights_data_source_v3.data_authority import data_authority_of
@@ -81,17 +82,11 @@ def get_chart_data(
 ):
     """A chart's rows, fetched under the authority the chart declares.
 
-    `filters` is dashboard filter state, keyed by filter name. Routing it to the
-    queries behind the charts is this side's job — the links that do the routing
-    name queries and columns, which is exactly what a viewer never receives.
+    `filters` is dashboard filter state, keyed by filter name.
     """
     name = resolve_chart(chart, dashboard)
     doc = frappe.get_doc(CHART, name)
-
-    adhoc_filters = None
-    if dashboard:
-        items = frappe.db.get_value(DASHBOARD, resolve_for_read(DASHBOARD, dashboard), "items")
-        adhoc_filters = route_filters(items, name, filters)
+    adhoc_filters = routed_filters(name, dashboard, filters)
 
     result = doc.get_data(
         force=force,
@@ -103,9 +98,67 @@ def get_chart_data(
         "columns": result["columns"],
         "rows": result["rows"],
         "granularity": column_granularity(doc.get_operations()),
+        # the drill menu opens on a click, so what it can offer travels with the
+        # card instead of costing a round trip at the moment latency is felt
+        "drill": {"dimensions": drill_dimensions(doc) if can_drill() else []},
         "time_taken": result["time_taken"],
         "executed_at": frappe.utils.now(),
     }
+
+
+@frappe.whitelist(allow_guest=True)
+@validate_type
+def get_drill_data(
+    chart: str,
+    dashboard: str | None = None,
+    filters: dict | None = None,
+    drill_stack: list | None = None,
+):
+    """What is behind a segment of a chart, one level of the drill at a time.
+
+    `drill_stack` is the path the viewer walked: one level per step, each naming
+    the segment it clicked as `segment_filters` — dimension values as plain
+    (column, operator, literal) triples — and an `action`, either
+    `{"records": true}` or `{"breakdown": column}`, which may also name the
+    `measure` the click landed on. The segments accumulate down the stack and
+    the last level's action shapes the answer.
+
+    Which chart is all the request says about the query. The server re-derives
+    the chart's operations, cuts them before the step that aggregated the rows,
+    and refuses any column that is not on the surface underneath it: the wire
+    cannot widen what a chart exposes.
+    """
+    if not can_drill():
+        frappe.throw(_("Sign in to see what is behind this chart"), exc=frappe.PermissionError)
+
+    name = resolve_chart(chart, dashboard)
+    doc = frappe.get_doc(CHART, name)
+
+    return drill_data(doc, drill_stack, adhoc_filters=routed_filters(name, dashboard, filters))
+
+
+def can_drill() -> bool:
+    """Whether this session may look behind a chart it can see.
+
+    A guest may not: a public chart stays a picture, and letting anonymous
+    readers walk the rows behind it is a decision to make loudly, not one to
+    inherit from the rung the dashboard sits on.
+    """
+    return frappe.session.user != "Guest"
+
+
+def routed_filters(chart: str, dashboard: str | None, filters: dict | None) -> dict | None:
+    """Dashboard filter state, routed to the queries behind one card.
+
+    The links that do the routing name queries and columns, which is exactly
+    what a viewer never receives — so a viewer sends filter state by name and
+    this side turns it into something a query can run.
+    """
+    if not dashboard:
+        return None
+
+    items = frappe.db.get_value(DASHBOARD, resolve_for_read(DASHBOARD, dashboard), "items")
+    return route_filters(items, chart, filters)
 
 
 @frappe.whitelist(allow_guest=True)

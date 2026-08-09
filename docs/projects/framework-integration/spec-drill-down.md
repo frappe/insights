@@ -139,6 +139,21 @@ misses the convention; it is not built now.
 **Guests.** No drill. The endpoint refuses Guest; the client draws no menu
 for anonymous sessions. Public charts stay pictures.
 
+**Settled while building steps 1 and 2** — four things the wire contract did
+not state, decided the same way on both sides:
+
+- A level's action carries an optional `measure`, the one the click landed
+  on. It narrows a breakdown, and on a records level it carries a
+  conditional measure's condition — without it, drilling an "Overdue" KPI
+  returns every row of the segment rather than the overdue ones.
+- The response carries `total_row_count`, the bound user story 12 states.
+- The server owns date-bucket expansion. A client pins a bucket as a plain
+  `=` on the raw value, and the server turns it into the span, fiscal
+  calendar included. One owner for the calendar.
+- Breakdown candidates subtract the pins of the whole path, not just the
+  clicked segment, so a deeper level never re-offers a column an earlier
+  one fixed.
+
 **The dialog.** One dialog with an internal back-stack. The menu's choice
 pushes the first level; drilling inside pushes further; back and breadcrumb
 crumbs pop. The client caches each level's response for the dialog's
@@ -203,8 +218,23 @@ Prior art: the existing viewer API and authoring API test modules — same
 integration base, ToDo fixtures, and persona set (author, role-free desk
 user, outsider, Guest). New tests join those modules.
 
-No frontend seam: the repo has no frontend test runner. The dialog, menu,
-back-stack, and Row-chart reuse ship on manual verification.
+**Seam 3 — the drill stack module** (frontend, added after the charts-v2
+work landed a vitest runner): the stack is a pure module — push a level,
+pop to a crumb, build the descriptor a click produces, hold the per-level
+response cache. Test it as a unit, in the style of the chart adapter tests:
+call the module, assert on the descriptor and the resulting breadcrumb,
+never on component internals. The dialog's rendering stays on manual
+verification.
+
+Note the contract the charts-v2 work fixed: a chart hands over the **raw**
+row it was clicked with, and the surfaces that draw formatted rows cross
+back themselves. Segment filters are built from raw values — never from
+formatted ones.
+
+**Isolating the drill stack.** The stack, the descriptor a click builds, and
+the per-level cache live in one pure module, separate from the dialog
+component. That is what makes seam 3 testable and what keeps the dialog a
+rendering concern.
 
 ## Out of Scope
 
@@ -230,3 +260,16 @@ back-stack, and Row-chart reuse ship on manual verification.
 - A prototype was judged unnecessary: every level composes parts that
   already exist. If the back-stack feel is in question at build time, mock
   the engine behind the descriptor and try it.
+- Open after steps 1 and 2, to settle in step 3 or later:
+  - Records-level dates render raw. The drill response carries no
+    `granularity`, so the table has nothing to format them by. Either the
+    endpoint grows the field or the records table formats by column type.
+  - Telemetry for the menu (story 26) is not built. `useTelemetry` sits
+    behind `frappe-ui/frappe`, which the island bundle does not import —
+    dragging that graph into the island needs its own decision.
+  - The menu anchors to the viewport. Both read surfaces use a plain CSS
+    grid, so it lands correctly; the builder's grid uses `translate3d`, so
+    step 3 must re-anchor it when the builder moves onto this dialog.
+  - "The chart's other declared dimensions sort first" is near-vacuous: a
+    click pins every dimension a chart declares, except on a number card
+    with a date column. The alphabetical tail does the real work.

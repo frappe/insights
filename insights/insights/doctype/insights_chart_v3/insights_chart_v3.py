@@ -89,19 +89,22 @@ class InsightsChartv3(Document):
                 adhoc_filters=adhoc_filters,
             )
 
-    def get_query(self):
+    def get_query(self, operations: list | None = None):
         """A query document for this chart's operations, made to run and thrown away.
 
         Nothing about it is worth keeping: the operations follow from the config, so
         the config is the only copy. It is never inserted, and it names the source
         query as its execution reference so a chart run still counts as usage of the
         tables it read.
+
+        `operations` runs something built out of the chart's own instead — a drill's
+        sliced pipeline — against the same source and connection the chart uses.
         """
         query = frappe.new_doc(QUERY)
         query.name = self.name
         query.title = self.title
         query.workbook = self.workbook
-        query.operations = frappe.as_json(self.get_operations())
+        query.operations = frappe.as_json(self.get_operations() if operations is None else operations)
         query.use_live_connection = frappe.db.get_value(QUERY, self.query, "use_live_connection")
         query.flags.execution_reference = self.query
         return query
