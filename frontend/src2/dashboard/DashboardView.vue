@@ -12,7 +12,6 @@ import type {
 	ViewerFilters,
 	ViewerFilterState,
 } from './viewer'
-import VueGridLayout from './VueGridLayout.vue'
 
 // A saved dashboard. This is the whole of what a dashboard page shows — the
 // trail, the title, the freshness, the actions and the grid — on every surface
@@ -265,7 +264,8 @@ function exportImage() {
 				{{ __('This dashboard is empty') }}
 			</div>
 
-			<VueGridLayout
+			<component
+				:is="source.grid"
 				v-else
 				class="h-fit w-full"
 				:class="source.authoring?.editing ? 'mb-[20rem] !select-none' : ''"
@@ -289,7 +289,7 @@ function exportImage() {
 						@reset-filters="filters = {}"
 					/>
 				</template>
-			</VueGridLayout>
+			</component>
 		</div>
 	</div>
 </template>

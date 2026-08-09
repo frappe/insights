@@ -18,6 +18,7 @@ import { isFilterApplied } from '../query/components/filter_utils'
 import type { FilterOperator, FilterValue } from '../types/query.types'
 import type { Layout } from '../types/workbook.types'
 import { readFilters, writeFilters } from './filter_storage'
+import StaticGridLayout from './StaticGridLayout.vue'
 import ViewerItem from './ViewerItem.vue'
 
 export type ViewerDashboardItem = {
@@ -153,6 +154,9 @@ export type DashboardSource = {
 	saveFilters?: (filters: ViewerFilters) => void
 	verticalCompact: boolean
 	cell: Component
+	// the grid the cells are laid out in. A reader gets one that only draws, so
+	// the drag-and-resize engine never reaches a surface that cannot use it
+	grid: Component
 	// reaching the builder from here. Absent for a reader who cannot edit — and
 	// for the builder, which is already there
 	openBuilder?: () => void
@@ -176,6 +180,7 @@ export function useSavedDashboard(dashboard: string): DashboardSource {
 		filters: {},
 		verticalCompact: true,
 		cell: markRaw(ViewerItem),
+		grid: markRaw(StaticGridLayout),
 	})
 
 	// A dashboard that is missing and one the viewer may not read answer the same,

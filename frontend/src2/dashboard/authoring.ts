@@ -20,6 +20,7 @@ import type { Layout, WorkbookChart } from '../types/workbook.types'
 import useDashboard from './dashboard'
 import DashboardEditActions from './DashboardEditActions.vue'
 import DashboardItem from './DashboardItem.vue'
+import VueGridLayout from './VueGridLayout.vue'
 import { defaultFilters, type DashboardSource, type ViewerDashboardItem } from './viewer'
 
 /** The charts this dashboard may draw from — the workbook's, not the site's. */
@@ -64,6 +65,7 @@ export function useDashboardAuthoring(name: string, charts: WorkbookChart[]): Da
 		filters: computed(() => defaultFilters(dashboard.doc.items as ViewerDashboardItem[])),
 		verticalCompact,
 		cell: markRaw(DashboardItem),
+		grid: markRaw(VueGridLayout),
 
 		authoring: reactive({
 			// the page only reads it — turning it on and off is the chrome's own
