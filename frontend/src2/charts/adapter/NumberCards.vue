@@ -3,10 +3,18 @@ import { NumberCard } from 'frappe-ui/charts'
 import { computed } from 'vue'
 import type { NumberCardClickEvent, NumberCardEntry } from './number'
 
-// The grid a Number Chart's readings sit in. It is a filler like any other: the
-// card around it is the chrome `ChartBody` draws, which is why every card in it
-// draws no surface of its own. Nothing here decorates — it lays the readings
-// out and reports a click.
+// The grid a Number Chart's readings sit in. Nothing here decorates — it lays
+// the readings out and reports a click.
+//
+// Every reading is a card of frappe-ui's, drawn with its own surface, which is
+// why the filler tells the chrome to draw none: a grid of cards inside a card
+// would border each reading twice. The cards fill the cell they are given
+// rather than the height they need, so a row of them lines up and the author
+// sets that height by resizing the item.
+//
+// The gap is the one a dashboard puts between two items — 16px, the `p-2` each
+// grid cell carries on both sides. Two readings side by side and two charts side
+// by side stand the same distance apart.
 const props = defineProps<{ cards: NumberCardEntry[] }>()
 
 const emit = defineEmits<{
@@ -30,7 +38,7 @@ const readings = computed(() => props.cards.map(({ column, ...card }) => ({ colu
 				class="min-w-0 cursor-pointer"
 				@dblclick="emit('cardClick', { column: reading.column })"
 			>
-				<NumberCard v-bind="reading.card" :card="false" />
+				<NumberCard v-bind="reading.card" class="h-full" />
 			</div>
 		</div>
 	</div>

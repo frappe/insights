@@ -103,10 +103,10 @@ const failure = computed(() => {
 	return null
 })
 
-// A filler that has one right height gets it, and every other one fills the
-// room. Only the picture is asked: a loading or empty card is chrome, and chrome
-// is the same size for every type.
-const fitsContent = computed(() => state.value === 'chart' && filler.value?.height === 'content')
+// A filler that draws cards of its own is left to draw them. Only the picture is
+// asked: a loading, empty or failed card is chrome, and chrome is the same for
+// every type.
+const drawCard = computed(() => state.value !== 'chart' || filler.value?.card !== false)
 
 // The events a filler reports a click through, bound without knowing which chart
 // type emits which. The adapter names them and turns each payload into the point
@@ -146,7 +146,7 @@ function reportSegment(target: DrillDownTarget) {
 		</div>
 
 		<div class="min-h-0 w-full flex-1">
-			<ChartCard :class="fitsContent ? 'max-h-full' : 'h-full'">
+			<ChartCard class="h-full" :card="drawCard">
 				<component
 					v-if="state === 'chart' && filler"
 					:is="filler.component"

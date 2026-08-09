@@ -51,6 +51,13 @@ export type ChartFiller = {
 	/** `v-bind`-ready. Typed at the point each adapter builds it. */
 	props: Record<string, any>
 	drillDown?: DrillDownResolvers
+	/**
+	 * Whether the chrome draws the card surface around the filler. One plot gets
+	 * one card, so `true` is the default. A filler that draws several cards of
+	 * its own — a Number Chart's readings — says `false`, or every one of them
+	 * sits inside a second border.
+	 */
+	card?: boolean
 }
 
 // eslint-disable-next-line no-unused-vars

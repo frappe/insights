@@ -35,6 +35,9 @@ export function adaptNumberChart(input: ChartAdapterInput): ChartFiller | undefi
 	return {
 		component: NumberCards,
 		props: { cards },
+		// every reading is a card in its own right, so the chrome draws none
+		// around the grid they sit in
+		card: false,
 		drillDown: {
 			cardClick: (event: NumberCardClickEvent) => ({
 				column: event.column,

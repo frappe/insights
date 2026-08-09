@@ -33,6 +33,10 @@ describe('a Number Chart with several values', () => {
 		expect(props.cards.map((card: any) => card.value)).toEqual([100, 40, 7])
 	})
 
+	it('draws the cards itself, so the chrome draws none around them', () => {
+		expect(adapt({ values: [{ name: 'Revenue', readings: [100] }] }).card).toBe(false)
+	})
+
 	it('reads the newest row, which is the reading a KPI states', () => {
 		expect(cardsOf({ values: [{ name: 'Revenue', readings: [100, 300] }] })[0].value).toBe(300)
 	})

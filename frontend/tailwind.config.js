@@ -6,8 +6,11 @@ export default {
 	content: [
 		'./index.html',
 		'./src2/**/*.{vue,js,ts,jsx,tsx}',
-		'./node_modules/frappe-ui/src/components/**/*.{vue,js,ts,jsx,tsx}',
-		'../node_modules/frappe-ui/src/components/**/*.{vue,js,ts,jsx,tsx}',
+		// charts v2 lives beside `components`, not under it. Leaving it out drops
+		// every class only its cards use — `rounded-7`, `bg-surface-elevation-2` —
+		// so the card draws square and flat instead of rounded and raised.
+		'./node_modules/frappe-ui/src/{components,charts}/**/*.{vue,js,ts,jsx,tsx}',
+		'../node_modules/frappe-ui/src/{components,charts}/**/*.{vue,js,ts,jsx,tsx}',
 	],
 	theme: {
 		container: {
