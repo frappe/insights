@@ -158,6 +158,9 @@ The framework-side foundation is specced from these tickets:
 The Insights-side foundation is specced from tickets 03, 04, 05, and 09:
 [spec-insights-foundation.md](spec-insights-foundation.md) (`ready-for-agent`).
 
+The drill-down layer is specced from ticket 11:
+[spec-drill-down.md](spec-drill-down.md) (`ready-for-agent`).
+
 ## Implementation — the foundation branch, 2026-08-05
 
 Tickets 12–23 built the Insights-side and SPA-side foundation the specs above
