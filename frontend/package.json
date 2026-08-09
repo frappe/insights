@@ -10,6 +10,7 @@
 		"dev": "vite",
 		"lint": "eslint --no-eslintrc -c .eslintrc.boundaries.json --ext .js,.ts,.vue src2",
 		"serve": "vite preview",
+		"test": "vitest run",
 		"build": "vite build -l warn --base=/assets/insights/frontend/ && yarn copy-html-entry",
 		"build:islands": "node build-islands.mjs --production",
 		"copy-html-entry": "cp ../insights/public/frontend/index.html ../insights/www/_insights.html"
@@ -58,6 +59,7 @@
 		"tailwindcss": "3.4.17",
 		"typescript": "^5.5.2",
 		"vite": "^4.4.6",
+		"vitest": "^0.34.6",
 		"vue-tsc": "^2.0.21"
 	},
 	"resolutions": {

@@ -2,6 +2,9 @@ import { createResource } from "frappe-ui";
 import type { App } from "vue";
 
 function getTranslatedMessage(message: string): string {
+    // Module-scope option lists call this while they are being defined, so it
+    // runs wherever a module is loaded — including a test runner with no window.
+    if (typeof window === "undefined") return message;
     const translatedMessages = (("translatedMessages" in window ? window["translatedMessages"] : null) ?? {}) as Record<string, string>;
     return translatedMessages[message] || message;
 }

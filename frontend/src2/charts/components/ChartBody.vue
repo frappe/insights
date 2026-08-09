@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Button } from 'frappe-ui'
+import { ChartCard, ChartContainer } from 'frappe-ui/charts'
 import { AlertTriangle, RefreshCcw } from 'lucide-vue-next'
 import { computed, shallowRef, watch } from 'vue'
 import { __ } from '../../translation'
@@ -8,31 +9,25 @@ import { FIELDTYPES } from '../../helpers/constants.ts'
 import { EMPTY_RESULT } from '../../query/helpers'
 import { Query } from '../../query/query'
 import {
-	BarChartConfig,
 	BubbleChartConfig,
 	DonutChartConfig,
 	FunnelChartConfig,
-	LineChartConfig,
 	MapChartConfig,
 	NumberChartConfig,
 	SankeyChartConfig,
-	AXIS_CHARTS,
-	AxisChartConfig,
 } from '../../types/chart.types'
+import { QueryResultRow } from '../../types/query.types'
+import { adaptChart, type DrillDownTarget } from '../adapter'
 import { ChartRead } from '../chart_read'
 import {
-	getBarChartOptions,
 	getBubbleChartOptions,
 	getDonutChartOptions,
 	getFunnelChartOptions,
-	getLineChartOptions,
 	getMapChartOptions,
 	getSankeyChartOptions,
-	getAxisChartRowOrder,
 } from '../helpers'
 import BaseChart from './BaseChart.vue'
 import ChartSectionEmptySvg from './ChartSectionEmptySvg.vue'
-import ChartTitle from './ChartTitle.vue'
 import NumberChart from './NumberChart.vue'
 import TableChart from './TableChart.vue'
 
@@ -41,6 +36,11 @@ import TableChart from './TableChart.vue'
 // and gets the failure, the reload and the empty result along with the picture.
 // Segment clicks are reported, never handled — drill-down is a dialog the caller
 // offers, so it is the caller that carries it.
+//
+// The card and the states are frappe-ui's, for every chart type without
+// exception. What goes inside them is the adapter's answer: it says which
+// component draws this Chart and what to hand it, so nothing here switches on
+// chart type. A new type is added in `charts/adapter`, not here.
 //
 // `readonly` is for a surface that cannot change the chart. It decides two
 // things, and they are the same thing: a table's sort rewrites the chart's config
@@ -60,21 +60,25 @@ const chart_type = computed(() => props.chart.doc.chart_type)
 const config = computed(() => props.chart.doc.config)
 const result = computed(() => props.chart.result || { ...EMPTY_RESULT })
 
-const builtOptions = computed(() => {
-	// the result outlives a chart type switch, so without this the option builders
-	// would run against the incoming type's still-empty config
+const adapted = computed(() => {
+	// the result outlives a chart type switch, so without this the adapter would
+	// run against the incoming type's still-empty config
 	if (props.chart.configErrors.length) return
 	if (!result.value.columns?.length) return
-	if (chart_type.value === 'Bar' || chart_type.value === 'Row') {
-		return getBarChartOptions(
-			config.value as BarChartConfig,
-			result.value,
-			chart_type.value === 'Row',
-		)
-	}
-	if (chart_type.value === 'Line') {
-		return getLineChartOptions(config.value as LineChartConfig, result.value)
-	}
+	return adaptChart({
+		chart_type: chart_type.value,
+		config: config.value,
+		result: result.value,
+		title: props.chart.doc.title,
+	})
+})
+
+// SCAFFOLD: the types that have not moved onto the standard chart family yet.
+// Each still builds its own echarts option or draws its own surface. This block,
+// and the branch that reaches it, go with the last of them.
+const builtOptions = computed(() => {
+	if (props.chart.configErrors.length) return
+	if (!result.value.columns?.length) return
 	if (chart_type.value === 'Donut') {
 		return getDonutChartOptions(config.value as DonutChartConfig, result.value)
 	}
@@ -94,23 +98,30 @@ const builtOptions = computed(() => {
 
 // The store holds on to the rows when the server answers with config errors, so
 // the card goes on showing what it last drew while a slot is being filled — the
-// builders cannot run against a config the server refused, but their last output
-// is still a true picture of those rows. A type switch is not that case: the
+// adapter cannot run against a config the server refused, but its last output is
+// still a true picture of those rows. A type switch is not that case: the
 // picture belongs to the type that drew it.
-const lastDrawn = shallowRef<{ chart_type: string; options: object }>()
-watch(builtOptions, (options) => {
-	if (options) lastDrawn.value = { chart_type: chart_type.value, options }
+type Drawn = { chart_type: string; filler?: ReturnType<typeof adaptChart>; options?: object }
+const lastDrawn = shallowRef<Drawn>()
+watch([adapted, builtOptions], ([filler, options]) => {
+	if (filler || options) lastDrawn.value = { chart_type: chart_type.value, filler, options }
 })
 
-const eChartOptions = computed(() => {
-	if (!props.chart.configErrors.length) return builtOptions.value
-	return lastDrawn.value?.chart_type === chart_type.value ? lastDrawn.value.options : undefined
+const drawn = computed<Drawn | undefined>(() => {
+	if (!props.chart.configErrors.length) {
+		return { chart_type: chart_type.value, filler: adapted.value, options: builtOptions.value }
+	}
+	return lastDrawn.value?.chart_type === chart_type.value ? lastDrawn.value : undefined
 })
+
+const filler = computed(() => drawn.value?.filler)
+const eChartOptions = computed(() => drawn.value?.options)
 
 // Number and Table draw themselves straight off the result; every other type
-// needs the option builders to have produced something
+// needs the adapter or the option builders to have produced something
 const drawable = computed(
 	() =>
+		Boolean(filler.value) ||
 		Boolean(eChartOptions.value) ||
 		chart_type.value === 'Number' ||
 		chart_type.value === 'Table',
@@ -136,6 +147,40 @@ const state = computed(() => {
 	if (props.chart.empty) return 'empty'
 	return drawable.value ? 'chart' : 'unconfigured'
 })
+
+// Any non-empty string puts the container in its error state. The slot below
+// draws the message itself, because a retry belongs beside it.
+const failure = computed(() => {
+	if (state.value === 'serverBusy') return __('The server is busy')
+	if (state.value === 'failed') return __('This chart is not available')
+	return null
+})
+
+// The events a filler reports a click through, bound without knowing which chart
+// type emits which. The adapter names them and turns each payload into the point
+// behind it.
+const fillerEvents = computed(() => {
+	const resolvers = filler.value?.drillDown
+	if (!resolvers) return {}
+	return Object.fromEntries(
+		Object.entries(resolvers).map(([event, resolve]) => [
+			event,
+			(payload: any) => drillDownInto(resolve(payload)),
+		]),
+	)
+})
+
+async function drillDownInto(target: DrillDownTarget | undefined | null) {
+	if (!target) return
+	const column = result.value.columns.find((c) => c.name === target.column)
+	if (!column) return
+	// A drill-down identifies its row inside `formattedRows`, and a chart is drawn
+	// from the raw ones, so the two are matched by position.
+	const row = result.value.formattedRows[result.value.rows.indexOf(target.row)]
+	if (!row) return
+	const query = await props.chart.getDrillDownQuery(column, row)
+	if (query) emit('drillDown', query)
+}
 
 const mapConfig = computed(() => props.chart.doc.config as MapChartConfig)
 
@@ -208,18 +253,7 @@ function handleMapChartClick(params: any) {
 }
 
 function handleGeneralChartClick(params: any) {
-	let dataIndex = params.dataIndex
-
-	if (AXIS_CHARTS.includes(chart_type.value)) {
-		const rowOrder = getAxisChartRowOrder(
-			result.value.rows,
-			(config.value as AxisChartConfig).x_axis,
-			chart_type.value === 'Row',
-		)
-		dataIndex = rowOrder[dataIndex]
-	}
-
-	const row = result.value.formattedRows[dataIndex]
+	const row = result.value.formattedRows[params.dataIndex]
 	const column = result.value.columns.find((c) => c.name === params.seriesName)
 
 	return column ? props.chart.getDrillDownQuery(column, row) : null
@@ -236,7 +270,7 @@ async function onChartElementClick(params: any) {
 	if (query) emit('drillDown', query)
 }
 
-async function onNumberChartDrillDown(column: any, row: any) {
+async function onNumberChartDrillDown(column: any, row: QueryResultRow) {
 	const query = await props.chart.getDrillDownQuery(column, row)
 	if (query) emit('drillDown', query)
 }
@@ -258,51 +292,66 @@ async function onNumberChartDrillDown(column: any, row: any) {
 		</div>
 
 		<div class="min-h-0 w-full flex-1">
-			<BaseChart
-				v-if="state === 'chart' && eChartOptions"
-				class="rounded bg-surface-base py-1 border border-outline-gray-2"
-				:class="props.chart.doc.chart_type == 'Map' ? '[&>div:last-child]:p-4' : ''"
-				:title="props.chart.doc.title"
-				:options="eChartOptions"
-				:onClick="onChartElementClick"
-			/>
-			<NumberChart
-				v-else-if="state === 'chart' && chart_type == 'Number'"
-				:config="config as NumberChartConfig"
-				:result="result"
-				@drill-down="onNumberChartDrillDown"
-			/>
-			<TableChart
-				v-else-if="state === 'chart'"
-				:chart="props.chart"
-				:readonly="props.readonly"
-				@drill-down="emit('drillDown', $event)"
-			/>
+			<!-- SCAFFOLD: a type the adapter has not taken over draws its own card.
+			     Goes with the last of them. -->
+			<template v-if="state === 'chart' && !filler">
+				<BaseChart
+					v-if="eChartOptions"
+					class="rounded bg-surface-base py-1 border border-outline-gray-2"
+					:class="chart_type == 'Map' ? '[&>div:last-child]:p-4' : ''"
+					:title="props.chart.doc.title"
+					:options="eChartOptions"
+					:onClick="onChartElementClick"
+				/>
+				<NumberChart
+					v-else-if="chart_type == 'Number'"
+					:config="config as NumberChartConfig"
+					:result="result"
+					@drill-down="onNumberChartDrillDown"
+				/>
+				<TableChart
+					v-else
+					:chart="props.chart"
+					:readonly="props.readonly"
+					@drill-down="emit('drillDown', $event)"
+				/>
+			</template>
 
 			<!-- a card still filling in is a placeholder to a reader, not a message:
 			     a dashboard fills in card by card and the grid should hold its shape -->
 			<div
 				v-else-if="state === 'loading' && props.readonly"
-				class="h-full w-full animate-pulse rounded border border-outline-gray-2 bg-surface-gray-2"
+				class="h-full w-full animate-pulse rounded-7 border border-outline-gray-1 bg-surface-gray-2"
 			/>
 
-			<div
-				v-else
-				class="flex h-full w-full flex-col overflow-hidden rounded border border-outline-gray-2 bg-surface-base"
-			>
-				<ChartTitle v-if="state === 'empty' && chart.doc.title" :title="chart.doc.title" />
-				<div class="flex flex-1 flex-col items-center justify-center gap-2 p-2">
-					<template v-if="state === 'loading'">
-						<LoadingIndicator class="h-5 w-5 text-ink-gray-4" />
-						<p class="text-ink-gray-4">{{ __('Loading data...') }}</p>
-					</template>
+			<ChartCard v-else class="h-full">
+				<component
+					v-if="state === 'chart' && filler"
+					:is="filler.component"
+					v-bind="filler.props"
+					v-on="fillerEvents"
+				/>
 
-					<!-- the queue turned this card away rather than queueing it, so
-					     asking again is the whole remedy -->
-					<template v-else-if="state === 'serverBusy'">
+				<ChartContainer
+					v-else
+					:title="chart.doc.title"
+					:loading="state === 'loading'"
+					:error="failure"
+					:empty="true"
+				>
+					<!-- the queue turns a card away rather than queueing it, so asking
+					     again is the whole remedy — and a chart that failed for any
+					     other reason is worth one more try too -->
+					<template #error>
+						<AlertTriangle
+							v-if="state === 'failed'"
+							class="h-6 w-6 text-ink-gray-4"
+							stroke-width="1"
+						/>
+						<p class="text-p-base text-ink-gray-5">{{ failure }}</p>
 						<Button
 							variant="outline"
-							:label="__('Server is busy, click to retry')"
+							:label="state === 'serverBusy' ? __('Try again') : __('Retry')"
 							@click="chart.load(true)"
 						>
 							<template #prefix>
@@ -311,38 +360,30 @@ async function onNumberChartDrillDown(column: any, row: any) {
 						</Button>
 					</template>
 
-					<template v-else-if="state === 'failed'">
-						<AlertTriangle class="h-6 w-6 text-ink-gray-4" stroke-width="1" />
-						<p class="text-p-base text-ink-gray-5">
-							{{ __('This chart is not available') }}
-						</p>
-						<Button variant="outline" :label="__('Retry')" @click="chart.load(true)">
-							<template #prefix>
-								<RefreshCcw class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
-							</template>
-						</Button>
-					</template>
+					<template #empty>
+						<template v-if="state === 'empty'">
+							<p class="text-p-base text-ink-gray-5">{{ __('No data') }}</p>
+							<Button
+								v-if="props.filtered"
+								variant="outline"
+								:label="__('Reset filters')"
+								@click="emit('resetFilters')"
+							/>
+						</template>
 
-					<template v-else-if="state === 'empty'">
-						<p class="text-p-base text-ink-gray-5">{{ __('No data') }}</p>
-						<Button
-							v-if="props.filtered"
-							variant="outline"
-							:label="__('Reset filters')"
-							@click="emit('resetFilters')"
-						/>
+						<template v-else>
+							<ChartSectionEmptySvg></ChartSectionEmptySvg>
+							<p class="text-ink-gray-4">
+								{{
+									__(
+										'Pick a chart type and configure options to see the chart here',
+									)
+								}}
+							</p>
+						</template>
 					</template>
-
-					<template v-else>
-						<ChartSectionEmptySvg></ChartSectionEmptySvg>
-						<p class="text-ink-gray-4">
-							{{
-								__('Pick a chart type and configure options to see the chart here')
-							}}
-						</p>
-					</template>
-				</div>
-			</div>
+				</ChartContainer>
+			</ChartCard>
 		</div>
 	</div>
 </template>
