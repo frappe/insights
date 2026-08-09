@@ -128,7 +128,8 @@ Resolved tickets:
   ADR's own order, because every unknown sits in the swap. v2 gains
   `xAxis.type: 'value'`; `show_scrollbar` is dropped; `split_by` stays wide
   because v2's `series` grouping takes a single `y`. frappe-ui's
-  `spec/charts-scope.md` is the membership authority, and it rules Table and Map
+  `spec/charts.md` plus `spec/adr/0015-what-enters-charts.md` are the
+  membership authority, and they rule Table and Map
   out of v2 on the model — which is what makes the plot slot permanent rather
   than a staging area. ADR-0001's "Blocked on" section was obsolete and is now
   amended. Specced as [spec-charts-v2.md](spec-charts-v2.md)

@@ -8,7 +8,8 @@ render swap.
 Sources: the resolved ticket
 [32](issues/resolved/32-charts-v2-adoption.md) (charts v2 adoption), amended
 [ADR-0001](../../adr/0001-type-independent-chart-config.md), and frappe-ui's
-`spec/charts-scope.md`, which is the authority on what enters v2.
+`spec/charts.md` and `spec/adr/0015-what-enters-charts.md`, which
+together are the authority on what enters v2.
 Glossary: `CONTEXT.md` — Chart, Dimension, Measure, Operation, Query, island,
 viewer.
 
@@ -227,7 +228,7 @@ One change, landing into branch `charts-v2` before the Insights swap depends on
 it: the axis charts gain a numeric x-axis, as `xAxis.type: 'value'` beside
 `'category'` and `'time'`.
 
-Argue it in `spec/charts-scope.md` under the existing rule, not as an exception
+Argue it in frappe-ui's scope documents under the existing rule, not as an exception
 to it. It follows from convention 1 — reading a Measure against a quantity is a
 statement about the data, not an instruction to the renderer — and it is the one
 item on the Insights gap list the scope document never ruled on.
@@ -257,9 +258,17 @@ link, so that charts-v2 can keep being polished alongside the swap. The branch's
 `frontend/package.json` declares the link rather than sitting on a published
 version while building against source.
 
-Flipping the link to the published version is a **merge condition**, not a task
-inside the swap. `develop` consumes the published package, and this branch must
-match it before it merges.
+Flipping the link to the published version was a **merge condition**, not a task
+inside the swap. That condition was **lifted on 2026-08-09**: charts v2 still
+needs changes Insights is asking for, so there is nothing published to flip to.
+The link stays until frappe-ui publishes.
+
+It carries one cost worth knowing. Re-locking under the `link:` protocol prunes
+frappe-ui's transitive dependencies, which is why `vitest` sits in
+`package.json` and not in `yarn.lock`, and why `yarn test` fails on a fresh
+checkout. `socket.io-client` is undeclared for the same reason and works only
+because a stale `node_modules` carries it. Declaring it and re-locking is the
+fix, and it does not wait on frappe-ui.
 
 Individual commits on this branch need not be in a working state.
 
@@ -365,21 +374,28 @@ not render". That stops being true when the swap ends. Then a thin smoke spec
 earns its place — one Dashboard, one card per chart type, asserting each drew a
 plot and a legend. Not a matrix, and written against the finished renderer.
 
+That condition is now met: the swap has ended, and the chart gallery is the one
+Dashboard it needs. The smoke spec is outstanding, deliberately deferred on
+2026-08-09.
+
 **ADR-0001 is amended, not superseded.** Its config decision stands. Its
 "Blocked on" section was replaced on 2026-08-09 because the gap list it named is
 closed. Read the amendment before the body.
 
-**Glossary.** This spec uses three words the glossary does not define yet —
-**chrome**, **plot** and **adapter**. They carry the central decision, so they
-belong in `CONTEXT.md` when this effort closes out.
+**Glossary.** This spec uses three words the glossary did not define — **chrome**,
+**plot** and **adapter**. They carry the central decision, so they are now in
+`CONTEXT.md`, under Framework integration.
 
 **The reasoning dies with the branch.** The framework-integration effort docs are
-branch-scoped. The seam and the ordering are decisions that outlive them, so
-they owe an ADR of their own before this branch merges.
+branch-scoped. The seam and the ordering are decisions that outlive them, so they
+are distilled into
+[ADR-0002](../../adr/0002-charts-render-through-frappe-ui.md). This spec is the
+working record; the ADR is what survives.
 
-**Dev loop.** Work happens in the `feat/charts-v2` worktree at
-`~/frappe/worktrees/insights-charts-v2`. Its Vite dev server runs on 8081
-against the live bench site, so the main checkout can serve the current renderer
-on 8080 for side-by-side comparison. `node_modules/frappe-ui` there is a
+**Dev loop.** `feat/charts-v2` merged into the effort branch on 2026-08-09, so
+there is one branch again. The worktree at `~/frappe/worktrees/insights-charts-v2`
+survives it as a second dev server: pass `frappeProxy: { port: 8081 }` in
+`frontend/vite.config.js` to move it off the port the plugin derives from the
+bench, and leave that edit uncommitted. `node_modules/frappe-ui` there is a
 hand-maintained absolute symlink; `yarn install` replaces it with the published
 package and must be followed by restoring it.

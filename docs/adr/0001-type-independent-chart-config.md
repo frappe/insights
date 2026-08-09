@@ -107,7 +107,8 @@ Two of the three gaps survive, and their status changed:
   GeoJSON, region-name resolution and a classification step — which is data
   cleaning, not rendering. **Table** is out for the same kind of reason: nothing
   in it maps a value to a visual property, so it is not a plot. frappe-ui's
-  `spec/charts-scope.md` holds the rule and both rulings.
+  frappe-ui's `spec/charts.md` holds the rule and
+  `spec/adr/0015-what-enters-charts.md` both rulings.
 
 Three consequences for this ADR:
 

@@ -78,6 +78,25 @@ shared runtime. Declared via the `ui_islands` hook; Insights ships `insights.das
 and `insights.chart`.
 _Avoid_: widget, block, embed (embed = the public iframe-sharing feature)
 
+**Chrome**:
+Everything around a plot: the card, the title, the actions, the legend, the tooltip,
+and the loading, error and empty states. frappe-ui charts v2 owns it for every
+Insights chart without exception, so a chart on a desk page reads as one of the
+family it sits beside. See ADR-0002.
+_Avoid_: frame, shell, container
+
+**Plot**:
+The picture inside the chrome — the marks that carry the data. The only part that
+varies by chart type, and it has three fillers: a charts v2 component, an Insights
+plot built on v2's `useChart` (Map), or none at all (Table).
+_Avoid_: graph, canvas, visual
+
+**Adapter**:
+The one module that turns a stored Chart config and a query result into the props of
+a charts v2 component (`frontend/src2/charts/adapter/`). One pure function per chart
+type. Insights builds no ECharts option for a type v2 admits.
+_Avoid_: mapper, translator, transformer
+
 **Standard workbook**:
 The unit an app ships analytics in — a workbook, shipped as an
 `insights/<folder>/` folder holding one JSON file per named item in typed
