@@ -47,6 +47,11 @@ PAGE_SIZE = 100
 DIMENSION_TYPES = ("String", "Date", "Datetime", "Time")
 DATE_TYPES = ("Date", "Datetime", "Time")
 
+# A moment grouped by itself is not a grouping: break a Datetime down raw and
+# every row lands in its own second. The grains match the ones the config UI
+# defaults to, in `frontend/src2/helpers/constants.ts`.
+DEFAULT_GRANULARITY = {"Date": "month", "Datetime": "month", "Time": "hour"}
+
 # a filter can only narrow what the surface already exposes, so the whole
 # operator set is open; naming one the engine does not have is a caller error
 OPERATORS = (
@@ -212,16 +217,18 @@ def _breakdown(dimension: str, clicked: str | None, step: dict, surface: list[di
     column = _surface_column(dimension, surface)
     measures = _clicked_measures(clicked, step)
 
+    dimension = {
+        "column_name": column["name"],
+        "dimension_name": column["name"],
+        "data_type": column["type"],
+    }
+    if column["type"] in DEFAULT_GRANULARITY:
+        dimension["granularity"] = DEFAULT_GRANULARITY[column["type"]]
+
     summarize = {
         "type": "summarize",
         "measures": measures,
-        "dimensions": [
-            {
-                "column_name": column["name"],
-                "dimension_name": column["name"],
-                "data_type": column["type"],
-            }
-        ],
+        "dimensions": [dimension],
     }
     # the ranking is the whole point of the level, and it is also what makes the
     # page the dialog shows the top of the list rather than an arbitrary slice

@@ -261,6 +261,21 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             [("High", 1), ("Low", 1)],
         )
 
+    def test_a_breakdown_by_a_datetime_buckets_it_instead_of_grouping_moments(self):
+        """Grouped raw, a timestamp puts every row in its own second."""
+        _, chart, dashboard = self.make_content()
+
+        result = self.drill(
+            DESK_USER,
+            chart.name,
+            dashboard.name,
+            drill_stack=[breakdown_level("creation", measure="count_of_rows")],
+        )
+
+        # the fixtures are made in one breath, so a month bucket holds them all
+        self.assertEqual(len(result["rows"]), 1)
+        self.assertEqual(result["rows"][0]["count_of_rows"], len(AUTHOR_TODOS))
+
     def test_a_breakdown_carries_the_measure_the_click_landed_on(self):
         _, chart, dashboard = self.make_content(
             chart_type="Table",
