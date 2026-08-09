@@ -29,7 +29,7 @@ import type { ChartSegmentClick } from './segment_click'
 //
 // `#actions` is what a surface may add to the level it is reading. It is a slot
 // rather than a prop so that an authoring affordance and everything it imports
-// stay out of the bundles that only read.
+// stay out of the islands, which only read.
 const props = defineProps<{
 	/** what is being drilled: the shape a click is read against, and the door */
 	subject: DrillSubject
