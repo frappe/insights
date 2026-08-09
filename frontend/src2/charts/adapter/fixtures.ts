@@ -134,6 +134,14 @@ function resultOf(
 		return row
 	})
 
+	return resultWith(resultColumns, rows)
+}
+
+/** The envelope the query store hands every chart, around the rows it ran. */
+function resultWith(
+	columns: QueryResultColumn[],
+	rows: Record<string, any>[],
+): QueryResult {
 	return {
 		executedSQL: '',
 		totalRowCount: rows.length,
@@ -141,7 +149,7 @@ function resultOf(
 		// A parallel array, the way the query store builds it: the drill-down
 		// reads the row out of it at the same index.
 		formattedRows: rows.map((row) => ({ ...row })),
-		columns: resultColumns,
+		columns,
 		columnOptions: [],
 		timeTaken: 0,
 		lastExecutedAt: new Date('2026-01-01T00:00:00Z'),
@@ -192,3 +200,328 @@ function defaultCategories(dimension: Dimension) {
 	if (dimension.data_type === ('Integer' as Dimension['data_type'])) return [1, 2]
 	return ['North', 'South']
 }
+
+// The types that draw one picture out of one shape. Each spec says what the
+// Chart measures and what came back for it; the server has already grouped and
+// ordered every one of these results, so a fixture writes the rows as the
+// picture reads them.
+
+export type DonutChartSpec = {
+	title?: string
+	/** The Dimension the slices are named after. */
+	category: DimensionSpec
+	measure: string
+	/** The slices as the server sent them: biggest first. */
+	slices?: { label: any; value: number }[]
+	maxSlices?: number
+	inlineLabels?: boolean
+	legendPosition?: 'top' | 'bottom' | 'left' | 'right'
+}
+
+export function donutChart(spec: DonutChartSpec): ChartAdapterInput {
+	const label_column = toDimension(spec.category)
+	const value_column = toMeasure(spec.measure)
+	const slices = spec.slices ?? [
+		{ label: 'North', value: 30 },
+		{ label: 'South', value: 20 },
+	]
+
+	const config = {
+		label_column,
+		value_column,
+		...(spec.maxSlices !== undefined ? { max_slices: spec.maxSlices } : {}),
+		...(spec.inlineLabels ? { show_inline_labels: true } : {}),
+		...(spec.legendPosition ? { legend_position: spec.legendPosition } : {}),
+	} as unknown as ChartConfig
+
+	return {
+		chart_type: 'Donut',
+		title: spec.title,
+		config,
+		result: resultWith(
+			[columnOfDimension(label_column), columnOfMeasure(value_column)],
+			slices.map((slice) => ({
+				[label_column.dimension_name]: slice.label,
+				[value_column.measure_name]: slice.value,
+			})),
+		),
+	}
+}
+
+export type FunnelStageSpec = { stage: string; value: number }
+
+export type FunnelChartSpec = {
+	title?: string
+	/**
+	 * Grouped mode: the Dimension the stages are named after, the Measure read
+	 * for each of them, and the row each stage came back on.
+	 */
+	dimension?: DimensionSpec
+	measure?: string
+	stages?: FunnelStageSpec[]
+	/**
+	 * Measures mode: one Measure per stage, aggregated with no group-by, so they
+	 * all arrive on one row. The config admits both shapes at once, and the
+	 * server derives the Chart from this one whenever it is set.
+	 */
+	measures?: FunnelStageSpec[]
+	showPercentage?: boolean
+}
+
+export function funnelChart(spec: FunnelChartSpec): ChartAdapterInput {
+	const label_column = spec.dimension !== undefined ? toDimension(spec.dimension) : undefined
+	const value_column = spec.measure !== undefined ? toMeasure(spec.measure) : undefined
+	const measures = (spec.measures || []).map((stage) => toMeasure(stage.stage))
+	const stages = spec.stages || []
+
+	const config = {
+		...(label_column ? { label_column } : {}),
+		...(value_column ? { value_column } : {}),
+		...(measures.length ? { measures } : {}),
+		...(spec.showPercentage !== undefined ? { show_percentage: spec.showPercentage } : {}),
+	} as unknown as ChartConfig
+
+	const result = spec.measures
+		? resultWith(measures.map(columnOfMeasure), [
+				Object.fromEntries(spec.measures.map((stage) => [stage.stage, stage.value])),
+		  ])
+		: resultWith(
+				[
+					...(label_column ? [columnOfDimension(label_column)] : []),
+					...(value_column ? [columnOfMeasure(value_column)] : []),
+				],
+				stages.map((stage) => ({
+					...(label_column ? { [label_column.dimension_name]: stage.stage } : {}),
+					...(value_column ? { [value_column.measure_name]: stage.value } : {}),
+				})),
+		  )
+
+	return { chart_type: 'Funnel', title: spec.title, config, result }
+}
+
+export type BubblePointSpec = {
+	x: number
+	y: number
+	size?: number
+	/** The point's own name. */
+	label?: string
+	/** Which group the point belongs to, i.e. what it is colored by. */
+	group?: string
+}
+
+export type BubbleChartSpec = {
+	title?: string
+	/** The Measures read against each other. */
+	x: string
+	y: string
+	/** The Measure each point is sized by. */
+	size?: string
+	/** The Dimension each point is named after. */
+	label?: DimensionSpec
+	/** The Dimension the points are grouped and colored by. */
+	group?: DimensionSpec
+	points?: BubblePointSpec[]
+	dataLabels?: boolean
+	/**
+	 * The dividers that cut the plot into quadrants. `shown: false` keeps the
+	 * values on the Chart without drawing them.
+	 */
+	quadrants?: { x?: number; y?: number; shown?: boolean }
+}
+
+export function bubbleChart(spec: BubbleChartSpec): ChartAdapterInput {
+	const xAxis = toMeasure(spec.x)
+	const yAxis = toMeasure(spec.y)
+	const size_column = spec.size ? toMeasure(spec.size) : undefined
+	const dimension = spec.label ? toDimension(spec.label) : undefined
+	const quadrant_column = spec.group ? toDimension(spec.group) : undefined
+	const points = spec.points ?? [
+		{ x: 10, y: 20 },
+		{ x: 30, y: 40 },
+	]
+	const quadrants = spec.quadrants
+
+	const config = {
+		xAxis,
+		yAxis,
+		...(size_column ? { size_column } : {}),
+		...(dimension ? { dimension } : {}),
+		...(quadrant_column ? { quadrant_column } : {}),
+		...(spec.dataLabels ? { show_data_labels: true } : {}),
+		...(quadrants ? { show_quadrants: quadrants.shown ?? true } : {}),
+		...(quadrants?.x !== undefined ? { xAxis_refLine: quadrants.x } : {}),
+		...(quadrants?.y !== undefined ? { yAxis_refLine: quadrants.y } : {}),
+	} as unknown as ChartConfig
+
+	const columns = [
+		...(dimension ? [columnOfDimension(dimension)] : []),
+		...(quadrant_column ? [columnOfDimension(quadrant_column)] : []),
+		columnOfMeasure(xAxis),
+		columnOfMeasure(yAxis),
+		...(size_column ? [columnOfMeasure(size_column)] : []),
+	]
+
+	return {
+		chart_type: 'Bubble',
+		title: spec.title,
+		config,
+		result: resultWith(
+			columns,
+			points.map((point) => ({
+				...(dimension ? { [dimension.dimension_name]: point.label } : {}),
+				...(quadrant_column ? { [quadrant_column.dimension_name]: point.group } : {}),
+				[xAxis.measure_name]: point.x,
+				[yAxis.measure_name]: point.y,
+				...(size_column ? { [size_column.measure_name]: point.size } : {}),
+			})),
+		),
+	}
+}
+
+export type SankeyFlowSpec = { source: string; target: string; value: number }
+
+export type SankeyChartSpec = {
+	title?: string
+	/** The Dimensions a flow leaves and arrives at. */
+	source: DimensionSpec
+	target: DimensionSpec
+	measure: string
+	/** One row per flow, the way the server groups them. */
+	flows?: SankeyFlowSpec[]
+	orient?: 'horizontal' | 'vertical'
+	nodeAlign?: 'left' | 'right' | 'justify'
+}
+
+export function sankeyChart(spec: SankeyChartSpec): ChartAdapterInput {
+	const source_column = toDimension(spec.source)
+	const target_column = toDimension(spec.target)
+	const value_column = toMeasure(spec.measure)
+	const flows = spec.flows ?? [
+		{ source: 'Search', target: 'Tops', value: 30 },
+		{ source: 'Email', target: 'Tops', value: 20 },
+	]
+
+	const config = {
+		source_column,
+		target_column,
+		value_column,
+		...(spec.orient ? { orient: spec.orient } : {}),
+		...(spec.nodeAlign ? { node_align: spec.nodeAlign } : {}),
+	} as unknown as ChartConfig
+
+	return {
+		chart_type: 'Sankey',
+		title: spec.title,
+		config,
+		result: resultWith(
+			[
+				columnOfDimension(source_column),
+				columnOfDimension(target_column),
+				columnOfMeasure(value_column),
+			],
+			flows.map((flow) => ({
+				[source_column.dimension_name]: flow.source,
+				[target_column.dimension_name]: flow.target,
+				[value_column.measure_name]: flow.value,
+			})),
+		),
+	}
+}
+
+export type NumberValueSpec = {
+	name: string
+	/** One reading per period, oldest first, the way the summarize returns them. */
+	readings: (number | null)[]
+	/** A Measure holding a fraction, which reads as a rate. */
+	percent?: boolean
+	prefix?: string
+	suffix?: string
+	decimal?: number
+	shorten?: boolean
+	color?: string
+}
+
+export type NumberChartSpec = {
+	title?: string
+	values: NumberValueSpec[]
+	/** The Dimension the readings are grouped by. A comparison and a sparkline both need one. */
+	period?: DimensionSpec
+	comparison?: boolean
+	sparkline?: boolean
+	sparklineColor?: string
+	/** A metric where a fall is the good news, e.g. churn. */
+	negativeIsBetter?: boolean
+	/** What the Chart sets for every value that sets nothing of its own. */
+	prefix?: string
+	suffix?: string
+	decimal?: number
+	shorten?: boolean
+}
+
+export function numberChart(spec: NumberChartSpec): ChartAdapterInput {
+	const period = spec.period ? toDimension(spec.period) : undefined
+	const number_columns = spec.values.map((value) =>
+		toMeasure(value.name, value.percent ? 'percent' : undefined),
+	)
+
+	const config = {
+		number_columns,
+		number_column_options: spec.values.map((value) => ({
+			...(value.prefix !== undefined ? { prefix: value.prefix } : {}),
+			...(value.suffix !== undefined ? { suffix: value.suffix } : {}),
+			...(value.decimal !== undefined ? { decimal: value.decimal } : {}),
+			...(value.shorten !== undefined ? { shorten_numbers: value.shorten } : {}),
+			...(value.color ? { color: value.color } : {}),
+		})),
+		comparison: Boolean(spec.comparison),
+		sparkline: Boolean(spec.sparkline),
+		...(spec.sparklineColor ? { sparkline_color: spec.sparklineColor } : {}),
+		...(period ? { date_column: period } : {}),
+		...(spec.negativeIsBetter ? { negative_is_better: true } : {}),
+		...(spec.prefix !== undefined ? { prefix: spec.prefix } : {}),
+		...(spec.suffix !== undefined ? { suffix: spec.suffix } : {}),
+		...(spec.decimal !== undefined ? { decimal: spec.decimal } : {}),
+		...(spec.shorten !== undefined ? { shorten_numbers: spec.shorten } : {}),
+	} as unknown as ChartConfig
+
+	const periods = Math.max(...spec.values.map((value) => value.readings.length), 1)
+	const rows = Array.from({ length: periods }, (_, index) => ({
+		...(period ? { [period.dimension_name]: `2026-${String(index + 1).padStart(2, '0')}-01` } : {}),
+		...Object.fromEntries(
+			spec.values.map((value) => [value.name, value.readings[index] ?? null]),
+		),
+	}))
+
+	return {
+		chart_type: 'Number',
+		title: spec.title,
+		config,
+		result: resultWith(
+			[
+				...(period ? [columnOfDimension(period)] : []),
+				...number_columns.map(columnOfMeasure),
+			],
+			rows,
+		),
+	}
+}
+
+function toMeasure(name: string, format?: 'currency' | 'percent'): Measure {
+	return {
+		measure_name: name,
+		column_name: name,
+		data_type: 'Decimal',
+		aggregation: 'sum',
+		...(format ? { format } : {}),
+	} as Measure
+}
+
+const columnOfDimension = (dimension: Dimension): QueryResultColumn => ({
+	name: dimension.dimension_name,
+	type: dimension.data_type,
+})
+
+const columnOfMeasure = (measure: Measure): QueryResultColumn => ({
+	name: measure.measure_name,
+	type: measure.data_type,
+})
