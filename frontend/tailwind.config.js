@@ -1,16 +1,24 @@
 import containerQueries from '@tailwindcss/container-queries'
-import frappeUIPreset from 'frappe-ui/tailwind'
+import frappeUIPreset, { content as frappeUIContent } from 'frappe-ui/tailwind'
 
 export default {
 	presets: [frappeUIPreset],
 	content: [
 		'./index.html',
 		'./src2/**/*.{vue,js,ts,jsx,tsx}',
-		// charts v2 lives beside `components`, not under it. Leaving it out drops
-		// every class only its cards use — `rounded-7`, `bg-surface-elevation-2` —
-		// so the card draws square and flat instead of rounded and raised.
-		'./node_modules/frappe-ui/src/{components,charts}/**/*.{vue,js,ts,jsx,tsx}',
-		'../node_modules/frappe-ui/src/{components,charts}/**/*.{vue,js,ts,jsx,tsx}',
+		// frappe-ui says which of its own files emit classes. A hand-kept list
+		// here rots every time a family moves, and it rots silently: a class that
+		// is never scanned is not an error, it is a component that quietly draws
+		// wrong. Two have already been lost that way — the chart card's corner,
+		// and the list's grid.
+		...frappeUIContent,
+		// ListView is parked in `frappe-ui/experimental`, which that list leaves
+		// out on purpose: experimental carries no stability promise, so it is not
+		// part of the content contract. Insights depends on it anyway — the root
+		// export is gone and this is the only ListView there is — so it scans it
+		// itself. Remove this when the list moves to `frappe-ui/list`.
+		'./node_modules/frappe-ui/experimental/ListView/**/*.{vue,js,ts,jsx,tsx}',
+		'../node_modules/frappe-ui/experimental/ListView/**/*.{vue,js,ts,jsx,tsx}',
 	],
 	theme: {
 		container: {
