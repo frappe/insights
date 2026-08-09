@@ -1,23 +1,17 @@
 <template>
 	<Popover
-		transition="default"
-		:placement="placement"
-		class="!block w-full"
-		popoverClass="!min-w-fit"
+		:open="isOpen"
+		@update:open="(value) => !value && (isOpen = false)"
+		:side="side"
+		:align="align"
+		bare
 	>
-		<template #target="{ togglePopover, isOpen }">
-			<slot
-				name="target"
-				:togglePopover="
-					() => {
-						togglePopover()
-						setSelectorPosition(modelColor)
-					}
-				"
-				:isOpen="isOpen"
-			></slot>
+		<template #trigger>
+			<div class="w-full">
+				<slot name="target" :togglePopover="togglePopover" :isOpen="isOpen"></slot>
+			</div>
 		</template>
-		<template #body>
+		<template #default>
 			<div ref="colorPicker" class="dark:bg-zinc-900 rounded-lg bg-white p-3 shadow-lg">
 				<div
 					ref="colorMap"
@@ -120,6 +114,7 @@
 <script setup lang="ts">
 import { clamp, useEyeDropper } from '@vueuse/core'
 import { Popover } from 'frappe-ui'
+import type { PopoverAlign, PopoverSide } from 'frappe-ui'
 import { PropType, Ref, StyleValue, computed, nextTick, ref, watch } from 'vue'
 import { HSVToHex, HashString, HexToHSV, RGBString, getRGB } from '../charts/colors'
 
@@ -148,6 +143,20 @@ const props = defineProps({
 const modelColor = computed(() => {
 	return getRGB(props.modelValue)
 })
+
+// Popover splits `placement` into `side` + `align`; this component keeps taking
+// the one string its callers already pass.
+const side = computed(() => props.placement.split('-')[0] as PopoverSide)
+const align = computed(() => (props.placement.split('-')[1] || 'center') as PopoverAlign)
+
+// Driven in controlled mode: the trigger wraps whatever the caller renders, so
+// reka's own toggle would fight the caller's `togglePopover`. Only the closing
+// half of `update:open` is honoured, which keeps Escape and outside-click working.
+const isOpen = ref(false)
+function togglePopover() {
+	isOpen.value = !isOpen.value
+	setSelectorPosition(modelColor.value)
+}
 
 const emit = defineEmits(['update:modelValue'])
 

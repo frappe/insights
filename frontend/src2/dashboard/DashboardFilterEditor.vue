@@ -60,7 +60,7 @@ const linkOptions = computed(() => {
 		const dependentColumns = chart.getDependentQueryColumns().map((group) => {
 			return {
 				group: group.group,
-				options: disableColumnOptions(group.items),
+				options: disableColumnOptions(group.options),
 			}
 		})
 		return {

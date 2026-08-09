@@ -224,7 +224,7 @@ function exportImage() {
 						<RefreshCcw class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 					</template>
 				</Button>
-				<Dropdown v-if="menuOptions.length" placement="right" :options="menuOptions">
+				<Dropdown v-if="menuOptions.length" align="end" :options="menuOptions">
 					<Button variant="subtle">
 						<template #icon>
 							<MoreHorizontal class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />

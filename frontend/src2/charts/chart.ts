@@ -71,7 +71,7 @@ function makeChart(name: string) {
 			}
 			return {
 				group: query.doc.title,
-				items: query.result.columnOptions.map((c) => {
+				options: query.result.columnOptions.map((c) => {
 					const sep = '`'
 					const value = `${sep}${query.doc.name}${sep}.${sep}${c.value}${sep}`
 					return {

@@ -224,7 +224,7 @@ function handleRemove() {
 					</div>
 				</template>
 
-				<template #default="{ isOpen, toggle: togglePopover }">
+				<template #default="{ toggle: togglePopover }">
 					<div
 						class="relative mt-1 overflow-hidden rounded-lg bg-surface-base p-1.5 text-base shadow-2xl"
 					>

@@ -96,7 +96,7 @@ const moreActions = [
 					<RefreshCcw class="h-3 w-3 text-ink-gray-6" stroke-width="1.5" />
 				</template>
 			</Button>
-			<Dropdown placement="right" :options="moreActions">
+			<Dropdown align="end" :options="moreActions">
 				<Button variant="outline">
 					<template #icon>
 						<MoreHorizontal class="h-3 w-3 text-ink-gray-6" stroke-width="1.5" />

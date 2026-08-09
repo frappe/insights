@@ -70,10 +70,10 @@ const label = computed(() => {
 					{{ label }}
 				</Button>
 			</template>
-			<template #default="{ toggle: togglePopover, isOpen }">
+			<template #default="{ toggle: togglePopover, open }">
 				<div class="p-2" :style="{ width: 'var(--reka-popover-trigger-width)' }">
 					<Filter
-						v-if="isOpen"
+						v-if="open"
 						:filter-type="props.filterType"
 						:valuesProvider="props.valuesProvider"
 						v-model:operator="operator"

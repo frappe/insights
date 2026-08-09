@@ -174,7 +174,7 @@ function updatePermissions() {
 						<Dropdown
 							v-if="user.email !== session.user.email"
 							class="flex-shrink-0"
-							placement="right"
+							align="end"
 							:options="accessOptions(user.email)"
 							:button="{
 								iconRight: 'lucide-chevron-down',

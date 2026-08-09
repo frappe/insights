@@ -12,7 +12,7 @@
 			class="flex items-center overflow-hidden duration-300 ease-in-out"
 			:class="isCollapsed ? 'p-1' : 'px-2 py-1'"
 		>
-			<Tooltip :text="label" placement="right">
+			<Tooltip :text="label" side="right">
 				<slot name="icon">
 					<span class="grid h-5 w-6 flex-shrink-0 place-items-center">
 						<component

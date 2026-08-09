@@ -73,7 +73,7 @@ function handleExecute() {
 					</template>
 				</Button>
 			</Tooltip>
-			<Dropdown placement="right" :options="moreActions">
+			<Dropdown align="end" :options="moreActions">
 				<Button variant="outline">
 					<template #icon>
 						<MoreHorizontal class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />

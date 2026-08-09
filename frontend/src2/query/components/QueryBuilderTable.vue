@@ -106,19 +106,19 @@ function addNewColumn() {
 			<template #header-suffix="{ column }">
 				<div class="ml-auto pl-2">
 					<Popover side="bottom" align="end">
-						<template #trigger="{ isOpen }">
+						<template #trigger="{ open }">
 							<Button
 								variant="ghost"
 								class="rounded-sm"
-								:class="isOpen ? '!bg-surface-gray-2' : ''"
+								:class="open ? '!bg-surface-gray-2' : ''"
 							>
 								<template #icon>
 									<MoreHorizontal class="h-4 w-4 text-ink-gray-6" />
 								</template>
 							</Button>
 						</template>
-						<template #default="{ toggle: togglePopover, isOpen }">
-							<div v-if="isOpen" class="flex min-w-[10rem] flex-col p-1">
+						<template #default="{ toggle: togglePopover, open }">
+							<div v-if="open" class="flex min-w-[10rem] flex-col p-1">
 								<!-- Rename, Sort, Filter, Summarize, Describe, Pivot, Remove -->
 								<ColumnSort
 									:column="column"

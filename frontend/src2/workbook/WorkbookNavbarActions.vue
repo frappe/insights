@@ -53,7 +53,7 @@ function afterExport() {
 		</Button>
 		<Dropdown
 			:button="{ icon: 'lucide-more-horizontal', variant: 'outline' }"
-			placement="right"
+			align="end"
 			:options="[
 				{
 					label: __('View Lineage'),
