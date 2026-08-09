@@ -399,6 +399,44 @@ describe('reading a level at another grain', () => {
 		expect(stack.levels).toEqual([west.level])
 	})
 
+	it('writes the grain the server derived onto the level itself', () => {
+		// Nobody chose it, and it is still what this level is: a click on one of
+		// these buckets pins its first moment, and the level below can only read
+		// that as a month if the level above says it was months.
+		const stack = makeDrillStack()
+		stack.push(byDate)
+		stack.remember({ columns: [], rows: [], ordered: true, granularity: 'month' })
+		expect(stack.levels).toEqual([
+			{
+				segment_filters: [{ column: 'status', operator: '=', value: 'Overdue' }],
+				action: { breakdown: 'due_date', measure: 'count', granularity: 'month' },
+			},
+		])
+	})
+
+	it('settles the level a derived grain came back for, so returning to it costs nothing', () => {
+		// The unsaid grain and the one the answer named are the same question. Left
+		// unsaid on the level, they file under two keys, and the reader asking for
+		// the grain they are already reading pays for it a second time.
+		const monthly = { columns: [], rows: [{ due_date: '2026-03-01', count: 30 }], granularity: 'month' }
+		const stack = makeDrillStack()
+		stack.push(byDate)
+		stack.remember(monthly)
+
+		stack.regrain('week')
+		expect(stack.answer()).toBeUndefined()
+
+		stack.regrain('month')
+		expect(stack.answer()).toEqual(monthly)
+	})
+
+	it('leaves a level that groups nothing alone, however its answer reads', () => {
+		const stack = makeDrillStack()
+		stack.push(west)
+		stack.remember({ columns: [], rows: [], granularity: 'month' })
+		expect(stack.levels).toEqual([west.level])
+	})
+
 	it('holds an answer against the grain it was asked at', () => {
 		// The same level at another grain is another question, so the rows already
 		// held are not an answer to it — and going back to a grain already asked

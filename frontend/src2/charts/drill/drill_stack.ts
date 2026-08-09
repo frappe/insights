@@ -59,9 +59,10 @@ export type DrillFilter = {
  * overdue ones"), and rows that ignored it would not add up to the number that
  * was clicked.
  *
- * `granularity` is what the reader asked a date breakdown for. Left off, the
- * server picks the grain the segment's span deserves; said, it wins. So the
- * absent field is not "no grain" — it is "you choose", and the answer says which.
+ * `granularity` is the grain a date breakdown is read at. Left off, the server
+ * picks the one the segment's span deserves; said, it wins. So the absent field
+ * is not "no grain" — it is "you choose", and it is absent only until the first
+ * answer, which says which and is written back onto the level.
  */
 export type DrillAction =
 	| { breakdown: string; measure?: string; granularity?: string }
@@ -492,6 +493,30 @@ export function makeDrillStack() {
 		return trail
 	})
 
+	/**
+	 * The level the reader is standing on, read at a grain.
+	 *
+	 * It replaces the level rather than pushing one: a grain is how this level
+	 * reads, not a step below it, so the trail and the way back out are the same
+	 * afterwards as before.
+	 *
+	 * The answer already held is left where it is. It answers the level as it was
+	 * asked then, and an answer is filed under the whole path — so a level whose
+	 * action has changed simply has none yet, and the dialog fetches.
+	 */
+	function regrain(granularity: string) {
+		const entry = entries.value[entries.value.length - 1]
+		const action = entry?.level.action
+		if (!action || !('breakdown' in action)) return
+		if (action.granularity === granularity) return
+
+		const regrained = {
+			...entry,
+			level: { ...entry.level, action: { ...action, granularity } },
+		}
+		entries.value = [...entries.value.slice(0, -1), regrained]
+	}
+
 	return reactive({
 		entries,
 		/** exactly what `get_drill_data` is sent */
@@ -518,27 +543,8 @@ export function makeDrillStack() {
 		push: (entry: DrillEntry) => {
 			entries.value = [...entries.value, entry]
 		},
-		/**
-		 * The level the reader is standing on, asked for again at a grain they
-		 * chose. It replaces the level rather than pushing one: a grain is how this
-		 * level reads, not a step below it, so the trail and the way back out are
-		 * the same afterwards as before.
-		 *
-		 * The answer already held is left where it is. It answers the level as it
-		 * was asked then, and an answer is filed under the whole path — so a level
-		 * whose action has changed simply has none yet, and the dialog fetches.
-		 */
-		regrain: (granularity: string) => {
-			const entry = entries.value[entries.value.length - 1]
-			const action = entry?.level.action
-			if (!action || !('breakdown' in action)) return
-
-			const regrained = {
-				...entry,
-				level: { ...entry.level, action: { ...action, granularity } },
-			}
-			entries.value = [...entries.value.slice(0, -1), regrained]
-		},
+		/** the reader asking for the level they are on at another grain */
+		regrain,
 		/** Pop to `depth` levels. Deeper answers are kept — the reader may return. */
 		popTo: (depth: number) => {
 			entries.value = entries.value.slice(0, Math.max(0, depth))
@@ -549,7 +555,19 @@ export function makeDrillStack() {
 
 		/** What the server already answered for where the reader now stands. */
 		answer: (): DrillLevelData | undefined => answers.get(signature()),
+		/**
+		 * File an answer under the level it answers — and take the grain out of it
+		 * first, because the answer is what finishes saying what the level is.
+		 *
+		 * A grain the server derived is as much a part of the level as one the
+		 * reader chose: the levels below need it, since a click on one of these
+		 * buckets pins its first moment and only the grain says how far the bucket
+		 * runs. Writing it back is also what settles the level's identity — asking
+		 * for a breakdown and asking for it at the grain that came back are the
+		 * same question, and until the level says so they are two keys for it.
+		 */
 		remember: (data: DrillLevelData) => {
+			if (data.granularity) regrain(data.granularity)
 			answers.set(signature(), data)
 		},
 	})

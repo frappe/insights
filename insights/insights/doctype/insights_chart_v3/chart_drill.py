@@ -275,8 +275,9 @@ def _action(level: dict) -> dict:
             "type": BREAKDOWN,
             "dimension": action[BREAKDOWN],
             "measure": action.get("measure"),
-            # the reader changed the grain on the level. Their choice outranks
-            # the one the segment's own span suggests
+            # the grain the level is read at, either because the reader chose it
+            # or because a previous answer said so and the caller wrote it back.
+            # Said, it outranks the one the segment's own span suggests
             "granularity": action.get("granularity"),
         }
 
@@ -340,17 +341,22 @@ def _granularity(chart, segment: list[dict], column: dict, named: str | None, ad
     otherwise it follows the span of the segment being drilled, which is the
     only thing that knows whether it covers ten minutes or ten years.
     """
-    grains = GRAINS.get(column["type"]) or {}
-
     if named:
-        if named not in grains:
-            frappe.throw(_("{0} cannot be broken down by {1}").format(column["name"], named))
-        return named
+        return _admitted_grain(column, named)
 
+    grains = GRAINS.get(column["type"]) or {}
     if not grains:
         return None
 
     return _derived_grain(grains, _span_seconds(chart, segment, column, adhoc_filters))
+
+
+def _admitted_grain(column: dict, granularity: str) -> str:
+    """A grain a caller named, checked against the ones the column has."""
+    if granularity not in (GRAINS.get(column["type"]) or {}):
+        frappe.throw(_("{0} cannot be broken down by {1}").format(column["name"], granularity))
+
+    return granularity
 
 
 def _derived_grain(grains: dict, seconds: float) -> str:
@@ -422,30 +428,66 @@ def _moment(value) -> datetime:
 
 
 def _segment_filters(drill_stack: list, step: dict, surface: list[dict]) -> list[dict]:
-    """Every level's segment, narrowing the rows one level at a time."""
+    """Every level's segment, narrowing the rows one level at a time.
+
+    A level is read against the levels above it as much as against the chart:
+    the grains they grouped by travel down the stack, because a value clicked on
+    one of their buckets stands for the whole bucket and nothing else records how
+    wide that is.
+    """
     filters = []
+    grains = {}
     for level in drill_stack:
         for rule in level.get("segment_filters") or []:
-            filters += _rule_filters(rule, step, surface)
+            filters += _rule_filters(rule, step, surface, grains)
         filters += _measure_condition(_measure_named(_clicked(level), _measures(step)))
+        grains.update(_level_grain(level))
 
     return filters
 
 
-def _rule_filters(rule: dict, step: dict, surface: list[dict]) -> list[dict]:
+def _level_grain(level: dict) -> dict:
+    """The bucket a level's own breakdown leaves for the levels under it.
+
+    A level that names no grain leaves none: the derivation that picked one runs
+    on the answer, not on the stack, and guessing at it here would be a second
+    owner of the same calendar. The level below pins the value it was given.
+    """
+    action = level.get("action") or {}
+    dimension, granularity = action.get(BREAKDOWN), action.get("granularity")
+    return {dimension: granularity} if dimension and granularity else {}
+
+
+def _rule_filters(rule: dict, step: dict, surface: list[dict], grains: dict) -> list[dict]:
     """One clicked dimension value, as the pipeline underneath it filters on it."""
     dimension = _dimension_named(rule.get("column"), step)
     column = (dimension or {}).get("column_name") or rule.get("column")
-    _surface_column(column, surface)
+    on_surface = _surface_column(column, surface)
 
     operator = rule.get("operator") or "="
     if operator not in OPERATORS:
         frappe.throw(_("Operator {0} is not supported").format(operator))
 
-    if operator == "=" and _is_bucket(dimension):
-        return _bucket_filters(column, dimension["granularity"], rule.get("value"))
+    granularity = _bucket_grain(on_surface, dimension, grains) if operator == "=" else None
+    if granularity:
+        return _bucket_filters(column, granularity, rule.get("value"))
 
     return [_rule(column, operator, rule.get("value"))]
+
+
+def _bucket_grain(on_surface: dict, dimension: dict | None, grains: dict) -> str | None:
+    """The grain a value on this column stands for a whole bucket of.
+
+    A level above says it outright, and that grain wins: it is the one the reader
+    is looking at, whichever the chart underneath happened to draw. Failing that
+    the chart's own aggregating step says it, which is the only answer the first
+    level of a stack can have.
+    """
+    named = grains.get(on_surface["name"])
+    if named:
+        return _admitted_grain(on_surface, named)
+
+    return dimension["granularity"] if _is_bucket(dimension) else None
 
 
 def _measure_condition(measure: dict | None) -> list[dict]:

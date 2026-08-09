@@ -120,9 +120,14 @@ def get_drill_data(
     the segment it clicked as `segment_filters` — dimension values as plain
     (column, operator, literal) triples — and an `action`, either
     `{"records": true}` or `{"breakdown": column}`, which may also name the
-    `measure` the click landed on and, on a breakdown, the `granularity` the
-    reader chose. The segments accumulate down the stack and the last level's
-    action shapes the answer.
+    `measure` the click landed on and, on a breakdown, the `granularity` it is
+    read at. The segments accumulate down the stack and the last level's action
+    shapes the answer.
+
+    A grain is worth saying even when the reader did not choose it: a click on a
+    bucket a breakdown made pins the bucket's first moment, and the level that
+    made it is the only place the span it stands for is written down. So a client
+    echoes the `granularity` the answer reports back onto the level it answered.
 
     Which chart is all the request says about the query. The server re-derives
     the chart's operations, cuts them before the step that aggregated the rows,

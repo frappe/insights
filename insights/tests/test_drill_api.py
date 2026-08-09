@@ -48,6 +48,12 @@ TIMELINE_TODOS = {
 # what those dates hold, month by month, oldest first
 TIMELINE_MONTHS = ["2024-01-01", "2024-02-01", "2024-06-01", "2024-12-01"]
 TIMELINE_COUNTS = [1, 3, 1, 1]
+# the bucket the nested tests click into, and the one priority inside it that
+# does not fill it — so a level that fails to narrow is visible in the rows
+FEBRUARY = sorted(d for d, (date, _) in TIMELINE_TODOS.items() if date.startswith("2024-02"))
+FEBRUARY_LOW = sorted(
+    d for d, (date, priority) in TIMELINE_TODOS.items() if date.startswith("2024-02") and priority == "Low"
+)
 
 
 def todo_operations(prefix=TODO_PREFIX):
@@ -614,6 +620,96 @@ class TestDrillAPI(InsightsIntegrationTestCase):
 
         self.assertEqual(self.descriptions(rows), sorted(AUTHOR_TODOS))
         self.assertEqual(empty["rows"], [])
+
+    # a bucket a level of the stack made for itself
+    #
+    # The chart's own step is not the only thing that buckets a date: a
+    # breakdown level groups one at a grain of its own, and a click on one of
+    # those bars pins a bucket no step of the chart has ever heard of.
+
+    def test_a_bucket_a_level_made_is_drilled_as_the_span_it_covers(self):
+        _, chart, dashboard = self.timeline()
+
+        result = self.drill(
+            DESK_USER,
+            chart.name,
+            dashboard.name,
+            drill_stack=[
+                breakdown_level("date", granularity="month"),
+                records_level(filters=[equals("date", TIMELINE_MONTHS[1])]),
+            ],
+        )
+
+        # the whole month, not the instant its first bucket starts at
+        self.assertEqual(self.descriptions(result), FEBRUARY)
+
+    def test_a_bucket_a_level_made_narrows_the_level_below_it(self):
+        _, chart, dashboard = self.timeline()
+
+        result = self.drill(
+            DESK_USER,
+            chart.name,
+            dashboard.name,
+            drill_stack=[
+                breakdown_level("date", granularity="month"),
+                breakdown_level("priority", filters=[equals("date", TIMELINE_MONTHS[1])]),
+            ],
+        )
+
+        self.assertEqual(
+            sorted((row["priority"], row["count_of_rows"]) for row in result["rows"]),
+            [("High", 1), ("Low", 2)],
+        )
+
+    def test_a_bucket_made_under_a_categorical_level_is_still_a_span(self):
+        _, chart, dashboard = self.timeline()
+
+        result = self.drill(
+            DESK_USER,
+            chart.name,
+            dashboard.name,
+            drill_stack=[
+                breakdown_level("priority"),
+                breakdown_level("date", filters=[equals("priority", "Low")], granularity="month"),
+                records_level(filters=[equals("date", TIMELINE_MONTHS[1])]),
+            ],
+        )
+
+        # both segments hold: the priority the first level pinned, and the whole
+        # month the second one bucketed
+        self.assertEqual(self.descriptions(result), FEBRUARY_LOW)
+
+    def test_a_level_that_names_no_grain_pins_the_value_it_was_given(self):
+        """A caller with no answer to echo yet, or one that never echoes."""
+        _, chart, dashboard = self.timeline()
+
+        result = self.drill(
+            DESK_USER,
+            chart.name,
+            dashboard.name,
+            drill_stack=[
+                breakdown_level("date"),
+                records_level(filters=[equals("date", "2024-02-15")]),
+            ],
+        )
+
+        self.assertEqual(self.descriptions(result), [f"{TIMELINE_PREFIX} february one"])
+
+    def test_a_grain_an_earlier_level_cannot_admit_is_refused(self):
+        _, chart, dashboard = self.timeline()
+
+        with self.assertRaises(frappe.ValidationError) as raised:
+            self.drill(
+                DESK_USER,
+                chart.name,
+                dashboard.name,
+                drill_stack=[
+                    breakdown_level("date", granularity="fortnight"),
+                    records_level(filters=[equals("date", TIMELINE_MONTHS[1])]),
+                ],
+            )
+
+        self.assertIn("cannot be broken down by", str(raised.exception))
 
     # the wire cannot widen what the chart exposes
 
