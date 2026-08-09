@@ -13,20 +13,15 @@
 // priority-queued execution.
 
 import { call } from 'frappe-ui'
-import { computed, reactive, ref, type ComputedRef } from 'vue'
+import { computed, reactive, ref, unref, type ComputedRef } from 'vue'
 import type { ViewerFilters } from '../dashboard/viewer'
 import { isServerBusyError, scheduleQueryExecution } from '../query/execution_queue'
 import { EMPTY_RESULT, formatResultRows } from '../query/helpers'
-import type { DrillDownSource, Query } from '../query/query'
-import type {
-	AdhocFilters,
-	Operation,
-	QueryResult,
-	QueryResultColumn,
-	QueryResultRow,
-} from '../types/query.types'
+import type { AdhocFilters, Operation, QueryResult } from '../types/query.types'
+import type { ChartType } from '../types/chart.types'
 import type { InsightsChartv3, WorkbookDashboardItem } from '../types/workbook.types'
-import type { DrillDimension } from './drill/drill_stack'
+import { fetchDrillData } from './drill/drill_api'
+import type { DrillDimension, DrillLevel, DrillLevelData, DrillSubject } from './drill/drill_stack'
 import { normalizeChartConfig } from './helpers'
 
 /**
@@ -79,24 +74,24 @@ export type ChartFeed = {
 		force: boolean,
 		filterContext?: DashboardFilterContext,
 	) => Promise<ChartDataResponse | undefined>
-	// forking what the server ran into a drill query is authoring, and so is the
-	// query editor it opens in. The feed that receives the operations is the feed
-	// that carries it — a read surface has neither, which is ticket 11's business.
-	// `row` is the raw row, as a chart's own click events report it.
-	drillDown?: (
-		source: DrillDownSource,
-		column: QueryResultColumn,
-		row: QueryResultRow,
-	) => Promise<Query | undefined>
+	// one level of a drill, through the door this feed came in by. The stack the
+	// dialog holds is the whole of the request — no operations cross either way,
+	// except back out of the authoring door, which is ticket 11's business.
+	fetchDrillData: (
+		levels: DrillLevel[],
+		filterContext?: DashboardFilterContext,
+	) => Promise<DrillLevelData>
 }
 
 export function makeChartRead(feed: ChartFeed, priority?: number) {
+	// the preview feed hands over the document it is editing, so read it through
+	// whichever of the two it is before anything derives from it
+	const doc = computed(() => unref(feed.doc))
 	const result = ref<QueryResult>({ ...EMPTY_RESULT })
-	// what the server ran, on the feed that is allowed to say. Drill-down forks it.
+	// what the server ran, on the feed that is allowed to say
 	const operations = ref<Operation[]>([])
-	const useLiveConnection = ref(false)
-	// where the grid's filters landed, as the server routed them. A drill-down
-	// forks the operations above and needs the same narrowing applied to them.
+	// where the grid's filters landed, as the server routed them. A level lifted
+	// into the query builder needs the same narrowing applied to it.
 	const routedFilters = ref<AdhocFilters>()
 	// why the chart cannot be drawn yet, as the server read the config
 	const configErrors = ref<string[]>([])
@@ -170,7 +165,6 @@ export function makeChartRead(feed: ChartFeed, priority?: number) {
 				lastExecutedAt: new Date(response.executed_at || Date.now()),
 			}
 			operations.value = response.operations || []
-			useLiveConnection.value = Boolean(response.use_live_connection)
 			routedFilters.value = response.adhoc_filters
 			drillDimensions.value = response.drill?.dimensions || []
 			executedAt.value = result.value.lastExecutedAt
@@ -188,21 +182,15 @@ export function makeChartRead(feed: ChartFeed, priority?: number) {
 		}
 	}
 
-	async function getDrillDownQuery(
-		column: QueryResultColumn,
-		row: QueryResultRow,
-	): Promise<Query | undefined> {
-		if (!feed.drillDown || !operations.value.length) return
-		return feed.drillDown(
-			{
-				operations: operations.value,
-				result: result.value,
-				use_live_connection: useLiveConnection.value,
-			},
-			column,
-			row,
-		)
-	}
+	// Everything the drill dialog needs from this card. The card knows the shape a
+	// click is read against and the candidates a breakdown may offer; the feed
+	// knows the door. Nothing above has to hold both halves.
+	const drillSubject = computed<DrillSubject>(() => ({
+		chart: { chart_type: doc.value.chart_type as ChartType, config: doc.value.config },
+		title: doc.value.title,
+		dimensions: drillDimensions.value,
+		fetch: (levels) => feed.fetchDrillData(levels, filterContext.value),
+	}))
 
 	return reactive({
 		doc: feed.doc,
@@ -213,6 +201,7 @@ export function makeChartRead(feed: ChartFeed, priority?: number) {
 		routedFilters,
 		configErrors,
 		drillDimensions,
+		drillSubject,
 
 		ready,
 		executing,
@@ -224,7 +213,6 @@ export function makeChartRead(feed: ChartFeed, priority?: number) {
 		filterContext,
 
 		load,
-		getDrillDownQuery,
 	})
 }
 
@@ -266,6 +254,13 @@ export function useSavedChart(reference: string, options: SavedChartOptions = {}
 					dashboard: options.dashboard,
 					filters: options.filters?.(),
 					force,
+				}),
+			fetchDrillData: (drill_stack) =>
+				fetchDrillData({
+					chart: reference,
+					dashboard: options.dashboard,
+					filters: options.filters?.(),
+					drill_stack,
 				}),
 		},
 		options.priority,

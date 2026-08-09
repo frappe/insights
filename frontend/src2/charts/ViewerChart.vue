@@ -86,10 +86,7 @@ watch(viewer, () => (clicked.value = undefined))
 		<!-- keyed on the click, so every drill starts from an empty stack -->
 		<ChartDrillDown
 			v-if="clicked"
-			:chart="viewer"
-			:reference="props.chart"
-			:dashboard="props.dashboard"
-			:filters="props.filters"
+			:subject="viewer.drillSubject"
 			:clicked="clicked"
 			@close="clicked = undefined"
 		/>

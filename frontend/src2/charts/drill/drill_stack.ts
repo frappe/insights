@@ -33,6 +33,7 @@ import type {
 	Dimension,
 	FilterOperator,
 	Measure,
+	Operation,
 	QueryResultColumn,
 	QueryResultRow,
 } from '../../types/query.types'
@@ -140,7 +141,11 @@ function declaredDimensions(chart: DrillChart): DeclaredDimensions {
 	switch (chart.chart_type) {
 		case 'Donut': {
 			const donut = config as DonutChartConfig
-			return { ...empty, rows: dims([donut.label_column]), measures: nums([donut.value_column]) }
+			return {
+				...empty,
+				rows: dims([donut.label_column]),
+				measures: nums([donut.value_column]),
+			}
 		}
 		case 'Funnel': {
 			const funnel = config as FunnelChartConfig
@@ -162,7 +167,11 @@ function declaredDimensions(chart: DrillChart): DeclaredDimensions {
 		}
 		case 'Map': {
 			const map = config as MapChartConfig
-			return { ...empty, rows: dims([map.location_column]), measures: nums([map.value_column]) }
+			return {
+				...empty,
+				rows: dims([map.location_column]),
+				measures: nums([map.value_column]),
+			}
 		}
 		case 'Bubble': {
 			const bubble = config as BubbleChartConfig
@@ -193,6 +202,35 @@ function declaredDimensions(chart: DrillChart): DeclaredDimensions {
 		default:
 			return empty
 	}
+}
+
+/**
+ * A query builder's own result, read as a Chart.
+ *
+ * The query builder has no Chart — it has the pipeline it is editing — but the
+ * step that aggregated its rows says the same thing a Chart's config does: which
+ * columns a click pins, and which numbers it can land on. So the aggregating
+ * step is read straight into a Table config, and every other reader of a
+ * `DrillChart` works unchanged.
+ *
+ * This is not the retired client-side derivation coming back. Nothing is sliced
+ * and nothing is sent: the server is still told the whole pipeline and still
+ * decides where to cut it. Undefined when nothing aggregated, which is a result
+ * with nothing behind it.
+ */
+export function queryResultChart(operations: Operation[]): DrillChart | undefined {
+	const aggregating = operations.filter(
+		(operation) => operation.type === 'summarize' || operation.type === 'pivot_wider',
+	)
+	const step = aggregating[aggregating.length - 1]
+	if (!step) return
+
+	const config: TableChartConfig =
+		step.type === 'summarize'
+			? { rows: step.dimensions, columns: [], values: step.measures }
+			: { rows: step.rows, columns: step.columns, values: step.values }
+
+	return { chart_type: 'Table', config }
 }
 
 /** Every Dimension column a Chart declares, in declaration order. */
@@ -287,6 +325,29 @@ export function segmentOf(chart: DrillChart, target: DrillDownTarget): DrillSegm
 }
 
 /**
+ * The grain a level's date columns are printed at.
+ *
+ * A grouped date is printed at the grain it was grouped by, and the response
+ * says which. A records level groups nothing, so its dates have no grain to
+ * carry — and printed raw they read as machine output. The column's own type is
+ * the honest grain there: a `Date` is a day, a `Datetime` is a moment.
+ */
+export function drillGranularity(
+	columns: QueryResultColumn[],
+	grouped: Record<string, string> = {},
+): Record<string, string> {
+	const byType: Record<string, string> = { Date: 'day', Datetime: 'second', Time: 'second' }
+
+	const granularity = { ...grouped }
+	for (const column of columns) {
+		if (!granularity[column.name] && byType[column.type]) {
+			granularity[column.name] = byType[column.type]
+		}
+	}
+	return granularity
+}
+
+/**
  * A pre-summarize column as a reader reads it. These are the query's own column
  * names, which are field names more often than they are words.
  */
@@ -356,6 +417,31 @@ export type DrillLevelData = {
 	total_row_count?: number
 	/** only on a records level, and only when the convention held */
 	record_link?: { doctype: string; column: string }
+	/**
+	 * The pipeline the server sliced for this level, and the connection it ran
+	 * on. The authoring door alone answers with them — they are what "open as
+	 * query" hands to the builder — and a reading surface never sees either.
+	 */
+	operations?: Operation[]
+	use_live_connection?: boolean
+}
+
+/**
+ * What the dialog drills, as the surface that opened it hands it over: the shape
+ * a click is read against, what a breakdown may offer, and the one call that
+ * answers a level.
+ *
+ * Which door `fetch` goes through is the surface's business — a saved chart's
+ * name from a reading surface, the config or the pipeline being edited from an
+ * authoring one. The dialog cannot tell them apart, and has no reason to: the
+ * only difference it ever sees is that an authoring answer carries `operations`.
+ */
+export type DrillSubject = {
+	chart: DrillChart
+	/** the head of the breadcrumb trail — what the reader clicked into */
+	title: string
+	dimensions: DrillDimension[]
+	fetch: (levels: DrillLevel[]) => Promise<DrillLevelData>
 }
 
 /**

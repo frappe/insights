@@ -12,7 +12,9 @@ import {
 import {
 	breakdownCandidates,
 	declaredDimensionColumns,
+	drillGranularity,
 	makeDrillStack,
+	queryResultChart,
 	segmentOf,
 	type DrillChart,
 	type DrillDimension,
@@ -345,5 +347,89 @@ describe('what the dialog has already been told', () => {
 		stack.popTo(0)
 		stack.push({ ...overdue, level: { ...overdue.level, action: { records: true } } })
 		expect(stack.answer()).toBeUndefined()
+	})
+})
+
+describe('a query result read as a chart', () => {
+	const status = { dimension_name: 'status', column_name: 'status', data_type: 'String' as const }
+	const priority = {
+		dimension_name: 'priority',
+		column_name: 'priority',
+		data_type: 'String' as const,
+	}
+	const todos = {
+		measure_name: 'Todos',
+		column_name: 'name',
+		aggregation: 'count' as const,
+		data_type: 'Integer' as const,
+	}
+	const source = {
+		type: 'source' as const,
+		table: { type: 'table' as const, data_source: 'Site DB', table_name: 'tabToDo' },
+	}
+
+	it('reads nothing out of a pipeline that aggregates nothing', () => {
+		// a raw result has no numbers with rows behind them, so there is no
+		// segment for a click to pin
+		expect(queryResultChart([source])).toBeUndefined()
+	})
+
+	it('reads a summarize as the rows and values a Table declares', () => {
+		const chart = queryResultChart([
+			source,
+			{ type: 'summarize', dimensions: [status], measures: [todos] },
+		])!
+		expect(chart.chart_type).toBe('Table')
+		expect(declaredDimensionColumns(chart)).toEqual(['status'])
+		// a cell click pins what the step grouped by, exactly as it would on a card
+		expect(segmentOf(chart, { column: 'Todos', row: { status: 'Open' } }).filters).toEqual([
+			{ column: 'status', operator: '=', value: 'Open' },
+		])
+	})
+
+	it('reads a pivot as the rows and the columns it spread the values across', () => {
+		const chart = queryResultChart([
+			source,
+			{ type: 'pivot_wider', rows: [status], columns: [priority], values: [todos] },
+		])!
+		expect(declaredDimensionColumns(chart)).toEqual(['status', 'priority'])
+		// the split's value stands in the clicked column's name, nowhere else
+		expect(
+			segmentOf(chart, { column: 'Todos___High', row: { status: 'Open' } }).filters,
+		).toEqual([
+			{ column: 'status', operator: '=', value: 'Open' },
+			{ column: 'priority', operator: '=', value: 'High' },
+		])
+	})
+
+	it('reads the last step that aggregated, which is the one the result came off', () => {
+		const chart = queryResultChart([
+			source,
+			{ type: 'summarize', dimensions: [status, priority], measures: [todos] },
+			{ type: 'summarize', dimensions: [status], measures: [todos] },
+		])!
+		expect(declaredDimensionColumns(chart)).toEqual(['status'])
+	})
+})
+
+describe('the grain a level prints its dates at', () => {
+	const columns = [
+		{ name: 'creation', type: 'Datetime' as const },
+		{ name: 'due_date', type: 'Date' as const },
+		{ name: 'description', type: 'String' as const },
+	]
+
+	it('keeps the grain a grouped column was grouped by', () => {
+		expect(drillGranularity(columns, { creation: 'month' }).creation).toBe('month')
+	})
+
+	it('falls back to what the column type honestly is, so a records date reads as a date', () => {
+		const granularity = drillGranularity(columns)
+		expect(granularity.creation).toBe('second')
+		expect(granularity.due_date).toBe('day')
+	})
+
+	it('says nothing about a column that is not a date', () => {
+		expect(drillGranularity(columns).description).toBeUndefined()
 	})
 })

@@ -1,12 +1,4 @@
-import type {
-	AdhocFilters,
-	Operation,
-	OrderByArgs,
-	QueryResult,
-	QueryResultColumn,
-	QueryResultRow,
-} from '../types/query.types'
-import type { Query } from './query'
+import type { AdhocFilters, Operation, OrderByArgs, QueryResult } from '../types/query.types'
 
 // What a result table needs from whatever produced the rows.
 //
@@ -42,10 +34,4 @@ export type ResultTable = {
 	renameColumn?: (column_name: string, new_name: string) => void
 	addOrderBy?: (args: OrderByArgs) => void
 	removeOrderBy?: (column_name: string) => void
-
-	/** `row` is the raw row, not the formatted one the table drew. */
-	getDrillDownQuery?: (
-		column: QueryResultColumn,
-		row: QueryResultRow,
-	) => Promise<Query | undefined>
 }

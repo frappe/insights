@@ -1,22 +1,25 @@
 <script setup lang="ts">
 import { Button } from 'frappe-ui'
 import { Maximize, XIcon } from 'lucide-vue-next'
-import { computed, ref } from 'vue'
-import { Query } from '../../query/query'
+import { computed, ref, watch } from 'vue'
 import { ChartRead } from '../chart_read'
+import AuthoringDrillDown from '../drill/AuthoringDrillDown.vue'
+import type { ChartSegmentClick } from '../drill/segment_click'
 import ChartBody from './ChartBody.vue'
-import DrillDown from './DrillDown.vue'
 
 // The chart with the affordances the builder and the SPA give it: expand, and
-// drill down into the rows behind a segment. The chart itself is ChartBody.
+// drill into the rows behind a segment. The chart itself is ChartBody.
 const props = defineProps<{ chart: ChartRead; hideMaximize?: boolean }>()
 
-const drillDownQuery = ref<Query>()
-const showDrillDown = ref(false)
-function openDrillDown(query: Query) {
-	drillDownQuery.value = query
-	showDrillDown.value = true
-}
+// The author's drill is the reader's drill plus "open as query" — one dialog,
+// two feeds. What the card's store was built from decides which endpoint answers
+// a level, so nothing here says.
+const clicked = ref<ChartSegmentClick>()
+// a new card is a new drill: the stack belongs to the click that started it
+watch(
+	() => props.chart,
+	() => (clicked.value = undefined),
+)
 
 const showExpandedChartDialog = ref(false)
 const canMaximize = computed(
@@ -26,7 +29,7 @@ const canMaximize = computed(
 
 <template>
 	<div class="group relative h-full w-full">
-		<ChartBody :chart="props.chart" @drill-down="openDrillDown" />
+		<ChartBody :chart="props.chart" @segment-click="clicked = $event" />
 
 		<div
 			v-if="canMaximize"
@@ -38,19 +41,19 @@ const canMaximize = computed(
 		</div>
 	</div>
 
-	<DrillDown
-		v-if="drillDownQuery"
-		v-model="showDrillDown"
-		@update:modelValue="!$event ? (drillDownQuery = undefined) : undefined"
-		:query="drillDownQuery"
+	<!-- keyed on the click, so every drill starts from an empty stack -->
+	<AuthoringDrillDown
+		v-if="clicked"
+		:subject="props.chart.drillSubject"
+		:clicked="clicked"
 		:adhoc-filters="props.chart.routedFilters"
-	>
-	</DrillDown>
+		@close="clicked = undefined"
+	/>
 
 	<Dialog v-if="chart" v-model:open="showExpandedChartDialog" size="7xl" bare>
 		<template #default>
 			<div class="h-[85vh] w-full">
-				<ChartBody :chart="props.chart" @drill-down="openDrillDown" />
+				<ChartBody :chart="props.chart" @segment-click="clicked = $event" />
 				<div class="absolute top-2 right-2">
 					<Button variant="ghost" @click="showExpandedChartDialog = false">
 						<template #icon>

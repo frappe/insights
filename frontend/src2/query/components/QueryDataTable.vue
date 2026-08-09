@@ -13,9 +13,9 @@ import {
 } from '../../types/query.types'
 
 import { column, filter_group, parseFilterString, rawRowOf } from '../helpers'
-import { Query } from '../query'
 import { ResultTable } from '../result_table'
 import session from '../../session'
+import type { ChartSegmentClick } from '../../charts/drill/segment_click'
 
 // `query` is whatever produced the rows — a query store, or a chart read store
 // that holds a result and none of the authoring half. What it does not offer is
@@ -29,7 +29,7 @@ const props = defineProps<{
 	onSortChange?: (column_name: string, sort_order: SortDirection) => void
 }>()
 
-const emit = defineEmits<{ drillDown: [query: Query] }>()
+const emit = defineEmits<{ segmentClick: [click: ChartSegmentClick] }>()
 
 const isFiltering = ref(false)
 watch(
@@ -90,15 +90,17 @@ function onSortChange(column_name: string, sort_order: SortDirection) {
 	})
 }
 
-// The table reports the drill-down, it does not open it: the drill-down dialog is
-// the query editor, and only a caller that offers the affordance should carry it.
-// The table draws the formatted rows, so it is the table that crosses back to the
-// raw one — a drill-down filters on what was queried, not on what was printed.
-async function onDrillDown(column: QueryResultColumn, formattedRow: QueryResultRow) {
+// The table reports the click, it does not act on it: what a cell can be drilled
+// against is the caller's to know, and so is the dialog. The table draws the
+// formatted rows, so it is the table that crosses back to the raw one — a
+// segment is pinned on what was queried, never on what was printed.
+function onDrillDown(column: QueryResultColumn, formattedRow: QueryResultRow, event: MouseEvent) {
 	const row = rawRowOf(props.query.result, formattedRow)
 	if (!row) return
-	const query = await props.query.getDrillDownQuery?.(column, row)
-	if (query) emit('drillDown', query)
+	emit('segmentClick', {
+		target: { column: column.name, row },
+		point: { x: event.clientX, y: event.clientY },
+	})
 }
 
 // Export dialog state

@@ -2,15 +2,15 @@
 // saved chart's name.
 //
 // It lives apart from the store because of what it drags in. The authoring
-// endpoint answers with the operations it derived, and forking those into a
-// drill query is the query builder — neither of which an island may carry. A
-// read surface imports `chart_read` and gets none of it.
+// endpoints answer with the operations the server derived, and the query editor
+// a drill level opens in is the builder — neither of which an island may carry.
+// A read surface imports `chart_read` and gets none of it.
 
 import { call } from 'frappe-ui'
 import { computed } from 'vue'
-import { makeDrillDownQuery } from '../query/query'
 import type { Chart } from './chart'
 import { makeChartRead, type ChartRead, type ChartReadDoc } from './chart_read'
+import { fetchAuthoringDrillData } from './drill/drill_api'
 
 // one preview per chart, so the chart page and the builder's dashboard draw the
 // same card from the same rows — the same sharing `useChart` gives the document
@@ -52,6 +52,17 @@ function makeChartPreview(chart: Chart) {
 			lastRequest = serialized
 			return call('insights.api.authoring.get_chart_data', { ...request, force })
 		},
-		drillDown: makeDrillDownQuery,
+		// the same config the picture was drawn from, so a drill answers for what
+		// is on screen rather than for whatever was last saved
+		fetchDrillData: (drill_stack, filterContext) =>
+			fetchAuthoringDrillData(
+				{
+					query: chart.doc.query,
+					chart_type: chart.doc.chart_type,
+					config: chart.doc.config,
+				},
+				drill_stack,
+				filterContext,
+			),
 	})
 }

@@ -78,6 +78,11 @@ const bound = computed(() => {
 					</template>
 				</Button>
 				<Breadcrumbs class="min-w-0" :items="crumbs" />
+				<!-- what a surface may do with the level it is reading. Empty on a
+				     reading surface, which has nothing to offer beyond the ladder. -->
+				<div class="ml-auto flex flex-shrink-0 items-center gap-2 pl-2">
+					<slot name="actions" />
+				</div>
 			</div>
 		</template>
 

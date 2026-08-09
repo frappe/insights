@@ -3,6 +3,8 @@ import json
 import frappe
 
 from insights.api.authoring import get_chart_data as get_authoring_data
+from insights.api.authoring import get_drill_data as get_authoring_drill
+from insights.api.authoring import get_drill_dimensions
 from insights.api.viewer import get_chart
 from insights.api.viewer import get_chart_data as get_viewer_data
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
@@ -35,22 +37,55 @@ def todo_operations():
     ]
 
 
-def table_config():
-    """One row per description, counted."""
+def counted(measure_name="count"):
+    return {
+        "measure_name": measure_name,
+        "column_name": "name",
+        "aggregation": "count",
+        "data_type": "Integer",
+    }
+
+
+def grouped_by(column_name):
+    return {"dimension_name": column_name, "column_name": column_name, "data_type": "String"}
+
+
+def table_config(column_name="description"):
+    """One row per value of `column_name`, counted."""
     return {
         "limit": 50,
-        "rows": [{"dimension_name": "description", "column_name": "description", "data_type": "String"}],
+        "rows": [grouped_by(column_name)],
         "columns": [],
-        "values": [
-            {
-                "measure_name": "count",
-                "column_name": "name",
-                "aggregation": "count",
-                "data_type": "Integer",
-            }
-        ],
+        "values": [counted()],
         "order_by": [],
     }
+
+
+def summarized_operations():
+    """The pipeline a query builder is editing: the todos, counted by status.
+
+    The other half of what an authoring surface can drill. It has no config to
+    derive anything from — the summarize is written into the pipeline itself.
+    """
+    return [
+        *todo_operations(),
+        {"type": "summarize", "measures": [counted("Todos")], "dimensions": [grouped_by("status")]},
+    ]
+
+
+def records_level(filters=None, measure=None):
+    return {"segment_filters": filters or [], "action": {"records": True, "measure": measure}}
+
+
+def breakdown_level(dimension_name, filters=None, measure=None):
+    return {
+        "segment_filters": filters or [],
+        "action": {"breakdown": dimension_name, "measure": measure},
+    }
+
+
+def equals(column, value):
+    return {"column": column, "operator": "=", "value": value}
 
 
 class TestAuthoringAPI(InsightsIntegrationTestCase):
@@ -125,6 +160,14 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
     def preview(self, user, **kwargs):
         with as_user(user), db_connections():
             return get_authoring_data(**kwargs)
+
+    def drill(self, user, **kwargs):
+        with as_user(user), db_connections():
+            return get_authoring_drill(**kwargs)
+
+    def candidates(self, user, **kwargs):
+        with as_user(user), db_connections():
+            return [d["name"] for d in get_drill_dimensions(**kwargs)["dimensions"]]
 
     def descriptions(self, result):
         return sorted(row["description"] for row in result["rows"])
@@ -248,6 +291,127 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         # a link that names a card this preview is not drawing routes nowhere
         self.assertEqual(self.descriptions(result), sorted(AUTHOR_TODOS))
 
+    # the drill, for a shape nobody has saved
+    #
+    # The walk itself is the viewer door's walk and is tested there. What is
+    # tested here is only what differs: naming the shape instead of a chart, and
+    # the pipeline that comes back with the rows.
+
+    def test_a_config_that_was_never_saved_can_be_drilled(self):
+        query, _ = self.make_content()
+
+        result = self.drill(
+            AUTHOR,
+            query=query.name,
+            chart_type="Table",
+            config=table_config("status"),
+            drill_stack=[records_level([equals("status", "Open")], measure="count")],
+        )
+
+        # the segment of a card that exists nowhere but in the builder
+        self.assertEqual(self.descriptions(result), sorted(AUTHOR_TODOS))
+        self.assertEqual(result["total_row_count"], 2)
+
+    def test_a_pipeline_that_belongs_to_no_chart_can_be_drilled(self):
+        query, _ = self.make_content()
+
+        result = self.drill(
+            AUTHOR,
+            query=query.name,
+            operations=summarized_operations(),
+            drill_stack=[records_level([equals("status", "Open")], measure="Todos")],
+        )
+
+        # the query builder's own result table: there is no config to derive
+        # anything from, so the pipeline it is editing is what it sends
+        self.assertEqual(self.descriptions(result), sorted(AUTHOR_TODOS))
+
+    def test_a_breakdown_of_an_unsaved_shape_groups_by_the_chosen_column(self):
+        query, _ = self.make_content()
+
+        result = self.drill(
+            AUTHOR,
+            query=query.name,
+            operations=summarized_operations(),
+            drill_stack=[breakdown_level("priority", [equals("status", "Open")], measure="Todos")],
+        )
+
+        self.assertEqual([column["name"] for column in result["columns"]], ["priority", "Todos"])
+        self.assertEqual([(row["priority"], row["Todos"]) for row in result["rows"]], [("Medium", 2)])
+
+    def test_the_answer_carries_the_pipeline_the_level_opens_as(self):
+        query, _ = self.make_content()
+
+        result = self.drill(
+            AUTHOR,
+            query=query.name,
+            chart_type="Table",
+            config=table_config("status"),
+            drill_stack=[records_level([equals("status", "Open")], measure="count")],
+        )
+
+        # what "open as query" hands to the builder: the chart's pipeline cut
+        # before the step that aggregated it, with the segment filtered in
+        self.assertEqual(
+            [operation["type"] for operation in result["operations"]],
+            ["source", "filter_group"],
+        )
+        self.assertEqual(result["operations"][0]["table"]["query_name"], query.name)
+        # and the connection it has to run on, which is the chart's
+        self.assertTrue(result["use_live_connection"])
+
+    def test_a_breakdown_opens_as_the_query_that_produced_its_ranking(self):
+        query, _ = self.make_content()
+
+        result = self.drill(
+            AUTHOR,
+            query=query.name,
+            operations=summarized_operations(),
+            drill_stack=[breakdown_level("priority", [equals("status", "Open")], measure="Todos")],
+        )
+
+        # the grouping and the sort the level is a picture of, not just the rows
+        # underneath it: what opens is the query that drew what is on screen
+        self.assertEqual(
+            [operation["type"] for operation in result["operations"]],
+            ["source", "filter", "filter_group", "summarize", "order_by"],
+        )
+
+    def test_the_candidates_can_be_asked_for_on_their_own(self):
+        query, _ = self.make_content()
+
+        names = self.candidates(AUTHOR, query=query.name, operations=summarized_operations())
+
+        # a chart's candidates ride its rows; a query builder fetches its rows
+        # through its own document, so it has no such response to ride
+        self.assertIn("status", names)
+        self.assertIn("priority", names)
+        self.assertIn("description", names)
+        # the surface underneath the summarize, so what the summarize produced
+        # is not on it, and neither is anything that measures rather than groups
+        self.assertNotIn("Todos", names)
+        self.assertNotIn("docstatus", names)
+
+    def test_a_pipeline_that_aggregates_nothing_offers_no_candidates(self):
+        query, _ = self.make_content()
+
+        names = self.candidates(AUTHOR, query=query.name, operations=todo_operations())
+
+        # asking what a raw result can be broken down by is a fair question even
+        # when the answer is that it cannot
+        self.assertEqual(names, [])
+
+    def test_the_candidates_ride_the_previews_rows(self):
+        query, _ = self.make_content()
+
+        result = self.preview(AUTHOR, chart_type="Table", query=query.name, config=table_config())
+
+        # the same field the viewer response carries, so a card reads its menu
+        # off whichever feed drew it
+        names = [dimension["name"] for dimension in result["drill"]["dimensions"]]
+        self.assertIn("status", names)
+        self.assertIn("priority", names)
+
     # the gate
 
     def test_a_reader_without_an_authoring_seat_is_refused(self):
@@ -269,6 +433,37 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
         with self.assertRaises(frappe.PermissionError):
             self.preview(OUTSIDER, chart_type="Table", query=query.name, config=table_config())
+
+    def test_a_reader_without_an_authoring_seat_cannot_drill(self):
+        query, chart = self.make_content()
+
+        # the reader may drill the saved chart on the viewer door all day. What
+        # this door adds is the pipeline, and the pipeline is the author's half
+        with self.assertRaises(frappe.PermissionError):
+            self.drill(
+                READER,
+                query=query.name,
+                chart_type="Table",
+                config=table_config("status"),
+                drill_stack=[records_level([equals("status", "Open")])],
+            )
+
+        with self.assertRaises(frappe.PermissionError):
+            self.candidates(READER, query=query.name, operations=summarized_operations())
+
+    def test_a_query_the_caller_cannot_read_cannot_be_drilled(self):
+        query, chart = self.make_content()
+        chart.db_set("visibility", "Private", update_modified=False)
+
+        # naming a query is how this door says what to run, here as much as on
+        # the preview — a seat is not a grant on someone else's content
+        with self.assertRaises(frappe.PermissionError):
+            self.drill(
+                OUTSIDER,
+                query=query.name,
+                operations=summarized_operations(),
+                drill_stack=[records_level([equals("status", "Open")], measure="Todos")],
+            )
 
     # the viewer contract is unchanged
 

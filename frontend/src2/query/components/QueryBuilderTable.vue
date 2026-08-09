@@ -17,17 +17,32 @@ import ColumnSort from './ColumnSort.vue'
 import ColumnTypeChange from './ColumnTypeChange.vue'
 import QueryAlerts from './QueryAlerts.vue'
 import QueryDataTable from './QueryDataTable.vue'
-import DrillDown from '../../charts/components/DrillDown.vue'
+import AuthoringDrillDown from '../../charts/drill/AuthoringDrillDown.vue'
+import type { ChartSegmentClick } from '../../charts/drill/segment_click'
+import type { DrillSubject } from '../../charts/drill/drill_stack'
+import { queryDrillSubject } from '../../charts/drill/query_drill'
 import ExpressionEditor from './ExpressionEditor.vue'
 import { copy } from '../../helpers'
+import { createToast } from '../../helpers/toasts'
+import { __ } from '../../translation'
 
 const query = inject('query') as Query
 
-const drillDownQuery = ref<Query>()
-const showDrillDown = ref(false)
-function openDrillDown(query: Query) {
-	drillDownQuery.value = query
-	showDrillDown.value = true
+// A summarized cell opens the same dialog a chart segment does. The candidates
+// are the one thing this surface has to ask for, so the click waits on them
+// rather than drawing a menu that would fill in under the reader's cursor.
+const drill = ref<{ subject: DrillSubject; clicked: ChartSegmentClick }>()
+async function onSegmentClick(clicked: ChartSegmentClick) {
+	const subject = await queryDrillSubject(query)
+	if (!subject) {
+		createToast({
+			title: __('Nothing to drill into'),
+			message: __('Only a summarized result has rows behind its numbers'),
+			variant: 'warning',
+		})
+		return
+	}
+	drill.value = { subject, clicked }
 }
 
 function onTypeChange(column: QueryResultColumn, new_type: ColumnDataType) {
@@ -90,7 +105,7 @@ function addNewColumn() {
 			:enable-column-rename="true"
 			:enable-new-column="true"
 			:enable-drill-down="true"
-			@drill-down="openDrillDown"
+			@segment-click="onSegmentClick"
 		>
 			<template #footer-actions>
 				<QueryAlerts :query="query" />
@@ -168,11 +183,12 @@ function addNewColumn() {
 		</QueryDataTable>
 	</div>
 
-	<DrillDown
-		v-if="drillDownQuery"
-		v-model="showDrillDown"
-		@update:modelValue="!$event ? (drillDownQuery = undefined) : undefined"
-		:query="drillDownQuery"
-	>
-	</DrillDown>
+	<!-- keyed on the click, so every drill starts from an empty stack -->
+	<AuthoringDrillDown
+		v-if="drill"
+		:subject="drill.subject"
+		:clicked="drill.clicked"
+		:adhoc-filters="query.adhocFilters"
+		@close="drill = undefined"
+	/>
 </template>

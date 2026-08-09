@@ -17,7 +17,10 @@ column of the surface. Levels accumulate, so every level's segment narrows the
 rows and the last level's action decides the shape of the answer.
 
 Nothing here reads a request. It takes a chart document, and the operations it
-builds go straight into a query that is executed and thrown away.
+builds go straight into a query that is executed and thrown away. `operations`
+overrides the ones the chart derives, which is how the query builder drills the
+pipeline it is editing: there is no config to derive that from, and the walk is
+the same walk either way.
 """
 
 import re
@@ -75,26 +78,46 @@ CONDITIONAL_MEASURES = (
 )
 
 
-def drill_dimensions(chart) -> list[dict]:
+def drill_dimensions(chart, operations: list[dict] | None = None) -> list[dict]:
     """The columns a segment of this chart can be broken down by.
 
     The dimension-typed columns of the pre-summarize surface — what the menu
     offers before anything is clicked, which is why it rides the chart's own
     data response instead of a call of its own.
+
+    A pipeline that aggregates nothing has no surface underneath it, so it
+    answers with nothing rather than refusing: asking what a result can be
+    broken down by is a fair question even when the answer is "it cannot".
     """
-    operations, index = _pipeline(chart)
+    operations = chart.get_operations() if operations is None else operations
+    index = _aggregating_step(operations)
+    if index is None:
+        return []
+
     with data_authority_of(chart):
         return _dimensions_on(_surface(chart, operations, index))
 
 
-def drill_data(chart, drill_stack: list, adhoc_filters: dict | None = None) -> dict:
-    """The rows behind the segment the stack describes."""
+def drill_data(
+    chart,
+    drill_stack: list,
+    adhoc_filters: dict | None = None,
+    operations: list[dict] | None = None,
+    with_operations: bool = False,
+) -> dict:
+    """The rows behind the segment the stack describes.
+
+    `with_operations` puts the sliced pipeline in the answer, for an authoring
+    surface that lifts the level into the query builder. It is off by default
+    because the reading surfaces must never receive it, and a default that leaks
+    is one forgotten argument away.
+    """
     if not drill_stack:
         frappe.throw(_("Nothing to drill into: the drill stack is empty"))
     if not all(isinstance(level, dict) for level in drill_stack):
         frappe.throw(_("A drill level must name its segment and its action"))
 
-    operations, index = _pipeline(chart)
+    operations, index = _pipeline(chart, operations)
     step = operations[index]
     sliced = operations[:index]
 
@@ -132,25 +155,32 @@ def drill_data(chart, drill_stack: list, adhoc_filters: dict | None = None) -> d
     if link:
         response["record_link"] = link
 
+    if with_operations:
+        response["operations"] = drilled
+
     return response
 
 
 # the pipeline
 
 
-def _pipeline(chart) -> tuple[list[dict], int]:
-    """The chart's operations, and where the step that aggregated them sits."""
-    operations = chart.get_operations()
+def _pipeline(chart, operations: list[dict] | None = None) -> tuple[list[dict], int]:
+    """The operations to drill, and where the step that aggregated them sits."""
+    operations = chart.get_operations() if operations is None else operations
+    index = _aggregating_step(operations)
+    if index is None:
+        frappe.throw(_("Nothing here aggregates any rows, so there is nothing behind it"))
 
+    return operations, index
+
+
+def _aggregating_step(operations: list[dict]) -> int | None:
     aggregating = [
         index
         for index, operation in enumerate(operations)
         if operation.get("type") in ("summarize", "pivot_wider")
     ]
-    if not aggregating:
-        frappe.throw(_("This chart aggregates nothing, so there is nothing behind it"))
-
-    return operations, aggregating[-1]
+    return aggregating[-1] if aggregating else None
 
 
 def _surface(chart, operations: list[dict], index: int) -> list[dict]:

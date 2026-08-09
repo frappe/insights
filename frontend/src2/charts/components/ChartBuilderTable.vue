@@ -3,24 +3,21 @@ import { Calendar, Check } from 'lucide-vue-next'
 import { h, inject, ref, watchEffect } from 'vue'
 import { FIELDTYPES, getGranularityOptions } from '../../helpers/constants'
 import QueryDataTable from '../../query/components/QueryDataTable.vue'
-import { Query } from '../../query/query'
-import DrillDown from './DrillDown.vue'
 import { column } from '../../query/helpers'
 import { SortDirection } from '../../types/query.types'
 import { Chart } from '../chart'
 import type { ChartRead } from '../chart_read'
+import AuthoringDrillDown from '../drill/AuthoringDrillDown.vue'
+import type { ChartSegmentClick } from '../drill/segment_click'
 import { getGranularity } from '../helpers'
 
 // the chart being edited, and the rows the server ran for it
 const chart = inject('chart') as Chart
 const preview = inject('chartPreview') as ChartRead
 
-const drillDownQuery = ref<Query>()
-const showDrillDown = ref(false)
-function openDrillDown(query: Query) {
-	drillDownQuery.value = query
-	showDrillDown.value = true
-}
+// A cell of the preview is a segment of the same card, so it opens the same
+// ladder the picture above it does — the config says which columns a cell pins.
+const clicked = ref<ChartSegmentClick>()
 
 watchEffect(() => {
 	if (!chart.doc.config.order_by) {
@@ -75,7 +72,7 @@ function getDateGranularityOptions(column_name: string, column_type: string) {
 			:query="preview"
 			:enable-sort="true"
 			:enable-drill-down="true"
-			@drill-down="openDrillDown"
+			@segment-click="clicked = $event"
 			:on-sort-change="onSortChange"
 		>
 			<template #header-suffix="{ column }">
@@ -93,11 +90,12 @@ function getDateGranularityOptions(column_name: string, column_type: string) {
 		</QueryDataTable>
 	</div>
 
-	<DrillDown
-		v-if="drillDownQuery"
-		v-model="showDrillDown"
-		@update:modelValue="!$event ? (drillDownQuery = undefined) : undefined"
-		:query="drillDownQuery"
-	>
-	</DrillDown>
+	<!-- keyed on the click, so every drill starts from an empty stack -->
+	<AuthoringDrillDown
+		v-if="clicked"
+		:subject="preview.drillSubject"
+		:clicked="clicked"
+		:adhoc-filters="preview.routedFilters"
+		@close="clicked = undefined"
+	/>
 </template>

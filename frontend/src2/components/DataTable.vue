@@ -51,7 +51,9 @@ const props = defineProps<{
 	sortOrder?: SortOrder
 	onSortChange?: (column_name: string, direction: SortDirection) => void
 	onColumnRename?: (column_name: string, new_name: string) => void
-	onDrilldown?: (column: QueryResultColumn, row: QueryResultRow) => void
+	// the event too: a caller that opens a menu at the click needs the point, and
+	// the cell is the only thing that knows where it was
+	onDrilldown?: (column: QueryResultColumn, row: QueryResultRow, event: MouseEvent) => void
 	stickyColumns?: string[]
 	columnWidths?: Record<string, number>
 	textWrap?: Record<string, boolean>
@@ -736,7 +738,9 @@ function toggleNewColumn() {
 								...getColumnWidthStyle(col.name),
 							}"
 							height="30px"
-							@dblclick="isNumberColumn(col.name) && props.onDrilldown?.(col, row)"
+							@dblclick="
+								isNumberColumn(col.name) && props.onDrilldown?.(col, row, $event)
+							"
 						>
 							<template v-if="isNumberColumn(col.name)">
 								{{ _formatNumber(row[col.name], col.name) }}

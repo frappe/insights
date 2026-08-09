@@ -7,7 +7,7 @@ import { EMPTY_RESULT, formatResultRows, rawRowOf } from '../../query/helpers'
 import type { ResultTable } from '../../query/result_table'
 import { __ } from '../../translation'
 import type { QueryResultRow } from '../../types/query.types'
-import type { DrillLevelData } from './drill_stack'
+import { drillGranularity, type DrillLevelData } from './drill_stack'
 
 // The floor of the ladder: the rows behind the segment, every column the query
 // selects and no more. What the author chose to publish is the query itself, so
@@ -29,7 +29,10 @@ const table = computed<ResultTable>(() => {
 		executing: false,
 		result: {
 			...result,
-			formattedRows: formatResultRows(result, props.data.granularity || {}),
+			formattedRows: formatResultRows(
+				result,
+				drillGranularity(props.data.columns, props.data.granularity),
+			),
 			totalRowCount: props.data.total_row_count ?? props.data.rows.length,
 		},
 	}

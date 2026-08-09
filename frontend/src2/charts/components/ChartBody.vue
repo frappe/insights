@@ -5,7 +5,6 @@ import { AlertTriangle, RefreshCcw } from 'lucide-vue-next'
 import { computed, shallowRef, watch } from 'vue'
 import { __ } from '../../translation'
 import { EMPTY_RESULT } from '../../query/helpers'
-import { Query } from '../../query/query'
 import { adaptChart, type DrillDownTarget } from '../adapter'
 import { ChartRead } from '../chart_read'
 import { segmentClickEvents, type ChartSegmentClick, type ClickPoint } from '../drill/segment_click'
@@ -37,8 +36,6 @@ const props = defineProps<{
 const emit = defineEmits<{
 	// where the reader pointed, for a surface that offers the drill menu
 	segmentClick: [click: ChartSegmentClick]
-	// the authoring fork of the same click. It retires with the old drill dialog.
-	drillDown: [query: Query]
 	resetFilters: []
 }>()
 
@@ -106,6 +103,11 @@ const failure = computed(() => {
 	return null
 })
 
+// A filler that has one right height gets it, and every other one fills the
+// room. Only the picture is asked: a loading or empty card is chrome, and chrome
+// is the same size for every type.
+const fitsContent = computed(() => state.value === 'chart' && filler.value?.height === 'content')
+
 // The events a filler reports a click through, bound without knowing which chart
 // type emits which. The adapter names them and turns each payload into the point
 // behind it.
@@ -121,20 +123,10 @@ function rememberPoint(event: MouseEvent) {
 	clickedAt.value = { x: event.clientX, y: event.clientY }
 }
 
-// A resolver answers with the raw row, which is what a drill-down reads, so
-// nothing is looked up on the way out.
+// A resolver answers with the raw row, which is what a drill reads, so nothing
+// is looked up on the way out.
 function reportSegment(target: DrillDownTarget) {
 	emit('segmentClick', { target, point: clickedAt.value })
-	forkDrillQuery(target)
-}
-
-// The authoring fork: the builder's own dialog is a query editor, so only a feed
-// that carries the operations can open one. It retires with that dialog.
-async function forkDrillQuery(target: DrillDownTarget) {
-	const column = result.value.columns.find((c) => c.name === target.column)
-	if (!column) return
-	const query = await props.chart.getDrillDownQuery(column, target.row)
-	if (query) emit('drillDown', query)
 }
 </script>
 
@@ -154,7 +146,7 @@ async function forkDrillQuery(target: DrillDownTarget) {
 		</div>
 
 		<div class="min-h-0 w-full flex-1">
-			<ChartCard class="h-full">
+			<ChartCard :class="fitsContent ? 'max-h-full' : 'h-full'">
 				<component
 					v-if="state === 'chart' && filler"
 					:is="filler.component"
