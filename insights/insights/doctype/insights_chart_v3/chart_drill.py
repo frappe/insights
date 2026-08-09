@@ -135,13 +135,8 @@ def drill_data(
         # is open, so back and crumb pops never come here. What does come here
         # is a viewer asking what a number is made of right now
         result = query.execute(adhoc_filters=adhoc_filters, page_size=PAGE_SIZE, force=True)
-        # the dialog shows one page and says so: "100 of 1,240" needs the 1,240.
-        # The whitelisted method carries an `Insights User` role check, which is
-        # the SPA's boundary and not this one — a viewer surface holds no role by
-        # definition, and the read was settled before any of this ran. The
-        # undecorated method is the same computation without that gate; the
-        # doctype should split the check off the method instead — see ticket 18
-        total_row_count = query.get_count.__wrapped__(query, adhoc_filters=adhoc_filters)
+        # the dialog shows one page and says so: "100 of 1,240" needs the 1,240
+        total_row_count = query.count_rows(adhoc_filters=adhoc_filters)
 
     response = {
         "columns": result["columns"],

@@ -178,15 +178,9 @@ def get_filter_values(dashboard: str, filter_name: str, search_term: str | None 
     chart, query, column = source
 
     query_doc = frappe.get_cached_doc(QUERY, query)
-    # the whitelisted method carries an `Insights User` role check, which is the
-    # SPA's boundary and not this one: a viewer surface holds no role by
-    # definition, and the read was already settled above. The undecorated method
-    # is the same computation without that gate. The doctype should split the
-    # check off the method instead — see ticket 18.
-    distinct_column_values = query_doc.get_distinct_column_values.__wrapped__
 
     with data_authority_of(frappe.get_doc(CHART, chart)):
-        return distinct_column_values(query_doc, column, search_term=search_term)
+        return query_doc.distinct_column_values(column, search_term=search_term)
 
 
 def resolve_chart(chart: str, dashboard: str | None) -> str:

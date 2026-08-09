@@ -151,6 +151,8 @@ class InsightsDashboardv3(Document):
         Who may read this dashboard was settled before this ran — the builder
         reaches it through `run_doc_method`, a viewer through
         `insights.api.viewer.get_filter_values`, and both check the read first.
+        The read is the whole gate, so this reaches the query's plain method: a
+        reader who may see this dashboard can hold no Insights role at all.
 
         `filter_context` is what the rest of the grid currently holds, unrouted:
         the `items`, the `chart` they link by, and the `filters` state. Routing
@@ -175,9 +177,7 @@ class InsightsDashboardv3(Document):
             )
 
         doc = frappe.get_cached_doc("Insights Query v3", query)
-        return doc.get_distinct_column_values(
-            column_name, search_term=search_term, adhoc_filters=adhoc_filters
-        )
+        return doc.distinct_column_values(column_name, search_term=search_term, adhoc_filters=adhoc_filters)
 
     def enqueue_update_dashboard_preview(self):
         if self.is_new() or not self.get_doc_before_save() or frappe.flags.in_patch:

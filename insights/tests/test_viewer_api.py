@@ -4,6 +4,7 @@ from unittest.mock import patch
 import frappe
 
 from insights.api.viewer import get_chart, get_chart_data, get_dashboard, get_filter_values
+from insights.insights.doctype.insights_data_source_v3.data_authority import data_authority_of
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
 from insights.resolver import ContentNotAvailableError
 from insights.tests.base import InsightsIntegrationTestCase
@@ -472,6 +473,45 @@ class TestViewerAPI(InsightsIntegrationTestCase):
 
         self.assertEqual(sorted(values), sorted(AUTHOR_TODOS))
         self.assertEqual(searched, [AUTHOR_TODOS[0]])
+
+    def test_a_roleless_viewer_reaches_what_the_authoring_endpoints_gate(self):
+        """The `Insights User` check sits on the endpoint, not on the computation.
+
+        A viewer surface needs the same two answers an authoring client asks for
+        — how many rows are behind a number, and what values a column offers —
+        and holds no Insights role to ask with.
+        """
+        query, chart, dashboard = self.make_content(visibility="Everyone")
+        chart.db_set("data_authority", "Author", update_modified=False)
+        query_doc = frappe.get_doc(DT.QUERY, query.name)
+
+        with as_user(DESK_USER), db_connections():
+            values = get_filter_values(dashboard=dashboard.name, filter_name="Description")
+            with data_authority_of(frappe.get_doc(DT.CHART, chart.name)):
+                count = query_doc.count_rows()
+
+        self.assertEqual(sorted(values), sorted(AUTHOR_TODOS))
+        self.assertEqual(count, len(AUTHOR_TODOS))
+
+    def test_a_dashboard_filter_list_needs_no_insights_seat(self):
+        _, _, dashboard = self.make_content(visibility="Everyone")
+
+        with as_user(DESK_USER), db_connections():
+            values = frappe.get_doc(DT.DASHBOARD, dashboard.name).get_distinct_column_values("Description")
+
+        # empty, not refused: this endpoint applies no declared authority, so a
+        # reader is offered the values their own permissions reach
+        self.assertEqual(values, [])
+
+    def test_the_authoring_endpoints_still_refuse_a_user_without_the_seat(self):
+        query, _, _ = self.make_content(visibility="Everyone")
+        query_doc = frappe.get_doc(DT.QUERY, query.name)
+
+        with as_user(DESK_USER):
+            with self.assertRaises(frappe.PermissionError):
+                query_doc.get_count()
+            with self.assertRaises(frappe.PermissionError):
+                query_doc.get_distinct_column_values("description")
 
     def test_filter_values_answer_like_any_other_reference(self):
         _, _, dashboard = self.make_content(visibility="Everyone")
