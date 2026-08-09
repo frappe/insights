@@ -1,0 +1,1127 @@
+{
+	"version": "1.0",
+	"timestamp": "",
+	"type": "Workbook",
+	"name": "gallery",
+	"doc": {
+		"name": "gallery",
+		"title": "Chart Gallery"
+	},
+	"dependencies": {
+		"folders": [
+			{
+				"name": "f_queries",
+				"title": "Queries",
+				"type": "query",
+				"sort_order": 0
+			},
+			{
+				"name": "f_axis",
+				"title": "Axis charts",
+				"type": "chart",
+				"sort_order": 1
+			},
+			{
+				"name": "f_part",
+				"title": "Part to whole",
+				"type": "chart",
+				"sort_order": 2
+			},
+			{
+				"name": "f_single",
+				"title": "Single value",
+				"type": "chart",
+				"sort_order": 3
+			},
+			{
+				"name": "f_owned",
+				"title": "Table and Map",
+				"type": "chart",
+				"sort_order": 4
+			},
+			{
+				"name": "f_relational",
+				"title": "Relational",
+				"type": "chart",
+				"sort_order": 5
+			}
+		],
+		"queries": {
+			"q_sales": {
+				"name": "q_sales",
+				"title": "Sales facts",
+				"workbook": "gallery",
+				"folder": "f_queries",
+				"sort_order": 0,
+				"use_live_connection": 1,
+				"is_script_query": 0,
+				"is_builder_query": 1,
+				"is_native_query": 0,
+				"operations": [
+					{
+						"type": "source",
+						"table": {
+							"type": "table",
+							"data_source": "ecommerce",
+							"table_name": "order_items"
+						}
+					},
+					{
+						"type": "join",
+						"join_type": "inner",
+						"table": {
+							"type": "table",
+							"data_source": "ecommerce",
+							"table_name": "products"
+						},
+						"select_columns": [
+							{
+								"type": "column",
+								"column_name": "category"
+							},
+							{
+								"type": "column",
+								"column_name": "department"
+							},
+							{
+								"type": "column",
+								"column_name": "brand"
+							},
+							{
+								"type": "column",
+								"column_name": "cost"
+							}
+						],
+						"join_condition": {
+							"left_column": {
+								"type": "column",
+								"column_name": "product_id"
+							},
+							"right_column": {
+								"type": "column",
+								"column_name": "id"
+							}
+						}
+					},
+					{
+						"type": "join",
+						"join_type": "inner",
+						"table": {
+							"type": "table",
+							"data_source": "ecommerce",
+							"table_name": "users"
+						},
+						"select_columns": [
+							{
+								"type": "column",
+								"column_name": "country"
+							},
+							{
+								"type": "column",
+								"column_name": "traffic_source"
+							},
+							{
+								"type": "column",
+								"column_name": "gender"
+							},
+							{
+								"type": "column",
+								"column_name": "age"
+							}
+						],
+						"join_condition": {
+							"left_column": {
+								"type": "column",
+								"column_name": "user_id"
+							},
+							"right_column": {
+								"type": "column",
+								"column_name": "id"
+							}
+						}
+					},
+					{
+						"type": "mutate",
+						"new_name": "profit",
+						"data_type": "Decimal",
+						"expression": {
+							"type": "expression",
+							"expression": "sale_price - cost"
+						}
+					}
+				]
+			}
+		},
+		"charts": {
+			"c_bar_stacked": {
+				"name": "c_bar_stacked",
+				"title": "Revenue by month, stacked by department",
+				"workbook": "gallery",
+				"folder": "f_axis",
+				"sort_order": 0,
+				"query": "q_sales",
+				"chart_type": "Bar",
+				"config": {
+					"order_by": [],
+					"filters": {
+						"logical_operator": "And",
+						"filters": []
+					},
+					"limit": 100,
+					"x_axis": {
+						"dimension": {
+							"dimension_name": "created_at",
+							"column_name": "created_at",
+							"data_type": "Datetime",
+							"granularity": "month"
+						}
+					},
+					"split_by": {
+						"dimension": {
+							"dimension_name": "department",
+							"column_name": "department",
+							"data_type": "String"
+						},
+						"max_split_values": 5
+					},
+					"y_axis": {
+						"series": [
+							{
+								"measure": {
+									"measure_name": "Revenue",
+									"column_name": "sale_price",
+									"aggregation": "sum",
+									"data_type": "Decimal",
+									"format": "currency"
+								},
+								"type": "bar"
+							}
+						],
+						"stack": true,
+						"show_axis_label": true,
+						"axis_label": "Revenue"
+					}
+				}
+			},
+			"c_bar_normalized": {
+				"name": "c_bar_normalized",
+				"title": "Traffic source mix by department (100%)",
+				"workbook": "gallery",
+				"folder": "f_axis",
+				"sort_order": 1,
+				"query": "q_sales",
+				"chart_type": "Bar",
+				"config": {
+					"order_by": [],
+					"filters": {
+						"logical_operator": "And",
+						"filters": []
+					},
+					"limit": 100,
+					"x_axis": {
+						"dimension": {
+							"dimension_name": "traffic_source",
+							"column_name": "traffic_source",
+							"data_type": "String"
+						}
+					},
+					"split_by": {
+						"dimension": {
+							"dimension_name": "department",
+							"column_name": "department",
+							"data_type": "String"
+						},
+						"max_split_values": 5
+					},
+					"y_axis": {
+						"series": [
+							{
+								"measure": {
+									"measure_name": "Revenue",
+									"column_name": "sale_price",
+									"aggregation": "sum",
+									"data_type": "Decimal",
+									"format": "currency"
+								},
+								"type": "bar"
+							}
+						],
+						"stack": true,
+						"normalize": true,
+						"show_data_labels": true
+					}
+				}
+			},
+			"c_line_two_measures": {
+				"name": "c_line_two_measures",
+				"title": "Revenue and profit trend",
+				"workbook": "gallery",
+				"folder": "f_axis",
+				"sort_order": 2,
+				"query": "q_sales",
+				"chart_type": "Line",
+				"config": {
+					"order_by": [],
+					"filters": {
+						"logical_operator": "And",
+						"filters": []
+					},
+					"limit": 100,
+					"x_axis": {
+						"dimension": {
+							"dimension_name": "created_at",
+							"column_name": "created_at",
+							"data_type": "Datetime",
+							"granularity": "month"
+						}
+					},
+					"y_axis": {
+						"series": [
+							{
+								"measure": {
+									"measure_name": "Revenue",
+									"column_name": "sale_price",
+									"aggregation": "sum",
+									"data_type": "Decimal",
+									"format": "currency"
+								},
+								"type": "line",
+								"smooth": true,
+								"show_data_points": true
+							},
+							{
+								"measure": {
+									"measure_name": "Profit",
+									"column_name": "profit",
+									"aggregation": "sum",
+									"data_type": "Decimal",
+									"format": "currency"
+								},
+								"type": "line",
+								"smooth": true,
+								"show_area": true
+							}
+						],
+						"show_axis_label": true,
+						"axis_label": "Amount"
+					}
+				}
+			},
+			"c_combo_dual_axis": {
+				"name": "c_combo_dual_axis",
+				"title": "Revenue bars with item count on the right axis",
+				"workbook": "gallery",
+				"folder": "f_axis",
+				"sort_order": 3,
+				"query": "q_sales",
+				"chart_type": "Bar",
+				"config": {
+					"order_by": [],
+					"filters": {
+						"logical_operator": "And",
+						"filters": []
+					},
+					"limit": 100,
+					"x_axis": {
+						"dimension": {
+							"dimension_name": "created_at",
+							"column_name": "created_at",
+							"data_type": "Datetime",
+							"granularity": "month"
+						}
+					},
+					"y_axis": {
+						"series": [
+							{
+								"measure": {
+									"measure_name": "Revenue",
+									"column_name": "sale_price",
+									"aggregation": "sum",
+									"data_type": "Decimal",
+									"format": "currency"
+								},
+								"type": "bar"
+							},
+							{
+								"measure": {
+									"measure_name": "Items",
+									"column_name": "count",
+									"aggregation": "count",
+									"data_type": "Integer"
+								},
+								"type": "line",
+								"align": "Right",
+								"smooth": true
+							}
+						],
+						"reference_lines": [
+							{
+								"axis": "y",
+								"align": "Left",
+								"value": 400000,
+								"label": "Revenue target",
+								"dashed": true
+							}
+						]
+					}
+				}
+			},
+			"c_row_by_category": {
+				"name": "c_row_by_category",
+				"title": "Revenue by category",
+				"workbook": "gallery",
+				"folder": "f_axis",
+				"sort_order": 4,
+				"query": "q_sales",
+				"chart_type": "Row",
+				"config": {
+					"order_by": [
+						{
+							"column": {
+								"type": "column",
+								"column_name": "Revenue"
+							},
+							"direction": "desc"
+						}
+					],
+					"filters": {
+						"logical_operator": "And",
+						"filters": []
+					},
+					"limit": 100,
+					"x_axis": {
+						"dimension": {
+							"dimension_name": "category",
+							"column_name": "category",
+							"data_type": "String"
+						}
+					},
+					"y_axis": {
+						"series": [
+							{
+								"measure": {
+									"measure_name": "Revenue",
+									"column_name": "sale_price",
+									"aggregation": "sum",
+									"data_type": "Decimal",
+									"format": "currency"
+								},
+								"type": "bar"
+							}
+						],
+						"show_data_labels": true
+					}
+				}
+			},
+			"c_donut_category": {
+				"name": "c_donut_category",
+				"title": "Revenue share by category",
+				"workbook": "gallery",
+				"folder": "f_part",
+				"sort_order": 5,
+				"query": "q_sales",
+				"chart_type": "Donut",
+				"config": {
+					"order_by": [],
+					"filters": {
+						"logical_operator": "And",
+						"filters": []
+					},
+					"limit": 100,
+					"label_column": {
+						"dimension_name": "category",
+						"column_name": "category",
+						"data_type": "String"
+					},
+					"value_column": {
+						"measure_name": "Revenue",
+						"column_name": "sale_price",
+						"aggregation": "sum",
+						"data_type": "Decimal",
+						"format": "currency"
+					},
+					"max_slices": 8,
+					"legend_position": "right",
+					"show_inline_labels": false
+				}
+			},
+			"c_funnel_measures": {
+				"name": "c_funnel_measures",
+				"title": "Order lifecycle (measures mode)",
+				"workbook": "gallery",
+				"folder": "f_part",
+				"sort_order": 6,
+				"query": "q_sales",
+				"chart_type": "Funnel",
+				"config": {
+					"order_by": [],
+					"filters": {
+						"logical_operator": "And",
+						"filters": []
+					},
+					"limit": 100,
+					"measures": [
+						{
+							"measure_name": "Ordered",
+							"column_name": "count",
+							"aggregation": "count",
+							"data_type": "Integer"
+						},
+						{
+							"measure_name": "Shipped",
+							"expression": {
+								"type": "expression",
+								"expression": "shipped_at.notnull().sum()"
+							},
+							"data_type": "Integer"
+						},
+						{
+							"measure_name": "Delivered",
+							"expression": {
+								"type": "expression",
+								"expression": "delivered_at.notnull().sum()"
+							},
+							"data_type": "Integer"
+						},
+						{
+							"measure_name": "Kept",
+							"expression": {
+								"type": "expression",
+								"expression": "(delivered_at.notnull() & returned_at.isnull()).sum()"
+							},
+							"data_type": "Integer"
+						}
+					],
+					"show_percentage": true
+				}
+			},
+			"c_funnel_grouped": {
+				"name": "c_funnel_grouped",
+				"title": "Items by order status (grouped mode)",
+				"workbook": "gallery",
+				"folder": "f_part",
+				"sort_order": 7,
+				"query": "q_sales",
+				"chart_type": "Funnel",
+				"config": {
+					"order_by": [],
+					"filters": {
+						"logical_operator": "And",
+						"filters": []
+					},
+					"limit": 100,
+					"label_column": {
+						"dimension_name": "status",
+						"column_name": "status",
+						"data_type": "String"
+					},
+					"value_column": {
+						"measure_name": "Items",
+						"column_name": "count",
+						"aggregation": "count",
+						"data_type": "Integer"
+					},
+					"show_percentage": true
+				}
+			},
+			"c_number_kpis": {
+				"name": "c_number_kpis",
+				"title": "Headline numbers",
+				"workbook": "gallery",
+				"folder": "f_single",
+				"sort_order": 8,
+				"query": "q_sales",
+				"chart_type": "Number",
+				"config": {
+					"order_by": [],
+					"filters": {
+						"logical_operator": "And",
+						"filters": []
+					},
+					"limit": 100,
+					"number_columns": [
+						{
+							"measure_name": "Revenue",
+							"column_name": "sale_price",
+							"aggregation": "sum",
+							"data_type": "Decimal",
+							"format": "currency"
+						},
+						{
+							"measure_name": "Profit",
+							"column_name": "profit",
+							"aggregation": "sum",
+							"data_type": "Decimal",
+							"format": "currency"
+						},
+						{
+							"measure_name": "Items",
+							"column_name": "count",
+							"aggregation": "count",
+							"data_type": "Integer"
+						}
+					],
+					"number_column_options": [
+						{
+							"prefix": "$",
+							"shorten_numbers": true,
+							"decimal": 1
+						},
+						{
+							"prefix": "$",
+							"shorten_numbers": true,
+							"decimal": 1
+						},
+						{
+							"shorten_numbers": true,
+							"decimal": 0
+						}
+					],
+					"comparison": false,
+					"sparkline": false
+				}
+			},
+			"c_number_comparison": {
+				"name": "c_number_comparison",
+				"title": "Revenue vs previous month",
+				"workbook": "gallery",
+				"folder": "f_single",
+				"sort_order": 9,
+				"query": "q_sales",
+				"chart_type": "Number",
+				"config": {
+					"order_by": [],
+					"filters": {
+						"logical_operator": "And",
+						"filters": []
+					},
+					"limit": 100,
+					"number_columns": [
+						{
+							"measure_name": "Revenue",
+							"column_name": "sale_price",
+							"aggregation": "sum",
+							"data_type": "Decimal",
+							"format": "currency"
+						}
+					],
+					"number_column_options": [
+						{
+							"prefix": "$",
+							"shorten_numbers": true,
+							"decimal": 1
+						}
+					],
+					"comparison": true,
+					"sparkline": false,
+					"date_column": {
+						"dimension_name": "created_at",
+						"column_name": "created_at",
+						"data_type": "Datetime",
+						"granularity": "month"
+					},
+					"negative_is_better": false
+				}
+			},
+			"c_number_sparkline": {
+				"name": "c_number_sparkline",
+				"title": "Items sold with sparkline",
+				"workbook": "gallery",
+				"folder": "f_single",
+				"sort_order": 10,
+				"query": "q_sales",
+				"chart_type": "Number",
+				"config": {
+					"order_by": [],
+					"filters": {
+						"logical_operator": "And",
+						"filters": []
+					},
+					"limit": 100,
+					"number_columns": [
+						{
+							"measure_name": "Items",
+							"column_name": "count",
+							"aggregation": "count",
+							"data_type": "Integer"
+						}
+					],
+					"number_column_options": [
+						{
+							"shorten_numbers": true,
+							"decimal": 0
+						}
+					],
+					"comparison": true,
+					"sparkline": true,
+					"sparkline_color": "#2490EF",
+					"date_column": {
+						"dimension_name": "created_at",
+						"column_name": "created_at",
+						"data_type": "Datetime",
+						"granularity": "month"
+					}
+				}
+			},
+			"c_table_pivot": {
+				"name": "c_table_pivot",
+				"title": "Revenue by category and department",
+				"workbook": "gallery",
+				"folder": "f_owned",
+				"sort_order": 11,
+				"query": "q_sales",
+				"chart_type": "Table",
+				"config": {
+					"order_by": [],
+					"filters": {
+						"logical_operator": "And",
+						"filters": []
+					},
+					"limit": 100,
+					"rows": [
+						{
+							"dimension_name": "category",
+							"column_name": "category",
+							"data_type": "String"
+						}
+					],
+					"columns": [
+						{
+							"dimension_name": "department",
+							"column_name": "department",
+							"data_type": "String"
+						}
+					],
+					"values": [
+						{
+							"measure_name": "Revenue",
+							"column_name": "sale_price",
+							"aggregation": "sum",
+							"data_type": "Decimal",
+							"format": "currency"
+						},
+						{
+							"measure_name": "Items",
+							"column_name": "count",
+							"aggregation": "count",
+							"data_type": "Integer"
+						}
+					],
+					"max_column_values": 10,
+					"show_row_totals": true,
+					"show_column_totals": true,
+					"show_filter_row": true,
+					"compact_numbers": true,
+					"conditional_formatting": {
+						"columns": [
+							{
+								"type": "column",
+								"column_name": "category"
+							}
+						],
+						"formats": [
+							{
+								"mode": "color_scale",
+								"column": {
+									"type": "column",
+									"column_name": "Revenue___Women"
+								},
+								"colorScale": "green",
+								"scaleScope": "local",
+								"value": null
+							},
+							{
+								"mode": "cell_rules",
+								"column": {
+									"type": "column",
+									"column_name": "Revenue___Men"
+								},
+								"operator": ">",
+								"value": 400000,
+								"color": "green"
+							}
+						]
+					}
+				}
+			},
+			"c_map_country": {
+				"name": "c_map_country",
+				"title": "Revenue by country",
+				"workbook": "gallery",
+				"folder": "f_owned",
+				"sort_order": 12,
+				"query": "q_sales",
+				"chart_type": "Map",
+				"config": {
+					"order_by": [],
+					"filters": {
+						"logical_operator": "And",
+						"filters": []
+					},
+					"limit": 100,
+					"location_column": {
+						"dimension_name": "country",
+						"column_name": "country",
+						"data_type": "String"
+					},
+					"value_column": {
+						"measure_name": "Revenue",
+						"column_name": "sale_price",
+						"aggregation": "sum",
+						"data_type": "Decimal",
+						"format": "currency"
+					},
+					"map_type": "world",
+					"region_mappings": {
+						"world": {
+							"United States": "United States of America",
+							"Brasil": "Brazil"
+						}
+					}
+				}
+			},
+			"c_bubble_categories": {
+				"name": "c_bubble_categories",
+				"title": "Category revenue vs profit",
+				"workbook": "gallery",
+				"folder": "f_relational",
+				"sort_order": 13,
+				"query": "q_sales",
+				"chart_type": "Bubble",
+				"config": {
+					"order_by": [],
+					"filters": {
+						"logical_operator": "And",
+						"filters": []
+					},
+					"limit": 100,
+					"xAxis": {
+						"measure_name": "Revenue",
+						"column_name": "sale_price",
+						"aggregation": "sum",
+						"data_type": "Decimal",
+						"format": "currency"
+					},
+					"yAxis": {
+						"measure_name": "Profit",
+						"column_name": "profit",
+						"aggregation": "sum",
+						"data_type": "Decimal",
+						"format": "currency"
+					},
+					"size_column": {
+						"measure_name": "Items",
+						"column_name": "count",
+						"aggregation": "count",
+						"data_type": "Integer"
+					},
+					"dimension": {
+						"dimension_name": "category",
+						"column_name": "category",
+						"data_type": "String"
+					},
+					"quadrant_column": {
+						"dimension_name": "department",
+						"column_name": "department",
+						"data_type": "String"
+					},
+					"show_quadrants": true,
+					"show_data_labels": false,
+					"xAxis_refLine": 255909,
+					"yAxis_refLine": 138980
+				}
+			},
+			"c_sankey_traffic": {
+				"name": "c_sankey_traffic",
+				"title": "Traffic source to category revenue",
+				"workbook": "gallery",
+				"folder": "f_relational",
+				"sort_order": 14,
+				"query": "q_sales",
+				"chart_type": "Sankey",
+				"config": {
+					"order_by": [
+						{
+							"column": {
+								"type": "column",
+								"column_name": "Revenue"
+							},
+							"direction": "desc"
+						}
+					],
+					"filters": {
+						"logical_operator": "And",
+						"filters": [
+							{
+								"column": {
+									"type": "column",
+									"column_name": "category"
+								},
+								"operator": "in",
+								"value": [
+									"Intimates",
+									"Jeans",
+									"Tops & Tees",
+									"Sweaters",
+									"Fashion Hoodies & Sweatshirts",
+									"Shorts",
+									"Swim",
+									"Outerwear & Coats"
+								]
+							}
+						]
+					},
+					"limit": 100,
+					"source_column": {
+						"dimension_name": "traffic_source",
+						"column_name": "traffic_source",
+						"data_type": "String"
+					},
+					"target_column": {
+						"dimension_name": "category",
+						"column_name": "category",
+						"data_type": "String"
+					},
+					"value_column": {
+						"measure_name": "Revenue",
+						"column_name": "sale_price",
+						"aggregation": "sum",
+						"data_type": "Decimal",
+						"format": "currency"
+					},
+					"orient": "horizontal",
+					"node_align": "justify"
+				}
+			}
+		},
+		"dashboards": {
+			"d_gallery": {
+				"name": "d_gallery",
+				"title": "Chart Gallery",
+				"workbook": "gallery",
+				"items": [
+					{
+						"type": "text",
+						"text": "## Axis charts",
+						"layout": {
+							"i": "t_axis",
+							"x": 0,
+							"y": 0,
+							"w": 20,
+							"h": 1
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "c_bar_stacked",
+						"layout": {
+							"i": "c_bar_stacked",
+							"x": 0,
+							"y": 1,
+							"w": 10,
+							"h": 8
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "c_line_two_measures",
+						"layout": {
+							"i": "c_line_two_measures",
+							"x": 10,
+							"y": 1,
+							"w": 10,
+							"h": 8
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "c_combo_dual_axis",
+						"layout": {
+							"i": "c_combo_dual_axis",
+							"x": 0,
+							"y": 9,
+							"w": 10,
+							"h": 8
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "c_bar_normalized",
+						"layout": {
+							"i": "c_bar_normalized",
+							"x": 10,
+							"y": 9,
+							"w": 10,
+							"h": 8
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "c_row_by_category",
+						"layout": {
+							"i": "c_row_by_category",
+							"x": 0,
+							"y": 17,
+							"w": 20,
+							"h": 10
+						}
+					},
+					{
+						"type": "text",
+						"text": "## Part to whole",
+						"layout": {
+							"i": "t_part",
+							"x": 0,
+							"y": 27,
+							"w": 20,
+							"h": 1
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "c_donut_category",
+						"layout": {
+							"i": "c_donut_category",
+							"x": 0,
+							"y": 28,
+							"w": 7,
+							"h": 8
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "c_funnel_measures",
+						"layout": {
+							"i": "c_funnel_measures",
+							"x": 7,
+							"y": 28,
+							"w": 7,
+							"h": 8
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "c_funnel_grouped",
+						"layout": {
+							"i": "c_funnel_grouped",
+							"x": 14,
+							"y": 28,
+							"w": 6,
+							"h": 8
+						}
+					},
+					{
+						"type": "text",
+						"text": "## Single value",
+						"layout": {
+							"i": "t_single",
+							"x": 0,
+							"y": 36,
+							"w": 20,
+							"h": 1
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "c_number_kpis",
+						"layout": {
+							"i": "c_number_kpis",
+							"x": 0,
+							"y": 37,
+							"w": 8,
+							"h": 4
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "c_number_comparison",
+						"layout": {
+							"i": "c_number_comparison",
+							"x": 8,
+							"y": 37,
+							"w": 6,
+							"h": 4
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "c_number_sparkline",
+						"layout": {
+							"i": "c_number_sparkline",
+							"x": 14,
+							"y": 37,
+							"w": 6,
+							"h": 4
+						}
+					},
+					{
+						"type": "text",
+						"text": "## Table and Map",
+						"layout": {
+							"i": "t_owned",
+							"x": 0,
+							"y": 41,
+							"w": 20,
+							"h": 1
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "c_table_pivot",
+						"layout": {
+							"i": "c_table_pivot",
+							"x": 0,
+							"y": 42,
+							"w": 10,
+							"h": 10
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "c_map_country",
+						"layout": {
+							"i": "c_map_country",
+							"x": 10,
+							"y": 42,
+							"w": 10,
+							"h": 10
+						}
+					},
+					{
+						"type": "text",
+						"text": "## Relational",
+						"layout": {
+							"i": "t_rel",
+							"x": 0,
+							"y": 52,
+							"w": 20,
+							"h": 1
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "c_bubble_categories",
+						"layout": {
+							"i": "c_bubble_categories",
+							"x": 0,
+							"y": 53,
+							"w": 10,
+							"h": 9
+						}
+					},
+					{
+						"type": "chart",
+						"chart": "c_sankey_traffic",
+						"layout": {
+							"i": "c_sankey_traffic",
+							"x": 10,
+							"y": 53,
+							"w": 10,
+							"h": 9
+						}
+					}
+				]
+			}
+		}
+	}
+}
