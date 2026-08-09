@@ -118,6 +118,37 @@ Resolved tickets:
   ladder, so the public page needs no permission work — only the preview-image
   key moves into the controller. Order: shared/public first, SPA read page,
   builder last riding ticket 27 step 3.
+- [What does Insights adopt from frappe-ui charts v2?](issues/32-charts-v2-adoption.md)
+  — the seam cuts at the layer, not at the chart type. v2 chrome (`ChartCard`,
+  `ChartContainer`, `ChartLegend`, `ChartTooltip`, states) dresses every Insights
+  chart, Table and Map included; only the plot slot varies, between a v2
+  component, an Insights plot on `useChart`, and no plot. Insights builds no
+  ECharts option for a type v2 admits, and draws no chrome for a type it owns.
+  The render swap goes first and ADR-0001's config split second, against that
+  ADR's own order, because every unknown sits in the swap. v2 gains
+  `xAxis.type: 'value'`; `show_scrollbar` is dropped; `split_by` stays wide
+  because v2's `series` grouping takes a single `y`. frappe-ui's
+  `spec/charts-scope.md` is the membership authority, and it rules Table and Map
+  out of v2 on the model — which is what makes the plot slot permanent rather
+  than a staging area. ADR-0001's "Blocked on" section is obsolete and needs
+  amending.
+- [Drill-down interaction](issues/11-drill-down-interaction.md) — one drill
+  experience on every surface (viewer, desk island, builder preview);
+  `DrillDown.vue` retires. Every segment click reduces to segment filters;
+  entry is a two-item menu (View records / Break down by →, candidates = the
+  pre-summarize result surface's dimensions minus pinned ones — the menu's
+  click distribution reveals the common path). One dialog with an internal
+  back-stack and breadcrumb, ephemeral. Breakdown = the existing Row chart,
+  ad-hoc, click-recurses; records = all result columns in the viewer data
+  table, with a per-row open-record control driven by server-derived
+  `record_link` metadata (base site-DB table + surviving `name` column; the
+  client never guesses). Guests get no drill in v1. Wire: stateless
+  `viewer.get_drill_data(chart, dashboard?, filters?, drill_stack)` — plain
+  values, never operations; server re-derives from `config` (ticket 27),
+  slices, validates, applies; candidates piggyback on `get_chart_data`.
+  Authoring extra: "open as query" into an ephemeral ad-hoc query, Insights
+  surfaces only, edit-rights-gated. First shipped slice of
+  [ticket 33](issues/33-query-building-server-side.md).
 - **Ownership split** (settled during ticket 02) — framework owns the desk page shell, the mount contract, the shared runtime (Vue + frappe-ui + chart primitives), and the renderer toggle; Insights provides doctypes, engine, and a mountable UI artifact built against framework-provided externals. The seam is one call: framework's page asks Insights to mount into an element with host context. The Insights→desk bridge (is Insights installed? is the flag on? is this an Insights dashboard?) lives in framework, so Insights never knows about the fallback.
 
 The framework-side foundation is specced from these tickets:
@@ -239,7 +270,6 @@ Still open in this wave:
   prioritization** — separate efforts. Where one constrains integration, the
   position is stated in the ticket as an input rather than re-decided here.
 - **Financial statements** — auditing, not analysis; not replaced by Insights.
-- **frappe-ui charts migration** — already in flight, needs no decision.
 - **Insights presence guarantee** (bundling, `required_apps`) — the framework
   team's decision; this map assumes presence.
 - **Unified permission-rule store** (`subject × object × action`, an Insights
