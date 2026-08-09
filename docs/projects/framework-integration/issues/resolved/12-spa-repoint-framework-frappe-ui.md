@@ -3,7 +3,7 @@
 Type: task
 Status: resolved
 Blocked by: none — can start immediately
-Spec: [spec-insights-foundation.md](../spec-insights-foundation.md), "One frappe-ui version"
+Spec: [spec-insights-foundation.md](../../spec-insights-foundation.md), "One frappe-ui version"
 
 ## What to build
 

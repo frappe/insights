@@ -4,14 +4,14 @@ Status: ready-for-agent
 Target: `apps/frappe`, framework v16, behind a site flag.
 
 This spec covers only the framework-side deliverables. The Insights-side work
-waits on tickets [03](issues/03-content-lifecycle.md) and
-[09](issues/09-desk-data-access.md) and gets its own spec.
+waits on tickets [03](issues/resolved/03-content-lifecycle.md) and
+[09](issues/resolved/09-desk-data-access.md) and gets its own spec.
 
 Sources: [map.md](map.md) and the resolved tickets
-[02](issues/02-rendering-isolation-mechanism.md),
-[04](issues/04-v1-contract-surface.md),
-[07](issues/07-runtime-version-policy.md),
-[08](issues/08-build-ownership-and-preset.md).
+[02](issues/resolved/02-rendering-isolation-mechanism.md),
+[04](issues/resolved/04-v1-contract-surface.md),
+[07](issues/resolved/07-runtime-version-policy.md),
+[08](issues/resolved/08-build-ownership-and-preset.md).
 Glossary: `CONTEXT.md` in the Insights repo ("Island" is the ratified term).
 
 ## Problem Statement

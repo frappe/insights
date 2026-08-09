@@ -1,6 +1,6 @@
 # Integration surface audit — findings
 
-Resolves: [01-integration-surface-audit](../issues/01-integration-surface-audit.md)
+Resolves: [01-integration-surface-audit](../issues/resolved/01-integration-surface-audit.md)
 Date: 2026-08-01
 Sources: insights `develop` (ff0d2b6a), frappe local checkout (branch
 `telemetry-optout-after-setup`, develop-based), upstream frappe/frappe via `gh`.

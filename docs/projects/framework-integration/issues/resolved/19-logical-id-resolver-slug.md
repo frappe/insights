@@ -3,7 +3,7 @@
 Type: task
 Status: resolved
 Blocked by: none — can start immediately
-Spec: [spec-insights-foundation.md](../spec-insights-foundation.md), "Logical ids and the resolver"
+Spec: [spec-insights-foundation.md](../../spec-insights-foundation.md), "Logical ids and the resolver"
 
 ## What to build
 

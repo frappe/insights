@@ -3,7 +3,7 @@
 Type: task
 Status: resolved
 Blocked by: 20
-Spec: [spec-insights-foundation.md](../spec-insights-foundation.md), "Authoring flows"
+Spec: [spec-insights-foundation.md](../../spec-insights-foundation.md), "Authoring flows"
 
 ## What to build
 

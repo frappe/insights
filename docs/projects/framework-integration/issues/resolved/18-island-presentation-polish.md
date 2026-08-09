@@ -3,7 +3,7 @@
 Type: task
 Status: resolved
 Blocked by: 17
-Spec: [spec-insights-foundation.md](../spec-insights-foundation.md), "Island presentation and the desk-page split"
+Spec: [spec-insights-foundation.md](../../spec-insights-foundation.md), "Island presentation and the desk-page split"
 
 ## What to build
 

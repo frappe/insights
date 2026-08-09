@@ -19,9 +19,9 @@ amends [spec-insights-foundation.md](spec-insights-foundation.md) where the
 two conflict — see Further Notes for the superseded pins.
 
 Sources: the resolved tickets
-[24](issues/24-shipping-unit-bundle-or-workbook.md) (shipping unit),
-[25](issues/25-workbook-item-list-model.md) (item lists),
-[26](issues/26-viewer-seat-role.md) (viewer seat).
+[24](issues/resolved/24-shipping-unit-bundle-or-workbook.md) (shipping unit),
+[25](issues/resolved/25-workbook-item-list-model.md) (item lists),
+[26](issues/resolved/26-viewer-seat-role.md) (viewer seat).
 Glossary: `CONTEXT.md` — Standard workbook, Standard content, and Standard ID
 are ratified terms; "Bundle" and "logical id" are retired.
 
@@ -266,7 +266,7 @@ cases, and the rename itself gets a gate.
 - Every open ticket. Checked 2026-08-07: none blocks this reshape.
   [06](issues/06-vue-app-embed-ux.md) is deliberately last and blocked by 04
   and 05; [10](issues/10-site-customization-of-shipped-content.md) resolves
-  behind the resolver; [11](issues/11-drill-down-interaction.md) runs in
+  behind the resolver; [11](issues/resolved/11-drill-down-interaction.md) runs in
   parallel by its own note; [28](issues/28-runtime-version-authority.md) is a
   lockfile question whose fix lives in the framework repo; and
   [29](issues/29-host-ambient-for-islands.md) is the island envelope, which

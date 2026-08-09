@@ -58,28 +58,28 @@ Decided while charting, before tickets existed:
 
 Resolved tickets:
 
-- [Integration surface audit](issues/01-integration-surface-audit.md) — public-flag sharing + bare iframe shipped in Insights (no tokens, no embed SDK, no custom-block code yet); framework side: vue-islands parked in PR frappe#39773, `@framework/ui` shipped without charts, DuckDB snapshot sync merged (Report-only), desk dashboards still render frappe-charts via `chart_widget`.
-- [Full-page mount mechanism for desk](issues/02-rendering-isolation-mechanism.md) — one mechanism at every granularity: dashboards and single charts both mount as Vue islands in a shadow root via framework's `mountVueIsland`. Iframe rejected (overlays can't escape the frame); vanilla/headless rejected (drill-down would mean a second UI on desk primitives). Requires Vue and frappe-ui to be framework-provided page singletons.
-- [Runtime version policy](issues/07-runtime-version-policy.md) — framework's lockfile is the version authority for the whole runtime closure (Vue + frappe-ui + everything it drags in); versions reconcile at build time, so runtime skew is unreachable; within a framework major the runtime surface is append-only, so an Insights release just targets a major; the rule is "one framework runtime per page", loadable in desk and Vue-frontend apps alike. The runtime artifact itself doesn't exist yet — a framework deliverable for the build ticket.
-- [Build ownership and island preset](issues/08-build-ownership-and-preset.md) — apps own their island builds; framework publishes an npm-installable Vite preset plus the runtime artifacts. Islands are native ESM linked through a desk-emitted import map (the convergence path for Vue-frontend apps); the generic enforcement is a per-entry size budget, import-boundary lint stays app-local; CSS splits like the JS — one shared runtime sheet via `adoptedStyleSheets`, islands ship only their own utilities; dev loop is preset watch + `hot_update` soft re-mount.
-- [Mount and renderer API](issues/04-v1-contract-surface.md) — islands are hook-declared (`ui_islands`) and mounted through one generic `frappe.ui.mount_island(name, el, context)`; the envelope is structured by ownership (`host` framework-injected ambient, `props`/`on` island-specific, generic `update`/`unmount` handle, `configure(app)` fixes the app-config gap); references are logical ids (`{app}/{name}` for shipped content, resolved by Insights — hash docnames never cross the boundary); the renderer toggle is one framework-owned bridge that retires without an Insights release. "Island" is the ratified term, in `CONTEXT.md`.
-- [Content lifecycle: author → ship → customize](issues/03-content-lifecycle.md) — one shipping channel: apps ship bundles of typed named documents (`insights/<bundle>/`, one JSON per query/chart/dashboard, logical-name references, workbook stays out of the format), synced as read-only standard docs via declarative reconcile; authoring = builder + "Export to app" + developer-mode round-trip, released through git; one append-only format major in `bundle.json`; template import-a-copy machinery retires. Customization split out to [Site customization of shipped content](issues/10-site-customization-of-shipped-content.md) with Duplicate as the interim floor.
-- [Data access for desk-rendered content](issues/09-desk-data-access.md) — three-axis model (authoring / visibility / data authority), semantics only, store-agnostic. The gate is a visibility ladder (`Private | Specific Roles | Everyone | Public`) declared as fields on chart and dashboard, enforced through one `frappe.has_permission` seam — no `Insights User` role in the viewing path. `data_authority: Viewer | Author` defaults to `Viewer`, doc-declared, engine-enforced. Viewing implies no Insights access. Drill-down exposes the chart's query rows under the chart's authority, never the query definition.
-- [Desk dashboard page UX](issues/05-desk-dashboard-page-ux.md) — viewer-first page rendering Insights dashboards only (legacy widgets never enter the island; legacy page stays behind the flag). Entry: workspace sidebar items + one route, `/app/dashboard-view/<reference>` — the existing desk dashboard route, so existing links upgrade in place (docname stays hash, slug editable, internal references stay on logical ids). Edit = "Edit in Insights" new-tab, rights-gated; "Duplicate to edit" for shipped. Per-card async states; denied leaks no existence. Drill split to [Drill-down interaction](issues/11-drill-down-interaction.md) as a common Insights+desk layer; prototype dropped as already-proven.
-- [Shipping unit: bundle, or shipped workbook?](issues/24-shipping-unit-bundle-or-workbook.md)
+- [Integration surface audit](issues/resolved/01-integration-surface-audit.md) — public-flag sharing + bare iframe shipped in Insights (no tokens, no embed SDK, no custom-block code yet); framework side: vue-islands parked in PR frappe#39773, `@framework/ui` shipped without charts, DuckDB snapshot sync merged (Report-only), desk dashboards still render frappe-charts via `chart_widget`.
+- [Full-page mount mechanism for desk](issues/resolved/02-rendering-isolation-mechanism.md) — one mechanism at every granularity: dashboards and single charts both mount as Vue islands in a shadow root via framework's `mountVueIsland`. Iframe rejected (overlays can't escape the frame); vanilla/headless rejected (drill-down would mean a second UI on desk primitives). Requires Vue and frappe-ui to be framework-provided page singletons.
+- [Runtime version policy](issues/resolved/07-runtime-version-policy.md) — framework's lockfile is the version authority for the whole runtime closure (Vue + frappe-ui + everything it drags in); versions reconcile at build time, so runtime skew is unreachable; within a framework major the runtime surface is append-only, so an Insights release just targets a major; the rule is "one framework runtime per page", loadable in desk and Vue-frontend apps alike. The runtime artifact itself doesn't exist yet — a framework deliverable for the build ticket.
+- [Build ownership and island preset](issues/resolved/08-build-ownership-and-preset.md) — apps own their island builds; framework publishes an npm-installable Vite preset plus the runtime artifacts. Islands are native ESM linked through a desk-emitted import map (the convergence path for Vue-frontend apps); the generic enforcement is a per-entry size budget, import-boundary lint stays app-local; CSS splits like the JS — one shared runtime sheet via `adoptedStyleSheets`, islands ship only their own utilities; dev loop is preset watch + `hot_update` soft re-mount.
+- [Mount and renderer API](issues/resolved/04-v1-contract-surface.md) — islands are hook-declared (`ui_islands`) and mounted through one generic `frappe.ui.mount_island(name, el, context)`; the envelope is structured by ownership (`host` framework-injected ambient, `props`/`on` island-specific, generic `update`/`unmount` handle, `configure(app)` fixes the app-config gap); references are logical ids (`{app}/{name}` for shipped content, resolved by Insights — hash docnames never cross the boundary); the renderer toggle is one framework-owned bridge that retires without an Insights release. "Island" is the ratified term, in `CONTEXT.md`.
+- [Content lifecycle: author → ship → customize](issues/resolved/03-content-lifecycle.md) — one shipping channel: apps ship bundles of typed named documents (`insights/<bundle>/`, one JSON per query/chart/dashboard, logical-name references, workbook stays out of the format), synced as read-only standard docs via declarative reconcile; authoring = builder + "Export to app" + developer-mode round-trip, released through git; one append-only format major in `bundle.json`; template import-a-copy machinery retires. Customization split out to [Site customization of shipped content](issues/10-site-customization-of-shipped-content.md) with Duplicate as the interim floor.
+- [Data access for desk-rendered content](issues/resolved/09-desk-data-access.md) — three-axis model (authoring / visibility / data authority), semantics only, store-agnostic. The gate is a visibility ladder (`Private | Specific Roles | Everyone | Public`) declared as fields on chart and dashboard, enforced through one `frappe.has_permission` seam — no `Insights User` role in the viewing path. `data_authority: Viewer | Author` defaults to `Viewer`, doc-declared, engine-enforced. Viewing implies no Insights access. Drill-down exposes the chart's query rows under the chart's authority, never the query definition.
+- [Desk dashboard page UX](issues/resolved/05-desk-dashboard-page-ux.md) — viewer-first page rendering Insights dashboards only (legacy widgets never enter the island; legacy page stays behind the flag). Entry: workspace sidebar items + one route, `/app/dashboard-view/<reference>` — the existing desk dashboard route, so existing links upgrade in place (docname stays hash, slug editable, internal references stay on logical ids). Edit = "Edit in Insights" new-tab, rights-gated; "Duplicate to edit" for shipped. Per-card async states; denied leaks no existence. Drill split to [Drill-down interaction](issues/resolved/11-drill-down-interaction.md) as a common Insights+desk layer; prototype dropped as already-proven.
+- [Shipping unit: bundle, or shipped workbook?](issues/resolved/24-shipping-unit-bundle-or-workbook.md)
   — the shipping unit is the workbook; "bundle" dies. Manifest becomes
   `workbook.json` (same keys); `Insights Workbook` carries `standard_id` +
   `is_standard` and syncs as the fourth reconciled doctype; the folder name is
   promoted to workbook identity; a standard workbook admits only standard items,
   so the container site global and its cleanup machinery die via patch. Renames
   `logical_id` → `standard_id` everywhere (amends ticket 04's vocabulary).
-- [Workbook item lists: stored or derived?](issues/25-workbook-item-list-model.md)
+- [Workbook item lists: stored or derived?](issues/resolved/25-workbook-item-list-model.md)
   — derived, permanently; ratified rather than built (the server had already
   moved via `normalize_workbook.py` + the `as_dict` derivation). Ordering
   authority is `sort_order`/`folder` on items; lists ride the workbook fetch.
   The client-side residue (title mirror, index routes, reload-after-duplicate)
   is non-gating debt handed to the parked workbook-state-model effort.
-- [The viewer seat: an Insights Viewer role?](issues/26-viewer-seat-role.md)
+- [The viewer seat: an Insights Viewer role?](issues/resolved/26-viewer-seat-role.md)
   — rejected. The seat means authoring (`check_app_permission` gates the
   builder SPA, never viewing); the ladder permanently owns audience on every
   surface; `Everyone` deliberately means any signed-in site user, with
@@ -88,7 +88,7 @@ Resolved tickets:
   for the parked unified-permission-store effort: the table as its read-side
   starting spec, and team resource grants on content doctypes as a retirement
   candidate.
-- [Who draws the desk page head?](issues/30-desk-page-head-ownership.md) — the
+- [Who draws the desk page head?](issues/resolved/30-desk-page-head-ownership.md) — the
   island owns the whole desk page and desk draws no head on that route. Three
   findings decided it: desk's breadcrumbs are page-head markup (`page.html`), not
   navbar chrome; v16 already moved global chrome to the workspace dock (logo,
@@ -97,7 +97,7 @@ Resolved tickets:
   Framework gains `Page.toggle_page_head(show)`; `host` gains `breadcrumbs`
   (ancestors only), `navigate` and `set_title`. No island→shell channel was
   built — the island draws its own title. Amends ticket 05's page layout.
-- [Who derives a chart's query?](issues/27-chart-query-derivation-owner.md) —
+- [Who derives a chart's query?](issues/resolved/27-chart-query-derivation-owner.md) —
   the server, from `config`, at execution time; nothing persisted (option 4).
   Preview already round-trips, so derivation moves to the other end of an
   existing call: one endpoint family, chart name or inline config in, rows plus
@@ -107,7 +107,7 @@ Resolved tickets:
   `<chart>_data.json`, which leaves the format before it freezes. Route:
   parity-proven Python deriver → read paths switch → preview endpoint +
   client derivation deleted → retirement patch.
-- [One dashboard renderer, one chart renderer](issues/31-one-dashboard-one-chart-renderer.md)
+- [One dashboard renderer, one chart renderer](issues/resolved/31-one-dashboard-one-chart-renderer.md)
   — the viewer is the foundation; the builder becomes a viewer that can also
   write. `useViewerChart` generalizes into the one chart-read store (saved-name
   feed and inline-config feed); the `Chart`-aggregate adapter and `chart.ts`'s
@@ -118,7 +118,7 @@ Resolved tickets:
   ladder, so the public page needs no permission work — only the preview-image
   key moves into the controller. Order: shared/public first, SPA read page,
   builder last riding ticket 27 step 3.
-- [What does Insights adopt from frappe-ui charts v2?](issues/32-charts-v2-adoption.md)
+- [What does Insights adopt from frappe-ui charts v2?](issues/resolved/32-charts-v2-adoption.md)
   — the seam cuts at the layer, not at the chart type. v2 chrome (`ChartCard`,
   `ChartContainer`, `ChartLegend`, `ChartTooltip`, states) dresses every Insights
   chart, Table and Map included; only the plot slot varies, between a v2
@@ -130,9 +130,11 @@ Resolved tickets:
   because v2's `series` grouping takes a single `y`. frappe-ui's
   `spec/charts-scope.md` is the membership authority, and it rules Table and Map
   out of v2 on the model — which is what makes the plot slot permanent rather
-  than a staging area. ADR-0001's "Blocked on" section is obsolete and needs
-  amending.
-- [Drill-down interaction](issues/11-drill-down-interaction.md) — one drill
+  than a staging area. ADR-0001's "Blocked on" section was obsolete and is now
+  amended. Specced as [spec-charts-v2.md](spec-charts-v2.md)
+  (`ready-for-agent`), which branches `feat/charts-v2` off `develop` rather than
+  riding the foundation branch.
+- [Drill-down interaction](issues/resolved/11-drill-down-interaction.md) — one drill
   experience on every surface (viewer, desk island, builder preview);
   `DrillDown.vue` retires. Every segment click reduces to segment filters;
   entry is a two-item menu (View records / Break down by →, candidates = the
@@ -162,18 +164,18 @@ Tickets 12–23 built the Insights-side and SPA-side foundation the specs above
 called for. Implementation tasks, not decisions — one line per ticket for what
 shipped, not how:
 
-- [Repoint the SPA at framework's frappe-ui](issues/12-spa-repoint-framework-frappe-ui.md) — `frontend/package.json` links frappe-ui from the framework checkout (branch `desk-islands`); production and dev builds work with one frappe-ui in the graph.
-- [Navigation seam: decouple the viewer graph from the SPA router](issues/13-navigation-seam-router-decoupling.md) — the chart and dashboard stores resolve navigation through an injected `helpers/navigation` seam; an app-local ESLint boundary keeps the router and the workbook store out of the viewer graph.
-- [Tracer bullet: a minimal `insights.chart` island](issues/14-chart-island-tracer.md) — the first island builds, registers under `ui_islands`, and mounts a chart in a shadow root on a desk page, live theme switch and idempotent unmount included.
-- [Visibility ladder](issues/15-visibility-ladder.md) — `visibility`/`visible_to_roles` on chart and dashboard, enforced as one grant source inside `InsightsPermissions`; `is_public` migrates onto the `Public` rung.
-- [Data authority](issues/16-data-authority.md) — `data_authority: Viewer | Author` on `Insights Chart v3`, read off the stored document and enforced in `InsightsTablev3.get_ibis_table`; no wire parameter can override it.
-- [Dashboard island and viewer endpoints](issues/17-dashboard-island-viewer-endpoints.md) — role-free viewer endpoints serve dashboard, chart, and chart data by resolver reference; the `insights.dashboard` island renders the saved grid with per-card skeletons.
-- [Island presentation: the full viewer UX](issues/18-island-presentation-polish.md) — sticky filter bar, freshness/refresh, per-card empty/error states, the quiet denied state, and the rights-gated "Edit in Insights" menu.
-- [Logical-id resolver and slug](issues/19-logical-id-resolver-slug.md) — `insights/resolver.py` resolves logical id, slug, or docname to a document, with a denied read indistinguishable from an unknown reference.
-- [Bundle shipping and declarative reconcile](issues/20-bundle-shipping-reconcile.md) — `insights/bundles.py` reconciles an app's `insights/<bundle>/` folders into standard documents on migrate and app-install, idempotently.
-- [Export to app and the developer-mode round-trip](issues/21-export-to-app-roundtrip.md) — "Export to app…" in the workbook menu writes a dashboard's closure into a bundle; a developer-mode save on a standard doc writes back to the same file.
-- [Duplicate to edit](issues/22-duplicate-to-edit.md) — the v1 customization floor: duplicating a shipped dashboard copies its closure into a private, user-owned workbook.
-- [Template migration and glossary](issues/23-template-migration-glossary.md) — the four ERPNext templates re-ship as bundles; the version/checksum update channel and the import ceremony retire; `CONTEXT.md` gains Bundle, Standard content, and Slug.
+- [Repoint the SPA at framework's frappe-ui](issues/resolved/12-spa-repoint-framework-frappe-ui.md) — `frontend/package.json` links frappe-ui from the framework checkout (branch `desk-islands`); production and dev builds work with one frappe-ui in the graph.
+- [Navigation seam: decouple the viewer graph from the SPA router](issues/resolved/13-navigation-seam-router-decoupling.md) — the chart and dashboard stores resolve navigation through an injected `helpers/navigation` seam; an app-local ESLint boundary keeps the router and the workbook store out of the viewer graph.
+- [Tracer bullet: a minimal `insights.chart` island](issues/resolved/14-chart-island-tracer.md) — the first island builds, registers under `ui_islands`, and mounts a chart in a shadow root on a desk page, live theme switch and idempotent unmount included.
+- [Visibility ladder](issues/resolved/15-visibility-ladder.md) — `visibility`/`visible_to_roles` on chart and dashboard, enforced as one grant source inside `InsightsPermissions`; `is_public` migrates onto the `Public` rung.
+- [Data authority](issues/resolved/16-data-authority.md) — `data_authority: Viewer | Author` on `Insights Chart v3`, read off the stored document and enforced in `InsightsTablev3.get_ibis_table`; no wire parameter can override it.
+- [Dashboard island and viewer endpoints](issues/resolved/17-dashboard-island-viewer-endpoints.md) — role-free viewer endpoints serve dashboard, chart, and chart data by resolver reference; the `insights.dashboard` island renders the saved grid with per-card skeletons.
+- [Island presentation: the full viewer UX](issues/resolved/18-island-presentation-polish.md) — sticky filter bar, freshness/refresh, per-card empty/error states, the quiet denied state, and the rights-gated "Edit in Insights" menu.
+- [Logical-id resolver and slug](issues/resolved/19-logical-id-resolver-slug.md) — `insights/resolver.py` resolves logical id, slug, or docname to a document, with a denied read indistinguishable from an unknown reference.
+- [Bundle shipping and declarative reconcile](issues/resolved/20-bundle-shipping-reconcile.md) — `insights/bundles.py` reconciles an app's `insights/<bundle>/` folders into standard documents on migrate and app-install, idempotently.
+- [Export to app and the developer-mode round-trip](issues/resolved/21-export-to-app-roundtrip.md) — "Export to app…" in the workbook menu writes a dashboard's closure into a bundle; a developer-mode save on a standard doc writes back to the same file.
+- [Duplicate to edit](issues/resolved/22-duplicate-to-edit.md) — the v1 customization floor: duplicating a shipped dashboard copies its closure into a private, user-owned workbook.
+- [Template migration and glossary](issues/resolved/23-template-migration-glossary.md) — the four ERPNext templates re-ship as bundles; the version/checksum update channel and the import ceremony retire; `CONTEXT.md` gains Bundle, Standard content, and Slug.
 
 ## Second wave — 2026-08-06
 
@@ -274,10 +276,10 @@ Still open in this wave:
   team's decision; this map assumes presence.
 - **Unified permission-rule store** (`subject × object × action`, an Insights
   permission-model overhaul with a possible framework RFC) — its own future
-  effort. The [desk data access](issues/09-desk-data-access.md) decision is
+  effort. The [desk data access](issues/resolved/09-desk-data-access.md) decision is
   store-agnostic behind the `has_permission` seam, so the store can land
   without touching the integration contract. Recorded requirements and inputs:
   role-based edit grants; the grant-source table from
-  [ticket 26](issues/26-viewer-seat-role.md) as the read-side starting spec;
+  [ticket 26](issues/resolved/26-viewer-seat-role.md) as the read-side starting spec;
   team resource grants on content doctypes as a retirement candidate (teams
   govern data objects only).

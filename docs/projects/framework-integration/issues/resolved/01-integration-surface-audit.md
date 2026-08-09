@@ -34,7 +34,7 @@ answer summarized here.
 
 ## Answer
 
-Full findings: [research/integration-surface-audit.md](../research/integration-surface-audit.md)
+Full findings: [research/integration-surface-audit.md](../../research/integration-surface-audit.md)
 
 - Insights sharing is shipped and flag-based: `is_public` on chart/dashboard,
   `/shared/{chart,dashboard}/<name>` src2 routes, guest execution through

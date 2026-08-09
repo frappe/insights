@@ -20,6 +20,11 @@ Don't create or triage GitHub issues unless explicitly asked.
 - Implementation issues are one file per ticket at
   `docs/projects/<effort-slug>/issues/<NN>-<slug>.md`, numbered from `01` —
   never a single combined tickets file
+- A resolved ticket moves to `docs/projects/<effort-slug>/issues/resolved/`.
+  The filename does not change, so the number keeps its meaning. `issues/`
+  therefore lists the open work and nothing else. Fix the relative links when
+  you move a file: links inside the ticket gain one `../`, and links to the
+  ticket gain `resolved/`
 - Every ticket carries a `Status:` line near the top. Wayfinder tickets use
   `claimed` and `resolved` (see *Wayfinding operations*). Tickets raised from an
   incoming GitHub issue use the triage roles instead: `needs-triage`,
@@ -51,16 +56,18 @@ the path or the number the user passed.
 Used by `/wayfinder`. The **map** is a file with one **child** file per ticket.
 
 - **Map**: `docs/projects/<effort>/map.md` — the Notes / Decisions-so-far / Fog body.
-- **Child ticket**: `docs/projects/<effort>/issues/NN-<slug>.md`, numbered from `01`,
+- **Child ticket**: `docs/projects/<effort>/issues/NN-<slug>.md` while open,
+  `docs/projects/<effort>/issues/resolved/NN-<slug>.md` once resolved, numbered from `01`,
   with the question in the body. A `Type:` line records the ticket type
   (`research`/`prototype`/`grilling`/`task`); a `Status:` line records `claimed`/`resolved`.
 - **Blocking**: a `Blocked by: NN, NN` line near the top. A ticket is unblocked
-  when every file it lists is `resolved`.
-- **Frontier**: scan `docs/projects/<effort>/issues/` for files that are open,
-  unblocked, and unclaimed; first by number wins.
+  when every number it lists sits in `issues/resolved/`.
+- **Frontier**: scan `docs/projects/<effort>/issues/` — the top level only, not
+  `resolved/` — for files that are unblocked and unclaimed; first by number wins.
 - **Claim**: set `Status: claimed` and save before any work.
 - **Resolve**: append the answer under an `## Answer` heading, set `Status: resolved`,
-  then append a context pointer (gist + link) to the map's Decisions-so-far in `map.md`.
+  move the file to `issues/resolved/`, then append a context pointer (gist + link)
+  to the map's Decisions-so-far in `map.md`.
   Add the ADR filename to that pointer once the decision reaches `docs/adr/`. An
   entry with no filename marks reasoning that still has to be distilled before
   the branch merges.

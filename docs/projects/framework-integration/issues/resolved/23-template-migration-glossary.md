@@ -3,7 +3,7 @@
 Type: task
 Status: resolved
 Blocked by: 21, 22
-Spec: [spec-insights-foundation.md](../spec-insights-foundation.md), "Migration"
+Spec: [spec-insights-foundation.md](../../spec-insights-foundation.md), "Migration"
 
 ## What to build
 

@@ -3,7 +3,7 @@
 Type: task
 Status: resolved
 Blocked by: 19
-Spec: [spec-insights-foundation.md](../spec-insights-foundation.md), "Bundle format and shipping" and "Sync: declarative reconcile"
+Spec: [spec-insights-foundation.md](../../spec-insights-foundation.md), "Bundle format and shipping" and "Sync: declarative reconcile"
 
 ## What to build
 

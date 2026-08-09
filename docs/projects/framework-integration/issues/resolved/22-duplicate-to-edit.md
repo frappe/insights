@@ -3,7 +3,7 @@
 Type: task
 Status: resolved
 Blocked by: 17, 20
-Spec: [spec-insights-foundation.md](../spec-insights-foundation.md), "Customization floor"
+Spec: [spec-insights-foundation.md](../../spec-insights-foundation.md), "Customization floor"
 
 ## What to build
 

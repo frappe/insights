@@ -76,7 +76,7 @@ acknowledged debt. The real model (and the fork-resolution policy the
 moves to a new grilling ticket,
 [Site customization of shipped content](10-site-customization-of-shipped-content.md),
 carrying as inputs: the
-[overlay-prior-art research](../research/03-customization-overlay-prior-art.md)
+[overlay-prior-art research](../../research/03-customization-overlay-prior-art.md)
 (verdict: item-keyed overlay is bounded under four rules — vendor-owned keys,
 per-key replace, silent orphan skip, declared surface — with ordering/layout
 as the proven danger zone) and the candidate design (site overlay shadowing

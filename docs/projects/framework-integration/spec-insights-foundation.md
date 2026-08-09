@@ -9,13 +9,13 @@ effort. The framework-side foundation is
 builds on its contract and never restates it.
 
 Sources: [map.md](map.md) and the resolved tickets
-[03](issues/03-content-lifecycle.md) (content lifecycle),
-[04](issues/04-v1-contract-surface.md) (mount and renderer API),
-[05](issues/05-desk-dashboard-page-ux.md) (desk dashboard page UX),
-[09](issues/09-desk-data-access.md) (desk data access).
+[03](issues/resolved/03-content-lifecycle.md) (content lifecycle),
+[04](issues/resolved/04-v1-contract-surface.md) (mount and renderer API),
+[05](issues/resolved/05-desk-dashboard-page-ux.md) (desk dashboard page UX),
+[09](issues/resolved/09-desk-data-access.md) (desk data access).
 Ticket [10](issues/10-site-customization-of-shipped-content.md) is open —
 Duplicate is the ratified interim customization floor. Ticket
-[11](issues/11-drill-down-interaction.md) is open — drill-down is an open
+[11](issues/resolved/11-drill-down-interaction.md) is open — drill-down is an open
 seam, reserved but not designed here.
 Glossary: `CONTEXT.md` (Island, Visibility, Data Authority are ratified terms).
 

@@ -3,7 +3,7 @@
 Type: task
 Status: resolved
 Blocked by: none — can start immediately
-Spec: [spec-insights-foundation.md](../spec-insights-foundation.md), "Island entries and router decoupling"
+Spec: [spec-insights-foundation.md](../../spec-insights-foundation.md), "Island entries and router decoupling"
 
 ## What to build
 

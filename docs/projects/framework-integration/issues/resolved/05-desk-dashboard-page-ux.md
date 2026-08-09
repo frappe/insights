@@ -79,7 +79,7 @@ which may prototype the dialog with a mocked engine.
 ## Comments
 
 2026-08-05 — the Insights-side spec
-([spec-insights-foundation.md](../spec-insights-foundation.md)) revises the
+([spec-insights-foundation.md](../../spec-insights-foundation.md)) revises the
 route decision. The two route forms (`/app/dashboard/<app>/<name>` shipped,
 `/app/dashboard/<slug>` site-authored) are replaced by a deferred choice:
 every dashboard carries a slug (shipped slugs assigned at sync from the

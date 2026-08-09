@@ -8,8 +8,8 @@ reverse of the one feared: this spec deleted code the reshape would otherwise
 have had to rename.
 
 Sources: the resolved tickets
-[27](issues/27-chart-query-derivation-owner.md) (query derivation owner) and
-[31](issues/31-one-dashboard-one-chart-renderer.md) (one dashboard renderer).
+[27](issues/resolved/27-chart-query-derivation-owner.md) (query derivation owner) and
+[31](issues/resolved/31-one-dashboard-one-chart-renderer.md) (one dashboard renderer).
 Glossary: `CONTEXT.md` — Standard content, viewer, island, visibility ladder,
 data authority.
 
