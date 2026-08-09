@@ -3,6 +3,7 @@ import { ellipsis, formatNumber, getShortNumber, toTitleCase } from '../helpers'
 import { FIELDTYPES, isCalendarDateType } from '../helpers/constants'
 import { getFormattedDate } from '../query/helpers'
 import {
+	AXIS_CHARTS,
 	AxisChartConfig,
 	BarChartConfig,
 	BubbleChartConfig,
@@ -1335,6 +1336,25 @@ export function handleOldYAxisConfig(old_y_axis: any): AxisChartConfig['y_axis']
 		}
 	}
 	return old_y_axis
+}
+
+// Every chart type reads a fixed set of slots off the config, and the validator and the
+// option builders reach into them without guarding. A type switch replaces the config
+// wholesale, so the incoming type's slots have to exist before anything reads them.
+export function ensureConfigSlots(config: any, chart_type: string) {
+	if (AXIS_CHARTS.includes(chart_type)) {
+		config.x_axis = config.x_axis || {}
+		config.x_axis.dimension = config.x_axis.dimension || {}
+		config.y_axis = config.y_axis || {}
+		config.y_axis.series = config.y_axis.series || []
+	}
+
+	if (chart_type === 'Map') {
+		config.location_column = config.location_column || {}
+		config.value_column = config.value_column || {}
+	}
+
+	return config
 }
 
 export function setDimensionNames(config: any) {
