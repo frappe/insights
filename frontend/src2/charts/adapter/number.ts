@@ -59,7 +59,8 @@ function readingOf(
 	const percent = measure.format === 'percent'
 
 	// Set per value, falling back to what the Chart set for all of them. `color`
-	// has nowhere to go: v2 prints one reading in one ink.
+	// is per value alone: it is the ink of one reading, and a Chart that colored
+	// every reading the same has said nothing.
 	const options = config.number_column_options?.[index] || {}
 	const prefix = options.prefix ?? config.prefix
 	const suffix = options.suffix ?? config.suffix
@@ -71,6 +72,7 @@ function readingOf(
 		title: column,
 		value: latest !== null && percent ? latest * 100 : latest,
 	}
+	if (options.color) card.color = options.color
 	if (prefix) card.prefix = prefix
 	const unit = percent ? `%${suffix || ''}` : suffix
 	if (unit) card.suffix = unit

@@ -42,6 +42,17 @@ describe('a bubble chart', () => {
 		expect(props.series).toBeUndefined()
 	})
 
+	it('prints each point’s own name beside it when the Chart asks', () => {
+		// The name column, not a measure: both measures are on the axes already.
+		const props = propsOf({ x: 'revenue', y: 'profit', label: 'category', dataLabels: true })
+		expect(props.showDataLabels).toBe(true)
+		expect(props.label).toBe('category')
+	})
+
+	it('prints none by default', () => {
+		expect(propsOf({ x: 'revenue', y: 'profit', label: 'category' }).showDataLabels).toBeUndefined()
+	})
+
 	it('draws nothing until the Chart names both Measures', () => {
 		expect(adaptChart(bubbleChart({ x: '', y: 'profit' }))).toBeUndefined()
 		expect(adaptChart(bubbleChart({ x: 'revenue', y: '' }))).toBeUndefined()

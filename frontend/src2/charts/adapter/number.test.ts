@@ -69,6 +69,19 @@ describe('how a reading is printed', () => {
 		expect(cards[1].precision).toBe(0)
 	})
 
+	it('prints a value in the ink it was given, and only that value', () => {
+		// One color for one reading: it is the ink of the number, not a restyle of
+		// the card it stands in.
+		const cards = cardsOf({
+			values: [
+				{ name: 'Revenue', readings: [100], color: '#2490EF' },
+				{ name: 'Items', readings: [7] },
+			],
+		})
+		expect(cards[0].color).toBe('#2490EF')
+		expect(cards[1].color).toBeUndefined()
+	})
+
 	it('scales a Measure that holds a fraction and states the unit', () => {
 		// v2 prints a number; what the number means stays the caller's.
 		const card = cardsOf({ values: [{ name: 'Margin', readings: [0.42], percent: true }] })[0]

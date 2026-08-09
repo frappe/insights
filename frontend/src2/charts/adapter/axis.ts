@@ -58,12 +58,6 @@ function adaptAxisChart(
 	if (!columns.length) return
 
 	const y_axis = config.y_axis
-	// A horizontal bar chart runs its value axis across the plot and draws only
-	// one, so a Series aligned right is measured against the same scale as the rest.
-	const onSecondAxis = (column: string) =>
-		!horizontal && seriesFor(config, column)?.align === 'Right'
-	const y = columns.filter((column) => !onSecondAxis(column))
-	const y2 = columns.filter(onSecondAxis)
 
 	const seriesConfig: Record<string, SeriesStyle> = {}
 	for (const column of columns) {
@@ -79,10 +73,12 @@ function adaptAxisChart(
 		title: input.title,
 		data: input.result.rows,
 		x,
-		y,
+		// Every value column, in the order the result carries them. Series colors
+		// are handed out along this list, so the scale a Series is read on is said
+		// in `seriesConfig` rather than by moving it.
+		y: columns,
 		xAxis: xAxisFor(dimension),
 	}
-	if (y2.length) props.y2 = y2
 	if (Object.keys(seriesConfig).length) props.seriesConfig = seriesConfig
 	if (horizontal) props.horizontal = true
 
@@ -140,6 +136,11 @@ function styleFor(
 	if (type !== mark) style.type = type
 
 	if (series?.color?.[0]) style.color = series.color[0]
+
+	// A horizontal bar chart runs its value axis across the plot and draws only
+	// one, so v2 reads every series against the primary there. Nothing here asks
+	// which way the bars run: knowing it twice is how the two answers drift apart.
+	if (series?.align === 'Right') style.axis = 'y2'
 
 	const showDataLabels = series?.show_data_labels ?? config.y_axis?.show_data_labels
 	if (showDataLabels) style.showDataLabels = true

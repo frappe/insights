@@ -28,6 +28,10 @@ export function adaptBubbleChart(input: ChartAdapterInput): ChartFiller | undefi
 	const label = config.dimension?.dimension_name || config.dimension?.column_name
 	if (label) props.label = label
 
+	// The name beside the point, not a measure: both measures are already on the
+	// axes. A Chart that asks for labels and names no column is told so by v2.
+	if (config.show_data_labels) props.showDataLabels = true
+
 	// Coloring the points by a Dimension is grouping them by it, which is what a
 	// series is. The Insights name says what the groups were meant to read as.
 	const series = config.quadrant_column?.dimension_name || config.quadrant_column?.column_name

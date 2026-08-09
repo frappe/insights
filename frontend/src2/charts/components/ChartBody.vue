@@ -142,14 +142,7 @@ async function drillDownInto(target: DrillDownTarget | undefined | null) {
 		</div>
 
 		<div class="min-h-0 w-full flex-1">
-			<!-- a card still filling in is a placeholder to a reader, not a message:
-			     a dashboard fills in card by card and the grid should hold its shape -->
-			<div
-				v-if="state === 'loading' && props.readonly"
-				class="h-full w-full animate-pulse rounded-7 border border-outline-gray-1 bg-surface-gray-2"
-			/>
-
-			<ChartCard v-else class="h-full">
+			<ChartCard class="h-full">
 				<component
 					v-if="state === 'chart' && filler"
 					:is="filler.component"
@@ -157,6 +150,9 @@ async function drillDownInto(target: DrillDownTarget | undefined | null) {
 					v-on="fillerEvents"
 				/>
 
+				<!-- Every state but the picture. `#loading` is left alone: v2 draws a
+				     skeleton the size of the plot, which is what a card still filling
+				     in should read as to a reader and to an author alike. -->
 				<ChartContainer
 					v-else
 					:title="chart.doc.title"

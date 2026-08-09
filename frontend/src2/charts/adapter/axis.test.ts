@@ -211,20 +211,31 @@ describe('the second value axis', () => {
 			dimension: 'region',
 			measures: ['revenue', { name: 'margin_rate', mark: 'line', axis: 'right' }],
 		})
-		expect(props.y).toEqual(['revenue'])
-		expect(props.y2).toEqual(['margin_rate'])
+		expect(props.seriesConfig.margin_rate.axis).toBe('y2')
 	})
 
-	it('keeps every series on one axis when the chart draws only one', () => {
+	it('leaves a Series where it stands when it changes axis', () => {
+		// The series are drawn and colored in `y` order, so a Series that moved
+		// down the list to reach the second axis would change color on the way.
+		const props = propsOf({
+			type: 'Bar',
+			dimension: 'region',
+			measures: [{ name: 'margin_rate', axis: 'right' }, 'revenue'],
+		})
+		expect(props.y).toEqual(['margin_rate', 'revenue'])
+	})
+
+	it('says the same for a row chart, whose one value axis is v2’s business', () => {
 		// A row chart runs its value axis across the plot; a second one along the
-		// other edge is unreadable, so v2 draws none.
+		// other edge is unreadable, so v2 draws none and reads every series against
+		// the primary. The adapter that knew this too was a second place to keep it.
 		const props = propsOf({
 			type: 'Row',
 			dimension: 'region',
 			measures: ['revenue', { name: 'margin_rate', axis: 'right' }],
 		})
 		expect(props.y).toEqual(['revenue', 'margin_rate'])
-		expect(props.y2).toBeUndefined()
+		expect(props.seriesConfig.margin_rate.axis).toBe('y2')
 	})
 })
 
