@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Icon } from 'frappe-ui/icons'
+import { Icon } from 'frappe-ui/experimental'
 import { computed } from 'vue'
 import { FIELDTYPES, FilterType } from '../helpers/constants'
 import DataTypeIcon from '../query/components/DataTypeIcon.vue'

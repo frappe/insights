@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Button, Dialog, call } from 'frappe-ui'
-import { useTelemetry } from 'frappe-ui/frappe'
+import { useTelemetry } from '@framework/ui/telemetry/index.ts'
 import { LayoutDashboard } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'

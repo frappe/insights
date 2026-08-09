@@ -1,6 +1,6 @@
 import { reactive, ref, toRefs } from 'vue'
 // @ts-ignore
-import { useTelemetry } from 'frappe-ui/frappe'
+import { useTelemetry } from '@framework/ui/telemetry/index.ts'
 import useChart from '../charts/chart'
 import useChartPreview from '../charts/chart_preview'
 import {

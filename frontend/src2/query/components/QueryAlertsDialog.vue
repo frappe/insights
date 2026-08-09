@@ -1,6 +1,6 @@
 <script setup lang="tsx">
 import { useTimeAgo } from '@vueuse/core'
-import { ListView } from 'frappe-ui'
+import { ListView } from 'frappe-ui/experimental'
 import { Plus, SearchIcon } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import IndicatorIcon from '../../components/Icons/IndicatorIcon.vue'

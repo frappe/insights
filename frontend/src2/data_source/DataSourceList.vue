@@ -1,5 +1,6 @@
 <script setup lang="tsx">
-import { Avatar, Breadcrumbs, ListView } from 'frappe-ui'
+import { Avatar, Breadcrumbs } from 'frappe-ui'
+import { ListView } from 'frappe-ui/experimental'
 import { PlusIcon, SearchIcon } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import CSVIcon from '../components/Icons/CSVIcon.vue'

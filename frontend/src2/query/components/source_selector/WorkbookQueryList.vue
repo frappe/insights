@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ListView } from 'frappe-ui'
+import { ListView } from 'frappe-ui/experimental'
 import { CheckIcon, SearchIcon, Table2Icon } from 'lucide-vue-next'
 import { computed, h, inject, ref } from 'vue'
 import { QueryTableArgs } from '../../../types/query.types'

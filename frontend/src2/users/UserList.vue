@@ -1,6 +1,7 @@
 <script setup lang="tsx">
 import { useTimeAgo } from '@vueuse/core'
-import { Avatar, Breadcrumbs, ListView } from 'frappe-ui'
+import { Avatar, Breadcrumbs } from 'frappe-ui'
+import { ListView } from 'frappe-ui/experimental'
 import { PlusIcon, SearchIcon, XIcon } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import IndicatorIcon from '../components/Icons/IndicatorIcon.vue'

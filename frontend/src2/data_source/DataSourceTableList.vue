@@ -1,6 +1,7 @@
 <script setup lang="tsx">
 import { watchDebounced } from '@vueuse/core'
-import { Breadcrumbs, ListView } from 'frappe-ui'
+import { Breadcrumbs } from 'frappe-ui'
+import { ListView } from 'frappe-ui/experimental'
 import { MoreHorizontal, RefreshCcw, SearchIcon } from 'lucide-vue-next'
 import { h, ref, watchEffect } from 'vue'
 import useDataSourceStore from './data_source'

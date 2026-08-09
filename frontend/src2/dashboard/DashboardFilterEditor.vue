@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { IconPicker } from 'frappe-ui/icons'
+import { IconPicker } from 'frappe-ui/experimental'
 import { computed, inject, reactive, ref } from 'vue'
 import useChart from '../charts/chart'
 import useQuery from '../query/query'

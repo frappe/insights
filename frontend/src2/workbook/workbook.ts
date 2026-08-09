@@ -1,6 +1,6 @@
 import { call } from 'frappe-ui'
 import { __ } from '../translation'
-import { useTelemetry } from 'frappe-ui/frappe'
+import { useTelemetry } from '@framework/ui/telemetry/index.ts'
 import { computed, reactive, toRefs } from 'vue'
 import useChart, { newChart } from '../charts/chart'
 import useDashboard, { newDashboard } from '../dashboard/dashboard'

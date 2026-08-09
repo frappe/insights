@@ -1,14 +1,7 @@
 <script setup lang="tsx">
 import { useMagicKeys, useStorage, whenever } from '@vueuse/core'
-import {
-	Breadcrumbs,
-	ListEmptyState,
-	ListHeader,
-	ListRows,
-	ListView,
-	TabButtons,
-	call,
-} from 'frappe-ui'
+import { Breadcrumbs, TabButtons, call } from 'frappe-ui'
+import { ListEmptyState, ListHeader, ListRows, ListView } from 'frappe-ui/experimental'
 import { LayoutTemplate as LayoutTemplateIcon, PlusIcon, SearchIcon } from 'lucide-vue-next'
 import { computed, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
@@ -19,7 +12,7 @@ import useWorkbook, { newWorkbookName } from './workbook'
 import { getWorkbookColumns } from './workbookListColumns'
 import useWorkbooks from './workbooks'
 import WorkbookLibrary, { StandardWorkbook } from './WorkbookLibrary.vue'
-import { useTelemetry } from 'frappe-ui/frappe'
+import { useTelemetry } from '@framework/ui/telemetry/index.ts'
 
 const router = useRouter()
 const userStore = useUserStore()

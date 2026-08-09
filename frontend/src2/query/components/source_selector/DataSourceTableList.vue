@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ListView } from 'frappe-ui'
+import { ListView } from 'frappe-ui/experimental'
 import { CheckIcon, RefreshCcw, SearchIcon, Table2Icon } from 'lucide-vue-next'
 import { computed, h, ref } from 'vue'
 import useTableStore from '../../../data_source/tables'

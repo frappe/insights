@@ -1,5 +1,5 @@
 import { frappeRequest, setConfig, useColorScheme } from 'frappe-ui'
-import { spritePlugin } from 'frappe-ui/icons'
+import { spritePlugin } from 'frappe-ui/experimental'
 import { createPinia } from 'pinia'
 import { createApp, watchEffect } from 'vue'
 import App from './App.vue'
@@ -8,7 +8,7 @@ import { setNavigationProvider } from './helpers/navigation.ts'
 import './index.css'
 import router from './router.ts'
 import { translationPlugin } from './translation.ts'
-import { telemetryPlugin } from 'frappe-ui/frappe'
+import { telemetryPlugin } from '@framework/ui/telemetry/index.ts'
 import session from './session.ts'
 
 setConfig('resourceFetcher', frappeRequest)
