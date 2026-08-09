@@ -59,6 +59,7 @@ import { adaptBarChart, adaptLineChart, adaptRowChart } from './axis'
 import { adaptBubbleChart } from './bubble'
 import { adaptDonutChart } from './donut'
 import { adaptFunnelChart } from './funnel'
+import { adaptMapChart } from './map'
 import { adaptNumberChart } from './number'
 import { adaptSankeyChart } from './sankey'
 import type { ChartAdapter, ChartAdapterInput, ChartFiller } from './types'
@@ -82,6 +83,7 @@ const ADAPTERS: Partial<Record<ChartType, ChartAdapter>> = {
 	Funnel: adaptFunnelChart,
 	Bubble: adaptBubbleChart,
 	Sankey: adaptSankeyChart,
+	Map: adaptMapChart,
 }
 
 export function adaptChart(input: ChartAdapterInput): ChartFiller | undefined {

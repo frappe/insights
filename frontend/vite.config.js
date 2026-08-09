@@ -83,7 +83,17 @@ export default defineConfig({
 		// is the version authority) and carries its own node_modules, so
 		// anything with a single-instance contract has to resolve to this app's
 		// copy. The link — and this list — go once that frappe-ui publishes.
-		dedupe: ['vue', 'vue-router', '@headlessui/vue', '@vueuse/core', 'dayjs'],
+		dedupe: [
+			'vue',
+			'vue-router',
+			'@headlessui/vue',
+			'@vueuse/core',
+			'dayjs',
+			// echarts holds its renderers, series and geographies in module state.
+			// The Map chart registers a series and a GeoJSON from here and mounts
+			// through frappe-ui's `useChart`, so both must write into one registry.
+			'echarts',
+		],
 		alias: {
 			// https://github.com/vitejs/vite/discussions/16730#discussioncomment-13048825
 			vue: 'vue/dist/vue.esm-bundler.js',

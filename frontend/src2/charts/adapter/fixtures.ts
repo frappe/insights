@@ -506,6 +506,45 @@ export function numberChart(spec: NumberChartSpec): ChartAdapterInput {
 	}
 }
 
+export type MapChartSpec = {
+	title?: string
+	/** One row per region, spelled the way the data spells it. */
+	regions: { region: any; value: number }[]
+	measure?: string
+	location?: DimensionSpec
+	mapType?: 'world' | 'india'
+	/** The data's spelling of a region onto the geography's, as an author fixes it. */
+	regionMappings?: Record<string, string>
+}
+
+export function mapChart(spec: MapChartSpec): ChartAdapterInput {
+	const location_column = toDimension(spec.location ?? 'country')
+	const value_column = toMeasure(spec.measure ?? 'revenue')
+	const map_type = spec.mapType ?? 'world'
+
+	const config = {
+		location_column,
+		value_column,
+		map_type,
+		...(spec.regionMappings
+			? { region_mappings: { [map_type]: spec.regionMappings } }
+			: {}),
+	} as unknown as ChartConfig
+
+	return {
+		chart_type: 'Map',
+		title: spec.title,
+		config,
+		result: resultWith(
+			[columnOfDimension(location_column), columnOfMeasure(value_column)],
+			spec.regions.map((region) => ({
+				[location_column.dimension_name]: region.region,
+				[value_column.measure_name]: region.value,
+			})),
+		),
+	}
+}
+
 function toMeasure(name: string, format?: 'currency' | 'percent'): Measure {
 	return {
 		measure_name: name,

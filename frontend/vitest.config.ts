@@ -13,7 +13,7 @@ export default defineConfig({
 		// frappe-ui is linked from the framework checkout and carries its own
 		// node_modules, so anything with a single-instance contract has to
 		// resolve to this app's copy. Same reason as `vite.config.js`.
-		dedupe: ['vue'],
+		dedupe: ['vue', 'echarts'],
 	},
 	test: {
 		include: ['src2/**/*.test.ts'],
