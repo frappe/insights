@@ -2,10 +2,15 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
+from insights.insights.doctype.insights_chart_v3.chart_query import config_errors, derive_operations
+from insights.insights.doctype.insights_data_source_v3.data_authority import data_authority_of
 from insights.insights.doctype.insights_query_v3.insights_query_v3 import import_query
 from insights.utils import deep_convert_dict_to_dict
+
+QUERY = "Insights Query v3"
 
 
 class InsightsChartv3(Document):
@@ -19,7 +24,7 @@ class InsightsChartv3(Document):
 
         chart_type: DF.Data | None
         config: DF.JSON | None
-        data_query: DF.Link | None
+        data_authority: DF.Literal["Viewer", "Author"]
         folder: DF.Data | None
         is_public: DF.Check
         old_name: DF.Data | None
@@ -39,12 +44,7 @@ class InsightsChartv3(Document):
         d.read_only = not self.has_permission("write")
         return d
 
-    def before_save(self):
-        self.set_data_query()
-
     def on_trash(self):
-        frappe.delete_doc("Insights Query v3", self.data_query, force=True, ignore_permissions=True)
-
         # Clean up empty folders
         if self.folder:
             self.cleanup_empty_folder(self.folder)
@@ -65,17 +65,68 @@ class InsightsChartv3(Document):
         if not has_items:
             frappe.delete_doc("Insights Folder", folder_name, force=True, ignore_permissions=True)
 
-    def set_data_query(self):
-        if self.data_query:
-            return
-        doc = frappe.get_doc(
-            {
-                "doctype": "Insights Query v3",
-                "workbook": self.workbook,
-            }
-        )
-        doc.db_insert()
-        self.data_query = doc.name
+    @frappe.whitelist()
+    def get_data(
+        self,
+        force: bool = False,
+        page: int = 1,
+        page_size: int = 100,
+        adhoc_filters: dict | None = None,
+    ):
+        """Fetch this chart's rows under the authority declared on this document.
+
+        A request may name a chart but must not describe one: `run_doc_method` builds
+        `self` out of the request payload, so the stored chart is re-read here and it
+        alone decides the authority and the query that runs under it.
+        """
+        chart = frappe.get_doc(self.doctype, self.name)
+        query = chart.get_query()
+        with data_authority_of(chart):
+            return query.execute(
+                force=force,
+                page=page,
+                page_size=page_size,
+                adhoc_filters=adhoc_filters,
+            )
+
+    def get_query(self):
+        """A query document for this chart's operations, made to run and thrown away.
+
+        Nothing about it is worth keeping: the operations follow from the config, so
+        the config is the only copy. It is never inserted, and it names the source
+        query as its execution reference so a chart run still counts as usage of the
+        tables it read.
+        """
+        query = frappe.new_doc(QUERY)
+        query.name = self.name
+        query.title = self.title
+        query.workbook = self.workbook
+        query.operations = frappe.as_json(self.get_operations())
+        query.use_live_connection = frappe.db.get_value(QUERY, self.query, "use_live_connection")
+        query.flags.execution_reference = self.query
+        return query
+
+    def get_operations(self):
+        """The operations that produce the chart's rows.
+
+        The source query, the chart's own filters, its summarize or pivot, and its
+        sort — derived here from the config every time the chart runs. This used to
+        be read off a second query document the browser filled in, and a chart no
+        browser had visited fell back to drawing its source query: a whole shipped
+        workbook rendered raw tables, every number wrong and nothing said so. A config
+        that cannot be drawn is an error, not a row set.
+        """
+        config = frappe.parse_json(self.config or "{}")
+        errors = config_errors(self.chart_type, self.query, config)
+        if errors:
+            frappe.throw(
+                _("Chart {0} is not configured: {1}. Open it in Insights to configure it.").format(
+                    frappe.bold(self.title or self.name), ", ".join(errors)
+                ),
+                title=_("Chart is not configured"),
+            )
+
+        return derive_operations(self.chart_type, self.query, config)
 
     @frappe.whitelist()
     def export(self):
@@ -106,7 +157,6 @@ class InsightsChartv3(Document):
     def duplicate(self):
         new_chart = frappe.copy_doc(self)
         new_chart.title = f"{self.title} (Copy)"
-        new_chart.data_query = None
         new_chart.insert()
         return new_chart.name
 
@@ -134,7 +184,7 @@ def import_chart(chart, workbook):
     if str(workbook) == str(chart.doc.workbook) or not chart.dependencies.queries:
         return new_chart.name
 
-    for _, exported_query in chart.dependencies.queries.items():
+    for exported_query in chart.dependencies.queries.values():
         name = import_query(exported_query, workbook=new_chart.workbook)
         new_chart.db_set("query", name, update_modified=False)
 

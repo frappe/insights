@@ -8,8 +8,8 @@ frappe-ui in `frontend/src2/`, built with Vite.
 - `insights/api/` — whitelisted API endpoints (thin; logic lives in doctype classes)
 - `insights/insights/doctype/` — doctypes; the `_v3` suffix on most of them is
   historical, not a variant marker (`Insights Workbook` and a few others have none)
-- `insights/workbook_templates/` — shipped workbook templates
-  (`insights_workbook_templates` hook, open to other apps)
+- `insights/insights/<bundle>/` — the analytics Insights ships as bundles; any app
+  ships them the same way, from its own `insights/` directory
 - `frontend/src2/` — the whole UI, one folder per area (`workbook/`, `query/`,
   `charts/`, `dashboard/`, `data_source/`, `data_store/`)
 - `frontend/src2/types/` — the domain types; read `query.types.ts` before touching

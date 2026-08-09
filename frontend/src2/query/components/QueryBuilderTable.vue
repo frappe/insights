@@ -15,11 +15,20 @@ import ColumnFilter from './ColumnFilter.vue'
 import ColumnRemove from './ColumnRemove.vue'
 import ColumnSort from './ColumnSort.vue'
 import ColumnTypeChange from './ColumnTypeChange.vue'
+import QueryAlerts from './QueryAlerts.vue'
 import QueryDataTable from './QueryDataTable.vue'
+import DrillDown from '../../charts/components/DrillDown.vue'
 import ExpressionEditor from './ExpressionEditor.vue'
 import { copy } from '../../helpers'
 
 const query = inject('query') as Query
+
+const drillDownQuery = ref<Query>()
+const showDrillDown = ref(false)
+function openDrillDown(query: Query) {
+	drillDownQuery.value = query
+	showDrillDown.value = true
+}
 
 function onTypeChange(column: QueryResultColumn, new_type: ColumnDataType) {
 	if (new_type === column.type) return
@@ -79,10 +88,14 @@ function addNewColumn() {
 		<QueryDataTable
 			:query="query"
 			:enable-column-rename="true"
-			:enable-alerts="true"
 			:enable-new-column="true"
 			:enable-drill-down="true"
+			@drill-down="openDrillDown"
 		>
+			<template #footer-actions>
+				<QueryAlerts :query="query" />
+			</template>
+
 			<template #header-prefix="{ column }">
 				<ColumnTypeChange
 					:model-value="column.type"
@@ -93,19 +106,19 @@ function addNewColumn() {
 			<template #header-suffix="{ column }">
 				<div class="ml-auto pl-2">
 					<Popover side="bottom" align="end">
-						<template #trigger="{ isOpen }">
+						<template #trigger="{ open }">
 							<Button
 								variant="ghost"
 								class="rounded-sm"
-								:class="isOpen ? '!bg-surface-gray-2' : ''"
+								:class="open ? '!bg-surface-gray-2' : ''"
 							>
 								<template #icon>
 									<MoreHorizontal class="h-4 w-4 text-ink-gray-6" />
 								</template>
 							</Button>
 						</template>
-						<template #default="{ toggle: togglePopover, isOpen }">
-							<div v-if="isOpen" class="flex min-w-[10rem] flex-col p-1">
+						<template #default="{ toggle: togglePopover, open }">
+							<div v-if="open" class="flex min-w-[10rem] flex-col p-1">
 								<!-- Rename, Sort, Filter, Summarize, Describe, Pivot, Remove -->
 								<ColumnSort
 									:column="column"
@@ -154,4 +167,12 @@ function addNewColumn() {
 			</template>
 		</QueryDataTable>
 	</div>
+
+	<DrillDown
+		v-if="drillDownQuery"
+		v-model="showDrillDown"
+		@update:modelValue="!$event ? (drillDownQuery = undefined) : undefined"
+		:query="drillDownQuery"
+	>
+	</DrillDown>
 </template>

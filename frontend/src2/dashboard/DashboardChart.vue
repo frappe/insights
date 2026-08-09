@@ -1,28 +1,33 @@
 <script setup lang="ts">
 import { Button } from 'frappe-ui'
 import { AlertTriangle, Maximize, XIcon } from 'lucide-vue-next'
-import { computed, inject, provide, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, inject, provide, watch } from 'vue'
 import useChart from '../charts/chart'
+import useChartPreview from '../charts/chart_preview'
 import ChartRenderer from '../charts/components/ChartRenderer.vue'
 import { waitUntil, wheneverChanges } from '../helpers'
+import { navigate } from '../helpers/navigation'
 import { WorkbookDashboardChart } from '../types/workbook.types'
-import { workbookKey } from '../workbook/workbook'
+import { workbookKey } from '../workbook/workbook_key'
 import { Dashboard } from './dashboard'
 
-const props = defineProps<{ item: WorkbookDashboardChart }>()
+const props = defineProps<{ item: WorkbookDashboardChart; refreshToken?: number }>()
+const emit = defineEmits<{ loaded: [executedAt: Date] }>()
 const dashboard = inject<Dashboard>('dashboard')!
 
 const chart = computed(() => {
 	if (!props.item.chart) return null
 	return useChart(props.item.chart)
 })
+// the builder's own card, drawn from the config being edited rather than from
+// the saved chart, so an unsaved edit shows here too
+const preview = computed(() => (chart.value ? useChartPreview(chart.value) : null))
 
 if (props.item.chart) {
 	provide('chartName', props.item.chart)
 
 	waitUntil(() => Boolean(chart.value?.isloaded)).then(() => {
-		if (!chart.value?.dataQuery.result.executedSQL) {
+		if (!preview.value?.result.executedSQL) {
 			dashboard.refreshChart(props.item.chart)
 		}
 
@@ -37,23 +42,40 @@ if (props.item.chart) {
 	})
 }
 
-const router = useRouter()
+// the page's one refresh, on the card that knows what to re-run
+watch(
+	() => props.refreshToken,
+	() => props.item.chart && dashboard.refreshChart(props.item.chart, true),
+)
+
+// when these rows were produced. The page's freshness stamp is the oldest of
+// its cards, so every card says.
+watch(
+	() => preview.value?.executedAt,
+	(executedAt) => executedAt && emit('loaded', executedAt),
+)
+
 const workbook = inject(workbookKey, null)
 wheneverChanges(
 	() => dashboard.isEditingItem(props.item),
 	(editing: boolean) => {
 		if (!workbook) return
 		if (editing) {
-			router.push(`/workbook/${workbook.doc.name}/chart/${props.item.chart}`)
+			navigate(`/workbook/${workbook.doc.name}/chart/${props.item.chart}`)
 		}
 	},
 )
 </script>
 
 <template>
-	<ChartRenderer v-if="chart" :chart="chart" />
+	<ChartRenderer v-if="preview" :chart="preview" />
 
-	<div v-else class="flex h-full flex-1 flex-col items-center justify-center rounded border">
+	<!-- not one of the card's states: a grid item that names no chart has no store
+	     to be loading, failed or empty. It is the layout that is wrong, not a read. -->
+	<div
+		v-else
+		class="flex h-full flex-1 flex-col items-center justify-center rounded border border-outline-gray-2"
+	>
 		<AlertTriangle class="h-8 w-8 text-ink-gray-4" stroke-width="1" />
 		<p class="text-p-base text-ink-gray-4">Chart not found</p>
 	</div>

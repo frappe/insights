@@ -1,34 +1,25 @@
 <script setup lang="ts">
-import { provide } from 'vue'
-import useDashboard from './dashboard'
-import DashboardItem from './DashboardItem.vue'
-import VueGridLayout from './VueGridLayout.vue'
-import { call } from 'frappe-ui'
+import DashboardView from './DashboardView.vue'
+import { useSavedDashboard } from './viewer'
 
+// A dashboard reached by its public link. The viewer endpoints are the same ones
+// the desk island and the in-app page use, and they decide access through the
+// visibility ladder — a guest reaches the Public rung through that one path, so
+// this page adds no access rule of its own.
+//
+// There is no trail: whoever follows a link here has no place in the app to go
+// back to.
 const props = defineProps<{ dashboard_name: string }>()
 
-const dashboard_name = await call('insights.api.shared.get_dashboard_name', {
-	dashboard_name: props.dashboard_name,
-})
+// The route's reference goes over as it arrived: the viewer resolves every form
+// a link can carry.
+const source = useSavedDashboard(props.dashboard_name)
 
-const dashboard = useDashboard(dashboard_name)
-provide('dashboard', dashboard)
+function setTitle(title: string) {
+	document.title = `${title} | Insights`
+}
 </script>
 
 <template>
-	<div class="relative flex h-full w-full overflow-hidden">
-		<div class="flex-1 overflow-y-auto p-4">
-			<VueGridLayout
-				v-if="dashboard.doc.items.length > 0"
-				class="h-fit w-full"
-				:cols="20"
-				:disabled="true"
-				:modelValue="dashboard.doc.items.map((item) => item.layout)"
-			>
-				<template #item="{ index }">
-					<DashboardItem :index="index" :item="dashboard.doc.items[index]" />
-				</template>
-			</VueGridLayout>
-		</div>
-	</div>
+	<DashboardView :source="source" @title="setTitle" />
 </template>

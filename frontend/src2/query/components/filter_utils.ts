@@ -5,6 +5,7 @@ import {
 	FilterExpression,
 	FilterOperator,
 	FilterRule,
+	FilterValue,
 } from '../../types/query.types'
 
 export function getOperatorOptions(filterType: FilterType) {
@@ -60,6 +61,18 @@ export function getValueSelectorType(operator: FilterOperator, filterType: Filte
 		return operator === 'between' ? 'date_range' : operator === 'within' ? 'relative_date' : 'date'
 	}
 	return 'text'
+}
+
+/** Whether a filter state is complete enough to apply — `is set` needs no value. */
+export function isFilterApplied(
+	filterType: FilterType,
+	operator?: FilterOperator,
+	value?: FilterValue
+) {
+	if (!operator) return false
+	if (!getValueSelectorType(operator, filterType)) return true
+	if (value === undefined || value === null || value === '') return false
+	return Array.isArray(value) ? value.length > 0 : true
 }
 
 export function isFilterExpressionValid(filter: FilterExpression) {

@@ -8,8 +8,10 @@
 	},
 	"scripts": {
 		"dev": "vite",
+		"lint": "eslint --no-eslintrc -c .eslintrc.boundaries.json --ext .js,.ts,.vue src2",
 		"serve": "vite preview",
 		"build": "vite build -l warn --base=/assets/insights/frontend/ && yarn copy-html-entry",
+		"build:islands": "node build-islands.mjs --production",
 		"copy-html-entry": "cp ../insights/public/frontend/index.html ../insights/www/_insights.html"
 	},
 	"dependencies": {
@@ -27,7 +29,7 @@
 		"echarts": "^5.5.0",
 		"es-toolkit": "^1.34.1",
 		"feather-icons": "^4.28.0",
-		"frappe-ui": "^1.0.0-beta.24",
+		"frappe-ui": "link:../../frappe/frappe-ui",
 		"grid-layout-plus": "^1.0.2",
 		"html-to-image": "^1.11.13",
 		"lucide-vue-next": "^0.484.0",
@@ -40,9 +42,11 @@
 		"vuedraggable": "^4.1.0"
 	},
 	"devDependencies": {
+		"@framework/ui": "link:../../frappe/ui",
 		"@iconify/utils": "2.3.0",
 		"@playwright/test": "^1.32.1",
 		"@tailwindcss/container-queries": "^0.1.1",
+		"@typescript-eslint/parser": "^8.66.0",
 		"@vitejs/plugin-vue": "^4.2.3",
 		"@vitejs/plugin-vue-jsx": "^3.0.1",
 		"autoprefixer": "^10.4.7",
@@ -57,7 +61,6 @@
 		"vue-tsc": "^2.0.21"
 	},
 	"resolutions": {
-		"@iconify/utils": "^2.3.0",
-		"reka-ui": "2.5.0"
+		"@iconify/utils": "^2.3.0"
 	}
 }

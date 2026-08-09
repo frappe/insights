@@ -287,7 +287,7 @@ export function flattenOptions(
 ): DropdownOption[] {
 	if (!options.length) return []
 	return 'group' in options[0]
-		? (options as GroupedDropdownOption[]).map((c) => c.items).flat()
+		? (options as GroupedDropdownOption[]).map((c) => c.options).flat()
 		: (options as DropdownOption[])
 }
 
@@ -299,9 +299,9 @@ export function groupOptions<T extends DropdownOption>(
 		const group = option[groupBy] as string
 		const index = acc.findIndex((g) => g.group === group)
 		if (index === -1) {
-			acc.push({ group, items: [option] })
+			acc.push({ group, options: [option] })
 		} else {
-			acc[index].items.push(option)
+			acc[index].options.push(option)
 		}
 		return acc
 	}, [] as GroupedDropdownOption[])

@@ -1,0 +1,198 @@
+{
+ "items": [
+  {
+   "default_operator": "within",
+   "default_value": "Last 12 Months",
+   "filter_name": "Posting Date",
+   "filter_type": "Date",
+   "icon": "calendar",
+   "layout": {
+    "h": 1,
+    "i": "filter-posting-date",
+    "w": 4,
+    "x": 0,
+    "y": 0
+   },
+   "links": {
+    "stock-in-vs-out-by-value": "`stock-movements`.`posting_date`",
+    "stock-value-change": "`stock-movements`.`posting_date`"
+   },
+   "type": "filter"
+  },
+  {
+   "filter_name": "Company",
+   "filter_type": "String",
+   "icon": "building-2",
+   "layout": {
+    "h": 1,
+    "i": "filter-company",
+    "w": 4,
+    "x": 4,
+    "y": 0
+   },
+   "links": {
+    "dead-stock-value-90d": "`stock-ageing`.`company`",
+    "items-below-reorder-level": "`reorder-shortfalls`.`company`",
+    "reorder-alert": "`reorder-shortfalls`.`company`",
+    "stock-ageing-by-value": "`stock-ageing`.`company`",
+    "stock-in-vs-out-by-value": "`stock-movements`.`company`",
+    "stock-value-by-item-group": "`stock-balances`.`company`",
+    "stock-value-by-warehouse": "`stock-balances`.`company`",
+    "stock-value-change": "`stock-movements`.`company`",
+    "top-items-by-stock-value": "`stock-ageing`.`company`",
+    "total-stock-value": "`stock-balances`.`company`"
+   },
+   "type": "filter"
+  },
+  {
+   "filter_name": "Warehouse",
+   "filter_type": "String",
+   "icon": "warehouse",
+   "layout": {
+    "h": 1,
+    "i": "filter-warehouse",
+    "w": 4,
+    "x": 8,
+    "y": 0
+   },
+   "links": {
+    "dead-stock-value-90d": "`stock-ageing`.`warehouse`",
+    "items-below-reorder-level": "`reorder-shortfalls`.`warehouse`",
+    "reorder-alert": "`reorder-shortfalls`.`warehouse`",
+    "stock-ageing-by-value": "`stock-ageing`.`warehouse`",
+    "stock-in-vs-out-by-value": "`stock-movements`.`warehouse`",
+    "stock-value-by-item-group": "`stock-balances`.`warehouse`",
+    "stock-value-by-warehouse": "`stock-balances`.`warehouse`",
+    "stock-value-change": "`stock-movements`.`warehouse`",
+    "top-items-by-stock-value": "`stock-ageing`.`warehouse`",
+    "total-stock-value": "`stock-balances`.`warehouse`"
+   },
+   "type": "filter"
+  },
+  {
+   "chart": "total-stock-value",
+   "layout": {
+    "h": 3,
+    "i": "chart-total-stock-value",
+    "w": 4,
+    "x": 0,
+    "y": 1
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "stock-value-change",
+   "layout": {
+    "h": 3,
+    "i": "chart-stock-value-change",
+    "w": 4,
+    "x": 4,
+    "y": 1
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "items-below-reorder-level",
+   "layout": {
+    "h": 3,
+    "i": "chart-items-below-reorder-level",
+    "w": 4,
+    "x": 8,
+    "y": 1
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "dead-stock-value-90d",
+   "layout": {
+    "h": 3,
+    "i": "chart-dead-stock-value-90d",
+    "w": 4,
+    "x": 12,
+    "y": 1
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "stock-value-by-warehouse",
+   "layout": {
+    "h": 8,
+    "i": "chart-stock-value-by-warehouse",
+    "w": 10,
+    "x": 0,
+    "y": 4
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "stock-value-by-item-group",
+   "layout": {
+    "h": 8,
+    "i": "chart-stock-value-by-item-group",
+    "w": 10,
+    "x": 10,
+    "y": 4
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "stock-ageing-by-value",
+   "layout": {
+    "h": 8,
+    "i": "chart-stock-ageing-by-value",
+    "w": 10,
+    "x": 0,
+    "y": 12
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "stock-in-vs-out-by-value",
+   "layout": {
+    "h": 8,
+    "i": "chart-stock-in-vs-out-by-value",
+    "w": 10,
+    "x": 10,
+    "y": 12
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "reorder-alert",
+   "layout": {
+    "h": 9,
+    "i": "chart-reorder-alert",
+    "w": 10,
+    "x": 0,
+    "y": 20
+   },
+   "type": "chart"
+  },
+  {
+   "chart": "top-items-by-stock-value",
+   "layout": {
+    "h": 9,
+    "i": "chart-top-items-by-stock-value",
+    "w": 10,
+    "x": 10,
+    "y": 20
+   },
+   "type": "chart"
+  },
+  {
+   "layout": {
+    "h": 1,
+    "i": "text-14",
+    "w": 8,
+    "x": 12,
+    "y": 0
+   },
+   "text": "",
+   "type": "text"
+  }
+ ],
+ "title": "Inventory Health",
+ "vertical_compact_layout": 0,
+ "visibility": "Private",
+ "visible_to_roles": []
+}

@@ -64,9 +64,92 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         frappe.db.set_single_value(DT.SETTINGS, "enable_permissions", enable)
         clear_team_cache()
 
+    def grant_to_team(self, team, resource_type, resource_name):
+        with self.as_user("Administrator"):
+            team.append(
+                "team_permissions",
+                {"resource_type": resource_type, "resource_name": resource_name},
+            )
+            team.save(ignore_permissions=True)
+            clear_team_cache()
+
+    # both seams, always: a grant the list seam honors and the document seam
+    # does not (or the other way round) is how a permission bug hides
+    def assert_readable(self, user, doctype, name):
+        self.assert_visible_to(user, doctype, name)
+        with self.as_user(user):
+            self.assertTrue(
+                frappe.has_permission(doctype, ptype="read", doc=name),
+                f"{doctype} {name} should be readable by {user}",
+            )
+
+    def assert_not_readable(self, user, doctype, name):
+        self.assert_not_visible_to(user, doctype, name)
+        with self.as_user(user):
+            self.assertFalse(
+                frappe.has_permission(doctype, ptype="read", doc=name),
+                f"{doctype} {name} should not be readable by {user}",
+            )
+
+    def team_granted_content(self):
+        """Content owned by the admin, granted to team1, which USER_2 is not in.
+
+        The chart is kept off the dashboard so that each grant is the only way
+        to reach its own document.
+        """
+        team = create_test_teams()
+        workbook = create_test_workbook(ADMIN)
+        query = create_test_query(ADMIN, workbook.name)
+        chart = create_test_chart(ADMIN, workbook.name, query.name)
+        dashboard = create_test_dashboard(ADMIN, workbook.name)
+        self.toggle_team_permissions(True)
+        self.grant_to_team(team, DT.DASHBOARD, dashboard.name)
+        self.grant_to_team(team, DT.CHART, chart.name)
+        return chart, dashboard
+
+    def test_team_dashboard_grant_does_not_reach_a_user_with_no_team(self):
+        _, dashboard = self.team_granted_content()
+        self.assert_not_readable(USER_2, DT.DASHBOARD, dashboard.name)
+
+    def test_team_chart_grant_does_not_reach_a_user_with_no_team(self):
+        chart, _ = self.team_granted_content()
+        self.assert_not_readable(USER_2, DT.CHART, chart.name)
+
+    def test_team_grant_reaches_the_members_of_the_granting_team(self):
+        chart, dashboard = self.team_granted_content()
+        self.assert_readable(USER_1, DT.DASHBOARD, dashboard.name)
+        self.assert_readable(USER_1, DT.CHART, chart.name)
+
+    def test_team_data_grant_does_not_reach_a_user_with_no_team(self):
+        """The same rule on the data objects, which is where it matters most.
+
+        `test_permission_on_team_based_doctype_with_team_permissions_enabled`
+        checks the same user, but it asks before any grant row exists and then
+        only re-checks the member. Asking after the grant is what catches a
+        resource query that reads an empty team list as "every team".
+        """
+        create_test_data_sources()
+        create_test_tables()
+        team = create_test_teams()
+        self.toggle_team_permissions(True)
+        self.grant_to_team(team, DT.DATA_SOURCE, TEST_DS)
+        self.grant_to_team(team, DT.TABLE, TEST_TABLE1)
+
+        self.assert_not_readable(USER_2, DT.DATA_SOURCE, TEST_DS)
+        self.assert_not_readable(USER_2, DT.TABLE, TEST_TABLE1)
+        # and the grant still works for the team it was made to
+        self.assert_readable(USER_1, DT.DATA_SOURCE, TEST_DS)
+        self.assert_readable(USER_1, DT.TABLE, TEST_TABLE1)
+
     def test_permissions_for_non_insights_user(self):
+        # charts and dashboards carry doctype-level read for everyone: the
+        # visibility ladder narrows access per document, so viewing needs no
+        # Insights role (see test_visibility_ladder)
+        audience_gated = ["Insights Chart v3", "Insights Dashboard v3"]
         with self.as_user(NON_INSIGHTS_USER):
             for doctype in PERMISSION_DOCTYPES:
+                if doctype in audience_gated:
+                    continue
                 self.assertFalse(
                     frappe.has_permission(doctype, ptype="read"),
                     f"{doctype} should not be readable without an Insights role",
@@ -258,19 +341,16 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         chart = frappe.get_doc(DT.CHART, chart.name)
 
         self.assert_not_visible_to(USER_2, DT.QUERY, query.name)
-        self.assert_not_visible_to(USER_2, DT.QUERY, chart.data_query)
 
         with self.as_user(USER_1):
             share_chart(chart.name, USER_2)
 
         self.assert_visible_to(USER_2, DT.QUERY, query.name)
-        self.assert_visible_to(USER_2, DT.QUERY, chart.data_query)
 
         with self.as_user(USER_1):
             unshare_chart(chart.name, USER_2)
 
         self.assert_not_visible_to(USER_2, DT.QUERY, query.name)
-        self.assert_not_visible_to(USER_2, DT.QUERY, chart.data_query)
 
         dashboard = create_test_dashboard(
             USER_1,
@@ -282,7 +362,6 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
             update_dashboard_access(dashboard.name, [USER_2])
 
         self.assert_visible_to(USER_2, DT.QUERY, query.name)
-        self.assert_visible_to(USER_2, DT.QUERY, chart.data_query)
 
         with self.as_user(NON_INSIGHTS_USER):
             with self.assertRaises(frappe.PermissionError):

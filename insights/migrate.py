@@ -11,12 +11,15 @@ def after_migrate():
     except Exception:
         frappe.log_error(title="Error creating Admin Team")
 
+    # every app's shipped analytics, reconciled into documents.
+    # sync_standard_content isolates each app itself; this catch is for discovery
+    # blowing up before any app is reached.
     try:
-        from insights.api.templates import sync_workbook_template_updates
+        from insights.standard_content import sync_standard_content
 
-        sync_workbook_template_updates()
+        sync_standard_content()
     except Exception:
-        frappe.log_error(title="Error syncing workbook template updates")
+        frappe.log_error(title="Error syncing Insights standard content")
 
 
 def create_admin_team():

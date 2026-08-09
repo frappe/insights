@@ -16,16 +16,21 @@ import { h, provide, ref } from 'vue'
 import session from '../../session'
 import { __ } from '../../translation'
 import ViewSQLDialog from '../../query/components/ViewSQLDialog.vue'
+import { duplicateWorkbookItem } from '../../workbook/workbook_items'
+import type { ChartRead } from '../chart_read'
 
 const props = defineProps<{
 	chart: any
+	preview: ChartRead
 	chartEl: HTMLElement | null
 	onDownload: () => void
 	onShare: () => void
 }>()
 
 const showViewSQLDialog = ref(false)
-provide('query', props.chart.dataQuery)
+// the SQL on show is the one the server sent back with the rows, so what is
+// debugged here is what ran
+provide('query', props.preview)
 
 const moreActions = [
 	{
@@ -43,7 +48,7 @@ const moreActions = [
 	{
 		label: __('Duplicate Chart'),
 		icon: h(CopyPlus, { class: 'h-3 w-3 text-ink-gray-6', strokeWidth: 1.5 }),
-		onClick: () => props.chart.duplicate(),
+		onClick: () => duplicateWorkbookItem(props.chart, 'chart'),
 	},
 	{
 		label: __('Reset Options'),
@@ -74,24 +79,24 @@ const moreActions = [
 	<div class="flex w-full flex-shrink-0 items-center justify-between bg-surface-base">
 		<div>
 			<div
-				v-show="chart.dataQuery.result.executedSQL"
+				v-show="preview.result.executedSQL"
 				class="tnum flex items-center gap-2 text-sm text-ink-gray-5"
 			>
 				<div class="h-2 w-2 rounded-full bg-green-500"></div>
 				<div>
-					<span v-if="chart.dataQuery.result.timeTaken == -1"> Fetched from cache </span>
-					<span v-else> Fetched in {{ chart.dataQuery.result.timeTaken }}s </span>
-					<span> {{ useTimeAgo(chart.dataQuery.result.lastExecutedAt).value }} </span>
+					<span v-if="preview.result.timeTaken == -1"> Fetched from cache </span>
+					<span v-else> Fetched in {{ preview.result.timeTaken }}s </span>
+					<span> {{ useTimeAgo(preview.result.lastExecutedAt).value }} </span>
 				</div>
 			</div>
 		</div>
 		<div class="flex items-center gap-2">
-			<Button variant="outline" label="Refresh" @click="() => chart.refresh(true)">
+			<Button variant="outline" label="Refresh" @click="() => preview.load(true)">
 				<template #prefix>
 					<RefreshCcw class="h-3 w-3 text-ink-gray-6" stroke-width="1.5" />
 				</template>
 			</Button>
-			<Dropdown placement="right" :options="moreActions">
+			<Dropdown align="end" :options="moreActions">
 				<Button variant="outline">
 					<template #icon>
 						<MoreHorizontal class="h-3 w-3 text-ink-gray-6" stroke-width="1.5" />

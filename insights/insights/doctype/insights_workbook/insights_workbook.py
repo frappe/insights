@@ -25,9 +25,8 @@ class InsightsWorkbook(Document):
 
         data_backup: DF.JSON | None
         from_template: DF.Data | None
-        imported_checksum: DF.Data | None
-        imported_version: DF.Int
         name: DF.Int | None
+        standard_id: DF.Data | None
         title: DF.Data
     # end: auto-generated types
 
@@ -191,17 +190,9 @@ class InsightsWorkbook(Document):
             order_by="sort_order asc, creation asc",
         )
 
-        chart_queries = frappe.get_all(
-            "Insights Chart v3",
-            filters={"workbook": self.name},
-            pluck="data_query",
-        )
         d.queries = frappe.get_all(
             "Insights Query v3",
-            filters={
-                "workbook": self.name,
-                "name": ["not in", chart_queries],
-            },
+            filters={"workbook": self.name},
             fields=[
                 "name",
                 "title",
@@ -255,7 +246,8 @@ class InsightsWorkbook(Document):
         if not last_viewed_recently:
             self.add_viewed(force=True)
 
-        # adoption signal for library workbooks; interval dedupes to once/user/site/day
+        # whether the copies the retired template library made are still in use;
+        # interval dedupes to once/user/site/day
         if self.from_template:
             with suppress(Exception):
                 capture(
@@ -284,13 +276,9 @@ class InsightsWorkbook(Document):
             },
         }
 
-        chart_queries = frappe.get_all("Insights Chart v3", {"workbook": self.name}, pluck="data_query")
         queries = frappe.get_all(
             "Insights Query v3",
-            filters={
-                "workbook": self.name,
-                "name": ["not in", chart_queries],
-            },
+            filters={"workbook": self.name},
             fields=[
                 "name",
                 "title",
@@ -457,19 +445,6 @@ class InsightsWorkbook(Document):
                         "workbook": info.get("workbook"),
                     }
                 edge_list.append({"id": f"{dep_id}=>{q_id}", "source": dep_id, "target": q_id})
-
-        chart_query_map: dict[str, str] = {
-            row.data_query: row.title
-            for row in frappe.get_all(
-                "Insights Chart v3",
-                filters={"workbook": self.name, "data_query": ("is", "set")},
-                fields=["data_query", "title"],
-            )
-        }
-        for node in nodes.values():
-            if node["node_type"] == "query" and node["name"] in chart_query_map:
-                node["is_chart_query"] = True
-                node["chart_title"] = chart_query_map[node["name"]]
 
         return {
             "nodes": list(nodes.values()),

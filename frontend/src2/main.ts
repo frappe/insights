@@ -1,10 +1,10 @@
-import { frappeRequest, setConfig, useTheme } from 'frappe-ui'
+import { frappeRequest, setConfig, useColorScheme } from 'frappe-ui'
 import { spritePlugin } from 'frappe-ui/icons'
-import { GridItem, GridLayout } from 'grid-layout-plus'
 import { createPinia } from 'pinia'
 import { createApp, watchEffect } from 'vue'
 import App from './App.vue'
 import { registerControllers, registerGlobalComponents } from './globals.ts'
+import { setNavigationProvider } from './helpers/navigation.ts'
 import './index.css'
 import router from './router.ts'
 import { translationPlugin } from './translation.ts'
@@ -16,16 +16,18 @@ setConfig('resourceFetcher', frappeRequest)
 // Default to light until charts are themed for dark (Phase 2); dark stays
 // opt-in via the toggle so users aren't dropped into a half-themed UI.
 if (!localStorage.getItem('theme')) localStorage.setItem('theme', 'light')
-useTheme() // restores saved theme onto <html data-theme>, tracks system pref
+useColorScheme() // restores saved theme onto <html data-theme>, tracks system pref
 
 const app = createApp(App)
 const pinia = createPinia()
 
 app.use(pinia)
 app.use(router)
+setNavigationProvider({
+	resolveHref: (to) => router.resolve(to).href,
+	navigate: (to) => router.push(to),
+})
 app.use(spritePlugin)
-app.component('grid-layout', GridLayout)
-app.component('grid-item', GridItem)
 
 const stop = watchEffect(() => {
 	if (session.isLoggedIn) {

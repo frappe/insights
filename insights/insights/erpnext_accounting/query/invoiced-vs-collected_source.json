@@ -1,0 +1,69 @@
+{
+ "is_builder_query": 1,
+ "is_native_query": 0,
+ "is_script_query": 0,
+ "operations": [
+  {
+   "table": {
+    "data_source": "Site DB",
+    "table_name": "tabSales Invoice",
+    "type": "table"
+   },
+   "type": "source"
+  },
+  {
+   "filters": [
+    {
+     "column": {
+      "column_name": "docstatus",
+      "type": "column"
+     },
+     "operator": "=",
+     "value": 1
+    }
+   ],
+   "logical_operator": "And",
+   "type": "filter_group"
+  },
+  {
+   "data_type": "String",
+   "expression": {
+    "expression": "ibis.literal('Invoiced')",
+    "type": "expression"
+   },
+   "new_name": "metric",
+   "type": "mutate"
+  },
+  {
+   "data_type": "Decimal",
+   "expression": {
+    "expression": "base_grand_total",
+    "type": "expression"
+   },
+   "new_name": "amount",
+   "type": "mutate"
+  },
+  {
+   "column_names": [
+    "company",
+    "posting_date",
+    "metric",
+    "amount"
+   ],
+   "type": "select"
+  },
+  {
+   "distinct": false,
+   "table": {
+    "query_name": "collected-helper",
+    "type": "query",
+    "workbook": 0
+   },
+   "type": "union"
+  }
+ ],
+ "sort_order": 4,
+ "title": "Invoiced vs Collected",
+ "use_live_connection": 1,
+ "variables": []
+}

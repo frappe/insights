@@ -7,7 +7,6 @@ import {
 	Dropdown,
 	ErrorMessage,
 	FormControl,
-	Input,
 	LoadingIndicator,
 	MultiSelect,
 	Popover,
@@ -23,7 +22,6 @@ import { createToast } from './helpers/toasts'
 import { getSocket } from './socket.ts'
 
 export function registerGlobalComponents(app: App) {
-	app.component('Input', Input)
 	app.component('Badge', Badge)
 	app.component('Button', Button)
 	app.component('Dialog', Dialog)

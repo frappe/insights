@@ -1,0 +1,7 @@
+{
+ "format_version": 1,
+ "required_apps": [
+  "erpnext"
+ ],
+ "title": "Inventory Health"
+}

@@ -169,7 +169,11 @@ class InsightsQueryv3(Document):
             force=force,
             cache_expiry=60 * 10,
             reference_doctype=self.doctype,
-            reference_name=self.name,
+            # a chart runs through a query document that is never saved, so the
+            # execution log would name a query nobody can look up. It points at the
+            # source query instead — the one with reference rows, which is how the
+            # data store learns that a table is still being read
+            reference_name=self.flags.execution_reference or self.name,
         )
         results = results.to_dict(orient="records")
 

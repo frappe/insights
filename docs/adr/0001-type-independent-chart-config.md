@@ -4,8 +4,9 @@ Date: 2026-08-05
 
 ## Status
 
-Accepted. The implementation is sequenced as the first step of the frappe-ui
-charts v2 migration.
+Accepted. Amended 2026-08-09: the decision stands, the sequencing does not. This
+config change now follows the render swap instead of leading it. See *Amendment*
+at the end.
 
 ## Context
 
@@ -73,24 +74,63 @@ type possible, because the switch no longer costs the user any work.
 Every chart type needs a mapper from the config to the v2 props. That mapper is
 close to an identity function under this shape. Under the current shape it is
 nine separate translations, and each one carries the old slot names into the new
-render layer. This is why the change comes first in the v2 migration and not
-after it.
+render layer. That argued for making this change first. The amendment below
+overturns the ordering and states what it costs.
 
 The config is persisted, so the change needs a normalizer. `transformChartDoc`
 already normalizes older config shapes on load. The new shape follows the same
 route.
 
 The `split_by` dimension currently forces a `pivot_wider` operation to make the
-result wide. v2 reads long data through its `series` prop. That pivot may become
-unnecessary. Confirm this during the migration.
+result wide. v2 reads long data through its `series` prop, so this ADR expected
+the pivot to become unnecessary. It does not. See the amendment.
 
-## Blocked on, for the render layer only
+## Amendment, 2026-08-09
 
-The config change is not blocked. The v2 render swap is. The parity audit in
-frappe-ui lists three gaps that Insights hits:
+This section replaces *Blocked on, for the render layer only*, which said the v2
+render swap was blocked by three gaps: combo charts, a numeric x-axis, and Map,
+Bubble and Sankey, with the raw ECharts escape hatch missing.
 
-1. Combo charts. `YAxisConfig` offers a per-series `Line` or `Bar` type. The v2
-   components are homogeneous.
-2. A numeric x-axis. v2 supports `category` and `time` only.
-3. Map, Bubble and Sankey. v2 ships seven chart types and Insights has ten. The
-   audit already lists the raw ECharts escape hatch as missing.
+That list described frappe-ui as it stood on 2026-08-05 and is now wrong. On
+branch `charts-v2`, combo charts are a per-series `type` of `bar`, `line` or
+`area`; `ScatterChart` covers Bubble, with `sizeColumn` and quadrant dividers as
+reference lines; `SankeyChart` ships; and the escape hatch exists as
+`echartOptions`, deep-merged at chart, axis and series level. The render swap is
+not blocked.
+
+Two of the three gaps survive, and their status changed:
+
+- **A numeric x-axis** stays missing. It was never ruled on. v2 will gain it as
+  `xAxis.type: 'value'`.
+- **Map** is out of v2 permanently, on the model rather than on demand. A
+  choropleth needs a geography layer the library does not own — external
+  GeoJSON, region-name resolution and a classification step — which is data
+  cleaning, not rendering. **Table** is out for the same kind of reason: nothing
+  in it maps a value to a visual property, so it is not a plot. frappe-ui's
+  `spec/charts-scope.md` holds the rule and both rulings.
+
+Three consequences for this ADR:
+
+1. **The ordering is reversed.** The render swap goes first, starting with the
+   axis charts, and this config change follows it. The reason is where the
+   uncertainty sits: the config shape is derived from the Insights domain and is
+   already settled, while real visual parity, the pivot question and the axis
+   gaps can only be answered by swapping. The cost is the one this ADR named —
+   per-type mappers written against the old slot names and then rewritten. It is
+   capped by building the adapter as one module with a function per type, so the
+   rewrite changes function bodies and not structure.
+2. **The pivot stays.** v2's axis charts read wide data through a list-valued
+   `y`, one series per column, which is exactly what `pivot_wider` produces. The
+   long shape is available but narrower: its `series` grouping takes a single
+   `y`, and Insights allows `split_by` together with several measures. Wide is
+   also where the row cap belongs, because bounding the series count in SQL
+   bounds the result before it crosses the wire.
+3. **Insights renders no chart chrome.** The ownership seam agreed alongside this
+   amendment cuts at the layer, not at the chart type: v2 owns the card, title,
+   legend, tooltip and states for every Insights chart, Map and Table included,
+   and only the plot inside them varies. So "Map and Table stay ours" means
+   Insights owns two plots, not two chart implementations.
+
+The reasoning behind the seam and the ordering lives in the framework-integration
+effort docs, which are branch-scoped and will be removed when that branch merges.
+Whatever survives of it belongs in an ADR of its own before then.

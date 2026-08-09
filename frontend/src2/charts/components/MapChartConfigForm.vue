@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, watchEffect } from 'vue'
+import { computed, inject, ref, watch, watchEffect } from 'vue'
 import { __ } from '../../translation'
 import { MapChartConfig } from '../../types/chart.types'
 import {
@@ -17,7 +17,7 @@ import { FormControl, Button } from 'frappe-ui'
 import { FIELDTYPES } from '../../helpers/constants'
 import { call } from 'frappe-ui'
 import { InfoIcon } from 'lucide-vue-next'
-import useChart from '../chart'
+import type { ChartRead } from '../chart_read'
 import { watchDebounced } from '@vueuse/core'
 
 const props = defineProps<{
@@ -60,10 +60,10 @@ const unresolvedCount = ref<number | null>(null)
 const loadingUnresolved = ref(false)
 
 const userRegions = ref<string[]>([])
-const { dataQuery } = useChart(props.chartName!)
+const preview = inject('chartPreview') as ChartRead
 
 watchDebounced(
-	[() => config.value.location_column?.dimension_name, () => dataQuery.result?.rows],
+	[() => config.value.location_column?.dimension_name, () => preview.result?.rows],
 	([columnName, rows]) => {
 		if (!columnName || !props.queryName || !rows || rows.length === 0) {
 			userRegions.value = []

@@ -4,7 +4,7 @@ import { __ } from '../translation'
 import { inject } from 'vue'
 import { useRouter } from 'vue-router'
 import ChartIcon from '../charts/components/ChartIcon.vue'
-import { workbookKey } from './workbook'
+import { workbookKey } from './workbook_key'
 
 const router = useRouter()
 const workbook = inject(workbookKey)

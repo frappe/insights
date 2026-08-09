@@ -203,7 +203,7 @@ export type DropdownOption = {
 
 export type GroupedDropdownOption = {
 	group: string
-	items: DropdownOption[]
+	options: DropdownOption[]
 }
 
 export type ColumnOption = DropdownOption & {
@@ -214,7 +214,7 @@ export type ColumnOption = DropdownOption & {
 
 export type GroupedColumnOption = {
 	group: string
-	items: ColumnOption[]
+	options: ColumnOption[]
 }
 
 export type QueryResult = {

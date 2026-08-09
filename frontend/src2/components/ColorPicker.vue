@@ -1,23 +1,24 @@
 <template>
 	<Popover
-		transition="default"
-		:placement="placement"
-		class="!block w-full"
-		popoverClass="!min-w-fit"
+		:open="isOpen"
+		@update:open="(value) => !value && (isOpen = false)"
+		:side="side"
+		:align="align"
+		bare
 	>
-		<template #target="{ togglePopover, isOpen }">
-			<slot
-				name="target"
-				:togglePopover="
-					() => {
-						togglePopover()
-						setSelectorPosition(modelColor)
-					}
-				"
-				:isOpen="isOpen"
-			></slot>
+		<!--
+			This wrapper is reka's trigger, so it toggles on any click that reaches
+			it. Opening is left to the caller's `togglePopover` instead, so that
+			only the element the caller nominates opens the picker — a click in the
+			rest of the target, a text field say, must not. Whatever calls
+			`togglePopover` therefore has to stop the click here.
+		-->
+		<template #trigger>
+			<div class="w-full">
+				<slot name="target" :togglePopover="togglePopover" :isOpen="isOpen"></slot>
+			</div>
 		</template>
-		<template #body>
+		<template #default>
 			<div ref="colorPicker" class="dark:bg-zinc-900 rounded-lg bg-white p-3 shadow-lg">
 				<div
 					ref="colorMap"
@@ -120,6 +121,7 @@
 <script setup lang="ts">
 import { clamp, useEyeDropper } from '@vueuse/core'
 import { Popover } from 'frappe-ui'
+import type { PopoverAlign, PopoverSide } from 'frappe-ui'
 import { PropType, Ref, StyleValue, computed, nextTick, ref, watch } from 'vue'
 import { HSVToHex, HashString, HexToHSV, RGBString, getRGB } from '../charts/colors'
 
@@ -149,6 +151,26 @@ const modelColor = computed(() => {
 	return getRGB(props.modelValue)
 })
 
+// Popover splits `placement` into `side` + `align`; this component keeps taking
+// the one string its callers already pass.
+const side = computed(() => props.placement.split('-')[0] as PopoverSide)
+const align = computed(() => (props.placement.split('-')[1] || 'center') as PopoverAlign)
+
+// Driven in controlled mode: the trigger wraps whatever the caller renders, so
+// reka's own toggle would fight the caller's `togglePopover`. Only the closing
+// half of `update:open` is honoured, which keeps Escape and outside-click working.
+const isOpen = ref(false)
+function togglePopover() {
+	isOpen.value = !isOpen.value
+}
+
+// The popover mounts its content only while open, so the maps do not exist at
+// the moment the picker opens. Position the selectors when the element itself
+// appears, rather than betting on how many ticks reka's portal takes.
+watch(colorMap, (el) => {
+	if (el) setSelectorPosition(modelColor.value)
+})
+
 const emit = defineEmits(['update:modelValue'])
 
 const colors = [
@@ -167,6 +189,7 @@ if (!isSupported.value) {
 }
 
 const setColorSelectorPosition = (color: HashString) => {
+	if (!colorMap.value) return
 	const { width, height } = colorMap.value.getBoundingClientRect()
 	const { s, v } = HexToHSV(color)
 	let x = clamp(s * width, 0, width)
@@ -175,6 +198,7 @@ const setColorSelectorPosition = (color: HashString) => {
 }
 
 const setHueSelectorPosition = (color: HashString) => {
+	if (!hueMap.value) return
 	const { width } = hueMap.value.getBoundingClientRect()
 	const { h } = HexToHSV(color)
 	const left = (h / 360) * width
@@ -255,6 +279,7 @@ const hue = computed(() => {
 
 const updateColor = () => {
 	nextTick(() => {
+		if (!colorMap.value) return
 		const colorMapBounds = colorMap.value.getBoundingClientRect()
 		const s = Math.round((colorSelectorPosition.value.x / colorMapBounds.width) * 100)
 		const v = 100 - Math.round((colorSelectorPosition.value.y / colorMapBounds.height) * 100)

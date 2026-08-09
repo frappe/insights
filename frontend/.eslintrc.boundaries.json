@@ -1,0 +1,121 @@
+{
+	"parser": "vue-eslint-parser",
+	"parserOptions": {
+		"parser": "@typescript-eslint/parser",
+		"ecmaVersion": 2021,
+		"sourceType": "module",
+		"ecmaFeatures": { "jsx": true }
+	},
+	"overrides": [
+		{
+			"files": ["src2/islands/**"],
+			"rules": {
+				"no-restricted-imports": [
+					"error",
+					{
+						"patterns": [
+							{
+								"group": [
+									"**/router",
+									"**/router.ts",
+									"**/workbook/workbook",
+									"**/workbook/workbook.ts"
+								],
+								"message": "An island entry graph must not import the SPA router or the workbook store — an island mounts with neither. The item stores are refused by the island build instead, which sees the graph after types are erased, so `import type` from them stays fine."
+							}
+						],
+						"paths": [
+							{
+								"name": "vue-router",
+								"importNames": ["useRouter", "useRoute"],
+								"message": "The viewer graph must not depend on a router instance — an island mounts without one. Use helpers/navigation instead."
+							}
+						]
+					}
+				]
+			}
+		},
+		{
+			"files": ["src2/charts/**", "src2/dashboard/**", "src2/query/**"],
+			"excludedFiles": ["src2/dashboard/DashboardList.vue"],
+			"rules": {
+				"no-restricted-imports": [
+					"error",
+					{
+						"patterns": [
+							{
+								"group": ["**/router", "**/router.ts"],
+								"message": "The viewer graph must not import the SPA router — it drags every routed page into the bundle and an island mounts without a router. Use helpers/navigation instead."
+							}
+						],
+						"paths": [
+							{
+								"name": "vue-router",
+								"importNames": ["useRouter", "useRoute"],
+								"message": "The viewer graph must not depend on a router instance — an island mounts without one. Use helpers/navigation instead."
+							}
+						]
+					}
+				]
+			}
+		},
+		{
+			"files": [
+				"src2/islands/DashboardIsland.vue",
+				"src2/dashboard/Dashboard.vue",
+				"src2/dashboard/DashboardBuilder.vue",
+				"src2/dashboard/SharedDashboard.vue"
+			],
+			"rules": {
+				"no-restricted-imports": [
+					"error",
+					{
+						"patterns": [
+							{
+								"group": [
+									"**/router",
+									"**/router.ts",
+									"**/workbook/workbook",
+									"**/workbook/workbook.ts"
+								],
+								"message": "The viewer graph must not import the SPA router or the workbook store — it drags every routed page into the bundle and an island mounts with neither."
+							},
+							{
+								"group": [
+									"./*.vue",
+									"**/dashboard/*.vue",
+									"!./DashboardView.vue",
+									"!**/dashboard/DashboardView.vue"
+								],
+								"message": "An entry point mounts DashboardView and draws nothing itself. Anything that renders inside the page box — the grid, a card, the filter bar, an action — belongs in DashboardView, behind the capability its feed carries. A shim names the feed it reads from and carries navigation context, nothing more."
+							}
+						],
+						"paths": [
+							{
+								"name": "vue-router",
+								"importNames": ["useRouter", "useRoute"],
+								"message": "The viewer graph must not depend on a router instance — an island mounts without one. Use helpers/navigation instead."
+							}
+						]
+					}
+				]
+			}
+		},
+		{
+			"files": ["src2/charts/chart.ts", "src2/query/query.ts", "src2/dashboard/dashboard.ts"],
+			"rules": {
+				"no-restricted-imports": [
+					"error",
+					{
+						"patterns": [
+							{
+								"group": ["**/workbook/workbook", "**/workbook/workbook.ts"],
+								"message": "The item stores must not import the workbook store — the workbook is the builder's aggregate, and an island mounts an item with no builder around it. Workbook-coupled behaviour belongs in workbook/workbook_items."
+							}
+						]
+					}
+				]
+			}
+		}
+	]
+}

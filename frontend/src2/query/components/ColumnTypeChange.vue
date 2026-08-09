@@ -14,19 +14,15 @@ function onTypeChange(newType: ColumnDataType, togglePopover: () => void) {
 
 <template>
 	<Popover side="bottom" align="start">
-		<template #trigger="{ isOpen }">
-			<Button
-				variant="ghost"
-				class="rounded-none"
-				:class="isOpen ? '!bg-surface-gray-2' : ''"
-			>
+		<template #trigger="{ open }">
+			<Button variant="ghost" class="rounded-none" :class="open ? '!bg-surface-gray-2' : ''">
 				<template #icon>
 					<DataTypeIcon :columnType="modelValue" />
 				</template>
 			</Button>
 		</template>
-		<template #default="{ toggle: togglePopover, isOpen }">
-			<div v-if="isOpen" class="flex min-w-[10rem] flex-col p-1.5">
+		<template #default="{ toggle: togglePopover, open }">
+			<div v-if="open" class="flex min-w-[10rem] flex-col p-1.5">
 				<Button
 					v-for="type in COLUMN_TYPES"
 					:key="type.value"

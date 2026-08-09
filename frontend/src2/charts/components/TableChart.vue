@@ -4,10 +4,12 @@ import QueryDataTable from '../../query/components/QueryDataTable.vue'
 import { column } from '../../query/helpers'
 import { TableChartConfig } from '../../types/chart.types'
 import { DataFormat, SortDirection } from '../../types/query.types'
-import { Chart } from '../chart'
+import { Query } from '../../query/query'
+import { ChartRead } from '../chart_read'
 import ChartTitle from './ChartTitle.vue'
 
-const props = defineProps<{ chart: Chart }>()
+const props = defineProps<{ chart: ChartRead; readonly?: boolean }>()
+defineEmits<{ drillDown: [query: Query] }>()
 const tableConfig = computed(() => props.chart.doc.config as TableChartConfig)
 
 // Maps a value column to its display format (e.g. percent) so the table can
@@ -50,15 +52,16 @@ function onSortChange(column_name: string, sort_order: SortDirection) {
 	>
 		<ChartTitle :title="props.chart.doc.title" />
 		<QueryDataTable
-			:query="props.chart.dataQuery"
+			:query="props.chart"
 			:show-filter-row="tableConfig.show_filter_row"
 			:show-column-totals="tableConfig.show_column_totals"
 			:show-row-totals="tableConfig.show_row_totals"
 			:compact-numbers="tableConfig.compact_numbers"
 			:enable-color-scale="tableConfig.enable_color_scale"
 			:format-group="tableConfig.conditional_formatting"
-			:enable-sort="true"
-			:enable-drill-down="true"
+			:enable-sort="!props.readonly"
+			:enable-drill-down="!props.readonly"
+			@drill-down="$emit('drillDown', $event)"
 			:on-sort-change="onSortChange"
 			:sticky-columns="tableConfig.sticky_columns"
 			:column-widths="tableConfig.column_widths"

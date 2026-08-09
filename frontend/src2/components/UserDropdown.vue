@@ -69,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import { call, Dropdown, useTheme } from 'frappe-ui'
+import { call, Dropdown, useColorScheme } from 'frappe-ui'
 import {
 	ChevronDown,
 	HelpCircle,
@@ -90,8 +90,8 @@ const props = defineProps<{ isCollapsed?: boolean }>()
 
 const showLoginToFCDialog = ref(false)
 
-const { currentTheme, toggleTheme } = useTheme()
-const isDark = computed(() => currentTheme.value === 'dark')
+const { colorScheme, toggleColorScheme } = useColorScheme()
+const isDark = computed(() => colorScheme.value === 'dark')
 
 const userDropdownOptions = computed(() => {
 	const options: { label: string; icon: any; onClick: () => void }[] = [
@@ -125,7 +125,7 @@ const userDropdownOptions = computed(() => {
 	options.push({
 		label: isDark.value ? __('Light mode') : __('Dark mode'),
 		icon: h(isDark.value ? Sun : Moon),
-		onClick: toggleTheme,
+		onClick: toggleColorScheme,
 	})
 	options.push({
 		label: __('Log out'),

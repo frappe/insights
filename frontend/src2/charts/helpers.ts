@@ -1,4 +1,4 @@
-import { graphic } from 'echarts/core'
+import { graphic } from 'echarts'
 import { ellipsis, formatNumber, getShortNumber, toTitleCase } from '../helpers'
 import { FIELDTYPES, isCalendarDateType } from '../helpers/constants'
 import { getFormattedDate } from '../query/helpers'
@@ -653,8 +653,8 @@ export function getFunnelChartOptions(config: FunnelChartConfig, result: QueryRe
 	const rows = result.rows
 	const show_percentage = config.show_percentage ?? true
 
-	// Measures mode: each measure is a stage. The data_query aggregates them with
-	// no group-by, so the result is a single row with one column per measure.
+	// Measures mode: each measure is a stage. The chart's query aggregates them
+	// with no group-by, so the result is a single row with one column per measure.
 	const measures = config.measures?.filter((m) => m.measure_name)
 
 	let categories: string[]
@@ -1503,6 +1503,36 @@ export function setDimensionNames(config: any) {
 	if (config.columns && config.columns.length) {
 		config.columns = config.columns.map(setDimensionName)
 	}
+	return config
+}
+
+// Every saved config passes through here before anything reads it: the option
+// builders reach into the slots without guarding, and a config saved by an older
+// version may not have them. The chart store runs it on load, and the viewer
+// endpoint's config runs it too — a card drawn on a desk page and the same card
+// in the builder must not disagree about what an old chart looks like.
+export function normalizeChartConfig(config: any, chart_type: string) {
+	config.order_by = config.order_by || []
+	config.limit = config.limit || 100
+
+	if ('x_axis' in config && config.x_axis) {
+		config.x_axis = handleOldXAxisConfig(config.x_axis)
+	}
+	if ('y_axis' in config && Array.isArray(config.y_axis)) {
+		config.y_axis = handleOldYAxisConfig(config.y_axis)
+	}
+	if ('split_by' in config && config.split_by) {
+		config.split_by = handleOldXAxisConfig(config.split_by)
+	}
+	if (chart_type === 'Funnel') {
+		config.label_position = config.label_position || 'left'
+	}
+	if (chart_type === 'Donut') {
+		config.legend_position = config.legend_position || 'bottom'
+	}
+
+	config = setDimensionNames(config)
+	config = ensureConfigSlots(config, chart_type)
 	return config
 }
 

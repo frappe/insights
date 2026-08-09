@@ -7,7 +7,8 @@ import { createToast } from '../helpers/toasts'
 import session from '../session'
 import { ShareAccess, WorkbookSharePermission } from '../types/workbook.types'
 import useUserStore from '../users/users'
-import { Workbook, workbookKey } from './workbook'
+import type { Workbook } from './workbook'
+import { workbookKey } from './workbook_key'
 
 const show = defineModel()
 const originalOrganizationAccess = ref<'view' | 'edit'>()
@@ -173,7 +174,7 @@ function updatePermissions() {
 						<Dropdown
 							v-if="user.email !== session.user.email"
 							class="flex-shrink-0"
-							placement="right"
+							align="end"
 							:options="accessOptions(user.email)"
 							:button="{
 								iconRight: 'lucide-chevron-down',

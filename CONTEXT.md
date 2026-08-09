@@ -78,6 +78,38 @@ shared runtime. Declared via the `ui_islands` hook; Insights ships `insights.das
 and `insights.chart`.
 _Avoid_: widget, block, embed (embed = the public iframe-sharing feature)
 
+**Standard workbook**:
+The unit an app ships analytics in — a workbook, shipped as an
+`insights/<folder>/` folder holding one JSON file per named item in typed
+subfolders (`query/`, `chart/`, `dashboard/`), plus a `workbook.json`
+(title, `required_apps`, `format_version`). The folder name is the workbook's
+identity: `{app}/{folder}` is its Standard ID. Item names stay flat across an
+app. References inside the folder are logical names, never docnames.
+_Avoid_: bundle (the retired name), template (the retired import-a-copy channel),
+package
+
+**Standard content**:
+What a shipped workbook becomes on a site: real documents (the workbook and its
+items), flagged `is_standard`, each identified by a Standard ID — synced on
+migrate, so shipped content exists everywhere and a reference to it never
+dangles. Read-only outside developer mode; a standard workbook admits only
+standard items — a site that wants it different duplicates.
+_Avoid_: imported workbook, shipped copy
+
+**Standard ID**:
+The `{app}/{name}` identity of a shipped document, stored in `standard_id` on
+the workbook and the three content doctypes. The only reference currency across
+the app boundary; docnames are site-local hashes and never cross it. Only
+standard content has one.
+_Avoid_: logical id (the retired name), logical name (a bare `{name}`, as used
+inside a shipped folder's files)
+
+**Slug**:
+A dashboard's readable URL handle (`sales-performance`), assigned once and only
+ever used from outside. The resolver accepts it beside the Standard ID and the
+docname; nothing internal references it.
+_Avoid_: route, permalink
+
 ### Sharing & governance
 
 **Visibility**:
@@ -97,10 +129,6 @@ A named group of users that grants access to resources (data sources, tables).
 
 **Resource Permission**:
 A grant tying a team to one specific resource.
-
-**Template**:
-A pre-built workbook shipped by any installed app via the `insights_workbook_templates`
-hook; imported as one shared, Administrator-owned copy per site.
 
 **Alert**:
 A scheduled check on a query's results that notifies recipients (email or Telegram)

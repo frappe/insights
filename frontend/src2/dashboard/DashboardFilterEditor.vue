@@ -15,7 +15,7 @@ import NumberFilterPicker from '../query/components/NumberFilterPicker.vue'
 import RelativeDatePicker from '../query/components/RelativeDatePicker.vue'
 import { ColumnOption, FilterOperator } from '../types/query.types'
 import { WorkbookDashboardFilter } from '../types/workbook.types'
-import { Dashboard } from './dashboard'
+import { Dashboard, parseFilterLink } from './dashboard'
 import { __ } from '../translation'
 import { Switch, Tabs, DatePicker, DateRangePicker } from 'frappe-ui'
 
@@ -60,7 +60,7 @@ const linkOptions = computed(() => {
 		const dependentColumns = chart.getDependentQueryColumns().map((group) => {
 			return {
 				group: group.group,
-				options: disableColumnOptions(group.items),
+				options: disableColumnOptions(group.options),
 			}
 		})
 		return {
@@ -131,7 +131,7 @@ const sourceColumn = computed(() => {
 	const firstChart = Object.keys(filter.links)[0]
 	if (!firstChart) return
 	const linkedColumn = filter.links[firstChart]
-	return dashboard.getColumnFromFilterLink(linkedColumn)
+	return parseFilterLink(linkedColumn)
 })
 
 function defaultValuesProvider(search: string) {

@@ -3,11 +3,11 @@ import { inject } from 'vue'
 import Code from '../../components/Code.vue'
 import { copyToClipboard } from '../../helpers'
 import { __ } from '../../translation'
-import { Query } from '../query'
+import { ResultTable } from '../result_table'
 
 const showDialog = defineModel()
 
-const query = inject('query') as Query
+const query = inject('query') as ResultTable
 </script>
 
 <template>

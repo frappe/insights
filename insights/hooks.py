@@ -27,13 +27,14 @@ add_to_apps_screen = [
     }
 ]
 
-# Any app can ship workbooks to Insights by pointing this hook at a directory
-# (relative to the app) holding one folder per workbook — manifest.json +
-# workbook.json + optional preview.png. Insights is its own first consumer: the
-# bundled ERPNext workbooks are discovered through the same public contract.
-# Deliberately policy-free name: how the site consumes these (import a copy
-# today, versioned updates later) can evolve without breaking the hook.
-insights_workbooks = "workbook_templates"
+# UI units the framework can mount into a host page, keyed by the asset base name
+# the island build registers in assets.json (`<base>.island.js` / `.island.css`,
+# built by `yarn build:islands`). Registration is unconditional — whether a desk
+# page renders Insights or the legacy dashboard is the framework's call.
+ui_islands = {
+    "insights.chart": "insights_chart",
+    "insights.dashboard": "insights_dashboard",
+}
 
 
 # Includes in <head>
@@ -95,6 +96,8 @@ app_include_js = "insights_nudge.bundle.js"
 # before_install = "insights.install.before_install"
 after_install = "insights.migrate.after_migrate"
 after_migrate = "insights.migrate.after_migrate"
+after_app_install = "insights.standard_content.after_app_install"
+before_app_uninstall = "insights.standard_content.before_app_uninstall"
 
 after_request = ["insights.insights.doctype.insights_data_source_v3.insights_data_source_v3.after_request"]
 
@@ -158,7 +161,46 @@ has_permission = {
 doc_events = {
     "User": {
         "on_change": "insights.insights.doctype.insights_team.insights_team.update_admin_team",
-    }
+    },
+    # standard (app-shipped) content is read-only outside developer mode, and on
+    # a developer bench a save writes its file back. The workbook's file is the
+    # folder's manifest; the rest is the same round trip.
+    "Insights Workbook": {
+        "validate": "insights.standard_content.block_standard_edits",
+        "on_update": "insights.export_to_app.write_back",
+        "on_trash": "insights.standard_content.block_standard_deletes",
+    },
+    # `block_standard_edits` first: for a standard document "this is read-only"
+    # is the truer answer than "this workbook is not yours"
+    "Insights Query v3": {
+        "validate": [
+            "insights.standard_content.block_standard_edits",
+            "insights.standard_content.block_foreign_workbook_members",
+        ],
+        "on_update": "insights.export_to_app.write_back",
+        "on_trash": "insights.standard_content.block_standard_deletes",
+    },
+    "Insights Chart v3": {
+        "validate": [
+            "insights.standard_content.block_standard_edits",
+            "insights.standard_content.block_foreign_workbook_members",
+        ],
+        "on_update": "insights.export_to_app.write_back",
+        "on_trash": "insights.standard_content.block_standard_deletes",
+    },
+    "Insights Dashboard v3": {
+        "validate": [
+            "insights.standard_content.block_standard_edits",
+            "insights.standard_content.block_foreign_workbook_members",
+        ],
+        "on_update": "insights.export_to_app.write_back",
+        "on_trash": "insights.standard_content.block_standard_deletes",
+    },
+    # the format ships no folders, so any folder in a shipped workbook is the
+    # site's own — the guard is the whole of this doctype's involvement
+    "Insights Folder": {
+        "validate": "insights.standard_content.block_foreign_workbook_members",
+    },
 }
 
 # Scheduled Tasks
