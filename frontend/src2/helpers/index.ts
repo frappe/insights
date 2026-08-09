@@ -3,7 +3,7 @@ import { __ } from '../translation'
 import { isEqual } from 'es-toolkit'
 import { toPng } from 'html-to-image'
 import { call, debounce } from 'frappe-ui'
-import { Socket } from 'socket.io-client'
+import type { Socket } from 'socket.io-client'
 import {
 	inject,
 	watch,

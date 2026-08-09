@@ -42,6 +42,10 @@ await buildIslands({
 		/\/charts\/chart(\.ts)?$/,
 		/\/query\/query(\.ts)?$/,
 		/\/dashboard\/dashboard(\.ts)?$/,
+		// The runtime publishes no socket, so an island that reached for one
+		// would either bundle 40 kB of it or ask the page's import map for a
+		// specifier it does not have. Desk owns the connection on that page.
+		/^socket\.io-client$/,
 	],
 	production: process.argv.includes('--production'),
 	watch: process.argv.includes('--watch'),
