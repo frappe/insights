@@ -1,4 +1,4 @@
-import { frappeRequest, setConfig, useTheme } from 'frappe-ui'
+import { frappeRequest, setConfig, useColorScheme } from 'frappe-ui'
 import { spritePlugin } from 'frappe-ui/icons'
 import { createPinia } from 'pinia'
 import { createApp, watchEffect } from 'vue'
@@ -16,7 +16,7 @@ setConfig('resourceFetcher', frappeRequest)
 // Default to light until charts are themed for dark (Phase 2); dark stays
 // opt-in via the toggle so users aren't dropped into a half-themed UI.
 if (!localStorage.getItem('theme')) localStorage.setItem('theme', 'light')
-useTheme() // restores saved theme onto <html data-theme>, tracks system pref
+useColorScheme() // restores saved theme onto <html data-theme>, tracks system pref
 
 const app = createApp(App)
 const pinia = createPinia()
