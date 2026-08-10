@@ -11,6 +11,7 @@ import pandas as pd
 import requests
 import telegram
 from croniter import croniter
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils import validate_email_address
 from frappe.utils.data import get_datetime, get_datetime_str, now_datetime
@@ -69,9 +70,9 @@ class InsightsAlert(Document):
 
     def validate_webhook(self):
         if not self.webhook_url:
-            frappe.throw("Webhook URI is required for a webhook alert")
+            frappe.throw(_("Webhook URL is required for a webhook alert"))
         if not self.webhook_token:
-            frappe.throw("Webhook token is required for a webhook alert")
+            frappe.throw(_("Webhook token is required for a webhook alert"))
         validate_public_url(self.webhook_url)
 
     def has_query_permission(self):
@@ -137,7 +138,7 @@ class InsightsAlert(Document):
                 message=frappe.get_traceback(),
                 title=f"Insights webhook alert failed: {self.title}",
             )
-            frappe.throw(f"Could not deliver the alert to {self.webhook_url}: {e}")
+            frappe.throw(_("Could not deliver the alert to {0}: {1}").format(self.webhook_url, str(e)))
 
     def send_email_alert(self, message):
         subject = f"Insights Alert: {self.title}"
@@ -268,24 +269,26 @@ def validate_public_url(url: str) -> None:
     targets."""
     parsed = urlparse(url)
     if parsed.scheme != "https":
-        frappe.throw("Webhook URL must use https")
+        frappe.throw(_("Webhook URL must use https"))
     if not parsed.hostname:
-        frappe.throw("Webhook URL must include a hostname")
+        frappe.throw(_("Webhook URL must include a hostname"))
 
     port = parsed.port or 443
     try:
         resolved = socket.getaddrinfo(parsed.hostname, port, proto=socket.IPPROTO_TCP)
     except socket.gaierror:
-        frappe.throw(f"Could not resolve webhook host: {parsed.hostname}")
+        frappe.throw(_("Could not resolve webhook host: {0}").format(parsed.hostname))
 
-    for *_, sockaddr in resolved:
+    for *_rest, sockaddr in resolved:
         address = ipaddress.ip_address(sockaddr[0])
         if address.version == 6 and address.ipv4_mapped:
             address = address.ipv4_mapped
         if not address.is_global:
             frappe.throw(
-                f"Webhook URL resolves to a non-public address ({address}). "
-                "Alerts can only be sent to publicly routable hosts."
+                _(
+                    "Webhook URL resolves to a non-public address ({0}). "
+                    "Alerts can only be sent to publicly routable hosts."
+                ).format(address)
             )
 
 
@@ -301,7 +304,7 @@ class _PublicOnlyConnection(HTTPSConnection):
             address = address.ipv4_mapped
         if not address.is_global:
             frappe.throw(
-                f"Webhook host connected to a non-public address ({address})",
+                _("Webhook host connected to a non-public address ({0})").format(address),
                 exc=BlockedWebhookAddress,
             )
 
@@ -322,7 +325,7 @@ class PublicOnlyAdapter(HTTPAdapter):
 
     def proxy_manager_for(self, proxy, **proxy_kwargs):
         frappe.throw(
-            f"Webhook alerts cannot be delivered through a proxy ({proxy})",
+            _("Webhook alerts cannot be delivered through a proxy ({0})").format(proxy),
             exc=BlockedWebhookAddress,
         )
 
@@ -344,7 +347,7 @@ def post_to_public_url(url: str, data: str, headers: dict) -> requests.Response:
             proxies={},
         )
     if response.is_redirect:
-        frappe.throw(f"Webhook URL must not redirect (got {response.status_code})")
+        frappe.throw(_("Webhook URL must not redirect (got {0})").format(response.status_code))
     return response
 
 
