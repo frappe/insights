@@ -1,7 +1,10 @@
 # Copyright (c) 2023, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
+import ipaddress
 import re
+import socket
 from datetime import datetime
+from urllib.parse import urlparse
 
 import frappe
 import pandas as pd
@@ -66,6 +69,7 @@ class InsightsAlert(Document):
             frappe.throw("Webhook URI is required for a webhook alert")
         if not self.webhook_token:
             frappe.throw("Webhook token is required for a webhook alert")
+        validate_public_url(self.webhook_url)
 
     def has_query_permission(self):
         if not frappe.has_permission("Insights Query v3", "read", self.query):
@@ -119,11 +123,10 @@ class InsightsAlert(Document):
         try:
             # frappe.as_json, not requests' json=: query rows carry datetimes
             # and Decimals that the plain encoder refuses.
-            response = requests.post(
+            response = post_to_public_url(
                 self.webhook_url,
                 data=frappe.as_json(payload),
                 headers=headers,
-                timeout=WEBHOOK_TIMEOUT_SECONDS,
             )
             response.raise_for_status()
         except requests.RequestException as e:
@@ -252,6 +255,52 @@ class TelegramAlert:
     @property
     def bot(self):
         return telegram.Bot(token=self.token)
+
+
+def validate_public_url(url: str) -> None:
+    """Reject a destination an Insights User should not be able to make this
+    server talk to. Any Insights User can create an alert, so a webhook that
+    resolves onto the server's own network reaches services that are not
+    otherwise exposed to them. Only publicly routable hosts are delivery
+    targets."""
+    parsed = urlparse(url)
+    if parsed.scheme != "https":
+        frappe.throw("Webhook URL must use https")
+    if not parsed.hostname:
+        frappe.throw("Webhook URL must include a hostname")
+
+    port = parsed.port or 443
+    try:
+        resolved = socket.getaddrinfo(parsed.hostname, port, proto=socket.IPPROTO_TCP)
+    except socket.gaierror:
+        frappe.throw(f"Could not resolve webhook host: {parsed.hostname}")
+
+    for *_, sockaddr in resolved:
+        address = ipaddress.ip_address(sockaddr[0])
+        if address.version == 6 and address.ipv4_mapped:
+            address = address.ipv4_mapped
+        if not address.is_global:
+            frappe.throw(
+                f"Webhook URL resolves to a non-public address ({address}). "
+                "Alerts can only be sent to publicly routable hosts."
+            )
+
+
+def post_to_public_url(url: str, data: str, headers: dict) -> requests.Response:
+    """POST to a validated destination. A redirect is refused rather than
+    followed, so the address that was checked is the address that receives the
+    alert - configure the final URL instead."""
+    validate_public_url(url)
+    response = requests.post(
+        url,
+        data=data,
+        headers=headers,
+        timeout=WEBHOOK_TIMEOUT_SECONDS,
+        allow_redirects=False,
+    )
+    if response.is_redirect:
+        frappe.throw(f"Webhook URL must not redirect (got {response.status_code})")
+    return response
 
 
 def render_template_restricted(template: str, context: dict) -> str:

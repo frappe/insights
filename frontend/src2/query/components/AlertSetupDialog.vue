@@ -43,7 +43,9 @@ wheneverChanges(
 
 const webhookError = computed(() => {
 	if (alert.doc.channel !== 'Webhook') return ''
-	if (!alert.doc.webhook_url?.trim()) return __('Webhook URL is required')
+	const url = alert.doc.webhook_url?.trim()
+	if (!url) return __('Webhook URL is required')
+	if (!url.startsWith('https://')) return __('Webhook URL must use https://')
 	if (!alert.doc.webhook_token) return __('Token is required')
 	return ''
 })
@@ -203,7 +205,7 @@ function toggleAlert() {
 									:label="__('Webhook URL')"
 									v-model="alert.doc.webhook_url"
 									:placeholder="__('e.g. https://example.com/hooks/insights')"
-								/>
+									/>
 								<ErrorMessage v-if="webhookError" :message="webhookError" />
 							</div>
 							<FormControl
