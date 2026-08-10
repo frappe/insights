@@ -273,11 +273,21 @@ def validate_public_url(url: str) -> None:
     if not parsed.hostname:
         frappe.throw(_("Webhook URL must include a hostname"))
 
-    port = parsed.port or 443
+    resolve_public_address(parsed.hostname, parsed.port or 443)
+
+
+class BlockedWebhookAddress(frappe.ValidationError):
+    pass
+
+
+def resolve_public_address(hostname: str, port: int) -> str:
+    """The one publicly routable address this hostname is allowed to be reached
+    on. Returning the address, rather than approving the name, is what stops a
+    second lookup from answering differently."""
     try:
-        resolved = socket.getaddrinfo(parsed.hostname, port, proto=socket.IPPROTO_TCP)
+        resolved = socket.getaddrinfo(hostname, port, proto=socket.IPPROTO_TCP)
     except socket.gaierror:
-        frappe.throw(_("Could not resolve webhook host: {0}").format(parsed.hostname))
+        frappe.throw(_("Could not resolve webhook host: {0}").format(hostname))
 
     for *_rest, sockaddr in resolved:
         address = ipaddress.ip_address(sockaddr[0])
@@ -288,25 +298,21 @@ def validate_public_url(url: str) -> None:
                 _(
                     "Webhook URL resolves to a non-public address ({0}). "
                     "Alerts can only be sent to publicly routable hosts."
-                ).format(address)
+                ).format(address),
+                exc=BlockedWebhookAddress,
             )
-
-
-class BlockedWebhookAddress(frappe.ValidationError):
-    pass
+    return resolved[0][-1][0]
 
 
 class _PublicOnlyConnection(HTTPSConnection):
-    def connect(self):
-        super().connect()
-        address = ipaddress.ip_address(self.sock.getpeername()[0])
-        if address.version == 6 and address.ipv4_mapped:
-            address = address.ipv4_mapped
-        if not address.is_global:
-            frappe.throw(
-                _("Webhook host connected to a non-public address ({0})").format(address),
-                exc=BlockedWebhookAddress,
-            )
+    def _new_conn(self):
+        pinned = resolve_public_address(self.host, self.port)
+        original = self._dns_host
+        self._dns_host = pinned
+        try:
+            return super()._new_conn()
+        finally:
+            self._dns_host = original
 
 
 class _PublicOnlyConnectionPool(HTTPSConnectionPool):
