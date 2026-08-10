@@ -311,11 +311,20 @@ class _PublicOnlyConnectionPool(HTTPSConnectionPool):
 
 
 class PublicOnlyAdapter(HTTPAdapter):
-    """Checks the address actually connected to, which DNS cannot change after the fact."""
+    """Checks the address actually connected to, which DNS cannot change after the fact.
+
+    A proxy resolves and connects on our behalf, so the destination cannot be
+    checked here at all - proxied delivery is refused rather than trusted."""
 
     def init_poolmanager(self, *args, **kwargs):
         super().init_poolmanager(*args, **kwargs)
         self.poolmanager.pool_classes_by_scheme = {"https": _PublicOnlyConnectionPool}
+
+    def proxy_manager_for(self, proxy, **proxy_kwargs):
+        frappe.throw(
+            f"Webhook alerts cannot be delivered through a proxy ({proxy})",
+            exc=BlockedWebhookAddress,
+        )
 
 
 def post_to_public_url(url: str, data: str, headers: dict) -> requests.Response:
@@ -325,12 +334,14 @@ def post_to_public_url(url: str, data: str, headers: dict) -> requests.Response:
     validate_public_url(url)
     with requests.Session() as session:
         session.mount("https://", PublicOnlyAdapter())
+        session.trust_env = False
         response = session.post(
             url,
             data=data,
             headers=headers,
             timeout=WEBHOOK_TIMEOUT_SECONDS,
             allow_redirects=False,
+            proxies={},
         )
     if response.is_redirect:
         frappe.throw(f"Webhook URL must not redirect (got {response.status_code})")
