@@ -17,7 +17,11 @@ const workbook = inject(workbookKey)!
 			<div class="absolute left-0">
 				<slot name="left">
 					<router-link :to="{ path: '/workbook' }">
-						<img src="../assets/insights-logo-new.svg" alt="logo" class="h-7 rounded" />
+						<img
+							src="../assets/insights-logo-new.svg"
+							alt="logo"
+							class="h-7 rounded-4"
+						/>
 					</router-link>
 				</slot>
 			</div>
@@ -33,7 +37,7 @@ const workbook = inject(workbookKey)!
 						/>
 					</Tooltip>
 					<ContentEditable
-						class="rounded-sm font-medium !text-ink-gray-7 focus:ring-2 focus:ring-outline-gray-6 focus:ring-offset-4"
+						class="rounded-1 font-medium !text-ink-gray-7 focus:ring-2 focus:ring-outline-gray-6 focus:ring-offset-4"
 						:modelValue="workbook.doc.title"
 						placeholder="Untitled Workbook"
 						@returned="workbook.doc.title = $event"

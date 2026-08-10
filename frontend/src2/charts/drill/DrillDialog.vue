@@ -143,7 +143,7 @@ const bound = computed(() => {
 			</div>
 
 			<template v-else>
-				<div class="min-h-0 flex-1 overflow-hidden rounded border border-outline-gray-2">
+				<div class="min-h-0 flex-1 overflow-hidden rounded-4 border border-outline-gray-2">
 					<DrillBreakdown
 						v-if="breakdown"
 						:data="props.data"

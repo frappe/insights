@@ -14,7 +14,7 @@ const query = inject('query') as ResultTable
 	<Dialog v-model:open="showDialog" :title="__('Generated SQL')" size="3xl" :dismissable="true">
 		<template #default>
 			<div class="relative">
-				<div class="max-h-[50vh] overflow-y-auto rounded border text-base">
+				<div class="max-h-[50vh] overflow-y-auto rounded-4 border text-base">
 					<Code
 						language="sql"
 						:model-value="query.result.executedSQL"

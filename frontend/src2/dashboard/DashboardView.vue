@@ -182,7 +182,7 @@ function exportImage() {
 				     trail with the title at the end of it -->
 				<ContentEditable
 					v-if="source.authoring?.rename"
-					class="cursor-text rounded-sm text-lg-semibold !text-ink-gray-7 focus:ring-2 focus:ring-outline-gray-6 focus:ring-offset-4"
+					class="cursor-text rounded-1 text-lg-semibold !text-ink-gray-7 focus:ring-2 focus:ring-outline-gray-6 focus:ring-offset-4"
 					:modelValue="source.title"
 					@returned="source.authoring.rename($event)"
 					@blur="source.authoring.rename($event)"
@@ -241,7 +241,7 @@ function exportImage() {
 		</div>
 
 		<div v-else-if="source.loading" class="flex-1 p-4">
-			<div class="h-8 w-64 animate-pulse rounded bg-surface-gray-2" />
+			<div class="h-8 w-64 animate-pulse rounded-4 bg-surface-gray-2" />
 		</div>
 
 		<!-- The one scroller on the page. The padding belongs here and not on

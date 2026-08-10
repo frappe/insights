@@ -132,7 +132,7 @@ const filteredSchema = computed(() => {
 					:key="tableName"
 				>
 					<div
-						class="flex w-full cursor-pointer select-none items-center gap-1.5 rounded py-1.5 text-ink-gray-6 hover:bg-surface-gray-1"
+						class="flex w-full cursor-pointer select-none items-center gap-1.5 rounded-4 py-1.5 text-ink-gray-6 hover:bg-surface-gray-1"
 						@click="toggleTable(tableName)"
 					>
 						<ChevronDown
@@ -156,7 +156,7 @@ const filteredSchema = computed(() => {
 							v-for="column in tableData.columns"
 							:key="column.label"
 							@click="insertColumnName(column.label)"
-							class="flex w-full items-center gap-1.5 rounded py-1.5 pl-2 text-left text-ink-gray-5 hover:bg-surface-gray-1"
+							class="flex w-full items-center gap-1.5 rounded-4 py-1.5 pl-2 text-left text-ink-gray-5 hover:bg-surface-gray-1"
 							:title="`${column.label} (${column.detail || column.type})`"
 						>
 							<component

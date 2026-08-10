@@ -1,6 +1,6 @@
 <template>
 	<div class="m-2 flex transition duration-200 ease-out">
-		<div :class="['w-[22rem] rounded bg-surface-base p-3 shadow-md', variantClasses]">
+		<div :class="['w-[22rem] rounded-4 bg-surface-base p-3 shadow-md', variantClasses]">
 			<div class="flex items-start">
 				<div v-if="iconComponent" class="mr-2 pt-1">
 					<component

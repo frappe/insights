@@ -19,7 +19,7 @@
 			</div>
 		</template>
 		<template #default>
-			<div ref="colorPicker" class="dark:bg-zinc-900 rounded-lg bg-white p-3 shadow-lg">
+			<div ref="colorPicker" class="dark:bg-zinc-900 rounded-6 bg-white p-3 shadow-lg">
 				<div
 					ref="colorMap"
 					:style="{
@@ -30,7 +30,7 @@
 						`,
 					}"
 					@mousedown.stop="handleSelectorMove"
-					class="relative m-auto h-24 w-44 rounded-md"
+					class="relative m-auto h-24 w-44 rounded-5"
 					@click.prevent="setColor"
 				>
 					<div
@@ -51,7 +51,7 @@
 				</div>
 				<div
 					ref="hueMap"
-					class="relative m-auto mt-2 h-3 w-44 rounded-md"
+					class="relative m-auto mt-2 h-3 w-44 rounded-5"
 					@click="setHue"
 					@mousedown.stop="handleHueSelectorMove"
 					:style="{

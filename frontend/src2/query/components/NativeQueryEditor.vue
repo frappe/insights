@@ -131,7 +131,7 @@ useShortcut('Meta+e', () => {
 			</QueryToolbar>
 
 			<!-- SQL Editor -->
-			<div class="relative flex flex-1 flex-col overflow-hidden rounded border">
+			<div class="relative flex flex-1 flex-col overflow-hidden rounded-4 border">
 				<Code
 					ref="codeEditor"
 					:key="completions.tables.length"
@@ -144,7 +144,7 @@ useShortcut('Meta+e', () => {
 
 			<!-- Results Table -->
 			<QueryExecutionStatus />
-			<div class="relative flex h-[45%] w-full flex-col overflow-hidden rounded border">
+			<div class="relative flex h-[45%] w-full flex-col overflow-hidden rounded-4 border">
 				<QueryDataTable :query="query">
 					<template #footer-actions>
 						<QueryAlerts :query="query" />

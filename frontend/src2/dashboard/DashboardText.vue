@@ -56,7 +56,7 @@ const editedText = ref(unref(props.item.text))
 					<template #default="{ editor }">
 						<EditorContent
 							:editor="editor"
-							class="h-auto min-h-[8rem] cursor-text rounded bg-surface-gray-2 p-2"
+							class="h-auto min-h-[8rem] cursor-text rounded-4 bg-surface-gray-2 p-2"
 						/>
 					</template>
 				</Editor>

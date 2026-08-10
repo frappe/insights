@@ -87,7 +87,7 @@ function open(dashboard: StandardWorkbook['dashboards'][number]) {
 						<div
 							v-for="shipped in section.items"
 							:key="shipped.workbook"
-							class="rounded border border-outline-gray-1 bg-surface-base p-4"
+							class="rounded-4 border border-outline-gray-1 bg-surface-base p-4"
 						>
 							<div class="flex items-center justify-between gap-3">
 								<div class="truncate text-base-medium text-ink-gray-9">

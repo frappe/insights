@@ -3,7 +3,7 @@
 		<Dropdown :options="userDropdownOptions">
 			<template v-slot="{ open }">
 				<button
-					class="flex h-12 items-center rounded-md py-2 duration-300 ease-in-out"
+					class="flex h-12 items-center rounded-5 py-2 duration-300 ease-in-out"
 					:class="
 						props.isCollapsed
 							? 'w-auto px-0'
@@ -15,7 +15,7 @@
 					<img
 						src="../assets/insights-logo-new.svg"
 						alt="logo"
-						class="h-8 w-8 flex-shrink-0 rounded"
+						class="h-8 w-8 flex-shrink-0 rounded-4"
 					/>
 					<div
 						class="flex flex-1 flex-col text-left duration-300 ease-in-out"

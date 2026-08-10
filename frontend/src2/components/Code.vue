@@ -195,7 +195,7 @@ const autocompletionOptions = {
 	closeOnBlur: false,
 	maxRenderedOptions: 10,
 	icons: false,
-	optionClass: () => 'flex h-7 !px-2 items-center rounded !text-ink-gray-5',
+	optionClass: () => 'flex h-7 !px-2 items-center rounded-4 !text-ink-gray-5',
 }
 if (props.completions) {
 	autocompletionOptions.override = [

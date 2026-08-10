@@ -843,7 +843,7 @@ function toggleNewColumn() {
 
 	<div
 		v-if="props.loading && !props.filtering"
-		class="absolute top-10 flex h-[calc(100%-2.5rem)] rounded-b w-full items-center justify-center bg-surface-base/30 backdrop-blur-sm"
+		class="absolute top-10 flex h-[calc(100%-2.5rem)] rounded-b-4 w-full items-center justify-center bg-surface-base/30 backdrop-blur-sm"
 	>
 		<LoadingIndicator class="h-5 w-5 text-ink-gray-4" />
 	</div>

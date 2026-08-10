@@ -104,7 +104,7 @@ function resetFile() {
 			>
 				<template #default="{ progress, uploading, openFileSelector }">
 					<div
-						class="flex cursor-pointer flex-col items-center justify-center gap-3 rounded border border-dashed border-outline-gray-3 p-12 text-base"
+						class="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-4 border border-dashed border-outline-gray-3 p-12 text-base"
 						@click="openFileSelector"
 					>
 						<FileUp
@@ -138,7 +138,7 @@ function resetFile() {
 					<FormControl class="w-fit" label="Table Name" v-model="csvData.tablename" />
 				</div>
 				<div
-					class="relative flex h-[30rem] w-full flex-col overflow-hidden rounded border bg-surface-base"
+					class="relative flex h-[30rem] w-full flex-col overflow-hidden rounded-4 border bg-surface-base"
 				>
 					<DataTable
 						:columns="csvData.columns"

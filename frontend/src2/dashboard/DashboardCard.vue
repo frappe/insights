@@ -19,10 +19,10 @@ const emit = defineEmits<{
 </script>
 
 <template>
-	<div class="group relative flex w-full cursor-pointer flex-col gap-2 rounded bg-surface-base">
+	<div class="group relative flex w-full cursor-pointer flex-col gap-2 rounded-4 bg-surface-base">
 		<router-link
 			:to="`/dashboards/${dashboard.name}`"
-			class="flex h-[150px] overflow-hidden rounded border border-outline-gray-2 transition-transform duration-200 group-hover:scale-[1.01]"
+			class="flex h-[150px] overflow-hidden rounded-4 border border-outline-gray-2 transition-transform duration-200 group-hover:scale-[1.01]"
 		>
 			<img
 				v-if="dashboard.preview_image"

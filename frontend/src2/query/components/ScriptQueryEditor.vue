@@ -50,10 +50,10 @@ function handleSaveVariables(variables: any[]) {
 
 <template>
 	<div class="flex flex-1 flex-col gap-4 overflow-hidden p-4">
-		<div class="relative flex h-[55%] w-full flex-col rounded border">
+		<div class="relative flex h-[55%] w-full flex-col rounded-4 border">
 			<div class="flex flex-shrink-0 items-center gap-1 border-b p-1">
 				<ContentEditable
-					class="flex h-7 cursor-text items-center justify-center rounded bg-surface-base px-2 text-base leading-7 text-ink-gray-7 focus-visible:ring-1 focus-visible:ring-outline-gray-5"
+					class="flex h-7 cursor-text items-center justify-center rounded-4 bg-surface-base px-2 text-base leading-7 text-ink-gray-7 focus-visible:ring-1 focus-visible:ring-outline-gray-5"
 					:modelValue="query.doc.title"
 					@returned="query.doc.title = $event"
 					@blur="query.doc.title = $event"
@@ -132,7 +132,7 @@ function handleSaveVariables(variables: any[]) {
 			</div>
 		</div>
 
-		<div class="relative flex w-full flex-1 flex-col overflow-hidden rounded border">
+		<div class="relative flex w-full flex-1 flex-col overflow-hidden rounded-4 border">
 			<QueryDataTable :query="query">
 				<template #footer-actions>
 					<QueryAlerts :query="query" />

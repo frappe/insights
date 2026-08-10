@@ -89,12 +89,12 @@ const signatureElement = ref<HTMLElement | null>(null)
 
 onMounted(() => {
 	// fix clipping of tooltip & signature element because of dialog styling
-	const dialogElement = codeContainer.value?.closest('.my-8.overflow-hidden.rounded-xl')
+	const dialogElement = codeContainer.value?.closest('.my-8.overflow-hidden.rounded-7')
 	if (!dialogElement) {
 		return
 	}
-	dialogElement.classList.remove('overflow-hidden', 'rounded-xl', 'bg-white')
-	dialogElement.children[0]?.classList.add('rounded-xl')
+	dialogElement.classList.remove('overflow-hidden', 'rounded-7', 'bg-white')
+	dialogElement.children[0]?.classList.add('rounded-7')
 
 	if (expression.value?.trim()) {
 		validateExpression()
@@ -262,7 +262,7 @@ function setSignatureElementPosition() {
 		<div
 			ref="signatureElement"
 			v-show="currentFunctionSignature"
-			class="absolute flex h-fit max-h-[14rem] w-[25rem] flex-col gap-2 overflow-y-auto rounded-lg bg-surface-base px-2.5 py-1.5 shadow-md transition-all"
+			class="absolute flex h-fit max-h-[14rem] w-[25rem] flex-col gap-2 overflow-y-auto rounded-6 bg-surface-base px-2.5 py-1.5 shadow-md transition-all"
 		>
 			<template v-if="currentFunctionSignature">
 				<p

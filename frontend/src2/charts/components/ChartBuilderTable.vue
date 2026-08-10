@@ -66,7 +66,7 @@ function getDateGranularityOptions(column_name: string, column_type: string) {
 <template>
 	<div
 		v-if="chart.doc.chart_type != 'Table'"
-		class="flex h-[18rem] flex-col overflow-hidden rounded border"
+		class="flex h-[18rem] flex-col overflow-hidden rounded-4 border"
 	>
 		<QueryDataTable
 			:query="preview"

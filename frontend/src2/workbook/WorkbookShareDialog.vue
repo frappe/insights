@@ -101,7 +101,7 @@ function updatePermissions() {
 	>
 		<template #default>
 			<div class="-mb-4 flex flex-col gap-3 text-base">
-				<div class="flex items-center gap-3 rounded border px-3 py-2">
+				<div class="flex items-center gap-3 rounded-4 border px-3 py-2">
 					<Building2 class="h-6 w-6 text-ink-blue-6" stroke-width="1.5" />
 					<div class="flex flex-1 flex-col">
 						<div class="font-medium leading-5 text-ink-gray-7">Organization Access</div>
@@ -193,7 +193,7 @@ function updatePermissions() {
 
 					<div
 						v-if="userPermissions.filter((u) => u.access).length === 0"
-						class="rounded border border-dashed border-outline-gray-2 px-32 py-6 text-center text-sm text-ink-gray-4"
+						class="rounded-4 border border-dashed border-outline-gray-2 px-32 py-6 text-center text-sm text-ink-gray-4"
 					>
 						{{
 							organizationAccess

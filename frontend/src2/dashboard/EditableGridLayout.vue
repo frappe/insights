@@ -221,7 +221,7 @@ const lifted = computed(() => {
 					     cannot spend. -->
 					<div
 						v-if="gesture?.i === cell.i"
-						class="pointer-events-none absolute inset-2 rounded bg-surface-base shadow-2xl"
+						class="pointer-events-none absolute inset-2 rounded-4 bg-surface-base shadow-2xl"
 					/>
 					<slot name="item" v-bind="cell" />
 					<!-- The corner an author grabs is 24px, the corner they see is

@@ -29,7 +29,7 @@ const show = defineModel()
 						@click="type.onClick?.()"
 					>
 						<div
-							class="rounded border p-4 text-ink-gray-4 shadow-sm transition-all group-hover:scale-105"
+							class="rounded-4 border p-4 text-ink-gray-4 shadow-sm transition-all group-hover:scale-105"
 						>
 							<component :is="type.icon" />
 						</div>

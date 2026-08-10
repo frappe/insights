@@ -187,7 +187,7 @@ document.title = 'Users | Insights'
 	>
 		<template #default>
 			<div class="flex flex-col gap-4">
-				<div class="flex flex-wrap gap-1 rounded bg-surface-gray-2 p-0.5">
+				<div class="flex flex-wrap gap-1 rounded-4 bg-surface-gray-2 p-0.5">
 					<Button
 						v-for="(email, idx) in emailsToInvite"
 						:key="email"
@@ -210,7 +210,7 @@ document.title = 'Users | Insights'
 							placeholder="Enter email address"
 							v-model="emailsTxt"
 							@keydown.enter.capture.stop="extractEmails(`${emailsTxt} `)"
-							class="h-7 w-full rounded border-none bg-surface-gray-2 py-1.5 pl-2 pr-2 text-base text-ink-gray-7 placeholder-ink-gray-4 transition-colors focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
+							class="h-7 w-full rounded-4 border-none bg-surface-gray-2 py-1.5 pl-2 pr-2 text-base text-ink-gray-7 placeholder-ink-gray-4 transition-colors focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
 						/>
 					</div>
 				</div>

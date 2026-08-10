@@ -59,7 +59,7 @@ function moveSortColumn(from: number, to: number) {
 			@sort="moveSortColumn"
 		>
 			<template #item="{ item, index }">
-				<div class="flex rounded">
+				<div class="flex rounded-4">
 					<Button
 						class="flex-shrink-0 rounded-r-none border-r"
 						@click="toggleSortDirection(index)"

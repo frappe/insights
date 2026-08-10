@@ -160,7 +160,7 @@ const actions = computed(() => {
 						{{ __('{0}/{1}', report.app, report.folder) }}
 					</div>
 					<div
-						class="flex max-h-64 flex-col divide-y divide-outline-gray-1 overflow-y-auto rounded border border-outline-gray-2"
+						class="flex max-h-64 flex-col divide-y divide-outline-gray-1 overflow-y-auto rounded-4 border border-outline-gray-2"
 					>
 						<div
 							v-for="item in report.items"

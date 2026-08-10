@@ -68,7 +68,7 @@ function saveVariables() {
 					}}
 					<br />
 					<code
-						class="rounded bg-surface-gray-2 px-1 my-1 py-0.5 text-p-sm text-ink-gray-7"
+						class="rounded-4 bg-surface-gray-2 px-1 my-1 py-0.5 text-p-sm text-ink-gray-7"
 					>
 						formatted_api_key = f'token {api_key}:{api_secret}'
 					</code>
@@ -91,7 +91,7 @@ function saveVariables() {
 						>
 							<div class="flex flex-1 flex-shrink-0">
 								<input
-									class="w-full rounded-sm border-none bg-transparent px-2 py-2 text-base focus:bg-surface-gray-2 focus:outline-none focus:ring-0"
+									class="w-full rounded-1 border-none bg-transparent px-2 py-2 text-base focus:bg-surface-gray-2 focus:outline-none focus:ring-0"
 									type="text"
 									v-model="variable.variable_name"
 									:placeholder="__('e.g. api_key')"
@@ -100,7 +100,7 @@ function saveVariables() {
 							<div class="flex flex-1 flex-shrink-0">
 								<input
 									type="password"
-									class="w-full rounded-sm border-none bg-transparent px-2 py-2 text-base focus:bg-surface-gray-2 focus:outline-none focus:ring-0"
+									class="w-full rounded-1 border-none bg-transparent px-2 py-2 text-base focus:bg-surface-gray-2 focus:outline-none focus:ring-0"
 									v-model="variable.variable_value"
 									placeholder="**********************"
 								/>

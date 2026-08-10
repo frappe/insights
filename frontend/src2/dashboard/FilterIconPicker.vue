@@ -68,7 +68,7 @@ function clear(close: () => void) {
 								:key="name"
 								type="button"
 								:title="filterIconLabel(name)"
-								class="flex h-8 w-8 items-center justify-center rounded hover:bg-surface-gray-3"
+								class="flex h-8 w-8 items-center justify-center rounded-4 hover:bg-surface-gray-3"
 								:class="{ 'bg-surface-gray-3': selected === name }"
 								@click="select(name, close)"
 							>
@@ -83,7 +83,7 @@ function clear(close: () => void) {
 				<button
 					v-if="selected"
 					type="button"
-					class="mt-1 rounded border-t px-2 py-1 text-left text-base text-ink-gray-6 hover:bg-surface-gray-3"
+					class="mt-1 rounded-4 border-t px-2 py-1 text-left text-base text-ink-gray-6 hover:bg-surface-gray-3"
 					@click="clear(close)"
 				>
 					{{ __('Remove icon') }}

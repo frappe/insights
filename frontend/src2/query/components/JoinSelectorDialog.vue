@@ -244,7 +244,7 @@ function reset() {
 <template>
 	<Dialog :open="showDialog" bare>
 		<template #default>
-			<div class="rounded-lg bg-surface-base px-4 pb-6 pt-5 sm:px-6">
+			<div class="rounded-6 bg-surface-base px-4 pb-6 pt-5 sm:px-6">
 				<!-- Title & Close -->
 				<div class="flex items-center justify-between pb-4">
 					<h3 class="text-3xl-semibold leading-6 text-ink-gray-8">
@@ -341,7 +341,7 @@ function reset() {
 							<div
 								v-for="joinType in joinTypes"
 								:key="joinType.label"
-								class="flex flex-1 flex-col items-center justify-center rounded border py-3 transition-all"
+								class="flex flex-1 flex-col items-center justify-center rounded-4 border py-3 transition-all"
 								:class="
 									join.join_type === joinType.value
 										? 'border-outline-gray-6'

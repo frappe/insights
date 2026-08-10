@@ -112,7 +112,7 @@ const landingStyle = computed(() => {
 			class="absolute top-0 left-0 p-2 transition-[transform,width,height] duration-150 ease-out"
 		>
 			<div
-				class="h-full w-full rounded border border-dashed border-outline-gray-3 bg-surface-gray-2"
+				class="h-full w-full rounded-4 border border-dashed border-outline-gray-3 bg-surface-gray-2"
 			/>
 		</div>
 

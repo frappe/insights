@@ -293,7 +293,7 @@ function updateTextWrap(column_name: string, wrap: boolean | undefined) {
 				<div
 					v-for="(rule, idx) in config.conditional_formatting?.formats"
 					:key="idx"
-					class="flex rounded"
+					class="flex rounded-4"
 				>
 					<div class="flex-1 overflow-hidden">
 						<Button

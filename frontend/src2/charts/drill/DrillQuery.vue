@@ -51,14 +51,14 @@ provide('query', query)
 				<QueryToolbar>
 					<QueryExecutionStatus />
 				</QueryToolbar>
-				<div class="flex flex-1 overflow-hidden rounded border border-outline-gray-2">
+				<div class="flex flex-1 overflow-hidden rounded-4 border border-outline-gray-2">
 					<!-- no drill from here: the ladder is behind this dialog, and a
 					     second one started inside it is the recursion ticket 11 retired -->
 					<QueryDataTable :query="query" :enable-sort="true" />
 				</div>
 			</div>
 			<div
-				class="relative flex h-full w-[17rem] flex-shrink-0 overflow-y-auto rounded border border-outline-gray-2"
+				class="relative flex h-full w-[17rem] flex-shrink-0 overflow-y-auto rounded-4 border border-outline-gray-2"
 			>
 				<QueryOperations />
 			</div>

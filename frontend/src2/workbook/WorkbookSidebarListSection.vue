@@ -32,7 +32,7 @@ function setDraggedItem(event: DragEvent, row: any) {
 		</div>
 		<div
 			v-if="!section.items.length"
-			class="flex h-12 flex-col items-center justify-center rounded border border-dashed border-outline-gray-2 py-2"
+			class="flex h-12 flex-col items-center justify-center rounded-4 border border-dashed border-outline-gray-2 py-2"
 		>
 			<div class="text-xs text-ink-gray-4">{{ section.emptyMessage }}</div>
 		</div>
@@ -40,7 +40,7 @@ function setDraggedItem(event: DragEvent, row: any) {
 			<div
 				v-for="(row, idx) in section.items"
 				:key="row[section.itemKey]"
-				class="group w-full cursor-pointer rounded transition-all hover:bg-surface-gray-2"
+				class="group w-full cursor-pointer rounded-4 transition-all hover:bg-surface-gray-2"
 				:class="
 					section.isActive(row) ? ' bg-surface-gray-2' : ' hover:border-outline-gray-2'
 				"
@@ -49,7 +49,7 @@ function setDraggedItem(event: DragEvent, row: any) {
 			>
 				<router-link
 					:to="route(row)"
-					class="flex h-7.5 items-center justify-between rounded pl-1.5 text-sm"
+					class="flex h-7.5 items-center justify-between rounded-4 pl-1.5 text-sm"
 				>
 					<div class="flex gap-1.5 overflow-hidden">
 						<div class="flex-shrink-0">
@@ -58,7 +58,7 @@ function setDraggedItem(event: DragEvent, row: any) {
 						<p class="truncate">{{ row.title }}</p>
 					</div>
 					<button
-						class="invisible cursor-pointer rounded px-1.5 py-1 transition-all hover:bg-surface-gray-2 group-hover:visible"
+						class="invisible cursor-pointer rounded-4 px-1.5 py-1 transition-all hover:bg-surface-gray-2 group-hover:visible"
 						@click.prevent.stop="section.remove(row)"
 					>
 						<X class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
