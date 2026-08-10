@@ -14,6 +14,9 @@ from croniter import croniter
 from frappe.model.document import Document
 from frappe.utils import validate_email_address
 from frappe.utils.data import get_datetime, get_datetime_str, now_datetime
+from requests.adapters import HTTPAdapter
+from urllib3.connection import HTTPSConnection
+from urllib3.connectionpool import HTTPSConnectionPool
 
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
     db_connections,
@@ -129,7 +132,7 @@ class InsightsAlert(Document):
                 headers=headers,
             )
             response.raise_for_status()
-        except requests.RequestException as e:
+        except (requests.RequestException, BlockedWebhookAddress) as e:
             frappe.log_error(
                 message=frappe.get_traceback(),
                 title=f"Insights webhook alert failed: {self.title}",
@@ -286,18 +289,49 @@ def validate_public_url(url: str) -> None:
             )
 
 
+class BlockedWebhookAddress(frappe.ValidationError):
+    pass
+
+
+class _PublicOnlyConnection(HTTPSConnection):
+    def connect(self):
+        super().connect()
+        address = ipaddress.ip_address(self.sock.getpeername()[0])
+        if address.version == 6 and address.ipv4_mapped:
+            address = address.ipv4_mapped
+        if not address.is_global:
+            frappe.throw(
+                f"Webhook host connected to a non-public address ({address})",
+                exc=BlockedWebhookAddress,
+            )
+
+
+class _PublicOnlyConnectionPool(HTTPSConnectionPool):
+    ConnectionCls = _PublicOnlyConnection
+
+
+class PublicOnlyAdapter(HTTPAdapter):
+    """Checks the address actually connected to, which DNS cannot change after the fact."""
+
+    def init_poolmanager(self, *args, **kwargs):
+        super().init_poolmanager(*args, **kwargs)
+        self.poolmanager.pool_classes_by_scheme = {"https": _PublicOnlyConnectionPool}
+
+
 def post_to_public_url(url: str, data: str, headers: dict) -> requests.Response:
     """POST to a validated destination. A redirect is refused rather than
     followed, so the address that was checked is the address that receives the
     alert - configure the final URL instead."""
     validate_public_url(url)
-    response = requests.post(
-        url,
-        data=data,
-        headers=headers,
-        timeout=WEBHOOK_TIMEOUT_SECONDS,
-        allow_redirects=False,
-    )
+    with requests.Session() as session:
+        session.mount("https://", PublicOnlyAdapter())
+        response = session.post(
+            url,
+            data=data,
+            headers=headers,
+            timeout=WEBHOOK_TIMEOUT_SECONDS,
+            allow_redirects=False,
+        )
     if response.is_redirect:
         frappe.throw(f"Webhook URL must not redirect (got {response.status_code})")
     return response
