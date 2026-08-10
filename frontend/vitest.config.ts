@@ -28,7 +28,7 @@ export default defineConfig({
 			// A dependency Vitest externalizes is loaded by Node, and Node resolves
 			// it from its own directory — which puts `dedupe` above out of reach.
 			// Inlining these two hands them back to Vite, so the rule applies.
-			deps: { inline: [/@vueuse\//, /reka-ui/] },
+			deps: { inline: [/frappe-ui/, /@vueuse\//, /reka-ui/] },
 		},
 	},
 })
