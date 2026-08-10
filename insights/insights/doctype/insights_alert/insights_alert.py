@@ -43,7 +43,7 @@ class InsightsAlert(Document):
         telegram_chat_id: DF.Data | None
         title: DF.Data
         webhook_token: DF.Password | None
-        webhook_uri: DF.Data | None
+        webhook_url: DF.Data | None
     # end: auto-generated types
 
     def validate(self):
@@ -62,13 +62,13 @@ class InsightsAlert(Document):
             frappe.throw(f"Invalid condition: {e}")
 
     def validate_webhook(self):
-        if not self.webhook_uri:
+        if not self.webhook_url:
             frappe.throw("Webhook URI is required for a webhook alert")
-        if not self.webhook_uri.startswith(("http://", "https://")):
-            frappe.throw("Webhook URI must start with http:// or https://")
+        if not self.webhook_token:
+            frappe.throw("Webhook token is required for a webhook alert")
         # The token is sent as a header, so plain http would expose it in transit.
-        if self.webhook_token and self.webhook_uri.startswith("http://"):
-            frappe.throw("A webhook with a token must use https://")
+        if not self.webhook_url.startswith("https://"):
+            frappe.throw("Webhook URI must start with https://")
 
     def has_query_permission(self):
         if not frappe.has_permission("Insights Query v3", "read", self.query):
@@ -114,15 +114,16 @@ class InsightsAlert(Document):
             },
         }
 
-        headers = {"Content-Type": "application/json"}
-        if token := self.get_password("webhook_token", raise_exception=False):
-            headers["Authorization"] = f"Bearer {token}"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.get_password('webhook_token')}",
+        }
 
         try:
             # frappe.as_json, not requests' json=: query rows carry datetimes
             # and Decimals that the plain encoder refuses.
             response = requests.post(
-                self.webhook_uri,
+                self.webhook_url,
                 data=frappe.as_json(payload),
                 headers=headers,
                 timeout=WEBHOOK_TIMEOUT_SECONDS,
@@ -133,7 +134,7 @@ class InsightsAlert(Document):
                 message=frappe.get_traceback(),
                 title=f"Insights webhook alert failed: {self.title}",
             )
-            frappe.throw(f"Could not deliver the alert to {self.webhook_uri}: {e}")
+            frappe.throw(f"Could not deliver the alert to {self.webhook_url}: {e}")
 
     def send_email_alert(self, message):
         subject = f"Insights Alert: {self.title}"

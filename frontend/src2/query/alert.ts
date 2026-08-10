@@ -8,7 +8,7 @@ export type InsightsAlert = {
 	doctype: 'Insights Alert'
 	disabled: 0 | 1
 	title: string
-	channel: 'Telegram' | 'Email'
+	channel: 'Telegram' | 'Email' | 'Webhook'
 	query: string
 	frequency: 'Hourly' | 'Daily' | 'Weekly' | 'Monthly' | 'Cron'
 	cron_format: string
@@ -16,6 +16,9 @@ export type InsightsAlert = {
 	next_execution: string
 	telegram_chat_id: string
 	recipients: string
+	webhook_url: string
+	// Stored in __Auth; the server hands back a masked value it ignores on save.
+	webhook_token: string
 	condition: string
 	custom_condition: 0 | 1
 	message: string
@@ -55,6 +58,8 @@ const EMPTY_ALERT: InsightsAlert = {
 	next_execution: '',
 	telegram_chat_id: '',
 	recipients: '',
+	webhook_url: '',
+	webhook_token: '',
 	condition: '',
 	custom_condition: 0,
 	message: '',

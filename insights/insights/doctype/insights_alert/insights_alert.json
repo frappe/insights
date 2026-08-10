@@ -16,7 +16,7 @@
   "cron_format",
   "last_execution",
   "next_execution",
-  "webhook_uri",
+  "webhook_url",
   "webhook_token",
   "column_break_ktop",
   "telegram_chat_id",
@@ -123,22 +123,22 @@
   },
   {
    "depends_on": "eval: doc.channel == \"Webhook\"",
-   "fieldname": "webhook_uri",
-   "fieldtype": "Data",
-   "label": "Webhook URI",
+   "fieldname": "webhook_token",
+   "fieldtype": "Password",
+   "label": "Webhook Token",
    "mandatory_depends_on": "eval: doc.channel == \"Webhook\""
   },
   {
    "depends_on": "eval: doc.channel == \"Webhook\"",
-   "fieldname": "webhook_token",
-   "fieldtype": "Password",
-   "label": "Webhook Token",
+   "fieldname": "webhook_url",
+   "fieldtype": "Data",
+   "label": "Webhook URL",
    "mandatory_depends_on": "eval: doc.channel == \"Webhook\""
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-10 17:59:06.379187",
+ "modified": "2026-08-10 18:17:36.273483",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Alert",
