@@ -5,6 +5,7 @@ from datetime import datetime
 
 import frappe
 import pandas as pd
+import requests
 import telegram
 from croniter import croniter
 from frappe.model.document import Document
@@ -16,6 +17,9 @@ from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 i
 )
 from insights.utils import deep_convert_dict_to_dict
 
+# A hanging endpoint must not hold the scheduled job that sends every alert.
+WEBHOOK_TIMEOUT_SECONDS = 10
+
 
 class InsightsAlert(Document):
     # begin: auto-generated types
@@ -26,7 +30,7 @@ class InsightsAlert(Document):
     if TYPE_CHECKING:
         from frappe.types import DF
 
-        channel: DF.Literal["Email", "Telegram"]
+        channel: DF.Literal["Email", "Telegram", "Webhook"]
         condition: DF.Code
         cron_format: DF.Data | None
         custom_condition: DF.Check
@@ -34,11 +38,12 @@ class InsightsAlert(Document):
         frequency: DF.Literal["Hourly", "Daily", "Weekly", "Monthly", "Cron"]
         last_execution: DF.Datetime | None
         message: DF.MarkdownEditor | None
-        next_execution: DF.Datetime | None
         query: DF.Link
         recipients: DF.SmallText | None
         telegram_chat_id: DF.Data | None
         title: DF.Data
+        webhook_token: DF.Password | None
+        webhook_uri: DF.Data | None
     # end: auto-generated types
 
     def validate(self):
@@ -48,10 +53,22 @@ class InsightsAlert(Document):
         if self.query:
             self.has_query_permission()
 
+        if self.channel == "Webhook":
+            self.validate_webhook()
+
         try:
             self.evaluate_condition()
         except Exception as e:
             frappe.throw(f"Invalid condition: {e}")
+
+    def validate_webhook(self):
+        if not self.webhook_uri:
+            frappe.throw("Webhook URI is required for a webhook alert")
+        if not self.webhook_uri.startswith(("http://", "https://")):
+            frappe.throw("Webhook URI must start with http:// or https://")
+        # The token is sent as a header, so plain http would expose it in transit.
+        if self.webhook_token and self.webhook_uri.startswith("http://"):
+            frappe.throw("A webhook with a token must use https://")
 
     def has_query_permission(self):
         if not frappe.has_permission("Insights Query v3", "read", self.query):
@@ -63,18 +80,60 @@ class InsightsAlert(Document):
         if not results and not force:
             return
 
-        message = self.evaluate_message()
+        # Built once: the context runs the query, and a webhook alert sends the
+        # rendered message and the rows behind it.
+        context = self.get_message_context()
+        message = self.evaluate_message(context)
 
         if self.channel == "Email":
             self.send_email_alert(message)
         if self.channel == "Telegram":
             self.send_telegram_alert(message)
+        if self.channel == "Webhook":
+            self.send_webhook_alert(message, context)
 
         self.db_set("last_execution", now_datetime(), update_modified=False)
 
     def send_telegram_alert(self, message):
         tg = TelegramAlert(self.telegram_chat_id)
         tg.send(message)
+
+    def send_webhook_alert(self, message, context):
+        """POST the alert to the configured endpoint. The token travels in an
+        Authorization header rather than the URI, which would put it in the
+        receiver's access logs."""
+        payload = {
+            "event": "insights_alert",
+            "message": message,
+            "context": {
+                "alert": context["alert"]["title"],
+                "query": context["query"]["title"],
+                "count": context["count"],
+                "rows": context["rows"],
+                "triggered_at": get_datetime_str(now_datetime()),
+            },
+        }
+
+        headers = {"Content-Type": "application/json"}
+        if token := self.get_password("webhook_token", raise_exception=False):
+            headers["Authorization"] = f"Bearer {token}"
+
+        try:
+            # frappe.as_json, not requests' json=: query rows carry datetimes
+            # and Decimals that the plain encoder refuses.
+            response = requests.post(
+                self.webhook_uri,
+                data=frappe.as_json(payload),
+                headers=headers,
+                timeout=WEBHOOK_TIMEOUT_SECONDS,
+            )
+            response.raise_for_status()
+        except requests.RequestException as e:
+            frappe.log_error(
+                message=frappe.get_traceback(),
+                title=f"Insights webhook alert failed: {self.title}",
+            )
+            frappe.throw(f"Could not deliver the alert to {self.webhook_uri}: {e}")
 
     def send_email_alert(self, message):
         subject = f"Insights Alert: {self.title}"
@@ -91,13 +150,14 @@ class InsightsAlert(Document):
         with db_connections():
             return doc.evaluate_alert_expression(self.condition)
 
-    def evaluate_message(self):
+    def evaluate_message(self, context=None):
         rows_pattern = r"{{\s*rows\s*}}"
         message_md = re.sub(rows_pattern, "{{ datatable }}", self.message)
 
-        context = self.get_message_context()
+        context = context or self.get_message_context()
         message_md = render_template_restricted(message_md, context)
-        if self.channel == "Telegram":
+        # A webhook consumer wants the text, not the styled email body.
+        if self.channel in ("Telegram", "Webhook"):
             return message_md
 
         message_html = frappe.utils.md_to_html(message_md)

@@ -16,6 +16,8 @@
   "cron_format",
   "last_execution",
   "next_execution",
+  "webhook_uri",
+  "webhook_token",
   "column_break_ktop",
   "telegram_chat_id",
   "recipients",
@@ -49,7 +51,7 @@
    "fieldname": "channel",
    "fieldtype": "Select",
    "label": "Channel",
-   "options": "Email\nTelegram"
+   "options": "Email\nTelegram\nWebhook"
   },
   {
    "fieldname": "recipients",
@@ -118,11 +120,25 @@
    "fieldname": "custom_condition",
    "fieldtype": "Check",
    "label": "Custom Condition"
+  },
+  {
+   "depends_on": "eval: doc.channel == \"Webhook\"",
+   "fieldname": "webhook_uri",
+   "fieldtype": "Data",
+   "label": "Webhook URI",
+   "mandatory_depends_on": "eval: doc.channel == \"Webhook\""
+  },
+  {
+   "depends_on": "eval: doc.channel == \"Webhook\"",
+   "fieldname": "webhook_token",
+   "fieldtype": "Password",
+   "label": "Webhook Token",
+   "mandatory_depends_on": "eval: doc.channel == \"Webhook\""
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-03-21 15:42:02.011577",
+ "modified": "2026-08-10 17:59:06.379187",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Alert",
@@ -153,6 +169,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
