@@ -4,6 +4,14 @@ import frappeui from 'frappe-ui/vite'
 import path from 'path'
 import { defineConfig } from 'vite'
 
+const echartsEntries = [
+	'echarts/core',
+	'echarts/charts',
+	'echarts/components',
+	'echarts/renderers',
+	'echarts/features',
+]
+
 // Pre-bundled below to avoid a dev-only duplicate prosemirror-state instance
 // (TipTap "keyed plugin" error). Keep in sync with frappe-ui's @tiptap/* deps.
 const tiptapDeps = [
@@ -97,7 +105,12 @@ export default defineConfig({
 			'feather-icons',
 			'tailwind.config.js',
 			'highlight.js/lib/core',
-			'echarts/core',
+			// echarts keeps its module registry in `echarts/core`, and every
+			// subpath writes into it. frappe-ui is excluded below, so a subpath
+			// only it imports would be served raw and pull in a second core —
+			// one that registers the grid a chart then cannot find. Naming all
+			// five puts them in a single optimize run, behind one core.
+			...echartsEntries,
 			...tiptapDeps,
 		],
 		exclude: ['frappe-ui'],
