@@ -205,7 +205,7 @@ function toggleAlert() {
 									:label="__('Webhook URL')"
 									v-model="alert.doc.webhook_url"
 									:placeholder="__('e.g. https://example.com/hooks/insights')"
-									/>
+								/>
 								<ErrorMessage v-if="webhookError" :message="webhookError" />
 							</div>
 							<FormControl
