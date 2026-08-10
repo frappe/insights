@@ -41,14 +41,9 @@ wheneverChanges(
 	{ deep: true },
 )
 
-// Mirrors InsightsAlert.validate_webhook, so a bad endpoint is caught here
-// instead of coming back as a server error on save.
 const webhookError = computed(() => {
 	if (alert.doc.channel !== 'Webhook') return ''
-	const url = alert.doc.webhook_url?.trim()
-	if (!url) return __('Webhook URL is required')
-	// The token is sent as a header, so plain http would expose it in transit.
-	if (!url.startsWith('https://')) return __('Webhook URL must start with https://')
+	if (!alert.doc.webhook_url?.trim()) return __('Webhook URL is required')
 	if (!alert.doc.webhook_token) return __('Token is required')
 	return ''
 })

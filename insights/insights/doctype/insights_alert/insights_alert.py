@@ -66,9 +66,6 @@ class InsightsAlert(Document):
             frappe.throw("Webhook URI is required for a webhook alert")
         if not self.webhook_token:
             frappe.throw("Webhook token is required for a webhook alert")
-        # The token is sent as a header, so plain http would expose it in transit.
-        if not self.webhook_url.startswith("https://"):
-            frappe.throw("Webhook URI must start with https://")
 
     def has_query_permission(self):
         if not frappe.has_permission("Insights Query v3", "read", self.query):
