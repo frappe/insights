@@ -366,6 +366,7 @@ function reset() {
 							__('Select Columns to Add')
 						}}</label>
 						<MultiSelect
+							class="w-full"
 							:placeholder="__('Columns')"
 							:loading="
 								rightTableColumnOptions.loading || queryTableColumnOptions.loading
