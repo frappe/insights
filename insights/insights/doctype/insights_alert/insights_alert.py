@@ -1,10 +1,7 @@
 # Copyright (c) 2023, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
-import ipaddress
 import re
-import socket
 from datetime import datetime
-from urllib.parse import urlparse
 
 import frappe
 import pandas as pd
@@ -15,17 +12,12 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import validate_email_address
 from frappe.utils.data import get_datetime, get_datetime_str, now_datetime
-from requests.adapters import HTTPAdapter
-from urllib3.connection import HTTPSConnection
-from urllib3.connectionpool import HTTPSConnectionPool
 
+from insights.http import OutboundRequestRefused, post_to_public_url, validate_public_url
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
     db_connections,
 )
 from insights.utils import deep_convert_dict_to_dict
-
-# A hanging endpoint must not hold the scheduled job that sends every alert.
-WEBHOOK_TIMEOUT_SECONDS = 10
 
 
 class InsightsAlert(Document):
@@ -133,7 +125,7 @@ class InsightsAlert(Document):
                 headers=headers,
             )
             response.raise_for_status()
-        except (requests.RequestException, BlockedWebhookAddress) as e:
+        except (requests.RequestException, OutboundRequestRefused) as e:
             frappe.log_error(
                 message=frappe.get_traceback(),
                 title=f"Insights webhook alert failed: {self.title}",
@@ -259,102 +251,6 @@ class TelegramAlert:
     @property
     def bot(self):
         return telegram.Bot(token=self.token)
-
-
-def validate_public_url(url: str) -> None:
-    """Reject a destination an Insights User should not be able to make this
-    server talk to. Any Insights User can create an alert, so a webhook that
-    resolves onto the server's own network reaches services that are not
-    otherwise exposed to them. Only publicly routable hosts are delivery
-    targets."""
-    parsed = urlparse(url)
-    if parsed.scheme != "https":
-        frappe.throw(_("Webhook URL must use https"))
-    if not parsed.hostname:
-        frappe.throw(_("Webhook URL must include a hostname"))
-
-    resolve_public_address(parsed.hostname, parsed.port or 443)
-
-
-class BlockedWebhookAddress(frappe.ValidationError):
-    pass
-
-
-def resolve_public_address(hostname: str, port: int) -> str:
-    """The one publicly routable address this hostname is allowed to be reached
-    on. Returning the address, rather than approving the name, is what stops a
-    second lookup from answering differently."""
-    try:
-        resolved = socket.getaddrinfo(hostname, port, proto=socket.IPPROTO_TCP)
-    except socket.gaierror:
-        frappe.throw(_("Could not resolve webhook host: {0}").format(hostname))
-
-    for *_rest, sockaddr in resolved:
-        address = ipaddress.ip_address(sockaddr[0])
-        if address.version == 6 and address.ipv4_mapped:
-            address = address.ipv4_mapped
-        if not address.is_global:
-            frappe.throw(
-                _(
-                    "Webhook URL resolves to a non-public address ({0}). "
-                    "Alerts can only be sent to publicly routable hosts."
-                ).format(address),
-                exc=BlockedWebhookAddress,
-            )
-    return resolved[0][-1][0]
-
-
-class _PublicOnlyConnection(HTTPSConnection):
-    def _new_conn(self):
-        pinned = resolve_public_address(self.host, self.port)
-        original = self._dns_host
-        self._dns_host = pinned
-        try:
-            return super()._new_conn()
-        finally:
-            self._dns_host = original
-
-
-class _PublicOnlyConnectionPool(HTTPSConnectionPool):
-    ConnectionCls = _PublicOnlyConnection
-
-
-class PublicOnlyAdapter(HTTPAdapter):
-    """Checks the address actually connected to, which DNS cannot change after the fact.
-
-    A proxy resolves and connects on our behalf, so the destination cannot be
-    checked here at all - proxied delivery is refused rather than trusted."""
-
-    def init_poolmanager(self, *args, **kwargs):
-        super().init_poolmanager(*args, **kwargs)
-        self.poolmanager.pool_classes_by_scheme = {"https": _PublicOnlyConnectionPool}
-
-    def proxy_manager_for(self, proxy, **proxy_kwargs):
-        frappe.throw(
-            _("Webhook alerts cannot be delivered through a proxy ({0})").format(proxy),
-            exc=BlockedWebhookAddress,
-        )
-
-
-def post_to_public_url(url: str, data: str, headers: dict) -> requests.Response:
-    """POST to a validated destination. A redirect is refused rather than
-    followed, so the address that was checked is the address that receives the
-    alert - configure the final URL instead."""
-    validate_public_url(url)
-    with requests.Session() as session:
-        session.mount("https://", PublicOnlyAdapter())
-        session.trust_env = False
-        response = session.post(
-            url,
-            data=data,
-            headers=headers,
-            timeout=WEBHOOK_TIMEOUT_SECONDS,
-            allow_redirects=False,
-            proxies={},
-        )
-    if response.is_redirect:
-        frappe.throw(_("Webhook URL must not redirect (got {0})").format(response.status_code))
-    return response
 
 
 def render_template_restricted(template: str, context: dict) -> str:
