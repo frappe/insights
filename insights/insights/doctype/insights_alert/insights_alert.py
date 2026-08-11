@@ -248,6 +248,24 @@ def send_alerts():
         except Exception:
             frappe.db.rollback()
             frappe.log_error(title=f"Failed to send alert: {alert.name}")
+            record_execution(alert.name)
+
+
+def record_execution(name: str):
+    """Mark an alert as run, whether or not it delivered.
+
+    `last_execution` is the cron's start point, so leaving it unset after a
+    failure makes the alert due again on the next four-minute tick. A webhook
+    pointed at an endpoint that is down would be retried forever, several
+    hundred times a day, against somebody else's server. The alert ran. The
+    next attempt belongs in the next scheduled window.
+
+    This runs after the rollback above, so it needs its own commit.
+    """
+    frappe.db.set_value("Insights Alert", name, "last_execution", now_datetime(), update_modified=False)
+    # The caller rolled back the failed alert. Without a commit of its own this
+    # write goes out with the next one, or with nothing at all.
+    frappe.db.commit()  # nosemgrep
 
 
 class TelegramAlert:
