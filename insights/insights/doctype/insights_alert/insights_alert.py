@@ -13,11 +13,19 @@ from frappe.model.document import Document
 from frappe.utils import validate_email_address
 from frappe.utils.data import get_datetime, get_datetime_str, now_datetime
 
-from insights.http import OutboundRequestRefused, post_to_public_url, validate_public_url
+from insights.http import post_to_public_url, validate_public_url
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
     db_connections,
 )
 from insights.utils import deep_convert_dict_to_dict
+
+# The payload is a contract with somebody else's code. Version it, so it can
+# change without breaking every receiver that already parses it.
+WEBHOOK_PAYLOAD_VERSION = 1
+
+# A query with no ceiling on its rows must not become a POST with no ceiling on
+# its body. `count` still reports the real total.
+WEBHOOK_MAX_ROWS = 100
 
 
 class InsightsAlert(Document):
@@ -65,6 +73,9 @@ class InsightsAlert(Document):
             frappe.throw(_("Webhook URL is required for a webhook alert"))
         if not self.webhook_token:
             frappe.throw(_("Webhook token is required for a webhook alert"))
+        # Only what the URL says, not where it resolves. Resolving here would
+        # put a name lookup inside the save transaction and still prove nothing
+        # about send time. "Send test" is the button that answers that.
         validate_public_url(self.webhook_url)
 
     def has_query_permission(self):
@@ -100,13 +111,15 @@ class InsightsAlert(Document):
         Authorization header rather than the URI, which would put it in the
         receiver's access logs."""
         payload = {
+            "version": WEBHOOK_PAYLOAD_VERSION,
             "event": "insights_alert",
             "message": message,
             "context": {
                 "alert": context["alert"]["title"],
                 "query": context["query"]["title"],
                 "count": context["count"],
-                "rows": context["rows"],
+                "rows": context["rows"][:WEBHOOK_MAX_ROWS],
+                "truncated": context["count"] > WEBHOOK_MAX_ROWS,
                 "triggered_at": get_datetime_str(now_datetime()),
             },
         }
@@ -125,12 +138,17 @@ class InsightsAlert(Document):
                 headers=headers,
             )
             response.raise_for_status()
-        except (requests.RequestException, OutboundRequestRefused) as e:
-            frappe.log_error(
-                message=frappe.get_traceback(),
-                title=f"Insights webhook alert failed: {self.title}",
+        except requests.HTTPError as e:
+            frappe.throw(
+                _("The webhook at {0} returned {1}").format(self.webhook_url, e.response.status_code)
             )
-            frappe.throw(_("Could not deliver the alert to {0}: {1}").format(self.webhook_url, str(e)))
+        except requests.RequestException as e:
+            # No log_error here: `send_alerts` logs, and the interactive caller
+            # reads the message. An OutboundRequestRefused already says what it
+            # refused, so it goes up untouched.
+            frappe.throw(
+                _("Could not deliver the alert to {0} ({1})").format(self.webhook_url, type(e).__name__)
+            )
 
     def send_email_alert(self, message):
         subject = f"Insights Alert: {self.title}"
@@ -147,11 +165,10 @@ class InsightsAlert(Document):
         with db_connections():
             return doc.evaluate_alert_expression(self.condition)
 
-    def evaluate_message(self, context=None):
+    def evaluate_message(self, context):
         rows_pattern = r"{{\s*rows\s*}}"
         message_md = re.sub(rows_pattern, "{{ datatable }}", self.message)
 
-        context = context or self.get_message_context()
         message_md = render_template_restricted(message_md, context)
         # A webhook consumer wants the text, not the styled email body.
         if self.channel in ("Telegram", "Webhook"):
