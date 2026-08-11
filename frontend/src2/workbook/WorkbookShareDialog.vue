@@ -3,6 +3,7 @@ import { Building2 } from 'lucide-vue-next'
 import { __ } from '../translation'
 import { computed, inject, ref } from 'vue'
 import UserSelector from '../components/UserSelector.vue'
+import { showErrorToast } from '../helpers'
 import { createToast } from '../helpers/toasts'
 import session from '../session'
 import { ShareAccess, WorkbookSharePermission } from '../types/workbook.types'
@@ -18,7 +19,10 @@ const selectedUserEmail = ref<string>('')
 
 function shareWorkbook() {
 	if (!selectedUserEmail.value) return
-	permissionMap.value[selectedUserEmail.value] = 'view'
+	const email = selectedUserEmail.value
+	const user = userStore.getUser(email)
+	userInfo.value[email] = { full_name: user?.full_name || email, user_image: user?.user_image }
+	permissionMap.value[email] = 'view'
 	selectedUserEmail.value = ''
 }
 
@@ -44,27 +48,31 @@ const accessOptions = (user_email: string) => [
 
 const workbook = inject(workbookKey) as Workbook
 const workbookPermissions = ref<PermissionMap>({})
+
+// who a share belongs to comes from the share itself, not from the roster -
+// an owner may not be allowed to look up the people they shared with
+type UserInfo = { full_name: string; user_image?: string }
+const userInfo = ref<Record<string, UserInfo>>({})
+
 workbook.getSharePermissions().then((permissions) => {
 	permissions.user_permissions.forEach((p) => {
 		workbookPermissions.value[p.email] = p.access
 		permissionMap.value[p.email] = p.access
+		userInfo.value[p.email] = { full_name: p.full_name, user_image: p.user_image }
 	})
 	originalOrganizationAccess.value = permissions.organization_access
 	organizationAccess.value = permissions.organization_access
 })
 
 const userPermissions = computed(() => {
-	return Object.keys(permissionMap.value)
-		.map((email) => {
-			const user = userStore.users.find((u) => u.email === email)
-			if (!user) return null
-			return {
-				email,
-				full_name: user.full_name,
-				access: permissionMap.value[email],
-			}
-		})
-		.filter(Boolean) as WorkbookSharePermission[]
+	return Object.keys(permissionMap.value).map((email) => {
+		return {
+			email,
+			full_name: userInfo.value[email]?.full_name || email,
+			user_image: userInfo.value[email]?.user_image,
+			access: permissionMap.value[email],
+		}
+	}) as WorkbookSharePermission[]
 })
 const saveDisabled = computed(() => {
 	return (
@@ -73,15 +81,19 @@ const saveDisabled = computed(() => {
 	)
 })
 function updatePermissions() {
-	workbook.updateSharePermissions({
-		user_permissions: userPermissions.value,
-		organization_access: organizationAccess.value,
-	})
-	show.value = false
-	createToast({
-		title: __('Permissions updated'),
-		variant: 'success',
-	})
+	workbook
+		.updateSharePermissions({
+			user_permissions: userPermissions.value,
+			organization_access: organizationAccess.value,
+		})
+		.then(() => {
+			show.value = false
+			createToast({
+				title: __('Permissions updated'),
+				variant: 'success',
+			})
+		})
+		.catch(showErrorToast)
 }
 </script>
 
@@ -141,6 +153,7 @@ function updatePermissions() {
 						<UserSelector
 							v-model="selectedUserEmail"
 							placeholder="Search by name or email"
+							allow-custom-email
 							:hide-users="
 								userPermissions.filter((u) => u.access).map((u) => u.email)
 							"
@@ -161,11 +174,7 @@ function updatePermissions() {
 						:key="user.email"
 						class="flex w-full items-center gap-2 py-1"
 					>
-						<Avatar
-							size="xl"
-							:label="user.full_name"
-							:image="userStore.getUser(user.email)?.user_image"
-						/>
+						<Avatar size="xl" :label="user.full_name" :image="user.user_image" />
 						<div class="flex flex-1 flex-col">
 							<div class="leading-5">{{ user.full_name }}</div>
 							<div class="text-xs text-ink-gray-5">{{ user.email }}</div>

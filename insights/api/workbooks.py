@@ -2,7 +2,28 @@ import frappe
 from frappe import _
 
 from insights.decorators import insights_whitelist
+from insights.permissions import get_insights_users
 from insights.utils import DocShare
+
+
+def validate_shareable_users(emails):
+    """A workbook is shareable with Insights users only.
+
+    The picker cannot always show the person being named - an address typed by
+    a user who may not look anyone up still has to land somewhere real.
+    """
+    if not emails:
+        return
+
+    # Administrator owns the workbooks a template import creates and so stays on
+    # the share list whenever one of them is re-shared
+    shareable = get_insights_users() | {"Administrator"}
+    unknown = sorted(set(emails) - shareable)
+    if unknown:
+        frappe.throw(
+            _("Cannot share with {0} - they are not an Insights user").format(", ".join(unknown)),
+            title=_("Not an Insights user"),
+        )
 
 
 @insights_whitelist()
@@ -132,6 +153,7 @@ def get_share_permissions(workbook_name: str):
             DocShare.write,
             DocShare.share,
             User.full_name,
+            User.user_image,
         )
         .where(DocShare.share_doctype == "Insights Workbook")
         .where(DocShare.share_name == workbook_name)
@@ -139,10 +161,12 @@ def get_share_permissions(workbook_name: str):
         .run(as_dict=True)
     )
     owner = frappe.db.get_value("Insights Workbook", workbook_name, "owner")
+    owner_info = frappe.db.get_value("User", owner, ["full_name", "user_image"], as_dict=True) or {}
     user_permissions.append(
         {
             "user": owner,
-            "full_name": frappe.get_value("User", owner, "full_name"),
+            "full_name": owner_info.get("full_name"),
+            "user_image": owner_info.get("user_image"),
             "read": 1,
             "write": 1,
         }
@@ -185,6 +209,7 @@ def update_share_permissions(
     )
 
     allowed_users = {permission["user"] for permission in user_permissions}
+    validate_shareable_users(allowed_users)
     for share in existing_shares:
         if share.user and share.user not in allowed_users:
             frappe.delete_doc("DocShare", share.name, ignore_permissions=True)
