@@ -27,7 +27,7 @@ if (!filter.links) {
 	filter.links = {}
 }
 
-const tabIndex = ref(0)
+const activeTab = ref('setup')
 const tabs = [
 	{
 		label: __('Setup'),
@@ -177,7 +177,7 @@ function saveEdit() {
 	>
 		<template #default>
 			<div class="flex flex-col min-h-[20rem] max-h-[20rem]">
-				<Tabs v-model="tabIndex" :tabs="tabs" class="-mt-6">
+				<Tabs v-model="activeTab" :tabs="tabs" class="-mt-6">
 					<template #tab-panel="{ tab }">
 						<div v-if="tab.value === 'setup'" class="flex flex-col gap-4 pt-2">
 							<div class="flex items-end gap-1.5 p-1">
