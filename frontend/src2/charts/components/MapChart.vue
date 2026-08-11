@@ -6,7 +6,7 @@ import {
 	ChartTooltip,
 	registerChartModules,
 	useChart,
-	useChartTheme,
+	useChartTokens,
 } from 'frappe-ui/charts'
 import type { ChartTooltipItem } from 'frappe-ui/charts'
 import { computed, reactive, ref, watch } from 'vue'
@@ -18,7 +18,7 @@ import type { MapChartProps } from '../adapter/map'
 // a Map card on a dashboard reads as one of the family; only the geography is
 // ours. The arithmetic behind it — which region a row belongs to and which
 // class its value falls in — is `adapter/map.ts`, and this file holds what
-// needs a DOM: the theme, the GeoJSON, and the mount.
+// needs a DOM: the tokens, the GeoJSON, and the mount.
 
 registerChartModules([MapSeries])
 
@@ -28,12 +28,7 @@ const emit = defineEmits<{ regionClick: [name: string] }>()
 
 const plotEl = ref<HTMLElement>()
 
-// frappe-ui is linked from the framework checkout and is typed against the copy
-// of `@vue/reactivity` that comes with it, so a `Ref` from here is a different
-// declaration of the same type. The build resolves both to one; this says so.
-const container = plotEl as unknown as Parameters<typeof useChart>[0]['container']
-
-const { theme } = useChartTheme(container)
+const { tokens } = useChartTokens(plotEl)
 
 /**
  * The GeoJSON, fetched once. `registerMap` writes into echarts' own registry,
@@ -73,7 +68,7 @@ watch(
 
 /** Pale for the lowest class, deep for the highest. */
 const bucketColors = computed(() => {
-	const ramp = theme.value.sequential
+	const ramp = tokens.value.sequential
 	const count = props.buckets.length
 	return props.buckets.map((_, index) => {
 		const position = count === 1 ? 1 : index / (count - 1)
@@ -83,7 +78,7 @@ const bucketColors = computed(() => {
 
 function colorOf(value: number) {
 	const bucket = props.buckets.findIndex((b) => value > b.min && value <= b.max)
-	return bucket === -1 ? theme.value.splitLine : bucketColors.value[bucket]
+	return bucket === -1 ? tokens.value.splitLine : bucketColors.value[bucket]
 }
 
 const option = computed(() => {
@@ -114,10 +109,10 @@ const option = computed(() => {
 					itemStyle: { areaColor: colorOf(region.value) },
 				})),
 				itemStyle: {
-					areaColor: theme.value.splitLine,
+					areaColor: tokens.value.splitLine,
 					// Regions are parted by the surface behind the plot, the way a
 					// heatmap parts its cells. A grey border reads as a second scale.
-					borderColor: theme.value.cellGap,
+					borderColor: tokens.value.cellGap,
 					borderWidth: 0.5,
 				},
 				// The tooltip is the feedback. A highlight fill on top of the class
@@ -139,7 +134,7 @@ const tooltip = reactive({
 })
 
 useChart({
-	container,
+	container: plotEl,
 	option: () => option.value,
 	events: {
 		mouseover: (params: any) => showTooltip(params.name, params.value),

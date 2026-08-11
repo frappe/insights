@@ -170,7 +170,7 @@ watchEffect(() => {
 					<SearchIcon class="h-4 w-4 text-ink-gray-4" />
 				</template>
 			</FormControl>
-			<TabButtons :buttons="scopeTabs" v-model="scope" />
+			<TabButtons :options="scopeTabs" v-model="scope" />
 		</div>
 		<!-- flex parent so ListView (whose root is flex-1) fills the height, which
 		lets the empty state center vertically instead of collapsing to the top -->
