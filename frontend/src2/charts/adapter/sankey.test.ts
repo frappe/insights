@@ -63,7 +63,7 @@ describe('drilling into a flow', () => {
 		const row = input.result.rows[1]
 
 		expect(
-			adaptChart(input)!.drillDown!.linkClick({
+			adaptChart(input)!.drillDown!.select({
 				source: 'Email',
 				target: 'Tops',
 				value: 20,

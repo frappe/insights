@@ -101,7 +101,7 @@ describe('drilling into a point', () => {
 		const row = input.result.rows[1]
 
 		expect(
-			adaptChart(input)!.drillDown!.pointClick({
+			adaptChart(input)!.drillDown!.select({
 				seriesName: 'Men',
 				x: 30,
 				y: 40,

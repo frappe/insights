@@ -35,9 +35,10 @@ export type DrillDownTarget = {
 }
 
 /**
- * Keyed by the event the filler emits, e.g. `datapointClick`. Each entry turns
- * that event's payload into the point behind it, or `undefined` when the click
- * landed on nothing drillable.
+ * Keyed by the event the filler emits — `select` for every v2 chart, and its
+ * own name for a plot Insights draws itself. Each entry turns that event's
+ * payload into the point behind it, or `undefined` when the click landed on
+ * nothing drillable.
  */
 export type DrillDownResolvers = Record<
 	string,

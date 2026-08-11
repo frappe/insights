@@ -36,7 +36,7 @@ function groupedFunnel(
 		component: FunnelChart,
 		props: funnelProps(input, config, input.result.rows, category, value),
 		drillDown: {
-			stageClick: (event: FunnelStageEvent) => ({ column: value, row: event.row }),
+			select: (event: FunnelStageEvent) => ({ column: value, row: event.row }),
 		},
 	}
 }
@@ -61,7 +61,7 @@ function measuresFunnel(
 		drillDown: {
 			// The stage label is the Measure's name, which is what the result calls
 			// the column behind it. The row is the one row every stage was read off.
-			stageClick: (event: FunnelStageEvent) => ({ column: event.label, row }),
+			select: (event: FunnelStageEvent) => ({ column: event.label, row }),
 		},
 	}
 }

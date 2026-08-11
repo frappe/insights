@@ -97,7 +97,7 @@ function adaptAxisChart(
 		drillDown: {
 			// The typed event carries the row it drew, so nothing maps an index
 			// back onto the result.
-			datapointClick: (event: ChartDatapointEvent) => ({
+			select: (event: ChartDatapointEvent) => ({
 				column: event.seriesName,
 				row: event.row,
 			}),

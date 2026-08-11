@@ -30,7 +30,7 @@ export function adaptDonutChart(input: ChartAdapterInput): ChartFiller | undefin
 		drillDown: {
 			// The tail slice stands for every row under it, and a drill-down names
 			// one row, so it drills into nothing rather than into the first of them.
-			sliceClick: (event: DonutSliceEvent) =>
+			select: (event: DonutSliceEvent) =>
 				event.rows.length === 1 ? { column: value, row: event.rows[0] } : undefined,
 		},
 	}

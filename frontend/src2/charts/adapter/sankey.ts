@@ -27,7 +27,7 @@ export function adaptSankeyChart(input: ChartAdapterInput): ChartFiller | undefi
 		component: SankeyChart,
 		props,
 		drillDown: {
-			linkClick: (event: SankeyLinkEvent) => ({ column: value, row: event.row }),
+			select: (event: SankeyLinkEvent) => ({ column: value, row: event.row }),
 		},
 	}
 }

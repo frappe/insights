@@ -46,7 +46,7 @@ export function adaptBubbleChart(input: ChartAdapterInput): ChartFiller | undefi
 		drillDown: {
 			// A point stands at the crossing of two Measures. It drills into the
 			// vertical one, which is the measure a quadrant chart is read down.
-			pointClick: (event: ScatterPointEvent) => ({ column: y, row: event.row }),
+			select: (event: ScatterPointEvent) => ({ column: y, row: event.row }),
 		},
 	}
 }

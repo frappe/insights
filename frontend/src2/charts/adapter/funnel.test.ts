@@ -90,7 +90,7 @@ describe('drilling into a stage', () => {
 		const row = input.result.rows[1]
 
 		expect(
-			adaptChart(input)!.drillDown!.stageClick({
+			adaptChart(input)!.drillDown!.select({
 				label: 'Shipped',
 				value: 800,
 				index: 1,
@@ -104,7 +104,7 @@ describe('drilling into a stage', () => {
 		const filler = adaptChart(input)!
 
 		expect(
-			filler.drillDown!.stageClick({
+			filler.drillDown!.select({
 				label: 'Shipped',
 				value: 800,
 				index: 1,

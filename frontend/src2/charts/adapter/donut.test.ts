@@ -76,7 +76,7 @@ describe('drilling into a slice', () => {
 		const row = input.result.rows[1]
 
 		expect(
-			adaptChart(input)!.drillDown!.sliceClick({
+			adaptChart(input)!.drillDown!.select({
 				name: 'South',
 				value: 20,
 				percent: 40,
@@ -89,7 +89,7 @@ describe('drilling into a slice', () => {
 		const input = donutChart({ category: 'category', measure: 'revenue' })
 
 		expect(
-			adaptChart(input)!.drillDown!.sliceClick({
+			adaptChart(input)!.drillDown!.select({
 				name: 'Others',
 				value: 50,
 				percent: 100,

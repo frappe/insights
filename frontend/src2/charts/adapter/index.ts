@@ -47,9 +47,10 @@
  * ## Drill-down
  *
  * A filler that a reader can point at names its click events in `drillDown`,
- * keyed by the event it emits — `datapointClick` for an axis chart,
- * `sliceClick` for a donut — each turning the payload into the column and row
- * behind the point. `ChartBody` binds them without knowing which is which. v2's
+ * keyed by the event it emits — `select` for every v2 chart, `regionClick` for
+ * the Map that Insights draws itself — each turning the payload into the column
+ * and row behind the point. `ChartBody` binds them without knowing which is
+ * which, so a plot naming its own event needs nothing from the chrome. v2's
  * typed events carry the row itself, so nothing maps a datapoint index back onto
  * the result.
  */
