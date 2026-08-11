@@ -100,7 +100,7 @@ const listOptions = ref({
 			key: 'status',
 			prefix: (props: any) => {
 				const color =
-					props.row.status == 'Inactive' ? 'text-ink-gray-4' : 'text-ink-green-6'
+					props.row.status == 'Inactive' ? 'text-ink-gray-4' : 'text-ink-green-5'
 				return <IndicatorIcon class={color} />
 			},
 		},

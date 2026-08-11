@@ -15,7 +15,7 @@ const showSourceSelectorDialog = ref(true)
 				class="flex flex-col items-center justify-center gap-2 rounded-4 border border-dashed border-outline-gray-2 p-8 text-center"
 			>
 				<div class="rounded-full bg-surface-orange-1 p-3">
-					<DatabaseZap class="h-5 w-5 text-ink-orange-6/70" stroke-width="1.5" />
+					<DatabaseZap class="h-5 w-5 text-ink-orange-5/70" stroke-width="1.5" />
 				</div>
 				<p class="font-medium">No Table Selected</p>
 				<span class="text-sm leading-4 text-ink-gray-5">

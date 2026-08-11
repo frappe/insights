@@ -198,7 +198,7 @@ function exportImage() {
 				</span>
 				<span
 					v-else-if="source.duplicate?.failed"
-					class="flex-shrink-0 text-p-sm text-ink-red-6"
+					class="flex-shrink-0 text-p-sm text-ink-red-5"
 				>
 					{{ __('Could not duplicate this dashboard') }}
 				</span>

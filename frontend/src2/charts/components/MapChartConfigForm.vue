@@ -161,7 +161,7 @@ watch(
 							@click="openRegionMappingDialog"
 							:class="{
 								'text-ink-gray-5': unresolvedCount === 0,
-								'text-ink-red-7': unresolvedCount !== null && unresolvedCount > 0,
+								'text-ink-red-6': unresolvedCount !== null && unresolvedCount > 0,
 							}"
 						/>
 					</div>

@@ -143,7 +143,7 @@ const filteredSchema = computed(() => {
 
 						<button
 							@click.stop="insertTableName(tableName)"
-							class="truncate text-start font-medium text-ink-gray-6 hover:text-ink-blue-7"
+							class="truncate text-start font-medium text-ink-gray-6 hover:text-ink-blue-6"
 						>
 							{{ tableName }}
 						</button>

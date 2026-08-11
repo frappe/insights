@@ -110,7 +110,7 @@ function applyChanges() {
 						:options="authorityOptions"
 						:placeholder="__('Select an option')"
 					/>
-					<p v-if="exposesAuthorRows" class="text-sm text-ink-red-6">
+					<p v-if="exposesAuthorRows" class="text-sm text-ink-red-5">
 						{{
 							__(
 								'Viewers will see the rows you can see, including rows their own permissions would hide.',

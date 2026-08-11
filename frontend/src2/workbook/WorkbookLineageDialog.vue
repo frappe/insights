@@ -205,14 +205,14 @@ function onNodeClick(_evt: MouseEvent, node: any) {
 						>
 							<div class="flex items-center gap-1.5">
 								<DatabaseIcon
-									class="h-3.5 w-3.5 flex-shrink-0 text-ink-blue-6"
+									class="h-3.5 w-3.5 flex-shrink-0 text-ink-blue-5"
 									stroke-width="1.5"
 								/>
-								<span class="truncate text-sm-medium text-ink-blue-10">{{
+								<span class="truncate text-sm-medium text-ink-blue-9">{{
 									data.label
 								}}</span>
 							</div>
-							<span class="truncate pl-5 text-xs text-ink-blue-6">{{
+							<span class="truncate pl-5 text-xs text-ink-blue-5">{{
 								data.data_source
 							}}</span>
 						</div>
@@ -226,10 +226,10 @@ function onNodeClick(_evt: MouseEvent, node: any) {
 						>
 							<div class="flex items-center gap-1.5">
 								<GitFork
-									class="h-3.5 w-3.5 flex-shrink-0 text-ink-green-7"
+									class="h-3.5 w-3.5 flex-shrink-0 text-ink-green-6"
 									stroke-width="1.5"
 								/>
-								<span class="truncate text-sm-medium text-ink-green-10">{{
+								<span class="truncate text-sm-medium text-ink-green-9">{{
 									data.label
 								}}</span>
 							</div>

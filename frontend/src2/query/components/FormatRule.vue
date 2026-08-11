@@ -331,7 +331,7 @@ const isInvalidColumn = computed(() => {
 			:options="availableColumns"
 			@update:modelValue="onColumnChange($event)"
 		/>
-		<p v-if="isInvalidColumn" class="text-xs text-ink-red-6">Invalid Column</p>
+		<p v-if="isInvalidColumn" class="text-xs text-ink-red-5">Invalid Column</p>
 	</div>
 
 	<template v-if="!isInvalidColumn">

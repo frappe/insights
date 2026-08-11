@@ -140,7 +140,7 @@ function reportSegment(target: DrillDownTarget) {
 			v-if="!props.readonly && chart.configErrors.length"
 			class="flex flex-shrink-0 flex-col gap-0.5 rounded-t-4 border border-b-0 border-outline-gray-2 bg-surface-amber-1 px-3 py-1.5"
 		>
-			<p v-for="error in chart.configErrors" :key="error" class="text-p-sm text-ink-amber-3">
+			<p v-for="error in chart.configErrors" :key="error" class="text-p-sm text-ink-amber-2">
 				{{ error }}
 			</p>
 		</div>

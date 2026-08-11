@@ -102,7 +102,7 @@ function updatePermissions() {
 		<template #default>
 			<div class="-mb-4 flex flex-col gap-3 text-base">
 				<div class="flex items-center gap-3 rounded-4 border px-3 py-2">
-					<Building2 class="h-6 w-6 text-ink-blue-6" stroke-width="1.5" />
+					<Building2 class="h-6 w-6 text-ink-blue-5" stroke-width="1.5" />
 					<div class="flex flex-1 flex-col">
 						<div class="font-medium leading-5 text-ink-gray-7">Organization Access</div>
 						<div class="text-sm text-ink-gray-6">

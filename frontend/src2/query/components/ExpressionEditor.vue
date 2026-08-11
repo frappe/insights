@@ -290,7 +290,7 @@ function setSignatureElementPosition() {
 				</template>
 
 				<template v-else-if="validationErrors.length">
-					<div class="flex items-center gap-2 text-ink-red-9">
+					<div class="flex items-center gap-2 text-ink-red-8">
 						<Info class="h-4 w-4 flex-shrink-0" />
 						<div class="flex-1">
 							<div

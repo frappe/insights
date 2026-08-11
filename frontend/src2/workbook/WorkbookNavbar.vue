@@ -32,7 +32,7 @@ const workbook = inject(workbookKey)!
 						text="You have read-only access to this workbook"
 					>
 						<ShieldAlert
-							class="absolute -left-6 h-4 w-4 cursor-pointer text-ink-orange-7"
+							class="absolute -left-6 h-4 w-4 cursor-pointer text-ink-orange-6"
 							stroke-width="1.5"
 						/>
 					</Tooltip>

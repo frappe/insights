@@ -142,7 +142,7 @@ const actions = computed(() => {
 			<div v-else class="flex flex-col gap-4 text-base">
 				<div class="flex items-start gap-2">
 					<CheckCircle2
-						class="mt-0.5 h-4 w-4 flex-shrink-0 text-ink-green-6"
+						class="mt-0.5 h-4 w-4 flex-shrink-0 text-ink-green-5"
 						stroke-width="1.5"
 					/>
 					<p class="text-p-sm text-ink-gray-7">

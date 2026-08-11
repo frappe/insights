@@ -52,10 +52,10 @@ const listOptions = ref({
 				if (user.invitation_status) {
 					color =
 						user.invitation_status === 'Pending'
-							? 'text-ink-yellow-6'
-							: 'text-ink-red-6'
+							? 'text-ink-yellow-5'
+							: 'text-ink-red-5'
 				} else {
-					color = props.row.enabled ? 'text-ink-green-6' : 'text-ink-gray-4'
+					color = props.row.enabled ? 'text-ink-green-5' : 'text-ink-gray-4'
 				}
 				return <IndicatorIcon class={color} />
 			},

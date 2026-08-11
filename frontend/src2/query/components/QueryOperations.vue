@@ -35,7 +35,7 @@ const operations = computed(() => {
 
 const Element = (_: any, { slots }: any) => {
 	return (
-		<div class="w-fit truncate rounded-4 border border-outline-orange-2 bg-surface-orange-1 px-1 py-0.5 font-mono text-xs text-ink-orange-9 opacity-90">
+		<div class="w-fit truncate rounded-4 border border-outline-orange-2 bg-surface-orange-1 px-1 py-0.5 font-mono text-xs text-ink-orange-8 opacity-90">
 			{slots.default?.()}
 		</div>
 	)

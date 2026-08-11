@@ -296,7 +296,7 @@ function getOptions(region: Region) {
 									<Button
 										variant="icon"
 										@click="removeMapping(mapping.user_region)"
-										class="text-ink-red-7"
+										class="text-ink-red-6"
 										:icon="Trash2Icon"
 									>
 									</Button>

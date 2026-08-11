@@ -79,7 +79,7 @@ const emit = defineEmits<{
 					<Heart
 						class="h-4 w-4"
 						:class="{
-							'fill-blue-500 text-ink-blue-6 transition-all hover:scale-110 active:scale-90':
+							'fill-blue-500 text-ink-blue-5 transition-all hover:scale-110 active:scale-90':
 								dashboard.is_favourite,
 							'text-ink-gray-3 transition-all hover:scale-110 hover:text-ink-gray-6 active:scale-90':
 								!dashboard.is_favourite,

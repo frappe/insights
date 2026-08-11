@@ -36,7 +36,7 @@ const show = defineModel()
 						<div>
 							<div class="flex items-center space-x-2">
 								<p
-									class="text-lg-medium leading-6 text-ink-gray-8 transition-colors group-hover:text-ink-blue-6"
+									class="text-lg-medium leading-6 text-ink-gray-8 transition-colors group-hover:text-ink-blue-5"
 								>
 									{{ type.label }}
 								</p>
