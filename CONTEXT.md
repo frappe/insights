@@ -103,5 +103,10 @@ A pre-built workbook shipped by any installed app via the `insights_workbook_tem
 hook; imported as one shared, Administrator-owned copy per site.
 
 **Alert**:
-A scheduled check on a query's results that notifies recipients (email or Telegram)
-when its condition is met.
+A scheduled check on a query's results that notifies recipients over a channel when its
+condition is met.
+
+**Channel**:
+How an alert reaches its recipients: email, Telegram or a webhook. A webhook posts to a
+URL the user supplies, which is why outbound requests carry an address policy — see
+ADR-0002.

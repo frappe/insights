@@ -41,6 +41,15 @@ wheneverChanges(
 	{ deep: true },
 )
 
+const webhookError = computed(() => {
+	if (alert.doc.channel !== 'Webhook') return ''
+	const url = alert.doc.webhook_url?.trim()
+	if (!url) return __('Webhook URL is required')
+	if (!url.startsWith('https://')) return __('Webhook URL must use https://')
+	if (!alert.doc.webhook_token) return __('Token is required')
+	return ''
+})
+
 const isValidAlert = computed(() => {
 	if (!alert.doc.title) return false
 	if (!alert.doc.frequency) return false
@@ -48,6 +57,7 @@ const isValidAlert = computed(() => {
 	if (!alert.doc.channel) return false
 	if (alert.doc.channel === 'Email' && !alert.doc.recipients) return false
 	if (alert.doc.channel === 'Telegram' && !alert.doc.telegram_chat_id) return false
+	if (webhookError.value) return false
 	if (alert.doc.custom_condition && !alert.doc.condition) return false
 	if (!alert.doc.custom_condition && !filterCondition.left) return false
 	if (!alert.doc.custom_condition && !filterCondition.operator) return false
@@ -170,6 +180,7 @@ function toggleAlert() {
 							v-model="alert.doc.channel"
 							:options="[
 								{ label: __('Email'), value: 'Email' },
+								{ label: __('Webhook'), value: 'Webhook' },
 								// { label: 'Telegram', value: 'Telegram' },
 							]"
 						/>
@@ -187,6 +198,23 @@ function toggleAlert() {
 							v-model="alert.doc.telegram_chat_id"
 							:placeholder="__('e.g. 123456789')"
 						/>
+						<template v-if="alert.doc.channel === 'Webhook'">
+							<div class="flex flex-col gap-1.5">
+								<FormControl
+									type="text"
+									:label="__('Webhook URL')"
+									v-model="alert.doc.webhook_url"
+									:placeholder="__('e.g. https://example.com/hooks/insights')"
+								/>
+								<ErrorMessage v-if="webhookError" :message="webhookError" />
+							</div>
+							<FormControl
+								type="password"
+								:label="__('Token')"
+								v-model="alert.doc.webhook_token"
+								:placeholder="__('Sent as an Authorization: Bearer header')"
+							/>
+						</template>
 					</div>
 				</div>
 
