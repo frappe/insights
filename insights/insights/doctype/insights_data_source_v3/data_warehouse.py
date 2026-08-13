@@ -785,12 +785,13 @@ def cleanup_data_store():
     # warehouse table has already been dropped.
     frappe.db.commit()  # nosemgrep
 
-    orphans = drop_orphan_warehouse_tables()
+    dropped, kept = drop_orphan_warehouse_tables()
     compacted = compact_warehouse()
 
     summary = {
         "tables_pruned": len(pruned),
-        "orphans_dropped": len(orphans),
+        "orphans_dropped": len(dropped),
+        "orphans_kept": len(kept),
         "size_before": compacted[0] if compacted else None,
         "size_after": compacted[1] if compacted else None,
     }
@@ -917,22 +918,22 @@ def get_first_import_per_table() -> dict[tuple[str, str], object]:
     return {(r.data_source, r.table_name): get_datetime(r.first_imported_on) for r in imports}
 
 
-def drop_orphan_warehouse_tables() -> list[str]:
+def drop_orphan_warehouse_tables() -> tuple[list[str], list[str]]:
     """Drop warehouse tables that no longer have a `stored` doc behind them.
 
-    Covers deleted data sources (their whole schema), deleted table docs,
-    tables just pruned, and legacy flat `source.table` tables left in `main`.
-    An orphan has no doc left to hold a bookmark or sync config, so the
-    "never touch incremental" rule does not apply to it.
+    A table is dropped only if the drop is reversible: a doc says a source sync
+    can re-import it, a live table replaced it, or it holds no rows. The sweep
+    keeps and reports anything else, because its rows may be the only copy.
+
+    Returns (dropped, kept).
     """
     logger = frappe.logger()
 
-    expected = {
-        (get_warehouse_schema_name(t.data_source), frappe.scrub(t.table))
-        for t in frappe.get_all("Insights Table v3", filters={"stored": 1}, fields=["data_source", "table"])
-    }
+    expected = get_stored_warehouse_tables() | get_import_job_warehouse_tables()
+    replaceable = expected | get_reimportable_warehouse_tables()
+    flat_prefixes = get_legacy_flat_prefixes()
 
-    dropped = []
+    dropped, kept, occupied = [], [], set()
     with insights.warehouse.get_write_connection(timeout=CLEANUP_LOCK_TIMEOUT) as db:
         tables = db.raw_sql(
             "select schema_name, table_name from duckdb_tables() where database_name = current_database()"
@@ -940,12 +941,24 @@ def drop_orphan_warehouse_tables() -> list[str]:
 
         for schema, table in tables:
             if (schema, table) in expected:
+                occupied.add(schema)
                 continue
+
+            successor = resolve_legacy_flat_table(schema, table, flat_prefixes)
+            if (schema, table) not in replaceable and successor not in replaceable:
+                # A count that fails reads as "not empty". The sweep deletes
+                # nothing it could not look inside first.
+                rows = count_table_rows(db, schema, table)
+                if rows != 0:
+                    kept.append(f"{schema}.{table}")
+                    occupied.add(schema)
+                    report_unexplained_orphan(schema, table, rows)
+                    continue
+
             db.raw_sql(f"DROP TABLE IF EXISTS {quote_identifier(schema)}.{quote_identifier(table)}")
             dropped.append(f"{schema}.{table}")
             logger.info(f"Data store cleanup: dropped '{schema}.{table}' (orphan: no matching doc)")
 
-        occupied = {schema for schema, table in tables if (schema, table) in expected}
         schemas = db.raw_sql(
             "select schema_name from duckdb_schemas() "
             "where database_name = current_database() and not internal"
@@ -958,7 +971,111 @@ def drop_orphan_warehouse_tables() -> list[str]:
                 db.raw_sql(f"DROP SCHEMA IF EXISTS {quote_identifier(schema)}")
                 logger.info(f"Data store cleanup: dropped empty schema '{schema}'")
 
-    return dropped
+    return dropped, kept
+
+
+def get_stored_warehouse_tables() -> set[tuple[str, str]]:
+    """Where the source sync says its live tables are."""
+    return {
+        (get_warehouse_schema_name(t.data_source), frappe.scrub(t.table))
+        for t in frappe.get_all("Insights Table v3", filters={"stored": 1}, fields=["data_source", "table"])
+    }
+
+
+def get_import_job_warehouse_tables() -> set[tuple[str, str]]:
+    """Where import jobs write, named the way they write it.
+
+    `WarehouseTableWriter` sets no `stored` flag, so a job's table reads as an
+    orphan. The pair comes from the data source's `schema` field and the job's
+    `table_name` because those are the two values `TableWriter` hands to DuckDB.
+    Disabled jobs count — their rows are still the only copy.
+    """
+    schemas = {
+        d.name: d.get("schema")
+        for d in frappe.get_all("Insights Data Source v3", fields=["name", "`schema`"])
+    }
+    return {
+        # "main" is `WarehouseTableWriter`'s own default for an unset schema.
+        (schemas.get(job.data_source) or "main", job.table_name)
+        for job in frappe.get_all("Insights Table Import Job", fields=["data_source", "table_name"])
+        if job.table_name
+    }
+
+
+def get_reimportable_warehouse_tables() -> set[tuple[str, str]]:
+    """Warehouse tables a source sync can rebuild, so dropping them loses nothing.
+
+    Read from the docs rather than from this run's prune, so a run that died
+    between the prune and the sweep does not leave a table nothing ever drops.
+    """
+    return {
+        (get_warehouse_schema_name(t.data_source), frappe.scrub(t.table))
+        for t in frappe.get_all(
+            "Insights Table v3",
+            filters={"stored": 0},
+            fields=["data_source", "table", "sync_mode"],
+        )
+        if t.sync_mode != "Incremental"
+    }
+
+
+def get_legacy_flat_prefixes() -> list[tuple[str, str]]:
+    """(name prefix, warehouse schema) per data source, longest prefix first.
+
+    A source name can itself contain dots, so a flat name has to be split
+    against the known sources rather than on its first dot.
+    """
+    prefixes = [
+        (f"{frappe.scrub(name)}.", get_warehouse_schema_name(name))
+        for name in frappe.get_all("Insights Data Source v3", pluck="name")
+    ]
+    return sorted(prefixes, key=lambda p: len(p[0]), reverse=True)
+
+
+def resolve_legacy_flat_table(schema: str, table: str, prefixes) -> tuple[str, str] | None:
+    """Map a flat `main."<source>.<table>"` name to the table that replaced it.
+
+    Tables lived in `main` under a dotted name before the move to one schema
+    per data source. The rename left the old copies behind. A flat table is
+    safe to drop once its successor is accounted for.
+    """
+    if schema != "main":
+        return None
+
+    for prefix, source_schema in prefixes:
+        if table.startswith(prefix):
+            return (source_schema, frappe.scrub(table[len(prefix) :]))
+
+    return None
+
+
+def count_table_rows(db: DuckDBBackend, schema: str, table: str) -> int | None:
+    """Rows in a warehouse table, or None if the count itself failed."""
+    try:
+        query = f"select count(*) from {quote_identifier(schema)}.{quote_identifier(table)}"
+        return int(db.raw_sql(query).fetchone()[0])
+    except Exception:
+        frappe.logger().exception(f"Data store cleanup: could not count rows in '{schema}.{table}'")
+        return None
+
+
+def report_unexplained_orphan(schema: str, table: str, rows: int | None) -> None:
+    """Report a table the sweep refused to drop.
+
+    An `Error Log` outlives `logs/frappe.log`, which rotated before anyone
+    could ask what happened to seven months of imports.
+    """
+    held = f"{rows} rows" if rows is not None else "an unknown number of rows (the count failed)"
+    frappe.logger().error(f"Data store cleanup: kept '{schema}.{table}' (unexplained orphan, {held})")
+    frappe.log_error(
+        title="Data store cleanup kept an unexplained table",
+        message=(
+            f"'{schema}.{table}' holds {held}. Nothing claims it with `stored = 1`, so the "
+            "cleanup cannot tell whether a re-import would bring it back.\n\n"
+            "The table was left in place. Either claim it from the writer that maintains it, "
+            "or drop it by hand once you know what it holds."
+        ),
+    )
 
 
 def compact_warehouse() -> tuple[int, int] | None:

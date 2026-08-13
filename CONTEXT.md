@@ -69,6 +69,11 @@ _Avoid_: warehouse (implementation file name only)
 **Table Import**:
 The sync job that copies a source table into the Data Store.
 
+**Unexplained Orphan**:
+A Data Store table the weekly cleanup cannot show to be rebuildable. The cleanup
+keeps it and raises an `Error Log`. See ADR-0003.
+_Avoid_: unknown table, stray table
+
 ### Framework integration
 
 **Island**:
