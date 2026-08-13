@@ -118,9 +118,9 @@ class TestIbisQueryBuilderCountMeasure(InsightsIntegrationTestCase):
                 "type": "code",
                 "code": """
 results = [
-    {"count": 5, "label": "alpha"},
-    {"count": None, "label": "beta"},
-    {"count": 7, "label": "gamma"},
+    {"label": "alpha", "count": 5},
+    {"label": "beta", "count": None},
+    {"label": "gamma", "count": 7},
 ]
 """,
             }
@@ -130,11 +130,16 @@ results = [
         return IbisQueryBuilder(self.make_query_doc(operations)).build()
 
     def test_counting_a_column_literally_named_count_counts_that_column(self):
-        # COUNT is non-null-count in SQL/ibis, so the middle row (count=None)
-        # is excluded: 2, not 3. Before the fix this returned 3 — every row —
-        # because it silently substituted whichever column is first in the
-        # table (here, "count" itself, coincidentally; on a table where a
-        # different column came first it would count that one instead).
+        # "count" is deliberately NOT the first column here. Before the fix,
+        # the collision substituted self.query.columns[0] regardless of which
+        # column the user actually picked — with "count" first, that
+        # substitution would coincidentally land on the right column anyway
+        # and this test would pass even with the bug still present. With
+        # "label" first, the old code counts "label" (3, all non-null) where
+        # the correct answer is 2 (the "count" column's own non-null count,
+        # since count is a non-null-count in SQL/ibis and the middle row is
+        # None), so this only passes once the fix actually reads the
+        # measure's own column rather than substituting the first one.
         query = self.build_query(
             [
                 *self.make_source_operations(),
