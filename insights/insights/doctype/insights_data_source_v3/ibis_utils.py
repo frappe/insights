@@ -778,7 +778,19 @@ class IbisQueryBuilder:
         )
 
     def translate_measure(self, measure):
-        if measure.column_name == "count" and measure.aggregation == "count":
+        # The frontend's synthetic "Count of records" measure (query/helpers.ts
+        # `count()`) always sets this exact triple, including measure_name —
+        # column_name/aggregation alone aren't enough to identify it: a table
+        # with a real column literally named "count", aggregated with COUNT,
+        # produces the same column_name/aggregation pair. Without the
+        # measure_name check that real measure was silently replaced by a
+        # count of self.query.columns[0] — whichever column happens to be
+        # first in table order, unrelated to what the user selected.
+        if (
+            measure.column_name == "count"
+            and measure.aggregation == "count"
+            and measure.measure_name == "count_of_rows"
+        ):
             first_column = self.query.columns[0]
             first_column = getattr(self.query, first_column)
             return first_column.count().name(measure.measure_name)
