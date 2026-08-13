@@ -49,7 +49,8 @@ export function wheneverChanges(source: WatchSource, callback: WatchCallback, op
 	return watchDebounced(
 		source,
 		(val, _, onCleanup) => {
-			if (isEqual(val, preVal)) return
+			// against a clone, because `preVal` is one — see `isDirty` in ./resource
+			if (isEqual(copy(val), preVal)) return
 			preVal = copy(val)
 			callback(val, preVal, onCleanup)
 		},

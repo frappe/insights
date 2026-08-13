@@ -59,7 +59,12 @@ export default function useDocumentResource<T extends Document>(
 
 	const transformFn = options.transform || ((doc: T) => doc)
 
-	const isDirty = computed(() => !isEqual(doc.value, originalDoc.value))
+	// Both sides go through `copy` because `originalDoc` is one: a key set to
+	// `undefined` is dropped by the clone and kept on the document, and a deep
+	// equality that counts keys then calls a document dirty that a save cannot
+	// clean — autoSave writes it, the response replaces the document, whatever
+	// wrote the `undefined` writes it again.
+	const isDirty = computed(() => !isEqual(copy(doc.value), originalDoc.value))
 
 	async function insertDoc() {
 		if (!isLocal.value) return
