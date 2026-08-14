@@ -142,7 +142,7 @@ watchEffect(() => {
 </script>
 
 <template>
-	<header class="flex h-12 items-center justify-between border-b py-2.5 pl-5 pr-2">
+	<header class="flex h-12 items-center justify-between border-b py-2.5 ps-5 pe-2">
 		<Breadcrumbs :items="[{ label: __('Workbooks'), route: '/workbook' }]" />
 		<div class="flex items-center gap-2">
 			<Button

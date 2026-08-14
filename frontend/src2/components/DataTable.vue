@@ -570,8 +570,8 @@ function toggleNewColumn() {
 							class="h-8 border-b border-r"
 							:class="[
 								header.isLast && isNumberColumn(header.column.name)
-									? 'text-right'
-									: 'text-left',
+									? 'text-end'
+									: 'text-start',
 								isStickyColumn(header.column.name)
 									? 'sticky bg-surface-gray-1'
 									: '',
@@ -633,10 +633,10 @@ function toggleNewColumn() {
 
 						<td
 							v-if="props.showRowTotals"
-							class="h-8 border-b border-r px-3 text-right"
+							class="h-8 border-b border-r px-3 text-end"
 							width="1px"
 						>
-							<div class="truncate pl-3 pr-20"></div>
+							<div class="truncate ps-3 pe-20"></div>
 						</td>
 					</tr>
 
@@ -675,10 +675,10 @@ function toggleNewColumn() {
 						</td>
 						<td
 							v-if="props.showRowTotals"
-							class="border-b border-r px-3 text-right"
+							class="border-b border-r px-3 text-end"
 							width="1px"
 						>
-							<div class="truncate pl-3 pr-20"></div>
+							<div class="truncate ps-3 pe-20"></div>
 						</td>
 					</tr>
 				</thead>
@@ -695,7 +695,7 @@ function toggleNewColumn() {
 						:key="idx"
 					>
 						<td
-							class="tnum sticky left-0 h-8 whitespace-nowrap border-b border-r bg-surface-base px-3 text-right text-xs"
+							class="tnum sticky left-0 h-8 whitespace-nowrap border-b border-r bg-surface-base px-3 text-end text-xs"
 							width="1px"
 							height="30px"
 						>
@@ -707,7 +707,7 @@ function toggleNewColumn() {
 							class="h-8 border-b border-r px-3 text-ink-gray-7 leading-5 py-1.5"
 							:class="[
 								getTextWrapClass(col.name),
-								isNumberColumn(col.name) ? 'tnum text-right' : 'text-left',
+								isNumberColumn(col.name) ? 'tnum text-end' : 'text-start',
 								props.enableColorScale && isNumberColumn(col.name)
 									? colorByValues[row[col.name]]
 									: '',
@@ -742,7 +742,7 @@ function toggleNewColumn() {
 
 						<td
 							v-if="props.showRowTotals && totalPerRow"
-							class="tnum h-8 border-b border-r px-3 text-right font-bold"
+							class="tnum h-8 border-b border-r px-3 text-end font-bold"
 						>
 							{{ _formatNumber(totalPerRow[idx]) }}
 						</td>
@@ -757,7 +757,7 @@ function toggleNewColumn() {
 							v-for="col in props.columns"
 							class="h-8 truncate border-r border-t px-3 font-bold text-ink-gray-7"
 							:class="[
-								isNumberColumn(col.name) ? 'tnum text-right' : 'text-left',
+								isNumberColumn(col.name) ? 'tnum text-end' : 'text-start',
 								isStickyColumn(col.name) ? 'sticky bg-surface-base' : '',
 							]"
 							:style="{
@@ -774,7 +774,7 @@ function toggleNewColumn() {
 
 						<td
 							v-if="props.showRowTotals && totalColumnTotal"
-							class="tnum h-8 border-r border-t px-3 text-right font-bold"
+							class="tnum h-8 border-r border-t px-3 text-end font-bold"
 						>
 							{{ _formatNumber(totalColumnTotal) }}
 						</td>

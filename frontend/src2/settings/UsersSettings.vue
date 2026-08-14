@@ -208,7 +208,7 @@ function sendInvitation() {
 							placeholder="Enter email address"
 							v-model="emailsTxt"
 							@keydown.enter.capture.stop="extractEmails(`${emailsTxt} `)"
-							class="h-7 w-full rounded border-none bg-surface-gray-2 py-1.5 pl-2 pr-2 text-base text-ink-gray-7 placeholder-ink-gray-4 transition-colors focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
+							class="h-7 w-full rounded border-none bg-surface-gray-2 py-1.5 ps-2 pe-2 text-base text-ink-gray-7 placeholder-ink-gray-4 transition-colors focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
 						/>
 					</div>
 				</div>

@@ -52,7 +52,7 @@ watch(searchQuery, (query) => {
 					<div class="w-[50%] truncate">{{ row.title }}</div>
 					<div class="flex-1 text-sm text-ink-gray-4">
 						<Avatar :label="row.owner" />
-						<span class="ml-1.5">{{ row.owner }}</span>
+						<span class="ms-1.5">{{ row.owner }}</span>
 					</div>
 					<div class="flex-1 text-sm text-ink-gray-4">
 						{{ (dayjs(row.creation) as any).fromNow() }}

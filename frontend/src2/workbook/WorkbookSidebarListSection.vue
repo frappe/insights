@@ -49,7 +49,7 @@ function setDraggedItem(event: DragEvent, row: any) {
 			>
 				<router-link
 					:to="route(row)"
-					class="flex h-7.5 items-center justify-between rounded pl-1.5 text-sm"
+					class="flex h-7.5 items-center justify-between rounded ps-1.5 text-sm"
 				>
 					<div class="flex gap-1.5 overflow-hidden">
 						<div class="flex-shrink-0">

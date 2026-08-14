@@ -114,7 +114,7 @@ function confirmSelections() {
 								/>
 							</div>
 							<button
-								class="mt-1.5 text-left text-xs text-ink-gray-5 hover:underline"
+								class="mt-1.5 text-start text-xs text-ink-gray-5 hover:underline"
 								@click="addRow"
 							>
 								+ Add
@@ -134,7 +134,7 @@ function confirmSelections() {
 								/>
 							</div>
 							<button
-								class="mt-1.5 text-left text-xs text-ink-gray-5 hover:underline"
+								class="mt-1.5 text-start text-xs text-ink-gray-5 hover:underline"
 								@click="addColumn"
 							>
 								+ Add
@@ -154,7 +154,7 @@ function confirmSelections() {
 								/>
 							</div>
 							<button
-								class="mt-1.5 text-left text-xs text-ink-gray-5 hover:underline"
+								class="mt-1.5 text-start text-xs text-ink-gray-5 hover:underline"
 								@click="addValue"
 							>
 								+ Add

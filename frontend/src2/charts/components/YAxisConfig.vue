@@ -100,7 +100,7 @@ function removeReferenceLine(index: number) {
 						</template>
 					</DraggableList>
 					<button
-						class="mt-1.5 text-left text-xs text-ink-gray-5 hover:underline"
+						class="mt-1.5 text-start text-xs text-ink-gray-5 hover:underline"
 						@click="addSeries"
 					>
 						+ Add series
@@ -201,7 +201,7 @@ function removeReferenceLine(index: number) {
 					</div>
 				</div>
 				<button
-					class="mt-1.5 text-left text-xs text-ink-gray-5 hover:underline"
+					class="mt-1.5 text-start text-xs text-ink-gray-5 hover:underline"
 					@click="addReferenceLine"
 				>
 					+ Add reference line

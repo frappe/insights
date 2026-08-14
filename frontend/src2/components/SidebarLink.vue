@@ -27,8 +27,8 @@
 				class="flex-1 flex-shrink-0 text-base duration-300 ease-in-out"
 				:class="
 					isCollapsed
-						? 'ml-0 w-0 overflow-hidden opacity-0'
-						: 'ml-2 w-auto truncate opacity-100'
+						? 'ms-0 w-0 overflow-hidden opacity-0'
+						: 'ms-2 w-auto truncate opacity-100'
 				"
 			>
 				{{ label }}
