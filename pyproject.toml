@@ -12,8 +12,13 @@ dependencies = [
     "SQLAlchemy==2.0.41",
     "python-telegram-bot==21.4",
     "duckdb~=1.4.3",
+<<<<<<< HEAD
     "sqlglot~=30.22.0",
     "ibis-framework~=11.0.0",  # when this moves to 12, delete connectors/compilers.py, the Insights DuckDB, ClickHouse and BigQuery compilers that use it, and `_hide_ctes_from_ibis`: ibis 12 passes sqlglot's `except_` and `with_` (ibis#11767)
+=======
+    "sqlglot>=30.12.0,<31",
+    "ibis-framework~=11.0.0",
+>>>>>>> 3a35e58 (chore: bump sqlglot to 30.12.0 (#1299))
     "ibis-framework[duckdb]",
     "ibis-framework[mysql]",
     "ibis-framework[sqlite]",
