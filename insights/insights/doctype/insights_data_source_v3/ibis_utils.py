@@ -1023,26 +1023,36 @@ def to_insights_type(dtype: DataType):
     return "String"
 
 
+def _results_cache_key(cache_key):
+    # v2 stores the column names alongside the rows, so the prefix change drops
+    # the v1 entries that cannot be read back with their schema intact
+    return "insights:query_results:v2:" + cache_key
+
+
 def cache_results(cache_key, result: pd.DataFrame, cache_expiry=3600):
-    cache_key = "insights:query_results:" + cache_key
-    data = result.to_dict(orient="records")
-    data = frappe.as_json(data)
-    frappe.cache().set_value(cache_key, data, expires_in_sec=cache_expiry)
+    payload = {
+        "columns": list(result.columns),
+        "rows": result.to_dict(orient="records"),
+    }
+    frappe.cache().set_value(
+        _results_cache_key(cache_key),
+        frappe.as_json(payload),
+        expires_in_sec=cache_expiry,
+    )
 
 
 def get_cached_results(cache_key) -> pd.DataFrame:
-    cache_key = "insights:query_results:" + cache_key
-    data = frappe.cache().get_value(cache_key)
+    data = frappe.cache().get_value(_results_cache_key(cache_key))
     if not data:
         return None
-    data = frappe.parse_json(data)
-    df = pd.DataFrame(data).replace({pd.NaT: None, np.nan: None})
-    return df
+    payload = frappe.parse_json(data)
+    # a result with no rows still has columns, and records alone cannot carry them
+    df = pd.DataFrame(payload["rows"], columns=payload["columns"])
+    return df.replace({pd.NaT: None, np.nan: None})
 
 
 def has_cached_results(cache_key):
-    cache_key = "insights:query_results:" + cache_key
-    return frappe.cache().get_value(cache_key) is not None
+    return frappe.cache().get_value(_results_cache_key(cache_key)) is not None
 
 
 def exec_with_return(
