@@ -33,15 +33,36 @@ Inputs: `$ARGUMENTS` is a PR number, a git ref, or empty.
 - A ref → `git diff <ref>...HEAD` (three-dot).
 - Empty → diff the current branch against `develop`'s merge-base. Say what you picked.
 
-# Read before you judge
+# Run this in three phases, in order
 
-`CONTEXT.md` (the glossary), `AGENTS.md`, and the ADRs in `docs/adr/` that touch the
-changed area. Cite them; never paraphrase a decision from memory. If the branch carries
-`docs/projects/<effort>/`, read the map and any ticket the diff claims to resolve.
+The phases exist to keep the writing rules away from the searching. Length limits shape
+what you look for, so you do not get to think about length until phase 3.
 
-Then investigate — spend most of your budget here. Read around the hunks, not just the
-hunks. Grep the other call sites of anything the diff touches. `git log --oneline -n 5
--- <file>` on suspicious files. Cap: ~25 read/grep/glob, ~5 git.
+**Phase 1 — read and search.** Read `CONTEXT.md` (the glossary), `AGENTS.md`, and the ADRs
+in `docs/adr/` that touch the changed area. Cite them; never paraphrase a decision from
+memory. If the branch carries `docs/projects/<effort>/`, read the map and any ticket the
+diff claims to resolve. Then investigate — spend most of your budget here. Read around the
+hunks, not just the hunks. Grep the other call sites of anything the diff touches.
+`git log --oneline -n 5 -- <file>` on suspicious files. Work through sections 1-7 below.
+Cap: ~25 read/grep/glob, ~5 git.
+
+Write the result as a raw candidate list. Ugly is correct here. No format, no length
+limit, no filtering — a candidate you are unsure of still goes on the list.
+
+**Phase 2 — confirm each candidate.** One at a time. **Run the check. Do not reason about
+it.** If the claim is that a value comes back wrong, read the code that produces it and
+say what it returns. If the claim is that a caller breaks, open the caller. If the claim
+is about a framework default, read the framework. A candidate you cannot confirm is either
+dropped, or stated as a question with the word "worth checking" in it — never asserted.
+Budget for this phase is separate: do not skip a check because the comment is getting long.
+The comment does not exist yet.
+
+Then apply section 8. Drop everything it forbids.
+
+**Phase 3 — write.** Only now read *Verdict and report* and write the comment. You may cut
+for length here. You may not soften a finding that survived phase 2, and you may not drop
+one to fit a line count. If everything survived and the limit is tight, the score carries
+the weight, not the omission.
 
 # 1. Foundation
 
