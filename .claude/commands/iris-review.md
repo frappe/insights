@@ -235,15 +235,27 @@ documents, or state a user can only escape by deleting the object: any blocker �
 Otherwise: no findings → 5, nits only → 4, one `Concerns` → 3, two or more → 2. Count
 distinct causes, not bullets — evidence for one cause is one finding.
 
-- **Short.** ~6-15 lines for `Concerns`, ~3-6 for `Minor nits`, 1-3 for `Looks good`.
-- Lead with the verdict and score in one bold line — `**Concerns (2/5)** — …` — then one
-  bullet per finding with `path:line`, the decision or precedent it breaks, and the
-  consequence. Never report `Concerns` without all three.
+**Shape.** Lead with the verdict and score in one bold line. Then one bullet per finding:
+`path:line`, the problem in one sentence, and the fix in one sentence. Put the evidence in
+a `<details>` block under that bullet. The open comment stays scannable and the proof stays
+one click away.
+
+- **Visible part is short.** One line per finding. ~4-8 lines total for `Concerns`, ~3 for
+  `Minor nits`, 1 for `Looks good`. A nit needs no `<details>`.
+- **The `<details>` block carries the proof:** the measurement, the call sites you grepped,
+  the file you read upstream, the cost of the fix you propose. No length limit here, but
+  every line must be evidence, not restatement.
+- Never report `Concerns` without `path:line`, the decision or precedent it breaks, and the
+  consequence.
 - End a `Concerns` review with one line naming the smaller fix you would rather see.
-- Explain with a concrete example when the finding is about a design. An abstract
-  explanation he cannot follow is a failed explanation.
-- Plain English, active voice. Many authors are first-time contributors — "other call sites
-  read this through `standard_id`", not "violates the reference-currency invariant".
+- **Write the review in STE** — the standard §7 applies to the PR applies to you. One point
+  per sentence, max 25 words, active voice, no semicolons, condition before command.
+- **Show an example when the finding is about a design**, inside the `<details>`. Take it
+  from this repo — a real call site, a real measured output, a real upstream `file:line`.
+  Never invent a snippet. If you cannot find a real one, drop the example and state the
+  finding plainly.
+- Many authors are first-time contributors — "other call sites read this through
+  `standard_id`", not "violates the reference-currency invariant".
 - Honest confidence ("looks like", "worth checking") is fine, and naming a discomfort
   without a fix is a valid finding — *"i just have some concerns that somethings feels
   'smelly'"*. Say it is a feeling when it is.
@@ -255,12 +267,18 @@ Example:
 > **Concerns (2/5)** — patches the symptom at every call site, and changes a stored shape
 > with no patch.
 >
-> - `frontend/src2/query/helpers.ts:212` — stringifies `workbook` at each boundary. The
->   cause is the `autoincrement` autoname on `Insights Workbook`, so every future call site
->   has to remember the cast. Dropping autoincrement removes the convention.
+> - `frontend/src2/query/helpers.ts:212` — stringifies `workbook` at each boundary, so every
+>   future call site must remember the cast. Drop the `autoincrement` autoname instead.
+>   <details><summary>evidence</summary>
+>
+>   `Insights Workbook` is `autoincrement`, so `name` is a bigint. Every column that
+>   references it is varchar. The cast appears at 6 call sites in this diff
+>   (`helpers.ts:212,240`, `workbook.ts:88`, …). An `autoname` method keeps plain numbers
+>   and continues the same sequence, and removes all 6.
+>   </details>
+>
 > - `insights/insights/doctype/insights_chart_v3/insights_chart_v3.json:88` — new `config`
->   key, no entry in `insights/patches.txt`. Charts saved before this ship read the old
->   shape and render empty.
+>   key with no entry in `insights/patches.txt`. Charts saved before this render empty.
 >
 > Suggest: fix the autoname, and keep the cast only where a patch has to run.
 
