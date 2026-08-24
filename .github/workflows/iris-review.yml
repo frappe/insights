@@ -75,6 +75,14 @@ jobs:
         # For git merge-base and three-dot diffs against the target branch.
         run: git fetch --depth=200 origin develop:refs/remotes/origin/develop
 
+      - name: Use trusted agent config
+        # The checkout is the PR head, so a fork PR controls every file in it —
+        # including the command's allowed-tools and CLAUDE.md. The agent's
+        # instructions and permissions must come from develop, not the PR.
+        run: |
+          rm -rf .claude .mcp.json CLAUDE.md AGENTS.md
+          git checkout origin/develop -- .claude CLAUDE.md AGENTS.md
+
       - name: Save comment
         # The agent cannot read env vars — its Bash permissions deny variable
         # expansion. Files reach it through the Read tool instead.
