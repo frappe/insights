@@ -55,11 +55,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-        with:
-          # History so iris can inspect recent commits near the changed files.
-          fetch-depth: 200
-
       - name: Resolve PR number
         id: pr
         env:
@@ -68,16 +63,79 @@ jobs:
           FROM_ISSUE: ${{ github.event.issue.number }}
         run: echo "number=${DISPATCH:-${FROM_PR:-$FROM_ISSUE}}" >> "$GITHUB_OUTPUT"
 
+      - uses: actions/checkout@v4
+        with:
+          # issue_comment and workflow_dispatch check out the default branch by
+          # default; the head ref exists in the base repo for fork PRs too.
+          ref: refs/pull/${{ steps.pr.outputs.number }}/head
+          # History so iris can inspect recent commits near the changed files.
+          fetch-depth: 200
+
+      - name: Fetch develop
+        # For git merge-base and three-dot diffs against the target branch.
+        run: git fetch --depth=200 origin develop:refs/remotes/origin/develop
+
+      - name: Use trusted agent config
+        # The checkout is the PR head, so a fork PR controls every file in it —
+        # including the command's allowed-tools and CLAUDE.md. Restore the agent
+        # config from the ref this workflow file ran from: develop on
+        # issue_comment, the dispatched branch on workflow_dispatch, and the
+        # merge commit on pull_request (same-repo authors only).
+        run: |
+          git fetch --depth=1 origin ${{ github.sha }}
+          rm -rf .claude .mcp.json CLAUDE.md AGENTS.md
+          git checkout ${{ github.sha }} -- .claude CLAUDE.md AGENTS.md
+
+      - name: Save comment
+        # The agent cannot read env vars — its Bash permissions deny variable
+        # expansion. Files reach it through the Read tool instead.
+        if: github.event_name == 'issue_comment'
+        env:
+          BODY: ${{ github.event.comment.body }}
+          AUTHOR: ${{ github.event.comment.user.login }}
+        run: |
+          printf '%s\n' "$BODY" > /tmp/iris-comment.txt
+          printf '%s\n' "$AUTHOR" > /tmp/iris-comment-author.txt
+
       - name: Run iris
+        id: iris
         uses: anthropics/claude-code-action@v1
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          IRIS_EVENT: ${{ github.event_name }}
-          IRIS_COMMENT_BODY: ${{ github.event.comment.body }}
-          IRIS_COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           display_report: 'true'
-          prompt: "/iris-review ${{ steps.pr.outputs.number }}"
+          prompt: "/iris-review ${{ steps.pr.outputs.number }} --ci ${{ github.event_name }}"
           claude_args: ${{ vars.IRIS_MODEL != '' && format('--model {0}', vars.IRIS_MODEL) || '' }}
+
+      - name: Bot token
+        # Optional custom identity: register a GitHub App, install it on this
+        # repo, then set the IRIS_APP_ID variable and IRIS_APP_PRIVATE_KEY
+        # secret. Without them the comment posts as github-actions.
+        id: bot
+        if: vars.IRIS_APP_ID != ''
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.IRIS_APP_ID }}
+          private-key: ${{ secrets.IRIS_APP_PRIVATE_KEY }}
+
+      - name: Post review
+        # The agent only writes /tmp/review.md — posting is the workflow's job,
+        # so the footer is reliable and the comment count is exactly one.
+        env:
+          GH_TOKEN: ${{ steps.bot.outputs.token || secrets.GITHUB_TOKEN }}
+          EXEC_FILE: ${{ steps.iris.outputs.execution_file }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          PR: ${{ steps.pr.outputs.number }}
+        run: |
+          test -s /tmp/review.md
+          model=$(jq -r 'first(.. | objects | select(has("model")) | .model) // empty' "$EXEC_FILE" || true)
+          cost=$(jq -r 'first(.. | objects | select(has("total_cost_usd")) | .total_cost_usd) // empty' "$EXEC_FILE" || true)
+          ms=$(jq -r 'first(.. | objects | select(has("duration_ms")) | .duration_ms) // empty' "$EXEC_FILE" || true)
+          footer="iris"
+          [ -n "$model" ] && footer="$footer · $model"
+          [ -n "$cost" ] && footer=$(printf '%s · $%.2f' "$footer" "$cost")
+          [ -n "$ms" ] && footer="$footer · $((ms / 60000))m $((ms / 1000 % 60))s"
+          printf '\n\n<sub>%s · [run](%s)</sub>\n' "$footer" "$RUN_URL" >> /tmp/review.md
+          gh pr comment "$PR" -R "${{ github.repository }}" --body-file /tmp/review.md

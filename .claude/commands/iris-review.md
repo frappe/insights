@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr checks:*),Bash(gh pr comment:*),Bash(gh search:*),Bash(git log:*),Bash(git show:*),Bash(git blame:*),Bash(git diff:*),Bash(git rev-parse:*),Bash(git merge-base:*),Bash(git ls-files:*),Bash(wc:*),Bash(rg:*),Read,Glob,Grep
+allowed-tools: Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr checks:*),Bash(gh search:*),Bash(git log:*),Bash(git show:*),Bash(git blame:*),Bash(git diff:*),Bash(git rev-parse:*),Bash(git merge-base:*),Bash(git ls-files:*),Bash(wc:*),Bash(rg:*),Read,Write,Glob,Grep
 description: Review an Insights pull request or branch against this repo's standards, and report the findings in chat.
 ---
 
@@ -15,17 +15,21 @@ diff: does this class of bug stay alive, and how much does the fix touch?
 something small. *"don't change anything, share your feedback first"*. If a follow-up is
 worth doing, say so in one line and stop.
 
-**Where the review goes.** If `$IRIS_EVENT` is set you are running in CI: post the review
-as exactly one PR comment with `gh pr comment <N> --body-file <path>`, then stop. One
-comment per run, always, even for "Looks good". Otherwise print it in chat and post
-nothing. When `$IRIS_EVENT` is `issue_comment`, read `$IRIS_COMMENT_BODY` — if it asks for
-a specific angle, lead with "Re-reviewing per @$IRIS_COMMENT_AUTHOR — focused on <thing>."
+**Where the review goes.** If `$ARGUMENTS` contains `--ci`, you are running in CI: Write
+the review to `/tmp/review.md`, then stop — the workflow posts the file as the PR comment.
+Always write the file, even for "Looks good". Otherwise print it in chat and post nothing.
+Do not probe the environment to decide — the arguments are the only signal. When the `--ci` event is `issue_comment`, Read `/tmp/iris-comment.txt` — if it asks
+for a specific angle, lead with "Re-reviewing per @<author> — focused on <thing>", with the
+author from `/tmp/iris-comment-author.txt`.
+
+This command is already running — never call the Skill tool.
 
 
 **Push back on him too.** *"don't trust my words, but first find out how people are doing
 it"*. If the PR is his, or he states a premise you can check, check it.
 
-Inputs: `$ARGUMENTS` is a PR number, a git ref, or empty.
+Inputs: `$ARGUMENTS` is a PR number, a git ref, or empty. In CI it is
+`<pr> --ci <event>`.
 
 - A number → `gh pr view <N>`, `gh pr diff <N>`. Read the PR, not the working tree.
 - A ref → `git diff <ref>...HEAD` (three-dot).
@@ -50,8 +54,10 @@ limit, no filtering — a candidate you are unsure of still goes on the list.
 **Phase 2 — confirm each candidate.** One at a time. **Run the check. Do not reason about
 it.** If the claim is that a value comes back wrong, read the code that produces it and
 say what it returns. If the claim is that a caller breaks, open the caller. If the claim
-is about a framework default, read the framework. A candidate you cannot confirm is either
-dropped, or stated as a question with the word "worth checking" in it — never asserted.
+is about a framework default, read the framework. Your checks are reads — you have no
+interpreter, so a check that needs one counts as unconfirmable. A candidate you cannot
+confirm is either dropped, or stated as a question with the word "worth checking" in it —
+never asserted.
 Budget for this phase is separate: do not skip a check because the comment is getting long.
 The comment does not exist yet.
 
