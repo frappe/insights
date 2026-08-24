@@ -20,6 +20,8 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  # For the reaction on the /iris review comment.
+  issues: write
 
 concurrency:
   # Split by trigger: every PR comment queues an `issue_comment` run, and it
@@ -55,6 +57,26 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      - name: Bot token
+        # Optional custom identity: register a GitHub App, install it on this
+        # repo, then set the IRIS_APP_ID variable and IRIS_APP_PRIVATE_KEY
+        # secret. Without them iris acts as github-actions.
+        id: bot
+        if: vars.IRIS_APP_ID != ''
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.IRIS_APP_ID }}
+          private-key: ${{ secrets.IRIS_APP_PRIVATE_KEY }}
+
+      - name: Acknowledge
+        # An eyes reaction on the /iris review comment: seen, running.
+        if: github.event_name == 'issue_comment'
+        env:
+          GH_TOKEN: ${{ steps.bot.outputs.token || secrets.GITHUB_TOKEN }}
+        run: >-
+          gh api repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions
+          -f content=eyes
+
       - name: Resolve PR number
         id: pr
         env:
@@ -109,17 +131,6 @@ jobs:
           prompt: "/iris-review ${{ steps.pr.outputs.number }} --ci ${{ github.event_name }}"
           claude_args: ${{ vars.IRIS_MODEL != '' && format('--model {0}', vars.IRIS_MODEL) || '' }}
 
-      - name: Bot token
-        # Optional custom identity: register a GitHub App, install it on this
-        # repo, then set the IRIS_APP_ID variable and IRIS_APP_PRIVATE_KEY
-        # secret. Without them the comment posts as github-actions.
-        id: bot
-        if: vars.IRIS_APP_ID != ''
-        uses: actions/create-github-app-token@v2
-        with:
-          app-id: ${{ vars.IRIS_APP_ID }}
-          private-key: ${{ secrets.IRIS_APP_PRIVATE_KEY }}
-
       - name: Post review
         # The agent only writes /tmp/review.md — posting is the workflow's job,
         # so the footer is reliable and the comment count is exactly one.
@@ -139,3 +150,13 @@ jobs:
           [ -n "$ms" ] && footer="$footer · $((ms / 60000))m $((ms / 1000 % 60))s"
           printf '\n\n<sub>%s · [run](%s)</sub>\n' "$footer" "$RUN_URL" >> /tmp/review.md
           gh pr comment "$PR" -R "${{ github.repository }}" --body-file /tmp/review.md
+
+      - name: Report failure
+        # Without this, a failed run leaves the commenter waiting on a review
+        # that never comes.
+        if: failure() && steps.pr.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ steps.bot.outputs.token || secrets.GITHUB_TOKEN }}
+          PR: ${{ steps.pr.outputs.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: gh pr comment "$PR" -R "${{ github.repository }}" --body "iris failed — [run]($RUN_URL)"
