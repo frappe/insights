@@ -77,11 +77,14 @@ jobs:
 
       - name: Use trusted agent config
         # The checkout is the PR head, so a fork PR controls every file in it —
-        # including the command's allowed-tools and CLAUDE.md. The agent's
-        # instructions and permissions must come from develop, not the PR.
+        # including the command's allowed-tools and CLAUDE.md. Restore the agent
+        # config from the ref this workflow file ran from: develop on
+        # issue_comment, the dispatched branch on workflow_dispatch, and the
+        # merge commit on pull_request (same-repo authors only).
         run: |
+          git fetch --depth=1 origin ${{ github.sha }}
           rm -rf .claude .mcp.json CLAUDE.md AGENTS.md
-          git checkout origin/develop -- .claude CLAUDE.md AGENTS.md
+          git checkout ${{ github.sha }} -- .claude CLAUDE.md AGENTS.md
 
       - name: Save comment
         # The agent cannot read env vars — its Bash permissions deny variable
