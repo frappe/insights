@@ -200,20 +200,24 @@ class FrappeTableFactory:
 
 
 def get_site_db_ssl_params():
-    """SSL settings for the site database, matching frappe.database.mariadb.
+    """SSL settings for the site database, as the framework resolves them.
 
-    The framework connects with SSL only when a CA is configured, and verifies
-    against that CA. Without it the site database gets no SSL at all.
+    The site database has no connection fields in the form, so the site config
+    is the only source. This mirrors frappe.database.mariadb.
+
+    frappe.db.get_connection_settings() cannot be reused as is. It carries a
+    converter map, and other keys, built for the driver the framework itself
+    connects with, which is not always the one used here.
     """
     if not frappe.conf.db_ssl_ca:
         return {}
 
     # pymysql rebuilds its ssl options from scratch when ssl_verify_cert is set,
     # which drops the CA. Sending the CA alone already means "verify".
-    # sent as a string so that a "no hostname check" setting survives the query
-    # string, where a falsy value would be dropped
     params = {
         "ssl_ca": frappe.conf.db_ssl_ca,
+        # a string, so that "do not check the hostname" survives the query
+        # string, where a falsy value would be dropped
         "ssl_check_hostname": str(bool(frappe.conf.db_ssl_check_hostname)).lower(),
     }
     if frappe.conf.db_ssl_cert and frappe.conf.db_ssl_key:
@@ -309,6 +313,8 @@ class SiteDB(FrappeDB):
             primary_config["port"] = frappe.conf.replica_db_port
         if frappe.conf.replica_host:
             primary_config["host"] = frappe.conf.replica_host
+            # the primary's socket does not reach the replica
+            primary_config["socket"] = None
 
         if frappe.conf.different_credentials_for_replica:
             primary_config["username"] = (
@@ -319,13 +325,21 @@ class SiteDB(FrappeDB):
         return primary_config
 
     def get_primary_credentials(self):
-        """Get primary database credentials"""
+        """Read back what the framework itself connected with.
+
+        Reading the live connection, rather than resolving the site config a
+        second time, keeps the two in step across framework versions. v15
+        connects as db_name, later versions prefer db_user, and a site may be
+        reached over a socket rather than a host and port.
+        """
+        db = frappe.local.db
         return {
-            "username": frappe.conf.db_name,
-            "password": frappe.conf.db_password,
-            "database": frappe.conf.db_name,
-            "host": frappe.conf.db_host or "127.0.0.1",
-            "port": frappe.conf.db_port or "3306",
+            "username": db.user,
+            "password": db.password,
+            "database": db.cur_db_name,
+            "host": db.host or "127.0.0.1",
+            "port": db.port or "3306",
+            "socket": db.socket,
         }
 
     def create_engine(self, credentials):
@@ -338,6 +352,7 @@ class SiteDB(FrappeDB):
             database=credentials["database"],
             host=credentials["host"],
             port=credentials["port"],
+            unix_socket=credentials.get("socket"),
             charset="utf8mb4",
             use_unicode=True,
             **get_site_db_ssl_params(),
