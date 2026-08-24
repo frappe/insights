@@ -19,8 +19,18 @@ jobs:
         with:
           node-version: 24
       - name: Setup dependencies
+        # Pinned. Unpinned installs resolve the latest release on every run, so an
+        # upstream publish breaks the workflow with no commit on our side. It happened
+        # on 2026-08-24: conventionalcommits 10.4.0 needs conventional-changelog-writer
+        # 9, which release-notes-generator 14 does not ship. Preset 10 renders an empty
+        # body under writer 8, so the pin is on 9.
         run: |
-          npm install @semantic-release/git @semantic-release/exec @semantic-release/release-notes-generator conventional-changelog-conventionalcommits --no-save
+          npm install --no-save \
+            semantic-release@25.0.9 \
+            @semantic-release/git@11.0.1 \
+            @semantic-release/exec@7.1.0 \
+            @semantic-release/release-notes-generator@14.1.1 \
+            conventional-changelog-conventionalcommits@9.3.1
       - name: Record pre-release state
         id: pre_release
         env:
@@ -31,7 +41,7 @@ jobs:
       - name: Create Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx semantic-release
+        run: npx --no semantic-release
       - name: Write release notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
