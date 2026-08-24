@@ -15,7 +15,7 @@ from sqlalchemy.engine.base import Connection
 from insights.insights.query_builders.postgresql.builder import PostgresQueryBuilder
 
 from .base_database import BaseDatabase
-from .utils import create_insights_table, get_sqlalchemy_engine
+from .utils import CONNECT_TIMEOUT, create_insights_table, get_sqlalchemy_engine
 
 IGNORED_TABLES = ["__.*"]
 
@@ -106,7 +106,7 @@ class PostgresTableFactory:
 
 class PostgresDatabase(BaseDatabase):
     def __init__(self, **kwargs):
-        connect_args = {"connect_timeout": 1}
+        connect_args = {"connect_timeout": CONNECT_TIMEOUT}
 
         self.data_source = kwargs.pop("data_source")
         if connection_string := kwargs.pop("connection_string", None):
