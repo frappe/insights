@@ -1,0 +1,83 @@
+name: iris — PR review
+
+on:
+  pull_request:
+    # No `synchronize` — a re-review on every push gets cancelled by the next
+    # push. Use `/iris review` in a comment after pushing fixes.
+    types: [opened, reopened, ready_for_review]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: PR number to (re)review
+        required: true
+        type: number
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  # Split by trigger: every PR comment queues an `issue_comment` run, and it
+  # must not cancel a review already running for the PR itself.
+  group: iris-${{ github.event_name == 'pull_request' && 'auto' || 'manual' }}-${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    # Kill switch: set repo variable IRIS_ENABLED=true to enable.
+    # Fork PRs are skipped — secrets are not available in a fork context, so a
+    # maintainer runs `/iris review` on those instead.
+    if: >-
+      vars.IRIS_ENABLED == 'true' && (
+        (
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.draft == false &&
+          github.event.pull_request.head.repo.full_name == github.repository
+        ) ||
+        github.event_name == 'workflow_dispatch' ||
+        (
+          github.event_name == 'issue_comment' &&
+          github.event.issue.pull_request != null &&
+          github.event.issue.state == 'open' &&
+          contains(github.event.comment.body, '/iris review') &&
+          (
+            github.event.comment.author_association == 'OWNER' ||
+            github.event.comment.author_association == 'MEMBER' ||
+            github.event.comment.author_association == 'COLLABORATOR'
+          )
+        )
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # History so iris can inspect recent commits near the changed files.
+          fetch-depth: 200
+
+      - name: Resolve PR number
+        id: pr
+        env:
+          DISPATCH: ${{ inputs.pr_number }}
+          FROM_PR: ${{ github.event.pull_request.number }}
+          FROM_ISSUE: ${{ github.event.issue.number }}
+        run: echo "number=${DISPATCH:-${FROM_PR:-$FROM_ISSUE}}" >> "$GITHUB_OUTPUT"
+
+      - name: Run iris
+        uses: anthropics/claude-code-action@v1
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IRIS_EVENT: ${{ github.event_name }}
+          IRIS_COMMENT_BODY: ${{ github.event.comment.body }}
+          IRIS_COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          display_report: 'true'
+          prompt: "/iris-review ${{ steps.pr.outputs.number }}"
+          claude_args: ${{ vars.IRIS_MODEL != '' && format('--model {0}', vars.IRIS_MODEL) || '' }}
