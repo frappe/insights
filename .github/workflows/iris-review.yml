@@ -55,11 +55,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-        with:
-          # History so iris can inspect recent commits near the changed files.
-          fetch-depth: 200
-
       - name: Resolve PR number
         id: pr
         env:
@@ -68,16 +63,36 @@ jobs:
           FROM_ISSUE: ${{ github.event.issue.number }}
         run: echo "number=${DISPATCH:-${FROM_PR:-$FROM_ISSUE}}" >> "$GITHUB_OUTPUT"
 
+      - uses: actions/checkout@v4
+        with:
+          # issue_comment and workflow_dispatch check out the default branch by
+          # default; the head ref exists in the base repo for fork PRs too.
+          ref: refs/pull/${{ steps.pr.outputs.number }}/head
+          # History so iris can inspect recent commits near the changed files.
+          fetch-depth: 200
+
+      - name: Fetch develop
+        # For git merge-base and three-dot diffs against the target branch.
+        run: git fetch --depth=200 origin develop:refs/remotes/origin/develop
+
+      - name: Save comment
+        # The agent cannot read env vars — its Bash permissions deny variable
+        # expansion. Files reach it through the Read tool instead.
+        if: github.event_name == 'issue_comment'
+        env:
+          BODY: ${{ github.event.comment.body }}
+          AUTHOR: ${{ github.event.comment.user.login }}
+        run: |
+          printf '%s\n' "$BODY" > /tmp/iris-comment.txt
+          printf '%s\n' "$AUTHOR" > /tmp/iris-comment-author.txt
+
       - name: Run iris
         uses: anthropics/claude-code-action@v1
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          IRIS_EVENT: ${{ github.event_name }}
-          IRIS_COMMENT_BODY: ${{ github.event.comment.body }}
-          IRIS_COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           display_report: 'true'
-          prompt: "/iris-review ${{ steps.pr.outputs.number }}"
+          prompt: "/iris-review ${{ steps.pr.outputs.number }} --ci ${{ github.event_name }}"
           claude_args: ${{ vars.IRIS_MODEL != '' && format('--model {0}', vars.IRIS_MODEL) || '' }}
