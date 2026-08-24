@@ -17,7 +17,7 @@ from .base_database import (
     DatabaseCredentialsError,
     DatabaseParallelConnectionError,
 )
-from .utils import create_insights_table, get_sqlalchemy_engine
+from .utils import CONNECT_TIMEOUT, create_insights_table, get_sqlalchemy_engine
 
 MARIADB_TO_GENERIC_TYPES = {
     "int": "Integer",
@@ -108,7 +108,7 @@ class MariaDB(BaseDatabase):
             ssl_verify_cert=use_ssl,
             charset="utf8mb4",
             use_unicode=True,
-            connect_args={"connect_timeout": 1},
+            connect_args={"connect_timeout": CONNECT_TIMEOUT},
         )
         self.query_builder: SQLQueryBuilder = SQLQueryBuilder(self.engine)
         self.table_factory: MariaDBTableFactory = MariaDBTableFactory(data_source)
