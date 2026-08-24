@@ -199,6 +199,29 @@ class FrappeTableFactory:
         return dynamic_link_map
 
 
+def get_site_db_ssl_params():
+    """SSL settings for the site database, matching frappe.database.mariadb.
+
+    The framework connects with SSL only when a CA is configured, and verifies
+    against that CA. Without it the site database gets no SSL at all.
+    """
+    if not frappe.conf.db_ssl_ca:
+        return {}
+
+    # pymysql rebuilds its ssl options from scratch when ssl_verify_cert is set,
+    # which drops the CA. Sending the CA alone already means "verify".
+    # sent as a string so that a "no hostname check" setting survives the query
+    # string, where a falsy value would be dropped
+    params = {
+        "ssl_ca": frappe.conf.db_ssl_ca,
+        "ssl_check_hostname": str(bool(frappe.conf.db_ssl_check_hostname)).lower(),
+    }
+    if frappe.conf.db_ssl_cert and frappe.conf.db_ssl_key:
+        params["ssl_cert"] = frappe.conf.db_ssl_cert
+        params["ssl_key"] = frappe.conf.db_ssl_key
+    return params
+
+
 class FrappeDB(MariaDB):
     def __init__(self, data_source, host, port, username, password, database_name, use_ssl, **_):
         self.data_source = data_source
@@ -211,7 +234,7 @@ class FrappeDB(MariaDB):
             host=host,
             port=port,
             ssl=use_ssl,
-            ssl_verify_cert=True,
+            ssl_verify_cert=use_ssl,
             charset="utf8mb4",
             use_unicode=True,
             connect_args={"connect_timeout": 1, "read_timeout": 1, "write_timeout": 1},
@@ -315,10 +338,9 @@ class SiteDB(FrappeDB):
             database=credentials["database"],
             host=credentials["host"],
             port=credentials["port"],
-            ssl=False,
-            ssl_verify_cert=bool(not frappe.conf.developer_mode),
             charset="utf8mb4",
             use_unicode=True,
+            **get_site_db_ssl_params(),
         )
 
 

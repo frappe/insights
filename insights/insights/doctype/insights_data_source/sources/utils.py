@@ -36,7 +36,10 @@ def get_sqlalchemy_engine(connect_args=None, **kwargs) -> Engine:
     database = kwargs.pop("database")
     host = kwargs.pop("host", "localhost")
     port = kwargs.pop("port") or 3306
-    extra_params = "&".join(f"{k}={v}" for k, v in kwargs.items())
+    # each value becomes a query string, and the driver reads it back as a non-empty
+    # string. "ssl=False" would therefore turn SSL on. Drop falsy values instead of
+    # spelling them out.
+    extra_params = "&".join(f"{k}={v}" for k, v in kwargs.items() if v is not None and v is not False)
 
     uri = f"{dialect}+{driver}://{user}:{password}@{host}:{port}/{database}?{extra_params}"
 
