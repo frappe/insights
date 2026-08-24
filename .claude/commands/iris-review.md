@@ -253,6 +253,10 @@ Each of these he has told an assistant to stop raising. Raising them costs trust
 **Looks good** / **Minor nits** / **Concerns**. Score out of 5. Check for a blocker first —
 a likely bug that would ship, a guest-reachable data leak, a migration that breaks saved
 documents, or state a user can only escape by deleting the object: any blocker → 1.
+A bug that already shipped is not a blocker, even when the diff rewrites its lines — the
+PR did not cause it and merging makes nothing worse. It becomes one if the PR makes it
+worse or easier to hit.
+
 Otherwise: no findings → 5, nits only → 4, one `Concerns` → 3, two or more → 2. Count
 distinct causes, not bullets — evidence for one cause is one finding.
 
