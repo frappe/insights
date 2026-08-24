@@ -13,7 +13,7 @@ from insights.insights.query_builders.sql_builder import SQLQueryBuilder
 
 from .base_database import DatabaseCredentialsError, DatabaseParallelConnectionError
 from .mariadb import MARIADB_TO_GENERIC_TYPES, MariaDB
-from .utils import create_insights_table, get_sqlalchemy_engine
+from .utils import CONNECT_TIMEOUT, create_insights_table, get_sqlalchemy_engine
 
 
 class FrappeTableFactory:
@@ -241,7 +241,10 @@ class FrappeDB(MariaDB):
             ssl_verify_cert=use_ssl,
             charset="utf8mb4",
             use_unicode=True,
-            connect_args={"connect_timeout": 1, "read_timeout": 1, "write_timeout": 1},
+            # no read or write timeout: a chart query may well run longer than
+            # the connect timeout, and cutting a read mid packet leaves the
+            # connection out of step
+            connect_args={"connect_timeout": CONNECT_TIMEOUT},
         )
         self.query_builder: SQLQueryBuilder = SQLQueryBuilder(self.engine)
         self.table_factory: FrappeTableFactory = FrappeTableFactory(data_source)

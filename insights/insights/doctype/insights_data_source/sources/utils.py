@@ -18,6 +18,12 @@ if TYPE_CHECKING:
     from sqlalchemy.engine.interfaces import Dialect
 
 
+# Enough to survive a dropped SYN, whose first retransmit lands about a second
+# in, and a TLS handshake over a wide area link. Short enough that probing a
+# host which does not answer, as is_frappe_db does, still fails quickly.
+CONNECT_TIMEOUT = 5
+
+
 def get_sqlalchemy_engine(connect_args=None, **kwargs) -> Engine:
     connect_args = connect_args or {}
 
@@ -44,7 +50,7 @@ def get_sqlalchemy_engine(connect_args=None, **kwargs) -> Engine:
     uri = f"{dialect}+{driver}://{user}:{password}@{host}:{port}/{database}?{extra_params}"
 
     # TODO: cache the engine by uri
-    return create_engine(uri, poolclass=NullPool, connect_args={})
+    return create_engine(uri, poolclass=NullPool, connect_args=connect_args)
 
 
 def create_insights_table(table, force=False):
