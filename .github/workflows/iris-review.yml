@@ -98,6 +98,7 @@ jobs:
           printf '%s\n' "$AUTHOR" > /tmp/iris-comment-author.txt
 
       - name: Run iris
+        id: iris
         uses: anthropics/claude-code-action@v1
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -107,3 +108,34 @@ jobs:
           display_report: 'true'
           prompt: "/iris-review ${{ steps.pr.outputs.number }} --ci ${{ github.event_name }}"
           claude_args: ${{ vars.IRIS_MODEL != '' && format('--model {0}', vars.IRIS_MODEL) || '' }}
+
+      - name: Bot token
+        # Optional custom identity: register a GitHub App, install it on this
+        # repo, then set the IRIS_APP_ID variable and IRIS_APP_PRIVATE_KEY
+        # secret. Without them the comment posts as github-actions.
+        id: bot
+        if: vars.IRIS_APP_ID != ''
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.IRIS_APP_ID }}
+          private-key: ${{ secrets.IRIS_APP_PRIVATE_KEY }}
+
+      - name: Post review
+        # The agent only writes /tmp/review.md — posting is the workflow's job,
+        # so the footer is reliable and the comment count is exactly one.
+        env:
+          GH_TOKEN: ${{ steps.bot.outputs.token || secrets.GITHUB_TOKEN }}
+          EXEC_FILE: ${{ steps.iris.outputs.execution_file }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          PR: ${{ steps.pr.outputs.number }}
+        run: |
+          test -s /tmp/review.md
+          model=$(jq -r 'first(.. | objects | select(has("model")) | .model) // empty' "$EXEC_FILE" || true)
+          cost=$(jq -r 'first(.. | objects | select(has("total_cost_usd")) | .total_cost_usd) // empty' "$EXEC_FILE" || true)
+          ms=$(jq -r 'first(.. | objects | select(has("duration_ms")) | .duration_ms) // empty' "$EXEC_FILE" || true)
+          footer="iris"
+          [ -n "$model" ] && footer="$footer · $model"
+          [ -n "$cost" ] && footer=$(printf '%s · $%.2f' "$footer" "$cost")
+          [ -n "$ms" ] && footer="$footer · $((ms / 60000))m $((ms / 1000 % 60))s"
+          printf '\n\n<sub>%s · [run](%s)</sub>\n' "$footer" "$RUN_URL" >> /tmp/review.md
+          gh pr comment "$PR" -R "${{ github.repository }}" --body-file /tmp/review.md

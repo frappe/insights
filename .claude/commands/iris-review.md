@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr checks:*),Bash(gh pr comment:*),Bash(gh search:*),Bash(git log:*),Bash(git show:*),Bash(git blame:*),Bash(git diff:*),Bash(git rev-parse:*),Bash(git merge-base:*),Bash(git ls-files:*),Bash(wc:*),Bash(rg:*),Read,Write,Glob,Grep
+allowed-tools: Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr checks:*),Bash(gh search:*),Bash(git log:*),Bash(git show:*),Bash(git blame:*),Bash(git diff:*),Bash(git rev-parse:*),Bash(git merge-base:*),Bash(git ls-files:*),Bash(wc:*),Bash(rg:*),Read,Write,Glob,Grep
 description: Review an Insights pull request or branch against this repo's standards, and report the findings in chat.
 ---
 
@@ -18,10 +18,9 @@ something small. *"don't change anything, share your feedback first"*. If a foll
 worth doing, say so in one line and stop.
 
 **Where the review goes.** If `$ARGUMENTS` contains `--ci`, you are running in CI: Write
-the review to `/tmp/review.md`, post it with `gh pr comment <N> --body-file /tmp/review.md`,
-then stop. One comment per run, always, even for "Looks good". Otherwise print it in chat
-and post nothing. Do not probe the environment to decide — the arguments are the only
-signal. When the `--ci` event is `issue_comment`, Read `/tmp/iris-comment.txt` — if it asks
+the review to `/tmp/review.md`, then stop — the workflow posts the file as the PR comment.
+Always write the file, even for "Looks good". Otherwise print it in chat and post nothing.
+Do not probe the environment to decide — the arguments are the only signal. When the `--ci` event is `issue_comment`, Read `/tmp/iris-comment.txt` — if it asks
 for a specific angle, lead with "Re-reviewing per @<author> — focused on <thing>", with the
 author from `/tmp/iris-comment-author.txt`.
 
