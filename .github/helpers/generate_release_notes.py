@@ -173,6 +173,11 @@ def collect(repo: str, prev: str, tag: str, dedupe: bool):
     return entries, announced, logins, past_logins
 
 
+def credit(login: str) -> str:
+    """A link renders like a mention but does not notify. Old work stays quiet."""
+    return f"[@{login}](https://github.com/{login})"
+
+
 def render(repo, prev, tag, entries, numbers, logins, past_logins) -> str:
     lines = []
     for key, heading in SECTIONS:
@@ -181,7 +186,7 @@ def render(repo, prev, tag, entries, numbers, logins, past_logins) -> str:
             continue
         lines.append(f"## {heading}")
         for row in rows:
-            lines.append(f"- {row['text']} (#{row['number']}) by @{row['author']}")
+            lines.append(f"- {row['text']} (#{row['number']}) by {credit(row['author'])}")
         lines.append("")
 
     if not lines:
@@ -189,11 +194,12 @@ def render(repo, prev, tag, entries, numbers, logins, past_logins) -> str:
 
     if logins:
         lines.append("## Contributors")
-        lines.append(" ".join(f"@{login}" for login in logins))
+        lines.append(" ".join(credit(login) for login in logins))
         new = [login for login in logins if login not in past_logins]
         if new and past_logins:
             lines.append("")
-            lines.append(f"First release for {', '.join('@' + n for n in new)}. Thank you.")
+            first = ", ".join(credit(n) for n in new)
+            lines.append(f"First release for {first}. Thank you.")
         lines.append("")
 
     if prev:
