@@ -111,6 +111,21 @@ def commit_type(repo: str, number: int) -> str:
     return match.group("type") if match else ""
 
 
+TYPE_WORDS = {
+    "feat": ("feat", "feature"),
+    "fix": ("fix", "fixes", "fixed"),
+    "perf": ("perf",),
+}
+
+
+def strip_leading_type(text: str, kind: str) -> str:
+    words = TYPE_WORDS.get(kind, ())
+    first, _, rest = text.partition(" ")
+    if rest and first.lower() in words:
+        return rest[:1].upper() + rest[1:]
+    return text
+
+
 def clean_title(title: str) -> tuple[str, str, bool]:
     match = CONVENTIONAL_RE.match(title)
     kind = match.group("type") if match else ""
@@ -154,7 +169,10 @@ def collect(repo: str, prev: str, tag: str, dedupe: bool):
 
         kind, text, breaking = clean_title(entry["title"])
         if not kind:
+            # No prefix on the title, so the type comes from the commit. Such a
+            # title often opens with the type as a word: "Fix German ...".
             kind = commit_type(repo, number)
+            text = strip_leading_type(text, kind)
         if kind not in RELEASED_TYPES:
             continue
 
