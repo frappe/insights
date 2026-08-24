@@ -306,6 +306,33 @@ class TestQuerying(InsightsIntegrationTestCase):
         self.assertIn(f"{TODO_PREFIX} Open Alpha", csv_data)
         self.assertIn(f"{TODO_PREFIX} Closed Beta", csv_data)
 
+    def test_distinct_values_of_an_all_null_column_stay_empty_when_cached(self):
+        self.seed_todos()
+        workbook = create_test_workbook(USER_1)
+        query = create_test_query(
+            USER_1,
+            workbook.name,
+            title="Workbook Flow Test Query Null Column",
+            operations=[
+                table_source(),
+                {
+                    "type": "filter",
+                    "column": column("description"),
+                    "operator": "contains",
+                    "value": TODO_PREFIX,
+                },
+            ],
+        )
+        query_doc = self.get_query(query.name)
+
+        with db_connections():
+            # no seeded todo sets a color, so the first call caches an empty result
+            first = query_doc.get_distinct_column_values("color")
+            second = query_doc.get_distinct_column_values("color")
+
+        self.assertEqual(first, [])
+        self.assertEqual(second, [])
+
     def test_query_can_use_another_query_as_its_source(self):
         self.seed_todos()
         workbook = create_test_workbook(USER_1)
