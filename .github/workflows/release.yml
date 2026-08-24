@@ -41,13 +41,8 @@ jobs:
       - name: Create Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-<<<<<<< HEAD
-        run: npx semantic-release
-      - name: Write release notes
-=======
         run: npx --no semantic-release
-      - name: Enrich release notes with author mentions
->>>>>>> af958492 (ci: pin the release tooling (#1312))
+      - name: Write release notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
