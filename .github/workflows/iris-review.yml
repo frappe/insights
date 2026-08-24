@@ -57,6 +57,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      - name: Resolve PR number
+        # First step, so a failure in any later step still reports to the PR.
+        id: pr
+        env:
+          DISPATCH: ${{ inputs.pr_number }}
+          FROM_PR: ${{ github.event.pull_request.number }}
+          FROM_ISSUE: ${{ github.event.issue.number }}
+        run: echo "number=${DISPATCH:-${FROM_PR:-$FROM_ISSUE}}" >> "$GITHUB_OUTPUT"
+
       - name: Bot token
         # Optional custom identity: register a GitHub App, install it on this
         # repo, then set the IRIS_APP_ID variable and IRIS_APP_PRIVATE_KEY
@@ -76,14 +85,6 @@ jobs:
         run: >-
           gh api repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions
           -f content=eyes
-
-      - name: Resolve PR number
-        id: pr
-        env:
-          DISPATCH: ${{ inputs.pr_number }}
-          FROM_PR: ${{ github.event.pull_request.number }}
-          FROM_ISSUE: ${{ github.event.issue.number }}
-        run: echo "number=${DISPATCH:-${FROM_PR:-$FROM_ISSUE}}" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v4
         with:
