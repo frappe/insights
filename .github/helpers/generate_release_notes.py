@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Build release notes for a tag, one entry per landed change.
+"""Build release notes for a tag from GitHub's own generated notes.
 
-The unit is the pull request, not the commit. Walking the first parent gives
-exactly one commit per change whatever the merge strategy, and descending
-through integration merges reaches the branch that carries the real work.
+GitHub resolves commits to pull requests already, including inside a merge from
+develop. What it cannot do is see past a mergify backport: the backport is its
+own pull request, so it lands as a second entry credited to the bot. This
+collapses each backport onto the pull request a human opened, and drops
+anything an earlier release already announced.
 """
 
 import argparse
@@ -12,10 +14,6 @@ import re
 import subprocess
 import sys
 
-# A merge from one of these is an integration merge: descend into it. Any other
-# merge is a pull request merged without a squash, and stands as one entry.
-INTEGRATION_BRANCHES = {"develop", "main", "version-3", "version-3-hotfix"}
-
 SECTIONS = [
     ("breaking", "Breaking Changes"),
     ("feat", "Features"),
@@ -23,70 +21,32 @@ SECTIONS = [
     ("perf", "Performance"),
 ]
 RELEASED_TYPES = {"feat", "fix", "perf"}
-KNOWN_TYPES = RELEASED_TYPES | {
-    "build",
-    "chore",
-    "ci",
-    "docs",
-    "refactor",
-    "revert",
-    "style",
-    "test",
-    "patch",
-    "deprecate",
-}
 
+ENTRY_RE = re.compile(
+    r"^\* (?P<title>.+) by @(?P<author>[\w.\[\]-]+) in "
+    r"https://github\.com/[^/]+/[^/]+/pull/(?P<number>\d+)\s*$"
+)
 CONVENTIONAL_RE = re.compile(r"^(?P<type>[a-z]+)(?:\((?P<scope>[^)]*)\))?(?P<bang>!)?:\s*")
 PR_SUFFIX_RE = re.compile(r"\s*\((?:backport\s*)?#(\d+)\)\s*$")
-MERGE_PR_RE = re.compile(r"^Merge pull request #(\d+) from [^/\s]+/(?P<branch>\S+)")
-MERGE_BRANCH_RE = re.compile(r"^Merge (?:remote-tracking )?branch '(?:[^/']*/)?(?P<branch>[^']+)'")
-CHORE_MERGE_RE = re.compile(r"^chore: merge ['\"`]?(?P<branch>[\w.-]+)")
-BACKPORT_RE = re.compile(r"automatic backport of pull request #(\d+)")
+BACKPORT_TITLE_RE = re.compile(r"\(backport #(\d+)\)")
+BACKPORT_BODY_RE = re.compile(r"automatic backport of pull request #(\d+)")
 # A leading identifier keeps its case: get_list, frappe.db.x, `col`.
 IDENTIFIER_RE = re.compile(r"""^[`'"]|^[a-z][\w.]*[_.]\w""")
 
 _pr_cache: dict[int, dict] = {}
 
 
-def git(*args: str) -> list[str]:
-    out = subprocess.run(["git", *args], capture_output=True, text=True, check=True).stdout
-    return [line for line in out.splitlines() if line]
-
-
-def gh_json(path: str):
-    result = subprocess.run(["gh", "api", path], capture_output=True, text=True)
+def gh_json(path: str, method: str = "GET", **fields):
+    args = ["gh", "api", path]
+    if method != "GET":
+        args += ["-X", method]
+    for key, value in fields.items():
+        args += ["-f", f"{key}={value}"]
+    result = subprocess.run(args, capture_output=True, text=True)
     if result.returncode != 0:
+        print(result.stderr.strip(), file=sys.stderr)
         return None
     return json.loads(result.stdout)
-
-
-def is_integration_merge(subject: str) -> bool:
-    for pattern in (MERGE_PR_RE, MERGE_BRANCH_RE, CHORE_MERGE_RE):
-        match = pattern.match(subject)
-        if match and match.group("branch").strip("/") in INTEGRATION_BRANCHES:
-            return True
-    return False
-
-
-def walk(start: str, end: str, depth: int = 0):
-    """Yield (sha, subject) for each landed change between two refs."""
-    if depth > 4:
-        return
-    for sha in git("rev-list", "--first-parent", f"{start}..{end}"):
-        parents = git("rev-list", "--parents", "-n", "1", sha)[0].split()[1:]
-        subject = git("log", "-1", "--pretty=%s", sha)[0]
-        if len(parents) == 2 and is_integration_merge(subject):
-            yield from walk(parents[0], parents[1], depth + 1)
-        else:
-            yield sha, subject
-
-
-def landing_pr(subject: str) -> int | None:
-    match = MERGE_PR_RE.match(subject)
-    if match:
-        return int(match.group(1))
-    match = PR_SUFFIX_RE.search(subject)
-    return int(match.group(1)) if match else None
 
 
 def fetch_pr(repo: str, number: int) -> dict | None:
@@ -98,23 +58,60 @@ def fetch_pr(repo: str, number: int) -> dict | None:
     return _pr_cache[number]
 
 
-def unwrap_backport(repo: str, number: int) -> int:
-    """A mergify backport credits the bot. Follow it to the PR a human opened."""
-    seen = set()
-    while number not in seen:
-        seen.add(number)
-        pr = fetch_pr(repo, number)
-        if not pr:
-            break
-        match = BACKPORT_RE.search(pr.get("body") or "")
-        if not match:
-            break
-        number = int(match.group(1))
-    return number
+def generated_entries(repo: str, prev: str, tag: str) -> list[dict]:
+    fields = {"tag_name": tag}
+    if prev:
+        fields["previous_tag_name"] = prev
+    notes = gh_json(f"/repos/{repo}/releases/generate-notes", "POST", **fields)
+    if not notes:
+        return []
+    entries = []
+    for line in (notes.get("body") or "").splitlines():
+        match = ENTRY_RE.match(line)
+        if match:
+            entries.append(
+                {
+                    "number": int(match.group("number")),
+                    "title": match.group("title"),
+                    "author": match.group("author"),
+                }
+            )
+    return entries
+
+
+def unwrap_backport(repo: str, entry: dict) -> dict:
+    """A backport is credited to the bot. Follow it to the human's pull request."""
+    match = BACKPORT_TITLE_RE.search(entry["title"])
+    number = int(match.group(1)) if match else None
+    if number is None and entry["author"].startswith("mergify"):
+        pr = fetch_pr(repo, entry["number"])
+        body_match = BACKPORT_BODY_RE.search((pr or {}).get("body") or "")
+        number = int(body_match.group(1)) if body_match else None
+    if number is None:
+        return entry
+    original = fetch_pr(repo, number)
+    if not original:
+        return entry
+    return {
+        "number": number,
+        "title": original["title"],
+        "author": original["user"]["login"],
+    }
+
+
+def commit_type(repo: str, number: int) -> str:
+    """commitlint governs the commit subject. Some pull request titles skip it."""
+    pr = fetch_pr(repo, number)
+    sha = (pr or {}).get("merge_commit_sha")
+    if not sha:
+        return ""
+    commit = gh_json(f"/repos/{repo}/commits/{sha}")
+    subject = ((commit or {}).get("commit", {}).get("message") or "").split("\n")[0]
+    match = CONVENTIONAL_RE.match(subject)
+    return match.group("type") if match else ""
 
 
 def clean_title(title: str) -> tuple[str, str, bool]:
-    """Return (type, display title, is_breaking)."""
     match = CONVENTIONAL_RE.match(title)
     kind = match.group("type") if match else ""
     breaking = bool(match and match.group("bang"))
@@ -128,7 +125,7 @@ def clean_title(title: str) -> tuple[str, str, bool]:
 
 
 def announced_before(repo: str, tag: str) -> tuple[set[int], set[str]]:
-    """PR numbers and contributor logins already published, for deduping."""
+    """Pull requests and contributors already published, for deduping."""
     releases = gh_json(f"/repos/{repo}/releases?per_page=100") or []
     cutoff = next((r.get("created_at") for r in releases if r.get("tag_name") == tag), None)
     numbers, logins = set(), set()
@@ -145,43 +142,33 @@ def announced_before(repo: str, tag: str) -> tuple[set[int], set[str]]:
 
 
 def collect(repo: str, prev: str, tag: str, dedupe: bool):
-    seen_prs, past_logins = announced_before(repo, tag) if dedupe else (set(), set())
+    seen, past_logins = announced_before(repo, tag) if dedupe else (set(), set())
     entries, in_release, announced, logins = [], set(), set(), []
 
-    for sha, subject in walk(prev, tag):
-        number = landing_pr(subject)
-        if number is None:
-            print(f"note: no pull request for {sha[:8]} {subject}", file=sys.stderr)
-            title, author = subject, None
-        else:
-            number = unwrap_backport(repo, number)
-            if number in in_release or number in seen_prs:
-                continue
-            in_release.add(number)
-            pr = fetch_pr(repo, number)
-            title = pr["title"] if pr else subject
-            author = pr["user"]["login"] if pr else None
+    for raw in generated_entries(repo, prev, tag):
+        entry = unwrap_backport(repo, raw)
+        number = entry["number"]
+        if number in in_release or number in seen:
+            continue
+        in_release.add(number)
 
-        kind, text, breaking = clean_title(title)
-        subject_kind, _, subject_breaking = clean_title(subject)
-        if kind not in KNOWN_TYPES:
-            kind = subject_kind
-        breaking = breaking or subject_breaking
+        kind, text, breaking = clean_title(entry["title"])
+        if not kind:
+            kind = commit_type(repo, number)
         if kind not in RELEASED_TYPES:
             continue
-        if number:
-            announced.add(number)
 
+        announced.add(number)
         entries.append(
             {
                 "section": "breaking" if breaking else kind,
                 "text": text,
-                "ref": f"#{number}" if number else sha[:8],
-                "author": author,
+                "number": number,
+                "author": entry["author"],
             }
         )
-        if author and author not in logins:
-            logins.append(author)
+        if entry["author"] not in logins:
+            logins.append(entry["author"])
 
     return entries, announced, logins, past_logins
 
@@ -194,8 +181,7 @@ def render(repo, prev, tag, entries, numbers, logins, past_logins) -> str:
             continue
         lines.append(f"## {heading}")
         for row in rows:
-            credit = f" by @{row['author']}" if row["author"] else ""
-            lines.append(f"- {row['text']} ({row['ref']}){credit}")
+            lines.append(f"- {row['text']} (#{row['number']}) by @{row['author']}")
         lines.append("")
 
     if not lines:
@@ -207,8 +193,7 @@ def render(repo, prev, tag, entries, numbers, logins, past_logins) -> str:
         new = [login for login in logins if login not in past_logins]
         if new and past_logins:
             lines.append("")
-            first = ", ".join(f"@{login}" for login in new)
-            lines.append(f"First release for {first}. Thank you.")
+            lines.append(f"First release for {', '.join('@' + n for n in new)}. Thank you.")
         lines.append("")
 
     if prev:
@@ -227,8 +212,7 @@ def main() -> int:
     parser.add_argument("--publish", action="store_true")
     args = parser.parse_args()
 
-    prev = args.prev or git("rev-list", "--max-parents=0", args.tag)[-1]
-    entries, numbers, logins, past_logins = collect(args.repo, prev, args.tag, not args.no_dedupe)
+    entries, numbers, logins, past_logins = collect(args.repo, args.prev, args.tag, not args.no_dedupe)
     body = render(args.repo, args.prev, args.tag, entries, numbers, logins, past_logins)
     if not body:
         print("note: nothing to announce", file=sys.stderr)
