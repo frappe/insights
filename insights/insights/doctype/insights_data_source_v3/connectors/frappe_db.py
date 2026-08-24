@@ -10,11 +10,11 @@ from .mariadb import get_mariadb_connection
 from .postgresql import get_postgres_connection
 
 
-def get_frappedb_connection(data_source):
+def get_frappedb_connection(data_source, socket=None):
     if data_source.database_type == "PostgreSQL":
         return get_postgres_connection(data_source)
     else:
-        return get_mariadb_connection(data_source)
+        return get_mariadb_connection(data_source, socket=socket)
 
 
 def get_primary_data_source():
@@ -80,7 +80,10 @@ def get_sitedb_connection():
             pass
 
     primary = get_primary_data_source()
-    return get_frappedb_connection(primary)
+    # frappe.conf.db_socket is Frappe's own connection metadata (e.g. set by
+    # frappe/pilot's default setup), not a persisted Data Source field, so it
+    # is passed straight through rather than stored on the document.
+    return get_frappedb_connection(primary, socket=frappe.conf.db_socket)
 
 
 def is_frappe_db(data_source):
