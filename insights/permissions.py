@@ -6,6 +6,7 @@ from functools import cached_property
 
 import frappe
 import frappe.share
+from pypika.terms import LiteralValue
 
 from insights.insights.doctype.insights_team.insights_team import (
     get_teams,
@@ -398,13 +399,25 @@ class InsightsPermissions:
         )
 
     def _build_resource_query(self, doctype):
+        """Grants on `doctype` that the user holds through a team.
+
+        A team is the only thing that carries a grant, so a user in no team must
+        match no row. That case cannot be written as a test of a column: `parent`
+        links a grant back to its team and is set on every row, so any predicate
+        over it is true for all of them. `isin([])` is not an option either -
+        pypika renders it as the invalid `IN ()`. State the empty set as a false
+        constant, where it cannot be read as its own opposite.
+        """
         Resource = frappe.qb.DocType("Insights Resource Permission")
 
-        condition = (Resource.resource_type == doctype) & (Resource.resource_name.isnotnull())
-        if not self.user_teams:
-            condition = condition & (Resource.parent.isnotnull())
-        else:
-            condition = condition & (Resource.parent.isin(self.user_teams))
+        held_by_a_team_of_the_user = (
+            Resource.parent.isin(self.user_teams) if self.user_teams else LiteralValue("1 = 0")
+        )
+        condition = (
+            (Resource.resource_type == doctype)
+            & Resource.resource_name.isnotnull()
+            & held_by_a_team_of_the_user
+        )
 
         return frappe.qb.from_(Resource).select(Resource.resource_name.as_("name")).where(condition)
 
