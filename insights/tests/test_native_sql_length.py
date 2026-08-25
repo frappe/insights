@@ -1,9 +1,12 @@
 """A native query is bounded before it reaches the SQL parser.
 
 `sqlparse` groups comments in quadratic time, so input written to be slow holds
-a synchronous worker for seconds of pure CPU with no data source involved. Both
-routes into a native query — the format button and execution — parse the same
-text, so both read the same bound.
+a synchronous worker for seconds of pure CPU with no data source involved.
+
+The bound sits in two places, for two reasons. Saving reads it so the error
+arrives where the statement was written, not later when somebody runs it. The
+parser wrappers read it so no route can reach `sqlparse` without it, including a
+row saved before this rule existed.
 """
 
 import frappe
@@ -35,7 +38,7 @@ class TestNativeSQLLength(UnitTestCase):
             validate_native_sql_length("-- c\n" * MAX_NATIVE_SQL_LENGTH)
 
 
-class TestBothRoutesReadTheBound(InsightsIntegrationTestCase):
+class TestEveryRouteReadsTheBound(InsightsIntegrationTestCase):
     OVERSIZE = "-- c\n" * MAX_NATIVE_SQL_LENGTH
 
     @classmethod
@@ -50,7 +53,7 @@ class TestBothRoutesReadTheBound(InsightsIntegrationTestCase):
 
     def native_query(self, raw_sql):
         with self.as_user(USER_1):
-            return frappe.get_doc(
+            doc = frappe.get_doc(
                 {
                     "doctype": DT.QUERY,
                     "title": "Native SQL Query",
@@ -62,21 +65,28 @@ class TestBothRoutesReadTheBound(InsightsIntegrationTestCase):
                     ],
                 }
             ).insert()
+        self.addCleanup(frappe.delete_doc, DT.QUERY, doc.name, force=True, ignore_permissions=True)
+        return doc
+
+    def test_saving_an_oversize_statement_is_refused(self):
+        with self.as_user(USER_1), self.assertRaisesRegex(frappe.ValidationError, "limited to"):
+            self.native_query(self.OVERSIZE)
 
     def test_the_format_button_refuses_an_oversize_statement(self):
         doc = self.native_query("select 1")
-        self.addCleanup(frappe.delete_doc, DT.QUERY, doc.name, force=True, ignore_permissions=True)
         with self.as_user(USER_1), self.assertRaisesRegex(frappe.ValidationError, "limited to"):
             doc.format(self.OVERSIZE)
 
-    def test_executing_an_oversize_statement_is_refused(self):
-        """Refused for its length, before the parser sees it. Oversize SQL is
-        rejected either way — the point is that the parser never runs."""
-        doc = self.native_query(self.OVERSIZE)
-        self.addCleanup(frappe.delete_doc, DT.QUERY, doc.name, force=True, ignore_permissions=True)
+    def test_a_row_saved_before_the_rule_is_still_refused(self):
+        """The bound is on the parser, so an existing row cannot walk past it."""
+        doc = self.native_query("select 1")
+        operations = [{"type": "sql", "data_source": "Site DB", "raw_sql": self.OVERSIZE}]
+        frappe.db.set_value(
+            DT.QUERY, doc.name, "operations", frappe.as_json(operations), update_modified=False
+        )
         with (
             self.as_user(USER_1),
             self.assertRaisesRegex(frappe.ValidationError, "limited to"),
             db_connections(),
         ):
-            doc.execute()
+            frappe.get_doc(DT.QUERY, doc.name).execute()

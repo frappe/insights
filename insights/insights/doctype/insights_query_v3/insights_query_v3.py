@@ -9,7 +9,6 @@ import frappe
 import ibis
 import sqlglot
 import sqlglot.expressions as sqlglot_exp
-import sqlparse
 from frappe.model.document import Document
 from ibis import _
 
@@ -18,6 +17,7 @@ from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     CircularQueryReferenceError,
     IbisQueryBuilder,
     execute_ibis_query,
+    format_native_sql,
     get_columns_from_schema,
     validate_native_sql_length,
 )
@@ -81,6 +81,13 @@ class InsightsQueryv3(Document):
 
     def validate(self):
         self._validate_no_circular_dependency()
+        self._validate_native_sql_length()
+
+    def _validate_native_sql_length(self):
+        """Refuse an oversize statement where it is written, not where it runs."""
+        for operation in frappe.parse_json(self.operations) or []:
+            if operation.get("type") == "sql":
+                validate_native_sql_length(operation.get("raw_sql"))
 
     def _validate_no_circular_dependency(self):
         """Raise an error if the current operations would create a circular query reference."""
@@ -196,8 +203,7 @@ class InsightsQueryv3(Document):
         if not raw_sql or not self.is_native_query:
             return raw_sql
 
-        validate_native_sql_length(raw_sql)
-        return sqlparse.format(str(raw_sql), reindent=True, keyword_case="upper")
+        return format_native_sql(str(raw_sql), reindent=True, keyword_case="upper")
 
     @insights_whitelist()
     def get_count(self, active_operation_idx: int | None = None, adhoc_filters: dict | None = None):

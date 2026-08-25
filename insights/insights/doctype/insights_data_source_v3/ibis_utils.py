@@ -60,6 +60,18 @@ def validate_native_sql_length(raw_sql: str | None):
         )
 
 
+# Native SQL reaches sqlparse from more than one place, so the bound lives on
+# the parser rather than at each caller. A new route gets it by using these.
+def format_native_sql(raw_sql: str, **options) -> str:
+    validate_native_sql_length(raw_sql)
+    return sqlparse.format(raw_sql, **options)
+
+
+def parse_native_sql(raw_sql: str):
+    validate_native_sql_length(raw_sql)
+    return sqlparse.parse(raw_sql)
+
+
 class CircularQueryReferenceError(frappe.ValidationError):
     """Raised when a circular query reference is detected during query building."""
 
@@ -599,8 +611,7 @@ class IbisQueryBuilder:
         db = ds._get_ibis_backend() if self.use_live_connection else insights.warehouse.db
         source_dialect = ds.get_sqlglot_dialect()
 
-        validate_native_sql_length(raw_sql)
-        raw_sql = sqlparse.format(sql=raw_sql, strip_comments=True)
+        raw_sql = format_native_sql(raw_sql, strip_comments=True)
         raw_sql = self._validate_native_sql(raw_sql, use_live_connection=self.use_live_connection)
 
         check_permissions = frappe.db.get_single_value(
@@ -659,7 +670,7 @@ class IbisQueryBuilder:
         raw_sql = raw_sql.strip()
 
         if not use_live_connection:
-            statements = [stmt for stmt in sqlparse.parse(raw_sql) if stmt.tokens and stmt.value.strip()]
+            statements = [stmt for stmt in parse_native_sql(raw_sql) if stmt.tokens and stmt.value.strip()]
             if len(statements) > 1:
                 frappe.throw(
                     "Multiple SQL statements are not supported with Data Store for native queries",
