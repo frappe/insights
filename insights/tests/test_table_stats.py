@@ -1,12 +1,17 @@
-"""A table's stats name the queries the caller may read.
+"""A table's stats answer for one table, and name the queries the caller may read.
 
 `Insights Table v3.get_stats` reports which queries reference the table. Reading
 the table is what gets you the stats. Which queries are named is the queries' own
 question, and their workbooks answer it.
+
+The table the stats answer for is the one the name identifies. `autoname` builds
+that name from the data source and the table, so the two cannot disagree.
 """
 
 import frappe
+from frappe.utils import set_request
 
+from insights.api import run_doc_method
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import DT, as_user, create_test_workbook
@@ -25,10 +30,11 @@ OWNER = USER_1
 OTHER = USER_2
 
 TABLE = "table1"
+OTHER_TABLE = "table2"
 SECRET_TITLE = "Owner Query With A Telling Title"
 
 
-def create_query_over_the_table(owner, workbook, title):
+def create_query_over_the_table(owner, workbook, title, table=TABLE):
     with as_user(owner):
         return frappe.get_doc(
             {
@@ -43,7 +49,7 @@ def create_query_over_the_table(owner, workbook, title):
                         "table": {
                             "type": "table",
                             "data_source": TEST_DS,
-                            "table_name": TABLE,
+                            "table_name": table,
                         },
                     }
                 ],
@@ -54,9 +60,8 @@ def create_query_over_the_table(owner, workbook, title):
 class StatsNameReadableQueriesOnly:
     """The rules. Both `enable_permissions` settings run them.
 
-    With the setting off every table is readable, which is the shipped default and
-    the wider case. With it on, a team grant is what gets the caller to the table,
-    and the rule still has to hold past that point.
+    Off, every table is readable. On, a team grant is what reaches the table, and
+    the rule still has to hold past that point.
     """
 
     ENABLE_PERMISSIONS = 0
@@ -75,6 +80,11 @@ class StatsNameReadableQueriesOnly:
         cls.other_workbook = create_test_workbook(OTHER, title="Stats Other Workbook").name
         cls.other_query = create_query_over_the_table(OTHER, cls.other_workbook, "Other Query").name
 
+        cls.other_table = get_table_name(TEST_DS, OTHER_TABLE)
+        cls.query_on_other_table = create_query_over_the_table(
+            OTHER, cls.other_workbook, "Other Table Query", table=OTHER_TABLE
+        ).name
+
         create_test_team("team1", [OWNER, OTHER], grants=[("Insights Table v3", cls.table)])
 
     @classmethod
@@ -83,6 +93,7 @@ class StatsNameReadableQueriesOnly:
 
     def before_test(self):
         self.set_team_permissions(self.ENABLE_PERMISSIONS)
+        set_request(method="POST", path="/api/method/insights.api.run_doc_method")
 
     def referencing_queries(self, user):
         with self.as_user(user):
@@ -99,6 +110,23 @@ class StatsNameReadableQueriesOnly:
 
     def test_the_stats_do_not_name_a_query_you_cannot_read(self):
         self.assertNotIn(self.owner_query, self.referencing_queries(OTHER))
+
+    def test_the_stats_answer_for_the_table_the_name_identifies(self):
+        """The name is the table. A different pair sent with it does not move the stats."""
+        with self.as_user(OTHER):
+            stats = run_doc_method(
+                "get_stats",
+                docs={
+                    "doctype": DT.TABLE,
+                    "name": self.table,
+                    "data_source": TEST_DS,
+                    "table": OTHER_TABLE,
+                },
+            )
+
+        names = [q["name"] for q in stats["referencing_queries"]]
+        self.assertIn(self.other_query, names)
+        self.assertNotIn(self.query_on_other_table, names)
 
     def test_an_administrator_still_sees_every_query(self):
         """Narrowing is per caller, not a smaller report for everyone."""
