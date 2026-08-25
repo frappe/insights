@@ -107,6 +107,36 @@ class StoredDocumentDecides:
             )
         self.assertIn("select", formatted.lower())
 
+    def test_a_guest_cannot_run_a_method_on_an_unsaved_document(self):
+        """The unsaved path is not a way in.
+
+        A guest holds no permission on the doctype and no Insights role, so the
+        method surface refuses before a document is built. What a guest reaches is
+        a public document, and an unsaved one is nobody's.
+        """
+        with self.as_user("Guest"), self.assertRaises(frappe.PermissionError):
+            run_doc_method(
+                "execute",
+                {
+                    "doctype": DT.QUERY,
+                    "name": "new-query-not-saved",
+                    "workbook": self.other_workbook,
+                    "is_builder_query": 1,
+                    "use_live_connection": 1,
+                    "__islocal": True,
+                    "operations": [
+                        {
+                            "type": "source",
+                            "table": {
+                                "type": "table",
+                                "data_source": "Site DB",
+                                "table_name": "tabToDo",
+                            },
+                        }
+                    ],
+                },
+            )
+
     def test_a_filter_set_is_not_a_name(self):
         """One name is one document. A dict would reach every matching row."""
         with self.as_user(OTHER), self.assertRaises(frappe.ValidationError):
