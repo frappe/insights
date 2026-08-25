@@ -14,8 +14,7 @@ from frappe.utils.telemetry import capture
 
 from insights.utils import deep_convert_dict_to_dict
 
-# `tabSeries` key the workbook counter lives under. The patch that moved this doctype
-# off `autoincrement` seeds the same key, so the two must not drift.
+# `tabSeries` key the workbook counter lives under.
 WORKBOOK_SERIES_KEY = "Insights Workbook"
 
 

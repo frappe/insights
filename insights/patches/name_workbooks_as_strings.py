@@ -48,10 +48,6 @@ def execute():
 def drop_sequence():
     """The sequence the old naming rule drew from. Nothing recreates it: the framework only
     maintains sequences for doctypes still marked `autoincrement`."""
-    if frappe.db.db_type == "sqlite":
-        # emulated in a bookkeeping table rather than a real sequence object
-        return
-
     frappe.db.sql_ddl(f"drop sequence if exists {SEQUENCE_NAME}")
 
 
