@@ -236,12 +236,6 @@ def accept_invitation(key: str):
     account_was_created = invitation.accept()
     invitation.reload()
 
-<<<<<<< HEAD
-    if invitation.status == "Accepted":
-        frappe.local.login_manager.login_as(invitation.email)
-        frappe.local.response["type"] = "redirect"
-        frappe.local.response["location"] = "/insights"
-=======
     if invitation.status != "Accepted":
         return
 
@@ -257,7 +251,6 @@ def accept_invitation(key: str):
     # invitee gets in the first time
     frappe.local.login_manager.login_as(invitation.email)
     frappe.local.response["location"] = get_app_url()
->>>>>>> cdf6caa (fix: store invitation keys hashed, and narrow what accepting one does)
 
 
 @insights_whitelist(role="Insights Admin")
