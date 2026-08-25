@@ -1,5 +1,4 @@
 [pre_model_sync]
-<<<<<<< HEAD
 insights.patches.rename_doctypes
 insights.patches.convert_duration_to_float
 execute:frappe.delete_doc('DocType', 'Query Filter', ignore_missing=True)
@@ -7,10 +6,7 @@ execute:frappe.delete_doc('DocType', 'Query Field', ignore_missing=True)
 execute:frappe.delete_doc('DocType', 'Query Chart', ignore_missing=True)
 insights.patches.add_roles
 insights.insights.doctype.insights_query.patches.make_query_variable_value_password_field
-=======
-insights.patches.check_legacy_v2_data_before_upgrade #2
 insights.patches.name_workbooks_as_strings
->>>>>>> 03124ac (fix: name workbooks with strings instead of autoincrement)
 insights.patches.normalize_workbook #6
 
 [post_model_sync]
