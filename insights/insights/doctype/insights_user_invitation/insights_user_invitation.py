@@ -3,9 +3,24 @@
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import add_days, get_datetime, now, validate_email_address
+from frappe.utils import add_days, get_datetime, now, sha256_hash, validate_email_address
 
 EXPIRY_DAYS = 1
+KEY_LENGTH = 32
+
+
+def hash_key(key: str) -> str:
+    return sha256_hash(key)
+
+
+def get_invitation_by_key(key: str) -> str | None:
+    """The name of the invitation a mailed key opens, or None.
+
+    The key is stored as its hash, so the lookup hashes before it matches.
+    """
+    if not key:
+        return None
+    return frappe.db.exists("Insights User Invitation", {"key": hash_key(key)})
 
 
 class InsightsUserInvitation(Document):
@@ -33,7 +48,9 @@ class InsightsUserInvitation(Document):
 
     def before_insert(self):
         validate_email_address(self.email, True)
-        self.key = frappe.generate_hash(length=12)
+        # the key travels in the invitation email; only its hash is stored
+        self._plain_key = frappe.generate_hash(length=KEY_LENGTH)
+        self.key = hash_key(self._plain_key)
         self.invited_by = frappe.session.user
         self.status = "Pending"
 
@@ -42,7 +59,7 @@ class InsightsUserInvitation(Document):
 
     def invite_via_email(self):
         invite_link = frappe.utils.get_url(
-            f"/api/method/insights.api.user.accept_invitation?key={self.key}"
+            f"/api/method/insights.api.user.accept_invitation?key={self._plain_key}"
         )
         if frappe.local.dev_server:
             print(f"Invite link for {self.email}: {invite_link}")
@@ -75,7 +92,7 @@ class InsightsUserInvitation(Document):
         if self.status == "Accepted":
             frappe.throw("Invitation already accepted")
 
-        user = self.create_user_if_not_exists()
+        user, account_was_created = self.create_user_if_not_exists()
         user.append_roles("Insights User")
         user.save(ignore_permissions=True)
 
@@ -83,16 +100,24 @@ class InsightsUserInvitation(Document):
         self.accepted_at = frappe.utils.now()
         self.save(ignore_permissions=True)
 
+        return account_was_created
+
     def create_user_if_not_exists(self):
-        if not frappe.db.exists("User", self.email):
-            first_name = self.email.split("@")[0].title()
-            user = frappe.get_doc(
-                doctype="User",
-                user_type="Website User",
-                email=self.email,
-                send_welcome_email=0,
-                first_name=first_name,
-            ).insert(ignore_permissions=True)
-        else:
-            user = frappe.get_doc("User", self.email)
-        return user
+        """The invited user, and whether this acceptance is what created it.
+
+        An invitation to an address that already has an account grants that
+        account access to Insights. It says nothing about who holds the key, so
+        the caller needs to tell the two cases apart.
+        """
+        if frappe.db.exists("User", self.email):
+            return frappe.get_doc("User", self.email), False
+
+        first_name = self.email.split("@")[0].title()
+        user = frappe.get_doc(
+            doctype="User",
+            user_type="Website User",
+            email=self.email,
+            send_welcome_email=0,
+            first_name=first_name,
+        ).insert(ignore_permissions=True)
+        return user, True
