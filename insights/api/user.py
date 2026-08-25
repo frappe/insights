@@ -10,6 +10,9 @@ from insights.insights.doctype.insights_team.insights_team import (
     get_teams as get_user_teams,
 )
 from insights.insights.doctype.insights_team.insights_team import is_admin
+from insights.insights.doctype.insights_user_invitation.insights_user_invitation import (
+    get_invitation_by_key,
+)
 from insights.permissions import get_insights_users
 
 # the roster is a directory to share from, so it carries what a picker shows
@@ -224,18 +227,36 @@ def accept_invitation(key: str):
     if not key:
         frappe.throw("Invalid or expired key")
 
-    invitation_name = frappe.db.exists("Insights User Invitation", {"key": key})
+    invitation_name = get_invitation_by_key(key)
     if not invitation_name:
         frappe.throw("Invalid or expired key")
 
     invitation = frappe.get_doc("Insights User Invitation", invitation_name)
-    invitation.accept()
+    account_was_created = invitation.accept()
     invitation.reload()
 
+<<<<<<< HEAD
     if invitation.status == "Accepted":
         frappe.local.login_manager.login_as(invitation.email)
         frappe.local.response["type"] = "redirect"
         frappe.local.response["location"] = "/insights"
+=======
+    if invitation.status != "Accepted":
+        return
+
+    frappe.local.response["type"] = "redirect"
+
+    if not account_was_created:
+        # the address already had an account. The invitation grants it access to
+        # Insights; signing in is for the account holder to do.
+        frappe.local.response["location"] = "/login"
+        return
+
+    # a new account has no password yet, so the invitation link is how the
+    # invitee gets in the first time
+    frappe.local.login_manager.login_as(invitation.email)
+    frappe.local.response["location"] = get_app_url()
+>>>>>>> cdf6caa (fix: store invitation keys hashed, and narrow what accepting one does)
 
 
 @insights_whitelist(role="Insights Admin")
