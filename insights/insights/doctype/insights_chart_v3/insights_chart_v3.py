@@ -39,6 +39,11 @@ class InsightsChartv3(Document):
         d.read_only = not self.has_permission("write")
         return d
 
+    def validate(self):
+        from insights.permissions import check_chart_query_access
+
+        check_chart_query_access(self)
+
     def before_save(self):
         self.set_data_query()
 
