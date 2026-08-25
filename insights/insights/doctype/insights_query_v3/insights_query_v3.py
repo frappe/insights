@@ -322,6 +322,8 @@ class InsightsQueryv3(Document):
 
     @insights_whitelist()
     def export(self):
+        from insights.permissions import check_referenced_query_access
+
         query = {
             "version": "1.0",
             "timestamp": frappe.utils.now(),
@@ -345,11 +347,7 @@ class InsightsQueryv3(Document):
         linked_queries = get_direct_dependencies(self.name)
         for q in linked_queries:
             # export() recurses, so this covers the whole dependency tree
-            if not frappe.has_permission("Insights Query v3", ptype="read", doc=q):
-                frappe.throw(
-                    frappe._("You do not have access to one of the linked queries"),
-                    frappe.PermissionError,
-                )
+            check_referenced_query_access(q)
             exported_query = frappe.get_doc("Insights Query v3", q).export()
             query["dependencies"]["queries"][q] = exported_query
 
