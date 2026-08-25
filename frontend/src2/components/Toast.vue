@@ -14,8 +14,7 @@
 							{{ title }}
 						</p>
 						<p v-if="message" class="text-p-sm text-ink-gray-5">
-							<span v-if="containsHTML" v-html="message"></span>
-							<span v-else>{{ message }}</span>
+							{{ message }}
 						</p>
 					</slot>
 				</div>
@@ -39,8 +38,6 @@ const props = defineProps<{
 	icon?: Component
 	iconClasses?: string
 }>()
-
-const containsHTML = computed(() => props.message?.includes('<'))
 
 const variantClasses = computed(() => {
 	if (props.variant === 'success') {
