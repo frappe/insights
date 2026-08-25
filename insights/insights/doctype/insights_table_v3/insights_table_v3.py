@@ -190,9 +190,9 @@ def get_table_stats(data_source: str, table_name: str) -> dict:
         - last_synced_on: last successful import timestamp
         - last_import_rows: row count from the most recent import
         - last_import_duration: duration (seconds) of the most recent import
-        - referencing_queries: list of query names/titles that currently reference this table
-        - last_executed_on: when the most recent referencing query was last executed
-        - execution_count: total executions across all referencing queries
+        - referencing_queries: the queries referencing this table that the caller may read
+        - last_executed_on: when the most recent of those queries was last executed
+        - execution_count: total executions across those queries
         - total_syncs: total number of import attempts
         - total_sync_time: sum of all import durations (seconds)
         - failed_syncs: number of failed imports

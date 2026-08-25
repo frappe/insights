@@ -308,26 +308,6 @@ def toggle_folder_expanded(folder_name: str, is_expanded: bool):
     folder.db_set("is_expanded", is_expanded, update_modified=False)
 
 
-@insights_whitelist()
-def move_item_to_folder(item_type: str, item_name: str, folder_name: str | None = None):
-    """Move a query/chart to a folder"""
-    doctype = ITEM_DOCTYPES.get(item_type)
-    if not doctype or doctype == "Insights Folder":
-        frappe.throw(_("{0} is not a movable item type").format(item_type))
-
-    item = frappe.get_doc(doctype, item_name)
-
-    if not frappe.has_permission("Insights Workbook", ptype="write", doc=item.workbook):
-        frappe.throw(_("You do not have permission to modify this workbook"), frappe.PermissionError)
-
-    if folder_name:
-        folder = frappe.get_doc("Insights Folder", folder_name)
-        if folder.workbook != item.workbook:
-            frappe.throw(_("Folder and item must belong to the same workbook"))
-
-    item.db_set("folder", folder_name, update_modified=False)
-
-
 ITEM_DOCTYPES = {
     "folder": "Insights Folder",
     "query": "Insights Query v3",
@@ -353,6 +333,24 @@ def check_belongs_to_workbook(doctype: str, name, workbook: str):
             _("{0} {1} does not belong to this workbook").format(doctype, name),
             frappe.PermissionError,
         )
+
+
+@insights_whitelist()
+def move_item_to_folder(item_type: str, item_name: str, folder_name: str | None = None):
+    """Move a query/chart to a folder"""
+    doctype = ITEM_DOCTYPES.get(item_type)
+    if not doctype or doctype == "Insights Folder":
+        frappe.throw(_("{0} is not a movable item type").format(item_type))
+
+    item = frappe.get_doc(doctype, item_name)
+
+    if not frappe.has_permission("Insights Workbook", ptype="write", doc=item.workbook):
+        frappe.throw(_("You do not have permission to modify this workbook"), frappe.PermissionError)
+
+    if folder_name:
+        check_belongs_to_workbook("Insights Folder", folder_name, item.workbook)
+
+    item.db_set("folder", folder_name, update_modified=False)
 
 
 @insights_whitelist()

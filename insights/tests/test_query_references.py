@@ -1,9 +1,13 @@
 """A query reached through a reference is read like any other query.
 
-An operation may source, join or union another query, and a dashboard filter may
-link one. Either way the reference resolves to the whole query - its operations,
-its native SQL, and the tables it reads - and the compiled result carries all of
-it back. So the rule is the same as reading the query directly.
+An operation may source, join or union another query, and a dashboard filter or a
+chart may name one. Either way the reference resolves to the whole query - its
+operations, its native SQL, and the tables it reads - and the compiled result
+carries all of it back.
+
+The reference is checked once, where it is written. Execution then trusts what was
+saved, so a chain stays runnable by everyone who may read the query at its head.
+A reference that arrives with the request was never written, and is checked then.
 """
 
 import frappe
@@ -21,10 +25,17 @@ from insights.tests.factories import (
     create_test_workbook,
     delete_users,
 )
-from insights.tests.permissions_utils import USER_1, USER_2, create_test_users
+from insights.tests.permissions_utils import (
+    USER_1,
+    USER_2,
+    USER_3,
+    create_test_users,
+    share_chart,
+)
 
 OWNER = USER_1
 OTHER = USER_2
+VIEWER = USER_3
 
 SECRET = "referenced query secret"
 SOURCE_ROWS = f"results = [{{'secret': '{SECRET}', 'amount': 1}}]"
@@ -45,6 +56,10 @@ def create_source_query(owner, workbook, title):
         ).insert()
 
 
+def reference_operations(query_name):
+    return [{"type": "source", "table": {"type": "query", "query_name": query_name}}]
+
+
 def create_referencing_query(owner, workbook, referenced, title):
     with as_user(owner):
         return frappe.get_doc(
@@ -54,21 +69,16 @@ def create_referencing_query(owner, workbook, referenced, title):
                 "workbook": workbook,
                 "use_live_connection": 0,
                 "is_builder_query": 1,
-                "operations": [
-                    {
-                        "type": "source",
-                        "table": {"type": "query", "query_name": referenced},
-                    }
-                ],
+                "operations": reference_operations(referenced),
             }
         ).insert()
 
 
-class ReferencedQueryIsReadChecked:
-    """The rules. Both `enable_permissions` settings run them.
+class AReferenceInTheRequestIsChecked:
+    """The rules for a reference that was never saved.
 
-    The setting scopes data sources and tables to teams. These queries carry no
-    table, so what is left is the reference itself.
+    Operations arrive with the request, so a caller can name any query in them.
+    Nothing authorised that, and it is checked as it resolves.
     """
 
     ENABLE_PERMISSIONS = 0
@@ -83,9 +93,7 @@ class ReferencedQueryIsReadChecked:
         ).name
 
         cls.other_workbook = create_test_workbook(OTHER, title="Reference Other Workbook").name
-        cls.other_reference = create_referencing_query(
-            OTHER, cls.other_workbook, cls.owner_query, "Reference Other Consumer"
-        ).name
+        cls.other_query = create_source_query(OTHER, cls.other_workbook, "Reference Other Source").name
 
     @classmethod
     def after_class(cls):
@@ -96,34 +104,17 @@ class ReferencedQueryIsReadChecked:
     def before_test(self):
         self.set_team_permissions(self.ENABLE_PERMISSIONS)
 
-    def execute(self, name):
-        with db_connections():
-            return frappe.get_doc(DT.QUERY, name).execute()
-
-    def test_the_owner_cannot_be_read_by_the_other_user(self):
+    def test_the_owner_query_is_not_readable_by_the_other_user(self):
         """The baseline the refusals below are measured against."""
         with self.as_user(OTHER):
             self.assertFalse(frappe.has_permission(DT.QUERY, ptype="read", doc=self.owner_query))
 
-    def test_a_query_reference_resolves_for_someone_who_may_read_it(self):
-        with self.as_user(OWNER):
-            result = self.execute(self.owner_reference)
+    def test_a_saved_chain_resolves_for_its_owner(self):
+        with self.as_user(OWNER), db_connections():
+            result = frappe.get_doc(DT.QUERY, self.owner_reference).execute()
         self.assertEqual(result["rows"][0]["secret"], SECRET)
 
-    def test_a_query_reference_is_refused_to_someone_who_may_not(self):
-        with self.as_user(OTHER), self.assertRaises(frappe.PermissionError):
-            self.execute(self.other_reference)
-
-    def test_a_refused_reference_returns_no_sql(self):
-        """The compiled SQL is the query's logic, so a refusal returns none of it."""
-        with self.as_user(OTHER):
-            try:
-                result = self.execute(self.other_reference)
-            except frappe.PermissionError:
-                return
-            self.fail(f"the reference resolved and returned {result.get('sql')}")
-
-    def test_a_reference_sent_inline_is_refused_too(self):
+    def test_a_reference_sent_inline_is_refused(self):
         """The operations arrive in the request, so the reference need not be saved."""
         with self.as_user(OTHER):
             doc = frappe.get_doc(
@@ -134,16 +125,90 @@ class ReferencedQueryIsReadChecked:
                     "use_live_connection": 0,
                     "is_builder_query": 1,
                     "__islocal": True,
-                    "operations": [
-                        {
-                            "type": "source",
-                            "table": {"type": "query", "query_name": self.owner_query},
-                        }
-                    ],
+                    "operations": reference_operations(self.owner_query),
                 }
             )
             with self.assertRaises(frappe.PermissionError), db_connections():
                 doc.execute()
+
+    def test_forged_operations_on_a_saved_query_are_refused(self):
+        """What was saved is the row, not what the request says was saved."""
+        with self.as_user(OTHER):
+            doc = frappe.get_doc(DT.QUERY, self.other_query)
+            doc.operations = reference_operations(self.owner_query)
+            with self.assertRaises(frappe.PermissionError), db_connections():
+                doc.execute()
+
+    def test_a_refused_reference_returns_no_sql(self):
+        """The compiled SQL is the query's logic, so a refusal returns none of it."""
+        with self.as_user(OTHER):
+            doc = frappe.get_doc(DT.QUERY, self.other_query)
+            doc.operations = reference_operations(self.owner_query)
+            try:
+                with db_connections():
+                    result = doc.execute()
+            except frappe.PermissionError:
+                return
+            self.fail(f"the reference resolved and returned {result.get('sql')}")
+
+
+class ASavedReferenceCarriesItsOwnAccess:
+    """The rules for a reference that was saved.
+
+    A chart can be shared with someone who holds no access to the workbook behind
+    it. They read the chart and the query it is built on. When that query is built
+    on another query, the chain is the query, not a detour around it - so they have
+    to be able to run it. The reference was checked when it was written, and that
+    is what the run trusts.
+    """
+
+    ENABLE_PERMISSIONS = 0
+
+    @classmethod
+    def before_class(cls):
+        create_test_users()
+        cls.workbook = create_test_workbook(OWNER, title="Chain Owner Workbook").name
+        cls.base = create_source_query(OWNER, cls.workbook, "Chain Base").name
+        cls.consumer = create_referencing_query(OWNER, cls.workbook, cls.base, "Chain Consumer").name
+        cls.chart = create_test_chart(OWNER, cls.workbook, query=cls.consumer, title="Chain Chart").name
+        share_chart(cls.chart, VIEWER)
+
+        cls.viewer_workbook = create_test_workbook(VIEWER, title="Chain Viewer Workbook").name
+
+    @classmethod
+    def after_class(cls):
+        for name in (cls.workbook, cls.viewer_workbook):
+            frappe.delete_doc(DT.WORKBOOK, name, force=True, ignore_permissions=True)
+        delete_users(OWNER, VIEWER)
+
+    def before_test(self):
+        self.set_team_permissions(self.ENABLE_PERMISSIONS)
+
+    def test_the_share_carries_the_chart_and_its_query_only(self):
+        """The baseline: a shared chart does not carry the workbook behind it."""
+        with self.as_user(VIEWER):
+            self.assertTrue(frappe.has_permission(DT.CHART, ptype="read", doc=self.chart))
+            self.assertTrue(frappe.has_permission(DT.QUERY, ptype="read", doc=self.consumer))
+            self.assertFalse(frappe.has_permission(DT.QUERY, ptype="read", doc=self.base))
+
+    def test_someone_with_the_chart_can_run_the_chain(self):
+        """Running the query they may read is what the share is for."""
+        with self.as_user(VIEWER), db_connections():
+            result = frappe.get_doc(DT.QUERY, self.consumer).execute()
+        self.assertEqual(result["rows"][0]["secret"], SECRET)
+
+    def test_a_reference_cannot_be_saved_to_an_unreadable_query(self):
+        """Where the check lives."""
+        with self.as_user(VIEWER), self.assertRaises(frappe.PermissionError):
+            create_referencing_query(VIEWER, self.viewer_workbook, self.base, "Chain Forged Consumer")
+
+    def test_a_reference_added_on_update_is_checked_too(self):
+        """An existing query is not a way around the check."""
+        with self.as_user(VIEWER):
+            query = create_source_query(VIEWER, self.viewer_workbook, "Chain Viewer Source")
+            query.operations = reference_operations(self.base)
+            with self.assertRaises(frappe.PermissionError):
+                query.save()
 
 
 class DashboardFilterReadsTheQuery:
@@ -274,12 +339,22 @@ class ChartExportReadsTheQuery:
             self.export_chart(self.other_chart, query=self.owner_query)
 
 
-class TestReferencedQueryIsReadChecked(ReferencedQueryIsReadChecked, InsightsIntegrationTestCase):
+class TestAReferenceInTheRequestIsChecked(AReferenceInTheRequestIsChecked, InsightsIntegrationTestCase):
     ENABLE_PERMISSIONS = 0
 
 
-class TestReferencedQueryIsReadCheckedWithTeamPermissions(
-    ReferencedQueryIsReadChecked, InsightsIntegrationTestCase
+class TestAReferenceInTheRequestIsCheckedWithTeamPermissions(
+    AReferenceInTheRequestIsChecked, InsightsIntegrationTestCase
+):
+    ENABLE_PERMISSIONS = 1
+
+
+class TestASavedReferenceCarriesItsOwnAccess(ASavedReferenceCarriesItsOwnAccess, InsightsIntegrationTestCase):
+    ENABLE_PERMISSIONS = 0
+
+
+class TestASavedReferenceCarriesItsOwnAccessWithTeamPermissions(
+    ASavedReferenceCarriesItsOwnAccess, InsightsIntegrationTestCase
 ):
     ENABLE_PERMISSIONS = 1
 
