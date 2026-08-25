@@ -44,6 +44,22 @@ except ImportError:
         return decorator
 
 
+# sqlparse groups comments in quadratic time (GHSA-f2ff-p2ww-7p4p), and every
+# route into a native query runs it. Measured on sqlparse 0.5.5: 5 kB of
+# comment lines parses in 0.13 s, 10 kB in 0.5 s, 40 kB in 9 s. Ten thousand
+# characters is far above any hand-written statement and keeps the parser off
+# a worker for seconds at a time.
+MAX_NATIVE_SQL_LENGTH = 10_000
+
+
+def validate_native_sql_length(raw_sql: str | None):
+    if raw_sql and len(raw_sql) > MAX_NATIVE_SQL_LENGTH:
+        frappe.throw(
+            frappe._("A native query is limited to {0} characters").format(MAX_NATIVE_SQL_LENGTH),
+            title=frappe._("Query Too Long"),
+        )
+
+
 class CircularQueryReferenceError(frappe.ValidationError):
     """Raised when a circular query reference is detected during query building."""
 
@@ -583,6 +599,7 @@ class IbisQueryBuilder:
         db = ds._get_ibis_backend() if self.use_live_connection else insights.warehouse.db
         source_dialect = ds.get_sqlglot_dialect()
 
+        validate_native_sql_length(raw_sql)
         raw_sql = sqlparse.format(sql=raw_sql, strip_comments=True)
         raw_sql = self._validate_native_sql(raw_sql, use_live_connection=self.use_live_connection)
 

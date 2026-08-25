@@ -19,6 +19,7 @@ from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     IbisQueryBuilder,
     execute_ibis_query,
     get_columns_from_schema,
+    validate_native_sql_length,
 )
 from insights.insights.query_utils import (
     extract_query_deps_from_operations,
@@ -195,6 +196,7 @@ class InsightsQueryv3(Document):
         if not raw_sql or not self.is_native_query:
             return raw_sql
 
+        validate_native_sql_length(raw_sql)
         return sqlparse.format(str(raw_sql), reindent=True, keyword_case="upper")
 
     @insights_whitelist()
