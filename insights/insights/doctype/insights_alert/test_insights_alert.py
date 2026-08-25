@@ -14,7 +14,12 @@ from insights.insights.doctype.insights_alert.insights_alert import (
     send_alerts,
 )
 from insights.tests.base import InsightsIntegrationTestCase
-from insights.tests.factories import create_test_query, create_test_workbook
+from insights.tests.factories import (
+    create_test_query,
+    create_test_workbook,
+    create_user,
+    delete_users,
+)
 
 POST = "insights.insights.doctype.insights_alert.insights_alert.post_to_public_url"
 
@@ -141,3 +146,57 @@ class TestFailedAlertIsNotRetriedEveryTick(InsightsIntegrationTestCase):
             send_alerts()
 
         self.assertIsNotNone(frappe.db.get_value("Insights Alert", self.alert.name, "last_execution"))
+
+
+class TestEmailRecipients(InsightsIntegrationTestCase):
+    """An email alert carries its query's rows, so it may only reach this site."""
+
+    MEMBER = "alert_recipient@test.com"
+    OUTSIDER = "someone@external.example.org"
+
+    @classmethod
+    def before_class(cls):
+        create_user(cls.MEMBER, first_name="Alert", last_name="Recipient", roles="Insights User")
+        cls.workbook = create_test_workbook("Administrator", title="Alert Workbook").name
+        cls.query = create_test_query("Administrator", cls.workbook, title="Alert Query").name
+
+    @classmethod
+    def after_class(cls):
+        frappe.delete_doc("Insights Workbook", cls.workbook, force=True)
+        delete_users(cls.MEMBER)
+
+    def email_alert(self, recipients):
+        doc = frappe.new_doc("Insights Alert")
+        doc.title = "Overdue invoices"
+        doc.channel = "Email"
+        doc.query = self.query
+        doc.frequency = "Daily"
+        doc.custom_condition = 1
+        doc.condition = "q['status'] == 'Open'"
+        doc.message = "{{ rows }}"
+        doc.recipients = recipients
+        return doc
+
+    def test_a_user_of_this_site_is_a_recipient(self):
+        self.assertEqual(self.email_alert(self.MEMBER).get_recipients(), [self.MEMBER])
+
+    def test_an_address_outside_this_site_is_refused(self):
+        with self.assertRaises(frappe.ValidationError):
+            self.email_alert(self.OUTSIDER).get_recipients()
+
+    def test_one_outside_address_refuses_the_whole_list(self):
+        with self.assertRaises(frappe.ValidationError):
+            self.email_alert(f"{self.MEMBER},{self.OUTSIDER}").get_recipients()
+
+    def test_a_disabled_user_is_refused(self):
+        frappe.db.set_value("User", self.MEMBER, "enabled", 0)
+        self.addCleanup(frappe.db.set_value, "User", self.MEMBER, "enabled", 1)
+        with self.assertRaises(frappe.ValidationError):
+            self.email_alert(self.MEMBER).get_recipients()
+
+    def test_saving_the_alert_applies_the_same_bound(self):
+        with (
+            patch.object(InsightsAlert, "evaluate_condition", return_value=True),
+            self.assertRaises(frappe.ValidationError),
+        ):
+            self.email_alert(self.OUTSIDER).insert()

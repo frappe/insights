@@ -60,6 +60,9 @@ class InsightsAlert(Document):
         if self.query:
             self.has_query_permission()
 
+        if self.channel == "Email":
+            self.get_recipients()
+
         if self.channel == "Webhook":
             self.validate_webhook()
 
@@ -202,10 +205,31 @@ class InsightsAlert(Document):
         )
 
     def get_recipients(self):
-        recipients = self.recipients.split(",")
+        """The addresses this alert may mail.
+
+        The message embeds the alert query's rows, so an alert moves data off
+        the site. A recipient is therefore an account on this site — the same
+        bound the webhook channel gets from `validate_public_url`. Sending
+        anywhere an address parses would make the site's outgoing account a
+        relay for whoever can write one alert.
+        """
+        recipients = [address.strip() for address in (self.recipients or "").split(",") if address.strip()]
+        if not recipients:
+            frappe.throw(_("An email alert needs at least one recipient"))
+
         for recipient in recipients:
             if not validate_email_address(recipient):
-                frappe.throw(f"{recipient} is not a valid email address")
+                frappe.throw(_("{0} is not a valid email address").format(recipient))
+
+        known = frappe.get_all(
+            "User",
+            filters={"name": ("in", recipients), "enabled": 1},
+            pluck="name",
+        )
+        unknown = [recipient for recipient in recipients if recipient not in known]
+        if unknown:
+            frappe.throw(_("{0} is not a user on this site").format(", ".join(unknown)))
+
         return recipients
 
     @property
