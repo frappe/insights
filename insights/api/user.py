@@ -221,7 +221,8 @@ def add_insights_user(user: str):
     raise NotImplementedError
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=True)  # nosemgrep - an invitee follows this link before they have
+# an account, so it cannot require a session
 @validate_type
 def accept_invitation(key: str):
     if not key:

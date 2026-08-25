@@ -7,6 +7,8 @@ as a hash, so the stored value is not the credential, and acceptance signs in
 only the account it just created.
 """
 
+from unittest.mock import patch
+
 import frappe
 from frappe.tests import IntegrationTestCase
 
@@ -14,9 +16,11 @@ from insights.api.user import accept_invitation
 
 
 def make_invitation(email):
+    """Insert an invitation without needing an outgoing email account."""
     invitation = frappe.new_doc("Insights User Invitation")
     invitation.email = email
-    invitation.insert(ignore_permissions=True)
+    with patch.object(frappe, "sendmail"):
+        invitation.insert(ignore_permissions=True)
     return invitation
 
 
@@ -28,6 +32,17 @@ class TestInvitationKeyIsStoredHashed(IntegrationTestCase):
         stored = frappe.db.get_value("Insights User Invitation", invitation.name, "key")
         self.assertNotEqual(stored, invitation._plain_key)
         self.assertEqual(stored, hash_key(invitation._plain_key))
+
+    def test_the_invitation_email_carries_the_key(self):
+        """The mailed link has to hold the key itself, or nothing can redeem it."""
+        with patch.object(frappe, "sendmail") as sendmail:
+            invitation = frappe.new_doc("Insights User Invitation")
+            invitation.email = "mailed-key@example.com"
+            invitation.insert(ignore_permissions=True)
+
+        link = sendmail.call_args.kwargs["args"]["invite_link"]
+        self.assertIn(invitation._plain_key, link)
+        self.assertNotIn(invitation.key, link)
 
     def test_the_stored_value_is_not_the_key(self):
         """What the row holds cannot be redeemed; what was mailed can."""

@@ -180,7 +180,8 @@ def _read_uploaded_table(db, file_path: str, ext: str):
         frappe.throw("Failed to read CSV data from uploaded file. Please try again.")
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=True)  # nosemgrep - falls back to is_public() only after the
+# framework has already refused the caller
 @validate_type
 def get_doc(doctype: str, name: str | int):
     try:
@@ -211,7 +212,8 @@ def _execute_doc_method(doc, method: str, args: dict | None = None, ignore_permi
     return response
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=True)  # nosemgrep - guests reach only public documents, and only
+# the methods and arguments PUBLIC_METHOD_ARGS names
 def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
     doc = frappe.parse_json(docs)
     doctype = doc.get("doctype")
