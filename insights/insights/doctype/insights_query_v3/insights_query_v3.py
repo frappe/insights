@@ -427,13 +427,47 @@ def _sql_has_group_by(sql: str) -> bool:
     return False
 
 
-def import_query(query, workbook):
+def already_in_workbook(query_name, workbook) -> bool:
+    """Whether `query_name` is a query the target workbook already holds.
+
+    A reference that resolves here needs no copy, and the copy would be a second
+    row for one query. The file cannot answer this: it carries the exporting
+    site's workbook name, and `autoname` makes those a bare counter, so every
+    site has a workbook "1". Ask the row.
+    """
+    if not query_name:
+        return False
+
+    return frappe.db.get_value("Insights Query v3", query_name, "workbook") == workbook
+
+
+def import_query(query, workbook, id_map=None):
+    """Copy an exported query into `workbook`, references and all.
+
+    The dependencies go in first, so the query is inserted already naming the
+    copies that replace them. It is never stored naming the exporting site's
+    queries, which is a state `validate` would read as the real one.
+
+    `export` nests, so a query two branches both build on appears once per branch.
+    `id_map` is shared down the recursion, so it is imported once.
+    """
+    from insights.insights.doctype.insights_workbook.insights_workbook import (
+        _rewrite_query_references,
+    )
+
     query = frappe.parse_json(query)
     query = deep_convert_dict_to_dict(query)
+
+    id_map = {} if id_map is None else id_map
+    for name, dependency in ((query.get("dependencies") or {}).get("queries") or {}).items():
+        if name in id_map or already_in_workbook(name, workbook):
+            continue
+        id_map[name] = import_query(dependency, workbook, id_map)
 
     new_query = frappe.new_doc("Insights Query v3")
     new_query.update(query.doc)
     new_query.workbook = workbook
+    new_query.operations = _rewrite_query_references(query.doc.operations, id_map)
 
     if not hasattr(new_query, "sort_order") or new_query.sort_order is None:
         max_sort_order = (
@@ -445,39 +479,8 @@ def import_query(query, workbook):
             or -1
         )
         new_query.sort_order = max_sort_order + 1
+
     new_query.insert()
-
-    if workbook == query.doc.workbook or not query.dependencies.queries:
-        return new_query.name
-
-    # if query is copied to a new workbook, all the dependencies will be copied as well
-    # so we create a new query in the workbook for each dependency
-    # and replace the old query names with the new query names
-
-    id_map = {}
-    for q, exported_query in query.dependencies.queries.items():
-        id_map[q] = import_query(exported_query, workbook=new_query.workbook)
-
-    # replace the old query names with the new query names
-    operations = frappe.parse_json(new_query.operations)
-    operations = deep_convert_dict_to_dict(operations)
-
-    should_update = False
-    for op in operations:
-        if not op.get("table") or not op.get("table").get("type") or not op.get("table").get("query_name"):
-            continue
-
-        ref_query = op.table.query_name
-        if ref_query in id_map:
-            op.table.query_name = id_map[ref_query]
-            should_update = True
-
-    if should_update:
-        new_query.db_set(
-            "operations",
-            frappe.as_json(operations),
-            update_modified=False,
-        )
 
     return new_query.name
 

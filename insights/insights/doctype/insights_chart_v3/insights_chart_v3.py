@@ -120,12 +120,24 @@ class InsightsChartv3(Document):
 
 
 def import_chart(chart, workbook):
+    """Copy an exported chart into `workbook`, with the query it is built on.
+
+    The query goes in first, so the chart is inserted already pointing at the
+    copy. `validate` reads the link, and a link to the exporting site's query is
+    a state it would read as the real one.
+    """
+    from insights.insights.doctype.insights_query_v3.insights_query_v3 import already_in_workbook
+
     chart = frappe.parse_json(chart)
     chart = deep_convert_dict_to_dict(chart)
 
     new_chart = frappe.new_doc("Insights Chart v3")
     new_chart.update(chart.doc)
     new_chart.workbook = workbook
+
+    exported = (chart.get("dependencies") or {}).get("queries") or {}
+    if chart.doc.query in exported and not already_in_workbook(chart.doc.query, workbook):
+        new_chart.query = import_query(exported[chart.doc.query], workbook)
 
     if not hasattr(new_chart, "sort_order") or new_chart.sort_order is None:
         max_sort_order = (
@@ -138,12 +150,5 @@ def import_chart(chart, workbook):
         )
         new_chart.sort_order = max_sort_order + 1
     new_chart.insert()
-
-    if workbook == chart.doc.workbook or not chart.dependencies.queries:
-        return new_chart.name
-
-    for _, exported_query in chart.dependencies.queries.items():
-        name = import_query(exported_query, workbook=new_chart.workbook)
-        new_chart.db_set("query", name, update_modified=False)
 
     return new_chart.name

@@ -12,6 +12,7 @@ from frappe.query_builder import Interval
 from frappe.query_builder.functions import Now
 from frappe.utils.telemetry import capture
 
+from insights.insights.query_utils import extract_query_deps_from_operations
 from insights.utils import deep_convert_dict_to_dict
 
 # `tabSeries` key the workbook counter lives under.
@@ -94,12 +95,14 @@ class InsightsWorkbook(Document):
             new_folder.insert(ignore_permissions=ignore_permissions)
             id_map[old_folder_name] = new_folder.name
 
+        queries = workbook_data.get("dependencies", {}).get("queries", {})
         query_sort_order = 0
-        for name, query in workbook_data.get("dependencies", {}).get("queries", {}).items():
-            query = deep_convert_dict_to_dict(query)
+        for name in _order_by_reference(queries):
+            query = deep_convert_dict_to_dict(queries[name])
             new_query = frappe.new_doc("Insights Query v3")
             new_query.update(query)
             new_query.workbook = target_workbook_name
+            new_query.operations = _rewrite_query_references(query.get("operations"), id_map)
 
             if query.get("folder") and query.get("folder") in id_map:
                 new_query.folder = id_map[query.get("folder")]
@@ -110,27 +113,6 @@ class InsightsWorkbook(Document):
 
             new_query.insert(ignore_permissions=ignore_permissions)
             id_map[name] = new_query.name
-
-        for name, _ in workbook_data.get("dependencies", {}).get("queries", {}).items():
-            new_query = frappe.get_doc("Insights Query v3", id_map[name])
-            operations = deep_convert_dict_to_dict(frappe.parse_json(new_query.operations))
-
-            should_update = False
-            for op in operations:
-                if (
-                    not op.get("table")
-                    or not op.get("table").get("type")
-                    or not op.get("table").get("query_name")
-                ):
-                    continue
-
-                ref_query = op.table.query_name
-                if ref_query in id_map:
-                    op.table.query_name = id_map[ref_query]
-                    should_update = True
-
-            if should_update:
-                new_query.db_set("operations", frappe.as_json(operations))
 
         chart_sort_order = 0
         for name, chart in workbook_data.get("dependencies", {}).get("charts", {}).items():
@@ -483,6 +465,51 @@ class InsightsWorkbook(Document):
             "nodes": list(nodes.values()),
             "edges": edge_list,
         }
+
+
+def _order_by_reference(queries: dict) -> list[str]:
+    """The names in `queries`, each one after the queries in the file it references.
+
+    A query is inserted with its references already pointing at the copies they
+    name, so those copies have to exist first. References form a directed acyclic
+    graph, so such an order exists. A file carrying a cycle has no order, and the
+    names left over go last for the cycle check to refuse.
+    """
+    deps = {
+        name: {
+            dep
+            for dep in extract_query_deps_from_operations(frappe.parse_json(query.get("operations")) or [])
+            if dep in queries
+        }
+        for name, query in queries.items()
+    }
+
+    ordered = []
+    placed = set()
+    while len(placed) < len(deps):
+        ready = [name for name, refs in deps.items() if name not in placed and refs <= placed]
+        if not ready:
+            ordered.extend(name for name in deps if name not in placed)
+            break
+        ordered.extend(ready)
+        placed.update(ready)
+
+    return ordered
+
+
+def _rewrite_query_references(operations, id_map: dict) -> str:
+    """Point every reference in `operations` at the copy that replaces it.
+
+    A name the file does not carry belongs to a query already on this site, and
+    is left alone: the import references that one, and read access decides.
+    """
+    operations = deep_convert_dict_to_dict(frappe.parse_json(operations) or [])
+    for op in operations:
+        table = op.get("table") or {}
+        if table.get("type") == "query" and table.get("query_name") in id_map:
+            table["query_name"] = id_map[table["query_name"]]
+
+    return frappe.as_json(operations)
 
 
 def import_workbook(workbook):
