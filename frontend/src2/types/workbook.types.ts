@@ -77,6 +77,12 @@ export type InsightsQueryv3 = {
 	is_native_query?: boolean
 	is_script_query?: boolean
 	is_builder_query?: boolean
+	is_materialized?: boolean
+	snapshot_refresh_frequency?: 'Daily' | 'Hourly'
+	snapshot_status?: '' | 'Queued' | 'Running' | 'Completed' | 'Failed'
+	snapshot_last_refreshed_at?: string | null
+	snapshot_row_count?: number
+	snapshot_error?: string | null
 	read_only: boolean
 }
 

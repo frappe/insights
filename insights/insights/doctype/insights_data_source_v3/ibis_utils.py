@@ -51,10 +51,11 @@ class CircularQueryReferenceError(frappe.ValidationError):
 
 
 class IbisQueryBuilder:
-    def __init__(self, doc, active_operation_idx=None):
+    def __init__(self, doc, active_operation_idx=None, resolve_snapshot=True):
         self.doc = doc
         self.title = self.doc.title or self.doc.name
         self.active_operation_idx = active_operation_idx
+        self.resolve_snapshot = resolve_snapshot
         self.use_live_connection = bool(doc.use_live_connection)
         self.operations = doc.operations
         self.set_operations()
@@ -70,6 +71,7 @@ class IbisQueryBuilder:
         ):
             operations = operations[: self.active_operation_idx + 1]
 
+        adhoc_op = None
         if self.doc.name in adhoc_filters_by_query:
             adhoc_filters = adhoc_filters_by_query[self.doc.name]
             if (
@@ -83,9 +85,31 @@ class IbisQueryBuilder:
                     f for f in adhoc_filters["filters"] if not f.get("expression", {}).get("type")
                 ]
                 if adhoc_filters["filters"]:
-                    operations.append(adhoc_filters)
+                    adhoc_op = adhoc_filters
+
+        # A materialized query serves its stored result: replace the whole
+        # operation chain with a single read from the snapshot table. Adhoc
+        # (dashboard) filters still apply on top — they target the query's
+        # output columns, which the snapshot preserves.
+        if self._should_read_snapshot():
+            operations = [{"type": "snapshot_source"}]
+
+        if adhoc_op:
+            operations.append(adhoc_op)
 
         self.operations = operations
+
+    def _should_read_snapshot(self) -> bool:
+        # Only serve the snapshot for a full build; previewing an intermediate
+        # operation (active_operation_idx) must always build live.
+        if not self.resolve_snapshot or self.active_operation_idx is not None:
+            return False
+        if not getattr(self.doc, "is_materialized", 0):
+            return False
+
+        from insights.insights.doctype.insights_query_v3.snapshots import snapshot_exists
+
+        return snapshot_exists(self.doc.name)
 
     def build(self) -> IbisQuery:
         if not hasattr(frappe.local, "_insights_building_queries"):
@@ -152,7 +176,26 @@ class IbisQueryBuilder:
             return self.apply_sql(operation)
         elif operation.type == "code":
             return self.apply_code(operation)
+        elif operation.type == "snapshot_source":
+            return self.apply_snapshot_source()
         return self.query
+
+    def apply_snapshot_source(self):
+        from insights.insights.doctype.insights_query_v3.snapshots import get_snapshot_table
+
+        # The snapshot hides the leaf tables from the usual per-table permission
+        # checks, so re-run them here against the query's real source tables.
+        self._check_snapshot_permissions()
+        return get_snapshot_table(self.doc.name)
+
+    def _check_snapshot_permissions(self):
+        from insights.insights.doctype.insights_team.insights_team import check_table_permission
+
+        get_source_tables = getattr(self.doc, "get_source_tables", None)
+        if not callable(get_source_tables):
+            return
+        for source in get_source_tables():
+            check_table_permission(source["data_source"], source["table_name"])
 
     def get_table_or_query(self, table_args):
         _table = None
@@ -908,6 +951,77 @@ def clamp(value, lo: int, hi: int) -> int:
         return lo
 
 
+def _get_single_backend(query: IbisQuery):
+    """Resolve the single backend a query runs against.
+
+    ibis raises a bare "Multiple backends found for this expression" when an
+    expression spans more than one connection (e.g. a materialized query or a
+    data-store table, which live in the DuckDB warehouse, joined with live
+    tables; or tables from two different data sources). Translate that into an
+    actionable message that names what got mixed and how to resolve it.
+    """
+    try:
+        return query.get_backend()
+    except ibis.common.exceptions.IbisError as e:
+        if "Multiple backends" not in str(e):
+            raise
+        _throw_mixed_backend_error(query)
+
+
+def _throw_mixed_backend_error(query: IbisQuery):
+    try:
+        backends, _has_unbound = query._find_backends()
+    except Exception:
+        backends = []
+
+    has_stored = any(is_warehouse(b) for b in backends)
+    live_sources = _live_source_labels(b for b in backends if not is_warehouse(b))
+    sources = ", ".join(live_sources)
+
+    if has_stored and live_sources:
+        frappe.throw(
+            title=frappe._("Cannot combine stored and live data"),
+            msg=frappe._(
+                "This query combines stored data (a materialized query or a table imported to "
+                "the data store) with live tables from {0}. Data from different places cannot be "
+                "queried together in one query. Import the live tables into the data store so "
+                "everything is queried from the same place."
+            ).format(sources or frappe._("a data source")),
+        )
+
+    if len(live_sources) > 1:
+        frappe.throw(
+            title=frappe._("Cannot combine data sources"),
+            msg=frappe._(
+                "This query joins tables from different data sources ({0}), which cannot be "
+                "queried together directly. Import them into the data store so they can be "
+                "queried together."
+            ).format(sources),
+        )
+
+    frappe.throw(
+        title=frappe._("Cannot combine data from different sources"),
+        msg=frappe._(
+            "This query combines tables that are stored in different places, which cannot be "
+            "queried together directly. Import the tables into the data store so they can all "
+            "be queried from one place."
+        ),
+    )
+
+
+def _live_source_labels(backends) -> list[str]:
+    """Best-effort data-source names for live (non-warehouse) backends."""
+    connections = insights.db_connections
+    labels = []
+    for backend in backends:
+        label = next((name for name, con in connections.items() if con is backend), None)
+        if label:
+            label = frappe.db.get_value("Insights Data Source v3", label, "title") or label
+        if label and label not in labels:
+            labels.append(label)
+    return labels
+
+
 def execute_ibis_query(
     query: IbisQuery,
     page=1,
@@ -931,7 +1045,7 @@ def execute_ibis_query(
         # TODO: throw better error message
         raise
 
-    backend = query.get_backend()
+    backend = _get_single_backend(query)
     if cache:
         backend_id = backend.db_identity if backend else None
         cache_key = make_digest(sql, backend_id)

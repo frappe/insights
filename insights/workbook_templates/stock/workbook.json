@@ -79,6 +79,8 @@
 				"folder": null,
 				"sort_order": 1,
 				"use_live_connection": 1,
+				"is_materialized": 1,
+				"snapshot_refresh_frequency": "Daily",
 				"is_script_query": 0,
 				"is_builder_query": 1,
 				"is_native_query": 0,
@@ -141,11 +143,13 @@
 			},
 			"template-query-stock-last-movement": {
 				"name": "template-query-stock-last-movement",
-				"title": "Last Movement Per Item",
+				"title": "Stock Balance & Last Movement",
 				"workbook": "template-stock-inventory-health",
 				"folder": null,
 				"sort_order": 2,
 				"use_live_connection": 1,
+				"is_materialized": 1,
+				"snapshot_refresh_frequency": "Daily",
 				"is_script_query": 0,
 				"is_builder_query": 1,
 				"is_native_query": 0,
@@ -176,6 +180,18 @@
 						"type": "summarize",
 						"measures": [
 							{
+								"measure_name": "actual_qty",
+								"column_name": "actual_qty",
+								"data_type": "Decimal",
+								"aggregation": "sum"
+							},
+							{
+								"measure_name": "stock_value",
+								"column_name": "stock_value_difference",
+								"data_type": "Decimal",
+								"aggregation": "sum"
+							},
+							{
 								"measure_name": "last_movement_date",
 								"column_name": "posting_date",
 								"data_type": "Date",
@@ -186,6 +202,16 @@
 							{
 								"dimension_name": "item_code",
 								"column_name": "item_code",
+								"data_type": "String"
+							},
+							{
+								"dimension_name": "warehouse",
+								"column_name": "warehouse",
+								"data_type": "String"
+							},
+							{
+								"dimension_name": "company",
+								"column_name": "company",
 								"data_type": "String"
 							}
 						]
@@ -206,34 +232,9 @@
 					{
 						"type": "source",
 						"table": {
-							"type": "table",
-							"data_source": "Site DB",
-							"table_name": "tabBin"
-						}
-					},
-					{
-						"type": "join",
-						"join_type": "inner",
-						"table": {
 							"type": "query",
 							"workbook": "template-stock-inventory-health",
 							"query_name": "template-query-stock-last-movement"
-						},
-						"select_columns": [
-							{
-								"type": "column",
-								"column_name": "last_movement_date"
-							}
-						],
-						"join_condition": {
-							"left_column": {
-								"type": "column",
-								"column_name": "item_code"
-							},
-							"right_column": {
-								"type": "column",
-								"column_name": "item_code"
-							}
 						}
 					},
 					{

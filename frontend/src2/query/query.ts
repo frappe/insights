@@ -1110,6 +1110,28 @@ export function makeQuery(name: string) {
 		}
 	}
 
+	const refreshingSnapshot = ref(false)
+	async function refreshSnapshot() {
+		refreshingSnapshot.value = true
+		try {
+			const status = await query.call('refresh_snapshot')
+			query.doc.snapshot_status = status?.status
+			createToast({
+				title: __('Refresh Queued'),
+				message: __('The snapshot will be rebuilt in the background.'),
+				variant: 'success',
+			})
+		} catch (error: any) {
+			createToast({
+				title: __('Refresh Failed'),
+				message: error?.message || __('Failed to refresh the snapshot'),
+				variant: 'error',
+			})
+		} finally {
+			refreshingSnapshot.value = false
+		}
+	}
+
 	const autoExecute = ref(false)
 	watchToggle(currentOperations, () => autoExecute.value && execute(), {
 		immediate: true,
@@ -1164,6 +1186,8 @@ export function makeQuery(name: string) {
 		fetchResultCount,
 		refreshStoredTables,
 		importingTables,
+		refreshSnapshot,
+		refreshingSnapshot,
 
 		setOperations,
 		setActiveOperation,
