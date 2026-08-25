@@ -102,19 +102,36 @@ class TestLinkRequiresReadAccess(InsightsIntegrationTestCase):
 
     def test_a_dashboard_cannot_hold_an_unreadable_chart(self):
         """A chart on a dashboard the caller can read is readable, so naming one
-        here is the same grant one level up."""
-        with self.as_user(OTHER):
-            dashboard = frappe.get_doc(
+        here is the same grant one level up.
+
+        Written through `items`, which is what the client sends. `linked_charts`
+        is derived from it, so a check that reads the stored rows would see the
+        state before this save.
+        """
+        with self.as_user(OTHER), self.assertRaises(frappe.PermissionError):
+            frappe.get_doc(
                 {
                     "doctype": DT.DASHBOARD,
                     "title": "Dashboard In Other Workbook",
                     "workbook": self.other_workbook,
+                    "items": [{"id": "chart-1", "type": "chart", "chart": self.owner_chart}],
+                }
+            ).insert()
+
+    def test_a_dashboard_cannot_take_on_an_unreadable_chart(self):
+        """The same on update: an existing dashboard gains an item."""
+        with self.as_user(OTHER):
+            dashboard = frappe.get_doc(
+                {
+                    "doctype": DT.DASHBOARD,
+                    "title": "Growing Dashboard",
+                    "workbook": self.other_workbook,
                     "items": [],
                 }
-            )
-            dashboard.append("linked_charts", {"chart": self.owner_chart})
+            ).insert()
+            dashboard.items = [{"id": "chart-1", "type": "chart", "chart": self.owner_chart}]
             with self.assertRaises(frappe.PermissionError):
-                dashboard.insert()
+                dashboard.save()
 
     def test_publishing_your_own_chart_still_works(self):
         with self.as_user(OWNER):
@@ -130,11 +147,10 @@ class TestLinkRequiresReadAccess(InsightsIntegrationTestCase):
                     "doctype": DT.DASHBOARD,
                     "title": "Legitimate Dashboard",
                     "workbook": self.owner_workbook,
-                    "items": [],
+                    "items": [{"id": "chart-1", "type": "chart", "chart": self.owner_chart}],
                 }
-            )
-            dashboard.append("linked_charts", {"chart": self.owner_chart})
-            dashboard.insert()
+            ).insert()
+            self.assertEqual([row.chart for row in dashboard.linked_charts], [self.owner_chart])
             dashboard.update_access(
                 {"is_public": 1, "is_shared_with_organization": 0, "people_with_access": []}
             )
