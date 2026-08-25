@@ -7,7 +7,9 @@ it back. So the rule is the same as reading the query directly.
 """
 
 import frappe
+from frappe.utils import set_request
 
+from insights.api import run_doc_method
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
     db_connections,
 )
@@ -15,6 +17,7 @@ from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import (
     DT,
     as_user,
+    create_test_chart,
     create_test_workbook,
     delete_users,
 )
@@ -210,6 +213,67 @@ class DashboardFilterReadsTheQuery:
             self.distinct_values(self.other_dashboard, self.owner_query)
 
 
+class ChartExportReadsTheQuery:
+    """The same rule where a chart names the query it is built on.
+
+    `Insights Chart v3.export` exports the linked query in full. The chart is
+    checked, and until now the query it named was not. A chart may only be saved
+    over a query its author can read, but a document method runs on the body the
+    client sends, so the link the method reads need never have been saved.
+    """
+
+    ENABLE_PERMISSIONS = 0
+
+    @classmethod
+    def before_class(cls):
+        create_test_users()
+        cls.owner_workbook = create_test_workbook(OWNER, title="Chart Export Owner Workbook").name
+        cls.owner_query = create_source_query(OWNER, cls.owner_workbook, "Chart Export Owner Source").name
+        cls.owner_chart = create_test_chart(
+            OWNER, cls.owner_workbook, query=cls.owner_query, title="Chart Export Owner Chart"
+        ).name
+
+        cls.other_workbook = create_test_workbook(OTHER, title="Chart Export Other Workbook").name
+        cls.other_query = create_source_query(OTHER, cls.other_workbook, "Chart Export Other Source").name
+        cls.other_chart = create_test_chart(
+            OTHER, cls.other_workbook, query=cls.other_query, title="Chart Export Other Chart"
+        ).name
+
+    @classmethod
+    def after_class(cls):
+        for name in (cls.owner_workbook, cls.other_workbook):
+            frappe.delete_doc(DT.WORKBOOK, name, force=True, ignore_permissions=True)
+        delete_users(OWNER, OTHER)
+
+    def before_test(self):
+        self.set_team_permissions(self.ENABLE_PERMISSIONS)
+        set_request(method="POST", path="/api/method/insights.api.run_doc_method")
+
+    def export_chart(self, name, **claims):
+        """The client sends the chart it holds, so the body carries its fields."""
+        chart = frappe.get_doc(DT.CHART, name)
+        body = {
+            "doctype": DT.CHART,
+            "name": chart.name,
+            "workbook": chart.workbook,
+            "query": chart.query,
+            "chart_type": chart.chart_type,
+        }
+        return run_doc_method("export", {**body, **claims})
+
+    def test_a_chart_exports_the_query_its_owner_may_read(self):
+        """The baseline: the export carries the linked query."""
+        with self.as_user(OWNER):
+            exported = self.export_chart(self.owner_chart)
+        self.assertIn(self.owner_query, exported["dependencies"]["queries"])
+
+    def test_a_chart_cannot_export_a_query_its_caller_may_not_read(self):
+        """The link is sent with the request, so the stored chart says nothing
+        about which query the export reads."""
+        with self.as_user(OTHER), self.assertRaises(frappe.PermissionError):
+            self.export_chart(self.other_chart, query=self.owner_query)
+
+
 class TestReferencedQueryIsReadChecked(ReferencedQueryIsReadChecked, InsightsIntegrationTestCase):
     ENABLE_PERMISSIONS = 0
 
@@ -227,4 +291,12 @@ class TestDashboardFilterReadsTheQuery(DashboardFilterReadsTheQuery, InsightsInt
 class TestDashboardFilterReadsTheQueryWithTeamPermissions(
     DashboardFilterReadsTheQuery, InsightsIntegrationTestCase
 ):
+    ENABLE_PERMISSIONS = 1
+
+
+class TestChartExportReadsTheQuery(ChartExportReadsTheQuery, InsightsIntegrationTestCase):
+    ENABLE_PERMISSIONS = 0
+
+
+class TestChartExportReadsTheQueryWithTeamPermissions(ChartExportReadsTheQuery, InsightsIntegrationTestCase):
     ENABLE_PERMISSIONS = 1

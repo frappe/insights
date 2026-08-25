@@ -84,6 +84,8 @@ class InsightsChartv3(Document):
 
     @frappe.whitelist()
     def export(self):
+        from insights.permissions import check_referenced_query_access
+
         chart = {
             "version": "1.0",
             "timestamp": frappe.utils.now(),
@@ -102,6 +104,7 @@ class InsightsChartv3(Document):
             },
         }
 
+        check_referenced_query_access(self.query)
         exported_query = frappe.get_doc("Insights Query v3", self.query).export()
         chart["dependencies"]["queries"][self.query] = exported_query
 
