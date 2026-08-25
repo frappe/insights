@@ -175,8 +175,17 @@ class InsightsTablev3(Document):
 
     @frappe.whitelist()
     def get_stats(self):
-        """Return usage and sync statistics for this table."""
-        return get_table_stats(self.data_source, self.table)
+        """Return usage and sync statistics for this table.
+
+        The pair comes from the stored row. `autoname` builds the name out of it,
+        so the pair is this row's identity, and access was decided on the name.
+        The numbers have to answer for the same table that name does.
+        """
+        stored = frappe.db.get_value("Insights Table v3", self.name, ["data_source", "table"], as_dict=True)
+        if not stored:
+            frappe.throw(frappe._("Table {0} not found").format(self.name), frappe.DoesNotExistError)
+
+        return get_table_stats(stored.data_source, stored.table)
 
 
 def get_table_name(data_source, table):
