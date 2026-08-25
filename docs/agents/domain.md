@@ -11,6 +11,38 @@ Do not suggest writing an ADR upfront. The `/domain-modeling` skill (reached via
 `/grill-with-docs` and `/improve-codebase-architecture`) writes them when a term
 or a decision actually gets resolved.
 
+## Most work produces no ADR
+
+The `/domain-modeling` test decides, and all three must hold: the decision is
+hard to reverse, it is surprising without context, and it is the result of a
+real trade-off. Two or three out of three is a no.
+
+Resolving a ticket is not by itself a reason to write one. Two failures this
+repo has had:
+
+- **A bug fix is not a decision.** If the fix is the only correct
+  implementation, nobody will reopen it and nothing is at stake in recording
+  it. The commit message is the record.
+- **Timing is not durable.** "There is no v1 yet", a token count, what the runs
+  said this week — that is true for a month and expires with the branch. It
+  belongs in the ticket. An ADR holds what stays true after the effort is gone.
+
+Write an ADR at the moment the decision is made, not when the ticket closes.
+Close-out is for the ones you missed, and there should be few.
+
+## Naming
+
+`docs/adr/<slug>.md`. No number.
+
+Numbers were dropped because they are allocated on a feature branch and
+collide on merge — two branches both took `0003`, and `iris-review.md` cited
+two ADR numbers that resolved to the wrong documents. The slug is the stable
+name and the `Date:` line is the ordering, so the number carried nothing and
+broke on the one operation that matters.
+
+Cite an ADR by slug, never by number: `` `declared-tool-policy` ``, or a
+relative link to the file.
+
 ## Durable documents and effort documents
 
 Two kinds of document live in this repo, and they have different lifetimes.
@@ -39,4 +71,4 @@ If the concept you need isn't in the glossary yet, that's a signal — either yo
 
 If your output contradicts an existing ADR, surface it explicitly rather than silently overriding:
 
-> _Contradicts ADR-0001 (type-independent chart config) — but worth reopening because…_
+> _Contradicts `type-independent-chart-config` — but worth reopening because…_

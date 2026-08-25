@@ -1,4 +1,4 @@
-# 3. The cleanup deletes only what it can rebuild
+# The cleanup deletes only what it can rebuild
 
 Date: 2026-08-13
 

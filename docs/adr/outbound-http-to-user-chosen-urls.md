@@ -1,4 +1,4 @@
-# 2. Outbound HTTP to user-chosen URLs
+# Outbound HTTP to user-chosen URLs
 
 Date: 2026-08-11
 

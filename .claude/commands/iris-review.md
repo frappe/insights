@@ -123,11 +123,10 @@ that owns it.
   double-names (grain/`granularity`, Library/`gallery`) are the exception, not the licence.
 - **A hard-to-change name settled later.** Hook names, field names, URLs. *"changing the
   hook name would be a difficult change, so shouldn't we decide it right now?"*
-- **ADR conflict.** Name the number and say whether it is worth reopening. Three get
-  contradicted often: ADR-0001 (type-independent config — a new per-type config slot),
-  ADR-0002 (frappe-ui owns the chrome — a hand-built ECharts option for a type charts v2
-  admits), ADR-0003 (a tool declares, the loop enforces — a handler re-implementing a
-  cross-cutting rule).
+- **ADR conflict.** Name the ADR by its slug and say whether it is worth reopening.
+  Three get contradicted often: `type-independent-chart-config` (a new per-type config
+  slot), `charts-render-through-frappe-ui` (a hand-built ECharts option for a type charts v2
+  admits), `declared-tool-policy` (a handler re-implementing a cross-cutting rule).
 
 # 3. Evidence
 
