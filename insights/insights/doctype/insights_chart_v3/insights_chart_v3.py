@@ -131,7 +131,7 @@ def import_chart(chart, workbook):
         new_chart.sort_order = max_sort_order + 1
     new_chart.insert()
 
-    if str(workbook) == str(chart.doc.workbook) or not chart.dependencies.queries:
+    if workbook == chart.doc.workbook or not chart.dependencies.queries:
         return new_chart.name
 
     for _, exported_query in chart.dependencies.queries.items():
