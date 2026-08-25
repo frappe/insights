@@ -63,10 +63,6 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
     def after_test(self):
         clear_team_cache()
 
-    def toggle_team_permissions(self, enable):
-        frappe.db.set_single_value(DT.SETTINGS, "enable_permissions", enable)
-        clear_team_cache()
-
     def assert_no_access_to(self, user, doctype, name):
         """Both consumers of the permission query must refuse the user."""
         self.assert_not_visible_to(user, doctype, name)
@@ -111,7 +107,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         create_test_data_sources()
         create_test_tables()
         create_test_teams()
-        self.toggle_team_permissions(False)
+        self.set_team_permissions(False)
 
         self.assert_visible_to(USER_2, DT.DATA_SOURCE, TEST_DS)
         self.assert_visible_to(USER_2, DT.TABLE, TEST_TABLE1)
@@ -120,7 +116,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         create_test_data_sources()
         create_test_tables()
         team = create_test_teams()
-        self.toggle_team_permissions(True)
+        self.set_team_permissions(True)
 
         self.assert_not_visible_to(USER_2, DT.DATA_SOURCE, TEST_DS)
         self.assert_not_visible_to(USER_2, DT.TABLE, TEST_TABLE1)
@@ -151,7 +147,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         an empty set of grants have to land on the same empty result.
         """
         granted = self.grant_every_resource_type_to_a_team()
-        self.toggle_team_permissions(True)
+        self.set_team_permissions(True)
 
         for doctype, name in granted.items():
             self.assert_visible_to(USER_1, doctype, name)
@@ -168,7 +164,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         access, which the grant holder does not have either.
         """
         granted = self.grant_every_resource_type_to_a_team()
-        self.toggle_team_permissions(False)
+        self.set_team_permissions(False)
 
         for user in (USER_1, USER_2, USER_3):
             self.assert_visible_to(user, DT.DATA_SOURCE, granted[DT.DATA_SOURCE])
@@ -181,7 +177,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
     ):
         create_test_data_sources()
         create_test_tables()
-        self.toggle_team_permissions(True)
+        self.set_team_permissions(True)
 
         self.assert_visible_to(ADMIN, DT.DATA_SOURCE, TEST_DS)
         self.assert_visible_to(ADMIN, DT.TABLE, TEST_TABLE1)
@@ -215,7 +211,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         # must find the other Insights users in it - with or without team permissions
         for team_permissions in (False, True):
             with self.subTest(team_permissions=team_permissions):
-                self.toggle_team_permissions(team_permissions)
+                self.set_team_permissions(team_permissions)
                 with self.as_user(USER_1):
                     emails = [user["email"] for user in get_users()]
 
@@ -299,7 +295,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
                 )
 
     def test_team_membership_is_listed_for_admins_only(self):
-        self.toggle_team_permissions(True)
+        self.set_team_permissions(True)
 
         with self.as_user(USER_1):
             self.assertNotIn("teams", get_users()[0])
@@ -457,7 +453,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
     def test_download_results_requires_export_permission(self):
         workbook = create_test_workbook(USER_1)
         query = create_test_query(USER_1, workbook.name)
-        self.toggle_team_permissions(False)
+        self.set_team_permissions(False)
         frappe.db.set_single_value(DT.SETTINGS, "allow_download", 1)
         self.addCleanup(frappe.clear_cache, doctype=DT.QUERY)
 
@@ -482,7 +478,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         workbook = create_test_workbook(USER_1)
         query = create_test_query(USER_1, workbook.name)
         frappe.db.set_single_value(DT.SETTINGS, "allow_download", 1)
-        self.toggle_team_permissions(True)
+        self.set_team_permissions(True)
 
         # USER_2 has the role-level export permission, but no access to
         # USER_1's workbook or query, so the download must still be blocked
@@ -493,7 +489,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
                 query_doc.download_results(format="csv")
 
         # the owner can still download their own query
-        self.toggle_team_permissions(False)
+        self.set_team_permissions(False)
         with self.as_user(USER_1):
             query_doc = frappe.get_doc(DT.QUERY, query.name)
             with db_connections():
@@ -506,7 +502,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         # keep team permissions disabled so the underlying table stays
         # accessible; the owner/share based document restriction on
         # workbooks & queries is enforced regardless of this setting
-        self.toggle_team_permissions(False)
+        self.set_team_permissions(False)
         frappe.db.set_single_value(DT.SETTINGS, "allow_download", 1)
 
         # USER_2 is given read-only access to USER_1's workbook
@@ -529,7 +525,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
     def test_download_results_blocked_when_globally_disabled(self):
         workbook = create_test_workbook(USER_1)
         query = create_test_query(USER_1, workbook.name)
-        self.toggle_team_permissions(False)
+        self.set_team_permissions(False)
         frappe.db.set_single_value(DT.SETTINGS, "allow_download", 0)
 
         # USER_1 has the export permission via the Insights User role,
