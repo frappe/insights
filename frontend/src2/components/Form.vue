@@ -11,6 +11,7 @@ const props = defineProps<{
 		required?: boolean
 		defaultValue?: any
 		description?: string
+		dependsOn?: string
 	}[]
 	actions?: {
 		label: string
@@ -41,7 +42,12 @@ defineExpose({
 <template>
 	<div class="flex w-full flex-col gap-2">
 		<div class="flex flex-col gap-4">
-			<div class="relative" v-for="field in fields" :key="field.name">
+			<div
+				class="relative"
+				v-for="field in fields"
+				:key="field.name"
+				v-show="!field.dependsOn || form[field.dependsOn]"
+			>
 				<FormControl
 					autocomplete="off"
 					:type="field.type"

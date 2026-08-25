@@ -148,6 +148,7 @@ def make_data_source(data_source):
     ds.database_name = data_source.database_name
     ds.schema = data_source.schema
     ds.use_ssl = data_source.use_ssl
+    ds.ssl_ca = data_source.ssl_ca
     ds.connection_string = data_source.connection_string
     return ds
 

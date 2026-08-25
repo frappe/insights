@@ -139,6 +139,7 @@ class InsightsDataSourceDocument:
                 or self.host != doc_before.host
                 or self.port != doc_before.port
                 or self.use_ssl != doc_before.use_ssl
+                or self.ssl_ca != doc_before.ssl_ca
             )
 
     def on_trash(self):
@@ -234,6 +235,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         password: DF.Password | None
         port: DF.Int
         schema: DF.Data | None
+        ssl_ca: DF.SmallText | None
         status: DF.Literal["Inactive", "Active"]
         title: DF.Data
         type: DF.Literal["Database", "REST API"]
