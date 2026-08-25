@@ -1,4 +1,4 @@
-# 1. Type-independent chart config
+# Type-independent chart config
 
 Date: 2026-08-05
 

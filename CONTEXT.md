@@ -71,7 +71,8 @@ The sync job that copies a source table into the Data Store.
 
 **Unexplained Orphan**:
 A Data Store table the weekly cleanup cannot show to be rebuildable. The cleanup
-keeps it and raises an `Error Log`. See ADR-0003.
+keeps it and raises an `Error Log`. See the cleanup ADR,
+`docs/adr/the-cleanup-deletes-only-what-it-can-rebuild.md`.
 _Avoid_: unknown table, stray table
 
 ### Framework integration
@@ -114,4 +115,4 @@ condition is met.
 **Channel**:
 How an alert reaches its recipients: email, Telegram or a webhook. A webhook posts to a
 URL the user supplies, which is why outbound requests carry an address policy — see
-ADR-0002.
+`docs/adr/outbound-http-to-user-chosen-urls.md`.

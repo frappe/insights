@@ -31,16 +31,20 @@ Don't create or triage GitHub issues unless explicitly asked.
 
 ## Closing out an effort
 
-The effort docs die with the branch. The ADR is the only durable record of why
-the work went the way it did, so write it before the branch merges.
+The effort docs die with the branch. Most of what they hold is meant to die with
+it — how the work went, what was measured this week, what was still unknown on
+Tuesday. Close-out is not a distillation of the whole effort.
 
-1. Write an ADR in `docs/adr/` for each decision the map records. Add any new
-   term to the glossary in `CONTEXT.md`.
+1. Write an ADR for each decision that passes the test in `domain.md`. **Most
+   tickets produce none**, and that is the normal outcome, not an omission. Add
+   any new term to the glossary in `CONTEXT.md`.
 2. Remove the effort with `git rm -r docs/projects/<effort-slug>/`. Put this in
-   the same commit as the ADR. A deletion with no ADR beside it is a lost
-   decision, and a reviewer can see that at a glance.
+   the same commit as any ADR it produced.
 3. Move the working copies to `docs/archive/<effort-slug>/` to keep them on the
    machine. `docs/archive/` is local-only.
+
+Close-out is a bad moment to notice a decision for the first time. Write the ADR
+when the decision is made. What is left at close-out should be nearly nothing.
 
 When a skill says "publish to the issue tracker", create the file under
 `docs/projects/<effort-slug>/`. When it says "fetch the relevant ticket", read
@@ -61,8 +65,7 @@ Used by `/wayfinder`. The **map** is a file with one **child** file per ticket.
 - **Claim**: set `Status: claimed` and save before any work.
 - **Resolve**: append the answer under an `## Answer` heading, set `Status: resolved`,
   then append a context pointer (gist + link) to the map's Decisions-so-far in `map.md`.
-  Add the ADR filename to that pointer once the decision reaches `docs/adr/`. An
-  entry with no filename marks reasoning that still has to be distilled before
-  the branch merges.
+  Add the ADR slug to that pointer if the decision produced one. Most do not, and
+  an entry with no slug is finished — it is a resolved ticket, not a debt.
 - **Research findings**: land in `docs/projects/<effort>/research/`, linked from
   the ticket's answer.
