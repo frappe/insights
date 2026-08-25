@@ -311,7 +311,10 @@ def toggle_folder_expanded(folder_name: str, is_expanded: bool):
 @insights_whitelist()
 def move_item_to_folder(item_type: str, item_name: str, folder_name: str | None = None):
     """Move a query/chart to a folder"""
-    doctype = "Insights Query v3" if item_type == "query" else "Insights Chart v3"
+    doctype = ITEM_DOCTYPES.get(item_type)
+    if not doctype or doctype == "Insights Folder":
+        frappe.throw(_("{0} is not a movable item type").format(item_type))
+
     item = frappe.get_doc(doctype, item_name)
 
     if not frappe.has_permission("Insights Workbook", ptype="write", doc=item.workbook):
@@ -325,41 +328,53 @@ def move_item_to_folder(item_type: str, item_name: str, folder_name: str | None 
     item.db_set("folder", folder_name, update_modified=False)
 
 
+ITEM_DOCTYPES = {
+    "folder": "Insights Folder",
+    "query": "Insights Query v3",
+    "chart": "Insights Chart v3",
+}
+
+
+def check_belongs_to_workbook(doctype: str, name, workbook: str):
+    """`name` names one document, and that document lives in `workbook`.
+
+    Write access is held on the workbook, so it reaches the workbook's own items
+    and no further. The write goes straight to the row, so the permission query
+    that scopes the read never sees it - this is what scopes the write.
+
+    A dict is not a name. `frappe.db` reads one as a filter set and would update
+    every row that matches.
+    """
+    if not isinstance(name, str):
+        frappe.throw(_("{0} is not the name of a {1}").format(name, doctype))
+
+    if frappe.db.get_value(doctype, name, "workbook") != workbook:
+        frappe.throw(
+            _("{0} {1} does not belong to this workbook").format(doctype, name),
+            frappe.PermissionError,
+        )
+
+
 @insights_whitelist()
 def update_sort_orders(workbook: str, items: list):
-    """Bulk update sort orders"""
+    """Order a workbook's own queries, charts and folders"""
     if not frappe.has_permission("Insights Workbook", ptype="write", doc=workbook):
         frappe.throw(_("You do not have permission to modify this workbook"), frappe.PermissionError)
 
     for item in items:
-        if item["type"] == "folder":
-            frappe.db.set_value(
-                "Insights Folder",
-                item["name"],
-                {
-                    "sort_order": item["sort_order"],
-                },
-                update_modified=False,
-            )
-        elif item["type"] == "query":
-            frappe.db.set_value(
-                "Insights Query v3",
-                item["name"],
-                {
-                    "sort_order": item["sort_order"],
-                    "folder": item.get("folder"),
-                },
-                update_modified=False,
-            )
-        elif item["type"] == "chart":
-            frappe.db.set_value(
-                "Insights Chart v3",
-                item["name"],
-                {
-                    "sort_order": item["sort_order"],
-                    "folder": item.get("folder"),
-                },
-                update_modified=False,
-            )
+        doctype = ITEM_DOCTYPES.get(item["type"])
+        if not doctype:
+            continue
+
+        check_belongs_to_workbook(doctype, item["name"], workbook)
+
+        values = {"sort_order": item["sort_order"]}
+        if doctype != "Insights Folder":
+            folder = item.get("folder")
+            if folder:
+                check_belongs_to_workbook("Insights Folder", folder, workbook)
+            values["folder"] = folder
+
+        frappe.db.set_value(doctype, item["name"], values, update_modified=False)
 
     frappe.db.commit()
