@@ -1,9 +1,5 @@
-"""Guards frappe/insights#1193.
-
-`Insights Workbook` used to be named by `autoincrement`, which made `name` a bigint while
-every column referencing it stayed varchar(140). Postgres refuses to compare the two, so
-listing and sharing workbooks broke. The doctype now names itself from `tabSeries`: the
-names are still plain numbers, but they are strings, and nothing has to cast them.
+"""Guards frappe/insights#1193 — see insights/patches/name_workbooks_as_strings.py for
+why `Insights Workbook` now names itself as a string instead of via `autoincrement`.
 """
 
 import frappe

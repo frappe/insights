@@ -1,5 +1,4 @@
 import frappe
-from frappe.core.doctype.doctype.doctype import change_name_column_type
 from frappe.utils import cint
 
 from insights.insights.doctype.insights_workbook.insights_workbook import WORKBOOK_SERIES_KEY
@@ -41,7 +40,7 @@ def execute():
     )
     frappe.clear_cache(doctype="Insights Workbook")
 
-    change_name_column_type("Insights Workbook", f"varchar({frappe.db.VARCHAR_LEN})")
+    frappe.get_doc("DocType", "Insights Workbook").setup_autoincrement_and_sequence()
     drop_sequence()
     seed_series(last_id)
 
