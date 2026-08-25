@@ -80,6 +80,29 @@ class InsightsQueryv3(Document):
 
     def validate(self):
         self._validate_no_circular_dependency()
+        self._validate_referenced_queries()
+
+    def _validate_referenced_queries(self):
+        """A query may only reference a query its author can read.
+
+        A reference resolves to the whole referenced query, so naming one asks for
+        a read of it. Checked once, here, where it is written - execution then
+        trusts the saved reference.
+
+        Only a new reference is checked. An existing one stays runnable by anyone
+        who may already read this query, whose access to the referenced query runs
+        through it. A name with no row behind it resolves to nothing: a workbook
+        import inserts a query before the queries it references.
+        """
+        from insights.permissions import check_referenced_query_access
+
+        operations = frappe.parse_json(self.operations) or []
+        new_deps = set(extract_query_deps_from_operations(operations))
+        if not new_deps:
+            return
+
+        for dep in new_deps - set(get_direct_dependencies(self.name)):
+            check_referenced_query_access(dep)
 
     def _validate_no_circular_dependency(self):
         """Raise an error if the current operations would create a circular query reference."""
