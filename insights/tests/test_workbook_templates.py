@@ -166,9 +166,7 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
 
         self.assert_visible_to(USER_2, "Insights Workbook", workbook_name)
         with self.as_user(USER_2):
-            self.assertFalse(
-                frappe.has_permission("Insights Workbook", ptype="write", doc=workbook_name)
-            )
+            self.assertFalse(frappe.has_permission("Insights Workbook", ptype="write", doc=workbook_name))
 
     def test_double_import_returns_existing_without_duplicating(self):
         with self.as_user(ADMIN_USER), installed_apps(APPS_WITH_ERPNEXT):
