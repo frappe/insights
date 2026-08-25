@@ -72,15 +72,14 @@ def get_workbooks(
         fields=["reference_name", "name"],
     )
     for workbook in workbooks:
-        views = [view for view in workbook_views if str(view["reference_name"]) == str(workbook["name"])]
+        views = [view for view in workbook_views if view["reference_name"] == workbook["name"]]
         workbook["views"] = len(views)
 
     # batch the share lookups into two grouped queries instead of ~2 per
     # workbook (avoids an N+1 over the whole list)
     org_shared, shared_users = _workbook_shares(workbook_names)
     for workbook in workbooks:
-        # share_name is stored as a string; workbook name may be an int — cast to match
-        name = str(workbook["name"])
+        name = workbook["name"]
         if name in org_shared:
             workbook["shared_with_organization"] = True
             continue
@@ -93,14 +92,12 @@ def _workbook_shares(names: list[str]) -> tuple[set, dict]:
     """Return (org-shared workbook names, {workbook name -> [users it's read-shared with]}).
 
     Two queries for the whole list instead of an exists-check + fetch per workbook.
-    Keys are stringified since DocShare.share_name is stored as a string.
     """
     if not names:
         return set(), {}
 
-    org_shared = {
-        str(name)
-        for name in frappe.get_all(
+    org_shared = set(
+        frappe.get_all(
             "DocShare",
             filters={
                 "share_doctype": "Insights Workbook",
@@ -110,7 +107,7 @@ def _workbook_shares(names: list[str]) -> tuple[set, dict]:
             },
             pluck="share_name",
         )
-    }
+    )
 
     shared_users: dict[str, list] = {}
     rows = frappe.get_all(
@@ -123,7 +120,7 @@ def _workbook_shares(names: list[str]) -> tuple[set, dict]:
         fields=["share_name", "user"],
     )
     for row in rows:
-        shared_users.setdefault(str(row["share_name"]), []).append(row["user"])
+        shared_users.setdefault(row["share_name"], []).append(row["user"])
 
     return org_shared, shared_users
 
