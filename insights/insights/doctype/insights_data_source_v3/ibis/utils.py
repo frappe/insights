@@ -11,6 +11,46 @@ from frappe.utils.safe_exec import SERVER_SCRIPT_FILE_PREFIX, safe_exec
 from ibis import selectors as s
 from jedi import Script
 
+# An expression describes a query. It does not move data in or out, so the
+# context holds no name that opens a path, a URL or a backend connection.
+# Expressed as a rule rather than a list, so an ibis release that adds
+# `read_avro` or `to_avro` needs no edit here. Attribute names only -
+# `to_inr(amount)` is a plain name and stays available.
+IO_ATTRIBUTE_PREFIXES = ("read_", "to_", "from_")
+IO_ATTRIBUTE_NAMES = frozenset(
+    {
+        "connect",
+        "get_backend",
+        "set_backend",
+        "register",
+    }
+)
+
+
+def is_io_attribute(name: str) -> bool:
+    return name in IO_ATTRIBUTE_NAMES or name.startswith(IO_ATTRIBUTE_PREFIXES)
+
+
+def assert_expression_has_no_io(expression: str) -> None:
+    """Refuse an expression that names an I/O attribute.
+
+    Checked in the source rather than at evaluation: RestrictedPython compiles
+    `a.b` to a guard call carrying the literal `b` and leaves no `getattr`, so an
+    attribute name is always spelled out here.
+    """
+    try:
+        tree = ast.parse(expression)
+    except SyntaxError:
+        # the caller reports syntax errors with a line and a column
+        return
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Attribute) and is_io_attribute(node.attr):
+            frappe.throw(
+                f"'{node.attr}' is not available in an expression",
+                frappe.PermissionError,
+            )
+
 
 def get_functions():
     import insights.insights.doctype.insights_data_source_v3.ibis.functions as functions
@@ -73,10 +113,6 @@ def get_functions():
         "range",
         "range_window",
         "rank",
-        "read_csv",
-        "read_delta",
-        "read_json",
-        "read_parquet",
         "row_number",
         "rows_window",
         "schema",
@@ -85,7 +121,6 @@ def get_functions():
         "table",
         "time",
         "timestamp",
-        "to_sql",
         "today",
         "trailing_range_window",
         "trailing_window",
@@ -96,6 +131,8 @@ def get_functions():
     )
     context.ibis = frappe._dict()
     for attr in allowed_ibis_attributes:
+        if is_io_attribute(attr):
+            raise ValueError(f"'{attr}' is an I/O function and does not belong in an expression")
         context.ibis[attr] = getattr(ibis, attr)
 
     return context
@@ -423,6 +460,9 @@ def validate_expression(expression: str, column_options: str):
     syntax_result = validate_syntax(expression)
     if not syntax_result["is_valid"]:
         return syntax_result
+
+    # validate_types() below evaluates the expression, so the same rule applies
+    assert_expression_has_no_io(expression)
 
     tree = ast.parse(expression)
     name_result = validate_names(tree, columns)

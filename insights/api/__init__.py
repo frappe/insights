@@ -180,7 +180,8 @@ def _read_uploaded_table(db, file_path: str, ext: str):
         frappe.throw("Failed to read CSV data from uploaded file. Please try again.")
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=True)  # nosemgrep - falls back to is_public() only after the
+# framework has already refused the caller
 @validate_type
 def get_doc(doctype: str, name: str | int):
     try:
@@ -211,7 +212,8 @@ def _execute_doc_method(doc, method: str, args: dict | None = None, ignore_permi
     return response
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=True)  # nosemgrep - guests reach only public documents, and only
+# the methods and arguments PUBLIC_METHOD_ARGS names
 def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
     doc = frappe.parse_json(docs)
     doctype = doc.get("doctype")
@@ -234,18 +236,40 @@ def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
         doc = frappe.get_doc(doctype, name)
         frappe.flags.insights_for_public_access = True
         try:
-            return _execute_doc_method(doc, method, args, ignore_permissions=True)
+            return _execute_doc_method(
+                doc, method, public_method_args(doctype, method, args), ignore_permissions=True
+            )
         finally:
             frappe.flags.insights_for_public_access = False
 
 
+# A public execution runs what the publisher published, so the public surface is
+# a set of parameter names, not a set of method names. The query builder passes
+# its own parameters to these methods - `active_operation_idx` drives the step
+# preview, and reshapes the query - and those are for the builder, not for the
+# published document.
+PUBLIC_METHOD_ARGS = {
+    ("Insights Query v3", "execute"): {"adhoc_filters", "page", "page_size"},
+    ("Insights Query v3", "download_results"): {"format", "adhoc_filters"},
+    ("Insights Dashboard v3", "get_distinct_column_values"): {
+        "query",
+        "column_name",
+        "search_term",
+        "adhoc_filters",
+    },
+    ("Insights Dashboard v3", "track_view"): set(),
+}
+
+
 def is_public_method(doctype: str, method: str):
-    public_methods = {
-        "Insights Query v3": ["execute", "download_results"],
-        "Insights Dashboard v3": ["get_distinct_column_values", "track_view"],
-    }
+    return (doctype, method) in PUBLIC_METHOD_ARGS
 
-    if doctype in public_methods and method in public_methods[doctype]:
-        return True
 
-    return False
+def public_method_args(doctype: str, method: str, args: dict | str | None):
+    """The caller's args, less anything the public contract does not name.
+
+    Dropped rather than refused, so the published document still renders.
+    """
+    allowed = PUBLIC_METHOD_ARGS[(doctype, method)]
+    args = frappe.parse_json(args) or {}
+    return {name: value for name, value in args.items() if name in allowed}

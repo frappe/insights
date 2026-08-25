@@ -31,7 +31,7 @@ from insights.utils import create_execution_log
 from insights.utils import deep_convert_dict_to_dict as _dict
 
 from .ibis.functions import fiscal_year_start, week_start
-from .ibis.utils import get_functions
+from .ibis.utils import assert_expression_has_no_io, get_functions
 
 try:
     from frappe.concurrency_limiter import concurrent_limit
@@ -1060,6 +1060,8 @@ def exec_with_return(
     _globals: dict | None = None,
     _locals: dict | None = None,
 ):
+    assert_expression_has_no_io(script)
+
     tree = ast.parse(script)
 
     if not tree.body:
