@@ -38,6 +38,16 @@ class InsightsDashboardv3(Document):
         workbook: DF.Link
     # end: auto-generated types
 
+    def before_validate(self):
+        # linked_charts is derived from items, so build it before anything
+        # validates it - validate() runs before before_save()
+        self.set_linked_charts()
+
+    def validate(self):
+        from insights.permissions import check_dashboard_chart_access
+
+        check_dashboard_chart_access(self)
+
     @frappe.whitelist()
     def track_view(self):
         view_log = frappe.qb.DocType("View Log")
@@ -84,7 +94,6 @@ class InsightsDashboardv3(Document):
         )
 
     def before_save(self):
-        self.set_linked_charts()
         self.enqueue_update_dashboard_preview()
 
     def set_linked_charts(self):
@@ -208,6 +217,13 @@ class InsightsDashboardv3(Document):
         is_public = data.get("is_public")
         is_shared_with_organization = data.get("is_shared_with_organization")
         people_with_access = data.get("people_with_access") or []
+
+        # this writes is_public with db_set, so validate() never runs. Check
+        # before any share is applied, so a refusal leaves nothing half-done.
+        if is_public:
+            from insights.permissions import check_dashboard_chart_access
+
+            check_dashboard_chart_access(self)
 
         existing_shares = frappe.get_all(
             "DocShare",
