@@ -36,9 +36,8 @@ class InsightsWorkbook(Document):
     # end: auto-generated types
 
     def autoname(self):
-        # plain numbers, carrying on from where `autoincrement` left off. The name has to
-        # be a string: every column that references a workbook is varchar, and postgres
-        # refuses to compare those against an integer name.
+        # plain numbers, carrying on from where `autoincrement` left off — see
+        # insights/patches/name_workbooks_as_strings.py for why this needs to be a string.
         self.name = getseries(WORKBOOK_SERIES_KEY, 1)
 
     def before_save(self):
