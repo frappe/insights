@@ -38,6 +38,11 @@ class InsightsDashboardv3(Document):
         workbook: DF.Link
     # end: auto-generated types
 
+    def before_validate(self):
+        # linked_charts is derived from items, so build it before anything
+        # validates it - validate() runs before before_save()
+        self.set_linked_charts()
+
     def validate(self):
         from insights.permissions import check_dashboard_chart_access
 
@@ -89,7 +94,6 @@ class InsightsDashboardv3(Document):
         )
 
     def before_save(self):
-        self.set_linked_charts()
         self.enqueue_update_dashboard_preview()
 
     def set_linked_charts(self):
