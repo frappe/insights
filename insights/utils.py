@@ -150,13 +150,13 @@ def anonymize_data(df, columns_to_anonymize, prefix_by_column=None):
     return df
 
 
-# `=` and `@` open a formula on their own, and a leading control character can
-# carry one past an importer that trims before it parses. `+` and `-` open one
-# too, but they also start ordinary data — a phone number, a negative held in a
-# text column — so a signed value is quoted only when it also carries the
+# `=` opens a formula on its own, and a leading control character can carry one
+# past an importer that trims before it parses. `@`, `+` and `-` open one too,
+# but they also start ordinary data — a handle, a phone number, a negative held
+# in a text column — so those are quoted only when the value also carries the
 # characters a formula needs in order to call anything.
-FORMULA_TRIGGERS = ("=", "@", "\t", "\r", "\n")
-SIGNS = ("+", "-")
+FORMULA_TRIGGERS = ("=", "\t", "\r", "\n")
+AMBIGUOUS_STARTS = ("@", "+", "-")
 CALL_CHARACTERS = frozenset("|!()")
 
 
@@ -166,7 +166,7 @@ def quote_formula(value):
         return value
     if value.startswith(FORMULA_TRIGGERS):
         return "'" + value
-    if value.startswith(SIGNS) and CALL_CHARACTERS.intersection(value):
+    if value.startswith(AMBIGUOUS_STARTS) and CALL_CHARACTERS.intersection(value):
         return "'" + value
     return value
 

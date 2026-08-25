@@ -1,14 +1,15 @@
 """An exported cell is data, not a program.
 
-A query reads columns other people write. A value beginning with `=` or `@` is a
-live formula once a spreadsheet opens the file, and a formula can reach DDE or a
+A query reads columns other people write. A value beginning with `=` is a live
+formula once a spreadsheet opens the file, and a formula can reach DDE or a
 shell on the machine of whoever exported. The export is the last place that can
 say the value is text.
 
-`+` and `-` open a formula too, and they also start ordinary data. Quoting every
-one of them would put a stray apostrophe into phone numbers and text-column
-negatives, and a CSV is read by scripts as often as by people. A signed value is
-quoted only when it carries the characters a formula needs to call something.
+`@`, `+` and `-` open a formula too, and they also start ordinary data. Quoting
+every one of them would put a stray apostrophe into handles, phone numbers and
+text-column negatives, and a CSV is read by scripts as often as by people. Those
+are quoted only when the value carries the characters a formula needs to call
+something.
 """
 
 import base64
@@ -50,14 +51,20 @@ class TestFormulasAreNeutralised(UnitTestCase):
         self.assertNotIn("<f>", sheet_xml(as_text(self.frame())))
 
     def test_the_triggers_that_always_open_a_formula(self):
-        triggers = ("=SUM(A1)", "@SUM(A1)", "\tone", "\rone", "\none")
+        triggers = ("=SUM(A1)", "\tone", "\rone", "\none")
         self.assertEqual(
             list(exported(value=list(triggers))["value"]),
             [f"'{value}" for value in triggers],
         )
 
-    def test_a_signed_value_that_can_call_something_is_quoted(self):
-        payloads = ("+cmd|'/c calc'!A1", "-2+3+cmd|'/c calc'!A0", "-SUM(A1:A2)")
+    def test_an_ambiguous_start_that_can_call_something_is_quoted(self):
+        payloads = (
+            "@SUM(A1)",
+            "@cmd|'/c calc'!A1",
+            "+cmd|'/c calc'!A1",
+            "-2+3+cmd|'/c calc'!A0",
+            "-SUM(A1:A2)",
+        )
         self.assertEqual(
             list(exported(value=list(payloads))["value"]),
             [f"'{value}" for value in payloads],
@@ -66,6 +73,12 @@ class TestFormulasAreNeutralised(UnitTestCase):
 
 class TestOrdinaryDataSurvives(UnitTestCase):
     """The cost of the rule, pinned so it cannot grow."""
+
+    def test_a_handle_keeps_its_at_sign(self):
+        self.assertEqual(exported(handle=["@acmecorp"])["handle"][0], "@acmecorp")
+
+    def test_an_email_address_is_untouched(self):
+        self.assertEqual(exported(cc=["@ada@example.com"])["cc"][0], "@ada@example.com")
 
     def test_a_phone_number_keeps_its_plus(self):
         self.assertEqual(exported(phone=["+91 9876543210"])["phone"][0], "+91 9876543210")
