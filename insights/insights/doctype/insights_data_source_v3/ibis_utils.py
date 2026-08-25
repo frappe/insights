@@ -164,6 +164,9 @@ class IbisQueryBuilder:
                 use_live_connection=self.use_live_connection,
             )
         if table_args.type == "query":
+            from insights.permissions import check_referenced_query_access
+
+            check_referenced_query_access(table_args.query_name)
             q = frappe.get_doc("Insights Query v3", table_args.query_name)
             _table = q.build(use_live_connection=self.use_live_connection)
 

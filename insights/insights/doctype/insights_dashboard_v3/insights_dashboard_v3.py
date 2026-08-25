@@ -106,6 +106,8 @@ class InsightsDashboardv3(Document):
     def get_distinct_column_values(
         self, query: str, column_name: str, search_term: str | None = None, adhoc_filters: dict | None = None
     ):
+        from insights.permissions import check_referenced_query_access
+
         is_guest = frappe.session.user == "Guest"
         if is_guest and not self.is_public:
             raise frappe.PermissionError
@@ -115,6 +117,8 @@ class InsightsDashboardv3(Document):
                 frappe._("This column is not available as a filter on this dashboard"),
                 frappe.PermissionError,
             )
+
+        check_referenced_query_access(query)
 
         doc = frappe.get_cached_doc("Insights Query v3", query)
         return doc.get_distinct_column_values(
