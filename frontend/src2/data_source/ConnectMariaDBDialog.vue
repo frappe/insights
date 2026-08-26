@@ -18,6 +18,7 @@ const database = ref<MariaDBDataSource>({
 	username: '',
 	password: '',
 	use_ssl: false,
+	ssl_ca: '',
 })
 
 const form = ref()
@@ -66,7 +67,17 @@ const fields = [
 		placeholder: '**********',
 		required: true,
 	},
-	{ label: __('Use secure connection (SSL)?'), name: 'use_ssl', type: 'checkbox' },
+	{ label: __('Encrypt connection (SSL)'), name: 'use_ssl', type: 'checkbox' },
+	{
+		label: __('CA Certificate'),
+		name: 'ssl_ca',
+		type: 'textarea',
+		placeholder: '-----BEGIN CERTIFICATE-----',
+		description: __(
+			"Optional. Certificate of the authority that signed the database server's certificate. Add one to verify the server, not just encrypt the connection.",
+		),
+		dependsOn: 'use_ssl',
+	},
 ]
 
 const sources = useDataSourceStore()

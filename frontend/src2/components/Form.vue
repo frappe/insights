@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 
 const props = defineProps<{
 	fields: {
@@ -11,6 +11,7 @@ const props = defineProps<{
 		required?: boolean
 		defaultValue?: any
 		description?: string
+		dependsOn?: string
 	}[]
 	actions?: {
 		label: string
@@ -20,6 +21,7 @@ const props = defineProps<{
 	}[]
 }>()
 
+type Field = (typeof props.fields)[number]
 type Form = Record<string, any>
 const form = defineModel<Form>({
 	required: true,
@@ -31,9 +33,27 @@ props.fields.forEach((field) => {
 	}
 })
 
+function isVisible(field: Field) {
+	return !field.dependsOn || Boolean(form.value[field.dependsOn])
+}
+
+// A hidden field is not part of the form. Vue keeps whatever its input last
+// held, so without this it would still submit after its dependency turns off.
+watch(
+	() => props.fields.map(isVisible),
+	(visible) => {
+		props.fields.forEach((field, index) => {
+			if (!visible[index]) delete form.value[field.name]
+		})
+	},
+	{ immediate: true },
+)
+
 defineExpose({
 	hasRequiredFields: computed(() => {
-		return props.fields.every((field) => !field.required || form.value[field.name])
+		return props.fields.every(
+			(field) => !field.required || !isVisible(field) || form.value[field.name],
+		)
 	}),
 })
 </script>
@@ -41,23 +61,25 @@ defineExpose({
 <template>
 	<div class="flex w-full flex-col gap-2">
 		<div class="flex flex-col gap-4">
-			<div class="relative" v-for="field in fields" :key="field.name">
-				<FormControl
-					autocomplete="off"
-					:type="field.type"
-					:label="field.label"
-					:options="field.options"
-					:placeholder="field.placeholder"
-					:description="field.description"
-					v-model="form[field.name]"
-				/>
-				<span
-					v-if="field.required && !form[field.name]"
-					class="absolute right-0 top-0 text-xs text-ink-red-5"
-				>
-					* required
-				</span>
-			</div>
+			<template v-for="field in fields" :key="field.name">
+				<div class="relative" v-if="isVisible(field)">
+					<FormControl
+						autocomplete="off"
+						:type="field.type"
+						:label="field.label"
+						:options="field.options"
+						:placeholder="field.placeholder"
+						:description="field.description"
+						v-model="form[field.name]"
+					/>
+					<span
+						v-if="field.required && !form[field.name]"
+						class="absolute right-0 top-0 text-xs text-ink-red-5"
+					>
+						* required
+					</span>
+				</div>
+			</template>
 		</div>
 		<div class="flex w-full justify-end gap-2 pt-2">
 			<Button v-for="action in actions" :key="action.label" v-bind="action" />

@@ -66,7 +66,7 @@ const fields = [
 		placeholder: '**********',
 		required: true,
 	},
-	{ label: __('Use secure connection (SSL)?'), name: 'use_ssl', type: 'checkbox' },
+	{ label: __('Encrypt connection (SSL)'), name: 'use_ssl', type: 'checkbox' },
 ]
 
 const sources = useDataSourceStore()
