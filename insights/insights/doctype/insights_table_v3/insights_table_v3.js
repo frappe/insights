@@ -3,6 +3,12 @@
 
 frappe.ui.form.on("Insights Table v3", {
 	refresh: function (frm) {
+		// __() substitutes {0} into a string that frappe.confirm and the dialog
+		// title both append as HTML, so the label is escaped, not interpolated.
+		const table_label = frappe.utils.escape_html(
+			frm.doc.label || frm.doc.table,
+		);
+
 		frm.add_custom_button(__("Import to Warehouse"), function () {
 			frm.call("import_to_warehouse").then(() => {
 				frappe.msgprint(__("Import job has been queued"));
@@ -14,7 +20,7 @@ frappe.ui.form.on("Insights Table v3", {
 				frappe.confirm(
 					__(
 						"This will delete all warehouse data for <b>{0}</b> and reset the sync bookmark. Are you sure?",
-						[frm.doc.label || frm.doc.table],
+						[table_label],
 					),
 					() => {
 						frm.call("clear_warehouse_data").then(() => {
@@ -88,9 +94,7 @@ frappe.ui.form.on("Insights Table v3", {
 </div>`;
 
 				new frappe.ui.Dialog({
-					title: __("Statistics — {0}", [
-						frm.doc.label || frm.doc.table,
-					]),
+					title: __("Statistics — {0}", [table_label]),
 					fields: [{ fieldtype: "HTML", options: html }],
 					primary_action_label: __("Close"),
 					primary_action(values) {
