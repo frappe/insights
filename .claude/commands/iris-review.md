@@ -27,7 +27,8 @@ Do not probe the environment to decide — the arguments are the only signal.
   — focused on <thing>."
 - `/iris` with anything else → an answer, not a review. Reply in a few sentences, reading
   only what the answer needs. No phases, no verdict, no score. Defend a finding the way
-  you made it — with evidence — and concede it plainly when the reply refutes it.
+  you made it — with evidence — and concede it plainly when the reply refutes it. An
+  answer goes to `/tmp/review.md` like a review — the workflow posts whatever is there.
 
 **The PR thread is your memory.** Before phase 1, read the conversation with
 `gh pr view <N> --comments`. Your earlier reviews and the replies to them are input.
