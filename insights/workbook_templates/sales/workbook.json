@@ -445,8 +445,7 @@
 									"measure_name": "Revenue",
 									"column_name": "base_net_total",
 									"data_type": "Decimal",
-									"aggregation": "sum",
-									"format": "currency"
+									"aggregation": "sum"
 								}
 							}
 						],
@@ -486,8 +485,7 @@
 						"measure_name": "Revenue",
 						"column_name": "base_net_amount",
 						"data_type": "Decimal",
-						"aggregation": "sum",
-						"format": "currency"
+						"aggregation": "sum"
 					},
 					"legend_position": "bottom",
 					"order_by": [],
@@ -521,8 +519,7 @@
 									"measure_name": "Revenue",
 									"column_name": "base_net_total",
 									"data_type": "Decimal",
-									"aggregation": "sum",
-									"format": "currency"
+									"aggregation": "sum"
 								}
 							}
 						]
@@ -566,8 +563,7 @@
 									"measure_name": "Revenue",
 									"column_name": "base_net_amount",
 									"data_type": "Decimal",
-									"aggregation": "sum",
-									"format": "currency"
+									"aggregation": "sum"
 								}
 							}
 						]

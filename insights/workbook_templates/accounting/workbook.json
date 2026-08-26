@@ -676,8 +676,7 @@
 									"measure_name": "Outstanding",
 									"column_name": "outstanding",
 									"data_type": "Decimal",
-									"aggregation": "sum",
-									"format": "currency"
+									"aggregation": "sum"
 								}
 							}
 						],
@@ -717,8 +716,7 @@
 									"measure_name": "Outstanding",
 									"column_name": "outstanding",
 									"data_type": "Decimal",
-									"aggregation": "sum",
-									"format": "currency"
+									"aggregation": "sum"
 								}
 							}
 						],

@@ -493,8 +493,7 @@
 									"measure_name": "stock_value",
 									"column_name": "stock_value",
 									"data_type": "Decimal",
-									"aggregation": "sum",
-									"format": "currency"
+									"aggregation": "sum"
 								}
 							}
 						]
@@ -533,8 +532,7 @@
 									"measure_name": "stock_value",
 									"column_name": "stock_value",
 									"data_type": "Decimal",
-									"aggregation": "sum",
-									"format": "currency"
+									"aggregation": "sum"
 								}
 							}
 						]
@@ -573,8 +571,7 @@
 									"measure_name": "stock_value",
 									"column_name": "stock_value",
 									"data_type": "Decimal",
-									"aggregation": "sum",
-									"format": "currency"
+									"aggregation": "sum"
 								}
 							}
 						]

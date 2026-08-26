@@ -54,8 +54,9 @@ const cards = computed(() => {
 		const format = config.value.number_columns.find((c) => c.measure_name === measure_name)
 			?.format
 
-		// The measure's format states the unit; a prefix or suffix set on the card
-		// overrides it, because a chart that spelled out its own unit meant it.
+		// The measure's format states the unit. A prefix set on the card replaces
+		// it — a card that spelled out its own symbol meant that one. A suffix
+		// sits after the unit instead, the way "12.5% of target" reads.
 		const units = getFormatUnits(format)
 		const prefix = getNumberOption(idx, 'prefix') || units.prefix
 		const suffix = `${units.suffix}${getNumberOption(idx, 'suffix') || ''}`

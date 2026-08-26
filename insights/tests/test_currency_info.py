@@ -17,6 +17,9 @@ def _defaults(currency=None, hide_symbol=None):
 
 
 class TestCurrencyInfo(InsightsIntegrationTestCase):
+    # two tests edit a Currency record to state a shape the site does not have
+    SAVEPOINT = "test_currency_info"
+
     def test_symbol_comes_from_the_site_currency(self):
         currency, hidden = _defaults("USD")
         with currency, hidden:

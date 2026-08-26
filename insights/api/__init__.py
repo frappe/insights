@@ -6,6 +6,7 @@ import os
 import frappe
 from frappe.handler import is_valid_http_method, is_whitelisted
 from frappe.monitor import add_data_to_monitor
+from frappe.utils import cint
 
 from insights.api.shared import is_public
 from insights.decorators import insights_whitelist, validate_type
@@ -31,7 +32,10 @@ def get_site_info():
     """Settings of the site, not of whoever reads it. A guest opening a public
     dashboard needs them to print an amount the way the workbook does, and they
     say nothing a public dashboard does not already show."""
-    return get_currency_info()
+    return {
+        "country": frappe.db.get_single_value("System Settings", "country"),
+        **get_currency_info(),
+    }
 
 
 def get_currency_info():
@@ -48,7 +52,7 @@ def get_currency_info():
     if not currency:
         return {"currency": None, "currency_symbol": "", "currency_symbol_on_right": False}
 
-    hidden = frappe.defaults.get_global_default("hide_currency_symbol") in ("1", "Yes")
+    hidden = cint(frappe.defaults.get_global_default("hide_currency_symbol"))
     symbol, on_right = frappe.db.get_value("Currency", currency, ["symbol", "symbol_on_right"]) or (
         None,
         None,
@@ -86,8 +90,6 @@ def get_user_info():
         "is_admin": is_admin,
         "is_user": is_user or frappe.session.user == "Administrator",
         "can_download": is_admin or bool(frappe.db.get_single_value("Insights Settings", "allow_download")),
-        # TODO: move to `get_session_info` since not user specific
-        "country": frappe.db.get_single_value("System Settings", "country"),
         "locale": locale,
         "has_desk_access": user.get("user_type") == "System User",
         "has_demo_data": has_demo_data,
