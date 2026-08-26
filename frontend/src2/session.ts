@@ -10,11 +10,27 @@ type SessionUser = {
 	is_admin: boolean
 	is_user: boolean
 	can_download: boolean
-	country: string
 	locale: string
 	has_desk_access?: boolean
 	has_demo_data: boolean
 	fiscal_year_start: string
+}
+
+// Settings of the site, not of whoever is reading it. A guest opening a public
+// dashboard gets these and nothing else, so a shared chart prints its amounts
+// the same way the workbook does.
+type SiteInfo = {
+	country: string
+	currency: string | null
+	currency_symbol: string
+	currency_symbol_on_right: boolean
+}
+
+const emptySite: SiteInfo = {
+	country: '',
+	currency: null,
+	currency_symbol: '',
+	currency_symbol_on_right: false,
 }
 
 const emptyUser: SessionUser = {
@@ -26,7 +42,6 @@ const emptyUser: SessionUser = {
 	is_admin: false,
 	is_user: false,
 	can_download: true,
-	country: '',
 	locale: 'en-US',
 	has_demo_data: false,
 	fiscal_year_start: '01-04-2020',
@@ -34,11 +49,13 @@ const emptyUser: SessionUser = {
 
 const session = reactive({
 	user: { ...emptyUser },
+	site: { ...emptySite },
 	initialized: false,
 	isLoggedIn: computed(() => false),
 	isAuthorized: computed(() => false),
 	initialize,
 	fetchSessionInfo,
+	fetchSiteInfo,
 	login,
 	logout,
 	resetSession,
@@ -52,7 +69,9 @@ session.isAuthorized = computed(() => session.user.is_admin || session.user.is_u
 async function initialize(force: boolean = false) {
 	if (session.initialized && !force) return
 	Object.assign(session.user, getSessionFromCookies())
-	session.isLoggedIn && (await fetchSessionInfo())
+	// the site's own settings reach a guest too, so they are fetched apart from
+	// the user's, and alongside them rather than after
+	await Promise.all([fetchSiteInfo(), session.isLoggedIn ? fetchSessionInfo() : null])
 	session.initialized = true
 }
 
@@ -66,6 +85,14 @@ async function fetchSessionInfo() {
 		has_desk_access: Boolean(userInfo.has_desk_access),
 		has_demo_data: Boolean(userInfo.has_demo_data),
 		can_download: Boolean(userInfo.can_download),
+	})
+}
+
+async function fetchSiteInfo() {
+	const siteInfo: SiteInfo = await call('insights.api.get_site_info')
+	Object.assign(session.site, {
+		...siteInfo,
+		currency_symbol_on_right: Boolean(siteInfo.currency_symbol_on_right),
 	})
 }
 

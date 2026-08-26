@@ -6,6 +6,7 @@ import os
 import frappe
 from frappe.handler import is_valid_http_method, is_whitelisted
 from frappe.monitor import add_data_to_monitor
+from frappe.utils import cint
 
 from insights.api.shared import is_public
 from insights.decorators import insights_whitelist, validate_type
@@ -24,6 +25,44 @@ from insights.utils import get_owned_file
 @insights_whitelist()
 def get_app_version():
     return frappe.get_attr("insights" + ".__version__")
+
+
+@frappe.whitelist(allow_guest=True, methods=["GET"])
+def get_site_info():
+    """Settings of the site, not of whoever reads it. A guest opening a public
+    dashboard needs them to print an amount the way the workbook does, and they
+    say nothing a public dashboard does not already show."""
+    return {
+        "country": frappe.db.get_single_value("System Settings", "country"),
+        **get_currency_info(),
+    }
+
+
+def get_currency_info():
+    """The site's display currency, as the client needs it to print an amount.
+
+    The `currency` global default covers a site with ERPNext and one without:
+    ERPNext's Global Defaults writes `default_currency` into it, and plain Frappe
+    writes `System Settings.currency` into it. `hide_currency_symbol` empties the
+    symbol, which is how a site says amounts print bare.
+    """
+    # System Settings writes the default only when the field changes, so read the
+    # field too — a site installed with a currency has never "changed" it
+    currency = frappe.db.get_default("currency") or frappe.db.get_single_value("System Settings", "currency")
+    if not currency:
+        return {"currency": None, "currency_symbol": "", "currency_symbol_on_right": False}
+
+    hidden = cint(frappe.defaults.get_global_default("hide_currency_symbol"))
+    symbol, on_right = frappe.db.get_value("Currency", currency, ["symbol", "symbol_on_right"]) or (
+        None,
+        None,
+    )
+    return {
+        "currency": currency,
+        # a currency with no symbol of its own prints as its code, the way fmt_money does
+        "currency_symbol": "" if hidden else (symbol or currency),
+        "currency_symbol_on_right": bool(on_right),
+    }
 
 
 @insights_whitelist()
@@ -51,8 +90,6 @@ def get_user_info():
         "is_admin": is_admin,
         "is_user": is_user or frappe.session.user == "Administrator",
         "can_download": is_admin or bool(frappe.db.get_single_value("Insights Settings", "allow_download")),
-        # TODO: move to `get_session_info` since not user specific
-        "country": frappe.db.get_single_value("System Settings", "country"),
         "locale": locale,
         "has_desk_access": user.get("user_type") == "System User",
         "has_demo_data": has_demo_data,

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { formatNumber, getShortNumber } from '../../helpers'
+import { formatNumber, getFormatUnits, getShortNumber } from '../../helpers'
 import { NumberChartConfig, NumberColumnOptions } from '../../types/chart.types'
 import { DataFormat, QueryResult, QueryResultColumn, QueryResultRow } from '../../types/query.types'
 import Sparkline from './Sparkline.vue'
@@ -48,13 +48,18 @@ const cards = computed(() => {
 			: currentValue - previousValue
 		const percentDelta = (delta / Math.abs(previousValue)) * 100
 
-		const prefix = getNumberOption(idx, 'prefix')
-		const suffix = getNumberOption(idx, 'suffix')
 		const decimal = getNumberOption(idx, 'decimal')
 		const color = getNumberOption(idx, 'color')
 		const shorten_numbers = getNumberOption(idx, 'shorten_numbers')
 		const format = config.value.number_columns.find((c) => c.measure_name === measure_name)
 			?.format
+
+		// The measure's format states the unit. A prefix set on the card replaces
+		// it — a card that spelled out its own symbol meant that one. A suffix
+		// sits after the unit instead, the way "12.5% of target" reads.
+		const units = getFormatUnits(format)
+		const prefix = getNumberOption(idx, 'prefix') || units.prefix
+		const suffix = `${units.suffix}${getNumberOption(idx, 'suffix') || ''}`
 
 		return {
 			measure_name,
@@ -78,13 +83,12 @@ const getFormattedValue = (
 	format?: DataFormat,
 ) => {
 	if (isNaN(value)) return 0
-	if (format === 'percent') {
-		return `${formatNumber(value * 100, decimal)}%`
-	}
+	// the number alone — its unit prints around it, from the same format
+	const scaled = value * getFormatUnits(format).scale
 	if (shorten_numbers) {
-		return getShortNumber(value, decimal)
+		return getShortNumber(scaled, decimal)
 	}
-	return formatNumber(value, decimal)
+	return formatNumber(scaled, decimal)
 }
 
 function getNumberOption(index: number, option: keyof NumberColumnOptions) {

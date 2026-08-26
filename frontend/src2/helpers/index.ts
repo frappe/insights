@@ -17,6 +17,7 @@ import { getFormattedDate } from '../query/helpers'
 import session from '../session'
 import {
 	ColumnDataType,
+	DataFormat,
 	DropdownOption,
 	GroupedDropdownOption,
 	QueryResultColumn,
@@ -173,11 +174,38 @@ export function downloadImage(element: HTMLElement, filename: string, scale = 2,
 export function formatNumber(number: number, precision = 0) {
 	if (isNaN(number)) return number
 	precision = precision || guessPrecision(number)
-	const locale = session.user?.country == 'India' ? 'en-IN' : session.user?.locale
+	const locale = session.site?.country == 'India' ? 'en-IN' : session.user?.locale
 	return new Intl.NumberFormat(locale || 'en-US', {
 		minimumFractionDigits: precision,
 		maximumFractionDigits: precision,
 	}).format(number)
+}
+
+export type FormatUnits = {
+	// what the stored number must be multiplied by to reach the printed one
+	scale: number
+	prefix: string
+	suffix: string
+}
+
+const NO_UNITS: FormatUnits = { scale: 1, prefix: '', suffix: '' }
+
+// A measure states its unit once, and every reading of it prints that unit the
+// same way. A currency reads the site's symbol rather than carrying one, so the
+// same shipped chart is right on a site in dollars and a site in rupees. The
+// symbol sits where fmt_money puts it, so Insights and desk agree.
+export function getFormatUnits(format?: DataFormat): FormatUnits {
+	if (format === 'percent') {
+		return { scale: 100, prefix: '', suffix: '%' }
+	}
+	if (format === 'currency') {
+		const symbol = session.site?.currency_symbol
+		if (!symbol) return NO_UNITS
+		return session.site.currency_symbol_on_right
+			? { scale: 1, prefix: '', suffix: ` ${symbol}` }
+			: { scale: 1, prefix: `${symbol} `, suffix: '' }
+	}
+	return NO_UNITS
 }
 
 export function guessPrecision(number: number) {
@@ -191,7 +219,7 @@ export function guessPrecision(number: number) {
 
 
 export function getShortNumber(number: number, precision = 0) {
-	const locale = session.user?.country == 'India' ? 'en-IN' : session.user?.locale
+	const locale = session.site?.country == 'India' ? 'en-IN' : session.user?.locale
 	let formatted = new Intl.NumberFormat(locale || 'en-US', {
 		notation: 'compact',
 		maximumFractionDigits: precision,
