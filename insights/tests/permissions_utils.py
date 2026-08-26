@@ -9,6 +9,7 @@ WEB_USER_EMAIL = "web_user@test.com"
 NON_INSIGHTS_USER = "non_insights_user@test.com"
 USER_1 = "insights_user1@test.com"
 USER_2 = "insights_user2@test.com"
+USER_3 = "insights_user3@test.com"
 ADMIN = "insights_admin@test.com"
 
 TEST_DS_TITLE = "Test DuckDB"
@@ -16,6 +17,8 @@ TEST_DS = frappe.scrub(TEST_DS_TITLE)
 TEST_TABLE1 = get_table_name(TEST_DS, "table1")
 TEST_TABLE2_NAME = get_table_name(TEST_DS, "table2")
 TEST_TABLE3_NAME = get_table_name(TEST_DS, "table3")
+
+TEST_TEAMS = ("team1", "team2")
 
 
 def create_test_users():
@@ -43,6 +46,12 @@ def create_test_users():
         roles="Insights User",
     )
     create_user(
+        USER_3,
+        first_name="Insights",
+        last_name="User",
+        roles="Insights User",
+    )
+    create_user(
         ADMIN,
         first_name="Insights",
         last_name="Admin",
@@ -56,6 +65,7 @@ def delete_test_users():
         NON_INSIGHTS_USER,
         USER_1,
         USER_2,
+        USER_3,
         ADMIN,
     )
 
@@ -94,16 +104,28 @@ def delete_test_tables():
     frappe.delete_doc(DT.TABLE, TEST_TABLE3_NAME, force=True)
 
 
-def create_test_teams():
-    team = frappe.get_doc({"doctype": DT.TEAM, "team_name": "team1"})
-    team.append("team_members", {"user": USER_1})
-    team.save()
+def create_test_team(team_name, members, grants=None):
+    """A team of `members` holding a grant on each (resource_type, name) in `grants`."""
+    team = frappe.get_doc({"doctype": DT.TEAM, "team_name": team_name})
+    for member in members:
+        team.append("team_members", {"user": member})
+    for resource_type, resource_name in grants or []:
+        team.append(
+            "team_permissions",
+            {"resource_type": resource_type, "resource_name": resource_name},
+        )
+    team.save(ignore_permissions=True)
     clear_team_cache()
     return team
 
 
+def create_test_teams():
+    return create_test_team("team1", [USER_1])
+
+
 def delete_test_teams():
-    frappe.delete_doc(DT.TEAM, "team1", force=True)
+    for team_name in TEST_TEAMS:
+        frappe.delete_doc(DT.TEAM, team_name, force=True)
 
 
 def update_dashboard_access(dashboard_name, people_with_access):
