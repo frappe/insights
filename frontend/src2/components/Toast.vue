@@ -13,9 +13,14 @@
 						<p class="text-p-base font-medium text-gray-900">
 							{{ title }}
 						</p>
+<<<<<<< HEAD
 						<p v-if="message" class="text-p-sm text-gray-600">
 							<span v-if="containsHTML" v-html="message"></span>
 							<span v-else>{{ message }}</span>
+=======
+						<p v-if="message" class="text-p-sm text-ink-gray-5">
+							{{ message }}
+>>>>>>> dd92a1f (fix: render a toast message as text)
 						</p>
 					</slot>
 				</div>
@@ -42,8 +47,6 @@ const props = defineProps<{
 	icon?: string
 	iconClasses?: string
 }>()
-
-const containsHTML = computed(() => props.message?.includes('<'))
 
 const variantClasses = computed(() => {
 	if (props.variant === 'success') {
