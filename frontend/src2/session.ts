@@ -12,6 +12,9 @@ type SessionUser = {
 	can_download: boolean
 	country: string
 	locale: string
+	currency: string | null
+	currency_symbol: string
+	currency_symbol_on_right: boolean
 	has_desk_access?: boolean
 	has_demo_data: boolean
 	fiscal_year_start: string
@@ -28,6 +31,9 @@ const emptyUser: SessionUser = {
 	can_download: true,
 	country: '',
 	locale: 'en-US',
+	currency: null,
+	currency_symbol: '',
+	currency_symbol_on_right: false,
 	has_demo_data: false,
 	fiscal_year_start: '01-04-2020',
 }
@@ -65,6 +71,7 @@ async function fetchSessionInfo() {
 		is_user: Boolean(userInfo.is_user),
 		has_desk_access: Boolean(userInfo.has_desk_access),
 		has_demo_data: Boolean(userInfo.has_demo_data),
+		currency_symbol_on_right: Boolean(userInfo.currency_symbol_on_right),
 		can_download: Boolean(userInfo.can_download),
 	})
 }
