@@ -130,7 +130,9 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           display_report: 'true'
           prompt: "/iris-review ${{ steps.pr.outputs.number }} --ci ${{ github.event_name }}"
-          claude_args: ${{ vars.IRIS_MODEL != '' && format('--model {0}', vars.IRIS_MODEL) || '' }}
+          claude_args: >-
+            ${{ vars.IRIS_MODEL != '' && format('--model {0}', vars.IRIS_MODEL) || '' }}
+            ${{ vars.IRIS_EFFORT != '' && format('--effort {0}', vars.IRIS_EFFORT) || '' }}
 
       - name: Post review
         # The agent only writes /tmp/review.md — posting is the workflow's job,
