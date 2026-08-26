@@ -546,7 +546,8 @@
 							"measure_name": "Total AR",
 							"column_name": "outstanding",
 							"data_type": "Decimal",
-							"aggregation": "sum"
+							"aggregation": "sum",
+							"format": "currency"
 						}
 					],
 					"comparison": false,
@@ -568,7 +569,8 @@
 							"measure_name": "Total AP",
 							"column_name": "outstanding",
 							"data_type": "Decimal",
-							"aggregation": "sum"
+							"aggregation": "sum",
+							"format": "currency"
 						}
 					],
 					"comparison": false,
@@ -642,7 +644,8 @@
 							"measure_name": "Net Cash Flow",
 							"column_name": "net_amount",
 							"data_type": "Decimal",
-							"aggregation": "sum"
+							"aggregation": "sum",
+							"format": "currency"
 						}
 					],
 					"comparison": false,
@@ -752,13 +755,15 @@
 							"measure_name": "Outstanding",
 							"column_name": "outstanding",
 							"data_type": "Decimal",
-							"aggregation": "sum"
+							"aggregation": "sum",
+							"format": "currency"
 						},
 						{
 							"measure_name": "Overdue",
 							"column_name": "overdue_outstanding",
 							"data_type": "Decimal",
-							"aggregation": "sum"
+							"aggregation": "sum",
+							"format": "currency"
 						},
 						{
 							"measure_name": "Oldest Days",
@@ -811,7 +816,8 @@
 							"measure_name": "Outstanding",
 							"column_name": "outstanding",
 							"data_type": "Decimal",
-							"aggregation": "sum"
+							"aggregation": "sum",
+							"format": "currency"
 						}
 					],
 					"filters": {

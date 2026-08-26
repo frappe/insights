@@ -4,7 +4,7 @@ import { Button, LoadingIndicator } from 'frappe-ui'
 import { Plus, Search, Table2Icon } from 'lucide-vue-next'
 import { computed, nextTick, ref } from 'vue'
 import { usePagination } from '../composables/usePagination'
-import { createHeaders, formatNumber, getShortNumber } from '../helpers'
+import { createHeaders, formatNumber, getFormatUnits, getShortNumber } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
 import {
 	applyDateRule,
@@ -529,10 +529,12 @@ function _formatNumber(value: any, columnName?: string) {
 	if (isNull) {
 		return props.replaceNullsWithZeros ? 0 : 'null'
 	}
-	if (columnName && props.columnFormats?.[columnName] === 'percent') {
-		return `${formatNumber(value * 100)}%`
-	}
-	return props.compactNumbers ? getShortNumber(value) : formatNumber(value)
+	const { scale, prefix, suffix } = getFormatUnits(
+		columnName ? props.columnFormats?.[columnName] : undefined,
+	)
+	const scaled = value * scale
+	const printed = props.compactNumbers ? getShortNumber(scaled) : formatNumber(scaled)
+	return `${prefix}${printed}${suffix}`
 }
 
 const showNewColumn = ref(false)

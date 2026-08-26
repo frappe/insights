@@ -26,6 +26,7 @@ const props = defineProps<{
 const formatOptions = [
 	{ label: __('Normal'), value: '' },
 	{ label: __('Percent'), value: 'percent' },
+	{ label: __('Currency'), value: 'currency' },
 ]
 
 // True when at least one available column is a pre-aggregated measure (i.e. it
