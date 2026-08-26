@@ -2,8 +2,9 @@ from unittest.mock import patch
 
 import frappe
 
-from insights.api import get_currency_info
+from insights.api import get_currency_info, get_site_info
 from insights.tests.base import InsightsIntegrationTestCase
+from insights.tests.factories import as_user
 
 
 def _defaults(currency=None, hide_symbol=None):
@@ -52,3 +53,11 @@ class TestCurrencyInfo(InsightsIntegrationTestCase):
                 get_currency_info(),
                 {"currency": None, "currency_symbol": "", "currency_symbol_on_right": False},
             )
+
+    def test_a_guest_reading_a_public_dashboard_gets_the_symbol(self):
+        # the guest whitelist is the point of the endpoint: a shared chart is
+        # read by nobody in particular, and it still has to print its amounts
+        self.assertIn(get_site_info, frappe.guest_methods)
+        currency, hidden = _defaults("USD")
+        with as_user("Guest"), currency, hidden:
+            self.assertEqual(get_site_info()["currency_symbol"], "$")

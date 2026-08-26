@@ -26,6 +26,14 @@ def get_app_version():
     return frappe.get_attr("insights" + ".__version__")
 
 
+@frappe.whitelist(allow_guest=True, methods=["GET"])
+def get_site_info():
+    """Settings of the site, not of whoever reads it. A guest opening a public
+    dashboard needs them to print an amount the way the workbook does, and they
+    say nothing a public dashboard does not already show."""
+    return get_currency_info()
+
+
 def get_currency_info():
     """The site's display currency, as the client needs it to print an amount.
 
@@ -81,7 +89,6 @@ def get_user_info():
         # TODO: move to `get_session_info` since not user specific
         "country": frappe.db.get_single_value("System Settings", "country"),
         "locale": locale,
-        **get_currency_info(),
         "has_desk_access": user.get("user_type") == "System User",
         "has_demo_data": has_demo_data,
         "fiscal_year_start": frappe.db.get_single_value("Insights Settings", "fiscal_year_start")

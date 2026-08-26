@@ -199,9 +199,9 @@ export function getFormatUnits(format?: DataFormat): FormatUnits {
 		return { scale: 100, prefix: '', suffix: '%' }
 	}
 	if (format === 'currency') {
-		const symbol = session.user?.currency_symbol
+		const symbol = session.site?.currency_symbol
 		if (!symbol) return NO_UNITS
-		return session.user.currency_symbol_on_right
+		return session.site.currency_symbol_on_right
 			? { scale: 1, prefix: '', suffix: ` ${symbol}` }
 			: { scale: 1, prefix: `${symbol} `, suffix: '' }
 	}
