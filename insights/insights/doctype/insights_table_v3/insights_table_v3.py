@@ -154,15 +154,24 @@ class InsightsTablev3(Document):
         t = apply_user_permissions(t, data_source, table_name)
         return t
 
+    def check_identity(self):
+        """`autoname` builds the name out of the data source and the table, so the
+        pair is this row's identity. A whitelisted method runs on a document built
+        from the request body, where the two can be made to disagree."""
+        if get_table_name(self.data_source or "", self.table or "") != self.name:
+            frappe.throw(frappe._("Table {0} is not {1}.{2}").format(self.name, self.data_source, self.table))
+
     @frappe.whitelist()
     def import_to_warehouse(self):
         frappe.only_for("Insights Admin")
+        self.check_identity()
         wt = insights.warehouse.get_table(self.data_source, self.table)
         wt.enqueue_import()
 
     @frappe.whitelist()
     def clear_warehouse_data(self):
         frappe.only_for("Insights Admin")
+        self.check_identity()
         insights.warehouse.get_table(self.data_source, self.table).drop()
         self.db_set(
             {
@@ -175,17 +184,9 @@ class InsightsTablev3(Document):
 
     @frappe.whitelist()
     def get_stats(self):
-        """Return usage and sync statistics for this table.
-
-        The pair comes from the stored row. `autoname` builds the name out of it,
-        so the pair is this row's identity, and access was decided on the name.
-        The numbers have to answer for the same table that name does.
-        """
-        stored = frappe.db.get_value("Insights Table v3", self.name, ["data_source", "table"], as_dict=True)
-        if not stored:
-            frappe.throw(frappe._("Table {0} not found").format(self.name), frappe.DoesNotExistError)
-
-        return get_table_stats(stored.data_source, stored.table)
+        """Return usage and sync statistics for this table."""
+        self.check_identity()
+        return get_table_stats(self.data_source, self.table)
 
 
 def get_table_name(data_source, table):

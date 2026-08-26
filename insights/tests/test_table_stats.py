@@ -111,8 +111,28 @@ class StatsNameReadableQueriesOnly:
     def test_the_stats_do_not_name_a_query_you_cannot_read(self):
         self.assertNotIn(self.owner_query, self.referencing_queries(OTHER))
 
-    def test_the_stats_answer_for_the_table_the_name_identifies(self):
-        """The name is the table. A different pair sent with it does not move the stats."""
+    def test_a_pair_that_disagrees_with_the_name_is_refused(self):
+        """The name is built from the pair, so the two naming different tables is
+        not a request that can be answered."""
+        with self.as_user(OTHER), self.assertRaises(frappe.ValidationError):
+            run_doc_method(
+                "get_stats",
+                docs={
+                    "doctype": DT.TABLE,
+                    "name": self.table,
+                    "data_source": TEST_DS,
+                    "table": OTHER_TABLE,
+                },
+            )
+
+    def test_a_body_that_omits_the_pair_is_refused(self):
+        """`get_table_name` concatenates the two, so a missing one has to be
+        refused before it is read, not raise `TypeError` inside the hash."""
+        with self.as_user(OTHER), self.assertRaises(frappe.ValidationError):
+            run_doc_method("get_stats", docs={"doctype": DT.TABLE, "name": self.table})
+
+    def test_the_stats_answer_when_the_pair_agrees(self):
+        """The path the client actually takes."""
         with self.as_user(OTHER):
             stats = run_doc_method(
                 "get_stats",
@@ -120,7 +140,7 @@ class StatsNameReadableQueriesOnly:
                     "doctype": DT.TABLE,
                     "name": self.table,
                     "data_source": TEST_DS,
-                    "table": OTHER_TABLE,
+                    "table": TABLE,
                 },
             )
 
