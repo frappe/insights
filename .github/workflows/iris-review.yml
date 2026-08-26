@@ -150,10 +150,19 @@ jobs:
           model=$(jq -r 'first(.. | objects | select(has("model")) | .model) // empty' "$EXEC_FILE" || true)
           cost=$(jq -r 'first(.. | objects | select(has("total_cost_usd")) | .total_cost_usd) // empty' "$EXEC_FILE" || true)
           ms=$(jq -r 'first(.. | objects | select(has("duration_ms")) | .duration_ms) // empty' "$EXEC_FILE" || true)
+          tin=$(jq -r 'first(.. | objects | select(has("total_cost_usd"))) | .usage.input_tokens // empty' "$EXEC_FILE" || true)
+          tcache=$(jq -r 'first(.. | objects | select(has("total_cost_usd"))) | .usage
+            | (.cache_read_input_tokens // 0) + (.cache_creation_input_tokens // 0)
+            | if . > 0 then . else empty end' "$EXEC_FILE" || true)
+          tout=$(jq -r 'first(.. | objects | select(has("total_cost_usd"))) | .usage.output_tokens // empty' "$EXEC_FILE" || true)
+          tok() { if [ "$1" -ge 1000 ]; then echo "$(($1 / 1000))k"; else echo "$1"; fi; }
           footer="iris"
           [ -n "$model" ] && footer="$footer · $model"
           [ -n "$cost" ] && footer=$(printf '%s · $%.2f' "$footer" "$cost")
           [ -n "$ms" ] && footer="$footer · $((ms / 60000))m $((ms / 1000 % 60))s"
+          [ -n "$tin" ] && footer="$footer · $(tok "$tin") in"
+          [ -n "$tcache" ] && footer="$footer · $(tok "$tcache") cached"
+          [ -n "$tout" ] && footer="$footer · $(tok "$tout") out"
           # The reviewed commit anchors the next re-review's delta diff.
           sha=$(git rev-parse --short HEAD || true)
           [ -n "$sha" ] && footer="$footer · reviewed $sha"
