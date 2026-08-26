@@ -44,6 +44,10 @@ The reader must be able to stop after layer 1 and still know what is wrong.
   'smelly'"*. Say it is a feeling when it is.
 - No emoji, no filler. Zero issues → a one-line "Looks good" with what the change does.
   Never manufacture a concern.
+- **On re-review, account for the last review first.** One line per earlier finding:
+  resolved (name the commit), stands, or settled. Then the new findings, if any. A
+  settled finding is out of the score — "Settled: the SSL default, per @<author>" is the
+  whole entry, with no re-argument.
 
 Example:
 
