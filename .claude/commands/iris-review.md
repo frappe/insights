@@ -18,9 +18,27 @@ worth doing, say so in one line and stop.
 **Where the review goes.** If `$ARGUMENTS` contains `--ci`, you are running in CI: Write
 the review to `/tmp/review.md`, then stop — the workflow posts the file as the PR comment.
 Always write the file, even for "Looks good". Otherwise print it in chat and post nothing.
-Do not probe the environment to decide — the arguments are the only signal. When the `--ci` event is `issue_comment`, Read `/tmp/iris-comment.txt` — if it asks
-for a specific angle, lead with "Re-reviewing per @<author> — focused on <thing>", with the
-author from `/tmp/iris-comment-author.txt`.
+Do not probe the environment to decide — the arguments are the only signal.
+
+**The comment picks the mode.** When the `--ci` event is `issue_comment`, Read
+`/tmp/iris-comment.txt` (its author is in `/tmp/iris-comment-author.txt`).
+
+- `/iris review` → a review. If it names an angle, lead with "Re-reviewing per @<author>
+  — focused on <thing>."
+- `/iris` with anything else → an answer, not a review. Reply in a few sentences, reading
+  only what the answer needs. No phases, no verdict, no score. Defend a finding the way
+  you made it — with evidence — and concede it plainly when the reply refutes it.
+
+**The PR thread is your memory.** Before phase 1, read the conversation with
+`gh pr view <N> --comments`. Your earlier reviews and the replies to them are input.
+
+- A decision in the thread stands. If the maintainer called a finding an accepted
+  tradeoff, or declared a scope punt, do not re-raise it — one "Settled:" line names it.
+- On re-review, give each earlier finding a status: resolved (name the commit), stands,
+  or settled. Verify "resolved" like any other claim — read the code, not the reply.
+- Your last review's footer names the commit it reviewed. Spend phase 1 on
+  `git diff <that-sha>..HEAD` and what it touches; code you already reviewed and that did
+  not move gets no second pass. No footer sha, or a force-push broke the range → full pass.
 
 This command is already running — never call the Skill tool.
 
