@@ -402,7 +402,7 @@ class WarehouseTableImporter:
 
         if is_job_enqueued(job_id) or self.import_in_progress():
             insights.create_toast(
-                f"Import for {frappe.bold(self.table.table_name)} is in progress."
+                f"Import for {self.table.table_name} is in progress."
                 "You may not see the results till the import is completed.",
                 title="Import In Progress",
                 type="info",
@@ -435,7 +435,7 @@ class WarehouseTableImporter:
                 self.update_log()
 
         insights.create_toast(
-            f"Imported {frappe.bold(self.table.table_name)} to the data store. "
+            f"Imported {self.table.table_name} to the data store. "
             "Please refresh the query to see the updated data.",
             title="Import Completed",
             type="success",
@@ -456,7 +456,7 @@ class WarehouseTableImporter:
         )
 
         insights.create_toast(
-            f"Importing {frappe.bold(self.table.table_name)} to the data store. "
+            f"Importing {self.table.table_name} to the data store. "
             "You may not see the results till the import is completed.",
             title="Import Started",
             duration=7,
