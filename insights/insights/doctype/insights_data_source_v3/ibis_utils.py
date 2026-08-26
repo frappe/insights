@@ -9,7 +9,6 @@ import ibis
 import numpy as np
 import pandas as pd
 import sqlglot as sg
-import sqlparse
 from frappe.utils.data import flt
 from frappe.utils.safe_exec import safe_eval, safe_exec
 from ibis import _
@@ -44,32 +43,43 @@ except ImportError:
         return decorator
 
 
-# sqlparse groups comments in quadratic time (GHSA-f2ff-p2ww-7p4p), and every
-# route into a native query runs it. Measured on sqlparse 0.5.5: 5 kB of
-# comment lines parses in 0.13 s, 10 kB in 0.5 s, 40 kB in 9 s. Ten thousand
-# characters is far above any hand-written statement and keeps the parser off
-# a worker for seconds at a time.
-MAX_NATIVE_SQL_LENGTH = 10_000
+# Native SQL is read by sqlglot, the parser this module already runs over the
+# same text. The one it replaced grouped comments in quadratic time, so a
+# statement written to be slow held a worker for seconds of pure CPU: 40 kB of
+# comment lines took 9 s, against 0.03 s here.
+#
+# A statement sqlglot cannot read is the user's to run, not ours to refuse.
+# These follow `extract_sql_table_refs` and hand it back untouched.
 
 
-def validate_native_sql_length(raw_sql: str | None):
-    if raw_sql and len(raw_sql) > MAX_NATIVE_SQL_LENGTH:
+def strip_sql_comments(raw_sql: str, dialect: sg.Dialect | None = None) -> str:
+    """Return the statement without its comments.
+
+    A comment can hide a second statement, and the checks that follow read a
+    prefix, so they read a copy with no comments in it.
+    """
+    try:
+        return ";\n".join(sg.transpile(raw_sql, read=dialect, write=dialect, comments=False))
+    except Exception:
+        return raw_sql
+
+
+def count_sql_statements(raw_sql: str, dialect: sg.Dialect | None = None) -> int:
+    try:
+        return len(sg.parse(raw_sql, dialect=dialect))
+    except Exception:
+        return 1
+
+
+def format_sql(raw_sql: str, dialect: sg.Dialect | None = None) -> str:
+    """Lay a statement out for reading."""
+    try:
+        return sg.transpile(raw_sql, read=dialect, write=dialect, pretty=True)[0]
+    except Exception as e:
         frappe.throw(
-            frappe._("A native query is limited to {0} characters").format(MAX_NATIVE_SQL_LENGTH),
-            title=frappe._("Query Too Long"),
+            frappe._("Could not read this statement: {0}").format(e),
+            title=frappe._("Invalid SQL"),
         )
-
-
-# Native SQL reaches sqlparse from more than one place, so the bound lives on
-# the parser rather than at each caller. A new route gets it by using these.
-def format_native_sql(raw_sql: str, **options) -> str:
-    validate_native_sql_length(raw_sql)
-    return sqlparse.format(raw_sql, **options)
-
-
-def parse_native_sql(raw_sql: str):
-    validate_native_sql_length(raw_sql)
-    return sqlparse.parse(raw_sql)
 
 
 class CircularQueryReferenceError(frappe.ValidationError):
@@ -611,8 +621,12 @@ class IbisQueryBuilder:
         db = ds._get_ibis_backend() if self.use_live_connection else insights.warehouse.db
         source_dialect = ds.get_sqlglot_dialect()
 
-        raw_sql = format_native_sql(raw_sql, strip_comments=True)
-        raw_sql = self._validate_native_sql(raw_sql, use_live_connection=self.use_live_connection)
+        raw_sql = strip_sql_comments(raw_sql, source_dialect)
+        raw_sql = self._validate_native_sql(
+            raw_sql,
+            use_live_connection=self.use_live_connection,
+            dialect=source_dialect,
+        )
 
         check_permissions = frappe.db.get_single_value(
             "Insights Settings", "enable_permissions"
@@ -666,12 +680,13 @@ class IbisQueryBuilder:
 
         return results
 
-    def _validate_native_sql(self, raw_sql: str, use_live_connection: bool) -> str:
+    def _validate_native_sql(
+        self, raw_sql: str, use_live_connection: bool, dialect: sg.Dialect | None = None
+    ) -> str:
         raw_sql = raw_sql.strip()
 
         if not use_live_connection:
-            statements = [stmt for stmt in parse_native_sql(raw_sql) if stmt.tokens and stmt.value.strip()]
-            if len(statements) > 1:
+            if count_sql_statements(raw_sql, dialect) > 1:
                 frappe.throw(
                     "Multiple SQL statements are not supported with Data Store for native queries",
                     title="Unsupported SQL Query",

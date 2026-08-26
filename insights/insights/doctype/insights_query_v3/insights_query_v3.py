@@ -17,9 +17,8 @@ from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     CircularQueryReferenceError,
     IbisQueryBuilder,
     execute_ibis_query,
-    format_native_sql,
+    format_sql,
     get_columns_from_schema,
-    validate_native_sql_length,
 )
 from insights.insights.query_utils import (
     extract_query_deps_from_operations,
@@ -81,13 +80,6 @@ class InsightsQueryv3(Document):
 
     def validate(self):
         self._validate_no_circular_dependency()
-        self._validate_native_sql_length()
-
-    def _validate_native_sql_length(self):
-        """Refuse an oversize statement where it is written, not where it runs."""
-        for operation in frappe.parse_json(self.operations) or []:
-            if operation.get("type") == "sql":
-                validate_native_sql_length(operation.get("raw_sql"))
 
     def _validate_no_circular_dependency(self):
         """Raise an error if the current operations would create a circular query reference."""
@@ -203,7 +195,14 @@ class InsightsQueryv3(Document):
         if not raw_sql or not self.is_native_query:
             return raw_sql
 
-        return format_native_sql(str(raw_sql), reindent=True, keyword_case="upper")
+        return format_sql(str(raw_sql), self.get_native_sql_dialect())
+
+    def get_native_sql_dialect(self):
+        for operation in frappe.parse_json(self.operations) or []:
+            if operation.get("type") == "sql" and operation.get("data_source"):
+                source = frappe.get_cached_doc("Insights Data Source v3", operation["data_source"])
+                return source.get_sqlglot_dialect()
+        return None
 
     @insights_whitelist()
     def get_count(self, active_operation_idx: int | None = None, adhoc_filters: dict | None = None):
