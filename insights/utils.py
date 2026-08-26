@@ -150,11 +150,10 @@ def anonymize_data(df, columns_to_anonymize, prefix_by_column=None):
     return df
 
 
-# `=` opens a formula on its own, and a leading control character can carry one
-# past an importer that trims before it parses. `@`, `+` and `-` open one too,
-# but they also start ordinary data — a handle, a phone number, a negative held
-# in a text column — so those are quoted only when the value also carries the
-# characters a formula needs in order to call anything.
+# A leading control character can carry a formula past an importer that trims
+# before it parses, so it counts as a trigger. `@`, `+` and `-` also start
+# ordinary data — a handle, a phone number, a text-column negative — so they are
+# quoted only when the value carries the characters a formula needs to call.
 FORMULA_TRIGGERS = ("=", "\t", "\r", "\n")
 AMBIGUOUS_STARTS = ("@", "+", "-")
 CALL_CHARACTERS = frozenset("|!()")
@@ -164,9 +163,9 @@ def quote_formula(value):
     """Prefix a value a spreadsheet would evaluate, so it reads as text."""
     if not isinstance(value, str) or not value:
         return value
-    if value.startswith(FORMULA_TRIGGERS):
-        return "'" + value
-    if value.startswith(AMBIGUOUS_STARTS) and CALL_CHARACTERS.intersection(value):
+    if value.startswith(FORMULA_TRIGGERS) or (
+        value.startswith(AMBIGUOUS_STARTS) and CALL_CHARACTERS.intersection(value)
+    ):
         return "'" + value
     return value
 
@@ -174,15 +173,10 @@ def quote_formula(value):
 def as_text(df: pd.DataFrame) -> pd.DataFrame:
     """Return the frame with every cell safe to write to a sheet.
 
-    Values only. A cell arrives from a source column that somebody else writes,
-    which is the whole reason it needs neutralising. A column header is the
-    alias the query's own author chose, and rewriting it would rename the
-    columns of every export something downstream parses.
+    Values only. A header is the alias the query's author chose, and rewriting
+    it would rename the columns of every export something downstream parses.
     """
-    for column in df.columns:
-        if df[column].dtype == object:
-            df[column] = df[column].map(quote_formula)
-    return df
+    return df.map(quote_formula)
 
 
 def xls_to_df(file_path: str) -> list[pd.DataFrame]:

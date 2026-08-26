@@ -1,15 +1,12 @@
 """An exported cell is data, not a program.
 
-A query reads columns other people write. A value beginning with `=` is a live
-formula once a spreadsheet opens the file, and a formula can reach DDE or a
-shell on the machine of whoever exported. The export is the last place that can
-say the value is text.
+A query reads columns other people write, and a value beginning with `=` is a
+live formula once a spreadsheet opens the file. The export is the last place
+that can say the value is text.
 
-`@`, `+` and `-` open a formula too, and they also start ordinary data. Quoting
-every one of them would put a stray apostrophe into handles, phone numbers and
-text-column negatives, and a CSV is read by scripts as often as by people. Those
-are quoted only when the value carries the characters a formula needs to call
-something.
+The rule costs a stray apostrophe, so it is kept narrow. `@`, `+` and `-` also
+start handles, phone numbers and text-column negatives, and a CSV is read by
+scripts as often as by people.
 """
 
 import base64
@@ -96,6 +93,19 @@ class TestOrdinaryDataSurvives(UnitTestCase):
 
     def test_ordinary_text_is_untouched(self):
         self.assertEqual(exported(name=["Ada Lovelace"])["name"][0], "Ada Lovelace")
+
+    def test_column_types_survive(self):
+        """A number written as text would import as text."""
+        frame = pd.DataFrame({"n": [1], "f": [1.5], "d": pd.to_datetime(["2024-01-01"])})
+        self.assertEqual(list(as_text(frame).dtypes), list(frame.dtypes))
+
+
+class TestEveryStringColumnReadsTheRule(UnitTestCase):
+    """ibis hands back arrow-backed strings, which are not `object` dtype."""
+
+    def test_an_arrow_backed_column_is_quoted(self):
+        frame = pd.DataFrame({"value": pd.array([PAYLOAD, "Ada"], dtype="string[pyarrow]")})
+        self.assertEqual(as_text(frame)["value"][0], f"'{PAYLOAD}")
 
 
 class TestQueryExportAppliesTheRule(InsightsIntegrationTestCase):
