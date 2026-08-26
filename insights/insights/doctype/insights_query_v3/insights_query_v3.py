@@ -27,7 +27,7 @@ from insights.insights.query_utils import (
     sync_query_references,
     transitive_closure,
 )
-from insights.utils import deep_convert_dict_to_dict
+from insights.utils import as_text, deep_convert_dict_to_dict
 
 
 class InsightsQueryv3(Document):
@@ -261,6 +261,7 @@ class InsightsQueryv3(Document):
             reference_name=self.name,
         )
 
+        results = as_text(results)
         if format == "excel":
             output = BytesIO()
             results.to_excel(output, index=False, engine="openpyxl")
