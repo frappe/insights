@@ -1,15 +1,19 @@
 """A data source can be verified, and says so by naming an authority.
 
 Encryption on its own stops a listener and lets through anyone who can answer
-for the database host. Which of the two a connection gets is decided by the CA
-certificate on the data source: with one, the driver checks the server; without
-one, it only encrypts. Peer tools read the same way, and every existing source
-keeps the connection it already had.
+for the database host. The CA certificate on the source decides which one a
+connection gets: with a CA the driver checks the server, without one it only
+encrypts. No existing source loses verification, because none had it.
 
-The MariaDB pairing is measured, not assumed. Against MariaDB Connector/C, which
-mysqlclient links in an ordinary Frappe install, `ssl_mode` alone accepts a
-self-signed certificate and a CA alone is not checked. Sent together they refuse
-one, so the test pins both.
+Measured against MariaDB Connector/C, which mysqlclient links and ibis uses, on
+a server holding a self-signed certificate:
+
+    ssl_mode="VERIFY_IDENTITY" alone   connects — no anchor, nothing to check
+    ssl={"ca": <bundle>} alone         connects — the CA is not consulted
+    both together                      refused: self-signed certificate
+
+So `VERIFY_CA` with no CA file was a label, not a check, and the driver does not
+fall back to the system trust store. The test pins both keywords together.
 """
 
 from typing import ClassVar
