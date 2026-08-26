@@ -158,9 +158,19 @@ class InsightsDashboardv3(Document):
         self.generate_dashboard_preview()
 
     def generate_dashboard_preview(self):
-        with generate_preview_key() as key:
+        with generate_preview_key(self.name) as key:
             preview = get_page_preview(
+<<<<<<< HEAD
                 frappe.utils.get_url(f"/insights/shared/dashboard/{self.name}"),
+=======
+                # The browser runs on the server and carries a preview key, so
+                # the page it opens is the site's own, not one a request header
+                # named.
+                frappe.utils.get_url(
+                    get_app_url(f"/shared/dashboard/{self.name}"),
+                    allow_header_override=False,
+                ),
+>>>>>>> 08c7901 (fix: bind the dashboard preview to this site and to one dashboard)
                 headers={
                     "X-Insights-Preview-Key": key,
                 },
@@ -336,10 +346,16 @@ def create_preview_file(content: bytes, dashboard_name: str):
 
 
 @contextmanager
-def generate_preview_key():
+def generate_preview_key(dashboard: str):
+    """A key that stands in for the viewer of one dashboard, for one render.
+
+    The key names its dashboard, so a leaked key reads that dashboard and the
+    charts and queries on it — the same documents the preview image itself
+    shows — and nothing else.
+    """
     try:
         key = frappe.generate_hash()
-        frappe.cache.set_value(f"insights_preview_key:{key}", True)
+        frappe.cache.set_value(f"insights_preview_key:{key}", dashboard)
         yield key
     finally:
         frappe.cache.delete_value(f"insights_preview_key:{key}")
