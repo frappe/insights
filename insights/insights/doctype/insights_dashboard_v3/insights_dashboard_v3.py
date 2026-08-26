@@ -9,6 +9,7 @@ import requests
 from frappe.model.document import Document
 from frappe.query_builder import Interval
 from frappe.query_builder.functions import Now
+from frappe.utils.html_utils import sanitize_html
 from frappe.utils.telemetry import capture
 
 from insights.utils import DocShare, File
@@ -39,9 +40,30 @@ class InsightsDashboardv3(Document):
     # end: auto-generated types
 
     def before_validate(self):
+        self.sanitize_text_items()
         # linked_charts is derived from items, so build it before anything
         # validates it - validate() runs before before_save()
         self.set_linked_charts()
+
+    def sanitize_text_items(self):
+        """A text item is authored as rich text and rendered as HTML.
+
+        The framework sanitizes the fields it knows carry markup, and `items`
+        is a JSON field, so nothing reaches inside it. Sanitizing on the way in
+        makes the stored text safe for every reader of the dashboard, including
+        the Guest who follows a public link.
+        """
+        items = frappe.parse_json(self.items) or []
+        sanitized = False
+        for item in items:
+            if item.get("type") != "text" or not item.get("text"):
+                continue
+            clean = sanitize_html(item["text"], always_sanitize=True)
+            sanitized = sanitized or clean != item["text"]
+            item["text"] = clean
+
+        if sanitized:
+            self.items = items
 
     def validate(self):
         from insights.permissions import check_dashboard_chart_access
