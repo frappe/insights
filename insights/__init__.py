@@ -42,7 +42,14 @@ def create_toast(
     type: str = "info",
     duration: int = 5,
 ):
+    """Publish a toast. The client renders it as text, so it leaves as text.
+
+    Markup here reaches the reader as visible tags, and a value the caller
+    interpolated would reach it as markup. Stripping is done once, here, rather
+    than trusted at each of the places that raise a toast.
+    """
     import frappe
+    from frappe.utils import strip_html
 
     if not title:
         title = type.capitalize()
@@ -51,8 +58,8 @@ def create_toast(
         event="insights_notification",
         user=frappe.session.user,
         message={
-            "message": message,
-            "title": title,
+            "message": strip_html(message) if message else message,
+            "title": strip_html(title) if title else title,
             "type": type,
             "user": frappe.session.user,
             "duration": duration,
