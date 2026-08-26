@@ -52,6 +52,11 @@ def extract_query_deps_from_operations(operations: list) -> list[str]:
     ]
 
 
+def referenced_queries(operations) -> set[str]:
+    """The query names `operations` references, from a stored or parsed value."""
+    return set(extract_query_deps_from_operations(frappe.parse_json(operations) or []))
+
+
 def extract_table_deps_from_operations(operations: list) -> list[dict]:
     """Extract all unique (data_source, table_name) pairs from a list of operations."""
     seen: set[tuple] = set()

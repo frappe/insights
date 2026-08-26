@@ -17,6 +17,7 @@ from insights.api import run_doc_method
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
     db_connections,
 )
+from insights.insights.query_utils import sync_query_references
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import (
     DT,
@@ -193,6 +194,20 @@ class ASavedReferenceCarriesItsOwnAccess:
 
     def test_someone_with_the_chart_can_run_the_chain(self):
         """Running the query they may read is what the share is for."""
+        with self.as_user(VIEWER), db_connections():
+            result = frappe.get_doc(DT.QUERY, self.consumer).execute()
+        self.assertEqual(result["rows"][0]["secret"], SECRET)
+
+    def test_the_chain_runs_before_the_reference_index_is_built(self):
+        """`Insights Query Reference` is rebuilt by a background job after the save
+        commits, so it lags. What was saved is what decides, and it cannot wait."""
+        frappe.db.delete("Insights Query Reference", {"query": self.consumer})
+        self.addCleanup(
+            sync_query_references,
+            self.consumer,
+            frappe.db.get_value(DT.QUERY, self.consumer, "operations"),
+        )
+
         with self.as_user(VIEWER), db_connections():
             result = frappe.get_doc(DT.QUERY, self.consumer).execute()
         self.assertEqual(result["rows"][0]["secret"], SECRET)

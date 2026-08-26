@@ -12,7 +12,7 @@ from frappe.query_builder import Interval
 from frappe.query_builder.functions import Now
 from frappe.utils.telemetry import capture
 
-from insights.insights.query_utils import extract_query_deps_from_operations
+from insights.insights.query_utils import referenced_queries
 from insights.utils import deep_convert_dict_to_dict
 
 # `tabSeries` key the workbook counter lives under.
@@ -472,16 +472,11 @@ def _order_by_reference(queries: dict) -> list[str]:
 
     A query is inserted with its references already pointing at the copies they
     name, so those copies have to exist first. References form a directed acyclic
-    graph, so such an order exists. A file carrying a cycle has no order, and the
-    names left over go last for the cycle check to refuse.
+    graph, so such an order exists. A file with no such order carries a cycle,
+    which the exporting site would not have let anyone save.
     """
     deps = {
-        name: {
-            dep
-            for dep in extract_query_deps_from_operations(frappe.parse_json(query.get("operations")) or [])
-            if dep in queries
-        }
-        for name, query in queries.items()
+        name: referenced_queries(query.get("operations")) & queries.keys() for name, query in queries.items()
     }
 
     ordered = []
@@ -489,8 +484,11 @@ def _order_by_reference(queries: dict) -> list[str]:
     while len(placed) < len(deps):
         ready = [name for name, refs in deps.items() if name not in placed and refs <= placed]
         if not ready:
-            ordered.extend(name for name in deps if name not in placed)
-            break
+            frappe.throw(
+                frappe._("Circular query reference detected in {0}").format(
+                    ", ".join(name for name in deps if name not in placed)
+                )
+            )
         ordered.extend(ready)
         placed.update(ready)
 
