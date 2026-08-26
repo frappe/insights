@@ -126,7 +126,7 @@ def _workbook_shares(names: list[str]) -> tuple[set, dict]:
 
 
 @insights_whitelist()
-def import_workbook(workbook: dict):
+def import_workbook(workbook: dict | str):
     from insights.insights.doctype.insights_workbook.insights_workbook import import_workbook
 
     return import_workbook(workbook)
@@ -191,7 +191,7 @@ def get_share_permissions(workbook_name: str):
 
 @insights_whitelist()
 def update_share_permissions(
-    workbook_name: str, user_permissions: dict, organization_access: str | None = None
+    workbook_name: str, user_permissions: list, organization_access: str | None = None
 ):
     if not frappe.has_permission("Insights Workbook", ptype="share", doc=workbook_name):
         frappe.throw(_("You do not have permission to share this workbook"), frappe.PermissionError)

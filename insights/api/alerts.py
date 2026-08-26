@@ -1,10 +1,9 @@
 import frappe
 
-from insights.decorators import insights_whitelist, validate_type
+from insights.decorators import insights_whitelist
 
 
 @insights_whitelist()
-@validate_type
 def get_alerts(query: str):
     return frappe.get_list(
         "Insights Alert",
