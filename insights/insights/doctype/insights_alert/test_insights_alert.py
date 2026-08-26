@@ -149,7 +149,7 @@ class TestFailedAlertIsNotRetriedEveryTick(InsightsIntegrationTestCase):
 
 
 class TestEmailRecipients(InsightsIntegrationTestCase):
-    """An email alert carries its query's rows, so it may only reach this site."""
+    """A recipient list is read at save, and the mail it produces says who sent it."""
 
     MEMBER = "alert_recipient@test.com"
     OUTSIDER = "someone@external.example.org"
@@ -177,26 +177,76 @@ class TestEmailRecipients(InsightsIntegrationTestCase):
         doc.recipients = recipients
         return doc
 
-    def test_a_user_of_this_site_is_a_recipient(self):
-        self.assertEqual(self.email_alert(self.MEMBER).get_recipients(), [self.MEMBER])
+    def test_an_address_outside_this_site_is_a_recipient(self):
+        """A report goes to a client or an accountant as often as to a colleague."""
+        self.assertEqual(self.email_alert(self.OUTSIDER).get_recipients(), [self.OUTSIDER])
 
-    def test_an_address_outside_this_site_is_refused(self):
+    def test_a_list_is_split_and_trimmed(self):
+        alert = self.email_alert(f" {self.MEMBER} , {self.OUTSIDER} ")
+        self.assertEqual(alert.get_recipients(), [self.MEMBER, self.OUTSIDER])
+
+    def test_an_empty_list_is_refused(self):
         with self.assertRaises(frappe.ValidationError):
-            self.email_alert(self.OUTSIDER).get_recipients()
+            self.email_alert("  ,  ").get_recipients()
 
-    def test_one_outside_address_refuses_the_whole_list(self):
-        with self.assertRaises(frappe.ValidationError):
-            self.email_alert(f"{self.MEMBER},{self.OUTSIDER}").get_recipients()
-
-    def test_a_disabled_user_is_refused(self):
-        frappe.db.set_value("User", self.MEMBER, "enabled", 0)
-        self.addCleanup(frappe.db.set_value, "User", self.MEMBER, "enabled", 1)
-        with self.assertRaises(frappe.ValidationError):
-            self.email_alert(self.MEMBER).get_recipients()
-
-    def test_saving_the_alert_applies_the_same_bound(self):
+    def test_saving_reads_the_list(self):
+        """`send_alerts` logs a send-time error and marks the alert as run, so a
+        list checked only at send fails where nobody is looking."""
         with (
             patch.object(InsightsAlert, "evaluate_condition", return_value=True),
-            self.assertRaises(frappe.ValidationError),
+            self.assertRaisesRegex(frappe.ValidationError, "not a valid email address"),
         ):
-            self.email_alert(self.OUTSIDER).insert()
+            self.email_alert("not-an-address").insert()
+
+
+class TestAlertMailIsAttributable(InsightsIntegrationTestCase):
+    """The body is written by the alert's owner and leaves on the site account.
+
+    Nothing bounds who an alert may reach, so the mail carries the marks that
+    say it is an Insights alert: it names the alert and the site that produced
+    it, and replies reach its author rather than the site's outgoing account.
+    """
+
+    @classmethod
+    def before_class(cls):
+        cls.workbook = create_test_workbook("Administrator", title="Mail Workbook").name
+        cls.query = create_test_query("Administrator", cls.workbook, title="Mail Query").name
+
+    @classmethod
+    def after_class(cls):
+        frappe.delete_doc("Insights Workbook", cls.workbook, force=True)
+
+    def alert(self):
+        doc = frappe.new_doc("Insights Alert")
+        doc.title = "Overdue invoices"
+        doc.channel = "Email"
+        doc.query = self.query
+        doc.frequency = "Daily"
+        doc.custom_condition = 1
+        doc.condition = "q['status'] == 'Open'"
+        doc.message = "hello"
+        doc.recipients = "someone@external.example.org"
+        with patch.object(InsightsAlert, "evaluate_condition", return_value=True):
+            doc.insert()
+        self.addCleanup(frappe.delete_doc, "Insights Alert", doc.name, force=True)
+        return doc
+
+    def test_a_reply_reaches_the_author(self):
+        doc = self.alert()
+        with patch("frappe.sendmail") as sendmail:
+            doc.send_email_alert("hello")
+        self.assertEqual(sendmail.call_args.kwargs["reply_to"], doc.owner)
+
+    def test_the_body_names_the_alert_and_the_site(self):
+        doc = self.alert()
+        body = doc.evaluate_message({"rows": [], "count": 0, "datatable": ""})
+        self.assertIn("Overdue invoices", body)
+        self.assertIn(frappe.utils.get_url(allow_header_override=False), body)
+        self.assertIn(doc.owner, body)
+
+    def test_a_title_written_as_markup_stays_text_in_the_footer(self):
+        doc = self.alert()
+        doc.title = "<script>x</script>"
+        body = doc.evaluate_message({"rows": [], "count": 0, "datatable": ""})
+        self.assertNotIn("<script>x</script>", body)
+        self.assertIn("&lt;script&gt;", body)

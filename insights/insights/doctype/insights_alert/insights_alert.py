@@ -10,7 +10,7 @@ import telegram
 from croniter import croniter
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import validate_email_address
+from frappe.utils import escape_html, get_url, validate_email_address
 from frappe.utils.data import get_datetime, get_datetime_str, now_datetime
 
 from insights.http import post_to_public_url, validate_public_url
@@ -154,12 +154,17 @@ class InsightsAlert(Document):
             )
 
     def send_email_alert(self, message):
-        subject = f"Insights Alert: {self.title}"
-        recievers = self.get_recipients()
+        """Mail the alert, marked as one.
+
+        The body is written by whoever owns the alert and leaves on the site's
+        default outgoing account, so the mail names the alert that produced it
+        and answers to its author rather than to the site.
+        """
         frappe.sendmail(
-            recipients=recievers,
-            subject=subject,
+            recipients=self.get_recipients(),
+            subject=f"Insights Alert: {self.title}",
             message=message,
+            reply_to=self.owner,
             now=True,
         )
 
@@ -179,7 +184,15 @@ class InsightsAlert(Document):
 
         message_html = frappe.utils.md_to_html(message_md)
         return frappe.render_template(
-            "insights/templates/alert.html", context=frappe._dict(message=message_html)
+            "insights/templates/alert.html",
+            context=frappe._dict(
+                message=message_html,
+                # The template renders without autoescaping, and the title is
+                # written by whoever owns the alert.
+                alert=escape_html(self.title),
+                author=escape_html(self.owner),
+                site_url=get_url(allow_header_override=False),
+            ),
         )
 
     def get_message_context(self):
@@ -205,13 +218,11 @@ class InsightsAlert(Document):
         )
 
     def get_recipients(self):
-        """The addresses this alert may mail.
+        """The addresses this alert mails.
 
-        The message embeds the alert query's rows, so an alert moves data off
-        the site. A recipient is therefore an account on this site — the same
-        bound the webhook channel gets from `validate_public_url`. Sending
-        anywhere an address parses would make the site's outgoing account a
-        relay for whoever can write one alert.
+        Read at save as well as at send. `send_alerts` turns a send-time error
+        into an Error Log entry and marks the alert as run, so an address
+        checked only at send fails where nobody is looking.
         """
         recipients = [address.strip() for address in (self.recipients or "").split(",") if address.strip()]
         if not recipients:
@@ -220,15 +231,6 @@ class InsightsAlert(Document):
         for recipient in recipients:
             if not validate_email_address(recipient):
                 frappe.throw(_("{0} is not a valid email address").format(recipient))
-
-        known = frappe.get_all(
-            "User",
-            filters={"name": ("in", recipients), "enabled": 1},
-            pluck="name",
-        )
-        unknown = [recipient for recipient in recipients if recipient not in known]
-        if unknown:
-            frappe.throw(_("{0} is not a user on this site").format(", ".join(unknown)))
 
         return recipients
 
