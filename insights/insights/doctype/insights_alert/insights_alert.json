@@ -55,6 +55,7 @@
   },
   {
    "fieldname": "recipients",
+  "mandatory_depends_on": "eval: doc.channel == \"Email\"",
    "fieldtype": "Small Text",
    "label": "Recipients"
   },
