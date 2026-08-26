@@ -5,6 +5,7 @@ template each. A source check is a poorer test than a rendered one, and it is
 what keeps the rule from being undone by a later edit.
 """
 
+import re
 from pathlib import Path
 
 from frappe.tests import UnitTestCase
@@ -35,7 +36,9 @@ class TestDeskFormEscapesTheTableLabel(UnitTestCase):
     `frappe.confirm` and a dialog title append what it produces as HTML.
     """
 
-    def test_the_label_is_read_once_and_escaped_there(self):
+    def test_every_read_of_the_label_is_escaped(self):
         form = (APP / "insights/insights/doctype/insights_table_v3/insights_table_v3.js").read_text()
-        self.assertEqual(form.count("frm.doc.label"), 1, "the label is read in more than one place")
-        self.assertRegex(form, r"escape_html\(\s*frm\.doc\.label")
+        reads = re.findall(r"(\S{0,14})\s*frm\.doc\.label", form)
+        self.assertTrue(reads, "the form no longer reads the label")
+        for read in reads:
+            self.assertIn("escape_html(", read)
