@@ -18,7 +18,7 @@ def check_public_access(doctype, name):
 def is_public(doctype: str, name: str):
     if doctype not in public_doctypes:
         return False
-    if has_valid_preview_key():
+    if is_being_previewed(doctype, name):
         return True
     if doctype == "Insights Workbook":
         return is_public_workbook(name)
@@ -54,10 +54,40 @@ def is_public_workbook(name: str):
     )
 
 
-def has_valid_preview_key():
+def is_being_previewed(doctype: str, name: str):
+    """Whether this document is part of the dashboard a preview key was cut for.
+
+    The preview browser reads a dashboard, the charts on it and the queries
+    behind those charts — the documents the image it produces already shows.
+    The key opens those and stops there.
+    """
+    dashboard = get_previewed_dashboard()
+    if not dashboard:
+        return False
+    if doctype == "Insights Dashboard v3":
+        return name == dashboard
+    charts = frappe.get_all(
+        "Insights Dashboard Chart v3",
+        filters={"parent": dashboard, "parenttype": "Insights Dashboard v3"},
+        pluck="chart",
+    )
+    if doctype == "Insights Chart v3":
+        return name in charts
+
+    linked = frappe.get_all(
+        "Insights Chart v3",
+        filters={"name": ["in", charts]},
+        fields=["query", "data_query"],
+    )
+    return any(name in (chart.query, chart.data_query) for chart in linked)
+
+
+def get_previewed_dashboard():
     # used to generate preview images of a dashboard
-    preview_key = frappe.request.headers.get("X-Insights-Preview-Key")
-    return preview_key and frappe.cache.get_value(f"insights_preview_key:{preview_key}")
+    preview_key = frappe.request and frappe.request.headers.get("X-Insights-Preview-Key")
+    if not preview_key:
+        return None
+    return frappe.cache.get_value(f"insights_preview_key:{preview_key}")
 
 
 @validate_type
