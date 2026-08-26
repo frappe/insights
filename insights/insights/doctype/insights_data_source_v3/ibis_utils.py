@@ -27,7 +27,7 @@ from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
 )
 from insights.insights.query_builders.sql_functions import handle_timespan
-from insights.insights.query_utils import extract_sql_table_refs, get_direct_dependencies
+from insights.insights.query_utils import extract_sql_table_refs, referenced_queries
 from insights.utils import create_execution_log
 from insights.utils import deep_convert_dict_to_dict as _dict
 
@@ -157,19 +157,15 @@ class IbisQueryBuilder:
 
     @cached_property
     def saved_references(self):
-        """The query references saved on the document being built.
+        """The references stored on this query, which `validate` authorised.
 
-        A saved reference passed the check in `InsightsQueryv3.validate`, so it
-        carries the authorisation it was granted then. Operations sent with the
-        request carry none, and this is what tells the two apart: the document
-        this builder runs on may be built from a request body, and only the row
-        says what was actually saved.
+        Read from the stored `operations` column: the document being built may
+        have come from a request body, and `Insights Query Reference` is rebuilt
+        by a background job that runs after the save commits.
         """
         name = self.doc.get("name")
-        if not name or not frappe.db.exists("Insights Query v3", name):
-            return set()
-
-        return set(get_direct_dependencies(name))
+        operations = frappe.db.get_value("Insights Query v3", name, "operations") if name else None
+        return referenced_queries(operations)
 
     def check_query_reference(self, query_name):
         """A saved reference is authorised. Anything else is checked now."""
