@@ -5,13 +5,18 @@ import warnings
 from functools import wraps
 
 import ibis
+import MySQLdb
+from ibis.backends.mysql import Backend as MySQLBackend
 
 
 def suppress_ibis_utc_warning(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", message="Unable to set session timezone")
+            warnings.filterwarnings(
+                "ignore",
+                message="Unable to set session timezone",
+            )
             return func(*args, **kwargs)
 
     return wrapper
@@ -19,6 +24,16 @@ def suppress_ibis_utc_warning(func):
 
 @suppress_ibis_utc_warning
 def get_mariadb_connection(data_source, socket=None):
+    """
+    Create an Ibis MariaDB/MySQL connection.
+
+    Ibis 11 converts its default ``localhost`` host to ``127.0.0.1``.
+    That forces TCP and prevents a supplied Unix socket from being used.
+
+    For socket connections, establish the MySQLdb connection directly
+    and then wrap that existing connection with the Ibis backend.
+    """
+
     password = data_source.get_password(raise_exception=False)
 
     connection_kwargs = {
@@ -32,9 +47,17 @@ def get_mariadb_connection(data_source, socket=None):
     }
 
     if socket:
-        connection_kwargs["unix_socket"] = socket
-    else:
-        connection_kwargs["host"] = data_source.host
-        connection_kwargs["port"] = int(data_source.port or 3306)
+        raw_connection = MySQLdb.connect(
+            host="localhost",
+            unix_socket=socket,
+            autocommit=True,
+            **connection_kwargs,
+        )
 
-    return ibis.mysql.connect(**connection_kwargs)
+        return MySQLBackend.from_connection(raw_connection)
+
+    return ibis.mysql.connect(
+        host=data_source.host or "127.0.0.1",
+        port=int(data_source.port or 3306),
+        **connection_kwargs,
+    )
