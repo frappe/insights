@@ -23,8 +23,6 @@ def is_public(doctype: str, name: str):
         return False
     if is_being_previewed(doctype, name):
         return True
-    if doctype == "Insights Workbook":
-        return is_public_workbook(name)
 
     return get_public_root(doctype, name) is not None
 
@@ -36,9 +34,11 @@ def get_public_root(doctype: str, name: str) -> tuple[str, str] | None:
     a dashboard holding it is. Publishing is where the permission user is
     recorded, so the root is what names the user a public execution runs as.
 
-    A query can sit behind more than one public chart. Each of those publishers
-    granted the query, so any of them is a correct answer - take the oldest, to
-    make it the same answer every time.
+    Content can sit under more than one root - a query behind two public charts,
+    a chart on two public dashboards. Each of those publishers granted it, so any
+    of them is a correct answer. Take the oldest, so it is the same answer every
+    time: an unordered `LIMIT 1` moves between MariaDB and Postgres, and the
+    identity decides the rows.
     """
     if doctype == "Insights Dashboard v3":
         return ("Insights Dashboard v3", name) if is_public_dashboard(name) else None
@@ -56,6 +56,7 @@ def get_public_root(doctype: str, name: str) -> tuple[str, str] | None:
 
 
 def get_chart_root(name: str) -> tuple[str, str] | None:
+    """A chart is published in its own right, or by a dashboard that holds it."""
     if frappe.db.get_value("Insights Chart v3", name, "is_public"):
         return ("Insights Chart v3", name)
 
@@ -64,6 +65,7 @@ def get_chart_root(name: str) -> tuple[str, str] | None:
 
 
 def get_public_dashboard_holding(chart: str) -> str | None:
+    """The oldest published dashboard `chart` sits on."""
     Dashboard = DocType("Insights Dashboard v3")
     DashboardChart = DocType("Insights Dashboard Chart v3")
 
@@ -74,6 +76,7 @@ def get_public_dashboard_holding(chart: str) -> str | None:
         frappe.qb.from_(Dashboard)
         .select(Dashboard.name)
         .where((Dashboard.is_public == 1) & Dashboard.name.isin(holders))
+        .orderby(Dashboard.creation)
         .limit(1)
         .run(pluck=True)
     )
@@ -81,6 +84,11 @@ def get_public_dashboard_holding(chart: str) -> str | None:
 
 
 def get_charts_built_on(query: str) -> list[str]:
+    """Charts that read `query`, oldest first.
+
+    A chart reads two: the query the author built, and the `data_query` the
+    chart mints for itself. Either link makes the query reachable.
+    """
     return frappe.get_all(
         "Insights Chart v3",
         or_filters=[
@@ -104,27 +112,6 @@ def get_public_permission_user(doctype: str, name: str) -> str | None:
 
     root = get_public_root(doctype, name)
     return frappe.db.get_value(*root, "permission_user") if root else None
-
-
-def is_public_workbook(name: str):
-    public_dashboard_exists = frappe.db.exists(
-        "Insights Dashboard v3",
-        {
-            "workbook": name,
-            "is_public": 1,
-        },
-    )
-    if public_dashboard_exists:
-        return True
-
-    public_charts = get_public_charts()
-    return frappe.db.exists(
-        "Insights Chart v3",
-        {
-            "workbook": name,
-            "name": ["in", public_charts],
-        },
-    )
 
 
 def is_being_previewed(doctype: str, name: str):
@@ -176,51 +163,6 @@ def is_public_dashboard(name: str):
             "is_public": 1,
         },
     )
-
-
-def get_public_charts():
-    Chart = DocType("Insights Chart v3")
-    Dashboard = DocType("Insights Dashboard v3")
-    DashboardChart = DocType("Insights Dashboard Chart v3")
-
-    public_dashboards = frappe.qb.from_(Dashboard).select(Dashboard.name).where(Dashboard.is_public == 1)
-
-    charts = (
-        frappe.qb.from_(Chart)
-        .select(Chart.name)
-        .where(
-            (Chart.is_public == 1)
-            | (
-                Chart.name.isin(
-                    frappe.qb.from_(DashboardChart)
-                    .select(DashboardChart.chart)
-                    .where(DashboardChart.parent.isin(public_dashboards))
-                )
-            )
-        )
-        .run(pluck=True)
-    )
-
-    return list(set(charts))
-
-
-def is_public_chart(name: str):
-    is_public = frappe.db.exists(
-        "Insights Chart v3",
-        {
-            "name": name,
-            "is_public": 1,
-        },
-    )
-    if is_public:
-        return True
-
-    return name in get_public_charts()
-
-
-def is_public_query(name: str):
-    public_charts = get_public_charts()
-    return any(chart in public_charts for chart in get_charts_built_on(name))
 
 
 @frappe.whitelist(allow_guest=True)

@@ -37,7 +37,7 @@ def permission_user(user: str):
     """
     if not user:
         frappe.throw(
-            frappe._("This has to be published again before it will show data."),
+            frappe._("This content does not name a user to run as."),
             frappe.PermissionError,
         )
 

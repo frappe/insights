@@ -54,18 +54,15 @@ class InsightsChartv3(Document):
         publisher is recorded here because the public execution has no caller of
         its own to filter rows by. `is_public` and `permission_user` are both
         permlevel 1, so this method is the only way in.
-        """
-        from insights.permissions import check_chart_query_access
 
+        The `query` link needs no check here. This writes neither link nor
+        content, and a caller who reached this method can read the chart, which
+        `_build_query_permission_query` already turns into read on its query.
+        """
         if not frappe.has_permission("Insights Chart v3", ptype="share", doc=self.name):
             frappe.throw(frappe._("You do not have permission to share this chart"), frappe.PermissionError)
 
         is_public = bool(frappe.parse_json(is_public))
-
-        # db_set skips validate(), so the link this publishes is checked here
-        if is_public:
-            check_chart_query_access(self)
-
         self.db_set(
             {
                 "is_public": int(is_public),

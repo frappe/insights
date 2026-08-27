@@ -84,11 +84,17 @@ class InsightsAlert(Document):
         out. Recording a user here moves the check to send time: the query runs
         under this user whatever it was changed to say.
 
+        Only the enable transition writes it. Anyone with write on the alert's
+        query may save the alert, so re-reading it on every save would let an
+        edit as small as a title change hand the alert somebody else's row
+        access, and mail the result to the list the alert already had.
+
         `permission_user` is permlevel 1 so no client can write it. Frappe
         resets permlevel fields before it runs `validate`, so this assignment is
         the one that lands.
         """
-        self.permission_user = frappe.session.user
+        if self.is_new() or self.has_value_changed("disabled"):
+            self.permission_user = frappe.session.user
 
     def validate_webhook(self):
         if not self.webhook_url:
