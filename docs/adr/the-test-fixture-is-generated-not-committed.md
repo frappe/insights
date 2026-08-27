@@ -8,7 +8,8 @@ Accepted.
 
 ## Context
 
-`insights/setup/demo_data.duckdb` was a 2.3 MB DuckDB file tracked in git.
+`insights/setup/insights_demo_data.duckdb` was a 2.3 MB DuckDB file tracked in
+git.
 `insights/setup/demo.py` copied it whenever `frappe.flags.in_test` or `CI` was
 set, so it was the dataset every test ran against.
 
@@ -27,9 +28,9 @@ diff, so no review could have caught it.
 
 ## Decision
 
-The repository holds a declarative spec — tables, columns, types, foreign keys,
-cardinalities, date ranges, category sets — and a seeded generator that turns it
-into DuckDB at test time. The `.duckdb` file is not tracked.
+`insights/setup/demo_data/` holds a declarative spec — tables, columns, types,
+foreign keys, cardinalities, date ranges, category sets — and a seeded generator
+that turns it into DuckDB at test time. The `.duckdb` file is not tracked.
 
 Generation fails if any declared foreign key matches no rows. That check is the
 point: it makes the fault that hid here impossible to reintroduce quietly.

@@ -395,6 +395,11 @@ cd frontend && yarn build                     # /insights needs the built entry
 E2E_BASE_URL=http://<site>:<port> npx playwright test
 ```
 
+`npx playwright test --list` prints every flow and ends with the count. Read the
+suite's size there rather than from a number written down somewhere. The total
+counts the setup and the teardown project on top of the flows in
+`e2e/tests/*.spec.ts`.
+
 `yarn dev` cannot host the suite. Vite serves its own `index.html` for
 `/insights`, so the page carries no `window.csrf_token` and the setup project
 fails. Point the suite at the bench port.
@@ -442,8 +447,8 @@ redis-cli -p <redis_queue_port> llen "rq:queue:<bench>:default"
 
 `playwright.config.ts` pins `workers: 2`, in CI and locally.
 
-Two ran green over a full run of 60 tests in 2.0 minutes. Three ran green over
-twelve full runs, then lost a flow. That is the whole measurement.
+Two ran green over a full run in 2.0 minutes. Three ran green over twelve full
+runs, then lost a flow. That is the whole measurement.
 
 **The cause is not established.** The server does cap live queries at 2, through
 `_default_limit()` in `frappe/concurrency_limiter.py`. The client absorbs that

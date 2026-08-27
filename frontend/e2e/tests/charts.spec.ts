@@ -35,6 +35,37 @@ function previewRows(page: Page): Locator {
 	return page.locator('tbody tr:has(td)')
 }
 
+/**
+ * Hold the first `set_value` for `doctype` open until `release` is called, and
+ * record the title every such write carried. An edit made between `started`
+ * and `release` lands while that write is in flight.
+ *
+ * A chart title also rewrites its Workbook, so the doctype filter is what keeps
+ * the record to the Chart's own writes.
+ */
+function holdFirstWrite(page: Page, doctype: string) {
+	let release = () => {}
+	let markStarted = () => {}
+	const held = new Promise<void>((resolve) => (release = resolve))
+	const started = new Promise<void>((resolve) => (markStarted = resolve))
+	const titles: string[] = []
+
+	const routed = page.route('**/api/method/frappe.client.set_value', async (route) => {
+		const body = route.request().postDataJSON()
+		if (body?.doctype !== doctype) {
+			return route.continue()
+		}
+		titles.push(String(body.fieldname?.title))
+		if (titles.length === 1) {
+			markStarted()
+			await held
+		}
+		await route.continue()
+	})
+
+	return { routed, started, release, titles }
+}
+
 const COUNT_OF_ROWS: Measure = {
 	measure_name: 'count_of_rows',
 	column_name: 'count',
@@ -498,6 +529,52 @@ test.describe('charts', () => {
 		await expect(drillDown.getByRole('cell', { name: 'canceled' })).not.toHaveCount(0)
 	})
 
+	test('a user turns off percentages on a Funnel chart', async ({
+		page,
+		adminApi,
+		demoDataSource,
+		workbookWithQuery,
+	}) => {
+		const { workbook, query } = workbookWithQuery
+		// Two stages, largest first. A funnel truncates a label that outgrows
+		// its bar, and it reads every share against the leading stage.
+		const chart = await createChart(adminApi, {
+			workbook: workbook.name,
+			query: query.name,
+			chartType: 'Funnel',
+			config: {
+				label_column: ORDER_STATUS,
+				value_column: COUNT_OF_ROWS,
+				show_percentage: true,
+				order_by: [{ column: { column_name: 'count_of_rows' }, direction: 'desc' }],
+				limit: 2,
+			},
+		})
+		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/chart/${chart.name}`)
+
+		// A funnel writes each stage's share beside its value. 1,778 of the
+		// 2,000 demo orders are delivered, which leads, and 85 are shipped.
+		const rendered = chartOf(page)
+		await expect(rendered.getByText('1.78K (100%)')).toBeVisible()
+		await expect(rendered.getByText('85 (5%)')).toBeVisible()
+
+		const toggle = page.getByRole('switch', { name: 'Show Percentage' })
+		await toggle.click()
+
+		// The toggle drives only the label text, so the stages stay and their
+		// shares go.
+		await expect(rendered.getByText('1.78K', { exact: true })).toBeVisible()
+		await expect(rendered.getByText('85', { exact: true })).toBeVisible()
+		await expect(rendered.getByText('delivered')).toBeVisible()
+
+		// Turning it back on brings them back. The shares live only in the
+		// funnel's label closures, so nothing else about the chart changes
+		// across either click.
+		await toggle.click()
+		await expect(rendered.getByText('1.78K (100%)')).toBeVisible()
+		await expect(rendered.getByText('85 (5%)')).toBeVisible()
+	})
+
 	test('a number card shows a comparison and a sparkline', async ({
 		page,
 		adminApi,
@@ -536,5 +613,49 @@ test.describe('charts', () => {
 		const sparkline = chartOf(page)
 		await expect(sparkline).toBeVisible()
 		await expect(sparkline.locator('path[fill]:not([fill="none"])')).not.toHaveCount(0)
+	})
+
+	test('a user renames a chart while it saves and the newer name wins', async ({
+		page,
+		adminApi,
+		demoDataSource,
+		workbookWithQuery,
+	}) => {
+		const { workbook, query } = workbookWithQuery
+		const chart = await createChart(adminApi, {
+			workbook: workbook.name,
+			query: query.name,
+			chartType: 'Bar',
+			config: barConfig(ORDER_STATUS),
+		})
+		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/chart/${chart.name}`)
+		await expect(chartOf(page).getByText('delivered')).toBeVisible()
+
+		const hold = holdFirstWrite(page, 'Insights Chart v3')
+		await hold.routed
+
+		// locator: the workbook navbar holds a second textbox, and "Untitled
+		// Workbook" carries "title" as a substring, so the match must be exact.
+		const title = page.getByRole('textbox', { name: 'Title', exact: true })
+		const first = `${chart.title} one`
+		const second = `${chart.title} two`
+
+		// The editor commits on Enter and saves 1.5 seconds later.
+		await title.fill(first)
+		await title.press('Enter')
+		await hold.started
+
+		// The second name is typed while the first write is still open.
+		await title.fill(second)
+		await title.press('Enter')
+		hold.release()
+
+		// The write in flight keeps the newer name instead of replacing it, and
+		// a second write carries that name to the server. Two writes, no storm.
+		await expect.poll(() => hold.titles).toEqual([first, second])
+
+		await page.reload()
+		await expect(page.getByRole('textbox', { name: 'Title', exact: true })).toHaveValue(second)
+		await expect(page.getByRole('link', { name: second })).toBeVisible()
 	})
 })
