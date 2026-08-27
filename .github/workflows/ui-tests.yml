@@ -132,6 +132,18 @@ jobs:
           # syncing, so a deep queue costs the suite nothing.
           bench --site "$SITE_NAME" set-config max_queued_jobs 100000 --parse
 
+      - name: Start the site
+        working-directory: ${{ env.BENCH_PATH }}
+        run: |
+          sed -i '/^watch:/d' Procfile
+          sed -i '/^schedule:/d' Procfile
+          bench start &> bench_start.log &
+          timeout 120 bash -c "until curl -sf $SITE_URL/api/method/ping > /dev/null; do sleep 2; done"
+
+      # Seeding runs after the site is up, not before: `update_progress`
+      # publishes realtime, and the redis ports come from `bench start`, so
+      # seeding first dies on `Error 111 connecting to 127.0.0.1:11000`.
+      #
       # The suite reads the demo dataset and asserts on its exact row counts, so
       # the Data Source has to exist before any test runs. `CI` makes
       # `insights.setup.demo` generate the deterministic dataset from
@@ -142,14 +154,6 @@ jobs:
         run: bench --site "$SITE_NAME" execute insights.setup.setup_wizard.setup_demo_data
         env:
           CI: "Yes"
-
-      - name: Start the site
-        working-directory: ${{ env.BENCH_PATH }}
-        run: |
-          sed -i '/^watch:/d' Procfile
-          sed -i '/^schedule:/d' Procfile
-          bench start &> bench_start.log &
-          timeout 120 bash -c "until curl -sf $SITE_URL/api/method/ping > /dev/null; do sleep 2; done"
 
       - name: Install Playwright
         working-directory: ${{ env.BENCH_PATH }}/apps/insights/frontend
