@@ -26,6 +26,7 @@ from insights.insights.query_utils import (
     get_direct_dependencies,
     referenced_queries,
     sync_query_references,
+    table_references,
     transitive_closure,
 )
 from insights.utils import as_text, deep_convert_dict_to_dict
@@ -141,17 +142,22 @@ class InsightsQueryv3(Document):
             frappe.delete_doc("Insights Folder", folder_name, force=True, ignore_permissions=True)
 
     def get_source_tables(self):
-        """Collect all leaf table references from this query and its transitive dependencies."""
-        all_query_names = {self.name} | transitive_closure(self.name)
-        Ref = frappe.qb.DocType("Insights Query Reference")
-        rows = (
-            frappe.qb.from_(Ref)
-            .select(Ref.data_source, Ref.table_name)
-            .where((Ref.query.isin(list(all_query_names))) & (Ref.ref_type == "Table"))
-            .distinct()
-            .run(as_dict=True)
-        )
-        return [{"data_source": r.data_source, "table_name": r.table_name} for r in rows]
+        """Collect all leaf table references from this query and its transitive dependencies.
+
+        Which tables a query reads is a forward question, so each row answers its
+        own. The edge table lags every write, and this runs right after a save.
+        """
+        seen: set[tuple] = set()
+        tables = []
+        for name in {self.name} | transitive_closure(self.name):
+            operations = frappe.db.get_value("Insights Query v3", name, "operations")
+            for ref in table_references(operations):
+                key = (ref["data_source"], ref["table_name"])
+                if key in seen:
+                    continue
+                seen.add(key)
+                tables.append(ref)
+        return tables
 
     def build(self, active_operation_idx=None, use_live_connection=None):
         builder = IbisQueryBuilder(self, active_operation_idx)
@@ -361,6 +367,11 @@ class InsightsQueryv3(Document):
 
         linked_queries = get_direct_dependencies(self.name)
         for q in linked_queries:
+            # `on_trash` drops the edge rows but not the operations that name the
+            # query, so a deleted reference is a name that resolves to nothing.
+            if not frappe.db.exists("Insights Query v3", q):
+                continue
+
             # export() recurses, so this covers the whole dependency tree
             check_referenced_query_access(q)
             exported_query = frappe.get_doc("Insights Query v3", q).export()

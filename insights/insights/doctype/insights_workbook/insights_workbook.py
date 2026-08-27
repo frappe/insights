@@ -472,8 +472,7 @@ def _order_by_reference(queries: dict) -> list[str]:
 
     A query is inserted with its references already pointing at the copies they
     name, so those copies have to exist first. References form a directed acyclic
-    graph, so such an order exists. A file with no such order carries a cycle,
-    which the exporting site would not have let anyone save.
+    graph, so such an order exists. A file with no such order carries a cycle.
     """
     deps = {
         name: referenced_queries(query.get("operations")) & queries.keys() for name, query in queries.items()

@@ -27,9 +27,13 @@ from insights.tests.factories import (
     delete_users,
 )
 from insights.tests.permissions_utils import (
+    TEST_DS,
     USER_1,
     USER_2,
     USER_3,
+    cleanup_test_fixtures,
+    create_test_data_sources,
+    create_test_tables,
     create_test_users,
     share_chart,
 )
@@ -212,6 +216,32 @@ class ASavedReferenceCarriesItsOwnAccess:
             result = frappe.get_doc(DT.QUERY, self.consumer).execute()
         self.assertEqual(result["rows"][0]["secret"], SECRET)
 
+    def test_an_export_carries_its_references_before_the_index_is_built(self):
+        """An export packs the queries it is built on. Which those are comes from
+        the query, not from the index that a background job rebuilds."""
+        frappe.db.delete("Insights Query Reference", {"query": self.consumer})
+        self.addCleanup(
+            sync_query_references,
+            self.consumer,
+            frappe.db.get_value(DT.QUERY, self.consumer, "operations"),
+        )
+
+        with self.as_user(OWNER):
+            exported = frappe.get_doc(DT.QUERY, self.consumer).export()
+        self.assertIn(self.base, exported["dependencies"]["queries"])
+
+    def test_an_export_skips_a_reference_whose_query_is_gone(self):
+        """`on_trash` drops the edge rows but not the operations that name the
+        query, so the export list carries a name with no row behind it."""
+        with self.as_user(OWNER):
+            gone = create_source_query(OWNER, self.workbook, "Chain Doomed Base").name
+            orphan = create_referencing_query(OWNER, self.workbook, gone, "Chain Orphan").name
+            frappe.delete_doc(DT.QUERY, gone, force=True)
+
+            exported = frappe.get_doc(DT.QUERY, orphan).export()
+
+        self.assertEqual(exported["dependencies"]["queries"], {})
+
     def test_a_reference_cannot_be_saved_to_an_unreadable_query(self):
         """Where the check lives."""
         with self.as_user(VIEWER), self.assertRaises(frappe.PermissionError):
@@ -352,6 +382,60 @@ class ChartExportReadsTheQuery:
         about which query the export reads."""
         with self.as_user(OTHER), self.assertRaises(frappe.PermissionError):
             self.export_chart(self.other_chart, query=self.owner_query)
+
+
+def create_query_over_a_table(owner, workbook, title):
+    with as_user(owner):
+        return frappe.get_doc(
+            {
+                "doctype": DT.QUERY,
+                "title": title,
+                "workbook": workbook,
+                "use_live_connection": 1,
+                "is_builder_query": 1,
+                "operations": [
+                    {
+                        "type": "source",
+                        "table": {"type": "table", "data_source": TEST_DS, "table_name": "table1"},
+                    }
+                ],
+            }
+        ).insert()
+
+
+class TestSourceTablesComeFromTheQuery(InsightsIntegrationTestCase):
+    """Which tables a query reads is a forward question, so the row answers it.
+
+    `refresh_stored_tables` runs right after a save, and the edge table is rebuilt
+    by a background job that runs after the save commits.
+    """
+
+    @classmethod
+    def before_class(cls):
+        create_test_users()
+        create_test_data_sources()
+        create_test_tables()
+        cls.workbook = create_test_workbook(OWNER, title="Source Tables Workbook").name
+        cls.query = create_query_over_a_table(OWNER, cls.workbook, "Source Tables Query").name
+
+    @classmethod
+    def after_class(cls):
+        frappe.delete_doc(DT.WORKBOOK, cls.workbook, force=True, ignore_permissions=True)
+        cleanup_test_fixtures()
+        delete_users(OWNER)
+
+    def test_the_tables_are_found_before_the_index_is_built(self):
+        frappe.db.delete("Insights Query Reference", {"query": self.query})
+        self.addCleanup(
+            sync_query_references,
+            self.query,
+            frappe.db.get_value(DT.QUERY, self.query, "operations"),
+        )
+
+        with self.as_user(OWNER):
+            tables = frappe.get_doc(DT.QUERY, self.query).get_source_tables()
+
+        self.assertEqual(tables, [{"data_source": TEST_DS, "table_name": "table1"}])
 
 
 class TestAReferenceInTheRequestIsChecked(AReferenceInTheRequestIsChecked, InsightsIntegrationTestCase):
