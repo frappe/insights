@@ -1,6 +1,6 @@
 import { watchDebounced } from '@vueuse/core'
 import { __ } from '../translation'
-import { isEqual } from 'es-toolkit'
+import { cloneDeep, isEqual } from 'es-toolkit'
 import { toPng } from 'html-to-image'
 import { call, debounce } from 'frappe-ui'
 import { Socket } from 'socket.io-client'
@@ -49,9 +49,13 @@ export function wheneverChanges(source: WatchSource, callback: WatchCallback, op
 	return watchDebounced(
 		source,
 		(val, _, onCleanup) => {
-			// against a clone, because `preVal` is one — see `isDirty` in ./resource
-			if (isEqual(copy(val), preVal)) return
-			preVal = copy(val)
+			// `cloneDeep`, not the JSON clone in `copy`. A JSON round-trip drops
+			// every function-valued key, so two chart option sets that differed
+			// only in a formatter closure compared equal and the chart never
+			// redrew. `cloneDeep` keeps a function by reference, and a rebuilt
+			// source carries a new one, so the change is visible here.
+			if (isEqual(val, preVal)) return
+			preVal = cloneDeep(val)
 			callback(val, preVal, onCleanup)
 		},
 		options
