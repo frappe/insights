@@ -1,6 +1,5 @@
 {
  "actions": [],
- "autoname": "autoincrement",
  "creation": "2024-05-28 11:49:18.335351",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -63,11 +62,10 @@
    "link_fieldname": "workbook"
   }
  ],
- "modified": "2025-04-11 17:26:45.109680",
+ "modified": "2026-08-06 10:12:33.482915",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Workbook",
- "naming_rule": "Autoincrement",
  "owner": "Administrator",
  "permissions": [
   {

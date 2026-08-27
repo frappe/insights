@@ -39,6 +39,11 @@ class InsightsChartv3(Document):
         d.read_only = not self.has_permission("write")
         return d
 
+    def validate(self):
+        from insights.permissions import check_chart_query_access
+
+        check_chart_query_access(self)
+
     def before_save(self):
         self.set_data_query()
 
@@ -131,7 +136,7 @@ def import_chart(chart, workbook):
         new_chart.sort_order = max_sort_order + 1
     new_chart.insert()
 
-    if str(workbook) == str(chart.doc.workbook) or not chart.dependencies.queries:
+    if workbook == chart.doc.workbook or not chart.dependencies.queries:
         return new_chart.name
 
     for _, exported_query in chart.dependencies.queries.items():

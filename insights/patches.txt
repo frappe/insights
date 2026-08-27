@@ -6,6 +6,7 @@ execute:frappe.delete_doc('DocType', 'Query Field', ignore_missing=True)
 execute:frappe.delete_doc('DocType', 'Query Chart', ignore_missing=True)
 insights.patches.add_roles
 insights.insights.doctype.insights_query.patches.make_query_variable_value_password_field
+insights.patches.name_workbooks_as_strings
 insights.patches.normalize_workbook #6
 
 [post_model_sync]
@@ -57,3 +58,4 @@ insights.patches.backfill_query_references
 execute:frappe.db.set_single_value("Insights Settings", "allow_download", 1)
 insights.patches.requalify_workbook_templates
 insights.patches.strip_default_schema_from_table_names
+insights.patches.hash_invitation_keys
