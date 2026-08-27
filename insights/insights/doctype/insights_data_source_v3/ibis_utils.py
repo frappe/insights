@@ -3,6 +3,7 @@ import re
 import time
 from contextlib import contextmanager
 from datetime import date
+from functools import cached_property
 
 import frappe
 import ibis
@@ -26,7 +27,7 @@ from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
 )
 from insights.insights.query_builders.sql_functions import handle_timespan
-from insights.insights.query_utils import extract_sql_table_refs
+from insights.insights.query_utils import extract_sql_table_refs, get_direct_dependencies
 from insights.utils import create_execution_log
 from insights.utils import deep_convert_dict_to_dict as _dict
 
@@ -154,6 +155,24 @@ class IbisQueryBuilder:
             return self.apply_code(operation)
         return self.query
 
+    @cached_property
+    def saved_references(self):
+        """The references stored on this query, which `validate` authorised.
+
+        Read from the row, not from the document being built: that one may have
+        come from a request body, which authorises nothing.
+        """
+        return set(get_direct_dependencies(self.doc.get("name")))
+
+    def check_query_reference(self, query_name):
+        """A saved reference is authorised. Anything else is checked now."""
+        if query_name in self.saved_references:
+            return
+
+        from insights.permissions import check_referenced_query_access
+
+        check_referenced_query_access(query_name)
+
     def get_table_or_query(self, table_args):
         _table = None
 
@@ -164,6 +183,7 @@ class IbisQueryBuilder:
                 use_live_connection=self.use_live_connection,
             )
         if table_args.type == "query":
+            self.check_query_reference(table_args.query_name)
             q = frappe.get_doc("Insights Query v3", table_args.query_name)
             _table = q.build(use_live_connection=self.use_live_connection)
 

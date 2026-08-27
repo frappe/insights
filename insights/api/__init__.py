@@ -245,6 +245,20 @@ def _execute_doc_method(doc, method: str, args: dict | None = None, ignore_permi
     return response
 
 
+def check_stored_document(doctype: str, name: str):
+    """Decide access against the stored document, not the caller's copy of it.
+
+    A method runs on a document built from the request body, so every field the
+    permission rules read is whatever the caller sent. A name with no row behind
+    it is a document the client has not saved, and discloses nothing.
+    """
+    if not frappe.db.exists(doctype, name):
+        return
+
+    if not frappe.has_permission(doctype, ptype="read", doc=name):
+        raise frappe.PermissionError("You don't have permission to access this document")
+
+
 @frappe.whitelist(allow_guest=True)  # nosemgrep - guests reach only public documents, and only
 # the methods and arguments PUBLIC_METHOD_ARGS names
 def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
@@ -252,10 +266,13 @@ def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
     doctype = doc.get("doctype")
     name = doc.get("name")
 
-    if not doctype or not name:
+    # a name is one document's identity. A dict is a filter set to `frappe.db`,
+    # so it is not a name.
+    if not doctype or not name or not isinstance(name, str):
         raise frappe.ValidationError("Invalid document")
 
     try:
+        check_stored_document(doctype, name)
         docs = frappe.parse_json(docs)
         doc = frappe.get_doc(docs)
         return _execute_doc_method(doc, method, args)
