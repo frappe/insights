@@ -1,8 +1,6 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
-import os
-
 import frappe
 
 from insights.decorators import insights_whitelist
@@ -26,9 +24,6 @@ def check_demo_data_exists() -> bool:
 
 @insights_whitelist(role="Insights Admin")
 def setup_demo_data():
-    if frappe.flags.in_test or os.environ.get("CI"):
-        return
-
     try:
         factory = DemoDataFactory()
         factory.run()
