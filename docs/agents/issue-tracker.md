@@ -59,12 +59,19 @@ Used by `/wayfinder`. The **map** is a file with one **child** file per ticket.
   with the question in the body. A `Type:` line records the ticket type
   (`research`/`prototype`/`grilling`/`task`); a `Status:` line records `claimed`/`resolved`.
 - **Blocking**: a `Blocked by: NN, NN` line near the top. A ticket is unblocked
-  when every file it lists is `resolved`.
-- **Frontier**: scan `docs/projects/<effort>/issues/` for files that are open,
-  unblocked, and unclaimed; first by number wins.
+  when every number it lists sits in `issues/resolved/`.
+- **Frontier**: scan `docs/projects/<effort>/issues/` — the top level only — for
+  files that are unblocked and unclaimed; first by number wins. Resolved tickets
+  are not there, so the listing *is* the open queue.
+- **Resolved tickets move.** A resolved ticket goes to
+  `docs/projects/<effort>/issues/resolved/NN-<slug>.md`. Keep the number.
+  Directory position carries the state, so no scan has to parse a `Status:` line
+  to know what is done. Fix the ticket's own relative links when you move it —
+  it drops one level deeper — and repoint the map at the new path.
 - **Claim**: set `Status: claimed` and save before any work.
 - **Resolve**: append the answer under an `## Answer` heading, set `Status: resolved`,
-  then append a context pointer (gist + link) to the map's Decisions-so-far in `map.md`.
+  move the file into `issues/resolved/`, then append a context pointer (gist +
+  link) to the map's Decisions-so-far in `map.md`.
   Add the ADR slug to that pointer if the decision produced one. Most do not, and
   an entry with no slug is finished — it is a resolved ticket, not a debt.
 - **Research findings**: land in `docs/projects/<effort>/research/`, linked from

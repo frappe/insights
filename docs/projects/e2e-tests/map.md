@@ -43,15 +43,15 @@ Standing preferences for this effort, settled in the charting session:
 
 <!-- one line per resolved ticket -->
 
-- [01 — How other Frappe apps run browser tests in CI](issues/01-how-frappe-apps-run-browser-tests.md)
+- [01 — How other Frappe apps run browser tests in CI](issues/resolved/01-how-frappe-apps-run-browser-tests.md)
   — copy `frappe/wiki`'s recipe; `e2e/helpers/frappe.ts` is reusable verbatim; a
   CI site build costs 2–3 minutes, so a pull-request gate is affordable; Insights
   already had a Playwright suite that `0abeb72f` deleted with the v2 frontend.
-- [02 — The flow inventory and its ranking](issues/02-flow-inventory.md) — 69
+- [02 — The flow inventory and its ranking](issues/resolved/02-flow-inventory.md) — 69
   flows across seven areas; the cut is tier A + tier B + C13 + C15, which is 56
   of 69 or 81%; flows split into cheap **verify** flows riding on seeded content
   and slow **author** flows that carry the churn.
-- [04 — The fixture dataset](issues/04-fixture-dataset.md) — the committed
+- [04 — The fixture dataset](issues/resolved/04-fixture-dataset.md) — the committed
   `insights_demo_data.duckdb` is broken, every join matches zero rows, so the
   seeded sample dashboard renders empty under CI; replaced by a declarative spec
   and a seeded generator, measured at 17 ms, with the binary leaving git.

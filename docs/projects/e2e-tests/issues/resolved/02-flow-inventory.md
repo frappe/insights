@@ -26,7 +26,7 @@ Two constraints on the output:
 
 ## Answer
 
-Inventory: [inventory-draft.md](../inventory-draft.md). **69 flows** across seven
+Inventory: [inventory-draft.md](../../inventory-draft.md). **69 flows** across seven
 areas, drawn from the 14 routes in `frontend/src2/router.ts`, the operation types
 in `types/query.types.ts`, the 9 chart types in `types/chart.types.ts`, and the
 area folders. Tiered A / B / C.

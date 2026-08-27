@@ -24,7 +24,7 @@ abandoned.
 
 ## Answer
 
-Findings: [research/frappe-app-browser-tests.md](../research/frappe-app-browser-tests.md).
+Findings: [research/frappe-app-browser-tests.md](../../research/frappe-app-browser-tests.md).
 Nine apps read, with durations pulled from the Actions jobs API on 2026-08-27.
 
 **Copy `frappe/wiki`.** It is the only sharded, current Playwright suite in the
