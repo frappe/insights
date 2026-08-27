@@ -2,7 +2,7 @@ import frappe
 from frappe.utils.caching import redis_cache
 
 from insights import notify
-from insights.decorators import insights_whitelist, validate_type
+from insights.decorators import insights_whitelist
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     execute_ibis_query,
     get_columns_from_schema,
@@ -303,7 +303,6 @@ def get_all_data_sources():
 
 
 @insights_whitelist()
-@validate_type
 def get_data_source_tables(data_source: str | None = None, search_term: str | None = None, limit: int = 100):
     tables = frappe.get_list(
         "Insights Table v3",
@@ -346,7 +345,6 @@ def get_permitted_ibis_table(data_source: str, table_name: str):
 
 
 @insights_whitelist()
-@validate_type
 def get_data_source_table(data_source: str, table_name: str):
     q = get_permitted_ibis_table(data_source, table_name).head(100)
     data, _ = execute_ibis_query(q, cache_expiry=24 * 60 * 60)
@@ -360,7 +358,6 @@ def get_data_source_table(data_source: str, table_name: str):
 
 
 @insights_whitelist()
-@validate_type
 def get_data_source_table_row_count(data_source: str, table_name: str):
     table = get_permitted_ibis_table(data_source, table_name)
     result = table.count().execute()
@@ -368,7 +365,6 @@ def get_data_source_table_row_count(data_source: str, table_name: str):
 
 
 @insights_whitelist()
-@validate_type
 def get_data_source_table_columns(data_source: str, table_name: str):
     table = get_permitted_ibis_table(data_source, table_name)
     return [
@@ -382,7 +378,6 @@ def get_data_source_table_columns(data_source: str, table_name: str):
 
 
 @insights_whitelist()
-@validate_type
 def update_data_source_tables(data_source: str):
     check_data_source_permission(data_source)
     ds = frappe.get_doc("Insights Data Source v3", data_source)
@@ -390,14 +385,12 @@ def update_data_source_tables(data_source: str):
 
 
 @insights_whitelist()
-@validate_type
 def get_table_links(data_source: str, left_table: str, right_table: str):
     check_table_permission(data_source, left_table)
     return InsightsTableLinkv3.get_links(data_source, left_table, right_table)
 
 
 @insights_whitelist()
-@validate_type
 def update_table_links(data_source: str):
     check_data_source_permission(data_source)
     ds = frappe.get_doc("Insights Data Source v3", data_source)
@@ -456,7 +449,6 @@ def get_data_sources_of_tables(table_names: list[str]):
 
 
 @insights_whitelist()
-@validate_type
 def get_schema(data_source: str):
     check_data_source_permission(data_source)
 
