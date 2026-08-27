@@ -52,9 +52,11 @@
    "options": "Email\nTelegram"
   },
   {
+   "depends_on": "eval: doc.channel == \"Email\"",
    "fieldname": "recipients",
    "fieldtype": "Small Text",
-   "label": "Recipients"
+   "label": "Recipients",
+   "mandatory_depends_on": "eval: doc.channel == \"Email\""
   },
   {
    "fieldname": "title",

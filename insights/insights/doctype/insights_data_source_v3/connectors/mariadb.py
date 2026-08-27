@@ -8,6 +8,8 @@ import ibis
 import MySQLdb
 from ibis.backends.mysql import Backend as MySQLBackend
 
+from .ssl import ca_certificate_file
+
 
 def suppress_ibis_utc_warning(func):
     @wraps(func)

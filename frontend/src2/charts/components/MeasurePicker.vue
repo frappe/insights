@@ -20,7 +20,14 @@ const emit = defineEmits({ remove: () => true })
 const props = defineProps<{
 	label?: string
 	columnOptions: ColumnOption[]
+	enableFormat?: boolean
 }>()
+
+const formatOptions = [
+	{ label: __('Normal'), value: '' },
+	{ label: __('Percent'), value: 'percent' },
+	{ label: __('Currency'), value: 'currency' },
+]
 
 // True when at least one available column is a pre-aggregated measure (i.e. it
 // came from a summarize/pivot_wider step in the source query). In this case we
@@ -128,6 +135,7 @@ function updateMeasure(measureExpression: ExpressionMeasure) {
 		expression: measureExpression.expression,
 		measure_name: measureExpression.measure_name,
 		data_type: measureExpression.data_type,
+		format: measure.value.format,
 	}
 	showMeasureDialog.value = false
 }
@@ -343,6 +351,15 @@ function handleRemove() {
 							@update:modelValue="label = $event"
 							@blur="measure.measure_name = label"
 							@keydown.enter="measure.measure_name = label"
+						/>
+					</InlineFormControlLabel>
+
+					<InlineFormControlLabel v-if="props.enableFormat" label="Format">
+						<FormControl
+							type="select"
+							:options="formatOptions"
+							:modelValue="measure.format || ''"
+							@update:modelValue="measure.format = $event || undefined"
 						/>
 					</InlineFormControlLabel>
 

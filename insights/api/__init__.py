@@ -7,9 +7,10 @@ import frappe
 from frappe.defaults import get_user_default, set_user_default
 from frappe.handler import is_valid_http_method, is_whitelisted
 from frappe.monitor import add_data_to_monitor
+from frappe.utils import cint
 
 from insights.api.shared import is_public
-from insights.decorators import insights_whitelist, validate_type
+from insights.decorators import insights_whitelist
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     get_columns_from_schema,
 )
@@ -25,6 +26,41 @@ from insights.utils import get_owned_file
 @insights_whitelist()
 def get_app_version():
     return frappe.get_attr("insights" + ".__version__")
+
+
+@frappe.whitelist(allow_guest=True, methods=["GET"])
+def get_site_info():
+    """Settings of the site, not of whoever reads it. A guest opening a public
+    dashboard needs them to print an amount the way the workbook does, and they
+    say nothing a public dashboard does not already show."""
+    return get_currency_info()
+
+
+def get_currency_info():
+    """The site's display currency, as the client needs it to print an amount.
+
+    The `currency` global default covers a site with ERPNext and one without:
+    ERPNext's Global Defaults writes `default_currency` into it, and plain Frappe
+    writes `System Settings.currency` into it. `hide_currency_symbol` empties the
+    symbol, which is how a site says amounts print bare.
+    """
+    # System Settings writes the default only when the field changes, so read the
+    # field too — a site installed with a currency has never "changed" it
+    currency = frappe.db.get_default("currency") or frappe.db.get_single_value("System Settings", "currency")
+    if not currency:
+        return {"currency": None, "currency_symbol": "", "currency_symbol_on_right": False}
+
+    hidden = cint(frappe.defaults.get_global_default("hide_currency_symbol"))
+    symbol, on_right = frappe.db.get_value("Currency", currency, ["symbol", "symbol_on_right"]) or (
+        None,
+        None,
+    )
+    return {
+        "currency": currency,
+        # a currency with no symbol of its own prints as its code, the way fmt_money does
+        "currency_symbol": "" if hidden else (symbol or currency),
+        "currency_symbol_on_right": bool(on_right),
+    }
 
 
 @insights_whitelist()
@@ -52,7 +88,7 @@ def get_user_info():
         "is_admin": is_admin,
         "is_user": is_user or frappe.session.user == "Administrator",
         "can_download": is_admin or bool(frappe.db.get_single_value("Insights Settings", "allow_download")),
-        # TODO: move to `get_session_info` since not user specific
+        # the v2 frontend reads this too, so it stays on the user payload here
         "country": frappe.db.get_single_value("System Settings", "country"),
         "locale": locale,
         "is_v2_instance": frappe.db.count("Insights Query") > 0,
@@ -99,7 +135,6 @@ def create_uploads_if_not_exists():
 
 
 @insights_whitelist()
-@validate_type
 def get_file_data(filename: str):
     check_data_source_permission("uploads")
 
@@ -131,7 +166,6 @@ def get_file_data(filename: str):
 
 
 @insights_whitelist()
-@validate_type
 def import_csv_data(filename: str, tablename: str = ""):
     check_data_source_permission("uploads")
 
@@ -182,7 +216,6 @@ def _read_uploaded_table(db, file_path: str, ext: str):
 
 @frappe.whitelist(allow_guest=True)  # nosemgrep - falls back to is_public() only after the
 # framework has already refused the caller
-@validate_type
 def get_doc(doctype: str, name: str | int):
     try:
         from frappe.client import get as _get_doc
@@ -212,6 +245,20 @@ def _execute_doc_method(doc, method: str, args: dict | None = None, ignore_permi
     return response
 
 
+def check_stored_document(doctype: str, name: str):
+    """Decide access against the stored document, not the caller's copy of it.
+
+    A method runs on a document built from the request body, so every field the
+    permission rules read is whatever the caller sent. A name with no row behind
+    it is a document the client has not saved, and discloses nothing.
+    """
+    if not frappe.db.exists(doctype, name):
+        return
+
+    if not frappe.has_permission(doctype, ptype="read", doc=name):
+        raise frappe.PermissionError("You don't have permission to access this document")
+
+
 @frappe.whitelist(allow_guest=True)  # nosemgrep - guests reach only public documents, and only
 # the methods and arguments PUBLIC_METHOD_ARGS names
 def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
@@ -219,10 +266,13 @@ def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
     doctype = doc.get("doctype")
     name = doc.get("name")
 
-    if not doctype or not name:
+    # a name is one document's identity. A dict is a filter set to `frappe.db`,
+    # so it is not a name.
+    if not doctype or not name or not isinstance(name, str):
         raise frappe.ValidationError("Invalid document")
 
     try:
+        check_stored_document(doctype, name)
         docs = frappe.parse_json(docs)
         doc = frappe.get_doc(docs)
         return _execute_doc_method(doc, method, args)

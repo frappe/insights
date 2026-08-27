@@ -24,6 +24,7 @@
   "host",
   "port",
   "use_ssl",
+  "ssl_ca",
   "is_ducklake",
   "is_site_db",
   "is_frappe_db",
@@ -73,9 +74,10 @@
   },
   {
    "default": "0",
+   "description": "Encrypts the connection. Add a CA certificate below to also verify the server.",
    "fieldname": "use_ssl",
    "fieldtype": "Check",
-   "label": "Use SSL"
+   "label": "Encrypt Connection (SSL)"
   },
   {
    "default": "0",
@@ -120,7 +122,8 @@
    "depends_on": "eval:doc.database_type == 'PostgreSQL'",
    "fieldname": "connection_string",
    "fieldtype": "Text",
-   "label": "Connection String"
+   "label": "Connection String",
+   "permlevel": 1
   },
   {
    "depends_on": "eval:doc.database_type == 'BigQuery'",
@@ -138,7 +141,8 @@
    "depends_on": "eval:doc.database_type == 'BigQuery'",
    "fieldname": "bigquery_service_account_key",
    "fieldtype": "JSON",
-   "label": "BigQuery Service Account Key (JSON)"
+   "label": "BigQuery Service Account Key (JSON)",
+   "permlevel": 1
   },
   {
    "default": "0",
@@ -157,7 +161,8 @@
    "depends_on": "eval:doc.database_type == 'DuckDB' && doc.database_name?.includes(\"http\")",
    "fieldname": "http_headers",
    "fieldtype": "JSON",
-   "label": "HTTP Headers"
+   "label": "HTTP Headers",
+   "permlevel": 1
   },
   {
    "default": "0",
@@ -238,10 +243,18 @@
   },
   {
    "depends_on": "eval:doc.type=='REST API'",
-   "description": "Custom headers for API requests (non-sensitive data only)",
+   "description": "Custom headers for API requests. Sent with every request, so a key belongs here rather than in the URL.",
    "fieldname": "api_custom_headers",
    "fieldtype": "JSON",
-   "label": "Custom Headers"
+   "label": "Custom Headers",
+   "permlevel": 1
+  },
+  {
+   "depends_on": "eval:doc.use_ssl \u0026\u0026 ['MariaDB', 'PostgreSQL'].includes(doc.database_type)",
+   "description": "Optional. PEM certificate of the authority that signed the database server's certificate. With one, Insights checks that the server is who it says it is. Without one, the connection is encrypted but the server is not checked.",
+   "fieldname": "ssl_ca",
+   "fieldtype": "Small Text",
+   "label": "CA Certificate"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -277,6 +290,12 @@
    "report": 1,
    "role": "Insights User",
    "share": 1
+  },
+  {
+   "permlevel": 1,
+   "read": 1,
+   "role": "Insights Admin",
+   "write": 1
   }
  ],
  "row_format": "Dynamic",

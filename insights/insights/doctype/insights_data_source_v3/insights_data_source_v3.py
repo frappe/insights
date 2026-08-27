@@ -139,6 +139,7 @@ class InsightsDataSourceDocument:
                 or self.host != doc_before.host
                 or self.port != doc_before.port
                 or self.use_ssl != doc_before.use_ssl
+                or self.ssl_ca != doc_before.ssl_ca
             )
 
     def on_trash(self):
@@ -234,12 +235,35 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         password: DF.Password | None
         port: DF.Int
         schema: DF.Data | None
+        ssl_ca: DF.SmallText | None
         status: DF.Literal["Inactive", "Active"]
         title: DF.Data
         type: DF.Literal["Database", "REST API"]
         use_ssl: DF.Check
         username: DF.Data | None
     # end: auto-generated types
+
+    def throw_connection_error(self, error: Exception):
+        """Report a failed connection without repeating what the driver said.
+
+        A driver names the host it could not reach, the account it was refused
+        as, and — when the source is configured by connection string — the
+        password inside it. Anyone who may edit the data source has already
+        seen all three, so they read the driver's own words. Everyone else,
+        including a Guest running a published query, gets the fact and nothing
+        else. The detail stays in the Error Log either way.
+        """
+        frappe.log_error(title=f"Failed to connect to '{self.title}'")
+        may_configure = frappe.has_permission(self.doctype, "write", self)
+        frappe.throw(
+            title="Connection Error",
+            msg=(
+                f"There was an error connecting to '{self.title}' data source: {error!s}"
+                if may_configure
+                else f"Could not connect to the '{self.title}' data source."
+            ),
+            exc=DataSourceConnectionError,
+        )
 
     def _get_ibis_backend(self) -> BaseBackend:
         if self.name in insights.db_connections:
@@ -248,11 +272,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         try:
             db: BaseBackend = self._get_db_connection()
         except Exception as e:
-            frappe.throw(
-                title="Connection Error",
-                msg=f"There was an error connecting to '{self.title}' data source: {e!s}",
-                exc=DataSourceConnectionError,
-            )
+            self.throw_connection_error(e)
 
         if self.database_type == "MariaDB":
             db.raw_sql("SET SESSION time_zone='+00:00'")

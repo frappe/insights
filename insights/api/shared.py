@@ -1,8 +1,6 @@
 import frappe
 from frappe.query_builder import DocType
 
-from insights.decorators import validate_type
-
 public_doctypes = [
     "Insights Dashboard v3",
     "Insights Chart v3",
@@ -16,9 +14,14 @@ def check_public_access(doctype, name):
 
 
 def is_public(doctype: str, name: str):
+    # run_doc_method reads `name` out of a parsed JSON blob, which frappe checks
+    # only as a whole, so a dict can arrive here and reach frappe.db as a
+    # filter set. Nothing but a name names a public document.
+    if not isinstance(name, str):
+        return False
     if doctype not in public_doctypes:
         return False
-    if has_valid_preview_key():
+    if is_being_previewed(doctype, name):
         return True
     if doctype == "Insights Workbook":
         return is_public_workbook(name)
@@ -32,7 +35,6 @@ def is_public(doctype: str, name: str):
     return False
 
 
-@validate_type
 def is_public_workbook(name: str):
     public_dashboard_exists = frappe.db.exists(
         "Insights Dashboard v3",
@@ -54,13 +56,42 @@ def is_public_workbook(name: str):
     )
 
 
-def has_valid_preview_key():
+def is_being_previewed(doctype: str, name: str):
+    """Whether this document is part of the dashboard a preview key was cut for.
+
+    The preview browser reads a dashboard, the charts on it and the queries
+    behind those charts — the documents the image it produces already shows.
+    The key opens those and stops there.
+    """
+    dashboard = get_previewed_dashboard()
+    if not dashboard:
+        return False
+    if doctype == "Insights Dashboard v3":
+        return name == dashboard
+    charts = frappe.get_all(
+        "Insights Dashboard Chart v3",
+        filters={"parent": dashboard, "parenttype": "Insights Dashboard v3"},
+        pluck="chart",
+    )
+    if doctype == "Insights Chart v3":
+        return name in charts
+
+    linked = frappe.get_all(
+        "Insights Chart v3",
+        filters={"name": ["in", charts]},
+        fields=["query", "data_query"],
+    )
+    return any(name in (chart.query, chart.data_query) for chart in linked)
+
+
+def get_previewed_dashboard():
     # used to generate preview images of a dashboard
-    preview_key = frappe.request.headers.get("X-Insights-Preview-Key")
-    return preview_key and frappe.cache.get_value(f"insights_preview_key:{preview_key}")
+    preview_key = frappe.request and frappe.request.headers.get("X-Insights-Preview-Key")
+    if not preview_key:
+        return None
+    return frappe.cache.get_value(f"insights_preview_key:{preview_key}")
 
 
-@validate_type
 def is_public_dashboard(name: str):
     return frappe.db.exists(
         "Insights Dashboard v3",
@@ -97,7 +128,6 @@ def get_public_charts():
     return list(set(charts))
 
 
-@validate_type
 def is_public_chart(name: str):
     is_public = frappe.db.exists(
         "Insights Chart v3",
@@ -112,7 +142,6 @@ def is_public_chart(name: str):
     return name in get_public_charts()
 
 
-@validate_type
 def is_public_query(name: str):
     # find a public chart that is linked with this query
     linked_charts = frappe.get_all(
@@ -131,7 +160,6 @@ def is_public_query(name: str):
 
 
 @frappe.whitelist(allow_guest=True)
-@validate_type
 def get_dashboard_name(dashboard_name: str):
     name = dashboard_name
     if not frappe.db.exists("Insights Dashboard v3", name):
@@ -142,7 +170,6 @@ def get_dashboard_name(dashboard_name: str):
 
 
 @frappe.whitelist(allow_guest=True)
-@validate_type
 def get_chart_name(chart_name: str):
     name = chart_name
     if not frappe.db.exists("Insights Chart v3", name):
