@@ -28,12 +28,21 @@ def get_app_version():
     return frappe.get_attr("insights" + ".__version__")
 
 
-@frappe.whitelist(allow_guest=True, methods=["GET"])
+@frappe.whitelist(allow_guest=True)  # nosemgrep - the payload is the site's currency and
+# country, which a public dashboard already prints
 def get_site_info():
     """Settings of the site, not of whoever reads it. A guest opening a public
+<<<<<<< HEAD
     dashboard needs them to print an amount the way the workbook does, and they
     say nothing a public dashboard does not already show."""
     return get_currency_info()
+=======
+    dashboard needs them to print an amount the way the workbook does."""
+    return {
+        "country": frappe.db.get_single_value("System Settings", "country"),
+        **get_currency_info(),
+    }
+>>>>>>> 7aa8e6f (fix: let the client reach get_site_info, and land an invitee in Insights (#1343))
 
 
 def get_currency_info():
