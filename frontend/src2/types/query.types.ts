@@ -18,11 +18,13 @@ export type ColumnMeasure = {
 	column_name: string
 	data_type: MeasureDataType
 	aggregation: AggregationType
+	format?: DataFormat
 }
 export type ExpressionMeasure = {
 	measure_name: string
 	expression: Expression
 	data_type: MeasureDataType
+	format?: DataFormat
 }
 export type MeasureOption = Measure & { label: string; value: string }
 export type Dimension = {

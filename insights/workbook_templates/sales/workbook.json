@@ -358,7 +358,8 @@
 							"measure_name": "Revenue",
 							"column_name": "base_net_total",
 							"data_type": "Decimal",
-							"aggregation": "sum"
+							"aggregation": "sum",
+							"format": "currency"
 						},
 						{
 							"measure_name": "Invoices",
@@ -370,7 +371,8 @@
 							"measure_name": "Avg Invoice Value",
 							"column_name": "base_net_total",
 							"data_type": "Decimal",
-							"aggregation": "avg"
+							"aggregation": "avg",
+							"format": "currency"
 						},
 						{
 							"measure_name": "Active Customers",
@@ -381,7 +383,6 @@
 					],
 					"number_column_options": [
 						{
-							"prefix": "\u20b9 ",
 							"decimal": 2,
 							"shorten_numbers": true
 						},
@@ -389,7 +390,6 @@
 							"shorten_numbers": false
 						},
 						{
-							"prefix": "\u20b9 ",
 							"decimal": 2,
 							"shorten_numbers": true
 						},
@@ -693,7 +693,8 @@
 							"measure_name": "Order Value",
 							"column_name": "base_grand_total",
 							"data_type": "Decimal",
-							"aggregation": "sum"
+							"aggregation": "sum",
+							"format": "currency"
 						}
 					],
 					"order_by": [
