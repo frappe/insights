@@ -180,11 +180,16 @@ XPath is banned outright.
   you add one. Add one only when the ladder and the `:label` route both fail.
 - **Labels pass through `__()`.** The test site runs in English, so the source
   string is the rendered string.
-- **Workbook tabs are plain buttons carrying the title.** A Query tab is
-  `getByRole('button', { name: query.title })`.
+- **A workbook sidebar item is a router link carrying the title.** A Query tab
+  is `getByRole('link', { name: query.title })`, not a button.
+- **The sidebar `+` that adds a Query or a Chart has no accessible name**, and a
+  `new folder` button sits beside it. The two differ only by their lucide icon
+  class, so scope by the section heading and the icon:
+  `div.mb-1:has(div:text-is("Charts")) button:has(svg.lucide-plus)`. The folder
+  button carries `lucide-folder-plus`, which that class does not match.
 - **Charts render as SVG**, so axis labels, legend entries and data labels are
   real `<text>` nodes. `getByText('delivered')` reaches them. Map charts are the
-  one exception and render to canvas.
+  one exception and render to canvas. See "Asserting on a chart" below.
 - **The results table is a real `<table>`.** Body rows are role `row` and cells
   are role `cell`.
 
@@ -204,12 +209,41 @@ Count data rows through a CSS locator, with the reason on the line above:
 // locator: <thead> uses <td>, and <tbody> ends with a cell-less spacer row, so
 // role=row over-counts. `:has(td)` keeps only real data rows.
 const dataRows = page.locator('tbody tr:has(td)')
-await expect(dataRows).toHaveCount(20)
+await expect(dataRows).toHaveCount(100)
 ```
 
-The footer reads `Showing 1–20 of 2,000 rows`, but only when the result needs
+The query editor shows one page of 100 rows, so 100 is the count an unlimited
+query over `orders` gives.
+
+The footer reads `Showing 1–100 of 2,000 rows`, but only when the result needs
 more than one page, and the total appears only after a count fetch. Do not
 assert on it unless your flow is about paging.
+
+### Asserting on a chart
+
+A chart is assertable in text. Insights renders echarts in SVG mode, so every
+axis label, legend entry and data label is a real `<text>` node in the DOM, and
+no chart except Map draws to a canvas.
+
+Scope to the chart. The result preview under the chart builder repeats every
+category label, so an unscoped `getByText('delivered')` matches twice.
+
+```ts
+// locator: echarts writes `_echarts_instance_` on the element it renders into,
+// so this names the chart and nothing else on the page.
+const chart = page.locator('[_echarts_instance_]')
+await expect(chart.getByText('delivered')).toBeVisible()
+```
+
+Three things the chart will not give you.
+
+1. **Category order is not stable between runs.** Assert that a label is there,
+   never where it is.
+2. **Values are abbreviated.** A bar of 1,778 renders its axis tick and its data
+   label as `1.8K`. Assert the abbreviation, or read the exact number from the
+   result preview table below the chart.
+3. **Data labels are off by default.** Only axis ticks and category labels are
+   in the DOM until a flow turns `Show Data Labels` on.
 
 ## What a flow test may assert
 
@@ -315,6 +349,30 @@ mixes the two hides the fix and breaks the baseline.
 
 The one edit to `frontend/src2/` this suite allows is an accessible name — a
 `:label` on an icon-only Button, or a `data-testid`. Both are inert.
+
+## Running the suite
+
+Nothing in `playwright.config.ts` starts a server. The suite needs a running
+site with the frontend built and the demo Data Source seeded.
+
+```sh
+cd frontend && yarn build                     # /insights needs the built entry
+E2E_BASE_URL=http://<site>:<port> npx playwright test
+```
+
+`yarn dev` cannot host the suite. Vite serves its own `index.html` for
+`/insights`, so the page carries no `window.csrf_token` and the setup project
+fails. Point the suite at the bench port.
+
+If the setup project reports a missing Data Source, seed it once:
+
+```sh
+CI=1 bench --site <site> execute insights.setup.setup_wizard.setup_demo_data
+```
+
+`CI` is what makes the generated, deterministic dataset the one that lands.
+Without it the setup downloads the production dataset, whose row counts are not
+the ones this file lists.
 
 ## Quarantine
 

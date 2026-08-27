@@ -74,9 +74,10 @@ export function uniqueTitle(label: string): string {
 /**
  * Fail early when the demo Data Source is missing or unsynced.
  *
- * The Data Source cannot be seeded over REST: `setup_demo_data` returns without
- * doing anything when `CI` is set, so the site build has to create it. A test
- * that skipped this check would fail deep inside a chart assertion instead.
+ * Generating the dataset takes long enough that no test should pay for it, so
+ * the site build calls `insights.setup.setup_wizard.setup_demo_data` once and
+ * this only checks the result. A test that skipped the check would fail deep
+ * inside a chart assertion instead of at its first line.
  */
 export async function assertDemoData(api: FrappeApi): Promise<void> {
 	if (!(await api.docExists(DOCTYPE.DATA_SOURCE, DEMO_DATA_SOURCE))) {
