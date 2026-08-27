@@ -106,7 +106,7 @@ class IbisQueryBuilder:
                 except CircularQueryReferenceError:
                     raise
                 except BaseException as e:
-                    operation_type_title = frappe.bold(operation.type.title())
+                    operation_type_title = operation.type.title()
                     create_toast(
                         title=f"Failed to Build {self.title} Query",
                         message=f"Please check the {operation_type_title} operation at position {idx + 1}",
