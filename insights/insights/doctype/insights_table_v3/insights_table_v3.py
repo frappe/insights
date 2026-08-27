@@ -154,15 +154,24 @@ class InsightsTablev3(Document):
         t = apply_user_permissions(t, data_source, table_name)
         return t
 
+    def check_identity(self):
+        """`autoname` builds the name out of the data source and the table, so the
+        pair is this row's identity. A whitelisted method runs on a document built
+        from the request body, where the two can be made to disagree."""
+        if get_table_name(self.data_source or "", self.table or "") != self.name:
+            frappe.throw(frappe._("Table {0} is not {1}.{2}").format(self.name, self.data_source, self.table))
+
     @frappe.whitelist()
     def import_to_warehouse(self):
         frappe.only_for("Insights Admin")
+        self.check_identity()
         wt = insights.warehouse.get_table(self.data_source, self.table)
         wt.enqueue_import()
 
     @frappe.whitelist()
     def clear_warehouse_data(self):
         frappe.only_for("Insights Admin")
+        self.check_identity()
         insights.warehouse.get_table(self.data_source, self.table).drop()
         self.db_set(
             {
@@ -176,6 +185,7 @@ class InsightsTablev3(Document):
     @frappe.whitelist()
     def get_stats(self):
         """Return usage and sync statistics for this table."""
+        self.check_identity()
         return get_table_stats(self.data_source, self.table)
 
 
@@ -190,9 +200,9 @@ def get_table_stats(data_source: str, table_name: str) -> dict:
         - last_synced_on: last successful import timestamp
         - last_import_rows: row count from the most recent import
         - last_import_duration: duration (seconds) of the most recent import
-        - referencing_queries: list of query names/titles that currently reference this table
-        - last_executed_on: when the most recent referencing query was last executed
-        - execution_count: total executions across all referencing queries
+        - referencing_queries: the queries referencing this table that the caller may read
+        - last_executed_on: when the most recent of those queries was last executed
+        - execution_count: total executions across those queries
         - total_syncs: total number of import attempts
         - total_sync_time: sum of all import durations (seconds)
         - failed_syncs: number of failed imports
@@ -271,16 +281,28 @@ def get_table_stats(data_source: str, table_name: str) -> dict:
 
 
 def _get_referencing_queries(data_source: str, table_name: str) -> list[dict]:
-    """Find all Insights Query v3 docs that reference this table via the edge table."""
+    """The queries that reference this table and that the caller may read.
+
+    `Insights Query Reference` is an edge table. It is granted to Administrator
+    and System Manager alone, and a join over it carries the joined query's title
+    and workbook out with it. Reading a table says nothing about who may see the
+    queries built on it, so each one is asked for by name.
+    """
     Ref = frappe.qb.DocType("Insights Query Reference")
-    Query = frappe.qb.DocType("Insights Query v3")
-    return (
+    referencing = (
         frappe.qb.from_(Ref)
-        .join(Query)
-        .on(Query.name == Ref.query)
-        .select(Query.name, Query.title, Query.workbook)
+        .select(Ref.query)
         .where((Ref.ref_type == "Table") & (Ref.data_source == data_source) & (Ref.table_name == table_name))
-        .run(as_dict=True)
+        .run(pluck=True)
+    )
+    if not referencing:
+        return []
+
+    return frappe.get_list(
+        "Insights Query v3",
+        filters={"name": ("in", referencing)},
+        fields=["name", "title", "workbook"],
+        limit_page_length=0,
     )
 
 

@@ -68,6 +68,21 @@ class InsightsIntegrationTestCase(IntegrationTestCase):
     def as_user(self, user):
         return as_user(user)
 
+    def set_team_permissions(self, enabled):
+        """Turn `enable_permissions` on or off for one test.
+
+        The setting scopes data sources and tables to teams. It has never scoped
+        a workbook's contents, so a rule over those has to hold either way. The
+        allowed-resource lookup is site-cached, so the cache goes with it.
+        """
+        from insights.insights.doctype.insights_team.insights_team import clear_cache
+
+        original = frappe.db.get_single_value("Insights Settings", "enable_permissions")
+        frappe.db.set_single_value("Insights Settings", "enable_permissions", enabled)
+        clear_cache()
+        self.addCleanup(clear_cache)
+        self.addCleanup(frappe.db.set_single_value, "Insights Settings", "enable_permissions", original)
+
     def assert_visible_to(self, user, doctype, name, message=None):
         with self.as_user(user):
             self.assertTrue(

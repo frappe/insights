@@ -52,6 +52,11 @@ def extract_query_deps_from_operations(operations: list) -> list[str]:
     ]
 
 
+def referenced_queries(operations) -> set[str]:
+    """The query names `operations` references, from a stored or parsed value."""
+    return set(extract_query_deps_from_operations(frappe.parse_json(operations) or []))
+
+
 def extract_table_deps_from_operations(operations: list) -> list[dict]:
     """Extract all unique (data_source, table_name) pairs from a list of operations."""
     seen: set[tuple] = set()
@@ -98,6 +103,25 @@ def extract_table_deps_from_sql_operations(operations: list) -> list[dict]:
     return result
 
 
+def table_references(operations) -> list[dict]:
+    """The (data_source, table_name) pairs `operations` reads.
+
+    A builder operation names its table outright. A native SQL operation carries
+    it in the SQL, so it has to be parsed out.
+    """
+    ops = frappe.parse_json(operations) or []
+
+    seen: set[tuple] = set()
+    result = []
+    for ref in extract_table_deps_from_operations(ops) + extract_table_deps_from_sql_operations(ops):
+        key = (ref["data_source"], ref["table_name"])
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(ref)
+    return result
+
+
 def sync_query_references(query_name: str, operations) -> None:
     """Rebuild edge rows for *query_name* in Insights Query Reference.
 
@@ -109,8 +133,7 @@ def sync_query_references(query_name: str, operations) -> None:
     ops = frappe.parse_json(operations) or []
 
     docs = []
-    all_table_deps = extract_table_deps_from_operations(ops) + extract_table_deps_from_sql_operations(ops)
-    for tbl in all_table_deps:
+    for tbl in table_references(ops):
         ref = frappe.new_doc("Insights Query Reference")
         ref.name = frappe.generate_hash(length=10)
         ref.query = query_name
@@ -133,12 +156,21 @@ def sync_query_references(query_name: str, operations) -> None:
 
 
 def get_direct_dependencies(query_name: str) -> list[str]:
-    """Return the query names this query directly depends on, from the edge table."""
-    return frappe.get_all(
-        "Insights Query Reference",
-        filters={"query": query_name, "ref_type": "Query"},
-        pluck="ref_query",
-    )
+    """Return the query names this query directly depends on.
+
+    Read from the query's own `operations`, not from `Insights Query Reference`.
+    A forward edge is already in the row, and the edge table is rebuilt by a
+    background job that runs after the save commits, so it lags every write.
+
+    Only the edge table answers the reverse question - who references this query.
+    `get_lineage_graph` and `get_last_execution_per_table` still read it forwards,
+    where a report that lags one job is the whole point of the index.
+    """
+    if not query_name:
+        return []
+
+    operations = frappe.db.get_value("Insights Query v3", query_name, "operations")
+    return list(referenced_queries(operations))
 
 
 def transitive_closure(start: str) -> set[str]:
