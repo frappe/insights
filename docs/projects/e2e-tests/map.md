@@ -43,24 +43,26 @@ Standing preferences for this effort, settled in the charting session:
 
 <!-- one line per resolved ticket -->
 
+- [01 — How other Frappe apps run browser tests in CI](issues/01-how-frappe-apps-run-browser-tests.md)
+  — copy `frappe/wiki`'s recipe; `e2e/helpers/frappe.ts` is reusable verbatim; a
+  CI site build costs 2–3 minutes, so a pull-request gate is affordable; Insights
+  already had a Playwright suite that `0abeb72f` deleted with the v2 frontend.
+
 ## Not yet specified
 
-- **What the CI site costs.** Building a Frappe site, installing Insights and
-  loading a dataset may make the pull-request gate too slow to keep. If it does,
-  the fallback shape is unknown — a prebuilt Docker image, a nightly-only run, or
-  a smaller fixture. Ticket 02 measures it, and the fallback is only specifiable
-  once there is a number.
 - **Whether the flow inventory needs a stable id per flow.** If a flow is
   renamed, the generated inventory loses its history. Whether that matters
   depends on what the inventory ends up being read for.
 - **Visual regression.** Charts are the churn hotspot and the hardest thing to
-  assert in text. Screenshot comparison may be the only way to cover them, but
-  it brings its own flakiness. Revisit once ticket 06 shows what a chart
-  assertion actually looks like.
+  assert in text. Screenshot comparison may be the only way to cover them, but it
+  brings its own flakiness, and ticket 01 found that **no Frappe app does it** —
+  there is no recipe to copy. Revisit once ticket 07's chart exemplar shows what
+  a text assertion can actually reach.
+- **Sharding.** `frappe/wiki` and `frappe/frappe` both shard across 4 runners.
+  Whether Insights needs that depends on how long the suite grows. The mechanism
+  is known, the trigger is not.
 - **Whether `factories.py` should be exposed over a test-only endpoint.** Ticket
-  04 may show the browser needs the same factories the Python suite uses.
-- **How the suite is sharded across CI machines** once it is large enough that
-  one runner is too slow.
+  05 may show the browser needs the same factories the Python suite uses.
 
 ## Out of scope
 

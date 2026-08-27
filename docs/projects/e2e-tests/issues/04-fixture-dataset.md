@@ -1,7 +1,7 @@
 # 04 — The fixture dataset
 
 Type: grilling
-Status: open
+Status: claimed
 
 ## Question
 

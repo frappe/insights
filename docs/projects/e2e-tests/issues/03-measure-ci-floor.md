@@ -1,4 +1,4 @@
-# 03 — Measure the CI floor
+# 03 — Confirm the CI floor for Insights
 
 Type: task
 Status: open
@@ -6,18 +6,22 @@ Blocked by: 01
 
 ## Question
 
-How long does the cheapest possible browser-test job take in GitHub Actions?
+Ticket 01 measured sibling apps: a Frappe site build costs 2–3 minutes, and full
+browser-test jobs run 4–15 minutes. A pull-request gate is affordable. That
+settles the viability question this ticket originally carried.
 
-Measure the floor with no fixture data at all: build a site, install Insights,
-build the frontend, start the server, run one Playwright test that loads
-`/insights` and asserts the login page renders.
+What remains is the Insights-specific delta. Insights carries two costs no
+sibling has: a DuckDB data store inside the CI job, and a heavier frontend build.
 
-Report wall-clock time for each stage separately, so ticket 04's dataset choice
-can be priced against a known baseline.
+Stand up `frappe/wiki`'s workflow shape against Insights and measure:
 
-This is the riskiest ticket on the map. If the floor alone is too slow to gate a
-pull request, the whole shape changes — a prebuilt image, a nightly run, or a
-smaller scope. Resolve it before anything is built on the assumption that CI is
-affordable.
+- Site build and Insights install.
+- Frontend build (`yarn build`), which no sibling's number covers.
+- Demo data setup with `CI=1`, which copies the tracked DuckDB file and syncs
+  tables.
+- One smoke test that loads the app and asserts the login page renders.
+
+Report each stage separately. Replace `.github/workflows/playwright.yml` — it is
+a `disabled_manually` nightly job with zero runs, left from the deleted v2 suite.
 
 The answer records the numbers and the workflow file, not a recommendation.

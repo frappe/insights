@@ -1,7 +1,7 @@
 # 02 — The flow inventory and its ranking
 
 Type: grilling
-Status: open
+Status: claimed
 
 ## Question
 
