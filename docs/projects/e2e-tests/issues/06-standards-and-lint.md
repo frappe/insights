@@ -1,6 +1,6 @@
 # 06 — The standards doc and the lint config
 
-Type: grilling
+Type: task
 Status: open
 Blocked by: 05
 
@@ -23,6 +23,17 @@ Already settled and needing only to be written down:
 - Flaky tests are quarantined, excluded from the merge gate, then fixed or
   deleted inside a fixed window.
 
-Open: the length of that quarantine window, the naming convention for tests and
-files, what a flow test may assert (and what belongs in the Python suite
-instead), and which lint rules are errors versus warnings.
+The remaining calls are made here, not grilled, to keep v1 moving:
+
+- **Quarantine window: 7 days.** A quarantined test is fixed or deleted inside a
+  week. Gameplan's nightly lane failed 6 of 15 nights while its pull-request lane
+  stayed green, so a stale quarantine list is the realistic failure.
+- **Naming**: one file per area, `<area>.spec.ts`. A test title is the flow
+  sentence from the inventory, in product language, because ticket 08 generates
+  the inventory from these titles.
+- **What a flow test may assert**: what a user can see. Rendered text, row
+  counts, chart labels, visible state. A test that reaches for a document field
+  or a SQL string belongs in `insights/tests/`.
+- **Lint**: every `eslint-plugin-playwright` rule that catches a correctness
+  problem is an error — no conditionals in tests, no hard waits, no `test.only`,
+  no missing awaits. Style rules stay warnings.

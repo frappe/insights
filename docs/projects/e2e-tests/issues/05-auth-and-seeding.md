@@ -1,24 +1,43 @@
 # 05 — Auth and API seeding
 
-Type: prototype
+Type: task
 Status: open
 Blocked by: 04
 
 ## Question
 
-How does a test arrive at the state it wants to assert on?
+Build the auth and seeding layer the suite sits on.
 
-Settled already: log in once per role, save `storageState`, reuse it. Build
-fixture data through the API, never by clicking.
+This was a prototype ticket. It is now a task: the decisions below are made, and
+what remains is to build them.
 
-Open: what the seeding call actually is. `insights/tests/factories.py` holds the
-factories the Python suite uses, but Playwright cannot import Python. The
-options are a test-only whitelisted endpoint that wraps those factories, plain
-REST calls against `insights/api/`, or a CLI step that seeds before the run.
+**Copy `frappe/wiki`'s `e2e/helpers/frappe.ts`.** Ticket 01 found it reusable
+verbatim — `createDoc`, `getDoc`, `deleteDoc`, `getList`, `callMethod` over REST
+with the CSRF header. Start from it, do not write a new one.
 
-Build a stub that creates a workbook with one query through whichever route
-looks cheapest, and react to it. The question the prototype answers is whether
-the browser can reuse the existing factories or needs its own.
+**No test-only endpoint.** `insights/tests/factories.py` cannot be reached from
+Playwright, and wrapping it in a whitelisted endpoint would ship a seeding
+surface into production code. Gameplan needed a gating pattern for exactly that
+risk. Plain REST against `insights/api/` avoids the surface entirely.
 
-Also settle which roles get a `storageState`: at minimum an admin and a viewer,
-since ticket 14 needs the UI to honour permissions.
+**Auth**: a Playwright setup project posts to `/api/method/login`, saves
+`storageState` and the CSRF token, and every other project depends on it. Two
+roles get a stored state — an admin and a viewer. Ticket 14 needs the viewer.
+
+**Layout**, following wiki:
+
+```
+frontend/e2e/
+├── .auth/            # gitignored
+├── helpers/
+├── fixtures/
+└── tests/
+```
+
+Build fixtures scoped to business actions, not Playwright wrappers — a fixture
+that gives a test a workbook with one query over the demo data source, and one
+that gives a saved chart. A fixture may create data, but a test must state what
+it depends on.
+
+Ticket 07 rewrites `playwright.config.js` to point at this layout. This ticket
+establishes it.

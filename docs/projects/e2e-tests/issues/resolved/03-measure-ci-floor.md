@@ -1,7 +1,7 @@
 # 03 — Confirm the CI floor for Insights
 
 Type: task
-Status: open
+Status: resolved
 Blocked by: 01
 
 ## Question
@@ -25,3 +25,18 @@ Report each stage separately. Replace `.github/workflows/playwright.yml` — it 
 a `disabled_manually` nightly job with zero runs, left from the deleted v2 suite.
 
 The answer records the numbers and the workflow file, not a recommendation.
+
+## Out of scope
+
+Dropped. This ticket was a de-risking step: find out whether a CI browser-test
+job is affordable before building on the assumption that it is.
+
+Ticket 01 removed the risk with measured numbers from nine sibling apps. A
+Frappe site build costs 2–3 minutes, full jobs run 4–15 minutes, and no app
+needs a prebuilt image. There is nothing left to de-risk.
+
+The Insights-specific number — the DuckDB store and the frontend build — still
+matters, but it arrives free the first time ticket 07's CI job runs. Measuring it
+first would build the same workflow twice to learn it twice.
+
+Priority is a working v1.

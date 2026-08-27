@@ -16,8 +16,12 @@ Query, Operation, Chart, Dashboard, Measure, Dimension.
 
 **This map carries execution.** Wayfinder plans by default. Here the decisions
 are few and the volume is in writing flows, so the map runs past the decisions
-into the build. Tickets 01–05 decide. Ticket 06 builds the harness serially.
-Tickets 07+ fan out.
+into the build. Tickets 01–06 decide and build the
+foundation. Ticket 07 builds the harness serially. Tickets 08+ fan out.
+
+**Prototype and grilling tickets were converted to tasks** partway through, at
+the user's direction, to get a v1 out. Decisions that would have been grilled are
+recorded in the tickets that make them. Override any of them freely.
 
 Skills every session should consult: `/grilling` and `/domain-modeling` for the
 decision tickets, `/tdd` for the harness, `/technical-writing` for the standards
@@ -83,6 +87,10 @@ Standing preferences for this effort, settled in the charting session:
 - **Unit tests for `src2` components.** This map is end-to-end only. A component
   test suite is a separate effort with a separate harness.
 - **Backend API coverage.** `insights/tests/` already owns it.
+- [03 — Confirm the CI floor for Insights](issues/resolved/03-measure-ci-floor.md)
+  — a de-risking step that ticket 01 made unnecessary. The Insights-specific
+  number arrives free the first time ticket 07's CI job runs, so measuring first
+  would build the same workflow twice. Priority is a working v1.
 - **Replacing the demo data download.** `insights/setup/demo.py` fetches the
   production demo dataset from a hardcoded Google Drive link, so every new
   install's demo experience rests on one link staying alive. Ticket 15's
