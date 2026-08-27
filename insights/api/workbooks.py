@@ -315,20 +315,25 @@ ITEM_DOCTYPES = {
 }
 
 
-def check_belongs_to_workbook(doctype: str, name, workbook: str):
-    """`name` names one document, and that document lives in `workbook`.
+def item_workbook(doctype: str, name) -> str | None:
+    """The workbook holding this row, or None if the row is gone.
 
-    Write access is held on the workbook, so it reaches the workbook's own items
-    and no further. The write goes straight to the row, so the permission query
-    that scopes the read never sees it - this is what scopes the write.
+    The write goes straight to the row, so the permission query that scopes the
+    read never sees it - this read is what scopes the write. A dict is not a
+    name: `frappe.db` reads one as a filter set and would match every row.
 
-    A dict is not a name. `frappe.db` reads one as a filter set and would update
-    every row that matches.
+    Gone and held by someone else are different answers, and the callers want
+    different things from each, so this reports and they decide.
     """
     if not isinstance(name, str):
         frappe.throw(_("{0} is not the name of a {1}").format(name, doctype))
 
-    if frappe.db.get_value(doctype, name, "workbook") != workbook:
+    return frappe.db.get_value(doctype, name, "workbook")
+
+
+def refuse_another_workbooks_item(doctype: str, name, holder: str | None, workbook: str) -> None:
+    """A row this workbook does not hold is not this caller's to write."""
+    if holder != workbook:
         frappe.throw(
             _("{0} {1} does not belong to this workbook").format(doctype, name),
             frappe.PermissionError,
@@ -348,7 +353,10 @@ def move_item_to_folder(item_type: str, item_name: str, folder_name: str | None 
         frappe.throw(_("You do not have permission to modify this workbook"), frappe.PermissionError)
 
     if folder_name:
-        check_belongs_to_workbook("Insights Folder", folder_name, item.workbook)
+        holder = item_workbook("Insights Folder", folder_name)
+        if holder is None:
+            frappe.throw(_("Insights Folder {0} not found").format(folder_name))
+        refuse_another_workbooks_item("Insights Folder", folder_name, holder, item.workbook)
 
     item.db_set("folder", folder_name, update_modified=False)
 
@@ -360,17 +368,34 @@ def update_sort_orders(workbook: str, items: list):
         frappe.throw(_("You do not have permission to modify this workbook"), frappe.PermissionError)
 
     for item in items:
-        doctype = ITEM_DOCTYPES.get(item["type"])
+        doctype = ITEM_DOCTYPES.get(item.get("type"))
         if not doctype:
+            frappe.throw(_("{0} is not a workbook item type").format(item.get("type")))
+
+        sort_order = item.get("sort_order")
+        if not isinstance(sort_order, int):
+            frappe.throw(_("{0} is not a sort order").format(sort_order))
+
+        # the client sends the whole list after a drag, so it can name an item
+        # someone else has since deleted. That item has nothing to order.
+        holder = item_workbook(doctype, item.get("name"))
+        if holder is None:
             continue
 
-        check_belongs_to_workbook(doctype, item["name"], workbook)
+        refuse_another_workbooks_item(doctype, item["name"], holder, workbook)
 
-        values = {"sort_order": item["sort_order"]}
+        values = {"sort_order": sort_order}
         if doctype != "Insights Folder":
             folder = item.get("folder")
             if folder:
-                check_belongs_to_workbook("Insights Folder", folder, workbook)
+                # a deleted folder leaves its items at the root, which is what
+                # `delete_folder` does. One held by another workbook is refused,
+                # because dropping the item at the root would hide the refusal.
+                folder_holder = item_workbook("Insights Folder", folder)
+                if folder_holder is None:
+                    folder = None
+                else:
+                    refuse_another_workbooks_item("Insights Folder", folder, folder_holder, workbook)
             values["folder"] = folder
 
         frappe.db.set_value(doctype, item["name"], values, update_modified=False)

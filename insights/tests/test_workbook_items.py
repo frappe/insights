@@ -25,11 +25,7 @@ OTHER = USER_2
 
 
 class OrderingReachesOwnItemsOnly:
-    """The rules. Both `enable_permissions` settings run them.
-
-    The setting scopes data sources and tables to teams. A workbook's items are
-    scoped by the workbook, so these rules hold either way.
-    """
+    """The rules. Both `enable_permissions` settings run them."""
 
     ENABLE_PERMISSIONS = 0
 
@@ -129,6 +125,14 @@ class OrderingReachesOwnItemsOnly:
             )
         self.assertNotEqual(frappe.db.get_value(DT.QUERY, self.other_query, "folder"), self.owner_folder)
 
+    def test_a_malformed_item_is_refused_with_a_message(self):
+        """A missing key used to raise KeyError, so one bad entry was a 500."""
+        with self.as_user(OWNER), self.assertRaises(frappe.ValidationError):
+            update_sort_orders(self.owner_workbook, [{"name": self.owner_query, "type": "query"}])
+
+        with self.as_user(OWNER), self.assertRaises(frappe.ValidationError):
+            update_sort_orders(self.owner_workbook, [{"name": self.owner_query, "sort_order": 0}])
+
     def test_a_filter_set_is_not_an_item_name(self):
         """One name is one document. A filter set would reach every row it
         matches, in any workbook."""
@@ -146,12 +150,20 @@ class OrderingReachesOwnItemsOnly:
             )
         self.assertEqual(self.sort_order_of(DT.QUERY, self.owner_query), before)
 
-    def test_an_unknown_item_is_left_alone(self):
-        with self.as_user(OTHER), self.assertRaises(frappe.PermissionError):
+    def test_an_item_that_no_longer_exists_is_skipped(self):
+        """The client sends the whole list after a drag, so one stale name in it
+        must not stop the rest of the list from being ordered."""
+        before = self.sort_order_of(DT.QUERY, self.other_query)
+        with self.as_user(OTHER):
             update_sort_orders(
                 self.other_workbook,
-                [{"type": "query", "name": "does-not-exist", "sort_order": 1}],
+                [
+                    {"type": "query", "name": "does-not-exist", "sort_order": 1},
+                    {"type": "query", "name": self.other_query, "sort_order": before + 5},
+                ],
             )
+
+        self.assertEqual(self.sort_order_of(DT.QUERY, self.other_query), before + 5)
 
 
 class TestOrderingReachesOwnItemsOnly(OrderingReachesOwnItemsOnly, InsightsIntegrationTestCase):
