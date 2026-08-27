@@ -40,9 +40,9 @@ def get_primary_data_source():
 
     if not site_db.username:
         site_db.username = (
-        frappe.conf.get("db_user")
-        or frappe.conf.get("db_name")
-    )
+            frappe.conf.get("db_user")
+            or frappe.conf.get("db_name")
+        )
 
     if not site_db.password:
         site_db.password = frappe.conf.get("db_password")
