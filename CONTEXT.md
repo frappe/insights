@@ -92,11 +92,12 @@ A strict ladder: `Private | Specific Roles | Everyone | Public`, declared as
 fields on the content. View-only; editing is governed separately.
 _Avoid_: sharing (person-level DocShare is the `Private` rung, not a separate axis)
 
-**Data Authority**:
-Whose permissions filter a chart's rows at execution: `Viewer` (default — the
-engine applies the viewer's role and user permissions) or `Author` (whole
-numbers, audience-curated). Declared on the content, enforced by the engine.
-_Avoid_: permission mode, run-as
+**Permission User**:
+Whose permissions filter the rows an execution returns, when the caller's own
+cannot. A public link runs as Guest, a preview as Guest with a key, an alert as
+Administrator — so each names a user, recorded on the content when it was
+published or enabled. Empty means the viewer decides the rows.
+_Avoid_: data authority, permission mode, run-as, impersonation
 
 **Team**:
 A named group of users that grants access to resources (data sources, tables).

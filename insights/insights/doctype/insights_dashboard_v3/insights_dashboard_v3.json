@@ -10,6 +10,7 @@
   "column_break_owsx",
   "workbook",
   "is_public",
+  "permission_user",
   "vertical_compact_layout",
   "section_break_lgpd",
   "items",
@@ -61,7 +62,16 @@
    "fieldname": "is_public",
    "fieldtype": "Check",
    "in_list_view": 1,
-   "label": "Is Public"
+   "label": "Is Public",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "permission_user",
+   "fieldtype": "Link",
+   "label": "Based on Permissions For User",
+   "options": "User",
+   "permlevel": 1,
+   "read_only": 1
   },
   {
    "fieldname": "section_break_aocd",
@@ -119,6 +129,16 @@
    "role": "Insights Admin",
    "share": 1,
    "write": 1
+  },
+  {
+   "permlevel": 1,
+   "read": 1,
+   "role": "Insights User"
+  },
+  {
+   "permlevel": 1,
+   "read": 1,
+   "role": "Insights Admin"
   }
  ],
  "row_format": "Dynamic",

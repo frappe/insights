@@ -8,6 +8,7 @@
  "engine": "InnoDB",
  "field_order": [
   "disabled",
+  "permission_user",
   "section_break_cmx9",
   "title",
   "channel",
@@ -76,6 +77,14 @@
    "fieldname": "disabled",
    "fieldtype": "Check",
    "label": "Disabled"
+  },
+  {
+   "fieldname": "permission_user",
+   "fieldtype": "Link",
+   "label": "Based on Permissions For User",
+   "options": "User",
+   "permlevel": 1,
+   "read_only": 1
   },
   {
    "fieldname": "section_break_cmx9",
@@ -169,6 +178,16 @@
    "role": "Insights User",
    "share": 1,
    "write": 1
+  },
+  {
+   "permlevel": 1,
+   "read": 1,
+   "role": "Insights Admin"
+  },
+  {
+   "permlevel": 1,
+   "read": 1,
+   "role": "Insights User"
   }
  ],
  "row_format": "Dynamic",
