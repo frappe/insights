@@ -68,6 +68,10 @@ Standing preferences for this effort, settled in the charting session:
   setup project stores state for an admin and a viewer, `frappe.ts` came from
   `frappe/wiki`, and fixtures stack as a Workbook ladder; the redundant CI guard
   on `setup_demo_data` is removed, so ticket 07 needs no out-of-band CI step.
+- [06 — The standards doc and the lint config](issues/resolved/06-standards-and-lint.md)
+  — `frontend/e2e/AGENTS.md` carries the rules, and `eslint-plugin-playwright`
+  enforces 25 of them as errors; the repo's eslint had never run, because a
+  trailing comma made `.eslintrc.json` invalid JSON.
 
 ## Not yet specified
 
