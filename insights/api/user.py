@@ -5,7 +5,7 @@ import frappe
 from frappe.utils import split_emails, validate_email_address
 from frappe.utils.user import get_users_with_role
 
-from insights.decorators import insights_whitelist, validate_type
+from insights.decorators import insights_whitelist
 from insights.insights.doctype.insights_team.insights_team import (
     get_teams as get_user_teams,
 )
@@ -162,7 +162,6 @@ def get_teams(search_term: str | None = None):
 
 
 @insights_whitelist(role="Insights Admin")
-@validate_type
 def create_team(team_name: str):
     team = frappe.new_doc("Insights Team")
     team.team_name = team_name
@@ -171,7 +170,6 @@ def create_team(team_name: str):
 
 
 @insights_whitelist(role="Insights Admin")
-@validate_type
 def update_team(team: dict):
     team = frappe._dict(team)
     doc = frappe.get_doc("Insights Team", team.name)
@@ -211,7 +209,6 @@ def update_team(team: dict):
 
 
 @insights_whitelist(role="Insights Admin")
-@validate_type
 def delete_team(team_name: str):
     frappe.delete_doc("Insights Team", team_name)
 
@@ -223,7 +220,6 @@ def add_insights_user(user: str):
 
 @frappe.whitelist(allow_guest=True)  # nosemgrep - an invitee follows this link before they have
 # an account, so it cannot require a session
-@validate_type
 def accept_invitation(key: str):
     if not key:
         frappe.throw("Invalid or expired key")
@@ -254,7 +250,6 @@ def accept_invitation(key: str):
 
 
 @insights_whitelist(role="Insights Admin")
-@validate_type
 def invite_users(emails: str):
     if not emails:
         return

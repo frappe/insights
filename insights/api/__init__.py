@@ -9,7 +9,7 @@ from frappe.handler import is_valid_http_method, is_whitelisted
 from frappe.monitor import add_data_to_monitor
 
 from insights.api.shared import is_public
-from insights.decorators import insights_whitelist, validate_type
+from insights.decorators import insights_whitelist
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     get_columns_from_schema,
 )
@@ -99,7 +99,6 @@ def create_uploads_if_not_exists():
 
 
 @insights_whitelist()
-@validate_type
 def get_file_data(filename: str):
     check_data_source_permission("uploads")
 
@@ -131,7 +130,6 @@ def get_file_data(filename: str):
 
 
 @insights_whitelist()
-@validate_type
 def import_csv_data(filename: str, tablename: str = ""):
     check_data_source_permission("uploads")
 
@@ -182,7 +180,6 @@ def _read_uploaded_table(db, file_path: str, ext: str):
 
 @frappe.whitelist(allow_guest=True)  # nosemgrep - falls back to is_public() only after the
 # framework has already refused the caller
-@validate_type
 def get_doc(doctype: str, name: str | int):
     try:
         from frappe.client import get as _get_doc
