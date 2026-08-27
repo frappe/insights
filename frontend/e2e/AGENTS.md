@@ -440,19 +440,22 @@ redis-cli -p <redis_queue_port> llen "rq:queue:<bench>:default"
 
 ### Two workers, in CI and locally
 
-`playwright.config.ts` pins `workers: 2`, because two is what the server allows.
-`bench start` serves through werkzeug, so `gunicorn_max_concurrency()` in
-`frappe/concurrency_limiter.py` returns its fallback of 4, and `_default_limit()`
-halves it. Insights runs a live query under `@concurrent_limit(wait_timeout=0)`,
-so a third query in flight renders "Server is busy" instead of queuing.
+`playwright.config.ts` pins `workers: 2`, in CI and locally.
 
-Two ran green over a full run of 60 tests in 2.0 minutes. Three ran green too,
-over twelve full runs, but it sat one query above the ceiling and paid for it
-whenever three query flows met.
+Two ran green over a full run of 60 tests in 2.0 minutes. Three ran green over
+twelve full runs, then lost a flow. That is the whole measurement.
 
-**Raising this needs a server that allows more, not a measurement.** Serving CI
-under gunicorn was tried and reverted: every test timed out and the run took
-16 minutes.
+**The cause is not established.** The server does cap live queries at 2, through
+`_default_limit()` in `frappe/concurrency_limiter.py`. The client absorbs that
+cap on its own. `src2/query/execution_queue.ts` keeps 6 queries in flight and
+retries a rejection 8 times with backoff, so one tab already sits well above the
+ceiling and still renders. Do not treat the cap as the reason.
+
+**A cheaper lever exists.** Lower `MAX_IN_FLIGHT` under test before you change
+the worker count. Nobody has tried it.
+
+Serving CI under gunicorn was tried and reverted. Every test timed out and the
+run took 16 minutes.
 
 **Raising this is untested.** Measure over at least five full runs at the new
 count before you believe a result.

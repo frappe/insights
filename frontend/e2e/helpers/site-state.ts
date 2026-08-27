@@ -15,6 +15,11 @@ export type SiteState = { enable_permissions: boolean }
 
 /** Record what the site holds now. The setup project calls this before it writes. */
 export async function saveSiteState(api: FrappeApi): Promise<void> {
+	// The first record wins. A run that dies before its teardown leaves the file
+	// behind and leaves the site turned on, so a second record would write the
+	// value this suite set and lose the developer's own for good.
+	if (fs.existsSync(SITE_STATE_PATH)) return
+
 	const state: SiteState = { enable_permissions: await getTeamPermissions(api) }
 	fs.writeFileSync(SITE_STATE_PATH, JSON.stringify(state))
 }

@@ -65,9 +65,7 @@ export type WatchOptions = {
 	toggleCondition?: () => boolean
 }
 export function watchToggle(source: WatchSource, callback: WatchCallback, options: WatchOptions = {}) {
-	// `wheneverChanges` skips a trigger that carries an equal value, so a deep
-	// source that is rewritten with the same content raises no callback.
-	const attachSourceWatcher = () => wheneverChanges(source, callback, options)
+	const attachSourceWatcher = () => _watch(source, callback, options)
 
 	if (!options.toggleCondition) {
 		attachSourceWatcher()

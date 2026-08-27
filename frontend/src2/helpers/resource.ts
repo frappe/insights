@@ -206,8 +206,9 @@ export default function useDocumentResource<T extends Document>(
 
 	const setupAutoSave = () => {
 		// Watch the document, not `isDirty`. `isDirty` is a boolean, so an edit
-		// that lands while a write is in flight raises no new edge and the write
-		// that follows it would have to escape the debounce.
+		// that lands while a write is in flight leaves it true and raises no
+		// new edge. The document itself changes, so the debounce re-arms and
+		// the kept edit reaches the server.
 		watchToggle(doc, () => isDirty.value && saveDoc(), {
 			toggleCondition: () => autoSave.value && !isLocal.value,
 			immediate: true,

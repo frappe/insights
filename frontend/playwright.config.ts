@@ -43,13 +43,16 @@ export default defineConfig({
 	grepInvert: excludeQuarantined,
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI ? 2 : 0,
-	// Two, in CI and locally, because two is what the server allows. `bench
-	// start` serves through werkzeug, so `gunicorn_max_concurrency()` in
-	// `frappe/concurrency_limiter.py` returns its fallback of 4, and
-	// `_default_limit()`, `max(1, gunicorn_max_concurrency() // 2)`, caps live
-	// queries at 2. Insights runs that query under
-	// `@concurrent_limit(wait_timeout=0)`, so a third in flight renders "Server
-	// is busy" instead of queuing.
+	// Two, in CI and locally. Two ran green over a full run of 60 tests. Three
+	// lost a flow. That is the whole of what was measured.
+	//
+	// The cause is not established. The server does cap live queries at 2, but
+	// the client absorbs that on its own: `src2/query/execution_queue.ts` keeps
+	// 6 queries in flight and retries a rejection 8 times with backoff. One tab
+	// alone already sits above the ceiling.
+	//
+	// A cheaper lever exists if this ever needs revisiting. Lower
+	// `MAX_IN_FLIGHT` under test before you change the worker count.
 	workers: 2,
 	reporter: process.env.CI
 		? [['github'], ['html', { open: 'never' }]]
