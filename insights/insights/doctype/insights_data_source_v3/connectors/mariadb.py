@@ -50,7 +50,6 @@ def get_mariadb_connection(data_source, socket=None):
         raw_connection = MySQLdb.connect(
             host="localhost",
             unix_socket=socket,
-            autocommit=True,
             **connection_kwargs,
         )
 
