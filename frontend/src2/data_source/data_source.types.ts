@@ -28,6 +28,7 @@ export type MariaDBDataSource = BaseDataSource & {
 	username: string
 	password: string
 	use_ssl: boolean
+	ssl_ca?: string
 }
 
 export type PostgreSQLDataSource = BaseDataSource & {
@@ -39,6 +40,7 @@ export type PostgreSQLDataSource = BaseDataSource & {
 	username: string
 	password: string
 	use_ssl: boolean
+	ssl_ca?: string
 }
 
 export type ClickHouseDataSource = BaseDataSource & {
