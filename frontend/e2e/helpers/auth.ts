@@ -38,6 +38,14 @@ export function storageStatePath(role: Role): string {
 	return path.join(AUTH_DIR, `${role}.json`)
 }
 
+/**
+ * Where the setup project parks a site setting it turned on.
+ *
+ * Setup and teardown run in separate processes, so the old value travels
+ * through a file beside the saved sessions.
+ */
+export const SITE_STATE_PATH = path.join(AUTH_DIR, 'site-state.json')
+
 function csrfPath(role: Role): string {
 	return path.join(AUTH_DIR, `${role}.csrf.json`)
 }

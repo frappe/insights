@@ -43,17 +43,14 @@ export default defineConfig({
 	grepInvert: excludeQuarantined,
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI ? 2 : 0,
-	// Three workers, everywhere. Playwright's local default is half the cores,
-	// which is five on the machine this was measured on.
-	//
-	// Three ran green over twelve consecutive full runs. Five lost about one
-	// chart flow a run before the autosave fix, and one chart flow over eight
-	// runs after it, so the gap has narrowed but is not closed. A run that loses
-	// a flow costs more than the twenty seconds five workers save.
-	//
-	// Raising this is untested. Measure over at least five full runs at the new
-	// count before you believe a result.
-	workers: 3,
+	// Two, in CI and locally, because two is what the server allows. `bench
+	// start` serves through werkzeug, so `gunicorn_max_concurrency()` in
+	// `frappe/concurrency_limiter.py` returns its fallback of 4, and
+	// `_default_limit()`, `max(1, gunicorn_max_concurrency() // 2)`, caps live
+	// queries at 2. Insights runs that query under
+	// `@concurrent_limit(wait_timeout=0)`, so a third in flight renders "Server
+	// is busy" instead of queuing.
+	workers: 2,
 	reporter: process.env.CI
 		? [['github'], ['html', { open: 'never' }]]
 		: [['list'], ['html', { open: 'never' }]],
@@ -79,11 +76,18 @@ export default defineConfig({
 			// Source. Every other project depends on it, so it runs first and once.
 			name: 'setup',
 			testMatch: /.*\.setup\.ts/,
+			teardown: 'teardown',
+		},
+		{
+			// Restores the site-wide settings the setup project changed. Playwright
+			// runs it after every project that depends on `setup` has finished.
+			name: 'teardown',
+			testMatch: /.*\.teardown\.ts/,
 		},
 		{
 			name: 'chromium',
 			dependencies: ['setup'],
-			testIgnore: /.*\.setup\.ts/,
+			testIgnore: /.*\.(setup|teardown)\.ts/,
 			use: {
 				...devices['Desktop Chrome'],
 				// The `page` fixture is the admin. `viewerPage` opens its own

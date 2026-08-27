@@ -66,10 +66,6 @@ export default function useDocumentResource<T extends Document>(
 	// wrote the `undefined` writes it again.
 	const isDirty = computed(() => !isEqual(copy(doc.value), originalDoc.value))
 
-	// Set by `updateDocState` when the answer to a write arrived after the user
-	// had already changed a field the write carried.
-	let keptInflightEdit = false
-
 	async function insertDoc() {
 		if (!isLocal.value) return
 		await executeHooks(lifecycleHooks.beforeInsert)
@@ -104,7 +100,6 @@ export default function useDocumentResource<T extends Document>(
 		isSaving.value = true
 		await executeHooks(lifecycleHooks.beforeSave)
 
-		keptInflightEdit = false
 		if (isLocal.value) {
 			await insertDoc()
 		} else {
@@ -113,12 +108,6 @@ export default function useDocumentResource<T extends Document>(
 
 		isSaving.value = false
 		await executeHooks(lifecycleHooks.afterSave)
-
-		// The dirty watcher reads a boolean, so a document that was dirty before
-		// the write and is dirty after it raises no new edge. Write the kept
-		// edit here instead. This ends, because the next write carries the kept
-		// edit and so cannot differ from it.
-		if (keptInflightEdit) return saveDoc()
 
 		return doc.value
 	}
@@ -204,7 +193,6 @@ export default function useDocumentResource<T extends Document>(
 				if (isEqual(current, sentDoc[field])) continue
 				// The field moved after the write left, so the newer value wins.
 				;(answer as any)[field] = current
-				keptInflightEdit = true
 			}
 		}
 
@@ -217,9 +205,13 @@ export default function useDocumentResource<T extends Document>(
 	}
 
 	const setupAutoSave = () => {
-		watchToggle(isDirty, saveDoc, {
+		// Watch the document, not `isDirty`. `isDirty` is a boolean, so an edit
+		// that lands while a write is in flight raises no new edge and the write
+		// that follows it would have to escape the debounce.
+		watchToggle(doc, () => isDirty.value && saveDoc(), {
 			toggleCondition: () => autoSave.value && !isLocal.value,
 			immediate: true,
+			deep: true,
 			debounce: 1500,
 		})
 	}

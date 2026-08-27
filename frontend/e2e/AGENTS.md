@@ -100,7 +100,7 @@ statement. Four rules follow:
    parallel against one site, so the write reaches every worker beside you. The
    setup project owns these. It turns `enable_permissions` on for the whole run,
    which is why the viewer reaches no Data Source and the admin reaches every
-   one.
+   one. The teardown project puts the old value back when the run ends.
 
 Need something the ladder does not give? Call the seeding functions from
 `helpers/insights.ts` directly with `adminApi` or `viewerApi`. Do not add a
@@ -438,15 +438,21 @@ otherwise.** Read the queue before you read the tests:
 redis-cli -p <redis_queue_port> llen "rq:queue:<bench>:default"
 ```
 
-### Three workers, not more
+### Two workers, in CI and locally
 
-`playwright.config.ts` pins `workers: 3`, in CI and locally. Playwright's own
-default is half the cores, which is five on the machine this was measured on.
+`playwright.config.ts` pins `workers: 2`, because two is what the server allows.
+`bench start` serves through werkzeug, so `gunicorn_max_concurrency()` in
+`frappe/concurrency_limiter.py` returns its fallback of 4, and `_default_limit()`
+halves it. Insights runs a live query under `@concurrent_limit(wait_timeout=0)`,
+so a third query in flight renders "Server is busy" instead of queuing.
 
-Three ran green over twelve consecutive full runs. Five lost about one chart
-flow a run before the autosave fix, and one chart flow over eight runs after it.
-The gap has narrowed. It is not closed, and a run that loses a flow costs more
-than the twenty seconds five workers save.
+Two ran green over a full run of 60 tests in 2.0 minutes. Three ran green too,
+over twelve full runs, but it sat one query above the ceiling and paid for it
+whenever three query flows met.
+
+**Raising this needs a server that allows more, not a measurement.** Serving CI
+under gunicorn was tried and reverted: every test timed out and the run took
+16 minutes.
 
 **Raising this is untested.** Measure over at least five full runs at the new
 count before you believe a result.

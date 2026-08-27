@@ -2,6 +2,7 @@ import { test as setup } from '@playwright/test'
 import { CREDENTIALS, captureAuthState, readCsrfToken } from '../helpers/auth'
 import { createFrappeApi } from '../helpers/frappe'
 import { setTeamPermissions } from '../helpers/insights'
+import { saveSiteState } from '../helpers/site-state'
 import { ensureInsightsUser } from '../helpers/users'
 
 /**
@@ -20,6 +21,10 @@ setup('authenticate', async ({ browser }) => {
 	// parallel against one site. The admin bypasses team checks, so admin flows
 	// read the same either way, and the viewer belongs to no team, which is the
 	// state the denial flow needs.
+	//
+	// The setting is site-wide, so record it first. The teardown project puts
+	// the old value back when the run ends.
+	await saveSiteState(adminApi)
 	await setTeamPermissions(adminApi, true)
 
 	await adminContext.close()

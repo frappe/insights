@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto'
 import type { FrappeApi } from './frappe'
 
 /**
@@ -290,13 +289,22 @@ export async function shareWorkbook(
 	})
 }
 
+/** Whether team permission checks are on for the whole site. */
+export async function getTeamPermissions(api: FrappeApi): Promise<boolean> {
+	const settings = await api.getDoc<{ enable_permissions: number }>(
+		DOCTYPE.SETTINGS,
+		DOCTYPE.SETTINGS,
+	)
+	return Boolean(settings.enable_permissions)
+}
+
 /**
  * Turn team permissions on or off for the whole site.
  *
  * Without them every Insights User reaches every Data Source and Table, so a
  * flow about a denied Data Source has nothing to deny. The setting is
- * site-wide, so only the setup project calls this. A test that flipped it would
- * flip it for every worker beside it.
+ * site-wide, so only the setup and teardown projects call this. A test that
+ * flipped it would flip it for every worker beside it.
  */
 export async function setTeamPermissions(api: FrappeApi, enabled: boolean): Promise<void> {
 	await api.updateDoc(DOCTYPE.SETTINGS, DOCTYPE.SETTINGS, {
@@ -357,13 +365,23 @@ export async function buildChartDataQuery(
 export const UPLOADS_DATA_SOURCE = 'uploads'
 
 /**
- * A Table document is named after its Data Source and its table name.
+ * The Table document for a Data Source table, or null when there is none.
  *
- * `InsightsTablev3.autoname` hashes the pair, so this is the only way to reach
- * a table document the app created. Teardown needs it.
+ * `InsightsTablev3.autoname` hashes the pair, so the name carries no meaning.
+ * The document keeps both halves as fields, so ask the site for it rather than
+ * repeat the hash here. Teardown needs it.
  */
-export function tableDocName(dataSource: string, tableName: string): string {
-	return createHash('md5').update(`${dataSource}${tableName}`).digest('hex').slice(0, 10)
+export async function findTableDocName(
+	api: FrappeApi,
+	dataSource: string,
+	tableName: string,
+): Promise<string | null> {
+	const [table] = await api.getList<{ name: string }>(DOCTYPE.TABLE, {
+		fields: ['name'],
+		filters: { data_source: dataSource, table: tableName },
+		limit: 1,
+	})
+	return table?.name ?? null
 }
 
 export type UploadedTable = { dataSource: string; table: string; file: string }
@@ -411,7 +429,8 @@ export async function clearDataStoreTable(
 	dataSource: string,
 	tableName: string,
 ): Promise<void> {
-	const name = tableDocName(dataSource, tableName)
+	const name = await findTableDocName(api, dataSource, tableName)
+	if (!name) return
 	const docs = await api.getDoc(DOCTYPE.TABLE, name)
 	await api.callMethod('insights.api.run_doc_method', {
 		method: 'clear_warehouse_data',
@@ -429,7 +448,10 @@ export async function clearDataStoreTable(
  */
 export async function deleteUploadedTable(api: FrappeApi, table: UploadedTable): Promise<void> {
 	await clearDataStoreTable(api, table.dataSource, table.table).catch(() => {})
-	await api.deleteDoc(DOCTYPE.TABLE, tableDocName(table.dataSource, table.table)).catch(() => {})
+	const name = await findTableDocName(api, table.dataSource, table.table).catch(() => null)
+	if (name) {
+		await api.deleteDoc(DOCTYPE.TABLE, name).catch(() => {})
+	}
 	if (table.file) {
 		await api.deleteDoc('File', table.file).catch(() => {})
 	}
