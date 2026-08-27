@@ -23,7 +23,7 @@ const hasChanged = computed(() => {
 })
 
 function saveChanges() {
-	chart.doc.is_public = isPublic.value
+	chart.updateAccess(Boolean(isPublic.value))
 	show.value = false
 }
 </script>

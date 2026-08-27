@@ -23,6 +23,7 @@ class InsightsChartv3(Document):
         folder: DF.Data | None
         is_public: DF.Check
         old_name: DF.Data | None
+        permission_user: DF.Link | None
         query: DF.Link | None
         sort_order: DF.Int
         title: DF.Data | None
@@ -43,6 +44,34 @@ class InsightsChartv3(Document):
         from insights.permissions import check_chart_query_access
 
         check_chart_query_access(self)
+
+    @frappe.whitelist()
+    def update_access(self, is_public: bool):
+        """Publish this chart, or withdraw it.
+
+        Publishing is a grant of the publisher's own read access to everyone
+        with the link, so it is the `share` permission and not `write`. The
+        publisher is recorded here because the public execution has no caller of
+        its own to filter rows by. `is_public` and `permission_user` are both
+        permlevel 1, so this method is the only way in.
+        """
+        from insights.permissions import check_chart_query_access
+
+        if not frappe.has_permission("Insights Chart v3", ptype="share", doc=self.name):
+            frappe.throw(frappe._("You do not have permission to share this chart"), frappe.PermissionError)
+
+        is_public = bool(frappe.parse_json(is_public))
+
+        # db_set skips validate(), so the link this publishes is checked here
+        if is_public:
+            check_chart_query_access(self)
+
+        self.db_set(
+            {
+                "is_public": int(is_public),
+                "permission_user": frappe.session.user if is_public else None,
+            }
+        )
 
     def before_save(self):
         self.set_data_query()

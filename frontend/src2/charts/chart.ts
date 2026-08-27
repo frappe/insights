@@ -443,6 +443,10 @@ function makeChart(name: string) {
 		return `${window.location.origin}${href}`
 	}
 
+	function updateAccess(is_public: boolean) {
+		return chart.call('update_access', { is_public }).then(() => chart.load())
+	}
+
 	function getDependentQueries() {
 		return [chart.doc.query, ...getLinkedQueries(chart.doc.query)]
 	}
@@ -549,6 +553,7 @@ function makeChart(name: string) {
 		resetConfig,
 
 		getShareLink,
+		updateAccess,
 
 		getDependentQueries,
 		getDependentQueryColumns,

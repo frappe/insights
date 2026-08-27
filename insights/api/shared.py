@@ -25,14 +25,85 @@ def is_public(doctype: str, name: str):
         return True
     if doctype == "Insights Workbook":
         return is_public_workbook(name)
-    if doctype == "Insights Dashboard v3":
-        return is_public_dashboard(name)
-    if doctype == "Insights Chart v3":
-        return is_public_chart(name)
-    if doctype == "Insights Query v3":
-        return is_public_query(name)
 
-    return False
+    return get_public_root(doctype, name) is not None
+
+
+def get_public_root(doctype: str, name: str) -> tuple[str, str] | None:
+    """The published document that makes `doctype`/`name` reachable without a login.
+
+    A query is reachable because a chart is published, and a chart because it or
+    a dashboard holding it is. Publishing is where the permission user is
+    recorded, so the root is what names the user a public execution runs as.
+
+    A query can sit behind more than one public chart. Each of those publishers
+    granted the query, so any of them is a correct answer - take the oldest, to
+    make it the same answer every time.
+    """
+    if doctype == "Insights Dashboard v3":
+        return ("Insights Dashboard v3", name) if is_public_dashboard(name) else None
+
+    if doctype == "Insights Chart v3":
+        return get_chart_root(name)
+
+    if doctype == "Insights Query v3":
+        for chart in get_charts_built_on(name):
+            root = get_chart_root(chart)
+            if root:
+                return root
+
+    return None
+
+
+def get_chart_root(name: str) -> tuple[str, str] | None:
+    if frappe.db.get_value("Insights Chart v3", name, "is_public"):
+        return ("Insights Chart v3", name)
+
+    dashboard = get_public_dashboard_holding(name)
+    return ("Insights Dashboard v3", dashboard) if dashboard else None
+
+
+def get_public_dashboard_holding(chart: str) -> str | None:
+    Dashboard = DocType("Insights Dashboard v3")
+    DashboardChart = DocType("Insights Dashboard Chart v3")
+
+    holders = (
+        frappe.qb.from_(DashboardChart).select(DashboardChart.parent).where(DashboardChart.chart == chart)
+    )
+    public = (
+        frappe.qb.from_(Dashboard)
+        .select(Dashboard.name)
+        .where((Dashboard.is_public == 1) & Dashboard.name.isin(holders))
+        .limit(1)
+        .run(pluck=True)
+    )
+    return public[0] if public else None
+
+
+def get_charts_built_on(query: str) -> list[str]:
+    return frappe.get_all(
+        "Insights Chart v3",
+        or_filters=[
+            ["query", "=", query],
+            ["data_query", "=", query],
+        ],
+        order_by="creation asc",
+        pluck="name",
+    )
+
+
+def get_public_permission_user(doctype: str, name: str) -> str | None:
+    """The user a public execution of `doctype`/`name` filters its rows by.
+
+    A preview runs as whoever the key was cut for. Everything else runs as the
+    user its root recorded when it was published.
+    """
+    preview = get_preview_key()
+    if preview and is_being_previewed(doctype, name):
+        return preview["user"]
+
+    root = get_public_root(doctype, name)
+    return frappe.db.get_value(*root, "permission_user") if root else None
 
 
 def is_public_workbook(name: str):
@@ -84,12 +155,17 @@ def is_being_previewed(doctype: str, name: str):
     return any(name in (chart.query, chart.data_query) for chart in linked)
 
 
-def get_previewed_dashboard():
+def get_preview_key():
     # used to generate preview images of a dashboard
-    preview_key = frappe.request and frappe.request.headers.get("X-Insights-Preview-Key")
-    if not preview_key:
+    key = frappe.request and frappe.request.headers.get("X-Insights-Preview-Key")
+    if not key:
         return None
-    return frappe.cache.get_value(f"insights_preview_key:{preview_key}")
+    return frappe.cache.get_value(f"insights_preview_key:{key}")
+
+
+def get_previewed_dashboard():
+    key = get_preview_key()
+    return key["dashboard"] if key else None
 
 
 def is_public_dashboard(name: str):
@@ -143,20 +219,8 @@ def is_public_chart(name: str):
 
 
 def is_public_query(name: str):
-    # find a public chart that is linked with this query
-    linked_charts = frappe.get_all(
-        "Insights Chart v3",
-        or_filters=[
-            ["query", "=", name],
-            ["data_query", "=", name],
-        ],
-        pluck="name",
-    )
     public_charts = get_public_charts()
-    if any(chart in public_charts for chart in linked_charts):
-        return True
-
-    return False
+    return any(chart in public_charts for chart in get_charts_built_on(name))
 
 
 @frappe.whitelist(allow_guest=True)

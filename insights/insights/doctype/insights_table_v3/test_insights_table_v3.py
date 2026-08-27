@@ -53,7 +53,7 @@ class TestUserPermissionColumns(FrappeTestCase):
         t = ibis.memtable({"name": ["a"], "secret": ["x"], "_assign": ["[]"]})
 
         original = table_module.get_permitted_columns_for_table
-        table_module.get_permitted_columns_for_table = lambda _name: {"name", "_assign"}
+        table_module.get_permitted_columns_for_table = lambda _name, _user=None: {"name", "_assign"}
         try:
             result = apply_column_permissions(t, "tabSomething")
         finally:
@@ -68,7 +68,7 @@ class TestUserPermissionColumns(FrappeTestCase):
         t = ibis.memtable({"name": ["a"], "secret": ["x"]})
 
         original = table_module.get_permitted_columns_for_table
-        table_module.get_permitted_columns_for_table = lambda _name: set()
+        table_module.get_permitted_columns_for_table = lambda _name, _user=None: set()
         try:
             result = apply_column_permissions(t, "tabSomething")
         finally:

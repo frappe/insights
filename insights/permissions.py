@@ -428,16 +428,18 @@ def check_referenced_query_access(query_name):
     A reference resolves to the whole query - its operations, its native SQL and
     the tables it reads - and the compiled result carries all of it back.
 
-    A public document runs as published, so what it may reach was decided then.
+    An unattended execution has no caller to check, so it is checked against the
+    user it runs as - the one recorded when the content was published.
     """
-    if frappe.flags.get("insights_for_public_access"):
-        return
+    from insights.permission_user import get_permission_user
 
     # a name with no row resolves to nothing. The build says "not found" instead.
     if not frappe.db.exists("Insights Query v3", query_name):
         return
 
-    if not frappe.has_permission("Insights Query v3", ptype="read", doc=query_name):
+    if not frappe.has_permission(
+        "Insights Query v3", ptype="read", doc=query_name, user=get_permission_user()
+    ):
         frappe.throw(
             frappe._("You do not have access to a query this one references"),
             frappe.PermissionError,
