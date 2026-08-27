@@ -8,7 +8,7 @@ import pandas as pd
 import telegram
 from croniter import croniter
 from frappe.model.document import Document
-from frappe.utils import validate_email_address
+from frappe.utils import escape_html, get_url, validate_email_address
 from frappe.utils.data import get_datetime, get_datetime_str, now_datetime
 
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
@@ -48,6 +48,15 @@ class InsightsAlert(Document):
         if self.query:
             self.has_query_permission()
 
+<<<<<<< HEAD
+=======
+        if self.channel == "Email":
+            self.get_recipients()
+
+        if self.channel == "Webhook":
+            self.validate_webhook()
+
+>>>>>>> ed01105 (fix: mark an email alert as one, and check its recipients at save (#1333))
         try:
             self.evaluate_condition()
         except Exception as e:
@@ -76,13 +85,76 @@ class InsightsAlert(Document):
         tg = TelegramAlert(self.telegram_chat_id)
         tg.send(message)
 
+<<<<<<< HEAD
+=======
+    def send_webhook_alert(self, message, context):
+        """POST the alert to the configured endpoint. The token travels in an
+        Authorization header rather than the URI, which would put it in the
+        receiver's access logs."""
+        payload = {
+            "version": WEBHOOK_PAYLOAD_VERSION,
+            "event": "insights_alert",
+            "message": message,
+            "context": {
+                "alert": context["alert"]["title"],
+                "query": context["query"]["title"],
+                "count": context["count"],
+                "rows": context["rows"][:WEBHOOK_MAX_ROWS],
+                "truncated": context["count"] > WEBHOOK_MAX_ROWS,
+                "triggered_at": get_datetime_str(now_datetime()),
+            },
+        }
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.get_password('webhook_token')}",
+        }
+
+        try:
+            # frappe.as_json, not requests' json=: query rows carry datetimes
+            # and Decimals that the plain encoder refuses.
+            response = post_to_public_url(
+                self.webhook_url,
+                data=frappe.as_json(payload),
+                headers=headers,
+            )
+            response.raise_for_status()
+        except requests.HTTPError as e:
+            frappe.throw(
+                _("The webhook at {0} returned {1}").format(self.webhook_url, e.response.status_code)
+            )
+        except requests.RequestException as e:
+            # No log_error here: `send_alerts` logs, and the interactive caller
+            # reads the message. An OutboundRequestRefused already says what it
+            # refused, so it goes up untouched.
+            frappe.throw(
+                _("Could not deliver the alert to {0} ({1})").format(self.webhook_url, type(e).__name__)
+            )
+
+    def get_author_email(self):
+        """The address a reply reaches.
+
+        `owner` is a User name, which is an address for an account created from
+        an invite and the literal "Administrator" for the admin. `sendmail`
+        refuses a reply_to it cannot parse, so an author it cannot resolve
+        leaves the mail without one rather than unsent.
+        """
+        email = frappe.db.get_value("User", self.owner, "email")
+        return email if email and validate_email_address(email) else None
+
+>>>>>>> ed01105 (fix: mark an email alert as one, and check its recipients at save (#1333))
     def send_email_alert(self, message):
-        subject = f"Insights Alert: {self.title}"
-        recievers = self.get_recipients()
+        """Mail the alert, marked as one.
+
+        The body is written by whoever owns the alert and leaves on the site's
+        default outgoing account, so the mail names the alert that produced it
+        and answers to its author rather than to the site.
+        """
         frappe.sendmail(
-            recipients=recievers,
-            subject=subject,
+            recipients=self.get_recipients(),
+            subject=f"Insights Alert: {self.title}",
             message=message,
+            reply_to=self.get_author_email(),
             now=True,
         )
 
@@ -101,8 +173,16 @@ class InsightsAlert(Document):
             return message_md
 
         message_html = frappe.utils.md_to_html(message_md)
-        return frappe.render_template(
-            "insights/templates/alert.html", context=frappe._dict(message=message_html)
+        return frappe.render_template(  # nosemgrep - the template is a file in this app
+            "insights/templates/alert.html",
+            context=frappe._dict(
+                message=message_html,
+                # The template renders without autoescaping, so a value
+                # interpolated into it is escaped here.
+                alert=escape_html(self.title),
+                author=escape_html(self.get_author_email() or self.owner),
+                site_url=get_url(allow_header_override=False),
+            ),
         )
 
     def get_message_context(self):
@@ -128,10 +208,20 @@ class InsightsAlert(Document):
         )
 
     def get_recipients(self):
-        recipients = self.recipients.split(",")
+        """The addresses this alert mails.
+
+        Read at save as well as at send. `send_alerts` turns a send-time error
+        into an Error Log entry and marks the alert as run, so an address
+        checked only at send fails where nobody is looking.
+        """
+        recipients = [address.strip() for address in (self.recipients or "").split(",") if address.strip()]
+        if not recipients:
+            frappe.throw(_("An email alert needs at least one recipient"))
+
         for recipient in recipients:
             if not validate_email_address(recipient):
-                frappe.throw(f"{recipient} is not a valid email address")
+                frappe.throw(_("{0} is not a valid email address").format(recipient))
+
         return recipients
 
     @property
