@@ -69,6 +69,10 @@ export async function captureAuthState(browser: Browser, role: Role): Promise<Br
 	await login(page, CREDENTIALS[role])
 
 	await page.goto(INSIGHTS_PATH)
+	// The only wait in the suite that is not tied to a visible element. Nothing
+	// on the page reports that `window.csrf_token` is set, and this runs once per
+	// run in the setup project, never inside a flow test.
+	// eslint-disable-next-line playwright/no-networkidle
 	await page.waitForLoadState('networkidle')
 	const csrfToken = await page.evaluate(
 		() => (window as unknown as { csrf_token?: string }).csrf_token,

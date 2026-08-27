@@ -4,22 +4,77 @@
 		"browser": true,
 		"es2021": true
 	},
-	"extends": [
-		"eslint:recommended",
-		"plugin:vue/vue3-recommended",
-		"plugin:prettier/recommended"
-	],
+	"extends": ["eslint:recommended", "plugin:vue/vue3-recommended", "plugin:prettier/recommended"],
 	"parser": "vue-eslint-parser",
 	"parserOptions": {
-		"parser": "@typescript-eslint/parser"
+		"parser": "@typescript-eslint/parser",
+		"ecmaVersion": "latest",
+		"sourceType": "module"
 	},
-	"plugins": [
-		"vue",
-		"prettier"
-	],
+	"plugins": ["vue", "prettier"],
 	"rules": {
 		"vue/no-reserved-component-names": "off",
 		"vue/multi-word-component-names": "off",
-		"no-unused-vars": "off",
-	}
+		"no-unused-vars": "off"
+	},
+	"overrides": [
+		{
+			"files": ["e2e/**/*.ts"],
+			"extends": ["plugin:playwright/recommended"],
+			"parser": "@typescript-eslint/parser",
+			"env": {
+				"browser": true,
+				"node": true,
+				"es2021": true
+			},
+			"rules": {
+				"no-undef": "off",
+				"playwright/expect-expect": "off",
+				"playwright/missing-playwright-await": "error",
+				"playwright/no-element-handle": "error",
+				"playwright/no-eval": "error",
+				"playwright/no-networkidle": "error",
+				"playwright/no-page-pause": "error",
+				"playwright/no-standalone-expect": "error",
+				"playwright/no-unnecessary-assertions": "error",
+				"playwright/no-unsafe-references": "error",
+				"playwright/no-unused-locators": "error",
+				"playwright/no-useless-await": "error",
+				"playwright/no-wait-for-navigation": "error",
+				"playwright/no-wait-for-selector": "error",
+				"playwright/no-wait-for-timeout": "error",
+				"playwright/prefer-web-first-assertions": "error",
+				"playwright/valid-describe-callback": "error",
+				"playwright/valid-expect": "error",
+				"playwright/valid-expect-in-promise": "error",
+				"playwright/valid-test-tags": "error",
+				"playwright/valid-title": "error",
+				"playwright/consistent-spacing-between-blocks": "warn",
+				"playwright/max-nested-describe": "warn",
+				"playwright/no-duplicate-hooks": "warn",
+				"playwright/no-force-option": "warn",
+				"playwright/no-get-by-title": "warn",
+				"playwright/no-nested-step": "warn",
+				"playwright/no-nth-methods": "warn",
+				"playwright/no-useless-not": "warn",
+				"playwright/prefer-hooks-in-order": "warn",
+				"playwright/prefer-hooks-on-top": "warn",
+				"playwright/prefer-locator": "warn",
+				"playwright/prefer-native-locators": "warn",
+				"playwright/prefer-to-have-count": "warn",
+				"playwright/prefer-to-have-length": "warn"
+			}
+		},
+		{
+			"files": ["e2e/**/*.spec.ts"],
+			"rules": {
+				"playwright/expect-expect": "error",
+				"playwright/no-conditional-expect": "error",
+				"playwright/no-conditional-in-test": "error",
+				"playwright/no-focused-test": "error",
+				"playwright/no-skipped-test": "error",
+				"playwright/require-top-level-describe": ["error", { "maxTopLevelDescribes": 1 }]
+			}
+		}
+	]
 }
