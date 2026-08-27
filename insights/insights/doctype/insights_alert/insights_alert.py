@@ -15,6 +15,7 @@ from frappe.utils.data import get_datetime, get_datetime_str, now_datetime
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
     db_connections,
 )
+from insights.permission_user import permission_user
 from insights.utils import deep_convert_dict_to_dict
 
 
@@ -36,6 +37,7 @@ class InsightsAlert(Document):
         last_execution: DF.Datetime | None
         message: DF.MarkdownEditor | None
         next_execution: DF.Datetime | None
+        permission_user: DF.Link | None
         query: DF.Link
         recipients: DF.SmallText | None
         telegram_chat_id: DF.Data | None
@@ -56,6 +58,29 @@ class InsightsAlert(Document):
             self.evaluate_condition()
         except Exception as e:
             frappe.throw(f"Invalid condition: {e}")
+
+        self.set_permission_user()
+
+    def set_permission_user(self):
+        """Whoever enables the alert is who it runs as.
+
+        The scheduler runs as Administrator, which passes every gate, and
+        `validate` sees the query as it is at save. So the owner could point the
+        query at a table they cannot read and have the next tick mail the rows
+        out. Recording a user here moves the check to send time: the query runs
+        under this user whatever it was changed to say.
+
+        Only the enable transition writes it. Anyone with write on the alert's
+        query may save the alert, so re-reading it on every save would let an
+        edit as small as a title change hand the alert somebody else's row
+        access, and mail the result to the list the alert already had.
+
+        `permission_user` is permlevel 1 so no client can write it. Frappe
+        resets permlevel fields before it runs `validate`, so this assignment is
+        the one that lands.
+        """
+        if self.is_new() or self.has_value_changed("disabled"):
+            self.permission_user = frappe.session.user
 
     def has_query_permission(self):
         if not frappe.has_permission("Insights Query v3", "read", self.query):
@@ -202,12 +227,15 @@ class InsightsAlert(Document):
 
 
 def send_alerts():
-    alerts = frappe.get_all("Insights Alert", filters={"disabled": 0})
+    alerts = frappe.get_all("Insights Alert", filters={"disabled": 0}, fields=["name", "permission_user"])
     for alert in alerts:
         try:
             alert_doc = frappe.get_cached_doc("Insights Alert", alert.name)
             if alert_doc.is_event_due():
-                alert_doc.send_alert()
+                # the scheduler runs as Administrator, so without this the alert
+                # would read every row of every table it names
+                with permission_user(alert.permission_user):
+                    alert_doc.send_alert()
             frappe.db.commit()
         except Exception:
             frappe.db.rollback()

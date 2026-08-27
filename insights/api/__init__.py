@@ -9,7 +9,7 @@ from frappe.handler import is_valid_http_method, is_whitelisted
 from frappe.monitor import add_data_to_monitor
 from frappe.utils import cint
 
-from insights.api.shared import is_public
+from insights.api.shared import get_public_permission_user, is_public
 from insights.decorators import insights_whitelist
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     get_columns_from_schema,
@@ -20,6 +20,7 @@ from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
 from insights.insights.doctype.insights_team.insights_team import (
     check_data_source_permission,
 )
+from insights.permission_user import permission_user
 from insights.utils import get_owned_file
 
 
@@ -224,7 +225,12 @@ def get_doc(doctype: str, name: str | int):
     except frappe.PermissionError:
         if not is_public(doctype, name):
             raise
-        return frappe.get_doc(doctype, name).as_dict()
+        doc = frappe.get_doc(doctype, name)
+        # the framework's own read path drops permlevel fields, and this branch
+        # goes around it. `permission_user` names a real person, so a public
+        # document must not carry it out to the internet.
+        doc.apply_fieldlevel_read_permissions()
+        return doc.as_dict()
 
 
 def _execute_doc_method(doc, method: str, args: dict | None = None, ignore_permissions=False):
@@ -283,14 +289,13 @@ def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
         if not is_public_method(doctype, method):
             raise frappe.PermissionError("You don't have permission to access this method")
 
+        # the caller is a Guest with no permissions of its own, so the rows come
+        # back filtered by the user the publisher recorded - not unfiltered.
         doc = frappe.get_doc(doctype, name)
-        frappe.flags.insights_for_public_access = True
-        try:
+        with permission_user(get_public_permission_user(doctype, name)):
             return _execute_doc_method(
                 doc, method, public_method_args(doctype, method, args), ignore_permissions=True
             )
-        finally:
-            frappe.flags.insights_for_public_access = False
 
 
 # A public execution runs what the publisher published, so the public surface is

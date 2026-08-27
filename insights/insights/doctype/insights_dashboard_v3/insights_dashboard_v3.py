@@ -32,6 +32,7 @@ class InsightsDashboardv3(Document):
         items: DF.JSON | None
         linked_charts: DF.TableMultiSelect[InsightsDashboardChartv3]
         old_name: DF.Data | None
+        permission_user: DF.Link | None
         preview_image: DF.Data | None
         share_link: DF.Data | None
         title: DF.Data | None
@@ -299,7 +300,14 @@ class InsightsDashboardv3(Document):
             for share in org_shares:
                 frappe.delete_doc("DocShare", share.name, ignore_permissions=True)
 
-        self.db_set("is_public", is_public)
+        # a public execution has no caller of its own, so the rows it returns are
+        # filtered by whoever published the dashboard
+        self.db_set(
+            {
+                "is_public": is_public,
+                "permission_user": frappe.session.user if is_public else None,
+            }
+        )
 
         if people_with_access:
             capture("dashboard_shared_with_user", "insights")
@@ -374,10 +382,17 @@ def generate_preview_key(dashboard: str):
     The key names its dashboard, so a leaked key reads that dashboard and the
     charts and queries on it — the same documents the preview image itself
     shows — and nothing else.
+
+    It names its viewer too. The render arrives as Guest, so the rows it draws
+    are filtered by the user the key was cut for, and the image shows what that
+    user would see.
     """
     try:
         key = frappe.generate_hash()
-        frappe.cache.set_value(f"insights_preview_key:{key}", dashboard)
+        frappe.cache.set_value(
+            f"insights_preview_key:{key}",
+            {"dashboard": dashboard, "user": frappe.session.user},
+        )
         yield key
     finally:
         frappe.cache.delete_value(f"insights_preview_key:{key}")
