@@ -36,11 +36,8 @@ class InsightsAlert(Document):
         frequency: DF.Literal["Hourly", "Daily", "Weekly", "Monthly", "Cron"]
         last_execution: DF.Datetime | None
         message: DF.MarkdownEditor | None
-<<<<<<< HEAD
         next_execution: DF.Datetime | None
-=======
         permission_user: DF.Link | None
->>>>>>> f7d0da1 (fix: run a public execution as its publisher, not with checks off (#1341))
         query: DF.Link
         recipients: DF.SmallText | None
         telegram_chat_id: DF.Data | None
@@ -62,8 +59,6 @@ class InsightsAlert(Document):
         except Exception as e:
             frappe.throw(f"Invalid condition: {e}")
 
-<<<<<<< HEAD
-=======
         self.set_permission_user()
 
     def set_permission_user(self):
@@ -87,17 +82,6 @@ class InsightsAlert(Document):
         if self.is_new() or self.has_value_changed("disabled"):
             self.permission_user = frappe.session.user
 
-    def validate_webhook(self):
-        if not self.webhook_url:
-            frappe.throw(_("Webhook URL is required for a webhook alert"))
-        if not self.webhook_token:
-            frappe.throw(_("Webhook token is required for a webhook alert"))
-        # Only what the URL says, not where it resolves. Resolving here would
-        # put a name lookup inside the save transaction and still prove nothing
-        # about send time. "Send test" is the button that answers that.
-        validate_public_url(self.webhook_url)
-
->>>>>>> f7d0da1 (fix: run a public execution as its publisher, not with checks off (#1341))
     def has_query_permission(self):
         if not frappe.has_permission("Insights Query v3", "read", self.query):
             frappe.throw("You do not have permission to access this query")
