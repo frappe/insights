@@ -1,6 +1,8 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+from urllib.parse import quote
+
 import frappe
 from frappe.utils import split_emails, validate_email_address
 from frappe.utils.user import get_users_with_role
@@ -240,8 +242,9 @@ def accept_invitation(key: str):
 
     if not account_was_created:
         # the address already had an account. The invitation grants it access to
-        # Insights; signing in is for the account holder to do.
-        frappe.local.response["location"] = "/login"
+        # Insights; signing in is for the account holder to do. The login page
+        # carries them the rest of the way, so the link still ends in Insights.
+        frappe.local.response["location"] = f"/login?redirect-to={quote(get_app_url())}"
         return
 
     # a new account has no password yet, so the invitation link is how the
