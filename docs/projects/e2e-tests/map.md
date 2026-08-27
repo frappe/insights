@@ -45,6 +45,15 @@ Standing preferences for this effort, settled in the charting session:
 
 ## Open
 
+- [19 — Flows: Data Source and Data Store](issues/19-flows-data-source.md) — five
+  drafted flows, four of them inside the 80% cut, that no ticket ever claimed.
+  This is the largest hole in the suite and the whole of the gap to the bar.
+- [20 — A workbook template flow has no entry point on the test site](issues/20-template-flow-needs-erpnext.md)
+  — every shipped template needs ERPNext, and the test site runs `frappe` and
+  `insights` only, so the Library button never renders.
+- [21 — Nobody covers sharing a chart from the builder](issues/21-flow-share-a-chart.md)
+  — ticket 02 pulled this into the cut, ticket 10 pointed at ticket 13, and
+  ticket 13 covered the guest half only.
 - [16 — An autosave answer drops every edit made while it was in flight](issues/16-autosave-drops-concurrent-edit.md)
   — a product bug in `frontend/src2/helpers/resource.ts`, behind three symptoms
   two agents found separately; the suite works around it and cannot record it.
@@ -65,6 +74,14 @@ Standing preferences for this effort, settled in the charting session:
   the queue over the cap; the residual one-a-run flake is tickets 16 and 18, and
   three workers is what holds it down until they land.
 
+- [08 — Generate the inventory from the test titles](issues/resolved/08-inventory-generator.md)
+  — the bootstrap inventory is deleted, and **nothing replaces it**. The test
+  titles are the inventory, and `npx playwright test --list` prints them. The
+  generator, the committed `FLOWS.md` and its CI gate were built, then removed:
+  a coverage number was a planning device, and it had done its job. Measuring
+  found the real coverage is **50 of 68 flows, or 74%**, not the 81% ticket 02
+  planned, because the Data source area was never ticketed. Tickets 19, 20 and
+  21 hold the difference.
 - [01 — How other Frappe apps run browser tests in CI](issues/resolved/01-how-frappe-apps-run-browser-tests.md)
   — copy `frappe/wiki`'s recipe; `e2e/helpers/frappe.ts` is reusable verbatim; a
   CI site build costs 2–3 minutes, so a pull-request gate is affordable; Insights
@@ -93,9 +110,10 @@ Standing preferences for this effort, settled in the charting session:
 
 ## Not yet specified
 
-- **Whether the flow inventory needs a stable id per flow.** If a flow is
-  renamed, the generated inventory loses its history. Whether that matters
-  depends on what the inventory ends up being read for.
+- **Whether the flow inventory needs a stable id per flow.** Ticket 08 shipped
+  the generator without one: a flow is its title, and a rename reads as a delete
+  plus an add. That is enough for a freshness check. It is not enough to track
+  one flow's history across a rename, and nothing yet asks for that.
 - **Visual regression.** Charts are the churn hotspot and the hardest thing to
   assert in text. Screenshot comparison may be the only way to cover them, but it
   brings its own flakiness, and ticket 01 found that **no Frappe app does it** —

@@ -36,8 +36,9 @@ The fixtures file re-exports both.
 **One top-level `test.describe` per file**, named after the area. Lint enforces
 this.
 
-**A test title is the flow sentence, in product language.** Ticket 08 generates
-the flow inventory from these titles, so a title is an output, not a label.
+**A test title is the flow sentence, in product language.** The titles are the
+inventory of what this suite covers — `npx playwright test --list` prints them.
+A title is read by people, so write it for them.
 
 ```ts
 test.describe('query', () => {

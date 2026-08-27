@@ -26,7 +26,7 @@ Two constraints on the output:
 
 ## Answer
 
-Inventory: [inventory-draft.md](../../inventory-draft.md). **69 flows** across seven
+Inventory: `inventory-draft.md`, **deleted by ticket 08**. **69 flows** across seven
 areas, drawn from the 14 routes in `frontend/src2/router.ts`, the operation types
 in `types/query.types.ts`, the 9 chart types in `types/chart.types.ts`, and the
 area folders. Tiered A / B / C.
@@ -53,3 +53,17 @@ slow, and where the churn is.
 D4, S1 and S2 are verify flows. Every tier A flow is an author flow. The split
 only works once ticket 15 lands — a seeded workbook whose charts render empty
 verifies nothing.
+
+### Amendment, ticket 08
+
+`inventory-draft.md` is gone. `frontend/e2e/FLOWS.md` replaces it, generated
+from the test titles. Read that file for the flows the suite holds, and this
+ticket for the ones it does not.
+
+The tests corrected the count above. Two of the 69 flows do not exist in the
+product, and one flow the draft missed does. The real denominator is **68**, and
+the suite covers **50 of them, or 74%**. Ticket 08 shows the working.
+
+Three of the drafted flows were each split in two while ticket 17 made the suite
+deterministic, so the generated inventory lists 53 flow tests against those 50
+flows.
