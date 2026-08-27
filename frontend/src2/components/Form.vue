@@ -61,25 +61,6 @@ defineExpose({
 <template>
 	<div class="flex w-full flex-col gap-2">
 		<div class="flex flex-col gap-4">
-<<<<<<< HEAD
-			<div class="relative" v-for="field in fields" :key="field.name">
-				<FormControl
-					autocomplete="off"
-					:type="field.type"
-					:label="field.label"
-					:options="field.options"
-					:placeholder="field.placeholder"
-					:description="field.description"
-					v-model="form[field.name]"
-				/>
-				<span
-					v-if="field.required && !form[field.name]"
-					class="absolute right-0 top-0 text-xs text-red-400"
-				>
-					* required
-				</span>
-			</div>
-=======
 			<template v-for="field in fields" :key="field.name">
 				<div class="relative" v-if="isVisible(field)">
 					<FormControl
@@ -99,7 +80,6 @@ defineExpose({
 					</span>
 				</div>
 			</template>
->>>>>>> 0e64722 (fix: let a data source ask to be verified, and name what the flag does)
 		</div>
 		<div class="flex w-full justify-end gap-2 pt-2">
 			<Button v-for="action in actions" :key="action.label" v-bind="action" />

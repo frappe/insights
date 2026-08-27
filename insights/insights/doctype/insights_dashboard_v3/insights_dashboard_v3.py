@@ -182,17 +182,13 @@ class InsightsDashboardv3(Document):
     def generate_dashboard_preview(self):
         with generate_preview_key(self.name) as key:
             preview = get_page_preview(
-<<<<<<< HEAD
-                frappe.utils.get_url(f"/insights/shared/dashboard/{self.name}"),
-=======
                 # The browser runs on the server and carries a preview key, so
                 # the page it opens is the site's own, not one a request header
                 # named.
                 frappe.utils.get_url(
-                    get_app_url(f"/shared/dashboard/{self.name}"),
+                    f"/insights/shared/dashboard/{self.name}",
                     allow_header_override=False,
                 ),
->>>>>>> 08c7901 (fix: bind the dashboard preview to this site and to one dashboard)
                 headers={
                     "X-Insights-Preview-Key": key,
                 },
