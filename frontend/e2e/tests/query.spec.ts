@@ -287,8 +287,15 @@ test.describe('query', () => {
 		await columnMenu(page, 'order_approved_at').click()
 		await page.getByRole('button', { name: 'Remove', exact: true }).click()
 
+		// Wait on the column that survives, not on the one that goes. Removing a
+		// column re-runs the query, and `toHaveCount(0)` passes on the empty
+		// table it renders meanwhile — so the negative assertion means nothing
+		// until the table is back. A two-core runner needs longer than the
+		// 15 second default to re-execute.
+		await expect(page.getByRole('cell', { name: 'order_status' })).toBeVisible({
+			timeout: 45_000,
+		})
 		await expect(page.getByRole('cell', { name: 'order_approved_at' })).toHaveCount(0)
-		await expect(page.getByRole('cell', { name: 'order_status' })).toBeVisible()
 	})
 
 	test('a user casts a column type', async ({ page, adminApi, demoDataSource, workbook }) => {
