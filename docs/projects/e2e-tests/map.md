@@ -47,6 +47,14 @@ Standing preferences for this effort, settled in the charting session:
   — copy `frappe/wiki`'s recipe; `e2e/helpers/frappe.ts` is reusable verbatim; a
   CI site build costs 2–3 minutes, so a pull-request gate is affordable; Insights
   already had a Playwright suite that `0abeb72f` deleted with the v2 frontend.
+- [02 — The flow inventory and its ranking](issues/02-flow-inventory.md) — 69
+  flows across seven areas; the cut is tier A + tier B + C13 + C15, which is 56
+  of 69 or 81%; flows split into cheap **verify** flows riding on seeded content
+  and slow **author** flows that carry the churn.
+- [04 — The fixture dataset](issues/04-fixture-dataset.md) — the committed
+  `insights_demo_data.duckdb` is broken, every join matches zero rows, so the
+  seeded sample dashboard renders empty under CI; replaced by a declarative spec
+  and a seeded generator, measured at 17 ms, with the binary leaving git.
 
 ## Not yet specified
 
@@ -62,7 +70,11 @@ Standing preferences for this effort, settled in the charting session:
   Whether Insights needs that depends on how long the suite grows. The mechanism
   is known, the trigger is not.
 - **Whether `factories.py` should be exposed over a test-only endpoint.** Ticket
-  05 may show the browser needs the same factories the Python suite uses.
+  05 may show the browser needs the same factories the Python suite uses. Ticket
+  01 found gameplan's `ui_test_helpers.py` gating pattern to copy if it does.
+- **How far the fixture spec has to stretch.** Tier C holds Funnel, Sankey, Map
+  and Bubble charts, and each wants a data shape the tier A and B spec will not
+  have. Specifiable once ticket 15 shows what extending the spec actually costs.
 
 ## Out of scope
 
@@ -71,3 +83,12 @@ Standing preferences for this effort, settled in the charting session:
 - **Unit tests for `src2` components.** This map is end-to-end only. A component
   test suite is a separate effort with a separate harness.
 - **Backend API coverage.** `insights/tests/` already owns it.
+- **Replacing the demo data download.** `insights/setup/demo.py` fetches the
+  production demo dataset from a hardcoded Google Drive link, so every new
+  install's demo experience rests on one link staying alive. Ticket 15's
+  generator could remove that dependency and make demo setup offline and
+  instant. It is ruled out here on two grounds: demo data is a first-impression
+  surface where synthetic distributions cost something real, and rebuilding it
+  is not an end-to-end testing effort. **Ticket 15 keeps the seam open** — the
+  generator must run outside a test context — so a later effort can take it up
+  without a rewrite.
