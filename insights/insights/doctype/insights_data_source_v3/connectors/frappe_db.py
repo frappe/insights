@@ -10,11 +10,11 @@ from .mariadb import get_mariadb_connection
 from .postgresql import get_postgres_connection
 
 
-def get_frappedb_connection(data_source):
+def get_frappedb_connection(data_source, socket=None):
     if data_source.database_type == "PostgreSQL":
         return get_postgres_connection(data_source)
-    else:
-        return get_mariadb_connection(data_source)
+
+    return get_mariadb_connection(data_source, socket=socket)
 
 
 def get_primary_data_source():
@@ -70,17 +70,18 @@ def get_replica_data_source():
 
 
 def get_sitedb_connection():
-    # If replica is configured, try replica connection first
     if frappe.conf.read_from_replica:
         try:
             replica = get_replica_data_source()
             return get_frappedb_connection(replica)
         except Exception:
-            # If replica fails, fall back to primary
             pass
 
     primary = get_primary_data_source()
-    return get_frappedb_connection(primary)
+    return get_frappedb_connection(
+        primary,
+        socket=frappe.conf.db_socket,
+    )
 
 
 def is_frappe_db(data_source):
