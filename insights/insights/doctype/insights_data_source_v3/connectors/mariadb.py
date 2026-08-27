@@ -18,17 +18,23 @@ def suppress_ibis_utc_warning(func):
 
 
 @suppress_ibis_utc_warning
-def get_mariadb_connection(data_source):
+def get_mariadb_connection(data_source, socket=None):
     password = data_source.get_password(raise_exception=False)
-    data_source.port = int(data_source.port or 3306)
-    return ibis.mysql.connect(
-        host=data_source.host,
-        port=data_source.port,
-        user=data_source.username,
-        password=password,
-        database=data_source.database_name,
-        charset="utf8mb4",
-        use_unicode=True,
-        ssl_mode="VERIFY_CA" if data_source.use_ssl else "DISABLED",
-        connect_timeout=5,
-    )
+
+    connection_kwargs = {
+        "user": data_source.username,
+        "password": password,
+        "database": data_source.database_name,
+        "charset": "utf8mb4",
+        "use_unicode": True,
+        "ssl_mode": "VERIFY_CA" if data_source.use_ssl else "DISABLED",
+        "connect_timeout": 5,
+    }
+
+    if socket:
+        connection_kwargs["unix_socket"] = socket
+    else:
+        connection_kwargs["host"] = data_source.host
+        connection_kwargs["port"] = int(data_source.port or 3306)
+
+    return ibis.mysql.connect(**connection_kwargs)
