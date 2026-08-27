@@ -7,8 +7,9 @@ import { DOCTYPE } from './insights'
  *
  * Insights invites people as Website Users, and `Insights User` has no desk
  * access, so the fixture user matches an invited member rather than a System
- * User. The password is reset on every run: the run must not depend on what an
- * earlier run, or a person, set on this account.
+ * User. The password is set only when the account is created. Frappe clears a
+ * user's sessions whenever `new_password` is written, so resetting it on every
+ * run invalidates a saved `storageState` that another worker is still using.
  */
 export async function ensureInsightsUser(
 	api: FrappeApi,
@@ -20,7 +21,6 @@ export async function ensureInsightsUser(
 		enabled: 1,
 		user_type: 'Website User',
 		send_welcome_email: 0,
-		new_password: credentials.pwd,
 		roles: [{ role }],
 	}
 
@@ -33,6 +33,7 @@ export async function ensureInsightsUser(
 		email,
 		first_name: 'E2E',
 		last_name: 'Viewer',
+		new_password: credentials.pwd,
 		...profile,
 	})
 }

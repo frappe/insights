@@ -15,12 +15,22 @@ import { storageStatePath } from './e2e/helpers/auth'
  * Locally:
  *
  *     cd ~/frappe/develop-bench && bench start
+ *     bench --site <site> set-config max_queued_jobs 100000 --parse
  *     cd frontend && yarn build          # /insights needs the built entry
  *     E2E_BASE_URL=http://test.insights.localhost:8000 npx playwright test
  *
  * A vite dev server cannot host this suite. `/insights` under `yarn dev` is
  * vite's own `index.html`, so it carries no `window.csrf_token` and the setup
  * project fails. Point the suite at the bench port, not at vite.
+ *
+ * **Why `max_queued_jobs` is not optional.** A full run enqueues about 300
+ * background jobs, mostly link cleanup behind the Workbook deletes the fixtures
+ * make. One `bench worker` drains about two a second, so the queue grows by
+ * about 190 jobs a run and never empties between runs. Once it passes
+ * `max_queued_jobs`, which is 500 plus 50 per site on the bench, Frappe answers
+ * every write that enqueues a job with a 503 `QueueOverloaded`. That reddened
+ * 17 of 54 tests in one measured run, across four spec files at once. The jobs
+ * are cleanup the suite never reads, so a deep queue costs it nothing.
  */
 const baseURL = process.env.E2E_BASE_URL || 'http://test.insights.localhost:8000'
 
@@ -38,10 +48,21 @@ export default defineConfig({
 	grepInvert: excludeQuarantined,
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI ? 2 : 0,
-	// One Frappe site answers every worker, and its web process is not the
-	// bottleneck a browser is. Four workers keeps the site busy without queueing
-	// query executions behind each other.
-	workers: process.env.CI ? 4 : undefined,
+	// Three workers, everywhere. Playwright's local default is half the cores,
+	// which is five on the machine this was measured on, and five loses about
+	// one chart flow a run.
+	//
+	// The reason is ticket 18. A chart page saves itself about every 1.5
+	// seconds, for as long as it is open, and each save answer replaces the
+	// whole document, so a click made while a save is in flight is dropped. The
+	// odds of landing in that window scale with the round trip, and the round
+	// trip scales with how many workers share the one Frappe site. No ordering
+	// of clicks escapes it, because there is always a save in flight.
+	//
+	// Measured over seven full runs each: five workers 56, 55, 55, 56, 55, 55,
+	// 55 in 60 seconds; three workers 56 every run in 77. Sixteen seconds buys
+	// the gate.
+	workers: 3,
 	reporter: process.env.CI
 		? [['github'], ['html', { open: 'never' }]]
 		: [['list'], ['html', { open: 'never' }]],

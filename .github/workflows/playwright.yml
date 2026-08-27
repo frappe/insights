@@ -121,6 +121,13 @@ jobs:
         run: |
           bench --site "$SITE_NAME" set-config allow_tests 1 --parse
           bench --site "$SITE_NAME" set-config host_name "$SITE_URL"
+          # One `bench worker` drains about two jobs a second, and a full suite
+          # run enqueues about 300. Frappe answers every write that enqueues a
+          # job with a 503 once the queue passes `max_queued_jobs`, which
+          # defaults to 550 on a one-site bench. That turned half the suite red
+          # in one measured run. The jobs here are link cleanup and reference
+          # syncing, so a deep queue costs the suite nothing.
+          bench --site "$SITE_NAME" set-config max_queued_jobs 100000 --parse
 
       # The suite reads the demo dataset and asserts on its exact row counts, so
       # the Data Source has to exist before any test runs. `CI` makes

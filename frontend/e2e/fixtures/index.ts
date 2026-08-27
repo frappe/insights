@@ -27,6 +27,8 @@ export type InsightsFixtures = {
 	viewerApi: FrappeApi
 	/** A browser page signed in as the viewer. */
 	viewerPage: Page
+	/** A browser page with no session at all. What a link recipient sees. */
+	guestPage: Page
 	/** The demo Data Source, checked to exist and to have its tables synced. */
 	demoDataSource: string
 	/** An empty Workbook. Deleted after the test, with everything inside it. */
@@ -68,6 +70,20 @@ export const test = base.extend<InsightsFixtures>({
 
 	viewerPage: async ({ browser }, use) => {
 		const context = await browser.newContext({ storageState: storageStatePath('viewer') })
+		const page = await context.newPage()
+		await use(page)
+		await context.close()
+	},
+
+	guestPage: async ({ browser, baseURL }, use) => {
+		// An empty storage state, not the project default. The `page` fixture
+		// carries the admin session, so a guest flow that reused it would prove
+		// nothing. `browser.newContext` takes no options from the config, so
+		// `baseURL` is passed on.
+		const context = await browser.newContext({
+			baseURL,
+			storageState: { cookies: [], origins: [] },
+		})
 		const page = await context.newPage()
 		await use(page)
 		await context.close()

@@ -43,9 +43,27 @@ Standing preferences for this effort, settled in the charting session:
   fixture data is the main source of slow, flaky suites.
 - **Enforced beats written.** Prose the agents read once will drift. Lint holds.
 
+## Open
+
+- [16 — An autosave answer drops every edit made while it was in flight](issues/16-autosave-drops-concurrent-edit.md)
+  — a product bug in `frontend/src2/helpers/resource.ts`, behind three symptoms
+  two agents found separately; the suite works around it and cannot record it.
+- [18 — A chart page saves itself about every 1.5 seconds, forever](issues/18-chart-page-saves-itself-forever.md)
+  — an `undefined` granularity makes any chart over a text column permanently
+  dirty, so the autosave never stops; that turns ticket 16's one-round-trip
+  window into a permanent one, and it is why chart author flows cannot be made
+  deterministic. One line fixes both, and that line is already on another
+  branch.
+
 ## Decisions so far
 
 <!-- one line per resolved ticket -->
+
+- [17 — Make the suite stable enough to gate a merge](issues/17-suite-stability.md)
+  — the mass failure is the bench's background job queue crossing
+  `max_queued_jobs`, which turns every write into a 503, reproduced by driving
+  the queue over the cap; the residual one-a-run flake is tickets 16 and 18, and
+  three workers is what holds it down until they land.
 
 - [01 — How other Frappe apps run browser tests in CI](issues/resolved/01-how-frappe-apps-run-browser-tests.md)
   — copy `frappe/wiki`'s recipe; `e2e/helpers/frappe.ts` is reusable verbatim; a

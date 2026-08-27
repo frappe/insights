@@ -95,6 +95,10 @@ statement. Three rules follow:
 2. Never seed in `test.beforeAll` for several tests to share. Shared state makes
    the order matter and turns one failure into many.
 3. Never depend on a record another test created. Tests run in parallel.
+4. A site-wide setting is not yours alone. One flow turns `enable_permissions`
+   on, and every other worker sees it for as long as that test runs. Restore it
+   in a `finally`, keep the window to the assertions that need it, and expect
+   the setup project to force it back at the start of the next run.
 
 Need something the ladder does not give? Call the seeding functions from
 `helpers/insights.ts` directly with `adminApi` or `viewerApi`. Do not add a
@@ -171,6 +175,13 @@ XPath is banned outright.
 - **frappe-ui `Button` renders `<button aria-label="{label}">`.** Any button
   written as `<Button :label="__('New Workbook')" />` is
   `getByRole('button', { name: 'New Workbook' })`.
+- **A frappe-ui `Button` drops a fallthrough `:aria-label`.** Its render sets
+  `'aria-label': props.label` after it spreads the other attributes. Your
+  `:aria-label` is overwritten by `undefined` and never reaches the DOM. Use
+  `:label` on a frappe-ui `Button`. Use `:aria-label` only on a plain `<button>`.
+- **`:label` on an icon-only Button adds no visible text.** The render picks
+  `slots.default?.() ?? props.label`, so a default slot wins. An icon in the
+  slot keeps the button icon-only and only the accessible name changes.
 - **Icon-only buttons often pass no `label`**, so they have no accessible name.
   Examples are the export and alert buttons in the results footer and the `+` in
   the tab bar. Prefer adding `:label="__('Export')"` to that Button in
@@ -179,14 +190,19 @@ XPath is banned outright.
 - **`src2` ships zero `data-testid` attributes.** `getByTestId` works only after
   you add one. Add one only when the ladder and the `:label` route both fail.
 - **Labels pass through `__()`.** The test site runs in English, so the source
-  string is the rendered string.
+  string is the rendered string. This app defines its own `__` in
+  `frontend/src2/translation.ts`. It takes positional arguments, not an array,
+  so `__('Add {0}', section.title)` is correct.
 - **A workbook sidebar item is a router link carrying the title.** A Query tab
   is `getByRole('link', { name: query.title })`, not a button.
-- **The sidebar `+` that adds a Query or a Chart has no accessible name**, and a
-  `new folder` button sits beside it. The two differ only by their lucide icon
-  class, so scope by the section heading and the icon:
-  `div.mb-1:has(div:text-is("Charts")) button:has(svg.lucide-plus)`. The folder
-  button carries `lucide-folder-plus`, which that class does not match.
+- **The sidebar `+` that adds a Query or a Chart is named after its section.**
+  Use `getByRole('button', { name: 'Add Charts' })`, and the same shape for
+  `Add Queries` and `Add Dashboards`. The row `X` is `Remove <title>`. The
+  second header button is `New folder in <section>`.
+- **Two components draw the workbook sidebar, and they look almost the same.**
+  `WorkbookSidebarFolders.vue` draws Queries and Charts.
+  `WorkbookSidebarListSection.vue` draws Dashboards only. Edit the right one.
+  Check the rendered DOM before you trust a source read.
 - **Charts render as SVG**, so axis labels, legend entries and data labels are
   real `<text>` nodes. `getByText('delivered')` reaches them. Map charts are the
   one exception and render to canvas. See "Asserting on a chart" below.
@@ -285,6 +301,74 @@ await expect(page.getByText('delivered')).not.toHaveCount(0, { timeout: 15_000 }
 An `if` in a test means the test does not know what it asserts. Lint rejects it.
 Split the branches into two tests, or seed the state you need.
 
+### Never wait in the middle of an edit
+
+**This is the rule that decides whether an author flow is flaky.** Read it
+before you write one.
+
+Every editor in this app autosaves. `useDocumentResource` sends the save 1.5
+seconds after the document's first unsaved change, and `updateDocState`
+replaces the whole document with the answer. So **an edit made while a save is
+in flight is thrown away**, with no error and no toast. The chart builder snaps
+its picker back to the empty state. The dashboard filter editor keeps an item
+the dashboard no longer holds, and its Save writes nothing.
+
+Two edits of one interaction must therefore run **back to back**, with nothing
+awaited between them:
+
+```ts
+// yes — every pick lands inside one save
+await section(page, 'Rows').getByRole('button', { name: 'Select a column' }).click()
+await page.getByRole('option', { name: 'order_purchase_timestamp' }).click()
+await section(page, 'Values').getByRole('button', { name: 'Select a column' }).click()
+await page.getByText('Count of...', { exact: true }).click()
+await measureDialog.getByText('order_id', { exact: true }).click()
+await expect(page.getByRole('cell', { name: 'September, 2016' })).toBeVisible()
+```
+
+```ts
+// no — the assertion outlives the debounce, so the save answer lands on the
+// next pick and drops it
+await section(page, 'Rows').getByRole('button', { name: 'Select a column' }).click()
+await page.getByRole('option', { name: 'order_purchase_timestamp' }).click()
+await expect(page.getByRole('cell', { name: 'September, 2016' })).toBeVisible()
+await section(page, 'Values').getByRole('button', { name: 'Select a column' }).click()
+```
+
+Four shapes follow, best first.
+
+1. **One edit per flow.** A flow that makes one edit cannot lose it. "A user
+   renames and removes columns" is two flows. "A user sorts a chart" and "a user
+   flips that sort" are two flows, and the second one seeds the sort. Splitting
+   costs a title and buys determinism.
+2. **Seed what the flow is not about, and seed it the way the app would.** A
+   filter the flow only applies is a fixture, not a click. `createDashboard`
+   seeds filter items for exactly this.
+
+   More important: **seed the defaults the builder would write.** The chart
+   builder adds `filters` and `y_axis.stack` to any Bar config that arrives
+   without them, and the dashboard grid adds `moved` to any layout. A seed
+   missing those is dirty the moment the page mounts, and the autosave 1.5
+   seconds later lands in the middle of the flow. `countByConfig` and
+   `createDashboard` carry the measured sets. Add to them rather than working
+   around them, and measure the set by loading a seeded document and reading it
+   back.
+3. **Assert after the whole interaction, not between its steps.** Where a flow
+   really needs several edits, run them back to back and assert once at the end.
+   This narrows the window. It does not close it, because the browser can stall
+   for longer than the debounce under five workers.
+4. **Put an unavoidable wait first.** A dialog that has to load something waits
+   before the first edit, never between two. A wait before the first edit costs
+   nothing, because no save is pending yet.
+
+**An assertion in the middle does not mean the save has landed.** The save and
+the query execution are two requests, and the results usually arrive first. Two
+edits either side of a result assertion is the exact shape that failed here,
+four times, in three different spec files.
+
+The lost edit is a product bug, not a test bug. Do not fix it in `src2`. Ticket
+16 on the map records it.
+
 ## The demo dataset
 
 `insights/setup/demo_data/spec.py` generates it. The Data Source is `demo_data`.
@@ -310,7 +394,7 @@ Category values, safe to assert on:
 - `product_category_name`: 12 Portuguese category names, `cama_mesa_banho` the
   most common.
 - Cities and states are Brazilian, for example `sao paulo` and `SP`.
-- `order_purchase_timestamp` runs from 2016-09-01 to 2018-10-31, which is 23
+- `order_purchase_timestamp` runs from 2016-09-01 to 2018-10-31, which is 26
   distinct months.
 
 All 8 declared foreign keys join with zero orphans, so any join in the spec
@@ -373,6 +457,49 @@ CI=1 bench --site <site> execute insights.setup.setup_wizard.setup_demo_data
 `CI` is what makes the generated, deterministic dataset the one that lands.
 Without it the setup downloads the production dataset, whose row counts are not
 the ones this file lists.
+
+### Raise the background job ceiling, once per site
+
+```sh
+bench --site <site> set-config max_queued_jobs 100000 --parse
+```
+
+A full run enqueues about 300 background jobs. Most are the link cleanup behind
+the Workbook deletes the fixtures make, and the rest are query reference syncs.
+One `bench worker` drains about two a second, so the queue grows by about 190
+jobs a run and never empties between runs.
+
+Frappe caps the queue at `max_queued_jobs`, which is 500 plus 50 per site on the
+bench. Past the cap it answers **every write that enqueues a job** with a 503
+`QueueOverloaded`. Seeding, teardown and the app's own autosave all take that
+route, so the failure lands on whichever tests happen to be running. One
+measured run lost 17 of 54 tests across four spec files this way, and the next
+run was clean because the queue had drained.
+
+The suite's REST client retries a 503 and a 508 with backoff, because Frappe
+uses both to mean "retry later". That covers a burst. It does not cover a queue
+that never drains, so raise the ceiling.
+
+**A mass failure that spans unrelated spec files is this, until proved
+otherwise.** Read the queue before you read the tests:
+
+```sh
+redis-cli -p <redis_queue_port> llen "rq:queue:<bench>:default"
+```
+
+### Three workers, not more
+
+`playwright.config.ts` pins `workers: 3`, in CI and locally. Playwright's own
+default is half the cores, and five loses about one chart flow a run.
+
+The reason is ticket 18 on the map: a chart page saves itself about every 1.5
+seconds for as long as it is open, so there is always a save in flight to lose a
+click to, and the odds scale with the round trip. Measured over seven full runs
+each — five workers gave 56, 55, 55, 56, 55, 55, 55 in 60 seconds, three gave 56
+every run in 77.
+
+Raise it again when ticket 18 lands, and measure over at least five full runs
+before you believe the result.
 
 ## Quarantine
 

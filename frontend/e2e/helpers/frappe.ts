@@ -1,4 +1,4 @@
-import type { APIRequestContext } from '@playwright/test'
+import type { APIRequestContext, APIResponse } from '@playwright/test'
 
 /**
  * REST access to a Frappe site. Adapted from frappe/wiki's e2e/helpers/frappe.ts.
@@ -7,6 +7,45 @@ import type { APIRequestContext } from '@playwright/test'
  * suite logs in as two roles, and a CSRF token belongs to a single session, so
  * the token is bound to the client instead of cached globally.
  */
+
+/**
+ * The two statuses Frappe uses to mean "retry later", and nothing else.
+ *
+ * 503 is `QueueOverloaded`, raised when the bench's background queue is over
+ * `max_queued_jobs`. Every write that enqueues a job gets it, and a Workbook
+ * delete enqueues one per document it cascades to. 508 is `QueryDeadlockError`,
+ * which the framework documents as "a concurrent transaction is blocking this
+ * one, retry later". Both clear on their own, so a seeding call that gives up
+ * on the first one fails a test for a reason the test is not about.
+ */
+const RETRY_STATUSES = [503, 508]
+const RETRY_ATTEMPTS = 8
+
+function backoffDelay(attempt: number): number {
+	// Jittered, so parallel workers that all bounced off the same overloaded
+	// queue do not come back in step. 8 attempts span roughly 30 seconds.
+	const base = Math.min(250 * 2 ** attempt, 8_000)
+	return base / 2 + Math.random() * (base / 2)
+}
+
+function sleep(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+/** Send a request, and send it again while Frappe answers "retry later". */
+async function sendWithRetry(send: () => Promise<APIResponse>): Promise<APIResponse> {
+	let response = await send()
+
+	for (let attempt = 0; attempt < RETRY_ATTEMPTS; attempt++) {
+		if (!RETRY_STATUSES.includes(response.status())) {
+			return response
+		}
+		await sleep(backoffDelay(attempt))
+		response = await send()
+	}
+
+	return response
+}
 
 export interface FrappeResponse<T = unknown> {
 	message?: T
@@ -56,10 +95,9 @@ export function createFrappeApi(request: APIRequestContext, csrfToken: string): 
 		doctype: string,
 		doc: Record<string, unknown>,
 	): Promise<T> {
-		const response = await request.post(`/api/resource/${doctype}`, {
-			data: doc,
-			headers: writeHeaders,
-		})
+		const response = await sendWithRetry(() =>
+			request.post(`/api/resource/${doctype}`, { data: doc, headers: writeHeaders }),
+		)
 
 		if (!response.ok()) {
 			throw new Error(`Failed to create ${doctype}: ${await response.text()}`)
@@ -70,7 +108,9 @@ export function createFrappeApi(request: APIRequestContext, csrfToken: string): 
 	}
 
 	async function getDoc<T = Record<string, unknown>>(doctype: string, name: string): Promise<T> {
-		const response = await request.get(`/api/resource/${doctype}/${encodeURIComponent(name)}`)
+		const response = await sendWithRetry(() =>
+			request.get(`/api/resource/${doctype}/${encodeURIComponent(name)}`),
+		)
 
 		if (!response.ok()) {
 			throw new Error(`Failed to get ${doctype}/${name}: ${await response.text()}`)
@@ -85,10 +125,12 @@ export function createFrappeApi(request: APIRequestContext, csrfToken: string): 
 		name: string,
 		updates: Record<string, unknown>,
 	): Promise<T> {
-		const response = await request.put(`/api/resource/${doctype}/${encodeURIComponent(name)}`, {
-			data: updates,
-			headers: writeHeaders,
-		})
+		const response = await sendWithRetry(() =>
+			request.put(`/api/resource/${doctype}/${encodeURIComponent(name)}`, {
+				data: updates,
+				headers: writeHeaders,
+			}),
+		)
 
 		if (!response.ok()) {
 			throw new Error(`Failed to update ${doctype}/${name}: ${await response.text()}`)
@@ -99,11 +141,10 @@ export function createFrappeApi(request: APIRequestContext, csrfToken: string): 
 	}
 
 	async function deleteDoc(doctype: string, name: string): Promise<void> {
-		const response = await request.delete(
-			`/api/resource/${doctype}/${encodeURIComponent(name)}`,
-			{
+		const response = await sendWithRetry(() =>
+			request.delete(`/api/resource/${doctype}/${encodeURIComponent(name)}`, {
 				headers: csrfHeader,
-			},
+			}),
 		)
 
 		if (!response.ok()) {
@@ -132,7 +173,9 @@ export function createFrappeApi(request: APIRequestContext, csrfToken: string): 
 			params.set('order_by', options.orderBy)
 		}
 
-		const response = await request.get(`/api/resource/${doctype}?${params.toString()}`)
+		const response = await sendWithRetry(() =>
+			request.get(`/api/resource/${doctype}?${params.toString()}`),
+		)
 
 		if (!response.ok()) {
 			throw new Error(`Failed to get list of ${doctype}: ${await response.text()}`)
@@ -146,10 +189,9 @@ export function createFrappeApi(request: APIRequestContext, csrfToken: string): 
 		method: string,
 		args: Record<string, unknown> = {},
 	): Promise<T> {
-		const response = await request.post(`/api/method/${method}`, {
-			data: args,
-			headers: writeHeaders,
-		})
+		const response = await sendWithRetry(() =>
+			request.post(`/api/method/${method}`, { data: args, headers: writeHeaders }),
+		)
 
 		if (!response.ok()) {
 			throw new Error(`Failed to call ${method}: ${await response.text()}`)
