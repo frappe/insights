@@ -178,7 +178,7 @@ export function downloadImage(element: HTMLElement, filename: string, scale = 2,
 export function formatNumber(number: number, precision = 0) {
 	if (isNaN(number)) return number
 	precision = precision || guessPrecision(number)
-	const locale = session.site?.country == 'India' ? 'en-IN' : session.user?.locale
+	const locale = session.user?.country == 'India' ? 'en-IN' : session.user?.locale
 	return new Intl.NumberFormat(locale || 'en-US', {
 		minimumFractionDigits: precision,
 		maximumFractionDigits: precision,
@@ -223,7 +223,7 @@ export function guessPrecision(number: number) {
 
 
 export function getShortNumber(number: number, precision = 0) {
-	const locale = session.site?.country == 'India' ? 'en-IN' : session.user?.locale
+	const locale = session.user?.country == 'India' ? 'en-IN' : session.user?.locale
 	let formatted = new Intl.NumberFormat(locale || 'en-US', {
 		notation: 'compact',
 		maximumFractionDigits: precision,

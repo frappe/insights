@@ -33,10 +33,7 @@ def get_site_info():
     """Settings of the site, not of whoever reads it. A guest opening a public
     dashboard needs them to print an amount the way the workbook does, and they
     say nothing a public dashboard does not already show."""
-    return {
-        "country": frappe.db.get_single_value("System Settings", "country"),
-        **get_currency_info(),
-    }
+    return get_currency_info()
 
 
 def get_currency_info():
@@ -91,6 +88,8 @@ def get_user_info():
         "is_admin": is_admin,
         "is_user": is_user or frappe.session.user == "Administrator",
         "can_download": is_admin or bool(frappe.db.get_single_value("Insights Settings", "allow_download")),
+        # the v2 frontend reads this too, so it stays on the user payload here
+        "country": frappe.db.get_single_value("System Settings", "country"),
         "locale": locale,
         "is_v2_instance": frappe.db.count("Insights Query") > 0,
         "default_version": get_user_default("insights_default_version", frappe.session.user),

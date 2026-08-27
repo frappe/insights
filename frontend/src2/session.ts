@@ -10,6 +10,7 @@ type SessionUser = {
 	is_admin: boolean
 	is_user: boolean
 	can_download: boolean
+	country: string
 	locale: string
 	is_v2_instance: boolean
 	default_version: 'v3' | 'v2' | ''
@@ -22,14 +23,12 @@ type SessionUser = {
 // dashboard gets these and nothing else, so a shared chart prints its amounts
 // the same way the workbook does.
 type SiteInfo = {
-	country: string
 	currency: string | null
 	currency_symbol: string
 	currency_symbol_on_right: boolean
 }
 
 const emptySite: SiteInfo = {
-	country: '',
 	currency: null,
 	currency_symbol: '',
 	currency_symbol_on_right: false,
@@ -44,6 +43,7 @@ const emptyUser: SessionUser = {
 	is_admin: false,
 	is_user: false,
 	can_download: true,
+	country: '',
 	locale: 'en-US',
 	is_v2_instance: false,
 	default_version: '',
