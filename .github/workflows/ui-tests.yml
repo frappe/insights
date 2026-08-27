@@ -1,3 +1,6 @@
+# Not `playwright.yml`. That path carries a workflow the repository disabled by
+# hand, and GitHub keeps that state against the path, not the contents — a
+# rewrite there is never dispatched. `frappe/wiki` uses this name too.
 name: UI
 
 on:
