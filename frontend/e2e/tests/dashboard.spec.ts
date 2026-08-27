@@ -85,14 +85,9 @@ test.describe('dashboard', () => {
 	})
 
 	/**
-	 * Building a filter and using one are two flows, not one.
-	 *
-	 * The editor keeps a draft and writes it onto the dashboard's item on Save,
-	 * so the item it writes onto has to still be the one the dashboard holds.
-	 * Adding the filter starts a save, and ticket 16's autosave answer replaces
-	 * `doc.items` while the editor is open, which leaves the editor holding an
-	 * orphan. Using a filter edits nothing at all, so it belongs on its own,
-	 * over a filter the fixture seeded.
+	 * Building a filter and using one are two flows, not one. Building writes to
+	 * the dashboard. Using a filter edits nothing at all, so it belongs on its
+	 * own, over a filter the fixture seeded.
 	 */
 	test('a user adds a dashboard filter', async ({
 		page,

@@ -76,7 +76,11 @@ export interface FrappeApi {
 	getList<T = Record<string, unknown>>(doctype: string, options?: ListOptions): Promise<T[]>
 	callMethod<T = unknown>(method: string, args?: Record<string, unknown>): Promise<T>
 	docExists(doctype: string, name: string): Promise<boolean>
+	uploadFile(fileName: string, content: string): Promise<UploadedFile>
 }
+
+/** What `/api/method/upload_file` returns. `name` is the File document. */
+export type UploadedFile = { name: string; file_name: string; file_url: string }
 
 export function createFrappeApi(request: APIRequestContext, csrfToken: string): FrappeApi {
 	if (!csrfToken) {
@@ -210,5 +214,32 @@ export function createFrappeApi(request: APIRequestContext, csrfToken: string): 
 		}
 	}
 
-	return { createDoc, getDoc, updateDoc, deleteDoc, getList, callMethod, docExists }
+	/**
+	 * Upload a file the way the browser does, as multipart.
+	 *
+	 * Insights reads an uploaded CSV by File document name, so a flow that seeds
+	 * an upload needs the real upload route and not a File row written over
+	 * REST. The file is private, which is what the upload dialog sends.
+	 */
+	async function uploadFile(fileName: string, content: string): Promise<UploadedFile> {
+		const response = await sendWithRetry(() =>
+			request.post('/api/method/upload_file', {
+				headers: csrfHeader,
+				multipart: {
+					is_private: '1',
+					file_name: fileName,
+					file: { name: fileName, mimeType: 'text/csv', buffer: Buffer.from(content) },
+				},
+			}),
+		)
+
+		if (!response.ok()) {
+			throw new Error(`Failed to upload ${fileName}: ${await response.text()}`)
+		}
+
+		const result: FrappeResponse<UploadedFile> = await response.json()
+		return result.message as UploadedFile
+	}
+
+	return { createDoc, getDoc, updateDoc, deleteDoc, getList, callMethod, docExists, uploadFile }
 }

@@ -7,11 +7,10 @@ The generator needs no Frappe context. Run it from the command line with
 `python -m insights.setup.demo_data.generator <path>`.
 
 One seed gives one dataset. The DuckDB file bytes still differ between runs,
-because DuckDB writes its own storage metadata, so `content_fingerprint` hashes
-the rows instead.
+because DuckDB writes its own storage metadata, so compare the generated rows
+rather than the file.
 """
 
-import hashlib
 import os
 import random
 import tempfile
@@ -122,16 +121,6 @@ def foreign_keys(spec):
                 yield table.name, column.name, column.value.table, column.value.column
             elif isinstance(column.value, ParentKey):
                 yield table.name, column.name, table.parent.table, table.parent.column
-
-
-def content_fingerprint(rows):
-    """Hash the generated rows. Equal seeds give equal fingerprints."""
-    digest = hashlib.sha256()
-    for name in sorted(rows):
-        digest.update(name.encode())
-        for row in rows[name]:
-            digest.update(repr(sorted(row.items())).encode())
-    return digest.hexdigest()
 
 
 # --- building ---------------------------------------------------------------

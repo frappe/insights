@@ -89,17 +89,18 @@ The Workbook rungs stack. A test that names `workbookWithChart` gets one
 Workbook and one teardown, because `Insights Workbook.on_trash` cascades.
 
 **A test states what it depends on.** The destructured fixture list is that
-statement. Three rules follow:
+statement. Four rules follow:
 
 1. Name `demoDataSource` in any test that reads demo rows, even when a Workbook
    fixture already pulls it in. The name is the dependency record.
 2. Never seed in `test.beforeAll` for several tests to share. Shared state makes
    the order matter and turns one failure into many.
 3. Never depend on a record another test created. Tests run in parallel.
-4. A site-wide setting is not yours alone. One flow turns `enable_permissions`
-   on, and every other worker sees it for as long as that test runs. Restore it
-   in a `finally`, keep the window to the assertions that need it, and expect
-   the setup project to force it back at the start of the next run.
+4. **Never write a site-wide setting from a test.** The suite runs fully
+   parallel against one site, so the write reaches every worker beside you. The
+   setup project owns these. It turns `enable_permissions` on for the whole run,
+   which is why the viewer reaches no Data Source and the admin reaches every
+   one.
 
 Need something the ladder does not give? Call the seeding functions from
 `helpers/insights.ts` directly with `adminApi` or `viewerApi`. Do not add a
@@ -302,73 +303,22 @@ await expect(page.getByText('delivered')).not.toHaveCount(0, { timeout: 15_000 }
 An `if` in a test means the test does not know what it asserts. Lint rejects it.
 Split the branches into two tests, or seed the state you need.
 
-### Never wait in the middle of an edit
-
-**This is the rule that decides whether an author flow is flaky.** Read it
-before you write one.
+### Autosave
 
 Every editor in this app autosaves. `useDocumentResource` sends the save 1.5
-seconds after the document's first unsaved change, and `updateDocState`
-replaces the whole document with the answer. So **an edit made while a save is
-in flight is thrown away**, with no error and no toast. The chart builder snaps
-its picker back to the empty state. The dashboard filter editor keeps an item
-the dashboard no longer holds, and its Save writes nothing.
+seconds after the document's first unsaved change. An edit made while that save
+is in flight survives it: `updateDocState` merges the answer instead of
+replacing the document, and writes the kept edit straight after. So a flow may
+assert between two edits of one interaction.
 
-Two edits of one interaction must therefore run **back to back**, with nothing
-awaited between them:
+**An assertion still does not mean the save has landed.** The save and the query
+execution are two requests, and the results usually arrive first. A flow that
+reloads the page must assert on something the save wrote before it reloads.
 
-```ts
-// yes — every pick lands inside one save
-await section(page, 'Rows').getByRole('button', { name: 'Select a column' }).click()
-await page.getByRole('option', { name: 'order_purchase_timestamp' }).click()
-await section(page, 'Values').getByRole('button', { name: 'Select a column' }).click()
-await page.getByText('Count of...', { exact: true }).click()
-await measureDialog.getByText('order_id', { exact: true }).click()
-await expect(page.getByRole('cell', { name: 'September, 2016' })).toBeVisible()
-```
-
-```ts
-// no — the assertion outlives the debounce, so the save answer lands on the
-// next pick and drops it
-await section(page, 'Rows').getByRole('button', { name: 'Select a column' }).click()
-await page.getByRole('option', { name: 'order_purchase_timestamp' }).click()
-await expect(page.getByRole('cell', { name: 'September, 2016' })).toBeVisible()
-await section(page, 'Values').getByRole('button', { name: 'Select a column' }).click()
-```
-
-Four shapes follow, best first.
-
-1. **One edit per flow.** A flow that makes one edit cannot lose it. "A user
-   renames and removes columns" is two flows. "A user sorts a chart" and "a user
-   flips that sort" are two flows, and the second one seeds the sort. Splitting
-   costs a title and buys determinism.
-2. **Seed what the flow is not about, and seed it the way the app would.** A
-   filter the flow only applies is a fixture, not a click. `createDashboard`
-   seeds filter items for exactly this.
-
-   More important: **seed the defaults the builder would write.** The chart
-   builder adds `filters` and `y_axis.stack` to any Bar config that arrives
-   without them, and the dashboard grid adds `moved` to any layout. A seed
-   missing those is dirty the moment the page mounts, and the autosave 1.5
-   seconds later lands in the middle of the flow. `countByConfig` and
-   `createDashboard` carry the measured sets. Add to them rather than working
-   around them, and measure the set by loading a seeded document and reading it
-   back.
-3. **Assert after the whole interaction, not between its steps.** Where a flow
-   really needs several edits, run them back to back and assert once at the end.
-   This narrows the window. It does not close it, because the browser can stall
-   for longer than the debounce under five workers.
-4. **Put an unavoidable wait first.** A dialog that has to load something waits
-   before the first edit, never between two. A wait before the first edit costs
-   nothing, because no save is pending yet.
-
-**An assertion in the middle does not mean the save has landed.** The save and
-the query execution are two requests, and the results usually arrive first. Two
-edits either side of a result assertion is the exact shape that failed here,
-four times, in three different spec files.
-
-The lost edit is a product bug, not a test bug. Do not fix it in `src2`. Ticket
-16 on the map records it.
+**Seed what the flow is not about.** A filter the flow only applies is a
+fixture, not a click. `createDashboard` seeds filter items for exactly this.
+Seed the config a user would leave behind, not the defaults the app fills in —
+`transformChartDoc` and the dashboard transform set those on load.
 
 ## The demo dataset
 
@@ -491,24 +441,21 @@ redis-cli -p <redis_queue_port> llen "rq:queue:<bench>:default"
 ### Three workers, not more
 
 `playwright.config.ts` pins `workers: 3`, in CI and locally. Playwright's own
-default is half the cores, and five loses about one chart flow a run.
+default is half the cores, which is five on the machine this was measured on.
 
-The reason is ticket 18 on the map: a chart page saves itself about every 1.5
-seconds for as long as it is open, so there is always a save in flight to lose a
-click to, and the odds scale with the round trip. Measured over seven full runs
-each — five workers gave 56, 55, 55, 56, 55, 55, 55 in 60 seconds, three gave 56
-every run in 77.
+Three ran green over twelve consecutive full runs. Five lost about one chart
+flow a run before the autosave fix, and one chart flow over eight runs after it.
+The gap has narrowed. It is not closed, and a run that loses a flow costs more
+than the twenty seconds five workers save.
 
-Raise it again when ticket 18 lands, and measure over at least five full runs
-before you believe the result.
+**Raising this is untested.** Measure over at least five full runs at the new
+count before you believe a result.
 
 ## Quarantine
 
-A test that fails without a product change is flaky. Sibling apps measure this.
-Gameplan's nightly lane failed 6 of 15 nights while its pull-request lane stayed
-green. The realistic failure is a quarantine list nobody clears.
-
-**The window is 7 days.** Inside a week the test is fixed or deleted.
+Tag a flaky test `@quarantine` and it leaves every run, which keeps the merge
+gate green while you fix it. Fix or delete it inside a week, because a
+quarantine list nobody clears is worse than a red test.
 
 Quarantine by tag, never by skip:
 

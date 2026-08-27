@@ -10,7 +10,6 @@ binary hides a broken join. A spec shows it in the diff.
 from insights.setup.demo_data.generator import (
     BrokenFixture,
     check_integrity,
-    content_fingerprint,
     generate,
 )
 from insights.setup.demo_data.spec import DEMO_SPEC
@@ -19,6 +18,5 @@ __all__ = [
     "DEMO_SPEC",
     "BrokenFixture",
     "check_integrity",
-    "content_fingerprint",
     "generate",
 ]

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import type { FrappeApi } from './frappe'
 
 /**
@@ -30,7 +31,7 @@ export type Dimension = {
 	granularity?: string
 }
 
-export type Layout = { i: string; x: number; y: number; w: number; h: number; moved: boolean }
+export type Layout = { i: string; x: number; y: number; w: number; h: number }
 export type DashboardChartItem = { type: 'chart'; chart: string; layout: Layout }
 export type DashboardFilterItem = {
 	type: 'filter'
@@ -156,15 +157,7 @@ export async function createQuery(
 	return { name: doc.name, title, workbook: options.workbook }
 }
 
-/**
- * A row count split by a dimension. The smallest configuration a Bar Chart draws.
- *
- * `filters` and `y_axis.stack` are the builder's own defaults, and it writes
- * them into any Bar config that arrives without them. A seed without them is
- * therefore dirty the moment the builder mounts, and the autosave that follows
- * 1.5 seconds later replaces the whole document under whatever the test is
- * clicking. Measured against a seeded chart, so this is the exact pair.
- */
+/** A row count split by a dimension. The smallest configuration a Bar Chart draws. */
 export function countByConfig(dimension: Dimension): ChartConfig {
 	const rowCount: Measure = {
 		measure_name: 'count_of_rows',
@@ -174,15 +167,9 @@ export function countByConfig(dimension: Dimension): ChartConfig {
 	}
 	return {
 		x_axis: { dimension },
-		y_axis: { series: [{ measure: rowCount }], stack: true },
-		order_by: [],
-		limit: 100,
-		filters: EMPTY_CHART_FILTERS,
+		y_axis: { series: [{ measure: rowCount }] },
 	}
 }
-
-/** The empty filter group the chart builder writes into every config it opens. */
-export const EMPTY_CHART_FILTERS = { logical_operator: 'And', filters: [] }
 
 export const ORDER_STATUS_DIMENSION: Dimension = {
 	dimension_name: 'order_status',
@@ -216,14 +203,10 @@ export async function createDashboard(
 	options: { workbook: string; title?: string; charts?: string[]; filters?: SeededFilter[] },
 ): Promise<SeededDashboard> {
 	const title = options.title || uniqueTitle('Dashboard')
-	// `moved` is grid-layout-plus's own key, and the builder writes it back into
-	// every layout the moment the grid mounts. A seed without it therefore leaves
-	// the dashboard dirty on load, and the autosave that follows 1.5 seconds
-	// later replaces `doc.items` under whatever the test is editing.
 	const charts: DashboardChartItem[] = (options.charts || []).map((chart, index) => ({
 		type: 'chart',
 		chart,
-		layout: { i: `chart-${index}`, x: 0, y: index * 8 + 2, w: 10, h: 8, moved: false },
+		layout: { i: `chart-${index}`, x: 0, y: index * 8 + 2, w: 10, h: 8 },
 	}))
 	// A filter routes by a link string the dashboard parses back into a Query
 	// and a column, spelled `query`.`column` with backticks. The key is the
@@ -233,7 +216,7 @@ export async function createDashboard(
 		filter_name: filter.name,
 		filter_type: 'String',
 		links: { [filter.chart]: `\`${filter.query}\`.\`${filter.column}\`` },
-		layout: { i: `filter-${index}`, x: index * 4, y: 0, w: 4, h: 2, moved: false },
+		layout: { i: `filter-${index}`, x: index * 4, y: 0, w: 4, h: 2 },
 	}))
 	const doc = await api.createDoc<{ name: string }>(DOCTYPE.DASHBOARD, {
 		title,
@@ -310,9 +293,10 @@ export async function shareWorkbook(
 /**
  * Turn team permissions on or off for the whole site.
  *
- * Without this, every Insights User reaches every Data Source and Table, so a
- * flow about a denied Data Source has nothing to deny. It is a site-wide
- * setting, so a test that turns it on must turn it off again, in a `finally`.
+ * Without them every Insights User reaches every Data Source and Table, so a
+ * flow about a denied Data Source has nothing to deny. The setting is
+ * site-wide, so only the setup project calls this. A test that flipped it would
+ * flip it for every worker beside it.
  */
 export async function setTeamPermissions(api: FrappeApi, enabled: boolean): Promise<void> {
 	await api.updateDoc(DOCTYPE.SETTINGS, DOCTYPE.SETTINGS, {
@@ -362,4 +346,106 @@ export async function buildChartDataQuery(
 			},
 		],
 	})
+}
+
+/**
+ * The Data Source the upload dialog writes into.
+ *
+ * `insights.api.get_file_data` creates it on the first upload a site ever
+ * takes, so a flow that uploads finds it there whether or not it existed.
+ */
+export const UPLOADS_DATA_SOURCE = 'uploads'
+
+/**
+ * A Table document is named after its Data Source and its table name.
+ *
+ * `InsightsTablev3.autoname` hashes the pair, so this is the only way to reach
+ * a table document the app created. Teardown needs it.
+ */
+export function tableDocName(dataSource: string, tableName: string): string {
+	return createHash('md5').update(`${dataSource}${tableName}`).digest('hex').slice(0, 10)
+}
+
+export type UploadedTable = { dataSource: string; table: string; file: string }
+
+/**
+ * A table name no other run holds.
+ *
+ * The Uploads Data Source is site-wide, so two runs that share a table name
+ * race: one deletes the table document while the other is reading it. Measured,
+ * once, against a second suite run on the same site.
+ */
+export function uniqueTableName(label: string): string {
+	return `${E2E_TITLE_PREFIX}_${label}_${Math.random().toString(36).slice(2, 8)}`
+}
+
+/**
+ * Seed a table in the Uploads Data Source, the way the upload dialog does.
+ *
+ * Two calls, the same two the dialog makes: the file goes up the normal upload
+ * route, then Insights reads it into DuckDB under `tableName`. The import
+ * overwrites, so a rerun replaces the table rather than adding one.
+ */
+export async function uploadCsvTable(
+	api: FrappeApi,
+	tableName: string,
+	csv: string,
+): Promise<UploadedTable> {
+	const file = await api.uploadFile(`${tableName}-${Date.now()}.csv`, csv)
+	await api.callMethod('insights.api.import_csv_data', {
+		filename: file.name,
+		tablename: tableName,
+	})
+	return { dataSource: UPLOADS_DATA_SOURCE, table: tableName, file: file.name }
+}
+
+/**
+ * Drop a table's copy out of the Data Store.
+ *
+ * `clear_warehouse_data` drops the DuckDB table and clears `stored`, so the
+ * table leaves the Data Store list. It is a document method, so it goes through
+ * `run_doc_method`, the route the app uses.
+ */
+export async function clearDataStoreTable(
+	api: FrappeApi,
+	dataSource: string,
+	tableName: string,
+): Promise<void> {
+	const name = tableDocName(dataSource, tableName)
+	const docs = await api.getDoc(DOCTYPE.TABLE, name)
+	await api.callMethod('insights.api.run_doc_method', {
+		method: 'clear_warehouse_data',
+		docs,
+		args: {},
+	})
+}
+
+/**
+ * Remove an uploaded table and the file behind it.
+ *
+ * The Data Store copy goes first, because dropping it needs the table document
+ * that the next call deletes. Files are matched on a prefix, so a stray left by
+ * a killed run is cleared too.
+ */
+export async function deleteUploadedTable(api: FrappeApi, table: UploadedTable): Promise<void> {
+	await clearDataStoreTable(api, table.dataSource, table.table).catch(() => {})
+	await api.deleteDoc(DOCTYPE.TABLE, tableDocName(table.dataSource, table.table)).catch(() => {})
+	if (table.file) {
+		await api.deleteDoc('File', table.file).catch(() => {})
+	}
+	await deleteUploadedFiles(api, table.table)
+}
+
+/** Delete every File whose name starts with `prefix`. */
+export async function deleteUploadedFiles(api: FrappeApi, prefix: string): Promise<void> {
+	const files = await api
+		.getList<{ name: string }>('File', {
+			fields: ['name'],
+			filters: { file_name: ['like', `${prefix}%`] },
+			limit: 0,
+		})
+		.catch(() => [])
+	for (const file of files) {
+		await api.deleteDoc('File', file.name).catch(() => {})
+	}
 }

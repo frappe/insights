@@ -2,12 +2,23 @@
 # See license.txt
 
 import dataclasses
+import hashlib
 import os
 import tempfile
 import unittest
 
-from insights.setup.demo_data import DEMO_SPEC, BrokenFixture, check_integrity, content_fingerprint, generate
+from insights.setup.demo_data import DEMO_SPEC, BrokenFixture, check_integrity, generate
 from insights.setup.demo_data.generator import build_rows
+
+
+def fingerprint(rows):
+    """Hash the generated rows, so a failure prints a digest and not 12,000 rows."""
+    digest = hashlib.sha256()
+    for name in sorted(rows):
+        digest.update(name.encode())
+        for row in rows[name]:
+            digest.update(repr(sorted(row.items())).encode())
+    return digest.hexdigest()
 
 
 class TestDemoDataGenerator(unittest.TestCase):
@@ -16,12 +27,12 @@ class TestDemoDataGenerator(unittest.TestCase):
     def test_same_seed_gives_same_rows(self):
         first = build_rows(DEMO_SPEC, DEMO_SPEC.seed)
         second = build_rows(DEMO_SPEC, DEMO_SPEC.seed)
-        self.assertEqual(content_fingerprint(first), content_fingerprint(second))
+        self.assertEqual(fingerprint(first), fingerprint(second))
 
     def test_another_seed_gives_other_rows(self):
         first = build_rows(DEMO_SPEC, DEMO_SPEC.seed)
         second = build_rows(DEMO_SPEC, DEMO_SPEC.seed + 1)
-        self.assertNotEqual(content_fingerprint(first), content_fingerprint(second))
+        self.assertNotEqual(fingerprint(first), fingerprint(second))
 
     def test_every_foreign_key_joins(self):
         with tempfile.TemporaryDirectory() as directory:

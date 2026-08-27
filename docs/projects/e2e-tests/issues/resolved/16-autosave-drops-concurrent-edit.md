@@ -1,7 +1,7 @@
 # 16 — An autosave answer drops every edit made while it was in flight
 
 Type: bug
-Status: resolved
+Status: fixed
 Found by: 17 (suite stability)
 
 ## What happens
@@ -63,7 +63,25 @@ during the flight and replay them onto the answer. Either removes the class.
 The dashboard editor's `indexOf` identity is a second, smaller fault. An item
 that carried its own id would survive an array swap.
 
-## Answer
+## Reopened
+
+Closing this was wrong. The quarantined test passed, and I read that as the bug
+being fixed. It is not.
+
+`updateDocState` in `frontend/src2/helpers/resource.ts:173` still replaces the
+whole document with the save answer. An edit made while a save is in flight is
+still thrown away, with no error and no toast. What the cherry-pick removed is
+the *perpetual* save on a chart page, so the window is now one round trip
+instead of always open. Narrower is not closed.
+
+`frontend/e2e/AGENTS.md` still teaches four shapes to dodge the window, and the
+suite still carries about 66 lines written around it. That is the proof it is
+open.
+
+The fix this ticket asks for stands: merge the save answer, or apply only the
+fields the request sent, rather than replacing the document.
+
+## Earlier note, kept for the record
 
 Fixed by cherry-picking `b32ee6fc2 fix(frontend): measure a document's dirtiness
 against a clone` onto this branch.
@@ -73,3 +91,24 @@ gone, there is no save perpetually in flight to fall into. The dashboard filter
 flow was quarantined against this ticket and now passes: three runs alone, then
 three full-suite runs at 57 tests. The `@quarantine` tag is removed, and the
 suite has none left.
+
+## Fixed
+
+`updateDocState` takes the clone the write carried and compares it against the
+document as it stands when the answer lands. A field that no longer matches was
+edited in flight, so the newer value wins over the answer. `originalDoc` still
+takes the answer whole, which leaves the document dirty, and `saveDoc` writes
+the kept edit straight after. That second write ends the chain, because it
+carries the kept edit and so cannot differ from it.
+
+`insertDoc` takes the same route. A load still replaces the document, which is
+what a load means.
+
+Two defaults moved with it, because the suite mirrored them by hand.
+`transformChartDoc` now sets `y_axis.stack` for a Bar chart, and the dashboard
+transform sets `layout.moved`. Both were written by the page on mount, which
+made a freshly seeded document dirty before the user touched it.
+
+`frontend/e2e/AGENTS.md` loses the four dodging shapes, and the suite loses the
+mirrored defaults. "A user sorts a chart" and "a user flips that sort" are one
+flow again, and that flow asserts between the two edits.

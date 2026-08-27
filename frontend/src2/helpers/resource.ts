@@ -66,21 +66,26 @@ export default function useDocumentResource<T extends Document>(
 	// wrote the `undefined` writes it again.
 	const isDirty = computed(() => !isEqual(copy(doc.value), originalDoc.value))
 
+	// Set by `updateDocState` when the answer to a write arrived after the user
+	// had already changed a field the write carried.
+	let keptInflightEdit = false
+
 	async function insertDoc() {
 		if (!isLocal.value) return
 		await executeHooks(lifecycleHooks.beforeInsert)
 
 		isSaving.value = true
+		const sentDoc = copy(removeMetaFields(doc.value))
 		const newDoc = await call(methods.insert, {
 			doc: {
 				doctype,
-				...removeMetaFields(doc.value),
+				...sentDoc,
 			},
 		})
 			.catch(showErrorToast)
 			.finally(() => (isSaving.value = false))
 
-		updateDocState(newDoc)
+		updateDocState(newDoc, sentDoc)
 		isLocal.value = false
 		await executeHooks(lifecycleHooks.afterInsert)
 		return newDoc
@@ -99,6 +104,7 @@ export default function useDocumentResource<T extends Document>(
 		isSaving.value = true
 		await executeHooks(lifecycleHooks.beforeSave)
 
+		keptInflightEdit = false
 		if (isLocal.value) {
 			await insertDoc()
 		} else {
@@ -107,21 +113,29 @@ export default function useDocumentResource<T extends Document>(
 
 		isSaving.value = false
 		await executeHooks(lifecycleHooks.afterSave)
+
+		// The dirty watcher reads a boolean, so a document that was dirty before
+		// the write and is dirty after it raises no new edge. Write the kept
+		// edit here instead. This ends, because the next write carries the kept
+		// edit and so cannot differ from it.
+		if (keptInflightEdit) return saveDoc()
+
 		return doc.value
 	}
 
 	async function updateDoc() {
 		isSaving.value = true
+		const sentDoc = copy(removeMetaFields(doc.value))
 		const newDoc = await call(methods.update, {
 			doctype,
 			name: docname.value,
-			fieldname: removeMetaFields(doc.value),
+			fieldname: sentDoc,
 		})
 			.catch(showErrorToast)
 			.finally(() => (isSaving.value = false))
 
 		if (newDoc) {
-			updateDocState(newDoc)
+			updateDocState(newDoc, sentDoc)
 		}
 	}
 
@@ -170,9 +184,31 @@ export default function useDocumentResource<T extends Document>(
 			.finally(() => (isDeleting.value = false))
 	}
 
-	function updateDocState(newDoc: any) {
-		doc.value = transformFn({ ...newDoc }) as UnwrapRef<T>
-		originalDoc.value = copy(doc.value)
+	// `sentDoc` is the deep clone a write carried. Pass it to keep the edits the
+	// user made while that write was in flight. Leave it out to replace the
+	// document, which is what a load wants.
+	function updateDocState(newDoc: any, sentDoc?: any) {
+		const currentDoc = removeMetaFields(doc.value)
+		const answer = transformFn({ ...newDoc }) as UnwrapRef<T>
+
+		// The answer says what the server holds, so it is the new baseline even
+		// where the document has moved past it.
+		originalDoc.value = copy(answer)
+
+		if (sentDoc) {
+			for (const field of Object.keys(currentDoc)) {
+				const current = copy(currentDoc[field])
+				// An `undefined` value is dropped by `copy`, so keeping one here
+				// would make the document dirty forever. Let the answer win.
+				if (current === undefined) continue
+				if (isEqual(current, sentDoc[field])) continue
+				// The field moved after the write left, so the newer value wins.
+				;(answer as any)[field] = current
+				keptInflightEdit = true
+			}
+		}
+
+		doc.value = answer
 		docname.value = newDoc.name
 	}
 

@@ -124,12 +124,8 @@ jobs:
         run: |
           bench --site "$SITE_NAME" set-config allow_tests 1 --parse
           bench --site "$SITE_NAME" set-config host_name "$SITE_URL"
-          # One `bench worker` drains about two jobs a second, and a full suite
-          # run enqueues about 300. Frappe answers every write that enqueues a
-          # job with a 503 once the queue passes `max_queued_jobs`, which
-          # defaults to 550 on a one-site bench. That turned half the suite red
-          # in one measured run. The jobs here are link cleanup and reference
-          # syncing, so a deep queue costs the suite nothing.
+          # Not optional. See "Raise the background job ceiling" in
+          # frontend/e2e/AGENTS.md for what a full queue does to a run.
           bench --site "$SITE_NAME" set-config max_queued_jobs 100000 --parse
 
       - name: Start the site
@@ -138,6 +134,11 @@ jobs:
           sed -i '/^watch:/d' Procfile
           sed -i '/^schedule:/d' Procfile
           bench start &> bench_start.log &
+          # A Table Import runs on the `long` queue, and the Procfile's one
+          # worker serves `short`, `default` and `long` in priority order. The
+          # suite's own teardown backlog starves `long`, so the import flow
+          # never finishes. This worker takes `long` alone.
+          bench worker --queue long &> long_worker.log &
           timeout 120 bash -c "until curl -sf $SITE_URL/api/method/ping > /dev/null; do sleep 2; done"
 
       # Seeding runs after the site is up, not before: `update_progress`

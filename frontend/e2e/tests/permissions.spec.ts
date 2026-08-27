@@ -1,11 +1,9 @@
 import { expect, test } from '../fixtures'
 import { INSIGHTS_PATH, VIEWER_EMAIL } from '../helpers/auth'
 import {
-	DOCTYPE,
 	createWorkbook,
 	deleteTeam,
 	deleteWorkbook,
-	setTeamPermissions,
 	shareWorkbook,
 	uniqueTitle,
 } from '../helpers/insights'
@@ -107,30 +105,19 @@ test.describe('permissions', () => {
 	}) => {
 		await shareWorkbook(adminApi, workbook.name, [{ user: VIEWER_EMAIL, access: 'edit' }])
 
-		// Every Insights User reaches every Data Source until team permissions are
-		// on, so the flow has nothing to deny without this. The switch is
-		// site-wide and this is the only test that touches it, so the restore runs
-		// in a `finally` rather than at the end of the flow.
-		const settings = await adminApi.getDoc<{ enable_permissions: number }>(
-			DOCTYPE.SETTINGS,
-			DOCTYPE.SETTINGS,
-		)
-		await setTeamPermissions(adminApi, true)
+		// Team permissions are on for the whole run, and the viewer belongs to no
+		// team. The setup project sets the switch, because a test that flipped it
+		// would flip it for every worker beside it.
+		await viewerPage.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}`)
 
-		try {
-			await viewerPage.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}`)
+		// The three interface cards are clickable divs with no role and no
+		// label, so getByText is the first rung that reaches them.
+		await viewerPage.getByText('Query Builder').click()
 
-			// The three interface cards are clickable divs with no role and no
-			// label, so getByText is the first rung that reaches them.
-			await viewerPage.getByText('Query Builder').click()
-
-			await expect(viewerPage.getByText('Pick Starting Data')).toBeVisible()
-			await expect(
-				viewerPage.getByRole('button', { name: `orders ${demoDataSource}` }),
-			).toHaveCount(0)
-			await expect(viewerPage.getByRole('button', { name: 'Confirm' })).toBeDisabled()
-		} finally {
-			await setTeamPermissions(adminApi, Boolean(settings.enable_permissions))
-		}
+		await expect(viewerPage.getByText('Pick Starting Data')).toBeVisible()
+		await expect(
+			viewerPage.getByRole('button', { name: `orders ${demoDataSource}` }),
+		).toHaveCount(0)
+		await expect(viewerPage.getByRole('button', { name: 'Confirm' })).toBeDisabled()
 	})
 })

@@ -23,14 +23,9 @@ import { storageStatePath } from './e2e/helpers/auth'
  * vite's own `index.html`, so it carries no `window.csrf_token` and the setup
  * project fails. Point the suite at the bench port, not at vite.
  *
- * **Why `max_queued_jobs` is not optional.** A full run enqueues about 300
- * background jobs, mostly link cleanup behind the Workbook deletes the fixtures
- * make. One `bench worker` drains about two a second, so the queue grows by
- * about 190 jobs a run and never empties between runs. Once it passes
- * `max_queued_jobs`, which is 500 plus 50 per site on the bench, Frappe answers
- * every write that enqueues a job with a 503 `QueueOverloaded`. That reddened
- * 17 of 54 tests in one measured run, across four spec files at once. The jobs
- * are cleanup the suite never reads, so a deep queue costs it nothing.
+ * **`max_queued_jobs` is not optional.** A run that skips it loses whole spec
+ * files to a 503. See "Raise the background job ceiling" in
+ * `frontend/e2e/AGENTS.md` for the measurement and the diagnosis.
  */
 const baseURL = process.env.E2E_BASE_URL || 'http://test.insights.localhost:8000'
 
@@ -49,19 +44,15 @@ export default defineConfig({
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI ? 2 : 0,
 	// Three workers, everywhere. Playwright's local default is half the cores,
-	// which is five on the machine this was measured on, and five loses about
-	// one chart flow a run.
+	// which is five on the machine this was measured on.
 	//
-	// The reason is ticket 18. A chart page saves itself about every 1.5
-	// seconds, for as long as it is open, and each save answer replaces the
-	// whole document, so a click made while a save is in flight is dropped. The
-	// odds of landing in that window scale with the round trip, and the round
-	// trip scales with how many workers share the one Frappe site. No ordering
-	// of clicks escapes it, because there is always a save in flight.
+	// Three ran green over twelve consecutive full runs. Five lost about one
+	// chart flow a run before the autosave fix, and one chart flow over eight
+	// runs after it, so the gap has narrowed but is not closed. A run that loses
+	// a flow costs more than the twenty seconds five workers save.
 	//
-	// Measured over seven full runs each: five workers 56, 55, 55, 56, 55, 55,
-	// 55 in 60 seconds; three workers 56 every run in 77. Sixteen seconds buys
-	// the gate.
+	// Raising this is untested. Measure over at least five full runs at the new
+	// count before you believe a result.
 	workers: 3,
 	reporter: process.env.CI
 		? [['github'], ['html', { open: 'never' }]]

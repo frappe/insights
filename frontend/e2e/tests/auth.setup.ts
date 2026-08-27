@@ -15,11 +15,12 @@ setup('authenticate', async ({ browser }) => {
 	const adminApi = createFrappeApi(adminContext.request, readCsrfToken('admin'))
 	await ensureInsightsUser(adminApi, CREDENTIALS.viewer)
 
-	// Team permissions are off in the shape the rest of the suite expects, and
-	// one permissions flow turns them on for the length of a single test. A run
-	// killed inside that test leaves them on, and every later run then fails for
-	// a reason no test states. Start from the known side of the switch.
-	await setTeamPermissions(adminApi, false)
+	// Team permissions are on for the whole run. A test that flipped them would
+	// flip them for every worker beside it, because the suite runs fully
+	// parallel against one site. The admin bypasses team checks, so admin flows
+	// read the same either way, and the viewer belongs to no team, which is the
+	// state the denial flow needs.
+	await setTeamPermissions(adminApi, true)
 
 	await adminContext.close()
 

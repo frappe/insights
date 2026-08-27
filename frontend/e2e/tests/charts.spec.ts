@@ -1,13 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '../fixtures'
 import { INSIGHTS_PATH } from '../helpers/auth'
-import {
-	EMPTY_CHART_FILTERS,
-	createChart,
-	type ChartConfig,
-	type Dimension,
-	type Measure,
-} from '../helpers/insights'
+import { createChart, type ChartConfig, type Dimension, type Measure } from '../helpers/insights'
 
 /**
  * A section of the chart config sidebar.
@@ -63,20 +57,11 @@ function purchaseDate(granularity: string): Dimension {
 	}
 }
 
-/**
- * `filters` and `y_axis.stack` are the builder's own defaults for a Bar chart,
- * and it writes them into any config that arrives without them. Seeding them
- * keeps the chart clean on load. Without them the builder dirties the document
- * as it mounts, and the autosave 1.5 seconds later replaces the document under
- * whatever the flow is clicking. See ticket 16.
- */
+/** The smallest Bar chart configuration: a row count split by one dimension. */
 function barConfig(dimension: Dimension, extra: ChartConfig = {}): ChartConfig {
 	return {
 		x_axis: { dimension },
-		y_axis: { series: [{ measure: COUNT_OF_ROWS }], stack: true },
-		order_by: [],
-		limit: 100,
-		filters: EMPTY_CHART_FILTERS,
+		y_axis: { series: [{ measure: COUNT_OF_ROWS }] },
 		...extra,
 	}
 }
@@ -161,11 +146,6 @@ test.describe('charts', () => {
 		await page.getByRole('button', { name: 'Add Charts' }).click()
 		await page.getByRole('button', { name: 'Table', exact: true }).click()
 
-		// All three picks run back to back, with nothing waited on between them.
-		// See "Never wait in the middle of an edit" in AGENTS.md: a chart saves
-		// 1.5 seconds after its first unsaved change, and the save answer
-		// replaces the whole document, so a pick made while that request is in
-		// flight is dropped. A wait between two picks is what puts one there.
 		await section(page, 'Rows').getByRole('button', { name: 'Select a column' }).click()
 		await page.getByRole('option', { name: 'order_purchase_timestamp' }).click()
 
@@ -371,7 +351,12 @@ test.describe('charts', () => {
 		await expect(rendered.getByText('count_distinct_of_customer_id')).toBeVisible()
 	})
 
-	test('a user sorts a chart', async ({ page, adminApi, demoDataSource, workbookWithQuery }) => {
+	test('a user sorts a chart and flips it to descending', async ({
+		page,
+		adminApi,
+		demoDataSource,
+		workbookWithQuery,
+	}) => {
 		const { workbook, query } = workbookWithQuery
 		const chart = await createChart(adminApi, {
 			workbook: workbook.name,
@@ -382,6 +367,7 @@ test.describe('charts', () => {
 		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/chart/${chart.name}`)
 		await expect(previewRows(page)).toHaveCount(6)
 
+		// A chart sorts by the measure's name, not by the column it counts.
 		await page.getByRole('button', { name: 'Sort', exact: true }).click()
 		await page.getByRole('button', { name: 'Add Sort' }).click()
 		await page.getByRole('option', { name: 'count_of_rows' }).click()
@@ -389,40 +375,6 @@ test.describe('charts', () => {
 		// A new sort starts ascending, so the rarest status leads. 16 of the
 		// 2,000 demo orders are unavailable.
 		await expect(previewRows(page).first()).toContainText('unavailable')
-	})
-
-	test('a user flips a chart sort to descending', async ({
-		page,
-		adminApi,
-		demoDataSource,
-		workbookWithQuery,
-	}) => {
-		const { workbook, query } = workbookWithQuery
-		// The sort is seeded, so the flip is this chart's first unsaved change.
-		// See "Never wait in the middle of an edit" in AGENTS.md: adding the sort
-		// through the interface and then waiting for the ascending result puts the
-		// flip inside the save that follows, and the save answer drops it.
-		const chart = await createChart(adminApi, {
-			workbook: workbook.name,
-			query: query.name,
-			chartType: 'Bar',
-			// A chart sorts by the measure's name, not by the column it counts.
-			config: barConfig(ORDER_STATUS, {
-				order_by: [
-					{ column: { type: 'column', column_name: 'count_of_rows' }, direction: 'asc' },
-				],
-			}),
-		})
-		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/chart/${chart.name}`)
-
-		// Ascending leads with the rarest status. 16 of the 2,000 demo orders are
-		// unavailable.
-		await expect(previewRows(page).first()).toContainText('unavailable')
-
-		// A config section heading carries its badge count, so the seeded sort
-		// names this one "Sort 1". Opening a section changes nothing on the
-		// chart, so the flip below is still the first unsaved change.
-		await page.getByRole('button', { name: 'Sort 1' }).click()
 
 		// locator: the direction toggle is icon-only and carries no accessible
 		// name. It is the first button of the sort row, ahead of the column
@@ -430,7 +382,8 @@ test.describe('charts', () => {
 		await section(page, 'Sort').locator('div.flex.rounded > button:first-child').click()
 
 		// Descending puts the most common status first. 1,778 orders are
-		// delivered.
+		// delivered. The flip lands inside the save the sort above started, so
+		// this asserts that the save answer keeps it.
 		await expect(previewRows(page).first()).toContainText('delivered')
 	})
 
@@ -562,8 +515,6 @@ test.describe('charts', () => {
 				date_column: purchaseDate('month'),
 				comparison: true,
 				sparkline: true,
-				order_by: [],
-				limit: 100,
 			},
 		})
 		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/chart/${chart.name}`)

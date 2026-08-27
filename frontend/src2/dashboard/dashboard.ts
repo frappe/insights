@@ -440,6 +440,14 @@ function getDashboardResource(name: string) {
 		disableLocalStorage: true,
 		transform(doc: any) {
 			doc.items = safeJSONParse(doc.items) || []
+			// grid-layout-plus owns `moved` and writes it into every layout when
+			// the grid mounts, which leaves a freshly opened dashboard dirty.
+			// Set it on load instead.
+			doc.items.forEach((item: any) => {
+				if (item.layout && item.layout.moved === undefined) {
+					item.layout.moved = false
+				}
+			})
 			return doc
 		},
 	})
