@@ -8,13 +8,11 @@ only the account it just created.
 """
 
 from unittest.mock import patch
-from urllib.parse import quote
 
 import frappe
 from frappe.tests import IntegrationTestCase
 
 from insights.api.user import accept_invitation
-from insights.utils import get_app_url
 
 
 def make_invitation(email):
@@ -98,7 +96,7 @@ class TestInvitationDoesNotAuthenticate(IntegrationTestCase):
 
         self.assertEqual(self.logged_in_as, [])
         # the link still ends in Insights: the login page carries them there
-        self.assertEqual(response.location, f"/login?redirect-to={quote(get_app_url())}")
+        self.assertEqual(response.location, "/login?redirect-to=/insights")
         # the invitation still did its job
         self.assertEqual(
             frappe.db.get_value("Insights User Invitation", invitation.name, "status"), "Accepted"
