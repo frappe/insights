@@ -7,6 +7,7 @@ import frappe
 import pandas as pd
 import telegram
 from croniter import croniter
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils import escape_html, get_url, validate_email_address
 from frappe.utils.data import get_datetime, get_datetime_str, now_datetime
@@ -48,15 +49,9 @@ class InsightsAlert(Document):
         if self.query:
             self.has_query_permission()
 
-<<<<<<< HEAD
-=======
         if self.channel == "Email":
             self.get_recipients()
 
-        if self.channel == "Webhook":
-            self.validate_webhook()
-
->>>>>>> ed01105 (fix: mark an email alert as one, and check its recipients at save (#1333))
         try:
             self.evaluate_condition()
         except Exception as e:
@@ -85,52 +80,6 @@ class InsightsAlert(Document):
         tg = TelegramAlert(self.telegram_chat_id)
         tg.send(message)
 
-<<<<<<< HEAD
-=======
-    def send_webhook_alert(self, message, context):
-        """POST the alert to the configured endpoint. The token travels in an
-        Authorization header rather than the URI, which would put it in the
-        receiver's access logs."""
-        payload = {
-            "version": WEBHOOK_PAYLOAD_VERSION,
-            "event": "insights_alert",
-            "message": message,
-            "context": {
-                "alert": context["alert"]["title"],
-                "query": context["query"]["title"],
-                "count": context["count"],
-                "rows": context["rows"][:WEBHOOK_MAX_ROWS],
-                "truncated": context["count"] > WEBHOOK_MAX_ROWS,
-                "triggered_at": get_datetime_str(now_datetime()),
-            },
-        }
-
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.get_password('webhook_token')}",
-        }
-
-        try:
-            # frappe.as_json, not requests' json=: query rows carry datetimes
-            # and Decimals that the plain encoder refuses.
-            response = post_to_public_url(
-                self.webhook_url,
-                data=frappe.as_json(payload),
-                headers=headers,
-            )
-            response.raise_for_status()
-        except requests.HTTPError as e:
-            frappe.throw(
-                _("The webhook at {0} returned {1}").format(self.webhook_url, e.response.status_code)
-            )
-        except requests.RequestException as e:
-            # No log_error here: `send_alerts` logs, and the interactive caller
-            # reads the message. An OutboundRequestRefused already says what it
-            # refused, so it goes up untouched.
-            frappe.throw(
-                _("Could not deliver the alert to {0} ({1})").format(self.webhook_url, type(e).__name__)
-            )
-
     def get_author_email(self):
         """The address a reply reaches.
 
@@ -142,7 +91,6 @@ class InsightsAlert(Document):
         email = frappe.db.get_value("User", self.owner, "email")
         return email if email and validate_email_address(email) else None
 
->>>>>>> ed01105 (fix: mark an email alert as one, and check its recipients at save (#1333))
     def send_email_alert(self, message):
         """Mail the alert, marked as one.
 
