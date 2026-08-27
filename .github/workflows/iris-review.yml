@@ -23,12 +23,6 @@ permissions:
   # For the reaction on the /iris review comment.
   issues: write
 
-concurrency:
-  # Split by trigger: every PR comment queues an `issue_comment` run, and it
-  # must not cancel a review already running for the PR itself.
-  group: iris-${{ github.event_name == 'pull_request' && 'auto' || 'manual' }}-${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}
-  cancel-in-progress: true
-
 jobs:
   review:
     # Kill switch: set repo variable IRIS_ENABLED=true to enable.
@@ -57,6 +51,12 @@ jobs:
           )
         )
       )
+    # On the job, not the workflow. Every comment on a PR starts a run, and a
+    # workflow-level group makes that run cancel a review in flight — even when
+    # its own job is skipped. A skipped job never enters a job-level group.
+    concurrency:
+      group: iris-${{ github.event_name == 'pull_request' && 'auto' || 'manual' }}-${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
