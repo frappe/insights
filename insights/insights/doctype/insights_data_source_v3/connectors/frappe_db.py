@@ -83,7 +83,7 @@ def get_sitedb_connection():
     primary = get_primary_data_source()
     return get_frappedb_connection(
         primary,
-        socket=frappe.conf.get("db_socket"),,
+        socket=frappe.conf.get("db_socket"),
     )
 
 
