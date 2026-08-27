@@ -6,6 +6,7 @@ from unittest.mock import patch
 import frappe
 import requests
 from frappe.tests import IntegrationTestCase
+from frappe.utils import validate_email_address
 
 from insights.http import OutboundRequestRefused
 from insights.insights.doctype.insights_alert.insights_alert import (
@@ -200,23 +201,22 @@ class TestEmailRecipients(InsightsIntegrationTestCase):
 
 
 class TestAlertMailIsAttributable(InsightsIntegrationTestCase):
-    """The body is written by the alert's owner and leaves on the site account.
+    """The mail carries the marks that say it is an Insights alert."""
 
-    Nothing bounds who an alert may reach, so the mail carries the marks that
-    say it is an Insights alert: it names the alert and the site that produced
-    it, and replies reach its author rather than the site's outgoing account.
-    """
+    AUTHOR = "alert_author@test.com"
 
     @classmethod
     def before_class(cls):
+        create_user(cls.AUTHOR, first_name="Alert", last_name="Author", roles="Insights User")
         cls.workbook = create_test_workbook("Administrator", title="Mail Workbook").name
         cls.query = create_test_query("Administrator", cls.workbook, title="Mail Query").name
 
     @classmethod
     def after_class(cls):
         frappe.delete_doc("Insights Workbook", cls.workbook, force=True)
+        delete_users(cls.AUTHOR)
 
-    def alert(self):
+    def alert(self, owner=None):
         doc = frappe.new_doc("Insights Alert")
         doc.title = "Overdue invoices"
         doc.channel = "Email"
@@ -228,21 +228,34 @@ class TestAlertMailIsAttributable(InsightsIntegrationTestCase):
         doc.recipients = "someone@external.example.org"
         with patch.object(InsightsAlert, "evaluate_condition", return_value=True):
             doc.insert()
+        if owner:
+            doc.db_set("owner", owner, update_modified=False)
+            doc.owner = owner
         self.addCleanup(frappe.delete_doc, "Insights Alert", doc.name, force=True)
         return doc
 
     def test_a_reply_reaches_the_author(self):
-        doc = self.alert()
+        doc = self.alert(owner=self.AUTHOR)
         with patch("frappe.sendmail") as sendmail:
             doc.send_email_alert("hello")
-        self.assertEqual(sendmail.call_args.kwargs["reply_to"], doc.owner)
+        self.assertEqual(sendmail.call_args.kwargs["reply_to"], self.AUTHOR)
+
+    def test_an_admin_owned_alert_replies_to_an_address(self):
+        """`owner` is a User name, and for the admin that name is
+        "Administrator". `sendmail` refuses a reply_to it cannot parse."""
+        doc = self.alert()
+        self.assertEqual(doc.owner, "Administrator")
+        with patch("frappe.sendmail") as sendmail:
+            doc.send_email_alert("hello")
+        reply_to = sendmail.call_args.kwargs["reply_to"]
+        self.assertTrue(validate_email_address(reply_to), f"{reply_to} is not an address")
 
     def test_the_body_names_the_alert_and_the_site(self):
-        doc = self.alert()
+        doc = self.alert(owner=self.AUTHOR)
         body = doc.evaluate_message({"rows": [], "count": 0, "datatable": ""})
         self.assertIn("Overdue invoices", body)
         self.assertIn(frappe.utils.get_url(allow_header_override=False), body)
-        self.assertIn(doc.owner, body)
+        self.assertIn(self.AUTHOR, body)
 
     def test_a_title_written_as_markup_stays_text_in_the_footer(self):
         doc = self.alert()

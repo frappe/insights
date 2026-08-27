@@ -153,6 +153,17 @@ class InsightsAlert(Document):
                 _("Could not deliver the alert to {0} ({1})").format(self.webhook_url, type(e).__name__)
             )
 
+    def get_author_email(self):
+        """The address a reply reaches.
+
+        `owner` is a User name, which is an address for an account created from
+        an invite and the literal "Administrator" for the admin. `sendmail`
+        refuses a reply_to it cannot parse, so an author it cannot resolve
+        leaves the mail without one rather than unsent.
+        """
+        email = frappe.db.get_value("User", self.owner, "email")
+        return email if email and validate_email_address(email) else None
+
     def send_email_alert(self, message):
         """Mail the alert, marked as one.
 
@@ -164,7 +175,7 @@ class InsightsAlert(Document):
             recipients=self.get_recipients(),
             subject=f"Insights Alert: {self.title}",
             message=message,
-            reply_to=self.owner,
+            reply_to=self.get_author_email(),
             now=True,
         )
 
@@ -183,14 +194,14 @@ class InsightsAlert(Document):
             return message_md
 
         message_html = frappe.utils.md_to_html(message_md)
-        return frappe.render_template(
+        return frappe.render_template(  # nosemgrep - the template is a file in this app
             "insights/templates/alert.html",
             context=frappe._dict(
                 message=message_html,
-                # The template renders without autoescaping, and the title is
-                # written by whoever owns the alert.
+                # The template renders without autoescaping, so a value
+                # interpolated into it is escaped here.
                 alert=escape_html(self.title),
-                author=escape_html(self.owner),
+                author=escape_html(self.get_author_email() or self.owner),
                 site_url=get_url(allow_header_override=False),
             ),
         )
