@@ -27,7 +27,7 @@ from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
 )
 from insights.insights.query_builders.sql_functions import handle_timespan
-from insights.insights.query_utils import extract_sql_table_refs, referenced_queries
+from insights.insights.query_utils import extract_sql_table_refs, get_direct_dependencies
 from insights.utils import create_execution_log
 from insights.utils import deep_convert_dict_to_dict as _dict
 
@@ -159,13 +159,10 @@ class IbisQueryBuilder:
     def saved_references(self):
         """The references stored on this query, which `validate` authorised.
 
-        Read from the stored `operations` column: the document being built may
-        have come from a request body, and `Insights Query Reference` is rebuilt
-        by a background job that runs after the save commits.
+        Read from the row, not from the document being built: that one may have
+        come from a request body, which authorises nothing.
         """
-        name = self.doc.get("name")
-        operations = frappe.db.get_value("Insights Query v3", name, "operations") if name else None
-        return referenced_queries(operations)
+        return set(get_direct_dependencies(self.doc.get("name")))
 
     def check_query_reference(self, query_name):
         """A saved reference is authorised. Anything else is checked now."""
