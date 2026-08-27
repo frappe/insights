@@ -95,7 +95,8 @@ class TestInvitationDoesNotAuthenticate(IntegrationTestCase):
         response = self.redeem(invitation)
 
         self.assertEqual(self.logged_in_as, [])
-        self.assertEqual(response.location, "/login")
+        # the link still ends in Insights: the login page carries them there
+        self.assertEqual(response.location, "/login?redirect-to=/insights")
         # the invitation still did its job
         self.assertEqual(
             frappe.db.get_value("Insights User Invitation", invitation.name, "status"), "Accepted"

@@ -64,3 +64,9 @@ class TestCurrencyInfo(InsightsIntegrationTestCase):
         currency, hidden = _defaults("USD")
         with as_user("Guest"), currency, hidden:
             self.assertEqual(get_site_info()["currency_symbol"], "$")
+
+    def test_the_client_can_reach_it_the_way_it_calls_it(self):
+        # frappe-ui's `call` posts. An endpoint declared GET-only answers it
+        # with a 403, and session.initialize() awaits this one - so restricting
+        # the method here blanks the app rather than hardening anything.
+        self.assertIn("POST", frappe.allowed_http_methods_for_whitelisted_func[get_site_info])

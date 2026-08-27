@@ -239,8 +239,9 @@ def accept_invitation(key: str):
 
     if not account_was_created:
         # the address already had an account. The invitation grants it access to
-        # Insights; signing in is for the account holder to do.
-        frappe.local.response["location"] = "/login"
+        # Insights; signing in is for the account holder to do. The login page
+        # carries them the rest of the way, so the link still ends in Insights.
+        frappe.local.response["location"] = "/login?redirect-to=/insights"
         return
 
     # a new account has no password yet, so the invitation link is how the
