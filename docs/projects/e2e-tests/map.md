@@ -59,6 +59,15 @@ Standing preferences for this effort, settled in the charting session:
   `insights_demo_data.duckdb` is broken, every join matches zero rows, so the
   seeded sample dashboard renders empty under CI; replaced by a declarative spec
   and a seeded generator, measured at 17 ms, with the binary leaving git.
+- [15 — Build the fixture generator](issues/resolved/15-fixture-generator.md) —
+  `insights/setup/demo_data/` holds a declarative spec and a seeded generator;
+  600 ms for 2000 orders and 4881 line items, all 8 declared foreign keys join,
+  and `BrokenFixture` fails the build on a dead join; the sample workbook now
+  returns 459 rows instead of 2.
+- [05 — Auth and API seeding](issues/resolved/05-auth-and-seeding.md) — a login
+  setup project stores state for an admin and a viewer, `frappe.ts` came from
+  `frappe/wiki`, and fixtures stack as a Workbook ladder; the redundant CI guard
+  on `setup_demo_data` is removed, so ticket 07 needs no out-of-band CI step.
 
 ## Not yet specified
 
