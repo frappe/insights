@@ -1,7 +1,7 @@
 # 18 — A chart page saves itself about every 1.5 seconds, forever
 
 Type: bug
-Status: open
+Status: resolved
 Found by: 17 (suite stability)
 Related: 16
 
@@ -71,3 +71,20 @@ Load a Bar chart over `order_status`, watch the network panel, and read the
 `set_value` payloads. They are identical. The server shows nothing, because the
 document never changes, so no `Version` row is written and `modified` moves
 without anything moving with it.
+
+## Answer
+
+Fixed by cherry-picking `b32ee6fc2 fix(frontend): measure a document's dirtiness
+against a clone`, which was written on `docs/framework-integration-map` on
+2026-08-13 and never reached `develop`.
+
+It changes `isDirty` to compare `copy(doc.value)` against `originalDoc`, so both
+sides are clones and an `undefined` key stops counting. It also deletes a
+granularity key rather than assigning `undefined`.
+
+**Measured before and after.** Two full suite runs sent **56** `set_value` calls
+in total, 28 per run — one per chart the suite creates. The server log had
+accumulated 5054 before the fix. The loop is gone.
+
+This fix belongs on `develop` on its own merits, independent of the test suite.
+It is a continuous write from every open chart page, for every user.

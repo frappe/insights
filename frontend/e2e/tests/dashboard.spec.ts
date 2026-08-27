@@ -94,46 +94,42 @@ test.describe('dashboard', () => {
 	 * orphan. Using a filter edits nothing at all, so it belongs on its own,
 	 * over a filter the fixture seeded.
 	 */
-	// quarantined 2026-08-27, ticket 16: Save writes onto an item the autosave
-	// answer has already replaced, so the filter is lost about one run in five.
-	test(
-		'a user adds a dashboard filter',
-		{ tag: '@quarantine' },
-		async ({ page, demoDataSource, workbookWithDashboard }) => {
-			const { workbook, dashboard, chart } = workbookWithDashboard
-			await page.goto(
-				`${INSIGHTS_PATH}/workbook/${workbook.name}/dashboard/${dashboard.name}`,
-			)
-			await expect(charts(page).getByText('1.8K')).toBeVisible({ timeout: 30_000 })
+	test('a user adds a dashboard filter', async ({
+		page,
+		demoDataSource,
+		workbookWithDashboard,
+	}) => {
+		const { workbook, dashboard, chart } = workbookWithDashboard
+		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/dashboard/${dashboard.name}`)
+		await expect(charts(page).getByText('1.8K')).toBeVisible({ timeout: 30_000 })
 
-			await page.getByRole('button', { name: 'Edit', exact: true }).click()
-			await page.getByRole('button', { name: 'Filter', exact: true }).click()
+		await page.getByRole('button', { name: 'Edit', exact: true }).click()
+		await page.getByRole('button', { name: 'Filter', exact: true }).click()
 
-			// Adding a filter opens its editor at once, because an unnamed filter
-			// routes to nothing.
-			const editor = page.getByRole('dialog', { name: 'Edit Filter' })
+		// Adding a filter opens its editor at once, because an unnamed filter
+		// routes to nothing.
+		const editor = page.getByRole('dialog', { name: 'Edit Filter' })
 
-			// A linked chart row is keyed on the chart's name, which is empty
-			// until the chart document loads. Waiting for the title keeps the
-			// click off the row that the load replaces.
-			await expect(editor.getByText(chart.title)).toBeVisible()
+		// A linked chart row is keyed on the chart's name, which is empty
+		// until the chart document loads. Waiting for the title keeps the
+		// click off the row that the load replaces.
+		await expect(editor.getByText(chart.title)).toBeVisible()
 
-			await editor.getByLabel('Label').fill('Status')
-			await editor.getByRole('switch').click()
-			await editor.getByPlaceholder('Select a column').click()
-			await page.getByRole('option', { name: 'order_status' }).click()
-			await editor.getByRole('button', { name: 'Save', exact: true }).click()
-			// Save writes the filter but leaves the editor open, so the flow
-			// closes it.
-			await editor.getByRole('button', { name: 'Close' }).click()
+		await editor.getByLabel('Label').fill('Status')
+		await editor.getByRole('switch').click()
+		await editor.getByPlaceholder('Select a column').click()
+		await page.getByRole('option', { name: 'order_status' }).click()
+		await editor.getByRole('button', { name: 'Save', exact: true }).click()
+		// Save writes the filter but leaves the editor open, so the flow
+		// closes it.
+		await editor.getByRole('button', { name: 'Close' }).click()
 
-			// The control takes the label the moment the editor writes it back,
-			// and keeps it once the dashboard leaves edit mode.
-			await expect(page.getByRole('button', { name: 'Status', exact: true })).toBeVisible()
-			await page.getByRole('button', { name: 'Done', exact: true }).click()
-			await expect(page.getByRole('button', { name: 'Status', exact: true })).toBeVisible()
-		},
-	)
+		// The control takes the label the moment the editor writes it back,
+		// and keeps it once the dashboard leaves edit mode.
+		await expect(page.getByRole('button', { name: 'Status', exact: true })).toBeVisible()
+		await page.getByRole('button', { name: 'Done', exact: true }).click()
+		await expect(page.getByRole('button', { name: 'Status', exact: true })).toBeVisible()
+	})
 
 	test('a linked chart refilters when a dashboard filter is applied', async ({
 		page,

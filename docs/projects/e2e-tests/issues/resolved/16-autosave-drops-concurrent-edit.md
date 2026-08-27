@@ -1,7 +1,7 @@
 # 16 — An autosave answer drops every edit made while it was in flight
 
 Type: bug
-Status: open
+Status: resolved
 Found by: 17 (suite stability)
 
 ## What happens
@@ -62,3 +62,14 @@ during the flight and replay them onto the answer. Either removes the class.
 
 The dashboard editor's `indexOf` identity is a second, smaller fault. An item
 that carried its own id would survive an array swap.
+
+## Answer
+
+Fixed by cherry-picking `b32ee6fc2 fix(frontend): measure a document's dirtiness
+against a clone` onto this branch.
+
+Ticket 18 explains why this window was permanent on a chart page. With the loop
+gone, there is no save perpetually in flight to fall into. The dashboard filter
+flow was quarantined against this ticket and now passes: three runs alone, then
+three full-suite runs at 57 tests. The `@quarantine` tag is removed, and the
+suite has none left.
