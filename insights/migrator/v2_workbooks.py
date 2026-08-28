@@ -28,10 +28,12 @@ Four things the v3 side decides, which the plan only records:
   `resolve_v3_data_source` matches by name, then by scrubbed name, then by
   title, and reports a miss. The migrator never creates a data source: it holds
   no credentials, and a v2 password is encrypted against a different doctype.
-- **v2 always read the live source**, so every migrated query does too.
-  `TranslatedQuery.use_live_connection` is only set by the SQL floor; a builder
-  query left at the default would read the DuckDB store instead, which holds
-  different rows or none.
+- **`use_live_connection` is carried, not decided.** It follows from the query's
+  kind, which `translate_query` owns through `LIVE_CONNECTION_BY_KIND`. Getting
+  it wrong is not a visible failure: `InsightsTablev3.get_ibis_table` builds
+  with `import_if_not_exists=True`, so a builder query with the flag off would
+  import the source table into the data store on its first build and then
+  answer, healthily, from a copy the user never asked for.
 - **A chart's `data_query` is the doctype's.** `set_data_query` creates it in
   `before_save`. Creating one here would leave an orphan.
 - **`is_public` does not travel.** In v3, publishing grants the publisher's own
@@ -567,9 +569,7 @@ def _write(plan: DashboardPlan, items: list[dict], owner: str) -> MigrationResul
         query.owner = owner
         query.sort_order = order
         query.operations = _bind_operations(query_plan, plan, result.query_names, workbook.name)
-        # v2 read the live source, always. A builder query left at the default
-        # would read the data store, which holds other rows or none.
-        query.use_live_connection = query_plan.kind in ("builder", "sql")
+        query.use_live_connection = query_plan.translated.use_live_connection
         query.is_builder_query = query_plan.kind == "builder"
         query.is_native_query = query_plan.kind == "sql"
         query.is_script_query = query_plan.kind == "code"
