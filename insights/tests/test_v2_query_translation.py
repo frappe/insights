@@ -11,7 +11,7 @@ import json
 
 from frappe.tests import UnitTestCase
 
-from insights.migrator.v2_queries import translate_query
+from insights.migrator.v2_queries import LIVE_CONNECTION_BY_KIND, translate_query
 
 
 def v2_query(json_spec=None, **overrides):
@@ -495,6 +495,38 @@ class TestQueryTypes(UnitTestCase):
         result = translate(query)
         self.assertEqual(result.kind, "none")
         self.assertIn("no_compiled_sql", gap_kinds(result))
+
+
+class TestConnectionMode(UnitTestCase):
+    """Off means "read the DuckDB data store", which v2 never did.
+
+    The mode follows from the kind, so no caller can get it wrong by omission.
+    """
+
+    def test_a_builder_query_reads_the_source_the_way_v2_read_it(self):
+        result = translate(v2_query({"columns": [column("status")]}))
+        self.assertEqual(result.kind, "builder")
+        self.assertTrue(result.use_live_connection)
+
+    def test_the_sql_floor_reads_the_source(self):
+        result = translate(v2_query(is_native_query=1, is_assisted_query=0, sql="SELECT 1"))
+        self.assertEqual(result.kind, "sql")
+        self.assertTrue(result.use_live_connection)
+
+    def test_a_script_query_has_no_source_to_be_live_against(self):
+        # `apply_code` never reads the flag: it runs the script and writes the
+        # result into the warehouse, so there is no connection to be live on.
+        result = translate(v2_query(is_assisted_query=0, is_script_query=1, script="results = []"))
+        self.assertEqual(result.kind, "code")
+        self.assertFalse(result.use_live_connection)
+
+    def test_a_query_that_emits_nothing_claims_no_connection(self):
+        result = translate(v2_query({"table": {}}))
+        self.assertEqual(result.kind, "none")
+        self.assertFalse(result.use_live_connection)
+
+    def test_every_kind_the_translator_emits_has_a_mode(self):
+        self.assertEqual(set(LIVE_CONNECTION_BY_KIND), {"builder", "sql", "code", "none"})
 
 
 class TestTransforms(UnitTestCase):

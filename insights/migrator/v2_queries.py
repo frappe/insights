@@ -41,6 +41,9 @@ that names its output:
 The transforms come last because v2 ran them in pandas over the fetched result,
 after LIMIT.
 
+`use_live_connection` follows from the kind and is never a caller's choice; see
+`LIVE_CONNECTION_BY_KIND`.
+
 Everything here is pure: dicts in, dicts out, no database.
 """
 
@@ -125,6 +128,18 @@ DIRECT_OPERATORS = frozenset(
 
 JOIN_TYPES = frozenset({"inner", "left", "right", "full"})
 
+# `use_live_connection` off means "read the DuckDB data store", which holds a
+# copy of the source or nothing at all. v2 always read the source itself, and
+# v3 turns the flag on for every query it creates (`addQuery` in
+# `frontend/src2/workbook/workbook.ts`), so a query that reads a table, a SQL
+# fragment or raw SQL has to carry it too.
+#
+# A `code` query is the one kind that must not. `apply_code` never reads the
+# flag: it runs the script and writes the result into the warehouse as a temp
+# table, so there is no source to be live against, and turning it on would put
+# a claim in the document that nothing backs.
+LIVE_CONNECTION_BY_KIND = {"builder": True, "sql": True, "code": False, "none": False}
+
 # Functions that make an expression a reduction, so it belongs in `summarize`
 # as an expression measure rather than in a `mutate` before it.
 AGGREGATING_FUNCTIONS = frozenset(
@@ -176,6 +191,8 @@ class TranslatedQuery:
 
     operations: list = field(default_factory=list)
     use_live_connection: bool = False
+    """Set from `kind` alone, by `translate_query`. Not a caller's decision."""
+
     references: tuple = ()
     """v2 query docnames this query reads, in the order they appear."""
 
@@ -209,7 +226,11 @@ def translate_query(
     warn when stripping a table qualifier off a SQL fragment had to guess.
     """
     builder = _Builder(query, query_map or {}, workbook, table_columns or {})
-    return builder.run()
+    result = builder.run()
+    # The connection mode follows from the kind, so it is decided here rather
+    # than on each path that sets a kind - and never by the caller.
+    result.use_live_connection = LIVE_CONNECTION_BY_KIND[result.kind]
+    return result
 
 
 class _Builder:
@@ -289,7 +310,6 @@ class _Builder:
             return self.result
 
         self.result.kind = "sql"
-        self.result.use_live_connection = True
         self.result.operations = [{"type": "sql", "raw_sql": sql, "data_source": self.data_source}]
         self.gap("sql_floor", "query", f"{reason}: kept as one SQL operation")
         return self.result
