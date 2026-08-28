@@ -26,6 +26,13 @@ row stamped at noon on the last day is inside the range. v3 `is_between` compare
 bounds as given. Renaming alone would drop the last day of every range, quietly, so the
 widening is written into the emitted literals instead.
 
+Some v2 expressions did not run in v2 either - a `between` over a bound `getdate()`
+cannot read, or a `time_elapsed` unit v2's own list rejected. These are
+`Outcome.BROKEN_IN_V2`, not an exception, because the migrator converts a whole
+dashboard closure and one query that was already broken must not abort the rest. The
+compiled SQL floor cannot rescue them, since v2 never generated any SQL to fall back
+to. `TranslationError` is reserved for a mapping this module is missing.
+
 A fragment runs where its original table is not in scope, so table qualifiers are
 stripped: ``\\`tabIssue\\`.\\`status\\`` becomes ``\\`status\\``. Stripping is only safe
 while one table owns the name. Pass `table_columns` and any column two joined tables
@@ -199,7 +206,7 @@ LOGICAL_OPERATORS = {"&&": "&", "||": "|"}
 
 
 class TranslationError(Exception):
-    """A v2 construct this module cannot turn into v3."""
+    """This module is missing a mapping. Not the input's fault - ours."""
 
 
 class Outcome(str, Enum):
@@ -214,13 +221,24 @@ class Outcome(str, Enum):
     COMPILED_SQL = "compiled_sql"
     """Not expressible at query level. Fall back to the whole-query compiled SQL."""
 
+    BROKEN_IN_V2 = "broken_in_v2"
+    """The expression did not run in v2 either. Nothing to migrate, and the compiled
+    SQL cannot rescue it, because v2 never generated any. Report it and move on."""
+
+
+# Which outcome wins when one expression collects several. A migration that cannot
+# happen outranks one that has to fall back.
+_OUTCOME_RANK = {Outcome.COMPILED_SQL: 1, Outcome.BROKEN_IN_V2: 2}
+
 
 @dataclass(frozen=True)
 class Blocker:
-    """A v2 construct with no query-level home in v3."""
+    """Something that stopped the expression, phrased for a migration report."""
 
     function: str
     reason: str
+    outcome: Outcome = Outcome.COMPILED_SQL
+    """Which outcome this blocker forces."""
 
 
 @dataclass(frozen=True)
@@ -267,7 +285,7 @@ class Translation:
     @property
     def outcome(self) -> Outcome:
         if self.blockers:
-            return Outcome.COMPILED_SQL
+            return max((blocker.outcome for blocker in self.blockers), key=_OUTCOME_RANK.get)
         if self.fragments:
             return Outcome.FRAGMENT
         return Outcome.TRANSLATED
@@ -319,8 +337,16 @@ class _State:
         )
         return reference(name)
 
-    def add_blocker(self, function: str, reason: str) -> str:
-        self.blockers.append(Blocker(function=function, reason=reason))
+    def add_blocker(self, function: str, reason: str, outcome: Outcome = Outcome.COMPILED_SQL) -> str:
+        self.blockers.append(Blocker(function=function, reason=reason, outcome=outcome))
+        return self.blocked_reference()
+
+    def blocked_reference(self) -> str:
+        """A placeholder so the walk can finish and collect every blocker in the tree.
+
+        It never reaches the caller: `translate` drops the expression once a blocker
+        exists.
+        """
         return reference(f"{self.fragment_prefix}_blocked")
 
     def ambiguous(self, columns) -> tuple[str, ...]:
@@ -434,16 +460,24 @@ def _time_elapsed(arguments, state: _State) -> str:
     if len(arguments) != 3:
         raise TranslationError(f"time_elapsed expects 3 arguments, got {len(arguments)}")
     unit = _literal(arguments, 0, "time_elapsed").lower()
+
+    # v2 returned `b - a`; v3 returns `a - b`. The arguments swap to keep the sign.
+    start = _walk(arguments[1], state)
+    end = _walk(arguments[2], state)
+
     if unit in DATE_DIFF_UNITS:
         v3_name = "date_diff"
     elif unit in TIME_DIFF_UNITS:
         v3_name = "time_diff"
     else:
-        raise TranslationError(f"time_elapsed unit has no v3 home: {unit!r}")
+        # v2 checked the unit against its own list and raised, so this never ran
+        return state.add_blocker(
+            "time_elapsed",
+            f"the unit {unit!r} is not one v2 accepted, so this expression raised "
+            f"'Invalid unit' whenever the query ran",
+            outcome=Outcome.BROKEN_IN_V2,
+        )
 
-    # v2 returned `b - a`; v3 returns `a - b`. The arguments swap to keep the sign.
-    start = _walk(arguments[1], state)
-    end = _walk(arguments[2], state)
     return f"{v3_name}({end}, {start}, {json.dumps(unit)})"
 
 
@@ -452,38 +486,43 @@ def _between(arguments, state: _State) -> str:
 
     `add_start_and_end_time` calls `getdate()` on both bounds with no type check, so a
     bound that is not a date was never compared - `getdate(5)` returns None and the
-    `strftime` that follows raises. There is no v2 behaviour to preserve for those, and
-    emitting a plain `is_between` would invent one, so they are rejected.
+    `strftime` that follows raises. Emitting a plain `is_between` would invent a
+    comparison v2 never made, so a bad bound is reported as broken instead.
     """
     if len(arguments) != 3:
         raise TranslationError(f"between expects 3 arguments, got {len(arguments)}")
     column = _walk(arguments[0], state)
-    start = _as_day(_bound(arguments[1]))
-    end = _as_day(_bound(arguments[2]))
+    start = _day_bound(arguments[1], "start", state)
+    end = _day_bound(arguments[2], "end", state)
+    if start is None or end is None:
+        return state.blocked_reference()
     # v2 emitted these two literals; the end of the day is what makes the range inclusive
-    start = json.dumps(f"{start} 00:00:00")
-    end = json.dumps(f"{end} 23:59:59")
-    return f"is_between({column}, {start}, {end})"
+    return f"is_between({column}, {json.dumps(start + ' 00:00:00')}, {json.dumps(end + ' 23:59:59')})"
 
 
-def _bound(node) -> str:
-    if not isinstance(node, dict) or node.get("type") != "String":
-        kind = node.get("type") if isinstance(node, dict) else type(node).__name__
-        raise TranslationError(
-            f"between expects a date literal, got {kind}: v2 ran every bound through "
-            f"getdate() and would have failed on this one too"
-        )
-    return str(node.get("value"))
+def _day_bound(node, position: str, state: _State) -> str | None:
+    """Reduce a bound to its date the way v2's `getdate()` did, or report it broken."""
+    value = node.get("value") if isinstance(node, dict) else None
+    if isinstance(node, dict) and node.get("type") == "String":
+        for parse in (datetime.fromisoformat, lambda v: datetime.strptime(v, "%Y-%m-%d")):
+            try:
+                return parse(str(value)).date().isoformat()
+            except ValueError:
+                continue
 
-
-def _as_day(value: str) -> str:
-    """Reduce a bound to its date, the way v2's `getdate()` did, or refuse it."""
-    for parse in (datetime.fromisoformat, lambda v: datetime.strptime(v, "%Y-%m-%d")):
-        try:
-            return parse(value).date().isoformat()
-        except ValueError:
-            continue
-    raise TranslationError(f"between expects a date bound, got {value!r}")
+    described = (
+        repr(value)
+        if isinstance(node, dict) and node.get("type") in ("String", "Number")
+        else f"a {node.get('type') if isinstance(node, dict) else type(node).__name__}"
+    )
+    state.add_blocker(
+        "between",
+        f"the {position} bound is {described}, not a date. v2 ran every bound through "
+        f"getdate(), which returns nothing for a non-date, so this expression failed "
+        f"whenever the query ran",
+        outcome=Outcome.BROKEN_IN_V2,
+    )
+    return None
 
 
 def _date_format(arguments, state: _State) -> str:

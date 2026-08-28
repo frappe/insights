@@ -174,19 +174,32 @@ class TestBetweenKeepsItsLastDay(UnitTestCase):
             'is_between(creation, "2024-07-01 00:00:00", "2024-07-31 23:59:59")',
         )
 
-    def test_a_numeric_bound_is_refused_rather_than_widened(self):
+    def test_a_numeric_bound_is_reported_broken_rather_than_widened(self):
         # v2 ran every bound through getdate(), which returns None for a number and
         # then raises on strftime - there is no numeric between to be faithful to
-        with self.assertRaises(TranslationError):
-            translate(call("between", column("age"), number(1), number(9)))
+        translated = translate(call("between", column("age"), number(1), number(9)))
+        self.assertIs(translated.outcome, Outcome.BROKEN_IN_V2)
+        self.assertIsNone(translated.expression)
 
-    def test_a_column_bound_is_refused_too(self):
-        with self.assertRaises(TranslationError):
-            translate(call("between", column("creation"), column("start"), column("end")))
+    def test_a_column_bound_is_broken_too(self):
+        translated = translate(call("between", column("creation"), column("a"), column("b")))
+        self.assertIs(translated.outcome, Outcome.BROKEN_IN_V2)
 
-    def test_a_string_that_is_not_a_date_is_refused(self):
-        with self.assertRaises(TranslationError):
-            translate(call("between", column("creation"), string("soon"), string("later")))
+    def test_a_string_that_is_not_a_date_is_broken(self):
+        translated = translate(call("between", column("creation"), string("soon"), string("later")))
+        self.assertIs(translated.outcome, Outcome.BROKEN_IN_V2)
+
+    def test_the_report_says_which_bound_was_bad_and_what_it_held(self):
+        translated = translate(call("between", column("creation"), string("2024-07-01"), number(9)))
+        self.assertEqual(len(translated.blockers), 1)
+        blocker = translated.blockers[0]
+        self.assertEqual(blocker.function, "between")
+        self.assertIn("end bound", blocker.reason)
+        self.assertIn("9", blocker.reason)
+
+    def test_both_bad_bounds_are_reported_not_only_the_first(self):
+        translated = translate(call("between", column("age"), number(1), number(9)))
+        self.assertEqual([blocker.reason.split()[1] for blocker in translated.blockers], ["start", "end"])
 
 
 class TestTimeElapsedReorders(UnitTestCase):
@@ -199,9 +212,11 @@ class TestTimeElapsedReorders(UnitTestCase):
         translated = translate(call("time_elapsed", string("SECOND"), column("start"), column("end")))
         self.assertEqual(translated.expression, 'time_diff(end, start, "second")')
 
-    def test_a_unit_neither_function_takes_is_an_error(self):
-        with self.assertRaises(TranslationError):
-            translate(call("time_elapsed", string("fortnight"), column("a"), column("b")))
+    def test_a_unit_v2_itself_rejected_is_reported_broken(self):
+        # v2 checked the unit against its own list and raised "Invalid unit"
+        translated = translate(call("time_elapsed", string("fortnight"), column("a"), column("b")))
+        self.assertIs(translated.outcome, Outcome.BROKEN_IN_V2)
+        self.assertIn("fortnight", translated.blockers[0].reason)
 
 
 class TestDateFormatIsRewritten(UnitTestCase):
@@ -391,6 +406,40 @@ class TestCollisionDetection(UnitTestCase):
         fragment = translated.fragments[0]
         self.assertEqual(fragment.tables, ("tabA", "tabB"))
         self.assertTrue(fragment.is_ambiguous)
+
+
+class TestTheOutcomesRankAgainstEachOther(UnitTestCase):
+    """One expression can collect several blockers; the migrator needs one verdict."""
+
+    def tree_call(self):
+        return call("descendants_and_self", string("India"), string("tabT"), column("t"))
+
+    def broken_call(self):
+        return call("between", column("age"), number(1), number(9))
+
+    def test_broken_in_v2_outranks_the_compiled_sql_fallback(self):
+        # v2 produced no SQL for a broken expression, so the floor cannot rescue it
+        translated = translate(logical("&&", self.tree_call(), self.broken_call()))
+        self.assertIs(translated.outcome, Outcome.BROKEN_IN_V2)
+
+    def test_the_order_of_the_blockers_does_not_change_the_verdict(self):
+        translated = translate(logical("&&", self.broken_call(), self.tree_call()))
+        self.assertIs(translated.outcome, Outcome.BROKEN_IN_V2)
+
+    def test_a_blocker_outranks_a_fragment_either_way(self):
+        for blocked, expected in (
+            (self.tree_call(), Outcome.COMPILED_SQL),
+            (self.broken_call(), Outcome.BROKEN_IN_V2),
+        ):
+            translated = translate(logical("&&", call("sql", string("`tabX`.`a`")), blocked))
+            self.assertIs(translated.outcome, expected)
+            self.assertTrue(translated.fragments)
+            self.assertIsNone(translated.expression)
+
+    def test_a_missing_mapping_stays_an_exception_not_an_outcome(self):
+        # "we are broken" is not "the input was broken", and must not reach a report
+        with self.assertRaises(TranslationError):
+            translate(call("regexp_like", column("name"), string("x")))
 
 
 class TestDescendantsHasNoQueryLevelHome(UnitTestCase):
