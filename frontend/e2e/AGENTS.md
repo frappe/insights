@@ -305,11 +305,6 @@ window: intercept the call, hold it, act while it is in flight, then let it go.
 `holdFirstWrite` in `charts.spec.ts` does this for a `set_value` — copy it
 rather than reaching for a timeout, which lint refuses anyway.
 
-The e2e folder has its own `tsconfig.json`, but **nothing typechecks it in CI**.
-`yarn lint:e2e` runs eslint only. So a seed that carries a field the app's types
-do not declare fails nowhere until the flow itself fails. Run `npx tsc -p e2e`
-by hand when you touch a helper's shape.
-
 ### No conditionals
 
 An `if` in a test means the test does not know what it asserts. Lint rejects it.
