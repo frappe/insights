@@ -63,6 +63,8 @@ import {
 	SourceArgs,
 	SQL,
 	SQLArgs,
+	SQLColumn,
+	SQLColumnArgs,
 	Summarize,
 	SummarizeArgs,
 	Table,
@@ -351,6 +353,17 @@ export const query_operation_types = {
 			return `${op.new_name}`
 		},
 	},
+	sql_column: {
+		label: __('SQL Column'),
+		type: 'sql_column',
+		icon: ScrollText,
+		color: 'gray',
+		class: 'text-gray-600 bg-gray-100',
+		init: (args: SQLColumnArgs): SQLColumn => ({ type: 'sql_column', ...args }),
+		getDescription: (op: SQLColumn) => {
+			return `${op.new_name}`
+		},
+	},
 	summarize: {
 		label: __('Summarize'),
 		type: 'summarize',
@@ -445,6 +458,7 @@ export const cast = query_operation_types.cast.init
 export const filter = query_operation_types.filter.init
 export const filter_group = query_operation_types.filter_group.init
 export const mutate = query_operation_types.mutate.init
+export const sql_column = query_operation_types.sql_column.init
 export const summarize = query_operation_types.summarize.init
 export const pivot_wider = query_operation_types.pivot_wider.init
 export const order_by = query_operation_types.order_by.init
