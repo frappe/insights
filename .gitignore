@@ -186,6 +186,9 @@ todo
 frontend/package-lock.json
 .opencode/package-lock.json
 frontend/components.d.ts
+
+# Browser sessions and CSRF tokens the Playwright setup project writes
+frontend/e2e/.auth/
 scripts/
 
 # Effort docs under docs/projects/ are branch-scoped: they live on the feature

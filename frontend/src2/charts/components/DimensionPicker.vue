@@ -34,7 +34,9 @@ watchEffect(() => {
 	const allowedGranularities = new Set(granularityOptions.value.map((option) => option.value))
 
 	if (!allowedGranularities.size) {
-		dimension.value.granularity = undefined
+		// deleted, not set to `undefined`: a config is stored as JSON, so a key
+		// with no value is a key the next load will not have
+		delete dimension.value.granularity
 		return
 	}
 
@@ -48,7 +50,6 @@ function selectDimension(option?: DimensionOption) {
 		dimension.value = {
 			column_name: '',
 			data_type: 'String',
-			granularity: undefined,
 			dimension_name: '',
 		}
 		return

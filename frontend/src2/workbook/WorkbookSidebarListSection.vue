@@ -25,7 +25,12 @@ function setDraggedItem(event: DragEvent, row: any) {
 				<div class="text-sm-medium">{{ section.title }}</div>
 			</div>
 			<div>
-				<Button class="!h-fit !p-1" variant="ghost" @click="section.add()">
+				<Button
+					class="!h-fit !p-1"
+					variant="ghost"
+					:label="__('Add {0}', section.title)"
+					@click="section.add()"
+				>
 					<Plus class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 				</Button>
 			</div>
@@ -59,6 +64,7 @@ function setDraggedItem(event: DragEvent, row: any) {
 					</div>
 					<button
 						class="invisible cursor-pointer rounded px-1.5 py-1 transition-all hover:bg-surface-gray-2 group-hover:visible"
+						:aria-label="__('Remove {0}', row.title)"
 						@click.prevent.stop="section.remove(row)"
 					>
 						<X class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />

@@ -1,0 +1,198 @@
+# Not `playwright.yml`. That path carries a workflow the repository disabled by
+# hand, and GitHub keeps that state against the path, not the contents — a
+# rewrite there is never dispatched. `frappe/wiki` uses this name too.
+name: UI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ui-${{ github.event_name }}-${{ github.event.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    name: UI
+    env:
+      BENCH_PATH: /home/runner/frappe-bench
+      SITE_NAME: insights.test
+      SITE_URL: http://insights.test:8000
+      DB_ROOT_PASSWORD: root
+      ADMIN_PASSWORD: frappe
+      FRAPPE_BRANCH: develop
+
+    services:
+      mariadb:
+        image: mariadb:10.6
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
+
+    steps:
+      - name: Clone
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          check-latest: true
+
+      - name: Add the site to hosts
+        run: echo "127.0.0.1 $SITE_NAME" | sudo tee -a /etc/hosts
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/*requirements.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            ${{ runner.os }}-
+
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v4
+        id: yarn-cache
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('frontend/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install system dependencies
+        run: |
+          sudo apt -qq update
+          sudo apt -qq install -y redis-server
+
+      - name: Setup
+        run: |
+          pip install frappe-bench
+          bench init \
+            --frappe-branch "$FRAPPE_BRANCH" \
+            --skip-assets \
+            --python "$(which python)" \
+            "$BENCH_PATH"
+          mysql --host 127.0.0.1 --port 3306 -u root -p"$DB_ROOT_PASSWORD" -e "SET GLOBAL character_set_server = 'utf8mb4'"
+          mysql --host 127.0.0.1 --port 3306 -u root -p"$DB_ROOT_PASSWORD" -e "SET GLOBAL collation_server = 'utf8mb4_unicode_ci'"
+
+      - name: Install
+        working-directory: ${{ env.BENCH_PATH }}
+        run: |
+          bench get-app insights $GITHUB_WORKSPACE --skip-assets
+          bench setup requirements --dev
+          bench new-site --db-root-password "$DB_ROOT_PASSWORD" --admin-password "$ADMIN_PASSWORD" "$SITE_NAME"
+          bench --site "$SITE_NAME" install-app insights
+          bench build
+        env:
+          CI: "Yes"
+
+      # `bench build` does not reach the Vue app. `/insights` is served from
+      # `insights/www/_insights.html`, which this build writes, so the suite has
+      # no page to open until it runs.
+      - name: Build the frontend
+        working-directory: ${{ env.BENCH_PATH }}/apps/insights/frontend
+        run: |
+          yarn install --frozen-lockfile
+          yarn build
+
+      # `frontend/e2e/AGENTS.md` tells an agent that lint refuses a sleep, a
+      # conditional and `test.only`. This is what makes that true.
+      - name: Lint the suite
+        working-directory: ${{ env.BENCH_PATH }}/apps/insights/frontend
+        run: yarn lint:e2e
+
+      - name: Configure the site
+        working-directory: ${{ env.BENCH_PATH }}
+        run: |
+          bench --site "$SITE_NAME" set-config allow_tests 1 --parse
+          bench --site "$SITE_NAME" set-config host_name "$SITE_URL"
+          # Not optional. See "Raise the background job ceiling" in
+          # frontend/e2e/AGENTS.md for what a full queue does to a run.
+          bench --site "$SITE_NAME" set-config max_queued_jobs 100000 --parse
+
+      - name: Start the site
+        working-directory: ${{ env.BENCH_PATH }}
+        run: |
+          sed -i '/^watch:/d' Procfile
+          sed -i '/^schedule:/d' Procfile
+          bench start &> bench_start.log &
+          # A Table Import runs on the `long` queue, and the Procfile's one
+          # worker serves `short`, `default` and `long` in priority order. The
+          # suite's own teardown backlog starves `long`, so the import flow
+          # never finishes. This worker takes `long` alone.
+          bench worker --queue long &> long_worker.log &
+          timeout 120 bash -c "until curl -sf $SITE_URL/api/method/ping > /dev/null; do sleep 2; done"
+
+      # Seeding runs after the site is up, not before: `update_progress`
+      # publishes realtime, and the redis ports come from `bench start`, so
+      # seeding first dies on `Error 111 connecting to 127.0.0.1:11000`.
+      #
+      # The suite reads the demo dataset and asserts on its exact row counts, so
+      # the Data Source has to exist before any test runs. `CI` makes
+      # `insights.setup.demo` generate the deterministic dataset from
+      # `insights/setup/demo_data/spec.py` instead of downloading the production
+      # one. This also creates the seeded "Order Analysis" Workbook.
+      - name: Seed the demo Data Source
+        working-directory: ${{ env.BENCH_PATH }}
+        run: bench --site "$SITE_NAME" execute insights.setup.setup_wizard.setup_demo_data
+        env:
+          CI: "Yes"
+
+      - name: Install Playwright
+        working-directory: ${{ env.BENCH_PATH }}/apps/insights/frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright tests
+        working-directory: ${{ env.BENCH_PATH }}/apps/insights/frontend
+        run: npx playwright test
+        env:
+          CI: "Yes"
+          E2E_BASE_URL: ${{ env.SITE_URL }}
+          E2E_ADMIN_PASSWORD: ${{ env.ADMIN_PASSWORD }}
+
+      - name: Upload the Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: ${{ env.BENCH_PATH }}/apps/insights/frontend/playwright-report/
+          retention-days: 7
+
+      - name: Upload failure traces
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: ${{ env.BENCH_PATH }}/apps/insights/frontend/test-results/
+          retention-days: 7
+
+      - name: Show the site logs on failure
+        if: failure()
+        working-directory: ${{ env.BENCH_PATH }}
+        run: |
+          cat bench_start.log || true
+          cat sites/"$SITE_NAME"/logs/*.log || true

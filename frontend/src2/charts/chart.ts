@@ -639,6 +639,12 @@ function transformChartDoc(doc: any) {
 	doc.config = setDimensionNames(doc.config)
 	doc.config = ensureConfigSlots(doc.config, doc.chart_type)
 
+	// The bar config form writes this default when it mounts, which leaves a
+	// freshly opened chart dirty. Set it on load instead.
+	if (doc.chart_type === 'Bar' && doc.config.y_axis.stack === undefined) {
+		doc.config.y_axis.stack = true
+	}
+
 	return doc
 }
 

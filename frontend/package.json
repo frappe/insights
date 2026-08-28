@@ -9,6 +9,7 @@
 	"scripts": {
 		"dev": "vite",
 		"serve": "vite preview",
+		"lint:e2e": "eslint e2e --ext .ts",
 		"build": "vite build -l warn --base=/assets/insights/frontend/ && yarn copy-html-entry",
 		"copy-html-entry": "cp ../insights/public/frontend/index.html ../insights/www/_insights.html"
 	},
@@ -41,12 +42,17 @@
 	},
 	"devDependencies": {
 		"@iconify/utils": "2.3.0",
-		"@playwright/test": "^1.32.1",
+		"@playwright/test": "^1.42.0",
 		"@tailwindcss/container-queries": "^0.1.1",
+		"@types/node": "^20.14.0",
+		"@typescript-eslint/parser": "^7.18.0",
 		"@vitejs/plugin-vue": "^4.2.3",
 		"@vitejs/plugin-vue-jsx": "^3.0.1",
 		"autoprefixer": "^10.4.7",
 		"eslint": "^8.19.0",
+		"eslint-config-prettier": "^9.1.0",
+		"eslint-plugin-playwright": "^2.11.0",
+		"eslint-plugin-prettier": "^5.1.3",
 		"eslint-plugin-vue": "^9.1.1",
 		"patch-package": "^8.0.1",
 		"postcss": "^8.4.14",

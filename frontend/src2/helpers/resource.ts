@@ -59,23 +59,29 @@ export default function useDocumentResource<T extends Document>(
 
 	const transformFn = options.transform || ((doc: T) => doc)
 
-	const isDirty = computed(() => !isEqual(doc.value, originalDoc.value))
+	// Both sides go through `copy` because `originalDoc` is one: a key set to
+	// `undefined` is dropped by the clone and kept on the document, and a deep
+	// equality that counts keys then calls a document dirty that a save cannot
+	// clean — autoSave writes it, the response replaces the document, whatever
+	// wrote the `undefined` writes it again.
+	const isDirty = computed(() => !isEqual(copy(doc.value), originalDoc.value))
 
 	async function insertDoc() {
 		if (!isLocal.value) return
 		await executeHooks(lifecycleHooks.beforeInsert)
 
 		isSaving.value = true
+		const sentDoc = copy(removeMetaFields(doc.value))
 		const newDoc = await call(methods.insert, {
 			doc: {
 				doctype,
-				...removeMetaFields(doc.value),
+				...sentDoc,
 			},
 		})
 			.catch(showErrorToast)
 			.finally(() => (isSaving.value = false))
 
-		updateDocState(newDoc)
+		updateDocState(newDoc, sentDoc)
 		isLocal.value = false
 		await executeHooks(lifecycleHooks.afterInsert)
 		return newDoc
@@ -102,21 +108,23 @@ export default function useDocumentResource<T extends Document>(
 
 		isSaving.value = false
 		await executeHooks(lifecycleHooks.afterSave)
+
 		return doc.value
 	}
 
 	async function updateDoc() {
 		isSaving.value = true
+		const sentDoc = copy(removeMetaFields(doc.value))
 		const newDoc = await call(methods.update, {
 			doctype,
 			name: docname.value,
-			fieldname: removeMetaFields(doc.value),
+			fieldname: sentDoc,
 		})
 			.catch(showErrorToast)
 			.finally(() => (isSaving.value = false))
 
 		if (newDoc) {
-			updateDocState(newDoc)
+			updateDocState(newDoc, sentDoc)
 		}
 	}
 
@@ -165,9 +173,30 @@ export default function useDocumentResource<T extends Document>(
 			.finally(() => (isDeleting.value = false))
 	}
 
-	function updateDocState(newDoc: any) {
-		doc.value = transformFn({ ...newDoc }) as UnwrapRef<T>
-		originalDoc.value = copy(doc.value)
+	// `sentDoc` is the deep clone a write carried. Pass it to keep the edits the
+	// user made while that write was in flight. Leave it out to replace the
+	// document, which is what a load wants.
+	function updateDocState(newDoc: any, sentDoc?: any) {
+		const currentDoc = removeMetaFields(doc.value)
+		const answer = transformFn({ ...newDoc }) as UnwrapRef<T>
+
+		// The answer says what the server holds, so it is the new baseline even
+		// where the document has moved past it.
+		originalDoc.value = copy(answer)
+
+		if (sentDoc) {
+			for (const field of Object.keys(currentDoc)) {
+				const current = copy(currentDoc[field])
+				// An `undefined` value is dropped by `copy`, so keeping one here
+				// would make the document dirty forever. Let the answer win.
+				if (current === undefined) continue
+				if (isEqual(current, sentDoc[field])) continue
+				// The field moved after the write left, so the newer value wins.
+				;(answer as any)[field] = current
+			}
+		}
+
+		doc.value = answer
 		docname.value = newDoc.name
 	}
 
@@ -176,9 +205,14 @@ export default function useDocumentResource<T extends Document>(
 	}
 
 	const setupAutoSave = () => {
-		watchToggle(isDirty, saveDoc, {
+		// Watch the document, not `isDirty`. `isDirty` is a boolean, so an edit
+		// that lands while a write is in flight leaves it true and raises no
+		// new edge. The document itself changes, so the debounce re-arms and
+		// the kept edit reaches the server.
+		watchToggle(doc, () => isDirty.value && saveDoc(), {
 			toggleCondition: () => autoSave.value && !isLocal.value,
 			immediate: true,
+			deep: true,
 			debounce: 1500,
 		})
 	}
