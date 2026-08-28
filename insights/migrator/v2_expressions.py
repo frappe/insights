@@ -20,6 +20,12 @@ migration time is worse: it works until the user edits the tree, then drifts in
 silence. So they are a third outcome, `Outcome.COMPILED_SQL`, reported as a `Blocker`
 with no expression at all. The caller falls back to the whole-query compiled SQL.
 
+One function needs its meaning translated rather than its spelling. v2 `between` runs
+both bounds through `add_start_and_end_time`, which widens the end to `23:59:59`, so a
+row stamped at noon on the last day is inside the range. v3 `is_between` compares the
+bounds as given. Renaming alone would drop the last day of every range, quietly, so the
+widening is written into the emitted literals instead.
+
 A fragment runs where its original table is not in scope, so table qualifiers are
 stripped: ``\\`tabIssue\\`.\\`status\\`` becomes ``\\`status\\``. Stripping is only safe
 while one table owns the name. Pass `table_columns` and any column two joined tables
@@ -31,6 +37,7 @@ This module is pure: it imports nothing from frappe and needs no database.
 import json
 import re
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
 
 # Functions v3 spells exactly as v2 did, with the same argument order.
@@ -398,6 +405,8 @@ def _call(node, state: _State) -> str:
         return _time_elapsed(arguments, state)
     if name == "date_format":
         return _date_format(arguments, state)
+    if name == "between":
+        return _between(arguments, state)
 
     v3_name = RENAMED_FUNCTIONS.get(name, name)
     if v3_name not in DIRECT_FUNCTIONS and name not in RENAMED_FUNCTIONS:
@@ -436,6 +445,45 @@ def _time_elapsed(arguments, state: _State) -> str:
     start = _walk(arguments[1], state)
     end = _walk(arguments[2], state)
     return f"{v3_name}({end}, {start}, {json.dumps(unit)})"
+
+
+def _between(arguments, state: _State) -> str:
+    """v2 `between` is date-only and widens its end bound to the end of that day.
+
+    `add_start_and_end_time` calls `getdate()` on both bounds with no type check, so a
+    bound that is not a date was never compared - `getdate(5)` returns None and the
+    `strftime` that follows raises. There is no v2 behaviour to preserve for those, and
+    emitting a plain `is_between` would invent one, so they are rejected.
+    """
+    if len(arguments) != 3:
+        raise TranslationError(f"between expects 3 arguments, got {len(arguments)}")
+    column = _walk(arguments[0], state)
+    start = _as_day(_bound(arguments[1]))
+    end = _as_day(_bound(arguments[2]))
+    # v2 emitted these two literals; the end of the day is what makes the range inclusive
+    start = json.dumps(f"{start} 00:00:00")
+    end = json.dumps(f"{end} 23:59:59")
+    return f"is_between({column}, {start}, {end})"
+
+
+def _bound(node) -> str:
+    if not isinstance(node, dict) or node.get("type") != "String":
+        kind = node.get("type") if isinstance(node, dict) else type(node).__name__
+        raise TranslationError(
+            f"between expects a date literal, got {kind}: v2 ran every bound through "
+            f"getdate() and would have failed on this one too"
+        )
+    return str(node.get("value"))
+
+
+def _as_day(value: str) -> str:
+    """Reduce a bound to its date, the way v2's `getdate()` did, or refuse it."""
+    for parse in (datetime.fromisoformat, lambda v: datetime.strptime(v, "%Y-%m-%d")):
+        try:
+            return parse(value).date().isoformat()
+        except ValueError:
+            continue
+    raise TranslationError(f"between expects a date bound, got {value!r}")
 
 
 def _date_format(arguments, state: _State) -> str:

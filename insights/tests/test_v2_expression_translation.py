@@ -132,7 +132,7 @@ class TestTheDirectMappings(UnitTestCase):
 
 
 class TestTheRenames(UnitTestCase):
-    def test_membership_and_range_are_renamed(self):
+    def test_membership_is_renamed(self):
         self.assertEqual(
             translate(call("in", column("status"), string("Open"))).expression,
             'is_in(status, "Open")',
@@ -140,10 +140,6 @@ class TestTheRenames(UnitTestCase):
         self.assertEqual(
             translate(call("not_in", column("status"), string("Open"))).expression,
             'is_not_in(status, "Open")',
-        )
-        self.assertEqual(
-            translate(call("between", column("age"), number(1), number(9))).expression,
-            "is_between(age, 1, 9)",
         )
 
     def test_timespan_becomes_within(self):
@@ -153,6 +149,44 @@ class TestTheRenames(UnitTestCase):
     def test_an_upper_case_aggregation_is_lowered(self):
         self.assertEqual(translate(call("MAX", column("amount"))).expression, "max(amount)")
         self.assertEqual(translate(call("SUM", column("amount"))).expression, "sum(amount)")
+
+
+class TestBetweenKeepsItsLastDay(UnitTestCase):
+    """v2 widened the end bound to 23:59:59; a plain rename would drop the last day."""
+
+    def between(self, start, end, on="creation"):
+        return translate(call("between", column(on), start, end)).expression
+
+    def test_the_end_bound_is_widened_to_the_end_of_that_day(self):
+        self.assertEqual(
+            self.between(string("2024-07-01"), string("2024-07-31")),
+            'is_between(creation, "2024-07-01 00:00:00", "2024-07-31 23:59:59")',
+        )
+
+    def test_the_start_bound_is_pinned_to_midnight(self):
+        # v2 emitted both literals, so a row before midnight stays outside the range
+        self.assertIn('"2024-07-01 00:00:00"', self.between(string("2024-07-01"), string("2024-07-31")))
+
+    def test_a_bound_that_already_carries_a_time_is_still_reduced_to_its_day(self):
+        # v2's getdate() discarded the time before re-applying 00:00:00 / 23:59:59
+        self.assertEqual(
+            self.between(string("2024-07-01 08:30:00"), string("2024-07-31 08:30:00")),
+            'is_between(creation, "2024-07-01 00:00:00", "2024-07-31 23:59:59")',
+        )
+
+    def test_a_numeric_bound_is_refused_rather_than_widened(self):
+        # v2 ran every bound through getdate(), which returns None for a number and
+        # then raises on strftime - there is no numeric between to be faithful to
+        with self.assertRaises(TranslationError):
+            translate(call("between", column("age"), number(1), number(9)))
+
+    def test_a_column_bound_is_refused_too(self):
+        with self.assertRaises(TranslationError):
+            translate(call("between", column("creation"), column("start"), column("end")))
+
+    def test_a_string_that_is_not_a_date_is_refused(self):
+        with self.assertRaises(TranslationError):
+            translate(call("between", column("creation"), string("soon"), string("later")))
 
 
 class TestTimeElapsedReorders(UnitTestCase):
