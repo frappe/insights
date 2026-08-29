@@ -261,7 +261,7 @@ async function migrate() {
 		</div>
 
 		<template v-else>
-			<div class="flex items-center justify-between gap-2 overflow-visible py-1">
+			<div class="flex items-center gap-2 overflow-visible py-1">
 				<FormControl
 					class="w-64"
 					:placeholder="__('Search by title')"
