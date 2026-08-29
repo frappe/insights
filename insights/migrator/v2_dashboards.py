@@ -102,6 +102,7 @@ def translate_dashboard(
     chart_names: dict[str, str] | None = None,
     query_names: dict[str, str] | None = None,
     columns_by_query: dict[str, list[dict]] | None = None,
+    skip_items: list[str] | None = None,
 ) -> TranslatedDashboard:
     """Convert a v2 dashboard and its items into v3 items.
 
@@ -109,10 +110,16 @@ def translate_dashboard(
     `query_names` maps a v2 query name to its v3 query, and `columns_by_query`
     gives the result columns of each v3 query. All three default to what the v2
     row already holds.
+
+    `skip_items` names the items the caller has already decided cannot be
+    carried - an item whose v2 query no longer exists is the case that raises
+    it. Emitting one would put a chart with no query on the dashboard and count
+    it as converted, so the item is left out here rather than reported twice.
     """
     chart_names = chart_names or {}
     query_names = query_names or {}
     columns_by_query = columns_by_query or {}
+    skipped = set(skip_items or ())
 
     translated = TranslatedDashboard(
         source=dashboard.get("name") or "",
@@ -125,6 +132,9 @@ def translate_dashboard(
     for item in items:
         item_type = item.get("item_type")
         item_id = item.get("item_id") or item.get("name")
+
+        if str(item.get("name") or item_id or "") in skipped:
+            continue
 
         if item_type == TEXT_ITEM:
             translated.items.append(_text_item(item, item_id))

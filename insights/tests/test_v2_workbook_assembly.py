@@ -175,6 +175,44 @@ class TestV2Planning(UnitTestCase):
         self.assertEqual([gap.kind for gap in dropped], ["item_without_query"])
         self.assertFalse(plan.converts_cleanly)
 
+    def test_an_item_whose_query_is_gone_is_not_counted_as_converted(self):
+        # The gap says the item is dropped, so the item count has to say so too.
+        # "items: 1 of 1 converted" beside a dropped gap is the report arguing
+        # with itself, and a chart pointing at no query would be written.
+        items = [{"name": 1, "item_type": "Bar", "options": json.dumps({"query": "QRY-9"})}]
+        plan = plan_dashboard({"name": "DSH-1", "title": "Orphan"}, items, {})
+
+        self.assertEqual(plan.converted_items, 0)
+        self.assertEqual(plan.dropped_items, 1)
+        self.assertEqual(plan.dashboard.charts, [])
+        self.assertIn("items: 0 of 1 converted", format_report(plan))
+
+    def test_a_query_level_loss_stops_the_dashboard_being_clean(self):
+        # The preview is the user's only durable evidence of what they lose.
+        # A dashboard that drops a query to the SQL floor is not clean, whatever
+        # the dashboard-level gaps say.
+        broken = group_by("status", "Status")
+        broken["expression"] = {
+            "raw": "no_such_function(status)",
+            "ast": {"type": "CallExpression", "function": "no_such_function", "arguments": []},
+        }
+        broken["column"] = None
+        broken["table"] = None
+        queries = {"QRY-1": v2_query("QRY-1", "tabIssue", [broken])}
+        items = [{"name": 1, "item_type": "Bar", "options": json.dumps({"query": "QRY-1"})}]
+        plan = plan_dashboard({"name": "DSH-1", "title": "Floored"}, items, queries)
+
+        self.assertEqual(plan.gaps, [])
+        self.assertTrue(plan.blocking_gaps)
+        self.assertFalse(plan.converts_cleanly)
+
+    def test_a_named_downgrade_alone_still_converts_cleanly(self):
+        queries = {"QRY-1": v2_query("QRY-1", "tabIssue", [group_by("status", "Status")])}
+        items = [{"name": 1, "item_type": "Bar", "options": json.dumps({"query": "QRY-1"})}]
+        plan = plan_dashboard({"name": "DSH-1", "title": "Fine"}, items, queries)
+
+        self.assertTrue(plan.converts_cleanly)
+
     def test_result_columns_come_off_the_stored_spec(self):
         query = v2_query("QRY-1", "tabIssue", [group_by("status", "Status"), count_column()])
         self.assertEqual(

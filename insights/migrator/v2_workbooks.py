@@ -139,6 +139,9 @@ class DashboardPlan:
     data_source_map: dict = field(default_factory=dict)
     """Every v2 data source the operations name, mapped to a v3 one or to None."""
 
+    orphan_items: list[str] = field(default_factory=list)
+    """Item docnames that name a v2 query no longer in the site. Not converted."""
+
     item_count: int = 0
 
     @property
@@ -176,8 +179,14 @@ class DashboardPlan:
 
     @property
     def blocking_gaps(self) -> list[Gap]:
-        """Gaps the plan itself raised that stop a faithful migration."""
-        return [gap for gap in self.gaps if gap.dropped]
+        """Every gap that stops a faithful migration, wherever it was raised.
+
+        A query that fell to the SQL floor because one filter has no v3 form
+        loses as much as a dashboard-level gap does, and the preview is the only
+        place the user learns it. Reading `self.gaps` alone reported such a
+        dashboard as clean.
+        """
+        return [gap for _, gap in self.all_gaps() if gap.dropped]
 
     def all_gaps(self) -> list[tuple[str, Gap]]:
         """Every gap from every translator, tagged with where it came from."""
@@ -341,6 +350,7 @@ def plan_dashboard(
         )
 
     roots, orphans = dashboard_roots(items, queries)
+    plan.orphan_items = [str(item.get("name") or item.get("item_id") or "") for item in orphans]
     for item in orphans:
         plan.gaps.append(
             Gap(
@@ -392,7 +402,12 @@ def plan_dashboard(
             )
         )
 
-    plan.dashboard = translate_dashboard(dashboard, items, columns_by_query=plan.columns_by_query)
+    plan.dashboard = translate_dashboard(
+        dashboard,
+        items,
+        columns_by_query=plan.columns_by_query,
+        skip_items=plan.orphan_items,
+    )
     return plan
 
 
@@ -600,6 +615,7 @@ def _write(plan: DashboardPlan, items: list[dict], owner: str) -> MigrationResul
         chart_names=result.chart_names,
         query_names=result.query_names,
         columns_by_query=plan.columns_by_query,
+        skip_items=plan.orphan_items,
     )
 
     dashboard = frappe.new_doc(V3_DASHBOARD)
