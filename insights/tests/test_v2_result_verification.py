@@ -233,9 +233,9 @@ class TestReadingTheStoredStatement(UnitTestCase):
 class TestWhatTheComparisonCannotSettle(UnitTestCase):
     """Two frames can differ and still settle nothing.
 
-    Both answers are faked, because the cases are about what a limit does to the
-    comparison - not about which rows MariaDB happens to pick for an unordered
-    limit, which is the one thing a fixture cannot pin down.
+    Both answers are faked, because the cases are about what a limit and a
+    pivot do to the comparison - not about which rows MariaDB happens to pick
+    for an unordered limit, which is the one thing a fixture cannot pin down.
     """
 
     LIMITED = "select `status` from `tabToDo` limit 3"
@@ -284,6 +284,20 @@ class TestWhatTheComparisonCannotSettle(UnitTestCase):
 
         self.assertEqual(check.verdict, NOT_RUN)
         self.assertIn("3-row cap", check.reason)
+
+    def test_a_pivoted_query_is_not_run_because_the_two_shapes_do_not_meet(self):
+        """v2 pivoted in pandas, so its stored SQL is the long form."""
+        check = self.verify(
+            self.OPEN,
+            frame(status=["a"]),
+            frame(status=["a"]),
+            operations=[{"type": "summarize"}, {"type": "pivot_wider"}],
+        )
+
+        self.assertEqual(check.verdict, NOT_RUN)
+        self.assertIn("Pivot", check.reason)
+        self.assertIn("not a defect", check.reason)
+        self.assertIsNone(check.v2_rows)
 
 
 # -- the integration fixture ------------------------------------------------

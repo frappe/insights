@@ -41,6 +41,11 @@ Not every query is worth executing, and the reason differs by kind:
   its stored SQL selects from v2's own result store, which v3 has no counterpart
   for. The v3 query reads the migrated upstream query instead, which is the
   point, but it makes the two statements incomparable.
+- A **pivoted** query is not comparable at all. v2 ran `Pivot` in pandas after
+  the fetch, so the statement it stored is the long form and the v3 query
+  returns the grid. Same numbers, two shapes. `Transpose` and `Unpivot` ran
+  there too, but v3 has neither and drops them, which leaves the v3 query in
+  v2's pre-transform shape - so those stay comparable and are compared.
 
 Every comparison rule is stated in `compare_frames`. The one that matters most
 is the verdict: `different` means a human has to look, so a difference the
@@ -656,7 +661,7 @@ def verify_query(
     skip = _why_not_run(v2_query, query_plan, target, data_source)
     if skip:
         check.reason = skip
-        check.differences = classify(_static_check(target, expected_columns, query_plan.kind), gap_kinds)
+        check.differences = classify(_static_check(target, expected_columns, query_plan), gap_kinds)
         return check
 
     if query_plan.kind == "sql":
@@ -741,6 +746,14 @@ def _why_not_run(v2_query: dict, query_plan, target, data_source) -> str:
             "even to read its columns - building one executes the script and writes a "
             "temp table into the data store, and a verification must not have that effect"
         )
+    if _pivots(query_plan):
+        return (
+            "v2 ran its Pivot in pandas, over the rows it had already fetched, so the SQL "
+            "it stored is the answer before the pivot: the long form, where the v3 query "
+            "returns the pivoted grid. The two hold the same numbers in two shapes, and no "
+            "comparison can line them up. A difference here would say nothing, so none is "
+            "reported - this is not a defect, and the pivot has to be checked by eye"
+        )
     if (v2_query.get("data_source") or "") == QUERY_STORE:
         return (
             "its v2 SQL selects from the Query Store, v2's own result store, which v3 "
@@ -753,7 +766,19 @@ def _why_not_run(v2_query: dict, query_plan, target, data_source) -> str:
     return ""
 
 
-def _static_check(target, expected_columns, kind: str) -> list[Difference]:
+def _pivots(query_plan) -> bool:
+    """Whether the v3 query pivots, which is what makes v2's SQL incomparable.
+
+    Read off the operations rather than off the v2 transform, because a pivot
+    the translator had to drop leaves the v3 query in v2's pre-pivot shape -
+    and those two are comparable, which is the whole point of checking one.
+    """
+    return any(
+        (operation or {}).get("type") == "pivot_wider" for operation in query_plan.translated.operations
+    )
+
+
+def _static_check(target, expected_columns, query_plan) -> list[Difference]:
     """What can still be said about a query that cannot be executed.
 
     `DashboardPlan.columns_by_query` records the columns v2's stored spec said
@@ -763,9 +788,12 @@ def _static_check(target, expected_columns, kind: str) -> list[Difference]:
 
     A `code` query is left out. Building one is not free: `apply_code` runs the
     script and writes its result into the data store as a temp table, so reading
-    its columns would make a verification change the thing it verifies.
+    its columns would make a verification change the thing it verifies. A
+    pivoted query is left out too: v2 recorded the columns it had before the
+    pivot, so holding them against the pivoted grid reports a loss that is not
+    one.
     """
-    if kind == "code" or not target or not expected_columns:
+    if query_plan.kind == "code" or _pivots(query_plan) or not target or not expected_columns:
         return []
 
     try:
