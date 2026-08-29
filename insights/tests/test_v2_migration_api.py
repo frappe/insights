@@ -6,6 +6,22 @@ request, and that asking twice migrates once.
 
 The v2 fixture goes in with SQL, the way the migrator reads it, and is built
 from the same helpers the assembly suite uses.
+
+`frappe.enqueue` does not run inline under tests: `call_directly` is
+`now or (not is_async and not frappe.in_test)`, so the default `is_async=True`
+puts a real job on redis, where the bench's own worker - which imports
+`apps/insights`, not this worktree - dies on `ModuleNotFoundError`. So the
+queueing tests patch `frappe.enqueue` and assert what it was handed, and the
+job body is called directly.
+
+To drive the queue for real, run a worker that imports the worktree:
+
+    OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES wt run <worktree> -- worker --queue long
+
+The environment variable is not optional on macOS. RQ forks a work-horse per
+job, and CoreFoundation aborts in the child; without it every job fails with
+"Work-horse terminated unexpectedly ... signal 6", which looks like a bug in
+the job and is not one.
 """
 
 import json
