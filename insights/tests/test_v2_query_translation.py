@@ -59,9 +59,9 @@ def column(name, **overrides):
     return entry
 
 
-def rule(name, operator, value):
+def rule(name, operator, value, data_type="String"):
     return {
-        "column": {"table": "tabIssue", "column": name},
+        "column": {"table": "tabIssue", "column": name, "type": data_type},
         "operator": {"value": operator, "label": operator},
         "value": {"value": value, "label": str(value)},
         "expression": {},
@@ -385,6 +385,47 @@ class TestFilters(UnitTestCase):
         result, filters = self.filters(entry)
         self.assertEqual(filters, [])
         self.assertIn("dropped_filter", gap_kinds(result))
+
+    def test_a_numeric_column_compares_against_a_number_not_its_spelling(self):
+        # v2 held every value as a string and let MySQL coerce it. ibis raises
+        # instead: `docstatus:!int8 and Literal(1):string are not comparable`.
+        _, filters = self.filters(rule("docstatus", "=", "1", data_type="Integer"))
+        self.assertEqual(filters[0]["value"], 1)
+
+    def test_a_decimal_column_compares_against_a_float(self):
+        _, filters = self.filters(rule("amount", ">", "99.5", data_type="Decimal"))
+        self.assertEqual(filters[0]["value"], 99.5)
+
+    def test_every_value_of_a_numeric_in_filter_is_typed(self):
+        _, filters = self.filters(
+            rule("docstatus", "in", [{"value": "0"}, {"value": "1"}], data_type="Integer")
+        )
+        self.assertEqual(filters[0]["value"], [0, 1])
+
+    def test_a_string_column_keeps_the_string_that_spells_a_number(self):
+        _, filters = self.filters(rule("name", "=", "100"))
+        self.assertEqual(filters[0]["value"], "100")
+
+    def test_a_text_match_on_a_numeric_column_stays_text(self):
+        # v2 compiled `contains` to LIKE '%1%', which is a string match whatever
+        # the column holds.
+        _, filters = self.filters(rule("docstatus", "contains", "1", data_type="Integer"))
+        self.assertEqual(filters[0]["value"], "1")
+
+    def test_a_numeric_filter_that_needs_no_value_takes_none(self):
+        _, filters = self.filters(rule("docstatus", "is_set", None, data_type="Integer"))
+        self.assertIsNone(filters[0]["value"])
+
+    def test_a_between_on_dates_is_untouched_by_the_typing(self):
+        _, filters = self.filters(rule("creation", "between", "2024-01-01,2024-06-30", data_type="Date"))
+        self.assertEqual(filters[0]["value"], ["2024-01-01 00:00:00", "2024-06-30 23:59:59"])
+
+    def test_a_value_a_numeric_column_cannot_hold_is_dropped_and_reported(self):
+        # MySQL read 'open' as 0 here and answered. Carrying that would migrate
+        # a comparison nobody wrote.
+        result, filters = self.filters(rule("docstatus", "=", "open", data_type="Integer"))
+        self.assertEqual(filters, [])
+        self.assertIn("broken_filter", gap_kinds(result))
 
     def test_an_expression_filter_becomes_a_filter_expression(self):
         entry = {

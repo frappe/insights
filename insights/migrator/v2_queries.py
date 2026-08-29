@@ -126,6 +126,11 @@ DIRECT_OPERATORS = frozenset(
     }
 )
 
+# Operators that compare a column against a value of the column's own type. The
+# rest match text (`contains`, `starts_with`), name a timespan (`within`) or
+# take no value at all, and a v2 value string travels to v3 unchanged.
+COMPARING_OPERATORS = frozenset({"=", "!=", ">", ">=", "<", "<=", "in", "not_in"})
+
 JOIN_TYPES = frozenset({"inner", "left", "right", "full"})
 
 # `use_live_connection` off means "read the DuckDB data store", which holds a
@@ -523,7 +528,7 @@ class _Builder:
             self.gap("unknown_operator", label, f"operator {operator!r} has no v3 form", dropped=True)
             return None
 
-        value = self.filter_value(operator, raw_value, label)
+        value = self.filter_value(operator, raw_value, label, column.get("type") or "")
         if value is _UNUSABLE:
             return None
 
@@ -533,10 +538,23 @@ class _Builder:
             "value": value,
         }
 
-    def filter_value(self, operator, raw_value, label):
+    def filter_value(self, operator, raw_value, label, data_type=""):
+        """The value v2 compared against, in the type v3 has to compare it in.
+
+        v2 held every filter value as a string on `LabelValue` and handed it to
+        SQLAlchemy, which rendered `'1'` and let the database coerce it against
+        the column. ibis does not coerce: comparing an int column to a string
+        literal raises before the query runs. The column's own v2 type is what
+        says which comparison v2 was really making, so it decides the type here.
+        """
+        if operator not in COMPARING_OPERATORS:
+            data_type = ""
+
         if operator in ("in", "not_in"):
             values = raw_value if isinstance(raw_value, list) else [raw_value]
-            return [v.get("value") if isinstance(v, dict) else v for v in values]
+            values = [v.get("value") if isinstance(v, dict) else v for v in values]
+            typed = [self.typed_value(v, data_type, label) for v in values]
+            return _UNUSABLE if _UNUSABLE in typed else typed
 
         if operator == "between":
             parts = raw_value if isinstance(raw_value, list) else str(raw_value).split(",")
@@ -563,8 +581,29 @@ class _Builder:
             return [f"{bounds[0]} 00:00:00", f"{bounds[1]} 23:59:59"]
 
         if isinstance(raw_value, list):
-            return [v.get("value") if isinstance(v, dict) else v for v in raw_value]
-        return raw_value
+            values = [v.get("value") if isinstance(v, dict) else v for v in raw_value]
+            typed = [self.typed_value(v, data_type, label) for v in values]
+            return _UNUSABLE if _UNUSABLE in typed else typed
+        return self.typed_value(raw_value, data_type, label)
+
+    def typed_value(self, value, data_type, label):
+        """One filter value, read as the number a numeric column compares to."""
+        if data_type not in MEASURE_TYPES or not isinstance(value, str):
+            return value
+        try:
+            return int(value.strip()) if data_type == "Integer" else float(value.strip())
+        except ValueError:
+            # MySQL read a non-numeric string as 0 here rather than failing, so
+            # v2 ran and answered. Carrying that coercion into v3 would migrate
+            # a comparison nobody wrote; the filter is dropped and reported.
+            self.gap(
+                "broken_filter",
+                label,
+                f"the value {value!r} is not a {data_type.lower()}, and the column is one. "
+                f"v2 let the database read it as 0",
+                dropped=True,
+            )
+            return _UNUSABLE
 
     # -- columns -----------------------------------------------------------
 
