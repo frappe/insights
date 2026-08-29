@@ -39,9 +39,7 @@ class TestSQLBuilder(unittest.TestCase):
     def test_joins(self):
         from sqlalchemy import column, select, table, text
 
-        todo = table(
-            "tabToDo", column("name"), column("allocated_to"), column("reference_name")
-        )
+        todo = table("tabToDo", column("name"), column("allocated_to"), column("reference_name"))
         user = table("tabUser", column("name"), column("full_name"))
         comment = table("tabComment", column("name"))
 
