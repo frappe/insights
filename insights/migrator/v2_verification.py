@@ -140,8 +140,10 @@ EXPLAINED_BY = {
     # loose grouping allowed. v3 groups by it, so the result is finer: more
     # rows, and a different value in every aggregate.
     "grouped_loose_column": (ROW_COUNT, ROW_MEMBERSHIP, CELL, COLUMN_TYPE),
-    # v2 formatted "Month of Year" as "January"; v3's month() returns 1.
-    "granularity_part_type": (CELL, COLUMN_TYPE),
+    # v2 formatted "Month of Year" as "January"; v3's month() returns 1. That
+    # relabels every value in the column, so the rows do not match either - see
+    # RELABELS_VALUES for the only shape of row difference it excuses.
+    "granularity_part_type": (CELL, COLUMN_TYPE, ROW_MEMBERSHIP),
     "unknown_granularity": (CELL, COLUMN_TYPE, COLUMN_NAME),
     "ignored_granularity": (CELL, COLUMN_TYPE),
     # v2 replaced the column in place; v3 lands the running total in a
@@ -164,6 +166,17 @@ EXPLAINED_BY = {
     "script_result_shape": (COLUMN_COUNT, COLUMN_NAME),
 }
 
+RELABELS_VALUES = frozenset({"granularity_part_type"})
+"""Gap kinds that predict one column's values being spelled differently.
+
+Row membership is the loosest thing a gap can excuse - every wrong filter and
+every lost join shows up as it - so these excuse it only for a difference that
+carries the relabelling signature: the same number of rows on both sides, one
+column where v2 holds text and v3 holds numbers, and nothing else about the rows
+moved. `_relabelled_values` is that test. Without it, `granularity_part_type`
+would excuse any row difference at all in a query that happens to group by a
+month."""
+
 
 NULL = "\x00null"
 """One spelling for missing. The two sides disagree about the rest of them:
@@ -184,6 +197,11 @@ class Difference:
     column: str = ""
     explained_by: str = ""
     """The gap kind that predicted this, or empty when nothing did."""
+
+    relabelled_values: bool = False
+    """The rows differ in one column alone, where v2 holds text and v3 holds the
+    number it spells. Set on a `row_membership` difference only; see
+    `RELABELS_VALUES`."""
 
     @property
     def expected(self) -> bool:
@@ -489,15 +507,47 @@ def _compare_as_multiset(left_rows, right_rows, names) -> list[Difference]:
     if not only_v2 and not only_v3:
         return []
 
+    relabelled = _relabelled_values(only_v2, only_v3)
     header = ", ".join(names)
     detail = f"{sum(only_v2.values())} row(s) only in v2, {sum(only_v3.values())} only in v3 " f"({header})"
-    differences = [Difference(ROW_MEMBERSHIP, detail)]
+    differences = [Difference(ROW_MEMBERSHIP, detail, relabelled_values=relabelled)]
     for label, counts in (("v2", only_v2), ("v3", only_v3)):
         for row, _count in list(counts.items())[:MAX_REPORTED]:
             differences.append(
-                Difference(ROW_MEMBERSHIP, f"only in {label}: ({', '.join(_show(v) for v in row)})")
+                Difference(
+                    ROW_MEMBERSHIP,
+                    f"only in {label}: ({', '.join(_show(v) for v in row)})",
+                    relabelled_values=relabelled,
+                )
             )
     return differences
+
+
+def _relabelled_values(only_v2, only_v3) -> bool:
+    """Whether the two sides differ by one column's values being spelled out.
+
+    The signature of a rendered dimension: as many rows on one side as the
+    other, one column where every v2 value is text and no v3 value is, and the
+    rest of every row identical once that column is dropped. A lost filter, a
+    wrong join or a miscomputed aggregate all fail at least one of those - which
+    is the point, because this is what lets a gap excuse a row difference at
+    all.
+    """
+    left, right = list(only_v2.elements()), list(only_v3.elements())
+    if not left or len(left) != len(right):
+        return False
+
+    for index in range(len(left[0])):
+        spelled_out = all(isinstance(row[index], str) and row[index] != NULL for row in left)
+        if not spelled_out or any(isinstance(row[index], str) for row in right):
+            continue
+        if _without(left, index) == _without(right, index):
+            return True
+    return False
+
+
+def _without(rows, index: int) -> Counter:
+    return Counter(row[:index] + row[index + 1 :] for row in rows)
 
 
 def _show(value) -> str:
@@ -515,11 +565,19 @@ def classify(differences: list[Difference], gap_kinds) -> list[Difference]:
     tagged = []
     for difference in differences:
         explained = next(
-            (kind for kind in sorted(gap_kinds) if difference.kind in EXPLAINED_BY.get(kind, ())),
+            (kind for kind in sorted(gap_kinds) if _explains(kind, difference)),
             "",
         )
         tagged.append(replace(difference, explained_by=explained))
     return tagged
+
+
+def _explains(kind: str, difference: Difference) -> bool:
+    if difference.kind not in EXPLAINED_BY.get(kind, ()):
+        return False
+    if difference.kind == ROW_MEMBERSHIP and kind in RELABELS_VALUES:
+        return difference.relabelled_values
+    return True
 
 
 def verdict_for(differences: list[Difference]) -> str:

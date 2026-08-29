@@ -197,6 +197,37 @@ class TestExpectedDifferences(UnitTestCase):
 
         self.assertEqual(verdict_for(differences), DIFFERENT)
 
+    def relabelled(self):
+        """v2 rendered the month; v3 returns the number. Nothing else moved."""
+        left = frame(month=["January", "February"], total=[3, 4])
+        right = frame(month=[1, 2], total=[3, 4])
+        return compare_frames(left, right)
+
+    def test_a_rendered_month_explains_the_rows_it_relabels(self):
+        differences = classify(self.relabelled(), {"granularity_part_type"})
+
+        self.assertIn(ROW_MEMBERSHIP, kinds(differences))
+        self.assertEqual(verdict_for(differences), EXPECTED)
+
+    def test_the_same_rows_with_no_gap_behind_them_are_a_failure(self):
+        self.assertEqual(verdict_for(classify(self.relabelled(), set())), DIFFERENT)
+
+    def test_a_relabelling_gap_refuses_a_row_difference_it_did_not_predict(self):
+        """A lost filter in a query that also renders a month is still a defect."""
+        left = frame(month=["January", "February"], total=[3, 4])
+        right = frame(month=[1, 2, 3], total=[3, 4, 5])
+        differences = classify(compare_frames(left, right), {"granularity_part_type"})
+
+        self.assertEqual(verdict_for(differences), DIFFERENT)
+
+    def test_a_relabelling_gap_refuses_a_value_that_moved_under_the_label(self):
+        """The months line up; one count does not."""
+        left = frame(month=["January", "February"], total=[3, 4])
+        right = frame(month=[1, 2], total=[3, 9])
+        differences = classify(compare_frames(left, right), {"granularity_part_type"})
+
+        self.assertEqual(verdict_for(differences), DIFFERENT)
+
     def test_a_gap_only_explains_the_differences_it_predicts(self):
         """`granularity_part_type` changes values, not the number of columns."""
         left = frame(month=["January"], total=[3])
