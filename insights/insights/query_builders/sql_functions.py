@@ -1,3 +1,4 @@
+import datetime
 import operator
 from contextlib import suppress
 
@@ -6,9 +7,7 @@ from frappe.utils.data import (
     add_to_date,
     get_date_str,
     get_first_day,
-    get_first_day_of_week,
     get_last_day,
-    get_last_day_of_week,
     get_quarter_ending,
     get_quarter_start,
     get_year_ending,
@@ -16,9 +15,8 @@ from frappe.utils.data import (
     getdate,
     nowdate,
 )
-from sqlalchemy import Column
+from sqlalchemy import Column, select, table
 from sqlalchemy import column as sa_column
-from sqlalchemy import select, table
 from sqlalchemy.sql import and_, case, distinct, func, or_, text
 
 DATE_TYPES = ("Date", "Datetime")
@@ -56,9 +54,7 @@ class ColumnFormatter:
     def format(cls, format_options: dict, column_type: str, column: Column) -> Column:
         if format_options and format_options.date_format and column_type in DATE_TYPES:
             date_format = format_options.date_format
-            date_format = (
-                date_format if type(date_format) == str else date_format.get("value")
-            )
+            date_format = date_format if type(date_format) == str else date_format.get("value")
             return cls.format_date(date_format, column)
         return column
 
@@ -75,9 +71,7 @@ class ColumnFormatter:
             date = func.date_format(column, "%Y-%m-%d")
             dialect = frappe.flags._current_query_dialect
             compiled = column.compile(dialect=dialect)
-            return func.DATE_SUB(
-                date, text(f"INTERVAL (DAYOFWEEK({compiled}) - 1) DAY")
-            )
+            return func.DATE_SUB(date, text(f"INTERVAL (DAYOFWEEK({compiled}) - 1) DAY"))
         if format == "Month" or format == "Mon":
             return func.date_format(column, "%Y-%m-01")
         if format == "Year":
@@ -202,9 +196,7 @@ class Functions:
             ]
             unit = args[0].upper()
             if unit not in VALID_UNITS:
-                raise Exception(
-                    f"Invalid unit {unit}. Valid units are {', '.join(VALID_UNITS)}"
-                )
+                raise Exception(f"Invalid unit {unit}. Valid units are {', '.join(VALID_UNITS)}")
             return func.timestampdiff(text(unit), args[1], args[2])
 
         if function == "descendants":
@@ -228,9 +220,7 @@ class Functions:
             valid_units = ["day", "week", "month", "quarter", "year"]
             unit = args[0].lower()
             if unit not in valid_units:
-                raise Exception(
-                    f"Invalid unit {unit}. Valid units are {', '.join(valid_units)}"
-                )
+                raise Exception(f"Invalid unit {unit}. Valid units are {', '.join(valid_units)}")
             return ColumnFormatter.format_date(args[0].title(), args[1])
 
         raise NotImplementedError(f"Function {function} not implemented")
@@ -267,18 +257,35 @@ def get_descendants(node, tree, include_self=False):
     Tree = table(tree, sa_column("lft"), sa_column("rgt"), sa_column("name"))
     lft_rgt = select(Tree.c.lft, Tree.c.rgt).where(Tree.c.name == node).alias("lft_rgt")
     return (
-        (
-            select(Tree.c.name)
-            .where(Tree.c.lft > lft_rgt.c.lft)
-            .where(Tree.c.rgt < lft_rgt.c.rgt)
-        )
+        (select(Tree.c.name).where(Tree.c.lft > lft_rgt.c.lft).where(Tree.c.rgt < lft_rgt.c.rgt))
         if not include_self
-        else (
-            select(Tree.c.name)
-            .where(Tree.c.lft >= lft_rgt.c.lft)
-            .where(Tree.c.rgt <= lft_rgt.c.rgt)
-        )
+        else (select(Tree.c.name).where(Tree.c.lft >= lft_rgt.c.lft).where(Tree.c.rgt <= lft_rgt.c.rgt))
     )
+
+
+WEEKDAYS = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+]
+
+
+def get_week_start_day_index():
+    day = frappe.db.get_single_value("Insights Settings", "week_starts_on") or "Monday"
+    return WEEKDAYS.index(day)
+
+
+def get_first_day_of_week(date):
+    date = getdate(date)
+    return date - datetime.timedelta(days=(date.weekday() - get_week_start_day_index()) % 7)
+
+
+def get_last_day_of_week(date):
+    return get_first_day_of_week(date) + datetime.timedelta(days=6)
 
 
 def get_current_date_range(unit):
@@ -299,9 +306,7 @@ def get_current_date_range(unit):
 
 
 def get_fiscal_year_start_date():
-    fiscal_year_start = frappe.db.get_single_value(
-        "Insights Settings", "fiscal_year_start"
-    )
+    fiscal_year_start = frappe.db.get_single_value("Insights Settings", "fiscal_year_start")
     if not fiscal_year_start or get_date_str(fiscal_year_start) == "0001-01-01":
         return getdate("1995-04-01")
     return getdate(fiscal_year_start)
@@ -311,9 +316,7 @@ def get_fy_start(date):
     fy_start = get_fiscal_year_start_date()
     dt = getdate(date)  # eg. 2019-01-01
     if dt.month < fy_start.month:
-        return getdate(
-            f"{dt.year - 1}-{fy_start.month}-{fy_start.day}"
-        )  # eg. 2018-04-01
+        return getdate(f"{dt.year - 1}-{fy_start.month}-{fy_start.day}")  # eg. 2018-04-01
     return getdate(f"{dt.year}-{fy_start.month}-{fy_start.day}")  # eg. 2019-04-01
 
 
@@ -336,9 +339,7 @@ def get_directional_date_range(direction, unit, number_of_unit):
         ]
     if unit == "week":
         dates = [
-            get_first_day_of_week(
-                add_to_date(today, days=direction * 7 * number_of_unit)
-            ),
+            get_first_day_of_week(add_to_date(today, days=direction * 7 * number_of_unit)),
             get_last_day_of_week(add_to_date(today, days=direction * 7)),
         ]
     if unit == "month":
@@ -348,9 +349,7 @@ def get_directional_date_range(direction, unit, number_of_unit):
         ]
     if unit == "quarter":
         dates = [
-            get_quarter_start(
-                add_to_date(today, months=direction * 3 * number_of_unit)
-            ),
+            get_quarter_start(add_to_date(today, months=direction * 3 * number_of_unit)),
             get_quarter_ending(add_to_date(today, months=direction * 3)),
         ]
     if unit == "year":
