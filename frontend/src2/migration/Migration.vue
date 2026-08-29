@@ -189,6 +189,9 @@ const willSkip = computed(() => confirmTargets.value.length - willMigrate.value.
 
 function askToMigrate(targets: Row[]) {
 	confirmTargets.value = targets
+	// Two portalled dialogs stack in document order, so the drill-down would
+	// cover this one. It has said its piece by now anyway.
+	showDialog.value = false
 	showConfirm.value = true
 }
 
@@ -202,7 +205,6 @@ async function migrate() {
 	try {
 		const result = await store.migrateDashboards(names)
 		showConfirm.value = false
-		showDialog.value = false
 		selected.value = new Set()
 		createToast({
 			variant: 'success',
