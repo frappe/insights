@@ -47,6 +47,11 @@ function addReferenceLine() {
 function removeReferenceLine(index: number) {
 	y_axis.value.reference_lines?.splice(index, 1)
 }
+
+function setReferenceLineAxis(line: ReferenceLine, axis: 'x' | 'y') {
+	line.axis = axis
+	if (axis === 'x') line.statistic = null
+}
 </script>
 
 <template>
@@ -137,8 +142,13 @@ function removeReferenceLine(index: number) {
 							<FormControl
 								type="text"
 								v-model="line.value"
+								:disabled="Boolean(line.statistic)"
 								:placeholder="
-									line.axis === 'x' ? 'Value (e.g. Jan)' : 'Value (e.g. 60)'
+									line.statistic
+										? 'From the data'
+										: line.axis === 'x'
+										  ? 'Value (e.g. Jan)'
+										  : 'Value (e.g. 60)'
 								"
 							/>
 						</div>
@@ -158,7 +168,8 @@ function removeReferenceLine(index: number) {
 									<InlineFormControlLabel label="Axis">
 										<FormControl
 											type="select"
-											v-model="line.axis"
+											:model-value="line.axis || 'y'"
+											@update:model-value="setReferenceLineAxis(line, $event)"
 											:options="[
 												{ label: 'Y (horizontal)', value: 'y' },
 												{ label: 'X (vertical)', value: 'x' },
@@ -173,6 +184,23 @@ function removeReferenceLine(index: number) {
 											type="select"
 											v-model="line.align"
 											:options="['Left', 'Right']"
+										/>
+									</InlineFormControlLabel>
+									<InlineFormControlLabel
+										v-if="(line.axis || 'y') === 'y'"
+										label="Statistic"
+									>
+										<FormControl
+											type="select"
+											:model-value="line.statistic || ''"
+											@update:model-value="line.statistic = $event || null"
+											:options="[
+												{ label: 'None (fixed value)', value: '' },
+												{ label: 'Average', value: 'average' },
+												{ label: 'Median', value: 'median' },
+												{ label: 'Min', value: 'min' },
+												{ label: 'Max', value: 'max' },
+											]"
 										/>
 									</InlineFormControlLabel>
 									<InlineFormControlLabel label="Label">
