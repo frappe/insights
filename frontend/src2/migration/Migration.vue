@@ -1,7 +1,7 @@
-<script setup lang="ts">
-import { Breadcrumbs, ListView, TabButtons } from 'frappe-ui'
-import { CircleHelp } from 'lucide-vue-next'
-import { computed, onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'vue'
+<script setup lang="tsx">
+import { Badge, Breadcrumbs, ListView } from 'frappe-ui'
+import { CircleHelp, SearchIcon } from 'lucide-vue-next'
+import { computed, onBeforeUnmount, onMounted, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { getErrorMessage } from '../helpers'
 import { createToast } from '../helpers/toasts'
@@ -9,6 +9,7 @@ import { __ } from '../translation'
 import MigrationDashboard from './MigrationDashboard.vue'
 import useV2MigrationStore, {
 	DashboardScan,
+	VERDICT_LABELS,
 	verdictSentence,
 	verificationSentence,
 } from './v2_migration'
@@ -26,117 +27,117 @@ watchEffect(() => {
 	document.title = 'Migrate from v2 | Insights'
 })
 
-type Row = DashboardScan & { sentence: string; result: string }
+/** What a row is right now. A verdict, except that a running job outranks the
+ * verdict the scan recorded before the job started. */
+type RowState = 'ready' | 'review' | 'blocked' | 'migrating' | 'migrated'
 
-function isInFlight(dashboard: DashboardScan) {
-	const state = store.stateOf(dashboard.dashboard)
-	return state === 'queued' || state === 'in_progress'
+const STATE_LABELS: Record<RowState, string> = {
+	...VERDICT_LABELS,
+	migrating: __('Migrating'),
 }
 
-function rowsOf(verdicts: string[]): Row[] {
-	return store.dashboards
-		.filter((d: DashboardScan) => verdicts.includes(d.verdict) && !isInFlight(d))
-		.map((d: DashboardScan) => ({
-			...d,
-			sentence: verdictSentence(d),
-			result: verificationSentence(d.verification),
-		}))
+const STATE_THEMES: Record<RowState, string> = {
+	ready: 'green',
+	review: 'orange',
+	blocked: 'red',
+	migrating: 'blue',
+	migrated: 'gray',
 }
 
-const ready = computed(() => rowsOf(['ready']))
-const review = computed(() => rowsOf(['review']))
-const blocked = computed(() => rowsOf(['blocked', 'unreadable']))
-const migrated = computed(() => rowsOf(['migrated']))
+/** Only these two are a decision the user has yet to make. */
+const MIGRATABLE: RowState[] = ['ready', 'review']
 
-// A dashboard whose job is running is out of every other tab: it is no longer
-// waiting on a decision, and `ListView` selects whole rows or none, so leaving
-// it among the reviewable ones is what would make it selectable.
-const inFlight = computed<Row[]>(() =>
-	store.dashboards.filter(isInFlight).map((d: DashboardScan) => ({
-		...d,
-		sentence: __('Migrating now...'),
-		result: __('Migrating now...'),
-	})),
+type Row = DashboardScan & { state: RowState; sentence: string }
+
+function stateOf(dashboard: DashboardScan): RowState {
+	const job = store.stateOf(dashboard.dashboard)
+	if (job === 'queued' || job === 'in_progress') return 'migrating'
+	if (dashboard.verdict === 'unreadable') return 'blocked'
+	return dashboard.verdict as RowState
+}
+
+function sentenceOf(dashboard: DashboardScan, state: RowState) {
+	if (state === 'migrating') return __('Migrating now...')
+	if (state === 'migrated') {
+		return verificationSentence(dashboard.verification) || __('Copied into a v3 workbook')
+	}
+	return verdictSentence(dashboard)
+}
+
+const allRows = computed<Row[]>(() =>
+	store.dashboards.map((d: DashboardScan) => {
+		const state = stateOf(d)
+		return { ...d, state, sentence: sentenceOf(d, state) }
+	}),
 )
 
-type TabValue = 'ready' | 'review' | 'blocked' | 'migrating' | 'migrated'
+// -- filtering --------------------------------------------------------------
 
-const tab = ref<TabValue>('ready')
-const tabRows: Record<TabValue, () => Row[]> = {
-	ready: () => ready.value,
-	review: () => review.value,
-	blocked: () => blocked.value,
-	migrating: () => inFlight.value,
-	migrated: () => migrated.value,
-}
+const searchQuery = ref('')
+const stateFilter = ref<RowState | 'all'>('all')
 
-const tabs = computed(() => {
-	const defined: { label: string; value: TabValue; count: number; always: boolean }[] = [
-		{ label: __('Ready'), value: 'ready', count: ready.value.length, always: true },
-		{ label: __('Needs review'), value: 'review', count: review.value.length, always: true },
-		{ label: __('Blocked'), value: 'blocked', count: blocked.value.length, always: false },
-		{
-			label: __('Migrating'),
-			value: 'migrating',
-			count: inFlight.value.length,
-			always: false,
-		},
-		{ label: __('Migrated'), value: 'migrated', count: migrated.value.length, always: true },
-	]
-	return defined
-		.filter((t) => t.always || t.count)
-		.map((t) => ({ label: `${t.label} · ${t.count}`, value: t.value }))
+const filterOptions = computed(() => [
+	{ label: __('All'), value: 'all' },
+	...(['ready', 'review', 'blocked', 'migrating', 'migrated'] as RowState[]).map((state) => ({
+		label: STATE_LABELS[state],
+		value: state,
+	})),
+])
+
+const rows = computed(() => {
+	const term = searchQuery.value.toLowerCase().trim()
+	return allRows.value.filter((row) => {
+		if (stateFilter.value !== 'all' && row.state !== stateFilter.value) return false
+		if (!term) return true
+		return row.title.toLowerCase().includes(term)
+	})
 })
-
-// A tab that empties - the last migration left the queue - would otherwise
-// leave the page on a tab that no longer exists.
-watch(tabs, (available) => {
-	if (!available.some((t) => t.value === tab.value)) tab.value = 'ready'
-})
-
-const rows = computed(() => tabRows[tab.value]())
-
-const EMPTY_STATES: Record<TabValue, string> = {
-	ready: __('Nothing is ready to migrate.'),
-	review: __('Nothing needs review.'),
-	blocked: __('Nothing is blocked.'),
-	migrating: __('Nothing is migrating.'),
-	migrated: __('Nothing is migrated yet.'),
-}
-
-const COLUMN_LABELS: Record<TabValue, string> = {
-	ready: __('What happens'),
-	review: __('What happens'),
-	blocked: __('What to do'),
-	migrating: __('Status'),
-	migrated: __('Result'),
-}
 
 const noV2 = computed(
 	() => store.unavailable || (!store.scanning && !store.dashboards.length && !store.scanError),
 )
 
+const emptyState = computed(() => {
+	if (searchQuery.value.trim()) return { title: __('No dashboard matches your search.') }
+	if (stateFilter.value !== 'all') {
+		return { title: __('No dashboard is {0}.', STATE_LABELS[stateFilter.value].toLowerCase()) }
+	}
+	return { title: __('No v2 dashboards to migrate.') }
+})
+
 const selected = ref<Set<string>>(new Set())
-watch(tab, () => (selected.value = new Set()))
 
 const listOptions = computed(() => ({
 	columns: [
 		{ label: __('Dashboard'), key: 'title', width: 2 },
 		{
-			label: COLUMN_LABELS[tab.value],
-			key: tab.value === 'migrated' ? 'result' : 'sentence',
-			width: 3,
+			label: __('Status'),
+			key: 'state',
+			// the badge carries the label; without this the cell prints it again
+			// beside the badge, and dropping it falls back to the raw state key
+			getLabel: () => '',
+			prefix: (props: any) => {
+				const state = props.row.state as RowState
+				return (
+					<Badge
+						theme={STATE_THEMES[state]}
+						variant="subtle"
+						label={STATE_LABELS[state]}
+					/>
+				)
+			},
 		},
+		{ label: __('What happens'), key: 'sentence', width: 3 },
 	],
 	rows: rows.value,
 	rowKey: 'dashboard',
 	options: {
 		showTooltip: false,
-		selectable: tab.value === 'review',
+		selectable: true,
 		onRowClick: (row: Row) => openDashboard(row),
 		selectionText: (count: number) =>
 			count === 1 ? __('1 dashboard selected') : __('{0} dashboards selected', String(count)),
-		emptyState: { title: EMPTY_STATES[tab.value], description: '' },
+		emptyState: emptyState.value,
 	},
 }))
 
@@ -164,10 +165,25 @@ function openInV3(dashboard: DashboardScan) {
 // -- migrating --------------------------------------------------------------
 
 const showConfirm = ref(false)
-const confirmTargets = ref<DashboardScan[]>([])
+const confirmTargets = ref<Row[]>([])
 
-async function migrate(targets: DashboardScan[]) {
-	const names = targets.map((d) => d.dashboard)
+// One list means a selection can hold rows there is nothing left to do to. They
+// are dropped here and counted in one line, rather than sorted into a taxonomy
+// the user has to read.
+const willMigrate = computed(() => confirmTargets.value.filter((d) => MIGRATABLE.includes(d.state)))
+const willSkip = computed(() => confirmTargets.value.length - willMigrate.value.length)
+
+function askToMigrate(targets: Row[]) {
+	confirmTargets.value = targets
+	showConfirm.value = true
+}
+
+function migrateSelected() {
+	askToMigrate(allRows.value.filter((row) => selected.value.has(row.dashboard)))
+}
+
+async function migrate() {
+	const names = willMigrate.value.map((d) => d.dashboard)
 	if (!names.length) return
 	try {
 		const result = await store.migrateDashboards(names)
@@ -193,15 +209,6 @@ async function migrate(targets: DashboardScan[]) {
 		})
 	}
 }
-
-function askToMigrate(targets: DashboardScan[]) {
-	confirmTargets.value = targets
-	showConfirm.value = true
-}
-
-function migrateSelected() {
-	askToMigrate(review.value.filter((d) => selected.value.has(d.dashboard)))
-}
 </script>
 
 <template>
@@ -220,25 +227,10 @@ function migrateSelected() {
 				@click="store.scan(true)"
 			/>
 			<Button
-				v-if="tab === 'review' && selected.size"
+				:label="__('Migrate')"
 				variant="solid"
-				:label="
-					selected.size === 1
-						? __('Migrate 1 selected')
-						: __('Migrate {0} selected', String(selected.size))
-				"
+				:disabled="!selected.size"
 				@click="migrateSelected"
-			/>
-			<Button
-				v-else-if="ready.length"
-				variant="solid"
-				:loading="store.migrating"
-				:label="
-					ready.length === 1
-						? __('Migrate 1 ready')
-						: __('Migrate all {0} ready', String(ready.length))
-				"
-				@click="migrate(ready)"
 			/>
 		</div>
 	</header>
@@ -269,8 +261,28 @@ function migrateSelected() {
 		</div>
 
 		<template v-else>
-			<div class="flex overflow-visible py-1">
-				<TabButtons :buttons="tabs" v-model="tab" />
+			<div class="flex items-center justify-between gap-2 overflow-visible py-1">
+				<FormControl
+					class="w-64"
+					:placeholder="__('Search by title')"
+					v-model="searchQuery"
+					:debounce="300"
+					autocomplete="off"
+				>
+					<template #prefix>
+						<SearchIcon class="h-4 w-4 text-gray-500" />
+					</template>
+				</FormControl>
+				<!-- FormControl drops layout classes on a select, so the width is on
+				the wrapper -->
+				<div class="w-44">
+					<FormControl
+						type="select"
+						v-model="stateFilter"
+						:options="filterOptions"
+						autocomplete="off"
+					/>
+				</div>
 			</div>
 			<!-- flex parent so ListView (whose root is flex-1) fills the height, which
 			lets the empty state center vertically instead of collapsing to the top -->
@@ -287,7 +299,7 @@ function migrateSelected() {
 	<MigrationDashboard
 		v-model="showDialog"
 		:dashboard="opened"
-		@migrate="(d: DashboardScan) => (d.verdict === 'ready' ? migrate([d]) : askToMigrate([d]))"
+		@migrate="(d: DashboardScan) => askToMigrate(allRows.filter((r) => r.dashboard === d.dashboard))"
 		@open="openInV3"
 	/>
 
@@ -302,17 +314,17 @@ function migrateSelected() {
 					}}
 				</p>
 				<p>
-					<span class="font-medium text-ink-gray-8">{{ __('Ready') }}</span>
+					<span class="font-medium text-ink-gray-8">{{ VERDICT_LABELS.ready }}</span>
 					-
 					{{ __('these carry over as they are.') }}
 				</p>
 				<p>
-					<span class="font-medium text-ink-gray-8">{{ __('Needs review') }}</span>
+					<span class="font-medium text-ink-gray-8">{{ VERDICT_LABELS.review }}</span>
 					-
 					{{ __('open one to see what changes before you migrate it.') }}
 				</p>
 				<p>
-					<span class="font-medium text-ink-gray-8">{{ __('Blocked') }}</span>
+					<span class="font-medium text-ink-gray-8">{{ VERDICT_LABELS.blocked }}</span>
 					-
 					{{
 						__(
@@ -321,7 +333,7 @@ function migrateSelected() {
 					}}
 				</p>
 				<p>
-					<span class="font-medium text-ink-gray-8">{{ __('Migrated') }}</span>
+					<span class="font-medium text-ink-gray-8">{{ VERDICT_LABELS.migrated }}</span>
 					-
 					{{
 						__(
@@ -345,18 +357,32 @@ function migrateSelected() {
 
 	<Dialog v-model="showConfirm" :options="{ title: __('Migrate to v3') }">
 		<template #body-content>
-			<p class="text-p-base text-ink-gray-7">
-				{{
-					confirmTargets.length === 1
-						? __(
-								'Create a v3 copy of this dashboard? Your v2 dashboard stays untouched.',
-						  )
-						: __(
-								'Create v3 copies of these {0} dashboards? Your v2 dashboards stay untouched.',
-								String(confirmTargets.length),
-						  )
-				}}
-			</p>
+			<div class="flex flex-col gap-2">
+				<p class="text-p-base text-ink-gray-7">
+					{{
+						willMigrate.length === 1
+							? __(
+									'Create a v3 copy of this dashboard? Your v2 dashboard stays untouched.',
+							  )
+							: __(
+									'Create v3 copies of these {0} dashboards? Your v2 dashboards stay untouched.',
+									String(willMigrate.length),
+							  )
+					}}
+				</p>
+				<p v-if="willSkip" class="text-p-sm text-ink-gray-6">
+					{{
+						willSkip === 1
+							? __(
+									'1 more is already migrated or cannot migrate yet, and is skipped.',
+							  )
+							: __(
+									'{0} more are already migrated or cannot migrate yet, and are skipped.',
+									String(willSkip),
+							  )
+					}}
+				</p>
+			</div>
 		</template>
 		<template #actions>
 			<div class="flex justify-end gap-2">
@@ -364,8 +390,9 @@ function migrateSelected() {
 				<Button
 					:label="__('Migrate')"
 					variant="solid"
+					:disabled="!willMigrate.length"
 					:loading="store.migrating"
-					@click="migrate(confirmTargets)"
+					@click="migrate"
 				/>
 			</div>
 		</template>

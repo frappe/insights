@@ -1,0 +1,12 @@
+{
+	"version": "0.0.1",
+	"configurations": [
+		{
+			"name": "insights-frontend",
+			"runtimeExecutable": "yarn",
+			"runtimeArgs": ["--cwd", "frontend", "dev"],
+			"port": 8080,
+			"url": "http://v2.insights.localhost:8080"
+		}
+	]
+}
