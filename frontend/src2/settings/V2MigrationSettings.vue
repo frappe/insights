@@ -91,8 +91,9 @@ const listOptions = computed(() => ({
 		{
 			label: __('Status'),
 			key: 'migration_state',
-			getLabel: (props: any) =>
-				STATE_BADGES[props.row.migration_state as MigrationState].label,
+			// the badge carries the label; without this the cell prints it again
+			// beside the badge, and dropping it falls back to the raw state key
+			getLabel: () => '',
 			prefix: (props: any) => {
 				const badge = STATE_BADGES[props.row.migration_state as MigrationState]
 				return <Badge theme={badge.theme} variant="subtle" label={badge.label} />
