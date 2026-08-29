@@ -1,0 +1,234 @@
+<script setup lang="ts">
+import { Badge } from 'frappe-ui'
+import { AlertTriangle, Check, Copy, X } from 'lucide-vue-next'
+import { computed, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { copyToClipboard } from '../helpers'
+import { __ } from '../translation'
+import useV2MigrationStore, {
+	DashboardScan,
+	MigrationItem,
+	Verification,
+	VERDICT_LABELS,
+	itemTitle,
+	noteSentence,
+	verdictSentence,
+	verificationSentence,
+} from './v2_migration'
+
+const props = defineProps<{ dashboard: DashboardScan | null }>()
+const emit = defineEmits<{
+	(e: 'migrate', dashboard: DashboardScan): void
+	(e: 'open', dashboard: DashboardScan): void
+}>()
+
+const show = defineModel({ required: true, default: false })
+
+const router = useRouter()
+const store = useV2MigrationStore()
+const verification = ref<Verification | null>(null)
+
+const status = computed(() =>
+	props.dashboard ? store.statuses[props.dashboard.dashboard] : undefined,
+)
+const migrated = computed(() => props.dashboard?.verdict === 'migrated')
+const inFlight = computed(
+	() => status.value?.status === 'queued' || status.value?.status === 'in_progress',
+)
+const canMigrate = computed(() => Boolean(props.dashboard) && !migrated.value && !inFlight.value)
+
+// The differing charts are named on the summary; the reason each one differs is
+// one level down, which is what this reads.
+watch(
+	() => [show.value, props.dashboard?.dashboard],
+	async () => {
+		verification.value = null
+		if (!show.value || !props.dashboard || !migrated.value) return
+		verification.value = await store.getVerification(props.dashboard.dashboard)
+	},
+	{ immediate: true },
+)
+
+const itemsInOrder = computed(() => {
+	const rank: Record<MigrationItem['state'], number> = { dropped: 0, changed: 1, ok: 2 }
+	return [...(props.dashboard?.items || [])].sort((a, b) => rank[a.state] - rank[b.state])
+})
+
+const differingQueries = computed(
+	() => verification.value?.queries.filter((q) => q.verdict === 'different') || [],
+)
+
+const copied = ref(false)
+function copyReport() {
+	if (!props.dashboard) return
+	const parts = [props.dashboard.report, verification.value?.report].filter(Boolean)
+	copyToClipboard(parts.join('\n\n'))
+	copied.value = true
+	setTimeout(() => (copied.value = false), 2000)
+}
+</script>
+
+<template>
+	<Dialog
+		v-if="props.dashboard"
+		v-model="show"
+		:options="{ title: props.dashboard.title, size: '2xl' }"
+	>
+		<template #body-content>
+			<div class="flex max-h-[60vh] flex-col gap-4 overflow-y-auto text-base">
+				<div class="flex items-center gap-2">
+					<Badge
+						variant="subtle"
+						:theme="
+							props.dashboard.verdict === 'ready'
+								? 'green'
+								: props.dashboard.verdict === 'migrated'
+								  ? 'blue'
+								  : props.dashboard.verdict === 'blocked'
+								    ? 'red'
+								    : 'orange'
+						"
+						:label="VERDICT_LABELS[props.dashboard.verdict]"
+					/>
+					<span class="text-p-base text-ink-gray-7">
+						{{ verdictSentence(props.dashboard) }}
+					</span>
+				</div>
+
+				<div
+					v-if="props.dashboard.unresolved_data_sources.length"
+					class="flex flex-col gap-2 rounded border border-outline-gray-2 bg-surface-gray-1 p-3"
+				>
+					<p class="text-p-base text-ink-gray-7">
+						{{
+							__(
+								'This dashboard reads from {0}, which is not set up in v3. Add it under Data Sources, then scan again.',
+								props.dashboard.unresolved_data_sources.join(', '),
+							)
+						}}
+					</p>
+					<Button
+						class="self-start"
+						variant="subtle"
+						:label="__('Go to Data Sources')"
+						@click="router.push('/data-source')"
+					/>
+				</div>
+
+				<div
+					v-if="migrated && props.dashboard.verification"
+					class="flex flex-col gap-2 rounded border border-outline-gray-2 bg-surface-gray-1 p-3"
+				>
+					<p class="text-p-base text-ink-gray-7">
+						{{ verificationSentence(props.dashboard.verification) }}
+					</p>
+					<ul v-if="differingQueries.length" class="flex flex-col gap-2">
+						<li
+							v-for="query in differingQueries"
+							:key="query.query"
+							class="flex flex-col gap-0.5"
+						>
+							<span class="text-p-sm font-medium text-ink-gray-8">
+								{{ query.charts.join(', ') || query.query }}
+							</span>
+							<span
+								v-for="(difference, idx) in query.differences"
+								:key="idx"
+								class="text-p-sm text-ink-gray-6"
+							>
+								{{ difference.detail }}
+							</span>
+						</li>
+					</ul>
+				</div>
+
+				<div class="flex flex-col gap-1">
+					<h3 class="text-p-base font-medium text-ink-gray-8">
+						{{ __('What is on this dashboard') }}
+					</h3>
+					<ul class="flex flex-col divide-y divide-outline-gray-1">
+						<li
+							v-for="item in itemsInOrder"
+							:key="item.key"
+							class="flex items-start gap-2 py-2"
+						>
+							<Check
+								v-if="item.state === 'ok'"
+								class="mt-0.5 h-4 w-4 shrink-0 text-ink-green-3"
+							/>
+							<AlertTriangle
+								v-else-if="item.state === 'changed'"
+								class="mt-0.5 h-4 w-4 shrink-0 text-ink-amber-3"
+							/>
+							<X v-else class="mt-0.5 h-4 w-4 shrink-0 text-ink-red-4" />
+							<div class="flex min-w-0 flex-col gap-0.5">
+								<span class="truncate text-p-base text-ink-gray-8">
+									{{ itemTitle(item) }}
+								</span>
+								<span
+									v-for="(note, idx) in item.notes"
+									:key="idx"
+									class="text-p-sm text-ink-gray-6"
+								>
+									{{ noteSentence(note) }}
+								</span>
+							</div>
+						</li>
+					</ul>
+				</div>
+
+				<div v-if="props.dashboard.queries.length" class="flex flex-col gap-1">
+					<h3 class="text-p-base font-medium text-ink-gray-8">{{ __('Queries') }}</h3>
+					<ul class="flex flex-col divide-y divide-outline-gray-1">
+						<li
+							v-for="section in props.dashboard.queries"
+							:key="section.query"
+							class="flex flex-col gap-0.5 py-2"
+						>
+							<span v-if="section.title" class="text-p-base text-ink-gray-8">
+								{{ section.title }}
+							</span>
+							<span
+								v-for="(note, idx) in section.notes"
+								:key="idx"
+								class="text-p-sm text-ink-gray-6"
+							>
+								{{ noteSentence(note) }}
+							</span>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</template>
+
+		<template #actions>
+			<div class="flex justify-between gap-2">
+				<Button
+					variant="ghost"
+					:label="copied ? __('Copied') : __('Copy report')"
+					@click="copyReport"
+				>
+					<template #prefix>
+						<Copy class="h-4 w-4" />
+					</template>
+				</Button>
+				<div class="flex gap-2">
+					<Button :label="__('Close')" variant="subtle" @click="show = false" />
+					<Button
+						v-if="migrated"
+						:label="__('Open in v3')"
+						variant="solid"
+						@click="emit('open', props.dashboard)"
+					/>
+					<Button
+						v-else-if="canMigrate"
+						:label="__('Migrate')"
+						variant="solid"
+						:loading="store.migrating"
+						@click="emit('migrate', props.dashboard)"
+					/>
+				</div>
+			</div>
+		</template>
+	</Dialog>
+</template>

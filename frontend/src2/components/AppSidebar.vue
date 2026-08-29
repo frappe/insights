@@ -55,7 +55,7 @@ import {
 	SettingsIcon,
 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
-import useSettings from '../settings/settings'
+import useSettings, { showSettingsDialog } from '../settings/settings'
 import Settings from '../settings/Settings.vue'
 import SidebarLink from './SidebarLink.vue'
 import DemoDataBanner from './DemoDataBanner.vue'
@@ -64,7 +64,6 @@ import { TrialBanner } from 'frappe-ui/frappe'
 import { __ } from '../translation'
 
 const isSidebarCollapsed = useStorage('insights:sidebarCollapsed', false)
-const showSettingsDialog = ref(false)
 
 const settings = useSettings()
 const is_fc_site = window.is_fc_site

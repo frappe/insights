@@ -82,6 +82,11 @@ const routes = [
 		component: () => import('./data_source/DataSourceTable.vue'),
 	},
 	{
+		path: '/migration',
+		name: 'V2Migration',
+		component: () => import('./migration/Migration.vue'),
+	},
+	{
 		path: '/data-store',
 		name: 'DataStoreList',
 		component: () => import('./data_store/DataStoreList.vue'),

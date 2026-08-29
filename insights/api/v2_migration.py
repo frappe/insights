@@ -282,6 +282,10 @@ def _summarize(plan, items: list[dict], landed: dict) -> dict:
         "report": format_report(plan),
         "migrated_workbook": landed.get("workbook"),
         "migrated_dashboard": landed.get("dashboard"),
+        # Carried on the scan rather than fetched per row: the reader shows it
+        # beside the verdict, and asking again per dashboard is a round trip per
+        # row for something this call already knows.
+        "verification": _verification_summary(read_verification(plan.source)) if landed else None,
     }
 
 
@@ -422,6 +426,7 @@ def _unreadable(name: str, landed: dict) -> dict:
         "report": "",
         "migrated_workbook": landed.get("workbook"),
         "migrated_dashboard": landed.get("dashboard"),
+        "verification": _verification_summary(read_verification(name)) if landed else None,
     }
 
 
