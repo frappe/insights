@@ -18,12 +18,15 @@ not yet a verifier.
 import json
 from datetime import date, datetime
 from decimal import Decimal
+from types import SimpleNamespace
+from unittest.mock import patch
 
 import frappe
 import numpy as np
 import pandas as pd
 from frappe.tests import UnitTestCase
 
+from insights.migrator import v2_verification
 from insights.migrator.v2_verification import (
     CELL,
     COLUMN_COUNT,
@@ -37,6 +40,7 @@ from insights.migrator.v2_verification import (
     ROW_MEMBERSHIP,
     SAME,
     TRANSLATION,
+    VerificationReport,
     classify,
     compare_frames,
     stated_limit,
@@ -44,6 +48,7 @@ from insights.migrator.v2_verification import (
     v2_answer,
     verdict_for,
     verify_migration,
+    verify_query,
 )
 from insights.migrator.v2_workbooks import migrate_dashboard
 from insights.tests.base import InsightsIntegrationTestCase
@@ -223,6 +228,62 @@ class TestReadingTheStoredStatement(UnitTestCase):
     def test_a_statement_that_will_not_parse_settles_nothing(self):
         self.assertFalse(states_an_order("this is not sql at all ((", "mysql"))
         self.assertIsNone(stated_limit("this is not sql at all ((", "mysql"))
+
+
+class TestWhatTheComparisonCannotSettle(UnitTestCase):
+    """Two frames can differ and still settle nothing.
+
+    Both answers are faked, because the cases are about what a limit does to the
+    comparison - not about which rows MariaDB happens to pick for an unordered
+    limit, which is the one thing a fixture cannot pin down.
+    """
+
+    LIMITED = "select `status` from `tabToDo` limit 3"
+    ORDERED = "select `status` from `tabToDo` order by `status` limit 3"
+    OPEN = "select `status` from `tabToDo`"
+
+    def plan(self, operations=()):
+        translated = SimpleNamespace(gaps=[], operations=list(operations))
+        return SimpleNamespace(source="QRY-1", kind="builder", translated=translated)
+
+    def verify(self, sql, left, right, *, operations=(), cap=1000):
+        v2 = {"sql": sql, "data_source": SITE_DB}
+        with (
+            patch.object(v2_verification, "sqlglot_dialect", return_value="mysql"),
+            patch.object(v2_verification, "v2_answer", return_value=left),
+            patch.object(v2_verification, "v3_answer", return_value=right),
+        ):
+            return verify_query(v2, self.plan(operations), "TARGET", data_source=SITE_DB, cap=cap)
+
+    def test_a_statement_that_limits_itself_and_orders_nothing_settles_nothing(self):
+        """v2 defaulted a query to LIMIT 100, and 100 of n rows is a sample."""
+        check = self.verify(self.LIMITED, frame(status=["a", "b", "c"]), frame(status=["a", "b", "d"]))
+
+        self.assertEqual(check.verdict, NOT_RUN)
+        self.assertIn("limits itself to 3 rows", check.reason)
+
+    def test_a_comparison_that_settles_nothing_marks_nothing_to_chase(self):
+        check = self.verify(self.LIMITED, frame(status=["a", "b", "c"]), frame(status=["a", "b", "d"]))
+        report = VerificationReport(dashboard="DSH-1", verifications=[check])
+
+        self.assertIn("row_membership", report.report)
+        self.assertNotIn("!", report.report)
+
+    def test_the_same_statement_below_its_own_limit_is_the_whole_answer(self):
+        check = self.verify(self.LIMITED, frame(status=["a", "b"]), frame(status=["a", "c"]))
+
+        self.assertEqual(check.verdict, DIFFERENT)
+
+    def test_a_statement_that_orders_its_limit_is_still_compared(self):
+        check = self.verify(self.ORDERED, frame(status=["a", "b", "c"]), frame(status=["a", "b", "d"]))
+
+        self.assertEqual(check.verdict, DIFFERENT)
+
+    def test_both_sides_cut_at_the_external_cap_settle_nothing_either(self):
+        check = self.verify(self.OPEN, frame(status=["a", "b", "c"]), frame(status=["a", "b", "d"]), cap=3)
+
+        self.assertEqual(check.verdict, NOT_RUN)
+        self.assertIn("3-row cap", check.reason)
 
 
 # -- the integration fixture ------------------------------------------------

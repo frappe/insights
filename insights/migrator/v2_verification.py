@@ -684,23 +684,48 @@ def verify_query(
     check.differences = classify(compare_frames(left, right, ordered=ordered), gap_kinds)
     check.verdict = verdict_for(check.differences)
 
-    if check.verdict != SAME and not ordered and len(left) == cap == len(right):
-        # Both sides were cut at the cap and neither states an order, so the two
-        # samples need not describe the same rows. Agreement would still have
-        # meant something; disagreement does not.
+    limit = _sample_limit(sql, dialect, cap)
+    if check.verdict != SAME and not ordered and len(left) == limit == len(right):
+        # Both sides were cut off at the same limit and neither states an order,
+        # so the two samples need not describe the same rows. Agreement would
+        # still have meant something; disagreement does not.
         return QueryVerification(
             source=check.source,
             target=check.target,
             kind=check.kind,
             check=check.check,
-            reason=f"both sides returned the full {cap}-row cap and neither states an "
-            f"order, so the samples need not agree. Re-run with a larger cap",
+            reason=_sample_reason(limit, cap),
             differences=check.differences,
             v2_rows=check.v2_rows,
             v3_rows=check.v3_rows,
         )
 
     return check
+
+
+def _sample_limit(sql: str, dialect: str | None, cap: int) -> int:
+    """The row count at which an answer is a sample rather than the answer.
+
+    Usually the external cap, but v2 defaulted a query to `LIMIT 100` and stored
+    that limit in the statement, so a statement can cut itself short long before
+    the cap does. Whichever cuts first is the one a full result was cut at.
+    """
+    stated = stated_limit(sql, dialect)
+    return min(stated, cap) if stated else cap
+
+
+def _sample_reason(limit: int, cap: int) -> str:
+    if limit < cap:
+        return (
+            f"v2's statement limits itself to {limit} rows and orders none of them, and "
+            f"both sides returned that many, so the two are samples of a larger result "
+            f"and need not describe the same rows. Nothing is proven either way - to "
+            f"settle it, order the query"
+        )
+    return (
+        f"both sides returned the full {cap}-row cap and neither states an order, so the "
+        f"samples need not agree. Re-run with a larger cap"
+    )
 
 
 def _why_not_run(v2_query: dict, query_plan, target, data_source) -> str:
@@ -818,8 +843,13 @@ def format_verification(report: VerificationReport) -> str:
         lines.append(f"  {check.verdict.upper():<9} {check.title} - {check.kind}{note}{rows}")
         if check.reason:
             lines.append(f"      {check.reason}")
+        # A query that ran and then landed on `not_run` is one whose diff settles
+        # nothing, so nothing in it is worth chasing and nothing in it is marked.
+        # A query that never ran keeps its marks: its static column check is the
+        # only signal there is.
+        inconclusive = check.verdict == NOT_RUN and check.v2_rows is not None
         for difference in check.differences:
-            mark = "!" if difference.material and not difference.expected else "-"
+            mark = "!" if difference.material and not difference.expected and not inconclusive else "-"
             tag = f" [expected: {difference.explained_by}]" if difference.expected else ""
             lines.append(f"      {mark} {difference.kind}: {difference.detail}{tag}")
 
