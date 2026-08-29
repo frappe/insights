@@ -38,7 +38,11 @@ export type ReferenceLine = {
 	axis?: 'x' | 'y'
 	// which value axis a 'y' line targets on a dual-axis chart; defaults to the primary (left)
 	align?: 'Left' | 'Right'
+	// a fixed position on the axis; ignored when `statistic` is set
 	value?: number | string
+	// read the line's position off the plotted rows on the axis it targets, instead of
+	// a fixed value; y lines only, since a category axis has no statistic
+	statistic?: 'average' | 'median' | 'min' | 'max' | null
 	label?: string
 	color?: string
 	dashed?: boolean

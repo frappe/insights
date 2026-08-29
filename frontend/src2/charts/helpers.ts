@@ -171,7 +171,7 @@ export function getLineChartOptions(config: LineChartConfig, result: QueryResult
 		yAxis,
 		series: [
 			...chartSeries,
-			...getReferenceLineSeries(config.y_axis.reference_lines, hasRightAxis),
+			...getReferenceLineSeries(config.y_axis.reference_lines, hasRightAxis, chartSeries),
 		],
 		tooltip: getTooltip({
 			xAxisIsDate,
@@ -325,7 +325,12 @@ export function getBarChartOptions(config: BarChartConfig, result: QueryResult, 
 		dataZoom: getDataZoom(show_scrollbar, swapAxes),
 		series: [
 			...chartSeries,
-			...getReferenceLineSeries(config.y_axis.reference_lines, hasRightAxis, swapAxes),
+			...getReferenceLineSeries(
+				config.y_axis.reference_lines,
+				hasRightAxis,
+				chartSeries,
+				swapAxes,
+			),
 		],
 		tooltip: getTooltip({
 			xAxisIsDate,
@@ -428,6 +433,7 @@ function getYAxis(options: YAxisCustomizeOptions = {}) {
 function getReferenceLineSeries(
 	reference_lines: ReferenceLine[] | undefined,
 	hasRightAxis: boolean,
+	chartSeries: any[],
 	swapAxes = false,
 ) {
 	if (!reference_lines?.length) return []
@@ -443,7 +449,11 @@ function getReferenceLineSeries(
 		{ axisIndex: 1, lines: reference_lines.filter(targetsRight) },
 	]
 		.map(({ axisIndex, lines }) => {
-			const markLine = getReferenceMarkLine(lines, swapAxes)
+			// reading every plotted point is only worth it when a line asks for a statistic
+			const values = lines.some((l) => l.statistic)
+				? getPlottedValues(chartSeries, axisIndex, swapAxes)
+				: []
+			const markLine = getReferenceMarkLine(lines, values, swapAxes)
 			return markLine
 				? {
 						type: 'line',
@@ -458,18 +468,77 @@ function getReferenceLineSeries(
 		.filter(Boolean)
 }
 
+// Every number the chart draws on one value axis. A statistic reference line reads these,
+// so it lands on the same numbers the reader sees, across all measures on that axis. A
+// hidden series is not on screen, and a stacked series is drawn as the stack total, so the
+// line is compared against the bar top rather than against one measure inside it.
+function getPlottedValues(chartSeries: any[], axisIndex: number, swapAxes: boolean) {
+	const plotted = chartSeries.filter(
+		(s) => (s.yAxisIndex || 0) === axisIndex && !s._hide_from_chart,
+	)
+
+	const values: number[] = []
+	const stackTotals: Record<string, number> = {}
+
+	plotted.forEach((s) => {
+		;(s.data || []).forEach((point: any) => {
+			const value = toPlottedNumber(swapAxes ? point[0] : point[1])
+			if (value === undefined) return
+			if (!s.stack) {
+				values.push(value)
+				return
+			}
+			// a gap in one series still leaves the rest of the stack drawn, and echarts
+			// stacks a negative value downwards from zero, giving the bar two ends
+			const category = swapAxes ? point[1] : point[0]
+			const key = `${s.stack}:${category}:${value < 0 ? 'below' : 'above'}`
+			stackTotals[key] = (stackTotals[key] || 0) + value
+		})
+	})
+
+	return [...values, ...Object.values(stackTotals)]
+}
+
+// an empty cell is drawn as a gap, not as a zero, so it is not a plotted number
+function toPlottedNumber(value: any) {
+	if (value === null || value === undefined || value === '') return undefined
+	const number = Number(value)
+	return isNaN(number) ? undefined : number
+}
+
+function getStatisticValue(statistic: ReferenceLine['statistic'], values: number[]) {
+	if (!values.length) return undefined
+	if (statistic === 'min') return Math.min(...values)
+	if (statistic === 'max') return Math.max(...values)
+	if (statistic === 'average') return values.reduce((a, b) => a + b, 0) / values.length
+	if (statistic !== 'median') return undefined
+
+	const sorted = [...values].sort((a, b) => a - b)
+	const mid = Math.floor(sorted.length / 2)
+	return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2
+}
+
 // A 'y' line is horizontal (at a measure value); an 'x' line is vertical (at a
 // category/date value). `swapAxes` (Row chart) flips which ECharts axis each maps to.
-function getReferenceMarkLine(reference_lines?: ReferenceLine[], swapAxes = false) {
+function getReferenceMarkLine(
+	reference_lines: ReferenceLine[] | undefined,
+	plottedValues: number[],
+	swapAxes = false,
+) {
 	if (!reference_lines?.length) return undefined
 
 	const data = reference_lines
-		.filter((line) => line.value !== undefined && line.value !== null && line.value !== '')
 		.map((line) => {
 			const onValueAxis = (line.axis || 'y') === 'y'
+			const statistic = onValueAxis ? line.statistic : undefined
+			const value = statistic ? getStatisticValue(statistic, plottedValues) : line.value
+			if (value === undefined || value === null || value === '') return undefined
+
 			// the value axis is yAxis normally, but becomes xAxis when axes are swapped
 			const axisKey = onValueAxis === !swapAxes ? 'yAxis' : 'xAxis'
-			const rawValue = onValueAxis ? Number(line.value) : line.value
+			const rawValue = onValueAxis ? Number(value) : value
+			// a category value left on a line that moved to the value axis is not plottable
+			if (typeof rawValue === 'number' && isNaN(rawValue)) return undefined
 			// a neutral gray by default, so a reference line doesn't read as another measure
 			const color = line.color || '#6b7280'
 
@@ -481,16 +550,20 @@ function getReferenceMarkLine(reference_lines?: ReferenceLine[], swapAxes = fals
 					color,
 				},
 			}
-			if (line.label) {
+			// a fixed line shows its number in the value box; a statistic line has none,
+			// so the label carries the number the line was drawn at
+			const label = line.label || (statistic ? getShortNumber(Number(value), 1) : '')
+			if (label) {
 				entry.label = {
 					show: true,
 					position: 'insideEndTop',
-					formatter: line.label,
+					formatter: label,
 					color,
 				}
 			}
 			return entry
 		})
+		.filter(Boolean)
 
 	if (!data.length) return undefined
 
