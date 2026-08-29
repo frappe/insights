@@ -1,5 +1,5 @@
 <script setup lang="tsx">
-import { Badge, Breadcrumbs, ListView } from 'frappe-ui'
+import { Badge, Breadcrumbs, ListEmptyState, ListHeader, ListRows, ListView } from 'frappe-ui'
 import { CircleHelp, SearchIcon } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
@@ -93,16 +93,23 @@ const rows = computed(() => {
 	})
 })
 
-const noV2 = computed(
-	() => store.unavailable || (!store.scanning && !store.dashboards.length && !store.scanError),
-)
-
 const emptyState = computed(() => {
-	if (searchQuery.value.trim()) return { title: __('No dashboard matches your search.') }
-	if (stateFilter.value !== 'all') {
-		return { title: __('No dashboard is {0}.', STATE_LABELS[stateFilter.value].toLowerCase()) }
+	if (searchQuery.value.trim()) {
+		return {
+			title: __('No Matches'),
+			description: __('No dashboard matches your search.'),
+		}
 	}
-	return { title: __('No v2 dashboards to migrate.') }
+	if (stateFilter.value !== 'all') {
+		return {
+			title: __('Nothing Here'),
+			description: __('No dashboard is {0}.', STATE_LABELS[stateFilter.value].toLowerCase()),
+		}
+	}
+	return {
+		title: __('No v2 Dashboards'),
+		description: __('This site has no Insights v2 dashboards to migrate.'),
+	}
 })
 
 const selected = ref<Set<string>>(new Set())
@@ -137,7 +144,6 @@ const listOptions = computed(() => ({
 		onRowClick: (row: Row) => openDashboard(row),
 		selectionText: (count: number) =>
 			count === 1 ? __('1 dashboard selected') : __('{0} dashboards selected', String(count)),
-		emptyState: emptyState.value,
 	},
 }))
 
@@ -237,14 +243,7 @@ async function migrate() {
 
 	<div class="mb-4 flex h-full flex-col gap-3 overflow-auto px-5 pt-3">
 		<div
-			v-if="noV2"
-			class="rounded border border-outline-gray-1 p-4 text-p-base text-ink-gray-6"
-		>
-			{{ __('This site has no Insights v2 dashboards to migrate.') }}
-		</div>
-
-		<div
-			v-else-if="store.scanError"
+			v-if="store.scanError"
 			class="rounded border border-outline-gray-2 bg-surface-gray-1 p-4"
 		>
 			<p class="text-p-base font-medium text-ink-red-5">
@@ -291,7 +290,20 @@ async function migrate() {
 					class="h-full"
 					v-bind="listOptions"
 					@update:selections="(s: Set<string>) => (selected = new Set(s))"
-				/>
+				>
+					<ListHeader />
+					<ListRows v-if="rows.length" />
+					<!-- skip the empty state while a scan is in flight so it doesn't flash -->
+					<!-- ListEmptyState already centers its slot content -->
+					<ListEmptyState v-else-if="!store.scanning">
+						<div class="text-xl font-medium text-ink-gray-8">
+							{{ emptyState.title }}
+						</div>
+						<div class="mt-1 text-base text-ink-gray-5">
+							{{ emptyState.description }}
+						</div>
+					</ListEmptyState>
+				</ListView>
 			</div>
 		</template>
 	</div>
