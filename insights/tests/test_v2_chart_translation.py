@@ -229,7 +229,7 @@ class TestChartTypesTranslate(UnitTestCase):
         self.assertIn("auto_type_guessed", gap_kinds(translated))
 
     def test_a_reference_line_is_written_in_the_v3_shape(self):
-        """v2 draws the line at a statistic of the data, v3 at a fixed value."""
+        """Both versions draw the line at a statistic of the data, so it is no gap."""
         translated = self.translate(
             "Line", {"xAxis": "Creation", "yAxis": ["Revenue"], "referenceLine": "Average"}
         )
@@ -238,11 +238,10 @@ class TestChartTypesTranslate(UnitTestCase):
             translated.config["y_axis"]["reference_lines"],
             [{"axis": "y", "label": "Average", "statistic": "average"}],
         )
-        self.assertIn("reference_line_is_a_statistic", gap_kinds(translated))
-        self.assertFalse(any(gap.dropped for gap in translated.gaps))
+        self.assertEqual(gap_kinds(translated), set())
 
-    def test_a_reference_line_carries_no_value_so_it_cannot_draw_wrong(self):
-        """v3 skips a reference line that has no value, so the config sits inert."""
+    def test_a_reference_line_carries_no_value_so_the_statistic_decides(self):
+        """v3 ignores a value when a statistic is set, so none is written."""
         translated = self.translate(
             "Bar",
             {"xAxis": "Territory", "yAxis": ["Revenue"], "referenceLine": {"value": "Median"}},

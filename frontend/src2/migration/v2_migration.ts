@@ -291,7 +291,6 @@ const NOTE_SENTENCES: Record<string, string> = {
 	scatter_x_not_numeric: __('v3 plots a bubble chart over numbers, so this becomes a line chart'),
 	trend_without_date_column: __("the trend line won't carry over: v3 compares over a date column"),
 	progress_target_unsupported: __('v3 has no progress chart: the value carries over, the target does not'),
-	reference_line_is_a_statistic: __('v3 draws a reference line at a fixed value, not at an average'),
 	auto_type_guessed: __('v2 picked this chart type from the data, so v3 guesses it instead'),
 	auto_type_needs_columns: __('v2 picked this chart type from the data, so it lands empty until you set it'),
 	column_types_unknown: __('the column types are unknown, so numbers are added up by default'),

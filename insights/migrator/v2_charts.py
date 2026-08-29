@@ -307,14 +307,6 @@ def _translate_axis_chart(translated, options, types, chart_type):
     reference_line = _reference_line(options.get("referenceLine"))
     if reference_line:
         y_config["reference_lines"] = [reference_line]
-        translated.gaps.append(
-            Gap(
-                "reference_line_is_a_statistic",
-                source,
-                f"v3 draws a reference line at a fixed value; v2 drew it at the "
-                f"{reference_line['statistic']} of the data",
-            )
-        )
 
     translated.config = config
     translated.chart_type = chart_type
@@ -328,10 +320,9 @@ def _reference_line(value):
 
     Every production reference line is one of Average, Median, Min or Max -
     v2 hands the lowercased word to an ECharts `markLine` type. v3's
-    `ReferenceLine` holds a fixed value instead, so the line is written in v3's
-    shape with the statistic beside it, and nothing draws until v3 can read one.
-    A `ReferenceLine` with no `value` is skipped by the renderer, so the config
-    is inert rather than wrong.
+    `ReferenceLine` names the same statistic and computes it off the plotted
+    rows, so the word carries over as-is and the line draws where v2 drew it.
+    No `value` is written: v3 ignores one whenever a `statistic` is set.
     """
     if isinstance(value, dict):
         value = value.get("value") or value.get("label")
