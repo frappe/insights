@@ -31,12 +31,17 @@ import frappe
 
 from insights.api.v2_migration import (
     MAX_DASHBOARDS,
+    SCAN_CACHE_KEY,
+    count_v2_dashboards,
     get_v2_dashboards,
     get_v2_migration_status,
+    get_v2_verification,
     job_id_for,
     migrate_v2_dashboards,
     preview_v2_dashboard,
     run_v2_dashboard_migration,
+    scan_v2_dashboards,
+    verification_key,
 )
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import (
@@ -158,6 +163,10 @@ class TestV2MigrationAPI(InsightsIntegrationTestCase):
     def setUp(self):
         super().setUp()
         self.delete_v3_output()
+        # The scan is cached and the verification is stored, so both outlive the
+        # test that made them unless they are cleared here.
+        frappe.cache().delete_value(SCAN_CACHE_KEY)
+        frappe.db.set_global(verification_key(DASHBOARD), None)
 
     # -- helpers -----------------------------------------------------------
 
@@ -319,6 +328,109 @@ class TestV2MigrationAPI(InsightsIntegrationTestCase):
         run_v2_dashboard_migration(DASHBOARD)
         self.assertEqual(get_v2_migration_status()[DASHBOARD]["status"], "migrated")
 
+    # -- the scan ----------------------------------------------------------
+
+    def scanned(self):
+        return {row["dashboard"]: row for row in scan_v2_dashboards(refresh=True)["dashboards"]}
+
+    def test_the_scan_gives_every_dashboard_a_verdict(self):
+        row = self.scanned()[DASHBOARD]
+        self.assertEqual(row["verdict"], "ready")
+        self.assertEqual(row["chart_count"], 1)
+        self.assertEqual(row["charts_carried"], 1)
+
+    def test_the_scan_calls_a_migrated_dashboard_migrated(self):
+        run_v2_dashboard_migration(DASHBOARD)
+        row = self.scanned()[DASHBOARD]
+        self.assertEqual(row["verdict"], "migrated")
+        self.assertTrue(row["migrated_workbook"])
+
+    def test_the_scan_is_cached_until_it_is_refreshed(self):
+        scan_v2_dashboards(refresh=True)
+        with patch("insights.api.v2_migration._plan_for") as planned:
+            scan_v2_dashboards()
+        planned.assert_not_called()
+
+    def test_a_migration_drops_the_cached_scan(self):
+        scan_v2_dashboards(refresh=True)
+        run_v2_dashboard_migration(DASHBOARD)
+        cached = {row["dashboard"]: row for row in scan_v2_dashboards()["dashboards"]}
+        self.assertEqual(cached[DASHBOARD]["verdict"], "migrated")
+
+    def test_the_scan_writes_nothing(self):
+        before = self.v3_row_counts()
+        scan_v2_dashboards(refresh=True)
+        self.assertEqual(self.v3_row_counts(), before)
+
+    # -- findings by name --------------------------------------------------
+
+    def test_findings_hang_off_the_item_the_user_named(self):
+        items = {item["key"]: item for item in preview_v2_dashboard(DASHBOARD)["items"]}
+        chart = items["910001"]
+        self.assertEqual(chart["title"], "Issues by Status")
+        self.assertEqual(chart["kind"], "chart")
+        self.assertEqual(chart["state"], "ok")
+        self.assertEqual(items["910002"]["kind"], "text")
+
+    def test_a_chart_with_no_v3_type_is_reported_as_dropped(self):
+        insert_row(
+            "Insights Dashboard Item",
+            {
+                "parent": DASHBOARD,
+                "parenttype": "Insights Dashboard",
+                "parentfield": "items",
+                "idx": 3,
+                "name": 910003,
+                "item_type": "Sankey",
+                "item_id": "910003",
+                "options": json.dumps({"query": STORED, "title": "Churn Funnel"}),
+            },
+        )
+        self.addCleanup(
+            frappe.db.sql, "delete from `tabInsights Dashboard Item` where name = %s", ("910003",)
+        )
+
+        preview = preview_v2_dashboard(DASHBOARD)
+        dropped = [item for item in preview["items"] if item["state"] == "dropped"]
+        self.assertEqual([item["title"] for item in dropped], ["Churn Funnel"])
+        self.assertEqual(dropped[0]["notes"][0]["kind"], "unsupported_chart_type")
+        self.assertEqual(preview["verdict"], "review")
+        self.assertEqual(preview["charts_carried"], 1)
+        self.assertEqual(preview["chart_count"], 2)
+
+    # -- the count ---------------------------------------------------------
+
+    def test_the_count_reports_what_is_left(self):
+        before = count_v2_dashboards()
+        run_v2_dashboard_migration(DASHBOARD)
+        after = count_v2_dashboards()
+        self.assertEqual(after["total"], before["total"])
+        self.assertEqual(after["migrated"], before["migrated"] + 1)
+
+    # -- verification ------------------------------------------------------
+
+    def test_the_job_verifies_what_it_wrote(self):
+        stored = run_v2_dashboard_migration(DASHBOARD)["verification"]
+        self.assertEqual(stored["dashboard"], DASHBOARD)
+        self.assertEqual(stored["checked"], 2)
+        self.assertEqual(stored, get_v2_verification(DASHBOARD))
+
+    def test_the_status_carries_the_verification_summary(self):
+        run_v2_dashboard_migration(DASHBOARD)
+        summary = get_v2_migration_status([DASHBOARD])[DASHBOARD]["verification"]
+        self.assertEqual(summary["checked"], 2)
+        self.assertEqual(summary["differing_charts"], [])
+
+    def test_there_is_no_verification_before_a_migration(self):
+        self.assertIsNone(get_v2_verification(DASHBOARD))
+        self.assertIsNone(get_v2_migration_status([DASHBOARD])[DASHBOARD]["verification"])
+
+    def test_a_failed_verification_does_not_fail_the_migration(self):
+        with patch("insights.api.v2_migration.verify_migration", side_effect=Exception("no backend")):
+            result = run_v2_dashboard_migration(DASHBOARD)
+        self.assertTrue(result["workbook"])
+        self.assertIsNone(result["verification"])
+
     # -- permission --------------------------------------------------------
 
     def test_an_insights_user_reaches_none_of_it(self):
@@ -328,6 +440,9 @@ class TestV2MigrationAPI(InsightsIntegrationTestCase):
                 lambda: preview_v2_dashboard(DASHBOARD),
                 lambda: migrate_v2_dashboards([DASHBOARD]),
                 lambda: get_v2_migration_status([DASHBOARD]),
+                lambda: scan_v2_dashboards(),
+                lambda: count_v2_dashboards(),
+                lambda: get_v2_verification(DASHBOARD),
             ):
                 with self.assertRaises(frappe.PermissionError):
                     call()
