@@ -234,10 +234,15 @@ def _findings(plan, items: list[dict]) -> tuple[list[dict], list[dict]]:
 
     # A dashboard-level gap belongs to no item - `public_not_carried` is the one
     # in production - so it rides in a section of its own rather than vanishing.
+    # `unresolved_data_source` is left out: the reader answers it with the one
+    # instruction that resolves it, and repeating the finding under it would be
+    # the diagnosis again.
     loose = [
         _note(gap)
         for origin, gap in plan.all_gaps()
-        if origin == "dashboard" and str(gap.source) not in {i["key"] for i in reported}
+        if origin == "dashboard"
+        and gap.kind != "unresolved_data_source"
+        and str(gap.source) not in {i["key"] for i in reported}
     ]
     if loose:
         query_sections.insert(0, {"query": "", "title": "", "notes": loose})
