@@ -1,10 +1,24 @@
 <script setup lang="ts">
-import { Building2, CircleUser, DatabaseZap, KeyRound, SettingsIcon, Users } from 'lucide-vue-next'
+import {
+	CircleUser,
+	DatabaseZap,
+	KeyRound,
+	PackageOpen,
+	SettingsIcon,
+	Users,
+} from 'lucide-vue-next'
 import { defineAsyncComponent, shallowRef } from 'vue'
 import TabbedSidebarLayout, { Tab, TabGroup } from '../components/TabbedSidebarLayout.vue'
+import session from '../session'
 import { __ } from '../translation'
 
 const showDialog = defineModel({ required: true, default: false })
+
+// The migrator writes documents, so it is admin-only - the endpoints gate on it
+// too. A site with no v2 rows has nothing to migrate, so the tab stays out of
+// the way rather than offering an empty list.
+const showMigration = session.user.is_admin && session.user.is_v2_instance
+
 const tabGroups: TabGroup[] = [
 	{
 		groupLabel: __('Account'),
@@ -44,6 +58,17 @@ const tabGroups: TabGroup[] = [
 				icon: DatabaseZap,
 				component: defineAsyncComponent(() => import('./DataStoreSettings.vue')),
 			},
+			...(showMigration
+				? [
+						{
+							label: __('Migrate from v2'),
+							icon: PackageOpen,
+							component: defineAsyncComponent(
+								() => import('./V2MigrationSettings.vue'),
+							),
+						},
+				  ]
+				: []),
 		],
 	},
 ]
