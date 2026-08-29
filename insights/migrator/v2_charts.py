@@ -168,15 +168,31 @@ def translate_chart(chart: dict, columns: list[dict] | None = None) -> Translate
 
     types = ColumnTypes(columns)
     translator = _TRANSLATORS.get(chart_type)
+
+    if not chart_type:
+        # v2 leaves chart_type empty two ways: a chart that was configured before
+        # the type existed, and a row for a chart nobody ever visualized
+        if not options:
+            translated.gaps.append(
+                Gap(
+                    kind="chart_never_visualized",
+                    source=source,
+                    detail="the v2 chart has neither a type nor any options",
+                    dropped=True,
+                )
+            )
+            return translated
+        translator = _translate_auto
+
     if not translator:
-        # v2 leaves chart_type empty on a chart that was never visualized
-        kind = "chart_type_missing" if not chart_type else "unsupported_chart_type"
-        detail = (
-            "the v2 chart carries no chart type"
-            if not chart_type
-            else f"v2 chart type {chart_type!r} has no v3 equivalent"
+        translated.gaps.append(
+            Gap(
+                kind="unsupported_chart_type",
+                source=source,
+                detail=f"v2 chart type {chart_type!r} has no v3 equivalent",
+                dropped=True,
+            )
         )
-        translated.gaps.append(Gap(kind=kind, source=source, detail=detail, dropped=True))
         return translated
 
     translator(translated, options, types)
@@ -288,17 +304,44 @@ def _translate_axis_chart(translated, options, types, chart_type):
             )
         )
 
-    if options.get("referenceLine"):
+    reference_line = _reference_line(options.get("referenceLine"))
+    if reference_line:
+        y_config["reference_lines"] = [reference_line]
         translated.gaps.append(
             Gap(
-                "reference_line_unsupported",
+                "reference_line_is_a_statistic",
                 source,
-                f"v3 axis charts draw no reference line ({options['referenceLine']})",
+                f"v3 draws a reference line at a fixed value; v2 drew it at the "
+                f"{reference_line['statistic']} of the data",
             )
         )
 
     translated.config = config
     translated.chart_type = chart_type
+
+
+V2_REFERENCE_STATISTICS = {"average": "average", "median": "median", "min": "min", "max": "max"}
+
+
+def _reference_line(value):
+    """v2 draws its reference line at a statistic of the plotted data.
+
+    Every production reference line is one of Average, Median, Min or Max -
+    v2 hands the lowercased word to an ECharts `markLine` type. v3's
+    `ReferenceLine` holds a fixed value instead, so the line is written in v3's
+    shape with the statistic beside it, and nothing draws until v3 can read one.
+    A `ReferenceLine` with no `value` is skipped by the renderer, so the config
+    is inert rather than wrong.
+    """
+    if isinstance(value, dict):
+        value = value.get("value") or value.get("label")
+    if not isinstance(value, str):
+        return None
+
+    statistic = V2_REFERENCE_STATISTICS.get(value.strip().lower())
+    if not statistic:
+        return None
+    return {"axis": "y", "label": value.strip(), "statistic": statistic}
 
 
 def _warn_unknown_columns(translated, types, names):
@@ -382,6 +425,8 @@ def _translate_pie(translated, options, types):
         )
 
     _warn_unknown_columns(translated, types, [c[0]["name"] for c in (label, value) if c])
+    # v2's own Pie widget drew a donut (radius ['40%', '70%']), so v3's Donut
+    # is the same shape under a different name, not a downgrade
     translated.chart_type = "Donut"
     config = {}
     if label:
@@ -398,13 +443,6 @@ def _translate_pie(translated, options, types):
         config["legend_position"] = position
 
     translated.config = config
-    translated.gaps.append(
-        Gap(
-            "pie_renders_as_donut",
-            translated.source,
-            "v3 has no full pie; the Donut chart always leaves a hole in the middle",
-        )
-    )
 
 
 def _translate_funnel(translated, options, types):

@@ -112,7 +112,8 @@ class TestChartTypesTranslate(UnitTestCase):
         )
         self.assertEqual(translated.config["split_by"]["dimension"]["column_name"], "Territory")
 
-    def test_a_pie_chart_becomes_a_donut_and_says_so(self):
+    def test_a_pie_chart_becomes_a_donut(self):
+        """v2's Pie widget already drew a donut, so the shape is unchanged."""
         translated = self.translate(
             "Pie", {"xAxis": "Territory", "yAxis": "Revenue", "maxSlices": "12", "inlineLabels": True}
         )
@@ -121,7 +122,7 @@ class TestChartTypesTranslate(UnitTestCase):
         self.assertEqual(translated.config["value_column"]["column_name"], "Revenue")
         self.assertEqual(translated.config["max_slices"], 12)
         self.assertTrue(translated.config["show_inline_labels"])
-        self.assertIn("pie_renders_as_donut", gap_kinds(translated))
+        self.assertEqual(gap_kinds(translated), set())
 
     def test_a_funnel_keeps_its_label_and_value(self):
         translated = self.translate("Funnel", {"xAxis": "Territory", "yAxis": "Revenue"})
@@ -216,19 +217,37 @@ class TestChartTypesTranslate(UnitTestCase):
         self.assertEqual(len(translated.config["rows"]) + len(translated.config["values"]), 4)
         self.assertIn("auto_type_guessed", gap_kinds(translated))
 
-    def test_a_chart_with_no_type_converts_to_nothing_and_is_named(self):
-        translated = self.translate(None, {"query": "QRY-0001"})
+    def test_a_chart_nobody_ever_visualized_converts_to_nothing(self):
+        translated = self.translate(None, {})
         self.assertIsNone(translated.chart_type)
-        self.assertIn("chart_type_missing", gap_kinds(translated))
+        self.assertIn("chart_never_visualized", gap_kinds(translated))
         self.assertTrue(translated.gaps[0].dropped)
 
-    def test_a_reference_line_is_named_as_lost(self):
+    def test_a_chart_with_options_but_no_type_is_read_as_an_auto_chart(self):
+        translated = self.translate(None, {"query": "QRY-0001"})
+        self.assertEqual(translated.chart_type, "Table")
+        self.assertIn("auto_type_guessed", gap_kinds(translated))
+
+    def test_a_reference_line_is_written_in_the_v3_shape(self):
+        """v2 draws the line at a statistic of the data, v3 at a fixed value."""
         translated = self.translate(
             "Line", {"xAxis": "Creation", "yAxis": ["Revenue"], "referenceLine": "Average"}
         )
         self.assertEqual(translated.chart_type, "Line")
-        self.assertIn("reference_line_unsupported", gap_kinds(translated))
+        self.assertEqual(
+            translated.config["y_axis"]["reference_lines"],
+            [{"axis": "y", "label": "Average", "statistic": "average"}],
+        )
+        self.assertIn("reference_line_is_a_statistic", gap_kinds(translated))
         self.assertFalse(any(gap.dropped for gap in translated.gaps))
+
+    def test_a_reference_line_carries_no_value_so_it_cannot_draw_wrong(self):
+        """v3 skips a reference line that has no value, so the config sits inert."""
+        translated = self.translate(
+            "Bar",
+            {"xAxis": "Territory", "yAxis": ["Revenue"], "referenceLine": {"value": "Median"}},
+        )
+        self.assertNotIn("value", translated.config["y_axis"]["reference_lines"][0])
 
     def test_an_unconfigured_axis_chart_keeps_its_type_and_names_the_hole(self):
         translated = self.translate("Row", {"xAxis": [], "yAxis": []})
