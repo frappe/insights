@@ -187,24 +187,24 @@ const confirmTargets = ref<Row[]>([])
 const willMigrate = computed(() => confirmTargets.value.filter((d) => MIGRATABLE.includes(d.state)))
 const willSkip = computed(() => confirmTargets.value.length - willMigrate.value.length)
 
-function askToMigrate(targets: Row[]) {
-	confirmTargets.value = targets
-	// Two portalled dialogs stack in document order, so the drill-down would
-	// cover this one. It has said its piece by now anyway.
-	showDialog.value = false
+function migrateSelected() {
+	confirmTargets.value = allRows.value.filter((row) => selected.value.has(row.dashboard))
 	showConfirm.value = true
 }
 
-function migrateSelected() {
-	askToMigrate(allRows.value.filter((row) => selected.value.has(row.dashboard)))
+/** The drill-down has already named every chart and what happens to it, so a
+ * confirm on top of it would ask the same question twice. */
+function migrateOne(dashboard: DashboardScan) {
+	migrate(allRows.value.filter((row) => row.dashboard === dashboard.dashboard))
 }
 
-async function migrate() {
-	const names = willMigrate.value.map((d) => d.dashboard)
+async function migrate(targets: Row[]) {
+	const names = targets.filter((d) => MIGRATABLE.includes(d.state)).map((d) => d.dashboard)
 	if (!names.length) return
 	try {
 		const result = await store.migrateDashboards(names)
 		showConfirm.value = false
+		showDialog.value = false
 		selected.value = new Set()
 		createToast({
 			variant: 'success',
@@ -323,7 +323,7 @@ async function migrate() {
 	<MigrationDashboard
 		v-model="showDialog"
 		:dashboard="opened"
-		@migrate="(d: DashboardScan) => askToMigrate(allRows.filter((r) => r.dashboard === d.dashboard))"
+		@migrate="migrateOne"
 		@open="openInV3"
 	/>
 
@@ -416,7 +416,7 @@ async function migrate() {
 					variant="solid"
 					:disabled="!willMigrate.length"
 					:loading="store.migrating"
-					@click="migrate"
+					@click="migrate(confirmTargets)"
 				/>
 			</div>
 		</template>
