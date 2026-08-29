@@ -11,7 +11,7 @@ import json
 
 from frappe.tests import UnitTestCase
 
-from insights.migrator.v2_queries import LIVE_CONNECTION_BY_KIND, translate_query
+from insights.migrator.v2_queries import LIVE_CONNECTION_BY_KIND, stored_sql, translate_query
 
 
 def v2_query(json_spec=None, **overrides):
@@ -489,6 +489,33 @@ class TestQueryTypes(UnitTestCase):
         result = translate(query)
         self.assertEqual(result.kind, "sql")
         self.assertIn("legacy_query", gap_kinds(result))
+
+    def test_the_floor_undoubles_the_percent_signs_sqlalchemy_escaped(self):
+        # `format_query` stores `str(compiled)`, and the compiler doubles every
+        # `%` for a `format`/`pyformat` paramstyle. Left alone, MariaDB reads
+        # `'%%Y-%%m-01'` as the literal text "%Y-%m-01" and every date collapses
+        # into one group.
+        sql = "SELECT date_format(`t`.`posting_date`, '%%Y-%%m-01') FROM `t`"
+        query = v2_query(is_assisted_query=0, sql=sql)
+        self.assertEqual(
+            find(translate(query), "sql")["raw_sql"],
+            "SELECT date_format(`t`.`posting_date`, '%Y-%m-01') FROM `t`",
+        )
+
+    def test_a_pattern_the_user_wrote_as_two_percents_survives_the_round_trip(self):
+        # The escape doubles what is already doubled, so undoubling is its exact
+        # inverse rather than a guess.
+        query = v2_query(is_assisted_query=0, sql="SELECT * FROM `t` WHERE `a` LIKE '100%%%% off'")
+        self.assertEqual(
+            find(translate(query), "sql")["raw_sql"],
+            "SELECT * FROM `t` WHERE `a` LIKE '100%% off'",
+        )
+
+    def test_a_native_query_was_never_compiled_so_its_percents_are_the_users(self):
+        sql = "SELECT * FROM `t` WHERE `a` LIKE '%draft%'"
+        query = v2_query(is_native_query=1, is_assisted_query=0, sql=sql)
+        self.assertEqual(find(translate(query), "sql")["raw_sql"], sql)
+        self.assertEqual(stored_sql(query), sql)
 
     def test_a_query_with_no_stored_sql_has_no_floor_to_fall_to(self):
         query = v2_query(is_native_query=1, is_assisted_query=0, sql=None)

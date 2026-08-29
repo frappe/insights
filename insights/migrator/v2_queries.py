@@ -208,6 +208,28 @@ class TranslatedQuery:
         return tuple(dict.fromkeys(gap.kind for gap in self.gaps if gap.dropped))
 
 
+def stored_sql(query: dict) -> str:
+    """The statement v2 meant, from the statement v2 stored.
+
+    `format_query` stores `str(compiled)`, and SQLAlchemy's compiler doubles
+    every `%` in the text whenever the dialect's paramstyle is `format` or
+    `pyformat` - MariaDB through pymysql and Postgres through psycopg2, which is
+    every remote v2 source. The doubling is applied to identifiers, text and
+    rendered literals alike, so `date_format(x, '%Y-%m-01')` is stored as
+    `'%%Y-%%m-01'` and a pattern the user wrote as `'%%'` is stored as `'%%%%'`.
+    Undoubling is therefore the exact inverse, not a guess: no single `%` and no
+    odd run of them can survive the escape.
+
+    A native query is the one exception. `SQLQueryBuilder.build` returns the
+    text the user typed without compiling it, so its `%` are already the ones
+    they wrote.
+    """
+    sql = (query.get("sql") or "").strip().rstrip(";")
+    if not sql or query.get("is_native_query"):
+        return sql
+    return sql.replace("%%", "%")
+
+
 def translate_query(
     query: dict,
     *,
@@ -297,7 +319,7 @@ class _Builder:
 
     def sql_floor(self, reason, detail) -> TranslatedQuery:
         """The whole-query floor: v2's own compiled SQL, run as one operation."""
-        sql = (self.query.get("sql") or "").strip().rstrip(";")
+        sql = stored_sql(self.query)
         if not sql:
             self.gap(
                 "no_compiled_sql",

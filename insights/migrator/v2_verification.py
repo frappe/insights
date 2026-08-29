@@ -6,11 +6,12 @@ Coverage says a thing was translated. Only a diff says it was translated
 **v2's answer needs no v2 runtime.** v2 compiled every query and stored the
 statement in the `sql` column of `tabInsights Query` - 1944 of 2061 non-script
 rows have one. That stored statement is v2's ground truth, and the v3 ibis
-backend for the same data source runs it verbatim: `backend.sql(stored_sql)`
-accepts the backticks, the aliases with spaces, and a trailing-space column name
-like `"Count of records "` exactly as MariaDB wrote them. Nothing here imports
-v2 code, so the check keeps working after the v2 app is removed - which is the
-state the migrator is built for.
+backend for the same data source runs it as it is: it accepts the backticks, the
+aliases with spaces, and a trailing-space column name like `"Count of records "`
+exactly as MariaDB wrote them. The one thing the stored statement is not is
+literal - SQLAlchemy escaped its percent signs on the way in, and `stored_sql`
+undoes that. Nothing here imports v2 code, so the check keeps working after the
+v2 app is removed - which is the state the migrator is built for.
 
 Both sides go through the same connection object. `_get_ibis_backend` caches one
 backend per data source and sets `time_zone='+00:00'` on it, so the v2 statement
@@ -55,6 +56,7 @@ from datetime import date, datetime, time, timedelta, timezone
 
 import frappe
 
+from insights.migrator.v2_queries import stored_sql
 from insights.migrator.v2_workbooks import (
     V3_DATA_SOURCE,
     V3_QUERY,
@@ -660,7 +662,7 @@ def verify_query(
     if query_plan.kind == "sql":
         check.check = IDENTITY
 
-    sql = (v2_query.get("sql") or "").strip().rstrip(";")
+    sql = stored_sql(v2_query)
     dialect = sqlglot_dialect(data_source)
 
     try:
