@@ -618,6 +618,32 @@ class TestTransforms(UnitTestCase):
         self.assertEqual(pivot["columns"][0]["column_name"], "Plan")
         self.assertEqual(pivot["values"][0]["aggregation"], "sum")
 
+    def test_a_pivot_addresses_the_columns_the_summarize_produced(self):
+        # The frame the pivot reads is the one `summarize` made: its columns
+        # answer to the dimension names, not to the source columns underneath,
+        # and their granularity is already spent.
+        query = v2_query(
+            {
+                "columns": [
+                    column("Month", column="posting_date", type="Datetime", granularity="Month"),
+                    column("Status", column="status"),
+                    column("Revenue", column="grand_total", aggregation="sum", type="Decimal"),
+                ]
+            },
+            transforms=[
+                {
+                    "type": "Pivot",
+                    "options": json.dumps({"index": "Month", "column": "Status", "value": "Revenue"}),
+                }
+            ],
+        )
+        pivot = find(translate(query), "pivot_wider")
+
+        self.assertEqual(pivot["rows"][0]["column_name"], "Month")
+        self.assertNotIn("granularity", pivot["rows"][0])
+        self.assertEqual(pivot["columns"][0]["column_name"], "Status")
+        self.assertEqual(pivot["values"][0]["column_name"], "Revenue")
+
     def test_a_pivot_over_a_column_the_query_does_not_produce_is_dropped(self):
         result = self.pivoted({"index": "Creation", "column": "Region", "value": "Amount"})
         self.assertNotIn("pivot_wider", operation_types(result))

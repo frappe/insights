@@ -1092,9 +1092,13 @@ def _measure_type(data_type):
 
 
 def _as_dimension(entry):
-    if entry.dimension:
-        return dict(entry.dimension)
-    return _dimension(entry.name, entry.name, "String", None)
+    # A pivot reads the frame the summarize produced, where the column answers
+    # to the dimension's name and not to the source column it was grouped from.
+    # The granularity is spent by then too: the summarize already bucketed the
+    # dates, and asking for it again would truncate an output that is no longer
+    # the source column.
+    data_type = (entry.dimension or {}).get("data_type", "String")
+    return _dimension(entry.name, entry.name, data_type, None)
 
 
 def _as_measure(entry):
