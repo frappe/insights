@@ -1,5 +1,13 @@
 <script setup lang="tsx">
-import { Badge, Breadcrumbs, ListEmptyState, ListHeader, ListRows, ListView } from 'frappe-ui'
+import {
+	Badge,
+	Breadcrumbs,
+	ListEmptyState,
+	ListHeader,
+	ListRows,
+	ListSelectBanner,
+	ListView,
+} from 'frappe-ui'
 import { CircleHelp, SearchIcon } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
@@ -236,6 +244,7 @@ async function migrate() {
 				:label="__('Migrate')"
 				variant="solid"
 				:disabled="!selected.size"
+				:tooltip="!selected.size ? __('Select the dashboards to migrate first') : ''"
 				@click="migrateSelected"
 			/>
 		</div>
@@ -303,6 +312,7 @@ async function migrate() {
 							{{ emptyState.description }}
 						</div>
 					</ListEmptyState>
+					<ListSelectBanner />
 				</ListView>
 			</div>
 		</template>
