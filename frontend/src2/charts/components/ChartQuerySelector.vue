@@ -34,7 +34,7 @@ wheneverChanges(
 			@update:modelValue="query = $event"
 		>
 			<template #prefix>
-				<Table2 class="mr-1.5 h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
+				<Table2 class="me-1.5 h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 			</template>
 		</Combobox>
 	</InlineFormControlLabel>

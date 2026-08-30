@@ -24,9 +24,9 @@ const workbook = inject(workbookKey)
 				@click="router.push(`/workbook/${workbook.name}/query/${idx}`)"
 			>
 				<Table2 class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />
-				<span class="ml-2">{{ query.title }}</span>
+				<span class="ms-2">{{ query.title }}</span>
 				<XIcon
-					class="ml-2 h-3.5 w-3.5 cursor-pointer text-ink-gray-4 transition-all hover:text-ink-gray-7"
+					class="ms-2 h-3.5 w-3.5 cursor-pointer text-ink-gray-4 transition-all hover:text-ink-gray-7"
 					@click.prevent.stop="workbook.removeQuery(query.name)"
 				/>
 			</button>
@@ -38,9 +38,9 @@ const workbook = inject(workbookKey)
 				@click="router.push(`/workbook/${workbook.name}/chart/${idx}`)"
 			>
 				<ChartIcon :chart-type="chart.chart_type" />
-				<span class="ml-2">{{ chart.title }}</span>
+				<span class="ms-2">{{ chart.title }}</span>
 				<XIcon
-					class="ml-2 h-3.5 w-3.5 cursor-pointer text-ink-gray-4 transition-all hover:text-ink-gray-7"
+					class="ms-2 h-3.5 w-3.5 cursor-pointer text-ink-gray-4 transition-all hover:text-ink-gray-7"
 					@click.prevent.stop="workbook.removeChart(chart.name)"
 				/>
 			</button>
@@ -52,15 +52,15 @@ const workbook = inject(workbookKey)
 				@click="router.push(`/workbook/${workbook.name}/dashboard/${idx}`)"
 			>
 				<LayoutPanelTop class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />
-				<span class="ml-2">{{ dashboard.title }}</span>
+				<span class="ms-2">{{ dashboard.title }}</span>
 				<XIcon
-					class="ml-2 h-3.5 w-3.5 cursor-pointer text-ink-gray-4 transition-all hover:text-ink-gray-7"
+					class="ms-2 h-3.5 w-3.5 cursor-pointer text-ink-gray-4 transition-all hover:text-ink-gray-7"
 					@click.prevent.stop="workbook.removeDashboard(dashboard.name)"
 				/>
 			</button>
 		</div>
 		<Dropdown
-			class="ml-1.5"
+			class="ms-1.5"
 			:options="[
 				{ label: __('New Query'), onClick: workbook.addQuery },
 				{ label: __('New Chart'), onClick: workbook.addChart },

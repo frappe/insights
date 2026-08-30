@@ -26,7 +26,7 @@ const props = defineProps<{
 					:class="{ ' !bg-surface-gray-2': isOpen }"
 				>
 					<template #icon>
-						<div class="flex h-7 w-full items-center gap-2 pl-2 pr-1.5 text-base">
+						<div class="flex h-7 w-full items-center gap-2 ps-2 pe-1.5 text-base">
 							<ListFilter class="h-4 w-4 flex-shrink-0" stroke-width="1.5" />
 							<div class="flex flex-1 items-center justify-between">
 								<span class="truncate">Filter</span>

@@ -130,7 +130,7 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 						</template>
 					</DraggableList>
 					<button
-						class="mt-1.5 text-left text-xs text-ink-gray-5 hover:underline"
+						class="mt-1.5 text-start text-xs text-ink-gray-5 hover:underline"
 						@click="config.number_columns.push({} as any)"
 					>
 						+ Add column

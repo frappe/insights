@@ -184,7 +184,7 @@ function onListChange(
 					>
 						<router-link
 							:to="route(row)"
-							class="flex h-7.5 items-center justify-between rounded pl-1.5 text-sm"
+							class="flex h-7.5 items-center justify-between rounded ps-1.5 text-sm"
 						>
 							<div class="flex gap-1.5 overflow-hidden">
 								<div class="flex-shrink-0">
@@ -282,21 +282,21 @@ function onListChange(
 							v-if="
 								isFolderExpanded(folder.name) && !folderItems[folder.name]?.length
 							"
-							class="ml-[22px] flex h-7.5 items-center pl-1.5 text-sm text-ink-gray-3"
+							class="ms-[22px] flex h-7.5 items-center ps-1.5 text-sm text-ink-gray-3"
 						>
 							{{ __('Empty') }}
 						</div>
 					</template>
 
 					<template #item="{ element: row }">
-						<div v-show="isFolderExpanded(folder.name)" class="ml-[22px]">
+						<div v-show="isFolderExpanded(folder.name)" class="ms-[22px]">
 							<div
 								class="group w-full cursor-pointer rounded transition-all hover:bg-surface-gray-2"
 								:class="section.isActive(row) ? 'bg-surface-gray-3' : ''"
 							>
 								<router-link
 									:to="route(row)"
-									class="flex h-7.5 items-center justify-between rounded pl-1.5 text-sm"
+									class="flex h-7.5 items-center justify-between rounded ps-1.5 text-sm"
 								>
 									<div class="flex gap-1.5 overflow-hidden">
 										<div class="flex-shrink-0">

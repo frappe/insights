@@ -83,7 +83,7 @@ function selectDimension(option?: DimensionOption) {
 							</span>
 							<template #suffix>
 								<ChevronDown
-									class="ml-auto h-4 w-4 text-ink-gray-6"
+									class="ms-auto h-4 w-4 text-ink-gray-6"
 									stroke-width="1.5"
 								/>
 							</template>
