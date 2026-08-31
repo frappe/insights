@@ -63,6 +63,18 @@ const itemsInOrder = computed(() => {
 	return [...(props.dashboard?.items || [])].sort((a, b) => rank[a.state] - rank[b.state])
 })
 
+/** Once a dashboard is migrated, what carried over is settled - how the numbers
+ * compare is the live question, so it becomes the description. */
+const description = computed(() => {
+	if (!props.dashboard) return ''
+	if (migrated.value && props.dashboard.verification) {
+		return (
+			verificationSentence(props.dashboard.verification) || verdictSentence(props.dashboard)
+		)
+	}
+	return verdictSentence(props.dashboard)
+})
+
 const differingQueries = computed(
 	() => verification.value?.queries.filter((q) => q.verdict === 'different') || [],
 )
@@ -91,7 +103,7 @@ const differingQueries = computed(
 			<div class="flex max-h-[60vh] flex-col gap-4 overflow-y-auto text-base">
 				<div class="flex flex-col items-start gap-2">
 					<p class="text-p-base text-ink-gray-7">
-						{{ verdictSentence(props.dashboard) }}
+						{{ description }}
 					</p>
 					<Button
 						v-if="props.dashboard.unresolved_data_sources.length"
@@ -101,32 +113,24 @@ const differingQueries = computed(
 					/>
 				</div>
 
-				<div
-					v-if="migrated && props.dashboard.verification"
-					class="flex flex-col gap-2 rounded border border-outline-gray-2 bg-surface-gray-1 p-3"
-				>
-					<p class="text-p-base text-ink-gray-7">
-						{{ verificationSentence(props.dashboard.verification) }}
-					</p>
-					<ul v-if="differingQueries.length" class="flex flex-col gap-2">
-						<li
-							v-for="query in differingQueries"
-							:key="query.query"
-							class="flex flex-col gap-0.5"
+				<ul v-if="differingQueries.length" class="flex flex-col gap-2">
+					<li
+						v-for="query in differingQueries"
+						:key="query.query"
+						class="flex flex-col gap-0.5"
+					>
+						<span class="text-p-sm font-medium text-ink-gray-8">
+							{{ query.charts.join(', ') || query.query }}
+						</span>
+						<span
+							v-for="(difference, idx) in query.differences"
+							:key="idx"
+							class="text-p-sm text-ink-gray-6"
 						>
-							<span class="text-p-sm font-medium text-ink-gray-8">
-								{{ query.charts.join(', ') || query.query }}
-							</span>
-							<span
-								v-for="(difference, idx) in query.differences"
-								:key="idx"
-								class="text-p-sm text-ink-gray-6"
-							>
-								{{ difference.detail }}
-							</span>
-						</li>
-					</ul>
-				</div>
+							{{ difference.detail }}
+						</span>
+					</li>
+				</ul>
 
 				<div class="flex flex-col gap-1">
 					<h3 class="text-p-base font-medium text-ink-gray-8">
