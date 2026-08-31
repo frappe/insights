@@ -767,7 +767,10 @@ def get_v2_migration_status(dashboards: list[str] | None = None) -> dict:
     """
     if dashboards is None:
         names = list(
-            frappe.db.sql_list(f"select name from `tab{V2_DASHBOARD}` order by modified desc limit 500")
+            frappe.db.sql_list(
+                f"select name from `tab{V2_DASHBOARD}` order by modified desc limit %(limit)s",
+                {"limit": MAX_LIST_LIMIT},
+            )
         )
     else:
         names = _accepted_names(dashboards)
