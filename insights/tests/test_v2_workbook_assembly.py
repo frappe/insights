@@ -21,6 +21,7 @@ from insights.migrator.v2_workbooks import (
     DashboardPlan,
     candidate_roots,
     closure,
+    copy_data_source_to_v3,
     dashboard_roots,
     format_report,
     load_v2_dashboard,
@@ -243,7 +244,8 @@ class TestV2Planning(UnitTestCase):
         self.assertEqual(plan.unresolved_data_sources, [])
         self.assertEqual(plan.data_source_map, {V2_SOURCE_TITLE: V2_SOURCE_V3_NAME})
 
-    def test_a_data_source_with_no_v3_counterpart_is_reported(self):
+    def test_a_data_source_with_no_v3_counterpart_is_not_a_gap(self):
+        """The migration creates the twin, so the plan has nothing to report."""
         queries = {"QRY-1": v2_query("QRY-1", "tabIssue", [group_by("status", "Status")])}
         items = [{"name": 1, "item_type": "Bar", "options": json.dumps({"query": "QRY-1"})}]
         plan = plan_dashboard(
@@ -251,7 +253,7 @@ class TestV2Planning(UnitTestCase):
         )
 
         self.assertEqual(plan.unresolved_data_sources, [V2_SOURCE_TITLE])
-        self.assertIn("unresolved_data_source", [gap.kind for gap in plan.blocking_gaps])
+        self.assertEqual(plan.blocking_gaps, [])
 
     def test_the_report_names_every_gap_and_where_it_came_from(self):
         queries = {"QRY-1": v2_query("QRY-1", "tabIssue", [group_by("status", "Status")], is_native_query=1)}
@@ -500,3 +502,49 @@ class TestV2WorkbookAssembly(InsightsIntegrationTestCase):
     def test_the_v3_data_source_is_found_by_its_scrubbed_name(self):
         self.assertEqual(resolve_v3_data_source(V2_SOURCE_TITLE), V2_SOURCE_V3_NAME)
         self.assertIsNone(resolve_v3_data_source("no such source"))
+
+    def test_a_v2_source_added_after_the_upgrade_is_copied_to_v3(self):
+        """`copy_data_sources` runs once, so v2 keeps adding sources after it."""
+        title = "Added After Upgrade"
+        insert_row(
+            "Insights Data Source",
+            {
+                "name": title,
+                "title": title,
+                "database_type": "MariaDB",
+                "database_name": "somedb",
+                "username": "someone",
+                "host": "localhost",
+                "port": 3306,
+                # the password lives in __Auth, which a raw insert cannot reach,
+                # so the fixture passes validation the way a hosted source does
+                "connection_string": "mysql://someone@localhost:3306/somedb",
+                "status": "Inactive",
+            },
+        )
+        self.addCleanup(frappe.db.sql, "delete from `tabInsights Data Source` where name = %s", title)
+        self.assertIsNone(resolve_v3_data_source(title))
+
+        created = copy_data_source_to_v3(title)
+        self.addCleanup(frappe.delete_doc, DT.DATA_SOURCE, created, force=True)
+
+        self.assertEqual(created, frappe.scrub(title))
+        self.assertEqual(resolve_v3_data_source(title), created)
+
+    def test_a_source_that_cannot_be_copied_does_not_raise(self):
+        """A password v2 can no longer read costs that source, not the dashboard."""
+        title = "No Credentials"
+        insert_row(
+            "Insights Data Source",
+            {
+                "name": title,
+                "title": title,
+                "database_type": "MariaDB",
+                "database_name": "somedb",
+                "status": "Inactive",
+            },
+        )
+        self.addCleanup(frappe.db.sql, "delete from `tabInsights Data Source` where name = %s", title)
+
+        self.assertIsNone(copy_data_source_to_v3(title))
+        self.assertIsNone(resolve_v3_data_source(title))

@@ -67,6 +67,7 @@ from insights.migrator.v2_queries import TranslatedQuery, translate_query
 V2_DASHBOARD = "Insights Dashboard"
 V2_DASHBOARD_ITEM = "Insights Dashboard Item"
 V2_QUERY = "Insights Query"
+V2_DATA_SOURCE = "Insights Data Source"
 
 V2_TRANSFORM = "Insights Query Transform"
 
@@ -390,18 +391,6 @@ def plan_dashboard(
         plan.queries.append(query_plan)
         plan.columns_by_query[name] = result_columns(row)
 
-    for v2_name in plan.unresolved_data_sources:
-        plan.gaps.append(
-            Gap(
-                kind="unresolved_data_source",
-                source=v2_name,
-                detail=f"no Insights Data Source v3 answers to the v2 data source "
-                f"{v2_name!r}. The queries migrate, and start working once a v3 "
-                f"data source of that name exists",
-                dropped=True,
-            )
-        )
-
     plan.dashboard = translate_dashboard(
         dashboard,
         items,
@@ -568,7 +557,52 @@ def migrate_dashboard(name: str, *, owner: str | None = None) -> MigrationResult
         raise
 
 
+def copy_data_source_to_v3(v2_name: str) -> str | None:
+    """Create the v3 twin of a v2 data source, and return its name.
+
+    `copy_data_sources` copies every source once, at upgrade. A source added in
+    v2 afterwards has no v3 twin, and a site mid-transition adds them - so the
+    migration copies what it needs rather than making the user keep two sets of
+    credentials in step. The field list is the patch's.
+    """
+    if not frappe.db.exists(V2_DATA_SOURCE, v2_name):
+        return None
+
+    v2 = frappe.get_doc(V2_DATA_SOURCE, v2_name)
+    v3 = frappe.get_doc(
+        {
+            "doctype": V3_DATA_SOURCE,
+            "title": v2.title,
+            "database_type": v2.database_type,
+            "database_name": v2.database_name,
+            "username": v2.username,
+            "password": v2.get_password(raise_exception=False),
+            "host": v2.host,
+            "port": v2.port,
+            "use_ssl": v2.use_ssl,
+            "connection_string": v2.connection_string,
+        }
+    )
+
+    # v3 asks for the same mandatory fields v2 does, so a source v2 accepted
+    # copies. The one that does not is a password v2 can no longer read - and
+    # that must cost the user this source, not the whole dashboard.
+    frappe.db.savepoint("insights_v2_source_copy")
+    try:
+        v3.insert(ignore_permissions=True)
+    except Exception:
+        frappe.db.rollback(save_point="insights_v2_source_copy")
+        frappe.log_error(title=f"Could not copy the v2 data source {v2_name}")
+        return None
+    return v3.name
+
+
 def _write(plan: DashboardPlan, items: list[dict], owner: str) -> MigrationResult:
+    # The queries below bind to whatever the map holds, so the twins have to
+    # exist before the first one is written.
+    for v2_name in plan.unresolved_data_sources:
+        plan.data_source_map[v2_name] = copy_data_source_to_v3(v2_name)
+
     workbook = frappe.new_doc(V3_WORKBOOK)
     workbook.title = plan.title
     workbook.owner = owner
