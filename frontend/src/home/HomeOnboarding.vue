@@ -1,20 +1,10 @@
 <script setup>
-import sessionStore from '@/stores/sessionStore'
+import { MIGRATION_URL, openInsightsV3, useV2MigrationNudge } from '@/utils/v2migration'
 import { AlertTriangle } from 'lucide-vue-next'
 import { ref } from 'vue'
 
-const session = sessionStore()
 const showDetailsDialog = ref(false)
-
-function switchToV3() {
-	session
-		.updateDefaultVersion(
-			session.user.default_version === 'v2' ? '' : session.user.default_version,
-		)
-		.then(() => {
-			window.location.href = '/insights'
-		})
-}
+const { waiting, canMigrate } = useV2MigrationNudge()
 </script>
 
 <template>
@@ -26,8 +16,11 @@ function switchToV3() {
 					Insights v2 is being discontinued
 				</h2>
 				<p class="mt-1 text-p-sm text-gray-700">
-					You are currently using Insights v2. This version will be removed in an upcoming
-					update. Switch to v3 now to avoid disruption.
+					You are using Insights v2. A future release will remove it.
+					<template v-if="waiting">
+						Insights v3 can convert your dashboards for you.
+					</template>
+					<template v-else>Switch to v3 to avoid disruption.</template>
 				</p>
 			</div>
 			<div class="ml-2 flex-shrink-0 self-center">
@@ -48,13 +41,11 @@ function switchToV3() {
 				<div>
 					<h3 class="mb-1.5 text-base font-semibold text-gray-900">What's happening?</h3>
 					<p>
-						You are currently using Insights v2. This version will be removed in an
-						upcoming release. Once you update, v2 will no longer be accessible. Insights
-						v3 is already available with a better experience and ongoing improvements.
+						You are using Insights v2. A future release will remove it. After that
+						update, v2 is no longer reachable.
 					</p>
 					<p class="mt-2">
-						New features and security fixes for v2 have stopped. We recommend migrating
-						before your next update.
+						v2 gets no new features and no security fixes. Insights v3 has replaced it.
 					</p>
 				</div>
 
@@ -62,16 +53,39 @@ function switchToV3() {
 					<h3 class="mb-1.5 text-base font-semibold text-gray-900">
 						What do you need to do?
 					</h3>
-					<p>
-						Open Insights v3 in a new tab and recreate your important dashboards and
-						queries there. Start with the ones your team uses every day.
-					</p>
-					<p class="mt-2">
-						Automatic migration from v2 to v3 isn't possible because the two versions
-						are built differently. An automated transfer would likely break your
-						dashboards and queries anyway. Your existing work in v2 stays untouched
-						until the removal date, so you can refer to it while you migrate.
-					</p>
+
+					<template v-if="waiting && canMigrate">
+						<p>
+							Insights v3 can convert your dashboards for you. It rebuilds each one in
+							v3, then runs both versions and compares the numbers.
+						</p>
+						<p class="mt-2">
+							Open the migration to see what happens to each dashboard before anything
+							moves. You pick which dashboards to move.
+							<strong>{{ waiting }}</strong>
+							{{ waiting === 1 ? 'is waiting' : 'are waiting' }}.
+						</p>
+					</template>
+
+					<template v-else-if="waiting">
+						<p>
+							Insights v3 can convert your dashboards for you. It rebuilds each one in
+							v3, then runs both versions and compares the numbers.
+						</p>
+						<p class="mt-2">
+							Ask an Insights administrator to run the migration. Only an
+							administrator can start it.
+						</p>
+					</template>
+
+					<template v-else>
+						<p>
+							Open Insights v3 and build your dashboards there. Start with the ones
+							your team uses every day.
+						</p>
+					</template>
+
+					<p class="mt-2">The migration only reads v2. Nothing you have there changes.</p>
 				</div>
 
 				<div>
@@ -97,8 +111,15 @@ function switchToV3() {
 			</div>
 
 			<div class="mt-5 flex justify-end gap-2">
-				<Button variant="subtle" @click="showDetailsDialog = false">Close</Button>
-				<Button variant="solid" @click="switchToV3">Open Insights v3</Button>
+				<Button v-if="waiting && canMigrate" variant="subtle" @click="openInsightsV3()">
+					Open Insights v3
+				</Button>
+				<Button
+					variant="solid"
+					@click="openInsightsV3(waiting && canMigrate ? MIGRATION_URL : '/insights')"
+				>
+					{{ waiting && canMigrate ? 'Review migration' : 'Open Insights v3' }}
+				</Button>
 			</div>
 		</template>
 	</Dialog>
