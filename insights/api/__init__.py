@@ -93,7 +93,9 @@ def get_user_info():
         "country": frappe.db.get_single_value("System Settings", "country"),
         "locale": locale,
         "is_v2_instance": frappe.db.count("Insights Query") > 0,
-        "default_version": get_user_default("insights_default_version", frappe.session.user),
+        # "" and not None: the value goes straight back to `update_default_version`,
+        # which is typed `str` and rejects a null for a user who never chose one.
+        "default_version": get_user_default("insights_default_version", frappe.session.user) or "",
         "has_desk_access": user.get("user_type") == "System User",
         "has_demo_data": has_demo_data,
         "fiscal_year_start": frappe.db.get_single_value("Insights Settings", "fiscal_year_start")
