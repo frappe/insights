@@ -421,7 +421,7 @@ class TestV2MigrationAPI(InsightsIntegrationTestCase):
         create_test_query(
             "Administrator",
             workbook.name,
-            operations=[{"type": "sql_column", "new_name": "x", "data_type": "Integer", "fragment": "1"}],
+            operations=[{"type": "sql_column", "new_name": "x", "data_type": "Integer", "raw_sql": "1"}],
         )
         self.addCleanup(frappe.delete_doc, DT.WORKBOOK, workbook.name, force=True)
 
