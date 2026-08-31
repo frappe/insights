@@ -4,8 +4,11 @@ import { __ } from '../translation'
 import { createToast } from '../helpers/toasts'
 
 /** Shared, because a tab inside the dialog can ask the dialog to close - the
- * migration tab leaves for a page, which would otherwise open behind it. */
+ * migration tab routes to a workbook, which would otherwise open behind it. */
 export const showSettingsDialog = ref(false)
+
+/** Set with `showSettingsDialog` to open the dialog on a named tab. */
+export const settingsTab = ref('')
 
 let settings = undefined as Settings | undefined
 export default function useSettings() {

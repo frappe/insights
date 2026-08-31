@@ -3,8 +3,8 @@ import { useStorage } from '@vueuse/core'
 import { call } from 'frappe-ui'
 import { PackageOpen, X } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import session from '../session'
+import { settingsTab, showSettingsDialog } from '../settings/settings'
 import { __ } from '../translation'
 
 const props = defineProps<{ workbookCount: number }>()
@@ -12,8 +12,6 @@ const props = defineProps<{ workbookCount: number }>()
 // Once a site has workbooks of its own, the v2 dashboards are no longer the
 // thing to do next, so the callout stops asking.
 const FEW_WORKBOOKS = 3
-
-const router = useRouter()
 
 const dismissed = useStorage('insights:v2-migration-callout-dismissed', false)
 const waiting = ref(0)
@@ -29,6 +27,11 @@ if (session.user.is_admin) {
 const show = computed(
 	() => !dismissed.value && waiting.value > 0 && props.workbookCount < FEW_WORKBOOKS,
 )
+
+function openMigration() {
+	settingsTab.value = 'v2-migration'
+	showSettingsDialog.value = true
+}
 </script>
 
 <template>
@@ -50,11 +53,7 @@ const show = computed(
 			</span>
 		</div>
 		<div class="flex items-center gap-2">
-			<Button
-				variant="subtle"
-				:label="__('Migrate from v2')"
-				@click="router.push('/migration')"
-			/>
+			<Button variant="subtle" :label="__('Migrate from v2')" @click="openMigration" />
 			<Button variant="ghost" :tooltip="__('Dismiss')" @click="dismissed = true">
 				<template #icon>
 					<X class="h-4 w-4" />

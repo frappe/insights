@@ -7,10 +7,11 @@ import {
 	SettingsIcon,
 	Users,
 } from 'lucide-vue-next'
-import { defineAsyncComponent, shallowRef } from 'vue'
+import { defineAsyncComponent, shallowRef, watch } from 'vue'
 import TabbedSidebarLayout, { Tab, TabGroup } from '../components/TabbedSidebarLayout.vue'
 import session from '../session'
 import { __ } from '../translation'
+import { settingsTab } from './settings'
 
 const showDialog = defineModel({ required: true, default: false })
 
@@ -61,6 +62,7 @@ const tabGroups: TabGroup[] = [
 			...(showMigration
 				? [
 						{
+							key: 'v2-migration',
 							label: __('Migrate from v2'),
 							icon: PackageOpen,
 							component: defineAsyncComponent(
@@ -73,6 +75,16 @@ const tabGroups: TabGroup[] = [
 	},
 ]
 const activeTab = shallowRef<Tab>(tabGroups[0].tabs[0])
+
+// The v2 callout opens settings straight on the migration tab.
+watch(showDialog, (open) => {
+	if (!open || !settingsTab.value) return
+	const wanted = tabGroups
+		.flatMap((group) => group.tabs)
+		.find((tab) => tab.key === settingsTab.value)
+	if (wanted) activeTab.value = wanted
+	settingsTab.value = ''
+})
 </script>
 
 <template>
