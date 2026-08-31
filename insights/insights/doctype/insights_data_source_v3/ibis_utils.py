@@ -538,30 +538,36 @@ class IbisQueryBuilder:
         return self.query.mutate(**{new_name: new_column})
 
     def apply_sql_column(self, sql_column_args):
-        """Add one column from a raw SQL fragment.
+        """Add one column from a raw SQL expression.
 
         Written by the v2 migrator, for the constructs v2 expressed in SQL and v3
         has no expression for. ibis has no scalar-level SQL escape - only
         `Table.sql()` - so this is a relation-level operation and not a `mutate`.
+
+        `new_name` is not sanitized, unlike `apply_mutate` and `apply_rename`: a
+        migrated column keeps the name the v2 charts and filters already use.
         """
         new_name = sql_column_args.new_name
-        fragment = sql_column_args.fragment
+        raw_sql = sql_column_args.raw_sql
 
-        if not new_name or not fragment or not fragment.strip():
+        if not new_name or not raw_sql or not raw_sql.strip():
             frappe.throw(
                 frappe._("A SQL column needs both a name and an expression"),
             )
 
-        source_dialect = None
-        if sql_column_args.data_source:
-            ds = frappe.get_doc("Insights Data Source v3", sql_column_args.data_source)
-            source_dialect = ds.get_sqlglot_dialect()
+        if not sql_column_args.data_source:
+            frappe.throw(
+                frappe._("A SQL column needs the data source its expression is written for"),
+            )
 
-        fragment = sqlparse.format(sql=fragment, strip_comments=True).strip()
-        self._validate_sql_column_fragment(fragment, source_dialect)
+        data_source = frappe.get_doc("Insights Data Source v3", sql_column_args.data_source)
+        source_dialect = data_source.get_sqlglot_dialect()
+
+        raw_sql = sqlparse.format(sql=raw_sql, strip_comments=True).strip()
 
         alias = sg.to_identifier(new_name, quoted=True).sql(dialect=source_dialect)
-        statement = f"SELECT *, {fragment} AS {alias} FROM {SQL_COLUMN_RELATION}"
+        statement = f"SELECT *, {raw_sql} AS {alias} FROM {SQL_COLUMN_RELATION}"
+        self._validate_sql_column_statement(statement, source_dialect)
 
         if not self.use_live_connection:
             statement = self._transpile_sql_to_duckdb(statement, source_dialect)
@@ -573,35 +579,30 @@ class IbisQueryBuilder:
         dtype = self.get_ibis_dtype(sql_column_args.data_type) if sql_column_args.data_type else None
         return query.cast({new_name: dtype}) if dtype else query
 
-    def _validate_sql_column_fragment(self, fragment: str, dialect: str | None) -> None:
-        """A fragment is one column expression. Anything that could open a statement is rejected."""
-        if ";" in fragment:
-            frappe.throw(
-                frappe._("A SQL column expression cannot contain multiple statements"),
-            )
+    def _validate_sql_column_statement(self, statement: str, dialect: str) -> None:
+        """Validate the assembled statement, not the expression alone.
 
-        if re.match(r"^(select|with|exec|execute)\b", fragment, flags=re.IGNORECASE):
-            frappe.throw(
-                frappe._("A SQL column expression cannot be a statement"),
-            )
-
+        An expression parsed on its own is read as the start of a statement, so
+        `replace(...)` reads as MySQL's REPLACE. In place, it is one projection.
+        """
         try:
-            parsed = sg.parse(fragment, dialect=dialect)
+            parsed = sg.parse(statement, dialect=dialect)
         except Exception as e:
             frappe.throw(
                 frappe._("Failed to parse the SQL column expression: {0}").format(e),
             )
 
-        if len(parsed) != 1 or parsed[0] is None:
+        if len(parsed) != 1 or not isinstance(parsed[0], sg.exp.Select):
             frappe.throw(
                 frappe._("A SQL column expression must be a single expression"),
             )
 
-        expression = parsed[0]
-        is_statement = isinstance(expression, sg.exp.DDL | sg.exp.DML | sg.exp.Command)
-        if is_statement or expression.find(sg.exp.Select):
+        select = parsed[0]
+        tables = {table.name for table in select.find_all(sg.exp.Table)}
+        nested = len(list(select.find_all(sg.exp.Select))) > 1 or select.find(sg.exp.Subquery)
+        if nested or tables != {SQL_COLUMN_RELATION}:
             frappe.throw(
-                frappe._("A SQL column expression must be a single expression"),
+                frappe._("A SQL column expression cannot read another table"),
             )
 
     def apply_summary(self, summarize_args):
