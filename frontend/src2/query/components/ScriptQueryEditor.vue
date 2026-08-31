@@ -29,6 +29,15 @@ attachRealtimeListener('insights_script_log', (data: any) => {
 	}
 })
 
+// the error is written to the logs, so a failed run has to open the panel
+// holding it - otherwise the script author is told nothing at all
+wheneverChanges(
+	() => query.executionError,
+	(error) => {
+		if (error) showLogs.value = true
+	},
+)
+
 const showVariablesDialog = ref(false)
 const localVariables = ref<any[]>([])
 

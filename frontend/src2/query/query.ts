@@ -6,6 +6,7 @@ import { computed, reactive, ref, toRefs, unref, watch } from 'vue'
 import {
 	copy,
 	copyToClipboard,
+	getErrorMessage,
 	getUniqueId,
 	safeJSONParse,
 	waitUntil,
@@ -155,6 +156,7 @@ export function makeQuery(name: string) {
 	})
 
 	const isServerBusy = ref(false)
+	const executionError = ref('')
 	const result = ref({ ...EMPTY_RESULT })
 	const executing = ref(false)
 	const downloading = ref(false)
@@ -179,6 +181,7 @@ export function makeQuery(name: string) {
 		}
 
 		isServerBusy.value = false
+		executionError.value = ''
 
 		if (!query.doc.operations.length) {
 			result.value = { ...EMPTY_RESULT }
@@ -251,6 +254,9 @@ export function makeQuery(name: string) {
 			.catch((err) => {
 				if (isStale()) return
 				isServerBusy.value = isServerBusyError(err)
+				// a failed run used to clear the table and say nothing, so the
+				// message has to survive the reset for the editor to show it
+				executionError.value = isServerBusy.value ? '' : getErrorMessage(err)
 				result.value = { ...EMPTY_RESULT }
 			})
 			.finally(() => {
@@ -1154,6 +1160,7 @@ export function makeQuery(name: string) {
 		executing,
 		fetchingCount,
 		isServerBusy,
+		executionError,
 		result,
 
 		currentPage,

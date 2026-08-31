@@ -159,11 +159,13 @@ class InsightsQueryv3(Document):
                 tables.append(ref)
         return tables
 
-    def build(self, active_operation_idx=None, use_live_connection=None):
+    def build(self, active_operation_idx=None, use_live_connection=None, force=False):
         builder = IbisQueryBuilder(self, active_operation_idx)
         builder.use_live_connection = (
             use_live_connection if use_live_connection is not None else self.use_live_connection
         )
+        # a script runs while the query is built, so only the builder can skip its cache
+        builder.force = force
         ibis_query = builder.build()
 
         if ibis_query is None:
@@ -181,7 +183,7 @@ class InsightsQueryv3(Document):
         page_size: int = 100,
     ):
         with set_adhoc_filters(adhoc_filters):
-            ibis_query = self.build(active_operation_idx)
+            ibis_query = self.build(active_operation_idx, force=force)
 
         results, time_taken = execute_ibis_query(
             ibis_query,

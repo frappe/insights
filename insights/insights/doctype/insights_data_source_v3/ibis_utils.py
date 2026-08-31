@@ -1,6 +1,8 @@
 import ast
 import re
+import sys
 import time
+import traceback
 from contextlib import contextmanager
 from datetime import date
 from functools import cached_property
@@ -12,7 +14,7 @@ import pandas as pd
 import sqlglot as sg
 import sqlparse
 from frappe.utils.data import flt
-from frappe.utils.safe_exec import safe_eval, safe_exec
+from frappe.utils.safe_exec import SERVER_SCRIPT_FILE_PREFIX, safe_eval, safe_exec
 from ibis import _
 from ibis.expr.datatypes import DataType
 from ibis.expr.operations.relations import DatabaseTable, Field
@@ -57,6 +59,7 @@ class IbisQueryBuilder:
         self.title = self.doc.title or self.doc.name
         self.active_operation_idx = active_operation_idx
         self.use_live_connection = bool(doc.use_live_connection)
+        self.force = False
         self.operations = doc.operations
         self.set_operations()
 
@@ -185,7 +188,7 @@ class IbisQueryBuilder:
         if table_args.type == "query":
             self.check_query_reference(table_args.query_name)
             q = frappe.get_doc("Insights Query v3", table_args.query_name)
-            _table = q.build(use_live_connection=self.use_live_connection)
+            _table = q.build(use_live_connection=self.use_live_connection, force=self.force)
 
         if _table is None:
             frappe.throw("Table or Query not found")
@@ -770,15 +773,15 @@ class IbisQueryBuilder:
         code = code_args.code
 
         adhoc_filters = frappe.as_json(getattr(frappe.local, "insights_adhoc_filters", {}))
-        digest = make_digest(code + adhoc_filters)
+        variables = resolve_variables(getattr(self.doc, "variables", None))
+        # a variable value changes the output as surely as the code does, so it
+        # belongs in the key that decides whether the script runs again
+        digest = make_digest(code, adhoc_filters, frappe.as_json(variables))
 
-        cached_results = get_cached_results(digest)
+        cached_results = None if self.force else get_cached_results(digest)
         if cached_results is not None:
             results = cached_results
         else:
-            variables = None
-            if hasattr(self.doc, "variables") and self.doc.variables:
-                variables = self.doc.variables
             results = get_code_results(code, variables=variables)
             cache_results(digest, results, cache_expiry=60 * 5)
 
@@ -1140,40 +1143,7 @@ class SafePandasDataFrame(pd.DataFrame):
         raise NotImplementedError("to_json is not supported in this context")
 
 
-def get_code_results(code: str, variables=None):
-    pandas = frappe._dict()
-    pandas.DataFrame = SafePandasDataFrame
-    pandas.read_csv = pd.read_csv
-    pandas.json_normalize = pd.json_normalize
-
-    results = []
-    frappe.local.debug_log = []
-
-    variable_context = {}
-    if variables:
-        from frappe.utils.password import get_decrypted_password
-
-        for var in variables:
-            if hasattr(var, "variable_name") and hasattr(var, "variable_value"):
-                variable_context[var.variable_name] = get_decrypted_password(
-                    var.doctype, var.name, "variable_value"
-                )
-            elif isinstance(var, dict):
-                variable_context[var.get("variable_name")] = var.get("variable_value")
-
-    _locals = {"results": results, **variable_context}
-    with ensure_rollback():
-        _, _locals = safe_exec(
-            code,
-            _globals={"pandas": pandas},
-            _locals=_locals,
-            restrict_commit_rollback=True,
-        )
-
-    results = _locals["results"]
-    if results is None or len(results) == 0:
-        results = [{"error": "No results"}]
-
+def publish_script_logs():
     frappe.publish_realtime(
         event="insights_script_log",
         user=frappe.session.user,
@@ -1183,18 +1153,99 @@ def get_code_results(code: str, variables=None):
         },
     )
 
-    if not isinstance(results, pd.DataFrame):
-        try:
-            if isinstance(results, list) and results and isinstance(results[0], list | tuple):
-                results = pd.DataFrame.from_records(results)
-            else:
-                results = pd.DataFrame(results)
-        except (ValueError, TypeError):
-            import json as _json
 
-            results = pd.DataFrame(_json.loads(frappe.as_json(results)))
+def format_script_error(code: str) -> str:
+    exc_type, exc_value, tb = sys.exc_info()
+    name = getattr(exc_type, "__name__", "Error")
+    message = f"{name}: {exc_value}"
 
-    return results
+    lineno = get_script_line_number(exc_value, tb)
+    if not lineno:
+        return message
+
+    lines = code.splitlines()
+    source = lines[lineno - 1].strip() if 0 < lineno <= len(lines) else ""
+    return f"Line {lineno}: {source}\n{message}" if source else f"Line {lineno}\n{message}"
+
+
+def get_script_line_number(exc_value, tb) -> int | None:
+    # RestrictedPython compiles the script under this filename, so its frames are
+    # the only ones with a line number that means anything to the author
+    for frame in traceback.extract_tb(tb):
+        if frame.filename.startswith(SERVER_SCRIPT_FILE_PREFIX):
+            return frame.lineno
+
+    # a syntax error never runs, so it has no frame of its own
+    if isinstance(exc_value, SyntaxError):
+        return exc_value.lineno
+
+    return None
+
+
+def resolve_variables(variables) -> dict:
+    if not variables:
+        return {}
+
+    from frappe.utils.password import get_decrypted_password
+
+    resolved = {}
+    for var in variables:
+        if isinstance(var, dict):
+            resolved[var.get("variable_name")] = var.get("variable_value")
+        else:
+            resolved[var.variable_name] = get_decrypted_password(var.doctype, var.name, "variable_value")
+    return resolved
+
+
+def get_code_results(code: str, variables: dict | None = None):
+    pandas = frappe._dict()
+    pandas.DataFrame = SafePandasDataFrame
+    pandas.read_csv = pd.read_csv
+    pandas.json_normalize = pd.json_normalize
+
+    results = []
+    frappe.local.debug_log = []
+
+    _locals = {"results": results, **(variables or {})}
+    start = time.monotonic()
+    try:
+        with ensure_rollback():
+            _, _locals = safe_exec(
+                code,
+                _globals={"pandas": pandas},
+                _locals=_locals,
+                restrict_commit_rollback=True,
+            )
+    except Exception:
+        # the panel is the only place the script author sees anything, so the
+        # error has to land there before it travels on as a request failure
+        frappe.log(format_script_error(code))
+        raise
+    else:
+        results = to_dataframe(_locals["results"])
+        frappe.log(f"{len(results)} rows in {flt(time.monotonic() - start, 3)}s")
+        return results
+    finally:
+        publish_script_logs()
+
+
+def to_dataframe(results) -> pd.DataFrame:
+    if isinstance(results, pd.DataFrame):
+        return results
+
+    if results is None or len(results) == 0:
+        # DuckDB cannot hold a table with no columns, so an empty run still needs
+        # one. A named column beats the fake row of errors this used to return.
+        return pd.DataFrame({"results": pd.Series([], dtype="string")})
+
+    try:
+        if isinstance(results, list) and isinstance(results[0], list | tuple):
+            return pd.DataFrame.from_records(results)
+        return pd.DataFrame(results)
+    except (ValueError, TypeError):
+        import json as _json
+
+        return pd.DataFrame(_json.loads(frappe.as_json(results)))
 
 
 @contextmanager
