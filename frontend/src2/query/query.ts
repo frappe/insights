@@ -207,20 +207,20 @@ export function makeQuery(name: string) {
 		isServerBusy.value = false
 		executionError.value = ''
 
-		if (!query.doc.operations.length) {
-			result.value = { ...EMPTY_RESULT }
-			return
-		}
-
 		if (page_size) {
 			pageSize.value = page_size
 			currentPage.value = 1
 		}
 
-		// recorded before the request, not after it: the failure path mutates
-		// `result`, and a caller watching that would re-ask before a later write
-		// landed. These args have been asked for, whatever the run returns.
+		// recorded before the request, and above the empty-operations return,
+		// because both paths replace `result`. A caller watching it would
+		// otherwise re-ask before the write landed, or never see one at all.
 		lastExecutionArgs = currentExecutionArgs()
+
+		if (!query.doc.operations.length) {
+			result.value = { ...EMPTY_RESULT }
+			return
+		}
 
 		executing.value = true
 		const token = ++currentExecutionToken
