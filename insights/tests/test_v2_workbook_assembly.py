@@ -15,6 +15,11 @@ import json
 
 import frappe
 from frappe.tests import UnitTestCase
+from frappe.utils.password import (
+    get_decrypted_password,
+    remove_encrypted_password,
+    set_encrypted_password,
+)
 
 from insights.migrator.v2_workbooks import (
     CircularQueryReference,
@@ -548,3 +553,127 @@ class TestV2WorkbookAssembly(InsightsIntegrationTestCase):
 
         self.assertIsNone(copy_data_source_to_v3(title))
         self.assertIsNone(resolve_v3_data_source(title))
+
+
+class TestV2ScriptQueryMigration(InsightsIntegrationTestCase):
+    """A script query, its variables, and the secret that has to travel with it."""
+
+    DASHBOARD = "DSH-MIGSCRIPT"
+    QUERY = "QRY-MIGSCRIPT-1"
+    VARIABLE = "VAR-MIGSCRIPT-1"
+    TOKEN = "s3cret-token"
+
+    @classmethod
+    def before_class(cls):
+        cls.delete_v2_fixture()
+
+        insert_row(
+            "Insights Query",
+            {
+                "name": cls.QUERY,
+                "title": "Script",
+                "data_source": V2_SOURCE_TITLE,
+                "json": "{}",
+                "sql": "",
+                "script": "results = [['token'], [token]]",
+                "is_native_query": 0,
+                "is_assisted_query": 0,
+                "is_script_query": 1,
+            },
+        )
+        insert_row(
+            "Insights Query Variable",
+            {
+                "name": cls.VARIABLE,
+                "parent": cls.QUERY,
+                "parenttype": "Insights Query",
+                "parentfield": "variables",
+                "idx": 1,
+                "variable_name": "token",
+                # what the column holds once `_save_passwords` has run
+                "variable_value": "*" * len(cls.TOKEN),
+            },
+        )
+        set_encrypted_password("Insights Query Variable", cls.VARIABLE, cls.TOKEN, "variable_value")
+
+        insert_row("Insights Dashboard", {"name": cls.DASHBOARD, "title": "Script Migration Test"})
+        insert_row(
+            "Insights Dashboard Item",
+            {
+                "parent": cls.DASHBOARD,
+                "parenttype": "Insights Dashboard",
+                "parentfield": "items",
+                "idx": 1,
+                "name": 900101,
+                "item_type": "Bar",
+                "item_id": "900101",
+                "layout": json.dumps({"i": 900101, "x": 0, "y": 0, "w": 10, "h": 8}),
+                "options": json.dumps({"query": cls.QUERY, "title": "Token", "xAxis": "token"}),
+            },
+        )
+
+    @classmethod
+    def after_class(cls):
+        cls.delete_v3_output()
+        cls.delete_v2_fixture()
+
+    @classmethod
+    def delete_v2_fixture(cls):
+        remove_encrypted_password("Insights Query Variable", cls.VARIABLE, "variable_value")
+        frappe.db.sql("delete from `tabInsights Dashboard Item` where parent = %s", (cls.DASHBOARD,))
+        frappe.db.sql("delete from `tabInsights Dashboard` where name = %s", (cls.DASHBOARD,))
+        frappe.db.sql("delete from `tabInsights Query Variable` where parent = %s", (cls.QUERY,))
+        frappe.db.sql("delete from `tabInsights Query` where name = %s", (cls.QUERY,))
+
+    @classmethod
+    def delete_v3_output(cls):
+        for workbook in frappe.get_all(DT.WORKBOOK, filters={"title": "Script Migration Test"}, pluck="name"):
+            frappe.delete_doc(DT.WORKBOOK, workbook, force=True, ignore_permissions=True)
+
+    def setUp(self):
+        super().setUp()
+        self.delete_v3_output()
+        self.result = migrate_dashboard(self.DASHBOARD)
+        self.v3_query = frappe.get_doc(DT.QUERY, self.result.query_names[self.QUERY])
+
+    def test_the_script_lands_as_one_code_operation(self):
+        self.assertTrue(self.v3_query.is_script_query)
+        self.assertEqual(
+            json.loads(self.v3_query.operations),
+            [{"type": "code", "code": "results = [['token'], [token]]"}],
+        )
+
+    def test_the_variable_row_travels(self):
+        self.assertEqual([row.variable_name for row in self.v3_query.variables], ["token"])
+
+    def test_the_variable_value_travels_too(self):
+        """The row alone is not enough: `get_code_results` reads the secret."""
+        row = self.v3_query.variables[0]
+        self.assertEqual(
+            get_decrypted_password("Insights Query Variable", row.name, "variable_value"),
+            self.TOKEN,
+        )
+
+    def test_the_v2_variable_is_untouched(self):
+        self.assertEqual(
+            get_decrypted_password("Insights Query Variable", self.VARIABLE, "variable_value"),
+            self.TOKEN,
+        )
+
+    def test_a_variable_with_no_readable_value_is_reported_not_written(self):
+        """The field is mandatory, so writing an empty one would lose the dashboard."""
+        remove_encrypted_password("Insights Query Variable", self.VARIABLE, "variable_value")
+        self.addCleanup(
+            set_encrypted_password,
+            "Insights Query Variable",
+            self.VARIABLE,
+            self.TOKEN,
+            "variable_value",
+        )
+        self.delete_v3_output()
+
+        result = migrate_dashboard(self.DASHBOARD)
+        query = frappe.get_doc(DT.QUERY, result.query_names[self.QUERY])
+
+        self.assertEqual(query.variables, [])
+        self.assertIn("variable_value_unreadable", [gap.kind for gap in result.plan.blocking_gaps])

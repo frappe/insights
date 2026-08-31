@@ -145,6 +145,11 @@ JOIN_TYPES = frozenset({"inner", "left", "right", "full"})
 # a claim in the document that nothing backs.
 LIVE_CONNECTION_BY_KIND = {"builder": True, "sql": True, "code": False, "none": False}
 
+# The one v2 script global v3 does not provide. `get_code_results` passes
+# `pandas` alone, so the name is unbound and the script fails at the call rather
+# than at build - which is why the migration has to say so rather than run it.
+CALLS_GET_QUERY_RESULTS = re.compile(r"\bget_query_results\s*\(")
+
 # Functions that make an expression a reduction, so it belongs in `summarize`
 # as an expression measure rather than in a `mutate` before it.
 AGGREGATING_FUNCTIONS = frozenset(
@@ -200,6 +205,14 @@ class TranslatedQuery:
 
     references: tuple = ()
     """v2 query docnames this query reads, in the order they appear."""
+
+    variables: list = field(default_factory=list)
+    """The v2 `Insights Query Variable` rows a script query declared, in order.
+
+    Names only. `variable_value` is a Password field, so the row holds `*****`
+    and the write path reads the real value out of `__Auth` - a decrypted
+    secret has no business on a dataclass the reporting layer reads.
+    """
 
     gaps: list = field(default_factory=list)
 
@@ -318,6 +331,18 @@ class _Builder:
             "with pandas.DataFrame.from_records, which keeps the header as data. A "
             "script that assigns a DataFrame to `results` needs no change",
         )
+        if CALLS_GET_QUERY_RESULTS.search(code):
+            self.gap(
+                "script_calls_get_query_results",
+                "script",
+                "the script calls `get_query_results`, which v2 put in the script "
+                "globals and v3 does not, so the call raises NameError. No shim can "
+                "carry it: the v2 function reads an `Insights Query` result, and that "
+                "is the doctype the migration exists to leave behind. Point the script "
+                "at the migrated query instead",
+                dropped=True,
+            )
+        self.result.variables = list(self.query.get("variables") or [])
         self.result.kind = "code"
         self.result.operations = [{"type": "code", "code": code}]
         return self.result

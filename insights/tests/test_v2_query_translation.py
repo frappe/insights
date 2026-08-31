@@ -525,6 +525,40 @@ class TestQueryTypes(UnitTestCase):
         self.assertEqual(result.operations, [{"type": "code", "code": "results = []"}])
         self.assertIn("script_result_shape", gap_kinds(result))
 
+    def test_a_script_that_calls_get_query_results_is_reported_as_broken(self):
+        # v2 put the name in the script globals; `get_code_results` passes
+        # `pandas` alone, so the migrated script raises NameError at the call.
+        query = v2_query(
+            is_assisted_query=0,
+            is_script_query=1,
+            script="results = get_query_results('QRY-0002')",
+        )
+        result = translate(query)
+        self.assertEqual(result.kind, "code")
+        self.assertIn("script_calls_get_query_results", gap_kinds(result))
+        self.assertIn("script_calls_get_query_results", result.fallback_reasons)
+
+    def test_a_script_that_names_no_v2_helper_is_not_reported_as_broken(self):
+        query = v2_query(
+            is_assisted_query=0,
+            is_script_query=1,
+            script="results = [['a'], [1]]  # get_query_results is only mentioned",
+        )
+        self.assertNotIn("script_calls_get_query_results", gap_kinds(translate(query)))
+
+    def test_a_script_query_carries_its_variables(self):
+        variables = [{"name": "VAR-01", "variable_name": "token", "variable_value": "*****"}]
+        query = v2_query(is_assisted_query=0, is_script_query=1, script="results = []")
+        query["variables"] = variables
+        self.assertEqual(translate(query).variables, variables)
+
+    def test_only_a_script_query_carries_variables(self):
+        # v3 gates the field on `is_script_query`, and nothing but
+        # `get_code_results` reads it. Rows on any other kind would be dead.
+        query = v2_query({"columns": [column("status")]})
+        query["variables"] = [{"name": "VAR-01", "variable_name": "token"}]
+        self.assertEqual(translate(query).variables, [])
+
     def test_a_legacy_query_has_no_structure_to_rebuild(self):
         query = v2_query(is_assisted_query=0, sql="SELECT 2")
         result = translate(query)

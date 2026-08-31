@@ -20,7 +20,7 @@ stay. The site that most needs a migrator is the one that has already dropped
 the v2 app code, so the read path is written to need no v2 meta at all. Where
 the meta is still present the ORM would work too - it is just not relied on.
 
-Four things the v3 side decides, which the plan only records:
+Five things the v3 side decides, which the plan only records:
 
 - **Data sources do not share names.** A v2 `Insights Data Source` is named by
   its title verbatim ("frappe.io"); a v3 `Insights Data Source v3` is named
@@ -36,6 +36,9 @@ Four things the v3 side decides, which the plan only records:
   answer, healthily, from a copy the user never asked for.
 - **A chart's `data_query` is the doctype's.** `set_data_query` creates it in
   `before_save`. Creating one here would leave an orphan.
+- **A script variable's value is read at write time.** The plan carries the
+  variable names, never the secrets. `_carry_variables` decrypts each value out
+  of `__Auth` as it writes the row.
 - **`is_public` does not travel.** In v3, publishing grants the publisher's own
   read access to anyone with the link, and records that publisher in
   `permission_user`. Deriving a publisher from a v2 row would hand out an access
@@ -70,6 +73,9 @@ V2_QUERY = "Insights Query"
 V2_DATA_SOURCE = "Insights Data Source"
 
 V2_TRANSFORM = "Insights Query Transform"
+# Not a v2 doctype: the v2 and the v3 query share this child table, so every
+# read of it needs a `parenttype` filter to stay on the v2 side.
+QUERY_VARIABLE = "Insights Query Variable"
 
 V3_WORKBOOK = "Insights Workbook"
 V3_DATA_SOURCE = "Insights Data Source v3"
@@ -457,6 +463,13 @@ def load_v2_queries(roots) -> dict:
         ):
             queries[row["parent"]].setdefault("transforms", []).append(row)
 
+        for row in _select(
+            QUERY_VARIABLE,
+            "where parenttype = %(parenttype)s and parent in %(names)s order by idx asc",
+            {"parenttype": V2_QUERY, "names": tuple(queries)},
+        ):
+            queries[row["parent"]].setdefault("variables", []).append(row)
+
     return queries
 
 
@@ -597,6 +610,41 @@ def copy_data_source_to_v3(v2_name: str) -> str | None:
     return v3.name
 
 
+def _carry_variables(query, query_plan: QueryPlan) -> None:
+    """Copy a script query's variables onto the v3 query that replaces it.
+
+    `get_code_results` reads them the same way v2's script controller did, so a
+    script that names a variable keeps working only if the row travels. The
+    value does not travel with the row: `variable_value` is a Password field, so
+    the column holds `*****` and the real value sits in `__Auth` under the child
+    row's own docname. `get_decrypted_password` reads `__Auth` directly and
+    needs no v2 meta, which the ORM would.
+
+    A value that will not decrypt is reported rather than written. The field is
+    mandatory, so writing an empty one would abort the whole migration over a
+    single corrupt row.
+    """
+    from frappe.utils.password import get_decrypted_password
+
+    for variable in query_plan.translated.variables:
+        name = variable.get("variable_name")
+        value = get_decrypted_password(
+            QUERY_VARIABLE, variable.get("name"), "variable_value", raise_exception=False
+        )
+        if not value:
+            query_plan.translated.gaps.append(
+                Gap(
+                    kind="variable_value_unreadable",
+                    source="variables",
+                    detail=f"the script variable `{name}` has no readable value in v2, "
+                    f"so it is not carried and the script fails on the name",
+                    dropped=True,
+                )
+            )
+            continue
+        query.append("variables", {"variable_name": name, "variable_value": value})
+
+
 def _write(plan: DashboardPlan, items: list[dict], owner: str) -> MigrationResult:
     # The queries below bind to whatever the map holds, so the twins have to
     # exist before the first one is written.
@@ -622,6 +670,7 @@ def _write(plan: DashboardPlan, items: list[dict], owner: str) -> MigrationResul
         query.is_builder_query = query_plan.kind == "builder"
         query.is_native_query = query_plan.kind == "sql"
         query.is_script_query = query_plan.kind == "code"
+        _carry_variables(query, query_plan)
         query.insert(ignore_permissions=True)
         result.query_names[query_plan.source] = query.name
 
