@@ -396,26 +396,71 @@ def preview_v2_dashboard(dashboard: str) -> dict:
 
 SCAN_CACHE_KEY = "insights_v2_migration_scan"
 SCAN_CACHE_TTL = 30 * 60
+SCAN_JOB_ID = "insights_v2_migration_scan"
 
 
 @insights_whitelist(role=MIGRATION_ROLE)
 def scan_v2_dashboards(refresh: bool = False) -> dict:
-    """Preview every v2 dashboard at once, so the page can sort them into groups.
+    """The triage of every v2 dashboard, or a promise that one is being built.
 
-    One call rather than one per dashboard: a preview is a closure walk and a
-    translation, all of it in Python over rows this request already has open,
-    and the round trip is what a client-side loop would spend most of its time
-    in. The answer is cached for the same reason it is batched - a triage is
-    read far more often than the v2 rows change - and `refresh` is how the user
-    says the rows did change.
+    Planning one dashboard is a closure walk and a translation, and this reads
+    every dashboard on the site, so the work runs on a worker and the answer is
+    cached. The caller polls this same endpoint until `status` is `ready`.
+
+    A refresh keeps serving the rows it has while the new ones are built. The
+    page then dims instead of emptying, which is what an admin who just
+    migrated something is looking at.
     """
     if not _v2_installed():
-        return {"available": False, "dashboards": [], "scanned_at": None}
+        return {"available": False, "status": "ready", "dashboards": [], "scanned_at": None}
 
-    cached = None if refresh else frappe.cache().get_value(SCAN_CACHE_KEY)
-    if cached:
+    cached = frappe.cache().get_value(SCAN_CACHE_KEY)
+    if cached and not refresh:
         return cached
 
+    if not is_job_enqueued(SCAN_JOB_ID):
+        frappe.enqueue(
+            "insights.api.v2_migration.run_v2_dashboard_scan",
+            queue=MIGRATION_QUEUE,
+            timeout=MIGRATION_TIMEOUT,
+            job_id=SCAN_JOB_ID,
+            deduplicate=True,
+        )
+
+    stale = cached or {}
+    return {
+        "available": True,
+        "status": "scanning",
+        "dashboards": stale.get("dashboards", []),
+        "scanned_at": stale.get("scanned_at"),
+    }
+
+
+def run_v2_dashboard_scan() -> dict:
+    """Build the triage and cache it.
+
+    Not whitelisted: it is reached through the queue, and `scan_v2_dashboards`
+    is the gate in front of it.
+    """
+    try:
+        scan = _build_scan()
+    except Exception:
+        frappe.log_error("v2 migration scan failed")
+        scan = {
+            "available": True,
+            "status": "failed",
+            "dashboards": [],
+            "scanned_at": frappe.utils.now(),
+            "error": frappe._("The scan could not be built. Check the error log."),
+        }
+
+    # Cached even when it failed, so the page stops asking. `refresh` is how the
+    # admin says to try again.
+    frappe.cache().set_value(SCAN_CACHE_KEY, scan, expires_in_sec=SCAN_CACHE_TTL)
+    return scan
+
+
+def _build_scan() -> dict:
     rows = frappe.db.sql(
         f"select name from `tab{V2_DASHBOARD}` order by modified desc limit %(limit)s",
         {"limit": MAX_LIST_LIMIT},
@@ -437,14 +482,14 @@ def scan_v2_dashboards(refresh: bool = False) -> dict:
 
     scan = {
         "available": True,
+        "status": "ready",
         "dashboards": dashboards,
         "scanned_at": frappe.utils.now(),
     }
-    frappe.cache().set_value(SCAN_CACHE_KEY, scan, expires_in_sec=SCAN_CACHE_TTL)
 
     # The shape of one site's v2 estate, which nothing else reports. Only on a
-    # real scan - a cache hit returned above - and once a day, because an estate
-    # changes far more slowly than an admin reloads the page.
+    # real scan - a cache hit never reaches here - and once a day, because an
+    # estate changes far more slowly than an admin reloads the page.
     verdicts = collections.Counter(d["verdict"] for d in dashboards)
     _capture(
         "v2_migration_scanned",

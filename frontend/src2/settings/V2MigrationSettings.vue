@@ -32,7 +32,10 @@ onMounted(() => {
 	store.loadNudge()
 	store.startPolling()
 })
-onBeforeUnmount(() => store.stopPolling())
+onBeforeUnmount(() => {
+	store.stopPolling()
+	store.stopScanPolling()
+})
 
 // Hiding the reminder reaches every user on the site and is one click away in
 // the sidebar. This is the way back, on the page that owns the migration.

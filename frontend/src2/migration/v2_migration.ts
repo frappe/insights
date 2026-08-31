@@ -123,6 +123,7 @@ function makeStore() {
 	const scanError = ref('')
 
 	let pollTimer: ReturnType<typeof setTimeout> | undefined
+	let scanTimer: ReturnType<typeof setTimeout> | undefined
 
 	const nudge = reactive<MigrationNudge>({
 		show: false,
@@ -156,31 +157,35 @@ function makeStore() {
 		else await loadNudge()
 	}
 
-	async function scan(refresh = false) {
+	/** The server builds the triage on a worker, so this asks and then keeps
+	 * asking until it is built. A refresh serves the rows it already has while
+	 * the new ones are built, so the page dims instead of emptying. */
+	function scan(refresh = false) {
+		stopScanPolling()
 		scanning.value = true
 		scanError.value = ''
+		return readScan(refresh)
+	}
+
+	async function readScan(refresh: boolean) {
 		try {
 			const data: any = await call('insights.api.v2_migration.scan_v2_dashboards', {
 				refresh: refresh ? 1 : 0,
 			})
 			unavailable.value = !data?.available
-			dashboards.value = (data?.dashboards || []) as DashboardScan[]
+			applyScan((data?.dashboards || []) as DashboardScan[])
 			scannedAt.value = data?.scanned_at || ''
-			// A dashboard migrated by an earlier visit has no live job, so the scan
-			// itself is what marks it done.
-			dashboards.value.forEach((d) => {
-				if (d.migrated_dashboard) {
-					statuses[d.dashboard] = {
-						status: 'migrated',
-						workbook: d.migrated_workbook,
-						dashboard: d.migrated_dashboard,
-						error: null,
-						verification: d.verification,
-					}
-				}
-			})
+
+			if (data?.status === 'scanning') {
+				scanTimer = setTimeout(() => readScan(false), POLL_INTERVAL)
+				return dashboards.value
+			}
+
+			scanning.value = false
+			if (data?.status === 'failed') scanError.value = data?.error || ''
 			return dashboards.value
 		} catch (err: any) {
+			scanning.value = false
 			const message = getErrorMessage(err)
 			dashboards.value = []
 			if (isMissingDoctype(message)) {
@@ -189,9 +194,29 @@ function makeStore() {
 				scanError.value = message
 			}
 			return []
-		} finally {
-			scanning.value = false
 		}
+	}
+
+	function applyScan(rows: DashboardScan[]) {
+		dashboards.value = rows
+		// A dashboard migrated by an earlier visit has no live job, so the scan
+		// itself is what marks it done.
+		rows.forEach((d) => {
+			if (d.migrated_dashboard) {
+				statuses[d.dashboard] = {
+					status: 'migrated',
+					workbook: d.migrated_workbook,
+					dashboard: d.migrated_dashboard,
+					error: null,
+					verification: d.verification,
+				}
+			}
+		})
+	}
+
+	function stopScanPolling() {
+		if (scanTimer) clearTimeout(scanTimer)
+		scanTimer = undefined
 	}
 
 	async function getVerification(dashboard: string): Promise<Verification | null> {
@@ -291,6 +316,7 @@ function makeStore() {
 		loadNudge,
 		setNudgeHidden,
 		scan,
+		stopScanPolling,
 		stateOf,
 		getVerification,
 		migrateDashboards,

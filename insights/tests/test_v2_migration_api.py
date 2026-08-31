@@ -34,6 +34,7 @@ from insights.api.v2_migration import (
     MAX_DASHBOARDS,
     NUDGE_HIDDEN_KEY,
     SCAN_CACHE_KEY,
+    SCAN_JOB_ID,
     _v2_last_used,
     get_v2_dashboards,
     get_v2_migration_nudge,
@@ -43,6 +44,7 @@ from insights.api.v2_migration import (
     migrate_v2_dashboards,
     preview_v2_dashboard,
     run_v2_dashboard_migration,
+    run_v2_dashboard_scan,
     scan_v2_dashboards,
     set_v2_migration_nudge,
     verification_key,
@@ -336,7 +338,9 @@ class TestV2MigrationAPI(InsightsIntegrationTestCase):
     # -- the scan ----------------------------------------------------------
 
     def scanned(self):
-        return {row["dashboard"]: row for row in scan_v2_dashboards(refresh=True)["dashboards"]}
+        """What an admin sees once the queued scan has run."""
+        run_v2_dashboard_scan()
+        return {row["dashboard"]: row for row in scan_v2_dashboards()["dashboards"]}
 
     def test_the_scan_gives_every_dashboard_a_verdict(self):
         row = self.scanned()[DASHBOARD]
@@ -350,21 +354,43 @@ class TestV2MigrationAPI(InsightsIntegrationTestCase):
         self.assertEqual(row["verdict"], "migrated")
         self.assertTrue(row["migrated_workbook"])
 
-    def test_the_scan_is_cached_until_it_is_refreshed(self):
-        scan_v2_dashboards(refresh=True)
-        with patch("insights.api.v2_migration._plan_for") as planned:
-            scan_v2_dashboards()
+    def test_the_endpoint_plans_nothing_on_the_request(self):
+        with patch("frappe.enqueue") as enqueue, patch("insights.api.v2_migration._plan_for") as planned:
+            answer = scan_v2_dashboards()
         planned.assert_not_called()
+        self.assertEqual(answer["status"], "scanning")
+        self.assertEqual(enqueue.call_args.kwargs["job_id"], SCAN_JOB_ID)
+
+    def test_the_scan_is_cached_until_it_is_refreshed(self):
+        self.scanned()
+        with patch("insights.api.v2_migration._plan_for") as planned, patch("frappe.enqueue") as enqueue:
+            self.assertEqual(scan_v2_dashboards()["status"], "ready")
+        planned.assert_not_called()
+        enqueue.assert_not_called()
+
+    def test_a_refresh_serves_the_rows_it_has_while_the_new_ones_are_built(self):
+        self.scanned()
+        with patch("frappe.enqueue") as enqueue:
+            answer = scan_v2_dashboards(refresh=True)
+        self.assertEqual(answer["status"], "scanning")
+        self.assertIn(DASHBOARD, [row["dashboard"] for row in answer["dashboards"]])
+        enqueue.assert_called_once()
 
     def test_a_migration_drops_the_cached_scan(self):
-        scan_v2_dashboards(refresh=True)
+        self.scanned()
         run_v2_dashboard_migration(DASHBOARD)
-        cached = {row["dashboard"]: row for row in scan_v2_dashboards()["dashboards"]}
-        self.assertEqual(cached[DASHBOARD]["verdict"], "migrated")
+        self.assertEqual(self.scanned()[DASHBOARD]["verdict"], "migrated")
+
+    def test_a_failed_scan_is_cached_so_the_page_stops_asking(self):
+        with patch("insights.api.v2_migration._build_scan", side_effect=Exception("boom")):
+            run_v2_dashboard_scan()
+        answer = scan_v2_dashboards()
+        self.assertEqual(answer["status"], "failed")
+        self.assertTrue(answer["error"])
 
     def test_the_scan_writes_nothing(self):
         before = self.v3_row_counts()
-        scan_v2_dashboards(refresh=True)
+        run_v2_dashboard_scan()
         self.assertEqual(self.v3_row_counts(), before)
 
     # -- findings by name --------------------------------------------------
