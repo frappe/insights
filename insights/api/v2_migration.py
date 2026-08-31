@@ -566,6 +566,10 @@ def get_v2_migration_nudge() -> dict:
         "show": bool(last_used) and get_datetime(last_used) > cutoff,
         "waiting": waiting,
         "can_migrate": _can_migrate(),
+        # A hidden nudge counts nothing waiting, so `waiting` alone cannot tell
+        # "the site is done" from "somebody switched this off". The page that
+        # offers to switch it back on has to know which.
+        "hidden": hidden,
     }
 
     # The top of the funnel: this user was offered the migration today. Which
@@ -592,17 +596,28 @@ def _can_migrate() -> bool:
 
 
 @insights_whitelist(role="Insights Admin")
-def hide_v2_migration_nudge() -> None:
-    """Stop offering the migration, for everyone, for good.
+def set_v2_migration_nudge(hidden: bool) -> None:
+    """Stop offering the migration, or start offering it again.
 
     A global default and not a browser key. Whoever decides the site is done
     with v2 decides it for the site: a browser key would ask them again on
     their next machine, and would leave every other admin still being asked.
+
+    One endpoint that takes the state, and not a `hide` beside a `show`. The two
+    are one decision, and the site-wide reach is what makes the way back
+    necessary - an admin who hides this for everyone from a one-click banner
+    must be able to undo it from the page that owns the migration.
     """
-    # Counted before the write, because after it `_v2_dashboards_waiting` reads
-    # zero. How much a site walks away from is the whole point of the event.
-    _capture("v2_migration_dismissed", {"waiting": _v2_dashboards_waiting()})
-    frappe.db.set_global(NUDGE_HIDDEN_KEY, "1")
+    if hidden:
+        # Counted before the write, because after it `_v2_dashboards_waiting`
+        # reads zero. How much a site walks away from is the point of the event.
+        _capture("v2_migration_dismissed", {"waiting": _v2_dashboards_waiting()})
+        frappe.db.set_global(NUDGE_HIDDEN_KEY, "1")
+        return
+
+    frappe.db.set_global(NUDGE_HIDDEN_KEY, None)
+    # How often the way back is used says whether hiding it was too easy.
+    _capture("v2_migration_restored", {"waiting": _v2_dashboards_waiting()})
 
 
 @insights_whitelist(role="Insights Admin")

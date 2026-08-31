@@ -14,6 +14,7 @@ import useV2MigrationStore, {
 	BadgeTheme,
 	VERDICT_LABELS,
 	VERDICT_THEMES,
+	skipSentence,
 	verdictSentence,
 	verificationSentence,
 } from '../migration/v2_migration'
@@ -28,38 +29,62 @@ onMounted(() => {
 	capture('v2_migration_page_opened', { from: settingsOpenedFrom.value || 'settings' })
 	settingsOpenedFrom.value = ''
 	store.scan()
+	store.loadNudge()
 	store.startPolling()
 })
 onBeforeUnmount(() => store.stopPolling())
 
-/** What a row is right now. A verdict, except that a running job outranks the
- * verdict the scan recorded before the job started. */
-type RowState = 'ready' | 'review' | 'blocked' | 'migrating' | 'migrated'
+// Hiding the reminder reaches every user on the site and is one click away in
+// the sidebar. This is the way back, on the page that owns the migration.
+const restoring = ref(false)
+async function restoreNudge() {
+	restoring.value = true
+	try {
+		await store.setNudgeHidden(false)
+	} finally {
+		restoring.value = false
+	}
+}
+
+/** What a row is right now. A verdict, except that the job outranks the verdict
+ * the scan recorded before the job started - it ran later, and it wrote. */
+type RowState = 'ready' | 'review' | 'unreadable' | 'migrating' | 'failed' | 'migrated'
 
 const STATE_LABELS: Record<RowState, string> = {
 	...VERDICT_LABELS,
 	migrating: __('Migrating'),
+	failed: __('Could not migrate'),
 }
 
 const STATE_THEMES: Record<RowState, BadgeTheme> = {
 	...VERDICT_THEMES,
 	migrating: 'blue',
+	failed: 'red',
 }
 
-/** Only these two are a decision the user has yet to make. */
-const MIGRATABLE: RowState[] = ['ready', 'review']
+/** What the user can still act on. A failure is one of them: nothing holds the
+ * reason for long, so running it again is the only way to learn more. */
+const MIGRATABLE: RowState[] = ['ready', 'review', 'failed']
 
 type Row = DashboardScan & { state: RowState; sentence: string }
 
 function stateOf(dashboard: DashboardScan): RowState {
 	const job = store.stateOf(dashboard.dashboard)
 	if (job === 'queued' || job === 'in_progress') return 'migrating'
-	if (dashboard.verdict === 'unreadable') return 'blocked'
+	if (job === 'failed') return 'failed'
 	return dashboard.verdict as RowState
 }
 
 function sentenceOf(dashboard: DashboardScan, state: RowState) {
 	if (state === 'migrating') return __('Migrating now')
+	if (state === 'failed') {
+		// The job's own last line. It is the only account of the failure that
+		// exists - RQ expires the record, and nothing else stored it.
+		return (
+			store.statuses[dashboard.dashboard]?.error ||
+			__('The migration stopped before it wrote anything. Try it again.')
+		)
+	}
 	if (state === 'migrated') {
 		return verificationSentence(dashboard.verification) || __('Copied into a v3 workbook.')
 	}
@@ -80,10 +105,12 @@ const stateFilter = ref<RowState | 'all'>('all')
 
 const filterOptions = computed(() => [
 	{ label: __('All'), value: 'all' },
-	...(['ready', 'review', 'blocked', 'migrating', 'migrated'] as RowState[]).map((state) => ({
-		label: STATE_LABELS[state],
-		value: state,
-	})),
+	...(['ready', 'review', 'unreadable', 'migrating', 'failed', 'migrated'] as RowState[]).map(
+		(state) => ({
+			label: STATE_LABELS[state],
+			value: state,
+		}),
+	),
 ])
 
 const rows = computed(() => {
@@ -210,20 +237,31 @@ async function migrate(targets: Row[]) {
 	const names = targets.filter((d) => MIGRATABLE.includes(d.state)).map((d) => d.dashboard)
 	if (!names.length) return
 	try {
-		const result = await store.migrateDashboards(names)
+		const { accepted, skipped } = await store.migrateDashboards(names)
 		showConfirm.value = false
 		showDialog.value = false
 		selected.value = new Set()
+
+		// The server decides what it takes, and it says why it refused the rest.
+		// The page selected these rows, so it owes the user that answer.
+		const refused = skipSentence(skipped)
+		if (!accepted.length) {
+			createToast({
+				variant: 'info',
+				title: __('Nothing to migrate'),
+				message: refused || __('None of these could be started.'),
+			})
+			return
+		}
+
+		const started =
+			accepted.length === 1
+				? __('1 dashboard is being copied into v3.')
+				: __('{0} dashboards are being copied into v3.', String(accepted.length))
 		createToast({
 			variant: 'success',
 			title: __('Migration started'),
-			message:
-				result.accepted.length === 1
-					? __('1 dashboard is being copied into v3.')
-					: __(
-							'{0} dashboards are being copied into v3.',
-							String(result.accepted.length),
-					  ),
+			message: refused ? `${started} ${refused}` : started,
 		})
 	} catch (err: any) {
 		createToast({
@@ -259,6 +297,21 @@ async function migrate(targets: Row[]) {
 					@click="migrateSelected"
 				/>
 			</div>
+		</div>
+
+		<div
+			v-if="store.nudge.hidden"
+			class="flex flex-shrink-0 items-center justify-between gap-2 rounded border border-outline-gray-2 bg-surface-gray-1 px-4 py-2.5"
+		>
+			<p class="text-p-sm text-ink-gray-6">
+				{{ __('The reminder to move from v2 is hidden for everyone on this site.') }}
+			</p>
+			<Button
+				:label="__('Show it again')"
+				variant="outline"
+				:loading="restoring"
+				@click="restoreNudge"
+			/>
 		</div>
 
 		<div
@@ -356,13 +409,18 @@ async function migrate(targets: Row[]) {
 					{{ __('Open one to see what changes. Then migrate it.') }}
 				</p>
 				<p>
-					<span class="font-medium text-ink-gray-8">{{ VERDICT_LABELS.blocked }}</span>
+					<span class="font-medium text-ink-gray-8">{{ VERDICT_LABELS.unreadable }}</span>
 					-
 					{{
 						__(
-							'These read from a data source that is not set up in v3. Add it under Data Sources. Then scan again.',
+							'Something in this one cannot be read. Migrate it on its own to see why.',
 						)
 					}}
+				</p>
+				<p>
+					<span class="font-medium text-ink-gray-8">{{ STATE_LABELS.failed }}</span>
+					-
+					{{ __('The migration stopped. Nothing was written. Run it again.') }}
 				</p>
 				<p>
 					<span class="font-medium text-ink-gray-8">{{ VERDICT_LABELS.migrated }}</span>

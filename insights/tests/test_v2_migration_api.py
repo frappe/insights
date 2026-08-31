@@ -39,12 +39,12 @@ from insights.api.v2_migration import (
     get_v2_migration_nudge,
     get_v2_migration_status,
     get_v2_verification,
-    hide_v2_migration_nudge,
     job_id_for,
     migrate_v2_dashboards,
     preview_v2_dashboard,
     run_v2_dashboard_migration,
     scan_v2_dashboards,
+    set_v2_migration_nudge,
     verification_key,
 )
 from insights.tests.base import InsightsIntegrationTestCase
@@ -445,7 +445,7 @@ class TestV2MigrationAPI(InsightsIntegrationTestCase):
         self.assertTrue(nudge["waiting"])
 
     def test_hiding_the_nudge_hides_it_for_every_user(self):
-        hide_v2_migration_nudge()
+        set_v2_migration_nudge(hidden=True)
         try:
             self.assertFalse(get_v2_migration_nudge()["show"])
             with as_user(USER_1):
@@ -453,13 +453,35 @@ class TestV2MigrationAPI(InsightsIntegrationTestCase):
         finally:
             frappe.db.set_global(NUDGE_HIDDEN_KEY, None)
 
+    def test_the_nudge_says_it_was_hidden_rather_than_finished(self):
+        self.assertFalse(get_v2_migration_nudge()["hidden"])
+        set_v2_migration_nudge(hidden=True)
+        try:
+            nudge = get_v2_migration_nudge()
+            # Both read zero waiting, so `hidden` is the only thing that tells
+            # the page which of the two happened.
+            self.assertTrue(nudge["hidden"])
+            self.assertEqual(nudge["waiting"], 0)
+        finally:
+            frappe.db.set_global(NUDGE_HIDDEN_KEY, None)
+
+    def test_showing_the_nudge_again_brings_it_back(self):
+        set_v2_migration_nudge(hidden=True)
+        self.assertFalse(get_v2_migration_nudge()["show"])
+
+        set_v2_migration_nudge(hidden=False)
+        nudge = get_v2_migration_nudge()
+        self.assertTrue(nudge["show"])
+        self.assertFalse(nudge["hidden"])
+        self.assertTrue(nudge["waiting"])
+
     def test_an_insights_user_reads_the_nudge_but_cannot_act_on_it(self):
         with as_user(USER_1):
             nudge = get_v2_migration_nudge()
             self.assertTrue(nudge["show"])
             self.assertFalse(nudge["can_migrate"])
             with self.assertRaises(frappe.PermissionError):
-                hide_v2_migration_nudge()
+                set_v2_migration_nudge(hidden=True)
 
     # -- verification ------------------------------------------------------
 

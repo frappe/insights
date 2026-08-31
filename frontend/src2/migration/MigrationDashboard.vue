@@ -33,6 +33,7 @@ const migrated = computed(() => props.dashboard?.verdict === 'migrated')
 const inFlight = computed(
 	() => status.value?.status === 'queued' || status.value?.status === 'in_progress',
 )
+const failed = computed(() => status.value?.status === 'failed')
 const canMigrate = computed(() => Boolean(props.dashboard) && !migrated.value && !inFlight.value)
 
 // The differing charts are named on the summary; the reason each one differs is
@@ -56,12 +57,28 @@ const itemsInOrder = computed(() => {
  * compare is the live question, so it becomes the description. */
 const description = computed(() => {
 	if (!props.dashboard) return ''
+	if (inFlight.value) return __('Migrating now.')
+	if (failed.value) {
+		return (
+			status.value?.error ||
+			__('The migration stopped before it wrote anything. Try it again.')
+		)
+	}
 	if (migrated.value && props.dashboard.verification) {
 		return (
 			verificationSentence(props.dashboard.verification) || verdictSentence(props.dashboard)
 		)
 	}
 	return verdictSentence(props.dashboard)
+})
+
+/** The job outranks the scan's verdict here for the reason the list uses: it ran
+ * later, and it wrote. */
+const badge = computed(() => {
+	if (inFlight.value) return { label: __('Migrating'), theme: 'blue' as const }
+	if (failed.value) return { label: __('Could not migrate'), theme: 'red' as const }
+	const verdict = props.dashboard!.verdict
+	return { label: VERDICT_LABELS[verdict], theme: VERDICT_THEMES[verdict] }
 })
 
 const differingQueries = computed(
@@ -80,11 +97,7 @@ const differingQueries = computed(
 				<h3 class="text-2xl font-semibold leading-6 text-ink-gray-9">
 					{{ props.dashboard.title }}
 				</h3>
-				<Badge
-					variant="subtle"
-					:theme="VERDICT_THEMES[props.dashboard.verdict]"
-					:label="VERDICT_LABELS[props.dashboard.verdict]"
-				/>
+				<Badge variant="subtle" :theme="badge.theme" :label="badge.label" />
 			</div>
 		</template>
 

@@ -3,7 +3,7 @@ import { reactive, ref } from 'vue'
 import { getErrorMessage } from '../helpers'
 import { __ } from '../translation'
 
-export type MigrationVerdict = 'ready' | 'review' | 'blocked' | 'migrated' | 'unreadable'
+export type MigrationVerdict = 'ready' | 'review' | 'migrated' | 'unreadable'
 
 export type MigrationNote = {
 	kind: string
@@ -51,6 +51,9 @@ export type DashboardScan = {
 
 export type MigrationState = 'not_started' | 'queued' | 'in_progress' | 'failed' | 'migrated'
 
+/** One dashboard the server would not take, and why. */
+export type MigrationSkip = { dashboard: string; reason: string; detail: string }
+
 export type VerificationSummary = {
 	checked: number
 	same: number
@@ -97,6 +100,16 @@ function isMissingDoctype(message: string) {
 	return /DoesNotExist|1146|doesn't exist|does not exist|no such table/i.test(message)
 }
 
+/** What v3 says about offering the migration. The rule is the server's - see
+ * `get_v2_migration_nudge` - and this is where both v3 surfaces read it, so the
+ * banner and the migration page cannot disagree about it inside one session. */
+export type MigrationNudge = {
+	show: boolean
+	waiting: number
+	canMigrate: boolean
+	hidden: boolean
+}
+
 function makeStore() {
 	const dashboards = ref<DashboardScan[]>([])
 	const statuses = reactive<Record<string, MigrationStatus>>({})
@@ -110,6 +123,38 @@ function makeStore() {
 	const scanError = ref('')
 
 	let pollTimer: ReturnType<typeof setTimeout> | undefined
+
+	const nudge = reactive<MigrationNudge>({
+		show: false,
+		waiting: 0,
+		canMigrate: false,
+		hidden: false,
+	})
+
+	async function loadNudge() {
+		try {
+			const data: any = await call('insights.api.v2_migration.get_v2_migration_nudge')
+			nudge.show = Boolean(data?.show)
+			nudge.waiting = data?.waiting || 0
+			nudge.canMigrate = Boolean(data?.can_migrate)
+			nudge.hidden = Boolean(data?.hidden)
+		} catch {
+			// An Insights without the migrator answers 404, which is not a
+			// failure: nothing is offered, and the surfaces render nothing.
+		}
+		return nudge
+	}
+
+	/** Hiding reaches every user on the site, so the way back has to reach them
+	 * too. Both directions are the one endpoint. */
+	async function setNudgeHidden(hidden: boolean) {
+		// A real boolean, not 1/0: `call` posts JSON, and frappe reads a JSON
+		// `false` as False. A string "0" would come back True.
+		await call('insights.api.v2_migration.set_v2_migration_nudge', { hidden })
+		nudge.hidden = hidden
+		if (hidden) nudge.show = false
+		else await loadNudge()
+	}
 
 	async function scan(refresh = false) {
 		scanning.value = true
@@ -155,7 +200,7 @@ function makeStore() {
 
 	async function migrateDashboards(names: string[]) {
 		const accepted: string[] = []
-		const skipped: { dashboard: string; reason: string; detail: string }[] = []
+		const skipped: MigrationSkip[] = []
 		if (!names.length) return { accepted, skipped }
 
 		migrating.value = true
@@ -242,6 +287,9 @@ function makeStore() {
 		migrating,
 		unavailable,
 		scanError,
+		nudge,
+		loadNudge,
+		setNudgeHidden,
 		scan,
 		stateOf,
 		getVerification,
@@ -263,9 +311,8 @@ export default function useV2MigrationStore() {
 export const VERDICT_LABELS: Record<MigrationVerdict, string> = {
 	ready: __('Ready to migrate'),
 	review: __('Needs review'),
-	blocked: __("Can't migrate yet"),
 	migrated: __('Migrated'),
-	unreadable: __("Can't migrate yet"),
+	unreadable: __('Could not be read'),
 }
 
 /** Badge only accepts its own themes, so a plain `string` will not type-check. */
@@ -274,9 +321,39 @@ export type BadgeTheme = 'green' | 'orange' | 'red' | 'gray' | 'blue'
 export const VERDICT_THEMES: Record<MigrationVerdict, BadgeTheme> = {
 	ready: 'green',
 	review: 'orange',
-	blocked: 'red',
 	migrated: 'gray',
 	unreadable: 'red',
+}
+
+/** Why the server would not take a dashboard the user selected.
+ *
+ * `migrate_v2_dashboards` answers per dashboard so the caller can say what
+ * happened to a selection. The reasons are its own vocabulary, so they are
+ * spelled out here beside every other kind rather than in the page.
+ */
+const SKIP_PHRASES: Record<string, (count: number) => string> = {
+	not_found: (n) =>
+		n === 1 ? __('1 is no longer in v2.') : __('{0} are no longer in v2.', String(n)),
+	already_migrated: (n) =>
+		n === 1 ? __('1 is already migrated.') : __('{0} are already migrated.', String(n)),
+	in_progress: (n) =>
+		n === 1
+			? __('1 is already being migrated.')
+			: __('{0} are already being migrated.', String(n)),
+	unknown: (n) =>
+		n === 1 ? __('1 could not be started.') : __('{0} could not be started.', String(n)),
+}
+
+export function skipSentence(skipped: MigrationSkip[]) {
+	if (!skipped.length) return ''
+	const counts: Record<string, number> = {}
+	skipped.forEach((entry) => {
+		const reason = entry.reason in SKIP_PHRASES ? entry.reason : 'unknown'
+		counts[reason] = (counts[reason] || 0) + 1
+	})
+	return Object.entries(counts)
+		.map(([reason, count]) => SKIP_PHRASES[reason](count))
+		.join(' ')
 }
 
 /** What one finding means for the dashboard, said as a whole sentence.
@@ -311,7 +388,6 @@ const NOTE_SENTENCES: Record<string, string> = {
 	// the dashboard
 	public_not_carried: __('The v2 dashboard was public. The v3 copy stays private until you publish it.'),
 	circular_query_reference: __('Its queries reference each other in a loop. It cannot be migrated.'),
-	unresolved_data_source: __('Its data source is not set up in v3 yet.'),
 	// the query behind it
 	sql_floor: __('Part of the query has no v3 form. v3 runs the SQL that v2 ran.'),
 	dropped_filter: __('A filter has no v3 form and is dropped. This shows more rows than v2.'),
@@ -327,6 +403,42 @@ const NOTE_SENTENCES: Record<string, string> = {
 	unreadable_json: __('The query is stored in a form that v3 cannot read.'),
 	empty_script: __('The script is empty. It returns nothing.'),
 	legacy_column_list: __('The query is in an old v2 format. Its columns are read as written.'),
+	legacy_query: __("This query is in v2's oldest format. v3 runs the SQL that v2 ran."),
+	no_compiled_sql: __(
+		'This query has no v3 form, and v2 kept no SQL to fall back on. It returns nothing.',
+	),
+	unresolved_query_reference: __(
+		'It reads another v2 query that is not part of this migration. That part returns nothing.',
+	),
+	invalid_join: __('A join names no table or no column. v2 skipped it too, so nothing changes.'),
+	broken_filter: __(
+		'A filter value does not fit its column. The filter is dropped, so this shows more rows than v2.',
+	),
+	broken_in_v2: __('A formula that did not work in v2 either. It is dropped.'),
+	ambiguous_fragment: __(
+		'A formula names a column that more than one table has. v3 picks one, which may be the wrong one.',
+	),
+	grouped_loose_column: __(
+		'v2 showed this column without grouping by it. v3 groups by it, so there may be fewer rows.',
+	),
+	ignored_granularity: __('A date grouping that v2 did not apply. v3 does not apply it either.'),
+	granularity_part_type: __('This date part shows as a number in v3, where v2 showed text.'),
+	unsupported_transform: __('v3 has no such step. The query carries over without it.'),
+	cumulative_without_order: __(
+		'The running total has no sort order, so its numbers can come out in a different order.',
+	),
+	cumulative_column_renamed: __(
+		'The running total lands in a new column in v3, beside the original.',
+	),
+	script_result_shape: __(
+		'If the script returns a list of lists, its first row becomes data in v3. Return a DataFrame instead.',
+	),
+	script_calls_get_query_results: __(
+		'The script reads another v2 query with `get_query_results`, which v3 does not have. Point it at the migrated query.',
+	),
+	variable_value_unreadable: __(
+		'A script variable has no readable value in v2. It is not carried, and the script fails on its name.',
+	),
 }
 
 export function noteSentence(note: MigrationNote) {
