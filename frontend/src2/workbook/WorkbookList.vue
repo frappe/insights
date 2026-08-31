@@ -13,7 +13,6 @@ import { LayoutTemplate as LayoutTemplateIcon, PlusIcon, SearchIcon } from 'luci
 import { computed, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { wheneverChanges } from '../helpers'
-import V2MigrationCallout from '../migration/V2MigrationCallout.vue'
 import session from '../session'
 import { __ } from '../translation'
 import useUserStore from '../users/users'
@@ -172,7 +171,6 @@ watchEffect(() => {
 	<WorkbookTemplates v-model="showTemplates" :templates="templates" @refresh="fetchTemplates" />
 
 	<div class="mb-4 flex h-full flex-col gap-3 overflow-auto px-5 pt-3">
-		<V2MigrationCallout class="mt-1" :workbook-count="workbookStore.workbooks.length" />
 		<div class="flex items-center justify-between gap-2 overflow-visible py-1">
 			<FormControl
 				class="w-64"

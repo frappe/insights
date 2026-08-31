@@ -21,6 +21,7 @@
 		</div>
 		<div>
 			<DemoDataBanner v-if="!isSidebarCollapsed" class="m-2 p-2" />
+			<V2MigrationBanner v-if="!isSidebarCollapsed" class="m-2 p-2" />
 			<TrialBanner v-if="is_fc_site" :is-sidebar-collapsed="isSidebarCollapsed" />
 			<SidebarLink
 				:label="isSidebarCollapsed ? __('Expand') : __('Collapse')"
@@ -54,11 +55,13 @@ import {
 	PanelRightOpen,
 	SettingsIcon,
 } from 'lucide-vue-next'
-import { computed, ref } from 'vue'
-import useSettings, { showSettingsDialog } from '../settings/settings'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import useSettings, { settingsTab, showSettingsDialog } from '../settings/settings'
 import Settings from '../settings/Settings.vue'
 import SidebarLink from './SidebarLink.vue'
 import DemoDataBanner from './DemoDataBanner.vue'
+import V2MigrationBanner from './V2MigrationBanner.vue'
 import UserDropdown from './UserDropdown.vue'
 import { TrialBanner } from 'frappe-ui/frappe'
 import { __ } from '../translation'
@@ -67,6 +70,21 @@ const isSidebarCollapsed = useStorage('insights:sidebarCollapsed', false)
 
 const settings = useSettings()
 const is_fc_site = window.is_fc_site
+
+// `?settings=<tab>` opens the dialog on that tab. The settings live in a dialog
+// and not on a route, so this is the only way another app - v2 - can link into
+// one. The param is cleared, or a reload would reopen the dialog.
+const route = useRoute()
+const router = useRouter()
+onMounted(() => {
+	const tab = route.query.settings
+	if (!tab) return
+	settingsTab.value = String(tab)
+	showSettingsDialog.value = true
+	const query = { ...route.query }
+	delete query.settings
+	router.replace({ query })
+})
 
 const links = ref([
 	{
