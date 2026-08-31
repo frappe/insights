@@ -657,7 +657,10 @@ def v2_answer(sql: str, data_source: str, *, cap: int = DEFAULT_ROW_CAP, dialect
     parsed = _parse(sql, dialect) is not None
 
     if parsed and limit is None:
-        return backend.sql(f"{sql.strip().rstrip(';')} limit {int(cap)}").to_pandas()
+        # On its own line: a native query's SQL is the user's own text, and one
+        # ending in a `--` comment would swallow a cap appended after it - the
+        # statement still parses, and the whole table comes back.
+        return backend.sql(f"{sql.strip().rstrip(';')}\nlimit {int(cap)}").to_pandas()
     if parsed and limit <= cap:
         return backend.sql(sql).to_pandas()
     return backend.sql(sql).limit(cap).to_pandas()

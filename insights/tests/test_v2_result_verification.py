@@ -540,6 +540,17 @@ class TestResultVerification(InsightsIntegrationTestCase):
         self.assertEqual(list(answer.columns), ["Status", "Count of records "])
         self.assertGreater(len(answer), 0)
 
+    def test_a_trailing_comment_does_not_swallow_the_row_cap(self):
+        """A native query's SQL is the user's own text, comment and all.
+
+        Two rows and a cap of one, so a cap that never applied is visible. The
+        statement states no limit of its own, which is the path that appends one.
+        """
+        commented = "select 1 as a union all select 2 as a -- every row, please"
+        answer = v2_answer(commented, SITE_DB, dialect="mysql", cap=1)
+
+        self.assertEqual(len(answer), 1)
+
     # -- the verdicts ------------------------------------------------------
 
     def test_a_faithful_translation_verifies_as_the_same(self):
