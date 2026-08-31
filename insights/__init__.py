@@ -3,7 +3,7 @@
 
 from typing import TYPE_CHECKING
 
-__version__ = "3.12.6"
+__version__ = "3.13.0"
 
 if TYPE_CHECKING:
     from insights.insights.doctype.insights_data_source_v3.data_warehouse import Warehouse
