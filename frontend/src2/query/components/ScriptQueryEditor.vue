@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useTimeAgo } from '@vueuse/core'
-import { Braces, Bug, MoreHorizontal, Play } from 'lucide-vue-next'
+import { BookOpen, Braces, Bug, MoreHorizontal, Play } from 'lucide-vue-next'
 import { inject, ref } from 'vue'
 import Code from '../../components/Code.vue'
 import ContentEditable from '../../components/ContentEditable.vue'
@@ -19,7 +19,7 @@ const operation = query.getCodeOperation()
 const code = ref(operation ? operation.code : '')
 wheneverChanges(code, () => query.setCode({ code: code.value }), { debounce: 500 })
 
-const placeholder_script = `# Write your script here`
+const placeholder_script = `# assign rows to \`results\`, e.g. results = frappe.db.get_all("ToDo", fields=["name", "status"])`
 
 const showLogs = ref(false)
 const scriptLogs = ref<string[]>([])
@@ -122,6 +122,15 @@ function handleSaveVariables(variables: any[]) {
 							label: __('Logs'),
 							icon: Bug,
 							onClick: () => (showLogs = !showLogs),
+						},
+						{
+							label: __('Docs'),
+							icon: BookOpen,
+							onClick: () =>
+								window.open(
+									'https://docs.frappe.io/insights/querying/script-query-api',
+									'_blank',
+								),
 						},
 					]"
 				/>
