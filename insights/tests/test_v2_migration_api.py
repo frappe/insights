@@ -54,7 +54,9 @@ from insights.tests.factories import (
     DT,
     USER_1,
     as_user,
+    create_test_query,
     create_test_user,
+    create_test_workbook,
     delete_users,
 )
 from insights.tests.test_v2_workbook_assembly import (
@@ -387,6 +389,24 @@ class TestV2MigrationAPI(InsightsIntegrationTestCase):
         answer = scan_v2_dashboards()
         self.assertEqual(answer["status"], "failed")
         self.assertTrue(answer["error"])
+
+    def test_the_scan_counts_the_sql_columns_still_out_there(self):
+        with patch("insights.api.v2_migration._capture") as captured:
+            run_v2_dashboard_scan()
+        before = captured.call_args.args[1]["queries_with_sql_column"]
+
+        workbook = create_test_workbook("Administrator", title="carries a sql column")
+        create_test_query(
+            "Administrator",
+            workbook.name,
+            operations=[{"type": "sql_column", "new_name": "x", "data_type": "Integer", "fragment": "1"}],
+        )
+        self.addCleanup(frappe.delete_doc, DT.WORKBOOK, workbook.name, force=True)
+
+        frappe.cache().delete_value(SCAN_CACHE_KEY)
+        with patch("insights.api.v2_migration._capture") as captured:
+            run_v2_dashboard_scan()
+        self.assertEqual(captured.call_args.args[1]["queries_with_sql_column"], before + 1)
 
     def test_the_scan_writes_nothing(self):
         before = self.v3_row_counts()

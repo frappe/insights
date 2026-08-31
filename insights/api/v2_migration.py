@@ -47,6 +47,7 @@ from insights.migrator.v2_workbooks import (
     V2_DASHBOARD_ITEM,
     V2_QUERY,
     V3_DASHBOARD,
+    V3_QUERY,
     candidate_roots,
     format_report,
     load_v2_dashboard,
@@ -499,10 +500,25 @@ def _build_scan() -> dict:
             "review": verdicts["review"],
             "migrated": verdicts["migrated"],
             "unreadable": verdicts["unreadable"],
+            "queries_with_sql_column": _queries_with_sql_column(),
         },
         interval="1d",
     )
     return scan
+
+
+def _queries_with_sql_column() -> int:
+    """How many v3 queries still carry a `sql_column` step.
+
+    `sql_column` exists for the constructs v3 has no expression for, and the
+    migrator is the only thing that writes one. This is the number that says
+    when the operation type can be dropped: it falls as users rewrite those
+    queries as formulas, and a zero across the fleet is the go-ahead.
+    """
+    return frappe.db.sql(
+        f"select count(*) from `tab{V3_QUERY}` where operations like %s",
+        ('%"sql_column"%',),
+    )[0][0]
 
 
 def _unreadable(name: str, landed: dict) -> dict:
