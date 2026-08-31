@@ -137,8 +137,8 @@ export type Mutate = { type: 'mutate' } & MutateArgs
 export type SQLColumnArgs = {
 	new_name: string
 	data_type: ColumnDataType
-	fragment: string
-	data_source?: string
+	raw_sql: string
+	data_source: string
 }
 export type SQLColumn = { type: 'sql_column' } & SQLColumnArgs
 

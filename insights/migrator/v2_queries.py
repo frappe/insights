@@ -907,14 +907,12 @@ class _Builder:
             column_name=label,
         )
 
-    def sql_column(self, name, fragment):
-        # `data_source` has to be set, or sqlglot parses v2's backtick
-        # identifiers with the default dialect and rejects them.
+    def sql_column(self, name, raw_sql):
         return {
             "type": "sql_column",
             "new_name": name,
             "data_type": "Auto",
-            "fragment": fragment,
+            "raw_sql": raw_sql,
             "data_source": self.data_source,
         }
 
