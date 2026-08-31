@@ -57,7 +57,11 @@ import {
 } from 'lucide-vue-next'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import useSettings, { settingsTab, showSettingsDialog } from '../settings/settings'
+import useSettings, {
+	settingsOpenedFrom,
+	settingsTab,
+	showSettingsDialog,
+} from '../settings/settings'
 import Settings from '../settings/Settings.vue'
 import SidebarLink from './SidebarLink.vue'
 import DemoDataBanner from './DemoDataBanner.vue'
@@ -80,6 +84,8 @@ onMounted(() => {
 	const tab = route.query.settings
 	if (!tab) return
 	settingsTab.value = String(tab)
+	// Only v2 links in, so the param is the whole of what "came from v2" means.
+	settingsOpenedFrom.value = 'v2'
 	showSettingsDialog.value = true
 	const query = { ...route.query }
 	delete query.settings

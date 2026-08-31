@@ -10,6 +10,10 @@ export const showSettingsDialog = ref(false)
 /** Set with `showSettingsDialog` to open the dialog on a named tab. */
 export const settingsTab = ref('')
 
+/** Which surface asked for that tab, for telemetry. Set it beside `settingsTab`;
+ * the tab reads it once and clears it. Empty means the user found the tab. */
+export const settingsOpenedFrom = ref('')
+
 let settings = undefined as Settings | undefined
 export default function useSettings() {
 	if (settings) return settings

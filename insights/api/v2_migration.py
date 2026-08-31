@@ -29,11 +29,14 @@ The page in front of this asks one question - "what happens to my dashboard" -
 so the reading endpoints answer per named item, not per gap kind.
 """
 
+import collections
 import json
+from contextlib import suppress
 
 import frappe
 from frappe.utils import add_days, get_datetime, now_datetime
 from frappe.utils.background_jobs import JobStatus, get_job, is_job_enqueued
+from frappe.utils.telemetry import capture
 
 from insights.decorators import insights_whitelist
 from insights.migrator.v2_charts import chart_from_dashboard_item, parse_json
@@ -296,6 +299,34 @@ def _plan_for(dashboard: str):
     return plan, items
 
 
+# -- telemetry --------------------------------------------------------------
+#
+# The browser reports intent - a nudge clicked, a page opened, a dashboard read.
+# This module reports outcome, because an outcome is made on a worker and the
+# admin who started it may have closed the page long before it lands. A migrator
+# that only reported when somebody watched would flatter itself.
+#
+# Nothing here carries a dashboard title, a query name, a column or an error
+# message. Every property is a count, a verdict, or a gap kind - fixed strings
+# this repo wrote, and the same vocabulary the page shows the user.
+
+
+def _capture(event: str, properties: dict, interval: str | None = None) -> None:
+    """Telemetry must never be the reason a migration fails."""
+    with suppress(Exception):
+        capture(event, "insights", properties=properties, interval=interval)
+
+
+def _gap_kinds(plan) -> list[str]:
+    """The distinct gap kinds one plan hit, sorted.
+
+    The kinds and not the count per kind: what a fleet report answers is "which
+    gap does the migrator still not cover", and one dashboard hitting `sql_floor`
+    forty times is the same answer as hitting it once.
+    """
+    return sorted({gap.kind for _, gap in plan.all_gaps()})
+
+
 # -- endpoints --------------------------------------------------------------
 
 
@@ -406,6 +437,22 @@ def scan_v2_dashboards(refresh: bool = False) -> dict:
         "scanned_at": frappe.utils.now(),
     }
     frappe.cache().set_value(SCAN_CACHE_KEY, scan, expires_in_sec=SCAN_CACHE_TTL)
+
+    # The shape of one site's v2 estate, which nothing else reports. Only on a
+    # real scan - a cache hit returned above - and once a day, because an estate
+    # changes far more slowly than an admin reloads the page.
+    verdicts = collections.Counter(d["verdict"] for d in dashboards)
+    _capture(
+        "v2_migration_scanned",
+        {
+            "dashboards": len(dashboards),
+            "ready": verdicts["ready"],
+            "review": verdicts["review"],
+            "migrated": verdicts["migrated"],
+            "unreadable": verdicts["unreadable"],
+        },
+        interval="1d",
+    )
     return scan
 
 
@@ -515,11 +562,23 @@ def get_v2_migration_nudge() -> dict:
     waiting = 0 if hidden else _v2_dashboards_waiting()
     last_used = _v2_last_used() if waiting else None
     cutoff = add_days(now_datetime(), -V2_ACTIVE_WITHIN_DAYS)
-    return {
+    nudge = {
         "show": bool(last_used) and get_datetime(last_used) > cutoff,
         "waiting": waiting,
         "can_migrate": _can_migrate(),
     }
+
+    # The top of the funnel: this user was offered the migration today. Which
+    # surface offered it is not said here - one call answers both frontends, and
+    # the rate limit keys on the event and the user, so a property could not
+    # separate them. `v2_migration_page_opened` carries the entry point instead.
+    if nudge["show"]:
+        _capture(
+            "v2_migration_offered",
+            {"waiting": waiting, "can_migrate": nudge["can_migrate"]},
+            interval="1d",
+        )
+    return nudge
 
 
 def _can_migrate() -> bool:
@@ -540,6 +599,9 @@ def hide_v2_migration_nudge() -> None:
     with v2 decides it for the site: a browser key would ask them again on
     their next machine, and would leave every other admin still being asked.
     """
+    # Counted before the write, because after it `_v2_dashboards_waiting` reads
+    # zero. How much a site walks away from is the whole point of the event.
+    _capture("v2_migration_dismissed", {"waiting": _v2_dashboards_waiting()})
     frappe.db.set_global(NUDGE_HIDDEN_KEY, "1")
 
 
@@ -602,6 +664,14 @@ def migrate_v2_dashboards(dashboards: list[str]) -> dict:
         )
         accepted.append(name)
 
+    _capture(
+        "v2_migration_started",
+        {
+            "accepted": len(accepted),
+            "skipped": len(skipped),
+            "reasons": sorted({entry["reason"] for entry in skipped}),
+        },
+    )
     return {"accepted": accepted, "skipped": skipped}
 
 
@@ -747,18 +817,63 @@ def run_v2_dashboard_migration(dashboard: str) -> dict:
     if not _existing_v2_dashboards([dashboard]):
         frappe.throw(frappe._("Dashboard {0} not found").format(dashboard))
 
-    result = migrate_dashboard(dashboard)
+    try:
+        result = migrate_dashboard(dashboard)
+    except Exception as exception:
+        # The class name alone. An exception message names the table, column or
+        # SQL that broke, and that is the user's data.
+        _capture("v2_migration_failed", {"error": type(exception).__name__})
+        raise
+
     # The scan says which group a dashboard belongs in, and this run just moved
     # one of them.
     frappe.cache().delete_value(SCAN_CACHE_KEY)
+
+    verification = _verify(result)
+    _capture_outcome(result, verification)
 
     return {
         "dashboard": result.dashboard,
         "workbook": result.workbook,
         "skipped": result.skipped,
         "report": result.report,
-        "verification": _verify(result),
+        "verification": verification,
     }
+
+
+def _capture_outcome(result, verification: dict | None) -> None:
+    """What this migration actually produced, and whether the numbers agreed.
+
+    The one event that says the migrator works. It reports the gap kinds the
+    plan hit rather than the gaps, so a fleet report answers "which construct
+    does the migrator still not carry" without carrying anybody's query.
+    """
+    if result.skipped:
+        return
+
+    plan = result.plan
+    summary = verification or {}
+    _capture(
+        "v2_migration_finished",
+        {
+            "queries": len(plan.queries),
+            "query_kinds": plan.kinds,
+            "dropped_queries": len(plan.dropped_queries),
+            "items": plan.item_count,
+            "items_converted": plan.converted_items,
+            "items_dropped": plan.dropped_items,
+            "converts_cleanly": plan.converts_cleanly,
+            "gap_kinds": _gap_kinds(plan),
+            # A verification that did not run is not a verification that agreed,
+            # so `verified` says which of the two this is.
+            "verified": bool(verification),
+            "checked": summary.get("checked", 0),
+            "same": summary.get("same", 0),
+            "expected": summary.get("expected", 0),
+            "different": summary.get("different", 0),
+            "not_checked": summary.get("not_checked", 0),
+        },
+    )
 
 
 def _verify(result) -> dict | None:

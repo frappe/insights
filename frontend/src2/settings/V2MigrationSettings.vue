@@ -5,8 +5,9 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { getErrorMessage } from '../helpers'
 import { createToast } from '../helpers/toasts'
+import { useTelemetry } from '../telemetry'
 import { __ } from '../translation'
-import { showSettingsDialog } from './settings'
+import { settingsOpenedFrom, showSettingsDialog } from './settings'
 import MigrationDashboard from '../migration/MigrationDashboard.vue'
 import useV2MigrationStore, {
 	DashboardScan,
@@ -19,8 +20,13 @@ import useV2MigrationStore, {
 
 const router = useRouter()
 const store = useV2MigrationStore()
+const { capture } = useTelemetry()
 
 onMounted(() => {
+	// Which surface brought the admin here decides whether the v2 nudge earned
+	// its place. The server cannot answer it: one endpoint answers both apps.
+	capture('v2_migration_page_opened', { from: settingsOpenedFrom.value || 'settings' })
+	settingsOpenedFrom.value = ''
 	store.scan()
 	store.startPolling()
 })
@@ -159,10 +165,17 @@ const showHelp = ref(false)
 function openDashboard(row: DashboardScan) {
 	opened.value = store.dashboards.find((d: DashboardScan) => d.dashboard === row.dashboard) || row
 	showDialog.value = true
+	// The page is built on the bet that people read what happens before they
+	// move anything. This is the only measure of whether they do.
+	capture('v2_migration_dashboard_opened', { verdict: row.verdict })
 }
 
 function openInV3(dashboard: DashboardScan) {
 	if (!dashboard.migrated_workbook) return
+	// The end of the funnel: a migrated dashboard somebody actually looked at.
+	capture('v2_migration_opened_in_v3', {
+		different: dashboard.verification?.different ?? 0,
+	})
 	showDialog.value = false
 	leaveSettings(
 		dashboard.migrated_dashboard

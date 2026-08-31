@@ -3,7 +3,7 @@ import { call } from 'frappe-ui'
 import { PackageOpen, X } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import session from '../session'
-import { settingsTab, showSettingsDialog } from '../settings/settings'
+import { settingsOpenedFrom, settingsTab, showSettingsDialog } from '../settings/settings'
 import { __ } from '../translation'
 
 const waiting = ref(0)
@@ -25,6 +25,7 @@ const show = computed(() => !hidden.value && waiting.value > 0 && canMigrate.val
 
 function openMigration() {
 	settingsTab.value = 'v2-migration'
+	settingsOpenedFrom.value = 'sidebar'
 	showSettingsDialog.value = true
 }
 
