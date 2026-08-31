@@ -38,6 +38,12 @@ wheneverChanges(
 	},
 )
 
+const DOCS_URL = 'https://docs.frappe.io/insights/querying/script-query-api'
+
+function openDocs() {
+	window.open(DOCS_URL, '_blank', 'noopener')
+}
+
 const showVariablesDialog = ref(false)
 const localVariables = ref<any[]>([])
 
@@ -126,11 +132,7 @@ function handleSaveVariables(variables: any[]) {
 						{
 							label: __('Docs'),
 							icon: BookOpen,
-							onClick: () =>
-								window.open(
-									'https://docs.frappe.io/insights/querying/script-query-api',
-									'_blank',
-								),
+							onClick: openDocs,
 						},
 					]"
 				/>

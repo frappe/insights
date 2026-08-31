@@ -250,6 +250,15 @@ export function makeQuery(name: string) {
 			})
 			result.value.timeTaken = response.time_taken
 			result.value.lastExecutedAt = new Date()
+
+			// only a run that produced a result may be memoised - memoising a
+			// failure turns the retry into a no-op that clears the error
+			lastExecutionArgs = {
+				operations: currentOperations.value,
+				adhoc_filters: adhocFilters.value,
+				page: currentPage.value,
+				page_size: pageSize.value,
+			}
 		})
 			.catch((err) => {
 				if (isStale()) return
@@ -262,12 +271,6 @@ export function makeQuery(name: string) {
 			.finally(() => {
 				if (isStale()) return
 				executing.value = false
-				lastExecutionArgs = {
-					operations: currentOperations.value,
-					adhoc_filters: adhocFilters.value,
-					page: currentPage.value,
-					page_size: pageSize.value,
-				}
 			})
 	}
 

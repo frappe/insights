@@ -1144,14 +1144,19 @@ class SafePandasDataFrame(pd.DataFrame):
 
 
 def publish_script_logs():
-    frappe.publish_realtime(
-        event="insights_script_log",
-        user=frappe.session.user,
-        message={
-            "user": frappe.session.user,
-            "logs": frappe.debug_log,
-        },
-    )
+    # this runs in a finally, so an unguarded raise here would replace the
+    # script's own exception - or its result - with a realtime transport error
+    try:
+        frappe.publish_realtime(
+            event="insights_script_log",
+            user=frappe.session.user,
+            message={
+                "user": frappe.session.user,
+                "logs": frappe.debug_log,
+            },
+        )
+    except Exception:
+        frappe.log_error("Failed to publish script query logs")
 
 
 def format_script_error(code: str) -> str:
