@@ -47,6 +47,10 @@ except ImportError:
         return decorator
 
 
+# the relation a `sql_column` fragment selects from, standing for the pipeline so far
+SQL_COLUMN_RELATION = "_insights_sql_column"
+
+
 class CircularQueryReferenceError(frappe.ValidationError):
     """Raised when a circular query reference is detected during query building."""
 
@@ -140,6 +144,8 @@ class IbisQueryBuilder:
             return self.apply_remove(operation)
         elif operation.type == "mutate":
             return self.apply_mutate(operation)
+        elif operation.type == "sql_column":
+            return self.apply_sql_column(operation)
         elif operation.type == "cast":
             return self.apply_cast(operation)
         elif operation.type == "summarize":
@@ -156,6 +162,11 @@ class IbisQueryBuilder:
             return self.apply_sql(operation)
         elif operation.type == "code":
             return self.apply_code(operation)
+
+        # Not `return self.query`: skipping an operation nobody recognises answers
+        # with a table that is missing a column, a filter or a join, and nothing
+        # says so. A query written by a newer client has to fail, not quietly
+        # return different numbers.
         return self.query
 
     @cached_property
@@ -523,6 +534,73 @@ class IbisQueryBuilder:
         if dtype:
             new_column = new_column.cast(dtype)
         return self.query.mutate(**{new_name: new_column})
+
+    def apply_sql_column(self, sql_column_args):
+        """Add one column from a raw SQL fragment.
+
+        Written by the v2 migrator, for the constructs v2 expressed in SQL and v3
+        has no expression for. ibis has no scalar-level SQL escape - only
+        `Table.sql()` - so this is a relation-level operation and not a `mutate`.
+        """
+        new_name = sql_column_args.new_name
+        fragment = sql_column_args.fragment
+
+        if not new_name or not fragment or not fragment.strip():
+            frappe.throw(
+                frappe._("A SQL column needs both a name and an expression"),
+            )
+
+        source_dialect = None
+        if sql_column_args.data_source:
+            ds = frappe.get_doc("Insights Data Source v3", sql_column_args.data_source)
+            source_dialect = ds.get_sqlglot_dialect()
+
+        fragment = sqlparse.format(sql=fragment, strip_comments=True).strip()
+        self._validate_sql_column_fragment(fragment, source_dialect)
+
+        alias = sg.to_identifier(new_name, quoted=True).sql(dialect=source_dialect)
+        statement = f"SELECT *, {fragment} AS {alias} FROM {SQL_COLUMN_RELATION}"
+
+        if not self.use_live_connection:
+            statement = self._transpile_sql_to_duckdb(statement, source_dialect)
+
+        # the alias is what puts the current pipeline in scope: without it ibis emits
+        # `FROM <original table>` and any column derived mid-pipeline is unresolvable
+        query = self.query.alias(SQL_COLUMN_RELATION).sql(statement)
+
+        dtype = self.get_ibis_dtype(sql_column_args.data_type) if sql_column_args.data_type else None
+        return query.cast({new_name: dtype}) if dtype else query
+
+    def _validate_sql_column_fragment(self, fragment: str, dialect: str | None) -> None:
+        """A fragment is one column expression. Anything that could open a statement is rejected."""
+        if ";" in fragment:
+            frappe.throw(
+                frappe._("A SQL column expression cannot contain multiple statements"),
+            )
+
+        if re.match(r"^(select|with|exec|execute)\b", fragment, flags=re.IGNORECASE):
+            frappe.throw(
+                frappe._("A SQL column expression cannot be a statement"),
+            )
+
+        try:
+            parsed = sg.parse(fragment, dialect=dialect)
+        except Exception as e:
+            frappe.throw(
+                frappe._("Failed to parse the SQL column expression: {0}").format(e),
+            )
+
+        if len(parsed) != 1 or parsed[0] is None:
+            frappe.throw(
+                frappe._("A SQL column expression must be a single expression"),
+            )
+
+        expression = parsed[0]
+        is_statement = isinstance(expression, sg.exp.DDL | sg.exp.DML | sg.exp.Command)
+        if is_statement or expression.find(sg.exp.Select):
+            frappe.throw(
+                frappe._("A SQL column expression must be a single expression"),
+            )
 
     def apply_summary(self, summarize_args):
         aggregates = [self.translate_measure(measure) for measure in summarize_args.measures]

@@ -134,6 +134,14 @@ export type Union = { type: 'union' } & UnionArgs
 export type MutateArgs = { new_name: string; data_type: ColumnDataType; expression: Expression }
 export type Mutate = { type: 'mutate' } & MutateArgs
 
+export type SQLColumnArgs = {
+	new_name: string
+	data_type: ColumnDataType
+	fragment: string
+	data_source?: string
+}
+export type SQLColumn = { type: 'sql_column' } & SQLColumnArgs
+
 export type SummarizeArgs = { measures: Measure[]; dimensions: Dimension[] }
 export type Summarize = { type: 'summarize' } & SummarizeArgs
 
@@ -181,6 +189,7 @@ export type Operation =
 	| Join
 	| Union
 	| Mutate
+	| SQLColumn
 	| Summarize
 	| OrderBy
 	| Limit
