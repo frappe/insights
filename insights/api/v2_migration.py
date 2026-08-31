@@ -32,6 +32,7 @@ so the reading endpoints answer per named item, not per gap kind.
 import json
 
 import frappe
+from frappe.utils import add_days, get_datetime, now_datetime
 from frappe.utils.background_jobs import JobStatus, get_job, is_job_enqueued
 
 from insights.decorators import insights_whitelist
@@ -41,6 +42,7 @@ from insights.migrator.v2_verification import DIFFERENT, EXPECTED, SAME, verify_
 from insights.migrator.v2_workbooks import (
     V2_DASHBOARD,
     V2_DASHBOARD_ITEM,
+    V2_QUERY,
     V3_DASHBOARD,
     candidate_roots,
     format_report,
@@ -428,18 +430,117 @@ def _unreadable(name: str, landed: dict) -> dict:
     }
 
 
-@insights_whitelist(role="Insights Admin")
-def count_v2_dashboards() -> dict:
-    """How many v2 dashboards wait, and how many already landed.
+# -- the nudge --------------------------------------------------------------
 
-    A count, not a list: the caller is a banner, and it renders one number.
+V2_ACTIVE_WITHIN_DAYS = 180
+"""How long after its last use v2 still counts as live.
+
+Long, because the window is not a guess at how often people work - it is how
+long a team keeps the intent to bring their old dashboards over. A team that
+has not opened v2 in half a year has been living without those dashboards, and
+a banner will not change that.
+"""
+
+NUDGE_HIDDEN_KEY = "insights_v2_migration_nudge_hidden"
+
+
+def _v2_last_used() -> str | None:
+    """When anybody last ran or edited a v2 query.
+
+    `last_execution` is written on every fetch, and a dashboard view fetches
+    through a cache that holds for minutes, so a team reading v2 daily writes
+    it daily. `modified` catches a team that edits without running. Neither
+    alone is the signal, so the answer is the later of the two.
+    """
+    if not frappe.db.table_exists(V2_QUERY):
+        return None
+    rows = frappe.db.sql(
+        f"select max(greatest(coalesce(last_execution, modified), modified)) " f"from `tab{V2_QUERY}`"
+    )
+    return rows[0][0] if rows else None
+
+
+def _v2_dashboards_waiting() -> int:
+    """How many v2 dashboards are still worth offering.
+
+    Not every v2 row: one already migrated is done, and one holding no chart
+    carries nothing across. Counting those makes the banner promise work that
+    is not there. The migration page still lists them, and says of each that it
+    has no charts to carry over - that is the page's job, and not a number's.
     """
     if not _v2_installed():
-        return {"total": 0, "migrated": 0}
+        return 0
+    return frappe.db.sql(
+        f"""
+        select count(*) from `tab{V2_DASHBOARD}` d
+        where exists (
+            select 1 from `tab{V2_DASHBOARD_ITEM}` i
+            where i.parent = d.name
+              and i.parenttype = %(parenttype)s
+              and coalesce(i.item_type, '') not in (%(text)s, %(filter)s)
+        )
+        and not exists (
+            select 1 from `tab{V3_DASHBOARD}` v3
+            where v3.old_name = d.name
+        )
+        """,
+        {"parenttype": V2_DASHBOARD, "text": TEXT_ITEM, "filter": FILTER_ITEM},
+    )[0][0]
 
-    total = frappe.db.sql(f"select count(*) from `tab{V2_DASHBOARD}`")[0][0]
-    migrated = frappe.db.count(V3_DASHBOARD, {"old_name": ["is", "set"]})
-    return {"total": total, "migrated": migrated}
+
+@insights_whitelist()
+def get_v2_migration_nudge() -> dict:
+    """Whether to offer the v2 migration, and the number to say in the offer.
+
+    The banner in v2 and the banner in v3 ask this one question, so the rule
+    lives here rather than twice in two frontends.
+
+    Three facts settle it, and none of them is "does this site hold v2 rows".
+    Nothing deletes those - not an upgrade, not the migrator - so their
+    presence can never turn the nudge off:
+
+    - **Something is left to move.** `_v2_dashboards_waiting`.
+    - **v2 was used recently.** A team that moved to v3 by hand keeps every v2
+      row and stops running them the same day. Use separates them from a team
+      still on v2. A row count cannot.
+    - **Nobody hid it.** Where the first two cannot decide - a team that
+      upgraded last month and rebuilt by hand still reads as active - one admin
+      answers once, for the whole site.
+
+    Readable by any Insights user, because the v2 banner is shown to whoever
+    opens v2, and a count of dashboards they can already see is not a secret.
+    `can_migrate` says whether this user is the one who can act on it.
+    """
+    hidden = bool(frappe.db.get_global(NUDGE_HIDDEN_KEY))
+    waiting = 0 if hidden else _v2_dashboards_waiting()
+    last_used = _v2_last_used() if waiting else None
+    cutoff = add_days(now_datetime(), -V2_ACTIVE_WITHIN_DAYS)
+    return {
+        "show": bool(last_used) and get_datetime(last_used) > cutoff,
+        "waiting": waiting,
+        "can_migrate": _can_migrate(),
+    }
+
+
+def _can_migrate() -> bool:
+    """The same test `migrate_v2_dashboards` applies.
+
+    Read through `frappe.get_roles` rather than through `insights_team.is_admin`,
+    which answers a different question - a System Manager passes that one and is
+    still refused by the endpoint the button calls.
+    """
+    return frappe.session.user == "Administrator" or "Insights Admin" in frappe.get_roles(frappe.session.user)
+
+
+@insights_whitelist(role="Insights Admin")
+def hide_v2_migration_nudge() -> None:
+    """Stop offering the migration, for everyone, for good.
+
+    A global default and not a browser key. Whoever decides the site is done
+    with v2 decides it for the site: a browser key would ask them again on
+    their next machine, and would leave every other admin still being asked.
+    """
+    frappe.db.set_global(NUDGE_HIDDEN_KEY, "1")
 
 
 @insights_whitelist(role="Insights Admin")

@@ -28,14 +28,18 @@ import json
 from unittest.mock import patch
 
 import frappe
+from frappe.utils import add_days, get_datetime, now_datetime
 
 from insights.api.v2_migration import (
     MAX_DASHBOARDS,
+    NUDGE_HIDDEN_KEY,
     SCAN_CACHE_KEY,
-    count_v2_dashboards,
+    _v2_last_used,
     get_v2_dashboards,
+    get_v2_migration_nudge,
     get_v2_migration_status,
     get_v2_verification,
+    hide_v2_migration_nudge,
     job_id_for,
     migrate_v2_dashboards,
     preview_v2_dashboard,
@@ -65,6 +69,7 @@ BASE = "QRY-MIGAPI-1"
 STORED = "QRY-MIGAPI-2"
 TITLE = "Migration API Test"
 UNKNOWN = "DSH-DOES-NOT-EXIST"
+EMPTY_DASHBOARD = "DSH-MIGAPI-EMPTY"
 
 
 class TestV2MigrationAPI(InsightsIntegrationTestCase):
@@ -398,14 +403,63 @@ class TestV2MigrationAPI(InsightsIntegrationTestCase):
         self.assertEqual(preview["charts_carried"], 1)
         self.assertEqual(preview["chart_count"], 2)
 
-    # -- the count ---------------------------------------------------------
+    # -- the nudge ---------------------------------------------------------
 
-    def test_the_count_reports_what_is_left(self):
-        before = count_v2_dashboards()
+    def test_the_nudge_offers_what_is_left(self):
+        before = get_v2_migration_nudge()
+        self.assertTrue(before["show"])
         run_v2_dashboard_migration(DASHBOARD)
-        after = count_v2_dashboards()
-        self.assertEqual(after["total"], before["total"])
-        self.assertEqual(after["migrated"], before["migrated"] + 1)
+        after = get_v2_migration_nudge()
+        self.assertEqual(after["waiting"], before["waiting"] - 1)
+
+    def test_the_nudge_passes_over_a_dashboard_with_no_chart(self):
+        insert_row("Insights Dashboard", {"name": EMPTY_DASHBOARD, "title": "Nothing In It"})
+        try:
+            waiting = get_v2_migration_nudge()["waiting"]
+            insert_row(
+                "Insights Dashboard Item",
+                {
+                    "name": 910099,
+                    "item_type": "Text",
+                    "parent": EMPTY_DASHBOARD,
+                    "parenttype": "Insights Dashboard",
+                    "parentfield": "items",
+                    "idx": 1,
+                    "item_id": 1,
+                    "options": "{}",
+                },
+            )
+            self.assertEqual(get_v2_migration_nudge()["waiting"], waiting)
+        finally:
+            frappe.db.sql("delete from `tabInsights Dashboard Item` where parent = %s", EMPTY_DASHBOARD)
+            frappe.db.sql("delete from `tabInsights Dashboard` where name = %s", EMPTY_DASHBOARD)
+
+    def test_a_v2_query_that_runs_is_recent(self):
+        self.assertIsNotNone(_v2_last_used())
+        self.assertGreater(get_datetime(_v2_last_used()), add_days(now_datetime(), -1))
+
+    def test_the_nudge_goes_quiet_once_nobody_uses_v2(self):
+        with patch("insights.api.v2_migration._v2_last_used", return_value="2019-01-01 00:00:00"):
+            nudge = get_v2_migration_nudge()
+        self.assertFalse(nudge["show"])
+        self.assertTrue(nudge["waiting"])
+
+    def test_hiding_the_nudge_hides_it_for_every_user(self):
+        hide_v2_migration_nudge()
+        try:
+            self.assertFalse(get_v2_migration_nudge()["show"])
+            with as_user(USER_1):
+                self.assertFalse(get_v2_migration_nudge()["show"])
+        finally:
+            frappe.db.set_global(NUDGE_HIDDEN_KEY, None)
+
+    def test_an_insights_user_reads_the_nudge_but_cannot_act_on_it(self):
+        with as_user(USER_1):
+            nudge = get_v2_migration_nudge()
+            self.assertTrue(nudge["show"])
+            self.assertFalse(nudge["can_migrate"])
+            with self.assertRaises(frappe.PermissionError):
+                hide_v2_migration_nudge()
 
     # -- verification ------------------------------------------------------
 
@@ -441,7 +495,6 @@ class TestV2MigrationAPI(InsightsIntegrationTestCase):
                 lambda: migrate_v2_dashboards([DASHBOARD]),
                 lambda: get_v2_migration_status([DASHBOARD]),
                 lambda: scan_v2_dashboards(),
-                lambda: count_v2_dashboards(),
                 lambda: get_v2_verification(DASHBOARD),
             ):
                 with self.assertRaises(frappe.PermissionError):
