@@ -3,12 +3,14 @@ import { Badge } from 'frappe-ui'
 import { AlertTriangle, Check, X } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { showSettingsDialog } from '../settings/settings'
 import { __ } from '../translation'
 import useV2MigrationStore, {
 	DashboardScan,
 	MigrationItem,
 	Verification,
 	VERDICT_LABELS,
+	VERDICT_THEMES,
 	itemTitle,
 	noteSentence,
 	verdictSentence,
@@ -25,6 +27,14 @@ const show = defineModel({ required: true, default: false })
 
 const router = useRouter()
 const store = useV2MigrationStore()
+
+/** This dialog opens over the settings dialog, which owns the viewport. A route
+ * pushed under it would open behind it, so both close first. */
+function openDataSources() {
+	show.value = false
+	showSettingsDialog.value = false
+	router.push('/data-source')
+}
 const verification = ref<Verification | null>(null)
 
 const status = computed(() =>
@@ -64,26 +74,24 @@ const differingQueries = computed(
 		v-model="show"
 		:options="{ title: props.dashboard.title, size: '2xl' }"
 	>
+		<template #body-title>
+			<div class="flex items-center gap-2">
+				<h3 class="text-2xl font-semibold leading-6 text-ink-gray-9">
+					{{ props.dashboard.title }}
+				</h3>
+				<Badge
+					variant="subtle"
+					:theme="VERDICT_THEMES[props.dashboard.verdict]"
+					:label="VERDICT_LABELS[props.dashboard.verdict]"
+				/>
+			</div>
+		</template>
+
 		<template #body-content>
 			<div class="flex max-h-[60vh] flex-col gap-4 overflow-y-auto text-base">
-				<div class="flex items-center gap-2">
-					<Badge
-						variant="subtle"
-						:theme="
-							props.dashboard.verdict === 'ready'
-								? 'green'
-								: props.dashboard.verdict === 'migrated'
-								  ? 'blue'
-								  : props.dashboard.verdict === 'blocked'
-								    ? 'red'
-								    : 'orange'
-						"
-						:label="VERDICT_LABELS[props.dashboard.verdict]"
-					/>
-					<span class="text-p-base text-ink-gray-7">
-						{{ verdictSentence(props.dashboard) }}
-					</span>
-				</div>
+				<p class="text-p-base text-ink-gray-7">
+					{{ verdictSentence(props.dashboard) }}
+				</p>
 
 				<div
 					v-if="props.dashboard.unresolved_data_sources.length"
@@ -101,7 +109,7 @@ const differingQueries = computed(
 						class="self-start"
 						variant="subtle"
 						:label="__('Go to Data Sources')"
-						@click="router.push('/data-source')"
+						@click="openDataSources"
 					/>
 				</div>
 

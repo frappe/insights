@@ -10,7 +10,9 @@ import { showSettingsDialog } from './settings'
 import MigrationDashboard from '../migration/MigrationDashboard.vue'
 import useV2MigrationStore, {
 	DashboardScan,
+	BadgeTheme,
 	VERDICT_LABELS,
+	VERDICT_THEMES,
 	verdictSentence,
 	verificationSentence,
 } from '../migration/v2_migration'
@@ -33,12 +35,9 @@ const STATE_LABELS: Record<RowState, string> = {
 	migrating: __('Migrating'),
 }
 
-const STATE_THEMES: Record<RowState, string> = {
-	ready: 'green',
-	review: 'orange',
-	blocked: 'red',
+const STATE_THEMES: Record<RowState, BadgeTheme> = {
+	...VERDICT_THEMES,
 	migrating: 'blue',
-	migrated: 'gray',
 }
 
 /** Only these two are a decision the user has yet to make. */

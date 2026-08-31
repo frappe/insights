@@ -268,6 +268,17 @@ export const VERDICT_LABELS: Record<MigrationVerdict, string> = {
 	unreadable: __("Can't migrate yet"),
 }
 
+/** Badge only accepts its own themes, so a plain `string` will not type-check. */
+export type BadgeTheme = 'green' | 'orange' | 'red' | 'gray' | 'blue'
+
+export const VERDICT_THEMES: Record<MigrationVerdict, BadgeTheme> = {
+	ready: 'green',
+	review: 'orange',
+	blocked: 'red',
+	migrated: 'gray',
+	unreadable: 'red',
+}
+
 /** What one finding means for the dashboard, said as a whole sentence.
  *
  * The translators name a gap by what they hit - `missing_x_axis`,
