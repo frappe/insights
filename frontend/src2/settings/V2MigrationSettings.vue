@@ -53,9 +53,9 @@ function stateOf(dashboard: DashboardScan): RowState {
 }
 
 function sentenceOf(dashboard: DashboardScan, state: RowState) {
-	if (state === 'migrating') return __('Migrating now...')
+	if (state === 'migrating') return __('Migrating now')
 	if (state === 'migrated') {
-		return verificationSentence(dashboard.verification) || __('Copied into a v3 workbook')
+		return verificationSentence(dashboard.verification) || __('Copied into a v3 workbook.')
 	}
 	return verdictSentence(dashboard)
 }
@@ -261,7 +261,7 @@ async function migrate(targets: Row[]) {
 		<div v-else-if="store.scanning && !store.dashboards.length" class="flex items-center gap-2">
 			<LoadingIndicator class="h-4 w-4" />
 			<span class="text-p-base text-ink-gray-6">
-				{{ __('Checking what will carry over...') }}
+				{{ __('Checking what will carry over') }}
 			</span>
 		</div>
 
@@ -328,26 +328,26 @@ async function migrate(targets: Row[]) {
 				<p>
 					{{
 						__(
-							'Each v2 dashboard is copied into a new v3 workbook. Your v2 dashboards stay untouched, so you can migrate one, look at it, and come back for the rest.',
+							'Each v2 dashboard is copied into a new v3 workbook. Your v2 dashboards stay as they are. Migrate one, look at it, then come back for the rest.',
 						)
 					}}
 				</p>
 				<p>
 					<span class="font-medium text-ink-gray-8">{{ VERDICT_LABELS.ready }}</span>
 					-
-					{{ __('these carry over as they are.') }}
+					{{ __('These carry over as they are.') }}
 				</p>
 				<p>
 					<span class="font-medium text-ink-gray-8">{{ VERDICT_LABELS.review }}</span>
 					-
-					{{ __('open one to see what changes before you migrate it.') }}
+					{{ __('Open one to see what changes. Then migrate it.') }}
 				</p>
 				<p>
 					<span class="font-medium text-ink-gray-8">{{ VERDICT_LABELS.blocked }}</span>
 					-
 					{{
 						__(
-							'these read from a data source that is not set up in v3. Add it under Data Sources, then scan again.',
+							'These read from a data source that is not set up in v3. Add it under Data Sources. Then scan again.',
 						)
 					}}
 				</p>
@@ -356,7 +356,7 @@ async function migrate(targets: Row[]) {
 					-
 					{{
 						__(
-							'we run each migrated query against v2 and compare the numbers. Open one to see the result, or to see it in v3.',
+							'Each migrated query runs against v2, and the numbers are compared. Open one to see the result, or to open it in v3.',
 						)
 					}}
 				</p>
@@ -392,11 +392,9 @@ async function migrate(targets: Row[]) {
 				<p v-if="willSkip" class="text-p-sm text-ink-gray-6">
 					{{
 						willSkip === 1
-							? __(
-									'1 more is already migrated or cannot migrate yet, and is skipped.',
-							  )
+							? __('1 more cannot be migrated now. It is skipped.')
 							: __(
-									'{0} more are already migrated or cannot migrate yet, and are skipped.',
+									'{0} more cannot be migrated now. They are skipped.',
 									String(willSkip),
 							  )
 					}}

@@ -100,7 +100,7 @@ const differingQueries = computed(
 					<p class="text-p-base text-ink-gray-7">
 						{{
 							__(
-								'This dashboard reads from {0}, which is not set up in v3. Add it under Data Sources, then scan again.',
+								'This dashboard reads from {0}. That data source is not set up in v3. Add it, then scan again.',
 								props.dashboard.unresolved_data_sources.join(', '),
 							)
 						}}

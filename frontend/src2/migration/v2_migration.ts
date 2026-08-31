@@ -289,44 +289,44 @@ export const VERDICT_THEMES: Record<MigrationVerdict, BadgeTheme> = {
  */
 const NOTE_SENTENCES: Record<string, string> = {
 	// the chart itself
-	unsupported_chart_type: __("this chart type doesn't exist in v3, so the chart is skipped"),
-	chart_never_visualized: __('this item was never given a chart type, so there is nothing to carry over'),
-	item_without_query: __('the query this reads was deleted, so the item is skipped'),
-	missing_x_axis: __('no column was set for the horizontal axis, so the chart lands empty'),
-	missing_y_axis: __('no column was set for the vertical axis, so the chart lands empty'),
-	missing_label_or_value: __('no label or value column was set, so the chart lands empty'),
-	missing_value_column: __('no value column was set, so the chart lands empty'),
-	missing_columns: __('no columns were set, so the table lands empty'),
-	extra_x_axis_columns: __('v3 draws one horizontal axis, so the extra columns are dropped'),
-	extra_y_axis_columns: __('v3 draws one measure here, so the extra ones are dropped'),
-	scatter_x_not_numeric: __('v3 plots a bubble chart over numbers, so this becomes a line chart'),
-	trend_without_date_column: __("the trend line won't carry over: v3 compares over a date column"),
-	progress_target_unsupported: __('v3 has no progress chart: the value carries over, the target does not'),
-	auto_type_guessed: __('v2 picked this chart type from the data, so v3 guesses it instead'),
-	auto_type_needs_columns: __('v2 picked this chart type from the data, so it lands empty until you set it'),
-	column_types_unknown: __('the column types are unknown, so numbers are added up by default'),
-	column_not_in_query: __('a column it draws is no longer in the query, so that part lands empty'),
-	filter_operator_unsupported: __('v3 has no such filter, so this filter starts empty'),
-	filter_link_dangling: __('a filter points at an item this dashboard no longer has'),
+	unsupported_chart_type: __("v3 has no such chart type. The chart is skipped."),
+	chart_never_visualized: __('This item has no chart type. There is nothing to carry over.'),
+	item_without_query: __('The query it reads was deleted. The item is skipped.'),
+	missing_x_axis: __('The horizontal axis has no column. The chart lands empty.'),
+	missing_y_axis: __('The vertical axis has no column. The chart lands empty.'),
+	missing_label_or_value: __('The label and value columns are not set. The chart lands empty.'),
+	missing_value_column: __('The value column is not set. The chart lands empty.'),
+	missing_columns: __('The table has no columns. It lands empty.'),
+	extra_x_axis_columns: __('v3 draws one horizontal axis. The extra columns are dropped.'),
+	extra_y_axis_columns: __('v3 draws one measure here. The extra ones are dropped.'),
+	scatter_x_not_numeric: __('A bubble chart needs numbers on both axes. This becomes a line chart.'),
+	trend_without_date_column: __('A trend line needs a date column in v3. The trend line is dropped.'),
+	progress_target_unsupported: __('v3 has no progress chart. The value carries over, the target does not.'),
+	auto_type_guessed: __('v2 picked this chart type from the data. v3 guesses it instead.'),
+	auto_type_needs_columns: __('v2 picked this chart type from the data. Set it in v3, or the chart lands empty.'),
+	column_types_unknown: __('The column types are unknown. v3 adds the numbers up by default.'),
+	column_not_in_query: __('A column it draws is no longer in the query. That part lands empty.'),
+	filter_operator_unsupported: __('v3 has no such filter. This filter starts empty.'),
+	filter_link_dangling: __('A filter points at an item this dashboard no longer has.'),
 	// the dashboard
-	public_not_carried: __('the v2 dashboard was public; the v3 copy is private until you publish it'),
-	circular_query_reference: __('its queries reference each other in a loop, so it cannot be migrated'),
-	unresolved_data_source: __('its data source is not set up in v3 yet'),
+	public_not_carried: __('The v2 dashboard was public. The v3 copy stays private until you publish it.'),
+	circular_query_reference: __('Its queries reference each other in a loop. It cannot be migrated.'),
+	unresolved_data_source: __('Its data source is not set up in v3 yet.'),
 	// the query behind it
-	sql_floor: __('part of the query has no v3 form, so v3 runs the SQL v2 ran instead'),
-	dropped_filter: __('a filter has no v3 form and is dropped, so this shows more rows than v2'),
-	dropped_column: __('a column has no v3 form and is dropped'),
-	dropped_transform: __('a step v2 ran after the query has no v3 form and is dropped'),
-	untranslatable_expression: __('a formula has no v3 form, so v3 runs it as SQL instead'),
-	expression_needs_sql: __('a formula has no v3 form, so v3 runs it as SQL instead'),
-	unknown_operator: __('a filter uses an operator v3 does not have, so it is dropped'),
-	unknown_aggregation: __('a column is summed up in a way v3 does not have'),
-	unknown_granularity: __('a date is grouped by a period v3 does not have'),
-	unknown_join_type: __('a join has no v3 form, so it is dropped'),
-	no_source_table: __('the query names no table, so it returns nothing'),
-	unreadable_json: __('the query is stored in a form v3 cannot read'),
-	empty_script: __('the script is empty, so it returns nothing'),
-	legacy_column_list: __('the query is in an old v2 format; its columns are read as written'),
+	sql_floor: __('Part of the query has no v3 form. v3 runs the SQL that v2 ran.'),
+	dropped_filter: __('A filter has no v3 form and is dropped. This shows more rows than v2.'),
+	dropped_column: __('A column has no v3 form and is dropped.'),
+	dropped_transform: __('A step that v2 ran after the query has no v3 form. It is dropped.'),
+	untranslatable_expression: __('A formula has no v3 form. v3 runs it as SQL.'),
+	expression_needs_sql: __('A formula has no v3 form. v3 runs it as SQL.'),
+	unknown_operator: __('A filter uses an operator that v3 does not have. It is dropped.'),
+	unknown_aggregation: __('A column is summed up in a way that v3 does not have.'),
+	unknown_granularity: __('A date is grouped by a period that v3 does not have.'),
+	unknown_join_type: __('A join has no v3 form. It is dropped.'),
+	no_source_table: __('The query names no table. It returns nothing.'),
+	unreadable_json: __('The query is stored in a form that v3 cannot read.'),
+	empty_script: __('The script is empty. It returns nothing.'),
+	legacy_column_list: __('The query is in an old v2 format. Its columns are read as written.'),
 }
 
 export function noteSentence(note: MigrationNote) {
@@ -353,7 +353,7 @@ export function verdictSentence(scan: DashboardScan) {
 	const attention = scan.items.filter((item) => item.state !== 'ok').length
 
 	if (scan.verdict === 'blocked') {
-		return __('Set up its data source in v3, then scan again.')
+		return __('Set up its data source in v3. Then scan again.')
 	}
 	if (scan.verdict === 'unreadable') {
 		return __('This dashboard could not be read. Migrate it on its own to see why.')
@@ -363,22 +363,24 @@ export function verdictSentence(scan: DashboardScan) {
 	}
 	if (carried < total) {
 		return __(
-			'{0} of {1} charts will carry over - {2} need your attention',
+			'{0} of {1} charts will carry over. {2} will not.',
 			String(carried),
 			String(total),
 			String(total - carried),
 		)
 	}
 	if (attention) {
-		return __(
-			'All {0} charts will carry over - {1} need your attention',
-			String(total),
-			String(attention),
-		)
+		return attention === 1
+			? __('All {0} charts will carry over. 1 will look different.', String(total))
+			: __(
+					'All {0} charts will carry over. {1} will look different.',
+					String(total),
+					String(attention),
+			  )
 	}
 	return total === 1
-		? __('The chart will carry over as it is')
-		: __('All {0} charts will carry over', String(total))
+		? __('The chart will carry over as it is.')
+		: __('All {0} charts will carry over.', String(total))
 }
 
 /** What the numbers check found, said the way the page says everything else. */
@@ -387,14 +389,18 @@ export function verificationSentence(summary: VerificationSummary | null) {
 	const agreed = summary.same + summary.expected
 	if (summary.different) {
 		return summary.different === 1
-			? __('1 chart shows different numbers than v2 - open it to review')
+			? __('1 chart shows different numbers than v2. Open it to review.')
 			: __(
-					'{0} charts show different numbers than v2 - open them to review',
+					'{0} charts show different numbers than v2. Open them to review.',
 					String(summary.different),
 			  )
 	}
 	if (!agreed) {
-		return __('The numbers could not be checked against v2.')
+		return __('The numbers could not be compared with v2.')
 	}
-	return __('We checked the numbers - {0} of {1} queries match v2', String(agreed), String(summary.checked))
+	return __(
+		'{0} of {1} queries return the same numbers as v2.',
+		String(agreed),
+		String(summary.checked),
+	)
 }

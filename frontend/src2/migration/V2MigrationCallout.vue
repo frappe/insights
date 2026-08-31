@@ -44,9 +44,9 @@ function openMigration() {
 			<span class="text-p-base text-ink-gray-8">
 				{{
 					waiting === 1
-						? __('You have 1 dashboard from Insights v2 - bring it over')
+						? __('You have 1 dashboard in Insights v2. Bring it over.')
 						: __(
-								'You have {0} dashboards from Insights v2 - bring them over',
+								'You have {0} dashboards in Insights v2. Bring them over.',
 								String(waiting),
 						  )
 				}}
