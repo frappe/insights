@@ -27,6 +27,7 @@ const emit = defineEmits<{
 			<img
 				v-if="dashboard.preview_image"
 				:src="dashboard.preview_image"
+				:alt="`Preview of ${dashboard.title}`"
 				loading="lazy"
 				decoding="async"
 				onerror="this.src = ''"

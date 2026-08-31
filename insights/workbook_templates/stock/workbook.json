@@ -360,7 +360,8 @@
 							"measure_name": "Total Stock Value",
 							"column_name": "stock_value",
 							"data_type": "Decimal",
-							"aggregation": "sum"
+							"aggregation": "sum",
+							"format": "currency"
 						}
 					],
 					"number_column_options": [
@@ -387,7 +388,8 @@
 							"measure_name": "Stock Value Change",
 							"column_name": "stock_value_difference",
 							"data_type": "Decimal",
-							"aggregation": "sum"
+							"aggregation": "sum",
+							"format": "currency"
 						}
 					],
 					"number_column_options": [
@@ -441,7 +443,8 @@
 							"measure_name": "Dead Stock (90d+)",
 							"column_name": "stock_value",
 							"data_type": "Decimal",
-							"aggregation": "sum"
+							"aggregation": "sum",
+							"format": "currency"
 						}
 					],
 					"number_column_options": [
@@ -714,7 +717,8 @@
 							"measure_name": "stock_value",
 							"column_name": "stock_value",
 							"data_type": "Decimal",
-							"aggregation": "sum"
+							"aggregation": "sum",
+							"format": "currency"
 						},
 						{
 							"measure_name": "days_since_movement",

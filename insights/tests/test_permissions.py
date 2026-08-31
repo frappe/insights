@@ -21,10 +21,12 @@ from insights.tests.permissions_utils import (
     TEST_TABLE1,
     USER_1,
     USER_2,
+    USER_3,
     cleanup_test_fixtures,
     clear_team_cache,
     create_test_data_sources,
     create_test_tables,
+    create_test_team,
     create_test_teams,
     create_test_users,
     share_chart,
@@ -60,9 +62,34 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
     def after_test(self):
         clear_team_cache()
 
-    def toggle_team_permissions(self, enable):
-        frappe.db.set_single_value(DT.SETTINGS, "enable_permissions", enable)
-        clear_team_cache()
+    def assert_no_access_to(self, user, doctype, name):
+        """Both consumers of the permission query must refuse the user."""
+        self.assert_not_visible_to(user, doctype, name)
+        with self.as_user(user):
+            for ptype in ("read", "write"):
+                self.assertFalse(
+                    frappe.has_permission(doctype, ptype=ptype, doc=name),
+                    f"{user} should not hold {ptype} on {doctype} {name}",
+                )
+
+    def grant_every_resource_type_to_a_team(self):
+        """Build one team holding a grant of each type, and one holding none."""
+        create_test_data_sources()
+        create_test_tables()
+        workbook = create_test_workbook(ADMIN)
+        query = create_test_query(ADMIN, workbook.name)
+        chart = create_test_chart(ADMIN, workbook.name, query.name)
+        dashboard = create_test_dashboard(ADMIN, workbook.name, chart.name)
+
+        granted = {
+            DT.DATA_SOURCE: TEST_DS,
+            DT.TABLE: TEST_TABLE1,
+            DT.CHART: chart.name,
+            DT.DASHBOARD: dashboard.name,
+        }
+        create_test_team("team1", [USER_1], list(granted.items()))
+        create_test_team("team2", [USER_3])
+        return granted
 
     def test_permissions_for_non_insights_user(self):
         with self.as_user(NON_INSIGHTS_USER):
@@ -79,7 +106,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         create_test_data_sources()
         create_test_tables()
         create_test_teams()
-        self.toggle_team_permissions(False)
+        self.set_team_permissions(False)
 
         self.assert_visible_to(USER_2, DT.DATA_SOURCE, TEST_DS)
         self.assert_visible_to(USER_2, DT.TABLE, TEST_TABLE1)
@@ -88,7 +115,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         create_test_data_sources()
         create_test_tables()
         team = create_test_teams()
-        self.toggle_team_permissions(True)
+        self.set_team_permissions(True)
 
         self.assert_not_visible_to(USER_2, DT.DATA_SOURCE, TEST_DS)
         self.assert_not_visible_to(USER_2, DT.TABLE, TEST_TABLE1)
@@ -111,12 +138,45 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         self.assert_visible_to(USER_1, DT.DATA_SOURCE, TEST_DS)
         self.assert_visible_to(USER_1, DT.TABLE, TEST_TABLE1)
 
+    def test_resource_grant_reaches_the_granted_team_only(self):
+        """A grant is held by a team, so only that team's members may use it.
+
+        The two users without access differ, and both matter. USER_2 is in no
+        team, USER_3 is in a team that holds no grant. An empty set of teams and
+        an empty set of grants have to land on the same empty result.
+        """
+        granted = self.grant_every_resource_type_to_a_team()
+        self.set_team_permissions(True)
+
+        for doctype, name in granted.items():
+            self.assert_visible_to(USER_1, doctype, name)
+
+        for user in (USER_2, USER_3):
+            for doctype, name in granted.items():
+                self.assert_no_access_to(user, doctype, name)
+
+    def test_resource_grant_is_inert_while_team_permissions_are_off(self):
+        """Team membership is not read while the setting is off, so no grant applies.
+
+        Data sources and tables stay open to every Insights user - that is what
+        the setting turns off. Charts and dashboards fall back to workbook
+        access, which the grant holder does not have either.
+        """
+        granted = self.grant_every_resource_type_to_a_team()
+        self.set_team_permissions(False)
+
+        for user in (USER_1, USER_2, USER_3):
+            self.assert_visible_to(user, DT.DATA_SOURCE, granted[DT.DATA_SOURCE])
+            self.assert_visible_to(user, DT.TABLE, granted[DT.TABLE])
+            self.assert_no_access_to(user, DT.CHART, granted[DT.CHART])
+            self.assert_no_access_to(user, DT.DASHBOARD, granted[DT.DASHBOARD])
+
     def test_permission_for_admin_on_team_based_doctype_with_team_permissions_enabled(
         self,
     ):
         create_test_data_sources()
         create_test_tables()
-        self.toggle_team_permissions(True)
+        self.set_team_permissions(True)
 
         self.assert_visible_to(ADMIN, DT.DATA_SOURCE, TEST_DS)
         self.assert_visible_to(ADMIN, DT.TABLE, TEST_TABLE1)
@@ -150,7 +210,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         # must find the other Insights users in it - with or without team permissions
         for team_permissions in (False, True):
             with self.subTest(team_permissions=team_permissions):
-                self.toggle_team_permissions(team_permissions)
+                self.set_team_permissions(team_permissions)
                 with self.as_user(USER_1):
                     emails = [user["email"] for user in get_users()]
 
@@ -234,7 +294,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
                 )
 
     def test_team_membership_is_listed_for_admins_only(self):
-        self.toggle_team_permissions(True)
+        self.set_team_permissions(True)
 
         with self.as_user(USER_1):
             self.assertNotIn("teams", get_users()[0])
@@ -392,7 +452,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
     def test_download_results_requires_export_permission(self):
         workbook = create_test_workbook(USER_1)
         query = create_test_query(USER_1, workbook.name)
-        self.toggle_team_permissions(False)
+        self.set_team_permissions(False)
         frappe.db.set_single_value(DT.SETTINGS, "allow_download", 1)
         self.addCleanup(frappe.clear_cache, doctype=DT.QUERY)
 
@@ -417,7 +477,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         workbook = create_test_workbook(USER_1)
         query = create_test_query(USER_1, workbook.name)
         frappe.db.set_single_value(DT.SETTINGS, "allow_download", 1)
-        self.toggle_team_permissions(True)
+        self.set_team_permissions(True)
 
         # USER_2 has the role-level export permission, but no access to
         # USER_1's workbook or query, so the download must still be blocked
@@ -428,7 +488,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
                 query_doc.download_results(format="csv")
 
         # the owner can still download their own query
-        self.toggle_team_permissions(False)
+        self.set_team_permissions(False)
         with self.as_user(USER_1):
             query_doc = frappe.get_doc(DT.QUERY, query.name)
             with db_connections():
@@ -441,7 +501,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         # keep team permissions disabled so the underlying table stays
         # accessible; the owner/share based document restriction on
         # workbooks & queries is enforced regardless of this setting
-        self.toggle_team_permissions(False)
+        self.set_team_permissions(False)
         frappe.db.set_single_value(DT.SETTINGS, "allow_download", 1)
 
         # USER_2 is given read-only access to USER_1's workbook
@@ -464,7 +524,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
     def test_download_results_blocked_when_globally_disabled(self):
         workbook = create_test_workbook(USER_1)
         query = create_test_query(USER_1, workbook.name)
-        self.toggle_team_permissions(False)
+        self.set_team_permissions(False)
         frappe.db.set_single_value(DT.SETTINGS, "allow_download", 0)
 
         # USER_1 has the export permission via the Insights User role,

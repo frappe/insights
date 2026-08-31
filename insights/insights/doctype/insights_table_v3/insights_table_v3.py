@@ -14,6 +14,7 @@ from ibis import Table
 from ibis.backends.duckdb import Backend as DuckDBBackend
 
 import insights
+from insights.permission_user import get_permission_user
 from insights.utils import InsightsDataSourcev3
 
 
@@ -139,8 +140,12 @@ class InsightsTablev3(Document):
             check_table_permission,
         )
 
+        # every table read funnels through here, so this is where the permission user
+        # in effect decides whose permissions the rows are filtered by
+        user = get_permission_user()
+
         # TODO: replace with frappe.has_permission()
-        check_table_permission(data_source, table_name)
+        check_table_permission(data_source, table_name, user=user)
 
         ds_type = frappe.db.get_value("Insights Data Source v3", data_source, "type", cache=True)
         if not use_live_connection and ds_type != "REST API":
@@ -150,19 +155,28 @@ class InsightsTablev3(Document):
             ds = InsightsDataSourcev3.get_doc(data_source)
             t = ds.get_ibis_table(table_name)
 
-        t = apply_table_restrictions(t, data_source, table_name)
-        t = apply_user_permissions(t, data_source, table_name)
+        t = apply_table_restrictions(t, data_source, table_name, user=user)
+        t = apply_user_permissions(t, data_source, table_name, user=user)
         return t
+
+    def check_identity(self):
+        """`autoname` builds the name out of the data source and the table, so the
+        pair is this row's identity. A whitelisted method runs on a document built
+        from the request body, where the two can be made to disagree."""
+        if get_table_name(self.data_source or "", self.table or "") != self.name:
+            frappe.throw(frappe._("Table {0} is not {1}.{2}").format(self.name, self.data_source, self.table))
 
     @frappe.whitelist()
     def import_to_warehouse(self):
         frappe.only_for("Insights Admin")
+        self.check_identity()
         wt = insights.warehouse.get_table(self.data_source, self.table)
         wt.enqueue_import()
 
     @frappe.whitelist()
     def clear_warehouse_data(self):
         frappe.only_for("Insights Admin")
+        self.check_identity()
         insights.warehouse.get_table(self.data_source, self.table).drop()
         self.db_set(
             {
@@ -176,6 +190,7 @@ class InsightsTablev3(Document):
     @frappe.whitelist()
     def get_stats(self):
         """Return usage and sync statistics for this table."""
+        self.check_identity()
         return get_table_stats(self.data_source, self.table)
 
 
@@ -190,9 +205,9 @@ def get_table_stats(data_source: str, table_name: str) -> dict:
         - last_synced_on: last successful import timestamp
         - last_import_rows: row count from the most recent import
         - last_import_duration: duration (seconds) of the most recent import
-        - referencing_queries: list of query names/titles that currently reference this table
-        - last_executed_on: when the most recent referencing query was last executed
-        - execution_count: total executions across all referencing queries
+        - referencing_queries: the queries referencing this table that the caller may read
+        - last_executed_on: when the most recent of those queries was last executed
+        - execution_count: total executions across those queries
         - total_syncs: total number of import attempts
         - total_sync_time: sum of all import durations (seconds)
         - failed_syncs: number of failed imports
@@ -271,16 +286,28 @@ def get_table_stats(data_source: str, table_name: str) -> dict:
 
 
 def _get_referencing_queries(data_source: str, table_name: str) -> list[dict]:
-    """Find all Insights Query v3 docs that reference this table via the edge table."""
+    """The queries that reference this table and that the caller may read.
+
+    `Insights Query Reference` is an edge table. It is granted to Administrator
+    and System Manager alone, and a join over it carries the joined query's title
+    and workbook out with it. Reading a table says nothing about who may see the
+    queries built on it, so each one is asked for by name.
+    """
     Ref = frappe.qb.DocType("Insights Query Reference")
-    Query = frappe.qb.DocType("Insights Query v3")
-    return (
+    referencing = (
         frappe.qb.from_(Ref)
-        .join(Query)
-        .on(Query.name == Ref.query)
-        .select(Query.name, Query.title, Query.workbook)
+        .select(Ref.query)
         .where((Ref.ref_type == "Table") & (Ref.data_source == data_source) & (Ref.table_name == table_name))
-        .run(as_dict=True)
+        .run(pluck=True)
+    )
+    if not referencing:
+        return []
+
+    return frappe.get_list(
+        "Insights Query v3",
+        filters={"name": ("in", referencing)},
+        fields=["name", "title", "workbook"],
+        limit_page_length=0,
     )
 
 
@@ -296,11 +323,11 @@ def strip_schema_prefix(table_name: str) -> str:
     return table if separator and table.startswith("tab") else table_name
 
 
-def apply_user_permissions(t: Table, data_source, table_name):
-    if frappe.flags.get("insights_for_public_access"):
-        return t
+def apply_user_permissions(t: Table, data_source, table_name, user=None):
+    user = user or get_permission_user()
 
     if not frappe.db.get_value("Insights Data Source v3", data_source, "is_site_db", cache=True):
+        # external databases and uploads carry no Frappe permissions to filter by
         return t
 
     if not frappe.db.get_single_value("Insights Settings", "apply_user_permissions", cache=True):
@@ -310,7 +337,7 @@ def apply_user_permissions(t: Table, data_source, table_name):
 
     if table_name == "tabSingles":
         single_doctypes = frappe.get_all("DocType", filters={"issingle": 1}, pluck="name")
-        allowed_doctypes = get_valid_perms()
+        allowed_doctypes = get_valid_perms(user=user)
         allowed_doctypes = [p.parent for p in allowed_doctypes if p.read]
         allowed_single_doctypes = set(single_doctypes) & set(allowed_doctypes)
         if not allowed_single_doctypes:
@@ -320,10 +347,10 @@ def apply_user_permissions(t: Table, data_source, table_name):
         return t.filter(t.doctype.isin(allowed_single_doctypes))
 
     # 1. Column-level (permlevel) read permissions: drop columns the user can't read.
-    t = apply_column_permissions(t, table_name)
+    t = apply_column_permissions(t, table_name, user)
 
     # 2. Row-level permissions: keep only the rows the user is allowed to see.
-    permission_query = get_permission_query_for_table(table_name)
+    permission_query = get_permission_query_for_table(table_name, user)
     if not permission_query:
         return t.filter(False)
 
@@ -333,14 +360,14 @@ def apply_user_permissions(t: Table, data_source, table_name):
     return apply_row_permissions(t, data_source, table_name, permission_query)
 
 
-def apply_column_permissions(t: Table, table_name):
-    """Restrict `t` to the columns the current user is permitted to read (permlevel).
+def apply_column_permissions(t: Table, table_name, user=None):
+    """Restrict `t` to the columns `user` is permitted to read (permlevel).
 
     Uses frappe's `get_permitted_fields` as the source of truth and applies it as an
     explicit projection, so column-level security is enforced consistently whether `t`
     comes from the warehouse (DuckDB) or a live site-db connection.
     """
-    allowed = get_permitted_columns_for_table(table_name)
+    allowed = get_permitted_columns_for_table(table_name, user)
     cols = [c for c in t.columns if c in allowed]
     # If nothing is permitted, the row filter below will block all rows anyway; selecting
     # an empty column list is invalid in ibis, so leave the projection untouched here.
@@ -367,8 +394,8 @@ def apply_row_permissions(t: Table, data_source, table_name, permission_query):
     return t.semi_join(names_expr, "name")
 
 
-def get_permitted_columns_for_table(table_name) -> set[str]:
-    """Columns the current user may read for `table_name`.
+def get_permitted_columns_for_table(table_name, user=None) -> set[str]:
+    """Columns `user` may read for `table_name`.
 
     For unrestricted doctypes this is the full column set (so the projection is a no-op).
     Returns an empty set when nothing is permitted (the caller's row filter then blocks
@@ -382,16 +409,16 @@ def get_permitted_columns_for_table(table_name) -> set[str]:
     def permitted(dt, parent=None) -> set[str]:
         # get_permitted_fields drops optional meta columns (`_assign`, `_comments`, ...)
         # because they aren't in valid_columns; add them back so they survive.
-        return {*get_permitted_fields(doctype=dt, parenttype=parent), *optional_fields}
+        return {*get_permitted_fields(doctype=dt, parenttype=parent, user=user), *optional_fields}
 
     if not meta.istable:
-        if not frappe.has_permission(doctype, "read"):
+        if not frappe.has_permission(doctype, "read", user=user):
             return set()
         return permitted(doctype)
 
     # Child table: union the permitted columns across every permitted parent doctype,
     # mirroring how get_permission_query_for_table builds the row filter.
-    permitted_parents = [p for p in get_parents(doctype) if frappe.has_permission(p, "read")]
+    permitted_parents = [p for p in get_parents(doctype) if frappe.has_permission(p, "read", user=user)]
     if not permitted_parents:
         return set()
 
@@ -401,12 +428,12 @@ def get_permitted_columns_for_table(table_name) -> set[str]:
     return allowed
 
 
-def get_permission_query_for_table(table_name) -> str | None:
+def get_permission_query_for_table(table_name, user=None) -> str | None:
     doctype = table_name.removeprefix("tab")
     istable = frappe.get_meta(doctype).istable
 
-    if not istable and frappe.has_permission(doctype, "read"):
-        permitted_docs_query = get_permission_query(doctype)
+    if not istable and frappe.has_permission(doctype, "read", user=user):
+        permitted_docs_query = get_permission_query(doctype, user=user)
         return permitted_docs_query
 
     if istable:
@@ -418,14 +445,16 @@ def get_permission_query_for_table(table_name) -> str | None:
 
         child_doctype = doctype
         parent_doctypes = get_parents(child_doctype)
-        permitted_parent_doctypes = [p for p in parent_doctypes if frappe.has_permission(p, "read")]
+        permitted_parent_doctypes = [
+            p for p in parent_doctypes if frappe.has_permission(p, "read", user=user)
+        ]
 
         if not permitted_parent_doctypes:
             return None
 
         child_perm_queries = []
         for parent_doctype in permitted_parent_doctypes:
-            permitted_child_docs_query = get_permission_query(child_doctype, parent_doctype)
+            permitted_child_docs_query = get_permission_query(child_doctype, parent_doctype, user=user)
             child_perm_queries.append(permitted_child_docs_query)
 
         final_query = " UNION ALL ".join(child_perm_queries)
@@ -434,7 +463,7 @@ def get_permission_query_for_table(table_name) -> str | None:
     return None
 
 
-def get_permission_query(doctype, parent_doctype=None):
+def get_permission_query(doctype, parent_doctype=None, user=None):
     # Used purely as a row filter (semi_join on `name`), so we only need `name` plus the
     # permission WHERE/match conditions. Column-level (permlevel) restrictions are applied
     # separately via apply_column_permissions().
@@ -444,6 +473,7 @@ def get_permission_query(doctype, parent_doctype=None):
             fields=["name"],
             order_by=None,
             parent_doctype=parent_doctype,
+            user=user,
             run=False,
         )
     )

@@ -5,11 +5,14 @@ import frappe
 from frappe.utils import split_emails, validate_email_address
 from frappe.utils.user import get_users_with_role
 
-from insights.decorators import insights_whitelist, validate_type
+from insights.decorators import insights_whitelist
 from insights.insights.doctype.insights_team.insights_team import (
     get_teams as get_user_teams,
 )
 from insights.insights.doctype.insights_team.insights_team import is_admin
+from insights.insights.doctype.insights_user_invitation.insights_user_invitation import (
+    get_invitation_by_key,
+)
 from insights.permissions import get_insights_users
 
 # the roster is a directory to share from, so it carries what a picker shows
@@ -159,7 +162,6 @@ def get_teams(search_term: str | None = None):
 
 
 @insights_whitelist(role="Insights Admin")
-@validate_type
 def create_team(team_name: str):
     team = frappe.new_doc("Insights Team")
     team.team_name = team_name
@@ -168,7 +170,6 @@ def create_team(team_name: str):
 
 
 @insights_whitelist(role="Insights Admin")
-@validate_type
 def update_team(team: dict):
     team = frappe._dict(team)
     doc = frappe.get_doc("Insights Team", team.name)
@@ -208,7 +209,6 @@ def update_team(team: dict):
 
 
 @insights_whitelist(role="Insights Admin")
-@validate_type
 def delete_team(team_name: str):
     frappe.delete_doc("Insights Team", team_name)
 
@@ -218,28 +218,39 @@ def add_insights_user(user: str):
     raise NotImplementedError
 
 
-@frappe.whitelist(allow_guest=True)
-@validate_type
+@frappe.whitelist(allow_guest=True)  # nosemgrep - an invitee follows this link before they have
+# an account, so it cannot require a session
 def accept_invitation(key: str):
     if not key:
         frappe.throw("Invalid or expired key")
 
-    invitation_name = frappe.db.exists("Insights User Invitation", {"key": key})
+    invitation_name = get_invitation_by_key(key)
     if not invitation_name:
         frappe.throw("Invalid or expired key")
 
     invitation = frappe.get_doc("Insights User Invitation", invitation_name)
-    invitation.accept()
+    account_was_created = invitation.accept()
     invitation.reload()
 
-    if invitation.status == "Accepted":
-        frappe.local.login_manager.login_as(invitation.email)
-        frappe.local.response["type"] = "redirect"
-        frappe.local.response["location"] = "/insights"
+    if invitation.status != "Accepted":
+        return
+
+    frappe.local.response["type"] = "redirect"
+
+    if not account_was_created:
+        # the address already had an account. The invitation grants it access to
+        # Insights; signing in is for the account holder to do. The login page
+        # carries them the rest of the way, so the link still ends in Insights.
+        frappe.local.response["location"] = "/login?redirect-to=/insights"
+        return
+
+    # a new account has no password yet, so the invitation link is how the
+    # invitee gets in the first time
+    frappe.local.login_manager.login_as(invitation.email)
+    frappe.local.response["location"] = "/insights"
 
 
 @insights_whitelist(role="Insights Admin")
-@validate_type
 def invite_users(emails: str):
     if not emails:
         return

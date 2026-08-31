@@ -3,6 +3,7 @@ import re
 import time
 from contextlib import contextmanager
 from datetime import date
+from functools import cached_property
 
 import frappe
 import ibis
@@ -26,12 +27,12 @@ from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
 )
 from insights.insights.query_builders.sql_functions import handle_timespan
-from insights.insights.query_utils import extract_sql_table_refs
+from insights.insights.query_utils import extract_sql_table_refs, get_direct_dependencies
 from insights.utils import create_execution_log
 from insights.utils import deep_convert_dict_to_dict as _dict
 
 from .ibis.functions import fiscal_year_start, week_start
-from .ibis.utils import get_functions
+from .ibis.utils import assert_expression_has_no_io, get_functions
 
 try:
     from frappe.concurrency_limiter import concurrent_limit
@@ -42,6 +43,10 @@ except ImportError:
             return func
 
         return decorator
+
+
+# the relation a `sql_column` fragment selects from, standing for the pipeline so far
+SQL_COLUMN_RELATION = "_insights_sql_column"
 
 
 class CircularQueryReferenceError(frappe.ValidationError):
@@ -106,7 +111,7 @@ class IbisQueryBuilder:
                 except CircularQueryReferenceError:
                     raise
                 except BaseException as e:
-                    operation_type_title = frappe.bold(operation.type.title())
+                    operation_type_title = operation.type.title()
                     create_toast(
                         title=f"Failed to Build {self.title} Query",
                         message=f"Please check the {operation_type_title} operation at position {idx + 1}",
@@ -136,6 +141,8 @@ class IbisQueryBuilder:
             return self.apply_remove(operation)
         elif operation.type == "mutate":
             return self.apply_mutate(operation)
+        elif operation.type == "sql_column":
+            return self.apply_sql_column(operation)
         elif operation.type == "cast":
             return self.apply_cast(operation)
         elif operation.type == "summarize":
@@ -154,6 +161,24 @@ class IbisQueryBuilder:
             return self.apply_code(operation)
         return self.query
 
+    @cached_property
+    def saved_references(self):
+        """The references stored on this query, which `validate` authorised.
+
+        Read from the row, not from the document being built: that one may have
+        come from a request body, which authorises nothing.
+        """
+        return set(get_direct_dependencies(self.doc.get("name")))
+
+    def check_query_reference(self, query_name):
+        """A saved reference is authorised. Anything else is checked now."""
+        if query_name in self.saved_references:
+            return
+
+        from insights.permissions import check_referenced_query_access
+
+        check_referenced_query_access(query_name)
+
     def get_table_or_query(self, table_args):
         _table = None
 
@@ -164,6 +189,7 @@ class IbisQueryBuilder:
                 use_live_connection=self.use_live_connection,
             )
         if table_args.type == "query":
+            self.check_query_reference(table_args.query_name)
             q = frappe.get_doc("Insights Query v3", table_args.query_name)
             _table = q.build(use_live_connection=self.use_live_connection)
 
@@ -500,6 +526,74 @@ class IbisQueryBuilder:
         if dtype:
             new_column = new_column.cast(dtype)
         return self.query.mutate(**{new_name: new_column})
+
+    def apply_sql_column(self, sql_column_args):
+        """Add one column from a raw SQL expression.
+
+        Written by the v2 migrator, for the constructs v2 expressed in SQL and v3
+        has no expression for. ibis has no scalar-level SQL escape - only
+        `Table.sql()` - so this is a relation-level operation and not a `mutate`.
+
+        `new_name` is not sanitized, unlike `apply_mutate` and `apply_rename`: a
+        migrated column keeps the name the v2 charts and filters already use.
+        """
+        new_name = sql_column_args.new_name
+        raw_sql = sql_column_args.raw_sql
+
+        if not new_name or not raw_sql or not raw_sql.strip():
+            frappe.throw(
+                frappe._("A SQL column needs both a name and an expression"),
+            )
+
+        if not sql_column_args.data_source:
+            frappe.throw(
+                frappe._("A SQL column needs the data source its expression is written for"),
+            )
+
+        data_source = frappe.get_doc("Insights Data Source v3", sql_column_args.data_source)
+        source_dialect = data_source.get_sqlglot_dialect()
+
+        raw_sql = sqlparse.format(sql=raw_sql, strip_comments=True).strip()
+
+        alias = sg.to_identifier(new_name, quoted=True).sql(dialect=source_dialect)
+        statement = f"SELECT *, {raw_sql} AS {alias} FROM {SQL_COLUMN_RELATION}"
+        self._validate_sql_column_statement(statement, source_dialect)
+
+        if not self.use_live_connection:
+            statement = self._transpile_sql_to_duckdb(statement, source_dialect)
+
+        # the alias is what puts the current pipeline in scope: without it ibis emits
+        # `FROM <original table>` and any column derived mid-pipeline is unresolvable
+        query = self.query.alias(SQL_COLUMN_RELATION).sql(statement)
+
+        dtype = self.get_ibis_dtype(sql_column_args.data_type) if sql_column_args.data_type else None
+        return query.cast({new_name: dtype}) if dtype else query
+
+    def _validate_sql_column_statement(self, statement: str, dialect: str) -> None:
+        """Validate the assembled statement, not the expression alone.
+
+        An expression parsed on its own is read as the start of a statement, so
+        `replace(...)` reads as MySQL's REPLACE. In place, it is one projection.
+        """
+        try:
+            parsed = sg.parse(statement, dialect=dialect)
+        except Exception as e:
+            frappe.throw(
+                frappe._("Failed to parse the SQL column expression: {0}").format(e),
+            )
+
+        if len(parsed) != 1 or not isinstance(parsed[0], sg.exp.Select):
+            frappe.throw(
+                frappe._("A SQL column expression must be a single expression"),
+            )
+
+        select = parsed[0]
+        tables = {table.name for table in select.find_all(sg.exp.Table)}
+        nested = len(list(select.find_all(sg.exp.Select))) > 1 or select.find(sg.exp.Subquery)
+        if nested or tables != {SQL_COLUMN_RELATION}:
+            frappe.throw(
+                frappe._("A SQL column expression cannot read another table"),
+            )
 
     def apply_summary(self, summarize_args):
         aggregates = [self.translate_measure(measure) for measure in summarize_args.measures]
@@ -1060,6 +1154,8 @@ def exec_with_return(
     _globals: dict | None = None,
     _locals: dict | None = None,
 ):
+    assert_expression_has_no_io(script)
+
     tree = ast.parse(script)
 
     if not tree.body:

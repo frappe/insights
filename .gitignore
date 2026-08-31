@@ -189,3 +189,4 @@ frontend/package-lock.json
 frontend/components.d.ts
 docs/
 scripts/
+.claude/
