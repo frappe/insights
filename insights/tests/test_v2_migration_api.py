@@ -378,6 +378,17 @@ class TestV2MigrationAPI(InsightsIntegrationTestCase):
         self.assertIn(DASHBOARD, [row["dashboard"] for row in answer["dashboards"]])
         enqueue.assert_called_once()
 
+    def test_storing_a_verification_does_not_flush_the_site_cache(self):
+        """`frappe.db.set_global` parents on `__global`, which frappe treats as a
+        common key and answers with `clear_cache(user=None)` - every redis key
+        for the site, once per migrated dashboard."""
+        frappe.cache().set_value("insights_v2_cache_witness", {"alive": True}, expires_in_sec=600)
+        self.addCleanup(frappe.cache().delete_value, "insights_v2_cache_witness")
+
+        run_v2_dashboard_migration(DASHBOARD)
+
+        self.assertEqual(frappe.cache().get_value("insights_v2_cache_witness"), {"alive": True})
+
     def test_a_migration_drops_the_cached_scan(self):
         self.scanned()
         run_v2_dashboard_migration(DASHBOARD)

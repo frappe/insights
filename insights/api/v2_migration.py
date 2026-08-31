@@ -809,13 +809,49 @@ def verification_key(dashboard: str) -> str:
 
 
 def read_verification(dashboard: str) -> dict | None:
-    stored = frappe.db.get_global(verification_key(dashboard))
+    """Read the row, not the defaults cache.
+
+    `frappe.db.get_global` answers from a dict cached per site, which a write in
+    the same transaction has not landed in yet.
+    """
+    stored = frappe.db.get_value(
+        "DefaultValue",
+        {"parent": "__global", "defkey": verification_key(dashboard)},
+        "defvalue",
+    )
     if not stored:
         return None
     try:
         return json.loads(stored)
     except ValueError:
         return None
+
+
+def write_verification(dashboard: str, stored: dict) -> None:
+    """Store one dashboard's verification, without flushing the site cache.
+
+    The same `tabDefaultValue` row `frappe.db.set_global` would write, written
+    directly. `set_global` parents on `__global`, which `frappe.defaults`
+    treats as a common key, so it answers with `frappe.clear_cache(user=None)` -
+    every redis key for the site, once per migrated dashboard
+    (`frappe/defaults.py:273`, `frappe/cache_manager.py:296`). A per-dashboard
+    note is not a site default, and nothing reads this through the cache.
+    """
+    key = verification_key(dashboard)
+    value = json.dumps(stored)
+    name = frappe.db.get_value("DefaultValue", {"parent": "__global", "defkey": key}, "name")
+    if name:
+        frappe.db.set_value("DefaultValue", name, "defvalue", value)
+        return
+
+    frappe.get_doc(
+        doctype="DefaultValue",
+        parent="__global",
+        parenttype="__default",
+        parentfield="__default",
+        defkey=key,
+        defvalue=value,
+    ).insert(ignore_permissions=True)
 
 
 def _verification_summary(stored: dict | None) -> dict | None:
@@ -880,7 +916,7 @@ def store_verification(result, report) -> dict:
         "queries": queries,
         "report": report.report,
     }
-    frappe.db.set_global(verification_key(result.plan.source), json.dumps(stored))
+    write_verification(result.plan.source, stored)
     return stored
 
 
