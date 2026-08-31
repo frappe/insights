@@ -353,9 +353,7 @@ export const query_operation_types = {
 			return `${op.new_name}`
 		},
 	},
-	// Not in `AddOperationPopover`, so nobody can author one: the migrator is the
-	// only writer. The label says so, because a raw SQL step is a thing to rewrite
-	// as a formula, not a thing to copy.
+	// No popover entry: the v2 migrator is the only writer.
 	sql_column: {
 		label: __('SQL column (from v2)'),
 		type: 'sql_column',
