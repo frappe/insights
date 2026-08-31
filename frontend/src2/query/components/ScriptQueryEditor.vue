@@ -13,7 +13,7 @@ import QueryDataTable from './QueryDataTable.vue'
 
 const query = inject<Query>('query')!
 query.autoExecute = false
-query.execute()
+query.ensureResult()
 
 const operation = query.getCodeOperation()
 const code = ref(operation ? operation.code : '')

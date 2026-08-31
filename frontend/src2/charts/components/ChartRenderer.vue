@@ -202,7 +202,7 @@ const showExpandedChartDialog = ref(false)
 			:onClick="onChartElementClick"
 		/>
 		<NumberChart
-			v-else-if="!loading && chart_type == 'Number'"
+			v-else-if="!loading && chart_type == 'Number' && !chart.dataQuery.executionError"
 			:config="config as NumberChartConfig"
 			:result="result"
 			@drill-down="onNumberChartDrillDown"
@@ -230,7 +230,10 @@ const showExpandedChartDialog = ref(false)
 			</template>
 			<template v-else-if="chart.dataQuery.executionError">
 				<TriangleAlert class="h-5 w-5 text-ink-red-4" stroke-width="1.5" />
-				<p class="mt-1.5 px-4 text-center font-mono text-xs leading-5 text-ink-red-4">
+				<p
+					class="mt-1.5 line-clamp-3 px-4 text-center font-mono text-xs leading-5 text-ink-red-4"
+					:title="chart.dataQuery.executionError"
+				>
 					{{ chart.dataQuery.executionError }}
 				</p>
 			</template>
