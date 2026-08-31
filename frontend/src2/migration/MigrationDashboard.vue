@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { Badge } from 'frappe-ui'
-import { AlertTriangle, Check, Copy, X } from 'lucide-vue-next'
+import { AlertTriangle, Check, X } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { copyToClipboard } from '../helpers'
 import { __ } from '../translation'
 import useV2MigrationStore, {
 	DashboardScan,
@@ -57,15 +56,6 @@ const itemsInOrder = computed(() => {
 const differingQueries = computed(
 	() => verification.value?.queries.filter((q) => q.verdict === 'different') || [],
 )
-
-const copied = ref(false)
-function copyReport() {
-	if (!props.dashboard) return
-	const parts = [props.dashboard.report, verification.value?.report].filter(Boolean)
-	copyToClipboard(parts.join('\n\n'))
-	copied.value = true
-	setTimeout(() => (copied.value = false), 2000)
-}
 </script>
 
 <template>
@@ -202,32 +192,21 @@ function copyReport() {
 		</template>
 
 		<template #actions>
-			<div class="flex justify-between gap-2">
+			<div class="flex justify-end gap-2">
+				<Button :label="__('Close')" variant="subtle" @click="show = false" />
 				<Button
-					variant="ghost"
-					:label="copied ? __('Copied') : __('Copy report')"
-					@click="copyReport"
-				>
-					<template #prefix>
-						<Copy class="h-4 w-4" />
-					</template>
-				</Button>
-				<div class="flex gap-2">
-					<Button :label="__('Close')" variant="subtle" @click="show = false" />
-					<Button
-						v-if="migrated"
-						:label="__('Open in v3')"
-						variant="solid"
-						@click="emit('open', props.dashboard)"
-					/>
-					<Button
-						v-else-if="canMigrate"
-						:label="__('Migrate')"
-						variant="solid"
-						:loading="store.migrating"
-						@click="emit('migrate', props.dashboard)"
-					/>
-				</div>
+					v-if="migrated"
+					:label="__('Open in v3')"
+					variant="solid"
+					@click="emit('open', props.dashboard)"
+				/>
+				<Button
+					v-else-if="canMigrate"
+					:label="__('Migrate')"
+					variant="solid"
+					:loading="store.migrating"
+					@click="emit('migrate', props.dashboard)"
+				/>
 			</div>
 		</template>
 	</Dialog>
