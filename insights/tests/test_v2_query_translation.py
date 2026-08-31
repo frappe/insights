@@ -457,7 +457,7 @@ class TestExpressionColumns(UnitTestCase):
         result = translate(v2_query({"columns": [expression_column("Bumped", ast)]}))
         operation = find(result, "sql_column")
         self.assertEqual(operation["new_name"], "Bumped")
-        self.assertEqual(operation["fragment"], "`status` + 1")
+        self.assertEqual(operation["raw_sql"], "`status` + 1")
         # sqlglot rejects v2's backtick identifiers without the source dialect.
         self.assertEqual(operation["data_source"], "frappe.io")
 

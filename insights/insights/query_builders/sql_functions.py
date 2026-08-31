@@ -1,6 +1,7 @@
 import datetime
 import operator
 from contextlib import suppress
+from typing import ClassVar
 
 import frappe
 from frappe.utils.data import (
@@ -54,7 +55,7 @@ class ColumnFormatter:
     def format(cls, format_options: dict, column_type: str, column: Column) -> Column:
         if format_options and format_options.date_format and column_type in DATE_TYPES:
             date_format = format_options.date_format
-            date_format = date_format if type(date_format) == str else date_format.get("value")
+            date_format = date_format if isinstance(date_format, str) else date_format.get("value")
             return cls.format_date(date_format, column)
         return column
 
@@ -413,13 +414,13 @@ def add_start_and_end_time(dates):
 
 
 class BinaryOperations:
-    ARITHMETIC_OPERATIONS = {
+    ARITHMETIC_OPERATIONS: ClassVar[dict] = {
         "+": operator.add,
         "-": operator.sub,
         "*": operator.mul,
         "/": operator.truediv,
     }
-    COMPARE_OPERATIONS = {
+    COMPARE_OPERATIONS: ClassVar[dict] = {
         "=": operator.eq,
         "!=": operator.ne,
         "<": operator.lt,
@@ -427,7 +428,7 @@ class BinaryOperations:
         "<=": operator.le,
         ">=": operator.ge,
     }
-    LOGICAL_OPERATIONS = {
+    LOGICAL_OPERATIONS: ClassVar[dict] = {
         "&&": lambda a, b: and_(a, b),
         "||": lambda a, b: or_(a, b),
     }
