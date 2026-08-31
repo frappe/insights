@@ -75,6 +75,7 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 							<MeasurePicker
 								:model-value="item"
 								:column-options="props.columnOptions"
+								:enable-format="true"
 								@update:model-value="Object.assign(item, $event || {})"
 								@remove="config.number_columns.splice(index, 1)"
 							>

@@ -1,11 +1,10 @@
 import frappe
 
-from insights.decorators import insights_whitelist, validate_type
+from insights.decorators import insights_whitelist
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 
 
 @insights_whitelist()
-@validate_type
 def get_data_store_tables(data_source: str | None = None, search_term: str | None = None, limit: int = 100):
     filters = {"stored": 1}
     if data_source:
@@ -50,7 +49,6 @@ def get_data_store_tables(data_source: str | None = None, search_term: str | Non
 
 
 @insights_whitelist(role="Insights Admin")
-@validate_type
 def import_table(data_source: str, table_name: str):
     name = get_table_name(data_source, table_name)
     table_doc = frappe.get_doc("Insights Table v3", name)

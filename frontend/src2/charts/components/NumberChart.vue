@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { formatNumber, getShortNumber } from '../../helpers'
+import { formatNumber, getFormatUnits, getShortNumber } from '../../helpers'
 import { NumberChartConfig, NumberColumnOptions } from '../../types/chart.types'
-import { QueryResult, QueryResultColumn, QueryResultRow } from '../../types/query.types'
+import { DataFormat, QueryResult, QueryResultColumn, QueryResultRow } from '../../types/query.types'
 import Sparkline from './Sparkline.vue'
 
 const props = defineProps<{
@@ -48,18 +48,26 @@ const cards = computed(() => {
 			: currentValue - previousValue
 		const percentDelta = (delta / Math.abs(previousValue)) * 100
 
-		const prefix = getNumberOption(idx, 'prefix')
-		const suffix = getNumberOption(idx, 'suffix')
 		const decimal = getNumberOption(idx, 'decimal')
 		const color = getNumberOption(idx, 'color')
 		const shorten_numbers = getNumberOption(idx, 'shorten_numbers')
+		const format = config.value.number_columns.find((c) => c.measure_name === measure_name)
+			?.format
+
+		// The measure's format states the unit. A prefix set on the card replaces
+		// it — a card that spelled out its own symbol meant that one. A suffix
+		// sits after the unit instead, the way "12.5% of target" reads.
+		const units = getFormatUnits(format)
+		const prefix = getNumberOption(idx, 'prefix') || units.prefix
+		const suffix = `${units.suffix}${getNumberOption(idx, 'suffix') || ''}`
 
 		return {
 			measure_name,
 			values: numberValues,
-			currentValue: getFormattedValue(currentValue, decimal, shorten_numbers),
-			previousValue: getFormattedValue(previousValue, decimal, shorten_numbers),
+			currentValue: getFormattedValue(currentValue, decimal, shorten_numbers, format),
+			previousValue: getFormattedValue(previousValue, decimal, shorten_numbers, format),
 			delta,
+			// percentDelta is already a percentage change, so it keeps the default format
 			percentDelta: getFormattedValue(percentDelta, decimal, shorten_numbers),
 			prefix,
 			suffix,
@@ -68,12 +76,19 @@ const cards = computed(() => {
 	})
 })
 
-const getFormattedValue = (value: number, decimal?: number, shorten_numbers?: boolean) => {
+const getFormattedValue = (
+	value: number,
+	decimal?: number,
+	shorten_numbers?: boolean,
+	format?: DataFormat,
+) => {
 	if (isNaN(value)) return 0
+	// the number alone — its unit prints around it, from the same format
+	const scaled = value * getFormatUnits(format).scale
 	if (shorten_numbers) {
-		return getShortNumber(value, decimal)
+		return getShortNumber(scaled, decimal)
 	}
-	return formatNumber(value, decimal)
+	return formatNumber(scaled, decimal)
 }
 
 function getNumberOption(index: number, option: keyof NumberColumnOptions) {

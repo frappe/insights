@@ -42,10 +42,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx --no semantic-release
-      - name: Enrich release notes with author mentions
+      - name: Write release notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          bash .github/helpers/enrich_release_notes.sh \
-            "${{ steps.pre_release.outputs.tag }}" \
-            "${{ github.repository }}"
+          TAG=$(gh release list --limit 1 --json tagName --jq '.[0].tagName // ""')
+          PREV="${{ steps.pre_release.outputs.tag }}"
+          if [ -z "$TAG" ] || [ "$TAG" = "$PREV" ]; then
+            echo "No new release created, skipping."
+            exit 0
+          fi
+          python3 .github/helpers/generate_release_notes.py \
+            --repo "${{ github.repository }}" \
+            --prev "$PREV" \
+            --tag "$TAG" \
+            --publish
