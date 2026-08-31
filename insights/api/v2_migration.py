@@ -38,7 +38,7 @@ from frappe.utils import add_days, get_datetime, now_datetime
 from frappe.utils.background_jobs import JobStatus, get_job, is_job_enqueued
 from frappe.utils.telemetry import capture
 
-from insights.decorators import insights_whitelist
+from insights.decorators import has_role, insights_whitelist
 from insights.migrator.v2_charts import chart_from_dashboard_item, parse_json
 from insights.migrator.v2_dashboards import FILTER_ITEM, TEXT_ITEM
 from insights.migrator.v2_verification import DIFFERENT, EXPECTED, SAME, verify_migration
@@ -65,6 +65,10 @@ malformed or hostile list cannot fill the queue.
 """
 
 MAX_LIST_LIMIT = 500
+
+# The one place the gate is named. `_can_migrate` answers the same test, so
+# the nudge cannot offer a button the endpoints refuse.
+MIGRATION_ROLE = "Insights Admin"
 
 MIGRATION_QUEUE = "long"
 MIGRATION_TIMEOUT = 30 * 60
@@ -330,7 +334,7 @@ def _gap_kinds(plan) -> list[str]:
 # -- endpoints --------------------------------------------------------------
 
 
-@insights_whitelist(role="Insights Admin")
+@insights_whitelist(role=MIGRATION_ROLE)
 def get_v2_dashboards(search: str | None = None, limit: int = 100) -> list[dict]:
     """Every v2 dashboard, with what a migration of it would involve.
 
@@ -376,7 +380,7 @@ def get_v2_dashboards(search: str | None = None, limit: int = 100) -> list[dict]
     return dashboards
 
 
-@insights_whitelist(role="Insights Admin")
+@insights_whitelist(role=MIGRATION_ROLE)
 def preview_v2_dashboard(dashboard: str) -> dict:
     """What migrating this dashboard would produce. Writes nothing.
 
@@ -394,7 +398,7 @@ SCAN_CACHE_KEY = "insights_v2_migration_scan"
 SCAN_CACHE_TTL = 30 * 60
 
 
-@insights_whitelist(role="Insights Admin")
+@insights_whitelist(role=MIGRATION_ROLE)
 def scan_v2_dashboards(refresh: bool = False) -> dict:
     """Preview every v2 dashboard at once, so the page can sort them into groups.
 
@@ -588,14 +592,14 @@ def get_v2_migration_nudge() -> dict:
 def _can_migrate() -> bool:
     """The same test `migrate_v2_dashboards` applies.
 
-    Read through `frappe.get_roles` rather than through `insights_team.is_admin`,
-    which answers a different question - a System Manager passes that one and is
-    still refused by the endpoint the button calls.
+    Asked through `has_role`, which is what `insights_whitelist` enforces. A
+    second copy of the rule here would drift, and the UI would then offer a
+    button the endpoint refuses.
     """
-    return frappe.session.user == "Administrator" or "Insights Admin" in frappe.get_roles(frappe.session.user)
+    return has_role(MIGRATION_ROLE)
 
 
-@insights_whitelist(role="Insights Admin")
+@insights_whitelist(role=MIGRATION_ROLE)
 def set_v2_migration_nudge(hidden: bool) -> None:
     """Stop offering the migration, or start offering it again.
 
@@ -620,7 +624,7 @@ def set_v2_migration_nudge(hidden: bool) -> None:
     _capture("v2_migration_restored", {"waiting": _v2_dashboards_waiting()})
 
 
-@insights_whitelist(role="Insights Admin")
+@insights_whitelist(role=MIGRATION_ROLE)
 def migrate_v2_dashboards(dashboards: list[str]) -> dict:
     """Queue a migration for each named v2 dashboard.
 
@@ -690,7 +694,7 @@ def migrate_v2_dashboards(dashboards: list[str]) -> dict:
     return {"accepted": accepted, "skipped": skipped}
 
 
-@insights_whitelist(role="Insights Admin")
+@insights_whitelist(role=MIGRATION_ROLE)
 def get_v2_migration_status(dashboards: list[str] | None = None) -> dict:
     """Where each named v2 dashboard stands, derived, not stored.
 
@@ -727,7 +731,7 @@ def get_v2_migration_status(dashboards: list[str] | None = None) -> dict:
     return status
 
 
-@insights_whitelist(role="Insights Admin")
+@insights_whitelist(role=MIGRATION_ROLE)
 def get_v2_verification(dashboard: str) -> dict | None:
     """What the numbers check found, query by query. Nothing until one has run."""
     _require_v2_dashboard(dashboard)
