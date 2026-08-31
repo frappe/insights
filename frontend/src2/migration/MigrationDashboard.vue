@@ -2,8 +2,6 @@
 import { Badge } from 'frappe-ui'
 import { AlertTriangle, Check, X } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { showSettingsDialog } from '../settings/settings'
 import { __ } from '../translation'
 import useV2MigrationStore, {
 	DashboardScan,
@@ -25,16 +23,7 @@ const emit = defineEmits<{
 
 const show = defineModel({ required: true, default: false })
 
-const router = useRouter()
 const store = useV2MigrationStore()
-
-/** This dialog opens over the settings dialog, which owns the viewport. A route
- * pushed under it would open behind it, so both close first. */
-function openDataSources() {
-	show.value = false
-	showSettingsDialog.value = false
-	router.push('/data-source')
-}
 const verification = ref<Verification | null>(null)
 
 const status = computed(() =>
@@ -101,17 +90,9 @@ const differingQueries = computed(
 
 		<template #body-content>
 			<div class="flex max-h-[60vh] flex-col gap-4 overflow-y-auto text-base">
-				<div class="flex flex-col items-start gap-2">
-					<p class="text-p-base text-ink-gray-7">
-						{{ description }}
-					</p>
-					<Button
-						v-if="props.dashboard.unresolved_data_sources.length"
-						variant="subtle"
-						:label="__('Go to Data Sources')"
-						@click="openDataSources"
-					/>
-				</div>
+				<p class="text-p-base text-ink-gray-7">
+					{{ description }}
+				</p>
 
 				<ul v-if="differingQueries.length" class="flex flex-col gap-2">
 					<li

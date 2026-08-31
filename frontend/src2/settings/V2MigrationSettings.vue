@@ -364,11 +364,6 @@ async function migrate(targets: Row[]) {
 		</template>
 		<template #actions>
 			<div class="flex justify-end gap-2">
-				<Button
-					:label="__('Go to Data Sources')"
-					variant="subtle"
-					@click="leaveSettings('/data-source')"
-				/>
 				<Button :label="__('Close')" variant="solid" @click="showHelp = false" />
 			</div>
 		</template>
