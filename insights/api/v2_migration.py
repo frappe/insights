@@ -49,7 +49,6 @@ from insights.migrator.v2_workbooks import (
     V3_DASHBOARD,
     V3_QUERY,
     candidate_roots,
-    format_report,
     load_v2_dashboard,
     load_v2_queries,
     migrate_dashboard,
@@ -272,22 +271,10 @@ def _summarize(plan, items: list[dict], landed: dict) -> dict:
         "dashboard": plan.source,
         "title": plan.title,
         "verdict": _verdict(plan, bool(landed)),
-        "converts_cleanly": plan.converts_cleanly,
         "chart_count": len(charts),
         "charts_carried": len([item for item in charts if item["state"] != "dropped"]),
         "items": reported,
         "queries": query_sections,
-        "counts": {
-            "queries": {**plan.kinds, "total": len(plan.queries)},
-            "items": {
-                "total": plan.item_count,
-                "converted": plan.converted_items,
-                "dropped": plan.dropped_items,
-            },
-        },
-        "unresolved_data_sources": plan.unresolved_data_sources,
-        "dropped_queries": plan.dropped_queries,
-        "report": format_report(plan),
         "migrated_workbook": landed.get("workbook"),
         "migrated_dashboard": landed.get("dashboard"),
         # Carried on the scan rather than fetched per row: the reader shows it
@@ -527,15 +514,10 @@ def _unreadable(name: str, landed: dict) -> dict:
         "dashboard": name,
         "title": (title and title[0][0]) or name,
         "verdict": "migrated" if landed else "unreadable",
-        "converts_cleanly": False,
         "chart_count": 0,
         "charts_carried": 0,
         "items": [],
         "queries": [],
-        "counts": {},
-        "unresolved_data_sources": [],
-        "dropped_queries": [],
-        "report": "",
         "migrated_workbook": landed.get("workbook"),
         "migrated_dashboard": landed.get("dashboard"),
         "verification": _verification_summary(read_verification(name)) if landed else None,
@@ -917,7 +899,6 @@ def store_verification(result, report) -> dict:
         ),
         "differing_charts": sorted(set(differing)),
         "queries": queries,
-        "report": report.report,
     }
     write_verification(result.plan.source, stored)
     return stored
@@ -954,7 +935,6 @@ def run_v2_dashboard_migration(dashboard: str) -> dict:
         "dashboard": result.dashboard,
         "workbook": result.workbook,
         "skipped": result.skipped,
-        "report": result.report,
         "verification": verification,
     }
 

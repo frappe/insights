@@ -9,7 +9,6 @@ export type MigrationNote = {
 	kind: string
 	/** The docname the translator raised it against. */
 	source: string
-	/** The translator's own words. Kept for the copied report, not shown. */
 	detail: string
 	/** A loss the user will see in their numbers, as opposed to a note. */
 	dropped: boolean
@@ -35,15 +34,10 @@ export type DashboardScan = {
 	dashboard: string
 	title: string
 	verdict: MigrationVerdict
-	converts_cleanly: boolean
 	chart_count: number
 	charts_carried: number
 	items: MigrationItem[]
 	queries: QuerySection[]
-	counts: Record<string, any>
-	unresolved_data_sources: string[]
-	dropped_queries: string[]
-	report: string
 	migrated_workbook: string | null
 	migrated_dashboard: string | null
 	verification: VerificationSummary | null
@@ -85,7 +79,6 @@ export type Verification = VerificationSummary & {
 	workbook: string | null
 	checked_at: string
 	queries: VerifiedQuery[]
-	report: string
 }
 
 const POLL_INTERVAL = 2000

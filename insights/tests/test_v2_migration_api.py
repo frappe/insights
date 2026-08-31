@@ -219,11 +219,11 @@ class TestV2MigrationAPI(InsightsIntegrationTestCase):
 
     def test_the_preview_reports_the_plan(self):
         preview = preview_v2_dashboard(DASHBOARD)
-        self.assertTrue(preview["converts_cleanly"])
-        self.assertEqual(preview["counts"]["queries"]["total"], 2)
-        self.assertEqual(preview["counts"]["items"], {"total": 2, "converted": 2, "dropped": 0})
-        self.assertIn(DASHBOARD, preview["report"])
-        self.assertEqual(preview["unresolved_data_sources"], [])
+        self.assertEqual(preview["verdict"], "ready")
+        self.assertEqual(preview["chart_count"], 1)
+        self.assertEqual(preview["charts_carried"], 1)
+        self.assertEqual(len(preview["items"]), 2)
+        self.assertEqual([item["state"] for item in preview["items"]], ["ok", "ok"])
 
     def test_the_preview_writes_nothing(self):
         before = self.v3_row_counts()
