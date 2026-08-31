@@ -167,7 +167,9 @@ class IbisQueryBuilder:
         # with a table that is missing a column, a filter or a join, and nothing
         # says so. A query written by a newer client has to fail, not quietly
         # return different numbers.
-        return self.query
+        frappe.throw(
+            frappe._("This query uses an operation this version does not know: {0}").format(operation.type),
+        )
 
     @cached_property
     def saved_references(self):

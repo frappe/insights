@@ -211,3 +211,12 @@ class TestSQLColumnOperation(InsightsIntegrationTestCase):
                     }
                 ]
             )
+
+    def test_an_operation_this_version_does_not_know_is_refused(self):
+        """A newer client's operation must fail, not return different numbers.
+
+        `sql_column` is the first operation to reach a release that predates it,
+        so the answer to an unknown type is settled here rather than per type.
+        """
+        with self.assertRaises(frappe.ValidationError):
+            self.execute([{"type": "operation_from_the_future", "new_name": "x"}])
