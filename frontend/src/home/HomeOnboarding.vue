@@ -111,9 +111,9 @@ const { waiting, canMigrate } = useV2MigrationNudge()
 			</div>
 
 			<div class="mt-5 flex justify-end gap-2">
-				<Button v-if="waiting && canMigrate" variant="subtle" @click="openInsightsV3()">
-					Open Insights v3
-				</Button>
+				<Button variant="subtle" @click="showDetailsDialog = false">Close</Button>
+				<!-- The migration page is in v3, so "Review migration" is also the way
+				 over. One button either way. -->
 				<Button
 					variant="solid"
 					@click="openInsightsV3(waiting && canMigrate ? MIGRATION_URL : '/insights')"
