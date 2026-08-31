@@ -30,6 +30,7 @@ from unittest.mock import patch
 import frappe
 from frappe.utils import add_days, get_datetime, now_datetime
 
+from insights.api import v2_migration
 from insights.api.v2_migration import (
     MAX_DASHBOARDS,
     NUDGE_HIDDEN_KEY,
@@ -389,10 +390,20 @@ class TestV2MigrationAPI(InsightsIntegrationTestCase):
 
         self.assertEqual(frappe.cache().get_value("insights_v2_cache_witness"), {"alive": True})
 
-    def test_a_migration_drops_the_cached_scan(self):
+    def test_a_migration_updates_its_own_row_and_leaves_the_rest_alone(self):
+        """The page renders from this cache, so a migration must not empty it."""
         self.scanned()
-        run_v2_dashboard_migration(DASHBOARD)
-        self.assertEqual(self.scanned()[DASHBOARD]["verdict"], "migrated")
+
+        with patch("insights.api.v2_migration._plan_for", wraps=v2_migration._plan_for) as planned:
+            run_v2_dashboard_migration(DASHBOARD)
+
+        answer = scan_v2_dashboards()
+        self.assertEqual(answer["status"], "ready")
+        rows = {row["dashboard"]: row for row in answer["dashboards"]}
+        self.assertEqual(rows[DASHBOARD]["verdict"], "migrated")
+        self.assertTrue(rows[DASHBOARD]["migrated_workbook"])
+        # one row re-planned, not the whole site
+        self.assertEqual([call.args[0] for call in planned.call_args_list], [DASHBOARD])
 
     def test_a_failed_scan_is_cached_so_the_page_stops_asking(self):
         with patch("insights.api.v2_migration._build_scan", side_effect=Exception("boom")):

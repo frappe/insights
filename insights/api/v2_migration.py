@@ -941,12 +941,11 @@ def run_v2_dashboard_migration(dashboard: str) -> dict:
         _capture("v2_migration_failed", {"error": type(exception).__name__})
         raise
 
-    # The scan says which group a dashboard belongs in, and this run just moved
-    # one of them.
-    frappe.cache().delete_value(SCAN_CACHE_KEY)
-
     verification = _verify(result)
     _capture_outcome(result, verification)
+
+    # After the verification, because the row carries its summary.
+    _refresh_scan_row(dashboard)
 
     return {
         "dashboard": result.dashboard,
@@ -955,6 +954,30 @@ def run_v2_dashboard_migration(dashboard: str) -> dict:
         "report": result.report,
         "verification": verification,
     }
+
+
+def _refresh_scan_row(dashboard: str) -> None:
+    """Bring one dashboard's row in the cached scan up to date.
+
+    Not a cache drop. The page renders from this cache, so dropping it costs the
+    admin the list, the search and the filter, and re-plans every other dashboard
+    on the site - to report one row that changed. A dashboard the cache does not
+    already carry is one the page never showed, so there is nothing to update.
+    """
+    cached = frappe.cache().get_value(SCAN_CACHE_KEY)
+    if not cached:
+        return
+
+    landed = _migrated([dashboard]).get(dashboard) or {}
+    try:
+        plan, items = _plan_for(dashboard)
+        row = _summarize(plan, items, landed)
+    except Exception:
+        frappe.log_error(f"v2 migration scan row failed for {dashboard}")
+        row = _unreadable(dashboard, landed)
+
+    cached["dashboards"] = [row if d["dashboard"] == dashboard else d for d in cached["dashboards"]]
+    frappe.cache().set_value(SCAN_CACHE_KEY, cached, expires_in_sec=SCAN_CACHE_TTL)
 
 
 def _capture_outcome(result, verification: dict | None) -> None:
