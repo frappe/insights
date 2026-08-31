@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Button } from 'frappe-ui'
-import { Bell, Download } from 'lucide-vue-next'
+import { Bell, Download, TriangleAlert } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import DrillDown from '../../charts/components/DrillDown.vue'
 import DataTable from '../../components/DataTable.vue'
@@ -167,6 +167,15 @@ function onFilterChange(filters: Record<string, string>) {
 </script>
 
 <template>
+	<div
+		v-if="props.query.executionError"
+		class="flex flex-shrink-0 items-start gap-2 border-b bg-surface-gray-1 px-3 py-2"
+	>
+		<TriangleAlert class="mt-0.5 h-4 w-4 flex-shrink-0 text-ink-red-4" stroke-width="1.5" />
+		<div class="font-mono text-xs leading-5 text-ink-red-4">
+			{{ props.query.executionError }}
+		</div>
+	</div>
 	<DataTable
 		v-if="props.query.isloaded || props.query.islocal"
 		:loading="props.query.executing && !isFiltering"

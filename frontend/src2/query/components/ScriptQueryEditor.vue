@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useTimeAgo } from '@vueuse/core'
-import { Braces, Bug, MoreHorizontal, Play } from 'lucide-vue-next'
+import { BookOpen, Braces, Bug, MoreHorizontal, Play } from 'lucide-vue-next'
 import { inject, ref } from 'vue'
 import Code from '../../components/Code.vue'
 import ContentEditable from '../../components/ContentEditable.vue'
@@ -13,13 +13,13 @@ import QueryDataTable from './QueryDataTable.vue'
 
 const query = inject<Query>('query')!
 query.autoExecute = false
-query.execute()
+query.ensureResult()
 
 const operation = query.getCodeOperation()
 const code = ref(operation ? operation.code : '')
 wheneverChanges(code, () => query.setCode({ code: code.value }), { debounce: 500 })
 
-const placeholder_script = `# Write your script here`
+const placeholder_script = `# assign rows to \`results\`, e.g. results = frappe.db.get_all("ToDo", fields=["name", "status"])`
 
 const showLogs = ref(false)
 const scriptLogs = ref<string[]>([])
@@ -28,6 +28,21 @@ attachRealtimeListener('insights_script_log', (data: any) => {
 		scriptLogs.value = data.logs
 	}
 })
+
+// the error is written to the logs, so a failed run has to open the panel
+// holding it - otherwise the script author is told nothing at all
+wheneverChanges(
+	() => query.executionError,
+	(error) => {
+		if (error) showLogs.value = true
+	},
+)
+
+const DOCS_URL = 'https://docs.frappe.io/insights/querying/script-query-api'
+
+function openDocs() {
+	window.open(DOCS_URL, '_blank', 'noopener')
+}
 
 const showVariablesDialog = ref(false)
 const localVariables = ref<any[]>([])
@@ -113,6 +128,11 @@ function handleSaveVariables(variables: any[]) {
 							label: __('Logs'),
 							icon: Bug,
 							onClick: () => (showLogs = !showLogs),
+						},
+						{
+							label: __('Docs'),
+							icon: BookOpen,
+							onClick: openDocs,
 						},
 					]"
 				/>

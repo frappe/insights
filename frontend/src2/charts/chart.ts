@@ -454,9 +454,7 @@ function makeChart(name: string) {
 	function getDependentQueryColumns() {
 		return getDependentQueries().map((q) => {
 			const query = useQuery(q)
-			if (!query.result.executedSQL) {
-				query.execute()
-			}
+			query.ensureResult()
 			return {
 				group: query.doc.title,
 				items: query.result.columnOptions.map((c) => {

@@ -17,7 +17,7 @@ import DataSourceSelector from './source_selector/DataSourceSelector.vue'
 
 const query = inject<Query>('query')!
 query.autoExecute = false
-query.execute()
+query.ensureResult()
 
 const operation = query.getSQLOperation()
 const data_source = ref(operation ? operation.data_source : '')

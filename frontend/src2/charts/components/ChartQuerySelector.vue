@@ -15,10 +15,7 @@ wheneverChanges(
 	query,
 	() => {
 		if (query.value) {
-			const q = useQuery(query.value)
-			if (q && !q.result.executedSQL) {
-				q.execute()
-			}
+			useQuery(query.value)?.ensureResult()
 		}
 	},
 	{ immediate: true },

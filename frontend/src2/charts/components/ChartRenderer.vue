@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Button } from 'frappe-ui'
-import { Maximize, XIcon, RefreshCcw } from 'lucide-vue-next'
+import { Maximize, XIcon, RefreshCcw, TriangleAlert } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { titleCase } from '../../helpers'
 import { FIELDTYPES } from '../../helpers/constants.ts'
@@ -202,7 +202,7 @@ const showExpandedChartDialog = ref(false)
 			:onClick="onChartElementClick"
 		/>
 		<NumberChart
-			v-else-if="!loading && chart_type == 'Number'"
+			v-else-if="!loading && chart_type == 'Number' && !chart.dataQuery.executionError"
 			:config="config as NumberChartConfig"
 			:result="result"
 			@drill-down="onNumberChartDrillDown"
@@ -227,6 +227,15 @@ const showExpandedChartDialog = ref(false)
 						<RefreshCcw class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 					</template>
 				</Button>
+			</template>
+			<template v-else-if="chart.dataQuery.executionError">
+				<TriangleAlert class="h-5 w-5 text-ink-red-4" stroke-width="1.5" />
+				<p
+					class="mt-1.5 line-clamp-3 px-4 text-center font-mono text-xs leading-5 text-ink-red-4"
+					:title="chart.dataQuery.executionError"
+				>
+					{{ chart.dataQuery.executionError }}
+				</p>
 			</template>
 			<template v-else>
 				<ChartSectionEmptySvg></ChartSectionEmptySvg>
