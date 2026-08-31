@@ -61,15 +61,26 @@
 						<div
 							class="w-fit rounded border border-gray-100 bg-gray-800 px-2 py-1 text-xs text-white shadow-xl"
 						>
-							v2 is being discontinued
+							{{
+								dashboardsWaiting
+									? 'v2 is being discontinued. Move your dashboards to v3.'
+									: 'v2 is being discontinued'
+							}}
 						</div>
 					</template>
 					<Button
 						variant="ghost"
-						class="!text-amber-700 hover:!bg-amber-50"
+						class="relative !text-amber-700 hover:!bg-amber-50"
 						@click="showSwitchToV3Dialog = true"
 					>
 						<AlertTriangle class="h-4" />
+						<!-- The rail is 56px wide and carries icons only, so the count
+						 cannot be written out. A dot says there is something to do,
+						 which the plain warning icon does not. -->
+						<span
+							v-if="dashboardsWaiting"
+							class="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-amber-600"
+						/>
 					</Button>
 				</Tooltip>
 				<Button variant="ghost" @click="open('https://docs.frappeinsights.com')">
@@ -137,29 +148,27 @@
 
 	<Dialog
 		v-model="showSwitchToV3Dialog"
-		:options="{
-			title: 'Insights v2 is being discontinued',
-			actions: [
-				{
-					label: 'Open Insights v3',
-					variant: 'solid',
-					onClick: openInsightsV3,
-				},
-			],
-		}"
+		:options="{ title: 'Insights v2 is being discontinued', actions: switchActions }"
 	>
 		<template #body-content>
 			<div class="space-y-3 text-sm leading-relaxed text-gray-700">
 				<p>
-					You are currently using Insights v2. A newer version — Insights v3 — is
-					available with a better experience and ongoing improvements. This interface will
-					be removed on <strong>April 2, 2026</strong>.
+					You are using Insights v2. Insights v3 has replaced it, and this interface will
+					be removed in a future release.
 				</p>
-				<p>
-					You'll need to recreate your important dashboards and queries in v3. Automatic
-					migration from v2 to v3 isn't possible because the two versions are built
-					differently. Your existing work in v2 stays untouched until the removal date.
+				<p v-if="dashboardsWaiting && canMigrate">
+					Insights v3 can bring your dashboards over for you. It converts each dashboard
+					and then checks that the numbers match v2. You choose which ones to move, and
+					nothing is converted until you say so.
+					<strong>{{ dashboardsWaiting }}</strong>
+					{{ dashboardsWaiting === 1 ? 'dashboard is' : 'dashboards are' }} waiting to
+					move.
 				</p>
+				<p v-else-if="dashboardsWaiting">
+					Insights v3 can bring your dashboards over for you. Ask an Insights
+					administrator to run the migration.
+				</p>
+				<p>Your work in v2 stays untouched.</p>
 			</div>
 			<div class="mt-4">
 				<FormControl
@@ -177,6 +186,7 @@
 import { Avatar } from 'frappe-ui'
 
 import sessionStore from '@/stores/sessionStore'
+import { MIGRATION_URL, openInsightsV3, useV2MigrationNudge } from '@/utils/v2migration'
 import settingsStore from '@/stores/settingsStore'
 import {
 	AlertTriangle,
@@ -254,16 +264,24 @@ const currentRoute = computed(() => {
 
 const open = (url) => window.open(url, '_blank')
 
-function openInsightsV3() {
-	session
-		.updateDefaultVersion(
-			// if default version is v2, then /insights always redirects to /insights_v2
-			// so it is not possible to switch to v3 from v2
-			// so we need to remove the default_version
-			session.user.default_version === 'v2' ? '' : session.user.default_version,
-		)
-		.then(() => {
-			window.location.href = '/insights'
+const { waiting: dashboardsWaiting, canMigrate } = useV2MigrationNudge()
+
+const switchActions = computed(() => {
+	const offerMigration = dashboardsWaiting.value && canMigrate.value
+	const actions = [
+		{
+			label: 'Open Insights v3',
+			variant: offerMigration ? 'subtle' : 'solid',
+			onClick: () => openInsightsV3(),
+		},
+	]
+	if (offerMigration) {
+		actions.unshift({
+			label: 'Review migration',
+			variant: 'solid',
+			onClick: () => openInsightsV3(MIGRATION_URL),
 		})
-}
+	}
+	return actions
+})
 </script>
