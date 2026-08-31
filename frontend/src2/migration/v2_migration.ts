@@ -353,7 +353,12 @@ export function verdictSentence(scan: DashboardScan) {
 	const attention = scan.items.filter((item) => item.state !== 'ok').length
 
 	if (scan.verdict === 'blocked') {
-		return __('Set up its data source in v3. Then scan again.')
+		return scan.unresolved_data_sources.length
+			? __(
+					'This dashboard reads from {0}, which is not set up in v3. Add it, then scan again.',
+					scan.unresolved_data_sources.join(', '),
+			  )
+			: __('Set up its data source in v3. Then scan again.')
 	}
 	if (scan.verdict === 'unreadable') {
 		return __('This dashboard could not be read. Migrate it on its own to see why.')

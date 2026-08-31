@@ -89,24 +89,12 @@ const differingQueries = computed(
 
 		<template #body-content>
 			<div class="flex max-h-[60vh] flex-col gap-4 overflow-y-auto text-base">
-				<p class="text-p-base text-ink-gray-7">
-					{{ verdictSentence(props.dashboard) }}
-				</p>
-
-				<div
-					v-if="props.dashboard.unresolved_data_sources.length"
-					class="flex flex-col gap-2 rounded border border-outline-gray-2 bg-surface-gray-1 p-3"
-				>
+				<div class="flex flex-col items-start gap-2">
 					<p class="text-p-base text-ink-gray-7">
-						{{
-							__(
-								'This dashboard reads from {0}. That data source is not set up in v3. Add it, then scan again.',
-								props.dashboard.unresolved_data_sources.join(', '),
-							)
-						}}
+						{{ verdictSentence(props.dashboard) }}
 					</p>
 					<Button
-						class="self-start"
+						v-if="props.dashboard.unresolved_data_sources.length"
 						variant="subtle"
 						:label="__('Go to Data Sources')"
 						@click="openDataSources"
