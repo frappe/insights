@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, watchEffect } from 'vue'
-import { BarChartConfig, XAxis, YAxisBar } from '../../types/chart.types'
+import { BarChartConfig, YAxisBar } from '../../types/chart.types'
 import { ColumnOption, DimensionOption } from '../../types/query.types'
+import ReferenceLinesConfig from './ReferenceLinesConfig.vue'
 import SplitByConfig from './SplitByConfig.vue'
 import XAxisConfig from './XAxisConfig.vue'
 import YAxisConfig from './YAxisConfig.vue'
@@ -27,16 +28,9 @@ const hasAxisSplit = computed(() => {
 	)
 })
 
+// The slots and the stack default are set on load, by `ensureConfigSlots`. Only
+// the rule that answers an edit belongs here: a split axis cannot stack.
 watchEffect(() => {
-	if (!config.value.x_axis) {
-		config.value.x_axis = {} as XAxis
-	}
-	if (!config.value.y_axis) {
-		config.value.y_axis = {} as YAxisBar
-	}
-	if (config.value.y_axis?.stack === undefined) {
-		config.value.y_axis.stack = true
-	}
 	if (hasAxisSplit.value) {
 		config.value.y_axis.stack = false
 	}
@@ -59,4 +53,6 @@ watchEffect(() => {
 	</YAxisConfig>
 
 	<SplitByConfig v-model="config.split_by" :dimensions="props.dimensions" />
+
+	<ReferenceLinesConfig v-model="config.y_axis" />
 </template>

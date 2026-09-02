@@ -2,8 +2,9 @@
 import { TextInput } from 'frappe-ui'
 import { __ } from '../../translation'
 import { Check, ChevronLeft, Edit, Plus, Settings, XIcon } from 'lucide-vue-next'
-import { computed, ref, watchEffect } from 'vue'
+import { computed, h, ref, watchEffect } from 'vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
+import { dialogs } from '../../helpers/confirm_dialog'
 import { FIELDTYPES } from '../../helpers/constants'
 import {
 	AggregationType,
@@ -16,11 +17,13 @@ import {
 } from '../../types/query.types'
 import NewMeasureSelectorDialog from './NewMeasureSelectorDialog.vue'
 
-const emit = defineEmits({ remove: () => true })
+const emit = defineEmits({ remove: () => true, 'dialog-open': () => true })
 const props = defineProps<{
 	label?: string
 	columnOptions: ColumnOption[]
 	enableFormat?: boolean
+	/** Width of the settings popover, for a `config-fields` slot that needs more. */
+	configWidth?: string
 }>()
 
 const formatOptions = [
@@ -129,15 +132,48 @@ watchEffect(() => {
 	}
 })
 
-const showMeasureDialog = ref(false)
-function updateMeasure(measureExpression: ExpressionMeasure) {
-	measure.value = {
-		expression: measureExpression.expression,
-		measure_name: measureExpression.measure_name,
-		data_type: measureExpression.data_type,
-		format: measure.value.format,
+let dialogCount = 0
+
+/**
+ * The expression dialog is mounted at the app root, not under this picker: a
+ * picker can sit inside a popover — this one nests in the number card's
+ * settings — and a popover unmounts its content when it closes, taking a dialog
+ * rendered there with it. Every popover over the dialog closes first, this
+ * picker's own and, through `dialog-open`, the one it is nested in.
+ */
+function openMeasureDialog(closePopover: () => void) {
+	closePopover()
+	emit('dialog-open')
+
+	const dialog = h(NewMeasureSelectorDialog, {
+		key: `measure-expression-${++dialogCount}`,
+		modelValue: true,
+		columnOptions: props.columnOptions,
+		measure: expressionMeasure.value,
+		'onUpdate:modelValue': (open: boolean) => !open && closeMeasureDialog(),
+		onSelect: (measureExpression: ExpressionMeasure) => {
+			updateMeasure(measureExpression)
+			closeMeasureDialog()
+		},
+	})
+	function closeMeasureDialog() {
+		dialogs.value = dialogs.value.filter((mounted) => mounted !== dialog)
 	}
-	showMeasureDialog.value = false
+	dialogs.value.push(dialog)
+}
+
+/**
+ * Written onto the measure the picker was given, not emitted in its place: by
+ * the time the dialog answers, the picker can be unmounted with the popover it
+ * sat in, and an emit from an unmounted picker reaches nobody.
+ */
+function updateMeasure(measureExpression: ExpressionMeasure) {
+	const written = measure.value as Partial<ColumnMeasure> & Partial<ExpressionMeasure>
+	delete written.column_name
+	delete written.aggregation
+	written.expression = measureExpression.expression
+	written.measure_name = measureExpression.measure_name
+	written.data_type = measureExpression.data_type
 }
 
 const aggregationOptions: { label: string; value: AggregationType }[] = [
@@ -213,7 +249,7 @@ function handleRemove() {
 							{{ props.label }}
 						</div>
 						<button
-							class="flex h-7 w-full items-center justify-between gap-2 rounded bg-surface-gray-2 py-1 px-2 text-base transition-colors hover:bg-surface-gray-3 focus:ring-2 focus:ring-outline-gray-3"
+							class="flex h-7 w-full items-center justify-between gap-2 rounded-4 bg-surface-gray-2 py-1 px-2 text-base transition-colors hover:bg-surface-gray-3 focus:ring-2 focus:ring-outline-gray-3"
 						>
 							<div class="flex flex-1 items-center gap-2 overflow-hidden truncate">
 								<span v-if="measure.measure_name">
@@ -225,9 +261,9 @@ function handleRemove() {
 					</div>
 				</template>
 
-				<template #default="{ isOpen, toggle: togglePopover }">
+				<template #default="{ toggle: togglePopover }">
 					<div
-						class="relative mt-1 overflow-hidden rounded-lg bg-surface-base p-1.5 text-base shadow-2xl"
+						class="relative mt-1 overflow-hidden rounded-6 bg-surface-base p-1.5 text-base shadow-2xl"
 					>
 						<template v-if="columnMeasure && !expressionMeasure">
 							<span
@@ -257,7 +293,7 @@ function handleRemove() {
 									<div
 										v-for="option in aggregationOptions"
 										:key="option.value"
-										class="flex h-7 flex-shrink-0 cursor-pointer items-center justify-between rounded px-2.5 text-base hover:bg-surface-gray-2"
+										class="flex h-7 flex-shrink-0 cursor-pointer items-center justify-between rounded-4 px-2.5 text-base hover:bg-surface-gray-2"
 										@click.prevent.stop="
 											() => {
 												if (!columnMeasure) return
@@ -287,7 +323,7 @@ function handleRemove() {
 									<div
 										v-for="option in filteredColumnOptions"
 										:key="option.value"
-										class="flex h-7 flex-shrink-0 cursor-pointer items-center justify-between rounded px-2.5 text-base hover:bg-surface-gray-2"
+										class="flex h-7 flex-shrink-0 cursor-pointer items-center justify-between rounded-4 px-2.5 text-base hover:bg-surface-gray-2"
 										@click.prevent.stop="
 											() => {
 												;(measure as ColumnMeasure).column_name =
@@ -318,7 +354,7 @@ function handleRemove() {
 								class="w-full"
 								variant="ghost"
 								:label="expressionMeasure ? 'Edit Expression' : 'Custom Expression'"
-								@click=";(showMeasureDialog = true), togglePopover()"
+								@click="openMeasureDialog(togglePopover)"
 							>
 								<template #prefix>
 									<component
@@ -341,8 +377,11 @@ function handleRemove() {
 					</template>
 				</Button>
 			</template>
-			<template #default>
-				<div class="flex w-[14rem] flex-col gap-2 p-2">
+			<template #default="{ close: closeSettings }">
+				<div
+					class="flex flex-col gap-2 p-2"
+					:style="{ width: props.configWidth || '14rem' }"
+				>
 					<InlineFormControlLabel label="Label">
 						<TextInput
 							autocomplete="off"
@@ -362,7 +401,7 @@ function handleRemove() {
 						/>
 					</InlineFormControlLabel>
 
-					<slot name="config-fields" />
+					<slot name="config-fields" :close="closeSettings" />
 
 					<div class="flex gap-1">
 						<Button
@@ -384,13 +423,4 @@ function handleRemove() {
 			</template>
 		</Button>
 	</div>
-
-	<NewMeasureSelectorDialog
-		v-if="showMeasureDialog"
-		:model-value="Boolean(showMeasureDialog)"
-		@update:model-value="!$event && (showMeasureDialog = false)"
-		:column-options="props.columnOptions"
-		:measure="measure as ExpressionMeasure"
-		@select="updateMeasure"
-	/>
 </template>

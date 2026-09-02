@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watchEffect } from 'vue'
+import { computed } from 'vue'
 import { __ } from '../../translation'
 import { FIELDTYPES } from '../../helpers/constants'
 import { FunnelChartConfig } from '../../types/chart.types'
@@ -27,18 +27,6 @@ const config = defineModel<FunnelChartConfig>({
 		label_column: {},
 		value_column: {},
 	}),
-})
-
-watchEffect(() => {
-	if (!config.value.measures) {
-		config.value.measures = []
-	}
-	if (!config.value.label_column) {
-		config.value.label_column = {} as Dimension
-	}
-	if (!config.value.value_column) {
-		config.value.value_column = {} as Measure
-	}
 })
 
 // Measures mode is active once any stage has a picked measure. When it isn't,

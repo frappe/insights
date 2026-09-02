@@ -3,6 +3,7 @@ import { Plus, SortAscIcon, SortDescIcon, X } from 'lucide-vue-next'
 import { computed } from 'vue'
 import DraggableList from '../../components/DraggableList.vue'
 import { column } from '../../query/helpers'
+import { __ } from '../../translation'
 import { ColumnOption, OrderByArgs } from '../../types/query.types'
 
 const props = defineProps<{ columnOptions: ColumnOption[] }>()
@@ -59,9 +60,10 @@ function moveSortColumn(from: number, to: number) {
 			@sort="moveSortColumn"
 		>
 			<template #item="{ item, index }">
-				<div class="flex rounded">
+				<div class="flex rounded-4">
 					<Button
 						class="flex-shrink-0 rounded-r-none border-r"
+						:aria-label="__('Toggle sort direction')"
 						@click="toggleSortDirection(index)"
 					>
 						<template #icon>

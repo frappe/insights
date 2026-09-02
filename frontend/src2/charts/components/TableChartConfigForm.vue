@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Badge, Button, FormControl } from 'frappe-ui'
 import { Plus, X } from 'lucide-vue-next'
-import { computed, ref, watchEffect } from 'vue'
+import { computed, ref } from 'vue'
 import DraggableList from '../../components/DraggableList.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { FIELDTYPES } from '../../helpers/constants'
@@ -34,18 +34,6 @@ const config = defineModel<TableChartConfig>({
 const showFormatSelectorDialog = ref(false)
 const editingRuleIndex = ref<number | null>(null)
 const editingRule = ref<FormattingMode | null>(null)
-
-watchEffect(() => {
-	if (!config.value.rows?.length) {
-		config.value.rows = [{} as any]
-	}
-	if (!config.value.columns?.length) {
-		config.value.columns = [{} as any]
-	}
-	if (!config.value.values?.length) {
-		config.value.values = [{} as any]
-	}
-})
 
 const measuresAsDimensions = computed<DimensionOption[]>(() =>
 	props.columnOptions
@@ -293,7 +281,7 @@ function updateTextWrap(column_name: string, wrap: boolean | undefined) {
 				<div
 					v-for="(rule, idx) in config.conditional_formatting?.formats"
 					:key="idx"
-					class="flex rounded"
+					class="flex rounded-4"
 				>
 					<div class="flex-1 overflow-hidden">
 						<Button

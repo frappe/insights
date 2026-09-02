@@ -44,10 +44,64 @@ _Avoid_: metric
 A column that results are grouped or split by, optionally with a date granularity.
 _Avoid_: group-by column
 
+**Grain**:
+The size of the bucket a date or ordered column is grouped into — day, week,
+month, quarter, year. "Grain" is the prose word. The identifier stays
+`granularity`: the key on a Dimension, the doctype field, and the wire field a
+card receives. frappe-ui's own prop type is `TimeGrain`. Both words are correct
+in their own layer.
+_Avoid_: renaming `granularity` in code, or writing "granularity" in prose
+
 **Expression**:
 An inline calculated column, measure, or filter written in the ibis-based expression
 syntax.
 _Avoid_: formula
+
+### Drill-down
+
+**Drill**:
+Reading what a number in a chart is made of. A drill cuts the chart's pipeline
+just before the step that aggregated it, and reads the surface underneath. The
+builder's chart preview, its dashboard grid and the query builder's result table
+offer the same drill.
+_Avoid_: drill-through, explore
+
+**Surface**:
+Three senses, all of them live, in three different layers.
+
+1. The rows under a chart's aggregation — the pipeline cut just before its
+   summarize or pivot step (`chart_drill.py`). This surface is the exposure
+   bound. A drill may name only its columns, so a drill never reaches past what
+   the chart already published.
+2. A screen a user works on: the public page, an authoring surface. Read
+   surfaces and authoring surfaces get different answers from the server.
+3. frappe-ui's `bg-surface-*` token, a background step in the design system.
+
+The three do not collide in practice, because each layer only ever means one of
+them. Say which one when a sentence could take two.
+_Avoid_: renaming any of the three
+
+**Segment**:
+The part of a chart a reader clicked — one bar, one slice, one point. It travels
+to the server as its dimension values, plain triples of column, operator and
+value. It never travels as operations. One level of a drill stack carries one
+segment, and levels accumulate, so each level narrows the rows further.
+_Avoid_: slice, data point, cell
+
+**Breakdown**:
+One of the two answers a drill level can ask for: group the segment by one more
+column of the surface. The other answer is records, the rows behind the segment.
+A breakdown draws as an ad-hoc chart the answer picks for itself, and a click on
+it recurses.
+_Avoid_: split, group-by (that is a Dimension)
+
+**Additive**:
+Whether a level's group values add up to the value of the segment above them.
+True of a sum and a count, false of an average, a distinct count and an
+expression. The server says it on the answer, beside the order the rows run in,
+because a column of decimals does not say which aggregation made it. A breakdown
+reads it to decide whether it may draw itself as parts of one whole.
+_Avoid_: summable, part-of-whole (that is what being additive licenses)
 
 ### Data
 
@@ -83,6 +137,24 @@ An app-provided, self-contained UI unit that the framework mounts into a host pa
 shared runtime. Declared via the `ui_islands` hook; Insights ships `insights.dashboard`
 and `insights.chart`.
 _Avoid_: widget, block, embed (embed = the public iframe-sharing feature)
+
+**Chrome**:
+Everything around a plot: the card, the title, the actions, the legend, the tooltip,
+and the loading, error and empty states. frappe-ui charts v2 owns it for every
+Insights chart without exception. See ADR-0002.
+_Avoid_: frame, shell, container
+
+**Plot**:
+The picture inside the chrome — the marks that carry the data. The only part that
+varies by chart type, and it has three fillers: a charts v2 component, an Insights
+plot built on v2's `useChart` (Map), or none at all (Table).
+_Avoid_: graph, canvas, visual
+
+**Adapter**:
+The one module that turns a stored Chart config and a query result into the props of
+a charts v2 component (`frontend/src2/charts/adapter/`). One pure function per chart
+type. Insights builds no ECharts option for a type v2 admits.
+_Avoid_: mapper, translator, transformer
 
 ### Sharing & governance
 

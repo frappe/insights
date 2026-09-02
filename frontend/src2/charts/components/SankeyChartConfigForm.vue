@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { watchEffect } from 'vue'
 import { __ } from '../../translation'
 import { SankeyChartConfig } from '../../types/chart.types'
-import { ColumnOption, Dimension, DimensionOption, Measure } from '../../types/query.types'
+import { ColumnOption, DimensionOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
@@ -19,18 +18,6 @@ const config = defineModel<SankeyChartConfig>({
 		target_column: {},
 		value_column: {},
 	}),
-})
-
-watchEffect(() => {
-	if (!config.value.source_column) {
-		config.value.source_column = {} as Dimension
-	}
-	if (!config.value.target_column) {
-		config.value.target_column = {} as Dimension
-	}
-	if (!config.value.value_column) {
-		config.value.value_column = {} as Measure
-	}
 })
 </script>
 

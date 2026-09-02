@@ -5,6 +5,7 @@ import {
 	BarChartHorizontal,
 	BatteryMedium,
 	Filter,
+	Grid3x3,
 	Hash,
 	LifeBuoy,
 	LineChart,
@@ -41,6 +42,8 @@ const icon = computed(() => {
 			return Map
 		case 'Sankey':
 			return Share2
+		case 'Heatmap':
+			return Grid3x3
 		default:
 			return BarChart3
 	}

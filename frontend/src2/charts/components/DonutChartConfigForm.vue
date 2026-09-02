@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, watchEffect } from 'vue'
+import { computed } from 'vue'
 import { __ } from '../../translation'
 import { FIELDTYPES } from '../../helpers/constants'
 import { DonutChartConfig } from '../../types/chart.types'
-import { ColumnOption, Dimension, DimensionOption, Measure } from '../../types/query.types'
+import { ColumnOption, DimensionOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
@@ -19,15 +19,6 @@ const config = defineModel<DonutChartConfig>({
 		label_column: {},
 		value_column: {},
 	}),
-})
-
-watchEffect(() => {
-	if (!config.value.label_column) {
-		config.value.label_column = {} as Dimension
-	}
-	if (!config.value.value_column) {
-		config.value.value_column = {} as Measure
-	}
 })
 
 const discrete_dimensions = computed(() =>

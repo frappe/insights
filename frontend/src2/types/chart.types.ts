@@ -4,7 +4,17 @@ import { Dimension, Measure } from './query.types'
 export const AXIS_CHARTS = ['Bar', 'Line', 'Row']
 export type AxisChartType = (typeof AXIS_CHARTS)[number]
 
-export const CHARTS = ['Number', ...AXIS_CHARTS, 'Donut', 'Funnel', 'Table', 'Map', 'Bubble', 'Sankey']
+export const CHARTS = [
+	'Number',
+	...AXIS_CHARTS,
+	'Donut',
+	'Funnel',
+	'Table',
+	'Map',
+	'Bubble',
+	'Sankey',
+	'Heatmap',
+]
 export type ChartType = (typeof CHARTS)[number]
 
 export type AxisChartConfig = {
@@ -15,7 +25,6 @@ export type AxisChartConfig = {
 
 export type XAxis = {
 	dimension: Dimension
-	label_rotation?: number
 }
 
 export type SplitBy = {
@@ -30,19 +39,23 @@ export type YAxis = {
 	axis_label?: string
 	show_axis_label?: boolean
 	show_data_labels?: boolean
-	show_scrollbar?: boolean
 	reference_lines?: ReferenceLine[]
 }
+export type ReferenceAggregate = 'average' | 'median' | 'min' | 'max' | 'sum'
 export type ReferenceLine = {
 	// 'y' draws a horizontal line at a measure value, 'x' a vertical line at a category/date value
 	axis?: 'x' | 'y'
 	// which value axis a 'y' line targets on a dual-axis chart; defaults to the primary (left)
 	align?: 'Left' | 'Right'
-	// a fixed position on the axis; ignored when `statistic` is set
+	// A line sits at a constant, or at an aggregate of one of the chart's own
+	// Measures. The Measure is named rather than copied: the series holds the
+	// definition, so a copy is a second answer waiting to disagree.
 	value?: number | string
-	// read the line's position off the plotted rows on the axis it targets, instead of
-	// a fixed value; y lines only, since a category axis has no statistic
-	statistic?: 'average' | 'median' | 'min' | 'max' | null
+	measure_name?: string
+	aggregate?: ReferenceAggregate
+	// What develop called the same thing before this branch named it `aggregate`.
+	// Charts saved on develop carry it, so normalizeChartConfig reads it and drops it.
+	statistic?: ReferenceAggregate | null
 	label?: string
 	color?: string
 	dashed?: boolean
@@ -89,18 +102,75 @@ export type MixedChartConfig = AxisChartConfig & {
 	y_axis: YAxisLine | YAxisBar
 }
 
+/**
+ * What the reading is aimed at. The card prints it on the value line, as
+ * `$621.8K / $750K`: a target is part of the reading, not commentary on it, so
+ * it carries no label and no percent — the fraction is the whole statement.
+ */
+export type NumberTarget = {
+	/** A fixed number. */
+	value?: number
+	/** A measure of the card's own query, read off the row the reading came from. */
+	measure?: Measure
+}
+
+/**
+ * The one number the reading is compared with, printed in the delta row with an
+ * arrow and a color. One, not a list: a second comparison is a second card, and
+ * that is the dashboard's job.
+ */
+export type NumberComparison = {
+	/**
+	 * `previous` is the row before the last one, `constant` a fixed number,
+	 * `measure` a measure of the card's own query read off the same last row, and
+	 * `window` the chart's own window shifted back. A shifted window is derived as
+	 * the row before the last one, so it reads the same way `previous` does.
+	 */
+	source: 'previous' | 'constant' | 'measure' | 'window'
+	/** The number, when `source` is `constant`. */
+	value?: number
+	/** The measure holding it, when `source` is `measure`. */
+	measure?: Measure
+	/** The same span, anchored `count` `unit`s away. `source: 'window'` only. */
+	shift?: { unit: string; count: number }
+	/**
+	 * How the gap is printed: `change` as a percent of the comparison number,
+	 * `delta` as a signed number in the value's own units. Defaults to `change`.
+	 */
+	show?: NumberComparisonShow
+	/** What to call it, e.g. `vs last month`. Defaults from the source. */
+	label?: string
+}
+export type NumberComparisonShow = 'change' | 'delta'
+
 export type NumberChartConfig = {
 	number_columns: Measure[]
 	number_column_options: NumberColumnOptions[]
-	comparison: boolean
 	sparkline: boolean
 	sparkline_color?: string
 	date_column?: Dimension
+	/**
+	 * The period the card reads. Needs `date_column`: the window is a group-by on
+	 * it, one row per window, so the card reads the newest window and compares it
+	 * with the one a `window` comparison shifts to.
+	 */
+	window?: {
+		/** A span the engine understands, e.g. `month to date`. */
+		span: string
+		/** Fixed anchor for a card that must not move with today. Defaults to today. */
+		anchor?: string
+	}
+	/**
+	 * What every value falls back to. The form no longer writes these — it sets
+	 * them per value — but a chart saved before it did still reads them.
+	 */
 	shorten_numbers?: boolean
 	decimal?: number
 	prefix?: string
 	suffix?: string
 	negative_is_better?: boolean
+	/** Set by a release before the per-value shape. Reads as one `previous` comparison. */
+	comparison?: boolean
 }
 export type NumberColumnOptions = {
 	shorten_numbers?: boolean
@@ -108,6 +178,15 @@ export type NumberColumnOptions = {
 	prefix?: string
 	suffix?: string
 	color?: string
+	/** A fall is the good news, e.g. churn or cost. Flips the comparison's colors. */
+	negative_is_better?: boolean
+	/** What the reading is aimed at. A target belongs to the metric, not to the chart. */
+	target?: NumberTarget
+	/**
+	 * The one number the reading is compared with. Absent falls back to the
+	 * chart's `comparison` flag; a value that names none compares nothing.
+	 */
+	comparison?: NumberComparison
 }
 
 export type DonutChartConfig = {
@@ -173,6 +252,19 @@ export type SankeyChartConfig = {
 	node_align?: 'left' | 'right' | 'justify'
 }
 
+export type HeatmapChartConfig = {
+	// The two dimensions the grid is cut by: `x_column` runs along the bottom,
+	// `y_column` up the side. One cell is one pair of their values.
+	x_column: Dimension
+	y_column: Dimension
+	value_column: Measure
+	show_values?: boolean
+	// 'sequential' reads as a magnitude, 'diverging' centers on zero for signed data
+	palette?: 'sequential' | 'diverging'
+	min?: number
+	max?: number
+}
+
 export type ChartConfig =
 	| LineChartConfig
 	| BarChartConfig
@@ -183,6 +275,7 @@ export type ChartConfig =
 	| MapChartConfig
 	| BubbleChartConfig
 	| SankeyChartConfig
+	| HeatmapChartConfig
 
 export interface Suggestion {
 		region: string

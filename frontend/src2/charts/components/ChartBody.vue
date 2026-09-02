@@ -1,0 +1,203 @@
+<script setup lang="ts">
+import { Button } from 'frappe-ui'
+import { ChartContainer } from 'frappe-ui/charts'
+import { AlertTriangle, RefreshCcw } from 'lucide-vue-next'
+import { computed, shallowRef, watch } from 'vue'
+import { __ } from '../../translation'
+import { EMPTY_RESULT } from '../../query/helpers'
+import { adaptChart, type DrillDownTarget } from '../adapter'
+import { ChartRead } from '../chart_read'
+import { segmentClickEvents, type ChartSegmentClick, type ClickPoint } from '../drill/segment_click'
+import ChartSectionEmptySvg from './ChartSectionEmptySvg.vue'
+
+// The chart itself: the type it is, the data it has, and every state in between.
+// One state machine — a surface that draws a chart draws this, and gets the
+// failure, the reload and the empty result along with the picture. Segment
+// clicks are reported, never handled — drill-down is a dialog the caller offers,
+// so it is the caller that carries it.
+//
+// It draws no card. The border, the padding and the title belong to whoever
+// frames the chart: `ChartCardFrame` on an Insights page, the widget frame on a
+// desk workspace. A host that has one mounts this and gets the chart alone.
+//
+// The states are frappe-ui's, for every chart type without exception. What goes
+// inside them is the adapter's answer: it says which component draws this Chart
+// and what to hand it, so nothing here switches on chart type. A new type is
+// added in `charts/adapter`, not here.
+//
+// `readonly` is for a surface that cannot change the chart. It decides two
+// things, and they are the same thing: a table's sort rewrites the chart's config
+// and re-runs its query, which a reader holds neither half of, so the control is
+// not offered rather than offered and dead — and for the same reason a reader is
+// told about the data ("No data") where an author is told about the config.
+const props = defineProps<{
+	chart: ChartRead
+	// heads the chart. Left out, no title is drawn anywhere in it — which is what
+	// a host that prints its own asks for.
+	title?: string
+	readonly?: boolean
+	// whether filters narrowed the rows, so an empty card can offer to clear them.
+	// Only a surface that owns filter state can say, and only it can reset them.
+	filtered?: boolean
+}>()
+const emit = defineEmits<{
+	// where the reader pointed, for a surface that offers the drill menu
+	segmentClick: [click: ChartSegmentClick]
+	resetFilters: []
+}>()
+
+const chart_type = computed(() => props.chart.doc.chart_type)
+const config = computed(() => props.chart.doc.config)
+const result = computed(() => props.chart.result || { ...EMPTY_RESULT })
+
+const adapted = computed(() => {
+	// the result outlives a chart type switch, so without this the adapter would
+	// run against the incoming type's still-empty config
+	if (props.chart.configErrors.length) return
+	if (!result.value.columns?.length) return
+	return adaptChart({
+		chart_type: chart_type.value,
+		config: config.value,
+		result: result.value,
+		recordLinks: props.chart.recordLinks,
+		sparklineResult: props.chart.sparklineResult,
+		title: props.title,
+		readonly: props.readonly,
+		executing: props.chart.executing,
+	})
+})
+
+// The card keeps its last picture while the server reports config errors. The
+// adapter cannot run against a config the server refused, and the last output is
+// still a true picture of those rows. A type switch discards it, because the
+// picture belongs to the type that drew it.
+type Drawn = { chart_type: string; filler: NonNullable<ReturnType<typeof adaptChart>> }
+const lastDrawn = shallowRef<Drawn>()
+watch(adapted, (filler) => {
+	if (filler) lastDrawn.value = { chart_type: chart_type.value, filler }
+})
+
+const filler = computed(() => {
+	if (!props.chart.configErrors.length) return adapted.value
+	return lastDrawn.value?.chart_type === chart_type.value ? lastDrawn.value.filler : undefined
+})
+
+// A table keeps its rows while the next run is in flight. Other types blank. A
+// table on a filtered dashboard would otherwise blank on every filter move.
+const keepsLastPicture = computed(
+	() => chart_type.value === 'Table' && Boolean(result.value.rows?.length),
+)
+
+// What the card shows, in the order the store settles it: a failure outranks the
+// reload that would replace it, and a reload outranks the rows it is replacing.
+// `unconfigured` is the state a chart is born in — nothing has been drawn yet and
+// nothing is on its way.
+const state = computed(() => {
+	if (props.chart.failed) return props.chart.serverBusy ? 'serverBusy' : 'failed'
+	if (props.chart.executing && !keepsLastPicture.value) return 'loading'
+	if (props.chart.empty) return 'empty'
+	return filler.value ? 'chart' : 'unconfigured'
+})
+
+// Any non-empty string puts the container in its error state. The slot below
+// draws the message itself, because a retry belongs beside it.
+const failure = computed(() => {
+	if (state.value === 'serverBusy') return __('The server is busy')
+	// An author can act on what the server said; a reader owns neither the query
+	// nor the config it names, so they are told the chart is out, not why.
+	if (state.value === 'failed') {
+		if (!props.readonly && props.chart.failure) return props.chart.failure
+		return __('This chart is not available')
+	}
+	return null
+})
+
+// The events a filler reports a click through, bound without knowing which chart
+// type emits which. The adapter names them and turns each payload into the point
+// behind it.
+const fillerEvents = computed(() =>
+	segmentClickEvents(filler.value, result.value.columns, reportSegment),
+)
+
+// echarts hands over the datapoint and not the event that reached it, so the
+// point the menu opens at is read off the click on its way in. The capture phase
+// is what puts it there before the chart's own handler runs.
+const clickedAt = shallowRef<ClickPoint>({ x: 0, y: 0 })
+function rememberPoint(event: MouseEvent) {
+	clickedAt.value = { x: event.clientX, y: event.clientY }
+}
+
+// A resolver answers with the raw row, which is what a drill reads, so nothing
+// is looked up on the way out.
+function reportSegment(target: DrillDownTarget) {
+	emit('segmentClick', { target, point: clickedAt.value })
+}
+</script>
+
+<template>
+	<div class="h-full w-full" data-testid="chart" @click.capture="rememberPoint">
+		<component
+			v-if="state === 'chart' && filler"
+			:is="filler.component"
+			v-bind="filler.props"
+			v-on="fillerEvents"
+		/>
+
+		<!-- Every state but the picture. `#loading` is left alone: v2 draws a
+		     skeleton the size of the plot, which is what a chart still filling in
+		     should read as to a reader and to an author alike. -->
+		<ChartContainer
+			v-else
+			:title="props.title"
+			:loading="state === 'loading'"
+			:error="failure"
+			:empty="true"
+		>
+			<!-- the queue turns a card away rather than queueing it, so asking
+			     again is the whole remedy — and a chart that failed for any
+			     other reason is worth one more try too -->
+			<template #error>
+				<AlertTriangle
+					v-if="state === 'failed'"
+					class="h-6 w-6 text-ink-gray-4"
+					stroke-width="1"
+				/>
+				<p
+					class="line-clamp-3 px-4 text-center text-p-base text-ink-gray-5"
+					:class="{ 'font-mono text-xs leading-5': !props.readonly && chart.failure }"
+					:title="failure || undefined"
+				>
+					{{ failure }}
+				</p>
+				<Button
+					variant="outline"
+					:label="state === 'serverBusy' ? __('Try again') : __('Retry')"
+					@click="chart.load(true)"
+				>
+					<template #prefix>
+						<RefreshCcw class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
+					</template>
+				</Button>
+			</template>
+
+			<template #empty>
+				<template v-if="state === 'empty'">
+					<p class="text-p-base text-ink-gray-5">{{ __('No data') }}</p>
+					<Button
+						v-if="props.filtered"
+						variant="outline"
+						:label="__('Reset filters')"
+						@click="emit('resetFilters')"
+					/>
+				</template>
+
+				<template v-else>
+					<ChartSectionEmptySvg></ChartSectionEmptySvg>
+					<p class="text-ink-gray-4">
+						{{ __('Pick a chart type and configure options to see the chart here') }}
+					</p>
+				</template>
+			</template>
+		</ChartContainer>
+	</div>
+</template>

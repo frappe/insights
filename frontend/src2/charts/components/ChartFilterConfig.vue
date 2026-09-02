@@ -41,7 +41,7 @@ function getFilterLabel(filter: FilterArgs) {
 <template>
 	<div class="flex flex-col gap-2">
 		<div v-if="filterGroup.filters.length" class="flex flex-col gap-1">
-			<div v-for="(filter, idx) in filterGroup.filters" :key="idx" class="flex rounded">
+			<div v-for="(filter, idx) in filterGroup.filters" :key="idx" class="flex rounded-4">
 				<div class="flex-1 overflow-hidden">
 					<Button
 						class="w-full !justify-start rounded-r-none [&>span]:truncate"
