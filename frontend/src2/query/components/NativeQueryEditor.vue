@@ -10,6 +10,7 @@ import { __ } from '../../translation'
 import { Query } from '../query'
 import QueryExecutionStatus from './QueryExecutionStatus.vue'
 import QueryToolbar from './QueryToolbar.vue'
+import QueryAlerts from './QueryAlerts.vue'
 import QueryDataTable from './QueryDataTable.vue'
 import QueryInfo from './QueryInfo.vue'
 import SchemaExplorer from './SchemaExplorer.vue'
@@ -130,7 +131,7 @@ useShortcut('Meta+e', () => {
 			</QueryToolbar>
 
 			<!-- SQL Editor -->
-			<div class="relative flex flex-1 flex-col overflow-hidden rounded border">
+			<div class="relative flex flex-1 flex-col overflow-hidden rounded-4 border">
 				<Code
 					ref="codeEditor"
 					:key="completions.tables.length"
@@ -143,8 +144,12 @@ useShortcut('Meta+e', () => {
 
 			<!-- Results Table -->
 			<QueryExecutionStatus />
-			<div class="relative flex h-[45%] w-full flex-col overflow-hidden rounded border">
-				<QueryDataTable :query="query" :enable-alerts="true" />
+			<div class="relative flex h-[45%] w-full flex-col overflow-hidden rounded-4 border">
+				<QueryDataTable :query="query">
+					<template #footer-actions>
+						<QueryAlerts :query="query" />
+					</template>
+				</QueryDataTable>
 			</div>
 		</div>
 

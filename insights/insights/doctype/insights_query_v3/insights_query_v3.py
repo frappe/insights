@@ -192,7 +192,11 @@ class InsightsQueryv3(Document):
             force=force,
             cache_expiry=60 * 10,
             reference_doctype=self.doctype,
-            reference_name=self.name,
+            # a chart runs through a query document that is never saved, so the
+            # execution log would name a query nobody can look up. It points at the
+            # source query instead — the one with reference rows, which is how the
+            # data store learns that a table is still being read
+            reference_name=self.flags.execution_reference or self.name,
         )
         results = results.to_dict(orient="records")
 
@@ -222,6 +226,15 @@ class InsightsQueryv3(Document):
 
     @insights_whitelist()
     def get_count(self, active_operation_idx: int | None = None, adhoc_filters: dict | None = None):
+        """The authoring client's endpoint for `count_rows`.
+
+        The `Insights User` role belongs to the endpoint a client reaches, not to
+        the computation behind it: a surface that settled its own read before it
+        counts anything calls the plain method instead.
+        """
+        return self.count_rows(active_operation_idx, adhoc_filters)
+
+    def count_rows(self, active_operation_idx: int | None = None, adhoc_filters: dict | None = None):
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
 
@@ -295,6 +308,19 @@ class InsightsQueryv3(Document):
 
     @insights_whitelist()
     def get_distinct_column_values(
+        self,
+        column_name: str,
+        active_operation_idx: int | None = None,
+        search_term: str | None = None,
+        limit: int = 20,
+        adhoc_filters: dict | None = None,
+    ):
+        """The authoring client's endpoint for `distinct_column_values`, gated like `get_count`."""
+        return self.distinct_column_values(
+            column_name, active_operation_idx, search_term, limit, adhoc_filters
+        )
+
+    def distinct_column_values(
         self,
         column_name: str,
         active_operation_idx: int | None = None,

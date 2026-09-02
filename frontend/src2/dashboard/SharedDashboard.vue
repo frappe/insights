@@ -12,6 +12,8 @@ const dashboard_name = await call('insights.api.shared.get_dashboard_name', {
 })
 
 const dashboard = useDashboard(dashboard_name)
+// whoever follows the link reads the saved charts, not the config being edited
+dashboard.shared = true
 provide('dashboard', dashboard)
 </script>
 

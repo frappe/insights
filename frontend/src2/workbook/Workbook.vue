@@ -5,10 +5,12 @@ import { provide, watch, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
 import { waitUntil } from '../helpers'
-import useWorkbook, { workbookKey } from './workbook'
+import useWorkbook from './workbook'
+import { workbookKey } from './workbook_key'
 import WorkbookNavbar from './WorkbookNavbar.vue'
 import WorkbookSidebar from './WorkbookSidebar.vue'
 import useChart from '../charts/chart'
+import useChartPreview from '../charts/chart_preview'
 import useDashboard from '../dashboard/dashboard'
 
 defineOptions({ inheritAttrs: false })
@@ -39,7 +41,7 @@ watch(
 		if (newRoute.name === 'WorkbookChart' && oldRoute.name === 'WorkbookQuery') {
 			const chart = useChart(newRoute.params.chart_name as string)
 			if (chart.doc.query === oldRoute.params.query_name) {
-				chart.refresh(true)
+				useChartPreview(chart).load(true)
 			}
 		}
 	},

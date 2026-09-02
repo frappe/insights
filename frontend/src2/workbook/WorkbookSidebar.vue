@@ -5,7 +5,7 @@ import { computed, inject } from 'vue'
 import { useRoute } from 'vue-router'
 import WorkbookSidebarListSection from './WorkbookSidebarListSection.vue'
 import WorkbookSidebarFolders from './WorkbookSidebarFolders.vue'
-import { workbookKey } from './workbook'
+import { workbookKey } from './workbook_key'
 import ChartIcon from '../charts/components/ChartIcon.vue'
 
 const workbook = inject(workbookKey)!

@@ -52,6 +52,7 @@ import {
 	PivotWiderArgs,
 	QueryResult,
 	QueryResultColumn,
+	QueryResultRow,
 	QueryTableArgs,
 	Remove,
 	RemoveArgs,
@@ -110,21 +111,48 @@ export const expression = (expression: string): Expression => ({
 // 	order_by: options.order_by,
 // })
 
-export function getFormattedRows(result: QueryResult, operations: Operation[]) {
-	if (!result.rows?.length || !result.columns?.length) return []
+// Here rather than in the query store: the island renders a result without ever
+// building a query, and importing the store for a blank one pulls the whole
+// execution path — socket, queue, autosave — into the island bundle.
+export const EMPTY_RESULT: QueryResult = {
+	executedSQL: '',
+	totalRowCount: 0,
+	rows: [],
+	formattedRows: [],
+	columns: [],
+	columnOptions: [],
+	timeTaken: 0,
+	lastExecutedAt: new Date(),
+}
 
-	const rows = copy(result.rows)
-	const columns = copy(result.columns)
+export function getFormattedRows(result: QueryResult, operations: Operation[]) {
+	return formatResultRows(result, getColumnGranularity(operations))
+}
+
+// The grain a date column was grouped by, per column. A viewer never receives
+// the operations, so the server sends it this map instead — same shape, so the
+// formatting below stays one implementation.
+export function getColumnGranularity(operations: Operation[]) {
 	const _operations = copy(operations)
 	const summarize_step = _operations.reverse().find((op) => op.type === 'summarize')
 	const pivot_step = _operations.reverse().find((op) => op.type === 'pivot_wider')
 
-	const getGranularity = (column_name: string) => {
-		const dim =
-			summarize_step?.dimensions.find((dim) => dim.dimension_name === column_name) ||
-			pivot_step?.rows.find((dim) => dim.dimension_name === column_name)
-		return dim ? dim.granularity : null
-	}
+	const granularity: Record<string, string> = {}
+	const dimensions = [...(summarize_step?.dimensions || []), ...(pivot_step?.rows || [])]
+	dimensions.forEach((dim) => {
+		if (dim.granularity && !granularity[dim.dimension_name]) {
+			granularity[dim.dimension_name] = dim.granularity
+		}
+	})
+	return granularity
+}
+
+export function formatResultRows(result: QueryResult, granularityByColumn: Record<string, string>) {
+	if (!result.rows?.length || !result.columns?.length) return []
+
+	const rows = copy(result.rows)
+	const columns = copy(result.columns)
+	const getGranularity = (column_name: string) => granularityByColumn[column_name] || null
 
 	const formattedRows = rows.map((row) => {
 		const formattedRow = { ...row }
@@ -153,7 +181,66 @@ export function getFormattedRows(result: QueryResult, operations: Operation[]) {
 	})
 	return formattedRows
 }
+/**
+ * The row `formatResultRows` produced this one from. A surface that draws the
+ * formatted rows — a table — reports the row it drew, and everything downstream
+ * of a click reads the raw values, so the crossing happens once, here.
+ *
+ * The two are parallel arrays, so the raw row is the formatted one's position.
+ * A row from anywhere else has no position, which is a caller bug rather than a
+ * click on nothing: it says so instead of returning quietly.
+ */
+export function rawRowOf(
+	result: QueryResult,
+	formattedRow: QueryResultRow,
+): QueryResultRow | undefined {
+	const index = result.formattedRows.indexOf(formattedRow)
+	const row = index === -1 ? undefined : result.rows[index]
+	if (!row) {
+		console.warn('[insights] No result row behind the row that was clicked.', formattedRow)
+	}
+	return row
+}
+
+/** How a date reads in a cell, a tooltip or a header — spelled out in full. */
+const LONG_DATE_FORMATS: Record<string, string> = {
+	second: 'MMMM D, YYYY h:mm:ss A',
+	minute: 'MMMM D, YYYY h:mm A',
+	hour: 'MMMM D, YYYY h:00 A',
+	day: 'MMMM D, YYYY',
+	week: 'MMM Do, YYYY',
+	month: 'MMMM, YYYY',
+	year: 'YYYY',
+	quarter: '[Q]Q, YYYY',
+}
+
+/**
+ * How the same date reads on an axis. A category axis draws a label per column,
+ * so a spelled-out month is dropped by the overlap rule and the reader is left
+ * with a bare grid. Everything is abbreviated, and the year is kept: a category
+ * carries no neighbours to read it against.
+ */
+const AXIS_DATE_FORMATS: Record<string, string> = {
+	second: 'MMM D, YYYY h:mm:ss A',
+	minute: 'MMM D, YYYY h:mm A',
+	hour: 'MMM D, YYYY h A',
+	day: 'MMM D, YYYY',
+	week: 'MMM D, YYYY',
+	month: 'MMM YYYY',
+	year: 'YYYY',
+	quarter: '[Q]Q YYYY',
+}
+
 export function getFormattedDate(date: string, granularity: string) {
+	return formatDateBy(date, granularity, LONG_DATE_FORMATS)
+}
+
+/** `getFormattedDate`, abbreviated for an axis tick. */
+export function getAxisDate(date: string, granularity: string) {
+	return formatDateBy(date, granularity, AXIS_DATE_FORMATS)
+}
+
+function formatDateBy(date: string, granularity: string, formats: Record<string, string>) {
 	if (!date) return ''
 
 	const isTimeOnlyValue = /^\d{1,2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(date)
@@ -183,19 +270,8 @@ export function getFormattedDate(date: string, granularity: string) {
 		return `FY ${startYear}-${String(endYear).slice(-2)}`
 	}
 
-	const dayjsFormat: Record<string, string> = {
-		second: 'MMMM D, YYYY h:mm:ss A',
-		minute: 'MMMM D, YYYY h:mm A',
-		hour: 'MMMM D, YYYY h:00 A',
-		day: 'MMMM D, YYYY',
-		week: 'MMM Do, YYYY',
-		month: 'MMMM, YYYY',
-		year: 'YYYY',
-		quarter: '[Q]Q, YYYY',
-	}
-
-	if (!dayjsFormat[granularity]) return date
-	return dayjs(date).format(dayjsFormat[granularity])
+	if (!formats[granularity]) return date
+	return dayjs(date).format(formats[granularity])
 }
 
 export function getMeasures(columns: QueryResultColumn[]): Measure[] {

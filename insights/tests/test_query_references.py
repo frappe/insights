@@ -257,43 +257,52 @@ class ASavedReferenceCarriesItsOwnAccess:
 
 
 class DashboardFilterReadsTheQuery:
-    """The same rule where a dashboard filter names a query.
+    """A dashboard filter names its own query, and the caller never does.
 
-    A filter links a column as `` `<query>`.`<column>` ``. The dashboard says
-    which columns it filters on, so it cannot also be what says which queries the
-    caller may reach.
+    A filter links a column as `` `<query>`.`<column>` ``. The caller sends the
+    filter's name and `filter_source` reads the link off the stored dashboard, so
+    the query a lookup runs against is the dashboard's word and not the request's.
+
+    A link is followed only through a chart the dashboard actually holds, which is
+    what keeps `links` from reaching a query on its own: putting the chart there
+    was already checked.
     """
 
     ENABLE_PERMISSIONS = 0
+    FILTER_NAME = "Secret"
 
     @classmethod
     def before_class(cls):
         create_test_users()
         cls.owner_workbook = create_test_workbook(OWNER, title="Filter Owner Workbook").name
         cls.owner_query = create_source_query(OWNER, cls.owner_workbook, "Filter Owner Source").name
+        cls.owner_chart = create_test_chart(
+            OWNER, cls.owner_workbook, query=cls.owner_query, title="Filter Owner Chart"
+        ).name
 
         cls.other_workbook = create_test_workbook(OTHER, title="Filter Other Workbook").name
-        cls.other_query = create_source_query(OTHER, cls.other_workbook, "Filter Other Source").name
 
-        cls.owner_dashboard = cls.create_dashboard(OWNER, cls.owner_workbook, cls.owner_query)
-        cls.other_dashboard = cls.create_dashboard(OTHER, cls.other_workbook, cls.owner_query)
+        cls.owner_dashboard = cls.create_dashboard(OWNER, cls.owner_workbook, cls.owner_chart)
+        # the same link, on a dashboard that does not hold the chart it names
+        cls.detached_dashboard = cls.create_dashboard(
+            OWNER, cls.owner_workbook, cls.owner_chart, hold_the_chart=False
+        )
 
     @classmethod
-    def create_dashboard(cls, owner, workbook, query):
+    def create_dashboard(cls, owner, workbook, chart, hold_the_chart=True):
+        link = {chart: f"`{cls.owner_query}`.`secret`"}
+        items = [{"id": "filter-1", "type": "filter", "filter_name": cls.FILTER_NAME, "links": link}]
+        if hold_the_chart:
+            items.insert(0, {"id": "chart-1", "type": "chart", "chart": chart})
+
         with as_user(owner):
             return (
                 frappe.get_doc(
                     {
                         "doctype": DT.DASHBOARD,
-                        "title": f"Filter Dashboard {workbook}",
+                        "title": f"Filter Dashboard {len(items)}",
                         "workbook": workbook,
-                        "items": [
-                            {
-                                "id": "filter-1",
-                                "type": "filter",
-                                "links": {"chart-1": f"`{query}`.`secret`"},
-                            }
-                        ],
+                        "items": items,
                     }
                 )
                 .insert()
@@ -309,18 +318,24 @@ class DashboardFilterReadsTheQuery:
     def before_test(self):
         self.set_team_permissions(self.ENABLE_PERMISSIONS)
 
-    def distinct_values(self, dashboard, query):
+    def distinct_values(self, dashboard, filter_name):
         with db_connections():
-            return frappe.get_doc(DT.DASHBOARD, dashboard).get_distinct_column_values(query, "secret")
+            return frappe.get_doc(DT.DASHBOARD, dashboard).get_distinct_column_values(filter_name)
 
-    def test_a_filter_reads_a_query_its_owner_may_read(self):
+    def test_a_filter_offers_the_values_of_the_column_it_links(self):
         with self.as_user(OWNER):
-            values = self.distinct_values(self.owner_dashboard, self.owner_query)
+            values = self.distinct_values(self.owner_dashboard, self.FILTER_NAME)
         self.assertEqual(values, [SECRET])
 
-    def test_a_filter_cannot_read_a_query_its_owner_may_not(self):
-        with self.as_user(OTHER), self.assertRaises(frappe.PermissionError):
-            self.distinct_values(self.other_dashboard, self.owner_query)
+    def test_a_filter_the_dashboard_does_not_declare_is_refused(self):
+        """A name is all the caller sends, so an unknown one reaches no query."""
+        with self.as_user(OWNER), self.assertRaises(frappe.PermissionError):
+            self.distinct_values(self.owner_dashboard, "Not A Filter")
+
+    def test_a_link_to_a_chart_the_dashboard_does_not_hold_is_not_followed(self):
+        """`links` alone cannot reach a query: the chart has to be on the page."""
+        with self.as_user(OWNER), self.assertRaises(frappe.PermissionError):
+            self.distinct_values(self.detached_dashboard, self.FILTER_NAME)
 
 
 class ChartExportReadsTheQuery:

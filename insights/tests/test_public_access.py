@@ -164,14 +164,14 @@ class TestPublicMethodArguments(InsightsIntegrationTestCase):
         return public_method_args(doctype, method, args)
 
     def test_a_builder_parameter_is_dropped(self):
-        """The builder's step preview reshapes the query, so it stays with the builder."""
-        args = self.filter_args(DT.QUERY, "execute", {"active_operation_idx": 0, "page_size": 100})
-        self.assertNotIn("active_operation_idx", args)
+        """A forced re-run bypasses the cache, so it stays with the builder."""
+        args = self.filter_args(DT.CHART, "get_data", {"force": True, "page_size": 100})
+        self.assertNotIn("force", args)
         self.assertEqual(args, {"page_size": 100})
 
     def test_a_json_string_body_is_filtered_too(self):
         """`args` arrives as a JSON body, so filtering must survive the parse."""
-        args = self.filter_args(DT.QUERY, "execute", '{"active_operation_idx": 0, "page": 2}')
+        args = self.filter_args(DT.CHART, "get_data", '{"force": true, "page": 2}')
         self.assertEqual(args, {"page": 2})
 
     def test_download_results_is_filtered_too(self):
@@ -197,9 +197,11 @@ class TestPublicMethodArguments(InsightsIntegrationTestCase):
             self.assertTrue(is_public_method(doctype, method))
 
     def test_the_dashboard_filter_path_keeps_what_it_needs(self):
+        """The filter names itself. The column behind it is read off the dashboard."""
+        context = {"chart": "c1", "items": [], "filters": {}}
         args = self.filter_args(
             DT.DASHBOARD,
             "get_distinct_column_values",
-            {"query": "q1", "column_name": "status", "search_term": "op"},
+            {"filter_name": "Status", "search_term": "op", "filter_context": context, "query": "q1"},
         )
-        self.assertEqual(args, {"query": "q1", "column_name": "status", "search_term": "op"})
+        self.assertEqual(args, {"filter_name": "Status", "search_term": "op", "filter_context": context})

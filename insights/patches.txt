@@ -17,3 +17,5 @@ insights.patches.requalify_workbook_templates
 insights.patches.strip_default_schema_from_table_names
 insights.patches.hash_invitation_keys
 insights.patches.backfill_permission_user
+insights.patches.repair_sankey_value_aggregation
+insights.patches.retire_chart_query_cache

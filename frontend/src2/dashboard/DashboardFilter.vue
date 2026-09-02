@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Icon } from 'frappe-ui/icons'
 import { computed, inject, reactive, watchEffect, watch } from 'vue'
 import { copy, wheneverChanges } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
@@ -9,6 +8,7 @@ import { WorkbookDashboardFilter } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
 import DashboardFilterEditor from './DashboardFilterEditor.vue'
 import Filter from './Filter.vue'
+import { filterIconClass } from './filter_icons'
 
 const dashboard = inject<Dashboard>('dashboard')!
 const props = defineProps<{ item: WorkbookDashboardFilter }>()
@@ -25,28 +25,19 @@ const FILTER_TYPES = {
 	Date: FIELDTYPES.DATE,
 }
 
-const sourceColumn = computed(() => {
-	const firstChart = Object.keys(filter.links)[0]
-	if (!firstChart) return
-	const linkedColumn = filter.links[firstChart]
-	return dashboard.getColumnFromFilterLink(linkedColumn)
-})
-
+// The filter names itself. Which column it reads is the server's to look up —
+// the link that says so is read there, so there is one lookup rather than one
+// per surface.
 function stringValuesProvider(search: string) {
-	if (!sourceColumn.value) return Promise.resolve([])
-
 	const firstLinkedChart = Object.keys(filter.links)?.[0]
-	const adhocFilters = firstLinkedChart
-		? dashboard.getAdhocFilters(firstLinkedChart, filter.filter_name)
-		: undefined
-
-	return dashboard.getDistinctColumnValues(
-		sourceColumn.value.query,
-		sourceColumn.value.column,
-		search,
-		adhocFilters,
-	)
+	if (!firstLinkedChart) return Promise.resolve([])
+	return dashboard.getDistinctColumnValues(filter.filter_name, search, firstLinkedChart)
 }
+
+// The author's icon is a `lucide-*` class Tailwind baked into the stylesheet. A
+// filter authored against the old sprite may name a glyph this build has no CSS
+// for, and that one falls back to the type icon.
+const iconClass = computed(() => filterIconClass(filter.icon))
 
 const filterState = reactive(copy(dashboard.filterStates[filter.filter_name] || {}))
 
@@ -91,11 +82,7 @@ const label = computed(() => {
 					class="flex h-full w-full !justify-start overflow-hidden text-sm [&>span]:truncate"
 				>
 					<template #prefix>
-						<Icon
-							v-if="filter.icon"
-							:name="filter.icon"
-							class="h-4 w-4 flex-shrink-0"
-						/>
+						<span v-if="iconClass" :class="iconClass" class="h-4 w-4 flex-shrink-0" />
 						<DataTypeIcon
 							v-else-if="filter.filter_type"
 							:column-type="FILTER_TYPES[filter.filter_type][0] as ColumnDataType"
@@ -106,10 +93,10 @@ const label = computed(() => {
 					{{ label }}
 				</Button>
 			</template>
-			<template #default="{ toggle: togglePopover, isOpen }">
+			<template #default="{ toggle: togglePopover, open }">
 				<div class="p-2" :style="{ width: 'var(--reka-popover-trigger-width)' }">
 					<Filter
-						v-if="isOpen"
+						v-if="open"
 						:filter-type="filter.filter_type"
 						:valuesProvider="stringValuesProvider"
 						v-model:operator="filterState.operator"

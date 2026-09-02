@@ -87,7 +87,6 @@ export type InsightsChartv3 = {
 	title: string
 	workbook: string
 	query: string
-	data_query: string
 	chart_type: ChartType
 	sort_order: number
 	folder?: string | null
@@ -155,6 +154,11 @@ export type WorkbookDashboardText = {
 	text: string
 	layout: Layout
 }
+
+// dashboard filter state, keyed by filter name. Which query a filter lands on is
+// the server's business — every surface sends the state and the grid it sits
+// on, and the links are read there.
+export type ViewerFilters = Record<string, { operator: FilterOperator; value: FilterValue }>
 
 export type ShareAccess = 'view' | 'edit' | undefined
 export type WorkbookSharePermission = {

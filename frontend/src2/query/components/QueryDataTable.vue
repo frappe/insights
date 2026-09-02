@@ -2,7 +2,6 @@
 import { Button } from 'frappe-ui'
 import { Bell, Download, TriangleAlert } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
-import DrillDown from '../../charts/components/DrillDown.vue'
 import DataTable from '../../components/DataTable.vue'
 import ExportDialog from '../../components/ExportDialog.vue'
 import {
@@ -13,21 +12,27 @@ import {
 	SortDirection,
 } from '../../types/query.types'
 
-import { column, filter_group, parseFilterString } from '../helpers'
-import { Query } from '../query'
-import AlertSetupDialog from './AlertSetupDialog.vue'
-import QueryAlertsDialog from './QueryAlertsDialog.vue'
+import { column, filter_group, parseFilterString, rawRowOf } from '../helpers'
+import { ResultTable } from '../result_table'
 import session from '../../session'
+import type { ChartSegmentClick } from '../../charts/drill/segment_click'
 
+// `query` is whatever produced the rows — a query store, or a chart read store
+// that holds a result and none of the authoring half. What it does not offer is
+// not drawn.
 const props = defineProps<{
-	query: Query
-	enableAlerts?: boolean
+	query: ResultTable
 	enableColumnRename?: boolean
 	enableSort?: boolean
 	enableDrillDown?: boolean
 	enableNewColumn?: boolean
 	onSortChange?: (column_name: string, sort_order: SortDirection) => void
+	// what a cell's value opens, asked of the raw row — the caller reads the
+	// value that was queried, not the one that was printed
+	getCellLink?: (column: QueryResultColumn, row: QueryResultRow) => string | undefined
 }>()
+
+const emit = defineEmits<{ segmentClick: [click: ChartSegmentClick] }>()
 
 const isFiltering = ref(false)
 watch(
@@ -42,22 +47,26 @@ const rows = computed(() => props.query.result.formattedRows)
 const previewRowCount = computed(() => props.query.result.rows.length)
 const totalRowCount = computed(() => props.query.result.totalRowCount || undefined)
 
+// a source with no paging of its own holds the whole result already
+const currentPage = computed(() => props.query.currentPage ?? 1)
+const pageSize = computed(() => props.query.pageSize ?? previewRowCount.value + 1)
+
 // When the entire result fits on one page, filter client-side (instant, no round-trip)
 const isSinglePage = computed(
-	() => props.query.currentPage === 1 && previewRowCount.value < props.query.pageSize,
+	() => currentPage.value === 1 && previewRowCount.value < pageSize.value,
 )
 
 function onRename(column_name: string, new_name: string) {
 	new_name = new_name.trim()
 	if (new_name === column_name) return
 	if (!new_name) return
-	props.query.renameColumn(column_name, new_name)
+	props.query.renameColumn?.(column_name, new_name)
 }
 
 const sortOrder = computed(() => {
 	const _sortOrder = {} as Record<string, SortDirection>
 
-	props.query.currentOperations.forEach((operation) => {
+	props.query.currentOperations?.forEach((operation) => {
 		if (operation.type === 'order_by') {
 			const column_name = operation.column.column_name
 			const direction = operation.direction
@@ -75,26 +84,32 @@ function onSortChange(column_name: string, sort_order: SortDirection) {
 	}
 
 	if (!sort_order) {
-		props.query.removeOrderBy(column_name)
+		props.query.removeOrderBy?.(column_name)
 		return
 	}
-	props.query.addOrderBy({
+	props.query.addOrderBy?.({
 		column: column(column_name),
 		direction: sort_order,
 	})
 }
 
-const showDrillDown = ref(false)
-const drillDownQuery = ref<Query>()
-async function onDrillDown(column: QueryResultColumn, row: QueryResultRow) {
-	drillDownQuery.value = await props.query.getDrillDownQuery(column, row)
-	if (drillDownQuery.value) {
-		showDrillDown.value = true
-	}
+// The table reports the click, it does not act on it: what a cell can be drilled
+// against is the caller's to know, and so is the dialog. The table draws the
+// formatted rows, so it is the table that crosses back to the raw one — a
+// segment is pinned on what was queried, never on what was printed.
+function onDrillDown(column: QueryResultColumn, formattedRow: QueryResultRow, event: MouseEvent) {
+	const row = rawRowOf(props.query.result, formattedRow)
+	if (!row) return
+	emit('segmentClick', {
+		target: { column: column.name, row },
+		point: { x: event.clientX, y: event.clientY },
+	})
 }
 
-const showAlertsDialog = ref(false)
-const currentAlertName = ref('')
+function cellLink(column: QueryResultColumn, formattedRow: QueryResultRow) {
+	const row = rawRowOf(props.query.result, formattedRow)
+	return row ? props.getCellLink?.(column, row) : undefined
+}
 
 // Export dialog state
 const showExportDialog = ref(false)
@@ -120,11 +135,11 @@ watch(
 )
 
 function onExport(format: 'csv' | 'excel', filename: string) {
-	props.query.exportResults(format, filename)
+	props.query.exportResults?.(format, filename)
 }
 
 function onPageChange(page: number) {
-	props.query.goToPage(page)
+	props.query.goToPage?.(page)
 }
 
 function onFilterChange(filters: Record<string, string>) {
@@ -152,7 +167,7 @@ function onFilterChange(filters: Record<string, string>) {
 		}
 	})
 
-	if (allRules.length) {
+	if (allRules.length && props.query.name) {
 		adhocFilters[props.query.name] = filter_group({
 			logical_operator: 'And',
 			filters: allRules,
@@ -162,7 +177,7 @@ function onFilterChange(filters: Record<string, string>) {
 	props.query.adhocFilters = adhocFilters
 
 	isFiltering.value = true
-	props.query.goToPage(1)
+	props.query.goToPage?.(1)
 }
 </script>
 
@@ -177,16 +192,16 @@ function onFilterChange(filters: Record<string, string>) {
 		</div>
 	</div>
 	<DataTable
-		v-if="props.query.isloaded || props.query.islocal"
+		v-if="props.query.ready"
 		:loading="props.query.executing && !isFiltering"
 		:filtering="props.query.executing && isFiltering"
 		:columns="columns"
 		:rows="rows"
 		:enable-pagination="true"
-		:page-size="props.query.pageSize"
+		:page-size="pageSize"
 		:total-row-count="totalRowCount"
-		:current-page="props.query.currentPage"
-		:on-page-change="onPageChange"
+		:current-page="currentPage"
+		:on-page-change="props.query.goToPage ? onPageChange : undefined"
 		:on-fetch-count="props.query.fetchResultCount"
 		:on-filter-change="isSinglePage ? undefined : onFilterChange"
 		:on-export="props.query.exportResults"
@@ -195,6 +210,7 @@ function onFilterChange(filters: Record<string, string>) {
 		:on-sort-change="props.enableSort ? onSortChange : undefined"
 		:on-column-rename="props.enableColumnRename ? onRename : undefined"
 		:on-drilldown="props.enableDrillDown ? onDrillDown : undefined"
+		:cell-link="props.getCellLink ? cellLink : undefined"
 		:enable-new-column="props.enableNewColumn"
 		v-bind="$attrs"
 	>
@@ -205,12 +221,12 @@ function onFilterChange(filters: Record<string, string>) {
 			<slot name="header-suffix" :column="column" />
 		</template>
 		<template #footer-right-actions>
-			<Button v-if="enableAlerts" variant="ghost" @click="showAlertsDialog = true">
-				<template #icon>
-					<Bell class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
-				</template>
-			</Button>
-			<Button v-if="session.user.can_download" variant="ghost" @click="openExport">
+			<slot name="footer-actions" />
+			<Button
+				v-if="session.user.can_download && props.query.exportResults"
+				variant="ghost"
+				@click="openExport"
+			>
 				<template #icon>
 					<Download class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 				</template>
@@ -226,30 +242,6 @@ function onFilterChange(filters: Record<string, string>) {
 		:downloading="props.query.downloading"
 		:default-filename="exportDefaultName"
 		@export="onExport"
-		@cancel="props.query.cancelDownload"
-	/>
-
-	<DrillDown
-		v-if="drillDownQuery"
-		v-model="showDrillDown"
-		@update:model-value="!$event ? (drillDownQuery = undefined) : undefined"
-		:query="drillDownQuery"
-	>
-	</DrillDown>
-
-	<QueryAlertsDialog
-		v-if="showAlertsDialog"
-		v-model="showAlertsDialog"
-		:query="props.query"
-		@set-current-alert-name="currentAlertName = $event"
-	>
-	</QueryAlertsDialog>
-
-	<AlertSetupDialog
-		v-if="currentAlertName"
-		:modelValue="Boolean(currentAlertName)"
-		@update:model-value="!$event ? (currentAlertName = '') : undefined"
-		:query="props.query"
-		:alert_name="currentAlertName"
+		@cancel="props.query.cancelDownload?.()"
 	/>
 </template>

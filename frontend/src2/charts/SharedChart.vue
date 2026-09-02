@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { call } from 'frappe-ui'
+import { waitUntil } from '../helpers'
 import useChart from './chart'
-import ChartRenderer from './components/ChartRenderer.vue'
+import { useSharedChart } from './chart_read'
+import ChartCardFrame from './components/ChartCardFrame.vue'
 
+// A chart on its own page, for whoever the link reaches. It reads the saved
+// chart through the public door, so it draws the card read-only.
 const props = defineProps<{ chart_name: string }>()
 
 const chart_name = await call('insights.api.shared.get_chart_name', {
@@ -10,11 +14,14 @@ const chart_name = await call('insights.api.shared.get_chart_name', {
 })
 
 const chart = useChart(chart_name)
-chart.refresh()
+await waitUntil(() => chart.isloaded)
+
+const read = useSharedChart(chart)
+read.load()
 </script>
 
 <template>
 	<div class="h-full w-full">
-		<ChartRenderer :chart="chart" />
+		<ChartCardFrame :chart="read" readonly />
 	</div>
 </template>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { IconPicker } from 'frappe-ui/icons'
+import FilterIconPicker from './FilterIconPicker.vue'
 import { computed, inject, reactive, ref } from 'vue'
 import useChart from '../charts/chart'
 import useQuery from '../query/query'
@@ -15,9 +15,9 @@ import NumberFilterPicker from '../query/components/NumberFilterPicker.vue'
 import RelativeDatePicker from '../query/components/RelativeDatePicker.vue'
 import { ColumnOption, FilterOperator } from '../types/query.types'
 import { WorkbookDashboardFilter } from '../types/workbook.types'
-import { Dashboard } from './dashboard'
+import { Dashboard, parseFilterLink } from './dashboard'
 import { __ } from '../translation'
-import { Switch, Tabs, DatePicker, DateRangePicker } from 'frappe-ui'
+import { Tabs, DatePicker, DateRangePicker } from 'frappe-ui'
 
 const dashboard = inject<Dashboard>('dashboard')!
 const props = defineProps<{ item: WorkbookDashboardFilter }>()
@@ -27,7 +27,7 @@ if (!filter.links) {
 	filter.links = {}
 }
 
-const tabIndex = ref(0)
+const activeTab = ref('setup')
 const tabs = [
 	{
 		label: __('Setup'),
@@ -60,7 +60,7 @@ const linkOptions = computed(() => {
 		const dependentColumns = chart.getDependentQueryColumns().map((group) => {
 			return {
 				group: group.group,
-				options: disableColumnOptions(group.items),
+				options: disableColumnOptions(group.options),
 			}
 		})
 		return {
@@ -131,7 +131,7 @@ const sourceColumn = computed(() => {
 	const firstChart = Object.keys(filter.links)[0]
 	if (!firstChart) return
 	const linkedColumn = filter.links[firstChart]
-	return dashboard.getColumnFromFilterLink(linkedColumn)
+	return parseFilterLink(linkedColumn)
 })
 
 function defaultValuesProvider(search: string) {
@@ -177,7 +177,7 @@ function saveEdit() {
 	>
 		<template #default>
 			<div class="flex flex-col min-h-[20rem] max-h-[20rem]">
-				<Tabs v-model="tabIndex" :tabs="tabs" class="-mt-6">
+				<Tabs v-model="activeTab" :tabs="tabs" class="-mt-6">
 					<template #tab-panel="{ tab }">
 						<div v-if="tab.value === 'setup'" class="flex flex-col gap-4 pt-2">
 							<div class="flex items-end gap-1.5 p-1">
@@ -206,11 +206,10 @@ function saveEdit() {
 									:key="link.name"
 									class="flex h-8 w-full items-center gap-2"
 								>
-									<Switch
-										size="sm"
+									<Toggle
 										:modelValue="enabledLinks.includes(link.name)"
 										@update:modelValue="toggleLink(link.name)"
-									></Switch>
+									/>
 									<p class="flex-1 truncate text-base">{{ link.title }}</p>
 									<div
 										v-if="enabledLinks.includes(link.name)"
@@ -232,7 +231,7 @@ function saveEdit() {
 								<label class="block text-xs text-ink-gray-5">{{
 									__('Filter Icon')
 								}}</label>
-								<IconPicker v-model="filter.icon" />
+								<FilterIconPicker v-model="filter.icon" />
 							</div>
 							<div
 								v-if="filter.filter_type"
