@@ -650,6 +650,80 @@ def chart_derivation_fixtures():
             ],
         },
         {
+            # a timeline nobody sorted: a date x axis derives its own ascending
+            # sort, so the line joins its points in the order they happened
+            "title": "Spend by Month and Supplier",
+            "chart_type": "Line",
+            "query": "purchase-invoices",
+            "config": {
+                "filters": {"filters": [], "logical_operator": "And"},
+                "limit": 100,
+                "order_by": [],
+                "x_axis": {
+                    "dimension": {
+                        "column_name": "posting_date",
+                        "data_type": "Date",
+                        "dimension_name": "posting_date",
+                        "granularity": "month",
+                    }
+                },
+                "split_by": {
+                    "dimension": {
+                        "column_name": "supplier",
+                        "data_type": "String",
+                        "dimension_name": "supplier",
+                    }
+                },
+                "y_axis": {
+                    "series": [
+                        {
+                            "measure": {
+                                "aggregation": "sum",
+                                "column_name": "base_net_total",
+                                "data_type": "Decimal",
+                                "measure_name": "Spend",
+                            }
+                        }
+                    ],
+                },
+            },
+            "operations": [
+                _source_operation("purchase-invoices"),
+                {
+                    "type": "pivot_wider",
+                    "rows": [
+                        {
+                            "column_name": "posting_date",
+                            "data_type": "Date",
+                            "dimension_name": "posting_date",
+                            "granularity": "month",
+                        }
+                    ],
+                    "columns": [
+                        {
+                            "column_name": "supplier",
+                            "data_type": "String",
+                            "dimension_name": "supplier",
+                        }
+                    ],
+                    "values": [
+                        {
+                            "aggregation": "sum",
+                            "column_name": "base_net_total",
+                            "data_type": "Decimal",
+                            "measure_name": "Spend",
+                        }
+                    ],
+                    "max_column_values": 10,
+                },
+                {
+                    "type": "order_by",
+                    "column": {"type": "column", "column_name": "posting_date"},
+                    "direction": "asc",
+                },
+            ],
+        },
+        {
             # a top-N list: sorted by the measure the summarize just wrote
             "title": "Top 10 Suppliers",
             "chart_type": "Row",

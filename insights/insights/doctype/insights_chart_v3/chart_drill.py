@@ -30,7 +30,10 @@ import frappe
 from frappe import _
 from frappe.utils import add_to_date, get_datetime
 
-from insights.insights.doctype.insights_chart_v3.chart_query import count_of_rows
+from insights.insights.doctype.insights_chart_v3.chart_query import (
+    ORDERED_TYPES,
+    count_of_rows,
+)
 from insights.insights.doctype.insights_chart_v3.record_link import record_links
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import get_columns_from_schema
 from insights.permission_user import permission_user, permission_user_for
@@ -48,12 +51,6 @@ BREAKDOWN_SIZE = 20
 
 # the columns a segment can be broken down by
 DIMENSION_TYPES = ("String", "Date", "Datetime", "Time")
-
-# A dimension that carries an order of its own is shown in that order; one that
-# carries none is ranked by the measure. Dates and times are the ordered ones —
-# a moment has a before and an after, and the question a series answers is how a
-# number moved, not which of its slices is biggest.
-ORDERED_TYPES = ("Date", "Datetime", "Time")
 
 # the column types a page of records can be ranked by. A measure over anything
 # else — a count of names, an expression that names no column at all — leaves

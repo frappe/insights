@@ -191,6 +191,53 @@ class TestChartDerivation(unittest.TestCase):
         ]
         self.assertEqual(sorts, [("posting_date", "desc"), ("territory", "asc")])
 
+    def test_an_axis_chart_on_a_date_runs_forwards(self):
+        """A line joins its points in row order and a summarize hands back none,
+        so a timeline nobody sorted draws itself doubling back on itself."""
+        case = derivation_case("Line")
+        config = {**case["config"], "order_by": []}
+        operations = derive_operations("Line", case["query"], config)
+        sorts = [
+            (op["column"]["column_name"], op["direction"]) for op in operations if op["type"] == "order_by"
+        ]
+        self.assertEqual(sorts, [("posting_date", "asc")])
+
+    def test_an_axis_chart_on_a_category_is_left_in_the_order_it_arrived(self):
+        """Ranking is the reading on a category axis, so a chart the author never
+        sorted gets no sort invented for it."""
+        case = derivation_case("Bar")
+        operations = derive_operations("Bar", case["query"], case["config"])
+        self.assertEqual([op for op in operations if op["type"] == "order_by"], [])
+
+    def test_a_date_axis_outranks_a_sort_on_a_measure(self):
+        """ibis reads the newest sort as the primary key. The measure's sort is
+        added first, so it survives as the tiebreak and the timeline still runs
+        forwards."""
+        case = derivation_case("Line")
+        config = {
+            **case["config"],
+            "order_by": [{"column": {"type": "column", "column_name": "Spend"}, "direction": "desc"}],
+        }
+        operations = derive_operations("Line", case["query"], config)
+        sorts = [
+            (op["column"]["column_name"], op["direction"]) for op in operations if op["type"] == "order_by"
+        ]
+        self.assertEqual(sorts, [("Spend", "desc"), ("posting_date", "asc")])
+
+    def test_a_date_axis_the_author_turned_around_stays_turned_around(self):
+        """Either direction is monotone, so either one draws a line that does not
+        cross itself."""
+        case = derivation_case("Line")
+        config = {
+            **case["config"],
+            "order_by": [{"column": {"type": "column", "column_name": "posting_date"}, "direction": "desc"}],
+        }
+        operations = derive_operations("Line", case["query"], config)
+        sorts = [
+            (op["column"]["column_name"], op["direction"]) for op in operations if op["type"] == "order_by"
+        ]
+        self.assertEqual(sorts, [("posting_date", "desc")])
+
     def test_a_windowed_card_filters_one_window_when_nothing_compares_it(self):
         """One window is one filter and one row. The comparison is what adds a second."""
         operations = derive_operations("Number", "sales-invoice-lines", _windowed_config())

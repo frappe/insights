@@ -42,6 +42,11 @@ CHART_TYPES = (
 
 DEFAULT_MAX_COLUMN_VALUES = 10
 
+# A dimension that carries an order of its own is drawn in that order. One that
+# carries none is left in the order the result arrived in. Dates and times are
+# the ordered ones — a moment has a before and an after.
+ORDERED_TYPES = ("Date", "Datetime", "Time")
+
 
 def derive_operations(chart_type: str, query: str, config: dict | None) -> list[dict]:
     """The operations JSON this chart executes.
@@ -56,6 +61,7 @@ def derive_operations(chart_type: str, query: str, config: dict | None) -> list[
     _add_filters(operations, config)
     _add_chart_operation(operations, chart_type, config)
     _add_order_by_from_config(operations, config)
+    _add_axis_time_order(operations, chart_type, config)
     return operations
 
 
@@ -594,6 +600,42 @@ def _add_filters(operations: list[dict], config: dict):
     if not filters.get("filters"):
         return
     operations.append({"type": "filter_group", **filters})
+
+
+def _add_axis_time_order(operations: list[dict], chart_type: str, config: dict):
+    """An axis chart on a date x axis runs forwards, unless it already says so.
+
+    A line joins its points in the order the rows arrive, and a summarize hands
+    back no order at all, so a timeline nobody sorted draws itself doubling back
+    on itself. Bars hide it: a time axis places each bar at its own date. So the
+    sort is added here rather than at the renderer, where only one of the two
+    marks would show it missing.
+
+    Only for a dimension that carries an order of its own. A chart grouped by
+    status or territory keeps the order its author sorted it into — ranking is
+    the reading there, and inventing one would be the implicit sort this avoids.
+
+    Last, because ibis reads the newest sort as the primary key: an author's
+    sort on a measure survives as the tiebreak and the timeline still runs
+    forwards. A sort the author already put on the x column is left alone —
+    either direction is monotone, so either one draws a line that does not
+    cross itself.
+    """
+    if chart_type not in AXIS_CHARTS:
+        return
+
+    dimension = (config.get("x_axis") or {}).get("dimension") or {}
+    if dimension.get("data_type") not in ORDERED_TYPES:
+        return
+
+    column_name = _result_column(dimension)
+    if not column_name:
+        return
+    for operation in operations:
+        if operation["type"] == "order_by" and operation["column"]["column_name"] == column_name:
+            return
+
+    operations.append(_order_by(column_name, "asc"))
 
 
 def _add_order_by_from_config(operations: list[dict], config: dict):
