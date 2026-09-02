@@ -508,3 +508,151 @@ export function matchesFilter(value: any, parsed: ParsedFilter): boolean {
 		.toLowerCase()
 		.includes(parsed.text.toLowerCase())
 }
+
+// Aggregates whose first positional argument is the boolean gate.
+const CONDITIONAL_AGGREGATES = ['count_if', 'sum_if', 'distinct_count_if']
+// Aggregates that accept a `where=` keyword.
+const GATED_AGGREGATES = [
+	'count',
+	'sum',
+	'avg',
+	'median',
+	'min',
+	'max',
+	'distinct_count',
+	'group_concat',
+]
+
+type ParsedCall = { name: string; args: string[] }
+
+/**
+ * Splits a call's argument list on top-level commas. Commas inside nested
+ * calls, brackets or quotes stay with their argument.
+ */
+function splitArguments(argList: string): string[] {
+	const args: string[] = []
+	let depth = 0
+	let quote = ''
+	let current = ''
+
+	for (const char of argList) {
+		if (quote) {
+			current += char
+			if (char === quote) quote = ''
+			continue
+		}
+		if (char === '"' || char === "'") {
+			quote = char
+			current += char
+			continue
+		}
+		if (char === '(' || char === '[' || char === '{') depth++
+		if (char === ')' || char === ']' || char === '}') depth--
+		if (char === ',' && depth === 0) {
+			args.push(current.trim())
+			current = ''
+			continue
+		}
+		current += char
+	}
+
+	if (current.trim()) args.push(current.trim())
+	return args
+}
+
+/**
+ * Parses `name(arg, arg, ...)` into its name and top-level arguments.
+ * Returns null if the expression is not a single call.
+ */
+function parseCall(expression: string): ParsedCall | null {
+	const trimmed = expression.trim()
+	const match = trimmed.match(/^([a-zA-Z_]\w*)\s*\(/)
+	if (!match) return null
+
+	const openIdx = trimmed.indexOf('(', match[1].length)
+	let depth = 0
+	let quote = ''
+	let closeIdx = -1
+
+	for (let i = openIdx; i < trimmed.length; i++) {
+		const char = trimmed[i]
+		if (quote) {
+			if (char === quote) quote = ''
+			continue
+		}
+		if (char === '"' || char === "'") {
+			quote = char
+			continue
+		}
+		if (char === '(') depth++
+		if (char === ')') {
+			depth--
+			if (depth === 0) {
+				closeIdx = i
+				break
+			}
+		}
+	}
+
+	// the call must span the whole expression, so `a(1) + b(2)` is not a call
+	if (closeIdx !== trimmed.length - 1) return null
+
+	return {
+		name: match[1],
+		args: splitArguments(trimmed.slice(openIdx + 1, closeIdx)),
+	}
+}
+
+// `status == 'Active'` is a positional argument, `where=...` is a keyword
+const KEYWORD_ARGUMENT = /^([a-zA-Z_]\w*)\s*=(?!=)\s*([\s\S]*)$/
+
+function getKeywordArguments(args: string[]): Record<string, string> {
+	const keywords: Record<string, string> = {}
+	args.forEach((arg) => {
+		const match = arg.match(KEYWORD_ARGUMENT)
+		if (match) keywords[match[1]] = match[2].trim()
+	})
+	return keywords
+}
+
+function getPositionalArguments(args: string[]): string[] {
+	return args.filter((arg) => !KEYWORD_ARGUMENT.test(arg))
+}
+
+/**
+ * Returns the boolean condition that gates an aggregate expression, so a
+ * drill-down can reproduce it as a filter.
+ *
+ * Three shapes carry a gate:
+ * - a conditional aggregate: `count_if(cond)`, `sum_if(cond, col)`
+ * - a `where=` keyword: `sum(amount, where=cond)`
+ * - an aggregate over `one_if`: `sum(one_if(cond))`
+ *
+ * Returns null when the expression has no gate, or when it is a window
+ * aggregate. A window measure reads rows outside the gate, so a row filter
+ * does not reproduce it.
+ */
+export function getAggregateCondition(expression: string): string | null {
+	const call = parseCall(expression)
+	if (!call) return null
+
+	const keywords = getKeywordArguments(call.args)
+	if (keywords.group_by || keywords.order_by) return null
+
+	if (CONDITIONAL_AGGREGATES.includes(call.name)) {
+		const positional = getPositionalArguments(call.args)
+		return positional[0] || null
+	}
+
+	if (!GATED_AGGREGATES.includes(call.name)) return null
+
+	if (keywords.where) return keywords.where
+
+	const positional = getPositionalArguments(call.args)
+	const inner = positional.length === 1 ? parseCall(positional[0]) : null
+	if (inner?.name === 'one_if') {
+		return getPositionalArguments(inner.args)[0] || null
+	}
+
+	return null
+}

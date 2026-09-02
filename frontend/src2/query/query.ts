@@ -59,6 +59,7 @@ import {
 	custom_operation,
 	expression,
 	filter_group,
+	getAggregateCondition,
 	getDimensions,
 	getFormattedRows,
 	getMeasures,
@@ -962,29 +963,9 @@ export function makeQuery(name: string) {
 			return []
 		}
 
-		// patterns to match to extract the condition
-		// 1. count_if(order_status == 'delivered')
-		// 2. count_if(order_status == 'delivered', order_id)
-		// 3. sum_if(order_status == 'delivered', order_id)
-		// 4. distinct_count_if(order_status == 'delivered', order_id)
-		const exp = measure.expression.expression
-		const patterns = [
-			/^count_if\(([^,]+),\s*([^)]+)\)$/,
-			/^count_if\(([^,]+)\)$/,
-			/^sum_if\(([^,]+),\s*([^)]+)\)$/,
-			/^distinct_count_if\(([^,]+),\s*([^)]+)\)$/,
-		]
-		const pattern = patterns.find((p) => exp.match(p))
-		if (pattern) {
-			const match = exp.match(pattern)
-			if (match) {
-				const condition = match[1].trim()
-				return [
-					{
-						expression: expression(condition),
-					},
-				]
-			}
+		const condition = getAggregateCondition(measure.expression.expression)
+		if (condition) {
+			return [{ expression: expression(condition) }]
 		}
 
 		return []
