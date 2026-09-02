@@ -16,6 +16,7 @@ import {
 	TextCursorInput,
 	XSquareIcon,
 } from 'lucide-vue-next'
+import { pythonLanguage } from '@codemirror/lang-python'
 import { h } from 'vue'
 import { copy } from '../helpers'
 import { FIELDTYPES, getDefaultGranularity, GranularityType } from '../helpers/constants'
@@ -522,4 +523,120 @@ export function matchesFilter(value: any, parsed: ParsedFilter): boolean {
 	return String(value ?? '')
 		.toLowerCase()
 		.includes(parsed.text.toLowerCase())
+}
+
+// Where the boolean gate sits in an aggregate's positional arguments.
+// Mirrors the signatures in ibis/functions.py.
+const CONDITION_ARGUMENT: Record<string, number> = {
+	count_if: 0,
+	sum_if: 0,
+	distinct_count_if: 0,
+	count: 1,
+	sum: 1,
+	avg: 1,
+	median: 1,
+	min: 1,
+	max: 1,
+	distinct_count: 1,
+	group_concat: 2,
+}
+
+type CallArgument = { name?: string; value: string }
+type ParsedCall = { name: string; args: CallArgument[] }
+
+/**
+ * Parses `name(arg, name=arg, ...)` into its name and arguments.
+ * Returns null if the expression is not a single well-formed call.
+ *
+ * Expressions are Python, and the editor already parses them with this
+ * grammar — see components/Code.vue.
+ */
+function parseCall(source: string): ParsedCall | null {
+	const tree = pythonLanguage.parser.parse(source)
+
+	let hasError = false
+	tree.iterate({
+		enter: (node) => {
+			if (node.type.isError) hasError = true
+		},
+	})
+	if (hasError) return null
+
+	const statement = tree.topNode.firstChild
+	if (!statement || statement.nextSibling || statement.name !== 'ExpressionStatement') return null
+
+	const call = statement.firstChild
+	if (!call || call.name !== 'CallExpression' || call.to !== statement.to) return null
+
+	const callee = call.firstChild
+	const argList = call.getChild('ArgList')
+	if (!callee || callee.name !== 'VariableName' || !argList) return null
+
+	const args: CallArgument[] = []
+	// @lezer/common is only a transitive dependency, so derive its node type here
+	let segment: NonNullable<typeof argList.firstChild>[] = []
+
+	const pushSegment = () => {
+		if (!segment.length) return
+		const last = segment[segment.length - 1]
+		if (segment.length >= 3 && segment[1].name === 'AssignOp') {
+			args.push({
+				name: source.slice(segment[0].from, segment[0].to),
+				value: source.slice(segment[2].from, last.to),
+			})
+		} else {
+			args.push({ value: source.slice(segment[0].from, last.to) })
+		}
+		segment = []
+	}
+
+	for (let child = argList.firstChild; child; child = child.nextSibling) {
+		// the call's own delimiters, not part of any argument
+		if (child.name === '(' || child.name === ')') continue
+		if (child.name === ',') pushSegment()
+		else segment.push(child)
+	}
+	pushSegment()
+
+	return { name: source.slice(callee.from, callee.to), args }
+}
+
+/**
+ * Returns the boolean conditions that gate an aggregate expression, so a
+ * drill-down can reproduce them as filters.
+ *
+ * A gate reaches an aggregate two ways, and both can appear at once:
+ * - as the `where` argument, by position or by keyword —
+ *   `sum(amount, status == 'Active')`, `count_if(status == 'Active', id)`
+ * - as a `one_if` over the aggregated column — `sum(one_if(cond))`
+ *
+ * Returns nothing for a window aggregate. It reads rows outside the gate,
+ * so a row filter does not reproduce it.
+ */
+export function getAggregateConditions(source: string): string[] {
+	const call = parseCall(source)
+	if (!call) return []
+
+	const gateIndex = CONDITION_ARGUMENT[call.name]
+	if (gateIndex === undefined) return []
+
+	// only group_by makes it a window — order_by alone does not
+	if (call.args.some((arg) => arg.name === 'group_by')) return []
+
+	const positional = call.args.filter((arg) => !arg.name)
+	const conditions: string[] = []
+
+	const keyword = call.args.find((arg) => arg.name === 'where')
+	const gate = keyword ? keyword.value : positional[gateIndex]?.value
+	if (gate) conditions.push(gate)
+
+	// the aggregated column is the argument before the gate
+	if (gateIndex > 0) {
+		const inner = positional[0] ? parseCall(positional[0].value) : null
+		if (inner?.name === 'one_if' && inner.args[0]) {
+			conditions.push(inner.args[0].value)
+		}
+	}
+
+	return conditions
 }
