@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { watchDebounced } from '@vueuse/core'
 import { Button, LoadingIndicator } from 'frappe-ui'
-import { Plus, Search, Table2Icon } from 'lucide-vue-next'
+import { ExternalLink, Plus, Search, Table2Icon } from 'lucide-vue-next'
 import { computed, nextTick, ref } from 'vue'
 import { usePagination } from '../composables/usePagination'
 import { createHeaders, formatNumber, getFormatUnits, getShortNumber } from '../helpers'
@@ -51,7 +51,12 @@ const props = defineProps<{
 	sortOrder?: SortOrder
 	onSortChange?: (column_name: string, direction: SortDirection) => void
 	onColumnRename?: (column_name: string, new_name: string) => void
-	onDrilldown?: (column: QueryResultColumn, row: QueryResultRow) => void
+	// the event too: a caller that opens a menu at the click needs the point, and
+	// the cell is the only thing that knows where it was
+	onDrilldown?: (column: QueryResultColumn, row: QueryResultRow, event: MouseEvent) => void
+	// where a cell's value points, when it points anywhere. The table draws the
+	// link and knows nothing about what is behind it
+	cellLink?: (column: QueryResultColumn, row: QueryResultRow) => string | undefined
 	stickyColumns?: string[]
 	columnWidths?: Record<string, number>
 	textWrap?: Record<string, boolean>
@@ -98,6 +103,12 @@ const isUrl = (value: any): boolean => {
 	} catch {
 		return false
 	}
+}
+
+const linkOf = (col: QueryResultColumn, row: QueryResultRow): string | undefined => {
+	const href = props.cellLink?.(col, row)
+	if (href) return href
+	return isUrl(row[col.name]) ? String(row[col.name]).trim() : undefined
 }
 
 const $header = ref<HTMLElement>()
@@ -724,16 +735,31 @@ function toggleNewColumn() {
 								...getColumnWidthStyle(col.name),
 							}"
 							height="30px"
-							@dblclick="isNumberColumn(col.name) && props.onDrilldown?.(col, row)"
+							@dblclick="
+								isNumberColumn(col.name) && props.onDrilldown?.(col, row, $event)
+							"
 						>
 							<template v-if="isNumberColumn(col.name)">
 								{{ _formatNumber(row[col.name], col.name) }}
 							</template>
-							<template v-else-if="isUrl(row[col.name])">
-								<a :href="row[col.name]" target="_blank" class="underline">
-									{{ row[col.name] }}
-								</a>
-							</template>
+							<!-- the whole value is the control, so a link needs no column
+							     of its own. The icon marks the one that leaves, and it
+							     is drawn only under the pointer: a column where every
+							     row links would otherwise be a column of icons. Its
+							     space is held either way, so nothing shifts on hover. -->
+							<a
+								v-else-if="linkOf(col, row)"
+								:href="linkOf(col, row)"
+								target="_blank"
+								rel="noopener noreferrer"
+								class="group inline-flex max-w-full items-center gap-1 hover:underline"
+							>
+								<span class="truncate">{{ row[col.name] }}</span>
+								<ExternalLink
+									class="size-3 shrink-0 text-ink-gray-5 opacity-0 group-hover:opacity-100"
+									stroke-width="1.5"
+								/>
+							</a>
 
 							<template v-else>
 								{{ row[col.name] }}
@@ -813,7 +839,7 @@ function toggleNewColumn() {
 
 	<div
 		v-if="props.loading && !props.filtering"
-		class="absolute top-10 flex h-[calc(100%-2.5rem)] rounded-b w-full items-center justify-center bg-surface-base/30 backdrop-blur-sm"
+		class="absolute top-10 flex h-[calc(100%-2.5rem)] rounded-b-4 w-full items-center justify-center bg-surface-base/30 backdrop-blur-sm"
 	>
 		<LoadingIndicator class="h-5 w-5 text-ink-gray-4" />
 	</div>

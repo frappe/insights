@@ -32,6 +32,12 @@ export type Dimension = {
 	column_name: string
 	data_type: DimensionDataType
 	granularity?: GranularityType
+	/**
+	 * Groups by window membership rather than by a grain: one row per window,
+	 * named by the date the window starts on. The engine resolves them, so a
+	 * dimension carrying them says nothing with `granularity`.
+	 */
+	windows?: Timespan[]
 }
 export type DimensionOption = Dimension & { label: string; value: string }
 
@@ -69,7 +75,19 @@ export type FilterOperator =
 	| 'ends_with'
 	| 'is_set'
 	| 'is_not_set'
-export type FilterValue = string | number | boolean | any[] | string[] | undefined
+/**
+ * The value of a `within` filter, when the span alone does not say enough. A
+ * span written as a string or as the words of one still resolves against today.
+ */
+export type Timespan = {
+	/** A span the engine understands, e.g. `month to date`. */
+	span: string
+	/** The date the span resolves against, as `YYYY-MM-DD`. Defaults to today. */
+	anchor?: string
+	/** The same span, anchored `count` `unit`s away. */
+	shift?: { unit: string; count: number }
+}
+export type FilterValue = string | number | boolean | any[] | string[] | Timespan | undefined
 export type Expression = {
 	type: 'expression'
 	expression: string
@@ -212,7 +230,7 @@ export type DropdownOption = {
 
 export type GroupedDropdownOption = {
 	group: string
-	items: DropdownOption[]
+	options: DropdownOption[]
 }
 
 export type ColumnOption = DropdownOption & {
@@ -223,7 +241,7 @@ export type ColumnOption = DropdownOption & {
 
 export type GroupedColumnOption = {
 	group: string
-	items: ColumnOption[]
+	options: ColumnOption[]
 }
 
 export type QueryResult = {

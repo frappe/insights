@@ -23,11 +23,11 @@ const actions = [
 ]
 </script>
 <template>
-	<div class="flex w-fit cursor-pointer rounded bg-surface-gray-9 shadow-sm">
+	<div class="flex w-fit cursor-pointer rounded-4 bg-surface-gray-9 shadow-sm">
 		<div
 			v-for="action in actions"
 			:key="action.label"
-			class="rounded p-1.5 hover:bg-surface-gray-8"
+			class="rounded-4 p-1.5 hover:bg-surface-gray-8"
 			@click="action.onClick()"
 		>
 			<component :is="action.icon" class="h-3.5 w-3.5 text-ink-gray-1" />

@@ -3,7 +3,7 @@ import { __ } from '../translation'
 import { isEqual } from 'es-toolkit'
 import { toPng } from 'html-to-image'
 import { call, debounce } from 'frappe-ui'
-import { Socket } from 'socket.io-client'
+import type { Socket } from 'socket.io-client'
 import {
 	inject,
 	watch,
@@ -49,7 +49,8 @@ export function wheneverChanges(source: WatchSource, callback: WatchCallback, op
 	return watchDebounced(
 		source,
 		(val, _, onCleanup) => {
-			if (isEqual(val, preVal)) return
+			// against a clone, because `preVal` is one — see `isDirty` in ./resource
+			if (isEqual(copy(val), preVal)) return
 			preVal = copy(val)
 			callback(val, preVal, onCleanup)
 		},
@@ -169,6 +170,13 @@ export function downloadImage(element: HTMLElement, filename: string, scale = 2,
 			link.click()
 		})
 		.catch((err) => showErrorToast(err, false))
+}
+
+/** A cell read as a number, or nothing: null, blank and text are not zero. */
+export function toNumber(value: any): number | null {
+	if (value === null || value === undefined || value === '') return null
+	const number = Number(value)
+	return Number.isNaN(number) ? null : number
 }
 
 export function formatNumber(number: number, precision = 0) {
@@ -315,7 +323,7 @@ export function flattenOptions(
 ): DropdownOption[] {
 	if (!options.length) return []
 	return 'group' in options[0]
-		? (options as GroupedDropdownOption[]).map((c) => c.items).flat()
+		? (options as GroupedDropdownOption[]).map((c) => c.options).flat()
 		: (options as DropdownOption[])
 }
 
@@ -327,9 +335,9 @@ export function groupOptions<T extends DropdownOption>(
 		const group = option[groupBy] as string
 		const index = acc.findIndex((g) => g.group === group)
 		if (index === -1) {
-			acc.push({ group, items: [option] })
+			acc.push({ group, options: [option] })
 		} else {
-			acc[index].items.push(option)
+			acc[index].options.push(option)
 		}
 		return acc
 	}, [] as GroupedDropdownOption[])

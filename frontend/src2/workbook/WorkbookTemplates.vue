@@ -4,7 +4,7 @@ import { CheckCircle2, LayoutTemplate } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { createToast } from '../helpers/toasts'
-import { useTelemetry } from 'frappe-ui/frappe'
+import { useTelemetry } from '@framework/ui/telemetry/index.ts'
 import { __ } from '../translation'
 
 export type WorkbookTemplate = {

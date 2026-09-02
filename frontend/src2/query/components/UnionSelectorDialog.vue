@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, reactive } from 'vue'
 import { UnionArgs } from '../../types/query.types'
-import { workbookKey } from '../../workbook/workbook'
+import { workbookKey } from '../../workbook/workbook_key'
 import { query_table, table } from '../helpers'
 import { Query } from '../query'
 import { useTableOptions } from './join_utils'
@@ -109,7 +109,7 @@ function reset() {
 <template>
 	<Dialog :open="showDialog" bare>
 		<template #default>
-			<div class="rounded-lg bg-surface-base px-4 pb-6 pt-5 sm:px-6">
+			<div class="rounded-6 bg-surface-base px-4 pb-6 pt-5 sm:px-6">
 				<!-- Title & Close -->
 				<div class="flex items-center justify-between pb-4">
 					<h3 class="text-3xl-semibold leading-6 text-ink-gray-8">

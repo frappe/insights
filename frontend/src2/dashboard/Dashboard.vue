@@ -54,7 +54,7 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 				</template>
 			</Button>
 			<Dropdown
-				placement="left"
+				align="end"
 				:button="{ icon: 'lucide-more-vertical', variant: 'outline' }"
 				:options="[
 					{

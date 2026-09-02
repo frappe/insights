@@ -152,7 +152,7 @@ watchEffect(() => {
 					<SearchIcon class="h-4 w-4 text-ink-gray-4" />
 				</template>
 			</FormControl>
-			<TabButtons :buttons="filterTabs" v-model="filter" />
+			<TabButtons :options="filterTabs" v-model="filter" />
 		</div>
 
 		<div class="h-full w-full">

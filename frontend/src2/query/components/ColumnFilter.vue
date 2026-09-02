@@ -18,12 +18,12 @@ const props = defineProps<{
 		:side="(props.placement || 'right-start').split('-')[0]"
 		:align="(props.placement || 'right-start').split('-')[1] || 'start'"
 	>
-		<template #trigger="{ toggle: togglePopover, isOpen }">
-			<slot name="target" :togglePopover="togglePopover" :isOpen="isOpen">
+		<template #trigger="{ toggle: togglePopover, open }">
+			<slot name="target" :togglePopover="togglePopover" :isOpen="open">
 				<Button
 					variant="ghost"
 					class="w-full !justify-start"
-					:class="{ ' !bg-surface-gray-2': isOpen }"
+					:class="{ ' !bg-surface-gray-2': open }"
 				>
 					<template #icon>
 						<div class="flex h-7 w-full items-center gap-2 pl-2 pr-1.5 text-base">
@@ -37,9 +37,9 @@ const props = defineProps<{
 				</Button>
 			</slot>
 		</template>
-		<template #default="{ toggle: togglePopover, isOpen }">
+		<template #default="{ toggle: togglePopover, open }">
 			<ColumnFilterBody
-				v-if="isOpen"
+				v-if="open"
 				:column="props.column"
 				:valuesProvider="props.valuesProvider"
 				@filter="(op, val) => emit('filter', op, val)"

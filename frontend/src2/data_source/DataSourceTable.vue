@@ -51,7 +51,7 @@ watchEffect(() => {
 		</div>
 		<div
 			v-else
-			class="flex h-full w-full flex-col items-center justify-center rounded bg-surface-gray-1"
+			class="flex h-full w-full flex-col items-center justify-center rounded-4 bg-surface-gray-1"
 		>
 			<LoadingIndicator class="mb-2 w-8 text-ink-gray-4" />
 			<div class="text-lg text-ink-gray-5">Loading table data...</div>

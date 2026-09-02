@@ -138,7 +138,7 @@ function onDatePickerInput(value: string[]) {
 				<div
 					v-for="range in predefinedRanges"
 					:key="range.value"
-					class="-mx-1 flex cursor-pointer items-center justify-between gap-8 rounded px-1 py-1"
+					class="-mx-1 flex cursor-pointer items-center justify-between gap-8 rounded-4 px-1 py-1"
 					@click="onPredefinedRangeInput(range.value)"
 					:class="
 						isRangeSelected(range.value)

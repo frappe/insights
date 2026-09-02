@@ -1,7 +1,7 @@
 <script setup lang="tsx">
 import { Textarea } from 'frappe-ui'
 import { computed, reactive, unref } from 'vue'
-import Checkbox from '../../components/Checkbox.vue'
+import Toggle from '../../components/Toggle.vue'
 import { waitUntil, wheneverChanges } from '../../helpers'
 import { createToast } from '../../helpers/toasts'
 import { __ } from '../../translation'
@@ -252,7 +252,7 @@ function toggleAlert() {
 							:column-options="props.query.result.columnOptions"
 						/>
 					</div>
-					<Checkbox
+					<Toggle
 						class="mt-1.5"
 						:label="__('Use Custom Condition')"
 						v-model="alert.doc.custom_condition"

@@ -96,11 +96,11 @@ function confirmSelection() {
 					</Button>
 				</div>
 				<div
-					class="flex h-[15rem] flex-col overflow-y-scroll rounded border p-0.5 text-base gap-1 py-2"
+					class="flex h-[15rem] flex-col overflow-y-scroll rounded-4 border p-0.5 text-base gap-1 py-2"
 				>
 					<template v-for="chart in filteredCharts" :key="chart.name">
 						<div
-							class="flex h-7 flex-shrink-0 cursor-pointer items-center justify-between rounded px-2 p-4 hover:bg-surface-gray-2"
+							class="flex h-7 flex-shrink-0 cursor-pointer items-center justify-between rounded-4 px-2 p-4 hover:bg-surface-gray-2"
 							@click="toggleChart(chart)"
 						>
 							<div class="flex items-center gap-2 py-4">

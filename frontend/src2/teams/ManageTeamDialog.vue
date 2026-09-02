@@ -160,7 +160,7 @@ const activeTab = ref('Members')
 						</div>
 						<div
 							v-else
-							class="rounded border border-dashed border-outline-gray-2 px-32 py-6 text-center text-sm text-ink-gray-4"
+							class="rounded-4 border border-dashed border-outline-gray-2 px-32 py-6 text-center text-sm text-ink-gray-4"
 						>
 							This team does not have any members
 						</div>
@@ -174,7 +174,7 @@ const activeTab = ref('Members')
 				>
 					<div
 						v-if="currentTeam.name == 'Admin'"
-						class="rounded bg-surface-gray-1 p-2 text-p-sm text-ink-gray-5"
+						class="rounded-4 bg-surface-gray-1 p-2 text-p-sm text-ink-gray-5"
 					>
 						Admin team has access to all the data sources and tables. Members of this
 						team are allowed to manage teams, users, and other admin settings

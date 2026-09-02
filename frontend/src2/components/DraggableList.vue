@@ -44,7 +44,7 @@ function onChange(e) {
 				<div class="flex-1 overflow-hidden">
 					<slot name="item" :item="item" :index="idx">
 						<div
-							class="group flex flex-1 cursor-pointer items-center justify-between gap-1 overflow-hidden rounded bg-surface-gray-1 py-1.5 px-2 hover:bg-surface-gray-2"
+							class="group flex flex-1 cursor-pointer items-center justify-between gap-1 overflow-hidden rounded-4 bg-surface-gray-1 py-1.5 px-2 hover:bg-surface-gray-2"
 						>
 							<div class="flex-1 overflow-hidden">
 								<slot name="item-content" :item="item" :index="idx">
@@ -67,7 +67,7 @@ function onChange(e) {
 	</Draggable>
 	<template v-if="showEmptyState && !items?.length">
 		<div
-			class="flex h-full flex-col items-center justify-center rounded border border-dashed border-outline-gray-2 py-2"
+			class="flex h-full flex-col items-center justify-center rounded-4 border border-dashed border-outline-gray-2 py-2"
 		>
 			<div class="text-xs text-ink-gray-4">{{ props.emptyText }}</div>
 		</div>

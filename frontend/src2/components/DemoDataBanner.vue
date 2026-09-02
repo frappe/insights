@@ -46,7 +46,7 @@ function dismiss() {
 <template>
 	<div
 		v-if="show"
-		class="flex flex-col gap-3 rounded-lg bg-surface-base px-3 py-2.5 text-sm shadow-sm"
+		class="flex flex-col gap-3 rounded-6 bg-surface-base px-3 py-2.5 text-sm shadow-sm"
 	>
 		<div class="flex items-start justify-between">
 			<div class="flex flex-col gap-1">
