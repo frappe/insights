@@ -59,7 +59,7 @@ import {
 	custom_operation,
 	expression,
 	filter_group,
-	getAggregateCondition,
+	getAggregateConditions,
 	getDimensions,
 	getFormattedRows,
 	getMeasures,
@@ -963,12 +963,9 @@ export function makeQuery(name: string) {
 			return []
 		}
 
-		const condition = getAggregateCondition(measure.expression.expression)
-		if (condition) {
-			return [{ expression: expression(condition) }]
-		}
-
-		return []
+		return getAggregateConditions(measure.expression.expression).map((condition) => ({
+			expression: expression(condition),
+		}))
 	}
 
 	function getDrillDownFiltersForSummarize(

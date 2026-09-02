@@ -16,6 +16,7 @@ import {
 	TextCursorInput,
 	XSquareIcon,
 } from 'lucide-vue-next'
+import { pythonLanguage } from '@codemirror/lang-python'
 import { h } from 'vue'
 import { copy } from '../helpers'
 import { FIELDTYPES, getDefaultGranularity, GranularityType } from '../helpers/constants'
@@ -509,150 +510,118 @@ export function matchesFilter(value: any, parsed: ParsedFilter): boolean {
 		.includes(parsed.text.toLowerCase())
 }
 
-// Aggregates whose first positional argument is the boolean gate.
-const CONDITIONAL_AGGREGATES = ['count_if', 'sum_if', 'distinct_count_if']
-// Aggregates that accept a `where=` keyword.
-const GATED_AGGREGATES = [
-	'count',
-	'sum',
-	'avg',
-	'median',
-	'min',
-	'max',
-	'distinct_count',
-	'group_concat',
-]
-
-type ParsedCall = { name: string; args: string[] }
-
-/**
- * Splits a call's argument list on top-level commas. Commas inside nested
- * calls, brackets or quotes stay with their argument.
- */
-function splitArguments(argList: string): string[] {
-	const args: string[] = []
-	let depth = 0
-	let quote = ''
-	let current = ''
-
-	for (const char of argList) {
-		if (quote) {
-			current += char
-			if (char === quote) quote = ''
-			continue
-		}
-		if (char === '"' || char === "'") {
-			quote = char
-			current += char
-			continue
-		}
-		if (char === '(' || char === '[' || char === '{') depth++
-		if (char === ')' || char === ']' || char === '}') depth--
-		if (char === ',' && depth === 0) {
-			args.push(current.trim())
-			current = ''
-			continue
-		}
-		current += char
-	}
-
-	if (current.trim()) args.push(current.trim())
-	return args
+// Where the boolean gate sits in an aggregate's positional arguments.
+// Mirrors the signatures in ibis/functions.py.
+const CONDITION_ARGUMENT: Record<string, number> = {
+	count_if: 0,
+	sum_if: 0,
+	distinct_count_if: 0,
+	count: 1,
+	sum: 1,
+	avg: 1,
+	median: 1,
+	min: 1,
+	max: 1,
+	distinct_count: 1,
+	group_concat: 2,
 }
 
+type CallArgument = { name?: string; value: string }
+type ParsedCall = { name: string; args: CallArgument[] }
+
 /**
- * Parses `name(arg, arg, ...)` into its name and top-level arguments.
- * Returns null if the expression is not a single call.
+ * Parses `name(arg, name=arg, ...)` into its name and arguments.
+ * Returns null if the expression is not a single well-formed call.
+ *
+ * Expressions are Python, and the editor already parses them with this
+ * grammar — see components/Code.vue.
  */
-function parseCall(expression: string): ParsedCall | null {
-	const trimmed = expression.trim()
-	const match = trimmed.match(/^([a-zA-Z_]\w*)\s*\(/)
-	if (!match) return null
+function parseCall(source: string): ParsedCall | null {
+	const tree = pythonLanguage.parser.parse(source)
 
-	const openIdx = trimmed.indexOf('(', match[1].length)
-	let depth = 0
-	let quote = ''
-	let closeIdx = -1
-
-	for (let i = openIdx; i < trimmed.length; i++) {
-		const char = trimmed[i]
-		if (quote) {
-			if (char === quote) quote = ''
-			continue
-		}
-		if (char === '"' || char === "'") {
-			quote = char
-			continue
-		}
-		if (char === '(') depth++
-		if (char === ')') {
-			depth--
-			if (depth === 0) {
-				closeIdx = i
-				break
-			}
-		}
-	}
-
-	// the call must span the whole expression, so `a(1) + b(2)` is not a call
-	if (closeIdx !== trimmed.length - 1) return null
-
-	return {
-		name: match[1],
-		args: splitArguments(trimmed.slice(openIdx + 1, closeIdx)),
-	}
-}
-
-// `status == 'Active'` is a positional argument, `where=...` is a keyword
-const KEYWORD_ARGUMENT = /^([a-zA-Z_]\w*)\s*=(?!=)\s*([\s\S]*)$/
-
-function getKeywordArguments(args: string[]): Record<string, string> {
-	const keywords: Record<string, string> = {}
-	args.forEach((arg) => {
-		const match = arg.match(KEYWORD_ARGUMENT)
-		if (match) keywords[match[1]] = match[2].trim()
+	let hasError = false
+	tree.iterate({
+		enter: (node) => {
+			if (node.type.isError) hasError = true
+		},
 	})
-	return keywords
-}
+	if (hasError) return null
 
-function getPositionalArguments(args: string[]): string[] {
-	return args.filter((arg) => !KEYWORD_ARGUMENT.test(arg))
+	const statement = tree.topNode.firstChild
+	if (!statement || statement.nextSibling || statement.name !== 'ExpressionStatement') return null
+
+	const call = statement.firstChild
+	if (!call || call.name !== 'CallExpression' || call.to !== statement.to) return null
+
+	const callee = call.firstChild
+	const argList = call.getChild('ArgList')
+	if (!callee || callee.name !== 'VariableName' || !argList) return null
+
+	const args: CallArgument[] = []
+	// @lezer/common is only a transitive dependency, so derive its node type here
+	let segment: NonNullable<typeof argList.firstChild>[] = []
+
+	const pushSegment = () => {
+		if (!segment.length) return
+		const last = segment[segment.length - 1]
+		if (segment.length >= 3 && segment[1].name === 'AssignOp') {
+			args.push({
+				name: source.slice(segment[0].from, segment[0].to),
+				value: source.slice(segment[2].from, last.to),
+			})
+		} else {
+			args.push({ value: source.slice(segment[0].from, last.to) })
+		}
+		segment = []
+	}
+
+	for (let child = argList.firstChild; child; child = child.nextSibling) {
+		// the call's own delimiters, not part of any argument
+		if (child.name === '(' || child.name === ')') continue
+		if (child.name === ',') pushSegment()
+		else segment.push(child)
+	}
+	pushSegment()
+
+	return { name: source.slice(callee.from, callee.to), args }
 }
 
 /**
- * Returns the boolean condition that gates an aggregate expression, so a
- * drill-down can reproduce it as a filter.
+ * Returns the boolean conditions that gate an aggregate expression, so a
+ * drill-down can reproduce them as filters.
  *
- * Three shapes carry a gate:
- * - a conditional aggregate: `count_if(cond)`, `sum_if(cond, col)`
- * - a `where=` keyword: `sum(amount, where=cond)`
- * - an aggregate over `one_if`: `sum(one_if(cond))`
+ * A gate reaches an aggregate two ways, and both can appear at once:
+ * - as the `where` argument, by position or by keyword —
+ *   `sum(amount, status == 'Active')`, `count_if(status == 'Active', id)`
+ * - as a `one_if` over the aggregated column — `sum(one_if(cond))`
  *
- * Returns null when the expression has no gate, or when it is a window
- * aggregate. A window measure reads rows outside the gate, so a row filter
- * does not reproduce it.
+ * Returns nothing for a window aggregate. It reads rows outside the gate,
+ * so a row filter does not reproduce it.
  */
-export function getAggregateCondition(expression: string): string | null {
-	const call = parseCall(expression)
-	if (!call) return null
+export function getAggregateConditions(source: string): string[] {
+	const call = parseCall(source)
+	if (!call) return []
 
-	const keywords = getKeywordArguments(call.args)
-	if (keywords.group_by || keywords.order_by) return null
+	const gateIndex = CONDITION_ARGUMENT[call.name]
+	if (gateIndex === undefined) return []
 
-	if (CONDITIONAL_AGGREGATES.includes(call.name)) {
-		const positional = getPositionalArguments(call.args)
-		return positional[0] || null
+	// only group_by makes it a window — order_by alone does not
+	if (call.args.some((arg) => arg.name === 'group_by')) return []
+
+	const positional = call.args.filter((arg) => !arg.name)
+	const conditions: string[] = []
+
+	const keyword = call.args.find((arg) => arg.name === 'where')
+	const gate = keyword ? keyword.value : positional[gateIndex]?.value
+	if (gate) conditions.push(gate)
+
+	// the aggregated column is the argument before the gate
+	if (gateIndex > 0) {
+		const inner = positional[0] ? parseCall(positional[0].value) : null
+		if (inner?.name === 'one_if' && inner.args[0]) {
+			conditions.push(inner.args[0].value)
+		}
 	}
 
-	if (!GATED_AGGREGATES.includes(call.name)) return null
-
-	if (keywords.where) return keywords.where
-
-	const positional = getPositionalArguments(call.args)
-	const inner = positional.length === 1 ? parseCall(positional[0]) : null
-	if (inner?.name === 'one_if') {
-		return getPositionalArguments(inner.args)[0] || null
-	}
-
-	return null
+	return conditions
 }
