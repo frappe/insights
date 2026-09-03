@@ -54,7 +54,7 @@ const rightTable = computed(() => {
 })
 const tableOptions = useTableOptions({
 	data_source,
-	initialSearchText: rightTable.value,
+	selected_table: rightTable,
 })
 
 const workbook = inject(workbookKey)!

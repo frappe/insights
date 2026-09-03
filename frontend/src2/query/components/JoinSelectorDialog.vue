@@ -97,7 +97,7 @@ const rightTable = computed(() => {
 })
 const tableOptions = useTableOptions({
 	data_source,
-	initialSearchText: rightTable.value,
+	selected_table: rightTable,
 })
 const rightTableColumnOptions = useTableColumnOptions(data_source, rightTable)
 
