@@ -8,6 +8,7 @@
 
 import { call } from 'frappe-ui'
 import { computed } from 'vue'
+import { stableStringify } from '../helpers'
 import type { Chart } from './chart'
 import {
 	makeChartRead,
@@ -33,7 +34,8 @@ export default function useChartPreview(chart: Chart) {
 
 function makeChartPreview(chart: Chart) {
 	// the config is watched deeply, so an edit that leaves the request the same —
-	// a display option, a re-normalized slot — must not re-run it
+	// a display option, a re-normalized slot, a save that came back with its keys
+	// sorted — must not re-run it
 	const request = (filterContext?: DashboardFilterContext) => ({
 		chart_type: chart.doc.chart_type,
 		query: chart.doc.query,
@@ -48,7 +50,7 @@ function makeChartPreview(chart: Chart) {
 
 	return makeChartRead({
 		doc: computed(() => chart.doc as ChartReadDoc),
-		requestKey: (filterContext) => JSON.stringify(request(filterContext)),
+		requestKey: (filterContext) => stableStringify(request(filterContext)),
 		fetchData: (force, filterContext) =>
 			call('insights.api.authoring.get_chart_data', { ...request(filterContext), force }),
 		// the same config the picture was drawn from, so a drill answers for what
