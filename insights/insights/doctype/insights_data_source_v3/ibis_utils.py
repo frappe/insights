@@ -1,5 +1,4 @@
 import ast
-import re
 import sys
 import time
 import traceback
@@ -708,10 +707,14 @@ class IbisQueryBuilder:
                 check_permissions=check_permissions,
             )
 
+            # after the transpile the SQL is DuckDB's, so the rewrite below reads
+            # and writes that dialect instead of the source's
+            target_dialect = source_dialect
             if not self.use_live_connection:
                 raw_sql = self._transpile_sql_to_duckdb(raw_sql, source_dialect)
+                target_dialect = "duckdb"
 
-            raw_sql = self._prepend_sql_with_clauses(raw_sql, replace_map)
+            raw_sql = self._replace_sql_tables(raw_sql, replace_map, dialect=target_dialect)
 
         supports_stored_procedure = ds.database_type in ["PostgreSQL", "MSSQL", "MariaDB"]
         if (
@@ -828,27 +831,47 @@ class IbisQueryBuilder:
 
         return replace_map
 
-    def _prepend_sql_with_clauses(self, raw_sql: str, replace_map: dict[str, str]) -> str:
+    def _replace_sql_tables(
+        self,
+        raw_sql: str,
+        replace_map: dict[str, str],
+        dialect: sg.Dialect | None,
+    ) -> str:
+        """Swap every reference to a bound table for its permission-filtered select.
+
+        Prepending one CTE per table is shorter, but then the CTE name is the
+        collision surface. MariaDB matches CTE names case-insensitively, so a query
+        that reads `tabTask` in one place and `tabtask` in another asks for two CTEs
+        that MariaDB reads as one, and it refuses the pair. Replacing the reference
+        itself needs no name, so no spelling can collide.
+        """
         if not replace_map:
             return raw_sql
 
-        with_clauses = []
-        for table_name, table_sql in replace_map.items():
-            quoted_table_name = sg.to_identifier(table_name)
-            with_clauses.append(f"{quoted_table_name} AS ({table_sql})")
-
-        with_clause_sql = ", ".join(with_clauses)
-        raw_sql_stripped = raw_sql.strip()
-        if raw_sql_stripped.lower().startswith("with"):
-            return re.sub(
-                r"(\bwith\b)",
-                f"WITH {with_clause_sql},",
-                raw_sql_stripped,
-                count=1,
-                flags=re.IGNORECASE,
+        try:
+            statements = sg.parse(raw_sql, dialect=dialect)
+        except Exception as e:
+            frappe.throw(
+                f"Failed to apply permissions to the SQL query: {e}",
+                title="Unsupported SQL Query",
             )
 
-        return f"WITH {with_clause_sql} {raw_sql_stripped}"
+        for statement in statements:
+            # collect first: the replacements carry their own table references,
+            # and re-reading them would replace a table inside its own binding
+            for table_exp in list(statement.find_all(sg.exp.Table)):
+                table_sql = replace_map.get(table_exp.name)
+                if table_sql is None:
+                    continue
+
+                # an unaliased reference keeps the table name as its alias, so a
+                # qualified column such as `tabTask`.name still resolves
+                alias = table_exp.args.get("alias") or sg.exp.TableAlias(this=table_exp.this.copy())
+                subquery = sg.parse_one(table_sql, dialect=dialect).subquery()
+                subquery.set("alias", alias)
+                table_exp.replace(subquery)
+
+        return ";\n".join(statement.sql(dialect=dialect) for statement in statements if statement)
 
     def apply_code(self, code_args):
         code = code_args.code
