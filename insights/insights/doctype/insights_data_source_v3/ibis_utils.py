@@ -52,6 +52,9 @@ except ImportError:
 # the relation a `sql_column` fragment selects from, standing for the pipeline so far
 SQL_COLUMN_RELATION = "_insights_sql_column"
 
+# the alias a native SQL query is nested under before ibis sees it
+NATIVE_SQL_RELATION = "_insights_native_sql"
+
 
 class CircularQueryReferenceError(frappe.ValidationError):
     """Raised when a circular query reference is detected during query building."""
@@ -688,6 +691,10 @@ class IbisQueryBuilder:
             "Insights Settings", "enable_permissions"
         ) or frappe.db.get_single_value("Insights Settings", "apply_user_permissions")
 
+        # the data store reads DuckDB, so from the transpile on, that is the dialect
+        # this query is written in
+        target_dialect = source_dialect if self.use_live_connection else "duckdb"
+
         if check_permissions or not self.use_live_connection:
             tables = self._get_sql_table_names(raw_sql, dialect=source_dialect)
             replace_map = self._get_sql_table_bindings(
@@ -698,12 +705,8 @@ class IbisQueryBuilder:
                 check_permissions=check_permissions,
             )
 
-            # after the transpile the SQL is DuckDB's, so the rewrite below reads
-            # and writes that dialect instead of the source's
-            target_dialect = source_dialect
             if not self.use_live_connection:
                 raw_sql = self._transpile_sql_to_duckdb(raw_sql, source_dialect)
-                target_dialect = "duckdb"
 
             raw_sql = self._replace_sql_tables(raw_sql, replace_map, dialect=target_dialect)
 
@@ -726,7 +729,7 @@ class IbisQueryBuilder:
             results = ibis.memtable(df)
 
         elif raw_sql.strip().lower().startswith(("select", "with")):
-            results = db.sql(raw_sql)
+            results = db.sql(self._hide_ctes_from_ibis(raw_sql, dialect=target_dialect))
 
         else:
             frappe.throw(
@@ -836,27 +839,46 @@ class IbisQueryBuilder:
         if not replace_map:
             return raw_sql
 
-        # `sg.parse` over `sg.parse_one`: only `parse` reports every statement on
-        # every sqlglot version, and a statement dropped here is a statement that
-        # never runs. An empty one — a stray `;` — parses to None.
-        statements = [statement for statement in sg.parse(raw_sql, dialect=dialect) if statement]
+        parsed = sg.parse_one(raw_sql, dialect=dialect)
 
-        for statement in statements:
-            # collect first: the replacements carry their own table references,
-            # and re-reading them would replace a table inside its own binding
-            for table_exp in list(statement.find_all(sg.exp.Table)):
-                table_sql = replace_map.get(table_exp.name)
-                if table_sql is None:
-                    continue
+        # collect first: the replacements carry their own table references, and
+        # re-reading them would replace a table inside its own binding
+        for table_exp in list(parsed.find_all(sg.exp.Table)):
+            table_sql = replace_map.get(table_exp.name)
+            if table_sql is None:
+                continue
 
-                # an unaliased reference keeps the table name as its alias, so a
-                # qualified column such as `tabTask`.name still resolves
-                alias = table_exp.args.get("alias") or sg.exp.TableAlias(this=table_exp.this.copy())
-                subquery = sg.parse_one(table_sql, dialect=dialect).subquery()
-                subquery.set("alias", alias)
-                table_exp.replace(subquery)
+            # an unaliased reference keeps the table name as its alias, so a
+            # qualified column such as `tabTask`.name still resolves
+            alias = table_exp.args.get("alias") or sg.exp.TableAlias(this=table_exp.this.copy())
+            subquery = sg.parse_one(table_sql, dialect=dialect).subquery()
+            subquery.set("alias", alias)
+            table_exp.replace(subquery)
 
-        return ";\n".join(statement.sql(dialect=dialect) for statement in statements)
+        return parsed.sql(dialect=dialect)
+
+    def _hide_ctes_from_ibis(self, raw_sql: str, dialect: sg.Dialect | None) -> str:
+        """Nest a query that opens with `WITH`, so ibis is handed no top-level CTE.
+
+        ibis 11 clears a parsed statement's `WITH` clause with `args.pop("with")`
+        before re-attaching it. sqlglot 28 renamed that key to `with_`, so the clear
+        became a no-op and every CTE is written twice. MariaDB rejects the pair:
+        `(4004, 'Duplicate query name ... in WITH clause')`.
+
+        Dropping back below sqlglot 28 is not open to us — frappe needs 30. Nesting
+        the statement leaves the outer query with no CTE, so ibis re-attaches
+        nothing. Remove this once ibis pops the right key.
+        """
+        try:
+            parsed = sg.parse_one(raw_sql, dialect=dialect)
+        except Exception:
+            # not ours to reject: let ibis fail on it the way it always has
+            return raw_sql
+
+        if not parsed.ctes:
+            return raw_sql
+
+        return f"SELECT * FROM ({raw_sql}) AS {NATIVE_SQL_RELATION}"
 
     def apply_code(self, code_args):
         code = code_args.code
