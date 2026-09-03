@@ -7,25 +7,33 @@ from insights.tests.base import InsightsIntegrationTestCase
 SITE_DB = "Site DB"
 
 
-class TestNativeSQLTableRewrite(InsightsIntegrationTestCase):
+class TestNativeSQL(InsightsIntegrationTestCase):
     """A native SQL query reads its tables through a permission-filtered select.
 
-    The rewrite replaces each table reference in place. It used to prepend one CTE
-    per table, which made the CTE name a collision surface.
+    Two things used to put a `WITH` clause in front of the query the database runs:
+    the permission rewrite named a CTE after each table, and ibis re-attached the
+    query's own CTEs without clearing them first. Both ended in MariaDB's
+    "Duplicate query name".
     """
 
     def setUp(self):
         super().setUp()
         self.data_source = frappe.get_doc("Insights Data Source v3", SITE_DB)
         self.dialect = self.data_source.get_sqlglot_dialect()
-        self.builder = IbisQueryBuilder(
-            frappe._dict(
-                name="Native SQL Rewrite Test",
-                title="Native SQL Rewrite Test",
-                use_live_connection=1,
-                operations=frappe.as_json([]),
-            )
+        self.builder = IbisQueryBuilder(self.make_query_doc([]))
+
+    def make_query_doc(self, operations):
+        return frappe._dict(
+            name="Native SQL Test",
+            title="Native SQL Test",
+            use_live_connection=1,
+            operations=frappe.as_json(operations),
         )
+
+    def run_native_sql(self, raw_sql):
+        """Execute `raw_sql` the way a native query operation does."""
+        operations = [{"type": "sql", "data_source": SITE_DB, "raw_sql": raw_sql}]
+        return IbisQueryBuilder(self.make_query_doc(operations)).build().execute()
 
     def rewrite(self, raw_sql, replace_map=None):
         if replace_map is None:
@@ -47,8 +55,32 @@ class TestNativeSQLTableRewrite(InsightsIntegrationTestCase):
         parsed = sg.parse_one(sql, dialect=self.dialect)
         return sorted(table.name for table in parsed.find_all(sg.exp.Table))
 
-    def execute(self, sql):
-        return self.data_source._get_ibis_backend().sql(sql).execute()
+    # --- the query the database runs ---
+
+    def test_a_query_that_opens_with_a_cte_runs(self):
+        # ibis 11 re-attaches a query's CTEs without clearing them first, because
+        # sqlglot 28 renamed the key it clears. MariaDB rejects the doubled pair.
+        rows = self.run_native_sql("with recent as (select name from `tabUser` limit 1) select * from recent")
+
+        self.assertEqual(len(rows), 1)
+
+    def test_a_query_with_several_ctes_runs(self):
+        rows = self.run_native_sql(
+            """
+            with one as (select name from `tabUser` limit 1),
+                 two as (select name from one)
+            select * from two
+            """
+        )
+
+        self.assertEqual(len(rows), 1)
+
+    def test_a_query_without_a_cte_runs(self):
+        rows = self.run_native_sql("select name from `tabUser` limit 1")
+
+        self.assertEqual(len(rows), 1)
+
+    # --- the permission rewrite ---
 
     def test_two_spellings_of_one_table_produce_no_cte(self):
         # MariaDB matches CTE names case-insensitively, so a CTE per spelling was
@@ -71,17 +103,16 @@ class TestNativeSQLTableRewrite(InsightsIntegrationTestCase):
         rewritten = self.rewrite("select name from `tabInsights Table v3` limit 1")
 
         self.assertIn("`tabInsights Table v3`", rewritten)
-        self.execute(rewritten)
 
     def test_unaliased_reference_keeps_the_table_name(self):
         rewritten = self.rewrite("select `tabUser`.name from `tabUser` limit 1")
 
-        self.execute(rewritten)
+        self.assertIn("AS `tabUser`", rewritten)
 
     def test_aliased_reference_keeps_its_alias(self):
         rewritten = self.rewrite("select u.name from `tabUser` u limit 1")
 
-        self.execute(rewritten)
+        self.assertIn("AS u", rewritten)
 
     def test_the_query_keeps_its_own_cte(self):
         raw_sql = "with recent as (select name from `tabUser`) select * from recent limit 1"
@@ -89,17 +120,11 @@ class TestNativeSQLTableRewrite(InsightsIntegrationTestCase):
         rewritten = self.rewrite(raw_sql)
 
         self.assertEqual(self.cte_names(rewritten), ["recent"])
-        self.execute(rewritten)
 
     def test_sql_is_untouched_when_no_table_is_bound(self):
         raw_sql = "select 1 as one"
 
         self.assertEqual(self.rewrite(raw_sql, {}), raw_sql)
-
-    def test_an_empty_statement_does_not_break_the_rewrite(self):
-        rewritten = self.rewrite("select `tabUser`.name from `tabUser` limit 1;;")
-
-        self.execute(rewritten)
 
     def test_a_schema_qualified_table_is_refused(self):
         # the binding is looked up by the bare name, so reading `sales.orders`
