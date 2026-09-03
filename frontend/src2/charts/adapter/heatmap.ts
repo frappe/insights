@@ -4,6 +4,7 @@ import { isCalendarDateType } from '../../helpers/constants'
 import { getAxisDate } from '../../query/helpers'
 import type { Dimension } from '../../types/query.types'
 import type { HeatmapChartConfig } from '../../types/chart.types'
+import { numberFormatter } from '../number_format'
 import type { ChartAdapterInput, ChartFiller } from './types'
 
 // The server groups a heatmap by both of its dimensions, so the result is
@@ -23,6 +24,7 @@ export function adaptHeatmapChart(input: ChartAdapterInput): ChartFiller | undef
 		x,
 		y,
 		value,
+		format: numberFormatter(config, config.value_column),
 	}
 	// Both cuts of a grid are category axes, so neither gets the time axis that
 	// prints an axis chart's dates. The grain the Dimension was grouped by is

@@ -2,6 +2,7 @@ import { FunnelChart } from 'frappe-ui/charts'
 import type { FunnelChartProps, FunnelStageEvent } from 'frappe-ui/charts'
 import type { FunnelChartConfig } from '../../types/chart.types'
 import type { Measure, QueryResultRow } from '../../types/query.types'
+import { numberFormatter } from '../number_format'
 import type { ChartAdapterInput, ChartFiller } from './types'
 
 // A funnel is stored in two shapes and v2 reads one: a stage column and a value
@@ -34,7 +35,7 @@ function groupedFunnel(
 
 	return {
 		component: FunnelChart,
-		props: funnelProps(input, config, input.result.rows, category, value),
+		props: funnelProps(input, config, input.result.rows, category, value, config.value_column),
 		drillDown: {
 			select: (event: FunnelStageEvent) => ({ column: value, row: event.row }),
 		},
@@ -57,7 +58,11 @@ function measuresFunnel(
 
 	return {
 		component: FunnelChart,
-		props: funnelProps(input, config, data, STAGE, VALUE),
+		// Every stage is a Measure of its own, and a funnel prints one scale, so
+		// the first stage says how all of them read. They are the same quantity
+		// counted at different points — a funnel whose stages disagree on their
+		// unit is not a funnel.
+		props: funnelProps(input, config, data, STAGE, VALUE, measures[0]),
 		drillDown: {
 			// The stage label is the Measure's name, which is what the result calls
 			// the column behind it. The row is the one row every stage was read off.
@@ -72,8 +77,15 @@ function funnelProps(
 	data: QueryResultRow[],
 	category: string,
 	value: string,
+	measure?: Measure,
 ): FunnelChartProps {
-	const props: FunnelChartProps = { title: input.title, data, category, value }
+	const props: FunnelChartProps = {
+		title: input.title,
+		data,
+		category,
+		value,
+		format: numberFormatter(config, measure),
+	}
 	// v2 prints the conversion rate unless told otherwise, which is what a funnel
 	// is read for. The square-root stage scaling is gone with it: the geometry is
 	// v2's, and Insights no longer has a say in how wide a stage is drawn.

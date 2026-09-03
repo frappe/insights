@@ -11,6 +11,7 @@ import { ColumnOption, Dimension, DimensionOption } from '../../types/query.type
 import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
+import NumberFormatFields from './NumberFormatFields.vue'
 import NumberValueContext from './NumberValueContext.vue'
 import NumberWindowPicker from './NumberWindowPicker.vue'
 
@@ -47,22 +48,20 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 }
 
 /**
- * The settings an older release wrote, moved onto each value.
+ * What a value is measured against, and how good a fall is, moved onto the value.
  *
- * Every one of them is a per-value setting now — the chart-level formatting
- * slots, the `comparison` flag, and the `references` list a value carried
- * before it named one target and one comparison. The adapter still reads all of
- * them so a chart nobody opens keeps drawing. But a form that hid a prefix it
- * was still printing would trap the author, so opening the chart is what moves
- * it: one shape from here on, and what the form shows is what draws.
+ * Both are per-value settings now — the `comparison` flag the chart carried, and
+ * the `references` list a value carried before it named one target and one
+ * comparison. The adapter still reads both shapes so a chart nobody opens keeps
+ * drawing. But a form that hid a target it was still printing would trap the
+ * author, so opening the chart is what moves it.
+ *
+ * How a number prints is not here: `number_format` and `number_formats` sit over
+ * the old spellings rather than replacing them, so nothing has to be rewritten.
  */
 function lowerChartLevelSettings() {
 	const chart = config.value
 	const inherited: NumberColumnOptions = {}
-	if (chart.prefix) inherited.prefix = chart.prefix
-	if (chart.suffix) inherited.suffix = chart.suffix
-	if (chart.decimal !== undefined) inherited.decimal = chart.decimal
-	if (chart.shorten_numbers) inherited.shorten_numbers = chart.shorten_numbers
 	if (chart.negative_is_better) inherited.negative_is_better = chart.negative_is_better
 
 	const references = chart.number_column_options?.some(
@@ -89,10 +88,6 @@ function lowerChartLevelSettings() {
 		}
 	})
 
-	delete chart.prefix
-	delete chart.suffix
-	delete chart.decimal
-	delete chart.shorten_numbers
 	delete chart.negative_is_better
 	delete chart.comparison
 }
@@ -117,35 +112,10 @@ lowerChartLevelSettings()
 								@remove="config.number_columns.splice(index, 1)"
 							>
 								<template #config-fields="{ close: closeSettings }">
-									<InlineFormControlLabel label="Units">
-										<div class="grid grid-cols-3 gap-1">
-											<FormControl
-												autocomplete="off"
-												placeholder="$"
-												:modelValue="getNumberOption(index, 'prefix')"
-												@update:modelValue="
-													setNumberOption(index, 'prefix', $event)
-												"
-											/>
-											<FormControl
-												autocomplete="off"
-												placeholder="unit"
-												:modelValue="getNumberOption(index, 'suffix')"
-												@update:modelValue="
-													setNumberOption(index, 'suffix', $event)
-												"
-											/>
-											<FormControl
-												autocomplete="off"
-												placeholder="0.0"
-												type="number"
-												:modelValue="getNumberOption(index, 'decimal')"
-												@update:modelValue="
-													setNumberOption(index, 'decimal', $event)
-												"
-											/>
-										</div>
-									</InlineFormControlLabel>
+									<NumberFormatFields
+										:config="config"
+										:measure-name="item.measure_name"
+									/>
 									<InlineFormControlLabel label="Color">
 										<ColorInput
 											:model-value="getNumberOption(index, 'color') as string"
@@ -156,13 +126,6 @@ lowerChartLevelSettings()
 										/>
 									</InlineFormControlLabel>
 
-									<Toggle
-										label="Show short numbers"
-										:modelValue="getNumberOption(index, 'shorten_numbers')"
-										@update:modelValue="
-											setNumberOption(index, 'shorten_numbers', $event)
-										"
-									/>
 									<Toggle
 										label="Negative is better"
 										:modelValue="getNumberOption(index, 'negative_is_better')"

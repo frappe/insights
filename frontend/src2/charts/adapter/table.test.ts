@@ -64,11 +64,22 @@ describe('what the author put on the table', () => {
 		expect(props.showFilterRow).toBe(true)
 		expect(props.showRowTotals).toBe(true)
 		expect(props.showColumnTotals).toBe(true)
-		expect(props.compactNumbers).toBe(true)
+		expect(props.numberFormat).toEqual({ shorten: true })
 		expect(props.enableColorScale).toBe(true)
 		expect(props.stickyColumns).toEqual(['category'])
 		expect(props.columnWidths).toEqual({ category: 240 })
 		expect(props.textWrap).toEqual({ category: true })
+	})
+
+	it('hands the grid the format policy, chart default and per-value alike', () => {
+		const props = propsOf({
+			rows: ['category'],
+			values: ['revenue', 'refunds'],
+			numberFormat: { shorten: true },
+			numberFormats: { refunds: { prefix: '-$' } },
+		})
+		expect(props.numberFormat).toEqual({ shorten: true })
+		expect(props.numberFormats).toEqual({ refunds: { prefix: '-$' } })
 	})
 
 	it('asks for nothing the Chart did not set', () => {
@@ -76,7 +87,8 @@ describe('what the author put on the table', () => {
 		expect(props.showFilterRow).toBeUndefined()
 		expect(props.showRowTotals).toBeUndefined()
 		expect(props.showColumnTotals).toBeUndefined()
-		expect(props.compactNumbers).toBeUndefined()
+		expect(props.numberFormat).toBeUndefined()
+		expect(props.numberFormats).toBeUndefined()
 		expect(props.enableColorScale).toBeUndefined()
 		expect(props.formatGroup).toBeUndefined()
 		expect(props.columnFormats).toBeUndefined()

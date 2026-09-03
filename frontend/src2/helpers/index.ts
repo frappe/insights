@@ -179,9 +179,11 @@ export function toNumber(value: any): number | null {
 	return Number.isNaN(number) ? null : number
 }
 
-export function formatNumber(number: number, precision = 0) {
+// `precision` is left out, not zeroed, when nobody states one: a caller asking
+// for no decimals means no decimals, and `0 || guess` swallowed that.
+export function formatNumber(number: number, precision?: number) {
 	if (isNaN(number)) return number
-	precision = precision || guessPrecision(number)
+	precision = precision ?? guessPrecision(number)
 	const locale = session.site?.country == 'India' ? 'en-IN' : session.user?.locale
 	return new Intl.NumberFormat(locale || 'en-US', {
 		minimumFractionDigits: precision,

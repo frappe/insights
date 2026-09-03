@@ -40,7 +40,7 @@ watchEffect(() => {
 <template>
 	<XAxisConfig v-model="config.x_axis" :dimensions="props.dimensions"></XAxisConfig>
 
-	<YAxisConfig v-model="config.y_axis" :column-options="props.columnOptions">
+	<YAxisConfig v-model="config.y_axis" :column-options="props.columnOptions" :config="config">
 		<template #y-axis-settings="{ y_axis }">
 			<Toggle label="Stack" v-model="(y_axis as YAxisBar).stack" :disabled="hasAxisSplit" />
 			<Toggle

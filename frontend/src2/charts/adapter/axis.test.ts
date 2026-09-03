@@ -251,7 +251,7 @@ describe('the value axis', () => {
 				min: 0,
 				max: 500,
 			}).yAxis,
-		).toEqual({ title: 'Revenue (₹)', min: 0, max: 500 })
+		).toMatchObject({ title: 'Revenue (₹)', min: 0, max: 500 })
 	})
 
 	it('reads stacked shares against the scale they are shares of', () => {
@@ -266,8 +266,9 @@ describe('the value axis', () => {
 		})
 		expect(props.stacked).toBe('normalized')
 		// The axis carries a percentage now, so a bound set for the raw magnitude
-		// would cut the plot off.
-		expect(props.yAxis).toBeUndefined()
+		// would cut the plot off. What is left is the formatter, which every axis
+		// carries.
+		expect(Object.keys(props.yAxis)).toEqual(['format'])
 	})
 
 	it('stacks without normalizing when only the stack was asked for', () => {
@@ -424,7 +425,7 @@ describe('a reference line at an aggregate', () => {
 		).toEqual([{ value: 8, axis: 'y2', label: 'Max margin_rate: 8' }])
 	})
 
-	it('names itself after the aggregate it read, in short form', () => {
+	it('names itself after the aggregate it read, printed as the axis prints it', () => {
 		expect(
 			propsOf({
 				type: 'Bar',
@@ -434,7 +435,7 @@ describe('a reference line at an aggregate', () => {
 				readings: { revenue: [1000000, 1400000] },
 				referenceLines: [{ aggregate: 'average', measure_name: 'revenue' }],
 			}).referenceLines,
-		).toEqual([{ value: 1200000, axis: 'y', label: 'Avg revenue: 1.2M' }])
+		).toEqual([{ value: 1200000, axis: 'y', label: 'Avg revenue: 1,200,000' }])
 	})
 
 	it('prints the label the author typed instead of its own', () => {

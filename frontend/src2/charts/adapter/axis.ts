@@ -10,7 +10,7 @@ import type {
 	TimeGrain,
 } from 'frappe-ui/charts'
 import type { Component } from 'vue'
-import { getShortNumber, toNumber } from '../../helpers'
+import { toNumber } from '../../helpers'
 import { FIELDTYPES, isCalendarDateType } from '../../helpers/constants'
 import { getFormattedDate } from '../../query/helpers'
 import type {
@@ -23,6 +23,7 @@ import type {
 	YAxisLine,
 } from '../../types/chart.types'
 import type { Dimension, QueryResultRow } from '../../types/query.types'
+import { numberFormatter, type NumberFormatter } from '../number_format'
 import type { ChartAdapterInput, ChartFiller } from './types'
 
 // Bar, Line and Row. One family, because they differ in two values: the mark an
@@ -88,10 +89,16 @@ function adaptAxisChart(
 	const stacked = stackingFor(y_axis)
 	if (stacked) props.stacked = stacked
 
-	const yAxis = valueAxisFor(y_axis, Boolean(stacked === 'normalized'))
-	if (Object.keys(yAxis).length) props.yAxis = yAxis
+	// One formatter per axis, not per series: v2 prints a value against the axis
+	// it is read on, and an axis carries one scale. The first series drawn on it
+	// says how that scale reads.
+	const primary = numberFormatter(config, measureOn(config, 'Left'))
+	props.yAxis = valueAxisFor(y_axis, Boolean(stacked === 'normalized'), primary)
 
-	const referenceLines = referenceLinesFor(config, columns, input.result.rows)
+	const right = measureOn(config, 'Right')
+	if (right) props.y2Axis = { format: numberFormatter(config, right) }
+
+	const referenceLines = referenceLinesFor(config, columns, input.result.rows, primary)
 	if (referenceLines.length) props.referenceLines = referenceLines
 
 	return {
@@ -191,11 +198,23 @@ function xAxisFor(dimension: Dimension): ChartXAxisOptions {
 	return axis
 }
 
+/**
+ * The Measure whose format an axis takes: the first series sitting on it. A
+ * chart drawing two Measures on one axis has already said they share a scale,
+ * so it prints them the way it prints the first.
+ */
+function measureOn(config: MixedChartConfig, align: 'Left' | 'Right') {
+	const series = (config.y_axis?.series || []).filter((s) => s.measure?.measure_name)
+	const onAxis = series.filter((s) => (s.align === 'Right' ? 'Right' : 'Left') === align)
+	return onAxis[0]?.measure
+}
+
 function valueAxisFor(
 	y_axis: MixedChartConfig['y_axis'],
 	normalized: boolean,
+	format: NumberFormatter,
 ): ChartValueAxisOptions {
-	const axis: ChartValueAxisOptions = {}
+	const axis: ChartValueAxisOptions = { format }
 	if (y_axis?.show_axis_label && y_axis.axis_label) axis.title = y_axis.axis_label
 	// A normalized axis is pinned to the share it reads, 0 to 100.
 	if (normalized) return axis
@@ -215,10 +234,11 @@ function referenceLinesFor(
 	config: MixedChartConfig,
 	columns: string[],
 	rows: QueryResultRow[],
+	format: NumberFormatter,
 ): PlotReferenceLine[] {
 	const lines: PlotReferenceLine[] = []
 	for (const line of config.y_axis?.reference_lines || []) {
-		const at = positionOf(line, config, columns, rows)
+		const at = positionOf(line, config, columns, rows, format)
 		if (!at) continue
 
 		const reference: PlotReferenceLine = {
@@ -249,8 +269,9 @@ function positionOf(
 	config: MixedChartConfig,
 	columns: string[],
 	rows: QueryResultRow[],
+	format: NumberFormatter,
 ): ReferencePosition | undefined {
-	if (line.aggregate) return aggregatePositionOf(line, config, columns, rows)
+	if (line.aggregate) return aggregatePositionOf(line, config, columns, rows, format)
 	if (line.value === undefined || line.value === null || line.value === '') return
 	return { value: line.value as number | string }
 }
@@ -260,6 +281,7 @@ function aggregatePositionOf(
 	config: MixedChartConfig,
 	columns: string[],
 	rows: QueryResultRow[],
+	format: NumberFormatter,
 ): ReferencePosition | undefined {
 	const aggregate = line.aggregate
 	const measure = line.measure_name
@@ -283,7 +305,8 @@ function aggregatePositionOf(
 	if (!values.length) return
 
 	const value = aggregateOf(aggregate, values)
-	return { value, label: `${AGGREGATE_LABELS[aggregate]} ${measure}: ${getShortNumber(value, 1)}` }
+	// The label prints on the plot, beside the ticks the same formatter drew.
+	return { value, label: `${AGGREGATE_LABELS[aggregate]} ${measure}: ${format(value)}` }
 }
 
 /** What a computed line's own label leads with. Short: it is printed on the plot. */

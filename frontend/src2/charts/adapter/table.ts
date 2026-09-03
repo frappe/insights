@@ -1,6 +1,7 @@
 import { column, rawRowOf } from '../../query/helpers'
 import type { FormatGroupArgs } from '../../query/components/formatting_utils'
-import type { TableChartConfig } from '../../types/chart.types'
+import type { NumberFormat, TableChartConfig } from '../../types/chart.types'
+import { readNumberFormat } from '../number_format'
 import { recordUrl } from '../record_link'
 import type {
 	DataFormat,
@@ -45,7 +46,6 @@ export type TableChartProps = {
 	showFilterRow?: boolean
 	showColumnTotals?: boolean
 	showRowTotals?: boolean
-	compactNumbers?: boolean
 	enableColorScale?: boolean
 	formatGroup?: FormatGroupArgs
 	stickyColumns?: string[]
@@ -53,6 +53,10 @@ export type TableChartProps = {
 	textWrap?: Record<string, boolean>
 	/** A rate Measure holds a fraction, so the table is told to print it as one. */
 	columnFormats?: Record<string, DataFormat>
+	/** How every cell prints, before a column says otherwise. */
+	numberFormat?: NumberFormat
+	/** How one column prints, by the name of the Measure behind it. */
+	numberFormats?: Record<string, NumberFormat>
 	/** Where a cell opens its document, for the one column that names one. */
 	// eslint-disable-next-line no-unused-vars
 	cellLink?: (column: QueryResultColumn, row: QueryResultRow) => string | undefined
@@ -82,7 +86,6 @@ export function adaptTableChart(input: ChartAdapterInput): ChartFiller | undefin
 	if (config.show_filter_row) props.showFilterRow = true
 	if (config.show_column_totals) props.showColumnTotals = true
 	if (config.show_row_totals) props.showRowTotals = true
-	if (config.compact_numbers) props.compactNumbers = true
 	if (config.enable_color_scale) props.enableColorScale = true
 	if (config.conditional_formatting) props.formatGroup = config.conditional_formatting
 	if (config.sticky_columns?.length) props.stickyColumns = config.sticky_columns
@@ -91,6 +94,13 @@ export function adaptTableChart(input: ChartAdapterInput): ChartFiller | undefin
 
 	const columnFormats = columnFormatsOf(config)
 	if (Object.keys(columnFormats).length) props.columnFormats = columnFormats
+
+	// The grid formats its own cells, so it is handed the policy rather than a
+	// formatter per column: it draws a total row the config names no Measure for.
+	// `compact_numbers` is read here, which is the last place it is read at all.
+	const numberFormat = readNumberFormat({ ...config, ...config.number_format })
+	if (Object.keys(numberFormat).length) props.numberFormat = numberFormat
+	if (config.number_formats) props.numberFormats = config.number_formats
 
 	// A cell of a grid holds a document as often as it holds a value, and only
 	// the server can tell which. The link is drawn in the cell itself: a grid has

@@ -9,6 +9,7 @@ import type {
 	NumberTarget,
 } from '../../types/chart.types'
 import type { Dimension, Measure, QueryResultRow } from '../../types/query.types'
+import { numberFormatOf } from '../number_format'
 import { windowShiftLabel } from '../window'
 import NumberCards from './NumberCards.vue'
 import type { ChartAdapterInput, ChartFiller } from './types'
@@ -17,6 +18,11 @@ import type { ChartAdapterInput, ChartFiller } from './types'
 // filler is a grid Insights lays out with one card behind each value. Two more
 // things v2 will not do for a caller land here as arithmetic: the gap against
 // the comparison, and the scaling a Measure formatted as a percent asks for.
+//
+// The one type that takes no `format` prop: v2's card prints a target and a
+// delta beside the reading and formats all three from props of its own. So the
+// resolver is asked for the format rather than for a formatter, and the pieces
+// are mapped across.
 
 /** One reading of the grid: a card, and the result column it was read off. */
 export type NumberCardEntry = NumberCardProps & {
@@ -64,19 +70,14 @@ function readingOf(
 	const latest = readings[readings.length - 1] ?? null
 
 	// A Measure formatted as a percent holds the fraction, so Insights scales it
-	// and states the unit. What a number means is the caller's; v2 prints it.
-	const percent = measure.format === 'percent'
+	// and the format states the unit. What a number means is the caller's.
+	const format = numberFormatOf(config, measure)
 	const scale = (reading: number | null) =>
-		reading !== null && percent ? reading * 100 : reading
+		reading !== null ? reading * format.scale : reading
 
-	// Set per value, falling back to what the Chart set for all of them. `color`
-	// is per value alone: it is the ink of one reading, and a Chart that colored
-	// every reading the same has said nothing.
+	// `color` is per value alone: it is the ink of one reading, and a Chart that
+	// colored every reading the same has said nothing.
 	const options = config.number_column_options?.[index] || {}
-	const prefix = options.prefix ?? config.prefix
-	const suffix = options.suffix ?? config.suffix
-	const precision = options.decimal ?? config.decimal
-	const compact = options.shorten_numbers ?? config.shorten_numbers
 	const negativeIsBetter = options.negative_is_better ?? config.negative_is_better
 
 	const card: NumberCardEntry = {
@@ -85,11 +86,10 @@ function readingOf(
 		value: scale(latest),
 	}
 	if (options.color) card.color = options.color
-	if (prefix) card.prefix = prefix
-	const unit = percent ? `%${suffix || ''}` : suffix
-	if (unit) card.suffix = unit
-	if (precision !== undefined) card.precision = precision
-	if (compact) card.compact = true
+	if (format.prefix) card.prefix = format.prefix
+	if (format.suffix) card.suffix = format.suffix
+	if (format.decimals !== undefined) card.precision = format.decimals
+	if (format.shorten) card.compact = true
 
 	const { target, comparison } = measuredAgainst(config, options)
 
@@ -106,13 +106,13 @@ function readingOf(
 				// A gap in the value's own units carries the value's own units, so
 				// the percent Measure's scaling applies to it too.
 				card.delta = latest === null || against === null ? null : scale(latest - against)
-				if (prefix) card.deltaPrefix = prefix
+				if (format.prefix) card.deltaPrefix = format.prefix
 				// A percent Measure's gap is points, not percent: the reading and its
 				// comparison are both percentages, so the shift between them is a
 				// change in percentage points, not a further percent change. Every
 				// other unit already stands on the value line above, and repeating
 				// it here only crowds the delta row out of its single line.
-				if (percent) card.deltaSuffix = ' ' + __('pts')
+				if (measure.format === 'percent') card.deltaSuffix = ' ' + __('pts')
 			} else {
 				card.delta = percentChange(latest, against)
 				card.deltaSuffix = '%'

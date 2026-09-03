@@ -3,6 +3,7 @@ import { BubbleChartConfig } from '../../types/chart.types'
 import { ColumnOption, Dimension, DimensionOption, Measure } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import MeasurePicker from './MeasurePicker.vue'
+import NumberFormatFields from './NumberFormatFields.vue'
 import DimensionPicker from './DimensionPicker.vue'
 
 const props = defineProps<{
@@ -31,13 +32,27 @@ const config = defineModel<BubbleChartConfig>({
 				label="X Axis"
 				v-model="config.xAxis"
 				:column-options="props.columnOptions"
-			/>
+			>
+				<template #config-fields>
+					<NumberFormatFields
+						:config="config"
+						:measure-name="config.xAxis?.measure_name"
+					/>
+				</template>
+			</MeasurePicker>
 
 			<MeasurePicker
 				label="Y Axis"
 				v-model="config.yAxis"
 				:column-options="props.columnOptions"
-			/>
+			>
+				<template #config-fields>
+					<NumberFormatFields
+						:config="config"
+						:measure-name="config.yAxis?.measure_name"
+					/>
+				</template>
+			</MeasurePicker>
 			<DimensionPicker
 				label="Color by"
 				v-model="config.quadrant_column!"
@@ -49,7 +64,14 @@ const config = defineModel<BubbleChartConfig>({
 				v-model="config.size_column!"
 				:column-options="props.columnOptions"
 				@remove="config.size_column = {} as Measure"
-			/>
+			>
+				<template #config-fields>
+					<NumberFormatFields
+						:config="config"
+						:measure-name="config.size_column?.measure_name"
+					/>
+				</template>
+			</MeasurePicker>
 		</div>
 	</CollapsibleSection>
 

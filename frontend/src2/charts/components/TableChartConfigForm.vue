@@ -13,6 +13,7 @@ import { ColumnOption, DimensionDataType, DimensionOption } from '../../types/qu
 import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
+import NumberFormatFields from './NumberFormatFields.vue'
 const props = defineProps<{
 	formatGroup?: FormatGroupArgs
 	dimensions: DimensionOption[]
@@ -249,7 +250,14 @@ function updateTextWrap(column_name: string, wrap: boolean | undefined) {
 							:enable-format="true"
 							@update:model-value="Object.assign(item, $event || {})"
 							@remove="config.values.splice(index, 1)"
-						/>
+						>
+							<template #config-fields>
+								<NumberFormatFields
+									:config="config"
+									:measure-name="item.measure_name"
+								/>
+							</template>
+						</MeasurePicker>
 					</template>
 				</DraggableList>
 				<button
@@ -262,7 +270,7 @@ function updateTextWrap(column_name: string, wrap: boolean | undefined) {
 			<Toggle label="Show Filters" v-model="config.show_filter_row" />
 			<Toggle label="Show Row Totals" v-model="config.show_row_totals" />
 			<Toggle label="Show Column Totals" v-model="config.show_column_totals" />
-			<Toggle label="Compact Number Format" v-model="config.compact_numbers" />
+			<NumberFormatFields :config="config" />
 			<Toggle
 				v-if="config.values.length === 1"
 				label="Show Color Scale"

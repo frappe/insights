@@ -5,6 +5,7 @@ import type {
 	ScatterPointEvent,
 } from 'frappe-ui/charts'
 import type { BubbleChartConfig } from '../../types/chart.types'
+import { numberFormatter } from '../number_format'
 import type { ChartAdapterInput, ChartFiller } from './types'
 
 export function adaptBubbleChart(input: ChartAdapterInput): ChartFiller | undefined {
@@ -18,6 +19,12 @@ export function adaptBubbleChart(input: ChartAdapterInput): ChartFiller | undefi
 		data: input.result.rows,
 		x,
 		y,
+		// Three Measures, each printed in its own units: the two axes carry their
+		// own formatter, and `format` is what is left — the size, which has no
+		// axis to hang one on.
+		xAxis: { format: numberFormatter(config, config.xAxis) },
+		yAxis: { format: numberFormatter(config, config.yAxis) },
+		format: numberFormatter(config, config.size_column),
 	}
 
 	const size = config.size_column?.measure_name

@@ -16,6 +16,7 @@ import type {
 	AxisChartType,
 	ChartConfig,
 	NumberComparison,
+	NumberFormat,
 	ReferenceLine,
 	Series,
 } from '../../types/chart.types'
@@ -687,7 +688,11 @@ export type TableChartSpec = {
 	filterRow?: boolean
 	rowTotals?: boolean
 	columnTotals?: boolean
+	/** What a release before `number_format` called shortening. Read as an alias. */
 	compactNumbers?: boolean
+	/** How every value prints, and how one of them overrides that. */
+	numberFormat?: NumberFormat
+	numberFormats?: Record<string, NumberFormat>
 	colorScale?: boolean
 	/** A cell rule the author set, e.g. red wherever revenue falls under target. */
 	highlight?: { column: string; below: number; color: ConditionalColor }
@@ -718,6 +723,8 @@ export function tableChart(spec: TableChartSpec): ChartAdapterInput {
 		...(spec.rowTotals ? { show_row_totals: true } : {}),
 		...(spec.columnTotals ? { show_column_totals: true } : {}),
 		...(spec.compactNumbers ? { compact_numbers: true } : {}),
+		...(spec.numberFormat ? { number_format: spec.numberFormat } : {}),
+		...(spec.numberFormats ? { number_formats: spec.numberFormats } : {}),
 		...(spec.colorScale ? { enable_color_scale: true } : {}),
 		...(spec.highlight ? { conditional_formatting: cellRule(spec.highlight) } : {}),
 		...(spec.stickyColumns ? { sticky_columns: spec.stickyColumns } : {}),

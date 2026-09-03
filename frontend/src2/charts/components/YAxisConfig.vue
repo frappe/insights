@@ -5,12 +5,15 @@ import { watchEffect } from 'vue'
 import DraggableList from '../../components/DraggableList.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { copy } from '../../helpers'
-import { AxisChartConfig } from '../../types/chart.types'
+import { AxisChartConfig, NumberFormatConfig } from '../../types/chart.types'
 import { ColumnOption, MeasureOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import MeasurePicker from './MeasurePicker.vue'
+import NumberFormatFields from './NumberFormatFields.vue'
 
-const props = defineProps<{ columnOptions: ColumnOption[] }>()
+// `config` is the whole Chart's, beside the axis: how a number prints is the
+// Chart's to default and each Measure's to override, and the axis owns neither.
+const props = defineProps<{ columnOptions: ColumnOption[]; config: NumberFormatConfig }>()
 const y_axis = defineModel<AxisChartConfig['y_axis']>({
 	required: true,
 	default: () => ({
@@ -52,6 +55,10 @@ const updateColor = debounce((color: string, idx: number) => {
 								@remove="y_axis.series.splice(index, 1)"
 							>
 								<template #config-fields>
+									<NumberFormatFields
+										:config="props.config"
+										:measure-name="item.measure?.measure_name"
+									/>
 									<InlineFormControlLabel label="Type">
 										<FormControl
 											type="select"
@@ -97,6 +104,7 @@ const updateColor = debounce((color: string, idx: number) => {
 			</div>
 
 			<slot name="y-axis-settings" :y_axis="y_axis" />
+			<NumberFormatFields :config="props.config" />
 			<Toggle label="Show Data Labels" v-model="y_axis.show_data_labels" />
 			<Toggle label="Show Axis Label" v-model="y_axis.show_axis_label" />
 			<FormControl

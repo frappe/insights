@@ -5,6 +5,7 @@ import { ColumnOption, DimensionOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
+import NumberFormatFields from './NumberFormatFields.vue'
 
 const props = defineProps<{
 	dimensions: DimensionOption[]
@@ -38,7 +39,14 @@ const config = defineModel<SankeyChartConfig>({
 				label="Value"
 				v-model="config.value_column"
 				:column-options="props.columnOptions"
-			/>
+			>
+				<template #config-fields>
+					<NumberFormatFields
+						:config="config"
+						:measure-name="config.value_column?.measure_name"
+					/>
+				</template>
+			</MeasurePicker>
 			<FormControl
 				v-model="config.orient"
 				label="Orientation"

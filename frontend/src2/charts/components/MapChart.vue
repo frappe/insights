@@ -10,7 +10,6 @@ import {
 } from 'frappe-ui/charts'
 import type { ChartTooltipItem } from 'frappe-ui/charts'
 import { computed, reactive, ref, watch } from 'vue'
-import { getShortNumber } from '../../helpers'
 import { __ } from '../../translation'
 import type { MapChartProps } from '../adapter/map'
 
@@ -169,7 +168,7 @@ function showTooltip(name: string, value: number) {
 			label: props.measure,
 			color: colorOf(value),
 			value,
-			formattedValue: getShortNumber(value, 2),
+			formattedValue: props.format(value),
 		},
 	]
 	tooltip.x = pointer.x
@@ -218,7 +217,7 @@ function showTooltip(name: string, value: number) {
 						:style="{ backgroundColor: bucketColors[index] }"
 					/>
 					<span class="text-p-xs tabular-nums text-ink-gray-5">
-						{{ getShortNumber(bucket.max, 1) }}
+						{{ props.format(bucket.max) }}
 					</span>
 				</span>
 			</div>

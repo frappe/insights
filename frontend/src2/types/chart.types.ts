@@ -17,7 +17,40 @@ export const CHARTS = [
 ]
 export type ChartType = (typeof CHARTS)[number]
 
-export type AxisChartConfig = {
+/**
+ * How a number prints. One shape, written by every layer that has a say — the
+ * chart's own default, and each Measure's override of it — so a setting reads
+ * the same wherever it was set.
+ *
+ * What it does not carry is the unit: a currency or a percent is the Measure's
+ * own `format`, stated once on the Measure and printed by every chart that
+ * draws it. This is the display on top of that.
+ */
+export type NumberFormat = {
+	/** `12300` prints as `12.3K`. */
+	shorten?: boolean
+	/** Decimal places. Left out, a value keeps as many as it carries, up to two. */
+	decimals?: number
+	/** Printed before the number. Set, it stands in for the Measure's own unit. */
+	prefix?: string
+	/** Printed after the number. Set, it stands in for the Measure's own unit. */
+	suffix?: string
+}
+
+/**
+ * Every chart config carries these two. `number_format` is the chart's default,
+ * which each of its values inherits. `number_formats` is one Measure's own,
+ * keyed by `measure_name`, and it overrides the default key by key.
+ *
+ * A chart drawing one measure has nothing to tell apart, so its form writes the
+ * Measure's entry alone and leaves the default empty.
+ */
+export type NumberFormatConfig = {
+	number_format?: NumberFormat
+	number_formats?: Record<string, NumberFormat>
+}
+
+export type AxisChartConfig = NumberFormatConfig & {
 	x_axis: XAxis
 	y_axis: YAxis
 	split_by?: SplitBy
@@ -143,7 +176,7 @@ export type NumberComparison = {
 }
 export type NumberComparisonShow = 'change' | 'delta'
 
-export type NumberChartConfig = {
+export type NumberChartConfig = NumberFormatConfig & {
 	number_columns: Measure[]
 	number_column_options: NumberColumnOptions[]
 	sparkline: boolean
@@ -161,8 +194,9 @@ export type NumberChartConfig = {
 		anchor?: string
 	}
 	/**
-	 * What every value falls back to. The form no longer writes these — it sets
-	 * them per value — but a chart saved before it did still reads them.
+	 * How every value printed, before `number_format` said it for every chart
+	 * type. The forms no longer write these. The resolver reads them as the
+	 * chart's default, so a chart nobody opens keeps printing as it did.
 	 */
 	shorten_numbers?: boolean
 	decimal?: number
@@ -173,6 +207,11 @@ export type NumberChartConfig = {
 	comparison?: boolean
 }
 export type NumberColumnOptions = {
+	/**
+	 * How this value printed, before `number_formats` said it for every chart
+	 * type. Read as this Measure's own format, under anything `number_formats`
+	 * sets for it.
+	 */
 	shorten_numbers?: boolean
 	decimal?: number
 	prefix?: string
@@ -189,14 +228,14 @@ export type NumberColumnOptions = {
 	comparison?: NumberComparison
 }
 
-export type DonutChartConfig = {
+export type DonutChartConfig = NumberFormatConfig & {
 	label_column: Dimension
 	value_column: Measure
 	legend_position?: 'top' | 'bottom' | 'left' | 'right'
 	max_slices?: number
 	show_inline_labels?: boolean
 }
-export type FunnelChartConfig = {
+export type FunnelChartConfig = NumberFormatConfig & {
 	// Measures mode: each measure is one funnel stage, aggregated over the whole
 	// result with no group-by (stage label = measure name). Takes precedence when set.
 	measures?: Measure[]
@@ -206,7 +245,7 @@ export type FunnelChartConfig = {
 	show_percentage?: boolean
 }
 
-export type TableChartConfig = {
+export type TableChartConfig = NumberFormatConfig & {
 	rows: Dimension[]
 	columns: Dimension[]
 	values: Measure[]
@@ -214,6 +253,7 @@ export type TableChartConfig = {
 	show_filter_row?: boolean
 	show_row_totals?: boolean
 	show_column_totals?: boolean
+	/** What `number_format.shorten` says now. Read as the chart's default. */
 	compact_numbers?: boolean
 	enable_color_scale?: boolean
 	sticky_columns?: string[]
@@ -222,7 +262,7 @@ export type TableChartConfig = {
 	conditional_formatting?: FormatGroupArgs
 }
 
-export type MapChartConfig = {
+export type MapChartConfig = NumberFormatConfig & {
 	location_column: Dimension
 	value_column: Measure
 	map_type?: 'world' | 'india'
@@ -232,7 +272,7 @@ export type MapChartConfig = {
 	}
 }
 
-export type BubbleChartConfig = {
+export type BubbleChartConfig = NumberFormatConfig & {
 	xAxis: Measure
 	yAxis: Measure
 	size_column?: Measure
@@ -244,7 +284,7 @@ export type BubbleChartConfig = {
 	yAxis_refLine?: number
 }
 
-export type SankeyChartConfig = {
+export type SankeyChartConfig = NumberFormatConfig & {
 	source_column: Dimension
 	target_column: Dimension
 	value_column: Measure
@@ -252,7 +292,7 @@ export type SankeyChartConfig = {
 	node_align?: 'left' | 'right' | 'justify'
 }
 
-export type HeatmapChartConfig = {
+export type HeatmapChartConfig = NumberFormatConfig & {
 	// The two dimensions the grid is cut by: `x_column` runs along the bottom,
 	// `y_column` up the side. One cell is one pair of their values.
 	x_column: Dimension

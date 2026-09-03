@@ -4,7 +4,8 @@ import { Button, LoadingIndicator } from 'frappe-ui'
 import { ExternalLink, Plus, Search, Table2Icon } from 'lucide-vue-next'
 import { computed, nextTick, ref } from 'vue'
 import { usePagination } from '../composables/usePagination'
-import { createHeaders, formatNumber, getFormatUnits, getShortNumber } from '../helpers'
+import { createHeaders } from '../helpers'
+import { numberFormatter, type NumberFormatter } from '../charts/number_format'
 import { FIELDTYPES } from '../helpers/constants'
 import {
 	applyDateRule,
@@ -21,6 +22,7 @@ import {
 	text_rules,
 } from '../query/components/formatting_utils'
 import { matchesFilter, parseFilterString } from '../query/helpers'
+import { NumberFormat } from '../types/chart.types'
 import {
 	DataFormat,
 	QueryResultColumn,
@@ -42,7 +44,6 @@ const props = defineProps<{
 	enableColorScale?: boolean
 	enableNewColumn?: boolean
 	replaceNullsWithZeros?: boolean
-	compactNumbers?: boolean
 	loading?: boolean
 	filtering?: boolean
 	onExport?: Function
@@ -61,6 +62,10 @@ const props = defineProps<{
 	columnWidths?: Record<string, number>
 	textWrap?: Record<string, boolean>
 	columnFormats?: Record<string, DataFormat>
+	/** How every cell prints, before a column says otherwise. */
+	numberFormat?: NumberFormat
+	/** How one column prints, by name. Overrides `numberFormat` key by key. */
+	numberFormats?: Record<string, NumberFormat>
 	pageSize?: number
 	displayPageSize?: number
 	totalRowCount?: number
@@ -535,17 +540,32 @@ function getCellStyleClass(colName: string, val: any): string {
 	return ''
 }
 
-function _formatNumber(value: any, columnName?: string) {
-	const isNull = value === null || value === undefined
-	if (isNull) {
-		return props.replaceNullsWithZeros ? 0 : 'null'
+// The grid formats its cells the way every chart does: it states the policy and
+// the one resolver answers it. A column is looked up by name, which is what the
+// Measure behind it is called. A total belongs to no column and prints under
+// the table's own default.
+const cellFormatters = computed(() => {
+	const formatters: Record<string, NumberFormatter> = {}
+	for (const column of props.columns || []) {
+		formatters[column.name] = numberFormatter(
+			{ number_format: props.numberFormat, number_formats: props.numberFormats },
+			{ measure_name: column.name, format: props.columnFormats?.[column.name] },
+		)
 	}
-	const { scale, prefix, suffix } = getFormatUnits(
-		columnName ? props.columnFormats?.[columnName] : undefined,
-	)
-	const scaled = value * scale
-	const printed = props.compactNumbers ? getShortNumber(scaled) : formatNumber(scaled)
-	return `${prefix}${printed}${suffix}`
+	return formatters
+})
+
+const defaultFormatter = computed(() => numberFormatter(props.numberFormat))
+
+function _formatNumber(value: any, columnName?: string) {
+	const format = (columnName && cellFormatters.value[columnName]) || defaultFormatter.value
+	const isNull = value === null || value === undefined
+	// A zero standing in for a missing number is still a number of this column,
+	// so it prints in the column's own units.
+	if (isNull) {
+		return props.replaceNullsWithZeros ? format(0) : 'null'
+	}
+	return format(value)
 }
 
 const showNewColumn = ref(false)

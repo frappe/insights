@@ -1,6 +1,7 @@
 import { DonutChart } from 'frappe-ui/charts'
 import type { DonutChartProps, DonutSliceEvent } from 'frappe-ui/charts'
 import type { DonutChartConfig } from '../../types/chart.types'
+import { numberFormatter } from '../number_format'
 import type { ChartAdapterInput, ChartFiller } from './types'
 
 // The server groups a donut by its label column and orders the slices biggest
@@ -18,6 +19,7 @@ export function adaptDonutChart(input: ChartAdapterInput): ChartFiller | undefin
 		data: input.result.rows,
 		category,
 		value,
+		format: numberFormatter(config, config.value_column),
 	}
 	// The tail is collapsed once, by the ring that draws it. `legend_position` has
 	// no prop to move to: where the legend sits is the library's to decide.

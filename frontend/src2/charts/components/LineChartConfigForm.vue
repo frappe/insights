@@ -24,7 +24,7 @@ const config = defineModel<LineChartConfig>({
 <template>
 	<XAxisConfig v-model="config.x_axis" :dimensions="props.dimensions"></XAxisConfig>
 
-	<YAxisConfig v-model="config.y_axis" :column-options="props.columnOptions">
+	<YAxisConfig v-model="config.y_axis" :column-options="props.columnOptions" :config="config">
 		<template #y-axis-settings="{ y_axis }">
 			<Toggle label="Curved Lines" v-model="(y_axis as YAxisLine).smooth" />
 			<Toggle label="Show Area" v-model="(y_axis as YAxisLine).show_area" />

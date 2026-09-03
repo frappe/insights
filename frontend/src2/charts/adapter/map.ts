@@ -3,6 +3,7 @@ import { FIELDTYPES } from '../../helpers/constants'
 import type { MapChartConfig } from '../../types/chart.types'
 import type { QueryResultRow } from '../../types/query.types'
 import MapChart from '../components/MapChart.vue'
+import { numberFormatter, type NumberFormatter } from '../number_format'
 import type { ChartAdapterInput, ChartFiller } from './types'
 
 // Map is filler 2: Insights draws the plot, on v2's `useChart` and inside v2's
@@ -30,6 +31,8 @@ export type MapChartProps = {
 	regions: MapRegion[]
 	/** Ascending. Empty when nothing can be classified. */
 	buckets: MapBucket[]
+	/** Prints every number the map shows: the tooltip, and the scale's ends. */
+	format: NumberFormatter
 }
 
 const DEFAULT_MAP = 'world'
@@ -55,6 +58,7 @@ export function adaptMapChart(input: ChartAdapterInput): ChartFiller | undefined
 		measure: measure.name,
 		regions,
 		buckets: naturalBreaks(regions.map((region) => region.value)),
+		format: numberFormatter(config, config.value_column),
 	}
 
 	const index = regionIndex(input.result.rows, location.name, mappings)

@@ -1,6 +1,7 @@
 import { SankeyChart } from 'frappe-ui/charts'
 import type { SankeyChartProps, SankeyLinkEvent } from 'frappe-ui/charts'
 import type { SankeyChartConfig } from '../../types/chart.types'
+import { numberFormatter } from '../number_format'
 import type { ChartAdapterInput, ChartFiller } from './types'
 
 // The server groups a sankey by its source and its target, so the result is
@@ -19,6 +20,7 @@ export function adaptSankeyChart(input: ChartAdapterInput): ChartFiller | undefi
 		source,
 		target,
 		value,
+		format: numberFormatter(config, config.value_column),
 	}
 	if (config.orient) props.orient = config.orient
 	if (config.node_align) props.nodeAlign = config.node_align
