@@ -178,10 +178,7 @@ function onNodeClick(_evt: MouseEvent, node: any) {
 					class="bg-surface-gray-1"
 					@node-click="onNodeClick"
 				>
-					<Panel
-						position="top-right"
-						class="rounded-4 border border-outline-gray-1 bg-surface-base p-2 shadow-sm"
-					>
+					<Panel position="top-right" class="rounded-4 bg-surface-base p-2 shadow-sm">
 						<div class="flex flex-col gap-1.5">
 							<div class="flex items-center gap-2">
 								<span
@@ -201,7 +198,7 @@ function onNodeClick(_evt: MouseEvent, node: any) {
 					<!-- Table node -->
 					<template #node-table="{ data }">
 						<div
-							class="flex w-52 flex-col gap-0.5 rounded-6 border border-outline-blue-2 bg-surface-blue-1 px-3 py-2.5 shadow-sm"
+							class="flex w-52 flex-col gap-0.5 rounded-6 bg-surface-blue-1 px-3 py-2.5 shadow-sm"
 						>
 							<div class="flex items-center gap-1.5">
 								<DatabaseIcon
@@ -221,7 +218,7 @@ function onNodeClick(_evt: MouseEvent, node: any) {
 					<!-- Query node -->
 					<template #node-query="{ data }">
 						<div
-							class="flex w-52 flex-col gap-0.5 rounded-6 border border-outline-green-2 bg-surface-green-1 px-3 py-2.5 shadow-sm transition-shadow hover:shadow-md"
+							class="flex w-52 flex-col gap-0.5 rounded-6 bg-surface-green-1 px-3 py-2.5 shadow-sm transition-shadow hover:shadow-md"
 							:class="{ 'cursor-pointer': data.name }"
 						>
 							<div class="flex items-center gap-1.5">
