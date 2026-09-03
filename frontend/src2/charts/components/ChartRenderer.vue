@@ -92,18 +92,13 @@ const locationColumn = computed(() => {
 
 // Runs only when data changes
 const locationRowIndex = computed(() => {
-	const index = new Map<string, any>()
+	const index = new Map<string, { firstRow: any; rawValues: Set<string> }>()
 	const col = locationColumn.value
 
-	if (!col) return { index, reverseMap: new Map<string, string>() }
+	if (!col) return index
 
 	// computed mappings for faster acess
 	const mappings = mapConfig.value.region_mappings?.[mapConfig.value.map_type || 'world'] || {}
-	const reverseMap = new Map<string, string>()
-
-	for (const [userValue, mappedRegion] of Object.entries(mappings)) {
-		reverseMap.set(titleCase(mappedRegion as string), userValue)
-	}
 
 	// Index the rows
 	result.value.formattedRows.forEach((row) => {
@@ -111,42 +106,75 @@ const locationRowIndex = computed(() => {
 		if (!rawValue) return
 
 		const normalizedRowValue = titleCase(rawValue)
-		//	case 1: Index by Direct Match (Auto-mapped)
-		// Key: "United States" -> Row(United States)
-		index.set(normalizedRowValue, row)
-
-		//case 2: Index by config mapping
-		// If this row is "usa" and config maps == "usa" -> "United States"
-		// we also want the key "United States" to point to this row
 		const mappedName = mappings[rawValue]
-		if (mappedName) {
-			index.set(titleCase(mappedName as string), row)
+		const normalizedMapped = mappedName ? titleCase(mappedName as string) : null
+
+		// Register under both the raw key and the mapped region key (if different)
+		const keysToUpdate = [normalizedRowValue]
+		if (normalizedMapped && normalizedMapped !== normalizedRowValue) {
+			keysToUpdate.push(normalizedMapped)
 		}
+
+		keysToUpdate.forEach((key) => {
+			let entry = index.get(key)
+			if (!entry) {
+				entry = { firstRow: row, rawValues: new Set<string>() }
+				index.set(key, entry)
+			}
+			entry.rawValues.add(rawValue)
+		})
 	})
 
-	return { index, reverseMap }
+	return index
 })
 
-function handleMapChartClick(params: any) {
+async function handleMapChartClick(params: any) {
 	if (!locationColumn.value) return null
 
 	const clickedLocation = params.name
 	const normalizedClick = titleCase(clickedLocation)
 
-	const { index, reverseMap } = locationRowIndex.value
-	// Lookup directly
-	let matchedRow = index.get(normalizedClick)
+	const entry = locationRowIndex.value.get(normalizedClick)
+	if (!entry || !entry.firstRow) return null
 
-	if (!matchedRow) {
-		const originalUserVal = reverseMap.get(normalizedClick)
-		if (originalUserVal) {
-			matchedRow = index.get(titleCase(originalUserVal))
+	// Build base drill-down query from firstRow (produces WHERE territory = 'territory')
+	const query = await props.chart.dataQuery.getDrillDownQuery(
+		locationColumn.value,
+		entry.firstRow,
+	)
+	if (!query) return null
+
+	// If multiple territories map to this region, upgrade = to IN
+	const matchingList = Array.from(entry.rawValues)
+	if (matchingList.length > 1) {
+		let mutated = false
+		// Use the raw schema column name — this matches filter.column.column_name
+		// set by getFiltersForDimension(dim, value) via column(dim.column_name)
+		const schemaColName = mapConfig.value.location_column?.column_name
+		if (schemaColName) {
+			const operations = query.doc.operations || []
+			for (let i = operations.length - 1; i >= 0; i--) {
+				const op = operations[i]
+				if (op.type === 'filter_group' && op.filters) {
+					for (const filter of op.filters as any[]) {
+						if (
+							filter.column?.column_name === schemaColName &&
+							filter.operator === '='
+						) {
+							filter.operator = 'in'
+							filter.value = matchingList
+							mutated = true
+						}
+					}
+				}
+			}
+		}
+		if (!mutated) {
+			return null
 		}
 	}
 
-	if (!matchedRow) return null
-
-	return props.chart.dataQuery.getDrillDownQuery(locationColumn.value, matchedRow)
+	return query
 }
 
 function handleGeneralChartClick(params: any) {
