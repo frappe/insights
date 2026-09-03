@@ -82,8 +82,8 @@ function makeWorkbook(name: string) {
 			const query = useQuery(name)
 			waitUntil(() => query.isloaded).then(() => query.delete())
 
-			openNext('query', idx)
 			workbook.doc.queries.splice(idx, 1)
+			openNext('query', idx)
 		}
 
 		confirmDialog({
@@ -123,8 +123,8 @@ function makeWorkbook(name: string) {
 			const chart = useChart(chartName)
 			waitUntil(() => chart.isloaded).then(() => chart.delete())
 
-			openNext('chart', idx)
 			workbook.doc.charts.splice(idx, 1)
+			openNext('chart', idx)
 		}
 
 		confirmDialog({
@@ -156,8 +156,8 @@ function makeWorkbook(name: string) {
 			const dashboard = useDashboard(dashboardName)
 			waitUntil(() => dashboard.isloaded).then(() => dashboard.delete())
 
-			openNext('dashboard', idx)
 			workbook.doc.dashboards.splice(idx, 1)
+			openNext('dashboard', idx)
 		}
 
 		confirmDialog({
@@ -167,6 +167,8 @@ function makeWorkbook(name: string) {
 		})
 	}
 
+	// Called after the row at `idx` is spliced out, so `idx` now holds the row
+	// that took its place — the next tab of the same type, or the last one.
 	function openNext(type: 'query' | 'chart' | 'dashboard', idx: number) {
 		const items = {
 			query: workbook.doc.queries,
@@ -174,16 +176,17 @@ function makeWorkbook(name: string) {
 			dashboard: workbook.doc.dashboards,
 		}[type]
 
-		let nextIndex = idx + 1
+		const next = items[Math.min(idx, items.length - 1)]
+		if (next) {
+			setActiveTab(type, next.name)
+			return
+		}
 
-		if (nextIndex >= items.length) {
-			nextIndex = 0
-		}
-		if (nextIndex < 0) {
-			nextIndex = items.length - 1
-		}
-		if (nextIndex >= 0 && nextIndex < items.length) {
-			setActiveTab(type, items[nextIndex].name)
+		// The last chart or dashboard is gone. A workbook always holds a query,
+		// so that is the tab to land on rather than a route with no document.
+		const query = workbook.doc.queries[0]
+		if (query) {
+			setActiveTab('query', query.name)
 			return
 		}
 
