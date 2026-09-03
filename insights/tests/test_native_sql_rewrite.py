@@ -29,9 +29,7 @@ class TestNativeSQLTableRewrite(InsightsIntegrationTestCase):
 
     def rewrite(self, raw_sql, replace_map=None):
         if replace_map is None:
-            tables = self.builder._get_sql_table_names(
-                raw_sql, dialect=self.dialect, use_live_connection=True
-            )
+            tables = self.builder._get_sql_table_names(raw_sql, dialect=self.dialect)
             replace_map = self.builder._get_sql_table_bindings(
                 SITE_DB,
                 tables,
@@ -44,6 +42,10 @@ class TestNativeSQLTableRewrite(InsightsIntegrationTestCase):
     def cte_names(self, sql):
         parsed = sg.parse_one(sql, dialect=self.dialect)
         return [cte.alias_or_name for cte in parsed.find_all(sg.exp.CTE)]
+
+    def table_names(self, sql):
+        parsed = sg.parse_one(sql, dialect=self.dialect)
+        return sorted(table.name for table in parsed.find_all(sg.exp.Table))
 
     def execute(self, sql):
         return self.data_source._get_ibis_backend().sql(sql).execute()
@@ -59,9 +61,9 @@ class TestNativeSQLTableRewrite(InsightsIntegrationTestCase):
 
         rewritten = self.rewrite(raw_sql, replace_map)
 
+        # each reference reads its own binding, and neither carries a name
         self.assertEqual(self.cte_names(rewritten), [])
-        self.assertEqual(rewritten.count("SELECT * FROM `tabUser`"), 1)
-        self.assertEqual(rewritten.count("SELECT * FROM `tabuser`"), 1)
+        self.assertEqual(self.table_names(rewritten), ["tabUser", "tabuser"])
 
     def test_table_name_needing_quotes_runs_on_the_source(self):
         # the alias used to be rendered with sqlglot's default dialect, which gave
@@ -93,3 +95,14 @@ class TestNativeSQLTableRewrite(InsightsIntegrationTestCase):
         raw_sql = "select 1 as one"
 
         self.assertEqual(self.rewrite(raw_sql, {}), raw_sql)
+
+    def test_an_empty_statement_does_not_break_the_rewrite(self):
+        rewritten = self.rewrite("select `tabUser`.name from `tabUser` limit 1;;")
+
+        self.execute(rewritten)
+
+    def test_a_schema_qualified_table_is_refused(self):
+        # the binding is looked up by the bare name, so reading `sales.orders`
+        # would bind whichever `orders` the default schema holds
+        with self.assertRaises(frappe.ValidationError):
+            self.builder._get_sql_table_names("select * from sales.orders", dialect=self.dialect)
