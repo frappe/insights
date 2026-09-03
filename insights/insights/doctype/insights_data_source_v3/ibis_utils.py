@@ -1,9 +1,4 @@
 import ast
-<<<<<<< HEAD
-import re
-=======
-import sys
->>>>>>> 630171f (fix: read a native query's tables through a subquery, not a CTE)
 import time
 from contextlib import contextmanager
 from datetime import date
