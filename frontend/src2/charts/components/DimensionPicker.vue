@@ -59,8 +59,8 @@ function selectDimension(option?: DimensionOption) {
 </script>
 
 <template>
-	<div class="flex items-end gap-1 overflow-hidden">
-		<div class="flex-1 overflow-hidden">
+	<div class="flex min-w-0 items-end gap-1">
+		<div class="min-w-0 flex-1">
 			<Combobox
 				placeholder="Select a column"
 				:options="props.options"

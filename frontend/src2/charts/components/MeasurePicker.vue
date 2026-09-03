@@ -236,8 +236,8 @@ function handleRemove() {
 </script>
 
 <template>
-	<div class="flex items-end gap-1 overflow-hidden">
-		<div class="flex-1 overflow-hidden">
+	<div class="flex min-w-0 items-end gap-1">
+		<div class="min-w-0 flex-1">
 			<Popover bare match-trigger-width>
 				<template #trigger>
 					<div class="w-full space-y-1.5">
@@ -309,7 +309,7 @@ function handleRemove() {
 								</template>
 
 								<template v-if="columnMeasure.aggregation">
-									<div class="sticky top-0 bg-surface-base space-y-1 p-1">
+									<div class="sticky top-0 z-10 bg-surface-base space-y-1 p-1">
 										<TextInput
 											v-model="searchQuery"
 											placeholder="Search..."

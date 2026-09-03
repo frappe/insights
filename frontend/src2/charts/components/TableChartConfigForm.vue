@@ -180,16 +180,22 @@ function updateTextWrap(column_name: string, wrap: boolean | undefined) {
 									step="10"
 								/>
 							</InlineFormControlLabel>
-							<Toggle
-								label="Wrap Text"
-								:modelValue="config.text_wrap?.[item.dimension_name]"
-								@update:modelValue="updateTextWrap(item.dimension_name, $event)"
-							/>
-							<Toggle
-								label="Pin Column"
-								:modelValue="config.sticky_columns?.includes(item.dimension_name)"
-								@update:modelValue="toggleStickyColumn(item.dimension_name, $event)"
-							/>
+							<div class="flex flex-col">
+								<Toggle
+									label="Wrap Text"
+									:modelValue="config.text_wrap?.[item.dimension_name]"
+									@update:modelValue="updateTextWrap(item.dimension_name, $event)"
+								/>
+								<Toggle
+									label="Pin Column"
+									:modelValue="
+										config.sticky_columns?.includes(item.dimension_name)
+									"
+									@update:modelValue="
+										toggleStickyColumn(item.dimension_name, $event)
+									"
+								/>
+							</div>
 						</template>
 					</DimensionPicker>
 				</template>
@@ -267,9 +273,13 @@ function updateTextWrap(column_name: string, wrap: boolean | undefined) {
 					+ Add column
 				</button>
 			</div>
-			<Toggle label="Show Filters" v-model="config.show_filter_row" />
-			<Toggle label="Show Row Totals" v-model="config.show_row_totals" />
-			<Toggle label="Show Column Totals" v-model="config.show_column_totals" />
+			<!-- Switch rows carry their own vertical padding, so a run of them
+			sets its own rhythm and takes no gap. -->
+			<div class="flex flex-col">
+				<Toggle label="Show Filters" v-model="config.show_filter_row" />
+				<Toggle label="Show Row Totals" v-model="config.show_row_totals" />
+				<Toggle label="Show Column Totals" v-model="config.show_column_totals" />
+			</div>
 			<NumberFormatFields :config="config" />
 			<Toggle
 				v-if="config.values.length === 1"
@@ -291,7 +301,7 @@ function updateTextWrap(column_name: string, wrap: boolean | undefined) {
 					:key="idx"
 					class="flex rounded-4"
 				>
-					<div class="flex-1 overflow-hidden">
+					<div class="min-w-0 flex-1">
 						<Button
 							class="w-full !justify-start rounded-r-none [&>span]:truncate"
 							@click="editRule(idx)"

@@ -93,7 +93,7 @@ const showShareDialog = ref(false)
 			<ChartBuilderTable v-if="preview.result.executedSQL" />
 		</div>
 		<div
-			class="relative mt-1 flex w-[19rem] flex-shrink-0 flex-col divide-y overflow-y-auto bg-surface-base px-3.5"
+			class="relative isolate mt-1 flex w-[19rem] flex-shrink-0 flex-col divide-y overflow-y-auto bg-surface-base px-3.5"
 		>
 			<CollapsibleSection title="Chart">
 				<div class="flex flex-col gap-3">

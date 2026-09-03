@@ -79,7 +79,7 @@ function moveSortColumn(from: number, to: number) {
 							/>
 						</template>
 					</Button>
-					<div class="flex-1 overflow-hidden">
+					<div class="min-w-0 flex-1">
 						<Combobox
 							:options="props.columnOptions"
 							:modelValue="item.value"

@@ -41,12 +41,12 @@ function onChange(e) {
 					v-if="props.showHandle"
 					class="h-4 w-4 flex-shrink-0 cursor-grab text-ink-gray-4"
 				/>
-				<div class="flex-1 overflow-hidden">
+				<div class="min-w-0 flex-1">
 					<slot name="item" :item="item" :index="idx">
 						<div
 							class="group flex flex-1 cursor-pointer items-center justify-between gap-1 overflow-hidden rounded-4 bg-surface-gray-1 py-1.5 px-2 hover:bg-surface-gray-2"
 						>
-							<div class="flex-1 overflow-hidden">
+							<div class="min-w-0 flex-1">
 								<slot name="item-content" :item="item" :index="idx">
 									<div>{{ typeof item === 'object' ? item[itemKey] : item }}</div>
 								</slot>

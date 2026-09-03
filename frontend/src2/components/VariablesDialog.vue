@@ -77,7 +77,7 @@ function saveVariables() {
 				<div class="flex flex-col overflow-hidden">
 					<div class="relative flex max-h-[20rem] flex-col overflow-y-auto">
 						<div
-							class="sticky top-0 flex gap-x-2 border-b bg-surface-base py-2 text-p-sm-medium text-ink-gray-5"
+							class="sticky top-0 z-10 flex gap-x-2 border-b bg-surface-base py-2 text-p-sm-medium text-ink-gray-5"
 						>
 							<div class="flex flex-1 flex-shrink-0 px-2">{{ __('Name') }}</div>
 							<div class="flex flex-1 flex-shrink-0 px-2">{{ __('Value') }}</div>

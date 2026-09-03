@@ -39,83 +39,86 @@ const updateColor = debounce((color: string, idx: number) => {
 
 <template>
 	<CollapsibleSection title="Y Axis">
-		<div class="flex flex-col gap-3 pt-1">
-			<div>
-				<p class="mb-1.5 text-xs text-ink-gray-5">Series</p>
-				<div>
-					<DraggableList v-model:items="y_axis.series" group="series">
-						<template #item="{ item, index }">
-							<MeasurePicker
-								:model-value="item.measure"
-								:column-options="props.columnOptions"
-								@update:model-value="Object.assign(item.measure, $event || {})"
-								@remove="y_axis.series.splice(index, 1)"
-							>
-								<template #config-fields>
-									<NumberFormatFields
-										:config="props.config"
-										:measure-name="item.measure?.measure_name"
-									/>
-									<InlineFormControlLabel label="Type">
-										<FormControl
-											type="select"
-											v-model="item.type"
-											:options="['Line', 'Bar']"
-										/>
-									</InlineFormControlLabel>
-									<InlineFormControlLabel label="Align">
-										<FormControl
-											type="select"
-											v-model="item.align"
-											:options="['Left', 'Right']"
-										/>
-									</InlineFormControlLabel>
-									<InlineFormControlLabel label="Color">
-										<ColorInput
-											:model-value="item.color?.[0]"
-											@update:model-value="updateColor($event, index)"
-											placement="left-start"
-										/>
-									</InlineFormControlLabel>
-									<Toggle
-										label="Show Data Labels"
-										v-model="item.show_data_labels"
-									/>
-									<Toggle
-										label="Hide from Chart"
-										v-model="item.hide_from_chart"
-									/>
-
-									<slot name="series-settings" :series="item" :idx="index" />
-								</template>
-							</MeasurePicker>
-						</template>
-					</DraggableList>
-					<button
-						class="mt-1.5 text-left text-xs text-ink-gray-5 hover:underline"
-						@click="addSeries"
+		<div class="pt-1">
+			<p class="mb-1.5 text-xs text-ink-gray-5">Series</p>
+			<DraggableList v-model:items="y_axis.series" group="series">
+				<template #item="{ item, index }">
+					<MeasurePicker
+						:model-value="item.measure"
+						:column-options="props.columnOptions"
+						@update:model-value="Object.assign(item.measure, $event || {})"
+						@remove="y_axis.series.splice(index, 1)"
 					>
-						+ Add series
-					</button>
-				</div>
-			</div>
+						<template #config-fields>
+							<NumberFormatFields
+								:config="props.config"
+								:measure-name="item.measure?.measure_name"
+							/>
+							<InlineFormControlLabel label="Type">
+								<FormControl
+									type="select"
+									v-model="item.type"
+									:options="['Line', 'Bar']"
+								/>
+							</InlineFormControlLabel>
+							<InlineFormControlLabel label="Align">
+								<FormControl
+									type="select"
+									v-model="item.align"
+									:options="['Left', 'Right']"
+								/>
+							</InlineFormControlLabel>
+							<InlineFormControlLabel label="Color">
+								<ColorInput
+									:model-value="item.color?.[0]"
+									@update:model-value="updateColor($event, index)"
+									placement="left-start"
+								/>
+							</InlineFormControlLabel>
+							<!-- Switch rows carry their own vertical padding, so a
+							run of them sets its own rhythm and takes no gap. -->
+							<div class="flex flex-col">
+								<Toggle label="Show Data Labels" v-model="item.show_data_labels" />
+								<Toggle label="Hide from Chart" v-model="item.hide_from_chart" />
+								<slot name="series-settings" :series="item" :idx="index" />
+							</div>
+						</template>
+					</MeasurePicker>
+				</template>
+			</DraggableList>
+			<button
+				class="mt-1.5 text-left text-xs text-ink-gray-5 hover:underline"
+				@click="addSeries"
+			>
+				+ Add series
+			</button>
+		</div>
+	</CollapsibleSection>
 
-			<slot name="y-axis-settings" :y_axis="y_axis" />
-			<NumberFormatFields :config="props.config" />
-			<Toggle label="Show Data Labels" v-model="y_axis.show_data_labels" />
-			<Toggle label="Show Axis Label" v-model="y_axis.show_axis_label" />
+	<CollapsibleSection title="Y Axis Options" collapsed>
+		<div class="flex flex-col gap-3 pt-1">
+			<div class="flex flex-col">
+				<slot name="y-axis-settings" :y_axis="y_axis" />
+				<Toggle label="Show Data Labels" v-model="y_axis.show_data_labels" />
+				<Toggle label="Show Axis Label" v-model="y_axis.show_axis_label" />
+			</div>
 			<FormControl
 				v-if="y_axis.show_axis_label"
 				v-model="y_axis.axis_label"
 				label="Axis Label"
 			/>
-
 			<InlineFormControlLabel label="Y-Min" class="w-1/2">
 				<FormControl type="number" v-model="y_axis.min" placeholder="Min" />
 			</InlineFormControlLabel>
 			<InlineFormControlLabel label="Y-Max" class="w-1/2">
 				<FormControl type="number" v-model="y_axis.max" placeholder="Max" />
 			</InlineFormControlLabel>
+		</div>
+	</CollapsibleSection>
+
+	<CollapsibleSection title="Number Format" collapsed>
+		<div class="flex flex-col gap-3 pt-1">
+			<NumberFormatFields :config="props.config" />
 		</div>
 	</CollapsibleSection>
 </template>

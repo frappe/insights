@@ -67,7 +67,7 @@ function setAggregate(line: ReferenceLine, aggregate: ReferenceAggregate | '') {
 						@update:model-value="setAggregate(line, $event)"
 					/>
 				</div>
-				<div class="flex-1 overflow-hidden">
+				<div class="min-w-0 flex-1">
 					<FormControl
 						v-if="line.aggregate"
 						type="select"
