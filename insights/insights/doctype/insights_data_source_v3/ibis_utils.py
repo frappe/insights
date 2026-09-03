@@ -791,7 +791,7 @@ class IbisQueryBuilder:
             if table_ref.db or table_ref.catalog:
                 frappe.throw(
                     frappe._("Schema-qualified table names are not supported for native queries yet"),
-                    title="Unsupported SQL Query",
+                    title=frappe._("Unsupported SQL Query"),
                 )
 
             tables.add(table_ref.name)
