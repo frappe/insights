@@ -742,14 +742,17 @@ class IbisQueryBuilder:
     def _validate_native_sql(self, raw_sql: str, use_live_connection: bool) -> str:
         raw_sql = raw_sql.strip()
 
-        if not use_live_connection:
-            statements = [stmt for stmt in sqlparse.parse(raw_sql) if stmt.tokens and stmt.value.strip()]
-            if len(statements) > 1:
-                frappe.throw(
-                    "Multiple SQL statements are not supported with Data Store for native queries",
-                    title="Unsupported SQL Query",
-                )
+        # one statement, on every path: ibis cannot run two — `db.sql` on a pair
+        # fails while it reads the schema — and both rewrites below read the first
+        # statement only, so a second one would be dropped rather than refused
+        statements = [stmt for stmt in sqlparse.parse(raw_sql) if stmt.tokens and stmt.value.strip()]
+        if len(statements) > 1:
+            frappe.throw(
+                frappe._("Multiple SQL statements are not supported for native queries"),
+                title=frappe._("Unsupported SQL Query"),
+            )
 
+        if not use_live_connection:
             if raw_sql.lower().startswith("exec"):
                 frappe.throw(
                     "Stored procedures are not supported with Data Store for native queries",
@@ -867,7 +870,8 @@ class IbisQueryBuilder:
 
         Dropping back below sqlglot 28 is not open to us — frappe needs 30. Nesting
         the statement leaves the outer query with no CTE, so ibis re-attaches
-        nothing. Remove this once ibis pops the right key.
+        nothing. ibis 12 no longer pops that key at all, so drop this when the
+        `ibis-framework` pin moves off 11.
         """
         try:
             parsed = sg.parse_one(raw_sql, dialect=dialect)
@@ -878,7 +882,9 @@ class IbisQueryBuilder:
         if not parsed.ctes:
             return raw_sql
 
-        return f"SELECT * FROM ({raw_sql}) AS {NATIVE_SQL_RELATION}"
+        # nest what was parsed, not the text it came from: the text can carry a
+        # trailing semicolon, and that would land inside the brackets
+        return f"SELECT * FROM ({parsed.sql(dialect=dialect)}) AS {NATIVE_SQL_RELATION}"
 
     def apply_code(self, code_args):
         code = code_args.code
