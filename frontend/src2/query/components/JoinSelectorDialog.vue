@@ -264,7 +264,7 @@ function reset() {
 							v-model="selectedTable"
 							:loading="tableOptions.loading"
 							:options="groupedTableOptions"
-							@input="tableOptions.searchText = $event"
+							@update:query="tableOptions.searchText = $event"
 						/>
 					</div>
 					<div>
