@@ -694,11 +694,7 @@ class IbisQueryBuilder:
         ) or frappe.db.get_single_value("Insights Settings", "apply_user_permissions")
 
         if check_permissions or not self.use_live_connection:
-            tables = self._get_sql_table_names(
-                raw_sql,
-                dialect=source_dialect,
-                use_live_connection=self.use_live_connection,
-            )
+            tables = self._get_sql_table_names(raw_sql, dialect=source_dialect)
             replace_map = self._get_sql_table_bindings(
                 data_source,
                 tables,
@@ -784,17 +780,14 @@ class IbisQueryBuilder:
 
         return transpiled_sql[0]
 
-    def _get_sql_table_names(
-        self,
-        raw_sql: str,
-        dialect: sg.Dialect | None,
-        use_live_connection: bool,
-    ) -> set[str]:
+    def _get_sql_table_names(self, raw_sql: str, dialect: sg.Dialect | None) -> set[str]:
         tables = set()
         for table_ref in extract_sql_table_refs(raw_sql, dialect=dialect):
-            if not use_live_connection and (table_ref.db or table_ref.catalog):
+            # a binding is looked up by the bare name, so a qualified reference would
+            # bind the same-named table in the default schema — a different table
+            if table_ref.db or table_ref.catalog:
                 frappe.throw(
-                    "Schema-qualified table names are not supported with Data Store for native queries yet",
+                    "Schema-qualified table names are not supported for native queries yet",
                     title="Unsupported SQL Query",
                 )
 
@@ -848,13 +841,10 @@ class IbisQueryBuilder:
         if not replace_map:
             return raw_sql
 
-        try:
-            statements = sg.parse(raw_sql, dialect=dialect)
-        except Exception as e:
-            frappe.throw(
-                f"Failed to apply permissions to the SQL query: {e}",
-                title="Unsupported SQL Query",
-            )
+        # `sg.parse` over `sg.parse_one`: only `parse` reports every statement on
+        # every sqlglot version, and a statement dropped here is a statement that
+        # never runs. An empty one — a stray `;` — parses to None.
+        statements = [statement for statement in sg.parse(raw_sql, dialect=dialect) if statement]
 
         for statement in statements:
             # collect first: the replacements carry their own table references,
@@ -871,7 +861,7 @@ class IbisQueryBuilder:
                 subquery.set("alias", alias)
                 table_exp.replace(subquery)
 
-        return ";\n".join(statement.sql(dialect=dialect) for statement in statements if statement)
+        return ";\n".join(statement.sql(dialect=dialect) for statement in statements)
 
     def apply_code(self, code_args):
         code = code_args.code
