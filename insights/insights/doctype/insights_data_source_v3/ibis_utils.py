@@ -790,7 +790,7 @@ class IbisQueryBuilder:
             # bind the same-named table in the default schema — a different table
             if table_ref.db or table_ref.catalog:
                 frappe.throw(
-                    "Schema-qualified table names are not supported for native queries yet",
+                    frappe._("Schema-qualified table names are not supported for native queries yet"),
                     title="Unsupported SQL Query",
                 )
 
