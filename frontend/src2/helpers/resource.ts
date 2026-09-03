@@ -5,6 +5,7 @@ import { call } from 'frappe-ui'
 import { computed, reactive, ref, UnwrapRef } from 'vue'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import { copy, showErrorToast, waitUntil, watchToggle } from './index'
+import { mergeWriteAnswer } from './write_answer'
 // import json_diff from 'https://cdn.jsdelivr.net/npm/json-diff@1.0.6/+esm'
 
 type Document = {
@@ -175,8 +176,8 @@ export default function useDocumentResource<T extends Document>(
 			.finally(() => (isDeleting.value = false))
 	}
 
-	// `sentDoc` is the deep clone a write carried. Pass it to keep the edits the
-	// user made while that write was in flight. Leave it out to replace the
+	// `sentDoc` is the deep clone a write carried. Pass it and the answer is read
+	// as the receipt it is — see `mergeWriteAnswer`. Leave it out to replace the
 	// document, which is what a load wants.
 	function updateDocState(newDoc: any, sentDoc?: any) {
 		const currentDoc = removeMetaFields(doc.value)
@@ -187,15 +188,7 @@ export default function useDocumentResource<T extends Document>(
 		originalDoc.value = copy(answer)
 
 		if (sentDoc) {
-			for (const field of Object.keys(currentDoc)) {
-				const current = copy(currentDoc[field])
-				// An `undefined` value is dropped by `copy`, so keeping one here
-				// would make the document dirty forever. Let the answer win.
-				if (current === undefined) continue
-				if (isEqual(current, sentDoc[field])) continue
-				// The field moved after the write left, so the newer value wins.
-				;(answer as any)[field] = current
-			}
+			mergeWriteAnswer(currentDoc, answer, sentDoc)
 		}
 
 		doc.value = answer
