@@ -169,6 +169,13 @@ function getChartResource(name: string) {
 		disableLocalStorage: true,
 		transform: transformChartDoc,
 	})
+	// A chart is inserted with the config its author already sees, which is the
+	// normalized one. Send anything else and the answer comes back in a shape the
+	// load normalizes differently — the document is dirty for being created, and
+	// creating a chart costs a write and a second run of its data.
+	chart.onBeforeInsert(() => {
+		chart.doc.config = normalizeChartConfig(chart.doc.config, chart.doc.chart_type)
+	})
 	wheneverChanges(
 		() => chart.doc.read_only,
 		() => {
@@ -184,17 +191,17 @@ function transformChartDoc(doc: any) {
 	doc.config = safeJSONParse(doc.config) || {}
 	doc.operations = safeJSONParse(doc.operations) || []
 
-	doc.config.filters = doc.config.filters?.filters?.length
-		? doc.config.filters
-		: {
-				filters: [],
-				logical_operator: 'And',
-		  }
 	doc.config = normalizeChartConfig(doc.config, doc.chart_type)
 
 	return doc
 }
 
 export function newChart() {
-	return getChartResource('new-chart-' + getUniqueId())
+	const chart = makeChart('new-chart-' + getUniqueId())
+	// The page that opens next asks for the chart by the name the insert gave it,
+	// and has to be handed this store. A second store for one chart writes the
+	// document twice and runs its data twice, and the two disagree from the first
+	// edit.
+	chart.onAfterInsert(() => charts.set(String(chart.doc.name), chart))
+	return chart
 }

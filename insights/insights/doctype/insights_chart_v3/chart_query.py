@@ -164,7 +164,7 @@ def config_errors(chart_type: str, query: str, config: dict | None) -> list[str]
         split_by = (config.get("split_by") or {}).get("dimension") or {}
         if not dimension.get("column_name"):
             errors.append(_("X-axis is required"))
-        if dimension.get("column_name") == split_by.get("column_name"):
+        if dimension.get("column_name") and dimension.get("column_name") == split_by.get("column_name"):
             errors.append(_("X-axis and Split by cannot be the same"))
 
     if chart_type == "Number":

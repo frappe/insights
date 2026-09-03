@@ -50,11 +50,13 @@ const measure = defineModel<Measure>({
 	},
 })
 
+// An empty slot is a column measure nobody has filled in yet. Reading it as
+// neither kind is what made the picker write a measure the moment it mounted —
+// one autosave and two re-runs of the chart data for opening a chart.
 const columnMeasure = computed<ColumnMeasure | undefined>({
 	get() {
-		if ('column_name' in measure.value) {
-			return measure.value as ColumnMeasure
-		}
+		if ('expression' in measure.value) return
+		return measure.value as ColumnMeasure
 	},
 	set(value) {
 		measure.value = value!
@@ -95,12 +97,6 @@ function getAutoMeasureName(columnMeasure: ColumnMeasure) {
 		? columnMeasure.column_name
 		: `${columnMeasure.aggregation}_of_${columnMeasure.column_name}`
 }
-
-watchEffect(() => {
-	if (!columnMeasure.value && !expressionMeasure.value) {
-		resetMeasure()
-	}
-})
 
 // When the source columns include pre-aggregated measures, pre-select `sum` as
 // the aggregation so the picker opens straight to the column list — skipping

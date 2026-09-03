@@ -85,6 +85,11 @@ export type ChartFeed = {
 		force: boolean,
 		filterContext?: DashboardFilterContext,
 	) => Promise<ChartDataResponse | undefined>
+	// What this feed would ask for, as a string. A load that would ask the same
+	// question again is dropped before it starts: the rows on screen are already
+	// its answer, and running it puts the card through its loading state for a
+	// picture that does not change. A feed that leaves it out runs every load.
+	requestKey?: (filterContext?: DashboardFilterContext) => string
 	// one level of a drill, through the door this feed came in by. The stack the
 	// dialog holds is the whole of the request. No operations cross either way,
 	// except back out of the authoring door.
@@ -131,8 +136,14 @@ export function makeChartRead(feed: ChartFeed, priority?: number) {
 	const filterContext = ref<DashboardFilterContext>()
 
 	let currentLoad = 0
+	// the question the rows on screen answer, so the same one is not asked twice
+	let lastRequestKey: string | undefined
 
 	async function load(force = false) {
+		const requestKey = feed.requestKey?.(filterContext.value)
+		if (!force && requestKey !== undefined && requestKey === lastRequestKey) return
+		lastRequestKey = requestKey
+
 		executing.value = true
 		failed.value = false
 		serverBusy.value = false
@@ -160,8 +171,9 @@ export function makeChartRead(feed: ChartFeed, priority?: number) {
 			if (isStale() || !response) return
 
 			configErrors.value = response.errors || []
-			// a half-configured chart is the builder's normal state: say what is
-			// missing and leave the last picture up, rather than blanking the card
+			// a half-configured chart is the builder's normal state, and the rows
+			// it last drew no longer answer the config on screen. The card says
+			// what is missing where the picture was.
 			if (configErrors.value.length) return
 
 			const rows = {
@@ -209,6 +221,9 @@ export function makeChartRead(feed: ChartFeed, priority?: number) {
 			// waited in the queue it dropped out rather than spending a slot on a
 			// result nobody is waiting for
 			if (isStale()) return
+			// nothing on screen answers this question, so asking it again is not a
+			// repeat
+			lastRequestKey = undefined
 			serverBusy.value = isServerBusyError(error)
 			failure.value = serverBusy.value ? '' : getErrorMessage(error)
 			failed.value = true

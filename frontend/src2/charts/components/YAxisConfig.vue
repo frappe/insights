@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import ColorInput from '../../components/ColorInput.vue'
 import { debounce } from 'frappe-ui'
-import { watchEffect } from 'vue'
 import DraggableList from '../../components/DraggableList.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { copy } from '../../helpers'
@@ -21,12 +20,10 @@ const y_axis = defineModel<AxisChartConfig['y_axis']>({
 	}),
 })
 
+// The empty series a chart opens on is seeded on load, by `ensureConfigSlots`.
+// Seeding it here would write the config on mount, which is one autosave and two
+// re-runs of the chart data for opening a chart.
 const emptySeries = { measure: {} as MeasureOption }
-watchEffect(() => {
-	if (!y_axis.value?.series?.length) {
-		y_axis.value = { series: [copy(emptySeries)] }
-	}
-})
 
 function addSeries() {
 	y_axis.value.series.push(copy(emptySeries))

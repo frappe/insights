@@ -83,7 +83,10 @@ export function ensureConfigSlots(config: any, chart_type: string) {
 		config.x_axis = config.x_axis || {}
 		config.x_axis.dimension = config.x_axis.dimension || {}
 		config.y_axis = config.y_axis || {}
-		config.y_axis.series = config.y_axis.series || []
+		// one empty series, so the form opens on a picker rather than on nothing
+		config.y_axis.series = config.y_axis.series?.length
+			? config.y_axis.series
+			: [{ measure: {} }]
 	}
 
 	// A bar stacks unless its author says otherwise, and the form reads the flag
@@ -186,6 +189,9 @@ export function setDimensionNames(config: any) {
 export function normalizeChartConfig(config: any, chart_type: string) {
 	config.order_by = config.order_by || []
 	config.limit = config.limit || 100
+	config.filters = config.filters?.filters?.length
+		? config.filters
+		: { filters: [], logical_operator: 'And' }
 
 	if ('x_axis' in config && config.x_axis) {
 		config.x_axis = handleOldXAxisConfig(config.x_axis)

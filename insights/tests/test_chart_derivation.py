@@ -16,6 +16,8 @@ being derived.
 import json
 import unittest
 
+from frappe import _
+
 from insights.insights.doctype.insights_chart_v3.chart_query import (
     config_errors,
     derive_operations,
@@ -160,6 +162,17 @@ class TestChartDerivation(unittest.TestCase):
             with self.subTest(slot=slot):
                 config = {**case["config"], slot: {}}
                 self.assertTrue(config_errors("Heatmap", case["query"], config))
+
+    def test_a_new_axis_chart_is_only_told_its_x_axis_is_missing(self):
+        """Two empty slots name the same nothing, which is not a clash."""
+        self.assertEqual(config_errors("Bar", "some-query", {}), [_("X-axis is required")])
+
+    def test_an_axis_chart_cannot_split_by_the_column_it_plots(self):
+        case = derivation_case("Bar")
+        config = {**case["config"], "split_by": case["config"]["x_axis"]}
+        self.assertIn(
+            _("X-axis and Split by cannot be the same"), config_errors("Bar", case["query"], config)
+        )
 
     def test_a_heatmap_cannot_cut_the_grid_by_one_column_twice(self):
         """Both cuts on one column collapses the grid to a diagonal line."""

@@ -83,6 +83,8 @@ export default function useDocumentResource<T extends Document>(
 
 		updateDocState(newDoc, sentDoc)
 		isLocal.value = false
+		// the document exists now, so a surface that waits for one may open on it
+		isLoaded.value = true
 		await executeHooks(lifecycleHooks.afterInsert)
 		return newDoc
 	}

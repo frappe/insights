@@ -2,7 +2,7 @@
 import { Button } from 'frappe-ui'
 import { ChartContainer } from 'frappe-ui/charts'
 import { AlertTriangle, RefreshCcw } from 'lucide-vue-next'
-import { computed, shallowRef, watch } from 'vue'
+import { computed, shallowRef } from 'vue'
 import { __ } from '../../translation'
 import { EMPTY_RESULT } from '../../query/helpers'
 import { adaptChart, type DrillDownTarget } from '../adapter'
@@ -50,7 +50,7 @@ const chart_type = computed(() => props.chart.doc.chart_type)
 const config = computed(() => props.chart.doc.config)
 const result = computed(() => props.chart.result || { ...EMPTY_RESULT })
 
-const adapted = computed(() => {
+const filler = computed(() => {
 	// the result outlives a chart type switch, so without this the adapter would
 	// run against the incoming type's still-empty config
 	if (props.chart.configErrors.length) return
@@ -67,21 +67,6 @@ const adapted = computed(() => {
 	})
 })
 
-// The card keeps its last picture while the server reports config errors. The
-// adapter cannot run against a config the server refused, and the last output is
-// still a true picture of those rows. A type switch discards it, because the
-// picture belongs to the type that drew it.
-type Drawn = { chart_type: string; filler: NonNullable<ReturnType<typeof adaptChart>> }
-const lastDrawn = shallowRef<Drawn>()
-watch(adapted, (filler) => {
-	if (filler) lastDrawn.value = { chart_type: chart_type.value, filler }
-})
-
-const filler = computed(() => {
-	if (!props.chart.configErrors.length) return adapted.value
-	return lastDrawn.value?.chart_type === chart_type.value ? lastDrawn.value.filler : undefined
-})
-
 // A table keeps its rows while the next run is in flight. Other types blank. A
 // table on a filtered dashboard would otherwise blank on every filter move.
 const keepsLastPicture = computed(
@@ -90,13 +75,27 @@ const keepsLastPicture = computed(
 
 // What the card shows, in the order the store settles it: a failure outranks the
 // reload that would replace it, and a reload outranks the rows it is replacing.
-// `unconfigured` is the state a chart is born in — nothing has been drawn yet and
-// nothing is on its way.
+// `unconfigured` is the state a chart is born in and the state a config the
+// server refused puts it back in — nothing is drawn, and the space the picture
+// would take is where the reason is printed.
 const state = computed(() => {
 	if (props.chart.failed) return props.chart.serverBusy ? 'serverBusy' : 'failed'
 	if (props.chart.executing && !keepsLastPicture.value) return 'loading'
+	if (props.chart.configErrors.length) return 'unconfigured'
 	if (props.chart.empty) return 'empty'
 	return filler.value ? 'chart' : 'unconfigured'
+})
+
+// What an author has left to fill in, printed where the picture would be. It is
+// the same line a chart nobody has configured yet shows, so a half-configured
+// chart says what is missing rather than repeating the invitation. A reader owns
+// no config, so they are never told about one.
+const unconfigured = computed(() => {
+	const errors = props.chart.configErrors
+	if (props.readonly || !errors.length) {
+		return [__('Pick a chart type and configure options to see the chart here')]
+	}
+	return errors
 })
 
 // Any non-empty string puts the container in its error state. The slot below
@@ -193,8 +192,8 @@ function reportSegment(target: DrillDownTarget) {
 
 				<template v-else>
 					<ChartSectionEmptySvg></ChartSectionEmptySvg>
-					<p class="text-ink-gray-4">
-						{{ __('Pick a chart type and configure options to see the chart here') }}
+					<p v-for="line in unconfigured" :key="line" class="text-ink-gray-4">
+						{{ line }}
 					</p>
 				</template>
 			</template>

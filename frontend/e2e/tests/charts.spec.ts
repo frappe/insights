@@ -287,11 +287,11 @@ test.describe('charts', () => {
 		await expect(rendered.getByText('1.8K')).toBeVisible()
 
 		// Donut is not an axis chart, so crossing that boundary drops the axis
-		// config and leaves the chart with nothing to draw.
+		// config and leaves the chart with nothing to draw. The card says which
+		// slots the new type needs filled, in place of the picture.
 		await page.getByRole('button', { name: 'Donut', exact: true }).click()
-		await expect(
-			page.getByText('Pick a chart type and configure options to see the chart here'),
-		).toBeVisible()
+		await expect(cardOf(page).getByText('Label column is required')).toBeVisible()
+		await expect(cardOf(page).getByText('Value column is required')).toBeVisible()
 
 		// The filter and the limit sit outside the type-specific config, so they
 		// survive every switch. The count beside the heading is part of its name.
