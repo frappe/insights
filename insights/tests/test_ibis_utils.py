@@ -95,3 +95,111 @@ results = [
             self.build_query(operations)
 
         self.assertIn("Supported granularities: second, minute, hour", str(exc.exception))
+
+
+class TestIbisQueryBuilderCountMeasure(InsightsIntegrationTestCase):
+    """translate_measure() special-cases the synthetic "Count of records"
+    pseudo-measure (query/helpers.ts `count()`) by checking column_name ==
+    "count" and aggregation == "count" — both of which a real table column
+    literally named "count" also satisfies when a user counts it. See #963.
+    """
+
+    def make_query_doc(self, operations):
+        return frappe._dict(
+            name="Ibis Count Column Test",
+            title="Ibis Count Column Test",
+            use_live_connection=0,
+            operations=frappe.as_json(operations),
+        )
+
+    def make_source_operations(self):
+        return [
+            {
+                "type": "code",
+                "code": """
+results = [
+    {"label": "alpha", "count": 5},
+    {"label": "beta", "count": None},
+    {"label": "gamma", "count": 7},
+]
+""",
+            }
+        ]
+
+    def build_query(self, operations):
+        return IbisQueryBuilder(self.make_query_doc(operations)).build()
+
+    def test_counting_a_column_literally_named_count_counts_that_column(self):
+        # "count" is deliberately NOT the first column here. Before the fix,
+        # the collision substituted self.query.columns[0] regardless of which
+        # column the user actually picked — with "count" first, that
+        # substitution would coincidentally land on the right column anyway
+        # and this test would pass even with the bug still present. With
+        # "label" first, the old code counts "label" (3, all non-null) where
+        # the correct answer is 2 (the "count" column's own non-null count,
+        # since count is a non-null-count in SQL/ibis and the middle row is
+        # None), so this only passes once the fix actually reads the
+        # measure's own column rather than substituting the first one.
+        query = self.build_query(
+            [
+                *self.make_source_operations(),
+                {
+                    "type": "summarize",
+                    "measures": [
+                        # measure_name here is what getAutoMeasureName() in
+                        # MeasurePicker.vue produces for a real column-based
+                        # measure — `${aggregation}_of_${column_name}` — never
+                        # the synthetic pseudo-measure's fixed "count_of_rows".
+                        {
+                            "measure_name": "count_of_count",
+                            "column_name": "count",
+                            "aggregation": "count",
+                        }
+                    ],
+                    "dimensions": [],
+                },
+            ]
+        )
+
+        result = query.execute()
+        self.assertEqual(int(result["count_of_count"][0]), 2)
+
+    def test_the_actual_synthetic_count_of_rows_measure_still_counts_every_row(self):
+        # The real "Count of records" pseudo-measure from query/helpers.ts —
+        # column_name/aggregation/measure_name all fixed, regardless of
+        # whether the table happens to have a "count" column at all.
+        #
+        # Deliberately no nulls anywhere in this fixture: the synthetic
+        # measure implements "count every row" as `first_column.count()`,
+        # which is a non-null count of one arbitrary column, not COUNT(*) —
+        # a separate, pre-existing quirk of its own (undercounts if that
+        # column has nulls) that is not what #963 is about and not what
+        # this test is trying to isolate.
+        query = self.build_query(
+            [
+                {
+                    "type": "code",
+                    "code": """
+results = [
+    {"count": 5, "label": "alpha"},
+    {"count": 3, "label": "beta"},
+    {"count": 7, "label": "gamma"},
+]
+""",
+                },
+                {
+                    "type": "summarize",
+                    "measures": [
+                        {
+                            "measure_name": "count_of_rows",
+                            "column_name": "count",
+                            "aggregation": "count",
+                        }
+                    ],
+                    "dimensions": [],
+                },
+            ]
+        )
+
+        result = query.execute()
+        self.assertEqual(int(result["count_of_rows"][0]), 3)
