@@ -167,7 +167,6 @@ function onListChange(
 				:model-value="rootItems"
 				:group="dragGroup"
 				item-key="name"
-				class="min-h-6"
 				:animation="150"
 				:delay="150"
 				:delay-on-touch-only="true"
