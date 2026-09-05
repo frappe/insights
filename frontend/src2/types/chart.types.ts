@@ -117,6 +117,9 @@ export type Series = {
 	type?: 'line' | 'bar'
 	align?: 'Left' | 'Right'
 	show_data_labels?: boolean
+	// A series drawn at zero opacity and kept out of the legend, i.e. a Measure
+	// that reached the tooltip and nothing else. `tooltip.measures` says that,
+	// so normalizeChartConfig moves it there. Read, never written.
 	hide_from_chart?: boolean
 }
 export type YAxisLine = Series & {

@@ -43,7 +43,6 @@ type MeasureSpec =
 			/** Measured against the second value axis. */
 			axis?: 'right'
 			color?: string
-			hidden?: boolean
 			dataLabels?: boolean
 			area?: boolean
 			smooth?: boolean
@@ -211,7 +210,6 @@ function toSeries(measure: MeasureSpecObject): Series {
 		...(measure.mark ? { type: measure.mark } : {}),
 		...(measure.axis === 'right' ? { align: 'Right' as const } : {}),
 		...(measure.color ? { color: [measure.color] } : {}),
-		...(measure.hidden ? { hide_from_chart: true } : {}),
 		...(measure.dataLabels ? { show_data_labels: true } : {}),
 		...(measure.area ? { show_area: true } : {}),
 		...(measure.smooth ? { smooth: true } : {}),

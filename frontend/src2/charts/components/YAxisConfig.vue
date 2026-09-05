@@ -76,7 +76,6 @@ const updateColor = debounce((color: string, idx: number) => {
 								/>
 							</InlineFormControlLabel>
 							<Toggle label="Show Data Labels" v-model="item.show_data_labels" />
-							<Toggle label="Hide from Chart" v-model="item.hide_from_chart" />
 							<slot name="series-settings" :series="item" :idx="index" />
 						</template>
 					</MeasurePicker>

@@ -40,7 +40,7 @@
  * - **Two inputs, not one.** With a `split_by` the value columns are named after
  *   the split's values, which the config cannot supply — only the result can.
  * - **One spelling per idea.** Where v2 has a concept, map onto it rather than
- *   keeping an Insights word beside it. `hide_from_chart` is `hiddenSeries`.
+ *   keeping an Insights word beside it. `tooltip.measures` is `tooltipColumns`.
  * - **`echartOptions` is the only escape hatch**, and it is for instructions to
  *   the renderer. A default that is wrong for every app is a frappe-ui change.
  *

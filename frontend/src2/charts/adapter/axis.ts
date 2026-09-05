@@ -77,10 +77,6 @@ function adaptAxisChart(
 		if (Object.keys(style).length) seriesConfig[column] = style
 	}
 
-	const hiddenSeries = columns.filter(
-		(column) => seriesFor(config, column)?.hide_from_chart,
-	)
-
 	const props: BarChartProps = {
 		title: input.title,
 		data: input.result.rows,
@@ -122,7 +118,7 @@ function adaptAxisChart(
 
 	return {
 		component,
-		props: hiddenSeries.length ? { ...props, hiddenSeries } : props,
+		props,
 		drillDown: {
 			// The typed event carries the row it drew, so nothing maps an index
 			// back onto the result.

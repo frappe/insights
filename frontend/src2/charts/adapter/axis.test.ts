@@ -468,25 +468,6 @@ describe('a reference line at an aggregate', () => {
 	})
 })
 
-describe('a series the author switched off', () => {
-	it('hands it to the chart as hidden rather than dropping it', () => {
-		// It keeps its legend entry, so a reader can switch it back on for a look.
-		const props = propsOf({
-			type: 'Bar',
-			dimension: 'region',
-			measures: ['revenue', { name: 'refunds', hidden: true }],
-		})
-		expect(props.y).toEqual(['revenue', 'refunds'])
-		expect(props.hiddenSeries).toEqual(['refunds'])
-	})
-
-	it('says nothing when every series is drawn', () => {
-		expect(
-			propsOf({ type: 'Bar', dimension: 'region', measures: ['revenue'] }).hiddenSeries,
-		).toBeUndefined()
-	})
-})
-
 describe('a Measure that only reaches the tooltip', () => {
 	const spec: AxisChartSpec = {
 		type: 'Bar',
@@ -543,7 +524,7 @@ describe('a Measure that only reaches the tooltip', () => {
 
 	// A tooltip Measure is not drawn, but it is measured. A target on the tooltip
 	// is exactly the kind of number a rule is computed from, so a line has to be
-	// able to name one.
+	// able to name one — this is what `hide_from_chart` could do, kept.
 	it('can still back a computed reference line', () => {
 		const props = propsOf({
 			...spec,

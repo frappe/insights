@@ -71,6 +71,36 @@ export function handleOldReferenceLines(config: any) {
 	return config
 }
 
+// `hide_from_chart` marked a series drawn at zero opacity and filtered out of
+// the legend, which left its value reaching the tooltip and nothing else. That
+// is what `tooltip.measures` says properly, so the flag moves there rather than
+// staying a second way to say one thing.
+//
+// A chart that hid every series is left alone. Moving them all would leave the
+// adapter no value column to plot, and it draws nothing at all rather than an
+// empty plot. Those charts keep the flag, which nothing reads any more, so they
+// draw every series instead of none — a degenerate chart either way, and the
+// one that shows its data is the better of the two.
+export function handleOldHideFromChart(config: any) {
+	const series = config?.y_axis?.series
+	if (!Array.isArray(series)) return config
+
+	const hidden = series.filter((s: any) => s?.hide_from_chart)
+	if (!hidden.length || hidden.length === series.length) return config
+
+	// The flag is read, never written: it stays on the measure that moved so a
+	// config saved before this release still reads the same way on the next load.
+	const carried = config.tooltip?.measures || []
+	const named = new Set(carried.map((measure: any) => measure?.measure_name))
+	const moved = hidden
+		.map((s: any) => s.measure)
+		.filter((measure: any) => measure?.measure_name && !named.has(measure.measure_name))
+
+	config.tooltip = { measures: [...carried, ...moved] }
+	config.y_axis.series = series.filter((s: any) => !s?.hide_from_chart)
+	return config
+}
+
 // Every chart type reads a fixed set of slots off the config, and the validator and the
 // config forms reach into them without guarding. A type switch replaces the config
 // wholesale, so the incoming type's slots have to exist before anything reads them.
@@ -212,6 +242,7 @@ export function normalizeChartConfig(config: any, chart_type: string) {
 	config = setDimensionNames(config)
 	config = ensureConfigSlots(config, chart_type)
 	config = handleOldReferenceLines(config)
+	config = handleOldHideFromChart(config)
 	return config
 }
 
