@@ -3,6 +3,7 @@ import { LineChartConfig, SeriesLine, YAxisLine } from '../../types/chart.types'
 import { ColumnOption, DimensionOption } from '../../types/query.types'
 import ReferenceLinesConfig from './ReferenceLinesConfig.vue'
 import SplitByConfig from './SplitByConfig.vue'
+import TooltipConfig from './TooltipConfig.vue'
 import XAxisConfig from './XAxisConfig.vue'
 import YAxisConfig from './YAxisConfig.vue'
 
@@ -38,6 +39,8 @@ const config = defineModel<LineChartConfig>({
 	</YAxisConfig>
 
 	<SplitByConfig v-model="config.split_by" :dimensions="props.dimensions" />
+
+	<TooltipConfig v-model="config" :column-options="props.columnOptions" />
 
 	<ReferenceLinesConfig v-model="config.y_axis" />
 </template>

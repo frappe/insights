@@ -3,6 +3,7 @@ import type {
 	BarChartProps,
 	ChartDatapointEvent,
 	ChartMark,
+	ChartTooltipColumn,
 	ChartValueAxisOptions,
 	ChartXAxisOptions,
 	ReferenceLine as PlotReferenceLine,
@@ -52,6 +53,12 @@ function adaptAxisChart(
 	const x = dimension?.dimension_name
 	if (!x) return
 
+	// Measures that reach the tooltip and nothing else. They ride the same
+	// summarize, so they arrive as value columns like any other — the config is
+	// the only thing that says they are not series, which is why they are taken
+	// out before the columns are read.
+	const tooltipMeasures = tooltipMeasuresOf(config)
+
 	// A split renames the value columns after its own values, so the series a
 	// chart draws are only knowable from the result. Without one they are the
 	// Measures, under the names the summarize gave them. Either way the answer is
@@ -59,6 +66,7 @@ function adaptAxisChart(
 	const columns = input.result.columns
 		.filter((column) => FIELDTYPES.NUMBER.includes(column.type) && column.name !== x)
 		.map((column) => column.name)
+		.filter((column) => !tooltipMeasures.includes(column))
 	if (!columns.length) return
 
 	const y_axis = config.y_axis
@@ -101,6 +109,10 @@ function adaptAxisChart(
 	const referenceLines = referenceLinesFor(config, columns, input.result.rows, primary)
 	if (referenceLines.length) props.referenceLines = referenceLines
 
+	if (tooltipMeasures.length) {
+		props.tooltipColumns = tooltipColumnsFor(config, tooltipMeasures)
+	}
+
 	return {
 		component,
 		props: hiddenSeries.length ? { ...props, hiddenSeries } : props,
@@ -128,6 +140,50 @@ function seriesFor(config: MixedChartConfig, column: string): Series | undefined
 	}
 	if (series.length === 1) return series[0]
 	return series.find((s) => column.includes(s.measure.measure_name))
+}
+
+/**
+ * The Measures the tooltip carries, by the column name each one produced. Empty
+ * under a split: a split fans every Measure out into one column per split value,
+ * so there is no per-category column for one to arrive on, and the server
+ * leaves them out of the pivot.
+ */
+function tooltipMeasuresOf(config: MixedChartConfig): string[] {
+	if (config.split_by?.dimension?.column_name) return []
+	const drawn = new Set(
+		(config.y_axis?.series || [])
+			.map((series) => series.measure?.measure_name)
+			.filter(Boolean),
+	)
+	return (config.tooltip?.measures || [])
+		.map((measure) => measure?.measure_name)
+		.filter((name): name is string => Boolean(name) && !drawn.has(name))
+}
+
+/**
+ * How each tooltip Measure prints. A tooltip value goes through the same number
+ * format policy a series value does — the point of an extra is a number in
+ * another unit, so it has to carry that unit. No label: a column takes the same
+ * one the chart would give the Measure if it drew it.
+ */
+function tooltipColumnsFor(
+	config: MixedChartConfig,
+	names: string[],
+): ChartTooltipColumn[] {
+	const measures = config.tooltip?.measures || []
+	return names.map((name) => {
+		const format = numberFormatter(
+			config,
+			measures.find((m) => m?.measure_name === name),
+		)
+		return {
+			name,
+			// Only a number is formatted. A constant text attribute is reached by
+			// picking a text column with `min`, and it prints as it stands.
+			format: (value: number | string) =>
+				typeof value === 'number' ? format(value) : String(value),
+		}
+	})
 }
 
 function styleFor(

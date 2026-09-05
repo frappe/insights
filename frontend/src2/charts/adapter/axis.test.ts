@@ -487,6 +487,79 @@ describe('a series the author switched off', () => {
 	})
 })
 
+describe('a Measure that only reaches the tooltip', () => {
+	const spec: AxisChartSpec = {
+		type: 'Bar',
+		dimension: 'region',
+		measures: ['conversion_rate'],
+		tooltipMeasures: ['order_count'],
+	}
+
+	it('is handed over as a tooltip column, not as a series', () => {
+		const props = propsOf(spec)
+		expect(props.y).toEqual(['conversion_rate'])
+		expect(props.tooltipColumns).toHaveLength(1)
+		expect(props.tooltipColumns[0].name).toBe('order_count')
+	})
+
+	// The result carries it as one more numeric column, so without the config
+	// saying otherwise it would be read as a series and drawn.
+	it('is taken out of the columns the chart draws', () => {
+		const input = axisChart(spec)
+		expect(input.result.columns.map((column) => column.name)).toContain('order_count')
+		expect(adaptChart(input)!.props.y).not.toContain('order_count')
+	})
+
+	// The chart labels a column the way it labels a series it draws, so naming
+	// one here would make the same Measure read two ways.
+	it('names itself the way a drawn Measure does', () => {
+		expect(propsOf(spec).tooltipColumns[0].label).toBeUndefined()
+	})
+
+	it('prints through the Chart number format, the way a series value does', () => {
+		const input = axisChart(spec)
+		// The Chart-level default every value inherits.
+		;(input.config as any).number_format = { prefix: '#', decimals: 0 }
+		const format = adaptChart(input)!.props.tooltipColumns[0].format
+		expect(format(1840)).toBe('#1,840')
+	})
+
+	it('prints a text attribute as it stands', () => {
+		const format = propsOf(spec).tooltipColumns[0].format
+		expect(format('Outerwear')).toBe('Outerwear')
+	})
+
+	// A split fans every Measure out into one column per split value, which is a
+	// value per mark. The server leaves tooltip Measures out of that pivot, so
+	// there is no column for one to arrive on.
+	it('is dropped under a split', () => {
+		const props = propsOf({
+			...spec,
+			splitBy: { dimension: 'department', into: ['Men', 'Women'] },
+		})
+		expect(props.tooltipColumns).toBeUndefined()
+		expect(props.y).toEqual(['Men', 'Women'])
+	})
+
+	it('says nothing when the Chart names none', () => {
+		const props = propsOf({ type: 'Bar', dimension: 'region', measures: ['revenue'] })
+		expect(props.tooltipColumns).toBeUndefined()
+	})
+
+	// Two Measures under one name is one column. Drawing wins: the chart would
+	// otherwise lose a series to the tooltip.
+	it('yields a name the chart already draws', () => {
+		const props = propsOf({
+			type: 'Bar',
+			dimension: 'region',
+			measures: ['revenue'],
+			tooltipMeasures: ['revenue'],
+		})
+		expect(props.y).toEqual(['revenue'])
+		expect(props.tooltipColumns).toBeUndefined()
+	})
+})
+
 describe('drilling into a point', () => {
 	it('names the column and the row behind it, off the event alone', () => {
 		const input = axisChart({

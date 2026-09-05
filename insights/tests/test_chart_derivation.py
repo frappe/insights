@@ -174,6 +174,67 @@ class TestChartDerivation(unittest.TestCase):
             _("X-axis and Split by cannot be the same"), config_errors("Bar", case["query"], config)
         )
 
+    def test_a_tooltip_measure_rides_the_summarize_beside_the_drawn_ones(self):
+        """One value per plotted row, which is what the tooltip prints beside the
+        series. Nothing here says it is not drawn — the config does that."""
+        case = derivation_case("Bar")
+        measure = {
+            "column_name": "name",
+            "data_type": "String",
+            "aggregation": "count",
+            "measure_name": "order_count",
+        }
+        config = {**case["config"], "tooltip": {"measures": [measure]}}
+        operations = derive_operations("Bar", case["query"], config)
+        summarize = next(op for op in operations if op["type"] == "summarize")
+        self.assertIn("order_count", [m["measure_name"] for m in summarize["measures"]])
+
+    def test_a_split_leaves_the_tooltip_measures_out(self):
+        """A split fans every measure into one column per split value, which is a
+        value per mark. A tooltip extra is one value per category, so a pivot has
+        nowhere to put it."""
+        case = derivation_case("Bar")
+        config = {
+            **case["config"],
+            "split_by": {
+                "dimension": {
+                    "column_name": "territory",
+                    "data_type": "String",
+                    "dimension_name": "territory",
+                }
+            },
+            "tooltip": {
+                "measures": [
+                    {
+                        "column_name": "name",
+                        "data_type": "String",
+                        "aggregation": "count",
+                        "measure_name": "order_count",
+                    }
+                ]
+            },
+        }
+        operations = derive_operations("Bar", case["query"], config)
+        pivot = next(op for op in operations if op["type"] == "pivot_wider")
+        self.assertNotIn("order_count", [m["measure_name"] for m in pivot["values"]])
+
+    def test_a_tooltip_measure_named_after_a_drawn_one_is_dropped(self):
+        """Two measures under one alias is one column, and the chart would lose
+        the series to the tooltip. The Bar fixture names no series, so what it
+        draws is the count a chart falls back to."""
+        case = derivation_case("Bar")
+        drawn = {
+            "column_name": "count",
+            "data_type": "Integer",
+            "aggregation": "count",
+            "measure_name": "count_of_rows",
+        }
+        config = {**case["config"], "tooltip": {"measures": [drawn]}}
+        operations = derive_operations("Bar", case["query"], config)
+        summarize = next(op for op in operations if op["type"] == "summarize")
+        names = [m["measure_name"] for m in summarize["measures"]]
+        self.assertEqual(names, ["count_of_rows"])
+
     def test_a_heatmap_cannot_cut_the_grid_by_one_column_twice(self):
         """Both cuts on one column collapses the grid to a diagonal line."""
         case = derivation_case("Heatmap")

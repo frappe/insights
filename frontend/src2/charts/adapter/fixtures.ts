@@ -71,6 +71,11 @@ export type AxisChartSpec = {
 	 * builder fills numbers of its own.
 	 */
 	readings?: Record<string, (number | string | null)[]>
+	/**
+	 * Measures that reach the tooltip and nothing else. They ride the same
+	 * summarize, so the result carries a value column for each of them.
+	 */
+	tooltipMeasures?: MeasureSpec[]
 	stacked?: boolean
 	normalized?: boolean
 	overlap?: boolean
@@ -88,7 +93,20 @@ export function axisChart(spec: AxisChartSpec): ChartAdapterInput {
 	const dimension = toDimension(spec.dimension)
 	const split = spec.splitBy ? toDimension(spec.splitBy.dimension) : undefined
 	const measures = spec.measures.map(toMeasureSpec)
-	const columns = valueColumns(measures, spec.splitBy?.into)
+	const tooltipMeasures = (spec.tooltipMeasures ?? []).map(toMeasureSpec)
+	const drawnColumns = valueColumns(measures, spec.splitBy?.into)
+	// What the server sends back for the tooltip Measures. A split leaves them
+	// out of the pivot, and a name already drawn is one column, not two — the
+	// summarize drops it rather than aliasing the same name twice.
+	const drawnNames = new Set(measures.map((measure) => measure.name))
+	const columns = [
+		...drawnColumns,
+		...(spec.splitBy
+			? []
+			: tooltipMeasures
+					.map((measure) => measure.name)
+					.filter((name) => !drawnNames.has(name))),
+	]
 	const categories = spec.categories ?? defaultCategories(dimension)
 
 	// Cast once, here. `ChartConfig` is a union of per-type shapes that no single
@@ -110,6 +128,9 @@ export function axisChart(spec: AxisChartSpec): ChartAdapterInput {
 			...(spec.referenceLines ? { reference_lines: spec.referenceLines } : {}),
 		},
 		...(split ? { split_by: { dimension: split } } : {}),
+		...(tooltipMeasures.length
+			? { tooltip: { measures: tooltipMeasures.map((m) => toSeries(m).measure) } }
+			: {}),
 	} as unknown as ChartConfig
 
 	return {

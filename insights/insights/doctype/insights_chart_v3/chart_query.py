@@ -275,6 +275,9 @@ def _add_axis_operation(operations: list[dict], config: dict):
     split_by = (config.get("split_by") or {}).get("dimension") or {}
 
     if split_by.get("column_name"):
+        # A split fans every measure out into one column per split value, which
+        # is a value per mark rather than per category. A tooltip measure has no
+        # such shape, so it is left out rather than pivoted into one.
         operations.append(
             _pivot_wider(
                 rows=[x_dimension],
@@ -286,7 +289,19 @@ def _add_axis_operation(operations: list[dict], config: dict):
         )
         return
 
-    operations.append(_summarize(measures=values, dimensions=[x_dimension]))
+    # Tooltip measures ride the same summarize, so they arrive as one more value
+    # per plotted row. They are named apart from the drawn ones only by the
+    # config, which is what keeps them out of the chart.
+    #
+    # A name already drawn is dropped: two measures under one alias is one
+    # column, and the chart would lose the series to the tooltip.
+    drawn = {m["measure_name"] for m in values}
+    tooltip = [
+        m
+        for m in _named_measures((config.get("tooltip") or {}).get("measures") or [])
+        if m["measure_name"] not in drawn
+    ]
+    operations.append(_summarize(measures=values + tooltip, dimensions=[x_dimension]))
 
 
 def _add_number_operation(operations: list[dict], config: dict):

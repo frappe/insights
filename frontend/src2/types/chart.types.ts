@@ -54,10 +54,27 @@ export type AxisChartConfig = NumberFormatConfig & {
 	x_axis: XAxis
 	y_axis: YAxis
 	split_by?: SplitBy
+	tooltip?: Tooltip
 }
 
 export type XAxis = {
 	dimension: Dimension
+}
+
+/**
+ * Measures that reach the tooltip and nothing else: no series, no legend entry,
+ * no place on the value axis. For context in another unit — the count behind a
+ * rate, the target beside the actual.
+ *
+ * Its own key rather than a flag on a Series, because it is not a Series: a
+ * Series that draws nothing is the thing `hide_from_chart` already is.
+ *
+ * A Dimension cannot go here. The chart's rows are a summarize, so anything in
+ * the tooltip must be one value per plotted row, and only an aggregate is. A
+ * constant attribute is reached by picking its text column with `min`.
+ */
+export type Tooltip = {
+	measures: Measure[]
 }
 
 export type SplitBy = {
