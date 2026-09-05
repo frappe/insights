@@ -541,6 +541,20 @@ describe('a Measure that only reaches the tooltip', () => {
 		expect(props.y).toEqual(['Men', 'Women'])
 	})
 
+	// A tooltip Measure is not drawn, but it is measured. A target on the tooltip
+	// is exactly the kind of number a rule is computed from, so a line has to be
+	// able to name one.
+	it('can still back a computed reference line', () => {
+		const props = propsOf({
+			...spec,
+			readings: { order_count: [10, 30] },
+			referenceLines: [{ aggregate: 'average', measure_name: 'order_count' }],
+		})
+		expect(props.referenceLines).toEqual([
+			{ value: 20, axis: 'y', label: 'Avg order_count: 20' },
+		])
+	})
+
 	it('says nothing when the Chart names none', () => {
 		const props = propsOf({ type: 'Bar', dimension: 'region', measures: ['revenue'] })
 		expect(props.tooltipColumns).toBeUndefined()

@@ -57,5 +57,5 @@ watchEffect(() => {
 
 	<TooltipConfig v-model="config" :column-options="props.columnOptions" />
 
-	<ReferenceLinesConfig v-model="config.y_axis" />
+	<ReferenceLinesConfig v-model="config" />
 </template>

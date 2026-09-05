@@ -106,7 +106,14 @@ function adaptAxisChart(
 	const right = measureOn(config, 'Right')
 	if (right) props.y2Axis = { format: numberFormatter(config, right) }
 
-	const referenceLines = referenceLinesFor(config, columns, input.result.rows, primary)
+	// A reference line reads any Measure the Chart carries, drawn or not: a target
+	// on the tooltip is exactly the kind a rule is computed from.
+	const referenceLines = referenceLinesFor(
+		config,
+		[...columns, ...tooltipMeasures],
+		input.result.rows,
+		primary,
+	)
 	if (referenceLines.length) props.referenceLines = referenceLines
 
 	if (tooltipMeasures.length) {
@@ -140,6 +147,18 @@ function seriesFor(config: MixedChartConfig, column: string): Series | undefined
 	}
 	if (series.length === 1) return series[0]
 	return series.find((s) => column.includes(s.measure.measure_name))
+}
+
+/**
+ * The Measure a value column came from, drawn or not. A series is asked of
+ * `seriesFor`, so a split — where the columns are named after the split's values
+ * and one Measure owns several of them — answers the same way it does for a
+ * mark. A tooltip Measure is never split, so its column is its own name.
+ */
+function measureNameFor(config: MixedChartConfig, column: string): string | undefined {
+	const series = seriesFor(config, column)
+	if (series) return series.measure?.measure_name
+	return tooltipMeasuresOf(config).includes(column) ? column : undefined
 }
 
 /**
@@ -343,12 +362,7 @@ function aggregatePositionOf(
 	const measure = line.measure_name
 	if (!aggregate || !measure) return
 
-	// Which columns the Measure produced, asked of `seriesFor` so it is the same
-	// answer a series gets: under a split the columns are named after the split's
-	// values, so one Measure owns several of them.
-	const sources = columns.filter(
-		(column) => seriesFor(config, column)?.measure?.measure_name === measure,
-	)
+	const sources = columns.filter((column) => measureNameFor(config, column) === measure)
 
 	// Every number the chart draws for those columns. Not the category totals: a
 	// stack is the one picture they read better on, and one rule that holds

@@ -6,16 +6,22 @@ import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { AxisChartConfig, ReferenceAggregate, ReferenceLine } from '../../types/chart.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 
-const y_axis = defineModel<AxisChartConfig['y_axis']>({ required: true })
+// The whole Chart config, not the axis alone: a line reads any Measure the
+// Chart carries, and the tooltip Measures do not live on the axis.
+const config = defineModel<AxisChartConfig>({ required: true })
+const y_axis = computed(() => config.value.y_axis)
 
 const lines = computed(() => y_axis.value.reference_lines || [])
 
 // A computed line reads one of the Chart's own Measures. The result carries no
 // other numbers, so a Measure from anywhere else would have nowhere to sit.
+// A tooltip Measure is one of them: it is not drawn, but it is measured, and a
+// target on the tooltip is exactly the kind a rule is computed from.
 const measureOptions = computed(() =>
-	(y_axis.value.series || [])
-		.map((series) => series.measure?.measure_name)
-		.filter((name): name is string => Boolean(name)),
+	[
+		...(y_axis.value.series || []).map((series) => series.measure?.measure_name),
+		...(config.value.tooltip?.measures || []).map((measure) => measure?.measure_name),
+	].filter((name): name is string => Boolean(name)),
 )
 
 const atOptions: { label: string; value: ReferenceAggregate | '' }[] = [
