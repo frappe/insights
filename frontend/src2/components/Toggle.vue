@@ -1,5 +1,18 @@
 <template>
-	<Switch v-bind="$attrs" v-model="checked" :size="props.size || 'sm'" :disabled="props.disabled">
+	<!--
+	`Switch` spaces itself as a settings row: a label-only row carries `py-1.5`
+	so a list of them abuts. Insights uses it as one control in a gapped form
+	stack, where that padding lands on top of the gap and doubles it. Cancelling
+	it here makes a Toggle measure like every other control in the stack, so the
+	stack's own gap is the only thing setting the rhythm.
+	-->
+	<Switch
+		v-bind="$attrs"
+		v-model="checked"
+		:size="props.size || 'sm'"
+		:disabled="props.disabled"
+		class="-my-1.5"
+	>
 		<template v-if="props.label" #label>
 			<span class="text-xs text-ink-gray-5">{{ props.label }}</span>
 		</template>

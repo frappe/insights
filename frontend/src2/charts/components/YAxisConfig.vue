@@ -75,13 +75,9 @@ const updateColor = debounce((color: string, idx: number) => {
 									placement="left-start"
 								/>
 							</InlineFormControlLabel>
-							<!-- Switch rows carry their own vertical padding, so a
-							run of them sets its own rhythm and takes no gap. -->
-							<div class="flex flex-col">
-								<Toggle label="Show Data Labels" v-model="item.show_data_labels" />
-								<Toggle label="Hide from Chart" v-model="item.hide_from_chart" />
-								<slot name="series-settings" :series="item" :idx="index" />
-							</div>
+							<Toggle label="Show Data Labels" v-model="item.show_data_labels" />
+							<Toggle label="Hide from Chart" v-model="item.hide_from_chart" />
+							<slot name="series-settings" :series="item" :idx="index" />
 						</template>
 					</MeasurePicker>
 				</template>
@@ -97,11 +93,9 @@ const updateColor = debounce((color: string, idx: number) => {
 
 	<CollapsibleSection title="Y Axis Options" collapsed>
 		<div class="flex flex-col gap-3 pt-1">
-			<div class="flex flex-col">
-				<slot name="y-axis-settings" :y_axis="y_axis" />
-				<Toggle label="Show Data Labels" v-model="y_axis.show_data_labels" />
-				<Toggle label="Show Axis Label" v-model="y_axis.show_axis_label" />
-			</div>
+			<slot name="y-axis-settings" :y_axis="y_axis" />
+			<Toggle label="Show Data Labels" v-model="y_axis.show_data_labels" />
+			<Toggle label="Show Axis Label" v-model="y_axis.show_axis_label" />
 			<FormControl
 				v-if="y_axis.show_axis_label"
 				v-model="y_axis.axis_label"
