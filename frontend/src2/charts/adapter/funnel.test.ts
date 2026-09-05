@@ -113,3 +113,24 @@ describe('drilling into a stage', () => {
 		).toEqual({ column: 'Shipped', row: input.result.rows[0] })
 	})
 })
+
+describe('how a funnel prints its numbers', () => {
+	it('prints every stage against the one format the Chart set', () => {
+		const format = propsOf({
+			measures: lifecycle,
+			numberFormat: { shorten: true, suffix: ' items' },
+		}).format
+		expect(format(1000)).toBe('1K items')
+		expect(format(800)).toBe('800 items')
+	})
+
+	it('prints a grouped funnel the same way', () => {
+		const format = propsOf({
+			dimension: 'status',
+			measure: 'items',
+			stages: lifecycle,
+			numberFormat: { decimals: 1 },
+		}).format
+		expect(format(1000)).toBe('1,000.0')
+	})
+})

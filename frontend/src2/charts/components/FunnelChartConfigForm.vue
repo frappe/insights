@@ -60,14 +60,7 @@ const discrete_dimensions = computed(() =>
 								:column-options="props.columnOptions"
 								@update:model-value="Object.assign(item, $event || {})"
 								@remove="config.measures!.splice(index, 1)"
-							>
-								<template #config-fields>
-									<NumberFormatFields
-										:config="config"
-										:measure-name="item.measure_name"
-									/>
-								</template>
-							</MeasurePicker>
+							/>
 						</template>
 					</DraggableList>
 					<button
@@ -100,6 +93,11 @@ const discrete_dimensions = computed(() =>
 					</template>
 				</MeasurePicker>
 			</template>
+
+			<!-- One format for the whole funnel, not one per stage: the stages are
+			     the same quantity counted at different points, and v2 prints them
+			     against a single scale. A per-stage override would draw nothing. -->
+			<NumberFormatFields v-if="hasMeasures" :config="config" />
 
 			<Toggle v-model="config.show_percentage" :label="__('Show Percentage')" />
 		</div>
