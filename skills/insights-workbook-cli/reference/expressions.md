@@ -1,15 +1,15 @@
 # Expression language
 
 Expressions appear in `mutate`, expression measures, expression filters, and join conditions. An
-expression is a **Python expression evaluated against ibis**, with this context:
+expression is a **Python expression that runs against ibis**. It has this context:
 
-- every current column of the query by bare name (`base_net_total`, `posting_date`); for names that
-  are not valid identifiers use `q['column name']` (`q` is the current table)
+- every current column of the query by bare name (`base_net_total`, `posting_date`). For a name that
+  is not a valid identifier, use `q['column name']` (`q` is the current table)
 - the function library below
 - `ibis` (the module) and `literal`
 
-Python syntax rules apply: `==` not `=`; `and` / `or` / `not` do NOT work on columns — use `&`, `|`,
-`~` with parentheses around each comparison; strings in quotes.
+Python syntax rules apply. Write `==`, not `=`. Put strings in quotes. `and` / `or` / `not` do NOT
+work on columns. Use `&`, `|`, `~`, with parentheses around each comparison.
 
 ```python
 (status == 'Paid') & (base_net_total > 1000)
@@ -17,14 +17,14 @@ Python syntax rules apply: `==` not `=`; `and` / `or` / `not` do NOT work on col
 
 ## Gotchas that cause real failures
 
-- **A bare string or number as a whole `mutate` expression fails.** The result is `.cast()` to the
+- **A bare string or number as a whole `mutate` expression fails.** Insights casts the result to the
   declared `data_type`, and a Python `str` has no `.cast`. Write `ibis.literal('1. Total')` or
-  `literal(0)`. This is how the templates label union branches.
-- **After `summarize`, only the summarized columns exist** — use the sanitized snake_case measure and
+  `literal(0)`. The templates label union branches this way.
+- **After `summarize`, only the summarized columns exist.** Use the sanitized snake_case measure and
   dimension names.
 - **Aggregations belong in expression measures and `summarize`.** In `mutate` they compute
-  window-style over the whole table, which is almost never what was asked for.
-- **Division by zero** returns null or errors depending on the backend: guard with
+  window-style over the whole table. That is almost never the ask.
+- **Division by zero** returns null or fails, depending on the backend. Guard it with
   `if_else(x != 0, a / x, 0)`.
 - Dates compare against date expressions, not strings: `delivery_date < today()`.
 
@@ -34,7 +34,7 @@ Aggregations (expression measures and `summarize`; most take an optional `where=
 `sum(col)`, `count()`, `count(col)`, `avg(col)`, `min(col)`, `max(col)`, `median(col)`,
 `distinct_count(col)`, `group_concat(col, sep=',')`.
 
-Conditional aggregations — the workhorses for ratios and percentages:
+Conditional aggregations, for ratios and percentages:
 `sum_if(condition, col)`, `count_if(condition)`, `distinct_count_if(condition, col)`.
 
 ```python
@@ -55,7 +55,7 @@ cases(
 )
 ```
 
-Numbering bucket labels (`1.`, `2.`, ...) makes them sort correctly as strings in charts.
+Number the bucket labels (`1.`, `2.`, ...). Charts then sort them correctly as strings.
 
 Numeric: `abs`, `round(col, decimals)`, `floor`, `ceil`, `create_buckets(col, n)`.
 
@@ -65,8 +65,8 @@ String: `lower`, `upper`, `concat(col, ...)`, `replace(col, old, new)`, `find(co
 
 ## JSON columns
 
-`json_value(col, path, type)` reads **one** value out of a JSON column and gives you a normal column.
-It is the one a `mutate` needs.
+`json_value(col, path, type)` reads **one** value out of a JSON column. It gives you a normal
+column. A `mutate` needs this one.
 
 ```python
 json_value(properties, 'template_group')                # string, the default
@@ -76,13 +76,13 @@ json_value(payload, 'amount', 'float')
 json_value(payload, 'signed_up_at', 'timestamp')
 ```
 
-`type` is one of `string`, `int`, `float`, `bool`, `date`, `timestamp`. Name it — the value comes
-back as a string otherwise, and a chart cannot sum a string. A missing key or a JSON null gives an
-empty value, and a malformed value gives an empty value rather than a failed query.
+`type` is one of `string`, `int`, `float`, `bool`, `date`, `timestamp`. Name it. Otherwise the value
+comes back as a string, and a chart cannot sum a string. A missing key, a JSON null or a malformed
+value gives an empty value, not a failed query.
 
 The value works anywhere: in a filter, in a summarize, inside another expression.
 
-`json_extract(col, *fields)` is a different thing. It expands into **several** columns at once and
+`json_extract(col, *fields)` is a different thing. It expands into **several** columns at once. It
 samples 50 rows to guess each type. A `mutate` takes one expression and binds one name, so
 `json_extract` inside a `mutate` fails with:
 
@@ -115,8 +115,8 @@ Constants: `literal(value)` (alias `constant`), or `ibis.literal(value)`.
 
 ## The site holds the real list
 
-This page is a working subset, and the site you are on may run a newer Insights than it was written
-against. Ask the site rather than guess:
+This page is a working subset. Your site may run a newer Insights than this page. Ask the site
+rather than guess:
 
 ```sh
 frappectl -s $SITE method call insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_list
@@ -124,9 +124,9 @@ frappectl -s $SITE method call insights.insights.doctype.insights_data_source_v3
   -F funcName=json_value
 ```
 
-`get_function_description` returns the signature and the docstring. The docstring is where a function
-says what it returns and what it costs — `json_value` against `json_extract` is the example on this
-page, and reading it is what settles that question. The parameter is `funcName`, camelCase.
+`get_function_description` returns the signature and the docstring. The docstring says what a
+function returns and what it costs. This page compares `json_value` with `json_extract`. The
+docstring is what settles that question. The parameter is `funcName`, camelCase.
 
 A function this page does not list is not forbidden. A function `get_function_list` does not return
 does not exist.

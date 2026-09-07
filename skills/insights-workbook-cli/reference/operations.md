@@ -30,11 +30,11 @@ A query's `operations` is a JSON array executed top to bottom. The first operati
 { "dimension_name": "posting_date", "column_name": "posting_date", "data_type": "Date", "granularity": "month" }
 ```
 
-`data_type`: `String | Integer | Decimal | Date | Datetime | Time | Text`. Measures are
-`String | Integer | Decimal`; dimensions are `String | Date | Datetime | Time`.
+`data_type`: `String | Integer | Decimal | Date | Datetime | Time | Text`. Measures take
+`String | Integer | Decimal`. Dimensions take `String | Date | Datetime | Time`.
 
-Datetime columns also accept `second`, `minute` and `hour` granularity; a Time column accepts only
-those three. Anything else is rejected with an "Unsupported Granularity" error naming the list.
+Datetime columns also accept `second`, `minute` and `hour` granularity. A Time column accepts only
+those three. Anything else fails with an "Unsupported Granularity" error that names the list.
 
 ## source
 
@@ -46,10 +46,10 @@ Always first, exactly once.
 
 ## filter_group
 
-The only way to filter. `filters` mixes rules and expression filters, combined with
-`logical_operator` (`And` | `Or`). Nest by using an expression filter. Several `filter_group` ops in
-a row are normal and readable — that is how the shipped templates express "submitted AND
-under-delivered AND past due".
+The only way to filter. `filters` mixes rules and expression filters. `logical_operator`
+(`And` | `Or`) joins them. To nest, use an expression filter. Several `filter_group` ops in a row
+are normal and readable. The shipped templates express "submitted AND under-delivered AND past due"
+that way.
 
 ```json
 {
@@ -68,12 +68,12 @@ Operators: `= != > >= < <= in not_in between within contains not_contains starts
 is_set is_not_set`.
 
 - `in` / `not_in`: value is an array.
-- `between`: value is `[start, end]`; bare date strings expand to full-day bounds.
-- `within` (Date columns): a timespan string — `"Last N days|weeks|months|quarters|years"`,
-  `"Current month"`, `"Next N weeks"`, `"Last 1 fiscal year"`; append `" (include current)"` for
-  the running period.
-- `contains` / `not_contains` are `%value%` matches; numerics are cast to string first.
-- `is_set` / `is_not_set` ignore `value`; for String columns an empty string counts as unset.
+- `between`: value is `[start, end]`. Bare date strings expand to full-day bounds.
+- `within` (Date columns): value is a timespan string, such as
+  `"Last N days|weeks|months|quarters|years"`, `"Current month"`, `"Next N weeks"` or
+  `"Last 1 fiscal year"`. For the running period, append `" (include current)"`.
+- `contains` / `not_contains` match `%value%`. Numerics become strings first.
+- `is_set` / `is_not_set` ignore `value`. For String columns an empty string counts as unset.
 - Column-vs-column: set `value` to a column ref `{ "type": "column", "column_name": "..." }`.
 - ERPNext data: submitted documents are `docstatus = 1`. Filter it or you will count drafts and
   cancelled documents.
@@ -87,14 +87,14 @@ is_set is_not_set`.
 { "type": "cast", "column": { "type": "column", "column_name": "posting_date" }, "data_type": "Date" }
 ```
 
-An early `select` keeps a wide table readable, but keep every column a chart or a dashboard filter
-will need. `rename` sanitizes new names (spaces and hyphens become underscores) — write snake_case
-yourself so later operations reference what you expect. `remove` skips missing columns silently.
+An early `select` keeps a wide table readable. Keep every column a chart or a dashboard filter
+needs. `rename` sanitizes new names (spaces and hyphens become underscores). Write snake_case
+yourself, so later operations reference what you expect. `remove` skips missing columns silently.
 
 ## mutate
 
-Adds one computed column. The result is cast to `data_type`, so pick it correctly: a Decimal
-expression declared `Integer` truncates.
+`mutate` adds one computed column. It casts the result to `data_type`, so pick that type with care.
+A Decimal expression declared `Integer` truncates.
 
 ```json
 { "type": "mutate", "new_name": "days_overdue", "data_type": "Integer",
@@ -119,14 +119,14 @@ expression declared `Integer` truncates.
 }
 ```
 
-(From the Sales template: invoice items joined to their parent invoice to get `posting_date` and
-`company` per item row — the columns the dashboard filters need.)
+(From the Sales template. It joins invoice items to their parent invoice to get `posting_date` and
+`company` per item row. The dashboard filters need those columns.)
 
 - `join_type`: `inner | left | right | full`.
-- `select_columns` are the columns pulled from the right table; the join key comes along implicitly.
-- The right table may be a `query` table. Joining a summarized helper query back to detail is the
-  standard grain-change pattern.
-- Conflicting right-side names are auto-suffixed; `rename` first rather than relying on that.
+- `select_columns` are the columns to pull from the right table. The join key comes along too.
+- The right table may be a `query` table. To change grain, join a summarized helper query back to
+  detail. That is the standard pattern.
+- The join adds a suffix to a conflicting right-side name. Do not rely on that. Use `rename` first.
 - Expression condition:
   `"join_condition": { "join_expression": { "type": "expression", "expression": "left.customer == right.name" } }`.
 
@@ -137,13 +137,13 @@ expression declared `Integer` truncates.
 ```
 
 Both sides need the same column names and types. To label each side, `mutate` a constant on both
-first — `ibis.literal('1. Total')`, never a bare string (see reference/expressions.md).
+first. Use `ibis.literal('1. Total')`, never a bare string (see reference/expressions.md).
 
 ## summarize — grain change only
 
-Charts aggregate; queries stay per-row. Use `summarize` mid-pipeline, then usually `join` back to
-detail. Worked example, AR ageing from the Accounting template — ledger rows rolled up to one row
-per invoice, then joined back to the invoice for its customer and due date:
+Charts aggregate. Queries stay per-row. Use `summarize` mid-pipeline. Then usually `join` back to
+detail. The example below is AR ageing from the Accounting template. It rolls ledger rows up to one
+row per invoice. It then joins back to the invoice for its customer and due date.
 
 ```json
 [
@@ -172,12 +172,13 @@ per invoice, then joined back to the invoice for its customer and due date:
 ```
 
 After `summarize`, only the measure and dimension output columns exist, under their sanitized
-snake_case names. `dimensions: []` collapses everything to a single row (used by the funnel
-template before a `union`).
+snake_case names. `dimensions: []` collapses everything to a single row. The funnel template does
+that before a `union`.
 
 ## pivot_wider
 
-Long to wide, inside a query. Rarely needed: a Table chart with non-empty `columns` pivots for you.
+`pivot_wider` turns long to wide inside a query. You rarely need it. A Table chart with non-empty
+`columns` pivots for you.
 
 ```json
 { "type": "pivot_wider",
@@ -194,8 +195,8 @@ Long to wide, inside a query. Rarely needed: a Table chart with non-empty `colum
 { "type": "limit", "limit": 500 }
 ```
 
-Rarely needed in a base query — charts apply their own order and limit from config. A `limit` in the
-base query silently caps every chart built on it.
+A base query rarely needs these. Charts apply their own order and limit from config. A `limit` in
+the base query silently caps every chart built on it.
 
 ## sql — last resort
 
@@ -206,13 +207,13 @@ One operation, no others, and the query doc flips to `is_native_query: 1`, `is_b
 { "type": "sql", "raw_sql": "SELECT ... FROM `tabSales Invoice` ...", "data_source": "Site DB" }
 ```
 
-Must start with SELECT or WITH; aliases become the column names; the dialect is the data source's
-own. Dashboard filters still work (they append a `filter_group` after the `sql` op), so still expose
-filterable columns per-row.
+The SQL must start with SELECT or WITH. Aliases become the column names. The dialect is the data
+source's own. Dashboard filters still work. They append a `filter_group` after the `sql` op, so
+still expose filterable columns per-row.
 
 # Layering queries
 
 A query can source from another query in the same workbook
-(`{ "type": "query", "workbook": ..., "query_name": ... }`) in `source`, `join`, or `union`. Prefer
-layering over one long pipeline when a helper result is reused by more than one chart — the helper
-is then a single place to fix.
+(`{ "type": "query", "workbook": ..., "query_name": ... }`) in `source`, `join`, or `union`. If more
+than one chart uses a helper result, prefer layering over one long pipeline. The helper is then a
+single place to fix.

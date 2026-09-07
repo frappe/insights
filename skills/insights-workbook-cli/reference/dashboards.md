@@ -11,12 +11,12 @@ nobody scrolls to. Both take grid rows from the charts.
 
 Everything you would write in a text item goes in your reply to the user instead: the caveat, the
 data gap, the retired signal, the reason a chart is cut to a date. The user reads your reply. Say it
-there, and leave the grid to the charts.
+there. Leave the grid to the charts.
 
 ## Layout
 
-The grid is **20 columns wide**; `h` is in rows of about 30px. Every item needs a `layout` with a
-unique `i` — two items sharing an `i` makes the grid drop one of them.
+The grid is **20 columns wide**. `h` counts rows of about 30px. Every item needs a `layout` with a
+unique `i`. If two items share an `i`, the grid drops one of them.
 
 ```json
 { "type": "chart", "chart": "<chart doc name>", "layout": { "i": "item-revenue-trend", "x": 0, "y": 4, "w": 10, "h": 8 } }
@@ -31,8 +31,8 @@ bottom: filters, KPIs, trends, then detail tables.
 **The site owns the layout. Your script does not.**
 
 The user moves charts, resizes them, adds a filter, and edits your titles. Every one of those
-changes lives in the same `items` array you write. So a second run of your build script that writes
-the `items` it computed destroys all of it, silently, and the user finds out by looking.
+changes lives in the same `items` array you write. A second run of your build script writes the
+`items` it computed. That destroys all the changes, silently. The user finds out by looking.
 
 This is the failure mode, and it looks reasonable in code:
 
@@ -42,7 +42,7 @@ items = build_the_layout_i_planned()
 call("doc", "update", "Insights Dashboard v3", dashboard, stdin=json.dumps({"items": items}))
 ```
 
-`doc update` does not protect you here. Its optimistic check compares `modified`, and you read the
+`doc update` does not protect you here. Its optimistic check compares `modified`. You read the
 document a moment before you wrote it, so the check passes. It catches an edit made *during* your
 write, not one made since your last run. Never reach for `--force`.
 
@@ -72,18 +72,18 @@ Four rules the merge must keep:
 - **Keep keys you do not recognise**, on the item and on the document. Copy the live item and
   update it. Do not rebuild it from scratch.
 
-`examples/build_workbook.py` ships `patch_dashboard()`, which does exactly this. Use it rather than
+`examples/build_workbook.py` ships `patch_dashboard()`, which does exactly this. Use it instead of
 writing the merge again.
 
 ## Filters — routing is by query name
 
 A filter item declares `links`: which charts it affects and, per chart, which **query column** it
-filters. At execution the filter is appended as a `filter_group` to the end of that *query's*
+filters. At execution Insights appends the filter as a `filter_group` to the end of that *query's*
 pipeline, before the chart's own aggregation. Two consequences:
 
-1. The query must expose the filter column per-row — one more reason not to pre-aggregate.
-2. The link value names the **query** doc, not the chart:
-   `` `query_name`.`column_name` `` — backtick, dot, backtick, exactly.
+1. The query must expose the filter column per-row. That is one more reason not to pre-aggregate.
+2. The link value names the **query** doc, not the chart. The form is
+   `` `query_name`.`column_name` ``: backtick, dot, backtick, exactly.
 
 ```json
 {
@@ -102,34 +102,34 @@ pipeline, before the chart's own aggregation. Two consequences:
 ```
 
 - `filter_type`: `String` | `Number` | `Date`.
-- `default_operator` / `default_value` are optional. Date filters normally use `within` with a
-  timespan string; String filters normally use `in` and let the UI supply the values — it reads
-  them from the linked column of the linked query, so link a column whose distinct values are the
-  ones the user should pick from.
+- `default_operator` and `default_value` are optional. Date filters normally use `within` with a
+  timespan string. String filters normally use `in` and let the UI supply the values. The UI reads
+  the values from the linked column of the linked query. So link a column whose distinct values are
+  the ones the user should pick from.
 - A default date range hides history. Set one only when the user asks for a window. Otherwise leave
   the filter empty, so the dashboard opens on everything the queries hold.
 - **Link every chart that should react.** An unlinked chart silently ignores the filter, which reads
   as a bug to the user.
-- One filter can point different charts at different queries and columns — a "Company" filter routes
+- One filter can point different charts at different queries and columns. A "Company" filter routes
   the invoice charts to `` `tq-sales-invoices`.`company` `` and the item charts to
   `` `tq-sales-invoice-items`.`company` ``.
-- The named query is usually the chart's base query, but it can be **any query feeding it**: the
-  filter is applied wherever that query is built, so filtering a shared helper query reaches every
-  chart layered on top of it.
+- The named query is usually the chart's base query. It can be **any query that feeds the chart**.
+  Insights applies the filter wherever that query is built. So a filter on a shared helper query
+  reaches every chart built on it.
 - A chart whose query chain lacks the column cannot be linked: add the column to the query first
   (usually a `join` to the parent document), then link it.
-- **Dashboard filters are rule-based only.** Expression filters inside a dashboard filter group are
-  dropped before execution, so a filter that must be an expression belongs in the query or the
+- **Dashboard filters are rule-based only.** Insights drops expression filters inside a dashboard
+  filter group before execution. A filter that must be an expression belongs in the query or in the
   chart's own `filters`.
-- A chart whose window is fixed by design — a cohort, a fixed observation period — must be left
-  **unlinked**. A date filter on it cuts days out of the window instead of filtering the view. Say
-  in your reply which charts you left unlinked, and why.
+- Leave a chart **unlinked** when its window is fixed by design, such as a cohort or a fixed
+  observation period. A date filter on it cuts days out of the window instead of filtering the view.
+  Say in your reply which charts you left unlinked, and why.
 
 ## Checklist
 
 - No `text` item.
-- Every `chart` item names an existing chart; every `links` key is a chart name and the query segment
-  of its value is a query in that chart's chain.
+- Every `chart` item names an existing chart. Every `links` key is a chart name, and the query
+  segment of its value is a query in that chart's chain.
 - No two items share `layout.i`, and items do not overlap.
 - Every edit after the first run went through the merge, so every live `layout` survived.
 - A dashboard with unlinked charts and a filter bar is not finished, unless you named the exception.

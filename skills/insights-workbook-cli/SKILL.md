@@ -27,16 +27,16 @@ Pass `-s <profile>` on every call. The examples write `$SITE` for it.
 
 ## The CLI is the only interface
 
-Every action you take on the site goes through `frappectl`. Never read or write the
-site's files, database, logs, or bench — not even when the site runs on this machine
-and those paths sit right there.
+Every action on the site goes through `frappectl`. Never read or write the site's
+files, database, logs or bench. This holds even when the site runs on this machine and
+those paths sit right there.
 
 A local path is an accident of one developer's setup. What you learn there does not
-hold on the site the workbook has to run on, and a workbook built on it breaks there.
+hold on the site the workbook must run on. A workbook built on it breaks there.
 
 **Assume you do not have the Insights source, because most users do not.** Nothing in this skill
-needs it. Every fact about the site — its tables, its columns, its stored data, its function library
-— is a call. When you want to know whether something exists, ask the site.
+needs it. Every fact about the site is a call: its tables, its columns, its stored data, its
+function library. To know whether something exists, ask the site.
 
 ### When a call fails and the error names no cause
 
@@ -44,7 +44,7 @@ Insights returns some failures as an exception type and nothing more. An Insight
 is a Website User, so the framework suppresses the traceback. Do not read the site's
 code. Take these three steps.
 
-1. Retry the call once. Change only what could plausibly matter.
+1. Retry the call once. Change only what could matter.
 2. Bisect over the API. Shrink the payload until you have the smallest call that still
    fails. Say what that proves.
 3. Stop and report to the user. Give the exact command and the exact response.
@@ -77,10 +77,10 @@ you depend on one:
 frappectl -s $SITE method search -q <name>
 ```
 
-**Every procedure here works on a stock site with no newer endpoint.** Where a newer one exists it
-does the same job faster, never a different job — so a missing endpoint costs round trips, never a
-result. When you find one missing, take the plain path and carry on. Do not stop, and do not tell
-the user their site is behind unless they asked.
+**Every procedure here works on a stock site with no newer endpoint.** A newer endpoint does the
+same job faster, never a different job. A missing endpoint costs round trips, never a result. If one
+is missing, take the plain path and carry on. Do not stop. Do not tell the user their site is behind
+unless they ask.
 
 The same holds for a function `get_function_list` does not return: the plan changes, the ask does
 not.
@@ -88,29 +88,30 @@ not.
 ### Translate the ask into the site's vocabulary
 
 The user asks in business language. "Support tickets raised by partner sites" names no table and no
-column. Most users cannot name one — only an admin knows what data is where. Translating the ask is
-your job, and it is the step most likely to go wrong.
+column. Most users cannot name one. Only an admin knows what data is where. You must translate the
+ask, and this step is the most likely to go wrong.
 
-Work the ladder in order. **The corpus comes before the schema, and this order is the point.**
+Work the ladder in order. **The corpus comes before the schema.**
 
 A schema is large and low-signal: hundreds of tables, hundreds of columns each, and no statement of
-meaning anywhere. It tells you a column exists. It never tells you the column is the right one. The
-corpus is small, curated and already correct — somebody wrote that query, somebody uses it, and the
-definition inside it survived contact with the business. On a mature site most of what you need is
-tribal knowledge sitting in a query, not a fact you can read off a column name.
+meaning. It tells you a column exists. It never tells you the column is the right one. The corpus is
+small and already correct. Somebody wrote that query, somebody uses it, and its definition survived
+contact with the business. On a mature site most of what you need is tribal knowledge in a query,
+not a fact you read off a column name.
 
 **1. Name the data sources.** `get_all_data_sources`. Their names are the first map: which system
 holds tickets, which holds sites, which holds billing. An ask that spans two of them is normal.
 
 **2. Search the corpus for every business word in the ask.** This is the rung that pays. "Partner",
-"active customer", "churned", "enterprise" are decisions somebody encoded once — in a title, a
-`mutate`, a `case_when`, a filter value, a `sql` query. Section 3 has the searches. Run it for every
-noun and every qualifier the user used, before you look at a single table.
+"active customer", "churned" and "enterprise" are decisions somebody encoded once, in a title, a
+`mutate`, a `case_when`, a filter value or a `sql` query. Section 3 has the searches. Run them for
+every noun and every qualifier the user used, before you look at a single table.
 
 A hit gives you the calculation *and* the tables it reads, so it settles rungs 3 and 4 at once.
 
-**3. Search table labels for what the corpus did not answer.** Omit `data_source` and
-`get_data_source_tables` searches the whole instance, matching the table's `label` and its real name:
+**3. Search table labels for what the corpus did not answer.** If you omit `data_source`,
+`get_data_source_tables` searches the whole instance. It matches the table's `label` and its real
+name:
 
 ```sh
 for word in ticket partner site; do
@@ -130,8 +131,8 @@ frappectl -s $SITE method call insights.api.data_sources.get_data_source_table_c
 ```
 
 `get_schema -F data_source=<name>` returns every table with its columns in one call. It opens each
-table on the backend, so it is the most expensive call in the skill. Reach for it only when you must
-search columns rather than tables, and say that you did.
+table on the backend, so it is the most expensive call in the skill. Use it only when you must
+search columns rather than tables. Say that you did.
 
 **5. Ask.** What the ladder does not resolve goes in the scope block as a question, with the
 candidates you found. Do not guess a definition somebody has already written down.
@@ -142,12 +143,12 @@ Discovery makes choices and the user sees none of them. Name every one, in the s
 in the closing summary. One line each:
 
 - **Reused a definition.** The workbook, the query, and the expression you copied. If the user's ask
-  differs from it at all, say how, and ask.
-- **Derived a definition yourself.** Say plainly that you found no existing one, name the columns you
-  built it from, and ask the user to confirm it. **This line matters most.** A reused definition has
-  been checked by the people who use it. One you derived has been checked by nobody.
+  differs from it, say how and ask.
+- **Derived a definition yourself.** Say that you found no existing one. Name the columns you built
+  it from. Ask the user to confirm it. **This line matters most.** The people who use a reused
+  definition checked it. Nobody checked the one you derived.
 - **Picked one candidate over others.** Name what you rejected, and why. A search that returned three
-  tables and a search that returned one are different situations, and only you can see which happened.
+  tables and a search that returned one are different situations. Only you can see which happened.
 - **Made a load-bearing cut.** A date the data starts, a filter that drops rows, a source you chose
   because a table was not stored. Each one changes the number.
 
@@ -155,7 +156,7 @@ Silence here reads as certainty. Do not spend certainty you do not have.
 
 ### A query spanning two data sources needs the data store
 
-Cross-source is decided by one flag. With `use_live_connection: 0` every table resolves through the
+One flag decides cross-source. With `use_live_connection: 0` every table resolves through the
 warehouse, whatever its data source, so tables from two sources join normally. With
 `use_live_connection: 1` each table opens on its own backend, and a join across two of them cannot
 run.
@@ -165,7 +166,7 @@ See "Choose the data store or the live connection" in section 5.
 
 ## 2. Read the contract
 
-Read `reference/rules.md` now. It is 34 lines and every rule in it is load-bearing.
+Read `reference/rules.md` now. It is short, and every rule in it is load-bearing.
 
 Read the rest when the plan needs it:
 
@@ -181,7 +182,7 @@ Read the rest when the plan needs it:
 Plan only with the operation types, chart types and functions these files list. Never
 invent one.
 
-The site itself is the authority on the function library, and it is one call away:
+The site is the authority on the function library. It is one call away:
 
 ```sh
 frappectl -s $SITE method call insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_list
@@ -189,9 +190,9 @@ frappectl -s $SITE method call insights.insights.doctype.insights_data_source_v3
   -F funcName=json_value
 ```
 
-`get_function_description` returns the signature and the docstring, which is where a function says
-what it actually does. Read it before you use a function these files do not cover, and before you
-trust one they describe in a line. The parameter is `funcName`, camelCase — `function` gives nothing
+`get_function_description` returns the signature and the docstring. The docstring says what the
+function does. Read it before you use a function these files do not cover. Read it before you trust
+one they describe in a line. The parameter is `funcName`, in camelCase. `function` gives nothing
 back.
 
 For worked examples, read what the site already has (section 3). A workbook the site imported from a
@@ -200,18 +201,18 @@ template is a good one: `doc list "Insights Workbook" --fields name,title,from_t
 ## 3. Reuse what the user already has
 
 People share workbooks. A metric somebody already defined and uses every day is more
-likely correct than one you derive from column names. **This is the first rung of the ladder in
-section 1, not a later resort.** Run it before you read the schema.
+likely correct than one you derive from column names. **Run these searches before you read the
+schema.**
 
-A `sql` query is worth opening even though you must not author one. The definitions nobody could
-express in builder operations end up there, which makes those queries the densest tribal knowledge
-on the site. Read the SQL, take the calculation, and rebuild it as builder operations.
+Open a `sql` query even though you must not author one. Definitions nobody could express in builder
+operations end up there, so those queries hold the densest tribal knowledge on the site. Read the
+SQL, take the calculation, and rebuild it as builder operations.
 
 **Search the corpus. Do not download it.** Titles and the JSON fields are text columns, so the site
-greps them for you, and a `like` filter is the whole search.
+greps them for you. A `like` filter is the whole search.
 
-**Search titles first.** A person wrote them, in the same business language the user is asking in.
-This is the rung that translates "partner" into a real definition:
+**Search titles first.** A person wrote them, in the same business language the user uses. These
+searches translate "partner" into a real definition:
 
 ```sh
 frappectl -s $SITE method call insights.api.workbooks.get_workbooks -F search_term=partner
@@ -221,21 +222,20 @@ frappectl -s $SITE doc list "Insights Chart v3" \
   --filters-json '{"title":["like","%partner%"]}' --fields name,title,workbook,chart_type --all
 ```
 
-`get_workbooks` searches titles only, so run the query and chart searches too — a workbook titled
+`get_workbooks` searches titles only, so run the query and chart searches too. A workbook titled
 "Cloud Metrics" can hold the partner definition.
 
-These searches are the rung, and they work on every site. A newer site may carry one endpoint that
-runs the whole rung in a single call and says which field matched. Probe for it once, and use it
-when it is there:
+These searches work on every site. A newer site may carry one endpoint that runs them all in a
+single call and says which field matched. Probe for it once. Use it when it is there:
 
 ```sh
 frappectl -s $SITE method search -q search_content
 ```
 
-The rung does not change either way. Only the number of calls does.
+The searches do not change either way. Only the number of calls does.
 
-**Then search the JSON**, which reaches column names, expression text, filter values and measure
-names — where a definition lives even when no title says so:
+**Then search the JSON.** It reaches column names, expression text, filter values and measure names.
+A definition lives there even when no title says so:
 
 ```sh
 frappectl -s $SITE doc list "Insights Query v3" \
@@ -245,18 +245,18 @@ frappectl -s $SITE doc list "Insights Chart v3" \
   --filters-json '{"config":["like","%base_net_total%"]}' --fields name,title,workbook,chart_type --all
 ```
 
-Search one word at a time, and search the words the *user* used before the words the schema uses.
-`like` matches a substring and nothing else — no synonyms, no stemming — so "partner" finds
-"is_partner" and "Partner Sites", and "partner persona" finds neither.
+Search one word at a time. Search the words the *user* used before the words the schema uses.
+`like` matches a substring and nothing else. It has no synonyms and no stemming, so "partner" finds
+"is_partner" and "Partner Sites". "partner persona" finds neither.
 
 Each search returns a shortlist of names. Then `doc get` the two or three worth reading.
 
-The unfiltered form — `doc list "Insights Query v3" --fields name,title,workbook,operations --all` —
+The unfiltered form `doc list "Insights Query v3" --fields name,title,workbook,operations --all`
 pulls every readable query's whole pipeline. It is fine on a site with six workbooks and useless on
-a site with six hundred. Search first; fetch what the search names.
+a site with six hundred. Search first. Fetch what the search names.
 
 Both are permission filtered, so what comes back is what the user can read. Look for a
-query over the same tables. Read its `operations` for the calculation — the expression,
+query over the same tables. Read its `operations` for the calculation: the expression,
 the aggregation, the filter group that defines "revenue" or "active customer" here.
 
 **Copy the calculation into your own query. Do not reference the other workbook's
@@ -264,9 +264,7 @@ query.** A cross-workbook query reference builds and runs, but the workbook's so
 selector lists only queries in its own workbook, so the user cannot see or edit where
 the data came from.
 
-When you reuse a definition, say so in the scope block: the workbook, the query, and
-the expression you copied. If the user's ask differs from the definition you found,
-name the difference and ask.
+Say what you reused. See "Say what you leaned on" in section 1.
 
 ## 4. Converge on scope with the user
 
@@ -283,8 +281,8 @@ When more than one column could serve a metric, name the candidates and ask whic
 Never resolve that ambiguity alone. Never carry an unasked choice into the closing
 summary.
 
-Ask before you sample real values from a column, and wait for the answer. Sampling needs a scratch
-query, so it is a write — see section 5.
+Ask before you sample real values from a column. Wait for the answer. A sample needs a scratch
+query, so it is a write. See section 5.
 
 **Stop here.** Post the scope block, end your turn, and wait for the user's reply.
 Agree the scope with the user, not with yourself.
@@ -293,9 +291,9 @@ Agree the scope with the user, not with yourself.
 
 ### Never create a workbook the user did not ask for
 
-The default is to add to a workbook that exists. "Add a chart", "fix this query", "put
-a filter on the dashboard" — all of these create documents inside the named workbook.
-None of them creates a workbook.
+The default is to add to a workbook that exists. "Add a chart", "fix this query" and
+"put a filter on the dashboard" all create documents inside the named workbook. None of
+them creates a workbook.
 
 Create a workbook only when the user asks for one in those words. When the target
 workbook is unclear, ask which one. Do not resolve it by making a new one.
@@ -304,20 +302,20 @@ Ask before you create a workbook when:
 
 - the user names no workbook and more than one could fit
 - the work would fit an existing workbook you can see
-- you are recovering from a failed attempt — patch or delete what you made, never
-  leave a second copy
+- you recover from a failed attempt. Patch or delete what you made. Never leave a
+  second copy
 
 ### Write through a build script
 
 Every write goes through one Python script you author for the task. Reading and
 exploring stay direct `frappectl` calls.
 
-The reason is verification. The checks in section 6 are list comparisons, and an agent
-comparing lists by hand reports a verdict nobody can audit. In a script the result is
-an exit code.
+The reason is verification. The checks in section 6 are list comparisons. An agent that
+compares lists by hand reports a verdict nobody can audit. In a script the result is an
+exit code.
 
-Copy `examples/build_workbook.py` and edit it. It is a template, not a library — you
-own every line. `frappectl` prints clean JSON when piped, so the whole client is:
+Copy `examples/build_workbook.py` and edit it. It is a template, not a library. You own
+every line. `frappectl` prints clean JSON when piped, so the whole client is:
 
 ```python
 import json, subprocess
@@ -361,7 +359,7 @@ Two rules:
 ### Create the documents
 
 Queries, charts and dashboards are plain documents. Each requires exactly one field:
-`workbook`. Permission follows the workbook — write on the workbook is write on its
+`workbook`. Permission follows the workbook. Write on the workbook is write on its
 contents.
 
 Create them in dependency order, and keep the name the site returns for each:
@@ -372,32 +370,31 @@ Create them in dependency order, and keep the name the site returns for each:
    `chart_type` and `config`. The chart creates its own empty `data_query` on save.
 3. **Dashboards.** Set `workbook`, `title` and `items`. Chart items name the chart's
    real document name. Filter links name the real query name. Author `chart` and `filter`
-   items only — never a `text` item.
+   items only. Never a `text` item.
 
-**Write a whole `items` array exactly once, at creation.** After that the user owns the layout: they
+**Write a whole `items` array exactly once, at creation.** After that the user owns the layout. They
 move charts, resize them and add filters, and all of it lives in the same array. A second run that
-writes the array your script computed destroys every one of those edits without a word. Every later
-change is a merge into the live `items`. `reference/dashboards.md` gives the merge, and
+writes the array your script computed destroys those edits without a word. Every later change is a
+merge into the live `items`. `reference/dashboards.md` gives the merge.
 `examples/build_workbook.py` ships it as `patch_dashboard()`.
 
-This is the reason a build script must not rebuild the dashboard to add one chart. Add the chart,
-then merge one item.
+So a build script must not rebuild the dashboard to add one chart. Add the chart. Merge one item.
 
 ```sh
 frappectl -s $SITE doc create "Insights Query v3" --input /tmp/query.json
 ```
 
 You use real document names throughout, so a reference either resolves or fails
-loudly. There is no name remapping and nothing is dropped silently.
+loudly. There is no name remapping. Nothing drops silently.
 
 ### Choose the data store or the live connection
 
 A query reads from the data store when `use_live_connection: 0`, and from the source
 database when it is `1`. The flag is per query. Every table in one query resolves the
-same way — you cannot mix.
+same way. You cannot mix.
 
-Prefer the data store. Return times are much better, and a table you query gets stored,
-so the next run is faster still.
+Prefer the data store. It returns faster. A table you query gets stored, so the next
+run is faster still.
 
 Check what is stored before you choose:
 
@@ -409,8 +406,8 @@ frappectl -s $SITE method call insights.api.data_store.get_data_store_tables \
 If most of the tables your query needs are stored, set `use_live_connection: 0` and
 take the rest with them.
 
-**The first run then returns zero rows, and this is the one case where an empty result
-is a failure.** A table that is not stored yet does not fail the query. Insights
+**The first run then returns zero rows. This is the one case where an empty result is a
+failure.** A table that is not stored yet does not fail the query. Insights
 enqueues the import and substitutes an empty table with the right schema. So:
 
 1. Before you set `use_live_connection: 0`, list which of your tables are missing from
@@ -447,11 +444,11 @@ frappectl -s $SITE method call execute \
   mean the query compiled and ran.
 - A failure here is often opaque. Run it again with `--debug` and read the server
   messages.
-- An empty `rows` is not a failure by itself, **except** on a data store query whose
-  tables are not all stored yet — that one fails the check. Compare the query's tables
-  against `get_data_store_tables` and decide, do not warn and pass. See section 5.
-  Always say the row count. Never accept zero silently.
-- `page_size=5` is enough. You are checking that it runs, not reading the data.
+- An empty `rows` is not a failure by itself. It **is** a failure on a data store query
+  whose tables are not all stored yet. Compare the query's tables against
+  `get_data_store_tables` and decide. Do not warn and pass. See section 5. Always say
+  the row count. Never accept zero silently.
+- `page_size=5` is enough. You check that the query runs, not what the data says.
 
 ### Check 2 — every chart's columns exist
 
@@ -461,7 +458,7 @@ creation, so executing it proves nothing.
 Verify a chart against its base query:
 
 1. Take `columns` from check 1 for the chart's `query`.
-2. Read every column name the chart's `config` names — dimensions, measures and chart
+2. Read every column name the chart's `config` names: dimensions, measures and chart
    filters.
 3. Every one must appear in `columns`. Report any that does not, and name the columns
    the query does have.
@@ -469,11 +466,11 @@ Verify a chart against its base query:
 A count measure and an expression measure name no column. Skip them.
 
 Then check the sort. `order_by` names are **post-aggregation** names, so they must match
-what the chart's own aggregation produces: a measure by its `measure_name`, a dimension
-by its `dimension_name or column_name`. A sort the chart cannot resolve is dropped, and
-the chart renders in an arbitrary order — a ranking or a time series then reads as
-wrong data. Skip this on a `Table` with non-empty `columns`, which makes its column
-names out of the data.
+what the chart's aggregation produces: a measure by its `measure_name`, a dimension by
+its `dimension_name or column_name`. Insights drops a sort the chart cannot resolve, and
+the chart renders in an arbitrary order. A ranking or a time series then reads as wrong
+data. Skip this on a `Table` with non-empty `columns`, which makes its column names out
+of the data.
 
 This proves the column exists. It does not prove it is the right column, or that the
 number is right. Check 4 does that.
@@ -485,8 +482,8 @@ For each item in `items`:
 - a `chart` item names a chart document that exists in this workbook
 - a `filter` item's `links` name charts that exist, and each link's query segment names
   a query whose `columns` from check 1 contain the column
-- **that query is in the linked chart's chain** — its base query, or a query the base
-  query reads from. The filter is appended to the query it names, so a link to a query
+- **that query is in the linked chart's chain**: its base query, or a query the base
+  query reads from. Insights appends the filter to the query it names. A link to a query
   the chart does not read from passes every other check and does nothing.
 - every item has a `layout` with an `i`, and no two share it. The grid sums
   `layout.y + layout.h` over every item, so one item without a layout breaks the whole
@@ -495,26 +492,26 @@ For each item in `items`:
 ### Check 4 — the numbers are right, not just the columns
 
 Checks 1 to 3 prove the workbook compiles. They do not prove it says anything true. Two wrong charts
-have shipped through a clean run of checks 1 to 3, and only reproducing the numbers caught them.
+shipped through a clean run of checks 1 to 3. Only a reproduction of the numbers caught them.
 
-For every chart, build its aggregation in the scratch query — the same dimensions, the same measures,
-the same filters — and read the rows. Then look at four things.
+For every chart, build its aggregation in the scratch query: the same dimensions, the same measures,
+the same filters. Read the rows. Then look at four things.
 
 1. **Does the number match the chart's own claim?** An average over a group is the classic trap: a
    count of distinct dates divided by a site count is not the average days per site. Compute the
    measure a second way and compare.
-2. **How many values does each dimension have?** Count it — `summarize` with `count_distinct` in the
-   scratch query. One value is not a split at all: the column does not carry what you assumed, and
-   the split lives on another column. Hundreds of values is the wrong chart type. "Making it
+2. **How many values does each dimension have?** Count it with `summarize` and `count_distinct` in
+   the scratch query. One value is not a split at all. The column does not carry what you assumed,
+   and the split lives on another column. Hundreds of values is the wrong chart type. "Making it
    readable" in `charts.md` maps the count to the chart.
 3. **Is the signal present across the whole range?** Group the measure by month and read the series.
-   A signal that starts partway through is not growth — it is the date it was first recorded. A
+   A signal that starts partway through is not growth. It is the date somebody first recorded it. A
    signal that stops is retired, not fallen. Both read as a trend and are not one.
 4. **Is the last period complete?** The newest bucket is usually a partial day, week or month, and
    it always draws as a fall. Confirm the maximum timestamp in the data before you call a drop real.
 
 Report the row counts and the headline numbers in your reply. Any date cut, any retired signal, any
-gap in the data goes in the reply too — not in a dashboard text item, and not in a chart title.
+gap in the data goes in the reply too. Do not put it in a dashboard text item or a chart title.
 
 When a check fails, fix the chart. Do not describe the fault and leave it.
 
@@ -542,8 +539,8 @@ Change only the field you mean to change. Preserve everything else. `doc update`
 on a concurrent edit. That is correct behaviour, so read the error before you reach for
 `--force`.
 
-`--force` is not the answer to a dashboard you are about to overwrite either. The optimistic check
-compares `modified`, and you read the document a moment before you wrote it, so it passes. It guards
+`--force` is not the answer to a dashboard you are about to overwrite either. The check compares
+`modified`. You read the document a moment before you write it, so the check passes. It guards
 against an edit made *during* your write, not against one made since your last run. Only the merge in
 `reference/dashboards.md` protects the user's edits.
 
@@ -575,7 +572,7 @@ envelope and its name remapping.
 It returns the new workbook name and a `names` map from your internal names to the
 real document names.
 
-A reference the importer cannot resolve is dropped, not reported. Run the section 6
+The importer drops a reference it cannot resolve, and reports nothing. Run the section 6
 checks after any import.
 
 ## Commands
@@ -602,7 +599,7 @@ exists.
 | Import a workbook JSON | `api method/insights.api.workbooks.import_workbook --input <file>` |
 
 `get_distinct_column_values` returns at most 20 values, and it runs on a **query document**, not
-on a table. There is no endpoint that samples a raw table. Build a scratch query first — see
+on a table. There is no endpoint that samples a raw table. Build a scratch query first. See
 "Sample with a scratch query" in section 5.
 
 `-F key=value` sends a typed scalar. `-F 'key:=<json>'` sends raw JSON. `--input <file>`

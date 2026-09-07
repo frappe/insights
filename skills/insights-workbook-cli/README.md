@@ -1,7 +1,7 @@
 # insights-workbook-cli
 
 A skill that lets a coding agent build, edit and explain Frappe Insights v3 workbooks on
-a live site over `frappectl`. It needs no Insights source and nothing installed on the
+a live site over `frappectl`. It needs no Insights source and installs nothing on the
 site.
 
 `SKILL.md` is the procedure. `reference/` is the workbook contract.
@@ -9,13 +9,13 @@ site.
 
 ## Install
 
-**Give this page to your agent and ask it to set the skill up.** The steps below are
-written for it to follow. Do them by hand if you prefer.
+**Give this page to your agent. Ask it to set the skill up.** The steps below are written
+for the agent to follow. Do them by hand if you prefer.
 
 ### 1. Get the skill
 
-One directory. Each agent gets a pointer to it, not a copy, so `git pull` is the update
-and the skill can never drift from the contract it documents.
+One directory. Each agent gets a pointer to it, not a copy. So `git pull` is the update,
+and the skill cannot drift from the contract it documents.
 
 ```sh
 git clone https://github.com/frappe/insights
@@ -24,7 +24,7 @@ SKILL=$PWD/insights/skills/insights-workbook-cli
 
 ### 2. Point the agent at it
 
-Find the agent's skills directory and link the skill into it:
+Find the agent's skills directory. Link the skill into it:
 
 | Agent | Directory |
 |---|---|
@@ -54,11 +54,11 @@ uv tool install frappectl
 frappectl auth login https://your-insights-site --name your-site
 ```
 
-The profile's user is who the agent acts as. It sees the workbooks, data sources and
-tables that user can see, and nothing else. To let the agent do less, give it a profile
-for a user who can do less.
+The agent acts as the profile's user. It sees the workbooks, data sources and tables that
+user can see, and nothing else. To let the agent do less, give it a profile for a user who
+can do less.
 
 ## Check it worked
 
-Ask the agent to list the workbooks on the site. It should reach for the skill, and the
-first call it makes should be `frappectl -s <your-site> auth whoami`.
+Ask the agent to list the workbooks on the site. It should use the skill. Its first call
+should be `frappectl -s <your-site> auth whoami`.
