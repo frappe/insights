@@ -57,6 +57,137 @@ def execute(query_name, page_size=5):
 
 
 # --------------------------------------------------------------------------
+# The scratch query. There is no endpoint that samples a raw table, so every
+# ad-hoc question runs through one throwaway query in the workbook. Delete it
+# before you report -- drop_scratch().
+# --------------------------------------------------------------------------
+
+SCRATCH_TITLE = "Scratch — working query, safe to delete"
+_scratch = None
+
+
+def scratch():
+    global _scratch
+    if _scratch is None:
+        _scratch = create(
+            "Insights Query v3",
+            {
+                "title": SCRATCH_TITLE,
+                "use_live_connection": 0,
+                "is_builder_query": 1,
+                "is_native_query": 0,
+                "is_script_query": 0,
+                "operations": [],
+            },
+        )
+    return _scratch
+
+
+def probe(operations, page_size=50, use_live_connection=0):
+    """Run an ad-hoc pipeline and return its rows. This is check 4's instrument."""
+    name = scratch()
+    call(
+        "doc",
+        "update",
+        "Insights Query v3",
+        name,
+        stdin=json.dumps({"operations": operations, "use_live_connection": use_live_connection}),
+    )
+    return execute(name, page_size=page_size)["rows"]
+
+
+def distinct_values(query_name, column_name, limit=20):
+    """The real values of a column. Runs on a query, not on a table."""
+    return call(
+        "method",
+        "call",
+        "get_distinct_column_values",
+        "--doctype",
+        "Insights Query v3",
+        "--name",
+        query_name,
+        "-F",
+        f"column_name={column_name}",
+        "-F",
+        f"limit={limit}",
+    )
+
+
+def drop_scratch():
+    global _scratch
+    if _scratch:
+        call("doc", "delete", "Insights Query v3", _scratch)
+        print(f"scratch deleted {_scratch}")
+        _scratch = None
+
+
+# --------------------------------------------------------------------------
+# Dashboard edits. The site owns the layout, so a change is a merge into the
+# live `items`, never a fresh array. See reference/dashboards.md.
+# --------------------------------------------------------------------------
+
+
+def item_key(item):
+    """What identifies an item across runs. The UI writes its own `layout.i`."""
+    if item.get("type") == "chart":
+        return ("chart", item.get("chart"))
+    if item.get("type") == "filter":
+        return ("filter", item.get("filter_name"))
+    return ("item", (item.get("layout") or {}).get("i"))
+
+
+def patch_dashboard(name, upsert=(), drop=()):
+    """Merge items into a live dashboard.
+
+    A matched item keeps its live `layout` -- position and size belong to whoever last
+    dragged it -- and merges `links` key by key. An unmatched item is appended below the
+    current bottom. Everything else on the dashboard is left exactly as it is.
+
+    `drop` takes item_key() tuples. Pass one only when the user asked for that removal.
+    """
+    doc = call("doc", "get", "Insights Dashboard v3", name)
+    doc = doc.get("data", doc)
+    items = doc["items"]
+    items = json.loads(items) if isinstance(items, str) else items
+
+    live = {item_key(item): item for item in items}
+    used_ids = {(i.get("layout") or {}).get("i") for i in items}
+    max_y = max((i["layout"]["y"] + i["layout"]["h"] for i in items if i.get("layout")), default=0)
+
+    for new in upsert:
+        key = item_key(new)
+        old = live.get(key)
+        if old is None:
+            item = dict(new)
+            layout = dict(item.get("layout") or {})
+            item_id = layout.get("i") or f"{key[0]}-{key[1]}"
+            while item_id in used_ids:
+                item_id += "-x"
+            layout["i"] = item_id
+            used_ids.add(item_id)
+            layout.setdefault("x", 0)
+            layout.setdefault("y", max_y)
+            layout.setdefault("w", 10)
+            layout.setdefault("h", 8)
+            item["layout"] = layout
+            max_y = layout["y"] + layout["h"]
+            items.append(item)
+            live[key] = item
+        else:
+            links = dict(old.get("links") or {})
+            links.update(new.get("links") or {})
+            old.update({k: v for k, v in new.items() if k != "layout"})
+            if links:
+                old["links"] = links
+
+    if drop:
+        items = [i for i in items if item_key(i) not in set(drop)]
+
+    call("doc", "update", "Insights Dashboard v3", name, stdin=json.dumps({"items": items}))
+    print(f"dashboard {name} merged, {len(items)} items")
+
+
+# --------------------------------------------------------------------------
 # Build. Queries first, then charts, then dashboards -- each step uses the
 # real document names the previous step returned.
 # --------------------------------------------------------------------------
@@ -132,6 +263,8 @@ def build():
         },
     )
 
+    # The whole `items` array is written exactly once, here. Every later change goes
+    # through patch_dashboard(), so the user's own layout edits survive.
     create(
         "Insights Dashboard v3",
         {
@@ -157,7 +290,8 @@ def build():
 
 
 # --------------------------------------------------------------------------
-# Verify. The three checks from SKILL.md section 6, as an exit code.
+# Verify. Checks 1 to 3 from SKILL.md section 6, as an exit code. Check 4 -- are the
+# numbers right -- runs through probe() and needs your judgement on the result.
 # --------------------------------------------------------------------------
 
 
@@ -269,6 +403,10 @@ def verify():
         items = json.loads(d.get("items") or "[]")
         seen = set()
         for item in items:
+            if item.get("type") == "text":
+                failures.append(
+                    f"dashboard {d['name']} has a text item -- put that prose in the reply instead"
+                )
             i = item.get("layout", {}).get("i")
             if i in seen:
                 failures.append(f"dashboard {d['name']} has two items with layout.i {i!r}")
@@ -291,6 +429,11 @@ def verify():
                         f"dashboard {d['name']} filter {item.get('filter_name')!r} links "
                         f"`{query}`.`{column}`, which that query does not have"
                     )
+
+    # Working papers do not ship.
+    for q in queries:
+        if (q.get("title") or "").startswith("Scratch"):
+            failures.append(f"scratch query {q['name']} ({q['title']!r}) is still in the workbook")
 
     if failures:
         print("\nFAILED")

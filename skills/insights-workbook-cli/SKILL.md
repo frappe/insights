@@ -132,7 +132,8 @@ When more than one column could serve a metric, name the candidates and ask whic
 Never resolve that ambiguity alone. Never carry an unasked choice into the closing
 summary.
 
-Ask before you sample real values from a column, and wait for the answer.
+Ask before you sample real values from a column, and wait for the answer. Sampling needs a scratch
+query, so it is a write — see section 5.
 
 **Stop here.** Post the scope block, end your turn, and wait for the user's reply.
 Agree the scope with the user, not with yourself.
@@ -180,6 +181,32 @@ def call(*args):
 Keep the script a build tool. One file, standard library only, no abstraction the
 workbook did not ask for.
 
+### Sample with a scratch query
+
+There is no endpoint that reads the real values of a raw table column. The only sampler,
+`get_distinct_column_values`, runs on a query document.
+
+So make one. Create a query in the target workbook, titled `Scratch — <what you are asking>`, whose
+pipeline is the source table and nothing else. Then ask it:
+
+```sh
+frappectl -s $SITE method call get_distinct_column_values \
+  --doctype "Insights Query v3" --name <scratch> -F column_name=status -F limit=20
+```
+
+The same query answers any question you can express as a pipeline. Rewrite its `operations`,
+`execute` it, read the rows, rewrite again. That is how you count a value, check a date range, or
+reproduce a chart's aggregation without touching a real query.
+
+Two rules:
+
+- **One scratch query per session.** Reuse it. Do not leave a trail.
+- **Delete it before you report.** A `Scratch —` query left in the workbook is your working paper in
+  the user's workbook. `doc delete "Insights Query v3" <scratch>`.
+
+`examples/build_workbook.py` ships this as `scratch()`, `probe()`, `distinct_values()` and
+`drop_scratch()`. Its verify step fails when a `Scratch` query is still in the workbook.
+
 ### Create the documents
 
 Queries, charts and dashboards are plain documents. Each requires exactly one field:
@@ -193,7 +220,17 @@ Create them in dependency order, and keep the name the site returns for each:
 2. **Charts.** Set `workbook`, `title`, `query` (the query's real document name),
    `chart_type` and `config`. The chart creates its own empty `data_query` on save.
 3. **Dashboards.** Set `workbook`, `title` and `items`. Chart items name the chart's
-   real document name. Filter links name the real query name.
+   real document name. Filter links name the real query name. Author `chart` and `filter`
+   items only — never a `text` item.
+
+**Write a whole `items` array exactly once, at creation.** After that the user owns the layout: they
+move charts, resize them and add filters, and all of it lives in the same array. A second run that
+writes the array your script computed destroys every one of those edits without a word. Every later
+change is a merge into the live `items`. `reference/dashboards.md` gives the merge, and
+`examples/build_workbook.py` ships it as `patch_dashboard()`.
+
+This is the reason a build script must not rebuild the dashboard to add one chart. Add the chart,
+then merge one item.
 
 ```sh
 frappectl -s $SITE doc create "Insights Query v3" --input /tmp/query.json
@@ -279,8 +316,8 @@ Verify a chart against its base query:
 
 A count measure and an expression measure name no column. Skip them.
 
-This proves the column exists. It does not prove it is the right column. That still
-needs your judgement.
+This proves the column exists. It does not prove it is the right column, or that the
+number is right. Check 4 does that.
 
 ### Check 3 — every dashboard reference resolves
 
@@ -290,6 +327,31 @@ For each item in `items`:
 - a `filter` item's `links` name charts that exist, and each link's query segment names
   a query in that chart's chain, whose `columns` from check 1 contain the column
 - no two items share `layout.i`
+
+### Check 4 — the numbers are right, not just the columns
+
+Checks 1 to 3 prove the workbook compiles. They do not prove it says anything true. Two wrong charts
+have shipped through a clean run of checks 1 to 3, and only reproducing the numbers caught them.
+
+For every chart, build its aggregation in the scratch query — the same dimensions, the same measures,
+the same filters — and read the rows. Then look at four things.
+
+1. **Does the number match the chart's own claim?** An average over a group is the classic trap: a
+   count of distinct dates divided by a site count is not the average days per site. Compute the
+   measure a second way and compare.
+2. **Does every dimension have more than one value?** `get_distinct_column_values` on the dimension
+   column answers it. One value makes a donut with one slice and a bar with one bar. That means the
+   column does not carry the split you assumed, and the split lives on another column.
+3. **Is the signal present across the whole range?** Group the measure by month and read the series.
+   A signal that starts partway through is not growth — it is the date it was first recorded. A
+   signal that stops is retired, not fallen. Both read as a trend and are not one.
+4. **Is the last period complete?** The newest bucket is usually a partial day, week or month, and
+   it always draws as a fall. Confirm the maximum timestamp in the data before you call a drop real.
+
+Report the row counts and the headline numbers in your reply. Any date cut, any retired signal, any
+gap in the data goes in the reply too — not in a dashboard text item, and not in a chart title.
+
+When a check fails, fix the chart. Do not describe the fault and leave it.
 
 ## 7. Read, update and delete
 
@@ -314,6 +376,11 @@ The JSON field per doctype is `operations` on `Insights Query v3`, `config` on
 Change only the field you mean to change. Preserve everything else. `doc update` fails
 on a concurrent edit. That is correct behaviour, so read the error before you reach for
 `--force`.
+
+`--force` is not the answer to a dashboard you are about to overwrite either. The optimistic check
+compares `modified`, and you read the document a moment before you wrote it, so it passes. It guards
+against an edit made *during* your write, not against one made since your last run. Only the merge in
+`reference/dashboards.md` protects the user's edits.
 
 Delete:
 
@@ -359,14 +426,16 @@ exists.
 | List tables | `method call insights.api.data_sources.get_data_source_tables` (`data_source`, `search_term`, `limit`) |
 | Table columns and types | `method call insights.api.data_sources.get_data_source_table_columns` (`data_source`, `table_name`) |
 | Table row count | `method call insights.api.data_sources.get_data_source_table_row_count` (`data_source`, `table_name`) |
-| Real values of a column | `method call insights.api.data_sources.fetch_column_values` (`data_source`, `table`, `column`, `search_text`) |
+| Real values of a column | `method call get_distinct_column_values --doctype "Insights Query v3" --name <n>` (`column_name`, `search_term`, `limit`, `active_operation_idx`) |
 | Known joins between two tables | `method call insights.api.data_sources.get_table_links` (`data_source`, `left_table`, `right_table`) |
 | Stored tables | `method call insights.api.data_store.get_data_store_tables` (`data_source`, `search_term`, `limit`) |
 | Run a saved query | `method call execute --doctype "Insights Query v3" --name <n> -F page_size=5` |
 | Create, read, patch, delete content | `doc create` / `doc get` / `doc list` / `doc update` / `doc delete` |
 | Import a workbook JSON | `api method/insights.api.workbooks.import_workbook --input <file>` |
 
-`fetch_column_values` returns at most 20 values. Use `search_text` to look for one.
+`get_distinct_column_values` returns at most 20 values, and it runs on a **query document**, not
+on a table. There is no endpoint that samples a raw table. Build a scratch query first — see
+"Sample with a scratch query" in section 5.
 
 `-F key=value` sends a typed scalar. `-F 'key:=<json>'` sends raw JSON. `--input <file>`
 sends a whole JSON body, which is what a document and a JSON field patch need.

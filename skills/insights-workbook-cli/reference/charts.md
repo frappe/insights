@@ -9,6 +9,28 @@ that aggregation. That is why base queries stay per-row.
 
 Chart types: `Number`, `Bar`, `Line`, `Row`, `Donut`, `Funnel`, `Table`, `Map`, `Bubble`, `Sankey`.
 
+## Titles
+
+The title is the only label the reader gets, and it is the dashboard's own structure — there are no
+headings. So the title has to name the chart on its own.
+
+State the measure, then the grain: "Revenue, per Month". "Sites That Published, Template Against the
+Rest". "Top 10 Customers by Order Value".
+
+**Never put a date, a date range or an era in a title.** Not "Revenue Since 2026-07-08", not "Signups,
+Last 6 Weeks", not "Q3". Three reasons, and each one alone is enough:
+
+- The dashboard filter owns the window, and the user changes it. The title then lies.
+- A relative window ("Last 6 Weeks") is true on the day you write it and wrong every day after.
+- A date you hardcode into a query filter is a fact about the data, not about the chart. It belongs
+  in your reply to the user, where you can explain it.
+
+The same goes for a count you measured today. "Top 34 Template Groups" becomes wrong when the 35th
+appears. Write "Top Template Groups".
+
+Say the era in your reply instead: "the age charts start at 2026-07-08, the first blank-start event,
+because a blank start leaves no trace before it."
+
 Measures and dimensions in a config use the same shapes as in the operations section, and reference
 columns of the **base query's result**, not of the source table. Expression measures work anywhere a
 measure does.
@@ -45,7 +67,8 @@ Keys on every chart config:
 ```
 
 - **The chart title is not rendered on Number cards** — `measure_name` IS the visible label, so make
-  it human-readable ("Avg Invoice Value", not `avg_invoice_value`).
+  it human-readable ("Avg Invoice Value", not `avg_invoice_value`). The no-dates rule applies to a
+  `measure_name` too.
 - The card shows the **last row's** value. No `date_column` gives one aggregated row, i.e. the grand
   total (what a snapshot card wants). With a `date_column` it shows the latest period plus the delta
   against the previous one.

@@ -73,7 +73,8 @@ Deleting a workbook deletes its queries, charts, dashboards and folders.
 }
 ```
 
-- `items` holds chart, filter and text items. See `dashboards.md` for the layout grid and the
+- `items` holds chart and filter items. The model has a third type, `text`; never author it.
+  See `dashboards.md` for the layout grid, the merge rule and the
   filter link syntax.
 - A chart item names the chart's real document name. A filter link names the real query name in
   its `` `query`.`column` `` value.

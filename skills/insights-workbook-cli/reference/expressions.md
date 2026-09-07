@@ -61,7 +61,36 @@ Numeric: `abs`, `round(col, decimals)`, `floor`, `ceil`, `create_buckets(col, n)
 
 String: `lower`, `upper`, `concat(col, ...)`, `replace(col, old, new)`, `find(col, sub)`,
 `substring(col, start, length)`, `contains(col, sub)`, `not_contains`, `starts_with`, `ends_with`,
-`length`, `textsplit(col, delim, max_splits)`, `json_extract(col, *fields)`.
+`length`, `textsplit(col, delim, max_splits)`.
+
+## JSON columns
+
+`json_value(col, path, type)` reads **one** value out of a JSON column and gives you a normal column.
+It is the one a `mutate` needs.
+
+```python
+json_value(properties, 'template_group')                # string, the default
+json_value(properties, 'address.city')                  # dots reach a nested key
+json_value(properties, 'items.0.name')                  # a number picks out of a list
+json_value(payload, 'amount', 'float')
+json_value(payload, 'signed_up_at', 'timestamp')
+```
+
+`type` is one of `string`, `int`, `float`, `bool`, `date`, `timestamp`. Name it — the value comes
+back as a string otherwise, and a chart cannot sum a string. A missing key or a JSON null gives an
+empty value, and a malformed value gives an empty value rather than a failed query.
+
+The value works anywhere: in a filter, in a summarize, inside another expression.
+
+`json_extract(col, *fields)` is a different thing. It expands into **several** columns at once and
+samples 50 rows to guess each type. A `mutate` takes one expression and binds one name, so
+`json_extract` inside a `mutate` fails with:
+
+```
+ValueError: not enough values to unpack (expected 2, got 1)
+```
+
+Use `json_value`, once per field you need.
 
 Date/time: `year`, `quarter`, `month`, `week_of_year`, `day`, `day_of_week`, `day_name`, `hour`,
 `minute`, `second`, `format_date(col, fmt)`, `date_diff(a, b, unit='day')`, `date_add(col, n, unit)`,
