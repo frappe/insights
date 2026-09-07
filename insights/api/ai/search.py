@@ -88,7 +88,7 @@ def search_columns(term: str, data_source: str | None = None, limit: int = 100) 
 
     needle = term.lower()
     matches = []
-    for table in get_stored_columns(data_source).values():
+    for table in get_stored_columns(data_source, contains=needle).values():
         for column in table.columns:
             name = column.get("name") or ""
             if needle not in name.lower():

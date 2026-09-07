@@ -231,12 +231,19 @@ def store_columns(data_source: str, table_name: str, schema: ibis.Schema) -> Non
         frappe.log_error("Failed to store table columns")
 
 
-def get_stored_columns(data_source: str | None = None, user: str | None = None) -> dict[str, frappe._dict]:
+def get_stored_columns(
+    data_source: str | None = None, user: str | None = None, contains: str | None = None
+) -> dict[str, frappe._dict]:
     """Stored columns of every table the caller may read, keyed by table document name.
 
     Each value carries `data_source`, `table`, `label` and `columns`, where `columns`
     is narrowed to what the caller may read. A table synced before the columns were
     stored is left out - it has nothing to report.
+
+    `contains` drops a table whose stored list does not hold the string at all, before
+    the permission checks run. A search then costs what it matches rather than what the
+    instance holds. The test reads types as well as names, so it over-includes and never
+    under-includes; the caller narrows the result either way.
     """
     tables = frappe.get_list(
         "Insights Table v3",
@@ -245,12 +252,16 @@ def get_stored_columns(data_source: str | None = None, user: str | None = None) 
         limit=0,
     )
 
+    needle = (contains or "").lower()
+
     # insights_team imports this module, so its import stays inside the function
     from insights.insights.doctype.insights_team.insights_team import check_table_permission
 
     permitted = {}
     for table in tables:
         if not table.columns:
+            continue
+        if needle and needle not in table.columns.lower():
             continue
         if not check_table_permission(table.data_source, table.table, user=user, raise_error=False):
             continue
