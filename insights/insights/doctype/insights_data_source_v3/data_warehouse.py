@@ -22,7 +22,7 @@ from ibis.expr.types import Expr, Table
 
 import insights
 from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import (
-    BACKGROUND_WRITE_LOCK_TIMEOUT,
+    IMPORT_WRITE_LOCK_TIMEOUT,
     WRITE_LOCK_TIMEOUT,
     local_duckdb_write_connection,
     local_duckdb_write_lock,
@@ -208,7 +208,7 @@ class WarehouseTableWriter:
 
         total_rows = 0
         try:
-            with insights.warehouse.get_write_connection(timeout=BACKGROUND_WRITE_LOCK_TIMEOUT) as db:
+            with insights.warehouse.get_write_connection(timeout=IMPORT_WRITE_LOCK_TIMEOUT) as db:
                 self._log(f"Committing {len(self._parquet_files)} parquet files to '{self.table_name}'")
 
                 with suppress(CatalogException):
@@ -376,7 +376,7 @@ class WarehouseTable:
 
         insights.create_toast(
             f"The last import of {self.table_name} failed, so it has no rows yet. "
-            "Check the import logs of the table in the data store.",
+            "A fresh import is queued. Check the table's import logs in the data store.",
             title="Import Failed",
             type="error",
             duration=7,
@@ -1144,15 +1144,11 @@ def compact_warehouse() -> tuple[int, int] | None:
     folder = os.path.dirname(path)
     new_path = f"{path}.compact"
 
-    deadline = time.monotonic() + CLEANUP_LOCK_TIMEOUT
-    with local_duckdb_write_lock(path, cache_key=WAREHOUSE_DB_NAME, timeout=CLEANUP_LOCK_TIMEOUT):
+    with local_duckdb_write_lock(
+        path, cache_key=WAREHOUSE_DB_NAME, timeout=CLEANUP_LOCK_TIMEOUT
+    ) as lock_timeout:
         # ATTACH-ing the new file needs the warehouse folder allowed, not tmp.
-        db = open_local_duckdb(
-            path,
-            read_only=False,
-            allowed_dir=folder,
-            lock_timeout=max(deadline - time.monotonic(), 0),
-        )
+        db = open_local_duckdb(path, read_only=False, allowed_dir=folder, lock_timeout=lock_timeout)
         try:
             if get_free_block_ratio(db) < COMPACT_MIN_FREE_RATIO:
                 return None

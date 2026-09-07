@@ -22,7 +22,7 @@ from ibis.backends.duckdb import Backend as DuckDBBackend
 # a click must not hold a web worker while readers come and go, so the default
 # stays short. A writer in a background job can afford to sit it out, and asks.
 WRITE_LOCK_TIMEOUT = 30
-BACKGROUND_WRITE_LOCK_TIMEOUT = 5 * 60
+IMPORT_WRITE_LOCK_TIMEOUT = 5 * 60
 WRITE_LOCK_RETRY_INTERVAL = 1
 
 
@@ -95,23 +95,29 @@ def local_duckdb_write_lock(
     path: str,
     cache_key: str,
     timeout: int = WRITE_LOCK_TIMEOUT,
-) -> Generator[None, None, None]:
+) -> Generator[float, None, None]:
     """Serialize write access to a local DuckDB file.
 
     Holds a file-level lock and evicts the cached read-only connection for
     cache_key, so the caller is free to open the file for writing — or to
     replace the file altogether, as the warehouse compaction does.
 
+    Yields whatever is left of timeout once the lock is in hand. Waiting off
+    other writers and waiting off readers come out of the one budget, and the
+    caller does not have to work that out for itself.
+
     Args:
         path: Absolute path to the .duckdb file.
         cache_key: The key under which the read connection is cached in
             insights.db_connections (typically the data source name).
-        timeout: Seconds to wait for the file lock before giving up.
+        timeout: Seconds to spend reaching a writable file, lock and readers
+            together.
     """
     from frappe.utils.synchronization import filelock
 
     import insights
 
+    deadline = time.monotonic() + timeout
     lock_name = f"insights_duckdb_write_{frappe.scrub(os.path.basename(path))}"
     with filelock(lock_name, timeout=timeout):
         with suppress(Exception):
@@ -119,7 +125,7 @@ def local_duckdb_write_lock(
             if cached:
                 cached.disconnect()
 
-        yield
+        yield max(deadline - time.monotonic(), 0)
 
 
 @contextmanager
@@ -144,17 +150,15 @@ def local_duckdb_write_connection(
         cache_key: The key under which the read connection is cached in
             insights.db_connections (typically the data source name).
         allowed_dir: Directory to allow external file access from.
-        timeout: Total seconds to spend obtaining the write connection. The file
-            lock holds off other writers, the open waits out the readers, and
-            both come out of this one budget.
+        timeout: Total seconds to spend obtaining the write connection, lock
+            and readers together.
     """
-    deadline = time.monotonic() + timeout
-    with local_duckdb_write_lock(path, cache_key, timeout=timeout):
+    with local_duckdb_write_lock(path, cache_key, timeout=timeout) as lock_timeout:
         db = open_local_duckdb(
             path,
             read_only=False,
             allowed_dir=allowed_dir,
-            lock_timeout=max(deadline - time.monotonic(), 0),
+            lock_timeout=lock_timeout,
         )
         try:
             yield db
