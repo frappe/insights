@@ -34,6 +34,10 @@ and those paths sit right there.
 A local path is an accident of one developer's setup. What you learn there does not
 hold on the site the workbook has to run on, and a workbook built on it breaks there.
 
+**Assume you do not have the Insights source, because most users do not.** Nothing in this skill
+needs it. Every fact about the site — its tables, its columns, its stored data, its function library
+— is a call. When you want to know whether something exists, ask the site.
+
 ### When a call fails and the error names no cause
 
 Insights returns some failures as an exception type and nothing more. An Insights user
@@ -89,8 +93,23 @@ Read the rest when the plan needs it:
 | `reference/workbook-format.md` | only when importing a workbook JSON the user gave you |
 
 Plan only with the operation types, chart types and functions these files list. Never
-invent one. The shipped templates in `insights/workbook_templates/*/workbook.json` are
-worked examples.
+invent one.
+
+The site itself is the authority on the function library, and it is one call away:
+
+```sh
+frappectl -s $SITE method call insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_list
+frappectl -s $SITE method call insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_description \
+  -F funcName=json_value
+```
+
+`get_function_description` returns the signature and the docstring, which is where a function says
+what it actually does. Read it before you use a function these files do not cover, and before you
+trust one they describe in a line. The parameter is `funcName`, camelCase — `function` gives nothing
+back.
+
+For worked examples, read what the site already has (section 3). A workbook the site imported from a
+template is a good one: `doc list "Insights Workbook" --fields name,title,from_template --all`.
 
 ## 3. Reuse what the user already has
 
@@ -429,6 +448,8 @@ exists.
 | Real values of a column | `method call get_distinct_column_values --doctype "Insights Query v3" --name <n>` (`column_name`, `search_term`, `limit`, `active_operation_idx`) |
 | Known joins between two tables | `method call insights.api.data_sources.get_table_links` (`data_source`, `left_table`, `right_table`) |
 | Stored tables | `method call insights.api.data_store.get_data_store_tables` (`data_source`, `search_term`, `limit`) |
+| Every expression function | `method call insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_list` |
+| One function's signature and docstring | `method call insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_description` (`funcName`) |
 | Run a saved query | `method call execute --doctype "Insights Query v3" --name <n> -F page_size=5` |
 | Create, read, patch, delete content | `doc create` / `doc get` / `doc list` / `doc update` / `doc delete` |
 | Import a workbook JSON | `api method/insights.api.workbooks.import_workbook --input <file>` |

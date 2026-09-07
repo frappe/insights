@@ -6,8 +6,10 @@ workbook, so it cannot add to one that exists.
 
 `import_workbook` accepts this envelope and creates the workbook and all its contents in one call,
 remapping the internal names you choose to fresh doc names — including chart-to-query references,
-query-to-query references, and dashboard filter links. The shipped templates in
-`insights/workbook_templates/*/workbook.json` are canonical examples.
+query-to-query references, and dashboard filter links.
+
+A workbook the site imported from a template is a canonical example of the envelope. Find one with
+`doc list "Insights Workbook" --fields name,title,from_template --all`.
 
 It returns the other half of that remapping:
 

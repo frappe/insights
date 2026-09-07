@@ -112,3 +112,21 @@ Window (advanced): `row_number()`, `previous_value(col, group_by, order_by)`, `n
 `is_last_row(...)`, `filter_first_row(group_by, order_by, sort_order)`.
 
 Constants: `literal(value)` (alias `constant`), or `ibis.literal(value)`.
+
+## The site holds the real list
+
+This page is a working subset, and the site you are on may run a newer Insights than it was written
+against. Ask the site rather than guess:
+
+```sh
+frappectl -s $SITE method call insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_list
+frappectl -s $SITE method call insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_description \
+  -F funcName=json_value
+```
+
+`get_function_description` returns the signature and the docstring. The docstring is where a function
+says what it returns and what it costs — `json_value` against `json_extract` is the example on this
+page, and reading it is what settles that question. The parameter is `funcName`, camelCase.
+
+A function this page does not list is not forbidden. A function `get_function_list` does not return
+does not exist.
