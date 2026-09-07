@@ -149,3 +149,58 @@ not be summed.
 Single number → `Number`. Over time → `Line`. Compare categories → `Bar`; ranked top-N → `Row`.
 Part of a whole, few slices → `Donut`. Stages → `Funnel`. Row-level detail or a cross-tab → `Table`.
 Keep the existing chart type unless the request implies a change.
+
+## Making it readable
+
+The chart type is the easy half. These four decide whether anyone can read the result.
+
+**Count the dimension before you pick the chart.** A dimension you have not counted is a chart you
+cannot size. Count it in the scratch query — `summarize` with a `count_distinct` — and then:
+
+| Distinct values | Use |
+|---|---|
+| 1 | Nothing. One value is not a split. Find the column that carries the split, or drop the chart. |
+| 2 to 8 | `Donut`, or a stacked `Bar` |
+| up to ~15 | `Bar`, or `Line` for a series |
+| more | `Row` with `order_by` desc and `limit: 10`, and say it is a top 10 |
+| hundreds | `Table`. A bar per customer is a smear, not a chart. |
+
+The same cap applies to `split_by` and to a `Table`'s pivot `columns`. One line per value of a
+high-cardinality column is unreadable at any size.
+
+**A share needs its n beside it.** A normalized stacked bar draws a bucket of 14 rows exactly as
+strongly as a bucket of 545. Pair it with a `Table` carrying the raw counts and the distinct entity
+count, side by side. The bar gives the shape, the table gives the n, and a thin bucket cannot be
+misread as a strong result.
+
+**Lead with the answer.** The first chart is the one that answers the user's question. KPIs above
+trends, trends above breakdowns, detail tables last. A dashboard that opens on a breakdown makes the
+reader hunt.
+
+**Prefer fewer charts.** Every chart has to earn its grid rows. Two charts showing the same cut in
+different shapes is one chart and a decision you did not make.
+
+## Drill down
+
+Every chart drills down, and it costs you nothing to author — but only if the base query stays
+per-row.
+
+The reader clicks a series element on an axis, donut, funnel or map chart, or double-clicks a
+numeric cell on a `Number` card or a `Table`. Insights then finds the **last** `summarize` or
+`pivot_wider` in the chart's data query, cuts the pipeline off just before it, and refilters by that
+row's dimension values. It opens the result in a dialog.
+
+The chart's own aggregation is that `summarize`. So with a per-row base query, **one click lands on
+the source rows behind the number** — the invoices, the events, the documents. That is the payoff of
+rule 1 in `rules.md`, and it is the strongest reason not to pre-aggregate.
+
+Three things to know:
+
+- **A pre-aggregated base query costs a click.** The first drill-down lands on the base query's
+  aggregated rows, not the source rows. The dialog's own table drills again, and the second click
+  inlines the base query's pipeline and reaches the source rows. It works. It is one click of
+  confusion you authored.
+- **A chain with no `summarize` anywhere cannot drill down at all.** Insights walks the query chain
+  looking for one, and toasts "Drill down is only supported on summarized data" when it finds none.
+- **The clicked column must be numeric** on a `Number` card and a `Table`. A count measure typed as
+  `String` renders and cannot be drilled. Type every measure.

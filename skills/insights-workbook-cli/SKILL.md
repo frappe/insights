@@ -384,9 +384,10 @@ the same filters — and read the rows. Then look at four things.
 1. **Does the number match the chart's own claim?** An average over a group is the classic trap: a
    count of distinct dates divided by a site count is not the average days per site. Compute the
    measure a second way and compare.
-2. **Does every dimension have more than one value?** `get_distinct_column_values` on the dimension
-   column answers it. One value makes a donut with one slice and a bar with one bar. That means the
-   column does not carry the split you assumed, and the split lives on another column.
+2. **How many values does each dimension have?** Count it — `summarize` with `count_distinct` in the
+   scratch query. One value is not a split at all: the column does not carry what you assumed, and
+   the split lives on another column. Hundreds of values is the wrong chart type. "Making it
+   readable" in `charts.md` maps the count to the chart.
 3. **Is the signal present across the whole range?** Group the measure by month and read the series.
    A signal that starts partway through is not growth — it is the date it was first recorded. A
    signal that stops is retired, not fallen. Both read as a trend and are not one.

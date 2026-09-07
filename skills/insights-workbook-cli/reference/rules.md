@@ -9,7 +9,9 @@ resource the user cannot edit in the UI afterwards.
 
 1. **Queries return per-row data. Charts aggregate.** A chart builds its own `summarize` at render
    time from its config, so a pre-aggregated query leaves the chart nothing to group and dashboard
-   filters nothing to filter on.
+   filters nothing to filter on. It also breaks drill-down: Insights cuts the pipeline off before
+   the last `summarize`, so a per-row query puts the source rows one click away. See "Drill down"
+   in `charts.md`.
 2. **`summarize` is a mid-pipeline grain change only** — e.g. rolling ledger rows up to one row per
    invoice before joining back to invoice detail. Never as the last operation of a query, because
    that is the chart's job.
