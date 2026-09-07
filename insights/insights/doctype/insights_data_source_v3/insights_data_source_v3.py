@@ -18,6 +18,7 @@ from insights.insights.doctype.insights_table_link_v3.insights_table_link_v3 imp
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
 )
+from insights.insights.doctype.insights_table_v3.table_rename import rename_tables
 
 from .connectors.bigquery import get_bigquery_connection
 from .connectors.clickhouse import get_clickhouse_connection
@@ -386,6 +387,18 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             return schema, table
         return schemas[0], table_name
 
+    def table_identity(self, table_name: str) -> str:
+        """Name the remote table `table_name` points at, free of the spelling of the day.
+
+        `format_table_name` answers differently once the number of configured schemas
+        changes, so the stored name is a spelling, not an identity. Matching the remote
+        list against stored spellings makes one table look like two (frappe/insights#1371).
+        """
+        if self.database_type != "PostgreSQL":
+            return table_name
+        schema, table = self.split_table_name(table_name)
+        return f"{schema}.{table}"
+
     def get_table_list(self):
         db = self._get_ibis_backend()
 
@@ -455,21 +468,47 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
                 "Insights Table v3",
                 {"data_source": self.name},
             )
-
-        new_tables = set(remote_tables)
-        if not force:
-            existing_tables = frappe.get_all(
-                "Insights Table v3",
-                {"data_source": self.name},
-                pluck="table",
-            )
-            new_tables = set(remote_tables) - set(existing_tables)
-
-        if not new_tables:
+            InsightsTablev3.bulk_create(self.name, list(set(remote_tables)))
+            self.update_table_links(force)
             return
 
+        new_tables, renames = self.reconcile_table_names(remote_tables)
+        if not new_tables and not renames:
+            return
+
+        rename_tables(self.name, renames)
         InsightsTablev3.bulk_create(self.name, list(new_tables))
         self.update_table_links(force)
+
+    def reconcile_table_names(self, remote_tables: list[str]) -> tuple[set[str], dict[str, str]]:
+        """Split the remote list into tables to create and stored names to re-spell.
+
+        A record already exists for a remote table whenever some stored name has the same
+        `table_identity`. That name may not be the one `get_table_list` reports today, so
+        the record is renamed. A second record would import the same table a second time.
+        """
+        stored_names = frappe.get_all(
+            "Insights Table v3",
+            {"data_source": self.name},
+            pluck="table",
+        )
+
+        stored_by_identity = {}
+        for name in stored_names:
+            stored_by_identity.setdefault(self.table_identity(name), []).append(name)
+
+        new_tables = set()
+        renames = {}
+        for remote in set(remote_tables):
+            matches = stored_by_identity.get(self.table_identity(remote))
+            if not matches:
+                new_tables.add(remote)
+                continue
+            for stored in matches:
+                if stored != remote:
+                    renames[stored] = remote
+
+        return new_tables, renames
 
     def update_table_links(self, force=False):
         links = []
