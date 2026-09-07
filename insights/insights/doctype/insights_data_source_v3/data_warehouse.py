@@ -21,6 +21,8 @@ from ibis.expr.types import Expr, Table
 
 import insights
 from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import (
+    IMPORT_WRITE_LOCK_TIMEOUT,
+    WRITE_LOCK_TIMEOUT,
     local_duckdb_write_connection,
     open_local_duckdb,
 )
@@ -69,7 +71,7 @@ class Warehouse:
 
     @contextmanager
     def get_write_connection(
-        self, database: str | None = None, timeout: int = 30
+        self, database: str | None = None, timeout: int = WRITE_LOCK_TIMEOUT
     ) -> Generator[DuckDBBackend, None, None]:
         path = self.get_db_path()
         allowed_dir = str(Path(tempfile.gettempdir()))
@@ -191,7 +193,7 @@ class WarehouseTableWriter:
 
         total_rows = 0
         try:
-            with insights.warehouse.get_write_connection() as db:
+            with insights.warehouse.get_write_connection(timeout=IMPORT_WRITE_LOCK_TIMEOUT) as db:
                 self._log(f"Committing {len(self._parquet_files)} parquet files to '{self.table_name}'")
 
                 with suppress(CatalogException):
@@ -307,7 +309,7 @@ class WarehouseTable:
             return insights.warehouse.db.table(self.warehouse_table_name, database=self.schema)
         except TableNotFound:
             if import_if_not_exists:
-                self.enqueue_import()
+                self.announce_missing_table(import_running=self.enqueue_import())
                 remote_table = self.get_remote_table()
                 return insights.warehouse.db.create_table(
                     self.warehouse_table_name,
@@ -324,16 +326,57 @@ class WarehouseTable:
             frappe.log_error(e)
             frappe.throw("Error accessing the data warehouse. Please try again.")
 
+    def announce_missing_table(self, import_running: bool = False):
+        """Say that the empty table the reader is about to get is not the real one.
+
+        A miss substitutes an empty table of the right shape so the chart still
+        renders while the import runs. That is indistinguishable from a table
+        which genuinely holds no rows, so a table whose import keeps failing
+        reads as a legitimate zero.
+
+        enqueue_import already speaks for a job that is queued or running, and
+        the newest log stays "Failed" until that job starts — so announcing the
+        old failure as well would contradict it. Only the gap it leaves is ours.
+        """
+        frappe.logger().warning(
+            f"{self.table_name} of {self.data_source} is not in the data warehouse, "
+            "serving an empty table in its place"
+        )
+
+        if import_running or not self.last_import_failed():
+            return
+
+        insights.create_toast(
+            f"The last import of {self.table_name} failed, so it has no rows yet. "
+            "A fresh import is queued. Check the table's import logs in the data store.",
+            title="Import Failed",
+            type="error",
+            duration=7,
+        )
+
+    def last_import_failed(self) -> bool:
+        log = frappe.qb.DocType("Insights Table Import Log")
+        last_status = (
+            frappe.qb.from_(log)
+            .select(log.status)
+            .where((log.data_source == self.data_source) & (log.table_name == self.table_name))
+            .orderby(log.creation, order=frappe.qb.desc)
+            .limit(1)
+            .run()
+        )
+        return bool(last_status) and last_status[0][0] == "Failed"
+
     def get_remote_table(self) -> Expr:
         ds = InsightsDataSourcev3.get_doc(self.data_source)
         return ds.get_ibis_table(self.table_name)
 
-    def enqueue_import(self):
+    def enqueue_import(self) -> bool:
+        """Queue an import for this table. True when one was already under way."""
         if frappe.db.get_value("Insights Data Source v3", self.data_source, "type") == "REST API":
             frappe.throw("Import not supported for API data sources")
 
         importer = WarehouseTableImporter(self)
-        importer.enqueue_import()
+        return importer.enqueue_import()
 
     def drop(self) -> None:
         """Drop this table from the warehouse. No-op if it does not exist."""
@@ -369,7 +412,8 @@ class WarehouseTableImporter:
             ),
         )
 
-    def enqueue_import(self):
+    def enqueue_import(self) -> bool:
+        """Queue an import for this table. True when one was already under way."""
         job_id = f"import_{frappe.scrub(self.table.data_source)}_{frappe.scrub(self.table.table_name)}"
 
         if is_job_enqueued(job_id) or self.import_in_progress():
@@ -380,12 +424,13 @@ class WarehouseTableImporter:
                 type="info",
                 duration=7,
             )
-            return
+            return True
 
         enqueue_warehouse_table_import(
             data_source=self.table.data_source,
             table_name=self.table.table_name,
         )
+        return False
 
     def start_import(self):
         from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (

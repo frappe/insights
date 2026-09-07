@@ -2,14 +2,28 @@
 # For license information, please see license.txt
 
 import os
+import time
 from collections.abc import Generator
 from contextlib import contextmanager, suppress
 from urllib.parse import urlparse
 
 import frappe
 import ibis
+from duckdb import IOException
 from frappe.utils import get_files_path
 from ibis.backends.duckdb import Backend as DuckDBBackend
+
+# DuckDB hands a file to one writer or to many readers, never both, and a read
+# connection holds its shared lock until its request ends. A writer that arrives
+# mid-request must therefore wait the readers out instead of failing on the
+# first attempt.
+#
+# How long it may wait is the caller's business, not the file's. A writer serving
+# a click must not hold a web worker while readers come and go, so the default
+# stays short. A writer in a background job can afford to sit it out, and asks.
+WRITE_LOCK_TIMEOUT = 30
+IMPORT_WRITE_LOCK_TIMEOUT = 5 * 60
+WRITE_LOCK_RETRY_INTERVAL = 1
 
 
 def get_duckdb_path(data_source) -> str:
@@ -22,6 +36,7 @@ def open_local_duckdb(
     path,
     read_only=True,
     allowed_dir=None,
+    lock_timeout=WRITE_LOCK_TIMEOUT,
 ) -> DuckDBBackend:
     """Open a DuckDB connection at the given filesystem path.
 
@@ -32,12 +47,13 @@ def open_local_duckdb(
         path: Absolute path to the .duckdb file.
         read_only: Whether to open in read-only mode.
         allowed_dir: Directory to allow external file access from (write mode only).
+        lock_timeout: Seconds a write open waits for readers to release the file.
     """
     if not os.path.exists(path):
         db = ibis.duckdb.connect(path)
         db.disconnect()
 
-    db = ibis.duckdb.connect(path, read_only=read_only)
+    db = ibis.duckdb.connect(path, read_only=True) if read_only else _connect_for_write(path, lock_timeout)
 
     private_folder = os.path.realpath(get_files_path(is_private=1))
     private_folder = _escape_sql_path(private_folder)
@@ -57,12 +73,67 @@ def open_local_duckdb(
     return db
 
 
+def _connect_for_write(path: str, lock_timeout: float) -> DuckDBBackend:
+    """Open path for writing, waiting out the readers that still hold it."""
+    deadline = time.monotonic() + lock_timeout
+    waited = False
+
+    while True:
+        try:
+            return ibis.duckdb.connect(path, read_only=False)
+        except IOException as e:
+            if "Could not set lock" not in str(e) or time.monotonic() >= deadline:
+                raise
+            if not waited:
+                waited = True
+                frappe.logger().warning(f"Waiting for readers to release {os.path.basename(path)}")
+            time.sleep(WRITE_LOCK_RETRY_INTERVAL)
+
+
+@contextmanager
+def local_duckdb_write_lock(
+    path: str,
+    cache_key: str,
+    timeout: int = WRITE_LOCK_TIMEOUT,
+) -> Generator[float, None, None]:
+    """Serialize write access to a local DuckDB file.
+
+    Holds a file-level lock and evicts the cached read-only connection for
+    cache_key, so the caller is free to open the file for writing — or to
+    replace the file altogether, as the warehouse compaction does.
+
+    Yields whatever is left of timeout once the lock is in hand. Waiting off
+    other writers and waiting off readers come out of the one budget, and the
+    caller does not have to work that out for itself.
+
+    Args:
+        path: Absolute path to the .duckdb file.
+        cache_key: The key under which the read connection is cached in
+            insights.db_connections (typically the data source name).
+        timeout: Seconds to spend reaching a writable file, lock and readers
+            together.
+    """
+    from frappe.utils.synchronization import filelock
+
+    import insights
+
+    deadline = time.monotonic() + timeout
+    lock_name = f"insights_duckdb_write_{frappe.scrub(os.path.basename(path))}"
+    with filelock(lock_name, timeout=timeout):
+        with suppress(Exception):
+            cached = insights.db_connections.pop(cache_key, None)
+            if cached:
+                cached.disconnect()
+
+        yield max(deadline - time.monotonic(), 0)
+
+
 @contextmanager
 def local_duckdb_write_connection(
     path: str,
     cache_key: str,
     allowed_dir: str,
-    timeout: int = 30,
+    timeout: int = WRITE_LOCK_TIMEOUT,
 ) -> Generator[DuckDBBackend, None, None]:
     """Context manager that safely yields a write connection to a local DuckDB file.
 
@@ -79,23 +150,15 @@ def local_duckdb_write_connection(
         cache_key: The key under which the read connection is cached in
             insights.db_connections (typically the data source name).
         allowed_dir: Directory to allow external file access from.
-        timeout: Seconds to wait for the file lock before giving up.
+        timeout: Total seconds to spend obtaining the write connection, lock
+            and readers together.
     """
-    from frappe.utils.synchronization import filelock
-
-    import insights
-
-    lock_name = f"insights_duckdb_write_{frappe.scrub(os.path.basename(path))}"
-    with filelock(lock_name, timeout=timeout):
-        with suppress(Exception):
-            cached = insights.db_connections.pop(cache_key, None)
-            if cached:
-                cached.disconnect()
-
+    with local_duckdb_write_lock(path, cache_key, timeout=timeout) as lock_timeout:
         db = open_local_duckdb(
             path,
             read_only=False,
             allowed_dir=allowed_dir,
+            lock_timeout=lock_timeout,
         )
         try:
             yield db
