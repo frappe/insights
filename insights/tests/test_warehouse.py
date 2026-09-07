@@ -250,3 +250,13 @@ class TestMissingTableNotice(InsightsIntegrationTestCase):
             WarehouseTable("some_source", "never_imported").announce_missing_table()
 
         toast.assert_not_called()
+
+    def test_a_queued_retry_suppresses_the_failure_notice(self):
+        # The retry is queued but has not started, so the newest log still reads
+        # "Failed" while enqueue_import already toasted "Import In Progress".
+        self.write_log("Failed")
+
+        with patch.object(insights, "create_toast") as toast:
+            self.make_table().announce_missing_table(import_running=True)
+
+        toast.assert_not_called()
