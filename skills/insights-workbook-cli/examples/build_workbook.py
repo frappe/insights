@@ -35,7 +35,7 @@ def call(*args, stdin=None):
 
 
 def create(doctype, doc):
-    doc["workbook"] = WORKBOOK
+    doc = {**doc, "workbook": WORKBOOK}
     created = call("doc", "create", doctype, stdin=json.dumps(doc))
     name = created["name"] if isinstance(created, dict) else created
     print(f"created {doctype} {name} — {doc.get('title', '')}")

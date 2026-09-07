@@ -100,9 +100,26 @@ frappectl -s $SITE method call insights.api.data_sources.get_data_source_table_c
   -F data_source="Frappe Cloud" -F table_name="tabSite"
 ```
 
-`get_schema -F data_source=<name>` returns every table with its columns in one call. It opens each
-table on the backend, so it is the most expensive call in the skill. Use it when you must search
-columns rather than tables, and say so.
+`get_schema -F data_source=<name>` returns tables with their columns in one call, when you must
+search columns rather than tables. It opens each table on the backend, so it is the most expensive
+call in the skill. Two limits make it a search tool, never an inventory:
+
+- **It sees 100 tables and takes no `limit`.** It calls `get_data_source_tables` with the default,
+  and passes nothing through, so on a source with more tables the rest are absent with no warning.
+  An ERPNext site is past that on its own.
+- **A table it cannot open comes back with an empty `columns` list, not an error.** So empty columns
+  means "no columns" or "this table failed", and the response does not say which.
+
+To enumerate a source, list the tables with an explicit high `limit` and read the columns of the
+ones you need:
+
+```sh
+frappectl -s $SITE method call insights.api.data_sources.get_data_source_tables \
+  -F data_source="Frappe Cloud" -F limit=1000
+```
+
+If a table you expect is missing from `get_schema`, or has no columns, ask for it by name with
+`get_data_source_table_columns` before you conclude anything.
 
 **4. Search the corpus for the word nobody can derive.** Some terms are not in the schema at all.
 "Partner", "active customer", "churned" are decisions somebody encoded once, in a `mutate`, a
@@ -533,7 +550,7 @@ exists.
 | List data sources | `method call insights.api.data_sources.get_all_data_sources` |
 | Search tables, all sources | `method call insights.api.data_sources.get_data_source_tables` (`search_term`, `limit`; omit `data_source` to search every source) |
 | Table columns and types | `method call insights.api.data_sources.get_data_source_table_columns` (`data_source`, `table_name`) |
-| Every table with its columns, one source | `method call insights.api.data_sources.get_schema` (`data_source`) — expensive, opens each table |
+| Tables with their columns, one source | `method call insights.api.data_sources.get_schema` (`data_source`) — expensive, opens each table, sees 100 tables and takes no `limit` |
 | Table row count | `method call insights.api.data_sources.get_data_source_table_row_count` (`data_source`, `table_name`) |
 | Real values of a column | `method call get_distinct_column_values --doctype "Insights Query v3" --name <n>` (`column_name`, `search_term`, `limit`, `active_operation_idx`) |
 | Known joins between two tables | `method call insights.api.data_sources.get_table_links` (`data_source`, `left_table`, `right_table`) |
