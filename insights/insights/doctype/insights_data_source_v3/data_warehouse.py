@@ -737,6 +737,10 @@ def execute_warehouse_table_import(data_source: str, table_name: str):
     importer.start_import()
 
 
+def quote_identifier(name: str) -> str:
+    return '"' + name.replace('"', '""') + '"'
+
+
 def get_warehouse_schema_name(data_source: str) -> str:
     """Return the DuckDB schema name for a given data source name."""
     return frappe.scrub(data_source).replace(".", "_")
