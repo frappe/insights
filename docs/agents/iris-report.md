@@ -31,7 +31,7 @@ The reader must be able to stop after layer 1 and still know what is wrong.
 - Never report `Concerns` without `path:line`, the decision or precedent it breaks, and the
   consequence.
 - End a `Concerns` review with one line naming the smaller fix you would rather see.
-- **Write the review in STE** — the standard §7 applies to the PR applies to you. One point
+- **Write the review in STE** — the standard §8 applies to the PR applies to you. One point
   per sentence, max 25 words, active voice, no semicolons, condition before command.
 - **Use an example whenever it makes the problem easier to grasp.** A made-up two-line
   before/after is fine and often better than a real one — its job is to explain, not to
@@ -47,7 +47,9 @@ The reader must be able to stop after layer 1 and still know what is wrong.
 - **On re-review, account for the last review first.** One line per earlier finding:
   resolved (name the commit), stands, or settled. Then the new findings, if any. A
   settled finding is out of the score — "Settled: the SSL default, per @<author>" is the
-  whole entry, with no re-argument.
+  whole entry, with no re-argument. A nit he left is "stands", once, in one line.
+- **Never write the reviewed sha in the body.** The workflow footer carries it; a second
+  copy in the body has drifted from it before.
 
 Example:
 
