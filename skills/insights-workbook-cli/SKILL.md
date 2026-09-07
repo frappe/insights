@@ -68,6 +68,23 @@ You act as the profile's user, and you see what that user sees. If the user name
 workbook that `get_workbooks` does not list, it is a missing share, not a missing
 workbook. Insights reports a missing grant as "not found". Ask the user to share it.
 
+### Read the site's version too, not only its data
+
+Sites run different Insights versions, so an endpoint this file names may not be there. Ask before
+you depend on one:
+
+```sh
+frappectl -s $SITE method search -q <name>
+```
+
+**Every procedure here works on a stock site with no newer endpoint.** Where a newer one exists it
+does the same job faster, never a different job — so a missing endpoint costs round trips, never a
+result. When you find one missing, take the plain path and carry on. Do not stop, and do not tell
+the user their site is behind unless they asked.
+
+The same holds for a function `get_function_list` does not return: the plan changes, the ask does
+not.
+
 ### Translate the ask into the site's vocabulary
 
 The user asks in business language. "Support tickets raised by partner sites" names no table and no
@@ -206,6 +223,16 @@ frappectl -s $SITE doc list "Insights Chart v3" \
 
 `get_workbooks` searches titles only, so run the query and chart searches too — a workbook titled
 "Cloud Metrics" can hold the partner definition.
+
+These searches are the rung, and they work on every site. A newer site may carry one endpoint that
+runs the whole rung in a single call and says which field matched. Probe for it once, and use it
+when it is there:
+
+```sh
+frappectl -s $SITE method search -q search_content
+```
+
+The rung does not change either way. Only the number of calls does.
 
 **Then search the JSON**, which reaches column names, expression text, filter values and measure
 names — where a definition lives even when no title says so:
