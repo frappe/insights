@@ -74,14 +74,26 @@ The user asks in business language. "Support tickets raised by partner sites" na
 column. Most users cannot name one — only an admin knows what data is where. Translating the ask is
 your job, and it is the step most likely to go wrong.
 
-Work the ladder. Each rung is a search, and each one narrows the next.
+Work the ladder in order. **The corpus comes before the schema, and this order is the point.**
+
+A schema is large and low-signal: hundreds of tables, hundreds of columns each, and no statement of
+meaning anywhere. It tells you a column exists. It never tells you the column is the right one. The
+corpus is small, curated and already correct — somebody wrote that query, somebody uses it, and the
+definition inside it survived contact with the business. On a mature site most of what you need is
+tribal knowledge sitting in a query, not a fact you can read off a column name.
 
 **1. Name the data sources.** `get_all_data_sources`. Their names are the first map: which system
 holds tickets, which holds sites, which holds billing. An ask that spans two of them is normal.
 
-**2. Search table labels for each business word, across every source at once.** Omit `data_source`
-and `get_data_source_tables` searches the whole instance, matching the table's `label` and its real
-name:
+**2. Search the corpus for every business word in the ask.** This is the rung that pays. "Partner",
+"active customer", "churned", "enterprise" are decisions somebody encoded once — in a title, a
+`mutate`, a `case_when`, a filter value, a `sql` query. Section 3 has the searches. Run it for every
+noun and every qualifier the user used, before you look at a single table.
+
+A hit gives you the calculation *and* the tables it reads, so it settles rungs 3 and 4 at once.
+
+**3. Search table labels for what the corpus did not answer.** Omit `data_source` and
+`get_data_source_tables` searches the whole instance, matching the table's `label` and its real name:
 
 ```sh
 for word in ticket partner site; do
@@ -90,43 +102,39 @@ for word in ticket partner site; do
 done
 ```
 
-Frappe doctype names are written in business language, so this rung answers more asks than any
-other. Run one search per noun in the ask.
+Frappe doctype names are business language, so one search per noun cuts hundreds of tables to a
+handful.
 
-**3. Read the columns of the tables it found.**
+**4. Read the columns of the few tables that survived.**
 
 ```sh
 frappectl -s $SITE method call insights.api.data_sources.get_data_source_table_columns \
   -F data_source="Frappe Cloud" -F table_name="tabSite"
 ```
 
-`get_schema -F data_source=<name>` returns tables with their columns in one call, when you must
-search columns rather than tables. It opens each table on the backend, so it is the most expensive
-call in the skill. Two limits make it a search tool, never an inventory:
-
-- **It sees 100 tables and takes no `limit`.** It calls `get_data_source_tables` with the default,
-  and passes nothing through, so on a source with more tables the rest are absent with no warning.
-  An ERPNext site is past that on its own.
-- **A table it cannot open comes back with an empty `columns` list, not an error.** So empty columns
-  means "no columns" or "this table failed", and the response does not say which.
-
-To enumerate a source, list the tables with an explicit high `limit` and read the columns of the
-ones you need:
-
-```sh
-frappectl -s $SITE method call insights.api.data_sources.get_data_source_tables \
-  -F data_source="Frappe Cloud" -F limit=1000
-```
-
-If a table you expect is missing from `get_schema`, or has no columns, ask for it by name with
-`get_data_source_table_columns` before you conclude anything.
-
-**4. Search the corpus for the word nobody can derive.** Some terms are not in the schema at all.
-"Partner", "active customer", "churned" are decisions somebody encoded once, in a `mutate`, a
-`case_when` or a filter value. Section 3 finds them.
+`get_schema -F data_source=<name>` returns every table with its columns in one call. It opens each
+table on the backend, so it is the most expensive call in the skill. Reach for it only when you must
+search columns rather than tables, and say that you did.
 
 **5. Ask.** What the ladder does not resolve goes in the scope block as a question, with the
-candidates you found. Do not guess a definition that somebody has already written down.
+candidates you found. Do not guess a definition somebody has already written down.
+
+### Say what you leaned on
+
+Discovery makes choices and the user sees none of them. Name every one, in the scope block and again
+in the closing summary. One line each:
+
+- **Reused a definition.** The workbook, the query, and the expression you copied. If the user's ask
+  differs from it at all, say how, and ask.
+- **Derived a definition yourself.** Say plainly that you found no existing one, name the columns you
+  built it from, and ask the user to confirm it. **This line matters most.** A reused definition has
+  been checked by the people who use it. One you derived has been checked by nobody.
+- **Picked one candidate over others.** Name what you rejected, and why. A search that returned three
+  tables and a search that returned one are different situations, and only you can see which happened.
+- **Made a load-bearing cut.** A date the data starts, a filter that drops rows, a source you chose
+  because a table was not stored. Each one changes the number.
+
+Silence here reads as certainty. Do not spend certainty you do not have.
 
 ### A query spanning two data sources needs the data store
 
@@ -175,7 +183,12 @@ template is a good one: `doc list "Insights Workbook" --fields name,title,from_t
 ## 3. Reuse what the user already has
 
 People share workbooks. A metric somebody already defined and uses every day is more
-likely correct than one you derive from column names.
+likely correct than one you derive from column names. **This is the first rung of the ladder in
+section 1, not a later resort.** Run it before you read the schema.
+
+A `sql` query is worth opening even though you must not author one. The definitions nobody could
+express in builder operations end up there, which makes those queries the densest tribal knowledge
+on the site. Read the SQL, take the calculation, and rebuild it as builder operations.
 
 **Search the corpus. Do not download it.** Titles and the JSON fields are text columns, so the site
 greps them for you, and a `like` filter is the whole search.
