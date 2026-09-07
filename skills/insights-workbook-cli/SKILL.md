@@ -131,8 +131,17 @@ frappectl -s $SITE method call insights.api.data_sources.get_data_source_table_c
 ```
 
 `get_schema -F data_source=<name>` returns every table with its columns in one call. It opens each
-table on the backend, so it is the most expensive call in the skill. Use it only when you must
-search columns rather than tables. Say that you did.
+table on the backend unless the site stores its column lists, so it is the most expensive call in
+the skill. Use it only when you must search columns rather than tables. Say that you did.
+
+A newer site searches columns directly, across every table the caller may read:
+
+```sh
+frappectl -s $SITE method call insights.api.ai.search.search_columns -F term=partner
+```
+
+It answers from stored column lists. A table nobody has synced or opened is not in it, so an empty
+answer is not proof. Fall back to `get_schema` when the answer matters.
 
 **5. Ask.** What the ladder does not resolve goes in the scope block as a question, with the
 candidates you found. Do not guess a definition somebody has already written down.
@@ -225,14 +234,25 @@ frappectl -s $SITE doc list "Insights Chart v3" \
 `get_workbooks` searches titles only, so run the query and chart searches too. A workbook titled
 "Cloud Metrics" can hold the partner definition.
 
-These searches work on every site. A newer site may carry one endpoint that runs them all in a
-single call and says which field matched. Probe for it once. Use it when it is there:
+These searches work on every site. A newer site carries one endpoint that runs them all in a single
+call. Probe for it once. Use it when it is there:
 
 ```sh
 frappectl -s $SITE method search -q search_content
+frappectl -s $SITE method call insights.api.ai.search.search_content -F term=partner -F limit=20
 ```
 
-The searches do not change either way. Only the number of calls does.
+A hit names `doctype`, `name`, `title`, `workbook`, `workbook_title`, `matched_field` and a
+`snippet` of the text around the match. The snippet is the reason to prefer it. You can tell a real
+definition from a coincidence without fetching the document.
+
+**A hit also carries `used_by_charts`, `used_by_dashboards` and `dashboard_views`.** Read them.
+Three queries can define "partner" three ways. The one behind a dashboard forty people open every
+week is the definition the organisation runs on. An orphan query somebody made once is not. Prefer
+the used one, and say in the scope block how much it is used.
+
+Without the endpoint you get the same documents, in more calls, with no snippet and no usage count.
+The searches do not change. Rank by hand instead, and say you did.
 
 **Then search the JSON.** It reaches column names, expression text, filter values and measure names.
 A definition lives there even when no title says so:
@@ -588,6 +608,8 @@ exists.
 | Search tables, all sources | `method call insights.api.data_sources.get_data_source_tables` (`search_term`, `limit`; omit `data_source` to search every source) |
 | Table columns and types | `method call insights.api.data_sources.get_data_source_table_columns` (`data_source`, `table_name`) |
 | Tables with their columns, one source | `method call insights.api.data_sources.get_schema` (`data_source`) — expensive, opens each table, sees 100 tables and takes no `limit` |
+| Search all workbook content, with snippets and usage | `method call insights.api.ai.search.search_content` (`term`, `limit`) — newer sites only |
+| Search column names, every table | `method call insights.api.ai.search.search_columns` (`term`, `data_source`, `limit`) — newer sites only |
 | Table row count | `method call insights.api.data_sources.get_data_source_table_row_count` (`data_source`, `table_name`) |
 | Real values of a column | `method call get_distinct_column_values --doctype "Insights Query v3" --name <n>` (`column_name`, `search_term`, `limit`, `active_operation_idx`) |
 | Known joins between two tables | `method call insights.api.data_sources.get_table_links` (`data_source`, `left_table`, `right_table`) |
