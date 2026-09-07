@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-06-21 10:42+0000\n"
-"PO-Revision-Date: 2026-07-10 10:32\n"
+"PO-Revision-Date: 2026-09-07 08:43\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -137,7 +137,7 @@ msgstr "Agregacija"
 #. Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "Aggregation Condition"
-msgstr "Uslov Agregacije"
+msgstr "Uvjet Agregacije"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:70
 msgid "Alert Created"
@@ -531,7 +531,7 @@ msgstr "Završeno"
 #: frontend/src2/query/components/FormatRule.vue:452
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Condition"
-msgstr "Uslov"
+msgstr "Uvjet"
 
 #. Label of the config (JSON) field in DocType 'Insights Chart v3'
 #. Label of the config (JSON) field in DocType 'Insights Query Chart'
@@ -628,7 +628,7 @@ msgstr "Broj..."
 
 #: frontend/src2/teams/CreateTeamDialog.vue:18
 msgid "Create"
-msgstr "Kreiraj"
+msgstr "Izradi"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:129
 msgid "Create Alert"
@@ -648,11 +648,11 @@ msgstr "Stvori Tim"
 #: frontend/src2/data_source/DataSourceList.vue:119
 #: frontend/src2/workbook/WorkbookList.vue:44
 msgid "Created"
-msgstr "Kreirano"
+msgstr "Izrađeno"
 
 #: frontend/src2/query/components/QueryAlertsDialog.vue:52
 msgid "Created By"
-msgstr "Kreirano Od"
+msgstr "Izrađeno Od"
 
 #: frontend/src2/teams/TeamList.vue:48
 msgid "Creation"
@@ -988,7 +988,7 @@ msgstr "Stavi u red"
 
 #: frontend/src2/components/ExportDialog.vue:60
 msgid "Enter filename"
-msgstr "Unesite naziv datoteke"
+msgstr "Unesi naziv datoteke"
 
 #: frontend/src2/dashboard/DashboardFilterEditor.vue:179
 msgid "Enter filter label..."
@@ -1004,7 +1004,7 @@ msgstr "Unesi URL DuckDB datoteke"
 
 #: frontend/src2/dashboard/DashboardText.vue:52
 msgid "Enter your text content here..."
-msgstr "Ovdje unesite sadržaj teksta..."
+msgstr "Ovdje unesi sadržaj teksta..."
 
 #. Label of the error (Text) field in DocType 'Insights Table Import'
 #. Label of the error (Code) field in DocType 'Insights Table Import Log'
@@ -1800,7 +1800,7 @@ msgstr "Zadnja Sinhronizacija"
 #. Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Last synced cursor value (set automatically)"
-msgstr "Posljednja sinhronizirana vrijednost kursora (automatski postavljena)"
+msgstr "Posljednja sinhronizirana vrijednost tečajora (automatski postavljena)"
 
 #: frontend/src2/charts/components/DonutChartConfigForm.vue:59
 #: frontend/src2/charts/components/SankeyChartConfigForm.vue:70
@@ -2351,7 +2351,7 @@ msgstr "Upit"
 
 #: frontend/src2/workbook/WorkbookLineageDialog.vue:149
 msgid "Query Lineage"
-msgstr "Redak Upita"
+msgstr "Red Upita"
 
 #. Label of the query_result_limit (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
@@ -2953,7 +2953,7 @@ msgstr "Upravitelj Sustava"
 #: insights/insights/doctype/insights_table/insights_table.json
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Table"
-msgstr "Tabela"
+msgstr "Tablica"
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:64
 msgid "Table Imported"
@@ -3035,7 +3035,7 @@ msgstr "ID Telegram chata"
 #. v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Temporal column used to detect rows that changed since the last sync. Use <b>modified</b> for mutable tables and <b>creation</b> for append-only tables."
-msgstr "Privremeni stupac koristi se za otkrivanje redaka koji su se promijenili od posljednje sinkronizacije. Koristite <b>modified</b> za promjenjive tablice i <b>creation</b> za tablice koje se mogu samo dodavati."
+msgstr "Privremeni stupac koristi se za otkrivanje redova koji su se promijenili od posljednje sinkronizacije. Koristite <b>modified</b> za promjenjive tablice i <b>creation</b> za tablice koje se mogu samo dodavati."
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
