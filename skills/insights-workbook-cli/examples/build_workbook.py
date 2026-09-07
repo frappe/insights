@@ -295,6 +295,36 @@ def build():
 # --------------------------------------------------------------------------
 
 
+# Which config key holds a dimension, and which holds a measure. A measure always
+# carries `measure_name`, so it names itself. A dimension often carries only
+# `column_name`, and nothing in the node says it is a dimension -- the key does. From
+# reference/charts.md, every chart type.
+DIMENSION_KEYS = {
+    "date_column",
+    "x_axis",
+    "split_by",
+    "dimension",
+    "label_column",
+    "rows",
+    "columns",
+    "location_column",
+    "source_column",
+    "target_column",
+}
+MEASURE_KEYS = {
+    "number_columns",
+    "y_axis",
+    "series",
+    "measure",
+    "measures",
+    "values",
+    "value_column",
+    "size_column",
+    "xAxis",
+    "yAxis",
+}
+
+
 def read_config(config):
     """Three name sets a chart config uses.
 
@@ -303,31 +333,39 @@ def read_config(config):
     column, so it drops out on its own.
 
     `output` -- names the chart's own aggregation produces. `translate_measure` names a
-    measure by `measure_name`; `translate_dimension` names a dimension by
-    `dimension_name or column_name`, and granularity keeps the name.
+    measure by `measure_name`. `translate_dimension` names a dimension by
+    `dimension_name or column_name`, so a dimension with no `dimension_name` comes out
+    under its column name. Granularity keeps the name either way.
 
     `sorted_by` -- names in `order_by`, which are output names, not source names.
     """
     source, output, sorted_by = set(), set(), set()
 
-    def walk(node, in_order_by):
+    def walk(node, role, in_order_by):
         if isinstance(node, dict):
-            if isinstance(node.get("measure_name"), str):
-                output.add(node["measure_name"])
-            if isinstance(node.get("dimension_name"), str):
-                output.add(node["dimension_name"])
-            elif "granularity" in node and isinstance(node.get("column_name"), str):
-                output.add(node["column_name"])
             name = node.get("column_name")
+            if not in_order_by:
+                if isinstance(node.get("measure_name"), str):
+                    output.add(node["measure_name"])
+                elif isinstance(node.get("dimension_name"), str):
+                    output.add(node["dimension_name"])
+                elif role == "dimension" and isinstance(name, str):
+                    output.add(name)
             if isinstance(name, str):
                 (sorted_by if in_order_by else source).add(name)
             for key, value in node.items():
-                walk(value, in_order_by or key == "order_by")
+                if key in DIMENSION_KEYS:
+                    next_role = "dimension"
+                elif key in MEASURE_KEYS:
+                    next_role = "measure"
+                else:
+                    next_role = role
+                walk(value, next_role, in_order_by or key == "order_by")
         elif isinstance(node, list):
             for item in node:
-                walk(item, in_order_by)
+                walk(item, role, in_order_by)
 
-    walk(config, False)
+    walk(config, None, False)
     source.discard("count")
     return source, output, sorted_by
 
@@ -493,8 +531,11 @@ def verify():
         seen = set()
         for item in items:
             if item.get("type") == "text":
-                failures.append(
-                    f"dashboard {d['name']} has a text item -- put that prose in the reply instead"
+                # Never author one. But the user may have, and their prose is theirs --
+                # failing here would force a delete to make an unrelated edit verify.
+                print(
+                    f"  note: dashboard {d['name']} has a text item. If you added it, move that "
+                    "prose to your reply and remove it. If the user wrote it, leave it alone."
                 )
 
             # The grid reads item.layout.y and item.layout.h for every item, so one item
