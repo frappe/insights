@@ -17,3 +17,4 @@ insights.patches.requalify_workbook_templates
 insights.patches.strip_default_schema_from_table_names
 insights.patches.hash_invitation_keys
 insights.patches.backfill_permission_user
+insights.patches.backfill_table_columns

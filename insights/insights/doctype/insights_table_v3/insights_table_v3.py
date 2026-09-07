@@ -28,6 +28,7 @@ class InsightsTablev3(Document):
         from frappe.types import DF
 
         before_import_script: DF.Code | None
+        columns: DF.JSON | None
         data_source: DF.Link
         label: DF.Data
         last_sync_bookmark: DF.Data | None
@@ -198,6 +199,97 @@ def get_table_name(data_source, table):
     return md5((data_source + table).encode()).hexdigest()[:10]
 
 
+def store_columns(data_source: str, table_name: str, schema: ibis.Schema) -> None:
+    """Record the columns of a remote table, so reading them needs no connection.
+
+    The only place that knows a table's shape is the source itself, and asking it
+    costs a round trip per table. Every caller that needs the shape of every table
+    - the schema browser, column search - therefore paid for one connection per
+    table. The sync already holds the schema, so it writes it down here instead.
+
+    A failure is never the caller's problem: the caller wanted the table, not the
+    record of its columns.
+    """
+    from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
+        get_columns_from_schema,
+    )
+
+    try:
+        columns = get_columns_from_schema(schema)
+        name = get_table_name(data_source, table_name)
+        stored = frappe.db.get_value("Insights Table v3", name, "columns")
+        if stored and frappe.parse_json(stored) == columns:
+            return
+        frappe.db.set_value(
+            "Insights Table v3",
+            name,
+            "columns",
+            frappe.as_json(columns),
+            update_modified=False,
+        )
+    except Exception:
+        frappe.log_error("Failed to store table columns")
+
+
+def get_stored_columns(data_source: str | None = None, user: str | None = None) -> dict[str, frappe._dict]:
+    """Stored columns of every table the caller may read, keyed by table document name.
+
+    Each value carries `data_source`, `table`, `label` and `columns`, where `columns`
+    is narrowed to what the caller may read. A table synced before the columns were
+    stored is left out - it has nothing to report.
+    """
+    tables = frappe.get_list(
+        "Insights Table v3",
+        filters={"data_source": data_source} if data_source else None,
+        fields=["name", "table", "label", "data_source", "columns"],
+        limit=0,
+    )
+
+    # insights_team imports this module, so its import stays inside the function
+    from insights.insights.doctype.insights_team.insights_team import check_table_permission
+
+    permitted = {}
+    for table in tables:
+        if not table.columns:
+            continue
+        if not check_table_permission(table.data_source, table.table, user=user, raise_error=False):
+            continue
+        permitted[table.name] = frappe._dict(
+            data_source=table.data_source,
+            table=table.table,
+            label=table.label,
+            columns=filter_permitted_columns(
+                table.data_source, table.table, frappe.parse_json(table.columns), user=user
+            ),
+        )
+    return permitted
+
+
+def filter_permitted_columns(
+    data_source: str, table_name: str, columns: list[dict], user: str | None = None
+) -> list[dict]:
+    """Drop the columns `user` may not read.
+
+    A stored column list is what the source holds, not what the reader is allowed to
+    see. The query engine drops permlevel-restricted columns in
+    `apply_column_permissions`, and a column name is document content, so the same
+    rule has to hold wherever the stored list is read.
+    """
+    if not frappe.db.get_value("Insights Data Source v3", data_source, "is_site_db", cache=True):
+        return columns
+
+    if not frappe.db.get_single_value("Insights Settings", "apply_user_permissions", cache=True):
+        return columns
+
+    try:
+        allowed = get_permitted_columns_for_table(strip_schema_prefix(table_name), user=user)
+    except Exception:
+        # a table the meta cannot explain cannot be checked, so report nothing
+        return []
+
+    return [column for column in columns if column.get("name") in allowed]
+
+
 def get_table_stats(data_source: str, table_name: str) -> dict:
     """Derive usage and sync stats for a warehouse table from existing data.
 
@@ -307,7 +399,7 @@ def _get_referencing_queries(data_source: str, table_name: str) -> list[dict]:
         "Insights Query v3",
         filters={"name": ("in", referencing)},
         fields=["name", "title", "workbook"],
-        limit_page_length=0,
+        limit=0,
     )
 
 

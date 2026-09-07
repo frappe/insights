@@ -12,6 +12,7 @@
   "last_synced_on",
   "row_limit",
   "stored",
+  "columns",
   "sync_section",
   "sync_mode",
   "sync_from",
@@ -63,6 +64,13 @@
    "fieldname": "stored",
    "fieldtype": "Check",
    "label": "Stored",
+   "read_only": 1
+  },
+  {
+   "description": "Column names and types read from the source on the last sync",
+   "fieldname": "columns",
+   "fieldtype": "JSON",
+   "label": "Columns",
    "read_only": 1
   },
   {
@@ -138,7 +146,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-17 11:46:50.112615",
+ "modified": "2026-09-07 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Table v3",
