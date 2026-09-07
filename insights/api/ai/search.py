@@ -72,15 +72,19 @@ def search_content(term: str, limit: int = 20) -> list[dict]:
 
 
 @insights_whitelist()
-def search_columns(term: str, data_source: str | None = None) -> list[dict]:
+def search_columns(term: str, data_source: str | None = None, limit: int = 100) -> list[dict]:
     """Search the column names of every table the caller may read.
 
     The sync records each table's columns, so this is a database query. A table
     synced before that record existed has nothing to search and is left out.
+
+    A short term matches a lot. `limit` caps the answer, exact names first.
     """
     term = (term or "").strip()
     if not term:
         return []
+
+    limit = frappe.utils.cint(limit) or 100
 
     needle = term.lower()
     matches = []
@@ -101,7 +105,7 @@ def search_columns(term: str, data_source: str | None = None) -> list[dict]:
 
     # an exact name is the one the asker meant; the rest are near misses
     matches.sort(key=lambda match: (match["column"].lower() != needle, match["column"].lower()))
-    return matches
+    return matches[:limit]
 
 
 def _search_doctype(doctype: str, fields: list[str], term: str, limit: int) -> list[frappe._dict]:
