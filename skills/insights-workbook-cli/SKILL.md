@@ -68,14 +68,58 @@ You act as the profile's user, and you see what that user sees. If the user name
 workbook that `get_workbooks` does not list, it is a missing share, not a missing
 workbook. Insights reports a missing grant as "not found". Ask the user to share it.
 
-Then read the schema you will build on:
+### Translate the ask into the site's vocabulary
+
+The user asks in business language. "Support tickets raised by partner sites" names no table and no
+column. Most users cannot name one — only an admin knows what data is where. Translating the ask is
+your job, and it is the step most likely to go wrong.
+
+Work the ladder. Each rung is a search, and each one narrows the next.
+
+**1. Name the data sources.** `get_all_data_sources`. Their names are the first map: which system
+holds tickets, which holds sites, which holds billing. An ask that spans two of them is normal.
+
+**2. Search table labels for each business word, across every source at once.** Omit `data_source`
+and `get_data_source_tables` searches the whole instance, matching the table's `label` and its real
+name:
 
 ```sh
-frappectl -s $SITE method call insights.api.data_sources.get_data_source_tables \
-  -F data_source="Site DB" -F limit=200
-frappectl -s $SITE method call insights.api.data_sources.get_data_source_table_columns \
-  -F data_source="Site DB" -F table_name="tabSales Invoice"
+for word in ticket partner site; do
+  frappectl -s $SITE method call insights.api.data_sources.get_data_source_tables \
+    -F search_term=$word -F limit=50
+done
 ```
+
+Frappe doctype names are written in business language, so this rung answers more asks than any
+other. Run one search per noun in the ask.
+
+**3. Read the columns of the tables it found.**
+
+```sh
+frappectl -s $SITE method call insights.api.data_sources.get_data_source_table_columns \
+  -F data_source="Frappe Cloud" -F table_name="tabSite"
+```
+
+`get_schema -F data_source=<name>` returns every table with its columns in one call. It opens each
+table on the backend, so it is the most expensive call in the skill. Use it when you must search
+columns rather than tables, and say so.
+
+**4. Search the corpus for the word nobody can derive.** Some terms are not in the schema at all.
+"Partner", "active customer", "churned" are decisions somebody encoded once, in a `mutate`, a
+`case_when` or a filter value. Section 3 finds them.
+
+**5. Ask.** What the ladder does not resolve goes in the scope block as a question, with the
+candidates you found. Do not guess a definition that somebody has already written down.
+
+### A query spanning two data sources needs the data store
+
+Cross-source is decided by one flag. With `use_live_connection: 0` every table resolves through the
+warehouse, whatever its data source, so tables from two sources join normally. With
+`use_live_connection: 1` each table opens on its own backend, and a join across two of them cannot
+run.
+
+So an ask that spans two systems is a data store query, and every table it needs must be stored.
+See "Choose the data store or the live connection" in section 5.
 
 ## 2. Read the contract
 
@@ -116,21 +160,39 @@ template is a good one: `doc list "Insights Workbook" --fields name,title,from_t
 People share workbooks. A metric somebody already defined and uses every day is more
 likely correct than one you derive from column names.
 
-**Search the corpus. Do not download it.** `operations` and `config` are JSON text columns, so the
-site can grep them for you, and a `like` filter is the whole search:
+**Search the corpus. Do not download it.** Titles and the JSON fields are text columns, so the site
+greps them for you, and a `like` filter is the whole search.
+
+**Search titles first.** A person wrote them, in the same business language the user is asking in.
+This is the rung that translates "partner" into a real definition:
 
 ```sh
-# which readable queries mention this table, this column, this event name?
+frappectl -s $SITE method call insights.api.workbooks.get_workbooks -F search_term=partner
 frappectl -s $SITE doc list "Insights Query v3" \
-  --filters-json '{"operations":["like","%tabSales Invoice%"]}' \
-  --fields name,title,workbook --all
-
+  --filters-json '{"title":["like","%partner%"]}' --fields name,title,workbook --all
 frappectl -s $SITE doc list "Insights Chart v3" \
-  --filters-json '{"config":["like","%base_net_total%"]}' \
-  --fields name,title,workbook,chart_type --all
+  --filters-json '{"title":["like","%partner%"]}' --fields name,title,workbook,chart_type --all
 ```
 
-That returns a shortlist of names. Then `doc get` the two or three worth reading.
+`get_workbooks` searches titles only, so run the query and chart searches too — a workbook titled
+"Cloud Metrics" can hold the partner definition.
+
+**Then search the JSON**, which reaches column names, expression text, filter values and measure
+names — where a definition lives even when no title says so:
+
+```sh
+frappectl -s $SITE doc list "Insights Query v3" \
+  --filters-json '{"operations":["like","%partner%"]}' --fields name,title,workbook --all
+
+frappectl -s $SITE doc list "Insights Chart v3" \
+  --filters-json '{"config":["like","%base_net_total%"]}' --fields name,title,workbook,chart_type --all
+```
+
+Search one word at a time, and search the words the *user* used before the words the schema uses.
+`like` matches a substring and nothing else — no synonyms, no stemming — so "partner" finds
+"is_partner" and "Partner Sites", and "partner persona" finds neither.
+
+Each search returns a shortlist of names. Then `doc get` the two or three worth reading.
 
 The unfiltered form — `doc list "Insights Query v3" --fields name,title,workbook,operations --all` —
 pulls every readable query's whole pipeline. It is fine on a site with six workbooks and useless on
@@ -469,8 +531,9 @@ exists.
 | Who am I, and on which site | `auth whoami` |
 | List workbooks | `method call insights.api.workbooks.get_workbooks` (`search_term`, `limit`, `scope`) |
 | List data sources | `method call insights.api.data_sources.get_all_data_sources` |
-| List tables | `method call insights.api.data_sources.get_data_source_tables` (`data_source`, `search_term`, `limit`) |
+| Search tables, all sources | `method call insights.api.data_sources.get_data_source_tables` (`search_term`, `limit`; omit `data_source` to search every source) |
 | Table columns and types | `method call insights.api.data_sources.get_data_source_table_columns` (`data_source`, `table_name`) |
+| Every table with its columns, one source | `method call insights.api.data_sources.get_schema` (`data_source`) — expensive, opens each table |
 | Table row count | `method call insights.api.data_sources.get_data_source_table_row_count` (`data_source`, `table_name`) |
 | Real values of a column | `method call get_distinct_column_values --doctype "Insights Query v3" --name <n>` (`column_name`, `search_term`, `limit`, `active_operation_idx`) |
 | Known joins between two tables | `method call insights.api.data_sources.get_table_links` (`data_source`, `left_table`, `right_table`) |
