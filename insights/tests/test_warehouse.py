@@ -167,13 +167,7 @@ class TestWarehouse(InsightsIntegrationTestCase):
 
 
 class TestWarehouseWriteLock(InsightsIntegrationTestCase):
-    """A writer must wait out the readers holding the warehouse file.
-
-    DuckDB gives the file to one writer or to many readers, never both, and a
-    web worker holds its read connection until its request ends. Before this,
-    an import failed on the first conflict — the single largest cause of failed
-    imports in production.
-    """
+    """A writer must wait out the readers holding the warehouse file."""
 
     @contextmanager
     def warehouse_held_by_a_reader(self, hold_seconds):
@@ -205,7 +199,7 @@ class TestWarehouseWriteLock(InsightsIntegrationTestCase):
             self.assertGreaterEqual(waited, 2, "the write open returned before the reader let go")
 
     def test_write_open_gives_up_at_the_timeout(self):
-        with self.warehouse_held_by_a_reader(hold_seconds=5) as (path, tmpdir):
+        with self.warehouse_held_by_a_reader(hold_seconds=2) as (path, tmpdir):
             with self.assertRaises(IOException) as caught:
                 open_local_duckdb(path, read_only=False, allowed_dir=tmpdir, lock_timeout=1)
 

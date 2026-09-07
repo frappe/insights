@@ -16,8 +16,13 @@ from ibis.backends.duckdb import Backend as DuckDBBackend
 # DuckDB hands a file to one writer or to many readers, never both, and a read
 # connection holds its shared lock until its request ends. A writer that arrives
 # mid-request must therefore wait the readers out instead of failing on the
-# first attempt. Every writer here runs in a background job, so it can afford to.
-WRITE_LOCK_TIMEOUT = 5 * 60
+# first attempt.
+#
+# How long it may wait is the caller's business, not the file's. A writer serving
+# a click must not hold a web worker while readers come and go, so the default
+# stays short. A writer in a background job can afford to sit it out, and asks.
+WRITE_LOCK_TIMEOUT = 30
+BACKGROUND_WRITE_LOCK_TIMEOUT = 5 * 60
 WRITE_LOCK_RETRY_INTERVAL = 1
 
 
