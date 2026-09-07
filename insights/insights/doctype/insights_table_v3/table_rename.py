@@ -225,7 +225,8 @@ def drop_warehouse_table(data_source: str, table: str) -> None:
 
     `WarehouseTable.drop` waits on the write lock. A Table Import holds that lock for its
     whole run. A rename that raised here would roll back the records it already moved. An
-    undropped table is harmless, because `drop_orphan_warehouse_tables` collects it.
+    undropped table costs disk until someone removes it. A half-renamed set of records
+    cannot be recovered at all.
     """
     try:
         insights.warehouse.get_table(data_source, table).drop()
