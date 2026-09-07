@@ -22,6 +22,7 @@ from ibis.expr.types import Expr, Table
 
 import insights
 from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import (
+    WRITE_LOCK_TIMEOUT,
     local_duckdb_write_connection,
     local_duckdb_write_lock,
     open_local_duckdb,
@@ -84,7 +85,7 @@ class Warehouse:
 
     @contextmanager
     def get_write_connection(
-        self, database: str | None = None, timeout: int = 30
+        self, database: str | None = None, timeout: int = WRITE_LOCK_TIMEOUT
     ) -> Generator[DuckDBBackend, None, None]:
         path = self.get_db_path()
         allowed_dir = str(Path(tempfile.gettempdir()))
@@ -336,6 +337,7 @@ class WarehouseTable:
         except TableNotFound:
             if import_if_not_exists:
                 self.enqueue_import()
+                self.announce_missing_table()
                 remote_table = self.get_remote_table()
                 return insights.warehouse.db.create_table(
                     self.warehouse_table_name,
@@ -351,6 +353,43 @@ class WarehouseTable:
         except Exception as e:
             frappe.log_error(e)
             frappe.throw("Error accessing the data warehouse. Please try again.")
+
+    def announce_missing_table(self):
+        """Say that the empty table the reader is about to get is not the real one.
+
+        A miss substitutes an empty table of the right shape so the chart still
+        renders while the import runs. That is indistinguishable from a table
+        which genuinely holds no rows, so a table whose import keeps failing
+        reads as a legitimate zero. The in-progress case already toasts from
+        enqueue_import; the failed case had nothing at all.
+        """
+        frappe.logger().warning(
+            f"{self.table_name} of {self.data_source} is not in the data warehouse, "
+            "serving an empty table in its place"
+        )
+
+        if not self.last_import_failed():
+            return
+
+        insights.create_toast(
+            f"The last import of {self.table_name} failed, so it has no rows yet. "
+            "Check the import logs of the table in the data store.",
+            title="Import Failed",
+            type="error",
+            duration=7,
+        )
+
+    def last_import_failed(self) -> bool:
+        log = frappe.qb.DocType("Insights Table Import Log")
+        last_status = (
+            frappe.qb.from_(log)
+            .select(log.status)
+            .where((log.data_source == self.data_source) & (log.table_name == self.table_name))
+            .orderby(log.creation, order=frappe.qb.desc)
+            .limit(1)
+            .run()
+        )
+        return bool(last_status) and last_status[0][0] == "Failed"
 
     def get_remote_table(self) -> Expr:
         ds = InsightsDataSourcev3.get_doc(self.data_source)
