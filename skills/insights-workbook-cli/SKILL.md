@@ -116,12 +116,25 @@ template is a good one: `doc list "Insights Workbook" --fields name,title,from_t
 People share workbooks. A metric somebody already defined and uses every day is more
 likely correct than one you derive from column names.
 
-Before you author a metric, look for it:
+**Search the corpus. Do not download it.** `operations` and `config` are JSON text columns, so the
+site can grep them for you, and a `like` filter is the whole search:
 
 ```sh
-frappectl -s $SITE doc list "Insights Query v3" --fields name,title,workbook,operations --all
-frappectl -s $SITE doc list "Insights Chart v3" --fields name,title,workbook,query,config --all
+# which readable queries mention this table, this column, this event name?
+frappectl -s $SITE doc list "Insights Query v3" \
+  --filters-json '{"operations":["like","%tabSales Invoice%"]}' \
+  --fields name,title,workbook --all
+
+frappectl -s $SITE doc list "Insights Chart v3" \
+  --filters-json '{"config":["like","%base_net_total%"]}' \
+  --fields name,title,workbook,chart_type --all
 ```
+
+That returns a shortlist of names. Then `doc get` the two or three worth reading.
+
+The unfiltered form — `doc list "Insights Query v3" --fields name,title,workbook,operations --all` —
+pulls every readable query's whole pipeline. It is fine on a site with six workbooks and useless on
+a site with six hundred. Search first; fetch what the search names.
 
 Both are permission filtered, so what comes back is what the user can read. Look for a
 query over the same tables. Read its `operations` for the calculation — the expression,
@@ -316,8 +329,9 @@ frappectl -s $SITE method call execute \
 - A failure here is often opaque. Run it again with `--debug` and read the server
   messages.
 - An empty `rows` is not a failure by itself, **except** on a data store query whose
-  tables are not all stored yet. See section 5. Always say the row count. Never accept
-  zero silently.
+  tables are not all stored yet — that one fails the check. Compare the query's tables
+  against `get_data_store_tables` and decide, do not warn and pass. See section 5.
+  Always say the row count. Never accept zero silently.
 - `page_size=5` is enough. You are checking that it runs, not reading the data.
 
 ### Check 2 — every chart's columns exist
@@ -335,6 +349,13 @@ Verify a chart against its base query:
 
 A count measure and an expression measure name no column. Skip them.
 
+Then check the sort. `order_by` names are **post-aggregation** names, so they must match
+what the chart's own aggregation produces: a measure by its `measure_name`, a dimension
+by its `dimension_name or column_name`. A sort the chart cannot resolve is dropped, and
+the chart renders in an arbitrary order — a ranking or a time series then reads as
+wrong data. Skip this on a `Table` with non-empty `columns`, which makes its column
+names out of the data.
+
 This proves the column exists. It does not prove it is the right column, or that the
 number is right. Check 4 does that.
 
@@ -344,8 +365,13 @@ For each item in `items`:
 
 - a `chart` item names a chart document that exists in this workbook
 - a `filter` item's `links` name charts that exist, and each link's query segment names
-  a query in that chart's chain, whose `columns` from check 1 contain the column
-- no two items share `layout.i`
+  a query whose `columns` from check 1 contain the column
+- **that query is in the linked chart's chain** — its base query, or a query the base
+  query reads from. The filter is appended to the query it names, so a link to a query
+  the chart does not read from passes every other check and does nothing.
+- every item has a `layout` with an `i`, and no two share it. The grid sums
+  `layout.y + layout.h` over every item, so one item without a layout breaks the whole
+  dashboard.
 
 ### Check 4 — the numbers are right, not just the columns
 

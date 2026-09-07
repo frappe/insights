@@ -295,22 +295,32 @@ def build():
 # --------------------------------------------------------------------------
 
 
-def collect_config_columns(config):
-    """Column names a chart config reads from its base query.
+def read_config(config):
+    """Three name sets a chart config uses.
 
-    Skips `order_by`, whose names are post-aggregation, and any name that matches a
-    measure the config declares. Skips the literal "count" of a row-count measure.
-    An expression measure names no column, so it drops out on its own.
+    `source` -- names read from the base query: dimensions, measures and chart filters.
+    Skips the literal "count" of a row-count measure. An expression measure names no
+    column, so it drops out on its own.
+
+    `output` -- names the chart's own aggregation produces. `translate_measure` names a
+    measure by `measure_name`; `translate_dimension` names a dimension by
+    `dimension_name or column_name`, and granularity keeps the name.
+
+    `sorted_by` -- names in `order_by`, which are output names, not source names.
     """
-    measure_names = set()
-    columns = set()
+    source, output, sorted_by = set(), set(), set()
 
     def walk(node, in_order_by):
         if isinstance(node, dict):
-            if "measure_name" in node:
-                measure_names.add(node["measure_name"])
-            if not in_order_by and isinstance(node.get("column_name"), str):
-                columns.add(node["column_name"])
+            if isinstance(node.get("measure_name"), str):
+                output.add(node["measure_name"])
+            if isinstance(node.get("dimension_name"), str):
+                output.add(node["dimension_name"])
+            elif "granularity" in node and isinstance(node.get("column_name"), str):
+                output.add(node["column_name"])
+            name = node.get("column_name")
+            if isinstance(name, str):
+                (sorted_by if in_order_by else source).add(name)
             for key, value in node.items():
                 walk(value, in_order_by or key == "order_by")
         elif isinstance(node, list):
@@ -318,7 +328,53 @@ def collect_config_columns(config):
                 walk(item, in_order_by)
 
     walk(config, False)
-    return {c for c in columns - measure_names if c != "count"}
+    source.discard("count")
+    return source, output, sorted_by
+
+
+def source_tables(operations):
+    """Every real table an operations pipeline reads, as (data_source, table_name)."""
+    tables = set()
+
+    def walk(node):
+        if isinstance(node, dict):
+            if node.get("type") == "table" and node.get("table_name"):
+                tables.add((node.get("data_source"), node["table_name"]))
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    walk(operations)
+    return tables
+
+
+def query_chain(query_name, operations_by_query):
+    """A query and every query it reads from, transitively.
+
+    A dashboard filter applies to the query it names, so it only reaches a chart when
+    that query is somewhere in the chart's chain.
+    """
+    chain, pending = set(), [query_name]
+    while pending:
+        current = pending.pop()
+        if current in chain or current not in operations_by_query:
+            continue
+        chain.add(current)
+
+        def walk(node):
+            if isinstance(node, dict):
+                if node.get("type") == "query" and node.get("query_name"):
+                    pending.append(node["query_name"])
+                for value in node.values():
+                    walk(value)
+            elif isinstance(node, list):
+                for item in node:
+                    walk(item)
+
+        walk(operations_by_query[current])
+    return chain
 
 
 def verify():
@@ -333,7 +389,7 @@ def verify():
             "-f",
             f"workbook={WORKBOOK}",
             "--fields",
-            "name,title,operations",
+            "name,title,operations,use_live_connection",
             "--all",
         )
         or []
@@ -346,7 +402,7 @@ def verify():
             "-f",
             f"workbook={WORKBOOK}",
             "--fields",
-            "name,title,query,config",
+            "name,title,query,chart_type,config",
             "--all",
         )
         or []
@@ -365,9 +421,18 @@ def verify():
         or []
     )
 
+    stored = {
+        (t["data_source"], t["table_name"])
+        for t in (
+            call("method", "call", "insights.api.data_store.get_data_store_tables", "-F", "limit=1000") or []
+        )
+    }
+    operations_by_query = {q["name"]: json.loads(q.get("operations") or "[]") for q in queries}
+
     # Check 1 -- every query builds and runs.
     for q in queries:
-        if not json.loads(q.get("operations") or "[]"):
+        operations = operations_by_query[q["name"]]
+        if not operations:
             continue  # a chart's own data_query is empty until the UI opens it
         try:
             result = execute(q["name"])
@@ -377,28 +442,52 @@ def verify():
         query_columns[q["name"]] = {c["name"] for c in result["columns"]}
         rows = len(result["rows"])
         print(f"query {q['name']} ({q['title']}): {rows} rows, " f"{len(query_columns[q['name']])} columns")
-        if rows == 0:
-            print(
-                "  zero rows -- report this to the user. On a data store query it can "
-                "mean an import is still running."
-            )
+        if rows:
+            continue
 
-    # Check 2 -- every chart's columns exist in its base query.
+        # Zero rows is a real answer on a live query. On a data store query it is not,
+        # when a table is still importing: get_ibis_table hands back an empty table with
+        # the right schema rather than an error, so the query "succeeds" and reads empty.
+        unstored = sorted(t for t in source_tables(operations) if t not in stored)
+        if not q.get("use_live_connection") and unstored:
+            failures.append(
+                f"query {q['name']} ({q['title']}) read zero rows from the data store, and "
+                f"{unstored} is not stored yet. The import is queued -- verify again when it "
+                "finishes, or set use_live_connection to 1."
+            )
+        else:
+            print("  zero rows -- say so to the user. Only they know whether that is wrong.")
+
+    # Check 2 -- every chart's columns exist in its base query, and it sorts by a name
+    # its own aggregation produces.
     for c in charts:
         cols = query_columns.get(c["query"])
         if cols is None:
             failures.append(f"chart {c['name']} ({c['title']}) has no runnable base query")
             continue
-        wanted = collect_config_columns(json.loads(c.get("config") or "{}"))
-        missing = sorted(wanted - cols)
+        config = json.loads(c.get("config") or "{}")
+        source, output, sorted_by = read_config(config)
+
+        missing = sorted(source - cols)
         if missing:
             failures.append(
                 f"chart {c['name']} ({c['title']}) names columns its query does not have: "
                 f"{missing}. The query has: {sorted(cols)}"
             )
 
+        # A pivoting Table makes its column names out of the data, so they are unknowable here.
+        pivots = c.get("chart_type") == "Table" and config.get("columns")
+        unknown = sorted(sorted_by - output) if not pivots else []
+        if unknown:
+            failures.append(
+                f"chart {c['name']} ({c['title']}) sorts by {unknown}, which its aggregation does "
+                f"not produce. It produces: {sorted(output)}. A sort it cannot resolve is dropped, "
+                "so the chart renders in an arbitrary order."
+            )
+
     # Check 3 -- every dashboard reference resolves.
-    chart_names = {c["name"] for c in charts}
+    chart_base_query = {c["name"]: c["query"] for c in charts}
+    chart_names = set(chart_base_query)
     for d in dashboards:
         items = json.loads(d.get("items") or "[]")
         seen = set()
@@ -407,27 +496,41 @@ def verify():
                 failures.append(
                     f"dashboard {d['name']} has a text item -- put that prose in the reply instead"
                 )
-            i = item.get("layout", {}).get("i")
-            if i in seen:
-                failures.append(f"dashboard {d['name']} has two items with layout.i {i!r}")
-            seen.add(i)
+
+            # The grid reads item.layout.y and item.layout.h for every item, so one item
+            # without a layout breaks the whole dashboard, not just itself.
+            layout = item.get("layout")
+            if not isinstance(layout, dict) or not layout.get("i"):
+                failures.append(
+                    f"dashboard {d['name']} has an item with no layout.i: {item.get('type')} "
+                    f"{item.get('chart') or item.get('filter_name')!r}"
+                )
+            else:
+                if layout["i"] in seen:
+                    failures.append(f"dashboard {d['name']} has two items with layout.i {layout['i']!r}")
+                seen.add(layout["i"])
+
             if item.get("type") == "chart" and item.get("chart") not in chart_names:
                 failures.append(
                     f"dashboard {d['name']} points at chart {item.get('chart')!r}, "
                     "which is not in this workbook"
                 )
             for chart, link in (item.get("links") or {}).items():
+                label = f"dashboard {d['name']} filter {item.get('filter_name')!r}"
                 if chart not in chart_names:
-                    failures.append(
-                        f"dashboard {d['name']} filter {item.get('filter_name')!r} links "
-                        f"chart {chart!r}, which is not in this workbook"
-                    )
+                    failures.append(f"{label} links chart {chart!r}, which is not in this workbook")
                     continue
                 query, _, column = link.strip("`").partition("`.`")
                 if column not in query_columns.get(query, set()):
+                    failures.append(f"{label} links `{query}`.`{column}`, which that query does not have")
+                    continue
+                # The filter is appended to the query it names. It reaches the chart only
+                # when that query is the chart's base query or feeds it.
+                chain = query_chain(chart_base_query[chart], operations_by_query)
+                if query not in chain:
                     failures.append(
-                        f"dashboard {d['name']} filter {item.get('filter_name')!r} links "
-                        f"`{query}`.`{column}`, which that query does not have"
+                        f"{label} links chart {chart!r} to query {query!r}, which that chart does "
+                        f"not read from. The filter would do nothing. Its chain is: {sorted(chain)}"
                     )
 
     # Working papers do not ship.
