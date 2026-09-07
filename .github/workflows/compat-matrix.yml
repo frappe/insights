@@ -6,6 +6,10 @@ on:
     - cron: '0 2 * * *'
   workflow_dispatch:
 
+concurrency:
+  group: compat-matrix-${{ github.event_name }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -17,21 +21,49 @@ jobs:
       matrix:
         insights_branch: [main, version-3, develop]
         frappe_branch: [version-15, version-16]
+        exclude:
+          # main is Insights v2, which never targeted Frappe v16
+          - insights_branch: main
+            frappe_branch: version-16
 
     name: Install (Insights=${{ matrix.insights_branch }}, Frappe=${{ matrix.frappe_branch }})
 
     services:
       mariadb:
-        image: mariadb:10.6
+        # Each Frappe branch runs the MariaDB its own CI runs
+        image: mariadb:${{ matrix.frappe_branch == 'version-16' && '11.8' || '10.6' }}
         env:
           MYSQL_ROOT_PASSWORD: root
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping"
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
           --health-interval=5s
           --health-timeout=2s
-          --health-retries=3
+          --health-retries=10
+
+      # bench keeps the default redis hosts even when it skips config
+      # generation, so these ports must answer. Frappe v16 raises a redis
+      # connection error where v15 only warns.
+      redis-cache:
+        image: redis:8-alpine
+        ports:
+          - 13000:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s
+          --health-timeout=2s
+          --health-retries=5
+
+      redis-queue:
+        image: redis:8-alpine
+        ports:
+          - 11000:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s
+          --health-timeout=2s
+          --health-retries=5
 
     env:
       BENCH_PATH: /home/runner/frappe-bench
@@ -41,17 +73,17 @@ jobs:
 
     steps:
       - name: Checkout Insights
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ matrix.insights_branch }}
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.frappe_branch == 'version-16' && '3.14' || '3.10' }}
 
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.frappe_branch == 'version-16' && '24' || '20' }}
 
@@ -87,3 +119,45 @@ jobs:
             --admin-password "$ADMIN_PASSWORD"
           bench --site "$SITE_NAME" install-app insights
           bench --site "$SITE_NAME" run-tests --app insights --module insights.tests.test_basic_workflow
+
+  report-failure:
+    name: Report failure
+    needs: install-matrix
+    if: ${{ failure() && github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      # A scheduled run has no reviewer. Without this the matrix stays red
+      # unnoticed, which it did for a week.
+      - name: Open or update the tracking issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create compat-matrix \
+            --repo "$GITHUB_REPOSITORY" \
+            --description "Nightly Frappe compatibility matrix" \
+            --color d73a4a \
+            --force
+
+          existing=$(gh issue list \
+            --repo "$GITHUB_REPOSITORY" \
+            --state open \
+            --label compat-matrix \
+            --limit 1 \
+            --json number \
+            --jq '.[0].number')
+
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" \
+              --repo "$GITHUB_REPOSITORY" \
+              --body "Still failing: $RUN_URL"
+          else
+            gh issue create \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "Nightly compatibility matrix is failing" \
+              --label compat-matrix \
+              --body "The nightly compatibility matrix failed. Run: $RUN_URL"
+          fi
