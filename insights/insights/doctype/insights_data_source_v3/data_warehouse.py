@@ -28,6 +28,7 @@ from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import 
     local_duckdb_write_lock,
     open_local_duckdb,
 )
+from insights.insights.doctype.insights_table_v3.insights_table_v3 import store_columns
 from insights.utils import InsightsDataSourcev3, InsightsTablev3
 
 WAREHOUSE_DB_NAME = "insights"
@@ -396,7 +397,11 @@ class WarehouseTable:
 
     def get_remote_table(self) -> Expr:
         ds = InsightsDataSourcev3.get_doc(self.data_source)
-        return ds.get_ibis_table(self.table_name)
+        remote_table = ds.get_ibis_table(self.table_name)
+        # the only read of the source schema in the warehouse path, so it is the
+        # one place that can record the columns without paying for them twice
+        store_columns(self.data_source, self.table_name, remote_table.schema())
+        return remote_table
 
     def enqueue_import(self) -> bool:
         """Queue an import for this table. True when one was already under way."""
