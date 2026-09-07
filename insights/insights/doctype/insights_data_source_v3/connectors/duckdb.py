@@ -91,8 +91,6 @@ def _connect_for_write(path: str, lock_timeout: float) -> DuckDBBackend:
 
 
 @contextmanager
-<<<<<<< HEAD
-=======
 def local_duckdb_write_lock(
     path: str,
     cache_key: str,
@@ -131,7 +129,6 @@ def local_duckdb_write_lock(
 
 
 @contextmanager
->>>>>>> a99707f (fix: wait for readers before opening the warehouse for a write (#1375))
 def local_duckdb_write_connection(
     path: str,
     cache_key: str,
@@ -156,21 +153,7 @@ def local_duckdb_write_connection(
         timeout: Total seconds to spend obtaining the write connection, lock
             and readers together.
     """
-<<<<<<< HEAD
-    from frappe.utils.synchronization import filelock
-
-    import insights
-
-    lock_name = f"insights_duckdb_write_{frappe.scrub(os.path.basename(path))}"
-    with filelock(lock_name, timeout=timeout):
-        with suppress(Exception):
-            cached = insights.db_connections.pop(cache_key, None)
-            if cached:
-                cached.disconnect()
-
-=======
     with local_duckdb_write_lock(path, cache_key, timeout=timeout) as lock_timeout:
->>>>>>> a99707f (fix: wait for readers before opening the warehouse for a write (#1375))
         db = open_local_duckdb(
             path,
             read_only=False,
