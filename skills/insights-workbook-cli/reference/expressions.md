@@ -1,0 +1,85 @@
+# Expression language
+
+Expressions appear in `mutate`, expression measures, expression filters, and join conditions. An
+expression is a **Python expression evaluated against ibis**, with this context:
+
+- every current column of the query by bare name (`base_net_total`, `posting_date`); for names that
+  are not valid identifiers use `q['column name']` (`q` is the current table)
+- the function library below
+- `ibis` (the module) and `literal`
+
+Python syntax rules apply: `==` not `=`; `and` / `or` / `not` do NOT work on columns — use `&`, `|`,
+`~` with parentheses around each comparison; strings in quotes.
+
+```python
+(status == 'Paid') & (base_net_total > 1000)
+```
+
+## Gotchas that cause real failures
+
+- **A bare string or number as a whole `mutate` expression fails.** The result is `.cast()` to the
+  declared `data_type`, and a Python `str` has no `.cast`. Write `ibis.literal('1. Total')` or
+  `literal(0)`. This is how the templates label union branches.
+- **After `summarize`, only the summarized columns exist** — use the sanitized snake_case measure and
+  dimension names.
+- **Aggregations belong in expression measures and `summarize`.** In `mutate` they compute
+  window-style over the whole table, which is almost never what was asked for.
+- **Division by zero** returns null or errors depending on the backend: guard with
+  `if_else(x != 0, a / x, 0)`.
+- Dates compare against date expressions, not strings: `delivery_date < today()`.
+
+## Function library
+
+Aggregations (expression measures and `summarize`; most take an optional `where=`):
+`sum(col)`, `count()`, `count(col)`, `avg(col)`, `min(col)`, `max(col)`, `median(col)`,
+`distinct_count(col)`, `group_concat(col, sep=',')`.
+
+Conditional aggregations — the workhorses for ratios and percentages:
+`sum_if(condition, col)`, `count_if(condition)`, `distinct_count_if(condition, col)`.
+
+```python
+count_if(status == 'Ordered') / count() * 100   # % converted, data_type Decimal
+sum(debit) - sum(credit)                        # net from a signed ledger
+```
+
+Conditionals: `if_else(cond, then, else_)`, `one_if(cond)`,
+`case(cond, value, cond2, value2, ..., default)`, `cases((cond, value), ..., else_=default)`.
+
+```python
+cases(
+  (days_overdue <= 0, '1. Not Due'),
+  (days_overdue <= 30, '2. 1-30 Days'),
+  (days_overdue <= 60, '3. 31-60 Days'),
+  (days_overdue <= 90, '4. 61-90 Days'),
+  else_='5. 90+ Days',
+)
+```
+
+Numbering bucket labels (`1.`, `2.`, ...) makes them sort correctly as strings in charts.
+
+Numeric: `abs`, `round(col, decimals)`, `floor`, `ceil`, `create_buckets(col, n)`.
+
+String: `lower`, `upper`, `concat(col, ...)`, `replace(col, old, new)`, `find(col, sub)`,
+`substring(col, start, length)`, `contains(col, sub)`, `not_contains`, `starts_with`, `ends_with`,
+`length`, `textsplit(col, delim, max_splits)`, `json_extract(col, *fields)`.
+
+Date/time: `year`, `quarter`, `month`, `week_of_year`, `day`, `day_of_week`, `day_name`, `hour`,
+`minute`, `second`, `format_date(col, fmt)`, `date_diff(a, b, unit='day')`, `date_add(col, n, unit)`,
+`date_sub(col, n, unit)`, `week_start(col)`, `month_start(col)`, `within(col, 'Last 6 months')`,
+`now()`, `today()`.
+
+```python
+date_diff(today(), due_date, 'day')                                    # age in days
+if_else(within(posting_date, 'Current fiscal year'), base_net_total, 0)
+```
+
+Null handling: `coalesce(*cols)`, `if_null(col, value)`, `is_set(col)`, `is_not_set(col)`.
+
+Membership and range (expression filters): `is_in(col, v1, v2, ...)`, `is_not_in`,
+`is_between(col, a, b)`, `is_not_between`.
+
+Window (advanced): `row_number()`, `previous_value(col, group_by, order_by)`, `next_value(...)`,
+`previous_period_value(col, date_col)`, `percentage_change(col, date_col)`, `is_first_row(...)`,
+`is_last_row(...)`, `filter_first_row(group_by, order_by, sort_order)`.
+
+Constants: `literal(value)` (alias `constant`), or `ibis.literal(value)`.

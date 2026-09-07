@@ -1,0 +1,372 @@
+---
+name: insights-workbook-cli
+version: 1
+description: Create, read, update and delete Frappe Insights v3 workbooks — queries, charts and dashboards — on any stock Insights site through the frappectl CLI. Use when the user asks for an Insights workbook, query, chart or dashboard, or wants an existing one changed, explained or deleted.
+---
+
+# Insights workbooks over frappectl
+
+You author workbook content and push it to a live Insights site with `frappectl`. This
+file is the procedure. `reference/` is the contract.
+
+This skill needs nothing installed on the site. It calls stock Insights v3 endpoints
+only.
+
+## Before you start
+
+The user owns the `frappectl` profile for the site. Check it:
+
+```sh
+frappectl -s <profile> auth whoami
+```
+
+If the site has no profile, stop and tell the user to make one. Do not run `auth`
+commands. Do not set `FRAPPE_*` variables.
+
+Pass `-s <profile>` on every call. The examples write `$SITE` for it.
+
+## The CLI is the only interface
+
+Every action you take on the site goes through `frappectl`. Never read or write the
+site's files, database, logs, or bench — not even when the site runs on this machine
+and those paths sit right there.
+
+A local path is an accident of one developer's setup. What you learn there does not
+hold on the site the workbook has to run on, and a workbook built on it breaks there.
+
+### When a call fails and the error names no cause
+
+Insights returns some failures as an exception type and nothing more. An Insights user
+is a Website User, so the framework suppresses the traceback. Do not read the site's
+code. Take these three steps.
+
+1. Retry the call once. Change only what could plausibly matter.
+2. Bisect over the API. Shrink the payload until you have the smallest call that still
+   fails. Say what that proves.
+3. Stop and report to the user. Give the exact command and the exact response.
+
+An error you cannot act on is a site or environment fault, not a payload fault. Your
+job is to hand the user a clean reproduction. Only the user can look inside the site.
+
+Run the failing call again with `--debug` before you report it. The flag prints the
+request and the server's own messages to stderr. Insights often names its fault there
+and nowhere else.
+
+## 1. Read the site before you plan
+
+```sh
+frappectl -s $SITE auth whoami
+frappectl -s $SITE method call insights.api.data_sources.get_all_data_sources
+frappectl -s $SITE method call insights.api.workbooks.get_workbooks
+```
+
+You act as the profile's user, and you see what that user sees. If the user names a
+workbook that `get_workbooks` does not list, it is a missing share, not a missing
+workbook. Insights reports a missing grant as "not found". Ask the user to share it.
+
+Then read the schema you will build on:
+
+```sh
+frappectl -s $SITE method call insights.api.data_sources.get_data_source_tables \
+  -F data_source="Site DB" -F limit=200
+frappectl -s $SITE method call insights.api.data_sources.get_data_source_table_columns \
+  -F data_source="Site DB" -F table_name="tabSales Invoice"
+```
+
+## 2. Read the contract
+
+Read `reference/rules.md` now. It is 34 lines and every rule in it is load-bearing.
+
+Read the rest when the plan needs it:
+
+| File | Read it before you write |
+|---|---|
+| `reference/documents.md` | any document you create — the field shapes |
+| `reference/operations.md` | any query pipeline |
+| `reference/expressions.md` | any `mutate`, expression measure or expression filter |
+| `reference/charts.md` | any chart config |
+| `reference/dashboards.md` | any dashboard layout or filter link |
+| `reference/workbook-format.md` | only when importing a workbook JSON the user gave you |
+
+Plan only with the operation types, chart types and functions these files list. Never
+invent one. The shipped templates in `insights/workbook_templates/*/workbook.json` are
+worked examples.
+
+## 3. Reuse what the user already has
+
+People share workbooks. A metric somebody already defined and uses every day is more
+likely correct than one you derive from column names.
+
+Before you author a metric, look for it:
+
+```sh
+frappectl -s $SITE doc list "Insights Query v3" --fields name,title,workbook,operations --all
+frappectl -s $SITE doc list "Insights Chart v3" --fields name,title,workbook,query,config --all
+```
+
+Both are permission filtered, so what comes back is what the user can read. Look for a
+query over the same tables. Read its `operations` for the calculation — the expression,
+the aggregation, the filter group that defines "revenue" or "active customer" here.
+
+**Copy the calculation into your own query. Do not reference the other workbook's
+query.** A cross-workbook query reference builds and runs, but the workbook's source
+selector lists only queries in its own workbook, so the user cannot see or edit where
+the data came from.
+
+When you reuse a definition, say so in the scope block: the workbook, the query, and
+the expression you copied. If the user's ask differs from the definition you found,
+name the difference and ask.
+
+## 4. Converge on scope with the user
+
+Before you author anything, post a scope block. It states:
+
+- the target workbook, by name
+- the tables to draw from, and the grain of each query
+- every metric, with the exact columns it computes from
+- any definition you reused, and where it came from
+- the dimensions and the filters
+- what the user is actually looking at, so the dashboard leads with it
+
+When more than one column could serve a metric, name the candidates and ask which one.
+Never resolve that ambiguity alone. Never carry an unasked choice into the closing
+summary.
+
+Ask before you sample real values from a column, and wait for the answer.
+
+**Stop here.** Post the scope block, end your turn, and wait for the user's reply.
+Agree the scope with the user, not with yourself.
+
+## 5. Author
+
+### Never create a workbook the user did not ask for
+
+The default is to add to a workbook that exists. "Add a chart", "fix this query", "put
+a filter on the dashboard" — all of these create documents inside the named workbook.
+None of them creates a workbook.
+
+Create a workbook only when the user asks for one in those words. When the target
+workbook is unclear, ask which one. Do not resolve it by making a new one.
+
+Ask before you create a workbook when:
+
+- the user names no workbook and more than one could fit
+- the work would fit an existing workbook you can see
+- you are recovering from a failed attempt — patch or delete what you made, never
+  leave a second copy
+
+### Write through a build script
+
+Every write goes through one Python script you author for the task. Reading and
+exploring stay direct `frappectl` calls.
+
+The reason is verification. The checks in section 6 are list comparisons, and an agent
+comparing lists by hand reports a verdict nobody can audit. In a script the result is
+an exit code.
+
+Copy `examples/build_workbook.py` and edit it. It is a template, not a library — you
+own every line. `frappectl` prints clean JSON when piped, so the whole client is:
+
+```python
+import json, subprocess
+
+def call(*args):
+    p = subprocess.run(["frappectl", "-s", SITE, *args], capture_output=True, text=True)
+    if p.returncode != 0:
+        raise SystemExit(f"{' '.join(args)}\n{p.stderr}")
+    return json.loads(p.stdout) if p.stdout.strip() else None
+```
+
+Keep the script a build tool. One file, standard library only, no abstraction the
+workbook did not ask for.
+
+### Create the documents
+
+Queries, charts and dashboards are plain documents. Each requires exactly one field:
+`workbook`. Permission follows the workbook — write on the workbook is write on its
+contents.
+
+Create them in dependency order, and keep the name the site returns for each:
+
+1. **Queries.** Set `workbook`, `title`, `operations`, and the builder flags from
+   `reference/rules.md`.
+2. **Charts.** Set `workbook`, `title`, `query` (the query's real document name),
+   `chart_type` and `config`. The chart creates its own empty `data_query` on save.
+3. **Dashboards.** Set `workbook`, `title` and `items`. Chart items name the chart's
+   real document name. Filter links name the real query name.
+
+```sh
+frappectl -s $SITE doc create "Insights Query v3" --input /tmp/query.json
+```
+
+You use real document names throughout, so a reference either resolves or fails
+loudly. There is no name remapping and nothing is dropped silently.
+
+### Choose the data store or the live connection
+
+A query reads from the data store when `use_live_connection: 0`, and from the source
+database when it is `1`. The flag is per query. Every table in one query resolves the
+same way — you cannot mix.
+
+Prefer the data store. Return times are much better, and a table you query gets stored,
+so the next run is faster still.
+
+Check what is stored before you choose:
+
+```sh
+frappectl -s $SITE method call insights.api.data_store.get_data_store_tables \
+  -F data_source="Site DB" -F limit=200
+```
+
+If most of the tables your query needs are stored, set `use_live_connection: 0` and
+take the rest with them.
+
+**The first run then returns zero rows, and this is the one case where an empty result
+is a failure.** A table that is not stored yet does not fail the query. Insights
+enqueues the import and substitutes an empty table with the right schema. So:
+
+1. Before you set `use_live_connection: 0`, list which of your tables are missing from
+   `get_data_store_tables`.
+2. If any is missing, tell the user. The import is queued, and the workbook reads empty
+   until it finishes.
+3. Run verify check 1 again after the import. Zero rows from a table you know is not
+   stored yet is an unfinished import, not a result.
+
+Two limits to read before you trust a stored table for a question about history:
+
+```sh
+frappectl -s $SITE doc get "Insights Table v3" <name>
+```
+
+`row_limit` caps the stored copy and keeps the **newest** rows. `sync_from` cuts off
+everything before a date. A stored table is often a recent window, not the whole table.
+When the ask needs more history than the window holds, use `use_live_connection: 1` and
+say why.
+
+## 6. Verify
+
+Verification is your compile step. Never call work finished before it verifies clean.
+Run these checks from the build script.
+
+### Check 1 — every query builds and runs
+
+```sh
+frappectl -s $SITE method call execute \
+  --doctype "Insights Query v3" --name <query_name> -F page_size=5
+```
+
+- The response carries `sql`, `columns`, `rows` and `time_taken`. All four together
+  mean the query compiled and ran.
+- A failure here is often opaque. Run it again with `--debug` and read the server
+  messages.
+- An empty `rows` is not a failure by itself, **except** on a data store query whose
+  tables are not all stored yet. See section 5. Always say the row count. Never accept
+  zero silently.
+- `page_size=5` is enough. You are checking that it runs, not reading the data.
+
+### Check 2 — every chart's columns exist
+
+A chart has no result of its own until the UI opens it. `data_query` is empty at
+creation, so executing it proves nothing.
+
+Verify a chart against its base query:
+
+1. Take `columns` from check 1 for the chart's `query`.
+2. Read every column name the chart's `config` names — dimensions, measures and chart
+   filters.
+3. Every one must appear in `columns`. Report any that does not, and name the columns
+   the query does have.
+
+A count measure and an expression measure name no column. Skip them.
+
+This proves the column exists. It does not prove it is the right column. That still
+needs your judgement.
+
+### Check 3 — every dashboard reference resolves
+
+For each item in `items`:
+
+- a `chart` item names a chart document that exists in this workbook
+- a `filter` item's `links` name charts that exist, and each link's query segment names
+  a query in that chart's chain, whose `columns` from check 1 contain the column
+- no two items share `layout.i`
+
+## 7. Read, update and delete
+
+Read a whole workbook:
+
+```sh
+frappectl -s $SITE doc get "Insights Workbook" <name>
+frappectl -s $SITE doc list "Insights Query v3"     -f workbook=<name> --fields name,title,operations --all
+frappectl -s $SITE doc list "Insights Chart v3"     -f workbook=<name> --fields name,title,query,chart_type,config --all
+frappectl -s $SITE doc list "Insights Dashboard v3" -f workbook=<name> --fields name,title,items --all
+```
+
+Update one JSON field. Write the new value to a file and pass `--input`:
+
+```sh
+frappectl -s $SITE doc update "Insights Query v3" <name> --input /tmp/patch.json
+```
+
+The JSON field per doctype is `operations` on `Insights Query v3`, `config` on
+`Insights Chart v3`, and `items` on `Insights Dashboard v3`.
+
+Change only the field you mean to change. Preserve everything else. `doc update` fails
+on a concurrent edit. That is correct behaviour, so read the error before you reach for
+`--force`.
+
+Delete:
+
+```sh
+frappectl -s $SITE doc delete "Insights Chart v3" <name>
+frappectl -s $SITE doc delete "Insights Workbook" <name>
+```
+
+Deleting a workbook deletes its queries, charts, dashboards and folders. Confirm with
+the user before you delete anything you did not create in this session.
+
+Verify again after any edit.
+
+## Appendix — importing a workbook JSON
+
+Use this only when the user hands you a workbook JSON to import: a template, or an
+export from another site. It is not the authoring path.
+
+```sh
+frappectl -s $SITE api method/insights.api.workbooks.import_workbook --input /tmp/wb.json
+```
+
+The file holds `{"workbook": <envelope>}`. `reference/workbook-format.md` describes the
+envelope and its name remapping.
+
+**Import creates a new workbook on every call**, so it cannot add to an existing one.
+It returns the new workbook name and a `names` map from your internal names to the
+real document names.
+
+A reference the importer cannot resolve is dropped, not reported. Run the section 6
+checks after any import.
+
+## Commands
+
+Confirmed against the Insights `develop` code. Do not assume anything outside this list
+exists.
+
+| Purpose | Command |
+|---|---|
+| Who am I, and on which site | `auth whoami` |
+| List workbooks | `method call insights.api.workbooks.get_workbooks` (`search_term`, `limit`, `scope`) |
+| List data sources | `method call insights.api.data_sources.get_all_data_sources` |
+| List tables | `method call insights.api.data_sources.get_data_source_tables` (`data_source`, `search_term`, `limit`) |
+| Table columns and types | `method call insights.api.data_sources.get_data_source_table_columns` (`data_source`, `table_name`) |
+| Table row count | `method call insights.api.data_sources.get_data_source_table_row_count` (`data_source`, `table_name`) |
+| Real values of a column | `method call insights.api.data_sources.fetch_column_values` (`data_source`, `table`, `column`, `search_text`) |
+| Known joins between two tables | `method call insights.api.data_sources.get_table_links` (`data_source`, `left_table`, `right_table`) |
+| Stored tables | `method call insights.api.data_store.get_data_store_tables` (`data_source`, `search_term`, `limit`) |
+| Run a saved query | `method call execute --doctype "Insights Query v3" --name <n> -F page_size=5` |
+| Create, read, patch, delete content | `doc create` / `doc get` / `doc list` / `doc update` / `doc delete` |
+| Import a workbook JSON | `api method/insights.api.workbooks.import_workbook --input <file>` |
+
+`fetch_column_values` returns at most 20 values. Use `search_text` to look for one.
+
+`-F key=value` sends a typed scalar. `-F 'key:=<json>'` sends raw JSON. `--input <file>`
+sends a whole JSON body, which is what a document and a JSON field patch need.
