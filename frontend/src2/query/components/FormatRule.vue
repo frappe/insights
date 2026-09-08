@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { DatePicker } from 'frappe-ui'
-import { computed, onMounted, watch } from 'vue'
+import { useChartTokens } from 'frappe-ui/charts'
+import { computed, onMounted, ref, watch } from 'vue'
 import FormControl from '../../components/FormControl.vue'
 import RadioGroup from '../../components/ui/Radio.vue'
 import RadioGroupItem from '../../components/ui/RadioGroupItem.vue'
@@ -20,6 +21,7 @@ import {
 	text_rules,
 	TextOperator,
 } from './formatting_utils'
+import { colorScaleDirection, magnitudeScale } from './formatting_colors'
 const format = defineModel<FormattingMode>({ required: true })
 const props = defineProps<{
 	columnOptions: ColumnOption[] | GroupedColumnOption[]
@@ -204,14 +206,21 @@ const rankOperatorOptions = [
 	{ label: __('Below average'), value: 'below_average' as RankOperator },
 ]
 
+// The swatches draw the ramp they pick, so the option cannot name a color the
+// scale does not paint. `useChartTokens` needs an element to scope the lookup;
+// an empty ref reads the document, which is where the ramps are defined.
+const { tokens } = useChartTokens(ref<HTMLElement>())
+
 const colorScaleOptions = [
 	{
-		label: __('Red-Green'),
-		value: 'Red-Green',
+		label: __('Deeper for higher values'),
+		value: 'ascending',
+		swatches: computed(() => magnitudeScale(tokens.value, 'ascending')),
 	},
 	{
-		label: __('Green-Red'),
-		value: 'Green-Red',
+		label: __('Deeper for lower values'),
+		value: 'descending',
+		swatches: computed(() => magnitudeScale(tokens.value, 'descending')),
 	},
 ]
 
@@ -340,28 +349,26 @@ const isInvalidColumn = computed(() => {
 				<h3 class="text-sm text-ink-gray-5 mb-3">Color</h3>
 				<RadioGroup
 					name="color-scale"
-					:modelValue="(format as color_scale).colorScale"
+					:modelValue="colorScaleDirection((format as color_scale).colorScale)"
 					@update:modelValue="onColorScaleChange($event)"
 				>
-					<RadioGroupItem value="Red-Green" class="[&_label]:w-full">
+					<RadioGroupItem
+						v-for="option in colorScaleOptions"
+						:key="option.value"
+						:value="option.value"
+						class="[&_label]:w-full"
+					>
 						<div class="flex items-center justify-between gap-2 w-full">
-							<span class="text-sm">Red to Green</span>
-							<div class="flex h-2 w-32">
-								<div class="w-1/2 bg-red-400"></div>
-								<div class="w-1/2 bg-red-300"></div>
-								<div class="w-1/2 bg-green-300"></div>
-								<div class="w-1/2 bg-green-500"></div>
-							</div>
-						</div>
-					</RadioGroupItem>
-					<RadioGroupItem value="Green-Red" class="[&_label]:w-full">
-						<div class="flex items-center justify-between gap-2 w-full">
-							<span class="text-sm">Green to Red</span>
-							<div class="flex h-2 w-32">
-								<div class="w-1/2 bg-green-500"></div>
-								<div class="w-1/2 bg-green-300"></div>
-								<div class="w-1/2 bg-red-300"></div>
-								<div class="w-1/2 bg-red-400"></div>
+							<span class="text-sm">{{ option.label }}</span>
+							<!-- the empty slot is drawn too: a scale that starts at
+							     nothing should show that it does -->
+							<div class="flex h-2 w-32 rounded-sm ring-1 ring-outline-gray-1">
+								<div
+									v-for="(fill, i) in option.swatches.value"
+									:key="i"
+									class="flex-1"
+									:style="{ backgroundColor: fill?.backgroundColor }"
+								></div>
 							</div>
 						</div>
 					</RadioGroupItem>

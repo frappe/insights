@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { watchDebounced } from '@vueuse/core'
 import { Button, LoadingIndicator } from 'frappe-ui'
+import { useChartTokens } from 'frappe-ui/charts'
 import { ExternalLink, Plus, Search, Table2Icon } from 'lucide-vue-next'
 import { computed, nextTick, ref } from 'vue'
 import { usePagination } from '../composables/usePagination'
@@ -16,11 +17,16 @@ import {
 	date_rules,
 	FormatGroupArgs,
 	FormattingMode,
-	garByPercentage,
-	ragByPercentage,
 	rank_rules,
 	text_rules,
 } from '../query/components/formatting_utils'
+import {
+	colorScaleDirection,
+	fillAt,
+	magnitudeScale,
+	statusFill,
+	type CellFill,
+} from '../query/components/formatting_colors'
 import { matchesFilter, parseFilterString } from '../query/helpers'
 import { NumberFormat } from '../types/chart.types'
 import {
@@ -248,14 +254,19 @@ const pagination = usePagination({
 	enabled: computed(() => Boolean(props.enablePagination)),
 })
 
-const colorByPercentage = {
-	0: 'bg-white text-ink-gray-8',
-	10: 'bg-[#338AD8]/10 text-ink-gray-8',
-	30: 'bg-[#338AD8]/30 text-ink-gray-8',
-	60: 'bg-[#338AD8]/60 text-ink-gray-8',
-	90: 'bg-[#338AD8]/90 text-white',
-	100: 'bg-[#338AD8] text-white',
-}
+// The grid draws in the same colors every chart does, so a scale reads the
+// same whether it is a heatmap or a column of numbers. `useChartTokens`
+// re-resolves when the theme flips.
+const $root = ref<HTMLElement>()
+const { tokens } = useChartTokens($root)
+
+// Built once per theme rather than per cell: every cell in a column reads the
+// same scale, and a grid asks for it thousands of times. The chart-wide toggle
+// and a column's own rule draw from the same two, so they cannot disagree.
+const scales = computed(() => ({
+	ascending: magnitudeScale(tokens.value, 'ascending'),
+	descending: magnitudeScale(tokens.value, 'descending'),
+}))
 
 const colorByValues = computed(() => {
 	const columns = props.columns
@@ -276,15 +287,10 @@ const colorByValues = computed(() => {
 
 	uniqueValues = uniqueValues.sort((a, b) => a - b)
 	const max = uniqueValues[uniqueValues.length - 1]
-	const uniqueValuesNormalized = uniqueValues.map((val) => Math.round((val / max) * 100))
-	const _colorByValues: Record<number, string> = {}
-	uniqueValuesNormalized.forEach((percentVal, index) => {
-		for (const [percent, color] of Object.entries(colorByPercentage)) {
-			if (percentVal <= Number(percent)) {
-				_colorByValues[uniqueValues[index]] = color
-				break
-			}
-		}
+	const _colorByValues: Record<number, CellFill> = {}
+	uniqueValues.forEach((value) => {
+		const fill = fillAt(scales.value.ascending, Math.round((value / max) * 100))
+		if (fill) _colorByValues[value] = fill
 	})
 
 	return _colorByValues
@@ -329,21 +335,6 @@ const formattingRulesByColumn = computed(() => {
 
 	return result
 })
-
-function getColorClass(colorName: string): string {
-	if (!colorName) return 'bg-surface-gray-6'
-
-	switch (colorName.toLowerCase()) {
-		case 'red':
-			return 'bg-[#d87373] text-white'
-		case 'green':
-			return 'bg-[#6DB678] text-white'
-		case 'amber':
-			return 'bg-[#F8D16E] text-black'
-		default:
-			return colorName.startsWith('bg-') ? colorName : 'bg-surface-gray-6'
-	}
-}
 
 const getColumnMinMax = (columnName: string) => {
 	const colorScaleFormats = formattingRulesByColumn.value[columnName]?.filter(
@@ -410,17 +401,11 @@ const getColumnMinMax = (columnName: string) => {
 	}
 }
 
-function getDefaultColorScaleClass(colName: string, val: any): string {
-	if (props.enableColorScale && isNumberColumn(colName)) {
-		const numVal = Number(val)
-		if (!isNaN(numVal)) {
-			const colorByValue = colorByValues.value as Record<number, string>
-			if (colorByValue && colorByValue[numVal]) {
-				return colorByValue[numVal]
-			}
-		}
-	}
-	return ''
+function getDefaultColorScaleFill(colName: string, val: any): CellFill | undefined {
+	if (!props.enableColorScale || !isNumberColumn(colName)) return undefined
+	const numVal = Number(val)
+	if (isNaN(numVal)) return undefined
+	return (colorByValues.value as Record<number, CellFill>)[numVal]
 }
 
 function normalizeCellValue(colName: string, val: any) {
@@ -430,114 +415,88 @@ function normalizeCellValue(colName: string, val: any) {
 	return val
 }
 
-function getHighlightClassFromRules(colName: string, val: any, rules: FormattingMode[]): string {
+/** The color the first matching rule asks for, if any rule matches. */
+function matchedRuleColor(colName: string, val: any, rules: FormattingMode[]): string | undefined {
+	const value = normalizeCellValue(colName, val)
+
 	for (const format of rules) {
-		let isHighlighted = false
-		let colorClass = ''
-
-		const normalizedValue = normalizeCellValue(colName, val)
-
 		if (format.mode === 'cell_rules' && format.operator && format.value !== undefined) {
-			const rule = {
-				column: colName,
-				operator: format.operator,
-				value: format.value,
-				color: format.color,
-				mode: 'cell_rules',
-			} as unknown as cell_rules
-
-			if (applyRule(normalizedValue, rule)) {
-				isHighlighted = true
-				colorClass = getColorClass(format.color as string)
-			}
+			const rule = { ...format, column: colName } as unknown as cell_rules
+			if (applyRule(value, rule)) return format.color
 		} else if (format.mode === 'text_rules') {
-			const textRule = format as text_rules
-			if (applyTextRule(normalizedValue, textRule)) {
-				isHighlighted = true
-				colorClass = getColorClass(textRule.color)
-			}
+			if (applyTextRule(value, format as text_rules)) return format.color
 		} else if (format.mode === 'date_rules') {
-			const dateRule = format as date_rules
-			if (applyDateRule(normalizedValue, dateRule)) {
-				isHighlighted = true
-				colorClass = getColorClass(dateRule.color)
-			}
+			if (applyDateRule(value, format as date_rules)) return format.color
 		} else if (format.mode === 'rank_rules') {
-			const rankRule = format as rank_rules
 			const allColumnValues =
 				props.rows?.map((row) => normalizeCellValue(colName, row[colName])) || []
-			if (applyRankRule(normalizedValue, rankRule, allColumnValues)) {
-				isHighlighted = true
-				colorClass = getColorClass(rankRule.color)
-			}
-		}
-
-		if (isHighlighted && colorClass) {
-			return colorClass
+			if (applyRankRule(value, format as rank_rules, allColumnValues)) return format.color
 		}
 	}
-	return ''
+	return undefined
 }
 
-function getColorScaleClassFromFormat(colName: string, val: any, format: FormattingMode): string {
-	if (format.mode !== 'color_scale') return ''
+function getColorScaleFillFromFormat(
+	colName: string,
+	val: any,
+	format: FormattingMode,
+): CellFill | undefined {
+	if (format.mode !== 'color_scale') return undefined
 	const numVal = Number(val)
-	if (isNaN(numVal)) return ''
+	if (isNaN(numVal)) return undefined
 
 	const { min, max } = getColumnMinMax(colName)
-	let percentile: number = 0
-	const normalizedValue = (numVal - min) / (max - min)
-	percentile = Math.round(normalizedValue * 100)
-	percentile = Math.max(0, Math.min(100, percentile))
+	const percentile = Math.round(((numVal - min) / (max - min)) * 100)
 
-	let colorScale: Record<string, string>
-	if (format.colorScale) {
-		format.colorScale == 'Red-Green'
-			? (colorScale = ragByPercentage)
-			: (colorScale = garByPercentage)
-	} else {
-		colorScale = ragByPercentage
-	}
-
-	const thresholds = Object.keys(colorScale)
-		.map(Number)
-		.sort((a, b) => a - b)
-
-	let selectedThreshold = thresholds[0]
-	for (const threshold of thresholds) {
-		if (percentile >= threshold) {
-			selectedThreshold = threshold
-		}
-	}
-	const thresholdKey = String(selectedThreshold)
-	const bgClass = colorScale[thresholdKey]?.trim() || 'bg-surface-gray-4'
-	return `${bgClass}`
+	return fillAt(scales.value[colorScaleDirection(format.colorScale)], percentile)
 }
 
-function getColorScaleClassFromRules(colName: string, val: any, rules: FormattingMode[]): string {
+function getColorScaleFillFromRules(
+	colName: string,
+	val: any,
+	rules: FormattingMode[],
+): CellFill | undefined {
 	for (const format of rules) {
 		if (format.mode === 'color_scale') {
-			const cls = getColorScaleClassFromFormat(colName, val, format)
-			if (cls) return cls
+			const fill = getColorScaleFillFromFormat(colName, val, format)
+			if (fill) return fill
 		}
 	}
-	return ''
+	return undefined
 }
 
-function getCellStyleClass(colName: string, val: any): string {
-	const defaultScale = getDefaultColorScaleClass(colName, val)
-	if (defaultScale) return defaultScale
+type CellPaint = Partial<CellFill> & { borderColor?: string }
+
+/**
+ * A filled cell draws its gridline in its own fill. The table's border is an
+ * outline gray picked to separate two bare cells, and any color over a fill is
+ * a seam — recoloring it only changes which color cuts the block. Painting the
+ * border in the fill leaves the cell edge where it was, so nothing reflows,
+ * and a run of filled cells reads as one block.
+ */
+function paint(fill: CellFill): CellPaint {
+	return { ...fill, borderColor: fill.backgroundColor }
+}
+
+/**
+ * What paints a cell. A rule verdict is a semantic class, a scale stop is a
+ * resolved color, and one call hands back whichever applies so the cell binds
+ * both the same way. A cell that nothing paints keeps the table's own grid.
+ */
+function getCellPaint(colName: string, val: any): CellPaint {
+	const defaultScale = getDefaultColorScaleFill(colName, val)
+	if (defaultScale) return paint(defaultScale)
 
 	const rules = formattingRulesByColumn.value[colName]
-	if (!rules?.length) return ''
+	if (!rules?.length) return {}
 
-	const highlight = getHighlightClassFromRules(colName, val, rules)
-	if (highlight) return highlight
+	const ruleColor = matchedRuleColor(colName, val, rules)
+	if (ruleColor) return paint(statusFill(ruleColor, tokens.value))
 
-	const scale = getColorScaleClassFromRules(colName, val, rules)
-	if (scale) return scale
+	const scale = getColorScaleFillFromRules(colName, val, rules)
+	if (scale) return paint(scale)
 
-	return ''
+	return {}
 }
 
 // The grid formats its cells the way every chart does: it states the policy and
@@ -586,6 +545,7 @@ function toggleNewColumn() {
 <template>
 	<div
 		v-if="columns?.length || rows?.length"
+		ref="$root"
 		class="flex h-full w-full flex-col overflow-hidden text-sm"
 	>
 		<div class="w-full flex-1 overflow-y-auto">
@@ -741,18 +701,15 @@ function toggleNewColumn() {
 							:class="[
 								getTextWrapClass(col.name),
 								isNumberColumn(col.name) ? 'tnum text-right' : 'text-left',
-								props.enableColorScale && isNumberColumn(col.name)
-									? colorByValues[row[col.name]]
-									: '',
 								isNumberColumn(col.name) && props.onDrilldown
 									? 'cursor-pointer'
 									: '',
-								getCellStyleClass(col.name, row[col.name]),
 								isStickyColumn(col.name) ? 'sticky bg-surface-base' : '',
 							]"
 							:style="{
 								...getStickyColumnStyle(col.name),
 								...getColumnWidthStyle(col.name),
+								...getCellPaint(col.name, row[col.name]),
 							}"
 							height="30px"
 							@dblclick="
