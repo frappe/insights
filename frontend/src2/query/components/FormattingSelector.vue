@@ -55,10 +55,10 @@ const hasChanged = computed(() => {
 			<FormControl
 				type="select"
 				v-model="selectedFormatMode"
-				label="Format Type"
+				:label="__('Format Type')"
 				:options="[
-					{ label: __('Highlight Cell'), value: 'cell_rules' },
-					{ label: __('Color Scale'), value: 'color_scale' },
+					{ label: __('Highlight cells'), value: 'cell_rules' },
+					{ label: __('Color scale'), value: 'color_scale' },
 				]"
 			>
 			</FormControl>
