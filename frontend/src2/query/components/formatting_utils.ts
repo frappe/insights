@@ -95,6 +95,52 @@ export type rank_rules = {
 // rule and color scale based coloring of cell
 export type FormattingMode = color_scale | cell_rules | text_rules | date_rules | rank_rules
 
+/**
+ * ibis pivots to `{measure}___{value1}___{value2}`, so the measure is the first
+ * part and a dimension value is any part after it.
+ */
+function measureOf(columnName: string): string {
+    return columnName.includes("___") ? columnName.split("___")[0] : columnName
+}
+
+/**
+ * Which rules paint which column. A rule names one of three things, and each is
+ * a whole name rather than a fragment:
+ *
+ *   "Revenue___Women"  the drawn column itself
+ *   "Revenue"          the measure behind every one of a pivot's columns
+ *   "Women"            the dimension value one pivot column stands for
+ *
+ * A rule that names none of them paints nothing. It used to widen to every
+ * numeric column, which turns one stale name into a colored table and reads as
+ * a fault in the palette rather than in the rule.
+ */
+export function rulesByColumn(
+    formats: FormattingMode[] | undefined,
+    columnNames: string[],
+): Record<string, FormattingMode[]> {
+    const result: Record<string, FormattingMode[]> = {}
+    if (!formats?.length) return result
+
+    formats.forEach((format) => {
+        const target = "column" in format ? format.column?.column_name : null
+        if (!target) return
+
+        columnNames
+            .filter(
+                (name) =>
+                    name === target ||
+                    measureOf(name) === target ||
+                    name.endsWith(`___${target}`),
+            )
+            .forEach((name) => {
+                ;(result[name] ??= []).push(format)
+            })
+    })
+
+    return result
+}
+
 // helper functions for date comparison
 function isSameDay(date1: Date, date2: Date): boolean {
     return date1.getDate() === date2.getDate() &&

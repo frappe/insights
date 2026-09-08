@@ -18,6 +18,8 @@ const props = defineProps<{
 	formatGroup?: FormatGroupArgs
 	dimensions: DimensionOption[]
 	columnOptions: ColumnOption[]
+	/** The columns the chart drew. A pivot's columns exist only here. */
+	resultColumnOptions?: ColumnOption[]
 }>()
 
 const emit = defineEmits({ select: (args: FormatGroupArgs) => true })
@@ -76,7 +78,14 @@ const measuresAndDimensions = computed(() => {
 	return [...measures, ...dimensions, ...rows]
 })
 
-const colOptions = computed(() => (measuresAndDimensions.value as ColumnOption[]) || [])
+// A rule names a column the table drew, so the drawn columns are the list. The
+// configured measures and dimensions stand in until the chart has run once,
+// which is also the whole list when the table does not pivot.
+const colOptions = computed<ColumnOption[]>(() =>
+	props.resultColumnOptions?.length
+		? props.resultColumnOptions
+		: (measuresAndDimensions.value as ColumnOption[]),
+)
 
 function editRule(index: number) {
 	const ruleToEditValue = config.value.conditional_formatting?.formats[index]
@@ -113,7 +122,7 @@ function handleFormatSelect(formatGroup: FormatGroupArgs) {
 }
 
 function getColumnType(column_name: string) {
-	const col = measuresAndDimensions.value.find((col) => col.value === column_name)
+	const col = colOptions.value.find((col) => col.value === column_name)
 	if (!col) {
 		return 'String'
 	}

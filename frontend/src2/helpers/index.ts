@@ -427,9 +427,9 @@ export function createHeaders(columns: QueryResultColumn[]) {
 		return {
 			...column,
 			isNested: column.name.includes('___'),
-			// ibis returns nested columns as value1___column1, value2___column1, value3___column1
-			// using the columns as it is will show the value1 on the top and column1, column2, column3 as nested columns
-			// so we reverse the parts to show column1 on the top and value1, value2, value3 as nested columns
+			// ibis pivots to measure___value1___value2, deepest value last. A
+			// header reads the other way round — the outermost dimension on the
+			// top row and the measure on the bottom — so the parts are reversed.
 			parts: column.name.split('___').reverse(),
 		}
 	})

@@ -48,6 +48,11 @@ const dimensions = computed<DimensionOption[]>(() => {
 
 const columnOptions = computed(() => chartQuery.value.result?.columnOptions || [])
 const queryResult = computed(() => chartQuery.value.result)
+
+// What the chart actually drew, not what the query returned. A table pivots
+// after the query, so `Revenue___Women` exists here and nowhere else — and a
+// formatting rule has to be able to name the column it paints.
+const resultColumnOptions = computed(() => preview.result?.columnOptions || [])
 </script>
 
 <template>
@@ -74,6 +79,7 @@ const queryResult = computed(() => chartQuery.value.result)
 		v-model="props.chart.doc.config as TableChartConfig"
 		:dimensions="dimensions"
 		:column-options="columnOptions"
+		:result-column-options="resultColumnOptions"
 	/>
 	<BarChartConfigForm
 		v-if="props.chart.doc.chart_type == 'Bar' || props.chart.doc.chart_type == 'Row'"

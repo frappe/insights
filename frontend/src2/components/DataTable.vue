@@ -18,6 +18,7 @@ import {
 	FormatGroupArgs,
 	FormattingMode,
 	rank_rules,
+	rulesByColumn,
 	text_rules,
 } from '../query/components/formatting_utils'
 import {
@@ -296,45 +297,12 @@ const colorByValues = computed(() => {
 	return _colorByValues
 })
 
-const formattingRulesByColumn = computed(() => {
-	const { formats } = props.formatGroup || {}
-	const columns = props.columns || []
-	const result: Record<string, FormattingMode[]> = {}
-
-	if (!formats?.length) return result
-
-	// ibis generates pivot columns as {measure}___{dim_value1}___{dim_value2}...
-	// so the measure name is always the first part
-	const getMeasureName = (name: string) => (name.includes('___') ? name.split('___')[0] : name)
-
-	formats.forEach((format) => {
-		const target = 'column' in format ? format.column?.column_name : null
-		if (!target) return
-
-		// get matches (direct or pivot suffix)
-		const matchedColumns = columns.filter((col) => {
-			const measureName = getMeasureName(col.name)
-			return measureName === target || col.name.endsWith(`___${target}`)
-		})
-
-		if (matchedColumns.length > 0) {
-			matchedColumns.forEach((col) => {
-				;(result[col.name] ??= []).push(format)
-			})
-		} else {
-			// Only apply to numeric value columns
-			// We skip index 0 since its the dimension/row header
-			columns.forEach((col, idx) => {
-				const isNumeric = FIELDTYPES.NUMBER.includes(col.type)
-				if (idx > 0 && isNumeric) {
-					;(result[col.name] ??= []).push(format)
-				}
-			})
-		}
-	})
-
-	return result
-})
+const formattingRulesByColumn = computed(() =>
+	rulesByColumn(
+		props.formatGroup?.formats,
+		(props.columns || []).map((col) => col.name),
+	),
+)
 
 const getColumnMinMax = (columnName: string) => {
 	const colorScaleFormats = formattingRulesByColumn.value[columnName]?.filter(
