@@ -47,3 +47,8 @@ The first build put the query's actions on a header row above the grid. That row
 
 The "page variant" in *Looks like* above is superseded by this, and so is its footer: the status line reads in the footer, not the pane header. The prototype's `card` variant is the shape of the pane everywhere.
 
+## Amendment, 2026-09-09
+
+The chart builder mounts the pane under the card, and drops the toolbar it drew above it. The card's own header is the page header: the title frappe-ui's `ChartContainer` already draws, with Refresh and the chart menu in its `actions` slot, passed down from the builder through `ChartRenderer` and `ChartCardFrame`.
+
+There is no page header row on the chart page. The title already lives in the card, and a page header would draw it twice. The source query is not in a header either — it is a config field, not an act.

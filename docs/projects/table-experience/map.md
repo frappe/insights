@@ -46,6 +46,7 @@ One picker under the dashboard filter bar, the card filter button, and the build
 - **The status line reads in the footer, left of the pager.** The pane header holds the find and whatever the host puts beside it; an editor with a page header of its own takes the find into that header instead. Footer right is the pager and Export, ghost only. — 03
 - **Search finds rows and jumps to columns.** One input, a panel under it lists the column hits. — 03, 06
 - **Stale is a solid Execute in the page header, not a footer button.** — 03
+- **The header sits on the object the acts belong to.** A query has no card, so its header is a page row. A chart's header is its card's. — 03
 - **The picker has no operator control.** One complete picker per type, include/exclude for dimensions, from/to for measures, calendar with presets for dates. The rare operators sit behind a more menu. — 01
 - **A preset emits a span, a calendar pick emits dates.** So the one picker serves a card filter that resets and a dashboard filter default that must move. — 01
 - **Two frappe-ui changes come first:** export the calendar panel, and let a Popover open without taking focus. — 07

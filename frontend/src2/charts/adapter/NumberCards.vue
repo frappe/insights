@@ -37,16 +37,26 @@ const emit = defineEmits<{
 </script>
 
 <template>
-	<div class="flex w-full gap-4" :class="preview ? 'flex-wrap content-start' : 'h-full'">
-		<NumberReading
-			v-for="card in cards"
-			:key="card.column"
-			:card="card"
-			:preview="preview"
-			:loading="loading"
-			:failure="failure"
-			@card-click="emit('cardClick', $event)"
-			@retry="emit('retry')"
-		/>
+	<div class="flex h-full w-full flex-col gap-2">
+		<!-- A Number Chart has no card to head, so the acts a host passes sit over
+		     the readings instead of beside a title. The row is one button tall:
+		     there is no title line here for the buttons to center on, and the
+		     card around this clips at its edge. -->
+		<div v-if="$slots.actions" class="flex h-7 shrink-0 items-center justify-end">
+			<slot name="actions" />
+		</div>
+
+		<div class="flex w-full gap-4" :class="preview ? 'flex-wrap content-start' : 'h-full'">
+			<NumberReading
+				v-for="card in cards"
+				:key="card.column"
+				:card="card"
+				:preview="preview"
+				:loading="loading"
+				:failure="failure"
+				@card-click="emit('cardClick', $event)"
+				@retry="emit('retry')"
+			/>
+		</div>
 	</div>
 </template>

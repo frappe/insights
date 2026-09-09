@@ -23,6 +23,10 @@ function onDrilldown(column: QueryResultColumn, row: QueryResultRow) {
 
 <template>
 	<ChartContainer :title="props.title">
+		<template v-if="$slots.actions" #actions>
+			<slot name="actions" />
+		</template>
+
 		<!-- The grid runs to the card's own edges, so its first and last columns
 		     end on the card border instead of floating 16px inside it. Nothing
 		     else in the card moves: the title keeps the card's padding, and the

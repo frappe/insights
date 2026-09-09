@@ -48,15 +48,21 @@ function expand() {
 			:chart="props.chart"
 			:column="props.column"
 			@segment-click="clicked = $event"
-		/>
+		>
+			<!-- The card's own header row. A host that heads its page with the card
+			     — the builder — puts the page's acts here. -->
+			<template v-if="$slots.actions" #actions>
+				<slot name="actions" />
+			</template>
+		</ChartCardFrame>
 
-		<!-- One bar for everything a surface offers on the card. A host fills the
+		<!-- One bar for everything a surface offers over the card. A host fills the
 		     slot instead of drawing a second overlay in the same corner. -->
 		<div
-			v-if="canMaximize || $slots.actions"
+			v-if="canMaximize || $slots.overlay"
 			class="absolute top-0 right-0 flex gap-1 p-2 opacity-0 transition-opacity group-hover:opacity-100"
 		>
-			<slot name="actions" />
+			<slot name="overlay" />
 			<Tooltip v-if="canMaximize" :text="__('Expand')">
 				<Button variant="ghost" @click="expand()">
 					<Maximize class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />

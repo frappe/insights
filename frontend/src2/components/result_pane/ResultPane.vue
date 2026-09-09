@@ -30,6 +30,8 @@ const props = defineProps<{
 	stale?: boolean
 	/** Where the host wants the find control. Without one it sits in the pane's own header. */
 	findTarget?: HTMLElement | null
+	/** a host whose rows only back a picture above them has nothing to find in */
+	noFind?: boolean
 }>()
 
 const columns = computed(() => props.query.result.columns || [])
@@ -126,7 +128,7 @@ watch(
 		<!-- The find is the pane's — it knows the rows and the columns — but a
 		     host with a header of its own places it there. Outside the clip
 		     below either way, so the find panel can hang past the border. -->
-		<Teleport v-if="props.findTarget" :to="props.findTarget">
+		<Teleport v-if="props.findTarget && !props.noFind" :to="props.findTarget">
 			<ResultFind
 				ref="$find"
 				v-model="term"
@@ -136,7 +138,7 @@ watch(
 			/>
 		</Teleport>
 		<div
-			v-else
+			v-else-if="!props.noFind || $slots['header-left'] || $slots.actions"
 			class="relative flex h-10 flex-shrink-0 items-center justify-between gap-3 border-b px-3"
 		>
 			<div class="min-w-0">
@@ -145,6 +147,7 @@ watch(
 			<div class="flex flex-shrink-0 items-center gap-2">
 				<slot name="actions" />
 				<ResultFind
+					v-if="!props.noFind"
 					ref="$find"
 					v-model="term"
 					:columns="columns"

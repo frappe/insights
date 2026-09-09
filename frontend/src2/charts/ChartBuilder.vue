@@ -8,8 +8,8 @@ import { downloadImage, waitUntil } from '../helpers'
 import { DropdownOption } from '../types/query.types'
 import useChart from './chart'
 import useChartPreview from './chart_preview'
+import ChartBuilderActions from './components/ChartBuilderActions.vue'
 import ChartBuilderTable from './components/ChartBuilderTable.vue'
-import ChartBuilderToolbar from './components/ChartBuilderToolbar.vue'
 import ChartConfigForm from './components/ChartConfigForm.vue'
 import ChartFilterConfig from './components/ChartFilterConfig.vue'
 import ChartQuerySelector from './components/ChartQuerySelector.vue'
@@ -65,7 +65,10 @@ function downloadChart() {
 	}
 	return downloadImage(chartEl.value, `${chart.doc.title}.png`, 2, {
 		filter: (element: HTMLElement) => {
-			return !element?.classList?.contains('absolute')
+			return (
+				!element?.classList?.contains('absolute') &&
+				!('exportExclude' in (element?.dataset || {}))
+			)
 		},
 	})
 }
@@ -75,25 +78,26 @@ const showShareDialog = ref(false)
 
 <template>
 	<div class="relative flex h-full w-full overflow-hidden">
-		<div class="relative flex h-full w-full flex-col gap-2.5 overflow-hidden px-4 pb-4 pt-2.5">
-			<ChartBuilderToolbar
-				v-if="chart.doc.query"
-				:chart="chart"
-				:preview="preview"
-				:chartEl="chartEl"
-				:onDownload="downloadChart"
-				:onShare="() => (showShareDialog = true)"
-			/>
-			<div
-				ref="chartEl"
-				class="flex min-h-[24rem] flex-1 flex-shrink-0 items-center justify-center"
-			>
-				<ChartRenderer :chart="preview" />
+		<div class="relative flex h-full w-full flex-col gap-3 overflow-hidden px-4 pb-4 pt-3">
+			<!-- no page header: the card's own header is this page's, so the title
+			     is drawn once and the acts sit beside it -->
+			<div ref="chartEl" class="flex min-h-0 flex-1 items-center justify-center">
+				<ChartRenderer :chart="preview" hide-maximize>
+					<template v-if="chart.doc.query" #actions>
+						<ChartBuilderActions
+							:chart="chart"
+							:preview="preview"
+							:chart-el="chartEl"
+							:on-download="downloadChart"
+							:on-share="() => (showShareDialog = true)"
+						/>
+					</template>
+				</ChartRenderer>
 			</div>
 			<ChartBuilderTable v-if="preview.result.executedSQL" />
 		</div>
 		<div
-			class="relative isolate mt-1 flex w-[19rem] flex-shrink-0 flex-col divide-y overflow-y-auto bg-surface-base px-3.5"
+			class="relative isolate mt-1.5 flex w-[19rem] flex-shrink-0 flex-col divide-y overflow-y-auto bg-surface-base px-3.5"
 		>
 			<CollapsibleSection title="Chart">
 				<div class="flex flex-col gap-3">

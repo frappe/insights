@@ -26,7 +26,9 @@ const hasContent = computed(
 </script>
 
 <template>
-	<div v-if="hasContent" class="flex flex-shrink-0 items-center border-t px-2 py-1">
+	<!-- the bar is one button tall with or without its buttons, so a footer that
+	     is only a status line stands as high as one with a pager -->
+	<div v-if="hasContent" class="flex h-9 flex-shrink-0 items-center border-t px-2">
 		<div class="flex flex-1 items-center">
 			<!-- What a result is, in words, is `ResultStatus`'s — the bar only
 			     holds the place for it. -->

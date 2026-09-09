@@ -18,7 +18,8 @@ import ChartSectionEmptySvg from './ChartSectionEmptySvg.vue'
 // so it is the caller that carries it.
 //
 // It draws no card. The border, the padding and the title belong to whoever
-// frames the chart: `ChartCardFrame` on an Insights page, the widget frame on a
+// frames the chart, and `#actions` reaches the row the title heads, in every
+// state and through every filler: `ChartCardFrame` on an Insights page, the widget frame on a
 // desk workspace. A host that has one mounts this and gets the chart alone.
 //
 // The states are frappe-ui's, and what goes inside them is the adapter's answer:
@@ -195,7 +196,11 @@ function reportSegment(target: DrillDownTarget) {
 			:is="filler.component"
 			v-bind="{ ...filler.props, ...stateProps }"
 			v-on="fillerEvents"
-		/>
+		>
+			<template v-if="$slots.actions" #actions>
+				<slot name="actions" />
+			</template>
+		</component>
 
 		<!-- Every state but the picture. `#loading` is left alone: v2 draws a
 		     skeleton the size of the plot, which is what a chart still filling in
@@ -207,6 +212,12 @@ function reportSegment(target: DrillDownTarget) {
 			:error="headline"
 			:empty="true"
 		>
+			<!-- The acts stay put through every state: a chart that failed is a
+			     chart to run again. -->
+			<template v-if="$slots.actions" #actions>
+				<slot name="actions" />
+			</template>
+
 			<!-- the queue turns a card away rather than queueing it, so asking
 			     again is the whole remedy — and a chart that failed for any
 			     other reason is worth one more try too -->

@@ -65,7 +65,7 @@ function editChart() {
 	     needs an authoring seat, so neither is offered there -->
 	<ChartCardFrame v-if="read && dashboard.shared" :chart="read" :column="column" readonly />
 	<ChartRenderer v-else-if="read" :chart="read" :column="column">
-		<template v-if="canEditChart" #actions>
+		<template v-if="canEditChart" #overlay>
 			<Tooltip :text="__('Edit Chart')">
 				<Button variant="ghost" @click="editChart()">
 					<Pencil class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />
