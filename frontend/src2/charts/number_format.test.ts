@@ -79,6 +79,22 @@ describe('what the chart says', () => {
 	})
 })
 
+describe('a precision the number cannot print', () => {
+	// `Intl.NumberFormat` throws outside 0..20 places, which takes down the whole
+	// chart rather than one value. The resolver clamps, so no config can do it.
+	it('reads a negative number of places as none', () => {
+		expect(numberFormatter({ number_format: { decimals: -2 } })(1234.56)).toBe('1,235')
+	})
+
+	it('reads more places than the printer holds as the most it holds', () => {
+		expect(readNumberFormat({ decimals: 40 }).decimals).toBe(20)
+	})
+
+	it('reads a fractional number of places as the whole one under it', () => {
+		expect(readNumberFormat({ decimals: 2.7 }).decimals).toBe(2)
+	})
+})
+
 describe('what one Measure says', () => {
 	it('overrides the chart, key by key', () => {
 		const config = {

@@ -178,12 +178,21 @@ function stated(value: unknown): boolean {
 	return value !== undefined && value !== null
 }
 
+/** What `Intl.NumberFormat` accepts. Outside it, the constructor throws. */
+const MIN_DECIMALS = 0
+const MAX_DECIMALS = 20
+
 /**
  * A number control hands back a string, and an empty one when it is cleared.
  * Cleared means unset — unlike a cleared prefix, which means no prefix.
+ *
+ * A precision outside the range above throws where the number prints, which
+ * takes down the whole chart rather than one value. Clamping here covers every
+ * layer and every config already stored, so nothing downstream checks again.
  */
 function toDecimals(value: unknown): number | undefined {
 	if (!stated(value) || value === '') return undefined
 	const decimals = Number(value)
-	return isNaN(decimals) ? undefined : decimals
+	if (isNaN(decimals)) return undefined
+	return Math.min(MAX_DECIMALS, Math.max(MIN_DECIMALS, Math.floor(decimals)))
 }
