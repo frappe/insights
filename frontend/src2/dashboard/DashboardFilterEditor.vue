@@ -39,12 +39,9 @@ const tabs = [
 	},
 ]
 
-const charts = computed(() => {
-	return dashboard.doc.items
-		.filter((i) => i.type === 'chart')
-		.map((i) => i.chart)
-		.filter(Boolean)
-})
+// Once each: several cells can draw readings of one Number chart, and a filter
+// lands on the chart, not on the cell.
+const charts = computed(() => dashboard.linkedCharts().filter(Boolean))
 
 const queries = computed(() => {
 	return charts.value

@@ -3,11 +3,13 @@ import { Button, Tooltip } from 'frappe-ui'
 import { AlertTriangle, Pencil } from 'lucide-vue-next'
 import { computed, inject, provide } from 'vue'
 import { useRouter } from 'vue-router'
+import { numberReadings } from '../charts/adapter/number'
 import useChart from '../charts/chart'
 import ChartCardFrame from '../charts/components/ChartCardFrame.vue'
 import ChartRenderer from '../charts/components/ChartRenderer.vue'
 import { waitUntil, wheneverChanges } from '../helpers'
 import { __ } from '../translation'
+import { NumberChartConfig } from '../types/chart.types'
 import { WorkbookDashboardChart } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
 
@@ -21,6 +23,13 @@ const chart = computed(() => {
 // the card, drawn from the config being edited rather than from the saved
 // chart, so an unsaved edit shows here too. A public link reads the saved chart.
 const read = computed(() => (props.item.chart ? dashboard.chartRead(props.item.chart) : null))
+
+// A cell always names the reading it draws. One written before a cell could
+// name one draws the first, and says so here rather than leaving the chart to
+// guess which surface it is on.
+const column = computed(
+	() => props.item.column ?? numberReadings(read.value?.doc.config as NumberChartConfig)[0],
+)
 
 if (props.item.chart) {
 	provide('chartName', props.item.chart)
@@ -54,8 +63,8 @@ function editChart() {
 <template>
 	<!-- a public link draws the card read-only: sorting is a query, and a drill
 	     needs an authoring seat, so neither is offered there -->
-	<ChartCardFrame v-if="read && dashboard.shared" :chart="read" readonly />
-	<ChartRenderer v-else-if="read" :chart="read">
+	<ChartCardFrame v-if="read && dashboard.shared" :chart="read" :column="column" readonly />
+	<ChartRenderer v-else-if="read" :chart="read" :column="column">
 		<template v-if="canEditChart" #actions>
 			<Tooltip :text="__('Edit Chart')">
 				<Button variant="ghost" @click="editChart()">

@@ -1,5 +1,5 @@
 import { computed, reactive, ref, toRefs } from 'vue'
-import { NUMBER_CARD_MIN_ROWS, numberCardRows } from '../charts/adapter/number'
+import { numberCardRows, numberReadings } from '../charts/adapter/number'
 import useChart from '../charts/chart'
 import useChartPreview from '../charts/chart_preview'
 import { useSharedChart } from '../charts/chart_read'
@@ -34,6 +34,9 @@ export function parseFilterLink(link: string) {
 	const match = link?.match(/^`([^`]+)`\.`([^`]+)`$/)
 	return match ? { query: match[1], column: match[2] } : null
 }
+
+/** Columns a Number cell is dropped at: a fifth of the grid, so five read as a row of KPIs. */
+const NUMBER_CARD_COLUMNS = 4
 
 const dashboards = new Map<string, Dashboard>()
 
@@ -73,39 +76,76 @@ function makeDashboard(name: string) {
 
 	const filterStates = ref<ViewerFilters>({})
 
-	function addChart(charts: WorkbookChart[]) {
+	async function addChart(charts: WorkbookChart[]) {
 		const maxY = getMaxY()
-		charts.forEach((chart) => {
-			if (
-				!dashboard.doc.items.some((item) => item.type === 'chart' && item.chart === chart.name)
-			) {
-				dashboard.doc.items.push({
+		for (const chart of charts) {
+			const placed = dashboard.doc.items.some(
+				(item) => item.type === 'chart' && item.chart === chart.name
+			)
+			if (placed) continue
+			dashboard.doc.items.push(...(await cellsFor(chart, maxY)))
+		}
+		capture('dashboard_chart_added')
+	}
+
+	/**
+	 * The cells a chart is dropped as.
+	 *
+	 * Every type is one cell except a Number chart: a cell draws one card, so a
+	 * chart stating five readings arrives as five cells side by side, each at the
+	 * height its own card needs. How many there are is in the config and not in
+	 * the list entry, so the chart's document is waited for rather than guessed
+	 * at.
+	 */
+	async function cellsFor(chart: WorkbookChart, y: number): Promise<WorkbookDashboardItem[]> {
+		if (chart.chart_type !== 'Number') {
+			return [
+				{
 					type: 'chart',
 					chart: chart.name,
-					layout: {
-						i: getUniqueId(),
-						x: 0,
-						y: maxY,
-						// A fifth of the grid for a card, because a card is one
-						// number and a row of five reads as a row of KPIs. Its
-						// height is the config's, and `cellRules` restates it as
-						// soon as the chart's own document has loaded.
-						w: chart.chart_type === 'Number' ? 4 : 10,
-						h: chart.chart_type === 'Number' ? NUMBER_CARD_MIN_ROWS : 20,
-					},
-				})
+					layout: { i: getUniqueId(), x: 0, y, w: 10, h: 20 },
+				},
+			]
+		}
+
+		const doc = useChart(chart.name)
+		await waitUntil(() => doc.isloaded)
+		const config = doc.doc.config as NumberChartConfig
+		// A chart nobody has configured yet is one cell, which is the cell it keeps
+		// once its first reading is named.
+		const readings: (string | undefined)[] = numberReadings(config)
+		if (!readings.length) readings.push(undefined)
+
+		const cells: WorkbookDashboardItem[] = []
+		let x = 0
+		let rowY = y
+		let rowHeight = 0
+		for (const column of readings) {
+			if (x + NUMBER_CARD_COLUMNS > GRID_COLUMNS) {
+				x = 0
+				rowY += rowHeight
+				rowHeight = 0
 			}
-		})
-		capture('dashboard_chart_added')
+			const h = numberCardRows(config, column)
+			cells.push({
+				type: 'chart',
+				chart: chart.name,
+				...(column ? { column } : {}),
+				layout: { i: getUniqueId(), x, y: rowY, w: NUMBER_CARD_COLUMNS, h },
+			})
+			x += NUMBER_CARD_COLUMNS
+			rowHeight = Math.max(rowHeight, h)
+		}
+		return cells
 	}
 
 	/**
 	 * What the grid is told about a cell beyond its layout.
 	 *
-	 * A Number cell is the only one with any: its height is what its card holds,
-	 * so the author sets the width and the height follows the config — including
-	 * after the config changes in the workbook. And two of them fit one narrow
-	 * row, where every other cell takes the row to itself.
+	 * A Number cell is the only one with any: its height is what the card of the
+	 * reading it names holds, so the author sets the width and the height follows
+	 * the config — including after the config changes in the workbook. And two of
+	 * them fit one narrow row, where every other cell takes the row to itself.
 	 *
 	 * Nothing is written back. The height is derived on every read, so a chart
 	 * edited in another tab needs no layout save to be drawn at its new height.
@@ -117,7 +157,7 @@ function makeDashboard(name: string) {
 			const chart = useChart(item.chart)
 			if (chart.doc?.chart_type !== 'Number') continue
 			rules[item.layout.i] = {
-				height: numberCardRows(chart.doc.config as NumberChartConfig),
+				height: numberCardRows(chart.doc.config as NumberChartConfig, item.column),
 				halfWidth: true,
 			}
 		}
@@ -261,9 +301,15 @@ function makeDashboard(name: string) {
 	}
 
 	function refresh(force = false) {
-		dashboard.doc.items
-			.filter((item) => item.type === 'chart')
-			.forEach((item) => refreshChart(item.chart, force))
+		// By chart and not by cell: several cells can read one chart, and the read
+		// behind them is one.
+		linkedCharts().forEach((chart_name) => refreshChart(chart_name, force))
+	}
+
+	/** Every chart the grid names, once each. */
+	function linkedCharts() {
+		const items = dashboard.doc.items.filter((item) => item.type === 'chart')
+		return [...new Set(items.map((item) => item.chart))]
 	}
 
 	// The card sends what the grid holds, not what it worked out from it: which
@@ -290,12 +336,13 @@ function makeDashboard(name: string) {
 		read.load(force)
 	}
 
+	// The chart runs once for every cell that reads it, so it is the cell that
+	// reads first that says when — the topmost, leftmost one.
 	function getLayoutRank(chart_name: string) {
-		const item = dashboard.doc.items.find(
-			(item) => item.type === 'chart' && item.chart === chart_name
-		)
-		if (!item) return undefined
-		return layoutRank(item.layout)
+		const ranks = dashboard.doc.items
+			.filter((item) => item.type === 'chart' && item.chart === chart_name)
+			.map((item) => layoutRank(item.layout))
+		return ranks.length ? Math.min(...ranks) : undefined
 	}
 
 	function updateFilterState(filter_name: string, operator?: FilterOperator, value?: FilterValue) {
@@ -401,6 +448,7 @@ function makeDashboard(name: string) {
 		refresh,
 		refreshChart,
 		chartRead,
+		linkedCharts,
 
 		updateFilterState,
 		applyFilter,

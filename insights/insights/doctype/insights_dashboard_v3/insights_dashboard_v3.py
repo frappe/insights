@@ -123,10 +123,16 @@ class InsightsDashboardv3(Document):
         self.enqueue_update_dashboard_preview()
 
     def set_linked_charts(self):
-        self.set(
-            "linked_charts",
-            [{"chart": item["chart"]} for item in frappe.parse_json(self.items) if item["type"] == "chart"],
+        """The charts the grid names, once each.
+
+        A Number chart draws one reading per cell, so several cells can name one
+        chart. This table answers which charts the dashboard reaches, which is a
+        question about charts and not about cells.
+        """
+        charts = dict.fromkeys(
+            item["chart"] for item in frappe.parse_json(self.items) if item["type"] == "chart"
         )
+        self.set("linked_charts", [{"chart": chart} for chart in charts])
 
     def filter_source(self, filter_name: str) -> tuple[str, str, str] | None:
         """The chart, query and column a named filter on this dashboard reads.
