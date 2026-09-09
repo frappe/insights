@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import DOMPurify from 'dompurify'
 import { Button } from 'frappe-ui'
 import { ChartContainer } from 'frappe-ui/charts'
 import { AlertTriangle, RefreshCcw } from 'lucide-vue-next'
 import { computed, shallowRef } from 'vue'
 import { __ } from '../../translation'
 import { EMPTY_RESULT } from '../../query/helpers'
-import { adaptChart, type DrillDownTarget } from '../adapter'
+import { adaptChart, drawsOwnCards, type ChartStateProps, type DrillDownTarget } from '../adapter'
 import { ChartRead } from '../chart_read'
 import { segmentClickEvents, type ChartSegmentClick, type ClickPoint } from '../drill/segment_click'
 import ChartSectionEmptySvg from './ChartSectionEmptySvg.vue'
@@ -20,10 +21,15 @@ import ChartSectionEmptySvg from './ChartSectionEmptySvg.vue'
 // frames the chart: `ChartCardFrame` on an Insights page, the widget frame on a
 // desk workspace. A host that has one mounts this and gets the chart alone.
 //
-// The states are frappe-ui's, for every chart type without exception. What goes
-// inside them is the adapter's answer: it says which component draws this Chart
-// and what to hand it, so nothing here switches on chart type. A new type is
-// added in `charts/adapter`, not here.
+// The states are frappe-ui's, and what goes inside them is the adapter's answer:
+// it says which component draws this Chart and what to hand it, so nothing here
+// switches on chart type. A new type is added in `charts/adapter`, not here.
+//
+// Where the states are drawn is the one thing that varies, and the adapter
+// answers that too. A type with no card of its own wears them on the chrome
+// around the plot. A type that draws cards — a Number Chart's readings are cards
+// already — wears them inside each card, so it is mounted in every state and
+// handed `ChartStateProps` instead.
 //
 // `readonly` is for a surface that cannot change the chart. It decides two
 // things, and they are the same thing: a table's sort rewrites the chart's config
@@ -50,11 +56,17 @@ const chart_type = computed(() => props.chart.doc.chart_type)
 const config = computed(() => props.chart.doc.config)
 const result = computed(() => props.chart.result || { ...EMPTY_RESULT })
 
+// Whether the filler draws the states itself. A property of the chart type, so
+// it is settled before there is a result to adapt.
+const ownsStates = computed(() => drawsOwnCards(chart_type.value))
+
 const filler = computed(() => {
 	// the result outlives a chart type switch, so without this the adapter would
 	// run against the incoming type's still-empty config
 	if (props.chart.configErrors.length) return
-	if (!result.value.columns?.length) return
+	// A filler that owns its states is built from the config alone: its grid has
+	// to stand while the query runs and stand when the query fails.
+	if (!result.value.columns?.length && !ownsStates.value) return
 	return adaptChart({
 		chart_type: chart_type.value,
 		config: config.value,
@@ -99,16 +111,55 @@ const unconfigured = computed(() => {
 })
 
 // Any non-empty string puts the container in its error state. The slot below
-// draws the message itself, because a retry belongs beside it.
-const failure = computed(() => {
+// draws the block itself, because a retry belongs beside the message.
+//
+// The headline names what happened and the detail names why. They are two lines
+// and not one because a card can be short enough to hold only one of them, and
+// then the line to keep is the one every reader can act on. The detail is what
+// gives way, in this block and in a card that draws the failure itself.
+//
+// The headline is short enough for the narrowest surface that draws it, which is
+// one reading of a Number Chart. One line for both, rather than a second string
+// that says the same thing in fewer words.
+const headline = computed(() => {
 	if (state.value === 'serverBusy') return __('The server is busy')
-	// An author can act on what the server said; a reader owns neither the query
-	// nor the config it names, so they are told the chart is out, not why.
-	if (state.value === 'failed') {
-		if (!props.readonly && props.chart.failure) return props.chart.failure
-		return __('This chart is not available')
-	}
+	if (state.value === 'failed') return __('Could not load')
 	return null
+})
+
+// What the server said. An author can act on it. A reader owns neither the query
+// nor the config it names, so a reader gets the headline alone.
+const detail = computed(() => {
+	if (state.value !== 'failed' || props.readonly) return ''
+	return props.chart.failure
+})
+
+// A Frappe exception message carries markup — a link to the docs, a `<br>` — so
+// the detail is drawn as HTML and not as its own source. DOMPurify is what keeps
+// a message that reached the server from a user out of the DOM as script.
+const detailHtml = computed(() => (detail.value ? DOMPurify.sanitize(detail.value) : ''))
+// The tooltip holds the whole message, which an element attribute can only carry
+// as text. Stripping every tag is the same sanitize with nothing allowed through.
+const detailText = computed(() =>
+	detail.value ? DOMPurify.sanitize(detail.value, { ALLOWED_TAGS: [] }) : undefined,
+)
+
+// What a filler that owns its states is told, bound as props beside the rest of
+// its input. Nothing here knows which component reads them.
+const stateProps = computed(() => {
+	if (!ownsStates.value) return {}
+	const owned: ChartStateProps = {
+		loading: state.value === 'loading',
+		failure: headline.value
+			? {
+					headline: headline.value,
+					detailHtml: detailHtml.value,
+					detailText: detailText.value,
+			  }
+			: null,
+		onRetry: () => props.chart.load(true),
+	}
+	return owned
 })
 
 // The events a filler reports a click through, bound without knowing which chart
@@ -136,9 +187,9 @@ function reportSegment(target: DrillDownTarget) {
 <template>
 	<div class="h-full w-full" data-testid="chart" @click.capture="rememberPoint">
 		<component
-			v-if="state === 'chart' && filler"
+			v-if="filler && (state === 'chart' || ownsStates)"
 			:is="filler.component"
-			v-bind="filler.props"
+			v-bind="{ ...filler.props, ...stateProps }"
 			v-on="fillerEvents"
 		/>
 
@@ -149,34 +200,50 @@ function reportSegment(target: DrillDownTarget) {
 			v-else
 			:title="props.title"
 			:loading="state === 'loading'"
-			:error="failure"
+			:error="headline"
 			:empty="true"
 		>
 			<!-- the queue turns a card away rather than queueing it, so asking
 			     again is the whole remedy — and a chart that failed for any
 			     other reason is worth one more try too -->
 			<template #error>
-				<AlertTriangle
-					v-if="state === 'failed'"
-					class="h-6 w-6 text-ink-gray-4"
-					stroke-width="1"
-				/>
-				<p
-					class="line-clamp-3 px-4 text-center text-p-base text-ink-gray-5"
-					:class="{ 'font-mono text-xs leading-5': !props.readonly && chart.failure }"
-					:title="failure || undefined"
-				>
-					{{ failure }}
-				</p>
-				<Button
-					variant="outline"
-					:label="state === 'serverBusy' ? __('Try again') : __('Retry')"
-					@click="chart.load(true)"
-				>
-					<template #prefix>
-						<RefreshCcw class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
-					</template>
-				</Button>
+				<!-- One block, so the headline and the action hold their size and
+				     the detail is the only thing a short box takes back. `status`
+				     and not `alert`: a dashboard can fail eight cards at once, and
+				     eight interruptions say less than one line each. -->
+				<div class="flex min-h-0 w-full flex-col items-center gap-2" role="status">
+					<div class="flex shrink-0 items-center gap-1.5 text-p-sm text-ink-gray-8">
+						<!-- The size of the text it stands beside, here and in every
+						     other failure Insights draws: an icon larger than its
+						     sentence reads as a picture of an error, not as part of
+						     the line that states one. -->
+						<AlertTriangle
+							class="h-3.5 w-3.5 shrink-0 text-ink-red-5"
+							stroke-width="1.5"
+						/>
+						<span>{{ headline }}</span>
+					</div>
+
+					<!-- The whole message is in the tooltip, so the clamp costs
+					     the reader nothing but a hover. -->
+					<p
+						v-if="detailHtml"
+						class="line-clamp-2 px-4 text-p-xs text-ink-gray-5 [&_a]:underline"
+						:title="detailText"
+						v-html="detailHtml"
+					></p>
+
+					<Button
+						class="shrink-0"
+						variant="outline"
+						:label="state === 'serverBusy' ? __('Try again') : __('Retry')"
+						@click="chart.load(true)"
+					>
+						<template #prefix>
+							<RefreshCcw class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
+						</template>
+					</Button>
+				</div>
 			</template>
 
 			<template #empty>

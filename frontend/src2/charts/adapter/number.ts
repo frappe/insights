@@ -37,25 +37,31 @@ export function adaptNumberChart(input: ChartAdapterInput): ChartFiller | undefi
 	const measures = (config.number_columns || []).filter((measure) => measure.measure_name)
 	if (!measures.length) return
 
-	const rows = input.result.rows
+	// The config names every reading, so the grid is built before a result and
+	// built when none arrives: a card with no row prints a dash, and the states
+	// the other types wear on their chrome are drawn inside these cards.
+	const rows = input.result.rows || []
 	// Every reading is the newest one, so the newest row is the row behind the
 	// whole grid — a `previous` comparison reads the one before it.
 	const current = rows[rows.length - 1]
-	if (!current) return
 
 	const series = input.sparklineResult?.rows
 	const cards = measures.map((measure, index) => readingOf(config, rows, measure, index, series))
 
-	return {
+	const filler: ChartFiller = {
 		component: NumberCards,
 		props: { cards },
-		drillDown: {
+	}
+	// Nothing to drill into until there is a row behind the reading.
+	if (current) {
+		filler.drillDown = {
 			cardClick: (event: NumberCardClickEvent) => ({
 				column: event.column,
 				row: current,
 			}),
-		},
+		}
 	}
+	return filler
 }
 
 function readingOf(
@@ -72,8 +78,7 @@ function readingOf(
 	// A Measure formatted as a percent holds the fraction, so Insights scales it
 	// and the format states the unit. What a number means is the caller's.
 	const format = numberFormatOf(config, measure)
-	const scale = (reading: number | null) =>
-		reading !== null ? reading * format.scale : reading
+	const scale = (reading: number | null) => (reading !== null ? reading * format.scale : reading)
 
 	// `color` is per value alone: it is the ink of one reading, and a Chart that
 	// colored every reading the same has said nothing.

@@ -221,8 +221,13 @@ const bound = computed(() => {
 					<ChartCard v-else class="h-full" :card="false">
 						<ChartContainer :loading="props.loading" :error="failure" :empty="true">
 							<template #error>
-								<AlertTriangle class="h-6 w-6 text-ink-gray-4" stroke-width="1" />
-								<p class="text-p-base text-ink-gray-5">{{ failure }}</p>
+								<div class="flex items-center gap-1.5 text-p-base text-ink-gray-5">
+									<AlertTriangle
+										class="h-3.5 w-3.5 shrink-0 text-ink-red-5"
+										stroke-width="1.5"
+									/>
+									<span>{{ failure }}</span>
+								</div>
 							</template>
 						</ChartContainer>
 					</ChartCard>

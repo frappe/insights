@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { EMPTY_RESULT } from '../../query/helpers'
 import { numberChart, type NumberChartSpec } from './fixtures'
 import { adaptChart, drawsOwnCards } from './index'
 import NumberCards from './NumberCards.vue'
@@ -35,11 +36,7 @@ describe('a Number Chart with several values', () => {
 		})
 
 		expect(component).toBe(NumberCards)
-		expect(props.cards.map((card: any) => card.title)).toEqual([
-			'Revenue',
-			'Profit',
-			'Items',
-		])
+		expect(props.cards.map((card: any) => card.title)).toEqual(['Revenue', 'Profit', 'Items'])
 		expect(props.cards.map((card: any) => card.value)).toEqual([100, 40, 7])
 	})
 
@@ -58,6 +55,21 @@ describe('a Number Chart with several values', () => {
 	it('draws nothing until the Chart names a Measure', () => {
 		expect(adaptChart(numberChart({ values: [] }))).toBeUndefined()
 	})
+
+	it('stands the grid up from the config alone, so the cards wear the states', () => {
+		// The cards are this type's only surface: a chart still running, or one
+		// that failed, is drawn on them and not on a chrome it does not have. So
+		// the grid is built before a result, with a titled card and no reading.
+		const filler = adaptChart({
+			...numberChart({ values: [{ name: 'Revenue', readings: [100] }] }),
+			result: { ...EMPTY_RESULT },
+		})
+
+		expect(filler?.props.cards.map((card: any) => card.title)).toEqual(['Revenue'])
+		expect(filler?.props.cards[0].value).toBeNull()
+		// Nothing to drill into: no row stands behind the reading.
+		expect(filler?.drillDown).toBeUndefined()
+	})
 })
 
 describe('how a reading is printed', () => {
@@ -75,7 +87,10 @@ describe('how a reading is printed', () => {
 
 	it('falls back to what the Chart set for every value', () => {
 		const cards = cardsOf({
-			values: [{ name: 'Revenue', readings: [12300] }, { name: 'Items', readings: [7], decimal: 0 }],
+			values: [
+				{ name: 'Revenue', readings: [12300] },
+				{ name: 'Items', readings: [7], decimal: 0 },
+			],
 			decimal: 2,
 			suffix: ' sold',
 		})
@@ -135,7 +150,9 @@ describe('the target', () => {
 	})
 
 	it('names none when the value aims at nothing, or at a column with no number', () => {
-		expect(cardsOf({ values: [{ name: 'Revenue', readings: [300] }] })[0].target).toBeUndefined()
+		expect(
+			cardsOf({ values: [{ name: 'Revenue', readings: [300] }] })[0].target,
+		).toBeUndefined()
 		expect(
 			cardsOf({
 				values: [{ name: 'Revenue', readings: [300], target: [null], targetColumn: true }],
@@ -181,7 +198,11 @@ describe('the comparison', () => {
 	it('measures against a fixed number, and calls it the target when unworded', () => {
 		const card = cardsOf({
 			values: [
-				{ name: 'Revenue', readings: [300], comparison: { source: 'constant', value: 250 } },
+				{
+					name: 'Revenue',
+					readings: [300],
+					comparison: { source: 'constant', value: 250 },
+				},
 			],
 		})[0]
 		expect(card.delta).toBe(20)
@@ -282,7 +303,9 @@ describe('the comparison', () => {
 		// A change from zero has no percentage.
 		expect(
 			cardsOf({
-				values: [{ name: 'Revenue', readings: [0, 300], comparison: { source: 'previous' } }],
+				values: [
+					{ name: 'Revenue', readings: [0, 300], comparison: { source: 'previous' } },
+				],
 				period: monthly,
 			})[0].delta,
 		).toBeNull()
@@ -372,7 +395,11 @@ describe('a chart saved before a value named its own target and comparison', () 
 					readings: [100, 300],
 					target: [500, 400],
 					references: [
-						{ source: 'measure', measure: measureNamed('Revenue_target'), show: 'attainment' },
+						{
+							source: 'measure',
+							measure: measureNamed('Revenue_target'),
+							show: 'attainment',
+						},
 					],
 				},
 			],
@@ -406,7 +433,8 @@ describe('the sparkline', () => {
 
 	it('draws none without a Dimension to run the trend along', () => {
 		expect(
-			cardsOf({ values: [{ name: 'Items', readings: [7, 9] }], sparkline: true })[0].sparkline,
+			cardsOf({ values: [{ name: 'Items', readings: [7, 9] }], sparkline: true })[0]
+				.sparkline,
 		).toBeUndefined()
 	})
 

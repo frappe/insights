@@ -71,7 +71,9 @@ function editChart() {
 		v-else
 		class="flex h-full flex-1 flex-col items-center justify-center rounded-4 border border-outline-gray-2"
 	>
-		<AlertTriangle class="h-8 w-8 text-ink-gray-4" stroke-width="1" />
-		<p class="text-p-base text-ink-gray-4">Chart not found</p>
+		<div class="flex items-center gap-1.5 text-p-base text-ink-gray-4">
+			<AlertTriangle class="h-3.5 w-3.5 shrink-0 text-ink-red-5" stroke-width="1.5" />
+			<span>Chart not found</span>
+		</div>
 	</div>
 </template>

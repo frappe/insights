@@ -60,6 +60,33 @@ export type DrillDownResolvers = Record<
 	(event: any) => DrillDownTarget | undefined
 >
 
+/**
+ * What a surface says when the chart behind it did not load: one line that fits
+ * any card, and the reason under it. The reason is HTML because a Frappe message
+ * carries markup — a link to the docs, a `<br>` — and it is sanitized before it
+ * gets here.
+ */
+export type ChartFailure = {
+	/** What happened, in one line. It is the part that survives the smallest card. */
+	headline: string
+	/** Why, as sanitized HTML. Empty when the reader is not the one who can act on it. */
+	detailHtml: string
+	/** The same reason as plain text, for the tooltip that holds what a clamp cuts. */
+	detailText?: string
+}
+
+/**
+ * The loading and failure states, handed to a filler that draws its own cards.
+ * Every other type wears them on the chrome around the plot; a filler with cards
+ * of its own has no chrome to wear them on, so it draws them inside each card.
+ */
+export type ChartStateProps = {
+	loading: boolean
+	failure: ChartFailure | null
+	/** Runs the chart again. The action beside the message. */
+	onRetry: () => void
+}
+
 /** What fills the chart chrome, and everything the card needs to mount it. */
 export type ChartFiller = {
 	component: Component
