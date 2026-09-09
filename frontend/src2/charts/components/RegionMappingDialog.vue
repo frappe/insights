@@ -160,26 +160,22 @@ const manualMappings = computed(() => {
 	}))
 })
 
-const usedRegions = computed(() => new Set(Object.values(localMappings.value)))
-
 function getOptions(region: Region) {
 	const available = data.value?.available_regions || []
 	const options: Array<{ label: string; value: string }> = []
 
 	// Add suggestions first
 	region.suggestions?.forEach((s) => {
-		if (!usedRegions.value.has(s.region)) {
-			options.push({
-				label: `${s.region} (${Math.round(s.similarity * 100)}% match)`,
-				value: s.region,
-			})
-		}
+		options.push({
+			label: `${s.region} (${Math.round(s.similarity * 100)}% match)`,
+			value: s.region,
+		})
 	})
 
 	// Add remaining available regions
 	const suggested = new Set(region.suggestions?.map((s) => s.region) || [])
 	available.forEach((r) => {
-		if (!suggested.has(r) && !usedRegions.value.has(r)) {
+		if (!suggested.has(r)) {
 			options.push({ label: r, value: r })
 		}
 	})
