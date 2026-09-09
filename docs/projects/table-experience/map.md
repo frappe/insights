@@ -28,7 +28,7 @@ One picker under the dashboard filter bar, the card filter button, and the build
 - `removeColumn` in `query.ts` takes an array and merges into the last `remove` operation.
 - `ColumnFilterTypeText`, `ColumnFilterTypeNumber` and `ColumnFilterTypeDate` are the typed filter bodies the builder's column menu already uses.
 
-- The prototypes live on `try/table-proto` and as untracked files under `frontend/src2/dev/`. Neither is merged, ever. Delete the branch and the files once tickets 01, 03, 05 and 06 have copied what they need.
+- The prototypes live on `try/table-proto` and under `frontend/src2/dev/`, the latter tracked on this branch behind a dev-only route. Neither ships. Delete the branch and the files once tickets 01, 03, 05 and 06 have copied what they need.
 
 ## Decisions so far
 
