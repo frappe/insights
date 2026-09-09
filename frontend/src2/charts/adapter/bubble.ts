@@ -5,7 +5,7 @@ import type {
 	ScatterPointEvent,
 } from 'frappe-ui/charts'
 import type { BubbleChartConfig } from '../../types/chart.types'
-import { numberFormatter } from '../number_format'
+import { numberFormatter, type NumberFormatter } from '../number_format'
 import type { ChartAdapterInput, ChartFiller } from './types'
 
 export function adaptBubbleChart(input: ChartAdapterInput): ChartFiller | undefined {
@@ -44,7 +44,7 @@ export function adaptBubbleChart(input: ChartAdapterInput): ChartFiller | undefi
 	const series = config.quadrant_column?.dimension_name || config.quadrant_column?.column_name
 	if (series) props.series = series
 
-	const referenceLines = quadrantLines(config)
+	const referenceLines = quadrantLines(config, props.xAxis!.format!, props.yAxis!.format!)
 	if (referenceLines.length) props.referenceLines = referenceLines
 
 	return {
@@ -63,13 +63,37 @@ export function adaptBubbleChart(input: ChartAdapterInput): ChartFiller | undefi
  * reference lines and `axis: 'x'` takes a number rather than a category. The
  * numbers are the author's own: nothing computes a default divider, and a
  * quadrant chart with no line set draws none.
+ *
+ * Each rule prints where it sits, in the units of the axis it is read against —
+ * a divider a reader cannot put a number to divides nothing. The two are placed
+ * at opposite ends, because both default to the same corner and a quadrant chart
+ * always draws them crossing.
  */
-function quadrantLines(config: BubbleChartConfig): PlotReferenceLine[] {
+function quadrantLines(
+	config: BubbleChartConfig,
+	xFormat: NumberFormatter,
+	yFormat: NumberFormatter,
+): PlotReferenceLine[] {
 	if (!config.show_quadrants) return []
 	return [
-		{ axis: 'x' as const, value: config.xAxis_refLine },
-		{ axis: 'y' as const, value: config.yAxis_refLine },
+		{
+			axis: 'x' as const,
+			value: config.xAxis_refLine,
+			format: xFormat,
+			labelPlacement: 'end-top' as const,
+		},
+		{
+			axis: 'y' as const,
+			value: config.yAxis_refLine,
+			format: yFormat,
+			labelPlacement: 'start-top' as const,
+		},
 	]
 		.filter((line) => line.value !== undefined && line.value !== null)
-		.map((line) => ({ ...line, value: line.value as number, dashed: true }))
+		.map(({ format, ...line }) => ({
+			...line,
+			value: line.value as number,
+			label: format(line.value as number),
+			dashed: true,
+		}))
 }

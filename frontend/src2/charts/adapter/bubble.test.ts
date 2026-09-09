@@ -50,7 +50,9 @@ describe('a bubble chart', () => {
 	})
 
 	it('prints none by default', () => {
-		expect(propsOf({ x: 'revenue', y: 'profit', label: 'category' }).showDataLabels).toBeUndefined()
+		expect(
+			propsOf({ x: 'revenue', y: 'profit', label: 'category' }).showDataLabels,
+		).toBeUndefined()
 	})
 
 	it('draws nothing until the Chart names both Measures', () => {
@@ -70,15 +72,29 @@ describe('the quadrant dividers', () => {
 				quadrants: { x: 255909, y: 138980 },
 			}).referenceLines,
 		).toEqual([
-			{ axis: 'x', value: 255909, dashed: true },
-			{ axis: 'y', value: 138980, dashed: true },
+			{
+				axis: 'x',
+				value: 255909,
+				label: '255,909',
+				labelPlacement: 'end-top',
+				dashed: true,
+			},
+			{
+				axis: 'y',
+				value: 138980,
+				label: '138,980',
+				labelPlacement: 'start-top',
+				dashed: true,
+			},
 		])
 	})
 
 	it('draws only the rule the Chart set a value for', () => {
-		expect(propsOf({ x: 'revenue', y: 'profit', quadrants: { x: 100 } }).referenceLines).toEqual(
-			[{ axis: 'x', value: 100, dashed: true }],
-		)
+		expect(
+			propsOf({ x: 'revenue', y: 'profit', quadrants: { x: 100 } }).referenceLines,
+		).toEqual([
+			{ axis: 'x', value: 100, label: '100', labelPlacement: 'end-top', dashed: true },
+		])
 	})
 
 	it('computes no divider of its own', () => {
