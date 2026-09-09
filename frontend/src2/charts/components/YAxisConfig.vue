@@ -76,7 +76,7 @@ const updateColor = debounce((color: string, idx: number) => {
 									placement="left-start"
 								/>
 							</InlineFormControlLabel>
-							<Toggle label="Show Data Labels" v-model="item.show_data_labels" />
+							<Toggle label="Data labels" v-model="item.show_data_labels" />
 							<slot name="series-settings" :series="item" :idx="index" />
 						</template>
 					</MeasurePicker>
@@ -94,17 +94,15 @@ const updateColor = debounce((color: string, idx: number) => {
 	<CollapsibleSection title="Y Axis Options" collapsed>
 		<div class="flex flex-col gap-3 pt-1">
 			<slot name="y-axis-settings" :y_axis="y_axis" />
-			<Toggle label="Show Data Labels" v-model="y_axis.show_data_labels" />
-			<Toggle label="Show Axis Label" v-model="y_axis.show_axis_label" />
-			<FormControl
-				v-if="y_axis.show_axis_label"
-				v-model="y_axis.axis_label"
-				label="Axis Label"
-			/>
-			<InlineFormControlLabel label="Y-Min" class="w-1/2">
+			<Toggle label="Data labels" v-model="y_axis.show_data_labels" />
+			<Toggle label="Axis label" v-model="y_axis.show_axis_label" />
+			<InlineFormControlLabel v-if="y_axis.show_axis_label" label="Text">
+				<FormControl v-model="y_axis.axis_label" />
+			</InlineFormControlLabel>
+			<InlineFormControlLabel label="Y-Min" control-width="5rem">
 				<FormControl type="number" v-model="y_axis.min" placeholder="Min" />
 			</InlineFormControlLabel>
-			<InlineFormControlLabel label="Y-Max" class="w-1/2">
+			<InlineFormControlLabel label="Y-Max" control-width="5rem">
 				<FormControl type="number" v-model="y_axis.max" placeholder="Max" />
 			</InlineFormControlLabel>
 		</div>

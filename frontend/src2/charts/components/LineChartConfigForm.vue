@@ -27,14 +27,14 @@ const config = defineModel<LineChartConfig>({
 
 	<YAxisConfig v-model="config.y_axis" :column-options="props.columnOptions" :config="config">
 		<template #y-axis-settings="{ y_axis }">
-			<Toggle label="Curved Lines" v-model="(y_axis as YAxisLine).smooth" />
-			<Toggle label="Show Area" v-model="(y_axis as YAxisLine).show_area" />
-			<Toggle label="Show Data Points" v-model="(y_axis as YAxisLine).show_data_points" />
+			<Toggle label="Curved lines" v-model="(y_axis as YAxisLine).smooth" />
+			<Toggle label="Area" v-model="(y_axis as YAxisLine).show_area" />
+			<Toggle label="Data points" v-model="(y_axis as YAxisLine).show_data_points" />
 		</template>
 		<template #series-settings="{ series }">
-			<Toggle label="Curved Lines" v-model="(series as SeriesLine).smooth" />
-			<Toggle label="Show Area" v-model="(series as SeriesLine).show_area" />
-			<Toggle label="Show Data Points" v-model="(series as SeriesLine).show_data_points" />
+			<Toggle label="Curved lines" v-model="(series as SeriesLine).smooth" />
+			<Toggle label="Area" v-model="(series as SeriesLine).show_area" />
+			<Toggle label="Data points" v-model="(series as SeriesLine).show_data_points" />
 		</template>
 	</YAxisConfig>
 

@@ -251,6 +251,7 @@ export type DonutChartSpec = {
 	slices?: { label: any; value: number }[]
 	maxSlices?: number
 	inlineLabels?: boolean
+	/** What an older release stored. No form writes it. The adapter drops it. */
 	legendPosition?: 'top' | 'bottom' | 'left' | 'right'
 }
 

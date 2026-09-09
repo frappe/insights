@@ -26,6 +26,13 @@ const props = defineProps<{
 	configWidth?: string
 }>()
 
+/**
+ * The settings popover holds a labeled row, so it is as wide as the widest
+ * control that row carries: the number format group, at 10rem, beside a label
+ * column of 30%. Narrower than this and the group runs past the edge.
+ */
+const CONFIG_WIDTH = '17rem'
+
 const formatOptions = [
 	{ label: __('Normal'), value: '' },
 	{ label: __('Percent'), value: 'percent' },
@@ -178,7 +185,7 @@ const aggregationOptions: { label: string; value: AggregationType }[] = [
 	{ label: __('Average of...'), value: 'avg' },
 	{ label: __('Minimum of...'), value: 'min' },
 	{ label: __('Maximum of...'), value: 'max' },
-	{ label: __('Unique Count of...'), value: 'count_distinct' },
+	{ label: __('Unique count of...'), value: 'count_distinct' },
 ]
 
 const columnOptions = computed(() => {
@@ -376,7 +383,7 @@ function handleRemove() {
 			<template #default="{ close: closeSettings }">
 				<div
 					class="flex flex-col gap-2 p-2"
-					:style="{ width: props.configWidth || '14rem' }"
+					:style="{ width: props.configWidth || CONFIG_WIDTH }"
 				>
 					<InlineFormControlLabel label="Label">
 						<TextInput

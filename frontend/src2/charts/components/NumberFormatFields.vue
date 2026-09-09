@@ -122,19 +122,14 @@ const fields = computed<InputGroupField[]>(() => [
 </script>
 
 <template>
-	<InlineFormControlLabel label="Format">
-		<!--
-		No field here holds more than a few characters, so the group states its
-		own width rather than taking the row's. The spare width falls on the
-		left, so the group ends where every other control in the panel ends.
-		-->
-		<div class="ml-auto max-w-40">
-			<InputGroup :fields="fields" @update="writeField" />
-		</div>
+	<!-- No field here holds more than a few characters, but three of them and
+	     their names need the room. -->
+	<InlineFormControlLabel label="Format" control-width="10rem">
+		<InputGroup :fields="fields" @update="writeField" />
 	</InlineFormControlLabel>
 
 	<Toggle
-		label="Show short numbers"
+		label="Short numbers"
 		:modelValue="format.shorten"
 		@update:modelValue="write('shorten', $event)"
 	/>

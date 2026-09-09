@@ -29,7 +29,7 @@ const config = defineModel<BubbleChartConfig>({
 	<CollapsibleSection title="Setup">
 		<div class="flex flex-col gap-3 pt-1">
 			<MeasurePicker
-				label="X Axis"
+				label="X axis"
 				v-model="config.xAxis"
 				:column-options="props.columnOptions"
 			>
@@ -42,7 +42,7 @@ const config = defineModel<BubbleChartConfig>({
 			</MeasurePicker>
 
 			<MeasurePicker
-				label="Y Axis"
+				label="Y axis"
 				v-model="config.yAxis"
 				:column-options="props.columnOptions"
 			>
@@ -60,7 +60,7 @@ const config = defineModel<BubbleChartConfig>({
 				@remove="config.quadrant_column = {} as Dimension"
 			/>
 			<MeasurePicker
-				label="Size Column"
+				label="Size column"
 				v-model="config.size_column!"
 				:column-options="props.columnOptions"
 				@remove="config.size_column = {} as Measure"
@@ -80,7 +80,7 @@ const config = defineModel<BubbleChartConfig>({
 			<div class="flex flex-col gap-2">
 				<div class="flex flex-col gap-3">
 					<DimensionPicker
-						label="Name Column"
+						label="Name column"
 						v-model="config.dimension!"
 						:options="props.dimensions"
 						@remove="config.dimension = {} as Dimension"
@@ -88,7 +88,7 @@ const config = defineModel<BubbleChartConfig>({
 				</div>
 				<div class="group flex flex-col items-between justify-between rounded-4 py-2">
 					<div class="gap-3">
-						<Toggle v-model="config.show_data_labels" label="Show Data Labels" />
+						<Toggle v-model="config.show_data_labels" label="Data labels" />
 					</div>
 				</div>
 			</div>

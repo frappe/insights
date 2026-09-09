@@ -12,7 +12,7 @@
 					<!-- .stop, or the click also reaches the popover trigger wrapping
 					     this input and toggles straight back. -->
 					<div
-						class="ml-2 h-4 w-4 rounded-4 shadow-sm"
+						class="h-4 w-4 rounded-4 shadow-sm"
 						@click.stop="togglePopover"
 						:style="{ background: value || unsetSwatch }"
 					></div>
@@ -20,7 +20,6 @@
 				<template #suffix>
 					<Button
 						v-show="value"
-						class="mr-1"
 						variant="ghost"
 						size="sm"
 						icon="lucide-x"

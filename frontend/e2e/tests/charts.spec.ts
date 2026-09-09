@@ -589,7 +589,7 @@ test.describe('charts', () => {
 		await expect(rendered.getByText('85', { exact: true })).toBeVisible()
 		await expect(rendered.getByText('5%', { exact: true })).toBeVisible()
 
-		const toggle = page.getByRole('switch', { name: 'Show Percentage' })
+		const toggle = page.getByRole('switch', { name: 'Percentage' })
 		await toggle.click()
 
 		// The toggle drives only the share line, so the stages stay and their

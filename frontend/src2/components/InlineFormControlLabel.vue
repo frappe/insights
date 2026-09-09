@@ -1,6 +1,15 @@
 <script setup lang="ts">
 defineOptions({ inheritAttrs: false })
-const props = defineProps<{ label: string }>()
+
+const props = defineProps<{
+	label: string
+	/**
+	 * Sizes the control to what its value needs, and pushes it to the row's
+	 * right edge so it ends where the toggles do. Any CSS length. Left out, the
+	 * control takes the rest of the row, which is what a free-text field wants.
+	 */
+	controlWidth?: string
+}>()
 </script>
 
 <template>
@@ -11,7 +20,11 @@ const props = defineProps<{ label: string }>()
 		>
 			{{ props.label }}
 		</span>
-		<div class="h-full min-w-0 flex-1">
+		<div
+			class="h-full min-w-0"
+			:class="props.controlWidth ? 'ml-auto flex-none' : 'flex-1'"
+			:style="props.controlWidth ? { width: props.controlWidth } : undefined"
+		>
 			<slot />
 		</div>
 	</div>

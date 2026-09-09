@@ -87,7 +87,7 @@ const discrete_dimensions = computed(() =>
 				/>
 			</template>
 
-			<Toggle v-model="config.show_percentage" :label="__('Show Percentage')" />
+			<Toggle v-model="config.show_percentage" :label="__('Percentage')" />
 		</div>
 	</CollapsibleSection>
 

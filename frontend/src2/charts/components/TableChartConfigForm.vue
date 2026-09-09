@@ -178,7 +178,7 @@ function updateTextWrap(column_name: string, wrap: boolean | undefined) {
 						@remove="config.rows.splice(index, 1)"
 					>
 						<template #config-fields>
-							<InlineFormControlLabel label="Width">
+							<InlineFormControlLabel label="Width" control-width="4.5rem">
 								<FormControl
 									type="number"
 									:modelValue="config.column_widths?.[item.dimension_name]"
@@ -191,12 +191,12 @@ function updateTextWrap(column_name: string, wrap: boolean | undefined) {
 								/>
 							</InlineFormControlLabel>
 							<Toggle
-								label="Wrap Text"
+								label="Wrap text"
 								:modelValue="config.text_wrap?.[item.dimension_name]"
 								@update:modelValue="updateTextWrap(item.dimension_name, $event)"
 							/>
 							<Toggle
-								label="Pin Column"
+								label="Pin column"
 								:modelValue="config.sticky_columns?.includes(item.dimension_name)"
 								@update:modelValue="toggleStickyColumn(item.dimension_name, $event)"
 							/>
@@ -236,12 +236,13 @@ function updateTextWrap(column_name: string, wrap: boolean | undefined) {
 
 			<InlineFormControlLabel
 				v-if="config.columns.length"
-				class="!w-1/2"
-				label="Max Column Values"
+				label="Max values"
+				control-width="4rem"
 			>
 				<FormControl
 					type="number"
 					autocomplete="off"
+					placeholder="10"
 					:modelValue="config.max_column_values"
 					@update:modelValue="config.max_column_values = $event"
 				/>
@@ -277,12 +278,12 @@ function updateTextWrap(column_name: string, wrap: boolean | undefined) {
 					+ Add column
 				</button>
 			</div>
-			<Toggle label="Show Filters" v-model="config.show_filter_row" />
-			<Toggle label="Show Row Totals" v-model="config.show_row_totals" />
-			<Toggle label="Show Column Totals" v-model="config.show_column_totals" />
+			<Toggle label="Filters" v-model="config.show_filter_row" />
+			<Toggle label="Row totals" v-model="config.show_row_totals" />
+			<Toggle label="Column totals" v-model="config.show_column_totals" />
 			<Toggle
 				v-if="config.values.length === 1"
-				label="Show Color Scale"
+				label="Color scale"
 				v-model="config.enable_color_scale"
 			/>
 		</div>

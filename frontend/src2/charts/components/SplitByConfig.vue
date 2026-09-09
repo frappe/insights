@@ -3,6 +3,7 @@ import { computed, watchEffect } from 'vue'
 import { SplitBy } from '../../types/chart.types'
 import { DimensionOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
+import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import DimensionPicker from './DimensionPicker.vue'
 
 const props = defineProps<{
@@ -45,22 +46,26 @@ const dimension = computed({
 	<CollapsibleSection title="Split Series">
 		<div class="flex flex-col gap-3 pt-1">
 			<DimensionPicker
-				label="Split By"
+				label="Split by"
 				:options="props.dimensions"
 				:modelValue="dimension"
 				@update:modelValue="dimension = $event || {}"
 				@remove="dimension = {}"
 			/>
 
-			<FormControl
+			<InlineFormControlLabel
 				v-if="dimension?.column_name"
-				type="number"
-				label="Max Split Values"
-				placeholder="Split Values"
-				autocomplete="off"
-				:modelValue="split_by.max_split_values"
-				@update:modelValue="split_by.max_split_values = $event"
-			/>
+				label="Max values"
+				control-width="4rem"
+			>
+				<FormControl
+					type="number"
+					placeholder="10"
+					autocomplete="off"
+					:modelValue="split_by.max_split_values"
+					@update:modelValue="split_by.max_split_values = $event"
+				/>
+			</InlineFormControlLabel>
 		</div>
 	</CollapsibleSection>
 </template>

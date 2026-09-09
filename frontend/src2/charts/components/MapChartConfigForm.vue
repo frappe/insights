@@ -3,6 +3,7 @@ import { computed, inject, ref, watch } from 'vue'
 import { __ } from '../../translation'
 import { MapChartConfig } from '../../types/chart.types'
 import { DimensionOption, ColumnOption, QueryResult } from '../../types/query.types'
+import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
 import NumberFormatSection from './NumberFormatSection.vue'
@@ -131,12 +132,9 @@ watch(
 	<div class="flex flex-col gap-3">
 		<CollapsibleSection title="Options">
 			<div class="flex flex-col gap-3 pt-1">
-				<FormControl
-					v-model="config.map_type"
-					label="Map Type"
-					type="select"
-					:options="map_options"
-				/>
+				<InlineFormControlLabel label="Map type" control-width="7rem">
+					<FormControl v-model="config.map_type" type="select" :options="map_options" />
+				</InlineFormControlLabel>
 
 				<div class="flex flex-col gap-1">
 					<div class="flex justify-start items-center">

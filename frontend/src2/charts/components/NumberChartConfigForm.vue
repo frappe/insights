@@ -179,7 +179,7 @@ lowerChartLevelSettings()
 
 			<Toggle
 				v-if="config.date_column?.column_name"
-				label="Show sparkline"
+				label="Sparkline"
 				v-model="config.sparkline"
 			/>
 

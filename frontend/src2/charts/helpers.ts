@@ -235,9 +235,6 @@ export function normalizeChartConfig(config: any, chart_type: string) {
 	if (chart_type === 'Funnel') {
 		config.label_position = config.label_position || 'left'
 	}
-	if (chart_type === 'Donut') {
-		config.legend_position = config.legend_position || 'bottom'
-	}
 
 	config = setDimensionNames(config)
 	config = ensureConfigSlots(config, chart_type)
