@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import DOMPurify from 'dompurify'
-import { Button } from 'frappe-ui'
+import { Button, LoadingIndicator } from 'frappe-ui'
 import { ChartContainer } from 'frappe-ui/charts'
 import { AlertTriangle, RefreshCcw } from 'lucide-vue-next'
-import { computed, shallowRef } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 import { __ } from '../../translation'
 import { EMPTY_RESULT } from '../../query/helpers'
 import { adaptChart, drawsOwnCards, type ChartStateProps, type DrillDownTarget } from '../adapter'
@@ -84,11 +84,24 @@ const filler = computed(() => {
 	})
 })
 
-// A table keeps its rows while the next run is in flight. Other types blank. A
-// table on a filtered dashboard would otherwise blank on every filter move.
-const keepsLastPicture = computed(
-	() => chart_type.value === 'Table' && Boolean(result.value.rows?.length),
-)
+// Rows on screen stay through the next run, veiled. Blanking them unmounts the
+// plot, and a plot mounted again is a new echarts instance that replays its
+// entry animation — frappe-ui holds that back only for an instance that has
+// drawn once. The builder re-runs on every edit, so a color tweak would grow
+// the plot from nothing.
+//
+// The veil waits: a run the server answers from cache is over before a veil can
+// be read, and one that flashes on every edit is its own flicker.
+const hasRows = computed(() => Boolean(result.value.rows?.length))
+const reloading = computed(() => props.chart.executing && hasRows.value)
+const VEIL_DELAY_MS = 300
+const veiled = ref(false)
+let veilTimer: ReturnType<typeof setTimeout> | undefined
+watch(reloading, (running) => {
+	clearTimeout(veilTimer)
+	if (running) veilTimer = setTimeout(() => (veiled.value = true), VEIL_DELAY_MS)
+	else veiled.value = false
+})
 
 // What the card shows, in the order the store settles it: a failure outranks the
 // reload that would replace it, and a reload outranks the rows it is replacing.
@@ -97,7 +110,7 @@ const keepsLastPicture = computed(
 // would take is where the reason is printed.
 const state = computed(() => {
 	if (props.chart.failed) return props.chart.serverBusy ? 'serverBusy' : 'failed'
-	if (props.chart.executing && !keepsLastPicture.value) return 'loading'
+	if (props.chart.executing && !hasRows.value) return 'loading'
 	if (props.chart.configErrors.length) return 'unconfigured'
 	if (props.chart.empty) return 'empty'
 	return filler.value ? 'chart' : 'unconfigured'
@@ -190,7 +203,7 @@ function reportSegment(target: DrillDownTarget) {
 </script>
 
 <template>
-	<div class="h-full w-full" data-testid="chart" @click.capture="rememberPoint">
+	<div class="relative h-full w-full" data-testid="chart" @click.capture="rememberPoint">
 		<component
 			v-if="filler && (state === 'chart' || ownsStates)"
 			:is="filler.component"
@@ -280,5 +293,16 @@ function reportSegment(target: DrillDownTarget) {
 				</template>
 			</template>
 		</ChartContainer>
+
+		<!-- The data table's veil, over the whole card: the body does not know
+		     where a filler keeps its plot. -->
+		<div
+			v-if="veiled"
+			class="absolute inset-0 flex items-center justify-center rounded-4 bg-surface-base/30 backdrop-blur-sm"
+			role="status"
+		>
+			<span class="sr-only">{{ __('Loading chart') }}</span>
+			<LoadingIndicator class="h-5 w-5 text-ink-gray-4" />
+		</div>
 	</div>
 </template>
