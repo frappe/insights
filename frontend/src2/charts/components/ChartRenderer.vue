@@ -26,10 +26,24 @@ const showExpandedChartDialog = ref(false)
 const canMaximize = computed(
 	() => !props.hideMaximize && props.chart && props.chart.doc.chart_type !== 'Number',
 )
+
+// The expanded chart opens in one of two shapes. A card that is already wide
+// opens as a band, everything else opens tall. The dialog caps the width at
+// `7xl` whatever we ask for, so the height is the only thing that says which.
+const WIDE_RATIO = 2
+
+const card = ref<HTMLElement>()
+const expandWide = ref(false)
+
+function expand() {
+	const rect = card.value?.getBoundingClientRect()
+	expandWide.value = Boolean(rect && rect.height > 0 && rect.width / rect.height > WIDE_RATIO)
+	showExpandedChartDialog.value = true
+}
 </script>
 
 <template>
-	<div class="group relative h-full w-full">
+	<div ref="card" class="group relative h-full w-full">
 		<ChartCardFrame :chart="props.chart" @segment-click="clicked = $event" />
 
 		<!-- One bar for everything a surface offers on the card. A host fills the
@@ -40,7 +54,7 @@ const canMaximize = computed(
 		>
 			<slot name="actions" />
 			<Tooltip v-if="canMaximize" :text="__('Expand')">
-				<Button variant="ghost" @click="showExpandedChartDialog = true">
+				<Button variant="ghost" @click="expand()">
 					<Maximize class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />
 				</Button>
 			</Tooltip>
@@ -58,7 +72,7 @@ const canMaximize = computed(
 
 	<Dialog v-if="chart" v-model:open="showExpandedChartDialog" size="7xl" bare>
 		<template #default>
-			<div class="h-[85vh] w-full">
+			<div class="relative w-full" :class="expandWide ? 'h-[50vh]' : 'h-[75vh]'">
 				<ChartCardFrame :chart="props.chart" @segment-click="clicked = $event" />
 				<div class="absolute top-2 right-2">
 					<Button variant="ghost" @click="showExpandedChartDialog = false">
