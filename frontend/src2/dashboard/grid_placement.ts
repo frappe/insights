@@ -13,8 +13,16 @@ import type {
 	WorkbookDashboardItemLayout,
 } from '../types/workbook.types'
 
-/** Height of one grid row in px. */
-export const ROW_HEIGHT = 54
+/**
+ * Height of one grid row in px.
+ *
+ * Small enough that a card sized to its own content lands on a whole number of
+ * rows. A Number card has three heights — 86px, 108px and 148px, counted in
+ * `numberCardRows` — and 22 is the row that wastes the least under all three:
+ * 4, 5 and 7 rows, with 2px, 2px and 6px left over. It was 54, and every stored
+ * layout was rescaled when it changed.
+ */
+export const ROW_HEIGHT = 22
 
 /** Columns a dashboard grid places against. */
 export const GRID_COLUMNS = 20

@@ -84,7 +84,7 @@ function makeDashboard(name: string) {
 						x: 0,
 						y: maxY,
 						w: chart.chart_type === 'Number' ? GRID_COLUMNS : 10,
-						h: chart.chart_type === 'Number' ? 3 : 8,
+						h: chart.chart_type === 'Number' ? 8 : 20,
 					},
 				})
 			}
@@ -106,14 +106,14 @@ function makeDashboard(name: string) {
 				x: 0,
 				y: maxY,
 				w: 10,
-				h: 2,
+				h: 5,
 			},
 		})
 		editingItemIndex.value = dashboard.doc.items.length - 1
 	}
 
 	const filter_w = 4
-	const filter_h = 1
+	const filter_h = 3
 
 	function addFilter() {
 		const newFilter: WorkbookDashboardItem = {

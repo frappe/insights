@@ -392,7 +392,7 @@
           {
             "chart": "sj4rjuvvpu",
             "layout": {
-              "h": 3,
+              "h": 8,
               "i": "1geec587",
               "moved": false,
               "w": 20,
@@ -404,36 +404,36 @@
           {
             "chart": "sj4r5sn1ro",
             "layout": {
-              "h": 8,
+              "h": 20,
               "i": "1kpzltkq",
               "moved": false,
               "w": 10,
               "x": 0,
-              "y": 3
+              "y": 8
             },
             "type": "chart"
           },
           {
             "chart": "sj4rdmcvpa",
             "layout": {
-              "h": 8,
+              "h": 20,
               "i": "2mkbxvt3",
               "moved": false,
               "w": 10,
               "x": 10,
-              "y": 3
+              "y": 8
             },
             "type": "chart"
           },
           {
             "chart": "sj4rdo50er",
             "layout": {
-              "h": 11,
+              "h": 27,
               "i": "b6n952s4",
               "moved": false,
               "w": 20,
               "x": 0,
-              "y": 11
+              "y": 28
             },
             "type": "chart"
           }
