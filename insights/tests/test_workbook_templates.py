@@ -232,7 +232,8 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
         dashboard_name = workbook["dashboards"][0]["name"]
         items = frappe.parse_json(frappe.db.get_value("Insights Dashboard v3", dashboard_name, "items"))
         chart_items = [item for item in items if item["type"] == "chart"]
-        self.assertEqual(len(chart_items), len(template_charts))
+        # A Number chart draws one reading per cell, so cells can outnumber charts.
+        self.assertEqual(len({item["chart"] for item in chart_items}), len(template_charts))
         for item in chart_items:
             self.assertIn(item["chart"], new_chart_names)
 

@@ -50,6 +50,14 @@ def rescale_items(items: list) -> list | None:
     if not moved:
         return None
 
+    settle_items(items)
+
+    return items
+
+
+def settle_items(items: list) -> None:
+    """Drop every cell past the ones above it, per breakpoint, the same way the
+    reader settles the grid."""
     _settle([item["layout"] for item in items if isinstance(item.get("layout"), dict)])
     for key in {key for item in items for key in (item.get("layouts") or {})}:
         _settle(
@@ -59,8 +67,6 @@ def rescale_items(items: list) -> list | None:
                 if isinstance((item.get("layouts") or {}).get(key), dict)
             ]
         )
-
-    return items
 
 
 def _settle(boxes: list[dict]) -> None:

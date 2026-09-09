@@ -20,3 +20,4 @@ insights.patches.backfill_permission_user
 insights.patches.repair_sankey_value_aggregation
 insights.patches.retire_chart_query_cache
 insights.patches.rescale_dashboard_rows
+insights.patches.split_number_cells

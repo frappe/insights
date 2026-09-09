@@ -771,9 +771,46 @@
 							"i": "item-kpis",
 							"x": 0,
 							"y": 3,
-							"w": 20,
-							"h": 8
-						}
+							"w": 4,
+							"h": 7
+						},
+						"column": "Revenue"
+					},
+					{
+						"type": "chart",
+						"chart": "tc-kpis",
+						"layout": {
+							"i": "item-kpis-2",
+							"x": 4,
+							"y": 3,
+							"w": 4,
+							"h": 7
+						},
+						"column": "Invoices"
+					},
+					{
+						"type": "chart",
+						"chart": "tc-kpis",
+						"layout": {
+							"i": "item-kpis-3",
+							"x": 8,
+							"y": 3,
+							"w": 4,
+							"h": 7
+						},
+						"column": "Avg Invoice Value"
+					},
+					{
+						"type": "chart",
+						"chart": "tc-kpis",
+						"layout": {
+							"i": "item-kpis-4",
+							"x": 12,
+							"y": 3,
+							"w": 4,
+							"h": 7
+						},
+						"column": "Active Customers"
 					},
 					{
 						"type": "chart",

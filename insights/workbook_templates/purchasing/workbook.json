@@ -593,9 +593,22 @@
 							"i": "item-kpis-spend",
 							"x": 0,
 							"y": 3,
-							"w": 7,
-							"h": 8
-						}
+							"w": 4,
+							"h": 7
+						},
+						"column": "Spend"
+					},
+					{
+						"type": "chart",
+						"chart": "tc-kpis-spend",
+						"layout": {
+							"i": "item-kpis-spend-2",
+							"x": 0,
+							"y": 10,
+							"w": 4,
+							"h": 7
+						},
+						"column": "Active Suppliers"
 					},
 					{
 						"type": "chart",
@@ -604,9 +617,22 @@
 							"i": "item-kpis-po",
 							"x": 7,
 							"y": 3,
-							"w": 7,
-							"h": 8
-						}
+							"w": 4,
+							"h": 7
+						},
+						"column": "PO Count"
+					},
+					{
+						"type": "chart",
+						"chart": "tc-kpis-po",
+						"layout": {
+							"i": "item-kpis-po-2",
+							"x": 7,
+							"y": 10,
+							"w": 4,
+							"h": 7
+						},
+						"column": "Avg PO Value"
 					},
 					{
 						"type": "chart",
