@@ -1,0 +1,13 @@
+# Two frappe-ui gaps the picker and the pane hit
+
+Type: task
+Status: ready-for-agent
+
+## Question
+
+Both prototypes had to rebuild a frappe-ui piece because the component could not be used the way the design needs. Each is a small frappe-ui change, and the real build should not carry the rebuilt copy.
+
+1. **The calendar cannot render inline.** `DateRangePicker` always owns a trigger input and its own floating panel. `CalendarPanel` is the inline piece, but it is not in the package's `exports`. Export it, or give the pickers an inline mode. Ticket 01's date picker needs this.
+2. **Popover steals focus on open and toggles on every trigger click.** A typing-driven panel under an input needs the input to keep focus and the caret click not to toggle. Expose reka's `open-auto-focus` escape hatch, or a `manual` mode. Ticket 03's search panel needs this; until then it is a plain positioned box.
+
+Both go to `~/frappe/frappe-ui` on a branch, pushed to `fork`. Until they land, the app carries the prototype's copies behind a comment that names this ticket.

@@ -28,6 +28,8 @@ One picker under the dashboard filter bar, the card filter button, and the build
 - `removeColumn` in `query.ts` takes an array and merges into the last `remove` operation.
 - `ColumnFilterTypeText`, `ColumnFilterTypeNumber` and `ColumnFilterTypeDate` are the typed filter bodies the builder's column menu already uses.
 
+- The prototypes live on `try/table-proto` and as untracked files under `frontend/src2/dev/`. Neither is merged, ever. Delete the branch and the files once tickets 01, 03, 05 and 06 have copied what they need.
+
 ## Decisions so far
 
 - **Find is client-only, filter is server-only.** The row-count switch dies with the filter row. Find says what it covers ("in 100 loaded rows"). — 06
@@ -40,10 +42,18 @@ One picker under the dashboard filter bar, the card filter button, and the build
 - **Columns popover owns show, hide and jump.** Search, Enter jumps to the column, checkbox toggles it. Untick writes a `remove`; tick drops the column from the `remove`, never writes a `select`. — 05
 - **Footer is the result status.** The cache line moves there, once. Alerts leave the footer for the editor's More menu. Export moves to the toolbar. — 03
 - **Error replaces the grid body.** No banner above it. Error, "no data" and "no rows match your find" are one slot with three states. — 03
+- **Page pane for the builder, card pane for a chart.** Two variants of one frame; a chart's header carries only Filter, search and expand. — 03
+- **Toolbar is `[Filter][Columns][Execute][⋯][search]`, all outline; footer is ghost only.** Search sits at the edge because it grows. Export lives in the footer after the pager. — 03
+- **Search finds rows and jumps to columns.** One input, a panel under it lists the column hits. — 03, 06
+- **Stale is a solid Execute, not a footer button.** — 03
+- **The picker has no operator control.** One complete picker per type, include/exclude for dimensions, from/to for measures, calendar with presets for dates. The rare operators sit behind a more menu. — 01
+- **A preset emits a span, a calendar pick emits dates.** So the one picker serves a card filter that resets and a dashboard filter default that must move. — 01
+- **Two frappe-ui changes come first:** export the calendar panel, and let a Popover open without taking focus. — 07
 - **Out of this effort:** column drag to reorder, drag to resize, cell selection and copy, row expand.
 
 ## Fog
 
-- The picker's surface: which of the dashboard filter bar's habits (icon, default value, link config) belong in the shared primitive and which stay the bar's. — 01
+- Icon-only or icon+label for Filter, Columns and Execute in the builder toolbar. The prototype shows both under `?b=`; the ticket takes label until told otherwise. — 03
+
 - Where the card's title row exposes a slot for the table toolbar, and whether `ChartContainer` in frappe-ui is the one to change. — 02
 - Whether a preview grid (`ChartBuilderTable`, drill) gets the filter button, or filter is card-and-builder only. — 02

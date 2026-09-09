@@ -24,3 +24,15 @@ The output is a filter rule: column, operator, value. Both the dashboard bar and
 ## Not this ticket
 
 The dashboard filter's icon, default value and link config stay in `DashboardFilterEditor.vue`. Only the choosing moves.
+
+## Looks like
+
+Settled on `frontend/src2/dev/ProtoFilter*.vue`, `ProtoDateRange.vue`, `proto_filter.ts` (branch `try/table-proto`), third pass, 2026-09-09.
+
+- Helpdesk's three-step popover: overview → fields → value, with its slide transitions, keyboard and live apply. Trigger with a count badge; the host may replace it through the `trigger` slot.
+- **No operator control.** One complete picker per type:
+  - Dimension: searchable distinct-value list with a Checkbox per row, applies as `in`. Include/Exclude `TabButtons` in the header flips to `not_in`. A more menu holds Contains (toggles to a text input and back), Is set, Is not set.
+  - Measure: From and To inputs. One filled is `>=` or `<=`, both is `between`.
+  - Date: inline calendar with a preset sidebar. A preset emits a span from `window.ts` and highlights its resolved range; one day is `within` that day's span; two days are `between`. A preset returns to the overview, a day pick stays open so a second click can extend it.
+- Overview rows are typed, not sentences: icon, column in `text-ink-gray-8` medium, `·`, value in `text-ink-gray-6`. "Acme, Bolt +2", "not Acme", "at least 500", "500 to 2,000", "Last 30 days".
+- Blocked by 07 for the calendar.

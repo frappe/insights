@@ -21,3 +21,7 @@ Remove:
 Keep `matchesFilter` for the text case. The numeric operators leave with the row: a measure condition is the picker's job.
 
 Empty result from find is the "no rows match" state in 03, with a clear action.
+
+## Looks like
+
+Settled in `FrameProto.vue` (branch `try/table-proto`), 2026-09-09. Find is the toolbar search described in 03, and the same input also jumps to a column. Both jobs are one control. The count in its panel is the live row-match count. Escape clears the term, so a short table never hides its cause.
