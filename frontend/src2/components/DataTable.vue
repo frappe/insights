@@ -721,14 +721,16 @@ function toggleNewColumn() {
 						</td>
 					</tr>
 
+					<!-- The cells carry the closing rule, not the row: under
+					     `border-separate` a border on a `tr` is never painted. -->
 					<tr
 						v-if="props.showColumnTotals && totalPerColumn"
-						class="sticky bottom-0 border-b bg-surface-base"
+						class="sticky bottom-0 bg-surface-base"
 					>
-						<td class="h-8 whitespace-nowrap border-r border-t px-3"></td>
+						<td class="h-8 whitespace-nowrap border-b border-r border-t px-3"></td>
 						<td
 							v-for="col in props.columns"
-							class="h-8 truncate border-r border-t px-3 font-bold text-ink-gray-7"
+							class="h-8 truncate border-b border-r border-t px-3 font-bold text-ink-gray-7"
 							:class="[
 								isNumberColumn(col.name) ? 'tnum text-right' : 'text-left',
 								isStickyColumn(col.name) ? 'sticky bg-surface-base' : '',
@@ -747,7 +749,7 @@ function toggleNewColumn() {
 
 						<td
 							v-if="props.showRowTotals && totalColumnTotal"
-							class="tnum h-8 border-r border-t px-3 text-right font-bold"
+							class="tnum h-8 border-b border-r border-t px-3 text-right font-bold"
 						>
 							{{ _formatNumber(totalColumnTotal) }}
 						</td>
@@ -765,10 +767,10 @@ function toggleNewColumn() {
 				@prev="pagination.prev"
 				@next="pagination.next"
 			>
-				<template #left>
+				<template v-if="$slots['footer-left']" #left>
 					<slot name="footer-left" />
 				</template>
-				<template #actions>
+				<template v-if="$slots['footer-right-actions']" #actions>
 					<slot name="footer-right-actions" />
 				</template>
 			</DataTableFooter>
