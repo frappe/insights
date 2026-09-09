@@ -3,6 +3,7 @@ import type { Layout, WorkbookDashboardItemLayout } from '../types/workbook.type
 import {
 	BASE_BREAKPOINT,
 	GRID_COLUMNS,
+	applyCellRules,
 	breakpointFor,
 	compactLayouts,
 	placeGrid,
@@ -66,6 +67,46 @@ describe('stackLayouts', () => {
 			cell('left', 0, 0, 6, 2),
 		])
 		expect(stacked.map((item) => item.i)).toEqual(['left', 'right', 'below'])
+	})
+
+	it('sits two half-width cells side by side, and the row is the taller of them', () => {
+		const rules = { a: { halfWidth: true }, b: { halfWidth: true } }
+		const stacked = stackLayouts([cell('a', 0, 0, 4, 4), cell('b', 4, 0, 4, 5)], 20, rules)
+		expect(stacked).toEqual([cell('a', 0, 0, 10, 4), cell('b', 10, 0, 10, 5)])
+	})
+
+	it('keeps a full-width cell between two half-width ones out of their row', () => {
+		const rules = { a: { halfWidth: true }, c: { halfWidth: true } }
+		const stacked = stackLayouts(
+			[cell('a', 0, 0, 4, 4), cell('wide', 4, 0, 16, 8), cell('c', 0, 8, 4, 4)],
+			20,
+			rules,
+		)
+		expect(stacked).toEqual([
+			cell('a', 0, 0, 20, 4),
+			cell('wide', 0, 4, 20, 8),
+			cell('c', 0, 12, 20, 4),
+		])
+	})
+
+	it('gives a half-width cell with nothing beside it the whole row', () => {
+		const stacked = stackLayouts([cell('a', 0, 0, 4, 4)], 20, { a: { halfWidth: true } })
+		expect(stacked).toEqual([cell('a', 0, 0, 20, 4)])
+	})
+})
+
+describe('applyCellRules', () => {
+	it('gives a cell the height its rule fixes, and leaves the rest alone', () => {
+		const grid = [cell('a', 0, 0, 6, 2), cell('b', 6, 0, 6, 2)]
+		expect(applyCellRules(grid, { a: { height: 5 } })).toEqual([
+			cell('a', 0, 0, 6, 5),
+			cell('b', 6, 0, 6, 2),
+		])
+	})
+
+	it('leaves the caller its own cells when nothing is ruled', () => {
+		const grid = [cell('a', 0, 0, 6, 2)]
+		expect(applyCellRules(grid)).toBe(grid)
 	})
 })
 
@@ -224,6 +265,31 @@ describe('placementsFor', () => {
 	it('answers in the order the items came in, whatever the layout says', () => {
 		const items = [item(cell('below', 0, 4, 6, 2)), item(cell('above', 0, 0, 6, 2))]
 		expect(placementsFor(items, 'sm').map((layout) => layout.i)).toEqual(['below', 'above'])
+	})
+
+	it('overrides a stored height with the one the cell is ruled to', () => {
+		const items = [item(cell('a', 0, 0, 6, 9))]
+		expect(placementsFor(items, BASE_BREAKPOINT.key, { a: { height: 4 } })).toEqual([
+			cell('a', 0, 0, 6, 4),
+		])
+	})
+
+	it('overrides it at a narrow breakpoint too, arranged or not', () => {
+		const items = [
+			item(cell('a', 0, 0, 6, 9)),
+			item(cell('b', 6, 0, 6, 9), { sm: { x: 0, y: 9, w: 20, h: 9 } }),
+		]
+		const rules = { a: { height: 4 }, b: { height: 4 } }
+		expect(placementsFor(items, 'sm', rules).map((layout) => layout.h)).toEqual([4, 4])
+	})
+
+	it('pairs two half-width cells on a narrow grid', () => {
+		const items = [item(cell('a', 0, 0, 4, 4)), item(cell('b', 4, 0, 4, 4))]
+		const rules = { a: { halfWidth: true }, b: { halfWidth: true } }
+		expect(placementsFor(items, 'sm', rules)).toEqual([
+			cell('a', 0, 0, 10, 4),
+			cell('b', 10, 0, 10, 4),
+		])
 	})
 })
 

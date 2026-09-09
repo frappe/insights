@@ -3,6 +3,7 @@ import { useElementSize } from '@vueuse/core'
 import { computed, onBeforeUnmount, ref } from 'vue'
 import type { BreakpointKey, Layout, WorkbookDashboardItemLayout } from '../types/workbook.types'
 import StaticGridLayout from './StaticGridLayout.vue'
+import type { CellRules } from './grid_placement'
 import {
 	BREAKPOINTS,
 	ROW_HEIGHT,
@@ -26,6 +27,8 @@ const props = defineProps<{
 	items?: WorkbookDashboardItemLayout[]
 	/** Arrange this breakpoint rather than the one the grid measures. */
 	breakpoint?: BreakpointKey
+	/** See `StaticGridLayout`. A cell whose height is fixed resizes in width only. */
+	rules?: CellRules
 	disabled?: boolean
 	verticalCompact?: boolean
 }>()
@@ -44,7 +47,7 @@ const active = computed(
 	() => BREAKPOINTS.find((item) => item.key === props.breakpoint) || breakpointFor(width.value),
 )
 
-const stored = computed(() => placementsFor(props.items || [], active.value.key))
+const stored = computed(() => placementsFor(props.items || [], active.value.key, props.rules))
 
 const editable = computed(() => !props.disabled)
 
@@ -77,6 +80,10 @@ const CONTROLS = 'button, a, input, select, textarea, [contenteditable]'
 
 function clamp(value: number, min: number, max: number) {
 	return Math.min(Math.max(value, min), max)
+}
+
+function fixedHeight(i: string) {
+	return props.rules?.[i]?.height
 }
 
 function sameCell(a: Layout, b: Layout) {
@@ -140,7 +147,10 @@ function track(event: PointerEvent) {
 			: {
 					...dragged,
 					w: clamp(dragged.w + acrossColumns, 1, active.value.columns - dragged.x),
-					h: Math.max(dragged.h + downRows, 1),
+					// A cell whose height is its content's takes the width the author
+					// gives it and nothing else. Dropping the row out of the gesture is
+					// what makes the corner drag sideways rather than snap back.
+					h: fixedHeight(current.i) ?? Math.max(dragged.h + downRows, 1),
 			  }
 
 	// The grid is only settled again when the pointer has asked for a different

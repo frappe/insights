@@ -56,16 +56,66 @@ export function compactLayouts(layouts: Layout[]): Layout[] {
 	return placed
 }
 
-/** Stack every cell full width, in reading order. */
-export function stackLayouts(layouts: Layout[], columns = GRID_COLUMNS): Layout[] {
+/**
+ * What the dashboard knows about a cell that its stored layout does not say.
+ *
+ * The grid takes it and applies it. What makes a cell half width, or fixes its
+ * height, is the dashboard's to decide — this module places cells and holds no
+ * opinion about what is in them.
+ */
+export type CellRule = {
+	/** Rows this cell always takes. A resize gesture may change its width only. */
+	height?: number
+	/** Half the grid where a breakpoint would otherwise stack it full width. */
+	halfWidth?: boolean
+}
+
+export type CellRules = Record<string, CellRule>
+
+/** Every cell at the height its rule fixes. Cells with no rule are untouched. */
+export function applyCellRules(layouts: Layout[], rules?: CellRules): Layout[] {
+	if (!rules) return layouts
+	return layouts.map((item) => {
+		const height = rules[item.i]?.height
+		return height && height !== item.h ? { ...item, h: height } : item
+	})
+}
+
+/**
+ * Stack every cell full width, in reading order — except that two half-width
+ * cells in a row share one.
+ *
+ * They pair off as they come. A half-width cell with no half-width cell after it
+ * takes the whole row rather than leaving the other half empty: nothing stands
+ * beside it, so nothing is gained by keeping the space.
+ */
+export function stackLayouts(
+	layouts: Layout[],
+	columns = GRID_COLUMNS,
+	rules?: CellRules,
+): Layout[] {
+	const order = [...layouts].sort((a, b) => a.y - b.y || a.x - b.x)
+	const placed: Layout[] = []
+
 	let y = 0
-	return [...layouts]
-		.sort((a, b) => a.y - b.y || a.x - b.x)
-		.map((item) => {
-			const placed = { ...item, x: 0, y, w: columns }
-			y += item.h
-			return placed
-		})
+	for (let index = 0; index < order.length; index++) {
+		const item = order[index]
+		const beside = rules?.[item.i]?.halfWidth ? order[index + 1] : undefined
+
+		if (beside && rules?.[beside.i]?.halfWidth) {
+			const half = Math.floor(columns / 2)
+			placed.push({ ...item, x: 0, y, w: half })
+			placed.push({ ...beside, x: half, y, w: columns - half })
+			y += Math.max(item.h, beside.h)
+			index++
+			continue
+		}
+
+		placed.push({ ...item, x: 0, y, w: columns })
+		y += item.h
+	}
+
+	return placed
 }
 
 /**
@@ -150,7 +200,8 @@ export type Breakpoint = {
 	/** The same, by lucide name. */
 	icon: string
 	/** Build the layout nobody arranged, out of the next wider one. */
-	derive?: (layouts: Layout[], columns: number) => Layout[]
+	// eslint-disable-next-line no-unused-vars
+	derive?: (layouts: Layout[], columns: number, rules?: CellRules) => Layout[]
 }
 
 /**
@@ -205,22 +256,31 @@ export function breakpointFor(width: number): Breakpoint {
 export function placementsFor(
 	items: WorkbookDashboardItemLayout[],
 	key: BreakpointKey,
+	rules?: CellRules,
 ): Layout[] {
 	const index = BREAKPOINTS.findIndex((breakpoint) => breakpoint.key === key)
 	const breakpoint = BREAKPOINTS[index]
-	if (!breakpoint || breakpoint === BASE_BREAKPOINT) return items.map((item) => item.layout)
+	if (!breakpoint || breakpoint === BASE_BREAKPOINT) {
+		return applyCellRules(
+			items.map((item) => item.layout),
+			rules,
+		)
+	}
 
-	const inherited = placementsFor(items, BREAKPOINTS[index + 1].key)
+	const inherited = placementsFor(items, BREAKPOINTS[index + 1].key, rules)
 	const derived = breakpoint.derive
-		? breakpoint.derive(inherited, breakpoint.columns)
+		? breakpoint.derive(inherited, breakpoint.columns, rules)
 		: inherited
 	const byId = new Map(derived.map((layout) => [layout.i, layout]))
 
-	const merged = items.map((item, position) => {
-		const stored = item.layouts?.[key]
-		if (!stored) return byId.get(item.layout.i) || inherited[position]
-		return { ...stored, i: item.layout.i }
-	})
+	const merged = applyCellRules(
+		items.map((item, position) => {
+			const stored = item.layouts?.[key]
+			if (!stored) return byId.get(item.layout.i) || inherited[position]
+			return { ...stored, i: item.layout.i }
+		}),
+		rules,
+	)
 
 	// An item added after this breakpoint was arranged is placed among cells that
 	// know nothing about it. Settling drops whatever lands on something below it,

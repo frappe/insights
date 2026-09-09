@@ -2,6 +2,7 @@
 import { useElementSize } from '@vueuse/core'
 import { computed, ref } from 'vue'
 import type { BreakpointKey, Layout, WorkbookDashboardItemLayout } from '../types/workbook.types'
+import type { CellRules } from './grid_placement'
 import { BREAKPOINTS, ROW_HEIGHT, breakpointFor, placeGrid, placementsFor } from './grid_placement'
 
 // The dashboard grid, drawn. It works out where every cell goes and puts it
@@ -39,6 +40,12 @@ const props = defineProps<{
 	 * grid the document stores, and only one of them may be drawn.
 	 */
 	layouts?: Layout[]
+	/**
+	 * What the dashboard knows about a cell that its layout does not say: the
+	 * height it always takes, and whether it goes half width where a breakpoint
+	 * stacks. Ignored when `layouts` is given — those are already placed.
+	 */
+	rules?: CellRules
 	disabled?: boolean
 	verticalCompact?: boolean
 	/**
@@ -59,7 +66,9 @@ const active = computed(
 	() => BREAKPOINTS.find((item) => item.key === props.breakpoint) || breakpointFor(width.value),
 )
 
-const layouts = computed(() => props.layouts || placementsFor(props.items || [], active.value.key))
+const layouts = computed(
+	() => props.layouts || placementsFor(props.items || [], active.value.key, props.rules),
+)
 
 const placement = computed(() =>
 	placeGrid(layouts.value, {
