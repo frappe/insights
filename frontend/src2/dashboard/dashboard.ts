@@ -9,12 +9,15 @@ import session from '../session'
 import { useTelemetry } from '@framework/ui/telemetry/index.ts'
 import { FilterOperator, FilterValue } from '../types/query.types'
 import {
+	BreakpointKey,
 	InsightsDashboardv3,
 	ViewerFilters,
+	Layout,
 	WorkbookChart,
 	WorkbookDashboardFilter,
 	WorkbookDashboardItem,
 } from '../types/workbook.types'
+import { BASE_BREAKPOINT, GRID_COLUMNS, layoutRank, writePlacement } from './grid_placement'
 
 /**
  * A filter link, `` `query`.`column` ``, split back into its two halves.
@@ -50,6 +53,11 @@ function makeDashboard(name: string) {
 	const editing = ref(false)
 	const editingItemIndex = ref<number>()
 
+	// Which breakpoint's layout the author is arranging. A dashboard is opened at
+	// its widest, because that is the layout every item has and the one the others
+	// are derived from.
+	const arranging = ref<BreakpointKey>(BASE_BREAKPOINT.key)
+
 	function isEditingItem(item: WorkbookDashboardItem) {
 		return editing.value && editingItemIndex.value === dashboard.doc.items.indexOf(item)
 	}
@@ -75,7 +83,7 @@ function makeDashboard(name: string) {
 						i: getUniqueId(),
 						x: 0,
 						y: maxY,
-						w: chart.chart_type === 'Number' ? 20 : 10,
+						w: chart.chart_type === 'Number' ? GRID_COLUMNS : 10,
 						h: chart.chart_type === 'Number' ? 3 : 8,
 					},
 				})
@@ -104,7 +112,6 @@ function makeDashboard(name: string) {
 		editingItemIndex.value = dashboard.doc.items.length - 1
 	}
 
-	const grid_cols = 20 // for 5 columns
 	const filter_w = 4
 	const filter_h = 1
 
@@ -146,7 +153,7 @@ function makeDashboard(name: string) {
 			0
 		)
 
-		if (rightmostX + newFilter.layout.w <= grid_cols) {
+		if (rightmostX + newFilter.layout.w <= GRID_COLUMNS) {
 			newFilter.layout.x = rightmostX
 			newFilter.layout.y = topRowY
 		} else {
@@ -173,6 +180,15 @@ function makeDashboard(name: string) {
 		dashboard.doc.items.splice(index, 1)
 	}
 
+	// A drag names the breakpoint it arranged. Every breakpoint is dragged on the
+	// same grid, so the gesture cannot tell the store where to store it.
+	function moveItems(key: BreakpointKey, layouts: Layout[]) {
+		dashboard.doc.items.forEach((item, index) => {
+			const layout = layouts[index]
+			if (layout) writePlacement(item, key, layout)
+		})
+	}
+
 	function normalizeLayout() {
 		const items = dashboard.doc.items
 		const filters = items.filter((item) => item.type === 'filter')
@@ -185,7 +201,7 @@ function makeDashboard(name: string) {
 			const itemWidth = item.layout.w || filter_w
 
 			// if filter doesn't fit in current row then move to next row
-			if (currentX + itemWidth > grid_cols && currentX > 0) {
+			if (currentX + itemWidth > GRID_COLUMNS && currentX > 0) {
 				currentX = 0
 				currentY += filter_h
 			}
@@ -242,14 +258,12 @@ function makeDashboard(name: string) {
 		read.load(force)
 	}
 
-	// charts reach the queue in whatever order their docs finish loading, so rank
-	// them by grid position instead: top row first, left to right within a row
 	function getLayoutRank(chart_name: string) {
 		const item = dashboard.doc.items.find(
 			(item) => item.type === 'chart' && item.chart === chart_name
 		)
 		if (!item) return undefined
-		return item.layout.y * grid_cols + item.layout.x
+		return layoutRank(item.layout)
 	}
 
 	function updateFilterState(filter_name: string, operator?: FilterOperator, value?: FilterValue) {
@@ -340,6 +354,7 @@ function makeDashboard(name: string) {
 		editingItemIndex,
 		isEditingItem,
 		shared,
+		arranging,
 
 		filterStates,
 
@@ -347,6 +362,7 @@ function makeDashboard(name: string) {
 		addText,
 		addFilter,
 		removeItem,
+		moveItems,
 		normalizeLayout,
 
 		refresh,
@@ -388,14 +404,6 @@ function getDashboardResource(name: string) {
 		disableLocalStorage: true,
 		transform(doc: any) {
 			doc.items = safeJSONParse(doc.items) || []
-			// grid-layout-plus owns `moved` and writes it into every layout when
-			// the grid mounts, which leaves a freshly opened dashboard dirty.
-			// Set it on load instead.
-			doc.items.forEach((item: any) => {
-				if (item.layout && item.layout.moved === undefined) {
-					item.layout.moved = false
-				}
-			})
 			return doc
 		},
 	})

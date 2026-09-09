@@ -1,5 +1,4 @@
 import { frappeRequest, setConfig, useColorScheme } from 'frappe-ui'
-import { GridItem, GridLayout } from 'grid-layout-plus'
 import { createPinia } from 'pinia'
 import { createApp, watchEffect } from 'vue'
 import App from './App.vue'
@@ -22,8 +21,6 @@ const pinia = createPinia()
 
 app.use(pinia)
 app.use(router)
-app.component('grid-layout', GridLayout)
-app.component('grid-item', GridItem)
 
 const stop = watchEffect(() => {
 	if (session.isLoggedIn) {

@@ -7,7 +7,7 @@ import { downloadImage, waitUntil, wheneverChanges } from '../helpers'
 import useDashboard from './dashboard'
 import { __ } from '../translation'
 import DashboardItem from './DashboardItem.vue'
-import VueGridLayout from './VueGridLayout.vue'
+import StaticGridLayout from './StaticGridLayout.vue'
 import { useStorage } from '@vueuse/core'
 
 const props = defineProps<{ name: string }>()
@@ -78,18 +78,16 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 
 	<div class="relative flex h-full w-full overflow-hidden">
 		<div ref="dashboardContainer" class="flex-1 overflow-y-auto p-4">
-			<VueGridLayout
+			<StaticGridLayout
 				v-if="dashboard.doc.items.length > 0"
 				class="h-fit w-full"
-				:cols="20"
-				:disabled="true"
 				:verticalCompact="verticalCompact"
-				:modelValue="dashboard.doc.items.map((item) => item.layout)"
+				:items="dashboard.doc.items"
 			>
 				<template #item="{ index }">
 					<DashboardItem :index="index" :item="dashboard.doc.items[index]" />
 				</template>
-			</VueGridLayout>
+			</StaticGridLayout>
 		</div>
 	</div>
 </template>
