@@ -222,6 +222,7 @@ async function downloadDashboardImage() {
 					:disabled="!dashboard.editing"
 					:verticalCompact="verticalCompact"
 					:items="dashboard.doc.items"
+					:rules="dashboard.cellRules"
 					@move="
 						(key: BreakpointKey, layouts: Layout[]) => dashboard.moveItems(key, layouts)
 					"

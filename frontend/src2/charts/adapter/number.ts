@@ -1,4 +1,5 @@
 import type { NumberCardProps, NumberCardSparkline } from 'frappe-ui/charts'
+import { ROW_HEIGHT } from '../../dashboard/grid_placement'
 import { toNumber } from '../../helpers'
 import { granularityOptions } from '../../helpers/constants'
 import { __ } from '../../translation'
@@ -267,3 +268,49 @@ function previousLabel(dimension?: Dimension): string | undefined {
 	const grain = granularityOptions.find((option) => option.value === dimension?.granularity)
 	return grain && __('vs previous {0}', grain.label.toLowerCase())
 }
+
+// ------------------------------------------------------------ the cell height
+
+/**
+ * The card, measured from the CSS that draws it — every number below is a class
+ * on `NumberCard.vue` or on frappe-ui's `ChartCard`, resolved against the type
+ * scale, and nothing here is an estimate.
+ */
+const CARD = {
+	/** A dashboard cell's `p-2`, top and bottom. */
+	cellPadding: 2 * 8,
+	/** ChartCard's `py-3` and its 1px border, top and bottom. */
+	chrome: 2 * (12 + 1),
+	/** `gap-1.5` between the card's blocks. */
+	gap: 6,
+	/** The title: `text-sm`, 13px at a line height of 1.15. */
+	title: 13 * 1.15,
+	/** The reading: `text-3xl-semibold`, 20px at 1.15. */
+	value: 20 * 1.15,
+	/** The delta row: a `size-4` arrow, which stands taller than its own text. */
+	delta: 16,
+	/** `pb-10`, the band the sparkline is drawn into. */
+	sparkline: 40,
+}
+
+/**
+ * The rows a Number cell takes on a dashboard.
+ *
+ * A card's height is what its blocks add up to, so the author sets the width and
+ * the height follows the config. There are three of them: a title and a reading,
+ * a delta row under them when the reading is compared with something, and the
+ * sparkline band under that.
+ */
+export function numberCardRows(config: NumberChartConfig): number {
+	const { comparison } = measuredAgainst(config, config.number_column_options?.[0] || {})
+	const sparkline = Boolean(config.sparkline && config.date_column?.column_name)
+
+	let height = CARD.cellPadding + CARD.chrome + CARD.title + CARD.gap + CARD.value
+	if (comparison || sparkline) height += CARD.gap + CARD.delta
+	if (sparkline) height += CARD.sparkline
+
+	return Math.ceil(height / ROW_HEIGHT)
+}
+
+/** The shortest a Number cell gets: a title and a reading, nothing under them. */
+export const NUMBER_CARD_MIN_ROWS = numberCardRows({} as NumberChartConfig)

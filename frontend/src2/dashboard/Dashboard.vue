@@ -83,6 +83,7 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 				class="h-fit w-full"
 				:verticalCompact="verticalCompact"
 				:items="dashboard.doc.items"
+				:rules="dashboard.cellRules"
 			>
 				<template #item="{ index }">
 					<DashboardItem :index="index" :item="dashboard.doc.items[index]" />

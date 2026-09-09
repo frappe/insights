@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { EMPTY_RESULT } from '../../query/helpers'
+import { ROW_HEIGHT } from '../../dashboard/grid_placement'
+import type { NumberChartConfig } from '../../types/chart.types'
 import { numberChart, type NumberChartSpec } from './fixtures'
+import { numberCardRows } from './number'
 import { adaptChart, drawsOwnCards } from './index'
 import NumberCards from './NumberCards.vue'
 
@@ -21,6 +24,8 @@ const measureNamed = (name: string) => ({
 })
 
 const monthly = { name: 'created_at', type: 'Datetime', granularity: 'month' } as const
+
+const revenue = { name: 'Revenue', readings: [12300] }
 
 describe('a Number Chart with several values', () => {
 	it('lays the readings out itself, one card behind each of them', () => {
@@ -479,5 +484,44 @@ describe('drilling into a reading', () => {
 			column: 'Revenue',
 			row: input.result.rows[1],
 		})
+	})
+})
+
+describe('the rows a Number cell takes', () => {
+	const rowsFor = (spec: NumberChartSpec) =>
+		numberCardRows(numberChart(spec).config as NumberChartConfig)
+
+	it('is a title and a reading when nothing stands under them', () => {
+		expect(rowsFor({ values: [revenue] })).toBe(4)
+	})
+
+	it('adds the delta row for a reading that is compared with something', () => {
+		expect(
+			rowsFor({
+				values: [{ ...revenue, comparison: { source: 'previous' } }],
+				period: monthly,
+			}),
+		).toBe(5)
+	})
+
+	it('adds the sparkline band under that, compared or not', () => {
+		expect(rowsFor({ values: [revenue], period: monthly, sparkline: true })).toBe(7)
+	})
+
+	it('draws no sparkline band without a Dimension to run the trend along', () => {
+		expect(rowsFor({ values: [revenue], sparkline: true })).toBe(4)
+	})
+
+	it('leaves every card less than a row of slack', () => {
+		// What picks the row height: the three heights the card has, and how much
+		// of the last row each of them wastes.
+		for (const [rows, height] of [
+			[4, 85.95],
+			[5, 107.95],
+			[7, 147.95],
+		]) {
+			expect(rows * ROW_HEIGHT).toBeGreaterThanOrEqual(height)
+			expect(rows * ROW_HEIGHT - height).toBeLessThan(ROW_HEIGHT)
+		}
 	})
 })

@@ -24,6 +24,7 @@ provide('dashboard', dashboard)
 				v-if="dashboard.doc.items.length > 0"
 				class="h-fit w-full"
 				:items="dashboard.doc.items"
+				:rules="dashboard.cellRules"
 			>
 				<template #item="{ index }">
 					<DashboardItem :index="index" :item="dashboard.doc.items[index]" />
