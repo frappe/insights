@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { Badge, Button, Dialog, call } from 'frappe-ui'
+import { Badge, Button, call, Dialog, toast } from 'frappe-ui'
 import { CheckCircle2, LayoutTemplate } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { createToast } from '../helpers/toasts'
 import { useTelemetry } from '@framework/ui/telemetry/index.ts'
 import { __ } from '../translation'
 
@@ -59,7 +58,7 @@ function importTemplate(template: WorkbookTemplate) {
 				app: template.app,
 				module: template.module,
 			})
-			createToast({ message: __('{0} imported', template.title), variant: 'success' })
+			toast.success(__('{0} imported', template.title))
 			router.push(
 				result.dashboard
 					? `/workbook/${result.workbook}/dashboard/${result.dashboard}`
@@ -67,10 +66,7 @@ function importTemplate(template: WorkbookTemplate) {
 			)
 		})
 		.catch(() => {
-			createToast({
-				message: __('Failed to import {0}', template.title),
-				variant: 'error',
-			})
+			toast.error(__('Failed to import {0}', template.title))
 		})
 		.finally(() => (importing.value = null))
 }
@@ -103,14 +99,11 @@ function runUpdate(template: WorkbookTemplate) {
 		template_name: template.name,
 	})
 		.then(() => {
-			createToast({ message: __('{0} updated', template.title), variant: 'success' })
+			toast.success(__('{0} updated', template.title))
 			emit('refresh')
 		})
 		.catch(() => {
-			createToast({
-				message: __('Failed to update {0}', template.title),
-				variant: 'error',
-			})
+			toast.error(__('Failed to update {0}', template.title))
 		})
 		.finally(() => (updating.value = null))
 }

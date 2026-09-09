@@ -17,7 +17,6 @@ import Toggle from './components/Toggle.vue'
 
 import { App } from 'vue'
 import dayjs from './helpers/dayjs.ts'
-import { createToast } from './helpers/toasts'
 import { getSocket } from './socket.ts'
 
 export function registerGlobalComponents(app: App) {
@@ -39,6 +38,5 @@ export function registerGlobalComponents(app: App) {
 
 export function registerControllers(app: App) {
 	app.provide('$dayjs', dayjs)
-	app.provide('$notify', createToast)
 	app.provide('$socket', getSocket())
 }

@@ -1,11 +1,11 @@
 <script setup lang="ts">
+import { toast } from 'frappe-ui'
 import { Wand2 } from 'lucide-vue-next'
 import { computed, h, inject, ref } from 'vue'
 import Code from '../../components/Code.vue'
 import { useShortcut } from '../../composables/useShortcut'
 import useDataSourceStore from '../../data_source/data_source'
 import { wheneverChanges } from '../../helpers'
-import { createToast } from '../../helpers/toasts'
 import { __ } from '../../translation'
 import { Query } from '../query'
 import QueryExecutionStatus from './QueryExecutionStatus.vue'
@@ -26,10 +26,7 @@ const sql = ref(operation ? operation.raw_sql : '')
 
 function execute(force: boolean = false) {
 	if (!data_source.value) {
-		createToast({
-			title: __('Please select a data source first'),
-			variant: 'error',
-		})
+		toast.error(__('Please select a data source first'))
 		return
 	}
 	query.setSQL(
@@ -52,10 +49,7 @@ async function format() {
 			data_source: data_source.value,
 		})
 	} catch (error) {
-		createToast({
-			title: __('Failed to format SQL'),
-			variant: 'error',
-		})
+		toast.error(__('Failed to format SQL'))
 	} finally {
 		formatting.value = false
 	}

@@ -39,7 +39,6 @@
 		"vue": "^3.5.13",
 		"vue-codemirror": "^6.0.1",
 		"vue-router": "^4.2.2",
-		"vue-sonner": "^1.0.3",
 		"vuedraggable": "^4.1.0"
 	},
 	"devDependencies": {

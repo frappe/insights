@@ -1,7 +1,6 @@
 import { useTimeAgo } from '@vueuse/core'
-import { call } from 'frappe-ui'
+import { call, toast } from 'frappe-ui'
 import { reactive, ref } from 'vue'
-import { createInfoToast, createSuccessToast } from '../helpers/toasts'
 import { showErrorToast } from '../helpers'
 
 export type DashboardListItem = {
@@ -66,10 +65,10 @@ async function fetchRecentDashboards(search_term?: string) {
 const updatingPreviewImage = ref<Record<string, boolean>>({})
 async function updatePreviewImage(dashboard_name: string) {
 	updatingPreviewImage.value[dashboard_name] = true
-	createInfoToast('Updating preview image...')
+	toast.info('Updating preview image...')
 	return call('insights.api.dashboards.update_dashboard_preview', { dashboard_name })
 		.then((file_url: string) => {
-			createSuccessToast('Preview image updated successfully')
+			toast.success('Preview image updated successfully')
 			const dashboard = dashboards.value.find((d) => d.name === dashboard_name)
 			if (dashboard) {
 				dashboard.preview_image = file_url

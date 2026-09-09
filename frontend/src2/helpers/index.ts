@@ -2,7 +2,7 @@ import { watchDebounced } from '@vueuse/core'
 import { __ } from '../translation'
 import { isEqual } from 'es-toolkit'
 import { toPng } from 'html-to-image'
-import { call, debounce } from 'frappe-ui'
+import { call, debounce, toast } from 'frappe-ui'
 import type { Socket } from 'socket.io-client'
 import {
 	inject,
@@ -11,7 +11,7 @@ import {
 	watch as vueWatch,
 	WatchCallback,
 	WatchSource,
-	WatchStopHandle
+	WatchStopHandle,
 } from 'vue'
 import { getFormattedDate } from '../query/helpers'
 import session from '../session'
@@ -23,7 +23,6 @@ import {
 	QueryResultColumn,
 } from '../types/query.types'
 import { FIELDTYPES } from './constants'
-import { createToast } from './toasts'
 
 export function getUniqueId(length = 8) {
 	return (+new Date() * Math.random()).toString(36).substring(0, length)
@@ -54,7 +53,7 @@ export function wheneverChanges(source: WatchSource, callback: WatchCallback, op
 			preVal = copy(val)
 			callback(val, preVal, onCleanup)
 		},
-		options
+		options,
 	)
 }
 
@@ -64,7 +63,11 @@ export type WatchOptions = {
 	debounce?: number
 	toggleCondition?: () => boolean
 }
-export function watchToggle(source: WatchSource, callback: WatchCallback, options: WatchOptions = {}) {
+export function watchToggle(
+	source: WatchSource,
+	callback: WatchCallback,
+	options: WatchOptions = {},
+) {
 	const attachSourceWatcher = () => _watch(source, callback, options)
 
 	if (!options.toggleCondition) {
@@ -90,7 +93,7 @@ export function watchToggle(source: WatchSource, callback: WatchCallback, option
 			},
 			{
 				immediate: true,
-			}
+			},
 		)
 	}
 }
@@ -142,11 +145,7 @@ export function getErrorMessage(err: any) {
 }
 
 export function showErrorToast(err: Error, raise = true) {
-	createToast({
-		variant: 'error',
-		title: __('Error'),
-		message: getErrorMessage(err),
-	})
+	toast.error(getErrorMessage(err))
 	if (raise) throw err
 }
 
@@ -227,7 +226,6 @@ export function guessPrecision(number: number) {
 	return Math.min(str.length - decimalIndex - 1, 2)
 }
 
-
 export function getShortNumber(number: number, precision = 0) {
 	const locale = session.site?.country == 'India' ? 'en-IN' : session.user?.locale
 	let formatted = new Intl.NumberFormat(locale || 'en-US', {
@@ -280,10 +278,7 @@ export function safeJSONParse(str: string, defaultValue = null) {
 		console.log(str)
 		console.error(e)
 		console.groupEnd()
-		createToast({
-			message: __('Error parsing JSON'),
-			variant: 'error',
-		})
+		toast.error(__('Error parsing JSON'))
 		return defaultValue
 	}
 }
@@ -332,10 +327,11 @@ export function copyToClipboard(text: string | Promise<string>) {
 }
 
 function showCopyToast(success: boolean) {
-	createToast({
-		variant: success ? 'success' : 'error',
-		title: success ? __('Copied to clipboard') : __('Failed to copy to clipboard'),
-	})
+	if (success) {
+		toast.success(__('Copied to clipboard'))
+	} else {
+		toast.error(__('Failed to copy to clipboard'))
+	}
 }
 
 export function ellipsis(value: string, length: number) {
@@ -346,7 +342,7 @@ export function ellipsis(value: string, length: number) {
 }
 
 export function flattenOptions(
-	options: DropdownOption[] | GroupedDropdownOption[]
+	options: DropdownOption[] | GroupedDropdownOption[],
 ): DropdownOption[] {
 	if (!options.length) return []
 	return 'group' in options[0]
@@ -356,7 +352,7 @@ export function flattenOptions(
 
 export function groupOptions<T extends DropdownOption>(
 	options: T[],
-	groupBy: keyof T
+	groupBy: keyof T,
 ): GroupedDropdownOption[] {
 	return options.reduce((acc, option) => {
 		const group = option[groupBy] as string
@@ -492,7 +488,9 @@ export function createHeaders(columns: QueryResultColumn[]) {
 		const areDates = areValidDates(headerRow.map((header) => header.label))
 		if (!areDates) continue
 
-		const areFirstOfFiscalYear = areFirstDayOfFiscalYear(headerRow.map((header) => header.label))
+		const areFirstOfFiscalYear = areFirstDayOfFiscalYear(
+			headerRow.map((header) => header.label),
+		)
 		const areFirstOfYear = areFirstDayOfYear(headerRow.map((header) => header.label))
 		const areFirstOfMonth = areFirstDayOfMonth(headerRow.map((header) => header.label))
 
@@ -581,7 +579,7 @@ export function toTitleCase(str: string): string {
 		.replace(/&/g, 'and')
 		.toLowerCase()
 		.split(' ')
-		.map(word => {
+		.map((word) => {
 			if (word === 'and') return 'and'
 			return word.charAt(0).toUpperCase() + word.slice(1)
 		})

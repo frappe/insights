@@ -1,4 +1,5 @@
 <script setup lang="tsx">
+import { toast } from 'frappe-ui'
 import { Check, MoreHorizontal, X } from 'lucide-vue-next'
 import { inject, ref } from 'vue'
 import {
@@ -23,7 +24,6 @@ import type { DrillSubject } from '../../charts/drill/drill_stack'
 import { queryDrillSubject } from '../../charts/drill/query_drill'
 import ExpressionEditor from './ExpressionEditor.vue'
 import { copy } from '../../helpers'
-import { createToast } from '../../helpers/toasts'
 import { __ } from '../../translation'
 
 const query = inject('query') as Query
@@ -35,10 +35,8 @@ const drill = ref<{ subject: DrillSubject; clicked: ChartSegmentClick }>()
 async function onSegmentClick(clicked: ChartSegmentClick) {
 	const subject = await queryDrillSubject(query)
 	if (!subject) {
-		createToast({
-			title: __('Nothing to drill into'),
-			message: __('Only a summarized result has rows behind its numbers'),
-			variant: 'warning',
+		toast.warning(__('Nothing to drill into'), {
+			description: __('Only a summarized result has rows behind its numbers'),
 		})
 		return
 	}

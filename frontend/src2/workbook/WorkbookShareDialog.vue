@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import { toast } from 'frappe-ui'
 import { Building2 } from 'lucide-vue-next'
 import { __ } from '../translation'
 import { computed, inject, ref } from 'vue'
 import UserSelector from '../components/UserSelector.vue'
 import { showErrorToast } from '../helpers'
-import { createToast } from '../helpers/toasts'
 import session from '../session'
 import { ShareAccess, WorkbookSharePermission } from '../types/workbook.types'
 import useUserStore from '../users/users'
@@ -89,10 +89,7 @@ function updatePermissions() {
 		})
 		.then(() => {
 			show.value = false
-			createToast({
-				title: __('Permissions updated'),
-				variant: 'success',
-			})
+			toast.success(__('Permissions updated'))
 		})
 		.catch(showErrorToast)
 }

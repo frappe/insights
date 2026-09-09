@@ -1,7 +1,7 @@
 import { useDebouncedRefHistory } from '@vueuse/core'
 import { Buffer } from 'buffer'
 import { isEqual } from 'es-toolkit'
-import { call, dayjs } from 'frappe-ui'
+import { call, dayjs, toast } from 'frappe-ui'
 import { computed, reactive, ref, toRefs, unref, watch } from 'vue'
 import {
 	copy,
@@ -16,7 +16,6 @@ import {
 import { confirmDialog } from '../helpers/confirm_dialog'
 import { FIELDTYPES } from '../helpers/constants'
 import useDocumentResource from '../helpers/resource'
-import { createToast } from '../helpers/toasts'
 import { __ } from '../translation'
 import session from '../session'
 import { isServerBusyError, scheduleQueryExecution } from './execution_queue'
@@ -230,38 +229,38 @@ export function makeQuery(name: string) {
 					page: currentPage.value,
 					page_size: pageSize.value,
 				}),
-			{ isStale, priority: executionPriority.value }
+			{ isStale, priority: executionPriority.value },
 		)
-		.then((response: any) => {
-			if (isStale()) return
-			if (!response) return
+			.then((response: any) => {
+				if (isStale()) return
+				if (!response) return
 
-			result.value.executedSQL = response.sql
-			result.value.columns = response.columns
-			result.value.rows = response.rows
-			result.value.totalRowCount = 0
-			result.value.formattedRows = getFormattedRows(result.value, query.doc.operations)
+				result.value.executedSQL = response.sql
+				result.value.columns = response.columns
+				result.value.rows = response.rows
+				result.value.totalRowCount = 0
+				result.value.formattedRows = getFormattedRows(result.value, query.doc.operations)
 
-			const aggregationPrefixes = aggregations.map((a) => `${a}_`)
-			const isAggregatedSql = Boolean(response.is_aggregated_sql)
-			const isMeasureColumn = (column: QueryResultColumn) =>
-				measureColumns.value.includes(column.name) ||
-				aggregationPrefixes.some((prefix) => column.name.startsWith(prefix)) ||
-				(isAggregatedSql && FIELDTYPES.NUMBER.includes(column.type))
+				const aggregationPrefixes = aggregations.map((a) => `${a}_`)
+				const isAggregatedSql = Boolean(response.is_aggregated_sql)
+				const isMeasureColumn = (column: QueryResultColumn) =>
+					measureColumns.value.includes(column.name) ||
+					aggregationPrefixes.some((prefix) => column.name.startsWith(prefix)) ||
+					(isAggregatedSql && FIELDTYPES.NUMBER.includes(column.type))
 
-			result.value.columnOptions = result.value.columns.map((column) => {
-				return {
-					label: column.name,
-					value: column.name,
-					description: column.type,
-					query: query.doc.name,
-					data_type: column.type,
-					is_measure: isMeasureColumn(column),
-				}
+				result.value.columnOptions = result.value.columns.map((column) => {
+					return {
+						label: column.name,
+						value: column.name,
+						description: column.type,
+						query: query.doc.name,
+						data_type: column.type,
+						is_measure: isMeasureColumn(column),
+					}
+				})
+				result.value.timeTaken = response.time_taken
+				result.value.lastExecutedAt = new Date()
 			})
-			result.value.timeTaken = response.time_taken
-			result.value.lastExecutedAt = new Date()
-		})
 			.catch((err) => {
 				if (isStale()) return
 				isServerBusy.value = isServerBusyError(err)
@@ -298,7 +297,7 @@ export function makeQuery(name: string) {
 			query.call('get_count', {
 				active_operation_idx: activeOperationIdx.value,
 				adhoc_filters: adhocFilters.value,
-			})
+			}),
 		)
 			.then((count: number) => {
 				result.value.totalRowCount = count || 0
@@ -441,12 +440,12 @@ export function makeQuery(name: string) {
 			(op) =>
 				op.type === 'order_by' &&
 				op.column.column_name === args.column.column_name &&
-				op.direction === args.direction
+				op.direction === args.direction,
 		)
 		if (existingOrderBy) return
 
 		const existingOrderByIndex = currentOperations.value.findIndex(
-			(op) => op.type === 'order_by' && op.column.column_name === args.column.column_name
+			(op) => op.type === 'order_by' && op.column.column_name === args.column.column_name,
 		)
 		if (existingOrderByIndex > -1) {
 			query.doc.operations[existingOrderByIndex] = order_by(args)
@@ -457,7 +456,7 @@ export function makeQuery(name: string) {
 
 	function removeOrderBy(column_name: string) {
 		const index = query.doc.operations.findIndex(
-			(op) => op.type === 'order_by' && op.column.column_name === column_name
+			(op) => op.type === 'order_by' && op.column.column_name === column_name,
 		)
 		if (index > -1) {
 			query.doc.operations.splice(index, 1)
@@ -489,7 +488,7 @@ export function makeQuery(name: string) {
 	function renameColumn(oldName: string, newName: string) {
 		// Check if there's a mutate operation with the old name
 		const existingMutateIdx = currentOperations.value.findIndex(
-			(op) => op.type === 'mutate' && op.new_name === oldName
+			(op) => op.type === 'mutate' && op.new_name === oldName,
 		)
 
 		if (existingMutateIdx !== -1) {
@@ -503,7 +502,7 @@ export function makeQuery(name: string) {
 		}
 
 		const existingRenameIdx = currentOperations.value.findIndex(
-			(op) => op.type === 'rename' && op.new_name === oldName
+			(op) => op.type === 'rename' && op.new_name === oldName,
 		)
 
 		if (existingRenameIdx === -1) {
@@ -512,7 +511,7 @@ export function makeQuery(name: string) {
 				rename({
 					column: column(oldName),
 					new_name: newName,
-				})
+				}),
 			)
 			return
 		}
@@ -532,7 +531,7 @@ export function makeQuery(name: string) {
 			rename({
 				column: column(originalColumnName),
 				new_name: newName,
-			})
+			}),
 		)
 	}
 
@@ -555,7 +554,7 @@ export function makeQuery(name: string) {
 	function changeColumnType(column_name: string, newType: ColumnDataType) {
 		// Check if there's a mutate operation with the old name
 		const existingMutateIdx = currentOperations.value.findIndex(
-			(op) => op.type === 'mutate' && op.new_name === column_name
+			(op) => op.type === 'mutate' && op.new_name === column_name,
 		)
 
 		if (existingMutateIdx !== -1) {
@@ -572,7 +571,7 @@ export function makeQuery(name: string) {
 			cast({
 				column: column(column_name),
 				data_type: newType,
-			})
+			}),
 		)
 	}
 
@@ -613,10 +612,8 @@ export function makeQuery(name: string) {
 					if (currentDownloadToken.value !== token) return
 					const data: string = payload?.message
 					if (!data) {
-						createToast({
-							title: __('Download Failed'),
-							message: __('No data found to download.'),
-							variant: 'warning',
+						toast.warning(__('Download Failed'), {
+							description: __('No data found to download.'),
 						})
 						return
 					}
@@ -631,7 +628,8 @@ export function makeQuery(name: string) {
 							type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 						})
 						extension = 'xlsx'
-						mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+						mimeType =
+							'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 					} else {
 						blob = new Blob([data], { type: 'text/csv' })
 						extension = 'csv'
@@ -648,18 +646,14 @@ export function makeQuery(name: string) {
 					a.click()
 					document.body.removeChild(a)
 					window.URL.revokeObjectURL(url)
-					createToast({
-						title: __('Export Successful'),
-						message: __(`File "{0}" exported successfully`, finalFileName),
-						variant: 'success',
+					toast.success(__('Export Successful'), {
+						description: __(`File "{0}" exported successfully`, finalFileName),
 					})
 				})
 				.catch((error: any) => {
 					if (currentDownloadToken.value !== token) return
-					createToast({
-						title: __('Download Failed'),
-						message: error?.message || __('Failed to download file'),
-						variant: 'error',
+					toast.error(__('Download Failed'), {
+						description: error?.message || __('Failed to download file'),
 					})
 				})
 				.finally(() => {
@@ -765,17 +759,13 @@ export function makeQuery(name: string) {
 		return query
 			.save()
 			.then(() => {
-				createToast({
-					title: __('Variables Updated'),
-					message: __('Script variables have been saved securely.'),
-					variant: 'success',
+				toast.success(__('Variables Updated'), {
+					description: __('Script variables have been saved securely.'),
 				})
 			})
 			.catch((error) => {
-				createToast({
-					title: __('Failed to Update Variables'),
-					message: error.message || __('An error occurred while saving variables.'),
-					variant: 'error',
+				toast.error(__('Failed to Update Variables'), {
+					description: error.message || __('An error occurred while saving variables.'),
 				})
 				throw error
 			})
@@ -807,7 +797,7 @@ export function makeQuery(name: string) {
 			deep: true,
 			capacity: 100,
 			debounce: 500,
-		}
+		},
 	)
 
 	const importingTables = ref(false)
@@ -815,16 +805,12 @@ export function makeQuery(name: string) {
 		importingTables.value = true
 		try {
 			const response = await query.call('refresh_stored_tables')
-			createToast({
-				title: __('Import Started'),
-				message: response?.message || __('Importing tables to data store'),
-				variant: 'success',
+			toast.success(__('Import Started'), {
+				description: response?.message || __('Importing tables to data store'),
 			})
 		} catch (error: any) {
-			createToast({
-				title: __('Import Failed'),
-				message: error?.message || __('Failed to import tables to data store'),
-				variant: 'error',
+			toast.error(__('Import Failed'), {
+				description: error?.message || __('Failed to import tables to data store'),
 			})
 		} finally {
 			importingTables.value = false
@@ -952,7 +938,7 @@ function getQueryResource(name: string) {
 			if (query.doc.read_only) {
 				query.autoSave = false
 			}
-		}
+		},
 	)
 	return query
 }

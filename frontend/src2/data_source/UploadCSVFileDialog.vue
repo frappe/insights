@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { FileUploader, call } from 'frappe-ui'
+import { call, FileUploader, toast } from 'frappe-ui'
 import { __ } from '../translation'
 import { FileUp } from 'lucide-vue-next'
 import { computed, reactive, ref } from 'vue'
 import DataTable from '../components/DataTable.vue'
 import { QueryResultColumn, QueryResultRow } from '../types/query.types'
-import { createToast } from '../helpers/toasts'
 
 const show = defineModel()
 
@@ -33,10 +32,8 @@ function uploadFile(file: File) {
 			csvData.totalRowCount = data.total_rows
 		})
 		.catch((error: any) => {
-			createToast({
-				title: __('Upload Failed'),
-				message: error?.message || __('Failed to process uploaded file'),
-				variant: 'error',
+			toast.error(__('Upload Failed'), {
+				description: error?.message || __('Failed to process uploaded file'),
 			})
 			fileUploaded.value = false
 			throw error
@@ -60,17 +57,13 @@ function importCSVData() {
 		tablename: csvData.tablename,
 	})
 		.then(() => {
-			createToast({
-				title: __('Table Imported'),
-				message: __(`Table '{0}' imported successfully`, csvData.tablename),
-				variant: 'success',
+			toast.success(__('Table Imported'), {
+				description: __(`Table '{0}' imported successfully`, csvData.tablename),
 			})
 		})
 		.catch((error: any) => {
-			createToast({
-				title: __('Import Failed'),
-				message: error?.message || __('Failed to import table'),
-				variant: 'error',
+			toast.error(__('Import Failed'), {
+				description: error?.message || __('Failed to import table'),
 			})
 		})
 		.finally(() => {

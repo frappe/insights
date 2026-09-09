@@ -1,4 +1,4 @@
-import { call } from 'frappe-ui'
+import { call, toast } from 'frappe-ui'
 import { __ } from '../translation'
 import { useTelemetry } from '@framework/ui/telemetry/index.ts'
 import { computed, reactive, toRefs } from 'vue'
@@ -14,7 +14,6 @@ import {
 } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import useDocumentResource from '../helpers/resource'
-import { createToast } from '../helpers/toasts'
 import { getLinkedQueries } from '../query/linked_queries'
 import useQuery, { newQuery } from '../query/query'
 import router from '../router'
@@ -44,7 +43,7 @@ function makeWorkbook(name: string) {
 	wheneverChanges(
 		() => workbook.doc.queries.map((q) => q.name),
 		() => workbook.doc.queries.forEach((q) => useQuery(q.name)),
-		{ deep: true }
+		{ deep: true },
 	)
 
 	function setActiveTab(type: 'query' | 'chart' | 'dashboard', name: string) {
@@ -236,16 +235,13 @@ function makeWorkbook(name: string) {
 		confirmDialog({
 			title: __('Duplicate Workbook'),
 			message: __(
-				'Duplicating this workbook will create a new workbook and copy all queries, charts and dashboards to it. Do you want to continue?'
+				'Duplicating this workbook will create a new workbook and copy all queries, charts and dashboards to it. Do you want to continue?',
 			),
 			onSuccess: () => {
 				workbook
 					.call('duplicate')
 					.then((name: any) => {
-						createToast({
-							message: __('Workbook duplicated successfully'),
-							variant: 'success',
-						})
+						toast.success(__('Workbook duplicated successfully'))
 						window.location.href = router.resolve({
 							name: 'Workbook',
 							params: { workbook_name: name },
@@ -263,10 +259,7 @@ function makeWorkbook(name: string) {
 			onSuccess: () => {
 				workbook.call('import_query', { query }).then((name) => {
 					workbook.load().then(() => {
-						createToast({
-							message: __('Query imported successfully'),
-							variant: 'success',
-						})
+						toast.success(__('Query imported successfully'))
 						setActiveTab('query', name)
 					})
 				})
@@ -281,10 +274,7 @@ function makeWorkbook(name: string) {
 			onSuccess: () => {
 				workbook.call('import_chart', { chart }).then((name) => {
 					workbook.load().then(() => {
-						createToast({
-							message: __('Chart imported successfully'),
-							variant: 'success',
-						})
+						toast.success(__('Chart imported successfully'))
 						setActiveTab('chart', name)
 					})
 				})
@@ -347,7 +337,7 @@ function makeWorkbook(name: string) {
 	async function moveItemToFolder(
 		itemType: 'query' | 'chart',
 		itemName: string,
-		folderName?: string
+		folderName?: string,
 	) {
 		const method = 'insights.api.workbooks.move_item_to_folder'
 		return call(method, {
@@ -360,7 +350,7 @@ function makeWorkbook(name: string) {
 	}
 
 	async function updateSortOrder(
-		items: Array<{ type: string; name: string; sort_order: number; folder?: string | null }>
+		items: Array<{ type: string; name: string; sort_order: number; folder?: string | null }>,
 	) {
 		const method = 'insights.api.workbooks.update_sort_orders'
 		return call(method, { workbook: workbook.name, items }).catch(showErrorToast)
@@ -443,7 +433,7 @@ export function getWorkbookResource(name: string) {
 			if (workbook.doc.read_only) {
 				workbook.autoSave = false
 			}
-		}
+		},
 	)
 	return workbook
 }
