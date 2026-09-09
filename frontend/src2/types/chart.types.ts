@@ -107,9 +107,13 @@ export type ReferenceLine = {
 	// Charts saved on develop carry it, so normalizeChartConfig reads it and drops it.
 	statistic?: ReferenceAggregate | null
 	label?: string
+	// Which end of the rule the label sits at, and which side of it. Left unset,
+	// the rule labels itself at its far end, above it.
+	label_placement?: ReferenceLabelPlacement
 	color?: string
 	dashed?: boolean
 }
+export type ReferenceLabelPlacement = 'start-top' | 'start-bottom' | 'end-top' | 'end-bottom'
 export type Series = {
 	name?: string
 	measure: Measure

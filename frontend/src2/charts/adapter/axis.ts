@@ -320,6 +320,7 @@ function referenceLinesFor(
 		// no reason for it. What the author typed wins.
 		const label = line.label || at.label
 		if (label) reference.label = label
+		if (line.label_placement) reference.labelPlacement = line.label_placement
 		if (line.color) reference.color = line.color
 		if (line.dashed) reference.dashed = true
 		lines.push(reference)

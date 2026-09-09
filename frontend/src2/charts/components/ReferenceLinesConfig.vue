@@ -3,7 +3,12 @@ import { Settings, X as XIcon } from 'lucide-vue-next'
 import { computed } from 'vue'
 import ColorInput from '../../components/ColorInput.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
-import { AxisChartConfig, ReferenceAggregate, ReferenceLine } from '../../types/chart.types'
+import {
+	AxisChartConfig,
+	ReferenceAggregate,
+	ReferenceLabelPlacement,
+	ReferenceLine,
+} from '../../types/chart.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 
 // The whole Chart config, not the axis alone: a line reads any Measure the
@@ -23,6 +28,15 @@ const measureOptions = computed(() =>
 		...(config.value.tooltip?.measures || []).map((measure) => measure?.measure_name),
 	].filter((name): name is string => Boolean(name)),
 )
+
+// Named as an end of the rule and a side of it. A rule drawn down the plot
+// carries its label rotated, so its sides read as the left and the right of it.
+const labelPlacementOptions: { label: string; value: ReferenceLabelPlacement }[] = [
+	{ label: 'End, above', value: 'end-top' },
+	{ label: 'End, below', value: 'end-bottom' },
+	{ label: 'Start, above', value: 'start-top' },
+	{ label: 'Start, below', value: 'start-bottom' },
+]
 
 const atOptions: { label: string; value: ReferenceAggregate | '' }[] = [
 	{ label: 'Constant', value: '' },
@@ -119,6 +133,13 @@ function setAggregate(line: ReferenceLine, aggregate: ReferenceAggregate | '') {
 									type="text"
 									v-model="line.label"
 									:placeholder="line.aggregate ? 'Auto' : 'e.g. Target'"
+								/>
+							</InlineFormControlLabel>
+							<InlineFormControlLabel label="Label at">
+								<FormControl
+									type="select"
+									v-model="line.label_placement"
+									:options="labelPlacementOptions"
 								/>
 							</InlineFormControlLabel>
 							<InlineFormControlLabel label="Color">
