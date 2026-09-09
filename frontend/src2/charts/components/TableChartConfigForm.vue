@@ -14,6 +14,7 @@ import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
 import NumberFormatFields from './NumberFormatFields.vue'
+import NumberFormatSection from './NumberFormatSection.vue'
 const props = defineProps<{
 	formatGroup?: FormatGroupArgs
 	dimensions: DimensionOption[]
@@ -279,7 +280,6 @@ function updateTextWrap(column_name: string, wrap: boolean | undefined) {
 			<Toggle label="Show Filters" v-model="config.show_filter_row" />
 			<Toggle label="Show Row Totals" v-model="config.show_row_totals" />
 			<Toggle label="Show Column Totals" v-model="config.show_column_totals" />
-			<NumberFormatFields :config="config" />
 			<Toggle
 				v-if="config.values.length === 1"
 				label="Show Color Scale"
@@ -332,6 +332,8 @@ function updateTextWrap(column_name: string, wrap: boolean | undefined) {
 			</Button>
 		</div>
 	</CollapsibleSection>
+
+	<NumberFormatSection :config="config" />
 
 	<ConditonalFormattingDialog
 		v-if="showFormatSelectorDialog"

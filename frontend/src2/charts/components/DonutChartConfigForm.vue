@@ -7,7 +7,7 @@ import { ColumnOption, DimensionOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
-import NumberFormatFields from './NumberFormatFields.vue'
+import NumberFormatSection from './NumberFormatSection.vue'
 
 const props = defineProps<{
 	dimensions: DimensionOption[]
@@ -39,14 +39,7 @@ const discrete_dimensions = computed(() =>
 				label="Value"
 				v-model="config.value_column"
 				:column-options="props.columnOptions"
-			>
-				<template #config-fields>
-					<NumberFormatFields
-						:config="config"
-						:measure-name="config.value_column?.measure_name"
-					/>
-				</template>
-			</MeasurePicker>
+			/>
 			<FormControl
 				v-if="!config.show_inline_labels"
 				v-model="config.legend_position"
@@ -63,4 +56,6 @@ const discrete_dimensions = computed(() =>
 			<Toggle v-model="config.show_inline_labels" label="Inline Labels" />
 		</div>
 	</CollapsibleSection>
+
+	<NumberFormatSection :config="config" :sole-measure-name="config.value_column?.measure_name" />
 </template>

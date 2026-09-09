@@ -388,7 +388,7 @@ function handleRemove() {
 						/>
 					</InlineFormControlLabel>
 
-					<InlineFormControlLabel v-if="props.enableFormat" label="Format">
+					<InlineFormControlLabel v-if="props.enableFormat" label="Unit">
 						<FormControl
 							type="select"
 							:options="formatOptions"

@@ -12,6 +12,7 @@ import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
 import NumberFormatFields from './NumberFormatFields.vue'
+import NumberFormatSection from './NumberFormatSection.vue'
 import NumberValueContext from './NumberValueContext.vue'
 import NumberWindowPicker from './NumberWindowPicker.vue'
 
@@ -194,4 +195,6 @@ lowerChartLevelSettings()
 			</InlineFormControlLabel>
 		</div>
 	</CollapsibleSection>
+
+	<NumberFormatSection :config="config" />
 </template>

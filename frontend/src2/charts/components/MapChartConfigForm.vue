@@ -5,7 +5,7 @@ import { MapChartConfig } from '../../types/chart.types'
 import { DimensionOption, ColumnOption, QueryResult } from '../../types/query.types'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
-import NumberFormatFields from './NumberFormatFields.vue'
+import NumberFormatSection from './NumberFormatSection.vue'
 import CollapsibleSection from './CollapsibleSection.vue'
 import RegionMappingDialog from './RegionMappingDialog.vue'
 import { FormControl, Button } from 'frappe-ui'
@@ -161,16 +161,14 @@ watch(
 					v-model="config.value_column"
 					:column-options="props.columnOptions"
 					label="Value"
-				>
-					<template #config-fields>
-						<NumberFormatFields
-							:config="config"
-							:measure-name="config.value_column?.measure_name"
-						/>
-					</template>
-				</MeasurePicker>
+				/>
 			</div>
 		</CollapsibleSection>
+
+		<NumberFormatSection
+			:config="config"
+			:sole-measure-name="config.value_column?.measure_name"
+		/>
 
 		<RegionMappingDialog
 			v-if="chartName"

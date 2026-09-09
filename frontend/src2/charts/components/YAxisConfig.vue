@@ -9,6 +9,7 @@ import { ColumnOption, MeasureOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import MeasurePicker from './MeasurePicker.vue'
 import NumberFormatFields from './NumberFormatFields.vue'
+import NumberFormatSection from './NumberFormatSection.vue'
 
 // `config` is the whole Chart's, beside the axis: how a number prints is the
 // Chart's to default and each Measure's to override, and the axis owns neither.
@@ -109,9 +110,5 @@ const updateColor = debounce((color: string, idx: number) => {
 		</div>
 	</CollapsibleSection>
 
-	<CollapsibleSection title="Number Format" collapsed>
-		<div class="flex flex-col gap-3 pt-1">
-			<NumberFormatFields :config="props.config" />
-		</div>
-	</CollapsibleSection>
+	<NumberFormatSection :config="props.config" />
 </template>

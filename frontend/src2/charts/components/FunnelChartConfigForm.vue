@@ -13,7 +13,7 @@ import {
 import DraggableList from '../../components/DraggableList.vue'
 import CollapsibleSection from './CollapsibleSection.vue'
 import MeasurePicker from './MeasurePicker.vue'
-import NumberFormatFields from './NumberFormatFields.vue'
+import NumberFormatSection from './NumberFormatSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
 
 const props = defineProps<{
@@ -84,22 +84,18 @@ const discrete_dimensions = computed(() =>
 					:column-options="props.columnOptions"
 					:model-value="config.value_column as Measure"
 					@update:model-value="config.value_column = $event || ({} as Measure)"
-				>
-					<template #config-fields>
-						<NumberFormatFields
-							:config="config"
-							:measure-name="config.value_column?.measure_name"
-						/>
-					</template>
-				</MeasurePicker>
+				/>
 			</template>
-
-			<!-- One format for the whole funnel, not one per stage: the stages are
-			     the same quantity counted at different points, and v2 prints them
-			     against a single scale. A per-stage override would draw nothing. -->
-			<NumberFormatFields v-if="hasMeasures" :config="config" />
 
 			<Toggle v-model="config.show_percentage" :label="__('Show Percentage')" />
 		</div>
 	</CollapsibleSection>
+
+	<!-- One format for the whole funnel, not one per stage: the stages are the
+	     same quantity counted at different points, and v2 prints them against a
+	     single scale. A per-stage override would draw nothing. -->
+	<NumberFormatSection
+		:config="config"
+		:sole-measure-name="hasMeasures ? undefined : config.value_column?.measure_name"
+	/>
 </template>

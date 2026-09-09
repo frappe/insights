@@ -104,6 +104,25 @@ export function numberFormatOf(
 	return { ...merged, scale: unit.scale }
 }
 
+/**
+ * What a form field inherits: every layer under the one that field writes.
+ *
+ * A panel field shows this as its placeholder, so an author reads what a key it
+ * does not state will print as. The Measure's own unit is not in it — this
+ * takes a config and a name, and a unit needs the Measure itself.
+ */
+export function inheritedNumberFormat(
+	config?: NumberFormatConfigSource | null,
+	measureName?: string,
+): NumberFormat {
+	const layers = [readNumberFormat(config)]
+	if (measureName) {
+		layers.push(readNumberFormat(config?.number_format))
+		layers.push(readNumberFormat(valueFormatOf(config, { measure_name: measureName })))
+	}
+	return mergeFormats(layers)
+}
+
 /** The one resolver. Every chart and the grid print their numbers with this. */
 export function numberFormatter(
 	config?: NumberFormatConfigSource | null,
