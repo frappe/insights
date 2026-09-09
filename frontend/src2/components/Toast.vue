@@ -2,7 +2,7 @@
 	<div class="m-2 flex transition duration-200 ease-out">
 		<div :class="['w-[22rem] rounded bg-surface-base p-3 shadow-md', variantClasses]">
 			<div class="flex items-start">
-				<div v-if="iconComponent" class="mr-2 pt-1">
+				<div v-if="iconComponent" class="me-2 pt-1">
 					<component
 						:is="iconComponent"
 						:class="['h-4 w-4 rounded-full', variantIconClasses, iconClasses]"
@@ -18,7 +18,7 @@
 						</p>
 					</slot>
 				</div>
-				<div class="ml-auto pl-2">
+				<div class="ms-auto ps-2">
 					<slot name="actions" />
 				</div>
 			</div>

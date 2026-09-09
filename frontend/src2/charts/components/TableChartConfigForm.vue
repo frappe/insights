@@ -206,7 +206,7 @@ function updateTextWrap(column_name: string, wrap: boolean | undefined) {
 				</template>
 			</DraggableList>
 			<button
-				class="mt-1.5 text-left text-xs text-ink-gray-5 hover:underline"
+				class="mt-1.5 text-start text-xs text-ink-gray-5 hover:underline"
 				@click="config.rows.push({} as any)"
 			>
 				+ Add column
@@ -228,7 +228,7 @@ function updateTextWrap(column_name: string, wrap: boolean | undefined) {
 					</template>
 				</DraggableList>
 				<button
-					class="mt-1.5 text-left text-xs text-ink-gray-5 hover:underline"
+					class="mt-1.5 text-start text-xs text-ink-gray-5 hover:underline"
 					@click="config.columns.push({} as any)"
 				>
 					+ Add column
@@ -265,7 +265,7 @@ function updateTextWrap(column_name: string, wrap: boolean | undefined) {
 					</template>
 				</DraggableList>
 				<button
-					class="mt-1.5 text-left text-xs text-ink-gray-5 hover:underline"
+					class="mt-1.5 text-start text-xs text-ink-gray-5 hover:underline"
 					@click="config.values.push({} as any)"
 				>
 					+ Add column

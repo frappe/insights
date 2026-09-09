@@ -214,7 +214,7 @@ function saveEdit() {
 									<p class="flex-1 truncate text-base">{{ link.title }}</p>
 									<div
 										v-if="enabledLinks.includes(link.name)"
-										class="ml-auto flex-shrink-0"
+										class="ms-auto flex-shrink-0"
 									>
 										<Combobox
 											class="min-w-[10rem]"

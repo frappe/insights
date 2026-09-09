@@ -151,7 +151,7 @@ function onNodeClick(_evt: MouseEvent, node: any) {
 					{{ visibleNodes.length }} {{ __('nodes') }}, {{ visibleEdges.length }}
 					{{ __('edges') }}
 				</span>
-				<div class="ml-auto">
+				<div class="ms-auto">
 					<FormControl
 						v-model="searchQuery"
 						:placeholder="__('Search nodes\u2026')"
@@ -223,7 +223,7 @@ function onNodeClick(_evt: MouseEvent, node: any) {
 									data.label
 								}}</span>
 							</div>
-							<span class="truncate pl-5 text-xs text-ink-blue-6">{{
+							<span class="truncate ps-5 text-xs text-ink-blue-6">{{
 								data.data_source
 							}}</span>
 						</div>

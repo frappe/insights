@@ -196,7 +196,7 @@ function runUpdate(template: WorkbookTemplate) {
 											<CheckCircle2 class="h-4 w-4" />
 											{{ __('Imported') }}
 										</div>
-										<div class="ml-auto flex items-center gap-2">
+										<div class="ms-auto flex items-center gap-2">
 											<Button
 												v-if="template.update_available"
 												:loading="updating === template.name"
@@ -212,7 +212,7 @@ function runUpdate(template: WorkbookTemplate) {
 									</template>
 									<Button
 										v-else
-										class="ml-auto"
+										class="ms-auto"
 										:loading="importing === template.name"
 										:disabled="!!importing"
 										@click="importTemplate(template)"

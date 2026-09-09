@@ -91,7 +91,7 @@ function addNewColumn() {
 			</template>
 
 			<template #header-suffix="{ column }">
-				<div class="ml-auto pl-2">
+				<div class="ms-auto ps-2">
 					<Popover side="bottom" align="end">
 						<template #trigger="{ isOpen }">
 							<Button
@@ -129,7 +129,7 @@ function addNewColumn() {
 			</template>
 
 			<template #new-column-editor="{ toggle }">
-				<div class="flex h-full min-w-64 w-auto items-center gap-1 pl-0.5">
+				<div class="flex h-full min-w-64 w-auto items-center gap-1 ps-0.5">
 					<ColumnTypeChange v-model="newColumn.data_type" />
 					<ExpressionEditor
 						class="inline-expression h-fit max-h-[10rem] text-sm flex-1"

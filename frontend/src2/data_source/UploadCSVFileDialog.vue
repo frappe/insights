@@ -155,7 +155,7 @@ function resetFile() {
 				</div>
 			</div>
 			<div class="mt-4 flex justify-between pt-2">
-				<div class="ml-auto flex items-center space-x-2">
+				<div class="ms-auto flex items-center space-x-2">
 					<Button :disabled="!fileUploaded" @click="resetFile"> Reset File </Button>
 					<Button
 						variant="solid"

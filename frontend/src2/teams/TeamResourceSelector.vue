@@ -235,7 +235,7 @@ function getVisibleTableLimit(dataSource: string) {
 	<div
 		v-for="data_source in dataSources"
 		:key="data_source.name"
-		class="flex flex-col pr-2"
+		class="flex flex-col pe-2"
 		:data-source="data_source.name"
 	>
 		<div class="sticky top-0 z-10 flex items-center gap-2 bg-surface-base py-1.5">
@@ -269,7 +269,7 @@ function getVisibleTableLimit(dataSource: string) {
 		</div>
 		<div
 			v-if="expandedDataSource === data_source.name"
-			class="flex flex-col gap-2.5 pl-6 pb-1.5"
+			class="flex flex-col gap-2.5 ps-6 pb-1.5"
 		>
 			<FormControl
 				type="text"
@@ -334,7 +334,7 @@ function getVisibleTableLimit(dataSource: string) {
 							</p>
 						</div>
 					</div>
-					<div v-if="expandedTable === table.name" class="ml-6 flex flex-col gap-1.5">
+					<div v-if="expandedTable === table.name" class="ms-6 flex flex-col gap-1.5">
 						<ExpressionEditor
 							:column-options="expandedTableColumns"
 							v-model="tableRestrictions[table.name]"

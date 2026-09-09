@@ -275,7 +275,7 @@ const CustomOperationInfo = (props: any) => {
 			<div></div>
 		</div>
 		<div
-			class="relative ml-3 flex flex-col-reverse gap-3 border-l border-outline-gray-2 text-sm"
+			class="relative ms-3 flex flex-col-reverse gap-3 border-l border-outline-gray-2 text-sm"
 		>
 			<template v-for="(op, idx) in operations" :key="idx">
 				<div
@@ -285,7 +285,7 @@ const CustomOperationInfo = (props: any) => {
 					@dblclick="query.setActiveEditIndex(idx)"
 				>
 					<div
-						class="-ml-[14px] h-fit flex-shrink-0 rounded border border-outline-gray-3 bg-surface-base p-1"
+						class="-ms-[14px] h-fit flex-shrink-0 rounded border border-outline-gray-3 bg-surface-base p-1"
 					>
 						<component
 							:is="op.meta.icon"

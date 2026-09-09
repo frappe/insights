@@ -18,11 +18,11 @@
 						class="h-8 w-8 flex-shrink-0 rounded"
 					/>
 					<div
-						class="flex flex-1 flex-col text-left duration-300 ease-in-out"
+						class="flex flex-1 flex-col text-start duration-300 ease-in-out"
 						:class="
 							props.isCollapsed
-								? 'ml-0 w-0 overflow-hidden opacity-0'
-								: 'ml-2 w-auto opacity-100'
+								? 'ms-0 w-0 overflow-hidden opacity-0'
+								: 'ms-2 w-auto opacity-100'
 						"
 					>
 						<div class="text-base-medium leading-none text-ink-gray-8">Insights</div>
@@ -38,8 +38,8 @@
 						class="duration-300 ease-in-out"
 						:class="
 							props.isCollapsed
-								? 'ml-0 w-0 overflow-hidden opacity-0'
-								: 'ml-2 w-auto opacity-100'
+								? 'ms-0 w-0 overflow-hidden opacity-0'
+								: 'ms-2 w-auto opacity-100'
 						"
 					>
 						<ChevronDown class="h-4 w-4 text-ink-gray-5" aria-hidden="true" />

@@ -281,7 +281,7 @@ Thanks,
 
 						<div
 							v-html="
-								`<ul class='list-disc pl-4'>
+								`<ul class='list-disc ps-4'>
 							<li>{{ rows }} - The result of the query</li>
 							<li>{{ count }} - The number of rows in the query</li>
 						</ul>`

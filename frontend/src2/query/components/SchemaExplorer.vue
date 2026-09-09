@@ -150,13 +150,13 @@ const filteredSchema = computed(() => {
 					</div>
 					<div
 						v-if="expandedTables.has(tableName)"
-						class="ml-3 flex flex-col gap-0.5 py-0.5"
+						class="ms-3 flex flex-col gap-0.5 py-0.5"
 					>
 						<button
 							v-for="column in tableData.columns"
 							:key="column.label"
 							@click="insertColumnName(column.label)"
-							class="flex w-full items-center gap-1.5 rounded py-1.5 pl-2 text-left text-ink-gray-5 hover:bg-surface-gray-1"
+							class="flex w-full items-center gap-1.5 rounded py-1.5 ps-2 text-start text-ink-gray-5 hover:bg-surface-gray-1"
 							:title="`${column.label} (${column.detail || column.type})`"
 						>
 							<component
@@ -164,7 +164,7 @@ const filteredSchema = computed(() => {
 								class="h-4 w-4 flex-shrink-0 text-ink-gray-5"
 							/>
 							<span class="truncate text-ink-gray-6">{{ column.label }}</span>
-							<span class="ml-auto flex-shrink-0 pr-1 text-xs text-ink-gray-4">{{
+							<span class="ms-auto flex-shrink-0 pe-1 text-xs text-ink-gray-4">{{
 								column.detail || column.type
 							}}</span>
 						</button>
