@@ -28,10 +28,10 @@ const monthly = { name: 'created_at', type: 'Datetime', granularity: 'month' } a
 const revenue = { name: 'Revenue', readings: [12300] }
 
 describe('a Number Chart with several values', () => {
-	it('lays the readings out itself, one card behind each of them', () => {
-		// v2's card is one reading and a Number Chart is several, so the grid is
-		// Insights' own. It draws no chrome: the card around it is the one every
-		// other chart type gets.
+	it('previews every reading, one card behind each of them', () => {
+		// What the workbook editor draws: the chart states three readings, so all
+		// three stand side by side. It draws no chrome — the card around it is the
+		// one every other chart type gets.
 		const { component, props } = adapt({
 			values: [
 				{ name: 'Revenue', readings: [100] },
@@ -43,6 +43,17 @@ describe('a Number Chart with several values', () => {
 		expect(component).toBe(NumberCards)
 		expect(props.cards.map((card: any) => card.title)).toEqual(['Revenue', 'Profit', 'Items'])
 		expect(props.cards.map((card: any) => card.value)).toEqual([100, 40, 7])
+	})
+
+	it('previews the cards at cell size when no cell names a reading', () => {
+		// The editor has no cell to fill, so each card carries the height a cell
+		// of its rows would give it, and the row is told to draw them that way.
+		const { props } = adapt({ values: [{ name: 'Revenue', readings: [100] }] })
+		expect(props.preview).toBe(true)
+		expect(props.cards[0].height).toBe(4 * 22 - 16)
+
+		const cell = adapt({ values: [{ name: 'Revenue', readings: [100] }], column: 'Revenue' })
+		expect(cell.props.preview).toBe(false)
 	})
 
 	it('draws the cards itself, so the chrome draws none around them', () => {
@@ -489,7 +500,19 @@ describe('drilling into a reading', () => {
 
 describe('the rows a Number cell takes', () => {
 	const rowsFor = (spec: NumberChartSpec) =>
-		numberCardRows(numberChart(spec).config as NumberChartConfig)
+		numberCardRows(numberChart(spec).config as NumberChartConfig, spec.column)
+
+	it('is answered for the reading the cell names, not for the chart', () => {
+		const spec: NumberChartSpec = {
+			values: [
+				{ name: 'Revenue', readings: [100] },
+				{ name: 'Profit', readings: [40], comparison: { source: 'previous' } },
+			],
+			period: monthly,
+		}
+		expect(rowsFor({ ...spec, column: 'Revenue' })).toBe(4)
+		expect(rowsFor({ ...spec, column: 'Profit' })).toBe(5)
+	})
 
 	it('is a title and a reading when nothing stands under them', () => {
 		expect(rowsFor({ values: [revenue] })).toBe(4)
@@ -523,5 +546,52 @@ describe('the rows a Number cell takes', () => {
 			expect(rows * ROW_HEIGHT).toBeGreaterThanOrEqual(height)
 			expect(rows * ROW_HEIGHT - height).toBeLessThan(ROW_HEIGHT)
 		}
+	})
+})
+
+describe('the reading a dashboard cell names', () => {
+	const three: NumberChartSpec = {
+		values: [
+			{ name: 'Revenue', readings: [100], color: '#2490EF' },
+			{ name: 'Profit', readings: [40] },
+			{ name: 'Items', readings: [7] },
+		],
+	}
+
+	it('is the only card the cell draws', () => {
+		const cards = cardsOf({ ...three, column: 'Profit' })
+		expect(cards).toHaveLength(1)
+		expect(cards[0]).toMatchObject({ title: 'Profit', value: 40, column: 'Profit' })
+	})
+
+	it('carries the settings that stand beside that reading, not another one', () => {
+		expect(cardsOf({ ...three, column: 'Profit' })[0].color).toBeUndefined()
+		expect(cardsOf({ ...three, column: 'Revenue' })[0].color).toBe('#2490EF')
+	})
+
+	it('is the first reading when the cell names none', () => {
+		// A cell written before a cell could name a reading draws what it drew.
+		expect(cardsOf({ ...three, column: undefined })[0].title).toBe('Revenue')
+	})
+
+	it('drills into the reading the cell names', () => {
+		const input = { ...numberChart({ ...three, column: 'Items' }) }
+		expect(adaptChart(input)!.drillDown!.cardClick({ column: 'Items' })).toEqual({
+			column: 'Items',
+			row: input.result.rows[0],
+		})
+	})
+})
+
+describe('a cell naming a reading the Chart no longer states', () => {
+	const gone = () => cardsOf({ values: [{ name: 'Revenue', readings: [100] }], column: 'Margin' })
+
+	it('draws the card that named it, so the reader is told which one went', () => {
+		expect(gone()).toHaveLength(1)
+		expect(gone()[0]).toMatchObject({ column: 'Margin', title: 'Margin', missing: true })
+	})
+
+	it('states no reading, rather than the one that took its place', () => {
+		expect(gone()[0].value).toBeNull()
 	})
 })

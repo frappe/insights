@@ -10,7 +10,7 @@ import ChartCardFrame from './ChartCardFrame.vue'
 
 // The chart with the affordances the builder and the SPA give it: expand, and
 // drill into the rows behind a segment. The card itself is ChartCardFrame.
-const props = defineProps<{ chart: ChartRead; hideMaximize?: boolean }>()
+const props = defineProps<{ chart: ChartRead; column?: string; hideMaximize?: boolean }>()
 
 // The author's drill is the reader's drill plus "open as query" — one dialog,
 // two feeds. What the card's store was built from decides which endpoint answers
@@ -44,7 +44,11 @@ function expand() {
 
 <template>
 	<div ref="card" class="group relative h-full w-full">
-		<ChartCardFrame :chart="props.chart" @segment-click="clicked = $event" />
+		<ChartCardFrame
+			:chart="props.chart"
+			:column="props.column"
+			@segment-click="clicked = $event"
+		/>
 
 		<!-- One bar for everything a surface offers on the card. A host fills the
 		     slot instead of drawing a second overlay in the same corner. -->
@@ -73,7 +77,11 @@ function expand() {
 	<Dialog v-if="chart" v-model:open="showExpandedChartDialog" size="7xl" bare>
 		<template #default>
 			<div class="relative w-full" :class="expandWide ? 'h-[50vh]' : 'h-[75vh]'">
-				<ChartCardFrame :chart="props.chart" @segment-click="clicked = $event" />
+				<ChartCardFrame
+					:chart="props.chart"
+					:column="props.column"
+					@segment-click="clicked = $event"
+				/>
 				<div class="absolute top-2 right-2">
 					<Button variant="ghost" @click="showExpandedChartDialog = false">
 						<template #icon>

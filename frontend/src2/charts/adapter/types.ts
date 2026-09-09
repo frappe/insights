@@ -28,6 +28,13 @@ export type ChartAdapterInput = {
 	/** Printed by the chrome. It belongs to the Chart, not to its config. */
 	title?: string
 	/**
+	 * The one reading to draw, by its `measure_name`, for the type that states
+	 * several — a Number Chart. A dashboard cell is one reading, so the cell
+	 * names it. A surface that names none gets every reading the config states,
+	 * which is what the workbook editor previews.
+	 */
+	column?: string
+	/**
 	 * The surface cannot change the Chart. A control that rewrites the config —
 	 * a table's sort — is left out rather than drawn dead.
 	 */

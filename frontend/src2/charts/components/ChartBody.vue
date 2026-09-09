@@ -41,6 +41,9 @@ const props = defineProps<{
 	// heads the chart. Left out, no title is drawn anywhere in it — which is what
 	// a host that prints its own asks for.
 	title?: string
+	// which reading to draw, for a Number Chart. A host that draws one reading per
+	// cell says which. One that draws the chart says nothing and gets them all.
+	column?: string
 	readonly?: boolean
 	// whether filters narrowed the rows, so an empty card can offer to clear them.
 	// Only a surface that owns filter state can say, and only it can reset them.
@@ -74,6 +77,7 @@ const filler = computed(() => {
 		recordLinks: props.chart.recordLinks,
 		sparklineResult: props.chart.sparklineResult,
 		title: props.title,
+		column: props.column,
 		readonly: props.readonly,
 		executing: props.chart.executing,
 	})

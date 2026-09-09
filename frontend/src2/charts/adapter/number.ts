@@ -15,43 +15,50 @@ import { windowShiftLabel } from '../window'
 import NumberCards from './NumberCards.vue'
 import type { ChartAdapterInput, ChartFiller } from './types'
 
-// A Number Chart carries several Measures and v2's card is one reading, so the
-// filler is a grid Insights lays out with one card behind each value. Two more
-// things v2 will not do for a caller land here as arithmetic: the gap against
-// the comparison, and the scaling a Measure formatted as a percent asks for.
+// A Number Chart carries several Measures and v2's card is one reading, so a
+// reading is a card and the chart is the row of them. Two more things v2 will
+// not do for a caller land here as arithmetic: the gap against the comparison,
+// and the scaling a Measure formatted as a percent asks for.
 //
 // The one type that takes no `format` prop: v2's card prints a target and a
 // delta beside the reading and formats all three from props of its own. So the
 // resolver is asked for the format rather than for a formatter, and the pieces
 // are mapped across.
 
-/** One reading of the grid: a card, and the result column it was read off. */
+/** One reading: a card, and the result column it was read off. */
 export type NumberCardEntry = NumberCardProps & {
-	/** Name of the result column behind the reading. Its identity in the grid. */
+	/** Name of the result column behind the reading. What a drill names. */
 	column: string
+	/** The chart states no such reading any more. See `cardFor`. */
+	missing?: boolean
+	/** The card's height in px, as a cell of `numberCardRows` rows gives it. */
+	height: number
 }
 
 export type NumberCardClickEvent = { column: string }
 
 export function adaptNumberChart(input: ChartAdapterInput): ChartFiller | undefined {
 	const config = input.config as NumberChartConfig
-	const measures = (config.number_columns || []).filter((measure) => measure.measure_name)
-	if (!measures.length) return
+	if (!numberReadings(config).length) return
 
-	// The config names every reading, so the grid is built before a result and
+	// The config names every reading, so the cards are built before a result and
 	// built when none arrives: a card with no row prints a dash, and the states
-	// the other types wear on their chrome are drawn inside these cards.
+	// the other types wear on their chrome are drawn inside them.
 	const rows = input.result.rows || []
-	// Every reading is the newest one, so the newest row is the row behind the
-	// whole grid — a `previous` comparison reads the one before it.
+	// Every reading is the newest one, so the newest row is the row behind every
+	// card — a `previous` comparison reads the one before it.
 	const current = rows[rows.length - 1]
 
-	const series = input.sparklineResult?.rows
-	const cards = measures.map((measure, index) => readingOf(config, rows, measure, index, series))
+	// A dashboard cell names the one reading it draws. A surface that names none
+	// — the workbook editor — previews them all.
+	const drawn = input.column ? [input.column] : numberReadings(config)
+	const cards = drawn.map((column) => cardFor(config, rows, column, input.sparklineResult?.rows))
 
+	// A surface that names no reading gets the cards at the size a cell gives
+	// them, so the preview is what the dashboard draws and not a guess at it.
 	const filler: ChartFiller = {
 		component: NumberCards,
-		props: { cards },
+		props: { cards, preview: !input.column },
 	}
 	// Nothing to drill into until there is a row behind the reading.
 	if (current) {
@@ -63,6 +70,48 @@ export function adaptNumberChart(input: ChartAdapterInput): ChartFiller | undefi
 		}
 	}
 	return filler
+}
+
+/** The readings a Number Chart states, in the order it states them. */
+export function numberReadings(config: NumberChartConfig): string[] {
+	return (config.number_columns || [])
+		.filter((measure) => measure?.measure_name)
+		.map((measure) => measure.measure_name)
+}
+
+/**
+ * Where a reading sits in the config, which is also where its settings sit —
+ * `number_column_options` stands beside `number_columns` by position, unnamed
+ * entries included. `-1` when the config states no such reading.
+ *
+ * Naming none is naming the first: a cell written before a cell could name one
+ * draws what it has always drawn.
+ */
+function readingIndex(config: NumberChartConfig, column?: string): number {
+	const columns = config.number_columns || []
+	return column
+		? columns.findIndex((measure) => measure?.measure_name === column)
+		: columns.findIndex((measure) => measure?.measure_name)
+}
+
+/**
+ * The card behind one reading.
+ *
+ * A cell can name a reading the chart no longer states — an author renamed the
+ * Measure, or removed it. The card stands where it stood and says so, rather
+ * than the cell vanishing under an author who never asked for that.
+ */
+function cardFor(
+	config: NumberChartConfig,
+	rows: QueryResultRow[],
+	column: string,
+	series?: QueryResultRow[],
+): NumberCardEntry {
+	const index = readingIndex(config, column)
+	const measure = (config.number_columns || [])[index]
+	const height = numberCardHeight(config, column)
+	if (!measure) return { column, title: column, value: null, missing: true, height }
+	return { ...readingOf(config, rows, measure, index, series), height }
 }
 
 function readingOf(
@@ -294,15 +343,20 @@ const CARD = {
 }
 
 /**
- * The rows a Number cell takes on a dashboard.
+ * The rows one reading of a Number Chart takes as a dashboard cell.
  *
  * A card's height is what its blocks add up to, so the author sets the width and
  * the height follows the config. There are three of them: a title and a reading,
  * a delta row under them when the reading is compared with something, and the
  * sparkline band under that.
+ *
+ * A cell that names nothing draws the first reading. One naming a reading the
+ * chart dropped keeps the height the chart's own settings give it, so the cell
+ * does not move under the author while they decide what to do about it.
  */
-export function numberCardRows(config: NumberChartConfig): number {
-	const { comparison } = measuredAgainst(config, config.number_column_options?.[0] || {})
+export function numberCardRows(config: NumberChartConfig, column?: string): number {
+	const options = config.number_column_options?.[readingIndex(config, column)] || {}
+	const { comparison } = measuredAgainst(config, options)
 	const sparkline = Boolean(config.sparkline && config.date_column?.column_name)
 
 	let height = CARD.cellPadding + CARD.chrome + CARD.title + CARD.gap + CARD.value
@@ -310,6 +364,11 @@ export function numberCardRows(config: NumberChartConfig): number {
 	if (sparkline) height += CARD.sparkline
 
 	return Math.ceil(height / ROW_HEIGHT)
+}
+
+/** The card's own height in a cell of `numberCardRows` rows: the rows less the cell's padding. */
+export function numberCardHeight(config: NumberChartConfig, column?: string): number {
+	return numberCardRows(config, column) * ROW_HEIGHT - CARD.cellPadding
 }
 
 /** The shortest a Number cell gets: a title and a reading, nothing under them. */

@@ -550,6 +550,8 @@ export type NumberValueSpec = {
 export type NumberChartSpec = {
 	title?: string
 	values: NumberValueSpec[]
+	/** The one reading a dashboard cell names. Absent draws every value. */
+	column?: string
 	/** The Dimension the readings are grouped by. A comparison and a sparkline both need one. */
 	period?: DimensionSpec
 	comparison?: boolean
@@ -614,6 +616,7 @@ export function numberChart(spec: NumberChartSpec): ChartAdapterInput {
 	return {
 		chart_type: 'Number',
 		title: spec.title,
+		...(spec.column ? { column: spec.column } : {}),
 		config,
 		result: resultWith(
 			[

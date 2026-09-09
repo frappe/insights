@@ -101,15 +101,15 @@ const OWN_CARDS: ChartType[] = ['Number']
 
 /**
  * Whether the chrome leaves the card surface undrawn. A Number Chart's readings
- * are cards already, and a grid of cards inside a card borders each one twice.
- * It is a property of the type and not of its data, so the chrome can ask before
- * there is a result to adapt.
+ * are cards already, and a card inside a card borders a reading twice. It is a
+ * property of the type and not of its data, so the chrome can ask before there
+ * is a result to adapt.
  *
  * The same answer settles where the states go. A type with no card of its own has
  * nothing to draw a loading skeleton or a failure on, so the chrome draws them
  * over the plot. A type that draws cards draws them inside each card, and takes
  * `ChartStateProps` for it. That is why its filler is built from the config alone
- * — the grid stands before the first result, and stands when none arrives.
+ * — the cards stand before the first result, and stand when none arrives.
  */
 export function drawsOwnCards(chart_type: string): boolean {
 	return OWN_CARDS.includes(chart_type as ChartType)
