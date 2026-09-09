@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { AlertTriangle } from 'lucide-vue-next'
+import { Button, Tooltip } from 'frappe-ui'
+import { AlertTriangle, Pencil } from 'lucide-vue-next'
 import { computed, inject, provide } from 'vue'
 import { useRouter } from 'vue-router'
 import useChart from '../charts/chart'
 import ChartCardFrame from '../charts/components/ChartCardFrame.vue'
 import ChartRenderer from '../charts/components/ChartRenderer.vue'
 import { waitUntil, wheneverChanges } from '../helpers'
+import { __ } from '../translation'
 import { WorkbookDashboardChart } from '../types/workbook.types'
-import { workbookKey } from '../workbook/workbook_key'
 import { Dashboard } from './dashboard'
 
 const props = defineProps<{ item: WorkbookDashboardChart }>()
@@ -40,24 +41,29 @@ if (props.item.chart) {
 	})
 }
 
+// Editing a chart is not editing the dashboard. The chart is a workbook object
+// and the dashboard only names it, so the action sits on the card in view mode
+// and never touches the layout state.
 const router = useRouter()
-const workbook = inject(workbookKey, null)
-wheneverChanges(
-	() => dashboard.isEditingItem(props.item),
-	(editing: boolean) => {
-		if (!workbook) return
-		if (editing) {
-			router.push(`/workbook/${workbook.doc.name}/chart/${props.item.chart}`)
-		}
-	},
-)
+const canEditChart = computed(() => Boolean(props.item.chart) && dashboard.doc.has_workbook_access)
+function editChart() {
+	router.push(`/workbook/${dashboard.doc.workbook}/chart/${props.item.chart}`)
+}
 </script>
 
 <template>
 	<!-- a public link draws the card read-only: sorting is a query, and a drill
 	     needs an authoring seat, so neither is offered there -->
 	<ChartCardFrame v-if="read && dashboard.shared" :chart="read" readonly />
-	<ChartRenderer v-else-if="read" :chart="read" />
+	<ChartRenderer v-else-if="read" :chart="read">
+		<template v-if="canEditChart" #actions>
+			<Tooltip :text="__('Edit Chart')">
+				<Button variant="ghost" @click="editChart()">
+					<Pencil class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />
+				</Button>
+			</Tooltip>
+		</template>
+	</ChartRenderer>
 
 	<!-- not one of the card's states: a grid item that names no chart has no store
 	     to be loading, failed or empty. It is the layout that is wrong, not a read. -->

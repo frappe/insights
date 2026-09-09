@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { Button } from 'frappe-ui'
+import { Button, Tooltip } from 'frappe-ui'
 import { Maximize, XIcon } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import { ChartRead } from '../chart_read'
+import { __ } from '../../translation'
 import AuthoringDrillDown from '../drill/AuthoringDrillDown.vue'
 import type { ChartSegmentClick } from '../drill/segment_click'
 import ChartCardFrame from './ChartCardFrame.vue'
@@ -31,13 +32,18 @@ const canMaximize = computed(
 	<div class="group relative h-full w-full">
 		<ChartCardFrame :chart="props.chart" @segment-click="clicked = $event" />
 
+		<!-- One bar for everything a surface offers on the card. A host fills the
+		     slot instead of drawing a second overlay in the same corner. -->
 		<div
-			v-if="canMaximize"
-			class="absolute top-0 right-0 p-2 opacity-0 transition-opacity group-hover:opacity-100"
+			v-if="canMaximize || $slots.actions"
+			class="absolute top-0 right-0 flex gap-1 p-2 opacity-0 transition-opacity group-hover:opacity-100"
 		>
-			<Button variant="ghost" @click="showExpandedChartDialog = true">
-				<Maximize class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />
-			</Button>
+			<slot name="actions" />
+			<Tooltip v-if="canMaximize" :text="__('Expand')">
+				<Button variant="ghost" @click="showExpandedChartDialog = true">
+					<Maximize class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />
+				</Button>
+			</Tooltip>
 		</div>
 	</div>
 
