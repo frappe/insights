@@ -75,7 +75,7 @@ const showShareDialog = ref(false)
 
 <template>
 	<div class="relative flex h-full w-full overflow-hidden">
-		<div class="relative flex h-full w-full flex-col gap-3 overflow-hidden p-4">
+		<div class="relative flex h-full w-full flex-col gap-2.5 overflow-hidden px-4 pb-4 pt-2.5">
 			<ChartBuilderToolbar
 				v-if="chart.doc.query"
 				:chart="chart"

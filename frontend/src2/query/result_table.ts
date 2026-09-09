@@ -13,6 +13,9 @@ export type ResultTable = {
 	executing: boolean
 	result: QueryResult
 
+	// why the last run produced nothing, which replaces the grid body
+	executionError?: string
+
 	// the query the rows came from, which is what column filters are keyed by
 	name?: string
 

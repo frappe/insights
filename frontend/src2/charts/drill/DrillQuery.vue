@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { Dialog, LoadingIndicator } from 'frappe-ui'
 import { provide, ref } from 'vue'
+import ResultPane from '../../components/result_pane/ResultPane.vue'
 import QueryDataTable from '../../query/components/QueryDataTable.vue'
-import QueryExecutionStatus from '../../query/components/QueryExecutionStatus.vue'
 import QueryOperations from '../../query/components/QueryOperations.vue'
-import QueryToolbar from '../../query/components/QueryToolbar.vue'
 import { makeAdhocQuery } from '../../query/query'
 import { __ } from '../../translation'
 import type { AdhocFilters } from '../../types/query.types'
@@ -47,15 +46,21 @@ provide('query', query)
 			<LoadingIndicator class="h-5 w-5 text-ink-gray-5" />
 		</div>
 		<div v-else class="relative flex h-[32rem] w-full flex-1 gap-4 overflow-hidden">
-			<div class="flex h-full flex-1 flex-col gap-2 overflow-hidden p-0.5">
-				<QueryToolbar>
-					<QueryExecutionStatus />
-				</QueryToolbar>
-				<div class="flex flex-1 overflow-hidden rounded-4 border border-outline-gray-2">
-					<!-- no drill from here: the stack is behind this dialog, and a
-					     second one started inside it recurses -->
-					<QueryDataTable :query="query" :enable-sort="true" />
-				</div>
+			<div class="flex h-full flex-1 flex-col overflow-hidden p-0.5">
+				<!-- the reader's own query, run for them: no Execute, no query menu -->
+				<ResultPane :query="query">
+					<template #grid="{ rows, currentPage, pageSize }">
+						<!-- no drill from here: the stack is behind this dialog, and a
+						     second one started inside it recurses -->
+						<QueryDataTable
+							:query="query"
+							:rows="rows"
+							:current-page="currentPage"
+							:page-size="pageSize"
+							:enable-sort="true"
+						/>
+					</template>
+				</ResultPane>
 			</div>
 			<div
 				class="relative flex h-full w-[17rem] flex-shrink-0 overflow-y-auto rounded-4 border border-outline-gray-2"

@@ -37,7 +37,7 @@ const workbook = inject(workbookKey)!
 						/>
 					</Tooltip>
 					<ContentEditable
-						class="rounded-1 font-medium !text-ink-gray-7 focus:ring-2 focus:ring-outline-gray-6 focus:ring-offset-4"
+						class="font-medium !text-ink-gray-7"
 						:modelValue="workbook.doc.title"
 						placeholder="Untitled Workbook"
 						@returned="workbook.doc.title = $event"

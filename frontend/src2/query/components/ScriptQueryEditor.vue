@@ -1,18 +1,19 @@
 <script setup lang="ts">
-import { useTimeAgo } from '@vueuse/core'
-import { BookOpen, Braces, Bug, MoreHorizontal, Play } from 'lucide-vue-next'
-import { inject, ref } from 'vue'
+import { BookOpen, Braces, Bug, Play } from 'lucide-vue-next'
+import { h, inject, ref } from 'vue'
 import Code from '../../components/Code.vue'
-import ContentEditable from '../../components/ContentEditable.vue'
 import VariablesDialog from '../../components/VariablesDialog.vue'
+import ResultPane from '../../components/result_pane/ResultPane.vue'
 import { attachRealtimeListener, wheneverChanges } from '../../helpers'
 import session from '../../session'
 import { __ } from '../../translation'
 import { Query } from '../query'
-import QueryAlerts from './QueryAlerts.vue'
+import QueryActions from './QueryActions.vue'
 import QueryDataTable from './QueryDataTable.vue'
+import QueryHeader from './QueryHeader.vue'
 
 const query = inject<Query>('query')!
+const $find = ref<HTMLElement>()
 query.autoExecute = false
 query.ensureResult()
 
@@ -53,6 +54,16 @@ function openVariablesDialog() {
 	showVariablesDialog.value = true
 }
 
+const icon = (component: any) =>
+	h(component, { class: 'h-3.5 w-3.5 text-ink-gray-6', strokeWidth: 1.5 })
+
+const extraActions = () => [
+	{ label: __('Force Run'), icon: icon(Play), onClick: () => query.execute(true) },
+	{ label: __('Variables'), icon: icon(Braces), onClick: openVariablesDialog },
+	{ label: __('Logs'), icon: icon(Bug), onClick: () => (showLogs.value = !showLogs.value) },
+	{ label: __('Docs'), icon: icon(BookOpen), onClick: openDocs },
+]
+
 function handleSaveVariables(variables: any[]) {
 	query
 		.updateVariables(variables)
@@ -64,17 +75,16 @@ function handleSaveVariables(variables: any[]) {
 </script>
 
 <template>
-	<div class="flex flex-1 flex-col gap-4 overflow-hidden p-4">
-		<div class="relative flex h-[55%] w-full flex-col rounded-4 border">
-			<div class="flex flex-shrink-0 items-center gap-1 border-b p-1">
-				<ContentEditable
-					class="flex h-7 cursor-text items-center justify-center rounded-4 bg-surface-base px-2 text-base leading-7 text-ink-gray-7 focus-visible:ring-1 focus-visible:ring-outline-gray-5"
-					:modelValue="query.doc.title"
-					@returned="query.doc.title = $event"
-					@blur="query.doc.title = $event"
-					placeholder="Untitled Dashboard"
-				></ContentEditable>
-			</div>
+	<div class="flex flex-1 flex-col gap-3 overflow-hidden px-4 pb-4 pt-3">
+		<QueryHeader>
+			<QueryActions
+				:on-execute="() => query.execute()"
+				:extra-actions="extraActions"
+				:stale="query.isStale"
+			/>
+		</QueryHeader>
+
+		<div class="relative flex h-[55%] w-full flex-col overflow-hidden rounded-4 border">
 			<div class="flex flex-1 overflow-hidden">
 				<div class="flex-1">
 					<Code v-model="code" language="python" :placeholder="placeholder_script" />
@@ -106,59 +116,19 @@ function handleSaveVariables(variables: any[]) {
 					</div>
 				</transition>
 			</div>
-			<div class="flex flex-shrink-0 gap-1 border-t p-1">
-				<Button @click="() => query.execute()" :label="__('Run')">
-					<template #prefix>
-						<Play class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />
-					</template>
-				</Button>
-				<Dropdown
-					:button="{ icon: MoreHorizontal }"
-					:options="[
-						{
-							label: __('Force Run'),
-							icon: Play,
-							onClick: () => query.execute(true),
-						},
-						{
-							label: __('Variables'),
-							icon: Braces,
-							onClick: openVariablesDialog,
-						},
-						{
-							label: __('Logs'),
-							icon: Bug,
-							onClick: () => (showLogs = !showLogs),
-						},
-						{
-							label: __('Docs'),
-							icon: BookOpen,
-							onClick: openDocs,
-						},
-					]"
+		</div>
+
+		<div ref="$find" class="flex flex-shrink-0"></div>
+		<ResultPane :query="query" :stale="query.isStale" :find-target="$find">
+			<template #grid="{ rows, currentPage, pageSize }">
+				<QueryDataTable
+					:query="query"
+					:rows="rows"
+					:current-page="currentPage"
+					:page-size="pageSize"
 				/>
-			</div>
-		</div>
-
-		<div
-			v-show="query.result.executedSQL"
-			class="tnum flex flex-shrink-0 items-center gap-2 text-sm text-ink-gray-5"
-		>
-			<div class="h-2 w-2 rounded-full bg-green-500"></div>
-			<div class="flex items-center gap-1">
-				<span v-if="query.result.timeTaken == -1"> {{ __('Fetched from cache') }} </span>
-				<span v-else> {{ __('Fetched in {0}s', String(query.result.timeTaken)) }} </span>
-				<span> {{ useTimeAgo(query.result.lastExecutedAt).value }} </span>
-			</div>
-		</div>
-
-		<div class="relative flex w-full flex-1 flex-col overflow-hidden rounded-4 border">
-			<QueryDataTable :query="query">
-				<template #footer-actions>
-					<QueryAlerts :query="query" />
-				</template>
-			</QueryDataTable>
-		</div>
+			</template>
+		</ResultPane>
 	</div>
 	<VariablesDialog
 		v-model:show="showVariablesDialog"

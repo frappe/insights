@@ -157,12 +157,12 @@ export function makeQuery(name: string) {
 	const currentDownloadToken = ref<number | null>(null)
 	const currentPage = ref(1)
 	const pageSize = ref(100)
-	let lastExecutionArgs: {
+	const lastExecutionArgs = ref<{
 		operations: Operation[]
 		adhoc_filters?: AdhocFilters
 		page?: number
 		page_size?: number
-	}
+	}>()
 	let currentExecutionToken = 0
 
 	const adhocFilters = ref<AdhocFilters>()
@@ -187,7 +187,7 @@ export function makeQuery(name: string) {
 		if (!query.islocal) {
 			await waitUntil(() => query.isloaded)
 		}
-		if (lastExecutionArgs && isEqual(lastExecutionArgs, currentExecutionArgs())) {
+		if (lastExecutionArgs.value && isEqual(lastExecutionArgs.value, currentExecutionArgs())) {
 			return
 		}
 		return execute()
@@ -209,7 +209,7 @@ export function makeQuery(name: string) {
 		// recorded before the request, and above the empty-operations return,
 		// because both paths replace `result`. A caller watching it would
 		// otherwise re-ask before the write landed, or never see one at all.
-		lastExecutionArgs = currentExecutionArgs()
+		lastExecutionArgs.value = currentExecutionArgs()
 
 		if (!query.doc.operations.length) {
 			result.value = { ...EMPTY_RESULT }
@@ -817,6 +817,20 @@ export function makeQuery(name: string) {
 		}
 	}
 
+	// The result no longer answers the pipeline it was run for. Only an editor
+	// that does not auto-execute can be in this state, and it is the same
+	// comparison `ensureResult` makes.
+	//
+	// It reads the operations, so it sees an edit only once the editor has
+	// written one. The script editor writes on a debounce and needs nothing
+	// more. The native editor writes only on Run — `setSQL` writes and executes
+	// in one step — so it adds the editor text to this in its own `stale`.
+	const isStale = computed(
+		() =>
+			Boolean(lastExecutionArgs.value) &&
+			!isEqual(lastExecutionArgs.value, currentExecutionArgs()),
+	)
+
 	const autoExecute = ref(false)
 	watchToggle(currentOperations, () => autoExecute.value && ensureResult(), {
 		immediate: true,
@@ -846,6 +860,7 @@ export function makeQuery(name: string) {
 
 		autoExecute,
 		executing,
+		isStale,
 		fetchingCount,
 		isServerBusy,
 		executionError,

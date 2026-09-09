@@ -1,6 +1,6 @@
 # Table experience — decision map
 
-The grid and everything around it: find, filter, column actions, the result status, and the frame each editor builds by hand. This map records the shape, so no more header polish lands on the old one.
+The grid and everything around it: find, filter, column actions, the result status, and the chrome each editor builds by hand. This map records the shape, so no more header polish lands on the old one.
 
 Tickets live in `issues/`, one body of work each. A ticket carries a `Type:`, a `Status:`, and any `Blocked by:` tickets.
 
@@ -40,12 +40,12 @@ One picker under the dashboard filter bar, the card filter button, and the build
 - **The `show_filter_row` chart config dies.** Find is always available and costs no space until used. — 06
 - **One header menu.** The table's sort arrow and the host's three-dot menu merge. Prefix and suffix slots go, capabilities come in. — 04
 - **Columns popover owns show, hide and jump.** Search, Enter jumps to the column, checkbox toggles it. Untick writes a `remove`; tick drops the column from the `remove`, never writes a `select`. — 05
-- **Footer is the result status.** The cache line moves there, once. Alerts leave the footer for the editor's More menu. Export moves to the toolbar. — 03
-- **Error replaces the grid body.** No banner above it. Error, "no data" and "no rows match your find" are one slot with three states. — 03
-- **Page pane for the builder, card pane for a chart.** Two variants of one frame; a chart's header carries only Filter, search and expand. — 03
-- **Toolbar is `[Filter][Columns][Execute][⋯][search]`, all outline; footer is ghost only.** Search sits at the edge because it grows. Export lives in the footer after the pager. — 03
+- **Footer is the result status.** The cache line moves there, once. Alerts leave the footer for the editor's More menu. Export stays in the footer, ghost only. — 03
+- **Error replaces the grid body.** No banner above it. Error, loading, "no data" and "no rows match your find" are one slot with four states. — 03
+- **One card-shaped pane everywhere, under a page header.** The query's actions (source, Execute, menu) sit in a page header with the title. Superseded the page/card split after the first build put Execute below the SQL editor. — 03
+- **The status line reads in the footer, left of the pager.** The pane header holds the find and whatever the host puts beside it; an editor with a page header of its own takes the find into that header instead. Footer right is the pager and Export, ghost only. — 03
 - **Search finds rows and jumps to columns.** One input, a panel under it lists the column hits. — 03, 06
-- **Stale is a solid Execute, not a footer button.** — 03
+- **Stale is a solid Execute in the page header, not a footer button.** — 03
 - **The picker has no operator control.** One complete picker per type, include/exclude for dimensions, from/to for measures, calendar with presets for dates. The rare operators sit behind a more menu. — 01
 - **A preset emits a span, a calendar pick emits dates.** So the one picker serves a card filter that resets and a dashboard filter default that must move. — 01
 - **Two frappe-ui changes come first:** export the calendar panel, and let a Popover open without taking focus. — 07

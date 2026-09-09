@@ -19,7 +19,7 @@ function setDraggedItem(event: DragEvent, row: any) {
 </script>
 
 <template>
-	<div class="flex flex-col px-3.5 pt-3">
+	<div class="flex flex-col px-3.5 pt-3.5">
 		<div class="mb-1 flex h-6 items-center justify-between">
 			<div class="flex items-center gap-1">
 				<div class="text-sm-medium">{{ section.title }}</div>
@@ -31,7 +31,7 @@ function setDraggedItem(event: DragEvent, row: any) {
 					:label="__('Add {0}', section.title)"
 					@click="section.add()"
 				>
-					<Plus class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
+					<Plus class="h-4 w-4 text-ink-gray-5" stroke-width="1.5" />
 				</Button>
 			</div>
 		</div>
@@ -56,7 +56,7 @@ function setDraggedItem(event: DragEvent, row: any) {
 					:to="route(row)"
 					class="flex h-7.5 items-center justify-between rounded-4 pl-1.5 text-sm"
 				>
-					<div class="flex gap-1.5 overflow-hidden">
+					<div class="flex items-center gap-1.5 overflow-hidden">
 						<div class="flex-shrink-0">
 							<slot name="item-icon" :item="row" />
 						</div>
@@ -67,7 +67,7 @@ function setDraggedItem(event: DragEvent, row: any) {
 						:aria-label="__('Remove {0}', row.title)"
 						@click.prevent.stop="section.remove(row)"
 					>
-						<X class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
+						<X class="h-4 w-4 text-ink-gray-5" stroke-width="1.5" />
 					</button>
 				</router-link>
 			</div>

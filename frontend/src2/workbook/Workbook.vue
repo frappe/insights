@@ -76,7 +76,7 @@ watchEffect(() => {
 </script>
 
 <template>
-	<div class="flex h-full w-full flex-col gap-0.5">
+	<div class="flex h-full w-full flex-col">
 		<LoadingOverlay v-if="!workbook.isloaded" />
 		<WorkbookNavbar />
 		<div

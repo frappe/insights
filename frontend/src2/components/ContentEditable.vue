@@ -1,21 +1,29 @@
 <template>
-	<component
-		:is="tag"
-		class="contenteditable align-middle outline-none transition-all before:text-ink-gray-4"
-		:contenteditable="disabled ? false : contenteditable"
-		:placeholder="placeholder"
-		@input="update"
-		@blur="update('blur')"
-		@paste="onPaste"
-		@keypress="onKeypress"
-		ref="element"
-		spellcheck="false"
-	>
-	</component>
+	<!-- Dressed like frappe-ui's TextInput: the same size and variant tables,
+	     with `focus-within` where the input says `focus`, because the element
+	     that takes focus is the text inside. The box carries the caller's
+	     classes and the prefix sits inside it like an input's own. -->
+	<div :class="boxClasses">
+		<slot name="prefix" />
+		<component
+			:is="tag"
+			class="contenteditable min-w-0 flex-1 truncate outline-none before:text-ink-gray-4"
+			:contenteditable="disabled ? false : contenteditable"
+			:placeholder="placeholder"
+			@input="update"
+			@blur="update('blur')"
+			@paste="onPaste"
+			@keypress="onKeypress"
+			ref="element"
+			spellcheck="false"
+		>
+		</component>
+		<slot name="suffix" />
+	</div>
 </template>
 
 <script setup>
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 function replaceAll(str, search, replacement) {
 	return str.split(search).join(replacement)
@@ -46,7 +54,46 @@ const props = defineProps({
 		type: Boolean,
 		default: true,
 	},
+	variant: {
+		type: String,
+		default: 'ghost',
+	},
+	size: {
+		type: String,
+		default: 'sm',
+	},
 })
+
+// Copied from frappe-ui TextInput, `focus:` rewritten as `focus-within:`.
+// frappe-ui keeps these tables private, so the copy drifts every time the input
+// is restyled. See docs/projects/table-experience/issues/07-frappe-ui-gaps.md
+// Font-size is left out on purpose: the caller's text style owns type, and a
+// `text-base` here would outrank a frappe-ui component class like
+// `text-lg-semibold`.
+const sizeClasses = {
+	// gaps assume the 14px icon every input in this app draws, so the text
+	// starts where TextInput's `ps-8` / `ps-9` / `ps-10` puts it
+	sm: 'rounded-4 h-7 px-2 gap-2.5',
+	md: 'rounded-4 h-8 px-2.5 gap-3',
+	lg: 'rounded-5 h-10 px-3 gap-3',
+	xl: 'rounded-5 h-10 px-3 gap-3',
+}
+const variantClasses = {
+	subtle: 'border border-[--surface-gray-2] bg-surface-gray-2 hover:border-outline-elevation-2 hover:bg-surface-gray-3 focus-within:bg-surface-base focus-within:border-outline-gray-4 focus-within:shadow-sm',
+	outline:
+		'border border-outline-gray-2 bg-surface-base hover:border-outline-gray-3 hover:shadow-sm focus-within:bg-surface-base focus-within:border-outline-gray-4 focus-within:shadow-sm',
+	// the border is always there, transparent at rest, so focus only recolors
+	// it — the same motion the input makes, and nothing shifts
+	ghost: 'border border-transparent bg-transparent focus-within:border-outline-gray-4 focus-within:bg-surface-base focus-within:shadow-sm',
+	// a read-only title is not a disabled input: it keeps the ink it inherits
+	disabled: 'border border-transparent bg-transparent',
+}
+const boxClasses = computed(() => [
+	'inline-flex min-w-0 items-center transition-colors',
+	sizeClasses[props.size] || sizeClasses.sm,
+	variantClasses[props.disabled ? 'disabled' : props.variant] || variantClasses.ghost,
+	props.disabled ? '' : 'text-ink-gray-8',
+])
 
 const element = ref()
 

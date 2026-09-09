@@ -1,4 +1,4 @@
-# Two frappe-ui gaps the picker and the pane hit
+# Three frappe-ui gaps the picker and the pane hit
 
 Type: task
 Status: ready-for-agent
@@ -9,5 +9,6 @@ Both prototypes had to rebuild a frappe-ui piece because the component could not
 
 1. **The calendar cannot render inline.** `DateRangePicker` always owns a trigger input and its own floating panel. `CalendarPanel` is the inline piece, but it is not in the package's `exports`. Export it, or give the pickers an inline mode. Ticket 01's date picker needs this.
 2. **Popover steals focus on open and toggles on every trigger click.** A typing-driven panel under an input needs the input to keep focus and the caret click not to toggle. Expose reka's `open-auto-focus` escape hatch, or a `manual` mode. Ticket 03's search panel needs this; until then it is a plain positioned box.
+3. **`TextInput`'s size and variant class tables are private.** An element that is not an `input` cannot wear them: `ContentEditable.vue` carries a copy, `focus:` rewritten as `focus-within:`, so an editable title sits at the same height and takes the same focus ring as the box next to it. The copy drifts silently every time the input is restyled. Export the tables, or a `useInputClasses({ size, variant })` composable that takes the focus prefix as an argument.
 
-Both go to `~/frappe/frappe-ui` on a branch, pushed to `fork`. Until they land, the app carries the prototype's copies behind a comment that names this ticket.
+All three go to `~/frappe/frappe-ui` on a branch, pushed to `fork`. Until they land, the app carries the prototype's copies behind a comment that names this ticket.

@@ -47,14 +47,11 @@ const props = defineProps<{
 	showRowTotals?: boolean
 	showColumnTotals?: boolean
 	showFilterRow?: boolean
-	enablePagination?: boolean
 	enableColorScale?: boolean
 	enableNewColumn?: boolean
 	replaceNullsWithZeros?: boolean
 	loading?: boolean
 	filtering?: boolean
-	onExport?: Function
-	downloading?: boolean
 	formatGroup?: FormatGroupArgs
 	sortOrder?: SortOrder
 	onSortChange?: (column_name: string, direction: SortDirection) => void
@@ -75,10 +72,7 @@ const props = defineProps<{
 	numberFormats?: Record<string, NumberFormat>
 	pageSize?: number
 	displayPageSize?: number
-	totalRowCount?: number
-	onPageChange?: (page: number) => void
 	currentPage?: number
-	onFetchCount?: () => Promise<void> | void
 	onFilterChange?: (filters: Record<string, string>) => void
 }>()
 
@@ -245,14 +239,14 @@ const totalColumnTotal = computed(() => {
 	return Object.values(totalPerColumn.value).reduce((acc, val) => acc + val, 0)
 })
 
+// The cursor is the host's — a pane above passes the page down and slices the
+// rows itself. What is left here is the row gutter: `rowDisplayOffset` is what
+// makes row 1 of page 3 print as 201.
 const pagination = usePagination({
 	pageSize: computed(() => props.pageSize ?? 100),
 	displayPageSize: computed(() => props.displayPageSize ?? 100),
 	rowCount: computed(() => visibleRows.value?.length ?? 0),
-	totalRowCount: computed(() => props.totalRowCount),
 	currentPage: computed(() => props.currentPage),
-	onPageChange: props.onPageChange,
-	enabled: computed(() => Boolean(props.enablePagination)),
 })
 
 // The grid draws in the same colors every chart does, so a scale reads the
@@ -521,7 +515,7 @@ function toggleNewColumn() {
 				<thead ref="$header" class="sticky top-0 z-10 bg-surface-gray-1">
 					<tr v-for="headerRow in headers">
 						<td
-							class="sticky left-0 h-8 whitespace-nowrap border-b border-r bg-surface-gray-1 px-3"
+							class="sticky left-0 z-[1] h-8 whitespace-nowrap border-b border-r bg-surface-gray-1 px-3"
 							data-column-name="__index"
 							width="1px"
 						></td>
@@ -534,7 +528,7 @@ function toggleNewColumn() {
 									? 'text-right'
 									: 'text-left',
 								isStickyColumn(header.column.name)
-									? 'sticky bg-surface-gray-1'
+									? 'sticky z-[1] bg-surface-gray-1'
 									: '',
 							]"
 							:style="{
@@ -603,14 +597,16 @@ function toggleNewColumn() {
 
 					<tr v-if="props.showFilterRow">
 						<td
-							class="sticky left-0 h-8 whitespace-nowrap border-b border-r bg-surface-gray-1 px-3"
+							class="sticky left-0 z-[1] h-8 whitespace-nowrap border-b border-r bg-surface-gray-1 px-3"
 							width="1px"
 						></td>
 						<td
 							v-for="(column, idx) in props.columns"
 							:key="idx"
 							class="h-8 border-b border-r p-1"
-							:class="isStickyColumn(column.name) ? 'sticky bg-surface-gray-1' : ''"
+							:class="
+								isStickyColumn(column.name) ? 'sticky z-[1] bg-surface-gray-1' : ''
+							"
 							:style="{
 								...getStickyColumnStyle(column.name),
 								...getColumnWidthStyle(column.name),
@@ -656,7 +652,7 @@ function toggleNewColumn() {
 						:key="idx"
 					>
 						<td
-							class="tnum sticky left-0 h-8 whitespace-nowrap border-b border-r bg-surface-base px-3 text-right text-xs"
+							class="tnum sticky left-0 z-[1] h-8 whitespace-nowrap border-b border-r bg-surface-base px-3 text-right text-xs"
 							width="1px"
 							height="30px"
 						>
@@ -672,7 +668,7 @@ function toggleNewColumn() {
 								isNumberColumn(col.name) && props.onDrilldown
 									? 'cursor-pointer'
 									: '',
-								isStickyColumn(col.name) ? 'sticky bg-surface-base' : '',
+								isStickyColumn(col.name) ? 'sticky z-[1] bg-surface-base' : '',
 							]"
 							:style="{
 								...getStickyColumnStyle(col.name),
@@ -733,7 +729,7 @@ function toggleNewColumn() {
 							class="h-8 truncate border-b border-r border-t px-3 font-bold text-ink-gray-7"
 							:class="[
 								isNumberColumn(col.name) ? 'tnum text-right' : 'text-left',
-								isStickyColumn(col.name) ? 'sticky bg-surface-base' : '',
+								isStickyColumn(col.name) ? 'sticky z-[1] bg-surface-base' : '',
 							]"
 							:style="{
 								...getStickyColumnStyle(col.name),
@@ -760,18 +756,9 @@ function toggleNewColumn() {
 			</table>
 		</div>
 		<slot name="footer">
-			<DataTableFooter
-				:pagination="props.enablePagination ? pagination : undefined"
-				:total-row-count="props.totalRowCount"
-				:on-fetch-count="props.onFetchCount"
-				@prev="pagination.prev"
-				@next="pagination.next"
-			>
+			<DataTableFooter>
 				<template v-if="$slots['footer-left']" #left>
 					<slot name="footer-left" />
-				</template>
-				<template v-if="$slots['footer-right-actions']" #actions>
-					<slot name="footer-right-actions" />
 				</template>
 			</DataTableFooter>
 		</slot>

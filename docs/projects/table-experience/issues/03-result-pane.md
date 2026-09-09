@@ -1,11 +1,11 @@
-# One frame around every grid
+# One pane around every grid
 
 Type: task
-Status: ready-for-agent
+Status: done
 
 ## Question
 
-The builder, the native editor and the script editor each assemble the frame around the grid by hand. The cache line is written three times. Alerts sit in the footer, export sits in the footer, the execution error is a banner that pushes the grid down.
+The builder, the native editor and the script editor each assemble the chrome around the grid by hand. The cache line is written three times. Alerts sit in the footer, export sits in the footer, the execution error is a banner that pushes the grid down.
 
 ## What to build
 
@@ -35,3 +35,15 @@ Settled on the prototype at `frontend/src2/dev/FrameProto.vue` (branch `try/tabl
 - **Card variant**, for a table chart: header inside the border, `h-10 px-3 border-b`, plain title, ghost icons in `text-ink-gray-5` always visible: Filter with a count badge, search that expands in place to `w-48`, expand. No footer. When narrowed, one line under the header: "12 of 100 rows".
 - **Paging is the pane's.** `DataTable`'s footer slot exposes no cursor, so the pane owns `usePagination`, slices the rows, and passes `current-page` down for the row gutter. A no-op `on-page-change` makes the table believe it is server-paged and Next never disables; do not pass one for client paging.
 - Body states, one slot: error, no data, "No rows match “xyz”" with a subtle Clear.
+
+## Amendment, 2026-09-09
+
+The first build put the query's actions on a header row above the grid. That row mixed two owners, and in the SQL and script editors it put Execute and the data source below the code box. Replaced by two headers, and the pane is always card-shaped. This is what shipped:
+
+- **Page header**, at the top of every query page (`QueryHeader.vue`): one `h-7` row. Left, the title, inline-editable, `font-medium`, prefixed with the query's own sidebar icon — no meta line. Right, whatever the editor puts there: the data source selector (SQL), Execute (`solid` while stale) and the menu, all in `QueryActions.vue`.
+- **Pane header**, inside the border, `h-10`. It holds the find, and the host's own `#header-left` and `#actions`. An editor with a page header of its own takes the find instead: it passes a `findTarget` element and the pane teleports the find into it, so the builder, the native and the script editors show it beside Execute. Nothing else lives here yet — the result actions (Columns, 05) are unbuilt.
+- **Footer**: the status line on the left (`ResultStatus.vue` — rows, timing, from cache, running, stale, failed, find count), the pager and Export on the right. The bar is hidden only when it would be empty.
+- **Body**, one slot: the grid, or one of four states — error, loading (a first run, with no columns yet), "no rows match", no data. A run that already has columns dims the body instead of replacing it.
+
+The "page variant" in *Looks like* above is superseded by this, and so is its footer: the status line reads in the footer, not the pane header. The prototype's `card` variant is the shape of the pane everywhere.
+

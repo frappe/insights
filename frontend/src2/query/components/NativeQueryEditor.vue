@@ -8,15 +8,16 @@ import useDataSourceStore from '../../data_source/data_source'
 import { wheneverChanges } from '../../helpers'
 import { __ } from '../../translation'
 import { Query } from '../query'
-import QueryExecutionStatus from './QueryExecutionStatus.vue'
-import QueryToolbar from './QueryToolbar.vue'
-import QueryAlerts from './QueryAlerts.vue'
+import ResultPane from '../../components/result_pane/ResultPane.vue'
+import QueryActions from './QueryActions.vue'
 import QueryDataTable from './QueryDataTable.vue'
+import QueryHeader from './QueryHeader.vue'
 import QueryInfo from './QueryInfo.vue'
 import SchemaExplorer from './SchemaExplorer.vue'
 import DataSourceSelector from './source_selector/DataSourceSelector.vue'
 
 const query = inject<Query>('query')!
+const $find = ref<HTMLElement>()
 query.autoExecute = false
 query.ensureResult()
 
@@ -114,15 +115,29 @@ const completions = computed(() => {
 useShortcut('Meta+e', () => {
 	execute(true)
 })
+
+// The SQL in the editor reaches the query only on a run, so the text is a
+// staleness source of its own — the query's own check cannot see it.
+const stale = computed(() => {
+	const operation = query.getSQLOperation()
+	return sql.value !== (operation ? operation.raw_sql : '') || query.isStale
+})
 </script>
 
 <template>
 	<div class="flex flex-1 overflow-hidden">
-		<div class="relative flex h-full flex-1 flex-col gap-3 overflow-hidden p-4">
-			<!-- Toolbar -->
-			<QueryToolbar :on-execute="() => execute(true)" :extra-actions="extraActions">
-				<DataSourceSelector v-model="data_source" placeholder="Select a data source" />
-			</QueryToolbar>
+		<div class="relative flex h-full flex-1 flex-col gap-3 overflow-hidden px-4 pb-4 pt-3">
+			<QueryHeader>
+				<DataSourceSelector
+					v-model="data_source"
+					:placeholder="__('Select a data source')"
+				/>
+				<QueryActions
+					:on-execute="() => execute(true)"
+					:extra-actions="extraActions"
+					:stale="stale"
+				/>
+			</QueryHeader>
 
 			<!-- SQL Editor -->
 			<div class="relative flex flex-1 flex-col overflow-hidden rounded-4 border">
@@ -137,13 +152,18 @@ useShortcut('Meta+e', () => {
 			</div>
 
 			<!-- Results Table -->
-			<QueryExecutionStatus />
-			<div class="relative flex h-[45%] w-full flex-col overflow-hidden rounded-4 border">
-				<QueryDataTable :query="query">
-					<template #footer-actions>
-						<QueryAlerts :query="query" />
+			<div class="relative flex h-[45%] w-full flex-col gap-2">
+				<div ref="$find" class="flex flex-shrink-0"></div>
+				<ResultPane :query="query" :stale="stale" :find-target="$find">
+					<template #grid="{ rows, currentPage, pageSize }">
+						<QueryDataTable
+							:query="query"
+							:rows="rows"
+							:current-page="currentPage"
+							:page-size="pageSize"
+						/>
 					</template>
-				</QueryDataTable>
+				</ResultPane>
 			</div>
 		</div>
 

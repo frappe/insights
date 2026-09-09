@@ -23,7 +23,7 @@ const workbook = inject(workbookKey)
 				:class="workbook.isActiveTab('query', idx) ? 'border-b-gray-800' : ''"
 				@click="router.push(`/workbook/${workbook.name}/query/${idx}`)"
 			>
-				<Table2 class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />
+				<Table2 class="h-3.5 w-3.5 text-ink-gray-5" stroke-width="1.5" />
 				<span class="ml-2">{{ query.title }}</span>
 				<XIcon
 					class="ml-2 h-3.5 w-3.5 cursor-pointer text-ink-gray-4 transition-all hover:text-ink-gray-7"
@@ -51,7 +51,7 @@ const workbook = inject(workbookKey)
 				:class="workbook.isActiveTab('dashboard', idx) ? 'border-b-gray-800' : ''"
 				@click="router.push(`/workbook/${workbook.name}/dashboard/${idx}`)"
 			>
-				<LayoutPanelTop class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />
+				<LayoutPanelTop class="h-3.5 w-3.5 text-ink-gray-5" stroke-width="1.5" />
 				<span class="ml-2">{{ dashboard.title }}</span>
 				<XIcon
 					class="ml-2 h-3.5 w-3.5 cursor-pointer text-ink-gray-4 transition-all hover:text-ink-gray-7"

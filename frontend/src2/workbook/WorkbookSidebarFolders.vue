@@ -130,7 +130,7 @@ function onListChange(
 </script>
 
 <template>
-	<div class="flex flex-col px-3.5 pt-3">
+	<div class="flex flex-col px-3.5 pt-3.5">
 		<div class="mb-1 flex h-6 items-center justify-between">
 			<div class="flex items-center gap-1">
 				<div class="text-sm-medium">{{ section.title }}</div>
@@ -142,7 +142,7 @@ function onListChange(
 					:label="__('New folder in {0}', section.title)"
 					@click="workbook.addFolder(`Untitled`, section.type)"
 				>
-					<FolderPlus class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
+					<FolderPlus class="h-4 w-4 text-ink-gray-5" stroke-width="1.5" />
 				</Button>
 				<Button
 					class="!h-fit !p-1"
@@ -150,7 +150,7 @@ function onListChange(
 					:label="__('Add {0}', section.title)"
 					@click="section.add()"
 				>
-					<Plus class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
+					<Plus class="h-4 w-4 text-ink-gray-5" stroke-width="1.5" />
 				</Button>
 			</div>
 		</div>
@@ -185,7 +185,7 @@ function onListChange(
 							:to="route(row)"
 							class="flex h-7.5 items-center justify-between rounded-4 pl-1.5 text-sm"
 						>
-							<div class="flex gap-1.5 overflow-hidden">
+							<div class="flex items-center gap-1.5 overflow-hidden">
 								<div class="flex-shrink-0">
 									<slot name="item-icon" :item="row" />
 								</div>
@@ -196,7 +196,7 @@ function onListChange(
 								:aria-label="__('Remove {0}', row.title)"
 								@click.prevent.stop="section.remove(row)"
 							>
-								<X class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
+								<X class="h-4 w-4 text-ink-gray-5" stroke-width="1.5" />
 							</button>
 						</router-link>
 					</div>
@@ -266,7 +266,7 @@ function onListChange(
 									@click.stop="startRenameFolder(folder, $event)"
 								>
 									<PenLine
-										class="h-3.5 w-3.5 text-ink-gray-6"
+										class="h-3.5 w-3.5 text-ink-gray-5"
 										stroke-width="1.5"
 									/>
 								</button>
@@ -274,7 +274,7 @@ function onListChange(
 									class="cursor-pointer rounded-4 p-1 transition-all hover:bg-surface-gray-3"
 									@click.stop="removeFolder(folder, $event)"
 								>
-									<X class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />
+									<X class="h-3.5 w-3.5 text-ink-gray-5" stroke-width="1.5" />
 								</button>
 							</div>
 						</div>
@@ -301,7 +301,7 @@ function onListChange(
 									:to="route(row)"
 									class="flex h-7.5 items-center justify-between rounded-4 pl-1.5 text-sm"
 								>
-									<div class="flex gap-1.5 overflow-hidden">
+									<div class="flex items-center gap-1.5 overflow-hidden">
 										<div class="flex-shrink-0">
 											<slot name="item-icon" :item="row" />
 										</div>
@@ -312,7 +312,7 @@ function onListChange(
 										:aria-label="__('Remove {0}', row.title)"
 										@click.prevent.stop="section.remove(row)"
 									>
-										<X class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
+										<X class="h-4 w-4 text-ink-gray-5" stroke-width="1.5" />
 									</button>
 								</router-link>
 							</div>

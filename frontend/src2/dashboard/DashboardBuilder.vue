@@ -92,9 +92,10 @@ async function downloadDashboardImage() {
 <template>
 	<div class="relative flex h-full w-full overflow-hidden">
 		<div class="relative flex h-full w-full flex-col overflow-hidden">
-			<div class="flex items-center justify-between p-4 pb-3">
+			<!-- the first card's own 8px inset completes the query view's 12px gap -->
+			<div class="flex h-7 items-center justify-between mx-4 mt-3 mb-1">
 				<ContentEditable
-					class="cursor-text rounded-sm text-lg-semibold !text-ink-gray-7 focus:ring-2 focus:ring-outline-gray-6 focus:ring-offset-4"
+					class="-ml-2 cursor-text text-lg-semibold !text-ink-gray-7"
 					:modelValue="dashboard.doc.title"
 					@returned="dashboard.doc.title = $event"
 					@blur="dashboard.doc.title = $event"
