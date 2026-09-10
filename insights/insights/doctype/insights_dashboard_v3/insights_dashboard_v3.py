@@ -7,9 +7,11 @@ from contextlib import contextmanager
 import frappe
 import requests
 from frappe.model.document import Document
+from frappe.model.naming import append_number_if_name_exists
 from frappe.query_builder import Interval
 from frappe.query_builder.functions import Now
 from frappe.utils.html_utils import sanitize_html
+from frappe.website.utils import cleanup_page_name
 
 from insights.insights.doctype.insights_chart_v3.chart_query import (
     config_filter_group,
@@ -23,7 +25,7 @@ from insights.utils import DocShare, File, get_app_url
 LINK_COLUMN = re.compile(r"^`([^`]+)`\.`([^`]+)`$")
 
 # Which page the view came from, as `docs/telemetry.md` names them.
-VIEW_SURFACES = {"workbook", "shared", "dashboards"}
+VIEW_SURFACES = {"workbook", "shared", "dashboards", "desk"}
 
 
 class InsightsDashboardv3(Document):
@@ -33,6 +35,7 @@ class InsightsDashboardv3(Document):
     from typing import TYPE_CHECKING
 
     if TYPE_CHECKING:
+        from frappe.core.doctype.has_role.has_role import HasRole
         from frappe.types import DF
 
         from insights.insights.doctype.insights_dashboard_chart_v3.insights_dashboard_chart_v3 import (
@@ -40,14 +43,18 @@ class InsightsDashboardv3(Document):
         )
 
         is_public: DF.Check
+        is_standard: DF.Check
         items: DF.JSON | None
         linked_charts: DF.TableMultiSelect[InsightsDashboardChartv3]
         old_name: DF.Data | None
         permission_user: DF.Link | None
         preview_image: DF.Data | None
+        route: DF.Data | None
         share_link: DF.Data | None
         title: DF.Data | None
         vertical_compact_layout: DF.Check
+        visibility: DF.Literal["Private", "Roles", "Everyone", "Public"]
+        visible_to_roles: DF.TableMultiSelect[HasRole]
         workbook: DF.Link
     # end: auto-generated types
 
@@ -78,9 +85,15 @@ class InsightsDashboardv3(Document):
             self.items = items
 
     def validate(self):
-        from insights.permissions import check_dashboard_chart_access
+        from insights.permissions import check_dashboard_chart_access, validate_visibility
 
         check_dashboard_chart_access(self)
+        validate_visibility(self)
+
+    def on_update(self):
+        from insights.permissions import update_linked_charts_permissions
+
+        update_linked_charts_permissions(self)
 
     @frappe.whitelist()
     def track_view(self, surface: str | None = None):
@@ -112,9 +125,7 @@ class InsightsDashboardv3(Document):
 
         d.read_only = not self.has_permission("write")
         if not d.read_only:
-            access = self.get_acess_data()
-            d.people_with_access = access[0]
-            d.is_shared_with_organization = access[1]
+            d.people_with_access = self.get_people_with_access()
         d.has_workbook_access = frappe.has_permission("Insights Workbook", ptype="read", doc=self.workbook)
         return d
 
@@ -132,7 +143,27 @@ class InsightsDashboardv3(Document):
         )
 
     def before_save(self):
+        self.set_route()
         self.enqueue_update_dashboard_preview()
+
+    def set_route(self):
+        """Give every dashboard a readable key for external links.
+
+        The route is derived from the title only when it is empty, so renaming a
+        dashboard leaves an already-published link working. Clearing the route
+        asks for a fresh one. It stays unique with a numbered suffix - nothing
+        internal points at a route, so a suffix costs a bookmark at worst.
+        """
+        route = cleanup_page_name(self.route or self.title)
+        if not route:
+            return
+
+        self.route = append_number_if_name_exists(
+            self.doctype,
+            route,
+            fieldname="route",
+            filters={"name": ("!=", self.name or "")},
+        )
 
     def set_linked_charts(self):
         """The charts the grid names, once each.
@@ -178,10 +209,11 @@ class InsightsDashboardv3(Document):
     ):
         """The values one of this dashboard's filters offers.
 
-        Who may read this dashboard was settled before this ran: the builder
-        reaches it through `run_doc_method`, and a public link through the same
-        endpoint's public fallback. The read is the whole gate, so this reaches the
-        query's plain method rather than the `Insights User` endpoint.
+        Who may read this dashboard was settled before this ran — the builder
+        reaches it through `run_doc_method` and a viewer through
+        `insights.api.view.get_filter_values`. The read is the whole gate, so
+        this reaches the query's plain method: a reader who may see this
+        dashboard can hold no Insights role at all.
 
         `filter_context` is what the rest of the grid currently holds, unrouted:
         the `chart` the links are followed under, and the `filters` state. Routing
@@ -192,7 +224,7 @@ class InsightsDashboardv3(Document):
         link names a query and a column, and a forged one would narrow this list
         by a column nobody published, which answers a question about it. The
         builder's unsaved grid still routes, because `run_doc_method` builds
-        `self` out of its request body, and the public fallback re-reads the
+        `self` out of its request body, and `insights.api.view` reads the
         stored document, which is the same rule `filter_source` states.
         """
         query, column_name, adhoc_filters = self._filter_column_source(filter_name, filter_context)
@@ -361,59 +393,39 @@ class InsightsDashboardv3(Document):
             self.db_set("preview_image", file_url)
             return file_url
 
-    def get_acess_data(self):
+    def get_people_with_access(self):
         DocShare = frappe.qb.DocType("DocShare")
         User = frappe.qb.DocType("User")
 
-        shared_with = (
+        return (
             frappe.qb.from_(DocShare)
             .left_join(User)
             .on(DocShare.user == User.name)
             .select(
-                DocShare.user,
-                DocShare.everyone,
                 User.full_name,
                 User.user_image,
                 User.email,
             )
             .where(DocShare.share_doctype == "Insights Dashboard v3")
             .where(DocShare.share_name == self.name)
+            .where(DocShare.user.isnotnull())
             .where((DocShare.read == 1) | (DocShare.write == 1))
             .run(as_dict=True)
         )
 
-        org_access = False
-        people_with_access = []
-        for share in shared_with:
-            if not share.everyone:
-                people_with_access.append(
-                    {
-                        "full_name": share.full_name,
-                        "user_image": share.user_image,
-                        "email": share.email,
-                    }
-                )
-            else:
-                org_access = True
-
-        return people_with_access, org_access
-
     @frappe.whitelist()
     def update_access(self, data: dict | str):
+        """The people named on this dashboard, and nobody else.
+
+        A share names a person. Who else may read is `visibility`, an ordinary
+        field the dialog saves with the rest of the document, so this method
+        never widens reach beyond the list it is given.
+        """
         if not frappe.has_permission("Insights Dashboard v3", ptype="share", doc=self.name):
             frappe.throw("You do not have permission to share this dashboard")
 
         data = frappe.parse_json(data)
-        is_public = data.get("is_public")
-        is_shared_with_organization = data.get("is_shared_with_organization")
         people_with_access = data.get("people_with_access") or []
-
-        # this writes is_public with db_set, so validate() never runs. Check
-        # before any share is applied, so a refusal leaves nothing half-done.
-        if is_public:
-            from insights.permissions import check_dashboard_chart_access
-
-            check_dashboard_chart_access(self)
 
         existing_shares = frappe.get_all(
             "DocShare",
@@ -422,7 +434,7 @@ class InsightsDashboardv3(Document):
                 "share_name": self.name,
                 "read": 1,
             },
-            fields=["name", "user", "everyone"],
+            fields=["name", "user"],
         )
 
         # remove all existing shares that are not in the new list
@@ -443,38 +455,9 @@ class InsightsDashboardv3(Document):
                 doc.notify_by_email = 0
                 doc.save(ignore_permissions=True)
 
-        org_shares = [share for share in existing_shares if share.everyone]
-        if is_shared_with_organization and not org_shares:
-            doc = DocShare.get_or_create_doc(
-                share_doctype="Insights Dashboard v3",
-                share_name=self.name,
-                everyone=1,
-            )
-            doc.read = 1
-            doc.notify_by_email = 0
-            doc.save(ignore_permissions=True)
-        elif org_shares and not is_shared_with_organization:
-            for share in org_shares:
-                frappe.delete_doc("DocShare", share.name, ignore_permissions=True)
-
-        was_public = self.is_public
-
-        # a public execution has no caller of its own, so the rows it returns are
-        # filtered by whoever published the dashboard
-        self.db_set(
-            {
-                "is_public": is_public,
-                "permission_user": frappe.session.user if is_public else None,
-            }
-        )
-
         newly_shared = set(people_with_access) - set(existing_share_users)
         if newly_shared:
             capture_share_granted("dashboard", "user", len(newly_shared))
-        if is_shared_with_organization and not org_shares:
-            capture_share_granted("dashboard", "org", 1)
-        if is_public and not was_public:
-            capture_share_granted("dashboard", "public", 1)
 
 
 # The two operators that ask about the column itself, so they stand without a value.
@@ -501,11 +484,11 @@ def route_filters(
 ) -> dict | None:
     """Dashboard filter state, routed to the queries the filters are linked to.
 
-    One router for every surface. The builder is editing items it has not saved
-    yet, so it sends those. A reading surface names its dashboard, and the
-    routing table is read from that dashboard's stored items. Routing is the
-    same either way, and it belongs on this side: a link names a query and a
-    column, and the client never has to take the link apart.
+    One router for every surface. A viewer names a saved dashboard and the read
+    path hands over its stored items. The builder is editing items it has not
+    saved yet, so it sends those instead. Routing is the same either way, and it
+    belongs on this side: a link names a query and a column, and that is exactly
+    what a viewer is never given.
 
     `exclude_filter` leaves one filter out. A filter offering its own values
     must not narrow them by what it currently holds, or picking a second value
@@ -696,7 +679,7 @@ def create_preview_file(content: bytes, dashboard_name: str):
 
 @contextmanager
 def generate_preview_key(dashboard: str):
-    """A key that stands in for the viewer of one dashboard, for one render.
+    """A key that stands in for the reader of one dashboard, for one render.
 
     The key names its dashboard, so a leaked key reads that dashboard and the
     charts and queries on it — the same documents the preview image itself

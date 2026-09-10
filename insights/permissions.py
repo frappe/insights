@@ -1,6 +1,56 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+"""Who may read or change Insights content, and on which grant.
+
+Frappe asks this module two questions. `get_permission_query_conditions` names
+the documents a list may show. `has_doc_permission` answers for one document.
+Both run through `InsightsPermissions`, so a grant one seam honors the other
+honors too.
+
+The branching below is three eras layered - teams, then workbook sharing, then
+declared visibility - but one rule holds under all of it: a grant is the union
+of enumerable sources, per doctype and per action.
+
+    Source                         Applies to                          Actions
+    Admin (`is_admin`)             every permissioned doctype          all
+    Ownership                      everything                          all
+    DocShare                       workbook, dashboard, chart          per share flags
+    Container inheritance          workbook -> items,                  follows container
+                                   dashboard -> chart,
+                                   chart -> query, query -> alert
+    Team resource grant            source, table - and dashboard,      all
+                                   chart (legacy)
+    Team membership                team                                all
+    Visibility                     dashboard, chart                    read only
+    Preview key                    the previewed dashboard, its        read only
+                                   charts, their queries
+    Role (`check_app_permission`)  the authoring SPA, not documents    -
+
+The table is exhaustive. A grant that is not in it does not exist. This file
+decides every read of Insights content: the `is_public` column that published a
+document before `visibility` is read by nothing but the patch that migrated it.
+
+The rule the table is written for: a new grant source must earn a row here
+before it earns a join in this file.
+
+Four things the table does not say:
+
+- A DocShare on content that declares visibility names a person. An org-wide
+  one is not read there, because the `Everyone` level is the one mechanism that
+  admits every signed-in user. A workbook declares no visibility, so its
+  org-wide share is read.
+
+- Actions fold. `has_doc_permission` is asked for read, share or write, and
+  anything that is neither read nor share is asked as write. The list seam asks
+  for read and nothing else.
+- A document that does not exist yet has nothing to enumerate, so the controller
+  admits it. The one exception is a new query, chart or dashboard that names a
+  workbook, where the workbook's grant decides.
+- Ownership is a source for every doctype on the document seam, but the list
+  seam builds no owner branch for data sources and tables. Teams alone say which
+  of those a list may show.
+"""
 
 from functools import cached_property
 
@@ -36,6 +86,24 @@ TEAM_BASED_PERMISSION_DOCTYPES = [
 
 INSIGHTS_ROLES = ("Insights User", "Insights Admin")
 
+# content that declares its own visibility (`visibility` + `visible_to_roles`)
+VISIBILITY_DOCTYPES = [
+    "Insights Chart v3",
+    "Insights Dashboard v3",
+]
+
+# The visibility levels, from the narrowest reach to the widest. The
+# `visibility` field on chart and dashboard declares the same four options, and
+# `test_visibility` asserts that this list and the schema agree.
+PRIVATE = "Private"
+ROLES = "Roles"
+EVERYONE = "Everyone"
+PUBLIC = "Public"
+VISIBILITY_LEVELS = [PRIVATE, ROLES, EVERYONE, PUBLIC]
+
+# levels that admit a reader without naming them
+OPEN_LEVELS = [EVERYONE, PUBLIC]
+
 
 def get_insights_users():
     """Everyone who may use Insights: an enabled holder of an Insights role.
@@ -68,6 +136,10 @@ class InsightsPermissions:
     def team_permissions_enabled(self):
         return frappe.db.get_single_value("Insights Settings", "enable_permissions")
 
+    @cached_property
+    def user_roles(self):
+        return frappe.get_roles(self.user)
+
     def get_permission_query_conditions(self, doctype: str) -> str:
         if doctype not in PERMISSION_DOCTYPES:
             return ""
@@ -94,6 +166,17 @@ class InsightsPermissions:
             return True
 
         if self.is_admin:
+            return True
+
+        # imported here because `insights.api` reaches back into this module
+        from insights.api.shared import is_being_previewed
+
+        # A preview render arrives as Guest carrying a key cut for one dashboard,
+        # so the key is its whole grant. It reaches the documents the image it
+        # produces already shows and stops there. The grant lives here rather
+        # than on one endpoint because the render reads through the same
+        # endpoints every other reader does.
+        if ptype == "read" and is_being_previewed(doc.doctype, doc.name):
             return True
 
         is_new = not doc.name or doc.is_new()
@@ -141,6 +224,54 @@ class InsightsPermissions:
         if doctype == "Insights Alert":
             query = self._build_alert_permission_query(ptype)
         return query
+
+    def _build_visibility_query(self, doctype, ptype):
+        """Returns a query to get docs whose declared visibility admits this user.
+
+        Declared visibility is one grant source beside owner, DocShare and
+        the workbook/dashboard links. It is view-only: no level ever grants
+        write or share, and no level consults the `Insights User` role.
+        """
+        if ptype != "read" or doctype not in VISIBILITY_DOCTYPES:
+            return None
+
+        Content = frappe.qb.DocType(doctype)
+
+        if self.user == "Guest":
+            # the levels are strict, so a guest only ever reaches the widest
+            return frappe.qb.from_(Content).select(Content.name).where(Content.visibility == PUBLIC)
+
+        query = frappe.qb.from_(Content).select(Content.name)
+        admits_user = Content.visibility.isin(OPEN_LEVELS)
+
+        roles = [role for role in self.user_roles if role != "Guest"]
+        if roles:
+            HasRole = frappe.qb.DocType("Has Role")
+            NamedRoles = (
+                frappe.qb.from_(HasRole)
+                .select(HasRole.parent.as_("name"))
+                .where(
+                    (HasRole.parenttype == doctype)
+                    & (HasRole.parentfield == "visible_to_roles")
+                    & (HasRole.role.isin(roles))
+                )
+            )
+            query = query.left_join(NamedRoles).on(Content.name == NamedRoles.name)
+            admits_user = admits_user | ((Content.visibility == ROLES) & NamedRoles.name.isnotnull())
+
+        return query.where(admits_user)
+
+    def _with_visibility_grant(self, query, Content, doctype, ptype, granted):
+        """Adds declared visibility to a doctype's grant sources"""
+        visible = self._build_visibility_query(doctype, ptype)
+        if visible is None:
+            return query.where(granted)
+
+        return (
+            query.left_join(visible)
+            .on(Content.name == visible.name)
+            .where(granted | visible.name.isnotnull())
+        )
 
     def _build_source_permission_query(self, ptype):
         # if team permissions are not enabled, all data sources are accessible
@@ -232,7 +363,7 @@ class InsightsPermissions:
             .where(
                 (DocShare.share_doctype == "Insights Dashboard v3")
                 & (DocShare[ptype] == 1)
-                & ((DocShare.user == self.user) | (DocShare.everyone == 1))
+                & (DocShare.user == self.user)
             )
         )
 
@@ -248,7 +379,7 @@ class InsightsPermissions:
 
         AllowedDashboards = self._build_resource_query("Insights Dashboard v3")
 
-        return (
+        query = (
             frappe.qb.from_(Dashboard)
             .select(Dashboard.name)
             .left_join(OwnedDashboards)
@@ -259,13 +390,15 @@ class InsightsPermissions:
             .on(Dashboard.name == LinkedWithAllowedWorkbooks.name)
             .left_join(AllowedDashboards)
             .on(Dashboard.name == AllowedDashboards.name)
-            .where(
-                OwnedDashboards.name.isnotnull()
-                | SharedDashboards.share_name.isnotnull()
-                | LinkedWithAllowedWorkbooks.name.isnotnull()
-                | AllowedDashboards.name.isnotnull()
-            )
         )
+        granted = (
+            OwnedDashboards.name.isnotnull()
+            | SharedDashboards.share_name.isnotnull()
+            | LinkedWithAllowedWorkbooks.name.isnotnull()
+            | AllowedDashboards.name.isnotnull()
+        )
+
+        return self._with_visibility_grant(query, Dashboard, "Insights Dashboard v3", ptype, granted)
 
     def _build_chart_permission_query(self, ptype):
         DocShare = frappe.qb.DocType("DocShare")
@@ -280,7 +413,7 @@ class InsightsPermissions:
             .where(
                 (DocShare.share_doctype == "Insights Chart v3")
                 & (DocShare[ptype] == 1)
-                & ((DocShare.user == self.user) | (DocShare.everyone == 1))
+                & (DocShare.user == self.user)
             )
         )
 
@@ -308,7 +441,7 @@ class InsightsPermissions:
 
         AllowedCharts = self._build_resource_query("Insights Chart v3")
 
-        return (
+        query = (
             frappe.qb.from_(Chart)
             .select(Chart.name)
             .left_join(OwnedCharts)
@@ -321,14 +454,18 @@ class InsightsPermissions:
             .on(Chart.name == LinkedWithAllowedDashboards.name)
             .left_join(AllowedCharts)
             .on(Chart.name == AllowedCharts.name)
-            .where(
-                OwnedCharts.name.isnotnull()
-                | SharedCharts.share_name.isnotnull()
-                | LinkedWithAllowedWorkbooks.name.isnotnull()
-                | LinkedWithAllowedDashboards.name.isnotnull()
-                | AllowedCharts.name.isnotnull()
-            )
         )
+        granted = (
+            OwnedCharts.name.isnotnull()
+            | SharedCharts.share_name.isnotnull()
+            | LinkedWithAllowedWorkbooks.name.isnotnull()
+            # a chart on a dashboard inherits the dashboard's visibility,
+            # downward only - see _build_dashboard_permission_query
+            | LinkedWithAllowedDashboards.name.isnotnull()
+            | AllowedCharts.name.isnotnull()
+        )
+
+        return self._with_visibility_grant(query, Chart, "Insights Chart v3", ptype, granted)
 
     def _build_query_permission_query(self, ptype):
         Query = frappe.qb.DocType("Insights Query v3")
@@ -426,7 +563,7 @@ def check_referenced_query_access(query_name):
     """A query named by another document is still a document you have to read.
 
     A reference resolves to the whole query - its operations, its native SQL and
-    the tables it reads - and the compiled result carries all of it back.
+    the tables it reads - and the compiled result brings all of it back.
 
     An unattended execution has no caller to check, so it is checked against the
     user it runs as - the one recorded when the content was published.
@@ -447,12 +584,11 @@ def check_referenced_query_access(query_name):
 
 
 def check_chart_query_access(chart):
-    """A chart may only point at a query its author can read.
+    """A chart may only point at a query its owner can read.
 
     The link is a grant, not a reference: `_build_query_permission_query` gives
-    read on every query linked from a chart the caller can read, and
-    `get_public_root` reads a link from a public chart the same way. So the link
-    has to be checked where it is written, or it widens the author's own access.
+    read on every query linked from a chart the caller can read. So the link has
+    to be checked where it is written, or it widens the owner's own access.
 
     Only a changed link is checked. An existing chart stays saveable by anyone
     who may already read it, whose access to the query runs through this link.
@@ -467,12 +603,132 @@ def check_chart_query_access(chart):
         )
 
 
+def validate_visibility(doc):
+    """Widening a document's visibility is a share, not a write.
+
+    `visibility` is an ordinary field, so the generic write surface reaches it.
+    Widening it hands the owner's own read access to people who hold none of
+    their own - a guest on the open internet, at the widest level - and that is
+    what `share` means. So the level is checked where it is written, the same way
+    a chart's query link is.
+
+    Only a widening move is checked. Narrowing takes nothing away from anybody,
+    and a level that did not move leaves the document as saveable as the rest of
+    it.
+    """
+    if not doc.has_value_changed("visibility"):
+        return
+
+    before = doc.get_doc_before_save()
+    if visibility_level(doc.visibility) <= visibility_level(before.visibility if before else None):
+        return
+
+    if not frappe.has_permission(doc.doctype, ptype="share", doc=doc if doc.is_new() else doc.name):
+        frappe.throw(
+            frappe._("You do not have permission to change who can see this"),
+            frappe.PermissionError,
+        )
+
+    if doc.visibility in OPEN_LEVELS:
+        from insights.telemetry import capture_share_granted
+
+        shared = "chart" if doc.doctype == "Insights Chart v3" else "dashboard"
+        capture_share_granted(shared, "public" if doc.visibility == PUBLIC else "org", 1)
+
+
+def validate_public_permissions(chart):
+    """The Public level means the owner's rows.
+
+    Guests have no permissions of their own, so a chart that applies each user's
+    draws an empty page for the very reader a public link is for. That is never
+    what an owner meant, so reaching the widest level unchecks the box.
+
+    Unchecking it on the way up and refusing it afterwards is what keeps the read
+    path free of a Guest branch: `permission_user_for` reads a stored declaration
+    that can no longer be checked at this level. Coming back down leaves the box
+    where the move put it - the owner may change it from the chart's share dialog.
+
+    A chart reaches a guest at its own level or through a Public dashboard it is
+    linked to, and `update_linked_charts_permissions` unchecks the box only on the
+    dashboard's save. So the chart's own save asks the inverse question, or the
+    next save of a linked chart would hand the guest an empty page again.
+    """
+    if chart.visibility == PUBLIC and chart.has_value_changed("visibility"):
+        chart.apply_user_permissions = 0
+
+    if not chart.apply_user_permissions:
+        return
+
+    if chart.visibility == PUBLIC:
+        frappe.throw(
+            frappe._("A public chart runs with its owner's permissions, so it cannot apply each user's."),
+            frappe.ValidationError,
+        )
+
+    public_dashboard = public_dashboards_linking(chart)
+    if public_dashboard:
+        frappe.throw(
+            frappe._(
+                "This chart is on the public dashboard {0}, so it runs with its owner's permissions and cannot apply each user's."
+            ).format(public_dashboard),
+            frappe.ValidationError,
+        )
+
+
+def public_dashboards_linking(chart) -> str | None:
+    """The title of a Public dashboard this chart is linked to, if there is one."""
+    if chart.is_new():
+        return None
+
+    Dashboard = frappe.qb.DocType("Insights Dashboard v3")
+    DashboardChart = frappe.qb.DocType("Insights Dashboard Chart v3")
+
+    dashboards = (
+        frappe.qb.from_(DashboardChart)
+        .join(Dashboard)
+        .on(Dashboard.name == DashboardChart.parent)
+        .select(Dashboard.title)
+        .where(
+            (DashboardChart.parenttype == "Insights Dashboard v3")
+            & (DashboardChart.chart == chart.name)
+            & (Dashboard.visibility == PUBLIC)
+        )
+        .limit(1)
+        .run(pluck=True)
+    )
+
+    return dashboards[0] if dashboards else None
+
+
+def update_linked_charts_permissions(dashboard):
+    """The same rule for the charts a Public dashboard is linked to.
+
+    `_build_chart_permission_query` hands a guest read on every chart placed on
+    a Public dashboard without touching the charts' own level, so the dashboard
+    is where their permissions have to be settled.
+    """
+    if dashboard.visibility != PUBLIC or not dashboard.has_value_changed("visibility"):
+        return
+
+    for row in dashboard.linked_charts:
+        frappe.db.set_value("Insights Chart v3", row.chart, "apply_user_permissions", 0)
+
+
+def visibility_level(visibility: str | None) -> int:
+    """How far a declared visibility reaches.
+
+    A visibility the field does not name reaches nobody, because every level is
+    matched by its exact name. So it sits at the bottom beside `Private`.
+    """
+    return VISIBILITY_LEVELS.index(visibility) if visibility in VISIBILITY_LEVELS else 0
+
+
 def check_dashboard_chart_access(dashboard):
     """The same rule one level up.
 
     `_build_chart_permission_query` grants read on every chart placed on a
-    dashboard the caller can read, and `get_chart_root` covers every chart on a
-    public dashboard. Naming a chart here is the same kind of grant.
+    dashboard the caller can read, so naming a chart here is the same kind of
+    grant.
     """
     for row in dashboard.linked_charts:
         if not frappe.has_permission("Insights Chart v3", ptype="read", doc=row.chart):
@@ -491,6 +747,14 @@ def get_permission_query_conditions(user, doctype):
 
 
 def check_app_permission():
+    """The authoring gate: may this person enter the builder?
+
+    It answers for the app, not for a document, and it is never consulted for
+    viewing. `visibility` decides who reads a dashboard, and a view of it mounts
+    for people who hold no Insights role at all. Editing is both questions at
+    once - write rights on the document AND a role - and `can_write` in
+    `api/view.py` is the one place that conjunction is made.
+    """
     if frappe.session.user == "Administrator":
         return True
 

@@ -13,9 +13,13 @@
   "chart_type",
   "is_public",
   "permission_user",
+  "visibility",
+  "visible_to_roles",
+  "apply_user_permissions",
   "section_break_vmvi",
   "config",
-  "old_name"
+  "old_name",
+  "is_standard"
  ],
  "fields": [
   {
@@ -94,6 +98,33 @@
    "fieldname": "folder",
    "fieldtype": "Data",
    "label": "folder"
+  },
+  {
+   "default": "Private",
+   "fieldname": "visibility",
+   "fieldtype": "Select",
+   "label": "Visibility",
+   "options": "Private\nRoles\nEveryone\nPublic"
+  },
+  {
+   "depends_on": "eval:doc.visibility === 'Roles'",
+   "fieldname": "visible_to_roles",
+   "fieldtype": "Table MultiSelect",
+   "label": "Visible To Roles",
+   "options": "Has Role"
+  },
+  {
+   "default": "1",
+   "fieldname": "apply_user_permissions",
+   "fieldtype": "Check",
+   "label": "Apply User Permissions"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_standard",
+   "fieldtype": "Check",
+   "label": "Is Standard",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -137,6 +168,14 @@
    "permlevel": 1,
    "read": 1,
    "role": "Insights Admin"
+  },
+  {
+   "read": 1,
+   "role": "All"
+  },
+  {
+   "read": 1,
+   "role": "Guest"
   }
  ],
  "row_format": "Dynamic",

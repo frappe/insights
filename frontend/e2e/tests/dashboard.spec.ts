@@ -363,7 +363,7 @@ test.describe('dashboard', () => {
 
 		const share = page.getByRole('dialog', { name: 'Share Dashboard' })
 		await share.getByPlaceholder('Select an option').click()
-		await page.getByRole('option', { name: 'Anyone with the link can view' }).click()
+		await page.getByRole('option', { name: 'Anyone with the link, including guests' }).click()
 
 		// The toast fires before the write returns, and nothing else on the page
 		// reports it, so the flow waits on the write itself. This is a wait, not
@@ -380,7 +380,7 @@ test.describe('dashboard', () => {
 		await page.reload()
 		await shareButton.click()
 		await expect(share.getByPlaceholder('Select an option')).toHaveValue(
-			'Anyone with the link can view',
+			'Anyone with the link, including guests',
 		)
 	})
 

@@ -225,45 +225,19 @@ export async function createDashboard(
 	return { name: doc.name, title, workbook: options.workbook }
 }
 
-/**
- * Publishing is not a REST write.
- *
- * `is_public` and `permission_user` sit at permlevel 1, so a PUT drops them
- * without an error. `update_access` is the only way in. It is a document
- * method, so it goes through `insights.api.run_doc_method`, the same route the
- * app uses.
- */
-async function runDocMethod(
-	api: FrappeApi,
-	doctype: string,
-	name: string,
-	method: string,
-	args: Record<string, unknown>,
-): Promise<void> {
-	// The method runs on the document the request body carries, so send the
-	// stored one. A dashboard checks `linked_charts` before it publishes, and a
-	// stub of doctype and name alone would carry none.
-	const docs = await api.getDoc(doctype, name)
-	await api.callMethod('insights.api.run_doc_method', { method, docs, args })
-}
-
 /** Publish a Dashboard, so anyone with the link opens it without a login. */
 export async function publishDashboard(api: FrappeApi, name: string): Promise<void> {
-	await runDocMethod(api, DOCTYPE.DASHBOARD, name, 'update_access', {
-		data: { is_public: 1, is_shared_with_organization: 0, people_with_access: [] },
-	})
+	await api.updateDoc(DOCTYPE.DASHBOARD, name, { visibility: 'Public' })
 }
 
 /** Withdraw a Dashboard, so its public link stops working. */
 export async function unpublishDashboard(api: FrappeApi, name: string): Promise<void> {
-	await runDocMethod(api, DOCTYPE.DASHBOARD, name, 'update_access', {
-		data: { is_public: 0, is_shared_with_organization: 0, people_with_access: [] },
-	})
+	await api.updateDoc(DOCTYPE.DASHBOARD, name, { visibility: 'Private' })
 }
 
 /** Publish a Chart, so anyone with the link opens it without a login. */
 export async function publishChart(api: FrappeApi, name: string): Promise<void> {
-	await runDocMethod(api, DOCTYPE.CHART, name, 'update_access', { is_public: 1 })
+	await api.updateDoc(DOCTYPE.CHART, name, { visibility: 'Public' })
 }
 
 /**
