@@ -2,7 +2,7 @@
 import { useTimeAgo } from '@vueuse/core'
 import { Button, LoadingIndicator } from 'frappe-ui'
 import { Search, Table2Icon, TriangleAlert } from 'lucide-vue-next'
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, provide, ref, watch } from 'vue'
 import { usePagination } from '../../composables/usePagination'
 import type { ResultTable } from '../../query/result_table'
 import session from '../../session'
@@ -11,6 +11,7 @@ import ExportDialog from '../ExportDialog.vue'
 import { findRows } from './find'
 import ResultFind from './ResultFind.vue'
 import ResultFooter from './ResultFooter.vue'
+import { RESULT_GRID_HOST, type ResultGrid } from './result_grid'
 import ResultStatus from './ResultStatus.vue'
 import { fetchTiming } from './status'
 
@@ -47,18 +48,13 @@ function clearFind() {
 	$find.value?.clear()
 }
 
-// Scoped to this pane: a drill dialog draws a second grid over the builder's.
-const $root = ref<HTMLElement>()
+// The grid is the host's, so where a column sits is the grid's to know. The
+// pane knows only that the find asked for one.
+const $grid = ref<ResultGrid>()
+provide(RESULT_GRID_HOST, { setGrid: (grid?: ResultGrid) => ($grid.value = grid) })
+
 function jumpToColumn(column_name: string) {
-	nextTick(() => {
-		const cell = $root.value?.querySelector(
-			`td[data-column-name="${column_name}"]`,
-		) as HTMLElement | null
-		if (!cell) return
-		cell.scrollIntoView({ inline: 'center', block: 'nearest' })
-		cell.classList.add('bg-surface-gray-3')
-		setTimeout(() => cell.classList.remove('bg-surface-gray-3'), 600)
-	})
+	$grid.value?.scrollToColumn(column_name)
 }
 
 // --- paging: one cursor, owned here so the footer can print its range -------
@@ -121,10 +117,7 @@ watch(
 </script>
 
 <template>
-	<div
-		ref="$root"
-		class="flex h-full min-h-0 w-full flex-1 flex-col rounded-4 border border-outline-gray-2"
-	>
+	<div class="flex h-full min-h-0 w-full flex-1 flex-col rounded-4 border border-outline-gray-2">
 		<!-- The find is the pane's — it knows the rows and the columns — but a
 		     host with a header of its own places it there. Outside the clip
 		     below either way, so the find panel can hang past the border. -->

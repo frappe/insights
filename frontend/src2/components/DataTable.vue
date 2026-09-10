@@ -3,7 +3,7 @@ import { watchDebounced } from '@vueuse/core'
 import { Button, LoadingIndicator } from 'frappe-ui'
 import { useChartTokens } from 'frappe-ui/charts'
 import { ExternalLink, Plus, Search, Table2Icon } from 'lucide-vue-next'
-import { computed, nextTick, ref } from 'vue'
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { usePagination } from '../composables/usePagination'
 import { createHeaders } from '../helpers'
 import { numberFormatter, type NumberFormatter } from '../charts/number_format'
@@ -37,6 +37,7 @@ import {
 	SortDirection,
 	SortOrder,
 } from '../types/query.types'
+import { RESULT_GRID_HOST } from './result_pane/result_grid'
 import DataTableColumn from './DataTableColumn.vue'
 import DataTableFooter from './DataTableFooter.vue'
 import LazyTextInput from './LazyTextInput.vue'
@@ -488,6 +489,29 @@ function _formatNumber(value: any, columnName?: string) {
 	}
 	return format(value)
 }
+
+/**
+ * Bring a column into view and mark it for a moment.
+ *
+ * The pane around the grid owns the find and asks for this. The grid owns where
+ * a column sits, which is why the pane asks rather than reaching for the cell
+ * itself. A grid drawn outside a pane registers with nobody and is never asked.
+ */
+function scrollToColumn(column_name: string) {
+	nextTick(() => {
+		const cell = $root.value?.querySelector(
+			`td[data-column-name="${column_name}"]`,
+		) as HTMLElement | null
+		if (!cell) return
+		cell.scrollIntoView({ inline: 'center', block: 'nearest' })
+		cell.classList.add('bg-surface-gray-3')
+		setTimeout(() => cell.classList.remove('bg-surface-gray-3'), 600)
+	})
+}
+
+const pane = inject(RESULT_GRID_HOST, null)
+onMounted(() => pane?.setGrid({ scrollToColumn }))
+onBeforeUnmount(() => pane?.setGrid(undefined))
 
 const showNewColumn = ref(false)
 function toggleNewColumn() {
