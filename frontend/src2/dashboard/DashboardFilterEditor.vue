@@ -249,8 +249,9 @@ function saveEdit() {
 									v-model:value="filter.default_value as number"
 								/>
 								<template v-else>
-									<div class="flex gap-2 items-start">
+									<div class="flex flex-wrap gap-2 items-start">
 										<FormControl
+											class="w-32 flex-shrink-0"
 											type="select"
 											:placeholder="__('Select operator...')"
 											:modelValue="filter.default_operator"
@@ -276,7 +277,7 @@ function saveEdit() {
 												v-else-if="
 													defaultValueSelectorType === 'relative_date'
 												"
-												class="flex-1"
+												class="min-w-[15rem] flex-1"
 												v-model="filter.default_value as string"
 											/>
 											<div
