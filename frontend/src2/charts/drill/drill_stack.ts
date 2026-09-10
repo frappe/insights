@@ -52,7 +52,7 @@ export type DrillFilter = {
  */
 export type DrillAction =
 	| { breakdown: string; measure?: string; granularity?: string }
-	| { records: true; measure?: string }
+	| { rows: true; measure?: string }
 
 export type DrillLevel = {
 	segment_filters: DrillFilter[]
@@ -329,14 +329,14 @@ export function segmentOf(chart: DrillChart, target: DrillDownTarget): DrillSegm
 }
 
 /**
- * The grain a records level's date columns are printed at.
+ * The grain a rows level's date columns are printed at.
  *
- * A records level groups nothing, so its dates carry no grain of their own.
+ * A rows level groups nothing, so its dates carry no grain of their own.
  * The column's own type is the honest grain there: a `Date` is a day, a
  * `Datetime` is a moment. A grouped date is a different reading, and the chart
  * that draws it is told the grain directly.
  */
-export function recordDateGranularity(columns: QueryResultColumn[]): Record<string, string> {
+export function rowsDateGranularity(columns: QueryResultColumn[]): Record<string, string> {
 	const byType: Record<string, string> = { Date: 'day', Datetime: 'second', Time: 'second' }
 
 	const granularity: Record<string, string> = {}
@@ -405,7 +405,7 @@ export type DrillEntry = {
 	level: DrillLevel
 	/** what the reader clicked to get here. Empty when it pins nothing. */
 	pins: DrillPin[]
-	/** what this level does — "by Region", "Records" */
+	/** what this level does — "by Region", "Rows" */
 	actionLabel: string
 }
 
@@ -442,7 +442,7 @@ export type DrillLevelData = {
 	additive?: boolean
 	/** how many rows there are behind the bounded few that came back */
 	total_row_count?: number
-	/** only on a records level, and only for the columns that name a document */
+	/** only on a rows level, and only for the columns that name a document */
 	record_links?: RecordLinks
 	/**
 	 * The pipeline the server sliced for this level, and the connection it ran

@@ -137,7 +137,8 @@ def get_drill_data(
 
     The answer carries the sliced pipeline, because "open as query" hands the
     level to the full builder. That field is what a reading surface must never
-    receive — see this module's docstring.
+    receive — see this module's docstring. A rows level here answers with
+    that pipeline and its columns and no rows: the caller runs it itself.
     """
     check_authoring_seat(query)
 

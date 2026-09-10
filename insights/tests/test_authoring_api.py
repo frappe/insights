@@ -69,8 +69,8 @@ def summarized_operations():
     ]
 
 
-def records_level(filters=None, measure=None):
-    return {"segment_filters": filters or [], "action": {"records": True, "measure": measure}}
+def rows_level(filters=None, measure=None):
+    return {"segment_filters": filters or [], "action": {"rows": True, "measure": measure}}
 
 
 def breakdown_level(dimension_name, filters=None, measure=None):
@@ -295,12 +295,16 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
             query=query.name,
             chart_type="Table",
             config=table_config("status"),
-            drill_stack=[records_level([equals("status", "Open")], measure="count")],
+            drill_stack=[rows_level([equals("status", "Open")], measure="count")],
         )
 
-        # the segment of a card that exists nowhere but in the builder
-        self.assertEqual(self.descriptions(result), sorted(AUTHOR_TODOS))
-        self.assertEqual(result["total_row_count"], 2)
+        # the segment of a card that exists nowhere but in the builder, as the
+        # pipeline the caller runs for itself
+        self.assertEqual(
+            [operation["type"] for operation in result["operations"]],
+            ["source", "filter_group"],
+        )
+        self.assertIn("description", [column["name"] for column in result["columns"]])
 
     def test_a_pipeline_that_belongs_to_no_chart_can_be_drilled(self):
         query, _ = self.make_content()
@@ -309,12 +313,16 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
             AUTHOR,
             query=query.name,
             operations=summarized_operations(),
-            drill_stack=[records_level([equals("status", "Open")], measure="Todos")],
+            drill_stack=[rows_level([equals("status", "Open")], measure="Todos")],
         )
 
         # the query builder's own result table: there is no config to derive
         # anything from, so the pipeline it is editing is what it sends
-        self.assertEqual(self.descriptions(result), sorted(AUTHOR_TODOS))
+        self.assertEqual(
+            [operation["type"] for operation in result["operations"]],
+            ["source", "filter", "filter_group"],
+        )
+        self.assertIn("description", [column["name"] for column in result["columns"]])
 
     def test_a_breakdown_of_an_unsaved_shape_groups_by_the_chosen_column(self):
         query, _ = self.make_content()
@@ -358,7 +366,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
             query=query.name,
             chart_type="Table",
             config=table_config("status"),
-            drill_stack=[records_level([equals("status", "Open")], measure="count")],
+            drill_stack=[rows_level([equals("status", "Open")], measure="count")],
         )
 
         # what "open as query" hands to the builder: the chart's pipeline cut
@@ -387,6 +395,41 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
             [operation["type"] for operation in result["operations"]],
             ["source", "filter", "filter_group", "summarize", "order_by"],
         )
+
+    def test_a_rows_level_here_is_answered_with_its_pipeline_and_not_its_rows(self):
+        query, _ = self.make_content()
+
+        behind = self.drill(
+            AUTHOR,
+            query=query.name,
+            operations=summarized_operations(),
+            drill_stack=[rows_level([equals("status", "Open")], measure="Todos")],
+        )
+
+        # the caller loads the pipeline and runs it, so fetching the rows here
+        # would be the same query run twice and drawn once
+        self.assertEqual(behind["rows"], [])
+        self.assertNotIn("total_row_count", behind)
+        self.assertEqual(
+            [operation["type"] for operation in behind["operations"]],
+            ["source", "filter", "filter_group"],
+        )
+        # what the level answers in place of the rows: the shape they will have,
+        # and which of their columns name a desk document
+        self.assertIn("description", [column["name"] for column in behind["columns"]])
+        self.assertEqual(behind["record_links"]["name"], "ToDo")
+
+        breakdown = self.drill(
+            AUTHOR,
+            query=query.name,
+            operations=summarized_operations(),
+            drill_stack=[breakdown_level("priority", [equals("status", "Open")], measure="Todos")],
+        )
+
+        # a breakdown is a picture the dialog draws itself, so it still comes
+        # back with its rows
+        self.assertEqual([(row["priority"], row["Todos"]) for row in breakdown["rows"]], [("Medium", 2)])
+        self.assertEqual(breakdown["total_row_count"], 1)
 
     def test_the_candidates_can_be_asked_for_on_their_own(self):
         query, _ = self.make_content()
@@ -450,7 +493,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
                 query=query.name,
                 chart_type="Table",
                 config=table_config("status"),
-                drill_stack=[records_level([equals("status", "Open")])],
+                drill_stack=[rows_level([equals("status", "Open")])],
             )
 
         with self.assertRaises(frappe.PermissionError):
@@ -466,5 +509,5 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
                 OUTSIDER,
                 query=query.name,
                 operations=summarized_operations(),
-                drill_stack=[records_level([equals("status", "Open")], measure="Todos")],
+                drill_stack=[rows_level([equals("status", "Open")], measure="Todos")],
             )

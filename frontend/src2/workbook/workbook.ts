@@ -18,6 +18,7 @@ import { getLinkedQueries } from '../query/linked_queries'
 import useQuery, { newQuery } from '../query/query'
 import router from '../router'
 import session from '../session'
+import type { Operation } from '../types/query.types'
 import type {
 	InsightsWorkbook,
 	WorkbookSharePermission as WorkbookUserPermission,
@@ -55,14 +56,22 @@ function makeWorkbook(name: string) {
 		return regex.test(url)
 	}
 
-	async function addQuery() {
+	type QuerySeed = {
+		title?: string
+		operations?: Operation[]
+		use_live_connection?: boolean
+	}
+	async function addQuery(seed: QuerySeed = {}) {
 		const query = newQuery()
-		query.doc.title = 'Query ' + (workbook.doc.queries.length + 1)
+		query.doc.title = seed.title || 'Query ' + (workbook.doc.queries.length + 1)
 		query.doc.workbook = workbook.doc.name
-		query.doc.use_live_connection = true
+		query.doc.use_live_connection = seed.use_live_connection ?? true
 		query.doc.sort_order = workbook.doc.queries.length
 		query.doc.folder = null
-		query.insert().then(() => {
+		if (seed.operations) {
+			query.doc.operations = seed.operations
+		}
+		return query.insert().then(() => {
 			workbook.doc.queries.push({
 				name: query.doc.name,
 				title: query.doc.title,
@@ -70,6 +79,7 @@ function makeWorkbook(name: string) {
 				folder: null,
 			})
 			setActiveTab('query', query.doc.name)
+			return query
 		})
 	}
 

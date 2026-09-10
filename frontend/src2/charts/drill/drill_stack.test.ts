@@ -12,7 +12,7 @@ import {
 import {
 	breakdownCandidates,
 	declaredDimensionColumns,
-	recordDateGranularity,
+	rowsDateGranularity,
 	grainsFor,
 	makeDrillStack,
 	queryResultChart,
@@ -284,10 +284,10 @@ const west: DrillEntry = {
 			{ column: 'status', operator: '=', value: 'Overdue' },
 			{ column: 'region', operator: '=', value: 'West' },
 		],
-		action: { records: true },
+		action: { rows: true },
 	},
 	pins: [{ column: 'region', value: 'West' }],
-	actionLabel: 'Records',
+	actionLabel: 'Rows',
 }
 
 describe('the crumbs', () => {
@@ -295,7 +295,7 @@ describe('the crumbs', () => {
 		const stack = makeDrillStack()
 		stack.push(overdue)
 		stack.push(west)
-		expect(stack.crumbs.map((crumb) => crumb.label)).toEqual(['by Region', 'Records'])
+		expect(stack.crumbs.map((crumb) => crumb.label)).toEqual(['by Region', 'Rows'])
 	})
 
 	it('sends the levels and nothing else', () => {
@@ -399,7 +399,7 @@ describe('what the dialog has already been told', () => {
 		stack.push(overdue)
 		stack.remember(rows)
 		stack.popTo(0)
-		stack.push({ ...overdue, level: { ...overdue.level, action: { records: true } } })
+		stack.push({ ...overdue, level: { ...overdue.level, action: { rows: true } } })
 		expect(stack.answer()).toBeUndefined()
 	})
 })
@@ -595,20 +595,20 @@ describe('a query result read as a chart', () => {
 	})
 })
 
-describe('the grain a records level prints its dates at', () => {
+describe('the grain a rows level prints its dates at', () => {
 	const columns = [
 		{ name: 'creation', type: 'Datetime' as const },
 		{ name: 'due_date', type: 'Date' as const },
 		{ name: 'description', type: 'String' as const },
 	]
 
-	it('reads what the column type honestly is, so a records date reads as a date', () => {
-		const granularity = recordDateGranularity(columns)
+	it('reads what the column type honestly is, so a rows date reads as a date', () => {
+		const granularity = rowsDateGranularity(columns)
 		expect(granularity.creation).toBe('second')
 		expect(granularity.due_date).toBe('day')
 	})
 
 	it('says nothing about a column that is not a date', () => {
-		expect(recordDateGranularity(columns).description).toBeUndefined()
+		expect(rowsDateGranularity(columns).description).toBeUndefined()
 	})
 })

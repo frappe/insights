@@ -62,7 +62,7 @@ const drillable = computed(() => !props.card.missing)
 			drillable ? 'cursor-pointer' : undefined,
 		]"
 		:style="preview ? { height: `${card.height}px` } : undefined"
-		@dblclick="drillable && emit('cardClick', { column: card.column })"
+		@click="drillable && emit('cardClick', { column: card.column })"
 	>
 		<NumberCard
 			v-bind="reading"
@@ -98,7 +98,7 @@ const drillable = computed(() => !props.card.missing)
 					variant="ghost"
 					size="xs"
 					:title="__('Retry')"
-					@click="emit('retry')"
+					@click.stop="emit('retry')"
 				>
 					<template #icon>
 						<RefreshCcw class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />

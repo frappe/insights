@@ -62,7 +62,7 @@ const workbook = inject(workbookKey)
 		<Dropdown
 			class="ml-1.5"
 			:options="[
-				{ label: __('New Query'), onClick: workbook.addQuery },
+				{ label: __('New Query'), onClick: () => workbook?.addQuery() },
 				{ label: __('New Chart'), onClick: workbook.addChart },
 				{ label: __('New Dashboard'), onClick: workbook.addDashboard },
 			]"

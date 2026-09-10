@@ -28,9 +28,12 @@ import type { ChartSegmentClick } from './segment_click'
 // Which door the levels come through is the subject's business. Nothing here
 // knows whether a chart was ever saved.
 //
-// `#actions` is what a surface may add to the level it is reading. It is a slot
-// rather than a prop so that an authoring affordance and everything it imports
-// stay out of a surface that only reads.
+// `#actions` is what a surface may add next to the way out, on any level;
+// `#level-actions` acts on the level being read and is drawn in the pins row
+// beside the find. `#rows` is how the surface draws the rows level. Slots rather
+// than props so that an authoring affordance and everything it imports — the
+// whole query editor, for the rows level — stay out of a surface that only
+// reads.
 const props = defineProps<{
 	/** what is being drilled: the shape a click is read against, and the door */
 	subject: DrillSubject
@@ -42,7 +45,11 @@ const emit = defineEmits<{ close: [] }>()
 
 defineSlots<{
 	// eslint-disable-next-line no-unused-vars
-	actions?: (props: { answer: DrillLevelData }) => any
+	actions?: (props: { answer: DrillLevelData; rows: boolean }) => any
+	// eslint-disable-next-line no-unused-vars
+	'level-actions'?: (props: { answer: DrillLevelData }) => any
+	// eslint-disable-next-line no-unused-vars
+	rows?: (props: { answer: DrillLevelData; findTarget: HTMLElement | null }) => any
 }>()
 
 const stack = makeDrillStack()
@@ -55,7 +62,7 @@ const failed = ref(false)
 const pending = ref<{ segment: DrillSegment; point: { x: number; y: number } }>()
 
 // The level being read is the chart a click inside the dialog is read against.
-// A records level has nothing to click, so there is nothing to read it against.
+// A rows level has nothing to click, so there is nothing to read it against.
 const clickedChart = computed<DrillChart>(() => {
 	const action = stack.current?.level.action
 	if (action && 'breakdown' in action) {
@@ -71,6 +78,11 @@ const grains = computed(() => {
 	const action = stack.current?.level.action
 	if (!action || !('breakdown' in action)) return []
 	return grainsFor(props.subject.dimensions, action.breakdown)
+})
+
+const rowsLevel = computed(() => {
+	const action = stack.current?.level.action
+	return Boolean(action && 'rows' in action)
 })
 
 const candidates = computed<DrillDimension[]>(() =>
@@ -95,15 +107,14 @@ function descend(action: DrillAction) {
 	stack.push({
 		level: { segment_filters: offered.segment.filters, action },
 		pins: offered.segment.pins,
-		actionLabel:
-			'records' in action ? __('Records') : `${__('by')} ${columnLabel(action.breakdown)}`,
+		actionLabel: 'rows' in action ? __('Rows') : `${__('by')} ${columnLabel(action.breakdown)}`,
 	})
 	open.value = true
 	load()
 }
 
-function chooseRecords() {
-	descend({ records: true, measure: pending.value?.segment.measure })
+function chooseRows() {
+	descend({ rows: true, measure: pending.value?.segment.measure })
 }
 
 function chooseBreakdown(dimension: DrillDimension) {
@@ -172,7 +183,7 @@ async function load() {
 		v-if="pending"
 		:point="pending.point"
 		:dimensions="candidates"
-		@records="chooseRecords"
+		@rows="chooseRows"
 		@breakdown="chooseBreakdown"
 		@close="dismissMenu"
 	/>
@@ -193,7 +204,15 @@ async function load() {
 		@closed="emit('close')"
 	>
 		<template v-if="answer" #actions>
-			<slot name="actions" :answer="answer" />
+			<slot name="actions" :answer="answer" :rows="rowsLevel" />
+		</template>
+
+		<template v-if="answer" #level-actions>
+			<slot name="level-actions" :answer="answer" />
+		</template>
+
+		<template #rows="{ answer: level, findTarget }">
+			<slot name="rows" :answer="level" :find-target="findTarget" />
 		</template>
 	</DrillDialog>
 </template>

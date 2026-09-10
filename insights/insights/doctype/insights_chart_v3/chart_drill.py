@@ -12,7 +12,7 @@ against it before anything runs.
 
 A caller describes the walk, never the pipeline. One level of the stack is the
 segment that was clicked — its dimension values as plain triples — and what it
-wants there: the records behind the segment, or a breakdown of it by another
+wants there: the rows behind the segment, or a breakdown of it by another
 column of the surface. Levels accumulate, so every level's segment narrows the
 rows and the last level's action decides the shape of the answer.
 
@@ -36,11 +36,12 @@ from insights.insights.doctype.insights_chart_v3.chart_query import (
 )
 from insights.insights.doctype.insights_chart_v3.record_link import record_links
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import get_columns_from_schema
+from insights.insights.doctype.insights_query_v3.insights_query_v3 import set_adhoc_filters
 
-RECORDS = "records"
+ROWS = "rows"
 BREAKDOWN = "breakdown"
 
-# what a records level shows. The dialog states the bound it draws; real
+# what a rows level shows. The dialog states the bound it draws; real
 # pagination waits for someone to hit it
 PAGE_SIZE = 100
 
@@ -51,7 +52,7 @@ BREAKDOWN_SIZE = 20
 # the columns a segment can be broken down by
 DIMENSION_TYPES = ("String", "Date", "Datetime", "Time")
 
-# the column types a page of records can be ranked by. A measure over anything
+# the column types a page of rows can be ranked by. A measure over anything
 # else — a count of names, an expression that names no column at all — leaves
 # no row that is the biggest one
 RANKABLE_TYPES = ("Integer", "Decimal")
@@ -173,10 +174,12 @@ def drill_data(
 ) -> dict:
     """The rows behind the segment the stack describes.
 
-    `with_operations` puts the sliced pipeline in the answer, for an authoring
-    surface that lifts the level into the query builder. It is off by default
-    because the reading surfaces must never receive it, and a default that leaks
-    is one forgotten argument away.
+    `with_operations` says the caller will run the level itself, through the
+    pipeline it gets back: a rows level then answers with that pipeline and
+    its columns rather than its rows, which is what an authoring surface asks
+    for when it lifts the level into the query builder. It is off by default
+    because the reading surfaces must never receive the pipeline, and a default
+    that leaks is one forgotten argument away.
     """
     if not drill_stack:
         frappe.throw(_("Nothing to drill into: the drill stack is empty"))
@@ -198,9 +201,19 @@ def drill_data(
         breakdown = _breakdown(chart, segment, action, step, surface, adhoc_filters)
         page_size = BREAKDOWN_SIZE
 
-    tail = breakdown["operations"] if breakdown else _records_order(_clicked(last), step, surface)
+    tail = breakdown["operations"] if breakdown else _rows_order(_clicked(last), step, surface)
     drilled = [*segment, *tail]
     query = chart.get_query(operations=drilled)
+
+    if with_operations and action["type"] == ROWS:
+        # the caller runs this pipeline itself, so running it here would
+        # fetch the same rows twice and draw neither of them. The shape of a
+        # result is known before a row of it is
+        with set_adhoc_filters(adhoc_filters):
+            columns = get_columns_from_schema(query.build().schema())
+
+        return _handed_over(drilled, columns, sliced)
+
     # a level is fetched once and then kept by the dialog for as long as it
     # is open, so back and crumb pops never come here. What does come here
     # is a viewer asking what a number is made of right now
@@ -226,12 +239,30 @@ def drill_data(
         "executed_at": frappe.utils.now(),
     }
 
-    links = record_links(sliced, result["columns"]) if action["type"] == RECORDS else {}
+    links = record_links(sliced, result["columns"]) if action["type"] == ROWS else {}
     if links:
         response["record_links"] = links
 
     if with_operations:
         response["operations"] = drilled
+
+    return response
+
+
+def _handed_over(drilled: list[dict], columns: list[dict], sliced: list[dict]) -> dict:
+    """A rows level the caller will run itself: the pipeline, not the rows."""
+    response = {
+        "columns": columns,
+        "rows": [],
+        "ordered": False,
+        "granularity": None,
+        "additive": False,
+        "operations": drilled,
+    }
+
+    links = record_links(sliced, columns)
+    if links:
+        response["record_links"] = links
 
     return response
 
@@ -274,8 +305,8 @@ def _dimensions_on(surface: list[dict]) -> list[dict]:
 def _action(level: dict) -> dict:
     """What this level does with its segment."""
     action = level.get("action") or {}
-    if action.get(RECORDS):
-        return {"type": RECORDS}
+    if action.get(ROWS):
+        return {"type": ROWS}
     if action.get(BREAKDOWN):
         return {
             "type": BREAKDOWN,
@@ -287,7 +318,7 @@ def _action(level: dict) -> dict:
             "granularity": action.get("granularity"),
         }
 
-    frappe.throw(_("A drill level asks either for records or for a breakdown by a dimension"))
+    frappe.throw(_("A drill level asks either for rows or for a breakdown by a dimension"))
 
 
 def _clicked(level: dict) -> str | None:
@@ -295,8 +326,8 @@ def _clicked(level: dict) -> str | None:
     return (level.get("action") or {}).get("measure")
 
 
-def _records_order(clicked: str | None, step: dict, surface: list[dict]) -> list[dict]:
-    """Rank the rows of a records level by the number that was clicked.
+def _rows_order(clicked: str | None, step: dict, surface: list[dict]) -> list[dict]:
+    """Rank a rows level by the number that was clicked.
 
     One page of the segment is shown, so which rows land on it is the level's
     answer: the ones that made the number biggest, ranked by the column the
@@ -541,7 +572,7 @@ def _measure_condition(measure: dict | None) -> list[dict]:
     """What a measure that counts a condition pins, beyond the segment itself.
 
     Without it the rows behind "Overdue" would be every row of the segment, not
-    the overdue ones — the number and the records it is made of would disagree.
+    the overdue ones — the number and the rows it is made of would disagree.
     """
     expression = ((measure or {}).get("expression") or {}).get("expression", "").strip()
     for pattern in CONDITIONAL_MEASURES:

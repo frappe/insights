@@ -109,10 +109,11 @@ _Avoid_: slice, data point, cell
 
 **Breakdown**:
 One of the two answers a drill level can ask for: group the segment by one more
-column of the surface. The other answer is records, the rows behind the segment.
-A breakdown draws as an ad-hoc chart the answer picks for itself, and a click on
-it recurses.
-_Avoid_: split, group-by (that is a Dimension)
+column of the surface. The other answer is rows, the rows behind the segment —
+what the wire, the code and the UI all call it. A breakdown draws as an ad-hoc
+chart the answer picks for itself, and a click on it recurses.
+_Avoid_: split, group-by (that is a Dimension); records, docs, entries for the
+rows answer
 
 **Additive**:
 Whether a level's group values add up to the value of the segment above them.

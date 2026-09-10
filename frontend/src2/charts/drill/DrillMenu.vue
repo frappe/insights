@@ -32,7 +32,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-	records: []
+	rows: []
 	// eslint-disable-next-line no-unused-vars
 	breakdown: [dimension: DrillDimension]
 	close: []
@@ -84,14 +84,14 @@ function openDimensions() {
 
 			<div class="w-56 p-1.5">
 				<div v-if="pane === 'actions'" class="flex flex-col gap-0.5">
-					<Button variant="ghost" :class="rowClass" @click="emit('records')">
+					<Button variant="ghost" :class="rowClass" @click="emit('rows')">
 						<template #prefix>
 							<Rows3 class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 						</template>
-						<span class="truncate">{{ __('View records') }}</span>
+						<span class="truncate">{{ __('View rows') }}</span>
 					</Button>
 					<!-- A segment that pins every dimension the query has left cannot be
-					     split any further, and the records are the only way on. -->
+					     split any further, and the rows are the only way on. -->
 					<Button
 						v-if="props.dimensions.length"
 						variant="ghost"

@@ -549,9 +549,9 @@ test.describe('charts', () => {
 		await rendered.locator('path[fill]:not([fill="none"])').click()
 
 		// A click offers the two ways down: the rows behind the bar, or a
-		// breakdown by another dimension. Records opens the rows. 53 of the
-		// 2,000 demo orders are canceled.
-		await page.getByRole('button', { name: 'View records' }).click()
+		// breakdown by another dimension. 53 of the 2,000 demo orders are
+		// canceled.
+		await page.getByRole('button', { name: 'View rows' }).click()
 
 		const drillDown = page.getByRole('dialog')
 		await expect(drillDown.locator('tbody tr:has(td)')).toHaveCount(53)

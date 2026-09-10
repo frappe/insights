@@ -33,7 +33,7 @@ AUTHOR_TODOS = {
     OPEN_LOW: ("Open", "Low"),
     CLOSED_HIGH: ("Closed", "High"),
 }
-# those three by the number a ranked records page puts first, biggest first
+# those three by the number a ranked rows page puts first, biggest first
 BY_WEIGHT = sorted(AUTHOR_TODOS, key=len, reverse=True)
 
 # the todos the ordered tests break down: dated, spread unevenly over one year,
@@ -77,7 +77,7 @@ def todo_operations(prefix=TODO_PREFIX):
 
 
 def weighted_operations():
-    """The same query with a number per row, which is what a records page ranks by.
+    """The same query with a number per row, which is what a rows page ranks by.
 
     `tabToDo` carries no measurable column of its own, so the tests that turn on
     the ranking derive one the fixtures already differ on.
@@ -122,7 +122,7 @@ def count(measure_name="Todos"):
 
 
 def weight(measure_name="Weight"):
-    """A measure over a number, which is the only kind a records page can rank by."""
+    """A measure over a number, which is the only kind a rows page can rank by."""
     return {
         "measure_name": measure_name,
         "column_name": "weight",
@@ -177,8 +177,8 @@ def pivot_config(values=None):
     }
 
 
-def records_level(filters=None, measure=None):
-    return {"segment_filters": filters or [], "action": {"records": True, "measure": measure}}
+def rows_level(filters=None, measure=None):
+    return {"segment_filters": filters or [], "action": {"rows": True, "measure": measure}}
 
 
 def breakdown_level(dimension_name, filters=None, measure=None, granularity=None):
@@ -321,14 +321,14 @@ class TestDrillAPI(InsightsIntegrationTestCase):
 
     # the two things a level can ask for
 
-    def test_a_records_level_returns_the_rows_behind_the_segment(self):
+    def test_a_rows_level_returns_the_rows_behind_the_segment(self):
         _, chart, dashboard = self.make_content()
 
         result = self.drill(
             AUTHOR,
             chart.name,
             dashboard.name,
-            drill_stack=[records_level(filters=[equals("status", "Open")], measure="count_of_rows")],
+            drill_stack=[rows_level(filters=[equals("status", "Open")], measure="count_of_rows")],
         )
 
         self.assertEqual(self.descriptions(result), sorted([OPEN_HIGH, OPEN_LOW]))
@@ -394,8 +394,8 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         # the dialog says "top 2 of 3", so the count has to see past the cut
         self.assertEqual(result["total_row_count"], 3)
 
-    def test_a_records_level_is_not_cut_to_a_ranking(self):
-        """A records page is bounded by the page size, not the ranking size."""
+    def test_a_rows_level_is_not_cut_to_a_ranking(self):
+        """A rows page is bounded by the page size, not the ranking size."""
         _, chart, dashboard = self.make_content()
 
         with patch("insights.insights.doctype.insights_chart_v3.chart_drill.BREAKDOWN_SIZE", 1):
@@ -403,29 +403,29 @@ class TestDrillAPI(InsightsIntegrationTestCase):
                 AUTHOR,
                 chart.name,
                 dashboard.name,
-                drill_stack=[records_level(measure="count_of_rows")],
+                drill_stack=[rows_level(measure="count_of_rows")],
             )
 
         self.assertEqual(len(result["rows"]), 3)
 
-    # the order a records page comes back in
+    # the order a rows page comes back in
 
-    def test_a_records_page_is_ranked_by_the_measure_that_was_clicked(self):
+    def test_a_rows_page_is_ranked_by_the_measure_that_was_clicked(self):
         """One page is shown, so it holds the rows that made the number biggest."""
         _, chart, dashboard = self.make_content(
             operations=weighted_operations(), config=bar_config([weight()])
         )
 
-        result = self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=[records_level(measure="Weight")])
+        result = self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=[rows_level(measure="Weight")])
 
         self.assertEqual([row["description"] for row in result["rows"]], BY_WEIGHT)
 
-    def test_a_records_page_that_names_no_measure_follows_the_chart_s_own(self):
+    def test_a_rows_page_that_names_no_measure_follows_the_chart_s_own(self):
         _, chart, dashboard = self.make_content(
             operations=weighted_operations(), config=bar_config([weight()])
         )
 
-        result = self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=[records_level()])
+        result = self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=[rows_level()])
 
         self.assertEqual([row["description"] for row in result["rows"]], BY_WEIGHT)
 
@@ -433,7 +433,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         """Counting rows ranks none of them, and a name is no size."""
         _, chart, dashboard = self.make_content(config=bar_config([count()]))
 
-        result = self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=[records_level(measure="Todos")])
+        result = self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=[rows_level(measure="Todos")])
 
         self.assertEqual(self.descriptions(result), sorted(AUTHOR_TODOS))
 
@@ -468,12 +468,12 @@ class TestDrillAPI(InsightsIntegrationTestCase):
 
         ordered = self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=[breakdown_level("date")])
         ranked = self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=[breakdown_level("priority")])
-        records = self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=[records_level()])
+        behind = self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=[rows_level()])
 
         # the client draws by what it is told, never by a column type it guesses from
         self.assertEqual((ordered["ordered"], ordered["granularity"]), (True, "month"))
         self.assertEqual((ranked["ordered"], ranked["granularity"]), (False, None))
-        self.assertEqual((records["ordered"], records["granularity"]), (False, None))
+        self.assertEqual((behind["ordered"], behind["granularity"]), (False, None))
 
     def test_the_answer_says_whether_its_groups_add_up_to_the_segment_above_them(self):
         """A level read as parts of one whole rests on this, and the answer's own
@@ -489,13 +489,13 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             average_dashboard.name,
             drill_stack=[breakdown_level("priority")],
         )
-        records = self.drill(AUTHOR, counted.name, dashboard.name, drill_stack=[records_level()])
+        behind = self.drill(AUTHOR, counted.name, dashboard.name, drill_stack=[rows_level()])
 
         self.assertTrue(added["additive"])
         # two groups' averages do not average, so these are not parts of anything
         self.assertFalse(averages["additive"])
-        # a records level groups nothing, so it has no groups to add
-        self.assertFalse(records["additive"])
+        # a rows level groups nothing, so it has no groups to add
+        self.assertFalse(behind["additive"])
 
     def test_the_grain_follows_the_span_of_the_segment_being_drilled(self):
         """A fixed default is arbitrary: one month of data is not ten years of it."""
@@ -615,7 +615,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             dashboard.name,
             drill_stack=[
                 breakdown_level("priority", filters=[equals("status", "Open")], measure="count_of_rows"),
-                records_level(filters=[equals("priority", "High")], measure="count_of_rows"),
+                rows_level(filters=[equals("priority", "High")], measure="count_of_rows"),
             ],
         )
 
@@ -627,7 +627,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             chart_type="Number", config={"number_columns": [count("Todos")]}
         )
 
-        result = self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=[records_level(measure="Todos")])
+        result = self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=[rows_level(measure="Todos")])
 
         self.assertEqual(self.descriptions(result), sorted(AUTHOR_TODOS))
 
@@ -645,7 +645,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             },
         )
 
-        result = self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=[records_level(measure="Open")])
+        result = self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=[rows_level(measure="Open")])
 
         # the rows behind the number are the ones the measure counted
         self.assertEqual(self.descriptions(result), sorted([OPEN_HIGH, OPEN_LOW]))
@@ -662,7 +662,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             # the cell under the "High" column, on the "Open" row: the row
             # dimension and the column dimension pin together
             drill_stack=[
-                records_level(filters=[equals("status", "Open"), equals("priority", "High")], measure="Todos")
+                rows_level(filters=[equals("status", "Open"), equals("priority", "High")], measure="Todos")
             ],
         )
 
@@ -713,14 +713,14 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             AUTHOR,
             chart.name,
             dashboard.name,
-            drill_stack=[records_level(filters=[equals("creation", str(this_month))])],
+            drill_stack=[rows_level(filters=[equals("creation", str(this_month))])],
         )
         empty = self.drill(
             AUTHOR,
             chart.name,
             dashboard.name,
             drill_stack=[
-                records_level(filters=[equals("creation", str(frappe.utils.add_months(this_month, -1)))])
+                rows_level(filters=[equals("creation", str(frappe.utils.add_months(this_month, -1)))])
             ],
         )
 
@@ -742,7 +742,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             dashboard.name,
             drill_stack=[
                 breakdown_level("date", granularity="month"),
-                records_level(filters=[equals("date", TIMELINE_MONTHS[1])]),
+                rows_level(filters=[equals("date", TIMELINE_MONTHS[1])]),
             ],
         )
 
@@ -777,7 +777,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             drill_stack=[
                 breakdown_level("priority"),
                 breakdown_level("date", filters=[equals("priority", "Low")], granularity="month"),
-                records_level(filters=[equals("date", TIMELINE_MONTHS[1])]),
+                rows_level(filters=[equals("date", TIMELINE_MONTHS[1])]),
             ],
         )
 
@@ -795,7 +795,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             dashboard.name,
             drill_stack=[
                 breakdown_level("date"),
-                records_level(filters=[equals("date", "2024-02-15")]),
+                rows_level(filters=[equals("date", "2024-02-15")]),
             ],
         )
 
@@ -811,7 +811,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
                 dashboard.name,
                 drill_stack=[
                     breakdown_level("date", granularity="fortnight"),
-                    records_level(filters=[equals("date", TIMELINE_MONTHS[1])]),
+                    rows_level(filters=[equals("date", TIMELINE_MONTHS[1])]),
                 ],
             )
 
@@ -823,7 +823,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         _, chart, dashboard = self.make_content()
 
         for stack in (
-            [records_level(filters=[equals("tabUser.password", "x")])],
+            [rows_level(filters=[equals("tabUser.password", "x")])],
             [breakdown_level("password")],
         ):
             with self.assertRaises(frappe.ValidationError) as raised:
@@ -837,7 +837,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             AUTHOR,
             chart.name,
             dashboard.name,
-            drill_stack=[records_level(filters=[equals("status", "Open")])],
+            drill_stack=[rows_level(filters=[equals("status", "Open")])],
         )
 
         serialized = json.dumps(result, default=str)
@@ -864,14 +864,14 @@ class TestDrillAPI(InsightsIntegrationTestCase):
 
     # the record behind a row
 
-    def test_a_records_row_names_the_desk_record_it_opens(self):
+    def test_a_drilled_row_names_the_desk_record_it_opens(self):
         _, chart, dashboard = self.make_content()
 
         result = self.drill(
             AUTHOR,
             chart.name,
             dashboard.name,
-            drill_stack=[records_level(filters=[equals("status", "Open")])],
+            drill_stack=[rows_level(filters=[equals("status", "Open")])],
         )
 
         # the row's own document, and the Link fields beside it on the same row
@@ -893,7 +893,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             AUTHOR,
             chart.name,
             dashboard.name,
-            drill_stack=[records_level(filters=[equals("status", "Open")])],
+            drill_stack=[rows_level(filters=[equals("status", "Open")])],
         )
 
         # a rename says what the column is called, not what it holds, so the link
@@ -912,7 +912,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             AUTHOR,
             chart.name,
             dashboard.name,
-            drill_stack=[records_level(filters=[equals("status", "Open")])],
+            drill_stack=[rows_level(filters=[equals("status", "Open")])],
         )
 
         # nothing on the row names a document, so the client is told nothing
@@ -929,7 +929,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             AUTHOR,
             chart.name,
             dashboard.name,
-            drill_stack=[records_level(filters=[equals("parenttype", "User")])],
+            drill_stack=[rows_level(filters=[equals("parenttype", "User")])],
         )
 
         # a child row has no form of its own — the desk routes the parent, which
@@ -937,7 +937,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         self.assertNotIn("name", result["record_links"])
         self.assertEqual(result["record_links"]["role"], "Role")
 
-    def test_only_a_records_level_carries_record_links(self):
+    def test_only_a_rows_level_carries_record_links(self):
         _, chart, dashboard = self.make_content()
 
         result = self.drill(
@@ -959,7 +959,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             chart.name,
             dashboard.name,
             filters={"Description": {"operator": "contains", "value": "open low"}},
-            drill_stack=[records_level(filters=[equals("status", "Open")])],
+            drill_stack=[rows_level(filters=[equals("status", "Open")])],
         )
 
         # the rows agree with the number the filtered card was showing
