@@ -631,6 +631,55 @@ class TestDrillAPI(InsightsIntegrationTestCase):
 
         self.assertEqual(self.descriptions(result), sorted(AUTHOR_TODOS))
 
+    def test_a_windowed_card_drills_into_the_window_it_reads(self):
+        """A card holding one window against another draws only the first.
+
+        The pipeline under it carries both, as the Or of every window the card
+        fetches, so a click that pinned nothing came back with both months.
+        """
+        _, chart, dashboard = self.timeline(
+            chart_type="Number",
+            config={
+                "number_columns": [count("Todos")],
+                "date_column": dimension("date", "Date"),
+                # anchored, so the window the card reads is the fixtures' February
+                "window": {"span": "current month", "anchor": "2024-02-15"},
+                "number_column_options": [{"comparison": {"source": "previous"}}],
+            },
+        )
+
+        result = self.drill(
+            AUTHOR,
+            chart.name,
+            dashboard.name,
+            drill_stack=[rows_level(filters=[equals("date", TIMELINE_MONTHS[1])], measure="Todos")],
+        )
+
+        # February alone: January is in the pipeline only because the card
+        # compares against it
+        self.assertEqual(self.descriptions(result), FEBRUARY)
+
+    def test_a_card_grouped_by_a_grain_drills_into_the_period_it_reads(self):
+        """A grain filters nothing, so the whole table is under the reading."""
+        _, chart, dashboard = self.timeline(
+            chart_type="Number",
+            config={
+                "number_columns": [count("Todos")],
+                "date_column": dimension("date", "Date"),
+                "window": {"grain": "month"},
+            },
+        )
+
+        result = self.drill(
+            AUTHOR,
+            chart.name,
+            dashboard.name,
+            # the newest bucket, which is the one the card reads
+            drill_stack=[rows_level(filters=[equals("date", TIMELINE_MONTHS[-1])], measure="Todos")],
+        )
+
+        self.assertEqual(self.descriptions(result), [f"{TIMELINE_PREFIX} december"])
+
     def test_a_conditional_measure_carries_its_condition_into_the_rows(self):
         _, chart, dashboard = self.make_content(
             chart_type="Number",

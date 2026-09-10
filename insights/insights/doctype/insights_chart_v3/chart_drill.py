@@ -37,9 +37,13 @@ from insights.insights.doctype.insights_chart_v3.chart_query import (
 from insights.insights.doctype.insights_chart_v3.record_link import record_links
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import get_columns_from_schema
 from insights.insights.doctype.insights_query_v3.insights_query_v3 import set_adhoc_filters
+from insights.insights.query_builders.sql_functions import resolve_timespan
 
 ROWS = "rows"
 BREAKDOWN = "breakdown"
+
+# a bucket standing for the rows that carry no date at all
+NO_DATE = (None, None)
 
 # what a rows level shows. The dialog states the bound it draws; real
 # pagination waits for someone to hit it
@@ -546,11 +550,30 @@ def _rule_filters(rule: dict, step: dict, surface: list[dict], grains: dict) -> 
     if operator not in OPERATORS:
         frappe.throw(_("Operator {0} is not supported").format(operator))
 
-    granularity = _bucket_grain(on_surface, dimension, grains) if operator == "=" else None
-    if granularity:
-        return _bucket_filters(column, granularity, rule.get("value"))
+    if operator == "=":
+        bucket = _bucket(on_surface, dimension, grains, rule.get("value"))
+        if bucket:
+            return _bucket_filters(column, bucket)
 
     return [_rule(column, operator, rule.get("value"))]
+
+
+def _bucket(on_surface: dict, dimension: dict | None, grains: dict, value) -> tuple | None:
+    """The stretch a clicked value stands for, as (start, end), end exclusive.
+
+    Two ways a chart cuts a date into stretches, and a click on either pins the
+    whole of the one it landed on. A grain says how long the stretch is and the
+    value is where it starts; a window carries its own dates, and the value is
+    the day it opens. Anything else stands for itself, and answers with nothing.
+
+    A bucket clicked on no value at all is the rows that carry no date, which
+    `NO_DATE` says and `_bucket_filters` matches.
+    """
+    granularity = _bucket_grain(on_surface, dimension, grains)
+    if not granularity:
+        return _clicked_window(dimension, value)
+
+    return _grain_bucket(granularity, value) if value else NO_DATE
 
 
 def _bucket_grain(on_surface: dict, dimension: dict | None, grains: dict) -> str | None:
@@ -568,6 +591,35 @@ def _bucket_grain(on_surface: dict, dimension: dict | None, grains: dict) -> str
     return dimension["granularity"] if _is_bucket(dimension) else None
 
 
+def _grain_bucket(granularity: str, value) -> tuple:
+    """The bucket a grain cuts, from the moment it starts at."""
+    start = get_datetime(value)
+    step = {"fiscal_year": {"years": 1}, "quarter": {"months": 3}}.get(granularity) or {f"{granularity}s": 1}
+    return (start, add_to_date(start, **step))
+
+
+def _clicked_window(dimension: dict | None, value) -> tuple | None:
+    """The window a value on a windowed dimension stands for.
+
+    A number card grouped by windows labels each row with the date its window
+    opens, so the label names the window and the span it was cut from gives the
+    end. The spans resolve here, the way they resolve while the card runs: they
+    travel unresolved so that the same chart reads a different stretch tomorrow.
+    """
+    windows = (dimension or {}).get("windows") or []
+    if not windows or not value:
+        return None
+
+    start = get_datetime(value).date()
+    for window in windows:
+        opened, closed = resolve_timespan(window)
+        if opened == start:
+            # a window closes on the last day it covers, and a bound is exclusive
+            return (get_datetime(opened), get_datetime(add_to_date(closed, days=1)))
+
+    return None
+
+
 def _measure_condition(measure: dict | None) -> list[dict]:
     """What a measure that counts a condition pins, beyond the segment itself.
 
@@ -583,16 +635,15 @@ def _measure_condition(measure: dict | None) -> list[dict]:
     return []
 
 
-def _bucket_filters(column: str, granularity: str, value) -> list[dict]:
-    """A date value the chart grouped by a grain stands for the whole bucket."""
-    if not value:
+def _bucket_filters(column: str, bucket: tuple) -> list[dict]:
+    """A date value the chart cut into a stretch stands for the whole stretch."""
+    start, end = bucket
+    if start is None:
         return [_rule(column, "is_not_set", "")]
 
-    start = get_datetime(value)
-    step = {"fiscal_year": {"years": 1}, "quarter": {"months": 3}}.get(granularity) or {f"{granularity}s": 1}
     return [
         _rule(column, ">=", _timestamp(start)),
-        _rule(column, "<", _timestamp(add_to_date(start, **step))),
+        _rule(column, "<", _timestamp(end)),
     ]
 
 

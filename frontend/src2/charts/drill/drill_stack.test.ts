@@ -76,7 +76,7 @@ describe('what a segment click pins', () => {
 		])
 	})
 
-	it('pins nothing at all for a number card, which is the whole of the reading', () => {
+	it('pins nothing at all for a number card that reads no period', () => {
 		const segment = click(
 			numberChart({ values: [{ name: 'revenue', readings: [100] }] }),
 			'revenue',
@@ -84,6 +84,40 @@ describe('what a segment click pins', () => {
 		expect(segment.filters).toEqual([])
 		expect(segment.pins).toEqual([])
 		expect(segment.measure).toBe('revenue')
+	})
+
+	it('pins the window a card’s reading stands on, and reads it as the window', () => {
+		// The reading is the newest window and the row carries the day it opens.
+		// Which stretch that day stands for is the span's answer, on both sides:
+		// the pin prints it, and the server resolves it.
+		const card = numberChart({
+			values: [{ name: 'revenue', readings: [80, 100] }],
+			period: { name: 'posting_date', type: 'Date' },
+			window: { span: 'current month' },
+		})
+
+		const segment = click(card, 'revenue', '2026-02-01')
+
+		expect(segment.filters).toEqual([
+			{ column: 'posting_date', operator: '=', value: '2026-02-01' },
+		])
+		expect(segment.pins).toEqual([{ column: 'posting_date', value: 'February, 2026' }])
+	})
+
+	it('pins the bucket a card grouped by a grain reads', () => {
+		const card = numberChart({
+			values: [{ name: 'revenue', readings: [80, 100] }],
+			period: { name: 'posting_date', type: 'Date' },
+			window: { grain: 'month' },
+		})
+
+		const segment = click(card, 'revenue', '2026-02-01')
+
+		expect(segment.filters).toEqual([
+			{ column: 'posting_date', operator: '=', value: '2026-02-01' },
+		])
+		// the grain rides the period, so the pin reads as the bucket it names
+		expect(segment.pins).toEqual([{ column: 'posting_date', value: 'February, 2026' }])
 	})
 
 	it('pins the slice a donut was clicked on', () => {

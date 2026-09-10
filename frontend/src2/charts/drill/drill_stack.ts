@@ -1,6 +1,7 @@
 // A click reduces to a set of segment filters — the dimension values it pins, as
 // (column, operator, literal) triples against the query's pre-summarize surface.
-// A number card pins the empty set. Nothing past `segmentOf` reads a chart type.
+// A number card pins the period its reading stands on, and nothing when it reads
+// none. Nothing past `segmentOf` reads a chart type.
 
 import { computed, reactive, shallowRef } from 'vue'
 import { FIELDTYPES, getGranularityOptions } from '../../helpers/constants'
@@ -30,6 +31,7 @@ import type {
 } from '../../types/query.types'
 import type { DrillDownTarget } from '../adapter'
 import type { RecordLinks } from '../record_link'
+import { formatWindowLabel, periodOf } from '../window'
 
 // ---------------------------------------------------------------------------
 // The wire shapes. Everything the server is told, and nothing it is not.
@@ -83,7 +85,7 @@ export type DrillPin = {
 
 /** What a segment click pins, before the reader has said what to do with it. */
 export type DrillSegment = {
-	/** The pins, as the wire carries them. Empty for a number card. */
+	/** The pins, as the wire carries them. Empty when the click pins nothing. */
 	filters: DrillFilter[]
 	/**
 	 * What this segment pins. The columns are subtracted from the breakdown
@@ -109,12 +111,19 @@ type DeclaredDimensions = {
 	rows: Dimension[]
 	columns: Dimension[]
 	/**
-	 * Declared, but not identified by a click: a number card's date column groups
-	 * the readings behind the card and a click on the card pins none of them. It
-	 * is still one of the Chart's own Dimensions, so it leads the candidates.
+	 * Declared, but not identified by a click: the date column of a number card
+	 * that reads no period groups nothing, so a click on the card pins none of
+	 * it. It is still one of the Chart's own Dimensions, so it leads the
+	 * candidates.
 	 */
 	unpinned: Dimension[]
 	measures: Measure[]
+	/**
+	 * How a Dimension's value prints, where the chart type knows better than the
+	 * Dimension does. A windowed card's date carries no grain: it is the day its
+	 * window opens, and only the card's span says how far the window runs.
+	 */
+	labels: Record<string, (value: any) => string>
 }
 
 /** A config slot is a slot whether or not the author has filled it in. */
@@ -130,7 +139,13 @@ const nums = (slots: (Measure | undefined)[]): Measure[] =>
  */
 function declaredDimensions(chart: DrillChart): DeclaredDimensions {
 	const config = chart.config as any
-	const empty: DeclaredDimensions = { rows: [], columns: [], unpinned: [], measures: [] }
+	const empty: DeclaredDimensions = {
+		rows: [],
+		columns: [],
+		unpinned: [],
+		measures: [],
+		labels: {},
+	}
 
 	if (AXIS_CHARTS.includes(chart.chart_type)) {
 		const axis = config as AxisChartConfig
@@ -206,9 +221,29 @@ function declaredDimensions(chart: DrillChart): DeclaredDimensions {
 		}
 		case 'Number': {
 			const number = config as NumberChartConfig
+			const period = periodOf(number)
+			// A card that reads a period reads one of its rows, so a click pins the
+			// period that row stands for: the bucket for a grain, the day the window
+			// opens for a span. The grain rides the Dimension, because the period is
+			// where a card's grain is written and the Dimension carries none.
+			const grained =
+				number.date_column && period?.grain
+					? { ...number.date_column, granularity: period.grain }
+					: number.date_column
+			const date = dims([grained])
+			const span = period?.span
+
 			return {
 				...empty,
-				unpinned: dims([number.date_column]),
+				rows: period ? date : [],
+				unpinned: period ? [] : date,
+				labels:
+					span && date.length
+						? {
+								[date[0].column_name]: (value: any) =>
+									String(formatWindowLabel(span, value)),
+						  }
+						: {},
 				measures: nums(number.number_columns || []),
 			}
 		}
@@ -288,8 +323,14 @@ function filterForDimension(dimension: Dimension, value: any): DrillFilter {
 	return { column, operator: '=', value }
 }
 
-function labelForDimension(dimension: Dimension, value: any): string {
+function labelForDimension(
+	dimension: Dimension,
+	value: any,
+	// eslint-disable-next-line no-unused-vars
+	label?: (value: any) => string,
+): string {
 	if (value === null || value === undefined || value === '') return '(blank)'
+	if (label) return label(value)
 	if (FIELDTYPES.DATE.includes(dimension.data_type) && dimension.granularity) {
 		return getFormattedDate(String(value), dimension.granularity)
 	}
@@ -312,7 +353,10 @@ export function segmentOf(chart: DrillChart, target: DrillDownTarget): DrillSegm
 
 	const pin = (dimension: Dimension, value: any) => {
 		filters.push(filterForDimension(dimension, value))
-		pins.push({ column: dimension.column_name, value: labelForDimension(dimension, value) })
+		pins.push({
+			column: dimension.column_name,
+			value: labelForDimension(dimension, value, declared.labels[dimension.column_name]),
+		})
 	}
 
 	for (const dimension of declared.rows) {
@@ -481,7 +525,7 @@ export function makeDrillStack() {
 
 	// Everything the stack has pinned, in the order it was pinned. A level whose
 	// segment pins nothing contributes none, which is what a click on a number
-	// card does.
+	// card that reads no period does.
 	const pins = computed<DrillPin[]>(() => entries.value.flatMap((entry) => entry.pins))
 
 	/**
