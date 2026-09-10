@@ -11,28 +11,27 @@ import { computed } from 'vue'
 import { stableStringify } from '../helpers'
 import type { Chart } from './chart'
 import {
+	cachedChartRead,
+	chartReadKey,
 	makeChartRead,
-	type ChartRead,
 	type ChartReadDoc,
+	type ChartReadSurface,
 	type DashboardFilterContext,
 } from './chart_read'
 import { fetchAuthoringDrillData } from './drill/drill_api'
 
-// one preview per chart, so the chart page and the builder's dashboard draw the
-// same card from the same rows — the same sharing `useChart` gives the document
-const previews = new Map<string, ChartRead>()
-
-export default function useChartPreview(chart: Chart) {
-	const key = String(chart.doc.name)
-	const existing = previews.get(key)
-	if (existing) return existing
-
-	const preview = makeChartPreview(chart)
-	previews.set(key, preview)
-	return preview
+// one preview per chart per surface: every card of one dashboard draws the
+// chart from the same rows, while the chart's own page and a second dashboard
+// each hold their own — a surface's filters are in the rows it drew. They are
+// cached in the store beside the saved feed's, so a chart that goes stale
+// reaches every read of it.
+export default function useChartPreview(chart: Chart, surface?: ChartReadSurface) {
+	return cachedChartRead(chartReadKey('preview', chart, surface), chart, () =>
+		makeChartPreview(chart, surface),
+	)
 }
 
-function makeChartPreview(chart: Chart) {
+function makeChartPreview(chart: Chart, surface?: ChartReadSurface) {
 	// the config is watched deeply, so an edit that leaves the request the same —
 	// a display option, a re-normalized slot, a save that came back with its keys
 	// sorted — must not re-run it
@@ -48,22 +47,25 @@ function makeChartPreview(chart: Chart) {
 		page_size: chart.doc.config.limit || 100,
 	})
 
-	return makeChartRead({
-		doc: computed(() => chart.doc as ChartReadDoc),
-		requestKey: (filterContext) => stableStringify(request(filterContext)),
-		fetchData: (force, filterContext) =>
-			call('insights.api.authoring.get_chart_data', { ...request(filterContext), force }),
-		// the same config the picture was drawn from, so a drill answers for what
-		// is on screen rather than for whatever was last saved
-		fetchDrillData: (drill_stack, filterContext) =>
-			fetchAuthoringDrillData(
-				{
-					query: chart.doc.query,
-					chart_type: chart.doc.chart_type,
-					config: chart.doc.config,
-				},
-				drill_stack,
-				filterContext,
-			),
-	})
+	return makeChartRead(
+		{
+			doc: computed(() => chart.doc as ChartReadDoc),
+			requestKey: (filterContext) => stableStringify(request(filterContext)),
+			fetchData: (force, filterContext) =>
+				call('insights.api.authoring.get_chart_data', { ...request(filterContext), force }),
+			// the same config the picture was drawn from, so a drill answers for what
+			// is on screen rather than for whatever was last saved
+			fetchDrillData: (drill_stack, filterContext) =>
+				fetchAuthoringDrillData(
+					{
+						query: chart.doc.query,
+						chart_type: chart.doc.chart_type,
+						config: chart.doc.config,
+					},
+					drill_stack,
+					filterContext,
+				),
+		},
+		() => surface?.filterContext(String(chart.doc.name)),
+	)
 }

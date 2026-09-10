@@ -2,7 +2,7 @@ import { computed, reactive, ref, toRefs } from 'vue'
 import { numberCardRows, numberReadings } from '../charts/adapter/number'
 import useChart from '../charts/chart'
 import useChartPreview from '../charts/chart_preview'
-import { useSharedChart } from '../charts/chart_read'
+import { useSharedChart, type ChartReadSurface } from '../charts/chart_read'
 import { getUniqueId, safeJSONParse, showErrorToast, store, waitUntil, wheneverChanges } from '../helpers'
 import useDocumentResource from '../helpers/resource'
 import router from '../router'
@@ -324,14 +324,23 @@ function makeDashboard(name: string) {
 		}
 	}
 
+	// This grid is a reading surface: the rows its cards draw are narrowed by the
+	// filters it holds, so its reads belong to it. Another dashboard drawing the
+	// same chart reads its own, and neither moves the other's rows.
+	const readSurface: ChartReadSurface = {
+		id: `dashboard:${name}`,
+		filterContext: filterContextFor,
+	}
+
 	function chartRead(chart_name: string) {
 		const chart = useChart(chart_name)
-		return shared.value ? useSharedChart(chart) : useChartPreview(chart)
+		return shared.value
+			? useSharedChart(chart, readSurface)
+			: useChartPreview(chart, readSurface)
 	}
 
 	function refreshChart(chart_name: string, force = false) {
 		const read = chartRead(chart_name)
-		read.filterContext = filterContextFor(chart_name)
 		read.executionPriority = getLayoutRank(chart_name)
 		read.load(force)
 	}

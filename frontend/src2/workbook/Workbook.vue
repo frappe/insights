@@ -10,7 +10,7 @@ import { workbookKey } from './workbook_key'
 import WorkbookNavbar from './WorkbookNavbar.vue'
 import WorkbookSidebar from './WorkbookSidebar.vue'
 import useChart from '../charts/chart'
-import useChartPreview from '../charts/chart_preview'
+import { invalidateChart } from '../charts/chart_read'
 import useDashboard from '../dashboard/dashboard'
 
 defineOptions({ inheritAttrs: false })
@@ -40,8 +40,11 @@ watch(
 	(newRoute, oldRoute) => {
 		if (newRoute.name === 'WorkbookChart' && oldRoute.name === 'WorkbookQuery') {
 			const chart = useChart(newRoute.params.chart_name as string)
+			// every read of the chart, not only its own: a dashboard beside it
+			// draws the same chart, and its read asks the same question it
+			// asked before the query changed under it
 			if (chart.doc.query === oldRoute.params.query_name) {
-				useChartPreview(chart).load(true)
+				invalidateChart(String(chart.doc.name))
 			}
 		}
 	},

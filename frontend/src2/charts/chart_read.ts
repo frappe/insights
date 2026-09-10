@@ -19,11 +19,7 @@ import { isServerBusyError, scheduleQueryExecution } from '../query/execution_qu
 import { EMPTY_RESULT, formatResultRows } from '../query/helpers'
 import type { AdhocFilters, Operation, QueryResult } from '../types/query.types'
 import type { ChartType } from '../types/chart.types'
-import type {
-	InsightsChartv3,
-	ViewerFilters,
-	WorkbookDashboardItem,
-} from '../types/workbook.types'
+import type { InsightsChartv3, ViewerFilters, WorkbookDashboardItem } from '../types/workbook.types'
 import type { Chart } from './chart'
 import type { RecordLinks } from './record_link'
 import type { DrillDimension, DrillLevel, DrillLevelData, DrillSubject } from './drill/drill_stack'
@@ -76,6 +72,30 @@ type ChartDataResponse = {
 	record_links?: RecordLinks
 }
 
+/**
+ * Which surface is reading, when something other than the chart itself is. The
+ * rows a surface draws depend on the filters that surface applies, so the
+ * surface is half of a read's identity: two dashboards drawing one chart hold
+ * one read each, and neither can move the other's rows. A reader that applies
+ * nothing names no surface and shares the one unnamed read.
+ */
+export type ChartReadSurface = {
+	// what tells one surface's reads from another's
+	id: string
+	// the filters this surface applies to the chart it names. It is asked at the
+	// moment of the read rather than stored on it, so a load always carries what
+	// the surface holds now.
+	filterContext: (chart_name: string) => DashboardFilterContext
+}
+
+/** A read is one chart, as one feed's surface reads it. */
+export function chartReadKey(feed: ChartFeedName, chart: Chart, surface?: ChartReadSurface) {
+	return `${feed}:${surface?.id || ''}:${chart.doc.name}`
+}
+
+/** Which door the rows came in by: the saved chart's, or the builder's. */
+export type ChartFeedName = 'saved' | 'preview'
+
 export type ChartFeed = {
 	doc: ChartReadDoc | ComputedRef<ChartReadDoc>
 	// the saved feed draws its frame from a second round trip. The preview feed
@@ -99,7 +119,12 @@ export type ChartFeed = {
 	) => Promise<DrillLevelData>
 }
 
-export function makeChartRead(feed: ChartFeed, priority?: number) {
+export function makeChartRead(
+	feed: ChartFeed,
+	// what the surface this read belongs to narrows the chart by, asked on every
+	// load. A read with none is unfiltered for as long as it lives.
+	filterContext: () => DashboardFilterContext | undefined = () => undefined,
+) {
 	// the preview feed hands over the document it is editing, so read it through
 	// whichever of the two it is before anything derives from it
 	const doc = computed(() => unref(feed.doc))
@@ -131,16 +156,15 @@ export function makeChartRead(feed: ChartFeed, priority?: number) {
 	const executedAt = ref<Date>()
 	const empty = computed(() => ready.value && !result.value.rows.length)
 
-	// both set by whoever owns the layout the card sits in
-	const executionPriority = ref(priority)
-	const filterContext = ref<DashboardFilterContext>()
+	// set by whoever owns the layout the card sits in
+	const executionPriority = ref<number>()
 
 	let currentLoad = 0
 	// the question the rows on screen answer, so the same one is not asked twice
 	let lastRequestKey: string | undefined
 
 	async function load(force = false) {
-		const requestKey = feed.requestKey?.(filterContext.value)
+		const requestKey = feed.requestKey?.(filterContext())
 		if (!force && requestKey !== undefined && requestKey === lastRequestKey) return
 		lastRequestKey = requestKey
 
@@ -158,7 +182,7 @@ export function makeChartRead(feed: ChartFeed, priority?: number) {
 		// wrong when that happens — the card waits its turn and asks again, on the
 		// same queue the query builder uses. A real failure is not retried and
 		// reaches the card immediately.
-		const dataLoad = scheduleQueryExecution(() => feed.fetchData(force, filterContext.value), {
+		const dataLoad = scheduleQueryExecution(() => feed.fetchData(force, filterContext()), {
 			isStale,
 			priority: executionPriority.value,
 		})
@@ -208,7 +232,7 @@ export function makeChartRead(feed: ChartFeed, priority?: number) {
 						...EMPTY_RESULT,
 						columns: response.sparkline.columns || [],
 						rows: response.sparkline.rows || [],
-					}
+				  }
 				: undefined
 			operations.value = response.operations || []
 			routedFilters.value = response.adhoc_filters
@@ -241,7 +265,7 @@ export function makeChartRead(feed: ChartFeed, priority?: number) {
 		chart: { chart_type: doc.value.chart_type as ChartType, config: doc.value.config },
 		title: doc.value.title,
 		dimensions: drillDimensions.value,
-		fetch: (levels) => feed.fetchDrillData(levels, filterContext.value),
+		fetch: (levels) => feed.fetchDrillData(levels, filterContext()),
 	}))
 
 	return reactive({
@@ -265,7 +289,6 @@ export function makeChartRead(feed: ChartFeed, priority?: number) {
 		empty,
 		executedAt,
 		executionPriority,
-		filterContext,
 
 		load,
 	})
@@ -273,9 +296,35 @@ export function makeChartRead(feed: ChartFeed, priority?: number) {
 
 export type ChartRead = ReturnType<typeof makeChartRead>
 
-// one read per chart, so a shared dashboard's cards and the chart's own page
-// draw the same card from the same rows
-const shared = new Map<string, ChartRead>()
+// One read per chart per surface per feed: the cards of one shared dashboard
+// draw from the same rows, a second dashboard reading the same chart holds its
+// own, and the builder's preview of that chart is a read beside both. Both
+// feeds cache here, because what goes stale is the chart and not one of its
+// reads.
+const reads = new Map<string, { chart: string; read: ChartRead }>()
+
+/** The read behind one key, made on the first surface that asks for it. */
+export function cachedChartRead(key: string, chart: Chart, make: () => ChartRead): ChartRead {
+	const existing = reads.get(key)
+	if (existing) return existing.read
+
+	const read = make()
+	reads.set(key, { chart: String(chart.doc.name), read })
+	return read
+}
+
+/**
+ * Run every read of one chart again.
+ *
+ * Chart identity is what goes stale: a chart edited in the builder is the same
+ * chart the dashboard beside it draws, and that read asks the same question it
+ * asked before, so nothing short of a forced load reaches the server.
+ */
+export function invalidateChart(chart_name: string) {
+	reads.forEach((entry) => {
+		if (entry.chart === chart_name) entry.read.load(true)
+	})
+}
 
 /**
  * The read feed for a public link: the saved chart, fetched through its own
@@ -286,29 +335,32 @@ const shared = new Map<string, ChartRead>()
  * No drill: a public chart stays a picture, and the endpoint that would answer
  * a level needs an authoring seat.
  */
-export function useSharedChart(chart: Chart) {
-	const key = String(chart.doc.name)
-	const existing = shared.get(key)
-	if (existing) return existing
+export function useSharedChart(chart: Chart, surface?: ChartReadSurface) {
+	return cachedChartRead(chartReadKey('saved', chart, surface), chart, () =>
+		makeSharedChart(chart, surface),
+	)
+}
 
-	const read = makeChartRead({
-		doc: computed(() => chart.doc as ChartReadDoc),
-		fetchData: (force, filterContext) =>
-			call('insights.api.run_doc_method', {
-				method: 'get_data',
-				docs: { doctype: 'Insights Chart v3', name: chart.doc.name },
-				args: {
-					force,
-					page_size: chart.doc.config.limit || 100,
-					// unrouted: the server reads the links and decides which query
-					// each filter lands on, the same way it does for the builder
-					chart_name: filterContext?.chart,
-					dashboard_items: filterContext?.items,
-					filters: filterContext?.filters,
-				},
-			}).then((response: any) => response.message),
-		fetchDrillData: () => Promise.reject(new Error('A public chart cannot be drilled')),
-	})
-	shared.set(key, read)
-	return read
+function makeSharedChart(chart: Chart, surface?: ChartReadSurface) {
+	return makeChartRead(
+		{
+			doc: computed(() => chart.doc as ChartReadDoc),
+			fetchData: (force, filterContext) =>
+				call('insights.api.run_doc_method', {
+					method: 'get_data',
+					docs: { doctype: 'Insights Chart v3', name: chart.doc.name },
+					args: {
+						force,
+						page_size: chart.doc.config.limit || 100,
+						// unrouted: the server reads the links and decides which query
+						// each filter lands on, the same way it does for the builder
+						chart_name: filterContext?.chart,
+						dashboard_items: filterContext?.items,
+						filters: filterContext?.filters,
+					},
+				}).then((response: any) => response.message),
+			fetchDrillData: () => Promise.reject(new Error('A public chart cannot be drilled')),
+		},
+		() => surface?.filterContext(String(chart.doc.name)),
+	)
 }
