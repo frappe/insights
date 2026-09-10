@@ -623,10 +623,59 @@ class IbisQueryBuilder:
             )
 
     def apply_summary(self, summarize_args):
+        if any(dimension.get("windows") for dimension in summarize_args.dimensions):
+            return self.aggregate_by_window(summarize_args)
+
         aggregates = [self.translate_measure(measure) for measure in summarize_args.measures]
         aggregates = {agg.get_name(): agg for agg in aggregates}
         group_bys = [self.translate_dimension(dimension) for dimension in summarize_args.dimensions]
         return self.query.aggregate(**aggregates, by=group_bys)
+
+    def aggregate_by_window(self, summarize_args):
+        """One aggregate per window, unioned, each named by the date it starts on.
+
+        A card grouped by a window gets one row per window whatever its span
+        covers, and the start dates sort the windows oldest first — the order a
+        number card reads its rows in. A span carries no dates until here,
+        because the clock and the fiscal calendar are only known while the
+        query runs.
+
+        Every window reads its own stretch whole, so windows that overlap both
+        count the rows they share: a span longer than the shift its comparison
+        moves by — a year of months against last year — still reads the figure
+        for the whole of it.
+
+        The window is the whole of the group-by. A dimension beside it would cut
+        each window again, and a second windowed dimension has no meaning: two
+        sets of windows name no rows in common.
+        """
+        dimensions = summarize_args.dimensions
+        if len(dimensions) != 1 or not dimensions[0].get("windows"):
+            frappe.throw(frappe._("A summarize grouped by a window can group by nothing else"))
+
+        windowed = dimensions[0]
+
+        column = self.get_column(windowed.column_name)
+        window_name = windowed.dimension_name or windowed.column_name
+        dtype = self.get_ibis_dtype(windowed.data_type)
+
+        base = self.query
+        rows = []
+        for start, end in sorted({resolve_timespan(window) for window in windowed.windows}):
+            bounds = add_start_and_end_time([start, end])
+            self.query = base.filter(column.between(*bounds))
+
+            aggregates = [self.translate_measure(measure) for measure in summarize_args.measures]
+            aggregates = {agg.get_name(): agg for agg in aggregates}
+
+            label = ibis.literal(start)
+            label = label.cast(dtype) if dtype else label
+            # grouped by the date, not projected beside the aggregate: a window
+            # holding no rows is then no row at all, the way an empty group is
+            rows.append(self.query.aggregate(**aggregates, by=[label.name(window_name)]))
+
+        self.query = base
+        return ibis.union(*rows)
 
     def apply_order_by(self, order_by_args):
         order_by_column = self.get_column(order_by_args.column.column_name, throw=False)
@@ -942,13 +991,6 @@ class IbisQueryBuilder:
     def translate_dimension(self, dimension):
         col = self.get_column(dimension.column_name)
 
-        if dimension.windows:
-            col = self.apply_windows(col, dimension.windows)
-            dtype = self.get_ibis_dtype(dimension.data_type)
-            if dtype:
-                col = col.cast(dtype)
-            return col.name(dimension.dimension_name or dimension.column_name)
-
         if dimension.data_type == "Time" and dimension.granularity:
             col = self.apply_time_granularity(col, dimension.granularity)
             return col.name(dimension.dimension_name or dimension.column_name)
@@ -957,25 +999,6 @@ class IbisQueryBuilder:
             col = self.apply_granularity(col, dimension.granularity, dimension.data_type)
             col = col.cast(self.get_ibis_dtype(dimension.data_type))
         return col.name(dimension.dimension_name or dimension.column_name)
-
-    def apply_windows(self, column, windows):
-        """The window a row falls in, named by the date that window starts on.
-
-        A card grouped by this gets one row per window whatever its span covers,
-        and the start dates sort the windows oldest first — the order a number
-        card reads its rows in. A span carries no dates until here, because the
-        clock and the fiscal calendar are only known while the query runs.
-
-        A row is labelled by the oldest window holding it, so two windows that
-        overlap never count it twice. A row outside every window is labelled
-        nothing, and the filter beside the group-by keeps it out of the result.
-        """
-        branches = []
-        for start, end in sorted({resolve_timespan(window) for window in windows}):
-            bounds = add_start_and_end_time([start, end])
-            branches.append((column.between(*bounds), ibis.literal(start)))
-
-        return ibis.cases(*branches)
 
     def is_date_type(self, data_type):
         return data_type in ["Date", "Datetime", "Time"]

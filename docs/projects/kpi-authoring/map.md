@@ -69,15 +69,15 @@ Decided while charting, before tickets existed.
   oldest first with no extra concept, and the label is a real period key — the
   same key whose absence forced the `ibis.literal(1)` join key in
   `overview_board.py`.
-- **A row in two windows belongs to the oldest.** Spans can overlap, for example
-  `last 3 months` shifted by one month. The oldest window wins, so no row is
-  counted twice.
-- **The window dimension is only correct beside its filter.** A row in no window
-  is labelled nothing, and a NULL label sorts last, which would make it the
-  card's reading. Derivation builds the filter and the dimension from one list of
-  windows, so the two cannot drift, and a test pins that they are emitted
-  together. Deliberately not defended further: there is no other caller, and
-  `apply_windows` states the coupling in its own docstring.
+- **A row in two windows belongs to both.** Spans overlap whenever the span is
+  longer than the shift its comparison moves by, for example a year of months
+  against last year. Labelling a row by the oldest window holding it made the
+  newer window read short, so each window is its own filtered aggregate and the
+  windows are unioned: every window reads the whole of its stretch.
+- **A window with no rows is no row.** The aggregate is grouped by the window's
+  start date rather than projected beside it, so an empty stretch produces an
+  empty group — which is what `comparison_rows` reads to name a question with
+  no figure.
 
 - **The window sits on the chart, the comparison stays per value.** Ticket 03
   asked for both on the chart. A chart-level comparison control would be a second

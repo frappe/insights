@@ -239,6 +239,30 @@ class TestIbisWindowedNumberCard(IbisQueryBuilderTestCase):
             ["2025-05-01", "2026-05-01"],
         )
 
+    def test_windows_that_overlap_each_read_their_whole_stretch(self):
+        """A span longer than the shift its comparison moves by overlaps it.
+
+        `last 12 months (include current)` anchored in August covers August
+        last year too, and its year-back window ends there. Each window is its
+        own aggregate, so the month they share counts in both and neither
+        window reads short.
+        """
+        sales = [
+            {"posting_date": "2025-08-15", "amount": 5},  # in both windows
+            {"posting_date": "2026-01-15", "amount": 10},  # this window only
+            {"posting_date": "2024-10-01", "amount": 3},  # the year-back window only
+            {"posting_date": "2024-05-01", "amount": 400},  # before both
+        ]
+        comparison = {"source": "last year"}
+        config = self.config(comparison, span="last 12 months (include current)")
+        result = self.windowed_result(config, sales)
+
+        self.assertEqual(list(result["Revenue"]), [8, 15])
+        self.assertEqual(
+            [str(window)[:10] for window in result["posting_date"]],
+            ["2024-08-01", "2025-08-01"],
+        )
+
     def test_a_sparkline_reads_the_window_one_day_at_a_time(self):
         """The card's own rows are one per window. The picture under the number
         is the same window split by the grain below the span's unit."""
@@ -262,3 +286,25 @@ class TestIbisWindowedNumberCard(IbisQueryBuilderTestCase):
         self.assertEqual(list(result["Revenue"]), [35, 70])
         # the number itself is unmoved by the second query
         self.assertEqual(list(self.windowed_result(config, sales)["Revenue"]), [60, 105])
+
+    def test_a_window_refuses_to_group_by_anything_else(self):
+        """The window is the whole of the group-by.
+
+        A dimension beside it would cut each window again, and a second
+        windowed dimension names no rows the first one does. Neither is a shape
+        a card sends, so both are refused rather than answered.
+        """
+        sales = [{"posting_date": "2026-08-05", "amount": 30, "region": "north"}]
+        window = {
+            "column_name": "posting_date",
+            "data_type": "Date",
+            "dimension_name": "posting_date",
+            "windows": [{"span": "month to date", "anchor": "2026-08-10"}],
+        }
+        region = {"column_name": "region", "data_type": "String", "dimension_name": "region"}
+        measures = self.config()["number_columns"]
+
+        for dimensions in ([region, window], [window, {**window, "dimension_name": "again"}]):
+            with self.subTest(dimensions=[d["dimension_name"] for d in dimensions]):
+                summarize = {"type": "summarize", "measures": measures, "dimensions": dimensions}
+                self.assertRaises(frappe.ValidationError, self.result_of, [None, summarize], sales)
