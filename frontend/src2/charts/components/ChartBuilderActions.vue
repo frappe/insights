@@ -16,13 +16,13 @@ import ViewSQLDialog from '../../query/components/ViewSQLDialog.vue'
 import session from '../../session'
 import { __ } from '../../translation'
 import { duplicateWorkbookItem } from '../../workbook/workbook_items'
-import type { ChartRead } from '../chart_read'
+import type { ChartView } from '../chart_view'
 
 // What the builder puts in the chart card's own header. The card heads the page,
 // so these are the page's acts: run it again, and everything else in a menu.
 const props = defineProps<{
 	chart: any
-	preview: ChartRead
+	preview: ChartView
 	chartEl: HTMLElement | null
 	onDownload: () => void
 	onShare: () => void

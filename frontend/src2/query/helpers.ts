@@ -144,7 +144,7 @@ export function getFormattedRows(result: QueryResult, operations: Operation[]) {
 	return formatResultRows(result, getColumnGranularity(operations))
 }
 
-// The grain a date column was grouped by, per column. A viewer never receives
+// The grain a date column was grouped by, per column. A reader never receives
 // the operations, so the server sends it this map instead — same shape, so the
 // formatting below stays one implementation.
 export function getColumnGranularity(operations: Operation[]) {

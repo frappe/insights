@@ -1,90 +1,22 @@
 <script setup lang="ts">
-import { Breadcrumbs } from 'frappe-ui'
-import { RefreshCcw } from 'lucide-vue-next'
-import { computed, provide, ref, watchEffect } from 'vue'
-import { useRouter } from 'vue-router'
-import { downloadImage } from '../helpers'
-import useDashboard from './dashboard'
 import { __ } from '../translation'
-import DashboardItem from './DashboardItem.vue'
-import LoadingOverlay from '../components/LoadingOverlay.vue'
-import StaticGridLayout from './StaticGridLayout.vue'
+import DashboardPage from './DashboardPage.vue'
+import { useDashboardView } from './view'
 
+// The dashboard page inside Insights. It shows what every other surface shows,
+// so all it adds is where this page sits in the app: the trail above it, and the
+// name of the tab it is open in.
 const props = defineProps<{ name: string }>()
 
-const dashboard = useDashboard(props.name)
-provide('dashboard', dashboard)
-dashboard.refresh()
+const dashboard = useDashboardView(() => props.name, 'dashboards')
 
-const router = useRouter()
-function openWorkbook() {
-	router.push(`/workbook/${dashboard.doc.workbook}`)
-}
+const crumbs = [{ label: __('Dashboards'), route: '/dashboards' }]
 
-watchEffect(() => {
-	document.title = `${dashboard.doc.title} | Insights`
-})
-
-const canOpenWorkbook = computed(() => dashboard.doc.has_workbook_access)
-
-const dashboardContainer = ref<HTMLElement | null>(null)
-async function downloadDashboardImage() {
-	if (!dashboardContainer.value) return
-	await downloadImage(dashboardContainer.value, `${dashboard.doc.title}.png`)
+function setTitle(title: string) {
+	document.title = `${title} | Insights`
 }
 </script>
 
 <template>
-	<header class="flex h-12 items-center justify-between border-b py-2.5 pl-5 pr-2">
-		<Breadcrumbs
-			:items="[
-				{ label: __('Dashboards'), route: '/dashboards' },
-				{ label: dashboard.doc.title, route: `/dashboards/${dashboard.doc.name}` },
-			]"
-		/>
-		<div class="flex items-center gap-2">
-			<Button variant="outline" @click="() => dashboard.refresh(true)" :label="__('Refresh')">
-				<template #prefix>
-					<RefreshCcw class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
-				</template>
-			</Button>
-			<Dropdown
-				align="end"
-				:button="{ icon: 'lucide-more-vertical', variant: 'outline' }"
-				:options="[
-					{
-						label: __('Export as PNG'),
-						variant: 'outline',
-						icon: 'lucide-download',
-						onClick: downloadDashboardImage,
-					},
-					canOpenWorkbook
-						? {
-								label: __('Open Workbook'),
-								variant: 'outline',
-								icon: 'lucide-external-link',
-								onClick: openWorkbook,
-						  }
-						: null,
-				]"
-			/>
-		</div>
-	</header>
-
-	<div class="relative flex h-full w-full overflow-hidden">
-		<LoadingOverlay v-if="dashboard.pending" />
-		<div ref="dashboardContainer" class="flex-1 overflow-y-auto p-4">
-			<StaticGridLayout
-				v-if="dashboard.doc.items.length > 0"
-				class="h-fit w-full"
-				:verticalCompact="dashboard.doc.vertical_compact_layout"
-				:items="dashboard.doc.items"
-				:rules="dashboard.cellRules"
-			>
-				<template #item="{ index }">
-					<DashboardItem :index="index" :item="dashboard.doc.items[index]" />
-				</template>
-			</StaticGridLayout>
-		</div>
-	</div>
+	<DashboardPage :dashboard="dashboard" :breadcrumbs="crumbs" @title="setTitle" />
 </template>
