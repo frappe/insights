@@ -203,6 +203,27 @@ export type NumberComparison = {
 }
 export type NumberComparisonShow = 'change' | 'delta'
 
+/**
+ * The period a number card reads: one group-by, written as the shape that
+ * names it. A period holding both would group the card twice, so the two are
+ * a union rather than two optional keys.
+ */
+export type NumberPeriod = {
+	/** Fixed anchor for a card that must not move with today. Defaults to today. */
+	anchor?: string
+} & (
+	| {
+			/** A span the engine understands, e.g. `month to date`. */
+			span: string
+			grain?: never
+	  }
+	| {
+			/** A date grain, e.g. `month`. */
+			grain: GranularityType
+			span?: never
+	  }
+)
+
 export type NumberChartConfig = NumberFormatConfig & {
 	number_columns: Measure[]
 	number_column_options: NumberColumnOptions[]
@@ -224,14 +245,7 @@ export type NumberChartConfig = NumberFormatConfig & {
 	 * only feeds the sparkline. Before this existed a granularity on
 	 * `date_column` did what `grain` does, which is what `periodOf` reads.
 	 */
-	window?: {
-		/** A span the engine understands, e.g. `month to date`. */
-		span?: string
-		/** A date grain, e.g. `month`. Mutually exclusive with `span`. */
-		grain?: GranularityType
-		/** Fixed anchor for a card that must not move with today. Defaults to today. */
-		anchor?: string
-	}
+	window?: NumberPeriod
 	/**
 	 * How every value printed, before `number_format` said it for every chart
 	 * type. The forms no longer write these. The resolver reads them as the

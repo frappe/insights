@@ -13,6 +13,7 @@ import {
 	periodOfChoice,
 	windowChoiceGroups,
 	windowUnitLabel,
+	type WindowSpan,
 } from '../window'
 
 // The period the whole card reads. It sits on the chart, not on a value: a card
@@ -52,20 +53,19 @@ function setChoice(value: unknown) {
 	period.value = next && anchor ? { ...next, anchor } : next
 }
 
+// Written whole, the way `setChoice` writes it: a period names one shape, and
+// the anchor is the only thing that crosses from the one it replaces.
+function setSpan(span: WindowSpan) {
+	const anchor = period.value?.anchor
+	period.value = { span: buildWindowSpan(span), ...(anchor ? { anchor } : {}) }
+}
+
 function setCount(count: any) {
-	if (!span.value) return
-	period.value = {
-		...period.value,
-		span: buildWindowSpan({ ...span.value, count: Number(count) || 1 }),
-	}
+	if (span.value) setSpan({ ...span.value, count: Number(count) || 1 })
 }
 
 function setIncludeCurrent(includeCurrent: boolean) {
-	if (!span.value) return
-	period.value = {
-		...period.value,
-		span: buildWindowSpan({ ...span.value, includeCurrent }),
-	}
+	if (span.value) setSpan({ ...span.value, includeCurrent })
 }
 </script>
 
