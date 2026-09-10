@@ -36,7 +36,6 @@ from insights.insights.doctype.insights_chart_v3.chart_query import (
 )
 from insights.insights.doctype.insights_chart_v3.record_link import record_links
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import get_columns_from_schema
-from insights.permission_user import permission_user, permission_user_for
 
 RECORDS = "records"
 BREAKDOWN = "breakdown"
@@ -162,8 +161,7 @@ def drill_dimensions(chart, operations: list[dict] | None = None) -> list[dict]:
     if index is None:
         return []
 
-    with permission_user(permission_user_for(chart)):
-        return _dimensions_on(_surface(chart, operations, index))
+    return _dimensions_on(_surface(chart, operations, index))
 
 
 def drill_data(
@@ -189,27 +187,26 @@ def drill_data(
     step = operations[index]
     sliced = operations[:index]
 
-    with permission_user(permission_user_for(chart)):
-        surface = _surface(chart, operations, index)
+    surface = _surface(chart, operations, index)
 
-        last = drill_stack[-1]
-        action = _action(last)
-        segment = [*sliced, _filter_group(_segment_filters(drill_stack, step, surface))]
-        page_size = PAGE_SIZE
-        breakdown = None
-        if action["type"] == BREAKDOWN:
-            breakdown = _breakdown(chart, segment, action, step, surface, adhoc_filters)
-            page_size = BREAKDOWN_SIZE
+    last = drill_stack[-1]
+    action = _action(last)
+    segment = [*sliced, _filter_group(_segment_filters(drill_stack, step, surface))]
+    page_size = PAGE_SIZE
+    breakdown = None
+    if action["type"] == BREAKDOWN:
+        breakdown = _breakdown(chart, segment, action, step, surface, adhoc_filters)
+        page_size = BREAKDOWN_SIZE
 
-        tail = breakdown["operations"] if breakdown else _records_order(_clicked(last), step, surface)
-        drilled = [*segment, *tail]
-        query = chart.get_query(operations=drilled)
-        # a level is fetched once and then kept by the dialog for as long as it
-        # is open, so back and crumb pops never come here. What does come here
-        # is a viewer asking what a number is made of right now
-        result = query.execute(adhoc_filters=adhoc_filters, page_size=page_size, force=True)
-        # the dialog shows one page and says so: "100 of 1,240" needs the 1,240
-        total_row_count = query.count_rows(adhoc_filters=adhoc_filters)
+    tail = breakdown["operations"] if breakdown else _records_order(_clicked(last), step, surface)
+    drilled = [*segment, *tail]
+    query = chart.get_query(operations=drilled)
+    # a level is fetched once and then kept by the dialog for as long as it
+    # is open, so back and crumb pops never come here. What does come here
+    # is a viewer asking what a number is made of right now
+    result = query.execute(adhoc_filters=adhoc_filters, page_size=page_size, force=True)
+    # the dialog shows one page and says so: "100 of 1,240" needs the 1,240
+    total_row_count = query.count_rows(adhoc_filters=adhoc_filters)
 
     ordered = bool(breakdown and breakdown["ordered"])
 

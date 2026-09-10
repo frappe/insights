@@ -47,13 +47,3 @@ def permission_user(user: str):
         yield user
     finally:
         frappe.local.insights_permission_user = previous
-
-
-def permission_user_for(doc) -> str:
-    """The user a stored chart's executions run as.
-
-    Every reader of a chart runs it as whoever the execution already runs as:
-    the caller at the keyboard, or the user a public link or an alert already
-    named through `permission_user`. Nothing on the wire can pass a user in.
-    """
-    return get_permission_user()

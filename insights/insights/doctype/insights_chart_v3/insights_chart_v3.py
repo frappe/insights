@@ -12,7 +12,6 @@ from insights.insights.doctype.insights_chart_v3.chart_query import (
 )
 from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import route_filters
 from insights.insights.doctype.insights_query_v3.insights_query_v3 import import_query
-from insights.permission_user import permission_user, permission_user_for
 from insights.utils import deep_convert_dict_to_dict
 
 QUERY = "Insights Query v3"
@@ -135,14 +134,13 @@ class InsightsChartv3(Document):
         adhoc_filters = route_filters(dashboard_items, chart_name, filters) if chart_name else None
 
         query = chart.get_query()
-        with permission_user(permission_user_for(chart)):
-            result = query.execute(
-                force=force,
-                page=page,
-                page_size=page_size,
-                adhoc_filters=adhoc_filters,
-            )
-            sparkline = chart.get_sparkline_data(force=force, adhoc_filters=adhoc_filters)
+        result = query.execute(
+            force=force,
+            page=page,
+            page_size=page_size,
+            adhoc_filters=adhoc_filters,
+        )
+        sparkline = chart.get_sparkline_data(force=force, adhoc_filters=adhoc_filters)
 
         if sparkline:
             result["sparkline"] = sparkline
