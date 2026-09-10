@@ -240,6 +240,40 @@ describe('the comparison', () => {
 		expect(grain.deltaCaption).toBe('vs previous month')
 	})
 
+	it('holds each reading against the window its own question asked for', () => {
+		// The one case counting back from the end cannot answer: three windows
+		// come back oldest first, and both readings would have read the middle
+		// one. The server names the row, so the year-back reading reads the
+		// year-back row.
+		const cards = cardsOf({
+			values: [
+				{ name: 'Revenue', readings: [100, 200, 300], comparison: previousPeriod },
+				{ name: 'Profit', readings: [100, 200, 300], comparison: { source: 'last year' } },
+			],
+			period: { name: 'created_at', type: 'Datetime' },
+			window: { span: 'month to date' },
+			comparisonRows: { previous: 1, 'last year': 0 },
+		})
+
+		expect(cards[0].delta).toBe(50)
+		expect(cards[0].deltaCaption).toBe('vs same period last month')
+		expect(cards[1].delta).toBe(200)
+		expect(cards[1].deltaCaption).toBe('vs same period last year')
+	})
+
+	it('says what it would have compared against when that window came back empty', () => {
+		// The question stands — the card asked it and the server ran it — so the
+		// caption prints with no figure in front of it.
+		const card = cardsOf({
+			values: [{ name: 'Revenue', readings: [300], comparison: previousPeriod }],
+			period: { name: 'created_at', type: 'Datetime' },
+			window: { span: 'month to date' },
+			comparisonRows: { previous: null },
+		})[0]
+		expect(card.delta).toBeNull()
+		expect(card.deltaCaption).toBe('vs same period last month')
+	})
+
 	it('prints no delta for a question the period cannot answer', () => {
 		// A grain cannot name the window a year back, so the card says nothing
 		// rather than printing the period before this one under that caption.

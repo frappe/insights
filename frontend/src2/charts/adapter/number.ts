@@ -11,7 +11,7 @@ import type {
 } from '../../types/chart.types'
 import type { Dimension, Measure, QueryResultRow } from '../../types/query.types'
 import { numberFormatOf } from '../number_format'
-import { periodComparison, periodOf, windowShiftLabel } from '../window'
+import { LAST_YEAR, periodOf, previousWindowShift, windowShiftLabel } from '../window'
 import NumberCards from './NumberCards.vue'
 import type { ChartAdapterInput, ChartFiller } from './types'
 
@@ -46,13 +46,16 @@ export function adaptNumberChart(input: ChartAdapterInput): ChartFiller | undefi
 	// the other types wear on their chrome are drawn inside them.
 	const rows = input.result.rows || []
 	// Every reading is the newest one, so the newest row is the row behind every
-	// card — a `previous` comparison reads the one before it.
+	// card. Which row a comparison reads is the server's answer, not a count
+	// back from here — see `comparisonNumber`.
 	const current = rows[rows.length - 1]
 
 	// A dashboard cell names the one reading it draws. A surface that names none
 	// — the workbook editor — previews them all.
 	const drawn = input.column ? [input.column] : numberReadings(config)
-	const cards = drawn.map((column) => cardFor(config, rows, column, input.sparklineResult?.rows))
+	const cards = drawn.map((column) =>
+		cardFor(config, rows, column, input.comparisonRows, input.sparklineResult?.rows),
+	)
 
 	// A surface that names no reading gets the cards at the size a cell gives
 	// them, so the preview is what the dashboard draws and not a guess at it.
@@ -105,13 +108,14 @@ function cardFor(
 	config: NumberChartConfig,
 	rows: QueryResultRow[],
 	column: string,
+	comparisonRows?: Record<string, number | null>,
 	series?: QueryResultRow[],
 ): NumberCardEntry {
 	const index = readingIndex(config, column)
 	const measure = (config.number_columns || [])[index]
 	const height = numberCardHeight(config, column)
 	if (!measure) return { column, title: column, value: null, missing: true, height }
-	return { ...readingOf(config, rows, measure, index, series), height }
+	return { ...readingOf(config, rows, measure, index, comparisonRows, series), height }
 }
 
 function readingOf(
@@ -119,6 +123,7 @@ function readingOf(
 	rows: QueryResultRow[],
 	measure: Measure,
 	index: number,
+	comparisonRows?: Record<string, number | null>,
 	series?: QueryResultRow[],
 ): NumberCardEntry {
 	const column = measure.measure_name
@@ -154,7 +159,7 @@ function readingOf(
 	if (aim !== null) card.target = aim
 
 	if (comparison) {
-		const against = comparisonNumber(comparison, config, rows, readings)
+		const against = comparisonNumber(comparison, rows, readings, comparisonRows)
 		if (against !== undefined) {
 			const show = comparison.show ?? 'change'
 			if (show === 'delta') {
@@ -224,9 +229,9 @@ function targetNumber(
  */
 function comparisonNumber(
 	comparison: NumberComparison,
-	config: NumberChartConfig,
 	rows: QueryResultRow[],
 	readings: (number | null)[],
+	comparisonRows?: Record<string, number | null>,
 ): number | null | undefined {
 	if (comparison.source === 'constant') {
 		return typeof comparison.value === 'number' ? comparison.value : undefined
@@ -236,14 +241,18 @@ function comparisonNumber(
 		if (!column) return undefined
 		return toNumber(rows[rows.length - 1]?.[column])
 	}
-	// A period the question cannot be put to holds no answer, so the card prints
-	// no delta rather than a figure that answers a different one.
-	if (!periodComparison(comparison, periodOf(config))) return undefined
-	// The reading before last, which is where both fetches land it: the earlier
-	// window the engine was asked for, or the period before the newest one. A
-	// card with one reading still says what it would have compared against, it
-	// just has no figure to print in front of it.
-	return readings[readings.length - 2] ?? null
+	// The server names the row each question is answered from. Counting back
+	// from the end cannot: two readings asking different questions read
+	// different rows, one stretch per question comes back oldest first, and a
+	// stretch with no data comes back not at all.
+	//
+	// A period the question cannot be put to names no row at all, so the card
+	// prints no delta rather than a figure that answers a different one. A
+	// question that was asked and came back empty names `null`: the card still
+	// says what it would have compared against, with no figure in front of it.
+	const row = comparisonRows?.[comparison.source]
+	if (row === undefined) return undefined
+	return row === null ? null : readings[row] ?? null
 }
 
 /**
@@ -274,12 +283,18 @@ export function defaultComparisonLabel(
 		return __('vs target')
 	}
 
-	// Worded by the fetch, because that is what the figure came from: a shifted
-	// window is named by the shift, and a grain's row before the last one by the
-	// grain it was grouped by.
-	const fetch = periodComparison(comparison, periodOf(config))
-	if (!fetch) return undefined
-	return fetch.shift ? windowShiftLabel(fetch.shift) : previousLabel(config)
+	// Worded by the period the config holds, not by the row the server named: the
+	// form prints this as the caption's placeholder before a card has ever run.
+	// A shifted window is named by the shift, and a grain's row before the last
+	// one by the grain it was grouped by.
+	const period = periodOf(config)
+	if (comparison.source === 'last year') {
+		return period?.span ? windowShiftLabel(LAST_YEAR) : undefined
+	}
+	if (comparison.source !== 'previous') return undefined
+
+	const shift = previousWindowShift(period?.span)
+	return shift ? windowShiftLabel(shift) : previousLabel(config)
 }
 
 /**

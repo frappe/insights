@@ -77,6 +77,7 @@ const filler = computed(() => {
 		result: result.value,
 		recordLinks: props.chart.recordLinks,
 		sparklineResult: props.chart.sparklineResult,
+		comparisonRows: props.chart.comparisonRows,
 		title: props.title,
 		column: props.column,
 		readonly: props.readonly,

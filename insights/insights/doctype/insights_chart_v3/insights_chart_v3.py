@@ -4,14 +4,19 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from frappe.utils import getdate
 
 from insights.insights.doctype.insights_chart_v3.chart_query import (
+    comparison_sources,
+    comparison_timespans,
     config_errors,
     derive_operations,
+    period_column,
     sparkline_operations,
 )
 from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import route_filters
 from insights.insights.doctype.insights_query_v3.insights_query_v3 import import_query
+from insights.insights.query_builders.sql_functions import resolve_timespan
 from insights.utils import deep_convert_dict_to_dict
 
 QUERY = "Insights Query v3"
@@ -144,7 +149,46 @@ class InsightsChartv3(Document):
 
         if sparkline:
             result["sparkline"] = sparkline
+        if rows := chart.comparison_rows(result["rows"]):
+            result["comparison_rows"] = rows
         return result
+
+    def comparison_rows(self, rows: list[dict]) -> dict[str, int | None]:
+        """Which row answers each comparison, keyed by the source that asks it.
+
+        A reading is measured against a row of its own, so two readings asking
+        different questions read different rows. Counting back from the end
+        cannot say which is which: a card fetches one stretch per distinct
+        comparison, they come back oldest first, and a stretch with no data
+        comes back not at all.
+
+        Answered here because the answer is a date. A span carries none until
+        the query runs, and the same span resolved a second time in the browser
+        would be resolved against a different clock and a different fiscal
+        calendar.
+
+        A grain period fetches nothing beside itself — every period it has is
+        already a row — so the period before this one is the row before the
+        last, and that is the whole of what it can answer.
+
+        A source the card asked and got no row for is named with `None`: the
+        question stands and the card prints it with no figure. A source that is
+        missing is one this period cannot be asked at all.
+        """
+        if self.chart_type != "Number" or not rows:
+            return {}
+
+        config = frappe.parse_json(self.config or "{}")
+        timespans = comparison_timespans(self.chart_type, config)
+        if not timespans:
+            if "previous" not in comparison_sources(self.chart_type, config):
+                return {}
+            return {"previous": len(rows) - 2 if len(rows) > 1 else None}
+
+        column = period_column(self.chart_type, config)
+        starts = {getdate(row[column]): index for index, row in enumerate(rows) if row.get(column)}
+
+        return {source: starts.get(resolve_timespan(timespan)[0]) for source, timespan in timespans.items()}
 
     def get_sparkline_data(self, force: bool = False, adhoc_filters: dict | None = None):
         """The series behind this card's sparkline, or nothing when it draws none.

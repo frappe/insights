@@ -100,6 +100,9 @@ def get_chart_data(
         # a reader will see
         **({"record_links": links} if (links := record_links(operations, result["columns"])) else {}),
         **({"sparkline": sparkline} if sparkline else {}),
+        # which row answers each reading's comparison, so the card reads the
+        # window it asked for rather than counting back from the end
+        **({"comparison_rows": rows} if (rows := chart.comparison_rows(result["rows"])) else {}),
         # what a segment click may break the card down by
         "drill": {"dimensions": drill_dimensions(chart, operations)},
         "time_taken": result["time_taken"],

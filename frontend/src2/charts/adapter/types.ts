@@ -20,6 +20,14 @@ export type ChartAdapterInput = {
 	 */
 	sparklineResult?: QueryResult
 	/**
+	 * Which row answers each of a number card's comparisons, keyed by the source
+	 * that asks it. The server names them: a card fetches one stretch per
+	 * distinct comparison, and which row is which is a question of dates the
+	 * browser never sees. `null` names a question the card asked and got no row
+	 * for. A source left out is one the card's period cannot be asked at all.
+	 */
+	comparisonRows?: Record<string, number | null>
+	/**
 	 * Which result columns name a desk document, when the rows are documents.
 	 * Only a filler that draws the values themselves — the grid — has anywhere
 	 * to put them.

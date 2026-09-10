@@ -19,6 +19,7 @@ import unittest
 from frappe import _
 
 from insights.insights.doctype.insights_chart_v3.chart_query import (
+    comparison_timespans,
     config_errors,
     derive_operations,
     sparkline_operations,
@@ -431,6 +432,35 @@ class TestChartDerivation(unittest.TestCase):
 
         operations = derive_operations("Number", "sales-invoice-lines", config)
         self.assertEqual(len(operations[1]["filters"]), 2)
+
+    def test_each_comparison_names_the_stretch_it_reads(self):
+        """Two readings asking different questions fetch two stretches, and the
+        source that asked is what names each — the caller matches a row to a
+        question by name, never by counting back from the end."""
+        config = _windowed_config(compare="previous")
+        config["number_columns"].append(
+            {
+                "aggregation": "sum",
+                "column_name": "line_cogs",
+                "data_type": "Decimal",
+                "measure_name": "COGS MTD",
+            }
+        )
+        config["number_column_options"].append({"comparison": {"source": "last year"}})
+
+        self.assertEqual(
+            comparison_timespans("Number", config),
+            {
+                "previous": {"span": "month to date", "shift": {"unit": "month", "count": -1}},
+                "last year": {"span": "month to date", "shift": {"unit": "year", "count": -1}},
+            },
+        )
+
+    def test_a_grain_period_names_no_stretch_beside_itself(self):
+        """It filters nothing, so every period it has is already a row."""
+        config = _windowed_config(compare="previous")
+        config["window"] = {"grain": "month"}
+        self.assertEqual(comparison_timespans("Number", config), {})
 
     def test_a_name_naming_two_measures_is_reported(self):
         """Every reading, target and comparison is read back off one result by

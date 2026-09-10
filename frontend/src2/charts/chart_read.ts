@@ -67,6 +67,10 @@ type ChartDataResponse = {
 	// rows because a menu that has to ask first puts a round trip in the one place
 	// latency is felt — between the click and the menu.
 	drill?: { dimensions: DrillDimension[] }
+	// which row answers each of a number card's comparisons, keyed by the source
+	// that asks it. A row named `null` was asked for and came back empty. A
+	// source left out is one the card's period cannot be asked at all
+	comparison_rows?: Record<string, number | null>
 	// which result columns name a desk document, when the rows are documents. A
 	// grid draws them as links. Every other chart type ignores them.
 	record_links?: RecordLinks
@@ -143,6 +147,9 @@ export function makeChartRead(
 	const drillDimensions = ref<DrillDimension[]>([])
 	// the columns of these rows that name a document, when any of them do
 	const recordLinks = ref<RecordLinks>()
+	// which row a number card's comparison is measured against, as the server
+	// named it. Only the server can say: a span is resolved while the query runs
+	const comparisonRows = ref<Record<string, number | null>>()
 
 	const ready = ref(false)
 	const executing = ref(true)
@@ -238,6 +245,7 @@ export function makeChartRead(
 			routedFilters.value = response.adhoc_filters
 			drillDimensions.value = response.drill?.dimensions || []
 			recordLinks.value = response.record_links
+			comparisonRows.value = response.comparison_rows
 			executedAt.value = result.value.lastExecutedAt
 			ready.value = true
 		} catch (error) {
@@ -279,6 +287,7 @@ export function makeChartRead(
 		configErrors,
 		drillDimensions,
 		recordLinks,
+		comparisonRows,
 		drillSubject,
 
 		ready,

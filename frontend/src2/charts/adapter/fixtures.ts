@@ -550,6 +550,12 @@ export type NumberChartSpec = {
 	sparklineSeries?: Record<string, (number | null)[]>
 	/** A span the card reads, for a card grouped by window rather than by grain. */
 	window?: { span?: string; grain?: string }
+	/**
+	 * Which row answers each comparison, as the server names them. Left out, the
+	 * server's own rule stands in for the card that asks one question: the row
+	 * before the last one. A card asking two must name them.
+	 */
+	comparisonRows?: Record<string, number | null>
 	/** A metric where a fall is the good news, e.g. churn. */
 	negativeIsBetter?: boolean
 	/** What the Chart sets for every value that sets nothing of its own. */
@@ -609,6 +615,7 @@ export function numberChart(spec: NumberChartSpec): ChartAdapterInput {
 		title: spec.title,
 		...(spec.column ? { column: spec.column } : {}),
 		config,
+		comparisonRows: spec.comparisonRows ?? comparisonRowsOf(spec, periods),
 		result: resultWith(
 			[
 				...(period ? [columnOfDimension(period)] : []),
@@ -623,6 +630,35 @@ export function numberChart(spec: NumberChartSpec): ChartAdapterInput {
 			? { sparklineResult: sparklineResultOf(spec.sparklineSeries, period) }
 			: {}),
 	}
+}
+
+/**
+ * Which row each comparison reads, the way the server answers it when the card
+ * asks one question: it fetches one stretch per distinct comparison, they come
+ * back oldest first, so the one comparison window is the row before the last.
+ * A card with a span may be asked a year back. A grain card cannot be.
+ *
+ * Two different questions fetch two stretches and which is older depends on
+ * dates the fixture never resolves, so that pairing has to be named.
+ */
+function comparisonRowsOf(spec: NumberChartSpec, periods: number): Record<string, number | null> {
+	const asked = new Set(
+		spec.values.map((value) => value.comparison?.source).filter(Boolean) as string[],
+	)
+	const answerable = (spec.window?.span ? ['previous', 'last year'] : ['previous']).filter(
+		(source) => asked.has(source),
+	)
+
+	if (answerable.length > 1) {
+		throw new Error(
+			`A card asking ${answerable.join(
+				' and ',
+			)} reads a row per question: name comparisonRows`,
+		)
+	}
+
+	const before = periods > 1 ? periods - 2 : null
+	return Object.fromEntries(answerable.map((source) => [source, before]))
 }
 
 /** The second run, as the server returns it: the readings, oldest first. */

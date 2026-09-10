@@ -356,9 +356,10 @@ def _add_number_operation(operations: list[dict], config: dict):
 def _add_window_operations(operations: list[dict], config: dict, window: dict, date_column: dict):
     """One row per window, oldest first.
 
-    The card reads the last row, and the row before it is what the reading is
-    compared with. Sorting the windows is what makes that true, so nobody has to
-    write a measure per window or know which row a card reads.
+    The card reads the last row. Which of the earlier rows a reading is measured
+    against is answered by `comparison_timespans` and not by counting back, so
+    two readings comparing against different windows each read their own — and
+    nobody has to write a measure per window.
 
     The group-by is the window itself, not the unit its span names. A span of
     several periods grouped by its unit comes back as one row per period, and
@@ -428,6 +429,57 @@ def _span_periods(span: str) -> int:
     return max(1, count) + (1 if include_current else 0)
 
 
+def comparison_sources(chart_type: str, config: dict | None) -> list[str]:
+    """The comparisons this card's readings ask, once each, in the order asked."""
+    if chart_type != "Number":
+        return []
+
+    config = _config_for_derivation(config, chart_type)
+    sources = []
+    for options in config.get("number_column_options") or []:
+        source = ((options or {}).get("comparison") or {}).get("source")
+        if source and source not in sources:
+            sources.append(source)
+    return sources
+
+
+def comparison_timespans(chart_type: str, config: dict | None) -> dict[str, dict]:
+    """The stretch each comparison reads, keyed by the source that asks for it.
+
+    A card fetches one stretch per distinct comparison and gets one row each,
+    which is what a reading is measured against. Which row is which is a
+    question of dates, and dates are what a span does not carry, so the caller
+    resolves these against the rows rather than the browser counting back from
+    the end — a stretch with no data returns no row at all.
+
+    Empty for a grain period: it filters nothing and every period it has is
+    already a row.
+    """
+    if chart_type != "Number":
+        return {}
+
+    config = _config_for_derivation(config, chart_type)
+    window = _period(config)
+    if not window.get("span"):
+        return {}
+
+    timespans = {}
+    for source in comparison_sources(chart_type, config):
+        shift = _comparison_shift({"source": source}, window["span"])
+        if shift:
+            timespans[source] = _timespan(window, shift)
+
+    return timespans
+
+
+def period_column(chart_type: str, config: dict | None) -> str:
+    """The result column a card's periods come back under."""
+    if chart_type != "Number":
+        return ""
+    config = _config_for_derivation(config, chart_type)
+    return _result_column(config.get("date_column") or {})
+
+
 def _comparison_shifts(config: dict, span: str) -> list[dict]:
     """The windows the comparisons ask for, beside the configured one.
 
@@ -441,8 +493,8 @@ def _comparison_shifts(config: dict, span: str) -> list[dict]:
     shift twice is one filter and one row.
     """
     shifts = []
-    for options in config.get("number_column_options") or []:
-        shift = _comparison_shift((options or {}).get("comparison") or {}, span)
+    for source in comparison_sources("Number", config):
+        shift = _comparison_shift({"source": source}, span)
         if shift and shift not in shifts:
             shifts.append(shift)
 

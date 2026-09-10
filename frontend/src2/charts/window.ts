@@ -4,7 +4,8 @@
 // A period is written as a span or as a grain, never both. A span filters to a
 // stretch of the calendar and groups by which stretch a row fell in. A grain
 // filters nothing and groups by the grain. Both give one row per stretch with
-// the newest last, which is why one comparison — the row before — serves both.
+// the newest last, so the card reads the last row either way — but which of the
+// earlier rows a comparison reads is the server's word, not this module's.
 //
 // One module owns the vocabulary. A span is a string the server's `get_window`
 // parses, and nothing outside this file builds one — a span it cannot parse
@@ -15,7 +16,7 @@ import dayjs from 'dayjs'
 import type { GranularityType } from '../helpers/constants'
 import { getFormattedDate } from '../query/helpers'
 import { __ } from '../translation'
-import type { ChartConfig, NumberChartConfig, NumberComparison } from '../types/chart.types'
+import type { ChartConfig, NumberChartConfig } from '../types/chart.types'
 import type { QueryResultRow } from '../types/query.types'
 
 export const WINDOW_UNITS = ['day', 'week', 'month', 'quarter', 'year', 'fiscal year'] as const
@@ -69,9 +70,13 @@ export function parseWindowSpan(span?: string): WindowSpan | undefined {
 
 	if (rest.startsWith('last ')) {
 		const words = rest.slice('last '.length).split(' ')
-		const count = Number(words[0])
-		const unit = toUnit(words.slice(1).join(' '))
-		if (!unit || !count || count < 1) return undefined
+		// "last month" is a span an author may write by hand and the server reads
+		// as one period. Left unparsed here, the card fetched a window its caption
+		// could not name.
+		const counted = Number(words[0]) ? Number(words[0]) : undefined
+		const count = counted ?? 1
+		const unit = toUnit((counted ? words.slice(1) : words).join(' '))
+		if (!unit || count < 1) return undefined
 		return { shape: 'last', unit, count, ...(includeCurrent ? { includeCurrent } : {}) }
 	}
 
@@ -92,37 +97,18 @@ export function windowPeriods(span: WindowSpan): number {
 /**
  * The shift that names the window before this one: the same span, moved back by
  * its own length, so the two windows meet and never overlap.
+ *
+ * Only the caption reads this. Which row a comparison is answered from is the
+ * server's word — it resolves the span while the query runs, which is the one
+ * place the dates exist — but a card's caption is printed as the form's
+ * placeholder before the card has ever run, so it is worded from the config.
+ * `_comparison_shift` in `chart_query.py` is the same derivation, and the two
+ * have to agree on every span `get_window` accepts.
  */
 export function previousWindowShift(span?: string): WindowShift | undefined {
 	const parsed = parseWindowSpan(span)
 	if (!parsed) return undefined
 	return { unit: parsed.unit, count: -windowPeriods(parsed) }
-}
-
-/**
- * How the card's period answers the question a period comparison asks, or
- * nothing when it cannot answer it.
- *
- * The comparison states the question — the period before this one, or the same
- * period a year back — and the period is what fetches it. A span reaches an
- * earlier period by shifting its own span, so it names the shift the engine has
- * to fetch beside the window. A grain filters nothing and already returns every
- * period it has, so the row before the last one is the answer and no shift is
- * needed. A year back is a span anchored a year earlier, which a grain cannot
- * name: it would have to count rows back, and a gap in the data would make it
- * count the wrong one.
- */
-export function periodComparison(
-	comparison: NumberComparison,
-	period?: NumberPeriod,
-): { shift?: WindowShift } | undefined {
-	if (comparison.source === 'last year') {
-		return period?.span ? { shift: { ...LAST_YEAR } } : undefined
-	}
-	if (comparison.source !== 'previous') return undefined
-
-	const shift = previousWindowShift(period?.span)
-	return shift ? { shift } : {}
 }
 
 // what a card offers, and what each choice writes
