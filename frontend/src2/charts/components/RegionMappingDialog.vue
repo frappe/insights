@@ -238,6 +238,7 @@ function getOptions(region: Region) {
 
 									<div class="w-56 flex-shrink-0">
 										<Combobox
+											class="w-full"
 											placeholder="Select region..."
 											:modelValue="localMappings[region.user_region] || ''"
 											@update:modelValue="
@@ -279,6 +280,7 @@ function getOptions(region: Region) {
 
 									<div class="w-56 flex-shrink-0">
 										<Combobox
+											class="w-full"
 											:modelValue="mapping.mapped_to"
 											@update:modelValue="
 												updateMapping(mapping.user_region, $event)

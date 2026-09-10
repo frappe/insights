@@ -91,6 +91,7 @@ const generalAccess = computed({
 					<div class="flex gap-2">
 						<div class="flex-1">
 							<Combobox
+								class="w-full"
 								placeholder="Select an option"
 								v-model="generalAccess"
 								:options="[

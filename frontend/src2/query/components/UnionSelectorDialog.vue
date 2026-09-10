@@ -126,6 +126,7 @@ function reset() {
 							__('Select Table')
 						}}</label>
 						<Combobox
+							class="w-full"
 							:placeholder="__('Table')"
 							:modelValue="selectedTableValue"
 							@update:selectedOption="onSelectTable"

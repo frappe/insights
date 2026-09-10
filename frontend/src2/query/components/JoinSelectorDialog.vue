@@ -259,6 +259,7 @@ function reset() {
 					<div class="flex flex-col gap-1.5">
 						<label class="block text-xs text-ink-gray-5">{{ __('Right Table') }}</label>
 						<Combobox
+							class="w-full"
 							:placeholder="__('Table')"
 							:open-on-focus="true"
 							v-model="selectedTable"
@@ -280,6 +281,7 @@ function reset() {
 										__('Left Column')
 									}}</label>
 									<Combobox
+										class="w-full"
 										:placeholder="__('Column')"
 										:options="query.result.columnOptions"
 										:modelValue="join.join_condition.left_column.column_name"
@@ -294,6 +296,7 @@ function reset() {
 										__('Right Column')
 									}}</label>
 									<Combobox
+										class="w-full"
 										:placeholder="__('Column')"
 										:loading="
 											rightTableColumnOptions.loading ||
