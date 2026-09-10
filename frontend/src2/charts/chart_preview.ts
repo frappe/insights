@@ -12,7 +12,6 @@ import { stableStringify } from '../helpers'
 import type { Chart } from './chart'
 import {
 	cachedChartRead,
-	chartReadKey,
 	makeChartRead,
 	type ChartReadDoc,
 	type ChartReadSurface,
@@ -26,9 +25,7 @@ import { fetchAuthoringDrillData } from './drill/drill_api'
 // cached in the store beside the saved feed's, so a chart that goes stale
 // reaches every read of it.
 export default function useChartPreview(chart: Chart, surface?: ChartReadSurface) {
-	return cachedChartRead(chartReadKey('preview', chart, surface), chart, () =>
-		makeChartPreview(chart, surface),
-	)
+	return cachedChartRead('preview', chart, surface, () => makeChartPreview(chart, surface))
 }
 
 function makeChartPreview(chart: Chart, surface?: ChartReadSurface) {

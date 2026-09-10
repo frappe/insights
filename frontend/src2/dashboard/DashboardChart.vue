@@ -35,7 +35,11 @@ if (props.item.chart) {
 	provide('chartName', props.item.chart)
 
 	waitUntil(() => Boolean(chart.value?.isloaded)).then(() => {
-		if (!read.value?.result.executedSQL) {
+		// A read this cell is the first to draw, or one the chart went stale under
+		// while nothing was drawing it. `invalidateChart` marks rather than runs,
+		// so the mark is collected here — by the card that has somewhere to put
+		// the rows.
+		if (!read.value?.ready || read.value.stale) {
 			dashboard.refreshChart(props.item.chart)
 		}
 

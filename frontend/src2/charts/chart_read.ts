@@ -93,7 +93,7 @@ export type ChartReadSurface = {
 }
 
 /** A read is one chart, as one feed's surface reads it. */
-export function chartReadKey(feed: ChartFeedName, chart: Chart, surface?: ChartReadSurface) {
+function chartReadKey(feed: ChartFeedName, chart: Chart, surface?: ChartReadSurface) {
 	return `${feed}:${surface?.id || ''}:${chart.doc.name}`
 }
 
@@ -152,6 +152,11 @@ export function makeChartRead(
 	const comparisonRows = ref<Record<string, number | null>>()
 
 	const ready = ref(false)
+	// the chart behind this read changed, so the rows on screen answer a question
+	// nobody is asking any more. It is a mark and not a run: a read whose surface
+	// is unmounted has nobody waiting for rows, and the next load runs it whether
+	// or not the request it would send has changed.
+	const stale = ref(false)
 	const executing = ref(true)
 	const failed = ref(false)
 	const serverBusy = ref(false)
@@ -170,10 +175,21 @@ export function makeChartRead(
 	// the question the rows on screen answer, so the same one is not asked twice
 	let lastRequestKey: string | undefined
 
+	// The rows and what is read off them are one picture, so a load that draws
+	// none leaves none: a comparison pairing kept past its rows names a row that
+	// is no longer there.
+	function clearPicture() {
+		result.value = { ...EMPTY_RESULT }
+		sparklineResult.value = undefined
+		comparisonRows.value = undefined
+	}
+
 	async function load(force = false) {
 		const requestKey = feed.requestKey?.(filterContext())
-		if (!force && requestKey !== undefined && requestKey === lastRequestKey) return
+		if (!force && !stale.value && requestKey !== undefined && requestKey === lastRequestKey)
+			return
 		lastRequestKey = requestKey
+		stale.value = false
 
 		executing.value = true
 		failed.value = false
@@ -259,8 +275,7 @@ export function makeChartRead(
 			serverBusy.value = isServerBusyError(error)
 			failure.value = serverBusy.value ? '' : getErrorMessage(error)
 			failed.value = true
-			result.value = { ...EMPTY_RESULT }
-			sparklineResult.value = undefined
+			clearPicture()
 		} finally {
 			if (!isStale()) executing.value = false
 		}
@@ -291,6 +306,7 @@ export function makeChartRead(
 		drillSubject,
 
 		ready,
+		stale,
 		executing,
 		failed,
 		serverBusy,
@@ -312,8 +328,20 @@ export type ChartRead = ReturnType<typeof makeChartRead>
 // reads.
 const reads = new Map<string, { chart: string; read: ChartRead }>()
 
-/** The read behind one key, made on the first surface that asks for it. */
-export function cachedChartRead(key: string, chart: Chart, make: () => ChartRead): ChartRead {
+/**
+ * The read behind one feed's surface, made on the first caller that asks for it.
+ *
+ * The key is built here rather than passed in: it is what tells one read from
+ * another, and a caller free to hand over a key that disagrees with the chart
+ * beside it can file a read where nothing invalidating that chart will find it.
+ */
+export function cachedChartRead(
+	feed: ChartFeedName,
+	chart: Chart,
+	surface: ChartReadSurface | undefined,
+	make: () => ChartRead,
+): ChartRead {
+	const key = chartReadKey(feed, chart, surface)
 	const existing = reads.get(key)
 	if (existing) return existing.read
 
@@ -323,15 +351,21 @@ export function cachedChartRead(key: string, chart: Chart, make: () => ChartRead
 }
 
 /**
- * Run every read of one chart again.
+ * Mark every read of one chart stale.
  *
  * Chart identity is what goes stale: a chart edited in the builder is the same
  * chart the dashboard beside it draws, and that read asks the same question it
- * asked before, so nothing short of a forced load reaches the server.
+ * asked before, so a plain load would be dropped as a repeat. The mark is what
+ * lets it through.
+ *
+ * Marked and not run, because the reads live longer than the surfaces that made
+ * them: running every one puts a query per dashboard nobody is looking at on
+ * the server, for rows that will have gone stale again by the time a card draws
+ * them. A surface that mounts loads what it draws, and finds the mark waiting.
  */
 export function invalidateChart(chart_name: string) {
 	reads.forEach((entry) => {
-		if (entry.chart === chart_name) entry.read.load(true)
+		if (entry.chart === chart_name) entry.read.stale = true
 	})
 }
 
@@ -345,9 +379,7 @@ export function invalidateChart(chart_name: string) {
  * a level needs an authoring seat.
  */
 export function useSharedChart(chart: Chart, surface?: ChartReadSurface) {
-	return cachedChartRead(chartReadKey('saved', chart, surface), chart, () =>
-		makeSharedChart(chart, surface),
-	)
+	return cachedChartRead('saved', chart, surface, () => makeSharedChart(chart, surface))
 }
 
 function makeSharedChart(chart: Chart, surface?: ChartReadSurface) {
