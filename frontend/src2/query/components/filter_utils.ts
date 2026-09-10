@@ -58,7 +58,11 @@ export function getValueSelectorType(operator: FilterOperator, filterType: Filte
 		return operator === 'between' ? 'text' : 'number'
 	}
 	if (filterType === 'Date') {
-		return operator === 'between' ? 'date_range' : operator === 'within' ? 'relative_date' : 'date'
+		return operator === 'between'
+			? 'date_range'
+			: operator === 'within'
+			  ? 'relative_date'
+			  : 'date'
 	}
 	return 'text'
 }
@@ -67,7 +71,7 @@ export function getValueSelectorType(operator: FilterOperator, filterType: Filte
 export function isFilterApplied(
 	filterType: FilterType,
 	operator?: FilterOperator,
-	value?: FilterValue
+	value?: FilterValue,
 ) {
 	if (!operator) return false
 	if (!getValueSelectorType(operator, filterType)) return true
@@ -125,7 +129,7 @@ export function isFilterValid(filter: FilterRule, filterType: FilterType) {
 			return Boolean(
 				Array.isArray(filter.value) &&
 					filter.value.length &&
-					filter.value.every((v: any) => typeof v === 'string')
+					filter.value.every((v: any) => typeof v === 'string'),
 			)
 		} else {
 			return typeof filter.value === 'string'
@@ -142,7 +146,7 @@ export function isFilterValid(filter: FilterRule, filterType: FilterType) {
 			return Boolean(
 				Array.isArray(filter.value) &&
 					filter.value.length === 2 &&
-					filter.value.every((v: any) => typeof v === 'string')
+					filter.value.every((v: any) => typeof v === 'string'),
 			)
 		}
 	}

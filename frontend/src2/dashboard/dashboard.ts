@@ -3,7 +3,14 @@ import { numberCardRows, numberReadings } from '../charts/adapter/number'
 import useChart from '../charts/chart'
 import useChartPreview from '../charts/chart_preview'
 import { useSharedChart, type ChartReadSurface } from '../charts/chart_read'
-import { getUniqueId, safeJSONParse, showErrorToast, store, waitUntil, wheneverChanges } from '../helpers'
+import {
+	getUniqueId,
+	safeJSONParse,
+	showErrorToast,
+	store,
+	waitUntil,
+	wheneverChanges,
+} from '../helpers'
 import useDocumentResource from '../helpers/resource'
 import router from '../router'
 import session from '../session'
@@ -80,7 +87,7 @@ function makeDashboard(name: string) {
 		const maxY = getMaxY()
 		for (const chart of charts) {
 			const placed = dashboard.doc.items.some(
-				(item) => item.type === 'chart' && item.chart === chart.name
+				(item) => item.type === 'chart' && item.chart === chart.name,
 			)
 			if (placed) continue
 			dashboard.doc.items.push(...(await cellsFor(chart, maxY)))
@@ -208,9 +215,7 @@ function makeDashboard(name: string) {
 
 	function positionNewFilter(newFilter: WorkbookDashboardItem) {
 		const items = dashboard.doc.items
-		const existingFilters = items.filter(
-			(item) => item.type === 'filter' && item !== newFilter
-		)
+		const existingFilters = items.filter((item) => item.type === 'filter' && item !== newFilter)
 
 		if (existingFilters.length === 0) {
 			newFilter.layout.x = 0
@@ -222,7 +227,7 @@ function makeDashboard(name: string) {
 		const topRowFilters = existingFilters.filter((item) => item.layout.y === topRowY)
 		const rightmostX = Math.max(
 			...topRowFilters.map((item) => item.layout.x + (item.layout.w || filter_w)),
-			0
+			0,
 		)
 
 		if (rightmostX + newFilter.layout.w <= GRID_COLUMNS) {
@@ -354,9 +359,13 @@ function makeDashboard(name: string) {
 		return ranks.length ? Math.min(...ranks) : undefined
 	}
 
-	function updateFilterState(filter_name: string, operator?: FilterOperator, value?: FilterValue) {
+	function updateFilterState(
+		filter_name: string,
+		operator?: FilterOperator,
+		value?: FilterValue,
+	) {
 		const filter = dashboard.doc.items.find(
-			(item) => item.type === 'filter' && item.filter_name === filter_name
+			(item) => item.type === 'filter' && item.filter_name === filter_name,
 		)
 		if (!filter) return
 
@@ -374,13 +383,13 @@ function makeDashboard(name: string) {
 
 	function applyFilter(filter_name: string) {
 		const item = dashboard.doc.items.find(
-			(item) => item.type === 'filter' && item.filter_name === filter_name
+			(item) => item.type === 'filter' && item.filter_name === filter_name,
 		)
 		if (!item) return
 
 		const filterItem = item as WorkbookDashboardFilter
 		const filteredCharts = Object.keys(filterItem.links).filter(
-			(chart_name) => filterItem.links[chart_name]
+			(chart_name) => filterItem.links[chart_name],
 		)
 		filteredCharts.forEach((chart_name) => refreshChart(chart_name))
 	}
@@ -388,7 +397,11 @@ function makeDashboard(name: string) {
 	// The filter names itself and the server finds the column behind it. What the
 	// rest of the grid holds goes along unrouted, so the list narrows to what the
 	// other filters leave — the server leaves this filter out of its own list.
-	function getDistinctColumnValues(filter_name: string, search_term?: string, chart_name?: string) {
+	function getDistinctColumnValues(
+		filter_name: string,
+		search_term?: string,
+		chart_name?: string,
+	) {
 		return dashboard.call('get_distinct_column_values', {
 			filter_name,
 			search_term,
@@ -415,24 +428,25 @@ function makeDashboard(name: string) {
 			.then(() => dashboard.load())
 	}
 
-
 	const key = `insights:dashboard-filter-states-${name}`
 	filterStates.value = store(key, () => filterStates.value)
 
 	waitUntil(() => dashboard.isloaded).then(() => {
-		const defaultFilters = dashboard.doc.items.reduce((acc, item) => {
-			if (item.type != 'filter') return acc
-			const filterItem = item as WorkbookDashboardFilter
-			if (filterItem.default_operator && filterItem.default_value) {
-				acc[filterItem.filter_name] = {
-					operator: filterItem.default_operator,
-					value: filterItem.default_value,
+		const defaultFilters = dashboard.doc.items.reduce(
+			(acc, item) => {
+				if (item.type != 'filter') return acc
+				const filterItem = item as WorkbookDashboardFilter
+				if (filterItem.default_operator && filterItem.default_value) {
+					acc[filterItem.filter_name] = {
+						operator: filterItem.default_operator,
+						value: filterItem.default_value,
+					}
 				}
-			}
-			return acc
-		}, {} as typeof filterStates.value)
+				return acc
+			},
+			{} as typeof filterStates.value,
+		)
 		Object.assign(filterStates.value, defaultFilters)
-
 	})
 
 	return reactive({
@@ -498,13 +512,16 @@ function getDashboardResource(name: string) {
 		},
 	})
 	if (session.isLoggedIn) {
-		dashboard.onAfterLoad(() => dashboard.call('track_view').catch(() => { }))
+		dashboard.onAfterLoad(() => dashboard.call('track_view').catch(() => {}))
 	}
-	wheneverChanges(() => dashboard.doc.read_only, () => {
-		if (dashboard.doc.read_only) {
-			dashboard.autoSave = false
-		}
-	})
+	wheneverChanges(
+		() => dashboard.doc.read_only,
+		() => {
+			if (dashboard.doc.read_only) {
+				dashboard.autoSave = false
+			}
+		},
+	)
 	return dashboard
 }
 

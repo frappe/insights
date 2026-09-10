@@ -41,7 +41,9 @@ describe('a donut', () => {
 	it('caps the slices and leaves the ring to collapse the tail', () => {
 		// v2 sums everything past the cap into one slice itself. Capping here as
 		// well would collapse a tail that is already a tail.
-		expect(propsOf({ category: 'category', measure: 'revenue', maxSlices: 8 }).maxSlices).toBe(8)
+		expect(propsOf({ category: 'category', measure: 'revenue', maxSlices: 8 }).maxSlices).toBe(
+			8,
+		)
 	})
 
 	it('leaves the cap to the ring when the Chart sets none', () => {

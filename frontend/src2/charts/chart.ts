@@ -105,7 +105,7 @@ function makeChart(name: string) {
 				resetConfig()
 			}
 			ensureConfigSlots(chart.doc.config, newType)
-		}
+		},
 	)
 
 	function copyChart() {
@@ -122,7 +122,7 @@ function makeChart(name: string) {
 			deep: true,
 			capacity: 100,
 			debounce: 500,
-		}
+		},
 	)
 
 	return reactive({
@@ -182,7 +182,7 @@ function getChartResource(name: string) {
 			if (chart.doc.read_only) {
 				chart.autoSave = false
 			}
-		}
+		},
 	)
 	return chart
 }

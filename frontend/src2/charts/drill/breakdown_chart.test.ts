@@ -122,7 +122,12 @@ describe('the config a shape is drawn from', () => {
 	it('draws the axis at the grain the level was grouped by', () => {
 		const chart = breakdownChart(
 			'due_date',
-			answer({ columns: dated, rows: rows('due_date', 12), ordered: true, granularity: 'week' }),
+			answer({
+				columns: dated,
+				rows: rows('due_date', 12),
+				ordered: true,
+				granularity: 'week',
+			}),
 		)
 		expect(config(chart).x_axis.dimension).toMatchObject({
 			column_name: 'due_date',

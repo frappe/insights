@@ -521,9 +521,7 @@ export function makeDrillStack() {
 		 * a way of splitting anything further down, so the menu stops offering it
 		 * as the reader descends.
 		 */
-		pinnedColumns: computed(() =>
-			Array.from(new Set(pins.value.map((pin) => pin.column))),
-		),
+		pinnedColumns: computed(() => Array.from(new Set(pins.value.map((pin) => pin.column)))),
 		/** the crumbs, in reading order. The last one is where the reader is. */
 		crumbs,
 

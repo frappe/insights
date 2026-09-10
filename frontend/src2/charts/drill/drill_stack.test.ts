@@ -42,8 +42,7 @@ function click(
 }
 
 /** The columns a segment pins, which is what the candidate list subtracts. */
-const columnsOf = (segment: { pins: { column: string }[] }) =>
-	segment.pins.map((pin) => pin.column)
+const columnsOf = (segment: { pins: { column: string }[] }) => segment.pins.map((pin) => pin.column)
 
 describe('what a segment click pins', () => {
 	it('pins the Dimension the bar stands at, as an equality on a literal', () => {
@@ -227,9 +226,9 @@ describe('what "break down by" offers', () => {
 			axisChart({ type: 'Bar', dimension: 'status', measures: ['count'] }),
 			'count',
 		)
-		expect(breakdownCandidates(available, columnsOf(segment), []).map((d) => d.name)).not.toContain(
-			'status',
-		)
+		expect(
+			breakdownCandidates(available, columnsOf(segment), []).map((d) => d.name),
+		).not.toContain('status')
 	})
 
 	it('drops a column a level further up already fixed', () => {

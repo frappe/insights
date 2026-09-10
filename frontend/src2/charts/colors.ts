@@ -82,9 +82,9 @@ export function HexToHSV(color: HashString): { h: number; s: number; v: number }
 		max === min
 			? 0
 			: max === r
-			? (g - b) / d + (g < b ? 6 : 0)
-			: max === g
-			? (b - r) / d + 2
-			: (r - g) / d + 4
+			  ? (g - b) / d + (g < b ? 6 : 0)
+			  : max === g
+			    ? (b - r) / d + 2
+			    : (r - g) / d + 4
 	return { h: h * 60, s, v }
 }

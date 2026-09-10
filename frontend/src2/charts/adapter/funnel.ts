@@ -19,9 +19,7 @@ const VALUE = 'value'
 export function adaptFunnelChart(input: ChartAdapterInput): ChartFiller | undefined {
 	const config = input.config as FunnelChartConfig
 	const measures = (config.measures || []).filter((measure) => measure.measure_name)
-	return measures.length
-		? measuresFunnel(input, config, measures)
-		: groupedFunnel(input, config)
+	return measures.length ? measuresFunnel(input, config, measures) : groupedFunnel(input, config)
 }
 
 /** One row per stage: the shape a group-by produces, and the shape v2 reads. */

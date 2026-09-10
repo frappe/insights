@@ -51,9 +51,7 @@ describe('a funnel built from one row per stage', () => {
 	})
 
 	it('draws nothing until the Chart names both columns', () => {
-		expect(
-			adaptChart(funnelChart({ dimension: 'status', stages: lifecycle })),
-		).toBeUndefined()
+		expect(adaptChart(funnelChart({ dimension: 'status', stages: lifecycle }))).toBeUndefined()
 		expect(adaptChart(funnelChart({ measure: 'items', stages: lifecycle }))).toBeUndefined()
 	})
 })

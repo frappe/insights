@@ -75,10 +75,7 @@ export function resolveSpan(span: string, anchor?: string): [string, string] {
 
 	if (words[0] === 'current') {
 		const unit = words[1] as dayjs.ManipulateType
-		return [
-			today.startOf(unit).format(DATE_FORMAT),
-			today.endOf(unit).format(DATE_FORMAT),
-		]
+		return [today.startOf(unit).format(DATE_FORMAT), today.endOf(unit).format(DATE_FORMAT)]
 	}
 
 	// "last N days" — N whole periods, the last of them ending the day before
@@ -104,7 +101,8 @@ function formatRange(from: string, to: string): string {
 	const start = dayjs(from)
 	const end = dayjs(to)
 	if (!start.isValid() || !end.isValid()) return `${from} – ${to}`
-	const startText = start.year() === end.year() ? start.format('D MMM') : start.format('D MMM YYYY')
+	const startText =
+		start.year() === end.year() ? start.format('D MMM') : start.format('D MMM YYYY')
 	return `${startText} – ${end.format('D MMM YYYY')}`
 }
 

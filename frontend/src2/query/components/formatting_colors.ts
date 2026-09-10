@@ -92,10 +92,7 @@ export function magnitudeScale(
  * The stop a value lands on. `percentile` is 0-100, and the ends are inclusive,
  * so the largest value in a column always reads as the scale's last slot.
  */
-export function fillAt(
-	scale: (CellFill | undefined)[],
-	percentile: number,
-): CellFill | undefined {
+export function fillAt(scale: (CellFill | undefined)[], percentile: number): CellFill | undefined {
 	if (!scale.length) return undefined
 	const clamped = Math.max(0, Math.min(100, percentile))
 	return scale[Math.round((clamped / 100) * (scale.length - 1))]

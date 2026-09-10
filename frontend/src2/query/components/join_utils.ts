@@ -66,7 +66,7 @@ export function useTableOptions(options: UseTableOptions) {
 		{
 			debounce: 300,
 			immediate: true,
-		}
+		},
 	)
 
 	return reactive({
@@ -104,7 +104,7 @@ export function useTableColumnOptions(data_source: Ref<string>, table_name: Ref<
 					fetchingColumnOptions.value = false
 				})
 		},
-		{ immediate: true }
+		{ immediate: true },
 	)
 
 	return reactive({
@@ -145,10 +145,10 @@ export function useQueryColumnOptions(query_name: Ref<string>) {
 					fetchingColumnOptions.value = false
 				})
 		},
-			{ immediate: true }
+		{ immediate: true },
 	)
-			return reactive({
-				options: queryColumnOptions,
-				loading: fetchingColumnOptions,
-			})
+	return reactive({
+		options: queryColumnOptions,
+		loading: fetchingColumnOptions,
+	})
 }

@@ -132,7 +132,6 @@ export type YAxisLine = Series & {
 	smooth?: boolean
 	show_data_points?: boolean
 	show_area?: boolean
-
 }
 export type SeriesLine = Series & {
 	type: 'line'
@@ -365,21 +364,21 @@ export type ChartConfig =
 	| HeatmapChartConfig
 
 export interface Suggestion {
-		region: string
-		similarity: number
-	}
+	region: string
+	similarity: number
+}
 
 export interface Region {
-		user_region: string
-		mapped_to?: string
-		suggestions?: Suggestion[]
-	}
+	user_region: string
+	mapped_to?: string
+	suggestions?: Suggestion[]
+}
 
 export interface MappingData {
-		total: number
-		resolved: number
-		unresolved: number
-		unresolved_list: Region[]
-		manual_mappings: Record<string, string>
-		available_regions: string[]
-	}
+	total: number
+	resolved: number
+	unresolved: number
+	unresolved_list: Region[]
+	manual_mappings: Record<string, string>
+	available_regions: string[]
+}

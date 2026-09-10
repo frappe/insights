@@ -36,7 +36,7 @@ type DocumentResourceOptions<T extends Document> = {
 export default function useDocumentResource<T extends Document>(
 	doctype: string,
 	name: string,
-	options: DocumentResourceOptions<T>
+	options: DocumentResourceOptions<T>,
 ) {
 	const doc = ref(options.initialDoc)
 	const originalDoc = ref(copy(options.initialDoc))
@@ -223,7 +223,8 @@ export default function useDocumentResource<T extends Document>(
 
 		if (storage.value?.doc) {
 			const isStale =
-				new Date(doc.value.modified).getTime() > new Date(storage.value.doc.modified).getTime()
+				new Date(doc.value.modified).getTime() >
+				new Date(storage.value.doc.modified).getTime()
 
 			if (!isStale) {
 				doc.value = storage.value.doc
@@ -244,7 +245,7 @@ export default function useDocumentResource<T extends Document>(
 			{
 				immediate: true,
 				deep: true,
-			}
+			},
 		)
 	}
 

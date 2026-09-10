@@ -8,10 +8,7 @@
 // something.
 
 import type { GranularityType } from '../../helpers/constants'
-import type {
-	ConditionalColor,
-	FormatGroupArgs,
-} from '../../query/components/formatting_utils'
+import type { ConditionalColor, FormatGroupArgs } from '../../query/components/formatting_utils'
 import type {
 	AxisChartType,
 	ChartConfig,
@@ -30,9 +27,7 @@ import type {
 } from '../../types/query.types'
 import type { ChartAdapterInput } from './types'
 
-type DimensionSpec =
-	| string
-	| { name: string; type?: ColumnDataType; granularity?: GranularityType }
+type DimensionSpec = string | { name: string; type?: ColumnDataType; granularity?: GranularityType }
 
 type MeasureSpec =
 	| string
@@ -147,9 +142,7 @@ function valueColumns(measures: MeasureSpecObject[], into?: string[]): string[] 
 	// them need the Measure's name beside each value to stay apart. The Measure
 	// leads, because `pivot_wider` names a column `values_from` first.
 	if (measures.length === 1) return into
-	return measures.flatMap((measure) =>
-		into.map((value) => `${measure.name}___${value}`),
-	)
+	return measures.flatMap((measure) => into.map((value) => `${measure.name}___${value}`))
 }
 
 function resultOf(
@@ -175,10 +168,7 @@ function resultOf(
 }
 
 /** The envelope the query store hands every chart, around the rows it ran. */
-function resultWith(
-	columns: QueryResultColumn[],
-	rows: Record<string, any>[],
-): QueryResult {
+function resultWith(columns: QueryResultColumn[], rows: Record<string, any>[]): QueryResult {
 	return {
 		executedSQL: '',
 		totalRowCount: rows.length,
@@ -223,9 +213,7 @@ function toDimension(dimension: DimensionSpec): Dimension {
 		dimension_name: spec.name,
 		column_name: spec.name,
 		data_type: (('type' in spec && spec.type) || 'String') as Dimension['data_type'],
-		...('granularity' in spec && spec.granularity
-			? { granularity: spec.granularity }
-			: {}),
+		...('granularity' in spec && spec.granularity ? { granularity: spec.granularity } : {}),
 	}
 }
 
@@ -587,7 +575,9 @@ export function numberChart(spec: NumberChartSpec): ChartAdapterInput {
 			...(value.color ? { color: value.color } : {}),
 			...(value.negativeIsBetter ? { negative_is_better: true } : {}),
 			...(value.targetValue !== undefined ? { target: { value: value.targetValue } } : {}),
-			...(value.targetColumn ? { target: { measure: toMeasure(`${value.name}_target`) } } : {}),
+			...(value.targetColumn
+				? { target: { measure: toMeasure(`${value.name}_target`) } }
+				: {}),
 			...(value.comparison ? { comparison: value.comparison } : {}),
 		})),
 		sparkline: Boolean(spec.sparkline),
@@ -603,7 +593,9 @@ export function numberChart(spec: NumberChartSpec): ChartAdapterInput {
 
 	const periods = Math.max(...spec.values.map((value) => value.readings.length), 1)
 	const rows = Array.from({ length: periods }, (_, index) => ({
-		...(period ? { [period.dimension_name]: `2026-${String(index + 1).padStart(2, '0')}-01` } : {}),
+		...(period
+			? { [period.dimension_name]: `2026-${String(index + 1).padStart(2, '0')}-01` }
+			: {}),
 		...Object.fromEntries(
 			spec.values.flatMap((value) => [
 				[value.name, value.readings[index] ?? null],
@@ -641,7 +633,9 @@ function sparklineResultOf(
 	const names = Object.keys(series)
 	const periods = Math.max(...names.map((name) => series[name].length), 1)
 	const rows = Array.from({ length: periods }, (_, index) => ({
-		...(period ? { [period.dimension_name]: `2026-01-${String(index + 1).padStart(2, '0')}` } : {}),
+		...(period
+			? { [period.dimension_name]: `2026-01-${String(index + 1).padStart(2, '0')}` }
+			: {}),
 		...Object.fromEntries(names.map((name) => [name, series[name][index] ?? null])),
 	}))
 
@@ -674,9 +668,7 @@ export function mapChart(spec: MapChartSpec): ChartAdapterInput {
 		location_column,
 		value_column,
 		map_type,
-		...(spec.regionMappings
-			? { region_mappings: { [map_type]: spec.regionMappings } }
-			: {}),
+		...(spec.regionMappings ? { region_mappings: { [map_type]: spec.regionMappings } } : {}),
 	} as unknown as ChartConfig
 
 	return {

@@ -28,9 +28,7 @@ describe('a series the author hid from the chart', () => {
 				{ measure: measure('orders'), hide_from_chart: true },
 			]),
 		)
-		expect(migrated.y_axis.series.map((s: any) => s.measure.measure_name)).toEqual([
-			'revenue',
-		])
+		expect(migrated.y_axis.series.map((s: any) => s.measure.measure_name)).toEqual(['revenue'])
 		expect(migrated.tooltip.measures.map((m: any) => m.measure_name)).toEqual(['orders'])
 	})
 

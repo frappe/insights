@@ -61,8 +61,12 @@ describe('the three axis types', () => {
 	})
 
 	it('draws nothing until the Chart names a Dimension and the result holds a number', () => {
-		expect(adaptChart(axisChart({ type: 'Bar', dimension: '', measures: ['revenue'] }))).toBeUndefined()
-		expect(adaptChart(axisChart({ type: 'Bar', dimension: 'region', measures: [] }))).toBeUndefined()
+		expect(
+			adaptChart(axisChart({ type: 'Bar', dimension: '', measures: ['revenue'] })),
+		).toBeUndefined()
+		expect(
+			adaptChart(axisChart({ type: 'Bar', dimension: 'region', measures: [] })),
+		).toBeUndefined()
 	})
 })
 
@@ -124,12 +128,7 @@ describe('a split Dimension', () => {
 				measures: ['revenue', 'margin'],
 				splitBy: { dimension: 'region', into: ['North', 'South'] },
 			}).y,
-		).toEqual([
-			'revenue___North',
-			'revenue___South',
-			'margin___North',
-			'margin___South',
-		])
+		).toEqual(['revenue___North', 'revenue___South', 'margin___North', 'margin___South'])
 	})
 
 	it('takes the collapsed tail as one more series, and caps nothing itself', () => {
@@ -184,7 +183,9 @@ describe('the marks a series draws as', () => {
 			propsOf({
 				type: 'Line',
 				dimension: 'region',
-				measures: [{ name: 'revenue', color: '#ff0000', dataLabels: true, dataPoints: true }],
+				measures: [
+					{ name: 'revenue', color: '#ff0000', dataLabels: true, dataPoints: true },
+				],
 			}).seriesConfig,
 		).toEqual({
 			revenue: { color: '#ff0000', showDataLabels: true, showDataPoints: true },
@@ -418,9 +419,7 @@ describe('a reference line at an aggregate', () => {
 				categories: ['North', 'South'],
 				measures: ['revenue', { name: 'margin_rate', axis: 'right' }],
 				readings: { margin_rate: [4, 8] },
-				referenceLines: [
-					{ aggregate: 'max', measure_name: 'margin_rate', align: 'Right' },
-				],
+				referenceLines: [{ aggregate: 'max', measure_name: 'margin_rate', align: 'Right' }],
 			}).referenceLines,
 		).toEqual([{ value: 8, axis: 'y2', label: 'Max margin_rate: 8' }])
 	})

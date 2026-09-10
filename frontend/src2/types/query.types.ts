@@ -1,4 +1,4 @@
-import { GranularityType } from "../helpers/constants";
+import { GranularityType } from '../helpers/constants'
 
 export type TableArgs = { type: 'table'; data_source: string; table_name: string }
 export type QueryTableArgs = {
@@ -101,9 +101,7 @@ export interface RelativeDateParts {
 }
 
 export const SPAN_OPTIONS = ['Last', 'Current', 'Next']
-export const INTERVAL_TYPE_OPTIONS = [
-	'Day', 'Week', 'Month', 'Quarter', 'Year', 'Fiscal Year'
-]
+export const INTERVAL_TYPE_OPTIONS = ['Day', 'Week', 'Month', 'Quarter', 'Year', 'Fiscal Year']
 
 export type SourceArgs = { table: Table }
 export type Source = { type: 'source' } & SourceArgs
@@ -146,7 +144,7 @@ export type JoinArgs = {
 }
 export type Join = { type: 'join' } & JoinArgs
 
-export type UnionArgs = { table: Table, distinct: boolean }
+export type UnionArgs = { table: Table; distinct: boolean }
 export type Union = { type: 'union' } & UnionArgs
 
 export type MutateArgs = { new_name: string; data_type: ColumnDataType; expression: Expression }
@@ -190,7 +188,7 @@ export type PivotWider = { type: 'pivot_wider' } & PivotWiderArgs
 export type CustomOperationArgs = { expression: Expression }
 export type CustomOperation = { type: 'custom_operation' } & CustomOperationArgs
 
-export type SQLArgs = { raw_sql: string, data_source: string }
+export type SQLArgs = { raw_sql: string; data_source: string }
 export type SQL = { type: 'sql' } & SQLArgs
 
 export type CodeArgs = { code: string }

@@ -191,8 +191,8 @@ function readingOf(
 		const data = series
 			? series.map((row) => toNumber(row[column]))
 			: grouped?.grain
-				? readings
-				: undefined
+			  ? readings
+			  : undefined
 
 		if (data) {
 			const sparkline: NumberCardSparkline = { data }

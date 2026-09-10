@@ -99,7 +99,9 @@ export function numberFormatOf(
 		readNumberFormat(config),
 		readNumberFormat(config?.number_format),
 		readNumberFormat(valueFormatOf(config, measure)),
-		readNumberFormat(measure?.measure_name ? config?.number_formats?.[measure.measure_name] : null),
+		readNumberFormat(
+			measure?.measure_name ? config?.number_formats?.[measure.measure_name] : null,
+		),
 	])
 	return { ...merged, scale: unit.scale }
 }
@@ -190,9 +192,7 @@ function valueFormatOf(
 	const name = measure?.measure_name
 	if (!config || !name) return
 	// The Number chart kept a value's settings beside its Measure, by position.
-	const index = (config.number_columns || []).findIndex(
-		(column) => column?.measure_name === name,
-	)
+	const index = (config.number_columns || []).findIndex((column) => column?.measure_name === name)
 	return index === -1 ? undefined : config.number_column_options?.[index]
 }
 

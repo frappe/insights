@@ -57,8 +57,7 @@ export function handleOldReferenceLines(config: any) {
 		}
 		if (!line.aggregate) {
 			const align = line.align === 'Right' ? 'Right' : 'Left'
-			const target =
-				series.find((s: any) => (s.align || 'Left') === align) || series[0]
+			const target = series.find((s: any) => (s.align || 'Left') === align) || series[0]
 			const measure_name = target?.measure?.measure_name
 			if (measure_name) {
 				line.aggregate = line.statistic

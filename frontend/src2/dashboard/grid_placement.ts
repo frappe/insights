@@ -7,11 +7,7 @@
 // It reads the stored layout alone — no element, no measurement, no pointer. A
 // test runs it without a DOM, and the pixels stay in the components.
 
-import type {
-	BreakpointKey,
-	Layout,
-	WorkbookDashboardItemLayout,
-} from '../types/workbook.types'
+import type { BreakpointKey, Layout, WorkbookDashboardItemLayout } from '../types/workbook.types'
 
 /**
  * Height of one grid row in px.

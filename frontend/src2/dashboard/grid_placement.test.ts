@@ -247,7 +247,10 @@ describe('placementsFor', () => {
 			item(cell('a', 0, 0, 6, 2), { sm: { x: 0, y: 0, w: 10, h: 4 } }),
 			item(cell('b', 6, 0, 6, 2), { sm: { x: 10, y: 0, w: 10, h: 4 } }),
 		]
-		expect(placementsFor(items, 'sm')).toEqual([cell('a', 0, 0, 10, 4), cell('b', 10, 0, 10, 4)])
+		expect(placementsFor(items, 'sm')).toEqual([
+			cell('a', 0, 0, 10, 4),
+			cell('b', 10, 0, 10, 4),
+		])
 	})
 
 	// A card added after the narrow layout was arranged has nothing stored for

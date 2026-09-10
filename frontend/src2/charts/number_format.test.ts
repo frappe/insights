@@ -79,9 +79,9 @@ describe('what the chart says', () => {
 	})
 
 	it('scales a percent Measure whatever it prints around it', () => {
-		expect(numberFormatOf({ number_format: { suffix: 'x' } }, measure('rate', 'percent'))).toEqual(
-			{ prefix: '', suffix: 'x', scale: 100 },
-		)
+		expect(
+			numberFormatOf({ number_format: { suffix: 'x' } }, measure('rate', 'percent')),
+		).toEqual({ prefix: '', suffix: 'x', scale: 100 })
 	})
 })
 

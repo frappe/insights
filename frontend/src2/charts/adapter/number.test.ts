@@ -212,7 +212,9 @@ describe('the comparison', () => {
 		// the shift the period asked for, because the dimension is a window and
 		// carries no grain.
 		const card = cardsOf({
-			values: [{ name: 'Revenue', readings: [200, 300], comparison: { source: 'last year' } }],
+			values: [
+				{ name: 'Revenue', readings: [200, 300], comparison: { source: 'last year' } },
+			],
 			period: { name: 'created_at', type: 'Datetime' },
 			window: { span: 'month to date' },
 		})[0]
@@ -242,7 +244,9 @@ describe('the comparison', () => {
 		// A grain cannot name the window a year back, so the card says nothing
 		// rather than printing the period before this one under that caption.
 		const card = cardsOf({
-			values: [{ name: 'Revenue', readings: [200, 300], comparison: { source: 'last year' } }],
+			values: [
+				{ name: 'Revenue', readings: [200, 300], comparison: { source: 'last year' } },
+			],
 			period: monthly,
 			window: { grain: 'month' },
 		})[0]

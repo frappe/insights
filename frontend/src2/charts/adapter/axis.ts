@@ -166,9 +166,7 @@ function measureNameFor(config: MixedChartConfig, column: string): string | unde
 function tooltipMeasuresOf(config: MixedChartConfig): string[] {
 	if (config.split_by?.dimension?.column_name) return []
 	const drawn = new Set(
-		(config.y_axis?.series || [])
-			.map((series) => series.measure?.measure_name)
-			.filter(Boolean),
+		(config.y_axis?.series || []).map((series) => series.measure?.measure_name).filter(Boolean),
 	)
 	return (config.tooltip?.measures || [])
 		.map((measure) => measure?.measure_name)
@@ -181,10 +179,7 @@ function tooltipMeasuresOf(config: MixedChartConfig): string[] {
  * another unit, so it has to carry that unit. No label: a column takes the same
  * one the chart would give the Measure if it drew it.
  */
-function tooltipColumnsFor(
-	config: MixedChartConfig,
-	names: string[],
-): ChartTooltipColumn[] {
+function tooltipColumnsFor(config: MixedChartConfig, names: string[]): ChartTooltipColumn[] {
 	const measures = config.tooltip?.measures || []
 	return names.map((name) => {
 		const format = numberFormatter(
@@ -211,8 +206,7 @@ function styleFor(
 	const style: SeriesStyle = {}
 
 	const asked = series?.type || mark
-	const area =
-		asked === 'line' && ((series as SeriesLine)?.show_area ?? line.show_area)
+	const area = asked === 'line' && ((series as SeriesLine)?.show_area ?? line.show_area)
 	const type = area ? 'area' : asked
 	if (type !== mark) style.type = type
 
@@ -229,8 +223,7 @@ function styleFor(
 	if (type === 'line' || type === 'area') {
 		const smooth = (series as SeriesLine)?.smooth ?? line.smooth
 		if (smooth) style.smooth = true
-		const showDataPoints =
-			(series as SeriesLine)?.show_data_points ?? line.show_data_points
+		const showDataPoints = (series as SeriesLine)?.show_data_points ?? line.show_data_points
 		if (showDataPoints) style.showDataPoints = true
 	}
 
