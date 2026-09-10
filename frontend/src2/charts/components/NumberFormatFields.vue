@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import InputGroup, { type InputGroupField } from '../../components/InputGroup.vue'
 import type { NumberFormat, NumberFormatConfig } from '../../types/chart.types'
-import { inheritedNumberFormat } from '../number_format'
+import { defaultDecimals, inheritedNumberFormat } from '../number_format'
 
 // The one form behind the one policy: how a chart's numbers print. Named a
 // Measure, it writes that Measure's own format. Named none, it writes the
@@ -45,6 +45,11 @@ const format = computed<NumberFormat>(() => {
 
 /** What a key left unstated prints as. The fields show it as their placeholder. */
 const inherited = computed(() => inheritedNumberFormat(props.config, props.measureName))
+
+// Whether this layer's numbers shorten, which is what the precision falls back
+// on. The toggle sits beside the precision here, so what it holds counts before
+// what the layer under it says.
+const shortens = computed(() => format.value.shorten ?? inherited.value.shorten)
 
 function write(key: keyof NumberFormat, value: any) {
 	const written: NumberFormat = { ...format.value }
@@ -108,12 +113,9 @@ const fields = computed<InputGroupField[]>(() => [
 		key: 'decimals',
 		label: 'Decimals',
 		value: format.value.decimals,
-		// Unstated, the locale picks the places from the number itself, so no
-		// one number stands for what it inherits.
-		placeholder:
-			inherited.value.decimals === undefined
-				? EXAMPLES.decimals
-				: String(inherited.value.decimals),
+		placeholder: String(
+			inherited.value.decimals ?? defaultDecimals(shortens.value) ?? EXAMPLES.decimals,
+		),
 		type: 'number',
 		min: 0,
 		max: 20,
@@ -129,7 +131,7 @@ const fields = computed<InputGroupField[]>(() => [
 	</InlineFormControlLabel>
 
 	<Toggle
-		label="Short numbers"
+		label="Shorten"
 		:modelValue="format.shorten"
 		@update:modelValue="write('shorten', $event)"
 	/>

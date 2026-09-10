@@ -11,7 +11,13 @@ import {
 } from './adapter/fixtures'
 import { adaptChart } from './adapter'
 import type { ChartAdapterInput } from './adapter/types'
-import { numberFormatOf, numberFormatter, readNumberFormat } from './number_format'
+import {
+	defaultDecimals,
+	printNumber,
+	numberFormatOf,
+	numberFormatter,
+	readNumberFormat,
+} from './number_format'
 
 // The one policy, tested where it is decided. Every chart and the grid read
 // their numbers through `numberFormatter`, so what holds here holds everywhere.
@@ -92,6 +98,20 @@ describe('a precision the number cannot print', () => {
 
 	it('reads a fractional number of places as the whole one under it', () => {
 		expect(readNumberFormat({ decimals: 2.7 }).decimals).toBe(2)
+	})
+})
+
+describe('the precision an unstated one falls back on', () => {
+	// One function answers this for every field that shows it, so the chart's
+	// own precision and a Measure's cannot state different defaults.
+	it('is the one place a shortened number prints', () => {
+		expect(defaultDecimals(true)).toBe(1)
+		expect(printNumber(1234.56, { scale: 1, shorten: true })).toBe('1.2K')
+	})
+
+	it('is nothing when the number does not shorten, because the locale picks it', () => {
+		expect(defaultDecimals(false)).toBeUndefined()
+		expect(defaultDecimals(undefined)).toBeUndefined()
 	})
 })
 

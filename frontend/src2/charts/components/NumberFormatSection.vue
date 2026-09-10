@@ -14,7 +14,7 @@ const props = defineProps<{
 </script>
 
 <template>
-	<CollapsibleSection title="Number Format" collapsed>
+	<CollapsibleSection title="Number format" collapsed>
 		<div class="flex flex-col gap-3 pt-1">
 			<NumberFormatFields :config="props.config" :sole-measure-name="props.soleMeasureName" />
 		</div>

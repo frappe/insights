@@ -120,7 +120,23 @@ export function inheritedNumberFormat(
 		layers.push(readNumberFormat(config?.number_format))
 		layers.push(readNumberFormat(valueFormatOf(config, { measure_name: measureName })))
 	}
+
 	return mergeFormats(layers)
+}
+
+/**
+ * The precision an unstated one prints as, under the format in effect.
+ *
+ * A shortened number falls back to one place. An unshortened one leaves the
+ * places to the locale, which no single number states, so this names none.
+ *
+ * A field shows this when it inherits no precision of its own. It takes the
+ * effective `shorten` rather than reading a layer, because a form states that
+ * toggle beside the precision — the two are one layer's answer, and the field
+ * has to show what its own toggle already implies.
+ */
+export function defaultDecimals(shorten?: boolean): number | undefined {
+	return shorten ? SHORT_DECIMALS : undefined
 }
 
 /** The one resolver. Every chart and the grid print their numbers with this. */
