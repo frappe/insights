@@ -48,6 +48,13 @@ def after_migrate():
         frappe.log_error(title="Error re-stamping template copies")
 
     try:
+        from insights.desk import install_custom_fields
+
+        install_custom_fields()
+    except Exception:
+        frappe.log_error(title="Error installing desk custom fields")
+
+    try:
         from insights.api.templates import sync_workbook_template_updates
 
         sync_workbook_template_updates()

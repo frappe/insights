@@ -38,6 +38,14 @@ add_to_apps_screen = [
 # today, versioned updates later) can evolve without breaking the hook.
 insights_workbooks = "workbook_templates"
 
+# The islands Insights ships, keyed by the asset base name `yarn build:islands`
+# registers in assets.json (`<base>.island.js` / `.island.css`). Registration
+# says an island exists; which desk documents it draws is `insights/desk.py`.
+ui_islands = {
+    "insights.chart": "insights_chart",
+    "insights.dashboard": "insights_dashboard",
+}
+
 
 # Includes in <head>
 # ------------------
@@ -162,7 +170,15 @@ has_permission = {
 doc_events = {
     "User": {
         "on_change": "insights.insights.doctype.insights_team.insights_team.update_admin_team",
-    }
+    },
+    # a desk document that links to Insights content is drawn by an Insights
+    # island — see insights/desk.py
+    "Dashboard": {
+        "onload": "insights.desk.claim",
+    },
+    "Dashboard Chart": {
+        "onload": "insights.desk.claim",
+    },
 }
 
 # Scheduled Tasks
