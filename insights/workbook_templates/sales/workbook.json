@@ -413,8 +413,10 @@
 					"date_column": {
 						"dimension_name": "posting_date",
 						"column_name": "posting_date",
-						"data_type": "Date",
-						"granularity": "month"
+						"data_type": "Date"
+					},
+					"window": {
+						"grain": "month"
 					},
 					"order_by": [
 						{

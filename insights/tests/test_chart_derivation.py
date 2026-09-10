@@ -56,9 +56,9 @@ def comparable(operations):
     return operations
 
 
-def _windowed_config(span="month to date", shift=None):
+def _windowed_config(span="month to date", compare=None):
     """A number card reading one measure over a window, and what compares it."""
-    comparison = {"source": "window", "shift": shift} if shift else {}
+    comparison = {"source": compare} if compare else {}
     return {
         "sparkline": False,
         "number_columns": [
@@ -107,9 +107,9 @@ def _against_measure(column, name):
     }
 
 
-def _sparkline_config(span="month to date", shift=None):
+def _sparkline_config(span="month to date", compare=None):
     """The same card, with the trend inside its window turned on."""
-    return {**_windowed_config(span, shift), "sparkline": True}
+    return {**_windowed_config(span, compare), "sparkline": True}
 
 
 class TestChartDerivation(unittest.TestCase):
@@ -335,7 +335,7 @@ class TestChartDerivation(unittest.TestCase):
         resolved here would make one config derive different operations
         tomorrow.
         """
-        config = _windowed_config(shift={"unit": "year", "count": -1})
+        config = _windowed_config(compare="last year")
         first = derive_operations("Number", "sales-invoice-lines", config)
         self.assertEqual(first, derive_operations("Number", "sales-invoice-lines", config))
 
@@ -346,10 +346,32 @@ class TestChartDerivation(unittest.TestCase):
             [None, {"unit": "year", "count": -1}],
         )
 
+    def test_a_comparison_is_fetched_the_way_the_card_period_says(self):
+        """The comparison states the question, the span answers it.
+
+        The period before this one is the same span moved back by its own
+        length, so a card whose period changed asks for the window its
+        comparison now means, with no stored shift to fall out of step.
+        """
+        for span, shift in [
+            ("month to date", {"unit": "month", "count": -1}),
+            ("last 3 months", {"unit": "month", "count": -3}),
+            ("last 3 months (include current)", {"unit": "month", "count": -4}),
+            ("fiscal year to date", {"unit": "fiscal year", "count": -1}),
+        ]:
+            with self.subTest(span=span):
+                config = _windowed_config(span, compare="previous")
+                operations = derive_operations("Number", "sales-invoice-lines", config)
+                filter_group = next(op for op in operations if op["type"] == "filter_group")
+                self.assertEqual(
+                    [f["value"].get("shift") for f in filter_group["filters"]],
+                    [None, shift],
+                )
+
     def test_a_windowed_card_sorts_its_windows_oldest_first(self):
         """The card reads the last row and compares it with the one before it, so
         the sort is what makes the newest window the reading."""
-        config = _windowed_config(shift={"unit": "year", "count": -1})
+        config = _windowed_config(compare="last year")
         operations = derive_operations("Number", "sales-invoice-lines", config)
         sorts = [
             (op["column"]["column_name"], op["direction"]) for op in operations if op["type"] == "order_by"
@@ -364,7 +386,7 @@ class TestChartDerivation(unittest.TestCase):
         says nothing about a window, so the dimension drops it rather than let a
         viewer format a window as a year.
         """
-        config = _windowed_config("last 3 months", shift={"unit": "year", "count": -1})
+        config = _windowed_config("last 3 months", compare="last year")
         config["date_column"]["granularity"] = "year"
         operations = derive_operations("Number", "sales-invoice-lines", config)
         summarize = next(op for op in operations if op["type"] == "summarize")
@@ -386,7 +408,7 @@ class TestChartDerivation(unittest.TestCase):
     def test_a_card_groups_by_the_windows_it_filters_to(self):
         """The filter and the group-by name the same windows, so every row the
         filter lets through belongs to one of them."""
-        config = _windowed_config(shift={"unit": "year", "count": -1})
+        config = _windowed_config(compare="last year")
         operations = derive_operations("Number", "sales-invoice-lines", config)
         filter_group = next(op for op in operations if op["type"] == "filter_group")
         summarize = next(op for op in operations if op["type"] == "summarize")
@@ -396,8 +418,7 @@ class TestChartDerivation(unittest.TestCase):
         )
 
     def test_two_values_comparing_against_the_same_window_ask_for_one_window(self):
-        shift = {"unit": "year", "count": -1}
-        config = _windowed_config(shift=shift)
+        config = _windowed_config(compare="last year")
         config["number_columns"].append(
             {
                 "aggregation": "sum",
@@ -406,7 +427,7 @@ class TestChartDerivation(unittest.TestCase):
                 "measure_name": "COGS MTD",
             }
         )
-        config["number_column_options"].append({"comparison": {"source": "window", "shift": shift}})
+        config["number_column_options"].append({"comparison": {"source": "last year"}})
 
         operations = derive_operations("Number", "sales-invoice-lines", config)
         self.assertEqual(len(operations[1]["filters"]), 2)
@@ -545,7 +566,7 @@ class TestChartDerivation(unittest.TestCase):
     def test_a_window_of_the_wrong_kind_is_reported_not_read(self):
         for slot, value in [
             ("window", "month to date"),
-            ("number_column_options", [{"comparison": {"shift": "1 year"}}]),
+            ("number_column_options", [{"comparison": {"measure": "revenue"}}]),
         ]:
             with self.subTest(slot=slot):
                 config = {**_windowed_config(), slot: value}
@@ -626,7 +647,7 @@ class TestSparklineDerivation(unittest.TestCase):
     def test_a_sparkline_draws_the_configured_window_and_not_the_comparison(self):
         """The comparison window answers what the number is held against. The
         picture is the window the card is read over."""
-        config = _sparkline_config(shift={"unit": "year", "count": -1})
+        config = _sparkline_config(compare="last year")
         operations = sparkline_operations("Number", "sales-invoice-lines", config)
 
         filter_group = next(op for op in operations if op["type"] == "filter_group")

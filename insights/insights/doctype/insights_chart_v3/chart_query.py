@@ -370,7 +370,7 @@ def _add_window_operations(operations: list[dict], config: dict, window: dict, d
     different operations tomorrow.
     """
     windows = [_timespan(window, None)]
-    windows += [_timespan(window, shift) for shift in _comparison_shifts(config)]
+    windows += [_timespan(window, shift) for shift in _comparison_shifts(config, window["span"])]
 
     filters = [_within(date_column, timespan) for timespan in windows]
     operations.append({"type": "filter_group", "logical_operator": "Or", "filters": filters})
@@ -414,25 +414,51 @@ def _span_unit(span: str | None) -> str:
     return "fiscal year" if "fiscal year" in span else span.rsplit(" ", 1)[-1]
 
 
-def _comparison_shifts(config: dict) -> list[dict]:
-    """The windows the comparisons name, beside the configured one.
+def _span_periods(span: str) -> int:
+    """How many whole periods a span covers, which is how far back the one
+    before it sits. Only a run of periods covers more than one."""
+    text = span.lower().strip()
+    include_current = "(include current)" in text
+    text = text.replace("(include current)", "").strip()
+    if not text.startswith("last "):
+        return 1
+
+    words = text.split(" ")
+    count = int(words[1]) if len(words) > 1 and words[1].isdigit() else 1
+    return max(1, count) + (1 if include_current else 0)
+
+
+def _comparison_shifts(config: dict, span: str) -> list[dict]:
+    """The windows the comparisons ask for, beside the configured one.
+
+    A comparison states the question and the span answers it, so the shift is
+    derived here rather than stored: the period before this one is the same span
+    moved back by its own length, and a year back is the same span anchored a
+    year earlier. A card whose period changed therefore fetches what its
+    comparison now means, with nothing to keep in step.
 
     Two values comparing against the same window ask for one window, so the same
     shift twice is one filter and one row.
     """
     shifts = []
     for options in config.get("number_column_options") or []:
-        comparison = (options or {}).get("comparison") or {}
-        if comparison.get("source") != "window":
-            continue
-        shift = comparison.get("shift") or {}
-        if not shift.get("unit") or not shift.get("count"):
-            continue
-        shift = {"unit": shift["unit"], "count": shift["count"]}
-        if shift not in shifts:
+        shift = _comparison_shift((options or {}).get("comparison") or {}, span)
+        if shift and shift not in shifts:
             shifts.append(shift)
 
     return shifts
+
+
+def _comparison_shift(comparison: dict, span: str) -> dict | None:
+    """The window one comparison asks for, or nothing when it asks for no
+    second window."""
+    if comparison.get("source") == "last year":
+        return {"unit": "year", "count": -1}
+    if comparison.get("source") != "previous":
+        return None
+
+    unit = _span_unit(span)
+    return {"unit": unit, "count": -_span_periods(span)} if unit else None
 
 
 def _timespan(window: dict, shift: dict | None) -> dict:
@@ -787,7 +813,7 @@ SLOT_SHAPES = {
     "quadrant_column": {},
     "filters": {"filters": [{}]},
     "number_columns": [{}],
-    "number_column_options": [{"target": {"measure": {}}, "comparison": {"measure": {}, "shift": {}}}],
+    "number_column_options": [{"target": {"measure": {}}, "comparison": {"measure": {}}}],
     "window": {},
     "measures": [{}],
     "rows": [{}],

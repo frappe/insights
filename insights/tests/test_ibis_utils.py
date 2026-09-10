@@ -208,7 +208,7 @@ class TestIbisWindowedNumberCard(IbisQueryBuilderTestCase):
         self.assertEqual(self.revenue_by_window(self.config()), [100])
 
     def test_a_comparison_window_is_the_row_before_the_reading(self):
-        comparison = {"source": "window", "shift": {"unit": "fiscal year", "count": -1}}
+        comparison = {"source": "last year"}
         self.assertEqual(self.revenue_by_window(self.config(comparison)), [60, 100])
 
     def test_a_window_of_several_periods_is_one_row_holding_the_whole_window(self):
@@ -228,7 +228,7 @@ class TestIbisWindowedNumberCard(IbisQueryBuilderTestCase):
             {"posting_date": "2026-08-05", "amount": 500},  # the anchor's own month
             {"posting_date": "2026-04-30", "amount": 400},  # before the window
         ]
-        comparison = {"source": "window", "shift": {"unit": "year", "count": -1}}
+        comparison = {"source": "last year"}
         result = self.windowed_result(self.config(comparison, span="last 3 months"), sales)
 
         self.assertEqual(list(result["Revenue"]), [7, 60])
@@ -250,7 +250,7 @@ class TestIbisWindowedNumberCard(IbisQueryBuilderTestCase):
             {"posting_date": "2026-07-05", "amount": 400},  # before the window
             {"posting_date": "2025-08-05", "amount": 60},  # the comparison window
         ]
-        comparison = {"source": "window", "shift": {"unit": "year", "count": -1}}
+        comparison = {"source": "last year"}
         config = {**self.config(comparison), "sparkline": True}
 
         result = self.result_of(sparkline_operations("Number", "sales", config), sales)

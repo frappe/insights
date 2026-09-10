@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import type { ChartConfig } from '../types/chart.types'
+import type { ChartConfig, NumberComparison } from '../types/chart.types'
 import {
 	LAST_YEAR,
+	periodComparison,
 	buildWindowSpan,
 	formatWindowLabel,
 	labelWindowRows,
@@ -186,6 +187,35 @@ describe('the window a comparison shifts to', () => {
 
 	it('names no shift for a card with no window', () => {
 		expect(previousWindowShift(undefined)).toBeUndefined()
+	})
+})
+
+describe('how a period answers a comparison', () => {
+	const previous = { source: 'previous' } as NumberComparison
+	const lastYear = { source: 'last year' } as NumberComparison
+
+	it('shifts a span, so the same question follows the period it is asked of', () => {
+		expect(periodComparison(previous, { span: 'month to date' })).toEqual({
+			shift: { unit: 'month', count: -1 },
+		})
+		expect(periodComparison(previous, { span: 'last 3 months' })).toEqual({
+			shift: { unit: 'month', count: -3 },
+		})
+		expect(periodComparison(lastYear, { span: 'last 3 months' })).toEqual({ shift: LAST_YEAR })
+	})
+
+	it('asks a grain for no shift, because the row before the last one is already there', () => {
+		expect(periodComparison(previous, { grain: 'month' })).toEqual({})
+	})
+
+	it('leaves a year back unanswered by a grain, which cannot name that window', () => {
+		expect(periodComparison(lastYear, { grain: 'month' })).toBeUndefined()
+		expect(periodComparison(lastYear, undefined)).toBeUndefined()
+	})
+
+	it('answers nothing for a comparison that names its own number', () => {
+		const constant = { source: 'constant', value: 10 } as NumberComparison
+		expect(periodComparison(constant, { span: 'month to date' })).toBeUndefined()
 	})
 })
 

@@ -179,18 +179,20 @@ export type NumberTarget = {
  */
 export type NumberComparison = {
 	/**
-	 * `previous` is the row before the last one, `constant` a fixed number,
-	 * `measure` a measure of the card's own query read off the same last row, and
-	 * `window` the chart's own window shifted back. A shifted window is derived as
-	 * the row before the last one, so it reads the same way `previous` does.
+	 * The question, not the way it is answered: `previous` is the period before
+	 * the one on the card and `last year` is the same period a year earlier,
+	 * both of which the card's own period is what fetches — a span shifts its
+	 * window back, a grain already holds the row. `constant` is a fixed number,
+	 * and `measure` a measure of the card's own query read off the same last row.
+	 *
+	 * A period a question cannot be put to answers nothing: only a span can be
+	 * anchored a year back, so `last year` beside a grain prints no delta.
 	 */
-	source: 'previous' | 'constant' | 'measure' | 'window'
+	source: 'previous' | 'last year' | 'constant' | 'measure'
 	/** The number, when `source` is `constant`. */
 	value?: number
 	/** The measure holding it, when `source` is `measure`. */
 	measure?: Measure
-	/** The same span, anchored `count` `unit`s away. `source: 'window'` only. */
-	shift?: { unit: string; count: number }
 	/**
 	 * How the gap is printed: `change` as a percent of the comparison number,
 	 * `delta` as a signed number in the value's own units. Defaults to `change`.
@@ -213,7 +215,7 @@ export type NumberChartConfig = NumberFormatConfig & {
 	 *
 	 * - `span` filters to a stretch of the calendar and groups by which stretch
 	 *   a row fell in. One row per stretch, so the card reads the newest and a
-	 *   `window` comparison shifts to an earlier one.
+	 *   period comparison shifts the window to an earlier one.
 	 * - `grain` filters nothing and groups by the date grain. One row per
 	 *   period present in the data, so the card reads the newest one there and
 	 *   a `previous` comparison reads the row before it.

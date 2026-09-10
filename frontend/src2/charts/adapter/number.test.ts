@@ -178,8 +178,9 @@ describe('the target', () => {
 })
 
 describe('the comparison', () => {
+	const previousPeriod = { source: 'previous' } as const
 	const previous: NumberChartSpec = {
-		values: [{ name: 'Revenue', readings: [200, 300], comparison: { source: 'previous' } }],
+		values: [{ name: 'Revenue', readings: [200, 300], comparison: previousPeriod }],
 		period: monthly,
 	}
 
@@ -205,21 +206,48 @@ describe('the comparison', () => {
 		expect(defaultComparisonLabel({ source: 'previous' }, migrated)).toBe('vs previous month')
 	})
 
-	it('words a shifted window off the shift, so the card needs no caption typed', () => {
+	it('words a span comparison off the window its period fetched', () => {
 		// Derivation returns the shifted window as the row before the last one, so
-		// the figure reads the way `previous` does. What it is called comes from
-		// the shift, because the dimension is a window and carries no grain.
+		// the figure reads the way a grain's does. What it is called comes from
+		// the shift the period asked for, because the dimension is a window and
+		// carries no grain.
 		const card = cardsOf({
-			values: [
-				{
-					name: 'Revenue',
-					readings: [200, 300],
-					comparison: { source: 'window', shift: { unit: 'year', count: -1 } },
-				},
-			],
+			values: [{ name: 'Revenue', readings: [200, 300], comparison: { source: 'last year' } }],
+			period: { name: 'created_at', type: 'Datetime' },
+			window: { span: 'month to date' },
 		})[0]
 		expect(card.delta).toBe(50)
 		expect(card.deltaCaption).toBe('vs same period last year')
+	})
+
+	it('answers the same question against the period the card holds now', () => {
+		// The stored comparison is the question alone. An author who switches the
+		// period switches what answers it, and the caption follows the answer.
+		const asked = { name: 'Revenue', readings: [200, 300], comparison: previousPeriod }
+
+		const span = cardsOf({
+			values: [asked],
+			period: { name: 'created_at', type: 'Datetime' },
+			window: { span: 'last 3 months' },
+		})[0]
+		expect(span.delta).toBe(50)
+		expect(span.deltaCaption).toBe('vs same period 3 months ago')
+
+		const grain = cardsOf({ values: [asked], period: monthly, window: { grain: 'month' } })[0]
+		expect(grain.delta).toBe(50)
+		expect(grain.deltaCaption).toBe('vs previous month')
+	})
+
+	it('prints no delta for a question the period cannot answer', () => {
+		// A grain cannot name the window a year back, so the card says nothing
+		// rather than printing the period before this one under that caption.
+		const card = cardsOf({
+			values: [{ name: 'Revenue', readings: [200, 300], comparison: { source: 'last year' } }],
+			period: monthly,
+			window: { grain: 'month' },
+		})[0]
+		expect(card.delta).toBeUndefined()
+		expect(card.deltaCaption).toBeUndefined()
 	})
 
 	it('measures against a fixed number, and calls it the target when unworded', () => {

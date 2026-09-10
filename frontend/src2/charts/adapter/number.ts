@@ -11,7 +11,7 @@ import type {
 } from '../../types/chart.types'
 import type { Dimension, Measure, QueryResultRow } from '../../types/query.types'
 import { numberFormatOf } from '../number_format'
-import { periodOf, windowShiftLabel } from '../window'
+import { periodComparison, periodOf, windowShiftLabel } from '../window'
 import NumberCards from './NumberCards.vue'
 import type { ChartAdapterInput, ChartFiller } from './types'
 
@@ -154,7 +154,7 @@ function readingOf(
 	if (aim !== null) card.target = aim
 
 	if (comparison) {
-		const against = comparisonNumber(comparison, rows, readings)
+		const against = comparisonNumber(comparison, config, rows, readings)
 		if (against !== undefined) {
 			const show = comparison.show ?? 'change'
 			if (show === 'delta') {
@@ -224,6 +224,7 @@ function targetNumber(
  */
 function comparisonNumber(
 	comparison: NumberComparison,
+	config: NumberChartConfig,
 	rows: QueryResultRow[],
 	readings: (number | null)[],
 ): number | null | undefined {
@@ -235,8 +236,13 @@ function comparisonNumber(
 		if (!column) return undefined
 		return toNumber(rows[rows.length - 1]?.[column])
 	}
-	// The reading before last. A card with one reading still says what it would
-	// have compared against, it just has no figure to print in front of it.
+	// A period the question cannot be put to holds no answer, so the card prints
+	// no delta rather than a figure that answers a different one.
+	if (!periodComparison(comparison, periodOf(config))) return undefined
+	// The reading before last, which is where both fetches land it: the earlier
+	// window the engine was asked for, or the period before the newest one. A
+	// card with one reading still says what it would have compared against, it
+	// just has no figure to print in front of it.
 	return readings[readings.length - 2] ?? null
 }
 
@@ -264,13 +270,21 @@ export function defaultComparisonLabel(
 	comparison: NumberComparison,
 	config: NumberChartConfig,
 ): string | undefined {
-	if (comparison.source === 'previous') return previousLabel(config)
-	if (comparison.source === 'window') return windowShiftLabel(comparison.shift)
-	return __('vs target')
+	if (comparison.source === 'constant' || comparison.source === 'measure') {
+		return __('vs target')
+	}
+
+	// Worded by the fetch, because that is what the figure came from: a shifted
+	// window is named by the shift, and a grain's row before the last one by the
+	// grain it was grouped by.
+	const fetch = periodComparison(comparison, periodOf(config))
+	if (!fetch) return undefined
+	return fetch.shift ? windowShiftLabel(fetch.shift) : previousLabel(config)
 }
 
 /**
- * The period the card groups by, which is what `previous` steps back one of.
+ * The period the card groups by, which is what a period comparison steps back
+ * one of.
  *
  * Read off the period rather than off the date column: the grain moved onto the
  * chart, and a migrated card has no granularity left on its dimension.

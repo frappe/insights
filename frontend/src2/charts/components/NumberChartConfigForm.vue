@@ -5,7 +5,7 @@ import ColorInput from '../../components/ColorInput.vue'
 import DraggableList from '../../components/DraggableList.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { FIELDTYPES } from '../../helpers/constants'
-import { DEFAULT_CHOICE, periodOf, periodOfChoice, previousWindowShift } from '../window'
+import { DEFAULT_CHOICE, periodOf, periodOfChoice } from '../window'
 import { NumberChartConfig, NumberColumnOptions } from '../../types/chart.types'
 import { ColumnOption, Dimension, DimensionOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
@@ -81,43 +81,6 @@ function lowerChartLevelSettings() {
 }
 
 /**
- * The period, moved off the date column and onto the chart.
- *
- * A granularity on the date column used to group the card, and Period does that
- * now. Both at once would group twice, so opening the chart is what moves it —
- * the same bargain `lowerChartLevelSettings` strikes.
- *
- * A `previous` comparison beside a span period is repaired here too. It asked
- * for the row before the last one without asking the engine for that row, so
- * the card printed no delta at all.
- */
-function raisePeriodOntoChart() {
-	const chart = config.value
-	const grain = chart.date_column?.granularity
-	const stale = chart.number_column_options?.filter(
-		(options) => options?.comparison?.source === 'previous',
-	)
-
-	// Nothing to move, so nothing is written: a form that rewrote the config on
-	// open would mark every chart it was opened on dirty.
-	if (!grain && !(chart.window?.span && stale?.length)) return
-
-	if (grain && !chart.window?.span && !chart.window?.grain) {
-		chart.window = { ...chart.window, grain }
-	}
-	// deleted, not set to `undefined`: a config is stored as JSON, so a key with
-	// no value is a key the next load will not have
-	if (chart.date_column) delete chart.date_column.granularity
-
-	const shift = previousWindowShift(chart.window?.span)
-	if (shift) {
-		stale?.forEach((options) => {
-			options.comparison = { ...options.comparison, source: 'window', shift }
-		})
-	}
-}
-
-/**
  * The column and the period are one decision, so one handler answers both.
  *
  * A date column that groups nothing is a date column doing nothing, which is
@@ -138,7 +101,6 @@ function setDateColumn(dimension?: Dimension) {
 }
 
 lowerChartLevelSettings()
-raisePeriodOntoChart()
 </script>
 
 <template>

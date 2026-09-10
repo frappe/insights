@@ -1,7 +1,8 @@
-"""The one-time rewrite of what a number card's reading is measured against.
+"""The one-time rewrite of what a number card reads and what it is measured against.
 
-Three releases wrote it three ways. The patch writes every chart in the shape
-the card reads, so the two older ones are read nowhere. See
+Three releases wrote what a reading is measured against, and two wrote the
+period the card reads. The patch writes every chart in the shape the card reads,
+so the older ones are read nowhere. See
 `insights/patches/normalize_number_card_comparisons.py`.
 """
 
@@ -93,6 +94,54 @@ class TestNumberCardComparisons(InsightsIntegrationTestCase):
         normalize(chart)
 
         self.assertEqual(options_of(chart)[0], {})
+
+    def test_a_granularity_on_the_date_column_becomes_the_cards_period(self):
+        """A granularity used to group the card, and the period does that now.
+
+        Both at once would group twice, so the granularity is lifted rather
+        than left for whoever opens the chart next.
+        """
+        chart = config("Revenue", date_column={"column_name": "posting_date", "granularity": "month"})
+
+        self.assertTrue(normalize(chart))
+
+        self.assertEqual(chart["window"], {"grain": "month"})
+        self.assertNotIn("granularity", chart["date_column"])
+
+    def test_a_chart_that_already_names_a_period_only_drops_the_granularity(self):
+        """The period the author picked wins: a grain beside it would group the
+        card a second time."""
+        chart = config(
+            "Revenue",
+            window={"span": "month to date"},
+            date_column={"column_name": "posting_date", "granularity": "month"},
+        )
+
+        self.assertTrue(normalize(chart))
+
+        self.assertEqual(chart["window"], {"span": "month to date"})
+        self.assertNotIn("granularity", chart["date_column"])
+
+    def test_a_shifted_window_becomes_the_question_it_asked(self):
+        """The shift was how the period of the day fetched the comparison. The
+        period fetches it where the card is read now, so only the question is
+        stored: a year back, or the period before this one."""
+        chart = config(
+            "Revenue",
+            "Profit",
+            options=[
+                {"comparison": {"source": "window", "shift": {"unit": "year", "count": -1}}},
+                {"comparison": {"source": "window", "shift": {"unit": "month", "count": -3}}},
+            ],
+            window={"span": "last 3 months"},
+        )
+
+        self.assertTrue(normalize(chart))
+
+        self.assertEqual(
+            [o["comparison"] for o in options_of(chart)],
+            [{"source": "last year"}, PREVIOUS],
+        )
 
     def test_a_chart_already_in_the_shape_is_left_alone(self):
         chart = config("Revenue", options=[{"comparison": PREVIOUS}])

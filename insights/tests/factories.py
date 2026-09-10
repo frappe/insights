@@ -503,7 +503,7 @@ def chart_derivation_fixtures():
         {
             # a window is a group-by: one row per window, oldest first, so the
             # card reads the newest window and compares it with the shifted one
-            "title": "Revenue MTD vs same days last FY",
+            "title": "Revenue MTD vs same days last year",
             "chart_type": "Number",
             "query": "sales-invoice-lines",
             "config": {
@@ -525,10 +525,9 @@ def chart_derivation_fixtures():
                 "number_column_options": [
                     {
                         "comparison": {
-                            "source": "window",
-                            "shift": {"unit": "fiscal year", "count": -1},
+                            "source": "last year",
                             "show": "change",
-                            "label": "vs same days last FY",
+                            "label": "vs same days last year",
                         }
                     }
                 ],
@@ -550,7 +549,7 @@ def chart_derivation_fixtures():
                             "value": {
                                 "span": "month to date",
                                 "anchor": "2026-08-10",
-                                "shift": {"unit": "fiscal year", "count": -1},
+                                "shift": {"unit": "year", "count": -1},
                             },
                         },
                     ],
@@ -575,7 +574,7 @@ def chart_derivation_fixtures():
                                 {
                                     "span": "month to date",
                                     "anchor": "2026-08-10",
-                                    "shift": {"unit": "fiscal year", "count": -1},
+                                    "shift": {"unit": "year", "count": -1},
                                 },
                             ],
                         }

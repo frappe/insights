@@ -15,7 +15,7 @@ import dayjs from 'dayjs'
 import type { GranularityType } from '../helpers/constants'
 import { getFormattedDate } from '../query/helpers'
 import { __ } from '../translation'
-import type { ChartConfig, NumberChartConfig } from '../types/chart.types'
+import type { ChartConfig, NumberChartConfig, NumberComparison } from '../types/chart.types'
 import type { QueryResultRow } from '../types/query.types'
 
 export const WINDOW_UNITS = ['day', 'week', 'month', 'quarter', 'year', 'fiscal year'] as const
@@ -99,9 +99,30 @@ export function previousWindowShift(span?: string): WindowShift | undefined {
 	return { unit: parsed.unit, count: -windowPeriods(parsed) }
 }
 
-export function sameShift(one?: WindowShift, other?: WindowShift): boolean {
-	if (!one || !other) return false
-	return one.unit === other.unit && one.count === other.count
+/**
+ * How the card's period answers the question a period comparison asks, or
+ * nothing when it cannot answer it.
+ *
+ * The comparison states the question — the period before this one, or the same
+ * period a year back — and the period is what fetches it. A span reaches an
+ * earlier period by shifting its own span, so it names the shift the engine has
+ * to fetch beside the window. A grain filters nothing and already returns every
+ * period it has, so the row before the last one is the answer and no shift is
+ * needed. A year back is a span anchored a year earlier, which a grain cannot
+ * name: it would have to count rows back, and a gap in the data would make it
+ * count the wrong one.
+ */
+export function periodComparison(
+	comparison: NumberComparison,
+	period?: NumberPeriod,
+): { shift?: WindowShift } | undefined {
+	if (comparison.source === 'last year') {
+		return period?.span ? { shift: { ...LAST_YEAR } } : undefined
+	}
+	if (comparison.source !== 'previous') return undefined
+
+	const shift = previousWindowShift(period?.span)
+	return shift ? { shift } : {}
 }
 
 // what a card offers, and what each choice writes
