@@ -89,7 +89,9 @@ def sparkline_operations(chart_type: str, query: str, config: dict | None) -> li
         return []
 
     date_column = config.get("date_column") or {}
-    window = config.get("window") or {}
+    # Only a span needs this. A grain card already returns one row per period, so
+    # its own readings are the series.
+    window = _period(config)
     grain = SPARKLINE_GRAINS.get(_span_unit(window.get("span")))
     measures = _named_measures(config.get("number_columns"))
     if not grain or not date_column.get("column_name") or not measures:
@@ -226,19 +228,35 @@ def config_errors(chart_type: str, query: str, config: dict | None) -> list[str]
     return errors
 
 
-def _window_errors(config: dict) -> list[str]:
-    """Why a windowed card cannot be derived, empty when it can.
+def _period(config: dict) -> dict:
+    """The period a card reads, from whichever shape wrote it.
 
-    Derivation falls back to its unwindowed shape for a window it cannot read.
-    That draws a number over all time under the window's own title, which is a
+    A period names one group-by: a `span` filters to a stretch of the calendar
+    and groups by which stretch a row fell in, a `grain` filters nothing and
+    groups by the grain. Before this field existed, a granularity on the date
+    column did what a grain does, so it is lifted here rather than branched on
+    twice.
+    """
+    window = config.get("window") or {}
+    if window.get("span") or window.get("grain"):
+        return window
+
+    grain = (config.get("date_column") or {}).get("granularity")
+    return {"grain": grain} if grain else {}
+
+
+def _window_errors(config: dict) -> list[str]:
+    """Why a card with a period cannot be derived, empty when it can.
+
+    Derivation falls back to its ungrouped shape for a period it cannot read.
+    That draws a number over all time under the period's own title, which is a
     wrong reading nothing else reports.
     """
-    span = (config.get("window") or {}).get("span")
-    if not span:
+    if not _period(config):
         return []
 
     if not (config.get("date_column") or {}).get("column_name"):
-        return [_("Date column is required to read a window")]
+        return [_("Date column is required to read a period")]
 
     return []
 
@@ -305,19 +323,34 @@ def _add_axis_operation(operations: list[dict], config: dict):
 
 
 def _add_number_operation(operations: list[dict], config: dict):
-    date_column = config.get("date_column") or {}
-    window = config.get("window") or {}
+    """One row per period, oldest last.
 
-    if window.get("span") and date_column.get("column_name"):
+    Every shape here agrees on where the reading is: the last row. What differs
+    is how the rows are cut, and a card with no period is cut into one.
+    """
+    date_column = config.get("date_column") or {}
+    window = _period(config)
+
+    if not date_column.get("column_name"):
+        operations.append(_summarize(measures=_number_measures(config), dimensions=[]))
+        return
+
+    if window.get("span"):
         _add_window_operations(operations, config, window, date_column)
         return
 
-    operations.append(
-        _summarize(
-            measures=_number_measures(config),
-            dimensions=[date_column] if date_column.get("column_name") else [],
-        )
-    )
+    if window.get("grain"):
+        # A grain filters nothing: the card reads the newest period the data has,
+        # and the row before it is what a `previous` comparison reads. That is the
+        # shape a date dimension already groups by, so the grain rides it.
+        date_column = {**date_column, "granularity": window["grain"]}
+        operations.append(_summarize(measures=_number_measures(config), dimensions=[date_column]))
+        _add_order_by(operations, _result_column(date_column), "asc")
+        return
+
+    # No period, so no group-by. The date column is the sparkline's axis here, not
+    # something the reading is cut by.
+    operations.append(_summarize(measures=_number_measures(config), dimensions=[]))
 
 
 def _add_window_operations(operations: list[dict], config: dict, window: dict, date_column: dict):

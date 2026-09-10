@@ -3,8 +3,15 @@ import { computed } from 'vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { __ } from '../../translation'
 import type { NumberChartConfig, NumberComparison, NumberTarget } from '../../types/chart.types'
-import type { ColumnOption, Measure } from '../../types/query.types'
-import { LAST_YEAR, previousWindowShift, sameShift, type WindowShift } from '../window'
+import type { ColumnOption, Dimension, Measure } from '../../types/query.types'
+import {
+	LAST_YEAR,
+	previousWindowShift,
+	sameShift,
+	type NumberPeriod,
+	type WindowShift,
+} from '../window'
+import { defaultComparisonLabel } from '../adapter/number'
 import MeasurePicker from './MeasurePicker.vue'
 
 // What a reading is read against: the target it aims at, and the one number it
@@ -14,8 +21,10 @@ import MeasurePicker from './MeasurePicker.vue'
 
 const props = defineProps<{
 	columnOptions: ColumnOption[]
-	/** The period the chart reads, when it reads one. Both window choices shift it. */
-	window?: NumberChartConfig['window']
+	/** The period the chart reads, when it reads one. Both period choices need it. */
+	period?: NumberPeriod
+	/** The chart's date column, which words a `previous` comparison. */
+	dateColumn?: Dimension
 }>()
 const emit = defineEmits({ 'dialog-open': () => true })
 const target = defineModel<NumberTarget | undefined>('target')
@@ -27,24 +36,38 @@ const targetSourceOptions = [
 	{ label: __('Measure'), value: 'measure' },
 ]
 
-// A window is one of two readings back: the same span a year ago, or the span
-// before this one. Both are the chart's own window shifted, so a card with no
-// window offers neither.
-const SAME_WINDOW_LAST_YEAR = 'window:last year'
-const PREVIOUS_WINDOW = 'window:previous'
+// One period comparison, not two. "The period before this one" is a single
+// intent, and which of `previous` or a shifted `window` states it is the
+// period's business, not the author's — a grain period already holds that row,
+// and a span period has to ask the engine for it.
+const PREVIOUS_PERIOD = 'period:previous'
+const SAME_PERIOD_LAST_YEAR = 'period:last year'
 
+// Listed even when they cannot be picked. A list that changed shape under the
+// author would hide the dependency. A disabled row states it, and the remedy is
+// one section up.
 const comparisonSourceOptions = computed(() => [
 	{ label: __('None'), value: 'none' },
-	...(props.window?.span
-		? [
-				{ label: __('Same window last year'), value: SAME_WINDOW_LAST_YEAR },
-				{ label: __('Previous window'), value: PREVIOUS_WINDOW },
-		  ]
-		: []),
-	{ label: __('Previous'), value: 'previous' },
+	{ label: __('Previous period'), value: PREVIOUS_PERIOD, disabled: !props.period },
+	// A year back is the same span anchored a year earlier, which only a span
+	// names. A grain period would have to count rows back instead, and a gap in
+	// the data would make it count the wrong one.
+	{
+		label: __('Same period last year'),
+		value: SAME_PERIOD_LAST_YEAR,
+		disabled: !props.period?.span,
+	},
 	{ label: __('Number'), value: 'constant' },
 	{ label: __('Measure'), value: 'measure' },
 ])
+
+// The caption the card prints when the author types none. Shown as the field's
+// placeholder, the same rule the format fields follow for prefix and suffix.
+const captionPlaceholder = computed(() => {
+	if (!comparison.value) return ''
+	const config = { date_column: props.dateColumn, window: props.period } as NumberChartConfig
+	return defaultComparisonLabel(comparison.value, config) || ''
+})
 
 const showOptions = [
 	{ label: __('% change'), value: 'change' },
@@ -67,10 +90,12 @@ function setTargetSource(source: string) {
 const comparisonSource = computed(() => {
 	const current = comparison.value
 	if (!current) return 'none'
+	// The row before the last one, however it was asked for.
+	if (current.source === 'previous') return PREVIOUS_PERIOD
 	if (current.source !== 'window') return current.source
 	// A whole-year window shifts a year back either way, so the two choices write
 	// the same comparison. Reading it as the named one keeps the wording steady.
-	return sameShift(current.shift, LAST_YEAR) ? SAME_WINDOW_LAST_YEAR : PREVIOUS_WINDOW
+	return sameShift(current.shift, LAST_YEAR) ? SAME_PERIOD_LAST_YEAR : PREVIOUS_PERIOD
 })
 
 function setComparisonSource(source: string) {
@@ -79,20 +104,38 @@ function setComparisonSource(source: string) {
 		return
 	}
 
-	const shifts = source === SAME_WINDOW_LAST_YEAR || source === PREVIOUS_WINDOW
-	const shift = shifts ? windowShift(source) : undefined
-	comparison.value = {
-		source: shifts ? 'window' : (source as NumberComparison['source']),
-		...(shift ? { shift } : {}),
+	const kept = {
 		show: comparison.value?.show || 'change',
-		...(source === 'measure' ? { measure: blankMeasure() } : {}),
 		...(comparison.value?.label ? { label: comparison.value.label } : {}),
+	}
+
+	if (source === PREVIOUS_PERIOD || source === SAME_PERIOD_LAST_YEAR) {
+		comparison.value = { ...periodComparison(source), ...kept }
+		return
+	}
+
+	comparison.value = {
+		source: source as NumberComparison['source'],
+		...kept,
+		...(source === 'measure' ? { measure: blankMeasure() } : {}),
 	}
 }
 
-function windowShift(source: string): WindowShift | undefined {
-	if (source === SAME_WINDOW_LAST_YEAR) return { ...LAST_YEAR }
-	return previousWindowShift(props.window?.span)
+/**
+ * How a period comparison is asked for, which the period decides.
+ *
+ * A span period reaches an earlier period by shifting its own span, and the
+ * engine has to be told to fetch that window. A grain period already returns
+ * every period it has, so the row before the last one is the answer and no
+ * shift is needed.
+ */
+function periodComparison(source: string): Pick<NumberComparison, 'source' | 'shift'> {
+	const shift: WindowShift | undefined =
+		source === SAME_PERIOD_LAST_YEAR
+			? { ...LAST_YEAR }
+			: previousWindowShift(props.period?.span)
+
+	return shift ? { source: 'window', shift } : { source: 'previous' }
 }
 
 // The picker reads and writes the stored measure itself, so the aggregation it
@@ -187,7 +230,7 @@ function blankMeasure(): Measure {
 			<div class="pl-[30%]">
 				<FormControl
 					autocomplete="off"
-					placeholder="vs last month"
+					:placeholder="captionPlaceholder"
 					:modelValue="comparison.label"
 					@update:modelValue="comparison.label = $event || undefined"
 				/>

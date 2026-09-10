@@ -1,15 +1,17 @@
 <script setup lang="ts">
+import { Combobox, Tooltip } from 'frappe-ui'
+import { InfoIcon } from 'lucide-vue-next'
 import { computed } from 'vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { __ } from '../../translation'
 import type { NumberChartConfig } from '../../types/chart.types'
 import {
-	NO_WINDOW,
 	buildWindowSpan,
+	choiceOfPeriod,
+	includeCurrentLabel,
 	parseWindowSpan,
-	spanOfChoice,
-	windowChoiceOf,
-	windowChoices,
+	periodOfChoice,
+	windowChoiceGroups,
 	windowUnitLabel,
 } from '../window'
 
@@ -20,19 +22,34 @@ const props = defineProps<{ hasDateColumn: boolean }>()
 const period = defineModel<NumberChartConfig['window']>()
 
 const span = computed(() => parseWindowSpan(period.value?.span))
-const choice = computed(() => windowChoiceOf(period.value?.span))
+const choice = computed(() => choiceOfPeriod(period.value))
 
 const choices = computed(() => {
-	const options = windowChoices()
-	// A span nobody here wrote — hand-authored, or written by a later release —
-	// stands as its own choice, so opening the form does not drop it.
-	if (options.some((option) => option.value === choice.value)) return options
-	return [...options, { label: choice.value, value: choice.value }]
+	const groups = windowChoiceGroups()
+	const known = groups.some((group) =>
+		group.options.some((option) => option.value === choice.value),
+	)
+	// Nothing chosen yet shows the placeholder, so there is no entry to keep.
+	if (!choice.value || known) return groups
+
+	// A period nobody here wrote — hand-authored, or written by a later release —
+	// stands as its own choice, so opening the form does not drop it. Under no
+	// heading, because it belongs to no family.
+	return [
+		...groups,
+		{
+			group: choice.value,
+			hideLabel: true,
+			options: [{ label: choice.value, value: choice.value }],
+		},
+	]
 })
 
-function setChoice(value: string) {
-	const next = spanOfChoice(value, period.value?.span)
-	period.value = next ? { ...period.value, span: next } : undefined
+function setChoice(value: unknown) {
+	const next = value ? periodOfChoice(String(value), period.value) : undefined
+	// The anchor is the author's, not the choice's, so it rides across a switch.
+	const anchor = period.value?.anchor
+	period.value = next && anchor ? { ...next, anchor } : next
 }
 
 function setCount(count: any) {
@@ -54,34 +71,53 @@ function setIncludeCurrent(includeCurrent: boolean) {
 
 <template>
 	<div class="flex flex-col gap-2">
-		<InlineFormControlLabel label="Window">
-			<p v-if="!props.hasDateColumn" class="text-xs leading-7 text-ink-gray-4">
-				{{ __('Pick a date column first') }}
-			</p>
-			<FormControl
-				v-else
-				type="select"
+		<InlineFormControlLabel label="Period">
+			<template #label-suffix>
+				<Tooltip>
+					<InfoIcon class="h-3 w-3 text-ink-gray-4" />
+					<template #content>
+						<p class="max-w-56 leading-relaxed">
+							{{
+								__(
+									'The card reads the newest period; a comparison reads an earlier one.',
+								)
+							}}
+						</p>
+					</template>
+				</Tooltip>
+			</template>
+
+			<Combobox
+				class="w-full"
+				:disabled="!props.hasDateColumn"
+				:placeholder="props.hasDateColumn ? __('Pick a period') : __('Pick a date column')"
 				:options="choices"
-				:modelValue="choice"
+				:modelValue="(props.hasDateColumn && choice) || null"
 				@update:modelValue="setChoice($event)"
 			/>
 		</InlineFormControlLabel>
 
 		<template v-if="props.hasDateColumn && span?.shape === 'last'">
-			<div class="pl-[30%]">
+			<!-- The option above says "Last N months". This is the same sentence
+			     with the blank filled, so the count never stands on its own. -->
+			<div class="flex items-center gap-1.5 pl-[30%]">
+				<span class="text-p-sm text-ink-gray-5">{{ __('Last') }}</span>
 				<FormControl
 					type="number"
 					autocomplete="off"
-					placeholder="3"
+					class="w-14"
 					:min="1"
 					:modelValue="span.count"
 					@update:modelValue="setCount($event)"
 				/>
+				<span class="text-p-sm text-ink-gray-5">
+					{{ windowUnitLabel(span.unit, (span.count || 1) !== 1) }}
+				</span>
 			</div>
 
 			<div class="pl-[30%]">
 				<Toggle
-					:label="__('Include the current {0}', windowUnitLabel(span.unit))"
+					:label="includeCurrentLabel(span.unit)"
 					:modelValue="Boolean(span.includeCurrent)"
 					@update:modelValue="setIncludeCurrent($event)"
 				/>

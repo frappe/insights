@@ -49,8 +49,27 @@ The size of the bucket a date or ordered column is grouped into — day, week,
 month, quarter, year. "Grain" is the prose word. The identifier stays
 `granularity`: the key on a Dimension, the doctype field, and the wire field a
 card receives. frappe-ui's own prop type is `TimeGrain`. Both words are correct
-in their own layer.
+in their own layer. The one exception is a Number chart's Period, whose key is
+`window.grain`, because it sits beside `span` and a `granularity` there would
+read as the Dimension's.
 _Avoid_: renaming `granularity` in code, or writing "granularity" in prose
+
+**Period**:
+The stretch of the date column one Number card reads, and the unit its
+comparison steps back by. Stored as `window`, holding one of a `span` or a
+`grain` and never both. It is the only thing that groups a card by date: left
+out, the card is one number over the whole result and its date column only
+feeds the sparkline.
+_Avoid_: slice, window (in prose — `window` is the stored key), timeframe
+
+**Span**:
+A Period the engine resolves against the clock, written as the string
+`get_window` parses — `month to date`, `current month`, `last 3 months
+(include current)`. It filters to the stretch it names and groups by which
+stretch a row fell in, so a comparison gets a real row of its own. A `grain`
+Period filters nothing and groups by the grain instead.
+_Avoid_: timespan (Frappe's word for the same thing, kept only in the `within`
+operator's value)
 
 **Expression**:
 An inline calculated column, measure, or filter written in the ibis-based expression

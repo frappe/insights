@@ -6,6 +6,7 @@ import DraggableList from '../../components/DraggableList.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { FIELDTYPES } from '../../helpers/constants'
 import { measuredAgainst } from '../adapter/number'
+import { DEFAULT_CHOICE, periodOf, periodOfChoice, previousWindowShift } from '../window'
 import { NumberChartConfig, NumberColumnOptions } from '../../types/chart.types'
 import { ColumnOption, Dimension, DimensionOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
@@ -33,6 +34,10 @@ const config = defineModel<NumberChartConfig>({
 const date_dimensions = computed(() =>
 	props.dimensions.filter((d) => FIELDTYPES.DATE.includes(d.data_type)),
 )
+
+// What the card reads, which is what decides whether a period comparison is on
+// offer and whether a sparkline has a series behind it.
+const period = computed(() => periodOf(config.value))
 
 const updateColor = debounce((color: string) => {
 	config.value.sparkline_color = color
@@ -93,7 +98,65 @@ function lowerChartLevelSettings() {
 	delete chart.comparison
 }
 
+/**
+ * The period, moved off the date column and onto the chart.
+ *
+ * A granularity on the date column used to group the card, and Period does that
+ * now. Both at once would group twice, so opening the chart is what moves it —
+ * the same bargain `lowerChartLevelSettings` strikes.
+ *
+ * A `previous` comparison beside a span period is repaired here too. It asked
+ * for the row before the last one without asking the engine for that row, so
+ * the card printed no delta at all.
+ */
+function raisePeriodOntoChart() {
+	const chart = config.value
+	const grain = chart.date_column?.granularity
+	const stale = chart.number_column_options?.filter(
+		(options) => options?.comparison?.source === 'previous',
+	)
+
+	// Nothing to move, so nothing is written: a form that rewrote the config on
+	// open would mark every chart it was opened on dirty.
+	if (!grain && !(chart.window?.span && stale?.length)) return
+
+	if (grain && !chart.window?.span && !chart.window?.grain) {
+		chart.window = { ...chart.window, grain }
+	}
+	// deleted, not set to `undefined`: a config is stored as JSON, so a key with
+	// no value is a key the next load will not have
+	if (chart.date_column) delete chart.date_column.granularity
+
+	const shift = previousWindowShift(chart.window?.span)
+	if (shift) {
+		stale?.forEach((options) => {
+			options.comparison = { ...options.comparison, source: 'window', shift }
+		})
+	}
+}
+
+/**
+ * The column and the period are one decision, so one handler answers both.
+ *
+ * A date column that groups nothing is a date column doing nothing, which is
+ * why the picker offers no "None" — picking a column picks a period, and
+ * dropping the column drops it. Written only on an author's action, never on
+ * open, so no chart is dirtied by being looked at.
+ */
+function setDateColumn(dimension?: Dimension) {
+	config.value.date_column = dimension || ({} as Dimension)
+
+	if (!config.value.date_column?.column_name) {
+		delete config.value.window
+		return
+	}
+	if (!periodOf(config.value)) {
+		config.value.window = periodOfChoice(DEFAULT_CHOICE)
+	}
+}
+
 lowerChartLevelSettings()
+raisePeriodOntoChart()
 </script>
 
 <template>
@@ -138,7 +201,8 @@ lowerChartLevelSettings()
 									<div class="mt-1 border-t pt-2">
 										<NumberValueContext
 											:column-options="props.columnOptions"
-											:window="config.window"
+											:period="period"
+											:date-column="config.date_column as Dimension"
 											:target="getNumberOption(index, 'target') as any"
 											:comparison="
 												getNumberOption(index, 'comparison') as any
@@ -164,12 +228,17 @@ lowerChartLevelSettings()
 					</button>
 				</div>
 			</div>
+		</div>
+	</CollapsibleSection>
 
+	<CollapsibleSection title="Date">
+		<div class="flex flex-col gap-3 pt-1">
 			<DimensionPicker
-				label="Date"
+				label="Column"
 				:options="date_dimensions"
+				:enable-granularity="false"
 				:model-value="config.date_column as Dimension"
-				@update:model-value="config.date_column = $event || {}"
+				@update:model-value="setDateColumn($event)"
 			/>
 
 			<NumberWindowPicker
@@ -177,16 +246,11 @@ lowerChartLevelSettings()
 				:has-date-column="Boolean(config.date_column?.column_name)"
 			/>
 
-			<Toggle
-				v-if="config.date_column?.column_name"
-				label="Sparkline"
-				v-model="config.sparkline"
-			/>
+			<!-- No period, no series: the card is one number, so a sparkline would
+			     be one point. -->
+			<Toggle v-if="period" label="Sparkline" v-model="config.sparkline" />
 
-			<InlineFormControlLabel
-				v-if="config.date_column?.column_name && config.sparkline"
-				label="Color"
-			>
+			<InlineFormControlLabel v-if="period && config.sparkline" label="Color">
 				<ColorInput
 					:model-value="config.sparkline_color"
 					@update:model-value="updateColor($event)"

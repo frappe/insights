@@ -15,10 +15,11 @@ const props = defineProps<{
 <template>
 	<div class="flex items-start justify-between gap-1">
 		<span
-			class="inline-flex w-[30%] flex-shrink-0 text-xs leading-7 text-ink-gray-5"
+			class="inline-flex w-[30%] flex-shrink-0 items-center gap-1 text-xs leading-7 text-ink-gray-5"
 			:class="$attrs.class"
 		>
 			{{ props.label }}
+			<slot name="label-suffix" />
 		</span>
 		<div
 			class="h-full min-w-0"

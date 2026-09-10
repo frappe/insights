@@ -3,7 +3,7 @@ import { EMPTY_RESULT } from '../../query/helpers'
 import { ROW_HEIGHT } from '../../dashboard/grid_placement'
 import type { NumberChartConfig } from '../../types/chart.types'
 import { numberChart, type NumberChartSpec } from './fixtures'
-import { numberCardRows } from './number'
+import { defaultComparisonLabel, numberCardRows } from './number'
 import { adaptChart, drawsOwnCards } from './index'
 import NumberCards from './NumberCards.vue'
 
@@ -192,6 +192,17 @@ describe('the comparison', () => {
 
 	it('says what the change is measured against, at the grain it was grouped by', () => {
 		expect(cardsOf(previous)[0].deltaCaption).toBe('vs previous month')
+	})
+
+	it('reads that grain off the period, so a migrated card keeps its caption', () => {
+		// The grain moved onto the chart and the form deletes it from the
+		// dimension. Reading the dimension would leave the delta row unworded.
+		const migrated = {
+			date_column: { column_name: 'created_at', data_type: 'Datetime' },
+			window: { grain: 'month' },
+		} as unknown as NumberChartConfig
+
+		expect(defaultComparisonLabel({ source: 'previous' }, migrated)).toBe('vs previous month')
 	})
 
 	it('words a shifted window off the shift, so the card needs no caption typed', () => {
@@ -465,6 +476,19 @@ describe('the sparkline', () => {
 		})[0]
 		expect(card.value).toBe(60)
 		expect(card.sparkline).toEqual({ data: [10, 20, 30] })
+	})
+
+	it('draws nothing for a windowed card until its second run lands', () => {
+		// Its own rows are the reading and what it is held against, so drawing
+		// them made a two-point line that read as a trend.
+		const card = cardsOf({
+			values: [{ name: 'Items', readings: [40, 60] }],
+			period: monthly,
+			window: { span: 'month to date' },
+			sparkline: true,
+		})[0]
+		expect(card.value).toBe(60)
+		expect(card.sparkline).toBeUndefined()
 	})
 
 	it('reads each value off its own column of the second run', () => {

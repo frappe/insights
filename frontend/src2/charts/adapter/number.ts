@@ -11,7 +11,7 @@ import type {
 } from '../../types/chart.types'
 import type { Dimension, Measure, QueryResultRow } from '../../types/query.types'
 import { numberFormatOf } from '../number_format'
-import { windowShiftLabel } from '../window'
+import { periodOf, windowShiftLabel } from '../window'
 import NumberCards from './NumberCards.vue'
 import type { ChartAdapterInput, ChartFiller } from './types'
 
@@ -172,20 +172,33 @@ function readingOf(
 				card.delta = percentChange(latest, against)
 				card.deltaSuffix = '%'
 			}
-			const label = comparison.label || defaultLabel(comparison, config.date_column)
+			const label = comparison.label || defaultComparisonLabel(comparison, config)
 			if (label) card.deltaCaption = label
 			if (negativeIsBetter) card.negativeIsBetter = true
 		}
 	}
 
 	if (config.sparkline && config.date_column?.column_name) {
-		// A windowed card is one row per window, so its own readings are the trend
-		// of two windows and not of the period. The server splits the window for it
-		// and sends the series beside the rows; every other card is its own series.
-		const data = series ? series.map((row) => toNumber(row[column])) : readings
-		const sparkline: NumberCardSparkline = { data }
-		if (config.sparkline_color) sparkline.color = config.sparkline_color
-		card.sparkline = sparkline
+		// Which rows are the trend depends on how the card is grouped, and an
+		// absent series is not the same question as an absent second run.
+		//
+		// A grain card is one row per period, so its own readings are the trend.
+		// A span card is one row per window — the reading and what it is held
+		// against — which is never a trend, so it waits for the run the server
+		// makes for it. Falling back to the rows there drew a two-point line out
+		// of a reading and its comparison, and it looked like a trend.
+		const grouped = periodOf(config)
+		const data = series
+			? series.map((row) => toNumber(row[column]))
+			: grouped?.grain
+				? readings
+				: undefined
+
+		if (data) {
+			const sparkline: NumberCardSparkline = { data }
+			if (config.sparkline_color) sparkline.color = config.sparkline_color
+			card.sparkline = sparkline
+		}
 	}
 
 	return card
@@ -305,16 +318,30 @@ function percentChange(current: number | null, against: number | null): number |
 	return ((current - against) / Math.abs(against)) * 100
 }
 
-/** What the figure is measured against, when the author did not word it. */
-function defaultLabel(comparison: NumberComparison, dimension?: Dimension): string | undefined {
-	if (comparison.source === 'previous') return previousLabel(dimension)
+/**
+ * What the figure is measured against, when the author did not word it.
+ *
+ * Exported because the form shows it as the caption field's placeholder: an
+ * author reads what the card already prints there, rather than a fixed example
+ * that a weekly card would contradict.
+ */
+export function defaultComparisonLabel(
+	comparison: NumberComparison,
+	config: NumberChartConfig,
+): string | undefined {
+	if (comparison.source === 'previous') return previousLabel(config)
 	if (comparison.source === 'window') return windowShiftLabel(comparison.shift)
 	return __('vs target')
 }
 
-/** The period the date column groups by, which is what `previous` steps back one of. */
-function previousLabel(dimension?: Dimension): string | undefined {
-	const grain = granularityOptions.find((option) => option.value === dimension?.granularity)
+/**
+ * The period the card groups by, which is what `previous` steps back one of.
+ *
+ * Read off the period rather than off the date column: the grain moved onto the
+ * chart, and a migrated card has no granularity left on its dimension.
+ */
+function previousLabel(config: NumberChartConfig): string | undefined {
+	const grain = granularityOptions.find((option) => option.value === periodOf(config)?.grain)
 	return grain && __('vs previous {0}', grain.label.toLowerCase())
 }
 

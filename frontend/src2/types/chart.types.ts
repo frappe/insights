@@ -1,3 +1,4 @@
+import { GranularityType } from '../helpers/constants'
 import { FormatGroupArgs } from '../query/components/formatting_utils'
 import { Dimension, Measure } from './query.types'
 
@@ -207,13 +208,25 @@ export type NumberChartConfig = NumberFormatConfig & {
 	sparkline_color?: string
 	date_column?: Dimension
 	/**
-	 * The period the card reads. Needs `date_column`: the window is a group-by on
-	 * it, one row per window, so the card reads the newest window and compares it
-	 * with the one a `window` comparison shifts to.
+	 * The period the card reads, and the only thing that groups it by date.
+	 * Needs `date_column`. A period names one of two group-bys, never both:
+	 *
+	 * - `span` filters to a stretch of the calendar and groups by which stretch
+	 *   a row fell in. One row per stretch, so the card reads the newest and a
+	 *   `window` comparison shifts to an earlier one.
+	 * - `grain` filters nothing and groups by the date grain. One row per
+	 *   period present in the data, so the card reads the newest one there and
+	 *   a `previous` comparison reads the row before it.
+	 *
+	 * Left out, the card is one number over the whole result and the date column
+	 * only feeds the sparkline. Before this existed a granularity on
+	 * `date_column` did what `grain` does, which is what `periodOf` reads.
 	 */
 	window?: {
 		/** A span the engine understands, e.g. `month to date`. */
-		span: string
+		span?: string
+		/** A date grain, e.g. `month`. Mutually exclusive with `span`. */
+		grain?: GranularityType
 		/** Fixed anchor for a card that must not move with today. Defaults to today. */
 		anchor?: string
 	}

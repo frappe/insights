@@ -6,9 +6,11 @@ import {
 	formatWindowLabel,
 	labelWindowRows,
 	parseWindowSpan,
+	choiceOfPeriod,
 	previousWindowShift,
-	spanOfChoice,
-	windowChoiceOf,
+	periodOf,
+	periodOfChoice,
+	windowChoiceGroups,
 	windowChoices,
 	windowShiftLabel,
 } from './window'
@@ -24,43 +26,54 @@ function windowedCard(span: string, column = 'created_at'): ChartConfig {
 	} as unknown as ChartConfig
 }
 
-describe('the spans the picker writes', () => {
+describe('the periods the picker writes', () => {
 	// The server parses these strings, so this list is the contract. Every one of
 	// them is a span `get_window` reads: `<unit> to date`, `current <unit>`,
-	// `last <n> <unit>s`, and the `(include current)` suffix.
-	it('writes one string per choice, and reads its own choice back off it', () => {
-		const spans = windowChoices()
+	// `last <n> <unit>s`, and the `(include current)` suffix. The grain family
+	// writes no span at all — it groups by the grain and filters nothing.
+	it('writes one period per choice, and reads its own choice back off it', () => {
+		const periods = windowChoices()
 			.map((choice) => choice.value)
-			.filter((choice) => choice !== 'none')
-			.map((choice) => [choice, spanOfChoice(choice)] as const)
+			.map((choice) => [choice, periodOfChoice(choice)] as const)
 
-		expect(Object.fromEntries(spans)).toEqual({
-			'to date:week': 'week to date',
-			'to date:month': 'month to date',
-			'to date:quarter': 'quarter to date',
-			'to date:year': 'year to date',
-			'to date:fiscal year': 'fiscal year to date',
-			'current:day': 'current day',
-			'current:week': 'current week',
-			'current:month': 'current month',
-			'current:quarter': 'current quarter',
-			'current:year': 'current year',
-			'current:fiscal year': 'current fiscal year',
-			'last:day': 'last 3 days',
-			'last:week': 'last 3 weeks',
-			'last:month': 'last 3 months',
-			'last:quarter': 'last 3 quarters',
-			'last:year': 'last 3 years',
-			'last:fiscal year': 'last 3 fiscal years',
+		expect(Object.fromEntries(periods)).toEqual({
+			'to date:week': { span: 'week to date' },
+			'to date:month': { span: 'month to date' },
+			'to date:quarter': { span: 'quarter to date' },
+			'to date:year': { span: 'year to date' },
+			'to date:fiscal year': { span: 'fiscal year to date' },
+			'current:day': { span: 'current day' },
+			'current:week': { span: 'current week' },
+			'current:month': { span: 'current month' },
+			'current:quarter': { span: 'current quarter' },
+			'current:year': { span: 'current year' },
+			'current:fiscal year': { span: 'current fiscal year' },
+			'last:day': { span: 'last 3 days' },
+			'last:week': { span: 'last 3 weeks' },
+			'last:month': { span: 'last 3 months' },
+			'last:quarter': { span: 'last 3 quarters' },
+			'last:year': { span: 'last 3 years' },
+			'last:fiscal year': { span: 'last 3 fiscal years' },
+			'grain:day': { grain: 'day' },
+			'grain:week': { grain: 'week' },
+			'grain:month': { grain: 'month' },
+			'grain:quarter': { grain: 'quarter' },
+			'grain:year': { grain: 'year' },
+			'grain:fiscal year': { grain: 'fiscal_year' },
 		})
 
-		spans.forEach(([choice, span]) => expect(windowChoiceOf(span)).toBe(choice))
+		periods.forEach(([choice, period]) => expect(choiceOfPeriod(period)).toBe(choice))
+	})
+
+	it('never writes both a span and a grain, so a card groups once', () => {
+		expect(periodOfChoice('grain:month', { span: 'last 3 months' })).toEqual({ grain: 'month' })
+		expect(periodOfChoice('last:month', { grain: 'month' })).toEqual({ span: 'last 3 months' })
 	})
 
 	it('keeps the run an author already set when they change the unit', () => {
-		expect(spanOfChoice('last:week', 'last 6 months (include current)')).toBe(
-			'last 6 weeks (include current)',
-		)
+		expect(periodOfChoice('last:week', { span: 'last 6 months (include current)' })).toEqual({
+			span: 'last 6 weeks (include current)',
+		})
 	})
 
 	it('names one period without a count, so `last 1 months` is never written', () => {
@@ -90,8 +103,67 @@ describe('the spans the picker writes', () => {
 	it('leaves a span it cannot read standing as its own choice', () => {
 		// Hand-authored, or written by a later release. Opening the form must not
 		// drop it silently.
-		expect(windowChoiceOf('next 2 months')).toBe('next 2 months')
-		expect(spanOfChoice('next 2 months')).toBe('next 2 months')
+		expect(choiceOfPeriod({ span: 'next 2 months' })).toBe('next 2 months')
+		expect(periodOfChoice('next 2 months')).toEqual({ span: 'next 2 months' })
+	})
+
+	it('leaves a grain it has no choice for standing as its own choice', () => {
+		// An hourly card, from before a period was a period.
+		expect(choiceOfPeriod({ grain: 'hour' })).toBe('hour')
+	})
+})
+
+describe('the headings the picker lists under', () => {
+	it('puts every choice under exactly one heading', () => {
+		// A family added to the copy and left out of the groups would be
+		// unpickable, and nothing else would say so.
+		const grouped = windowChoiceGroups().flatMap((group) =>
+			group.options.map((option) => option.value),
+		)
+
+		expect(grouped.sort()).toEqual(
+			windowChoices()
+				.map((choice) => choice.value)
+				.sort(),
+		)
+	})
+
+	it('heads every family, and offers nothing outside one', () => {
+		expect(windowChoiceGroups().map((group) => group.group)).toEqual([
+			'Up to today',
+			'Whole current period',
+			'Previous periods',
+			'Latest in the data',
+		])
+	})
+})
+
+describe('the period a card reads', () => {
+	it('lifts the date column granularity of a card written before periods existed', () => {
+		const card = {
+			date_column: { column_name: 'created_at', granularity: 'month' },
+		} as any
+
+		expect(periodOf(card)).toEqual({ grain: 'month' })
+	})
+
+	it('lets the period win, so a migrated card is read once', () => {
+		const card = {
+			date_column: { column_name: 'created_at', granularity: 'month' },
+			window: { span: 'last 3 months' },
+		} as any
+
+		expect(periodOf(card)).toEqual({ span: 'last 3 months' })
+	})
+
+	it('names no period for a card with no date column', () => {
+		expect(periodOf({ date_column: {} } as any)).toBeUndefined()
+	})
+
+	it('offers no "no period" choice, because a column that groups nothing does nothing', () => {
+		expect(choiceOfPeriod(undefined)).toBe('')
+		expect(periodOfChoice('')).toBeUndefined()
+		expect(windowChoices().every((choice) => choice.value.includes(':'))).toBe(true)
 	})
 })
 

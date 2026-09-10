@@ -563,6 +563,8 @@ export type NumberChartSpec = {
 	 * period inside the window, keyed by value name.
 	 */
 	sparklineSeries?: Record<string, (number | null)[]>
+	/** A span the card reads, for a card grouped by window rather than by grain. */
+	window?: { span?: string; grain?: string }
 	/** A metric where a fall is the good news, e.g. churn. */
 	negativeIsBetter?: boolean
 	/** What the Chart sets for every value that sets nothing of its own. */
@@ -596,6 +598,7 @@ export function numberChart(spec: NumberChartSpec): ChartAdapterInput {
 		sparkline: Boolean(spec.sparkline),
 		...(spec.sparklineColor ? { sparkline_color: spec.sparklineColor } : {}),
 		...(period ? { date_column: period } : {}),
+		...(spec.window ? { window: spec.window } : {}),
 		...(spec.negativeIsBetter ? { negative_is_better: true } : {}),
 		...(spec.prefix !== undefined ? { prefix: spec.prefix } : {}),
 		...(spec.suffix !== undefined ? { suffix: spec.suffix } : {}),

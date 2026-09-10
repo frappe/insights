@@ -448,11 +448,15 @@ class TestChartDerivation(unittest.TestCase):
         names = [m["measure_name"] for m in summarize["measures"]]
         self.assertEqual(names, ["Revenue MTD", "COGS MTD", "Last Month"])
 
-    def test_a_card_with_no_window_derives_what_it_derived_before(self):
-        """A window is the only thing that writes a card's filter and its sort."""
+    def test_a_card_with_no_slice_reads_one_number_over_the_whole_result(self):
+        """A period is the only thing that cuts a card by date.
+
+        A date column with no period behind it is the sparkline's axis, so it
+        groups nothing — a card grouped by a column it does not period by would
+        read whichever period the data happened to end on.
+        """
         config = _windowed_config()
         config.pop("window")
-        config["number_column_options"] = [{"comparison": {"source": "previous"}}]
 
         operations = derive_operations("Number", "sales-invoice-lines", config)
         self.assertEqual(
@@ -465,10 +469,62 @@ class TestChartDerivation(unittest.TestCase):
                 {
                     "type": "summarize",
                     "measures": config["number_columns"],
-                    "dimensions": [config["date_column"]],
+                    "dimensions": [],
                 },
             ],
         )
+
+    def test_a_grain_period_groups_by_the_grain_and_sorts_oldest_first(self):
+        """A grain filters nothing: every period the data holds comes back, and
+        the sort is what makes the newest one the reading."""
+        config = _windowed_config()
+        config["window"] = {"grain": "month"}
+        config["number_column_options"] = [{"comparison": {"source": "previous"}}]
+
+        operations = derive_operations("Number", "sales-invoice-lines", config)
+        dated = {**config["date_column"], "granularity": "month"}
+        self.assertEqual(
+            operations,
+            [
+                {
+                    "type": "source",
+                    "table": {"type": "query", "workbook": "", "query_name": "sales-invoice-lines"},
+                },
+                {
+                    "type": "summarize",
+                    "measures": config["number_columns"],
+                    "dimensions": [dated],
+                },
+                {
+                    "type": "order_by",
+                    "column": {"type": "column", "column_name": "posting_date"},
+                    "direction": "asc",
+                },
+            ],
+        )
+
+    def test_a_granularity_on_the_date_column_is_read_as_a_grain_period(self):
+        """Every card authored before a period existed grouped by the date
+        column's granularity. Lifting it is what keeps their number where it
+        was, for the ones nobody opens in the builder."""
+        config = _windowed_config()
+        config.pop("window")
+        config["date_column"]["granularity"] = "month"
+
+        lifted = _windowed_config()
+        lifted["window"] = {"grain": "month"}
+
+        self.assertEqual(
+            derive_operations("Number", "sales-invoice-lines", config),
+            derive_operations("Number", "sales-invoice-lines", lifted),
+        )
+
+    def test_a_grain_card_asks_for_no_second_series(self):
+        """Its own rows are one per period, so they already are the series."""
+        config = _sparkline_config()
+        config["window"] = {"grain": "month"}
+
+        self.assertEqual(sparkline_operations("Number", "sales-invoice-lines", config), [])
 
     def test_a_window_a_card_cannot_group_by_is_left_ungrouped(self):
         """A window needs a date column to be a group-by, and there is nothing to
