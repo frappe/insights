@@ -550,7 +550,6 @@
 							"format": "currency"
 						}
 					],
-					"comparison": false,
 					"sparkline": false,
 					"shorten_numbers": true
 				}
@@ -573,7 +572,6 @@
 							"format": "currency"
 						}
 					],
-					"comparison": false,
 					"sparkline": false,
 					"shorten_numbers": true
 				}
@@ -597,7 +595,6 @@
 							"data_type": "Decimal"
 						}
 					],
-					"comparison": false,
 					"sparkline": false,
 					"shorten_numbers": false,
 					"suffix": "%",
@@ -623,7 +620,6 @@
 							"data_type": "Decimal"
 						}
 					],
-					"comparison": false,
 					"sparkline": false,
 					"shorten_numbers": false,
 					"suffix": "%",
@@ -648,7 +644,6 @@
 							"format": "currency"
 						}
 					],
-					"comparison": false,
 					"sparkline": false,
 					"shorten_numbers": true
 				}

@@ -320,6 +320,15 @@ describe('the comparison', () => {
 		expect(card.negativeIsBetter).toBe(true)
 	})
 
+	it('falls back to what the chart set for negative-is-better', () => {
+		const card = cardsOf({
+			values: [{ name: 'Churn', readings: [300, 200], comparison: { source: 'previous' } }],
+			period: monthly,
+			negativeIsBetter: true,
+		})[0]
+		expect(card.negativeIsBetter).toBe(true)
+	})
+
 	it('states no change when there is nothing to measure one from', () => {
 		expect(
 			cardsOf({
@@ -369,81 +378,6 @@ describe('a card carrying both a target and a comparison', () => {
 		expect(card.target).toBe(400)
 		expect(card.delta).toBe(50)
 		expect(card.deltaCaption).toBe('vs last month')
-	})
-})
-
-describe('a chart saved before a value named its own target and comparison', () => {
-	it('reads the old comparison flag as one previous-period comparison', () => {
-		const card = cardsOf({
-			values: [{ name: 'Revenue', readings: [200, 300] }],
-			period: monthly,
-			comparison: true,
-		})[0]
-		expect(card.delta).toBe(50)
-		expect(card.deltaCaption).toBe('vs previous month')
-	})
-
-	it('still falls back to what the chart set for negative-is-better', () => {
-		const card = cardsOf({
-			values: [{ name: 'Churn', readings: [300, 200] }],
-			period: monthly,
-			comparison: true,
-			negativeIsBetter: true,
-		})[0]
-		expect(card.negativeIsBetter).toBe(true)
-	})
-
-	it('reads a reference list as the movement it held and the target it aimed at', () => {
-		// One release wrote both as references. A movement is the comparison; an
-		// attainment was only ever a target worded as a percentage.
-		const card = cardsOf({
-			values: [
-				{
-					name: 'Revenue',
-					readings: [200, 300],
-					references: [
-						{ source: 'previous', label: 'vs last month' },
-						{ source: 'constant', value: 400, show: 'attainment', label: 'of target' },
-					],
-				},
-			],
-			period: monthly,
-		})[0]
-		expect(card.target).toBe(400)
-		expect(card.delta).toBe(50)
-		expect(card.deltaCaption).toBe('vs last month')
-	})
-
-	it('reads an attainment reference on a column as a target read off that column', () => {
-		const card = cardsOf({
-			values: [
-				{
-					name: 'Revenue',
-					readings: [100, 300],
-					target: [500, 400],
-					references: [
-						{
-							source: 'measure',
-							measure: measureNamed('Revenue_target'),
-							show: 'attainment',
-						},
-					],
-				},
-			],
-			period: monthly,
-		})[0]
-		expect(card.target).toBe(400)
-		expect(card.delta).toBeUndefined()
-	})
-
-	it('takes the value at its word when it named its own references, including none', () => {
-		const card = cardsOf({
-			values: [{ name: 'Revenue', readings: [200, 300], references: [] }],
-			period: monthly,
-			comparison: true,
-		})[0]
-		expect(card.delta).toBeUndefined()
-		expect(card.target).toBeUndefined()
 	})
 })
 

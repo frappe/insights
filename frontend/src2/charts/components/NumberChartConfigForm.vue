@@ -5,7 +5,6 @@ import ColorInput from '../../components/ColorInput.vue'
 import DraggableList from '../../components/DraggableList.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { FIELDTYPES } from '../../helpers/constants'
-import { measuredAgainst } from '../adapter/number'
 import { DEFAULT_CHOICE, periodOf, periodOfChoice, previousWindowShift } from '../window'
 import { NumberChartConfig, NumberColumnOptions } from '../../types/chart.types'
 import { ColumnOption, Dimension, DimensionOption } from '../../types/query.types'
@@ -54,48 +53,31 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 }
 
 /**
- * What a value is measured against, and how good a fall is, moved onto the value.
+ * How good a fall is, moved onto the value.
  *
- * Both are per-value settings now — the `comparison` flag the chart carried, and
- * the `references` list a value carried before it named one target and one
- * comparison. The adapter still reads both shapes so a chart nobody opens keeps
- * drawing. But a form that hid a target it was still printing would trap the
- * author, so opening the chart is what moves it.
+ * It is a per-value setting now. What a value is measured against is one too,
+ * and `insights.patches.normalize_number_card_comparisons` moved that where it
+ * belongs, so the only chart-level setting left to lower is this one.
  *
  * How a number prints is not here: `number_format` and `number_formats` sit over
  * the old spellings rather than replacing them, so nothing has to be rewritten.
  */
 function lowerChartLevelSettings() {
 	const chart = config.value
-	const inherited: NumberColumnOptions = {}
-	if (chart.negative_is_better) inherited.negative_is_better = chart.negative_is_better
-
-	const references = chart.number_column_options?.some(
-		(options) => (options as { references?: unknown })?.references,
-	)
-
 	// Nothing to move, so nothing is written. A form that rewrote the config on
 	// open would mark every chart it was opened on dirty.
-	if (!Object.keys(inherited).length && !chart.comparison && !references) return
+	if (!chart.negative_is_better) return
 
 	chart.number_columns?.forEach((_, index) => {
-		const options = chart.number_column_options[index] || {}
-		// What the value is measured against, read the same way the adapter reads
-		// it, so the form shows what the card is already drawing.
-		const { target, comparison } = measuredAgainst(chart, options)
-		delete (options as { references?: unknown }).references
 		// A value that set something of its own already overrode the chart, so
 		// lowering the chart's onto it would undo the override.
 		chart.number_column_options[index] = {
-			...inherited,
-			...options,
-			...(target ? { target } : {}),
-			...(comparison ? { comparison } : {}),
+			negative_is_better: chart.negative_is_better,
+			...(chart.number_column_options[index] || {}),
 		}
 	})
 
 	delete chart.negative_is_better
-	delete chart.comparison
 }
 
 /**

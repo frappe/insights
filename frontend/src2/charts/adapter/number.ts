@@ -146,7 +146,7 @@ function readingOf(
 	if (format.decimals !== undefined) card.precision = format.decimals
 	if (format.shorten) card.compact = true
 
-	const { target, comparison } = measuredAgainst(config, options)
+	const { target, comparison } = options
 
 	// The raw number: it prints on the value line, in the value's own units, so
 	// v2 formats it with the props the value is already formatted by.
@@ -202,71 +202,6 @@ function readingOf(
 	}
 
 	return card
-}
-
-/** The shape one release wrote: a list of references, each with its own way of printing. */
-type LegacyReference = {
-	source: 'previous' | 'constant' | 'measure'
-	value?: number
-	measure?: Measure
-	show?: 'change' | 'attainment' | 'delta'
-	label?: string
-}
-
-/**
- * What the value is measured against, read from whichever shape wrote it.
- *
- * Three releases have written this: the current one names a `target` and a
- * `comparison` per value; the one before it wrote a `references` list, of which
- * a movement is the comparison and an attainment the target; and the one before
- * that wrote a single chart-level `comparison` flag, which said the same thing
- * as one `previous` comparison. A value that names its own answers for itself,
- * including when it names none — an author who removed the last one meant to.
- */
-export function measuredAgainst(
-	config: NumberChartConfig,
-	options: NumberColumnOptions,
-): { target?: NumberTarget; comparison?: NumberComparison } {
-	if (options.target || options.comparison) {
-		return { target: options.target, comparison: options.comparison }
-	}
-
-	const references = (options as { references?: LegacyReference[] }).references
-	if (references) return fromReferences(references)
-
-	return config.comparison ? { comparison: { source: 'previous' } } : {}
-}
-
-function fromReferences(references: LegacyReference[]): {
-	target?: NumberTarget
-	comparison?: NumberComparison
-} {
-	const moves = (reference: LegacyReference) =>
-		reference.show === 'change' || reference.show === 'delta' || reference.source === 'previous'
-
-	const leading = references.findIndex(moves)
-	const aim = references.findIndex(
-		(reference, index) => index !== leading && reference.show === 'attainment',
-	)
-
-	const context: { target?: NumberTarget; comparison?: NumberComparison } = {}
-	if (leading !== -1) {
-		const reference = references[leading]
-		context.comparison = {
-			source: reference.source,
-			...(reference.value !== undefined ? { value: reference.value } : {}),
-			...(reference.measure ? { measure: reference.measure } : {}),
-			show: reference.show === 'delta' ? 'delta' : 'change',
-			...(reference.label ? { label: reference.label } : {}),
-		}
-	}
-	if (aim !== -1) {
-		const reference = references[aim]
-		context.target = reference.measure
-			? { measure: reference.measure }
-			: { value: reference.value }
-	}
-	return context
 }
 
 /** The number the reading is aimed at, or `undefined` when nothing names one. */
@@ -383,7 +318,7 @@ const CARD = {
  */
 export function numberCardRows(config: NumberChartConfig, column?: string): number {
 	const options = config.number_column_options?.[readingIndex(config, column)] || {}
-	const { comparison } = measuredAgainst(config, options)
+	const comparison = options.comparison
 	const sparkline = Boolean(config.sparkline && config.date_column?.column_name)
 
 	let height = CARD.cellPadding + CARD.chrome + CARD.title + CARD.gap + CARD.value

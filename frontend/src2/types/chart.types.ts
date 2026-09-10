@@ -240,8 +240,6 @@ export type NumberChartConfig = NumberFormatConfig & {
 	prefix?: string
 	suffix?: string
 	negative_is_better?: boolean
-	/** Set by a release before the per-value shape. Reads as one `previous` comparison. */
-	comparison?: boolean
 }
 export type NumberColumnOptions = {
 	/**
@@ -258,10 +256,7 @@ export type NumberColumnOptions = {
 	negative_is_better?: boolean
 	/** What the reading is aimed at. A target belongs to the metric, not to the chart. */
 	target?: NumberTarget
-	/**
-	 * The one number the reading is compared with. Absent falls back to the
-	 * chart's `comparison` flag; a value that names none compares nothing.
-	 */
+	/** The one number the reading is compared with. Naming none compares nothing. */
 	comparison?: NumberComparison
 }
 

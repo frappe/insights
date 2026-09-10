@@ -540,12 +540,10 @@ export type NumberValueSpec = {
 	targetValue?: number
 	/** Aims the reading at the `<name>_target` column `target` fills. */
 	targetColumn?: boolean
-	/** The one number the reading is compared with. Absent falls back to `comparison`. */
+	/** The one number the reading is compared with. Naming none compares nothing. */
 	comparison?: NumberComparison
 	/** The target column's data, one number per period. */
 	target?: (number | null)[]
-	/** The reference list a release before `target`/`comparison` wrote. */
-	references?: Record<string, any>[]
 }
 
 export type NumberChartSpec = {
@@ -555,7 +553,6 @@ export type NumberChartSpec = {
 	column?: string
 	/** The Dimension the readings are grouped by. A comparison and a sparkline both need one. */
 	period?: DimensionSpec
-	comparison?: boolean
 	sparkline?: boolean
 	sparklineColor?: string
 	/**
@@ -592,9 +589,7 @@ export function numberChart(spec: NumberChartSpec): ChartAdapterInput {
 			...(value.targetValue !== undefined ? { target: { value: value.targetValue } } : {}),
 			...(value.targetColumn ? { target: { measure: toMeasure(`${value.name}_target`) } } : {}),
 			...(value.comparison ? { comparison: value.comparison } : {}),
-			...(value.references ? { references: value.references } : {}),
 		})),
-		comparison: Boolean(spec.comparison),
 		sparkline: Boolean(spec.sparkline),
 		...(spec.sparklineColor ? { sparkline_color: spec.sparklineColor } : {}),
 		...(period ? { date_column: period } : {}),

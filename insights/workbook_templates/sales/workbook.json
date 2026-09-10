@@ -384,20 +384,31 @@
 					"number_column_options": [
 						{
 							"decimal": 2,
-							"shorten_numbers": true
+							"shorten_numbers": true,
+							"comparison": {
+								"source": "previous"
+							}
 						},
 						{
-							"shorten_numbers": false
+							"shorten_numbers": false,
+							"comparison": {
+								"source": "previous"
+							}
 						},
 						{
 							"decimal": 2,
-							"shorten_numbers": true
+							"shorten_numbers": true,
+							"comparison": {
+								"source": "previous"
+							}
 						},
 						{
-							"shorten_numbers": false
+							"shorten_numbers": false,
+							"comparison": {
+								"source": "previous"
+							}
 						}
 					],
-					"comparison": true,
 					"sparkline": true,
 					"date_column": {
 						"dimension_name": "posting_date",
@@ -636,7 +647,6 @@
 							"shorten_numbers": false
 						}
 					],
-					"comparison": false,
 					"sparkline": false,
 					"order_by": [],
 					"limit": 100,

@@ -124,25 +124,8 @@ def card_rows(config: dict, reading: str) -> int:
 
 
 def _compared(config: dict, reading: str) -> bool:
-    """Whether the reading prints a delta row.
-
-    The three shapes `measuredAgainst` reads, in its order: a comparison the
-    reading names, the `references` list a release before it wrote, and the
-    chart-level flag that said one previous-period comparison for every reading.
-    """
-    options = _options_of(config, reading)
-    if options.get("target") or options.get("comparison"):
-        return bool(options.get("comparison"))
-
-    references = options.get("references")
-    if isinstance(references, list):
-        return any(
-            r.get("show") in ("change", "delta") or r.get("source") == "previous"
-            for r in references
-            if isinstance(r, dict)
-        )
-
-    return bool(config.get("comparison"))
+    """Whether the reading prints a delta row."""
+    return bool(_options_of(config, reading).get("comparison"))
 
 
 def _options_of(config: dict, reading: str) -> dict:
