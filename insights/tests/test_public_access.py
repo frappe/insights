@@ -174,9 +174,11 @@ class TestPublicMethodArguments(InsightsIntegrationTestCase):
         args = self.filter_args(DT.CHART, "get_data", '{"force": true, "page": 2}')
         self.assertEqual(args, {"page": 2})
 
-    def test_download_results_is_filtered_too(self):
-        args = self.filter_args(DT.QUERY, "download_results", {"active_operation_idx": 0, "format": "csv"})
-        self.assertEqual(args, {"format": "csv"})
+    def test_a_download_is_not_a_public_method(self):
+        """No reading surface downloads: the export button belongs to the builder."""
+        from insights.api import is_public_method
+
+        self.assertFalse(is_public_method(DT.QUERY, "download_results"))
 
     def test_no_public_method_accepts_a_builder_parameter(self):
         """The rule, not one parameter name."""

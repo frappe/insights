@@ -295,7 +295,6 @@ def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
 # published document.
 PUBLIC_METHOD_ARGS = {
     ("Insights Chart v3", "get_data"): {"page", "page_size", "chart_name", "dashboard_items", "filters"},
-    ("Insights Query v3", "download_results"): {"format", "adhoc_filters"},
     ("Insights Dashboard v3", "get_distinct_column_values"): {
         "filter_name",
         "search_term",
