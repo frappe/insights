@@ -6,7 +6,6 @@ import os
 import frappe
 from frappe.handler import is_valid_http_method, is_whitelisted
 from frappe.monitor import add_data_to_monitor
-from frappe.utils import cint
 
 from insights.api.shared import get_public_permission_user, is_public
 from insights.decorators import insights_whitelist
@@ -20,7 +19,7 @@ from insights.insights.doctype.insights_team.insights_team import (
     check_data_source_permission,
 )
 from insights.permission_user import permission_user
-from insights.utils import get_owned_file
+from insights.utils import get_currency_symbols, get_owned_file
 
 
 @insights_whitelist()
@@ -28,8 +27,8 @@ def get_app_version():
     return frappe.get_attr("insights" + ".__version__")
 
 
-@frappe.whitelist(allow_guest=True)  # nosemgrep - the payload is the site's currency and
-# country, which a public dashboard already prints
+@frappe.whitelist(allow_guest=True)  # nosemgrep - the payload is the site's country and
+# currency, which a public dashboard already prints
 def get_site_info():
     """Settings of the site, not of whoever reads it. A guest opening a public
     dashboard needs them to print an amount the way the workbook does."""
@@ -40,30 +39,18 @@ def get_site_info():
 
 
 def get_currency_info():
-    """The site's display currency, as the client needs it to print an amount.
+    """The site's currency: the code a measure that names no column prints in.
+
+    Its symbol is the one entry the client starts with.
 
     The `currency` global default covers a site with ERPNext and one without:
     ERPNext's Global Defaults writes `default_currency` into it, and plain Frappe
-    writes `System Settings.currency` into it. `hide_currency_symbol` empties the
-    symbol, which is how a site says amounts print bare.
+    writes `System Settings.currency` into it.
     """
     # System Settings writes the default only when the field changes, so read the
     # field too — a site installed with a currency has never "changed" it
     currency = frappe.db.get_default("currency") or frappe.db.get_single_value("System Settings", "currency")
-    if not currency:
-        return {"currency": None, "currency_symbol": "", "currency_symbol_on_right": False}
-
-    hidden = cint(frappe.defaults.get_global_default("hide_currency_symbol"))
-    symbol, on_right = frappe.db.get_value("Currency", currency, ["symbol", "symbol_on_right"]) or (
-        None,
-        None,
-    )
-    return {
-        "currency": currency,
-        # a currency with no symbol of its own prints as its code, the way fmt_money does
-        "currency_symbol": "" if hidden else (symbol or currency),
-        "currency_symbol_on_right": bool(on_right),
-    }
+    return {"currency": currency or None, "currency_symbols": get_currency_symbols([currency])}
 
 
 @insights_whitelist()
