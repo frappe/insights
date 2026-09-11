@@ -94,7 +94,12 @@ export default defineConfig({
 		// renderers, series and registered geographies in module state — so a
 		// second instance means `registerMap` here and `init` in there disagree
 		// about which maps exist. No-op while frappe-ui comes from the registry.
-		dedupe: ['echarts', 'zrender', 'vue', '@vueuse/core'],
+		//
+		// frappe-ui is here for a different reason. `@framework/ui` is a link to
+		// the frappe app, which does not depend on frappe-ui, so the bare import
+		// inside it resolves from the frappe app and finds nothing. Deduping
+		// sends it to this app's copy.
+		dedupe: ['frappe-ui', 'echarts', 'zrender', 'vue', '@vueuse/core'],
 	},
 	build: {
 		outDir: `../insights/public/frontend`,
