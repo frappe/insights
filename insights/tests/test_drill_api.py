@@ -193,6 +193,22 @@ def equals(column, value):
     return {"column": column, "operator": "=", "value": value}
 
 
+def filter_group(column_name, operator, value):
+    """One routed filter group, shaped the way `route_filters` writes it."""
+    return {
+        "type": "filter_group",
+        "logical_operator": "And",
+        "filters": [
+            {
+                "type": "filter",
+                "column": {"type": "column", "column_name": column_name},
+                "operator": operator,
+                "value": value,
+            }
+        ],
+    }
+
+
 class TestDrillAPI(InsightsIntegrationTestCase):
     SAVEPOINT = "test_drill_api"
 
@@ -1012,6 +1028,27 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         )
 
         # the rows agree with the number the filtered card was showing
+        self.assertEqual(self.descriptions(result), [OPEN_LOW])
+
+    def test_a_chart_keyed_filter_group_does_not_reach_the_drill(self):
+        """A card filter lands after the chart's summarize, where the drill does not go."""
+        query, chart, _ = self.make_content()
+
+        adhoc_filters = {
+            # a rule on the card's own measure. The drill's pipeline is sliced
+            # before the summarize, so applying it there would throw
+            chart.name: filter_group("count_of_rows", ">", 5),
+            query.name: filter_group("description", "contains", "open low"),
+        }
+
+        with as_user(AUTHOR), db_connections():
+            result = drill_data(
+                chart,
+                [rows_level(filters=[equals("status", "Open")])],
+                adhoc_filters=adhoc_filters,
+            )
+
+        # the query-keyed group still narrows the rows
         self.assertEqual(self.descriptions(result), [OPEN_LOW])
 
     def test_a_stack_without_a_level_asks_for_nothing(self):

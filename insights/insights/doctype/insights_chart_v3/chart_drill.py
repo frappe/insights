@@ -197,6 +197,10 @@ def drill_data(
     if not all(isinstance(level, dict) for level in drill_stack):
         frappe.throw(_("A drill level must name its segment and its action"))
 
+    # A group keyed by the chart is a rule on the card's own columns: the drilled row already
+    # satisfied it and the segment is its dimension values, so it has nothing left to say here.
+    adhoc_filters = {k: v for k, v in (adhoc_filters or {}).items() if k != chart.name} or None
+
     operations, index = _pipeline(chart, operations)
     step = operations[index]
     sliced = operations[:index]

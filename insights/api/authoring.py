@@ -77,7 +77,7 @@ def get_chart_data(
     if errors:
         return {"errors": errors}
 
-    chart = preview_chart(chart_type, query, config)
+    chart = preview_chart(chart_type, query, config, name=chart_name)
 
     operations = chart.get_operations()
     chart_query = chart.get_query()
@@ -145,7 +145,7 @@ def get_drill_data(
     """
     check_authoring_seat(query)
 
-    chart = preview_chart(chart_type, query, config)
+    chart = preview_chart(chart_type, query, config, name=chart_name)
     adhoc_filters = route_filters(dashboard_items, chart_name, filters) if chart_name else None
 
     response = drill_data(
@@ -186,19 +186,23 @@ def check_authoring_seat(query: str):
     frappe.has_permission(QUERY, ptype="read", doc=query, throw=True)
 
 
-def preview_chart(chart_type: str | None, query: str, config: dict | None):
+def preview_chart(chart_type: str | None, query: str, config: dict | None, name: str | None = None):
     """A chart document for a shape nobody has saved, made to run and thrown away.
 
     The query builder sends no chart at all — it names its source query and
     hands over its own operations — and this is still what carries them: the
     connection, the execution reference and the authority all hang off the
     source query either way.
+
+    `name` is the chart the caller is drawing, when it is drawing one. The
+    throwaway query takes that name, so a filter linked to the chart lands on it
+    here as it does on the saved chart's own read path.
     """
     chart = frappe.new_doc(CHART)
     # the throwaway query this becomes is named after the chart, and the builder
     # names its source query in the same request — two documents in one build, so
     # this one needs a name of its own or the cycle guard mistakes it for the other
-    chart.name = f"preview-of-{query}"
+    chart.name = name or f"preview-of-{query}"
     chart.chart_type = chart_type
     chart.query = query
     chart.config = frappe.as_json(config or {})
