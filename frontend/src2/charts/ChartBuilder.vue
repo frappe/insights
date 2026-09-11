@@ -18,6 +18,7 @@ import ChartShareDialog from './components/ChartShareDialog.vue'
 import ChartSortConfig from './components/ChartSortConfig.vue'
 import ChartTypeSelector from './components/ChartTypeSelector.vue'
 import CollapsibleSection from './components/CollapsibleSection.vue'
+import LoadingOverlay from '../components/LoadingOverlay.vue'
 
 const props = defineProps<{ chart_name: string; queries: DropdownOption[] }>()
 
@@ -26,8 +27,6 @@ provide('chart', chart)
 // @ts-ignore
 window.chart = chart
 
-await waitUntil(() => chart.isloaded)
-
 // the preview is the card the builder draws: it sends the config being edited to
 // the authoring endpoint and gets back the rows, the SQL and the operations the
 // server derived — the same round trip the old client derivation already made
@@ -35,10 +34,10 @@ const preview = useChartPreview(chart)
 provide('chartPreview', preview)
 
 // the first draw separately, so opening a chart does not wait out the debounce
-preview.load()
+waitUntil(() => !chart.pending).then(() => preview.load())
 watchDebounced(
 	() => [chart.doc.query, chart.doc.chart_type, chart.doc.config],
-	() => preview.load(),
+	() => !chart.pending && preview.load(),
 	{
 		deep: true,
 		debounce: 500,
@@ -78,6 +77,7 @@ const showShareDialog = ref(false)
 
 <template>
 	<div class="relative flex h-full w-full overflow-hidden">
+		<LoadingOverlay v-if="chart.pending" />
 		<div class="relative flex h-full w-full flex-col gap-3 overflow-hidden px-4 pb-4 pt-3">
 			<!-- no page header: the card's header is the page's, so the title is
 			     drawn once with the actions beside it -->

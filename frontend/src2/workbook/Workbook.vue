@@ -21,18 +21,19 @@ const workbook = useWorkbook(props.workbook_name)
 provide(workbookKey, workbook)
 window.workbook = workbook
 
-await waitUntil(() => workbook.isloaded)
-
-if (workbook.doc.queries.length === 0) {
-	workbook.addQuery()
-}
-
 const router = useRouter()
 const route = useRoute()
-if (route.name === 'Workbook' && workbook.doc.queries.length) {
-	const query = workbook.doc.queries[0]
-	router.replace(`/workbook/${workbook.doc.name}/query/${query.name}`)
-}
+
+// the workbook opens on a query, and an empty one gets its first
+waitUntil(() => !workbook.pending).then(() => {
+	if (workbook.doc.queries.length === 0) {
+		workbook.addQuery()
+	}
+	if (route.name === 'Workbook' && workbook.doc.queries.length) {
+		const query = workbook.doc.queries[0]
+		router.replace(`/workbook/${workbook.doc.name}/query/${query.name}`)
+	}
+})
 
 // when we navigate from query to chart of the same query, refresh the chart
 watch(
@@ -80,14 +81,14 @@ watchEffect(() => {
 
 <template>
 	<div class="flex h-full w-full flex-col">
-		<LoadingOverlay v-if="!workbook.isloaded" />
+		<LoadingOverlay v-if="workbook.pending" />
 		<WorkbookNavbar />
 		<div
 			class="relative flex w-full flex-1 overflow-hidden"
 			:class="workbook.showSidebar ? 'flex-row' : 'flex-col'"
 		>
 			<WorkbookSidebar />
-			<RouterView v-if="workbook.isloaded" :key="route.fullPath" v-slot="{ Component }">
+			<RouterView v-if="!workbook.pending" :key="route.fullPath" v-slot="{ Component }">
 				<component :is="Component" />
 				<div v-if="false" class="flex flex-1 items-center justify-center">
 					<div class="flex flex-col items-center gap-4">

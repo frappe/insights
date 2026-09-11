@@ -4,7 +4,8 @@ import { TabButtons } from 'frappe-ui'
 import { Edit3, RefreshCcw, Share2 } from 'lucide-vue-next'
 import { computed, provide, ref, watchEffect } from 'vue'
 import ContentEditable from '../components/ContentEditable.vue'
-import { downloadImage, safeJSONParse, waitUntil } from '../helpers'
+import { downloadImage, safeJSONParse } from '../helpers'
+import LoadingOverlay from '../components/LoadingOverlay.vue'
 import { BreakpointKey, Layout, WorkbookChart, WorkbookQuery } from '../types/workbook.types'
 import useDashboard from './dashboard'
 import DashboardChartSelectorDialog from './DashboardChartSelectorDialog.vue'
@@ -33,8 +34,6 @@ watchEffect(() => {
 		dashboard.autoSave = true
 	}
 })
-
-await waitUntil(() => dashboard.isloaded)
 
 const showChartSelectorDialog = ref(false)
 
@@ -91,6 +90,7 @@ async function downloadDashboardImage() {
 
 <template>
 	<div class="relative flex h-full w-full overflow-hidden">
+		<LoadingOverlay v-if="dashboard.pending" />
 		<div class="relative flex h-full w-full flex-col overflow-hidden">
 			<!-- the first card's own 8px inset completes the query view's 12px gap -->
 			<div class="flex h-7 items-center justify-between mx-4 mt-3 mb-1">

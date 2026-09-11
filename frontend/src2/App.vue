@@ -5,9 +5,7 @@
 		</div>
 
 		<div class="flex h-full flex-1 flex-col overflow-auto">
-			<Suspense>
-				<RouterView />
-			</Suspense>
+			<RouterView />
 		</div>
 
 		<template>

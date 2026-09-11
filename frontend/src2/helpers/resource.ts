@@ -67,6 +67,10 @@ export default function useDocumentResource<T extends Document>(
 	// wrote the `undefined` writes it again.
 	const isDirty = computed(() => !isEqual(copy(doc.value), originalDoc.value))
 
+	// A surface waits on this before it draws the document. A local document has
+	// nothing to load, so it is ready the moment it is made.
+	const isPending = computed(() => !isLoaded.value && !isLocal.value)
+
 	async function insertDoc() {
 		if (!isLocal.value) return
 		await executeHooks(lifecycleHooks.beforeInsert)
@@ -270,6 +274,7 @@ export default function useDocumentResource<T extends Document>(
 		islocal: isLocal,
 		loading: isLoading,
 		isloaded: isLoaded,
+		pending: isPending,
 		saving: isSaving,
 		deleting: isDeleting,
 		autoSave: autoSave,

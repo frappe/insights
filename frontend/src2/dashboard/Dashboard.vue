@@ -1,22 +1,19 @@
 <script setup lang="ts">
-import { Breadcrumbs, call } from 'frappe-ui'
+import { Breadcrumbs } from 'frappe-ui'
 import { RefreshCcw } from 'lucide-vue-next'
-import { computed, provide, ref } from 'vue'
+import { computed, provide, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
-import { downloadImage, waitUntil, wheneverChanges } from '../helpers'
+import { downloadImage } from '../helpers'
 import useDashboard from './dashboard'
 import { __ } from '../translation'
 import DashboardItem from './DashboardItem.vue'
+import LoadingOverlay from '../components/LoadingOverlay.vue'
 import StaticGridLayout from './StaticGridLayout.vue'
 import { useStorage } from '@vueuse/core'
 
 const props = defineProps<{ name: string }>()
 
-const dashboard_name = await call('insights.api.shared.get_dashboard_name', {
-	dashboard_name: props.name,
-})
-
-const dashboard = useDashboard(dashboard_name)
+const dashboard = useDashboard(props.name)
 provide('dashboard', dashboard)
 dashboard.refresh()
 
@@ -24,11 +21,12 @@ const router = useRouter()
 function openWorkbook() {
 	router.push(`/workbook/${dashboard.doc.workbook}`)
 }
-await waitUntil(() => dashboard.isloaded)
 
-document.title = `${dashboard.doc.title} | Insights`
+watchEffect(() => {
+	document.title = `${dashboard.doc.title} | Insights`
+})
 
-const canOpenWorkbook = ref(dashboard.doc.has_workbook_access)
+const canOpenWorkbook = computed(() => dashboard.doc.has_workbook_access)
 
 const dashboardContainer = ref<HTMLElement | null>(null)
 async function downloadDashboardImage() {
@@ -77,6 +75,7 @@ const verticalCompact = useStorage('dashboard_vertical_compact', true)
 	</header>
 
 	<div class="relative flex h-full w-full overflow-hidden">
+		<LoadingOverlay v-if="dashboard.pending" />
 		<div ref="dashboardContainer" class="flex-1 overflow-y-auto p-4">
 			<StaticGridLayout
 				v-if="dashboard.doc.items.length > 0"
