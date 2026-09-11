@@ -1,3 +1,4 @@
+import type { InjectionKey, Ref } from 'vue'
 import { column, rawRowOf } from '../../query/helpers'
 import type { FormatGroupArgs } from '../../query/components/formatting_utils'
 import type { NumberFormat, TableChartConfig } from '../../types/chart.types'
@@ -25,6 +26,14 @@ import type { ChartAdapterInput, ChartFiller } from './types'
 
 /** The stored config as the table reads it. `order_by` belongs to every Chart. */
 type StoredTableConfig = TableChartConfig & { order_by: OrderByArgs[] }
+
+/**
+ * The host's find text, read by the grid it narrows. Find is the table's act
+ * and client-side over the rows already drawn, so it never reaches the adapter
+ * or the server. A host that draws no find box provides nothing and the grid
+ * shows every row it was handed.
+ */
+export const tableFindKey: InjectionKey<Ref<string>> = Symbol('tableFind')
 
 /** The cell a reader asked for the rows behind. */
 export type TableCellEvent = { column: QueryResultColumn; row: QueryResultRow }

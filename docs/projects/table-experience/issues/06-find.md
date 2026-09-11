@@ -15,7 +15,7 @@ One find box in the table toolbar (03). It matches every column of the loaded ro
 Remove:
 
 - the filter row, `showFilterRow` and `filterPerColumn` in `DataTable.vue`
-- `onFilterChange` and `isSinglePage` in `QueryDataTable.vue`; a server filter is a column menu act (04) or a card filter (02)
+- `onFilterChange` and `isSinglePage` in `QueryDataTable.vue`; a server filter is a column menu act (04) or a card filter
 - `show_filter_row` from `chart.types.ts`, `adapter/table.ts`, its tests, fixtures and `TableChartConfigForm.vue`
 
 Keep `matchesFilter` for the text case. The numeric operators leave with the row: a measure condition is the picker's job.

@@ -12,7 +12,7 @@ In the builder a column has two sort controls: the table's arrow in `DataTableCo
 The header shows the label and state only: sort arrow, filter dot, type icon when the host allows type change. Click the header to open one menu. The table builds it from capabilities the host passes:
 
 - sort: asc, desc, remove
-- filter: opens the picker's condition body (01) for this column
+- filter: opens the filter picker with this column fixed
 - rename
 - type
 - granularity, for a date column

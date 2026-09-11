@@ -1,6 +1,7 @@
 import { computed, reactive, ref, toRefs } from 'vue'
 import { numberCardRows, numberReadings } from '../charts/adapter/number'
 import useChart from '../charts/chart'
+import { kindOf, type Filter } from '../components/filter_picker/filter_picker'
 import useChartPreview from '../charts/chart_preview'
 import { useSharedChart, type ChartReadSurface } from '../charts/chart_read'
 import {
@@ -46,6 +47,20 @@ import {
 export function parseFilterLink(link: string) {
 	const match = link?.match(/^`([^`]+)`\.`([^`]+)`$/)
 	return match ? { query: match[1], column: match[2] } : null
+}
+
+/** The link a filter item carries, as the server's `LINK_COLUMN` reads it. */
+export function filterLink(query: string, column: string) {
+	return `\`${query}\`.\`${column}\``
+}
+
+/**
+ * What a card filter is called on the wire. The author types a filter's name,
+ * and a `:` is not a character this prefix shares with one: a card filter can
+ * never take the state of a saved filter, nor be taken for one.
+ */
+function cardFilterName(chart_name: string, index: number) {
+	return `card:${chart_name}:${index}`
 }
 
 /** Columns a Number cell is dropped at: a fifth of the grid, so five read as a row of KPIs. */
@@ -105,6 +120,34 @@ function makeDashboard(name: string) {
 	const shared = ref(false)
 
 	const filterStates = ref<ViewerFilters>({})
+
+	// What a reader filtered one card down to, per chart. It is a filter the
+	// reader owns and the document never holds: not saved with the dashboard, and
+	// not stored beside the filter states, so a reload clears it.
+	const cardFilters = ref<Record<string, Filter[]>>({})
+
+	function setCardFilters(chart_name: string, filters: Filter[]) {
+		cardFilters.value[chart_name] = filters
+		refreshChart(chart_name)
+	}
+
+	// A card filter, written as the filter item the server routes. It links by the
+	// chart's own name, which is what the chart's derived query is called, so the
+	// rule lands after the chart's summarize — on the columns the card draws,
+	// measures included.
+	function cardItem(chart_name: string, filter: Filter, index: number): WorkbookDashboardFilter {
+		const kind = kindOf(filter.column.type)
+		return {
+			type: 'filter',
+			filter_name: cardFilterName(chart_name, index),
+			filter_type: kind === 'number' ? 'Number' : kind === 'date' ? 'Date' : 'String',
+			links: {
+				[chart_name]: filterLink(chart_name, filter.column.name),
+			},
+			// the grid never draws this item, so its cell is a placeholder
+			layout: { i: cardFilterName(chart_name, index), x: 0, y: 0, w: 0, h: 0 },
+		}
+	}
 
 	async function addChart(charts: WorkbookChart[]) {
 		const maxY = getMaxY()
@@ -347,11 +390,34 @@ function makeDashboard(name: string) {
 	// query a filter lands on is read off the links server-side, the one place it
 	// is read for every surface. The items are sent because the builder is editing
 	// ones the document has not saved.
+	//
+	// A card filter goes along as an item and a state of its own. The server has
+	// one router for both, so a filter the reader made on a card lands in the
+	// chart's query group beside the grid's own, `And`-composed.
 	function filterContextFor(chart_name: string) {
+		const own = cardFilters.value[chart_name] || []
+		const items = own.length
+			? [
+					...dashboard.doc.items,
+					...own.map((filter, index) => cardItem(chart_name, filter, index)),
+			  ]
+			: dashboard.doc.items
+		const filters = own.length
+			? {
+					...filterStates.value,
+					...Object.fromEntries(
+						own.map((filter, index) => [
+							cardFilterName(chart_name, index),
+							{ operator: filter.operator, value: filter.value },
+						]),
+					),
+			  }
+			: filterStates.value
+
 		return {
 			chart: chart_name,
-			items: dashboard.doc.items,
-			filters: filterStates.value,
+			items,
+			filters,
 		}
 	}
 
@@ -486,6 +552,8 @@ function makeDashboard(name: string) {
 		arranging,
 
 		filterStates,
+		cardFilters,
+		setCardFilters,
 
 		addChart,
 		addText,

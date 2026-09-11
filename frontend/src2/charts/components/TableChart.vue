@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ChartContainer } from 'frappe-ui/charts'
+import { computed, inject, ref } from 'vue'
 import DataTable from '../../components/DataTable.vue'
 import type { QueryResultColumn, QueryResultRow } from '../../types/query.types'
-import type { TableCellEvent, TableChartProps } from '../adapter/table'
+import { tableFindKey, type TableCellEvent, type TableChartProps } from '../adapter/table'
 
 // The grid a Table Chart draws instead of a plot. It is a filler like any
 // other: the title and every state around it are `ChartBody`'s, and the card is
@@ -15,6 +16,23 @@ const emit = defineEmits<{
 	// eslint-disable-next-line no-unused-vars
 	cellClick: [event: TableCellEvent]
 }>()
+
+// The find the host's box asks for. It runs over the rows this grid was handed
+// — formatted, so a date matches the way it prints — and never over the ones
+// the server kept back. A host with no find box provides none and every row
+// stands.
+const findText = inject(tableFindKey, ref(''))
+const matches = computed(() => {
+	const text = findText.value.trim().toLowerCase()
+	if (!text) return props.rows
+	return props.rows.filter((row) =>
+		props.columns.some((column) =>
+			String(row[column.name] ?? '')
+				.toLowerCase()
+				.includes(text),
+		),
+	)
+})
 
 function onDrilldown(column: QueryResultColumn, row: QueryResultRow) {
 	emit('cellClick', { column, row })
@@ -44,7 +62,7 @@ function onDrilldown(column: QueryResultColumn, row: QueryResultRow) {
 		>
 			<DataTable
 				:columns="props.columns"
-				:rows="props.rows"
+				:rows="matches"
 				:loading="props.loading"
 				:sort-order="props.sortOrder"
 				:on-sort-change="props.onSortChange"

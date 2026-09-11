@@ -148,14 +148,6 @@ const routes = [
 	},
 ]
 
-if (import.meta.env.DEV) {
-	routes.push({
-		path: '/proto/picker',
-		name: 'PickerProto',
-		component: () => import('./dev/PickerProto.vue'),
-	})
-}
-
 let router = createRouter({
 	history: createWebHistory(APP_PATH),
 	// @ts-ignore

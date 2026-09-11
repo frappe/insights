@@ -35,12 +35,12 @@ const emit = defineEmits<{
 </script>
 
 <template>
-	<div class="flex h-full w-full flex-col gap-2">
+	<div class="relative flex h-full w-full flex-col">
 		<!-- A Number Chart has no card to head, so a host's actions sit over the
-		     readings instead of beside a title. The row is one button tall:
-		     there is no title line here for the buttons to center on, and the
-		     card around this clips at its edge. -->
-		<div v-if="$slots.actions" class="flex h-7 shrink-0 items-center justify-end">
+		     readings instead of beside a title. They take no height: the cell a
+		     card is drawn in is sized from the config alone, so a row in the flow
+		     would push the cards past its edge. -->
+		<div v-if="$slots.actions" class="absolute top-0 right-0 flex items-center p-2">
 			<slot name="actions" />
 		</div>
 

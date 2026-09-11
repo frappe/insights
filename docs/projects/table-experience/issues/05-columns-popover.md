@@ -2,7 +2,7 @@
 
 Type: task
 Status: ready-for-agent
-Blocked by: 01, 03
+Blocked by: 03
 
 ## Question
 
@@ -10,7 +10,7 @@ Removing a column in the builder is three clicks, one column at a time. Selectin
 
 ## What to build
 
-A Columns button in the table toolbar (03). It opens the picker's column list (01) over the result columns, each row with a checkbox.
+A Columns button in the table toolbar (03). It opens the filter picker's column list over the result columns, each row with a checkbox.
 
 - Type to narrow. Enter on a row scrolls the grid to that column and flashes its header. The new-column path in `DataTable.vue` already scrolls with `scrollIntoView`; reuse it.
 - Untick calls `removeColumn`, which merges into the last `remove` operation. Ten unticks in one visit are one operation.

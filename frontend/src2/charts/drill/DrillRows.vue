@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { provide, ref } from 'vue'
+import { computed, provide, ref, watch } from 'vue'
+import { toFilterGroup, type Filter } from '../../components/filter_picker/filter_picker'
+import FilterPicker from '../../components/filter_picker/FilterPicker.vue'
 import ResultPane from '../../components/result_pane/ResultPane.vue'
 import QueryDataTable from '../../query/components/QueryDataTable.vue'
 import QueryOperations from '../../query/components/QueryOperations.vue'
+import { filter_group } from '../../query/helpers'
 import { makeAdhocQuery } from '../../query/query'
 import { __ } from '../../translation'
 import type { AdhocFilters, QueryResultColumn, QueryResultRow } from '../../types/query.types'
@@ -42,6 +45,44 @@ provide('query', query)
 
 const editing = ref(false)
 
+// --- the reader's own filters over these rows -------------------------------
+//
+// Held here, so they last exactly as long as the level does: a new rows level
+// mounts a new component, and closing the dialog unmounts this one. Nothing is
+// carried back to the surface.
+//
+// Every column here is a plain column — these are the sliced source rows, not a
+// summarize — so a number operator is a `WHERE` like any other.
+const filters = ref<Filter[]>([])
+const columns = computed(() => query.result.columns || [])
+
+function valuesProvider(column: QueryResultColumn) {
+	return (search: string) => query.getDistinctColumnValues(column.name, search)
+}
+
+// The surface's routed groups are the surface's: they are passed through
+// untouched, and the reader's rules are one more group under this query's own
+// name, which is the key the server matches these rows against. Should a group
+// already stand under that name, both hold — `And`.
+watch(filters, () => {
+	const routed = props.adhocFilters || {}
+	const routedGroup = routed[query.doc.name]
+	const own = toFilterGroup(filters.value)
+	query.adhocFilters = filters.value.length
+		? {
+				...routed,
+				[query.doc.name]: routedGroup
+					? filter_group({
+							logical_operator: 'And',
+							filters: [...routedGroup.filters, ...own.filters],
+					  })
+					: own,
+		  }
+		: { ...routed }
+	// narrower rows are a different first page, and going to it runs the query
+	query.goToPage(1)
+})
+
 // Which columns name a desk document is the server's answer, carried on the
 // level. Nothing here guesses a doctype from a column name: a miss shows no
 // control rather than a control that lands on the wrong record.
@@ -79,6 +120,17 @@ defineExpose({
 					/>
 				</template>
 			</ResultPane>
+
+			<!-- Beside the find, in the dialog's row of level actions. It is drawn
+			     after the pane so that it lands after the find the pane teleports
+			     into the same host: filter reads the rows, find reads the result. -->
+			<Teleport v-if="props.findTarget" :to="props.findTarget">
+				<FilterPicker
+					v-model="filters"
+					:columns="columns"
+					:values-provider="valuesProvider"
+				/>
+			</Teleport>
 		</div>
 		<!-- the wrapper carries the row's gap, so closed it takes no space -->
 		<div
