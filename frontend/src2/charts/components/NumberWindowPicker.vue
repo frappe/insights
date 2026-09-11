@@ -48,7 +48,8 @@ const choices = computed(() => {
 
 function setChoice(value: unknown) {
 	const next = value ? periodOfChoice(String(value), period.value) : undefined
-	// The anchor is the author's, not the choice's, so it rides across a switch.
+	// The anchor is the author's, not the choice's, so it stays when the choice
+	// changes.
 	const anchor = period.value?.anchor
 	period.value = next && anchor ? { ...next, anchor } : next
 }

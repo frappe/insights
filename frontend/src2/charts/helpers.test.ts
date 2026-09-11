@@ -3,7 +3,7 @@ import { handleOldHideFromChart } from './helpers'
 
 // `hide_from_chart` drew a series at zero opacity and kept it out of the legend,
 // which left its value reaching the tooltip and nothing else. `tooltip.measures`
-// says that properly, so the flag moves there on load.
+// says the same thing directly, so the flag moves there on load.
 
 const measure = (name: string) => ({
 	measure_name: name,

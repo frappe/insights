@@ -3,8 +3,8 @@
 // The adapter names a filler's click events and turns each payload into the
 // point behind it. This turns that into one report a surface can act on, so the
 // chart card and the drill dialog's own chart bind their clicks the same way —
-// which is what makes drilling inside the dialog ride the path a chart already
-// has, rather than a second one built for the dialog.
+// so drilling inside the dialog reuses the chart's click path instead of a
+// second one.
 
 import type { QueryResultColumn } from '../../types/query.types'
 import type { ChartFiller, DrillDownTarget } from '../adapter'

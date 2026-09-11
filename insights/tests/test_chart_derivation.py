@@ -191,7 +191,7 @@ class TestChartDerivation(unittest.TestCase):
         self.assertIn("order_count", [m["measure_name"] for m in summarize["measures"]])
 
     def test_a_split_leaves_the_tooltip_measures_out(self):
-        """A split fans every measure into one column per split value, which is a
+        """A split turns every measure into one column per split value, which is a
         value per mark. A tooltip extra is one value per category, so a pivot has
         nowhere to put it."""
         case = derivation_case("Bar")

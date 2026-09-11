@@ -166,7 +166,7 @@ class InsightsDashboardv3(Document):
 
         Who may read this dashboard was settled before this ran — the builder
         reaches it through `run_doc_method`, and a public link through the same
-        door's public fallback. The read is the whole gate, so this reaches the
+        endpoint's public fallback. The read is the whole gate, so this reaches the
         query's plain method rather than the `Insights User` endpoint.
 
         `filter_context` is what the rest of the grid currently holds, unrouted:

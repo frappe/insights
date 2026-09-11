@@ -5,9 +5,9 @@ import { __ } from '../translation'
 import useWorkbook from './workbook'
 
 // What a query, chart or dashboard does *because* it sits in a workbook. It
-// lives on this side of the fence so the item stores stay free of the workbook
-// store: a chart or a dashboard is read on surfaces that have no workbook and
-// no builder around them.
+// lives here so the item stores stay free of the workbook store: a chart or a
+// dashboard is read on surfaces that have no workbook and no builder around
+// them.
 
 type WorkbookItemType = 'query' | 'chart' | 'dashboard'
 

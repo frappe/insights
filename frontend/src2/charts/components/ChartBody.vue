@@ -27,9 +27,9 @@ import ChartSectionEmptySvg from './ChartSectionEmptySvg.vue'
 // switches on chart type. A new type is added in `charts/adapter`, not here.
 //
 // Where the states are drawn is the one thing that varies, and the adapter
-// answers that too. A type with no card of its own wears them on the chrome
-// around the plot. A type that draws cards — a Number Chart's readings are cards
-// already — wears them inside each card, so it is mounted in every state and
+// answers that too. A type with no card of its own gets the states drawn around
+// the plot. A type that draws cards — a Number Chart's readings are cards
+// already — draws them inside each card, so it is mounted in every state and
 // handed `ChartStateProps` instead.
 //
 // `readonly` is for a surface that cannot change the chart. It decides two
@@ -188,9 +188,8 @@ const fillerEvents = computed(() =>
 	segmentClickEvents(filler.value, result.value.columns, reportSegment),
 )
 
-// echarts hands over the datapoint and not the event that reached it, so the
-// point the menu opens at is read off the click on its way in. The capture phase
-// is what puts it there before the chart's own handler runs.
+// echarts hands over the datapoint, not the event, so the capture phase records
+// the click position before the chart's own handler runs.
 const clickedAt = shallowRef<ClickPoint>({ x: 0, y: 0 })
 function rememberPoint(event: MouseEvent) {
 	clickedAt.value = { x: event.clientX, y: event.clientY }

@@ -8,7 +8,7 @@ import {
 	type FilterIconGroup,
 } from './filter_icons'
 
-// Picks the icon a filter wears. The list is short enough to read in a couple
+// Picks a filter's icon. The list is short enough to read in a couple
 // of scrolls, so search only narrows it — it never hides a glyph the way a
 // full-pack picker hides its 1500th.
 const icon = defineModel<string | undefined>()

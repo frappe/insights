@@ -116,7 +116,7 @@ describe('what a segment click pins', () => {
 		expect(segment.filters).toEqual([
 			{ column: 'posting_date', operator: '=', value: '2026-02-01' },
 		])
-		// the grain rides the period, so the pin reads as the bucket it names
+		// the grain comes from the period, so the pin reads as the bucket it names
 		expect(segment.pins).toEqual([{ column: 'posting_date', value: 'February, 2026' }])
 	})
 
@@ -525,7 +525,7 @@ describe('reading a level at another grain', () => {
 	it('holds an answer against the grain it was asked at', () => {
 		// The same level at another grain is another question, so the rows already
 		// held are not an answer to it — and going back to a grain already asked
-		// for costs nothing, exactly as retracing does.
+		// for costs nothing, as retracing does.
 		const weekly = { columns: [], rows: [{ due_date: '2026-03-02', count: 4 }] }
 		const stack = makeDrillStack()
 		stack.push(byDate)
@@ -597,7 +597,7 @@ describe('a query result read as a chart', () => {
 		])!
 		expect(chart.chart_type).toBe('Table')
 		expect(declaredDimensionColumns(chart)).toEqual(['status'])
-		// a cell click pins what the step grouped by, exactly as it would on a card
+		// a cell click pins what the step grouped by, as it would on a card
 		expect(segmentOf(chart, { column: 'Todos', row: { status: 'Open' } }).filters).toEqual([
 			{ column: 'status', operator: '=', value: 'Open' },
 		])

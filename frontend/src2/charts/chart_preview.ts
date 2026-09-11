@@ -1,7 +1,7 @@
 // The chart-read store's other feed: the config being edited, rather than a
 // saved chart's name.
 //
-// It lives apart from the store because of what it drags in. The authoring
+// It lives apart from the store because of what it imports. The authoring
 // endpoints answer with the operations the server derived, and the query editor
 // a drill level opens in is the builder — neither of which an island may carry.
 // A read surface imports `chart_read` and gets none of it.

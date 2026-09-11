@@ -17,7 +17,7 @@ A picker in two layers.
    - Measure: greater than, less than, between, equals.
    - Date: range, or a relative window.
 
-Compose the bodies from `ColumnFilterTypeText`, `ColumnFilterTypeNumber` and `ColumnFilterTypeDate` in `frontend/src2/query/components/`. Move what needs moving so nothing under `query/` is imported by `dashboard/`.
+Compose the bodies from `ColumnFilterTypeText`, `ColumnFilterTypeNumber` and `ColumnFilterTypeDate` in `frontend/src2/query/components/`. Move what needs moving so `dashboard/` imports nothing under `query/`.
 
 The output is a filter rule: column, operator, value. Both the dashboard bar and the card button turn it into an adhoc filter group.
 

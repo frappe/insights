@@ -92,8 +92,8 @@ export type ChartFailure = {
 
 /**
  * The loading and failure states, handed to a filler that draws its own cards.
- * Every other type wears them on the chrome around the plot; a filler with cards
- * of its own has no chrome to wear them on, so it draws them inside each card.
+ * Every other type draws them on the chrome around the plot. A filler with its
+ * own cards has no chrome, so it draws them inside each card.
  */
 export type ChartStateProps = {
 	loading: boolean

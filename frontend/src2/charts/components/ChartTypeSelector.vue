@@ -4,9 +4,8 @@ import ChartIcon from './ChartIcon.vue'
 
 const chartType = defineModel<ChartType>()
 
-// The selected chip flips the whole variant instead of adding a background
-// class. A `bg-*` utility next to the variant's own races it on stylesheet
-// order, which is what made the selection read as unselected.
+// A `bg-*` utility beside the variant's own races it on stylesheet order, which
+// made the selection read as unselected. Switch the whole variant instead.
 function variantFor(item: ChartType) {
 	return chartType.value === item ? 'outline' : 'subtle'
 }

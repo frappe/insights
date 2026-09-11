@@ -1,22 +1,16 @@
 # KPI authoring — decision map
 
-A KPI card should be configured, not compiled. This map records how a number
-card stops being a hand-built query pipeline.
+A KPI card should be configured, not compiled. This map records how a number card stops being a hand-built query pipeline.
 
-Tickets live in `issues/`, one body of work each. A ticket carries a `Type:`, a
-`Status:`, and any `Blocked by:` tickets.
+Tickets live in `issues/`, one body of work each. A ticket carries a `Type:`, a `Status:`, and any `Blocked by:` tickets.
 
-Charted 2026-08-14. Continues the number card work in `312756c8..5a5fca04`.
+Written 2026-08-14. Continues the number card work in `312756c8..5a5fca04`.
 
 ## Destination
 
-An author names a measure, a date column, a window and a comparison. Derivation
-writes the filter, the grouping and the sort. Nobody writes a `sum_if` per
-window, a constant join key, or a pruning `select`, and nobody has to know that
-the card reads the last row.
+An author names a measure, a date column, a window and a comparison. Derivation writes the filter, the grouping and the sort. Nobody writes a `sum_if` per window, a constant join key, or a pruning `select`, and nobody has to know that the card reads the last row.
 
-The card's target stays a measure of the author's own query. Two small
-query-layer changes make that join cheap.
+The card's target stays a measure of the author's own query. Two small query-layer changes make that join cheap.
 
 ## Notes
 
@@ -30,7 +24,7 @@ query-layer changes make that join cheap.
 
 ## Decisions so far
 
-Decided while charting, before tickets existed.
+Decided while writing this map, before tickets existed.
 
 - **A window is a group-by, not a filter inside a measure.** One row per window,
   ordered oldest first. The measure stays plain. This is what removes the
@@ -47,7 +41,7 @@ Decided while charting, before tickets existed.
   the clock and on Insights Settings, so derivation emits it unresolved — in the
   filter (ticket 02) and in the dimension (ticket 06) — and `ibis_utils` resolves
   it where the clock already lives.
-- **The comparison stops being folklore.** `previous` reads the row before the
+- **The comparison stops being an unwritten rule.** `previous` reads the row before the
   last one today, and an author has to know that. Under window derivation the
   row before the last one *is* the previous window, because derivation wrote the
   sort. The adapter does not change.
@@ -93,7 +87,7 @@ Decided while charting, before tickets existed.
   paper. Rejected on three counts, all found in the code:
   `_execute_live_query` is `@concurrent_limit(wait_timeout=0)` and its own
   comment says a dashboard already starves the thread pool; `route_filters`
-  resolves a dashboard filter to exactly one `query::column` per chart, so
+  resolves a dashboard filter to one `query::column` per chart, so
   multi-source readings become unfilterable; and the card's drill identity is a
   row, which several readings do not have. The model survives as the way to
   *think* about a card. Execution count stays a derivation decision.
@@ -142,7 +136,6 @@ Nothing. Every question this effort opened is answered. New ones go here.
 ## Out of scope
 
 - The chart contract (`one query, one operations list, one result`). Changing it
-  is real work with real payoff, but it should be decided on its own, not
-  arrived at by way of a KPI card.
+  is worth doing, but it needs its own decision, not one a KPI card drags in.
 - Dashboard filter links and the drill-down contract, which only move if the
   chart contract does.

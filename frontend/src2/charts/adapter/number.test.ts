@@ -115,8 +115,7 @@ describe('how a reading is printed', () => {
 	})
 
 	it('prints a value in the ink it was given, and only that value', () => {
-		// One color for one reading: it is the ink of the number, not a restyle of
-		// the card it stands in.
+		// One color for one reading: it colors the number, not the card it stands in.
 		const cards = cardsOf({
 			values: [
 				{ name: 'Revenue', readings: [100], color: '#2490EF' },
@@ -594,7 +593,7 @@ describe('the reading a dashboard cell names', () => {
 	})
 
 	it('is the first reading when the cell names none', () => {
-		// A cell written before a cell could name a reading draws what it drew.
+		// A cell written before cells could name a reading keeps the reading it drew.
 		expect(cardsOf({ ...three, column: undefined })[0].title).toBe('Revenue')
 	})
 

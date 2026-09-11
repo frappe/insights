@@ -9,11 +9,11 @@ the rows a saved chart with that shape would give. A saved chart's own
 `get_data` is the same answer for a chart that has a name; the deriver behind
 both is the one in `chart_query`.
 
-What makes this a separate door is the rest of the answer: the operations the
+What makes this a separate endpoint is the rest of the answer: the operations the
 server derived, and the SQL they ran as. A saved chart's response carries
 neither, and that is the whole reason a public link is safe to open to a guest.
 Here they are the point — the builder shows the SQL it ran, and lifts a drill
-level into the query builder — so this door is closed to anyone without an
+level into the query builder — so this endpoint is closed to anyone without an
 authoring seat.
 
 Two things are checked: `check_app_permission`, which is the seat, and read on
@@ -65,7 +65,7 @@ def get_chart_data(
     filter `filters` state and the `chart_name` those items link by. Routing
     them is `route_filters`' job, the same one a saved chart's `get_data` calls
     — the builder is editing items it has not saved, and that is the only reason
-    it sends them rather than naming a dashboard. It does not widen this door:
+    it sends them rather than naming a dashboard. It does not widen this endpoint:
     what comes back are filters keyed by the queries the links name, and a query
     the chart does not read matches nothing in its graph.
     """
@@ -136,7 +136,7 @@ def get_drill_data(
     values, answered by the drill layer. What the caller says is what it is
     drilling: the config the builder is editing, or, for the query builder's
     own result table, the `operations` it is editing. Neither exists as a
-    document yet, which is the whole reason this door exists.
+    document yet, which is why this endpoint exists.
 
     The answer carries the sliced pipeline, because "open as query" hands the
     level to the full builder. That field is what a reading surface must never
@@ -169,9 +169,9 @@ def get_drill_dimensions(
 ):
     """What a segment of this shape can be broken down by.
 
-    A chart's candidates ride its data response. A query builder fetches its
-    rows through the query document itself, so it has no such response to ride
-    — hence this. Same answer, asked for on its own.
+    A chart's candidates come back with its data response. A query builder
+    fetches its rows through the query document, so it has no such response and
+    asks for the same answer here.
     """
     check_authoring_seat(query)
 
@@ -196,7 +196,7 @@ def preview_chart(chart_type: str | None, query: str, config: dict | None):
     """
     chart = frappe.new_doc(CHART)
     # the throwaway query this becomes is named after the chart, and the builder
-    # names its source query in the same breath — two documents in one build, so
+    # names its source query in the same request — two documents in one build, so
     # this one needs a name of its own or the cycle guard mistakes it for the other
     chart.name = f"preview-of-{query}"
     chart.chart_type = chart_type

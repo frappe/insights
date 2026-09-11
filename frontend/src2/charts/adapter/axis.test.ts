@@ -509,7 +509,7 @@ describe('a Measure that only reaches the tooltip', () => {
 		expect(format('Outerwear')).toBe('Outerwear')
 	})
 
-	// A split fans every Measure out into one column per split value, which is a
+	// A split turns every Measure into one column per split value, which is a
 	// value per mark. The server leaves tooltip Measures out of that pivot, so
 	// there is no column for one to arrive on.
 	it('is dropped under a split', () => {
@@ -522,8 +522,7 @@ describe('a Measure that only reaches the tooltip', () => {
 	})
 
 	// A tooltip Measure is not drawn, but it is measured. A target on the tooltip
-	// is exactly the kind of number a rule is computed from, so a line has to be
-	// able to name one — this is what `hide_from_chart` could do, kept.
+	// is the kind of number a rule reads, so a line has to be able to name one — this is what `hide_from_chart` could do, kept.
 	it('can still back a computed reference line', () => {
 		const props = propsOf({
 			...spec,

@@ -224,8 +224,8 @@ function declaredDimensions(chart: DrillChart): DeclaredDimensions {
 			const period = periodOf(number)
 			// A card that reads a period reads one of its rows, so a click pins the
 			// period that row stands for: the bucket for a grain, the day the window
-			// opens for a span. The grain rides the Dimension, because the period is
-			// where a card's grain is written and the Dimension carries none.
+			// opens for a span. The Dimension carries no grain, so copy the period's
+			// grain onto it.
 			const grained =
 				number.date_column && period?.grain
 					? { ...number.date_column, granularity: period.grain }
@@ -490,7 +490,7 @@ export type DrillLevelData = {
 	record_links?: RecordLinks
 	/**
 	 * The pipeline the server sliced for this level, and the connection it ran
-	 * on. The authoring door alone answers with them.
+	 * on. Only the authoring endpoint answers with them.
 	 */
 	operations?: Operation[]
 	use_live_connection?: boolean
@@ -512,7 +512,7 @@ export type DrillSubject = {
  */
 export function makeDrillStack() {
 	// shallow on purpose: an entry is replaced, never edited, and the rows a
-	// level answered with have no business being made reactive one cell at a time
+	// and a level's rows do not need per-cell reactivity
 	const entries = shallowRef<DrillEntry[]>([])
 	const answers = new Map<string, DrillLevelData>()
 

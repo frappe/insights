@@ -100,7 +100,7 @@ defineExpose({ focus, clear })
 			</template>
 		</FormControl>
 
-		<!-- A hand-built box wearing PopoverPanel's look and Combobox's rows:
+		<!-- A hand-built box with PopoverPanel's look and Combobox's rows:
 		     frappe-ui's Popover takes focus on open, which a panel driven by
 		     typing cannot afford. Same layer as a popover, so the grid's sticky
 		     header cannot paint over it. See

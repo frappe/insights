@@ -21,8 +21,8 @@
  *   1. a frappe-ui charts v2 component, for every type v2 admits;
  *   2. an Insights plot built on v2's `useChart`, for Map, whose geography layer
  *      v2's scope rule keeps out of the library;
- *   3. no plot at all, for Table: the filler draws the grid, and wears the same
- *      states as every other type.
+ *   3. no plot at all, for Table: the filler draws the grid, in the same states
+ *      as every other type.
  *
  * `undefined` means there is nothing to draw: a slot is unfilled, or the result
  * carries no column the config asks for. The card shows its unconfigured state.
@@ -31,7 +31,7 @@
  *
  * One function per chart type, taking `ChartAdapterInput` and returning a
  * `ChartFiller`. Read `frappe-ui/src/charts/types.ts` for the props your
- * component takes; that file and this comment are all you need.
+ * component takes.
  *
  * Rules the family holds to:
  *

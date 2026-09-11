@@ -166,9 +166,9 @@ function openMeasureDialog(closePopover: () => void) {
 }
 
 /**
- * Written onto the measure the picker was given, not emitted in its place: by
- * the time the dialog answers, the picker can be unmounted with the popover it
- * sat in, and an emit from an unmounted picker reaches nobody.
+ * Writes onto the measure the picker holds instead of emitting: by the time the
+ * dialog answers, the popover can have unmounted the picker, and an emit from an
+ * unmounted picker reaches nobody.
  */
 function updateMeasure(measureExpression: ExpressionMeasure) {
 	const written = measure.value as Partial<ColumnMeasure> & Partial<ExpressionMeasure>

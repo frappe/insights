@@ -53,11 +53,11 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 }
 
 /**
- * How good a fall is, moved onto the value.
+ * Moves `negative_is_better` onto each value.
  *
- * It is a per-value setting now. What a value is measured against is one too,
- * and `insights.patches.normalize_number_card_comparisons` moved that where it
- * belongs, so the only chart-level setting left to lower is this one.
+ * What a value is compared against is a per-value setting too, and
+ * `insights.patches.normalize_number_card_comparisons` moved that, so this is
+ * the last chart-level setting left to lower.
  *
  * How a number prints is not here: `number_format` and `number_formats` sit over
  * the old spellings rather than replacing them, so nothing has to be rewritten.

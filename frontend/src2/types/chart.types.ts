@@ -100,7 +100,7 @@ export type ReferenceLine = {
 	align?: 'Left' | 'Right'
 	// A line sits at a constant, or at an aggregate of one of the chart's own
 	// Measures. The Measure is named rather than copied: the series holds the
-	// definition, so a copy is a second answer waiting to disagree.
+	// definition, and a copy can disagree with it.
 	value?: number | string
 	measure_name?: string
 	aggregate?: ReferenceAggregate

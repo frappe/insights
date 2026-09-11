@@ -4,7 +4,7 @@ The grid and everything around it: find, filter, column actions, the result stat
 
 Tickets live in `issues/`, one body of work each. A ticket carries a `Type:`, a `Status:`, and any `Blocked by:` tickets.
 
-Charted 2026-09-09 on `feat/charts-extract`, after a header-polish patch was set aside. The patch is at `docs/archive/datatable-header-polish.patch` (local-only) and none of it survives.
+Written 2026-09-09 on `feat/charts-extract`, after a header-polish patch was set aside. The patch is at `docs/archive/datatable-header-polish.patch` (local-only) and none of it survives.
 
 ## Destination
 

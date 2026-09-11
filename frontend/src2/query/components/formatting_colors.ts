@@ -3,8 +3,8 @@ import { type ChartTokens } from 'frappe-ui/charts'
 /**
  * Which end of a scale gets the deep color. A scale ranks by lightness, so the
  * only choice it has to offer is which end is heavy. The stored name says that
- * and not a color, so the ramp can be rebranded without turning every saved
- * rule into a lie.
+ * and not a color, so the ramp can be restyled without making saved rules
+ * wrong.
  */
 export type ColorScaleDirection = 'ascending' | 'descending'
 
@@ -63,8 +63,8 @@ function inkOn(background: string, tokens: ChartTokens): string {
 }
 
 /**
- * A scale, from the bottom of the range to the top. The first slot is empty on
- * purpose: the bottom of a magnitude scale is an absence, so a zero draws
+ * A scale, from the bottom of the range to the top. The first slot is empty:
+ * the bottom of a magnitude scale is an absence, so a zero draws
  * nothing rather than drawing the heaviest thing on the page.
  *
  * It reads `tokens.sequential` rather than going through `paletteColors`. That

@@ -72,7 +72,7 @@ export function handleOldReferenceLines(config: any) {
 
 // `hide_from_chart` marked a series drawn at zero opacity and filtered out of
 // the legend, which left its value reaching the tooltip and nothing else. That
-// is what `tooltip.measures` says properly, so the flag moves there rather than
+// is what `tooltip.measures` says, so the flag moves there rather than
 // staying a second way to say one thing.
 //
 // A chart that hid every series is left alone. Moving them all would leave the

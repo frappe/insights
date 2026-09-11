@@ -130,7 +130,7 @@ class InsightsChartv3(Document):
         `route_filters` decides which query each filter lands on, the same way
         it does for the builder's own feed in `insights.api.authoring`.
 
-        A windowed card's sparkline rides along under `sparkline`. It runs here
+        A windowed card's sparkline comes back under `sparkline`. It runs here
         and not through a call of its own so that a client never has to know
         which cards need a second fetch, and so that a filter cannot reach one
         execution and miss the other.
@@ -194,7 +194,7 @@ class InsightsChartv3(Document):
         """The series behind this card's sparkline, or nothing when it draws none.
 
         Only a card that asks for both a sparkline and a window runs it. Execution
-        is limited rather than queued — a dashboard already pushes the pool — so a
+        is limited rather than queued — a dashboard already fills the pool — so a
         second execution per card stays something an author turns on.
         """
         operations = sparkline_operations(self.chart_type, self.query, frappe.parse_json(self.config or "{}"))

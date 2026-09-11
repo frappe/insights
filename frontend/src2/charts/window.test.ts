@@ -108,7 +108,7 @@ describe('the periods the picker writes', () => {
 	})
 
 	it('leaves a grain it has no choice for standing as its own choice', () => {
-		// An hourly card, from before a period was a period.
+		// An hourly card, authored before periods existed.
 		expect(choiceOfPeriod({ grain: 'hour' })).toBe('hour')
 	})
 })

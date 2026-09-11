@@ -218,7 +218,7 @@ describe('breakpointFor', () => {
 		expect(breakpointFor(WIDE)).toBe(BASE_BREAKPOINT)
 	})
 
-	// The grid reports zero before it has been measured. Collapsing then would
+	// The grid reports zero before it is measured. Collapsing then would
 	// draw the narrow layout for a frame and reflow, which reads as a break.
 	it('reads an unmeasured grid as the widest breakpoint', () => {
 		expect(breakpointFor(0)).toBe(BASE_BREAKPOINT)
@@ -253,8 +253,7 @@ describe('placementsFor', () => {
 		])
 	})
 
-	// A card added after the narrow layout was arranged has nothing stored for
-	// it. It is placed below the arranged cells rather than on top of one.
+	// A card added after the narrow layout was arranged has nothing stored for it.
 	it('drops an item nobody arranged clear of the ones somebody did', () => {
 		const items = [
 			item(cell('a', 0, 0, 6, 2), { sm: { x: 0, y: 0, w: 20, h: 4 } }),

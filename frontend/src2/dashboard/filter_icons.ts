@@ -1,4 +1,4 @@
-// The icons a dashboard filter can wear.
+// The icons a dashboard filter can use.
 //
 // Lucide ships more than 1500 glyphs, and frappe-ui only serves the whole pack
 // through a 468 kB sprite that a plugin injects into `document.body` — which a

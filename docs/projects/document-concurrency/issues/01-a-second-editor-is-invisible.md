@@ -7,7 +7,7 @@ Status: ready-for-agent
 
 Two people open the same chart. One changes the x-axis and the autosave lands. The other's browser never hears about it. The other then changes a title, and their autosave carries their whole document — including the old x-axis. The first change is gone, and neither person is told.
 
-Three things make this possible, and all three were read in the framework and in `resource.ts`:
+Three things make this possible, all of them in the framework and in `resource.ts`:
 
 1. **The client never sends `modified`.** It is in `metaFields` (`frontend/src2/helpers/resource.ts:307`) and stripped from every payload.
 2. **`frappe.client.set_value` cannot check a version.** It does `frappe.get_doc(doctype, name)` — a fresh read — then applies the fields and saves (`frappe/client.py:215`). So `check_if_latest` compares the fresh read against itself and always passes. `modified` is a framework default field, so `set_value` strips it from the payload as well. No timestamp check can ride on this endpoint.
@@ -26,7 +26,7 @@ Four layers, none of which merge:
 
 Desk can afford that last line because it has **no autosave**. A form stays dirty until Ctrl+S, so a person who is told to refresh knows what they are holding.
 
-Insights autosaves every 1500 ms. That inverts the two cases in our favour: the document is almost always clean when the event arrives, so desk's silent-reload path becomes the normal one and the dirty-banner path becomes rare.
+Insights autosaves every 1500 ms. That inverts the two cases: the document is usually clean when the event arrives. Silent reload becomes the normal path, and the dirty banner the rare one.
 
 ## What to build
 
@@ -48,7 +48,7 @@ def set_value(doctype: str, name: str, fieldname: dict, modified: str | None = N
 
 Point `DEFAULT_API.update` at it and pass `modified` beside the fields. On `TimestampMismatchError` the client turns `autoSave` off for that document and offers two buttons: **Reload**, which runs `loadDoc()`, and **Copy my version**, which writes the local document to the clipboard through the `export` path that already exists. The second one is what makes losing the write acceptable.
 
-**3. Presence.** `doc_viewers` avatars, on the workbook. Cheapest of the three and it prevents more collisions than either of the others.
+**3. Presence.** `doc_viewers` avatars, on the workbook. Cheapest of the three, and it prevents collisions the other two only report.
 
 ## What not to build
 

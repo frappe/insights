@@ -10,7 +10,7 @@ import type { ClickPoint } from './segment_click'
 //
 // Two items, and the second one absorbs the dimension picker so a breakdown is
 // two clicks from the chart. Nothing is fetched until the reader has said which
-// they want — the candidates rode in with the rows the chart already has.
+// they want — the candidates come back with the chart's rows.
 //
 // The menu opens where the reader pointed, which is why it hangs off a zero-size
 // anchor placed at the click rather than off a control on the page: there is no
@@ -52,11 +52,11 @@ const matches = computed(() => {
 	)
 })
 
-// undefined outside an island, which is Teleport's own default target anyway
+// undefined outside an island, which is Teleport's default target
 const portalTarget = usePortalTarget()
 
 // ItemListRow renders unstyled inside this menu. Its utility classes do not
-// apply here, and the cause is not known. Use a ghost Button until someone
+// apply here and we do not know why. Use a ghost Button until someone
 // diagnoses it.
 const rowClass = 'w-full !justify-start'
 

@@ -15,7 +15,7 @@ const props = defineProps<{ columnOptions: ColumnOption[] }>()
 // rule in one place rather than in every form that draws the section.
 const config = defineModel<AxisChartConfig>({ required: true })
 
-// A split fans every Measure out into one column per split value, which is a
+// A split turns every Measure into one column per split value, which is a
 // value per mark. A tooltip extra is one value per category, so the two shapes
 // do not meet — the section goes away rather than letting an author write a
 // config the chart would ignore.

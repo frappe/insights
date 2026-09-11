@@ -2,8 +2,8 @@
 
 The walk is `chart_drill`'s: a chart document, a stack of levels, and the rows
 behind the segment the stack describes. It is tested at the layer, under the
-author who built the chart, because the layer is what every door shares.
-`test_authoring_api` covers the builder's door and what it adds.
+author who built the chart, because the layer is what every endpoint shares.
+`test_authoring_api` covers the builder's endpoint and what it adds.
 """
 
 import json
@@ -368,7 +368,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             drill_stack=[breakdown_level("creation", measure="count_of_rows")],
         )
 
-        # the fixtures are made in one breath, so the span asks for the finest
+        # the fixtures are created within one second, so the span asks for the finest
         # grain the ladder offers and they all land within a bucket of it
         self.assertEqual(result["granularity"], "minute")
         self.assertEqual(sum(row["count_of_rows"] for row in result["rows"]), len(AUTHOR_TODOS))
@@ -582,7 +582,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         result = self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=[breakdown_level("creation")])
 
         self.assertTrue(result["ordered"])
-        # the fixtures are made in one breath, so the ladder floors on its finest
+        # the fixtures are created within one second, so the ladder floors on its finest
         self.assertEqual(result["granularity"], "second")
 
     def test_a_breakdown_carries_the_measure_the_click_landed_on(self):

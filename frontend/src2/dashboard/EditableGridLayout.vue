@@ -234,8 +234,7 @@ const lifted = computed(() => {
 					<!-- The card being carried is raised by a shadow laid under it,
 					     inset to the card's own edges. Under it, and not on it: a
 					     `filter` on the card would re-render its chart canvas on
-					     every frame of the drag, which is the one thing a drag
-					     cannot spend. -->
+					     every frame of the drag. -->
 					<div
 						v-if="gesture?.i === cell.i"
 						class="pointer-events-none absolute inset-2 rounded-4 bg-surface-base shadow-2xl"

@@ -131,7 +131,6 @@ function addNewColumn() {
 							</template>
 							<template #default="{ toggle: togglePopover, open }">
 								<div v-if="open" class="flex min-w-[10rem] flex-col p-1">
-									<!-- Rename, Sort, Filter, Summarize, Describe, Pivot, Remove -->
 									<ColumnSort
 										:column="column"
 										@sort="onSort(column, $event), togglePopover()"

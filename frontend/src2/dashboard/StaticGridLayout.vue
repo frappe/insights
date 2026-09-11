@@ -130,7 +130,7 @@ const landingStyle = computed(() => {
 
 <template>
 	<div ref="container" class="relative w-full" :style="{ height: `${height}px` }">
-		<!-- Padded like a card, so the outline lands exactly where the card will. -->
+		<!-- Padded like a card, so the outline lands where the card will. -->
 		<div
 			v-if="landingStyle"
 			:style="landingStyle"

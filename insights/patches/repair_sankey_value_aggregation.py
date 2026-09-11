@@ -2,8 +2,8 @@ import frappe
 
 DOCTYPE = "Insights Chart v3"
 
-# A Sankey link is one row per source and target, and every Sankey source in the
-# wild already emits exactly that — native SQL that either unions literal pairs
+# A Sankey link is one row per source and target, and every Sankey source on a
+# live site already emits that — native SQL that either unions literal pairs
 # with a `COUNT(*)`, or groups by the pair. So the group the chart aggregates
 # holds a single row: `count` and `count_distinct` return 1 over it, `sum`,
 # `avg`, `min` and `max` return the value itself.
@@ -19,7 +19,7 @@ def execute():
     `summarize(value, by source and target)` from the config, and the stored
     function decides the width of every ribbon.
 
-    Because the function decided nothing, it was never really chosen. The
+    Because the function decided nothing, it was never chosen. The
     measure picker pre-fills `sum` only when the source declares measure
     columns, and a native SQL source declares none — so the author picked from a
     list that opens with "Count of", over a column that is already a `COUNT(*)`.

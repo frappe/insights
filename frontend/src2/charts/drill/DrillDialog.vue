@@ -20,8 +20,8 @@ import type { ChartSegmentClick } from './segment_click'
 // It is a `bare` Dialog: what makes this a modal is the overlay, Esc,
 // click-outside and the focus trap, and `bare` keeps all of them. What it drops
 // is the header block and its padding — a 24px band between a title and the
-// body, where a chart card puts six. What the drill wants above the plot is not
-// a dialog title anyway. Crumbs, a grain and the way out are a toolbar.
+// body, where a chart card puts six. Above the plot the drill needs a toolbar —
+// crumbs, grain, close — not a dialog title.
 //
 // So the whole surface is one card: a toolbar, a plot, and a line under it. The
 // only chrome drawn here is that toolbar. The states around the plot and the
@@ -62,9 +62,9 @@ defineSlots<{
 
 const open = defineModel<boolean>({ default: false })
 
-// The find belongs to the level's own result pane, but it is drawn up here with
-// the level's own actions, out of the pane's border — the shape the query
-// builder already has.
+// The find belongs to the level's result pane, but the dialog draws it here with
+// the level actions, outside the pane border — the shape the query builder
+// already has.
 const $find = ref<HTMLElement | null>(null)
 
 /** Whether there is a level to draw. Anything else is one of the three states. */
@@ -86,13 +86,8 @@ const breakdown = computed(() => {
 // them is drawn even when the stack pinned nothing on the way here.
 const rowsLevel = computed(() => Boolean(action.value && 'rows' in action.value))
 
-// One crumb per level, and every one of them goes somewhere its neighbour does
-// not. The chart's own name is not among them: it heads the trail as a title,
-// which is what it is. A title is not a destination, and the way back to the
-// chart is the close button in the same row.
-//
-// The stack's own crumbs, unwrapped: the trail is drawn here, so nothing has to
-// be reshaped into what a Breadcrumbs component wants.
+// One crumb per level. The chart's name heads the trail as a title, not a crumb
+// — the way back to the chart is the close button.
 const crumbs = computed(() => props.stack.crumbs)
 
 // A Dimension with an order of its own is read in that order, at a grain. The
@@ -113,8 +108,7 @@ const grainOptions = computed(() =>
 
 /**
  * Where the server cut a breakdown, said only when it cut one. Real paging is
- * not built, so the honest thing when rows were left behind is to name the
- * bound; a level that came back whole has nothing to declare. Which few came
+ * not built, so when the server drops rows, name the bound. A level that came back whole has nothing to declare. Which few came
  * back is the level's own reading: a ranked breakdown is cut to the biggest
  * slices, and an ordered one to the most recent stretch — so one says "top" and
  * the other says "latest". A rows level says its own count, from its grid.
@@ -186,12 +180,12 @@ const bound = computed(() => {
 					</div>
 
 					<!-- what a surface may do with the drill wherever it stands, next
-					     to the way out. Empty on a reading surface, which has nothing to
-					     offer beyond the stack. -->
+					     to the close button. Empty on a reading surface, which has
+					     nothing to offer beyond the stack. -->
 					<div class="ml-auto flex flex-shrink-0 items-center gap-1 pl-2">
 						<slot name="actions" />
-						<!-- `bare` draws no close button of its own, which is the point:
-						     the way out belongs in this row with the other actions. -->
+						<!-- `bare` draws no close button, so close belongs in this row
+						     with the other actions. -->
 						<Button variant="ghost" :tooltip="__('Close')" @click="close">
 							<template #icon>
 								<X class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
@@ -212,10 +206,7 @@ const bound = computed(() => {
 
 				     `h-7` because the row holds chips on some levels and buttons on
 				     others, and a row that took its height from what landed in it
-				     would move the plot as the reader descends.
-
-				     This row is where a chart's own filters would surface, if charts
-				     grow a filter affordance of their own. -->
+				     would move the plot as the reader descends. -->
 				<div
 					v-if="stack.pins.length || rowsLevel"
 					class="flex h-7 flex-shrink-0 items-center gap-1.5"

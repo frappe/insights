@@ -9,7 +9,7 @@ import type { AdhocFilters, QueryResultColumn, QueryResultRow } from '../../type
 import { recordUrl } from '../record_link'
 import type { DrillLevelData } from './drill_stack'
 
-// The floor of the stack: the rows behind the segment, as a query.
+// The last level of the stack: the rows behind the segment, as a query.
 //
 // The pipeline is the server's — the same slice it ran to answer the level — so
 // nothing here derives anything. It is loaded into an ad-hoc query, which is a
@@ -80,7 +80,7 @@ defineExpose({
 				</template>
 			</ResultPane>
 		</div>
-		<!-- the wrapper carries the row's gap, so closed it takes no space at all -->
+		<!-- the wrapper carries the row's gap, so closed it takes no space -->
 		<div
 			class="h-full flex-shrink-0 overflow-hidden transition-[width] duration-200 ease-out"
 			:class="editing ? 'w-[17.75rem]' : 'w-0'"

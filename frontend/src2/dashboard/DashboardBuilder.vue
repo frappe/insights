@@ -74,8 +74,8 @@ const widths = computed(() =>
 
 // An author arranging a narrower breakpoint is given a box that width, rather
 // than a wide grid told to pretend. The grid then measures the breakpoint it is
-// arranging, the cards lay their contents out at the width they will really
-// have, and a drag lands where the reader will see it.
+// arranging, the cards lay their contents out at the width they will have, and
+// a drag lands where the reader will see it.
 const arrangedBox = computed(() => {
 	const breakpoint = BREAKPOINTS.find((item) => item.key === dashboard.arranging)
 	if (!breakpoint || breakpoint === BASE_BREAKPOINT) return undefined

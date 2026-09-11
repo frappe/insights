@@ -286,7 +286,6 @@ export function applyDateRule(value: any, rule: date_rules): boolean {
 export function applyRankRule(value: any, rule: rank_rules, allValues: number[]): boolean {
 	const numVal = useNumber(value)
 	if (numVal === null) return false
-	// sort descending
 	const numericValues = [...allValues].sort((a, b) => b - a)
 
 	if (numericValues.length === 0) return false

@@ -45,8 +45,8 @@ BREAKDOWN = "breakdown"
 # a bucket standing for the rows that carry no date at all
 NO_DATE = (None, None)
 
-# what a rows level shows. The dialog states the bound it draws; real
-# pagination waits for someone to hit it
+# what a rows level shows. The dialog states the bound it draws. Nothing pages
+# past it yet
 PAGE_SIZE = 100
 
 # what a breakdown holds. The level answers "which slice explains this" or "how
@@ -154,8 +154,8 @@ def drill_dimensions(chart, operations: list[dict] | None = None) -> list[dict]:
     """The columns a segment of this chart can be broken down by.
 
     The dimension-typed columns of the pre-summarize surface — what the menu
-    offers before anything is clicked, which is why it rides the chart's own
-    data response instead of a call of its own.
+    offers before anything is clicked, which is why it comes back with the
+    chart's own data response instead of in a call of its own.
 
     A pipeline that aggregates nothing has no surface underneath it, so it
     answers with nothing rather than refusing: asking what a result can be
@@ -182,8 +182,7 @@ def drill_data(
     pipeline it gets back: a rows level then answers with that pipeline and
     its columns rather than its rows, which is what an authoring surface asks
     for when it lifts the level into the query builder. It is off by default
-    because the reading surfaces must never receive the pipeline, and a default
-    that leaks is one forgotten argument away.
+    because the reading surfaces must never receive the pipeline.
     """
     if not drill_stack:
         frappe.throw(_("Nothing to drill into: the drill stack is empty"))
@@ -219,8 +218,7 @@ def drill_data(
         return _handed_over(drilled, columns, sliced)
 
     # a level is fetched once and then kept by the dialog for as long as it
-    # is open, so back and crumb pops never come here. What does come here
-    # is a viewer asking what a number is made of right now
+    # is open, so back and crumb pops never come here
     result = query.execute(adhoc_filters=adhoc_filters, page_size=page_size, force=True)
     # the dialog shows one page and says so: "100 of 1,240" needs the 1,240
     total_row_count = query.count_rows(adhoc_filters=adhoc_filters)
@@ -406,7 +404,8 @@ def _additive(measures: list[dict]) -> bool:
     The client is told, because the answer it receives carries column types and
     not aggregations — there is nothing in a column of decimals that says
     whether they are sums or averages. A level drawn as parts of one whole rests
-    on this, and a whole made of averages is a lie the reader cannot see.
+    on this, and a whole made of averages is wrong with nothing on screen to
+    show it.
     """
     return bool(measures) and all(measure.get("aggregation") in ADDITIVE_AGGREGATIONS for measure in measures)
 
@@ -513,7 +512,7 @@ def _segment_filters(drill_stack: list, step: dict, surface: list[dict]) -> list
     """Every level's segment, narrowing the rows one level at a time.
 
     A level is read against the levels above it as much as against the chart:
-    the grains they grouped by travel down the stack, because a value clicked on
+    the grains they grouped by apply to every level below, because a value clicked on
     one of their buckets stands for the whole bucket and nothing else records how
     wide that is.
     """
@@ -604,7 +603,8 @@ def _clicked_window(dimension: dict | None, value) -> tuple | None:
     A number card grouped by windows labels each row with the date its window
     opens, so the label names the window and the span it was cut from gives the
     end. The spans resolve here, the way they resolve while the card runs: they
-    travel unresolved so that the same chart reads a different stretch tomorrow.
+    are stored unresolved so that the same chart reads a different stretch
+    tomorrow.
     """
     windows = (dimension or {}).get("windows") or []
     if not windows or not value:
@@ -714,7 +714,7 @@ def _surface_column(name: str, surface: list[dict]) -> dict:
     """A column of the pre-summarize surface, or a refusal.
 
     The surface is what the chart's author published. A name that is not on it
-    is never guessed at: the wire cannot widen what a chart exposes.
+    is never guessed at: a request cannot widen what a chart exposes.
     """
     for column in surface:
         if column["name"] == name:

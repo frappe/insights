@@ -8,12 +8,10 @@ import type { ChartFailure } from './types'
 //
 // A dashboard cell names one reading, so on a dashboard this row holds a single
 // card and is that card. The workbook editor names none, so there it holds every
-// reading the chart states and previews them side by side. It is a preview and
-// not a layout: what a reading looks like on a dashboard is a cell of its own,
-// which is the row of one.
+// reading the chart states and previews them side by side.
 //
-// A cell was sized from this config — `numberCardRows` is the other half of
-// that rule — so on a dashboard the one card fills it. The editor has no cell,
+// `numberCardRows` sizes the cell from this config, so on a dashboard the one
+// card fills it. The editor has no cell,
 // so there each card is drawn at the size a cell would give it: the height the
 // rule states, and a fifth of the pane wide, which is the width a dropped cell
 // starts at.
@@ -38,8 +36,8 @@ const emit = defineEmits<{
 
 <template>
 	<div class="flex h-full w-full flex-col gap-2">
-		<!-- A Number Chart has no card to head, so the acts a host passes sit over
-		     the readings instead of beside a title. The row is one button tall:
+		<!-- A Number Chart has no card to head, so a host's actions sit over the
+		     readings instead of beside a title. The row is one button tall:
 		     there is no title line here for the buttons to center on, and the
 		     card around this clips at its edge. -->
 		<div v-if="$slots.actions" class="flex h-7 shrink-0 items-center justify-end">

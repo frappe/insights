@@ -25,17 +25,17 @@ import type { ChartSegmentClick } from './segment_click'
 //
 // A surface mounts this and hands over what was clicked. Everything past that
 // lives here and dies with it, so closing is all it takes to forget the stack.
-// Which door the levels come through is the subject's business. Nothing here
-// knows whether a chart was ever saved.
+// The subject owns which endpoint answers a level. Nothing here knows whether a
+// chart was ever saved.
 //
-// `#actions` is what a surface may add next to the way out, on any level;
+// `#actions` is what a surface may add next to the close button, on any level;
 // `#level-actions` acts on the level being read and is drawn in the pins row
 // beside the find. `#rows` is how the surface draws the rows level. Slots rather
 // than props so that an authoring affordance and everything it imports — the
 // whole query editor, for the rows level — stay out of a surface that only
 // reads.
 const props = defineProps<{
-	/** what is being drilled: the shape a click is read against, and the door */
+	/** what is being drilled: the shape a click is read against, and the endpoint */
 	subject: DrillSubject
 	/** the click that opened this */
 	clicked: ChartSegmentClick
@@ -58,7 +58,6 @@ const answer = ref<DrillLevelData>()
 const loading = ref(false)
 const failed = ref(false)
 
-// what the menu is currently offering to split, and where it is drawn
 const pending = ref<{ segment: DrillSegment; point: { x: number; y: number } }>()
 
 // The level being read is the chart a click inside the dialog is read against.
@@ -121,8 +120,7 @@ function chooseBreakdown(dimension: DrillDimension) {
 	descend({ breakdown: dimension.name, measure: pending.value?.segment.measure })
 }
 
-// Dismissing the menu without choosing is the whole of the interaction when
-// nothing is open behind it.
+// With no dialog open, dismissing the menu ends the drill.
 function dismissMenu() {
 	pending.value = undefined
 	if (!open.value) emit('close')

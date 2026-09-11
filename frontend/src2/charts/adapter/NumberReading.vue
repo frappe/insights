@@ -7,16 +7,15 @@ import { __ } from '../../translation'
 import type { NumberCardClickEvent, NumberCardEntry } from './number'
 import type { ChartFailure } from './types'
 
-// One reading of a Number Chart. Nothing here decorates — it fills the space it
-// was given and reports a click.
+// One reading of a Number Chart. Nothing here decorates: it fills its space and
+// reports a click.
 //
 // The reading is a card of frappe-ui's, drawn with its own surface, which is why
 // the filler tells the chrome to draw none: a card inside a card would border
 // the reading twice.
 //
-// This card is also where the chart wears its states, because it is the only
-// surface it has. So it stands in every state: it skeletons while the query
-// runs, prints a dash when it returns nothing, and carries the failure and the
+// The card is the chart's only surface, so it draws every state: a skeleton
+// while the query runs, a dash when it returns nothing, the failure and the
 // retry when it fails. A reader who sees a titled card and a dash has been told
 // which reading is missing, which a message floating on the page never said.
 const props = defineProps<{
@@ -78,14 +77,12 @@ const drillable = computed(() => !props.card.missing)
 					class="flex items-center gap-1.5 text-p-sm text-ink-gray-8"
 					:title="failure.detailText"
 				>
-					<!-- Both icons on the card are the size of the text beside them,
-					     so neither reads as an ornament on the line. -->
 					<AlertTriangle class="h-3.5 w-3.5 shrink-0 text-ink-red-5" stroke-width="1.5" />
 					<span class="truncate">{{ failure.headline }}</span>
 				</div>
 			</template>
 
-			<!-- The retry rides the title row, which stands at zero height, so the
+			<!-- The retry sits in the title row, which has zero height, so the
 			     action costs the message none of the card. It is the smallest
 			     control in the library for the same reason: one taller than the
 			     title's line stands outside the row and reads as though the card is

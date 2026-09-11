@@ -43,7 +43,7 @@ export function adaptNumberChart(input: ChartAdapterInput): ChartFiller | undefi
 
 	// The config names every reading, so the cards are built before a result and
 	// built when none arrives: a card with no row prints a dash, and the states
-	// the other types wear on their chrome are drawn inside them.
+	// the other types draw on their chrome are drawn inside them.
 	const rows = input.result.rows || []
 	// Every reading is the newest one, so the newest row is the row behind every
 	// card. Which row a comparison reads is the server's answer, not a count
@@ -135,8 +135,7 @@ function readingOf(
 	const format = numberFormatOf(config, measure)
 	const scale = (reading: number | null) => (reading !== null ? reading * format.scale : reading)
 
-	// `color` is per value alone: it is the ink of one reading, and a Chart that
-	// colored every reading the same has said nothing.
+	// `color` is per value: coloring every reading the same says nothing.
 	const options = config.number_column_options?.[index] || {}
 	const negativeIsBetter = options.negative_is_better ?? config.negative_is_better
 
@@ -190,8 +189,8 @@ function readingOf(
 		// A grain card is one row per period, so its own readings are the trend.
 		// A span card is one row per window — the reading and what it is held
 		// against — which is never a trend, so it waits for the run the server
-		// makes for it. Falling back to the rows there drew a two-point line out
-		// of a reading and its comparison, and it looked like a trend.
+		// makes for it. Falling back to the rows there draws a two-point line from
+		// the reading and its comparison, which reads as a trend.
 		const grouped = periodOf(config)
 		const data = series
 			? series.map((row) => toNumber(row[column]))
@@ -261,7 +260,7 @@ function comparisonNumber(
  * flipping the number here too would flip it back.
  *
  * Nothing to compare with — a missing number, or one of zero — leaves the figure
- * empty. A change from nothing has no percentage.
+ * empty.
  */
 function percentChange(current: number | null, against: number | null): number | null {
 	if (current === null || against === null || against === 0) return null

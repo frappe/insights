@@ -157,7 +157,7 @@ export type BreakpointKey = 'sm' | 'lg'
  * `layout` is the placement at the widest breakpoint, and it is the one every
  * item has — it is what a dashboard authored before there was more than one
  * width already holds, and what a new item is given. `layouts` holds the
- * narrower ones, and only the ones an author actually arranged: a breakpoint an
+ * narrower ones, and only the ones an author arranged: a breakpoint an
  * item says nothing about is derived from the next wider one, so a dashboard
  * nobody has laid out for a phone still reads on a phone.
  *

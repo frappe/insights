@@ -122,7 +122,7 @@ describe('what one Measure says', () => {
 			number_formats: { refunds: { prefix: '-$' } },
 		}
 		expect(numberFormatter(config, measure('revenue'))(1234567)).toBe('$1.2M')
-		// `shorten` is the chart's still: an override says one thing, not all of them.
+		// `shorten` still comes from the chart: an override replaces one key, not all of them.
 		expect(numberFormatter(config, measure('refunds'))(1234567)).toBe('-$1.2M')
 	})
 

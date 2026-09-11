@@ -78,7 +78,7 @@ export type ResolvedNumberFormat = NumberFormat & {
 	scale: number
 }
 
-/** What a shortened number carries when nobody says. v2's own default. */
+/** Decimal places a shortened number prints when no layer states one. v2's default. */
 const SHORT_DECIMALS = 1
 
 /**
@@ -141,7 +141,7 @@ export function defaultDecimals(shorten?: boolean): number | undefined {
 	return shorten ? SHORT_DECIMALS : undefined
 }
 
-/** The one resolver. Every chart and the grid print their numbers with this. */
+/** The one resolver. */
 export function numberFormatter(
 	config?: NumberFormatConfigSource | null,
 	measure?: FormattedMeasure | null,
@@ -208,7 +208,7 @@ function mergeFormats(layers: NumberFormat[]): NumberFormat {
 	return merged
 }
 
-/** A layer states a key when it holds anything but nothing. `''` is a value. */
+/** A layer states a key unless it is undefined or null. `''` is a value. */
 function stated(value: unknown): boolean {
 	return value !== undefined && value !== null
 }

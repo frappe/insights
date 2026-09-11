@@ -213,9 +213,8 @@ describe('drilling into a cell', () => {
 		).toEqual({ column: 'revenue', row: input.result.rows[1] })
 	})
 
-	// Only the rows the table was handed have a raw row behind them. A row from
-	// anywhere else drills into nothing — and `rawRowOf` says so out loud, because
-	// there is no reading of the data under which this is a click on empty space.
+	// Only the rows the table was handed have a raw row behind them, so `rawRowOf`
+	// returns nothing for any other row.
 	it('drills into nothing from a row the result does not carry', () => {
 		const input = tableChart({ rows: ['category'], values: ['revenue'] })
 		const filler = adapt(input)

@@ -66,8 +66,8 @@ export type AxisChartSpec = {
 	 */
 	readings?: Record<string, (number | string | null)[]>
 	/**
-	 * Measures that reach the tooltip and nothing else. They ride the same
-	 * summarize, so the result carries a value column for each of them.
+	 * Measures that reach the tooltip and nothing else. The same summarize
+	 * returns them, so the result carries a value column for each of them.
 	 */
 	tooltipMeasures?: MeasureSpec[]
 	stacked?: boolean

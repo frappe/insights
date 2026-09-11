@@ -11,7 +11,7 @@ import { segmentClickEvents, type ChartSegmentClick, type ClickPoint } from './s
 // One breakdown level: the clicked Measure across the chosen Dimension, drawn by
 // the chart the answer's own reading calls for. It goes through `adaptChart` like
 // any card, so a click inside it comes back through the same resolver a card's
-// click does — which is what makes the next level ride a path that already exists.
+// click does — so the next level reuses the existing click path.
 //
 // Which measures the level holds is the answer's to say, not the caller's: a
 // click on a number card named none of them and kept them all.
@@ -53,7 +53,7 @@ const events = computed(() =>
 
 <template>
 	<!-- `card: false` keeps the box a chart needs — it clips the plot — and drops
-	     the surface a card wears. A dialog is already the frame here, and a second
+	     the card's own border and background. A dialog is already the frame here, and a second
 	     border inside it draws a card that is not there. -->
 	<ChartCard class="h-full" :card="false" @click.capture="rememberPoint">
 		<component v-if="filler" :is="filler.component" v-bind="filler.props" v-on="events" />

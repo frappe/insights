@@ -2,7 +2,7 @@
 //
 // The vocabulary the picker speaks: kinds, date presets, and the two halves of
 // the line an overview row prints. There is no operator vocabulary left — each
-// type has exactly one picker, and the picker decides the operator.
+// type has one picker, and the picker decides the operator.
 
 import dayjs from 'dayjs'
 import { Calendar, Hash, Type } from 'lucide-vue-next'

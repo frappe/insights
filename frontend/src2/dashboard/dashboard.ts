@@ -75,9 +75,9 @@ function makeDashboard(name: string) {
 		return editing.value && editingItemIndex.value === dashboard.doc.items.indexOf(item)
 	}
 
-	// Which door the cards read through. The builder and the in-app page draw a
-	// card from the config being edited through the authoring door, which needs
-	// an authoring seat. A public link has no seat, so its cards read the saved
+	// Which endpoint the cards read through. The builder and the in-app page draw
+	// a card from the config being edited through the authoring endpoint, which
+	// needs an authoring seat. A public link has no seat, so its cards read the saved
 	// chart through its own `get_data`. The page that mounts the store says.
 	const shared = ref(false)
 
@@ -319,7 +319,7 @@ function makeDashboard(name: string) {
 
 	// The card sends what the grid holds, not what it worked out from it: which
 	// query a filter lands on is read off the links server-side, the one place it
-	// is read for every surface. The items travel because the builder is editing
+	// is read for every surface. The items are sent because the builder is editing
 	// ones the document has not saved.
 	function filterContextFor(chart_name: string) {
 		return {

@@ -27,10 +27,9 @@ const props = defineProps<{
 
 const emit = defineEmits<{ close: [] }>()
 
-// Two halves to the gate, each asserted by whoever owns it. The server hands
-// back the sliced pipeline through the authoring door alone, so a level that
-// carries one is a level an author is reading. The client owns the other half:
-// a workbook this user only reads is not one to add a query to.
+// Two checks, one per owner. Only the authoring endpoint returns the sliced
+// pipeline, so a level that carries one belongs to an author. The client owns
+// the other half: a workbook this user only reads is not one to add a query to.
 const workbook = inject(workbookKey, null)
 function openable(answer: DrillLevelData) {
 	return Boolean(answer.operations?.length) && Boolean(workbook) && !workbook?.doc.read_only
@@ -69,8 +68,8 @@ function addToWorkbook(answer: DrillLevelData) {
 <template>
 	<ChartDrillDown :subject="props.subject" :clicked="props.clicked" @close="emit('close')">
 		<template #actions="{ answer }">
-			<!-- taking the level away as a query is offered wherever the reader
-			     stands, so it sits with the way out rather than with the level -->
+			<!-- this works on any level, so it sits with the close button rather
+			     than with the level actions -->
 			<Button
 				v-if="openable(answer)"
 				variant="ghost"

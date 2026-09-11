@@ -295,8 +295,8 @@ export function placementsFor(
 /**
  * Store where one item sits at one breakpoint. The only writer of either field.
  *
- * The widest breakpoint is stored on its own, in `layout`, so identity has one
- * home: a narrower breakpoint stores a box and nothing else.
+ * The widest breakpoint is stored on its own, in `layout`, so identity is
+ * stored in one place: a narrower breakpoint stores a box and nothing else.
  */
 export function writePlacement(
 	item: WorkbookDashboardItemLayout,

@@ -79,8 +79,8 @@ const showShareDialog = ref(false)
 <template>
 	<div class="relative flex h-full w-full overflow-hidden">
 		<div class="relative flex h-full w-full flex-col gap-3 overflow-hidden px-4 pb-4 pt-3">
-			<!-- no page header: the card's own header is this page's, so the title
-			     is drawn once and the acts sit beside it -->
+			<!-- no page header: the card's header is the page's, so the title is
+			     drawn once with the actions beside it -->
 			<div ref="chartEl" class="flex min-h-0 flex-1 items-center justify-center">
 				<ChartRenderer :chart="preview" hide-maximize>
 					<template v-if="chart.doc.query" #actions>

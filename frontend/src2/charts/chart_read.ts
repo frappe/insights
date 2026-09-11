@@ -5,8 +5,7 @@
 // which answers rows and nothing else — a reader never says what query to run,
 // and never learns what ran. The builder has no saved chart to name, so it sends
 // the config it is editing to `insights.api.authoring` and gets the derived
-// operations back with the rows. That door is closed to anyone without an
-// authoring seat.
+// operations back with the rows. That endpoint needs an authoring seat.
 //
 // Above the fetch the two are the same store: the same result, the same
 // loading, failure and empty states, the same freshness stamp, the same
@@ -63,8 +62,8 @@ type ChartDataResponse = {
 	use_live_connection?: boolean
 	// where the grid's filters landed, as the server routed them
 	adhoc_filters?: AdhocFilters
-	// what a segment click may break the card down by. It rides along with the
-	// rows because a menu that has to ask first puts a round trip in the one place
+	// what a segment click may break the card down by. It comes with the rows
+	// because a menu that has to ask first puts a round trip in the one place
 	// latency is felt — between the click and the menu.
 	drill?: { dimensions: DrillDimension[] }
 	// which row answers each of a number card's comparisons, keyed by the source
@@ -84,7 +83,6 @@ type ChartDataResponse = {
  * nothing names no surface and shares the one unnamed read.
  */
 export type ChartReadSurface = {
-	// what tells one surface's reads from another's
 	id: string
 	// the filters this surface applies to the chart it names. It is asked at the
 	// moment of the read rather than stored on it, so a load always carries what
@@ -97,7 +95,7 @@ function chartReadKey(feed: ChartFeedName, chart: Chart, surface?: ChartReadSurf
 	return `${feed}:${surface?.id || ''}:${chart.doc.name}`
 }
 
-/** Which door the rows came in by: the saved chart's, or the builder's. */
+/** Which feed the rows came from: the saved chart's, or the builder's. */
 export type ChartFeedName = 'saved' | 'preview'
 
 export type ChartFeed = {
@@ -114,9 +112,9 @@ export type ChartFeed = {
 	// its answer, and running it puts the card through its loading state for a
 	// picture that does not change. A feed that leaves it out runs every load.
 	requestKey?: (filterContext?: DashboardFilterContext) => string
-	// one level of a drill, through the door this feed came in by. The stack the
-	// dialog holds is the whole of the request. No operations cross either way,
-	// except back out of the authoring door.
+	// one level of a drill, through this feed's endpoint. The stack the dialog
+	// holds is the whole request. No operations cross either way, except back out
+	// of the authoring endpoint.
 	fetchDrillData: (
 		levels: DrillLevel[],
 		filterContext?: DashboardFilterContext,
@@ -129,8 +127,7 @@ export function makeChartRead(
 	// load. A read with none is unfiltered for as long as it lives.
 	filterContext: () => DashboardFilterContext | undefined = () => undefined,
 ) {
-	// the preview feed hands over the document it is editing, so read it through
-	// whichever of the two it is before anything derives from it
+	// the preview feed hands over a ref to the document it is editing
 	const doc = computed(() => unref(feed.doc))
 	const result = ref<QueryResult>({ ...EMPTY_RESULT })
 	// the series a windowed card's sparkline is drawn from, when the server ran
@@ -283,7 +280,7 @@ export function makeChartRead(
 
 	// Everything the drill dialog needs from this card. The card knows the shape a
 	// click is read against and the candidates a breakdown may offer. The feed
-	// knows the door. Nothing above has to hold both halves.
+	// knows the endpoint. Nothing above holds both halves.
 	const drillSubject = computed<DrillSubject>(() => ({
 		chart: { chart_type: doc.value.chart_type as ChartType, config: doc.value.config },
 		title: doc.value.title,
@@ -295,8 +292,6 @@ export function makeChartRead(
 		doc: feed.doc,
 		result,
 		sparklineResult,
-		// the whole result comes back in one response, so the table it feeds has
-		// one page and filters over the rows it holds
 		currentOperations: operations,
 		routedFilters,
 		configErrors,

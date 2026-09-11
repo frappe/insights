@@ -548,7 +548,7 @@ test.describe('charts', () => {
 		// is an axis line or a split line, and those carry `fill="none"`.
 		await rendered.locator('path[fill]:not([fill="none"])').click()
 
-		// A click offers the two ways down: the rows behind the bar, or a
+		// A click offers two drill-downs: the rows behind the bar, or a
 		// breakdown by another dimension. 53 of the 2,000 demo orders are
 		// canceled.
 		await page.getByRole('button', { name: 'View rows' }).click()
@@ -642,7 +642,7 @@ test.describe('charts', () => {
 		await expect(card.getByText('vs previous month')).toBeVisible()
 
 		// The sparkline is drawn in the card itself, not as a chart of its own:
-		// one filled area under a line, bled to the card's bottom edge.
+		// one filled area under a line, down to the card's bottom edge.
 		await expect(cardOf(page).locator('svg path[fill]:not([fill="none"])')).not.toHaveCount(0)
 	})
 

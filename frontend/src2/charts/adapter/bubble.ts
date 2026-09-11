@@ -36,7 +36,7 @@ export function adaptBubbleChart(input: ChartAdapterInput): ChartFiller | undefi
 	if (label) props.label = label
 
 	// The name beside the point, not a measure: both measures are already on the
-	// axes. A Chart that asks for labels and names no column is told so by v2.
+	// axes. v2 reports a Chart that asks for labels and names no column.
 	if (config.show_data_labels) props.showDataLabels = true
 
 	// Coloring the points by a Dimension is grouping them by it, which is what a
@@ -64,8 +64,8 @@ export function adaptBubbleChart(input: ChartAdapterInput): ChartFiller | undefi
  * numbers are the author's own: nothing computes a default divider, and a
  * quadrant chart with no line set draws none.
  *
- * Each rule prints where it sits, in the units of the axis it is read against —
- * a divider a reader cannot put a number to divides nothing. The two are placed
+ * Each rule prints where it sits, in the units of the axis it is read against.
+ * The two are placed
  * at opposite ends, because both default to the same corner and a quadrant chart
  * always draws them crossing.
  */

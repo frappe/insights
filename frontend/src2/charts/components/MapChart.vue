@@ -57,7 +57,7 @@ watch(
 	() => props.map,
 	async (name) => {
 		const loaded = await loadGeography(name)
-		// A second geography may have been asked for while this one was in flight.
+		// The chart may ask for a second geography while this one loads.
 		if (props.map !== name) return
 		failed.value = !loaded
 		if (loaded) registered.value = name

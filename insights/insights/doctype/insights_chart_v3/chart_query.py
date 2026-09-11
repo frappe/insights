@@ -10,8 +10,9 @@ somebody opened it in the builder. Here the shape is turned into operations
 wherever the chart runs, from the config alone.
 
 The output is `source + config filters + the chart's own summarize/pivot +
-order-by`, in that order. Dashboard filter state is not part of it — that rides
-the `adhoc_filters` argument of execution and is applied to the query it names.
+order-by`, in that order. Dashboard filter state is not part of it — it arrives
+as the `adhoc_filters` argument of execution and is applied to the query it
+names.
 
 A windowed number card also derives a second list, `sparkline_operations`. It
 answers how the number moved rather than what the number is, and the two
@@ -44,7 +45,7 @@ DEFAULT_MAX_COLUMN_VALUES = 10
 
 # A dimension that carries an order of its own is drawn in that order. One that
 # carries none is left in the order the result arrived in. Dates and times are
-# the ordered ones — a moment has a before and an after.
+# the ordered ones.
 ORDERED_TYPES = ("Date", "Datetime", "Time")
 
 
@@ -307,7 +308,7 @@ def _add_axis_operation(operations: list[dict], config: dict):
         )
         return
 
-    # Tooltip measures ride the same summarize, so they arrive as one more value
+    # Tooltip measures go into the same summarize, so they arrive as one more value
     # per plotted row. They are named apart from the drawn ones only by the
     # config, which is what keeps them out of the chart.
     #
@@ -342,7 +343,8 @@ def _add_number_operation(operations: list[dict], config: dict):
     if window.get("grain"):
         # A grain filters nothing: the card reads the newest period the data has,
         # and the row before it is what a `previous` comparison reads. That is the
-        # shape a date dimension already groups by, so the grain rides it.
+        # shape a date dimension already groups by, so the grain goes on the
+        # dimension.
         date_column = {**date_column, "granularity": window["grain"]}
         operations.append(_summarize(measures=_number_measures(config), dimensions=[date_column]))
         _add_order_by(operations, _result_column(date_column), "asc")
@@ -358,8 +360,7 @@ def _add_window_operations(operations: list[dict], config: dict, window: dict, d
 
     The card reads the last row. Which of the earlier rows a reading is measured
     against is answered by `comparison_timespans` and not by counting back, so
-    two readings comparing against different windows each read their own — and
-    nobody has to write a measure per window.
+    two readings comparing against different windows each read their own.
 
     The group-by is the window itself, not the unit its span names. A span of
     several periods grouped by its unit comes back as one row per period, and
@@ -401,7 +402,7 @@ def _span_unit(span: str | None) -> str:
     """The unit a span names, read the way `get_window` reads it.
 
     The unit is in the string and the dates are not, so reading it here leaves
-    derivation pure — the span still travels unresolved.
+    derivation pure — the span stays unresolved.
     """
     if not span:
         return ""
@@ -776,7 +777,7 @@ def _add_order_by(operations: list[dict], column_name: str, direction: str):
 
     Donut and Funnel sort by their measure before the config's own sorts are
     read, so a chart sorted on that same measure must move the sort rather than
-    add a second one — two order-by steps on one column would fight.
+    add a second one — two order-by steps on one column conflict.
     """
     if not column_name:
         return

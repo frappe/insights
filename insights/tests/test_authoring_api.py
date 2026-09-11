@@ -197,7 +197,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
         result = self.preview(AUTHOR, chart_type="Table", query=query.name, config=table_config())
 
-        # one deriver behind both doors, so what the author is shaping is what
+        # one deriver behind both endpoints, so what the author is shaping is what
         # every reader of the saved chart gets
         self.assertEqual(result["operations"], chart.get_operations())
 
@@ -229,7 +229,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
         self.assertEqual(result["granularity"], {"creation": "month"})
 
-    # dashboard filters, routed by the same function the viewer door uses
+    # dashboard filters, routed by the same function the viewer endpoint uses
 
     def grid_items(self, chart: str, query: str, column: str = "description"):
         """A grid holding one chart card and one filter linked to it."""
@@ -283,7 +283,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
     # the drill, for a shape nobody has saved
     #
-    # The walk itself is the viewer door's walk and is tested there. What is
+    # The walk itself is the viewer endpoint's walk and is tested there. What is
     # tested here is only what differs: naming the shape instead of a chart, and
     # the pipeline that comes back with the rows.
 
@@ -353,7 +353,8 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
             drill_stack=[breakdown_level("priority", measure="Todos")],
         )
 
-        # the two fields the viewer door reports, on the door the builder uses:
+        # the two fields the viewer endpoint reports, on the endpoint the builder
+        # uses:
         # one dialog draws both, so it must not have to know which fed it
         self.assertEqual((ordered["ordered"], ordered["granularity"]), (True, "minute"))
         self.assertEqual((ranked["ordered"], ranked["granularity"]), (False, None))
@@ -436,8 +437,8 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
         names = self.candidates(AUTHOR, query=query.name, operations=summarized_operations())
 
-        # a chart's candidates ride its rows; a query builder fetches its rows
-        # through its own document, so it has no such response to ride
+        # a chart's candidates come back with its rows. A query builder fetches its
+        # rows through its own document, so it has no such response
         self.assertIn("status", names)
         self.assertIn("priority", names)
         self.assertIn("description", names)
@@ -486,7 +487,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
     def test_a_reader_without_an_authoring_seat_cannot_drill(self):
         query, _ = self.make_content()
 
-        # what this door adds is the pipeline, and the pipeline is the author's half
+        # what this endpoint adds is the pipeline, and the pipeline is the author's half
         with self.assertRaises(frappe.PermissionError):
             self.drill(
                 READER,
@@ -502,7 +503,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
     def test_a_query_the_caller_cannot_read_cannot_be_drilled(self):
         query, _ = self.make_content()
 
-        # naming a query is how this door says what to run, here as much as on
+        # naming a query is how this endpoint says what to run, here as much as on
         # the preview — a seat is not a grant on someone else's content
         with self.assertRaises(frappe.PermissionError):
             self.drill(

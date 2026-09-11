@@ -1,8 +1,7 @@
-// The door the drill goes through.
+// Every server call the drill makes.
 //
-// Every server call the drill makes is here, so the whole client-side reading of
-// the drill endpoint is one file to reconcile if it answers differently from
-// what this expects. Nothing above this module knows an endpoint's name, its
+// The whole client-side reading of the drill endpoint is one file to reconcile
+// if it answers differently from what this expects. Nothing above this module knows an endpoint's name, its
 // argument names, or the shape of its answer beyond `DrillLevelData`.
 //
 // The wire contract:
@@ -11,8 +10,8 @@
 //
 // It names what it is drilling — the config the chart builder is editing, or
 // the operations the query builder is — and `drill_stack` is the descriptor:
-// literals and an action per level. This door answers with the sliced
-// pipeline, which is why it is closed to anyone without an authoring seat.
+// literals and an action per level. It returns the sliced pipeline, so only
+// authors may call it.
 
 import { call } from 'frappe-ui'
 import type { ChartConfig } from '../../types/chart.types'

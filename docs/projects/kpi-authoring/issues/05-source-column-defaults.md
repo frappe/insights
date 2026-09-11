@@ -5,28 +5,17 @@ Status: ready-for-agent
 
 ## Question
 
-A query on a doctype arrives with every framework column — `name`, `owner`,
-`creation`, `modified_by`, `_assign`, `_comments`, `_user_tags`, `docstatus`,
-`idx`. An author who wants four columns prunes by hand, every time.
+A query on a doctype arrives with every framework column — `name`, `owner`, `creation`, `modified_by`, `_assign`, `_comments`, `_user_tags`, `docstatus`, `idx`. An author who wants four columns prunes by hand, every time.
 
-This is independent of the rest of the effort. It was found while reading the
-target join in `overview_board.py`, where the pruning `select` turned out to be
-cleaning up the *left* source, not the join.
+This is independent of the rest of the effort. It was found while reading the target join in `overview_board.py`, where the pruning `select` turned out to be cleaning up the *left* source, not the join.
 
 ## What to build
 
-The builder writes an explicit column list when it creates a source step. The
-list holds the doctype's own fields; meta columns are available and unchecked.
+The builder writes an explicit column list when it creates a source step. The list holds the doctype's own fields; meta columns are available and unchecked.
 
-**Prune at authoring, never in the engine.** `get_column` throws hard when a
-column is absent (`ibis_utils.py:220`), and it already carries four fallback
-strategies from past column renames — a pruned column has no fallback available,
-because it genuinely is not there. A saved query that filters on `_assign`
-would break with no migration possible.
+**Prune at authoring, never in the engine.** `get_column` throws hard when a column is absent (`ibis_utils.py:220`), and it already carries four fallback strategies from past column renames — a pruned column has no fallback available, because it is not there. A saved query that filters on `_assign` would break with no migration possible.
 
-Recording the list in the query document is what makes this safe: documents
-written before this ticket carry no list and behave exactly as they do today.
-The author can see the list and add a meta column back.
+Recording the list in the query document is what makes this safe: documents written before this ticket carry no list and behave as they do today. The author can see the list and add a meta column back.
 
 ## Done when
 
@@ -40,6 +29,4 @@ The author can see the list and add a meta column back.
 
 ## Notes
 
-Judge this ticket on its own. Once ticket 04 lands, the target table is never
-the left source of a query, so this saves nothing on the KPI card that motivated
-the effort. Its payoff is every other doctype query in the product.
+Judge this ticket on its own. Once ticket 04 lands, the target table is never the left source of a query, so this saves nothing on the KPI card that motivated the effort. Its payoff is every other doctype query in the product.

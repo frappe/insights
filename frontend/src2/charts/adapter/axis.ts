@@ -53,8 +53,8 @@ function adaptAxisChart(
 	const x = dimension?.dimension_name
 	if (!x) return
 
-	// Measures that reach the tooltip and nothing else. They ride the same
-	// summarize, so they arrive as value columns like any other — the config is
+	// Measures that reach the tooltip and nothing else. The same summarize returns
+	// them, so they arrive as value columns like any other — the config is
 	// the only thing that says they are not series, which is why they are taken
 	// out before the columns are read.
 	const tooltipMeasures = tooltipMeasuresOf(config)
@@ -81,8 +81,7 @@ function adaptAxisChart(
 		title: input.title,
 		data: input.result.rows,
 		x,
-		// Every value column, in the order the result carries them. Series colors
-		// are handed out along this list, so the scale a Series is read on is said
+		// Series colors are handed out along this list, so the scale a Series is read on is said
 		// in `seriesConfig` rather than by moving it.
 		y: columns,
 		xAxis: xAxisFor(dimension),
@@ -102,8 +101,8 @@ function adaptAxisChart(
 	const right = measureOn(config, 'Right')
 	if (right) props.y2Axis = { format: numberFormatter(config, right) }
 
-	// A reference line reads any Measure the Chart carries, drawn or not: a target
-	// on the tooltip is exactly the kind a rule is computed from.
+	// A reference line reads any Measure the Chart carries, drawn or not: a rule
+	// often computes from a tooltip target.
 	const referenceLines = referenceLinesFor(
 		config,
 		[...columns, ...tooltipMeasures],
@@ -159,7 +158,7 @@ function measureNameFor(config: MixedChartConfig, column: string): string | unde
 
 /**
  * The Measures the tooltip carries, by the column name each one produced. Empty
- * under a split: a split fans every Measure out into one column per split value,
+ * under a split: a split turns every Measure into one column per split value,
  * so there is no per-category column for one to arrive on, and the server
  * leaves them out of the pivot.
  */
@@ -361,7 +360,7 @@ function aggregatePositionOf(
 		.flatMap((column) => rows.map((row) => toNumber(row[column])))
 		.filter((value): value is number => value !== null)
 	// A Measure the query no longer returns, or one with nothing numeric in it,
-	// leaves the line with nowhere to sit. Drawing it at zero would be a lie.
+	// leaves the line with nowhere to sit.
 	if (!values.length) return
 
 	const value = aggregateOf(aggregate, values)

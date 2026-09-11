@@ -6,7 +6,7 @@ import { useSharedChart } from './chart_read'
 import ChartCardFrame from './components/ChartCardFrame.vue'
 
 // A chart on its own page, for whoever the link reaches. It reads the saved
-// chart through the public door, so it draws the card read-only.
+// chart through the public endpoint, so it draws the card read-only.
 const props = defineProps<{ chart_name: string }>()
 
 const chart_name = await call('insights.api.shared.get_chart_name', {
