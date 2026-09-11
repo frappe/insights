@@ -1,25 +1,20 @@
 import copy
+import math
 
 import frappe
 
-from insights.patches.rescale_dashboard_rows import settle_items
-
-# What a card holds decides how tall it is. `numberCardRows` in
-# `charts/adapter/number.ts` owns the rule and restates it on every read, so
-# these are the rows a cell starts at and not the last word on them.
-ROWS_TITLE_AND_VALUE = 4
-ROWS_WITH_DELTA = 5
-ROWS_WITH_SPARKLINE = 7
-
-# The columns a dropped cell starts at, a fifth of the grid: the width the old
-# inner grid gave a card in a full-width cell, and `addChart` gives one now.
-CELL_COLUMNS = 4
+from insights.patches.resize_dashboard_cells import (
+    card_rows,
+    number_chart_configs,
+    number_readings,
+    settle_items,
+)
 
 
 def execute():
     """A dashboard cell draws one reading, so a cell on a Number chart that
-    states several becomes one cell per reading, laid left to right inside the
-    width the one cell had.
+    states several becomes one cell per reading, sharing the width the one cell
+    had.
 
     The chart is untouched: it keeps every reading, and each cell names the one
     it draws. Idempotent — a cell that already names a reading is left alone, so
@@ -34,10 +29,9 @@ def execute():
         items = frappe.parse_json(stored) or []
         if not expand_items(items, configs):
             continue
-        # One cell became several taller ones, so the cells under it are where
-        # the one cell used to end. Settling drops them past their new
-        # neighbours, the same pass `rescale_dashboard_rows` runs for the same
-        # reason.
+        # A reading that prints a delta row is taller than one that does not, so
+        # the row can end lower than the one cell did and the cells under it
+        # stand where it used to end. Settling drops them past it.
         settle_items(items)
         # `linked_charts` is derived from the items and needs no rebuild: it is
         # the charts the grid names, and this writes more cells on the same
@@ -46,12 +40,6 @@ def execute():
         frappe.db.set_value(
             "Insights Dashboard v3", name, "items", frappe.as_json(items), update_modified=False
         )
-
-
-def number_chart_configs() -> dict[str, dict]:
-    """Every Number chart on the site, by name, with the config naming its readings."""
-    charts = frappe.get_all("Insights Chart v3", filters={"chart_type": "Number"}, fields=["name", "config"])
-    return {chart.name: frappe.parse_json(chart.config) or {} for chart in charts}
 
 
 def expand_items(items: list, configs: dict) -> bool:
@@ -108,64 +96,29 @@ def expand_item(item: dict, configs: dict) -> list[dict] | None:
     return cells
 
 
-def number_readings(config: dict) -> list[str]:
-    """The readings a Number chart states, in the order it states them."""
-    columns = config.get("number_columns")
-    if not isinstance(columns, list):
-        return []
-    return [c["measure_name"] for c in columns if isinstance(c, dict) and c.get("measure_name")]
-
-
-def card_rows(config: dict, reading: str) -> int:
-    """The rows one reading takes, in the three heights a card has."""
-    if config.get("sparkline") and (config.get("date_column") or {}).get("column_name"):
-        return ROWS_WITH_SPARKLINE
-    return ROWS_WITH_DELTA if _compared(config, reading) else ROWS_TITLE_AND_VALUE
-
-
-def _compared(config: dict, reading: str) -> bool:
-    """Whether the reading prints a delta row."""
-    return bool(_options_of(config, reading).get("comparison"))
-
-
-def _options_of(config: dict, reading: str) -> dict:
-    """The settings beside a reading. They stand in a second list, by position."""
-    columns = config.get("number_columns") or []
-    index = next(
-        (i for i, c in enumerate(columns) if isinstance(c, dict) and c.get("measure_name") == reading),
-        -1,
-    )
-    options = config.get("number_column_options")
-    if not isinstance(options, list) or index < 0 or index >= len(options):
-        return {}
-    return options[index] if isinstance(options[index], dict) else {}
-
-
 def lay_out(box: dict, heights: list[int]) -> list[dict]:
-    """One cell per height, each the width a dropped cell takes, laid left to
-    right from the cell's corner and wrapping inside its width.
+    """One cell per height, sharing the cell's width, all on the cell's row.
 
-    The one cell's width is what the author gave the row, so the cells fill it
-    the way the readings did before, and a row that overflows it starts another
-    under the tallest cell of the one above. A cell narrower than a dropped cell
-    gives each reading its whole width, one under the other.
+    The one cell's width is what the author gave the row, so the readings share
+    it the way they shared the card: 7 columns for two readings is 4 and 3. A
+    cell too narrow to give each reading a column gives them one each anyway —
+    a cramped card is the author's to widen, and wrapping would move everything
+    below instead.
     """
-    width = min(CELL_COLUMNS, box.get("w") or CELL_COLUMNS)
-    per_row = max(1, (box.get("w") or width) // width)
-    x0, y0 = box.get("x") or 0, box.get("y") or 0
+    left = box.get("w") or len(heights)
+    x, y = box.get("x") or 0, box.get("y") or 0
 
     cells = []
-    y = y0
     for index, height in enumerate(heights):
-        row, column = divmod(index, per_row)
-        if column == 0 and row > 0:
-            y += max(heights[(row - 1) * per_row : row * per_row])
+        width = max(1, math.ceil(left / (len(heights) - index)))
         cell = dict(box)
-        cell["x"] = x0 + column * width
+        cell["x"] = x
         cell["y"] = y
         cell["w"] = width
         cell["h"] = height
         cells.append(cell)
+        x += width
+        left -= width
     return cells
 
 

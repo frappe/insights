@@ -20,6 +20,7 @@ insights.patches.backfill_permission_user
 insights.patches.backfill_table_columns
 insights.patches.repair_sankey_value_aggregation
 insights.patches.retire_chart_query_cache
-insights.patches.rescale_dashboard_rows
 insights.patches.normalize_number_card_comparisons
+# after the comparisons are normalized: a reading's comparison decides how tall its cell is
+insights.patches.resize_dashboard_cells
 insights.patches.split_number_cells

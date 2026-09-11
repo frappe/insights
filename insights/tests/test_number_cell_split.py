@@ -104,7 +104,7 @@ class TestNumberCellSplit(InsightsIntegrationTestCase):
         self.assertEqual([item["column"] for item in items], ["Revenue", "Profit", "Orders"])
         self.assertTrue(all(item["chart"] == chart for item in items))
         boxes = [item["layout"] for item in items]
-        self.assertEqual([(b["x"], b["w"]) for b in boxes], [(2, 4), (6, 4), (10, 4)])
+        self.assertEqual([(b["x"], b["w"]) for b in boxes], [(2, 6), (8, 6), (14, 6)])
         self.assertEqual({b["y"] for b in boxes}, {4})
         self.assertEqual([b["i"] for b in boxes], ["kpis", "kpis-2", "kpis-3"])
 
@@ -132,18 +132,18 @@ class TestNumberCellSplit(InsightsIntegrationTestCase):
         self.assertEqual([item["layout"]["h"] for item in self.items_of(dashboard)], [4, 5])
 
     def test_the_cells_under_it_drop_past_the_new_ones(self):
-        # A quarter-width cell stacks its readings, so what stood under the one
-        # cell now stands where the second reading is.
+        # A compared reading is a row taller than the cell that held it, so what
+        # stood under that cell now stands inside the tallest new one.
         chart = self.create_chart(
             number_config(
                 measure("Revenue", "amount"),
-                measure("Profit", "profit"),
-                measure("Orders", "orders"),
+                measure("Churn", "churn"),
+                options=[{}, {"comparison": {"source": "previous"}}],
             )
         )
-        below = self.cell(chart, i="note", y=8, w=20, h=4)
+        below = self.cell(chart, i="note", y=4, w=20, h=4)
         below["column"] = "Revenue"
-        dashboard = self.create_dashboard([self.cell(chart, w=4, h=8), below])
+        dashboard = self.create_dashboard([self.cell(chart, w=20, h=4), below])
 
         run_patch()
 
@@ -192,24 +192,24 @@ class TestNumberCellExpansion(InsightsIntegrationTestCase):
 
     def configs(self, readings=3):
         """One Number chart named `c`, stating `readings` readings."""
-        columns = [{"measure_name": name} for name in "abc"[:readings]]
+        columns = [{"measure_name": name} for name in "abcde"[:readings]]
         return {"c": {"sparkline": False, "number_columns": columns}}
 
-    def test_each_cell_takes_the_width_a_dropped_cell_takes(self):
+    def test_the_readings_share_the_width_the_cell_had(self):
         items = [{"type": "chart", "chart": "c", "layout": {"i": "a", "x": 0, "y": 0, "w": 20, "h": 8}}]
 
         expand_items(items, self.configs())
 
-        self.assertEqual([item["layout"]["w"] for item in items], [4, 4, 4])
-        self.assertEqual([item["layout"]["x"] for item in items], [0, 4, 8])
+        self.assertEqual([item["layout"]["w"] for item in items], [7, 7, 6])
+        self.assertEqual([item["layout"]["x"] for item in items], [0, 7, 14])
 
-    def test_a_row_that_overflows_the_cell_wraps_under_it(self):
-        items = [{"type": "chart", "chart": "c", "layout": {"i": "a", "x": 2, "y": 1, "w": 8, "h": 8}}]
+    def test_a_width_that_does_not_divide_goes_to_the_leftmost_readings(self):
+        items = [{"type": "chart", "chart": "c", "layout": {"i": "a", "x": 2, "y": 1, "w": 7, "h": 8}}]
 
-        expand_items(items, self.configs())
+        expand_items(items, self.configs(2))
 
         boxes = [item["layout"] for item in items]
-        self.assertEqual([(b["x"], b["y"]) for b in boxes], [(2, 1), (6, 1), (2, 5)])
+        self.assertEqual([(b["x"], b["y"], b["w"]) for b in boxes], [(2, 1, 4), (6, 1, 3)])
 
     def test_every_breakpoint_the_cell_was_arranged_for_is_split_too(self):
         items = [
@@ -223,16 +223,20 @@ class TestNumberCellExpansion(InsightsIntegrationTestCase):
 
         expand_items(items, self.configs(2))
 
-        self.assertEqual([item["layouts"]["sm"]["w"] for item in items], [4, 4])
-        self.assertEqual([item["layouts"]["sm"]["x"] for item in items], [0, 4])
+        self.assertEqual([item["layouts"]["sm"]["w"] for item in items], [10, 10])
+        self.assertEqual([item["layouts"]["sm"]["x"] for item in items], [0, 10])
 
-    def test_a_cell_narrower_than_a_dropped_cell_stacks_the_readings(self):
-        items = [{"type": "chart", "chart": "c", "layout": {"i": "a", "x": 0, "y": 0, "w": 2, "h": 8}}]
+    def test_a_cell_too_narrow_to_share_gives_each_reading_one_column(self):
+        # Nothing wraps and nothing below moves: a cramped card is the author's
+        # to widen.
+        items = [{"type": "chart", "chart": "c", "layout": {"i": "a", "x": 0, "y": 0, "w": 4, "h": 8}}]
 
-        expand_items(items, self.configs())
+        expand_items(items, self.configs(5))
 
-        self.assertEqual([item["layout"]["w"] for item in items], [2, 2, 2])
-        self.assertEqual([item["layout"]["y"] for item in items], [0, 4, 8])
+        boxes = [item["layout"] for item in items]
+        self.assertEqual([b["w"] for b in boxes], [1, 1, 1, 1, 1])
+        self.assertEqual([b["x"] for b in boxes], [0, 1, 2, 3, 4])
+        self.assertEqual({b["y"] for b in boxes}, {0})
 
     def test_a_cell_that_already_names_a_reading_is_left_alone(self):
         items = [
