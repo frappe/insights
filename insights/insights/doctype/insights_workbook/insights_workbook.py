@@ -35,6 +35,12 @@ class InsightsWorkbook(Document):
         title: DF.Data
     # end: auto-generated types
 
+    def before_naming(self):
+        # a fixture or export written while this doctype was still `autoincrement` carries a
+        # numeric name, and the column is varchar now — `validate_name` throws on an int
+        if isinstance(self.name, int):
+            self.name = str(self.name)
+
     def autoname(self):
         # plain numbers, carrying on from where `autoincrement` left off — see
         # insights/patches/name_workbooks_as_strings.py for why this needs to be a string.

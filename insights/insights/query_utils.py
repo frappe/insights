@@ -13,11 +13,7 @@ def extract_sql_table_refs(raw_sql: str, dialect: sg.Dialect | None = None) -> l
         # In the future, we may want to log these exceptions to help improve our SQL parsing capabilities.
         return []
 
-    cte_aliases = {
-        str(alias)
-        for cte_exp in parsed.find_all(sg.exp.CTE)
-        if (alias := getattr(cte_exp, "alias_or_name", None) or cte_exp.alias)
-    }
+    cte_aliases = {cte_exp.alias_or_name for cte_exp in parsed.find_all(sg.exp.CTE) if cte_exp.alias_or_name}
 
     table_refs = []
     seen_refs = set()

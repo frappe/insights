@@ -23,7 +23,7 @@ pipeline it is editing: there is no config to derive that from, and the walk is
 the same walk either way.
 """
 
-import re
+import ast
 from datetime import date, datetime, time, timedelta
 
 import frappe
@@ -140,14 +140,22 @@ OPERATORS = (
     "within",
 )
 
-# a measure that counts a condition instead of the whole group: the rows behind
-# it are the ones the condition holds for, so drilling it carries the condition
-CONDITIONAL_MEASURES = (
-    re.compile(r"^count_if\(([^,]+),\s*([^)]+)\)$"),
-    re.compile(r"^count_if\(([^,]+)\)$"),
-    re.compile(r"^sum_if\(([^,]+),\s*([^)]+)\)$"),
-    re.compile(r"^distinct_count_if\(([^,]+),\s*([^)]+)\)$"),
-)
+# a measure that aggregates under a condition: the rows behind it are the ones
+# the condition holds for, so drilling it carries the condition. The value is
+# where the gate sits among the positional arguments, or under `where=`
+CONDITION_ARGUMENT = {
+    "count_if": 0,
+    "sum_if": 0,
+    "distinct_count_if": 0,
+    "count": 1,
+    "sum": 1,
+    "avg": 1,
+    "median": 1,
+    "min": 1,
+    "max": 1,
+    "distinct_count": 1,
+    "group_concat": 2,
+}
 
 
 def drill_dimensions(chart, operations: list[dict] | None = None) -> list[dict]:
@@ -627,12 +635,54 @@ def _measure_condition(measure: dict | None) -> list[dict]:
     the overdue ones — the number and the rows it is made of would disagree.
     """
     expression = ((measure or {}).get("expression") or {}).get("expression", "").strip()
-    for pattern in CONDITIONAL_MEASURES:
-        match = pattern.match(expression)
-        if match:
-            return [{"expression": {"type": "expression", "expression": match.group(1).strip()}}]
+    return [
+        {"expression": {"type": "expression", "expression": condition}}
+        for condition in aggregate_conditions(expression)
+    ]
 
-    return []
+
+def aggregate_conditions(source: str) -> list[str]:
+    """The conditions that gate an aggregate, as the rows filter that reproduces them.
+
+    A gate reaches an aggregate two ways, and both can appear at once: as the
+    `where` argument, by position or by keyword, and as a `one_if` over the
+    aggregated column. A window aggregate reads rows outside its gate, so no
+    rows filter reproduces it and it pins nothing.
+    """
+    call = _parse_call(source)
+    if call is None:
+        return []
+
+    name, positional, keywords = call
+    gate_index = CONDITION_ARGUMENT.get(name)
+    if gate_index is None or "group_by" in keywords:
+        return []
+
+    conditions = []
+    gate = keywords.get("where") or (positional[gate_index] if len(positional) > gate_index else None)
+    if gate:
+        conditions.append(gate)
+
+    if gate_index > 0 and positional:
+        inner = _parse_call(positional[0])
+        if inner and inner[0] == "one_if" and inner[1]:
+            conditions.append(inner[1][0])
+
+    return conditions
+
+
+def _parse_call(source: str) -> tuple[str, list[str], dict[str, str]] | None:
+    """A bare function call as its name, positional arguments and keyword arguments, each as source."""
+    try:
+        node = ast.parse(source.strip(), mode="eval").body
+    except SyntaxError:
+        return None
+    if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Name):
+        return None
+
+    positional = [ast.unparse(arg) for arg in node.args]
+    keywords = {kw.arg: ast.unparse(kw.value) for kw in node.keywords if kw.arg}
+    return node.func.id, positional, keywords
 
 
 def _bucket_filters(column: str, bucket: tuple) -> list[dict]:

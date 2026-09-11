@@ -102,6 +102,14 @@ _Avoid_: connection
 **Table**:
 A table exposed by a data source, selectable as a query's source.
 
+**Table Name**:
+The string that names a Table — `Insights Table v3.table`. Every referrer quotes it,
+and the record's key derives from it. A postgres name carries a `<schema>.` prefix
+while the Data Source reads several schemas, so the name can change while the table
+does not. A rename therefore has to move every referrer. See
+`docs/adr/the-schema-is-a-coordinate-not-a-name.md`.
+_Avoid_: table id, table key
+
 **Table Link**:
 A stored join relationship between two tables, used to suggest joins.
 

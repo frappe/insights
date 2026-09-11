@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-06-21 10:42+0000\n"
-"PO-Revision-Date: 2026-07-09 09:47\n"
+"PO-Revision-Date: 2026-09-07 08:43\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -3064,7 +3064,7 @@ msgstr ""
 
 #: frontend/src2/query/components/ColumnFilterTypeDate.vue:57
 msgid "This Year"
-msgstr ""
+msgstr "Dieses Jahr"
 
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.py:93
 msgid "This column is not available as a filter on this dashboard"

@@ -9,7 +9,10 @@ from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
 from insights.insights.doctype.insights_table_link_v3.insights_table_link_v3 import (
     InsightsTableLinkv3,
 )
-from insights.insights.doctype.insights_table_v3.insights_table_v3 import InsightsTablev3
+from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
+    InsightsTablev3,
+    get_stored_columns,
+)
 from insights.insights.doctype.insights_team.insights_team import (
     check_data_source_permission,
     check_table_permission,
@@ -183,9 +186,16 @@ def get_data_sources_of_tables(table_names: list[str]):
 
 @insights_whitelist()
 def get_schema(data_source: str):
+    """Every table of the data source, with its columns, as the caller may see it.
+
+    The sync writes each table's columns down, so a synced table costs nothing to
+    describe. A table synced before that is opened on the source, which is one
+    connection per table.
+    """
     check_data_source_permission(data_source)
 
     tables = get_data_source_tables(data_source)
+    stored = get_stored_columns(data_source)
     schema = {}
 
     for table in tables:
@@ -196,6 +206,14 @@ def get_schema(data_source: str):
             "data_source": data_source,
             "columns": [],
         }
+
+        if table.name in stored:
+            schema[table_name]["columns"] = [
+                frappe._dict(column=column["name"], label=column["name"], type=column["type"])
+                for column in stored[table.name].columns
+            ]
+            continue
+
         try:
             _table = get_permitted_ibis_table(data_source, table_name)
         except Exception:

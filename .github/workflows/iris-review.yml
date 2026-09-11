@@ -107,10 +107,13 @@ jobs:
         # config from the ref this workflow file ran from: develop on
         # issue_comment, the dispatched branch on workflow_dispatch, and the
         # merge commit on pull_request (same-repo authors only).
+        # docs/agents holds the report format, which is instruction too. The
+        # glossary and the ADRs stay at the PR head — the diff may change them,
+        # and the command reads PR-head content as data.
         run: |
           git fetch --depth=1 origin ${{ github.sha }}
-          rm -rf .claude .mcp.json CLAUDE.md AGENTS.md
-          git checkout ${{ github.sha }} -- .claude CLAUDE.md AGENTS.md
+          rm -rf .claude .mcp.json CLAUDE.md AGENTS.md docs/agents
+          git checkout ${{ github.sha }} -- .claude CLAUDE.md AGENTS.md docs/agents
 
       - name: Save comment
         # The agent cannot read env vars — its Bash permissions deny variable
@@ -163,9 +166,6 @@ jobs:
           [ -n "$tin" ] && footer="$footer · $(tok "$tin") in"
           [ -n "$tcache" ] && footer="$footer · $(tok "$tcache") cached"
           [ -n "$tout" ] && footer="$footer · $(tok "$tout") out"
-          # The reviewed commit anchors the next re-review's delta diff.
-          sha=$(git rev-parse --short HEAD || true)
-          [ -n "$sha" ] && footer="$footer · reviewed $sha"
           printf '\n\n<sub>%s · [run](%s)</sub>\n' "$footer" "$RUN_URL" >> /tmp/review.md
           gh pr comment "$PR" -R "${{ github.repository }}" --body-file /tmp/review.md
 

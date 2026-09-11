@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-06-21 10:42+0000\n"
-"PO-Revision-Date: 2026-07-09 09:47\n"
+"PO-Revision-Date: 2026-09-07 08:43\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Hungarian\n"
 "MIME-Version: 1.0\n"
@@ -293,7 +293,7 @@ msgstr "Alapfokú Hitelesítés"
 #. Label of the batch_size (Int) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Batch Size"
-msgstr ""
+msgstr "Köteg méret"
 
 #. Label of the before_import_script (Code) field in DocType 'Insights Table
 #. v3'
@@ -2160,7 +2160,7 @@ msgstr "Megnyitás az asztalon"
 #. Label of the operations (JSON) field in DocType 'Insights Query v3'
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Operations"
-msgstr ""
+msgstr "Műveletek"
 
 #: frontend/src2/query/components/FormatRule.vue:416
 msgid "Operator"
@@ -2178,7 +2178,7 @@ msgstr "Opciók"
 #. Label of the order_by (Select) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "Order By"
-msgstr ""
+msgstr "Rendezés"
 
 #: frontend/src2/settings/Settings.vue:20
 msgid "Organization"
@@ -3311,7 +3311,7 @@ msgstr "Értékszabályok"
 #. Label of the variable_name (Data) field in DocType 'Insights Query Variable'
 #: insights/insights/doctype/insights_query_variable/insights_query_variable.json
 msgid "Variable Name"
-msgstr ""
+msgstr "Változó név"
 
 #. Label of the variable_value (Password) field in DocType 'Insights Query
 #. Variable'
@@ -3327,7 +3327,7 @@ msgstr "Változó érték"
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Variables"
-msgstr ""
+msgstr "Változók"
 
 #: frontend/src2/components/VariablesDialog.vue:69
 msgid "Variables are used to store sensitive information such as API keys and credentials. They can be referenced and combined in your script just like any other variable. For eg."

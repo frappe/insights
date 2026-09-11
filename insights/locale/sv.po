@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-06-21 10:42+0000\n"
-"PO-Revision-Date: 2026-07-09 09:47\n"
+"PO-Revision-Date: 2026-09-07 08:43\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Swedish\n"
 "MIME-Version: 1.0\n"
@@ -450,7 +450,7 @@ msgstr "Välj Kolumner"
 #. v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Choose how incremental sync writes rows: <b>Append Only</b> adds new rows, while <b>Update or Insert</b> updates matching keys and inserts new rows."
-msgstr "Välj hur stegvis synkronisering skriver rader: <b>Endast Tillägg</b> lägger till nya rader, medan <b>Uppdatera eller Infoga</b> uppdaterar matchande nycklar och infogar nya rader."
+msgstr "Välj hur stegvis synkronisering skriver rader: <b>Endast Tillägg</b> lägger till nya rader, medan <b>Uppdatera eller Infoga</b> uppdaterar samstämda nycklar och infogar nya rader."
 
 #: insights/insights/doctype/insights_data_source_v3/ibis_utils.py:96
 msgid "Circular query reference detected while building \"{0}\""
@@ -642,7 +642,7 @@ msgstr "Skapa Åtgärd"
 #: frontend/src2/teams/CreateTeamDialog.vue:15
 #: frontend/src2/teams/TeamList.vue:65
 msgid "Create Team"
-msgstr "Skapa Team"
+msgstr "Skapa Lag"
 
 #: frontend/src2/dashboard/DashboardList.vue:29
 #: frontend/src2/data_source/DataSourceList.vue:119
@@ -733,7 +733,7 @@ msgstr "Översiktpaneler som delas med dig visas här."
 
 #: frontend/src2/dashboard/DashboardList.vue:83
 msgid "Dashboards you open will show up here."
-msgstr "Översiktspaneler som du öppnar visas här."
+msgstr "Översikt Paneler som öppnas visas här."
 
 #. Label of the data_backup (JSON) field in DocType 'Insights Workbook'
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
@@ -897,7 +897,7 @@ msgstr "DuckDB"
 #: frontend/src2/query/components/FiltersSelector.vue:120
 #: frontend/src2/workbook/WorkbookNavbarActions.vue:60
 msgid "Duplicate"
-msgstr "Kopiera"
+msgstr "Duplicera"
 
 #: frontend/src2/charts/components/ChartBuilderToolbar.vue:44
 msgid "Duplicate Chart"
@@ -1536,12 +1536,12 @@ msgstr "Tabell v3"
 #. Name of a DocType
 #: insights/insights/doctype/insights_team/insights_team.json
 msgid "Insights Team"
-msgstr "Team"
+msgstr "Lag"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_team_member/insights_team_member.json
 msgid "Insights Team Member"
-msgstr "Team Medlem"
+msgstr "Lag Medlem"
 
 #. Name of a role
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -1884,7 +1884,7 @@ msgstr "Lång Text"
 
 #: frontend/src2/teams/ManageTeamDialog.vue:64
 msgid "Manage Team"
-msgstr "Hantera Team"
+msgstr "Hantera Lag"
 
 #: frontend/src2/workbook/WorkbookShareDialog.vue:92
 msgid "Manage Workbook Access"
@@ -2086,12 +2086,12 @@ msgstr "Inga tabeller hittades i datalager."
 #: frontend/src2/settings/PermissionsSettings.vue:64
 #: frontend/src2/teams/TeamList.vue:62
 msgid "No teams to display."
-msgstr "Inga team att visa."
+msgstr "Inga lag att visa."
 
 #: frontend/src2/settings/PermissionsSettings.vue:63
 #: frontend/src2/teams/TeamList.vue:61
 msgid "No teams."
-msgstr "Inga team."
+msgstr "Inga lag."
 
 #: frontend/src2/settings/UsersSettings.vue:82
 #: frontend/src2/users/UserList.vue:81
@@ -2292,7 +2292,7 @@ msgstr "PostgreSQL"
 #. Label of the preview_image (Data) field in DocType 'Insights Dashboard v3'
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Preview Image"
-msgstr "Förhandsgranska Bild"
+msgstr "Förhandsvisa Bild"
 
 #. Label of the primary_key (Data) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
@@ -2419,7 +2419,7 @@ msgstr "Uppdatera"
 
 #: frontend/src2/dashboard/DashboardList.vue:122
 msgid "Refresh Preview"
-msgstr "Uppdatera Förhandsgranskning"
+msgstr "Uppdatera Förhandsvisning"
 
 #: frontend/src2/query/components/QueryToolbar.vue:28
 msgid "Refresh Stored Tables"
@@ -2992,27 +2992,27 @@ msgstr "Tabeller"
 
 #: frontend/src2/teams/TeamList.vue:30
 msgid "Team"
-msgstr "Team"
+msgstr "Lag"
 
 #. Label of the team_members (Table) field in DocType 'Insights Team'
 #: insights/insights/doctype/insights_team/insights_team.json
 msgid "Team Members"
-msgstr "Team Medlemmar"
+msgstr "Lag Medlemmar"
 
 #. Label of the team_name (Data) field in DocType 'Insights Team'
 #: frontend/src2/settings/PermissionsSettings.vue:45
 #: insights/insights/doctype/insights_team/insights_team.json
 msgid "Team Name"
-msgstr "Team Namn"
+msgstr "Lag Namn"
 
 #. Label of the team_permissions (Table) field in DocType 'Insights Team'
 #: insights/insights/doctype/insights_team/insights_team.json
 msgid "Team Permissions"
-msgstr "Team Behörigheter"
+msgstr "Lag Behörigheter"
 
 #: frontend/src2/teams/TeamList.vue:83
 msgid "Teams"
-msgstr "Teams"
+msgstr "Grupper"
 
 #. Option for the 'Channel' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -3424,7 +3424,7 @@ msgstr "Du har inte behörighet att dela denna arbetsbok"
 
 #: frontend/src2/dashboard/DashboardList.vue:88
 msgid "You haven't created any dashboards yet."
-msgstr "Du har inte skapat några översiktspaneler än."
+msgstr "Inga Översikt Paneler skapade än."
 
 #: frontend/src2/home/HomeWorkbookList.vue:68
 msgid "Your workbooks will appear here. Create a new workbook to get started."

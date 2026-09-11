@@ -100,7 +100,7 @@ def _enrich_dashboards(dashboards):
     # batch counts into one grouped query each instead of per-dashboard queries
     # (avoids N+1s over the whole list)
     names = [dashboard.name for dashboard in dashboards]
-    view_counts = _dashboard_view_counts(names)
+    view_counts = dashboard_view_counts(names)
     chart_counts = _dashboard_chart_counts(names)
     user = frappe.session.user
     for dashboard in dashboards:
@@ -110,11 +110,12 @@ def _enrich_dashboards(dashboards):
             dashboard["is_favourite"] = user in frappe.as_json(dashboard._liked_by)
 
 
-def _dashboard_view_counts(names: list[str]) -> dict[str, int]:
+def dashboard_view_counts(names: list[str], since: str | None = None) -> dict[str, int]:
+    """Opens per dashboard, over every open or only those after `since`."""
     if not names:
         return {}
     view_log = frappe.qb.DocType("View Log")
-    rows = (
+    query = (
         frappe.qb.from_(view_log)
         .select(view_log.reference_name, Count(view_log.name).as_("views"))
         .where(
@@ -123,8 +124,10 @@ def _dashboard_view_counts(names: list[str]) -> dict[str, int]:
             & view_log.reference_name.isin([str(name) for name in names])
         )
         .groupby(view_log.reference_name)
-        .run(as_dict=True)
     )
+    if since:
+        query = query.where(view_log.creation >= since)
+    rows = query.run(as_dict=True)
     return {str(row.reference_name): row.views for row in rows}
 
 
