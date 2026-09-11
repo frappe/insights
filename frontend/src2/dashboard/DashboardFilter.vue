@@ -74,12 +74,12 @@ const label = computed(() => {
 </script>
 
 <template>
-	<div class="h-8 w-full [&>div:first-child]:h-full">
-		<Popover class="h-full" match-trigger-width>
+	<div class="w-full">
+		<Popover match-trigger-width>
 			<template #trigger>
 				<Button
 					variant="outline"
-					class="flex h-full w-full !justify-start overflow-hidden text-sm [&>span]:truncate"
+					class="flex w-full !justify-start overflow-hidden text-sm [&>span]:truncate"
 				>
 					<template #prefix>
 						<span v-if="iconClass" :class="iconClass" class="h-4 w-4 flex-shrink-0" />

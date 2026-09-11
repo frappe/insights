@@ -27,7 +27,13 @@ import {
 	WorkbookDashboardItem,
 } from '../types/workbook.types'
 import type { CellRules } from './grid_placement'
-import { BASE_BREAKPOINT, GRID_COLUMNS, layoutRank, writePlacement } from './grid_placement'
+import {
+	BASE_BREAKPOINT,
+	GRID_COLUMNS,
+	layoutRank,
+	ROW_HEIGHT,
+	writePlacement,
+} from './grid_placement'
 
 /**
  * A filter link, `` `query`.`column` ``, split back into its two halves.
@@ -44,6 +50,23 @@ export function parseFilterLink(link: string) {
 
 /** Columns a Number cell is dropped at: a fifth of the grid, so five read as a row of KPIs. */
 const NUMBER_CARD_COLUMNS = 4
+
+/** Columns a filter cell takes. */
+const FILTER_WIDTH = 4
+
+/**
+ * The filter cell, measured from the CSS that draws it the way `numberCardRows`
+ * measures a card: the trigger widget plus the cell's own padding.
+ */
+const FILTER = {
+	/** The trigger is frappe-ui's `sm` Button, `h-7`. */
+	widget: 28,
+	/** A dashboard cell's `p-2`, top and bottom. */
+	cellPadding: 2 * 8,
+}
+
+/** Rows a filter cell takes. */
+const FILTER_ROWS = Math.ceil((FILTER.widget + FILTER.cellPadding) / ROW_HEIGHT)
 
 const dashboards = new Map<string, Dashboard>()
 
@@ -149,17 +172,23 @@ function makeDashboard(name: string) {
 	/**
 	 * What the grid is told about a cell beyond its layout.
 	 *
-	 * A Number cell is the only one with any: its height is what the card of the
-	 * reading it names holds, so the author sets the width and the height follows
-	 * the config — including after the config changes in the workbook. And two of
-	 * them fit one narrow row, where every other cell takes the row to itself.
+	 * A Number cell's height is what the card of the reading it names holds, so the
+	 * author sets the width and the height follows the config — including after the
+	 * config changes in the workbook. And two of them fit one narrow row, where
+	 * every other cell takes the row to itself. A filter cell is its widget, which
+	 * is one height and never anything else.
 	 *
 	 * Nothing is written back. The height is derived on every read, so a chart
-	 * edited in another tab needs no layout save to be drawn at its new height.
+	 * edited in another tab needs no layout save to be drawn at its new height, and
+	 * a stored `h` cannot drift from the widget.
 	 */
 	const cellRules = computed(() => {
 		const rules: CellRules = {}
 		for (const item of dashboard.doc.items) {
+			if (item.type === 'filter') {
+				rules[item.layout.i] = { height: FILTER_ROWS }
+				continue
+			}
 			if (item.type !== 'chart' || !item.chart) continue
 			const chart = useChart(item.chart)
 			if (chart.doc?.chart_type !== 'Number') continue
@@ -191,9 +220,6 @@ function makeDashboard(name: string) {
 		editingItemIndex.value = dashboard.doc.items.length - 1
 	}
 
-	const filter_w = 4
-	const filter_h = 3
-
 	function addFilter() {
 		const newFilter: WorkbookDashboardItem = {
 			type: 'filter',
@@ -204,8 +230,8 @@ function makeDashboard(name: string) {
 				i: getUniqueId(),
 				x: 0,
 				y: 0,
-				w: filter_w,
-				h: filter_h,
+				w: FILTER_WIDTH,
+				h: FILTER_ROWS,
 			},
 		}
 		dashboard.doc.items.push(newFilter)
@@ -226,7 +252,7 @@ function makeDashboard(name: string) {
 		const topRowY = Math.min(...existingFilters.map((item) => item.layout.y))
 		const topRowFilters = existingFilters.filter((item) => item.layout.y === topRowY)
 		const rightmostX = Math.max(
-			...topRowFilters.map((item) => item.layout.x + (item.layout.w || filter_w)),
+			...topRowFilters.map((item) => item.layout.x + (item.layout.w || FILTER_WIDTH)),
 			0,
 		)
 
@@ -238,15 +264,15 @@ function makeDashboard(name: string) {
 			newFilter.layout.y = 0
 
 			existingFilters.forEach((item) => {
-				item.layout.y += filter_h
+				item.layout.y += FILTER_ROWS
 			})
 
 			const otherItems = items.filter((item) => item.type !== 'filter')
 			if (otherItems.length > 0) {
 				const minOtherY = Math.min(...otherItems.map((item) => item.layout.y))
-				if (minOtherY <= filter_h) {
+				if (minOtherY <= FILTER_ROWS) {
 					otherItems.forEach((item) => {
-						item.layout.y = Math.max(0, item.layout.y + filter_h)
+						item.layout.y = Math.max(0, item.layout.y + FILTER_ROWS)
 					})
 				}
 			}
@@ -275,24 +301,24 @@ function makeDashboard(name: string) {
 		let currentY = 0
 
 		filters.forEach((item) => {
-			const itemWidth = item.layout.w || filter_w
+			const itemWidth = item.layout.w || FILTER_WIDTH
 
 			// if filter doesn't fit in current row then move to next row
 			if (currentX + itemWidth > GRID_COLUMNS && currentX > 0) {
 				currentX = 0
-				currentY += filter_h
+				currentY += FILTER_ROWS
 			}
 
 			item.layout.x = currentX
 			item.layout.y = currentY
-			item.layout.h = filter_h
+			item.layout.h = FILTER_ROWS
 
-			if (!item.layout.w) item.layout.w = filter_w
+			if (!item.layout.w) item.layout.w = FILTER_WIDTH
 
 			currentX += itemWidth
 		})
 
-		const topRow = currentY + filter_h
+		const topRow = currentY + FILTER_ROWS
 
 		const otherItems = items.filter((item) => item.type !== 'filter')
 		if (otherItems.length === 0) return
