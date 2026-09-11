@@ -195,21 +195,19 @@ export type FormatUnits = {
 const NO_UNITS: FormatUnits = { scale: 1, prefix: '', suffix: '' }
 
 // A measure states its unit once, and every reading of it prints that unit the
-// same way. A currency reads the site's symbol rather than carrying one, so the
-// same shipped chart is right on a site in dollars and a site in rupees. The
-// symbol sits where fmt_money puts it, so Insights and desk agree.
-export function getFormatUnits(format?: DataFormat): FormatUnits {
+// same way. The symbol sits where fmt_money puts it, so Insights and desk agree.
+export function getFormatUnits(format?: DataFormat, code?: string | null): FormatUnits {
 	if (format === 'percent') {
 		return { scale: 100, prefix: '', suffix: '%' }
 	}
-	if (format === 'currency') {
-		const symbol = session.site?.currency_symbol
-		if (!symbol) return NO_UNITS
-		return session.site.currency_symbol_on_right
-			? { scale: 1, prefix: '', suffix: ` ${symbol}` }
-			: { scale: 1, prefix: `${symbol} `, suffix: '' }
-	}
-	return NO_UNITS
+	if (format !== 'currency') return NO_UNITS
+
+	const resolved = code === undefined ? session.site?.currency : code
+	const currency = resolved ? session.site?.currency_symbols?.[resolved] : undefined
+	if (!currency?.symbol) return NO_UNITS
+	return currency.symbol_on_right
+		? { scale: 1, prefix: '', suffix: ` ${currency.symbol}` }
+		: { scale: 1, prefix: `${currency.symbol} `, suffix: '' }
 }
 
 export function guessPrecision(number: number) {

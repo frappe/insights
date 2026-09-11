@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { formatNumber, getFormatUnits, getShortNumber } from '../../helpers'
+import { getRowCurrency } from '../../query/helpers'
 import { NumberChartConfig, NumberColumnOptions } from '../../types/chart.types'
 import { DataFormat, QueryResult, QueryResultColumn, QueryResultRow } from '../../types/query.types'
 import Sparkline from './Sparkline.vue'
@@ -53,11 +54,12 @@ const cards = computed(() => {
 		const shorten_numbers = getNumberOption(idx, 'shorten_numbers')
 		const format = config.value.number_columns.find((c) => c.measure_name === measure_name)
 			?.format
+		const currency = getRowCurrency(props.result.rows.at(-1), measure_name)
 
 		// The measure's format states the unit. A prefix set on the card replaces
 		// it — a card that spelled out its own symbol meant that one. A suffix
 		// sits after the unit instead, the way "12.5% of target" reads.
-		const units = getFormatUnits(format)
+		const units = getFormatUnits(format, currency)
 		const prefix = getNumberOption(idx, 'prefix') || units.prefix
 		const suffix = `${units.suffix}${getNumberOption(idx, 'suffix') || ''}`
 

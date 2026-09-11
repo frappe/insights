@@ -264,3 +264,28 @@ class InsightsPageRenderer(TemplatePage):
         allowed_origins = [origin.strip() for origin in allowed_origins]
         allowed_origins = " ".join(allowed_origins)
         self.headers["Content-Security-Policy"] = f"frame-ancestors 'self' {allowed_origins}"
+
+
+def get_currency_symbols(codes) -> dict:
+    """The symbol for each currency code.
+
+    Codes arrive with each result, so nothing is sent ahead. A code with no Currency
+    row, or with no symbol, prints as the code, the way fmt_money does.
+    `hide_currency_symbol` empties every symbol.
+    """
+    codes = {code for code in codes if code}
+    if not codes or frappe.utils.cint(frappe.defaults.get_global_default("hide_currency_symbol")):
+        return {}
+
+    # one read: a measure pointed at the wrong column names as many codes as rows
+    rows = frappe.db.get_all(
+        "Currency", filters={"name": ("in", list(codes))}, fields=["name", "symbol", "symbol_on_right"]
+    )
+    known = {row.name: row for row in rows}
+    return {
+        code: {
+            "symbol": (known[code].symbol if code in known else None) or code,
+            "symbol_on_right": bool(known[code].symbol_on_right) if code in known else False,
+        }
+        for code in codes
+    }
