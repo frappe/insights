@@ -575,7 +575,7 @@
 							"x": 0,
 							"y": 0,
 							"w": 4,
-							"h": 3
+							"h": 2
 						}
 					},
 					{
@@ -597,7 +597,18 @@
 							"x": 4,
 							"y": 0,
 							"w": 4,
-							"h": 3
+							"h": 2
+						}
+					},
+					{
+						"type": "text",
+						"text": "",
+						"layout": {
+							"i": "filter-row-end",
+							"x": 8,
+							"y": 0,
+							"w": 12,
+							"h": 2
 						}
 					},
 					{
@@ -606,8 +617,8 @@
 						"layout": {
 							"i": "item-kpis-spend",
 							"x": 0,
-							"y": 3,
-							"w": 4,
+							"y": 2,
+							"w": 5,
 							"h": 7
 						},
 						"column": "Spend"
@@ -617,9 +628,9 @@
 						"chart": "tc-kpis-spend",
 						"layout": {
 							"i": "item-kpis-spend-2",
-							"x": 0,
-							"y": 10,
-							"w": 4,
+							"x": 5,
+							"y": 2,
+							"w": 5,
 							"h": 7
 						},
 						"column": "Active Suppliers"
@@ -629,9 +640,9 @@
 						"chart": "tc-kpis-po",
 						"layout": {
 							"i": "item-kpis-po",
-							"x": 7,
-							"y": 3,
-							"w": 4,
+							"x": 10,
+							"y": 2,
+							"w": 5,
 							"h": 7
 						},
 						"column": "PO Count"
@@ -641,9 +652,9 @@
 						"chart": "tc-kpis-po",
 						"layout": {
 							"i": "item-kpis-po-2",
-							"x": 7,
-							"y": 10,
-							"w": 4,
+							"x": 15,
+							"y": 2,
+							"w": 5,
 							"h": 7
 						},
 						"column": "Avg PO Value"
@@ -654,7 +665,7 @@
 						"layout": {
 							"i": "item-spend-trend",
 							"x": 0,
-							"y": 11,
+							"y": 9,
 							"w": 12,
 							"h": 23
 						}
@@ -665,7 +676,7 @@
 						"layout": {
 							"i": "item-item-group",
 							"x": 12,
-							"y": 11,
+							"y": 9,
 							"w": 8,
 							"h": 23
 						}
@@ -676,7 +687,7 @@
 						"layout": {
 							"i": "item-top-suppliers",
 							"x": 0,
-							"y": 34,
+							"y": 32,
 							"w": 10,
 							"h": 23
 						}
@@ -687,7 +698,7 @@
 						"layout": {
 							"i": "item-po-status",
 							"x": 10,
-							"y": 34,
+							"y": 32,
 							"w": 10,
 							"h": 23
 						}
@@ -698,7 +709,7 @@
 						"layout": {
 							"i": "item-overdue",
 							"x": 0,
-							"y": 57,
+							"y": 55,
 							"w": 20,
 							"h": 23
 						}
