@@ -103,6 +103,16 @@ export const expression = (expression: string): Expression => ({
 	expression,
 })
 
+// the server's summarize carries a money measure's currency code under this name;
+// `CARRIED_CURRENCY_SUFFIX` in ibis_utils.py must match
+export const currencyColumnName = (measure_name: string) => `${measure_name}__currency`
+
+// `undefined`: the measure names no column. `null`: the row mixes currencies.
+export function getRowCurrency(row: any, measure_name: string): string | null | undefined {
+	const key = currencyColumnName(measure_name)
+	return key in (row || {}) ? (row[key] ?? null) : undefined
+}
+
 // export const window_operation = (options: WindowOperationArgs): WindowOperation => ({
 // 	type: 'window_operation',
 // 	operation: options.operation,

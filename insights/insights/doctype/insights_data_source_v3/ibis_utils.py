@@ -53,6 +53,31 @@ SQL_COLUMN_RELATION = "_insights_sql_column"
 NATIVE_SQL_RELATION = "_insights_native_sql"
 
 
+# the summarize carries a money measure's currency code as `<measure>__currency`,
+# because the code must survive aggregation. The client reads it by that name
+# (`currencyColumnName` in query/helpers.ts), so the suffix is a contract. A column
+# so named is hidden in every schema read.
+CARRIED_CURRENCY_SUFFIX = "__currency"
+
+
+def is_carried_currency_column(name: str) -> bool:
+    return name.endswith(CARRIED_CURRENCY_SUFFIX)
+
+
+# a carried currency is the only kind of hidden column today
+def is_hidden_column(name: str) -> bool:
+    return is_carried_currency_column(name)
+
+
+def get_carried_currency_columns(measures) -> dict[str, str]:
+    """Carried column name to the source column it is read from."""
+    return {
+        f"{measure['measure_name']}{CARRIED_CURRENCY_SUFFIX}": measure["currency_column"]
+        for measure in measures or []
+        if measure.get("format") == "currency" and measure.get("currency_column")
+    }
+
+
 class CircularQueryReferenceError(frappe.ValidationError):
     """Raised when a circular query reference is detected during query building."""
 
@@ -610,8 +635,22 @@ class IbisQueryBuilder:
     def apply_summary(self, summarize_args):
         aggregates = [self.translate_measure(measure) for measure in summarize_args.measures]
         aggregates = {agg.get_name(): agg for agg in aggregates}
+        aggregates.update(self.translate_carried_currencies(summarize_args.measures))
         group_bys = [self.translate_dimension(dimension) for dimension in summarize_args.dimensions]
         return self.query.aggregate(**aggregates, by=group_bys)
+
+    def translate_carried_currencies(self, measures):
+        carried = {}
+        for name, column_name in get_carried_currency_columns(measures).items():
+            # a missing column must not fail the query; it carries null and the amount prints bare
+            col = self.get_column(column_name, throw=False)
+            if col is None:
+                carried[name] = ibis.null().cast("string")
+                continue
+            # min and max skip nulls, so a row with no code is checked apart
+            one_currency = (col.min() == col.max()) & ~col.isnull().any()
+            carried[name] = ibis.ifelse(one_currency, col.min(), ibis.null()).cast("string")
+        return carried
 
     def apply_order_by(self, order_by_args):
         order_by_column = self.get_column(order_by_args.column.column_name, throw=False)
@@ -1141,6 +1180,7 @@ def get_columns_from_schema(schema: ibis.Schema):
         {
             "name": col,
             "type": to_insights_type(dtype),
+            **({"hidden": True} if is_hidden_column(col) else {}),
         }
         for col, dtype in schema.items()
     ]

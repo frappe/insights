@@ -169,6 +169,14 @@ const filteredColumnOptions = computed(() => {
 	return columnOptions.value.filter((option) => option.label.toLowerCase().includes(query))
 })
 
+// a currency code is text, so only text columns are offered
+const currencyColumnOptions = computed(() => [
+	{ label: __('Site currency'), value: '' },
+	...props.columnOptions
+		.filter((column) => FIELDTYPES.TEXT.includes(column.data_type))
+		.map((column) => ({ label: column.label, value: column.value })),
+])
+
 function getAggregationLabel(aggregation: AggregationType) {
 	return aggregationOptions.find((option) => option.value === aggregation)?.label
 }
@@ -359,6 +367,18 @@ function handleRemove() {
 							:options="formatOptions"
 							:modelValue="measure.format || ''"
 							@update:modelValue="measure.format = $event || undefined"
+						/>
+					</InlineFormControlLabel>
+
+					<InlineFormControlLabel
+						v-if="props.enableFormat && measure.format === 'currency'"
+						:label="__('Currency from')"
+					>
+						<FormControl
+							type="select"
+							:options="currencyColumnOptions"
+							:modelValue="measure.currency_column || ''"
+							@update:modelValue="measure.currency_column = $event || undefined"
 						/>
 					</InlineFormControlLabel>
 
