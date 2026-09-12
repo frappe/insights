@@ -36,14 +36,6 @@ const emit = defineEmits<{
 
 <template>
 	<div class="relative flex h-full w-full flex-col">
-		<!-- A Number Chart has no card to head, so a host's actions sit over the
-		     readings instead of beside a title. They take no height: the cell a
-		     card is drawn in is sized from the config alone, so a row in the flow
-		     would push the cards past its edge. -->
-		<div v-if="$slots.actions" class="absolute top-0 right-0 flex items-center p-2">
-			<slot name="actions" />
-		</div>
-
 		<div class="flex w-full gap-4" :class="preview ? 'flex-wrap content-start' : 'h-full'">
 			<NumberReading
 				v-for="card in cards"
@@ -55,6 +47,18 @@ const emit = defineEmits<{
 				@card-click="emit('cardClick', $event)"
 				@retry="emit('retry')"
 			/>
+		</div>
+
+		<!-- A Number Chart has no card to head, so a host's actions sit over the
+		     readings instead of beside a title. They take no height: the cell a
+		     card is drawn in is sized from the config alone, so a row in the flow
+		     would push the cards past its edge.
+
+		     Drawn after the readings, because a reading is a card with a surface
+		     of its own and both boxes are positioned — the later one paints over
+		     the earlier, which is what puts these on top without a z-index. -->
+		<div v-if="$slots.actions" class="absolute top-0 right-0 flex items-center p-2">
+			<slot name="actions" />
 		</div>
 	</div>
 </template>
