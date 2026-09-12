@@ -685,7 +685,7 @@ function toggleNewColumn() {
 
 						<td
 							v-for="col in props.columns"
-							class="h-8 border-b border-r px-3 text-ink-gray-7 leading-5 py-1.5"
+							class="group/cell h-8 border-b border-r px-3 text-ink-gray-7 leading-5 py-1.5"
 							:class="[
 								getTextWrapClass(col.name),
 								isNumberColumn(col.name) ? 'tnum text-right' : 'text-left',
@@ -711,17 +711,25 @@ function toggleNewColumn() {
 							     of its own. The icon marks the one that leaves, and it
 							     is drawn only under the pointer: a column where every
 							     row links would otherwise be a column of icons. Its
-							     space is held either way, so nothing shifts on hover. -->
+							     space is held either way, so nothing shifts on hover.
+
+							     The cell is what is pointed at, not the text: a value
+							     short of the column's width would otherwise leave the
+							     icon out of reach of most of the cell. The group is
+							     named for it, because a card names a hover group of
+							     its own around the whole table and a bare
+							     `group-hover` answers whichever ancestor carries the
+							     class. -->
 							<a
 								v-else-if="linkOf(col, row)"
 								:href="linkOf(col, row)"
 								target="_blank"
 								rel="noopener noreferrer"
-								class="group inline-flex max-w-full items-center gap-1 hover:underline"
+								class="inline-flex max-w-full items-center gap-1 hover:underline"
 							>
 								<span class="truncate">{{ row[col.name] }}</span>
 								<ExternalLink
-									class="size-3 shrink-0 text-ink-gray-5 opacity-0 group-hover:opacity-100"
+									class="size-3 shrink-0 text-ink-gray-5 opacity-0 transition-opacity group-hover/cell:opacity-100"
 									stroke-width="1.5"
 								/>
 							</a>
