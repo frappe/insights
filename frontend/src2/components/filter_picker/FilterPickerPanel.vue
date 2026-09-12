@@ -515,7 +515,11 @@ function onKeydown(event: KeyboardEvent) {
 	if (event.isComposing) return
 	if (event.key === 'Backspace' && !search.value) {
 		event.preventDefault()
-		back()
+		// the row under the highlight already draws a Remove button, so the key
+		// takes the row where there is one and the stage where there is not
+		const row = highlightedRow()
+		if (row?.removable && row.filter) emit('remove', row.filter)
+		else back()
 		return
 	}
 	// reka answers Enter by clicking the highlighted row and marks the event
@@ -570,6 +574,17 @@ const comboRef = ref<any>(null)
 
 function highlight(value: string) {
 	nextTick(() => comboRef.value?.highlightItem?.(value))
+}
+
+/** the row under reka's highlight, found by the value the row was given */
+function highlightedRow(): ListItem | undefined {
+	const el = comboRef.value?.highlightedElement
+	if (!el) return undefined
+	const item = comboRef.value
+		?.getItems?.()
+		?.find((candidate: { ref: HTMLElement }) => candidate.ref === el)
+	if (!item) return undefined
+	return rows.value.find((row) => (row.tick ? row.label : row.key) === item.value)
 }
 
 // a stage change, a commit or a late batch of values leaves the highlight on a
