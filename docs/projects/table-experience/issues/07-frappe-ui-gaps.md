@@ -14,21 +14,26 @@ Both prototypes had to rebuild a frappe-ui piece because the component could not
 
 All four go to `~/frappe/frappe-ui` on a branch, pushed to `fork`. Until they land, the app carries the prototype's copies behind a comment that names this ticket.
 
-## Done, 2026-09-11
+## Done, 2026-09-12
 
-Four commits on `picker-gaps` in `~/frappe/frappe-ui`, off v1.0.0-beta.63, not yet pushed.
+Six commits on `picker-gaps` in `~/frappe/frappe-ui`, off v1.0.0-beta.63, not yet pushed.
 
-1. `CalendarPanel` is exported, with a `v-model` that is a date or a `[from, to]` pair; the bound shape picks the mode. The pickers still pass `weeks` and own their selection, so the panel has one branch: `weeks` present means the parent owns it.
-2. `Popover` gains `autoFocus` (default true) and `trigger: 'click' | 'manual'`. Manual renders reka's anchor, so it carries no `aria-expanded`.
+1. `DateCalendar` and `DateRangeCalendar` ship from `frappe-ui/experimental`, each owning its selection. The range calendar holds the `[from, to]` pair, the hover preview and the first-click rule. `CalendarPanel` stays internal, which reverses the first answer: exporting the panel left every consumer rebuilding the selection around it.
+2. `Popover` gains `autoFocus`, `trigger: 'click' | 'manual'`, `reference` and a `contentEl` on the template ref. Manual renders reka's anchor, so it carries no `aria-expanded`.
 3. `useInputClasses` lives in `frappe-ui/experimental`, next to `useInputLabeling`, not the root. `TextInput` consumes it.
 4. `ChartContainer`'s actions wrapper is `h-[1lh] items-center`. The title line box measures 21px, so `min-h-7` would grow it and `-my-1` only fits a 28px action.
 
-The prototype reads the branch through the link; the app's pin stays beta.62 until a release carries these.
+## What the app took, 2026-09-12
+
+Three of the four are in. `FilterPickerCalendar` renders the two calendars and keeps only the text mapping, since the calendars seed their own view from the value. `ResultFind` is a real `Popover` on `trigger="manual"` and `:auto-focus="false"`, so the panel is portalled and carries no `z-[100]`. `ChartBuilderActions` dropped its `-my-1`.
+
+`ContentEditable` keeps its copy. `useInputClasses` does not fit it: the composable's `ghost` is `border-0` with no focus surface, where this box draws a transparent border that recolors on focus, and its size table carries a font-size that a caller's own `text-lg-semibold` would have to outrank. Taking it would change the look at all four call sites. The gap is narrower than it was, not closed — it wants a `ghost` that rings on focus, and type left to the caller.
+
+**The app does not build on the beta.62 pin**, and did not before this either: the calendars, `autoFocus` and the composable are all unreleased. `wt link frappe-ui` is what builds it until `picker-gaps` is pushed and a release carries it.
 
 ## Follow-ups from the first consumer
 
-The palette took `CalendarPanel` and `autoFocus` the same day. Three things the panel does not yet say:
+The palette read the branch through the link. Two things the calendars do not yet say:
 
-- It moves focus to the clicked day. A panel inside another input needs a way to never take focus; the palette puts `@mousedown.prevent` on the panel root for now.
-- It has no "the range is settled" signal. `change` fires `[from, '']` on the first click and the pair on the second, so the consumer re-derives the phase from the payload. A `complete` event would say it.
-- `change` is typed as the union whatever shape is bound, so a range consumer narrows in every handler.
+- They move focus to the clicked day. A calendar inside another input needs a way to never take focus; the picker puts `@mousedown.prevent` on the wrapper for now.
+- There is no "the range is settled" signal. `select` fires `[from, '']` on the first click and the pair on the second, so the consumer re-derives the phase from the payload. A `complete` event would say it.

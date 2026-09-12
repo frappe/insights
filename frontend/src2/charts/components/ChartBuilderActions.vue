@@ -90,13 +90,8 @@ const moreActions = computed(() =>
 </script>
 
 <template>
-	<!-- read out of the PNG the menu exports: the acts are chrome, not the chart.
-	     `-my-1`: the card header is `items-start` and a button is 8px taller
-	     than the title line, so without it the icons sit low and the header
-	     grows past a dashboard card's. A host with no title row gives the
-	     buttons a row of their own height instead. See
-	     docs/projects/table-experience/issues/07-frappe-ui-gaps.md -->
-	<div class="-my-1 flex items-center gap-1" data-export-exclude>
+	<!-- read out of the PNG the menu exports: the acts are chrome, not the chart -->
+	<div class="flex items-center gap-1" data-export-exclude>
 		<Button variant="ghost" :tooltip="__('Refresh')" @click="preview.load(true)">
 			<template #icon>
 				<RefreshCcw class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />

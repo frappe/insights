@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { FormControl } from 'frappe-ui'
+import { FormControl, Popover } from 'frappe-ui'
 import { CornerDownLeft, Search } from 'lucide-vue-next'
 import { computed, nextTick, ref, watch } from 'vue'
 import { columnIcon } from '../../query/column_icon'
@@ -82,70 +82,68 @@ defineExpose({ focus, clear })
 </script>
 
 <template>
-	<div class="relative">
-		<FormControl
-			ref="$input"
-			v-model="term"
-			type="text"
-			variant="outline"
-			class="w-[120px]"
-			:placeholder="__('Find')"
-			autocomplete="off"
-			@focus="onFocus"
-			@blur="onBlur"
-			@keydown="onKeydown"
-		>
-			<template #prefix>
-				<Search class="size-3.5 text-ink-gray-6" stroke-width="1.5" />
-			</template>
-		</FormControl>
+	<!-- manual: a click in the input places the caret instead of toggling the
+	     panel. The typing drives it, and the caret stays put on open. -->
+	<Popover v-model:open="panelOpen" trigger="manual" :auto-focus="false">
+		<template #trigger>
+			<FormControl
+				ref="$input"
+				v-model="term"
+				type="text"
+				variant="outline"
+				class="w-[120px]"
+				:placeholder="__('Find')"
+				autocomplete="off"
+				@focus="onFocus"
+				@blur="onBlur"
+				@keydown="onKeydown"
+			>
+				<template #prefix>
+					<Search class="size-3.5 text-ink-gray-6" stroke-width="1.5" />
+				</template>
+			</FormControl>
+		</template>
 
-		<!-- A hand-built box with PopoverPanel's look and Combobox's rows:
-		     frappe-ui's Popover takes focus on open, which a panel driven by
-		     typing cannot afford. Same layer as a popover, so the grid's sticky
-		     header cannot paint over it. See
-		     docs/projects/table-experience/issues/07-frappe-ui-gaps.md -->
-		<div
-			v-if="panelOpen"
-			class="absolute start-0 top-full z-[100] mt-1 w-64 overflow-hidden rounded-6 bg-surface-elevation-2 shadow-2xl ring-1 ring-black ring-opacity-5"
-		>
-			<div v-if="matched.length" class="flex flex-col p-1">
-				<div class="flex h-7 items-center px-2 text-sm-medium text-ink-gray-4">
-					{{ __('Jump to column') }}
+		<template #default>
+			<div class="w-64">
+				<div v-if="matched.length" class="flex flex-col p-1">
+					<div class="flex h-7 items-center px-2 text-sm-medium text-ink-gray-4">
+						{{ __('Jump to column') }}
+					</div>
+					<div
+						v-for="(column, index) in matched"
+						:key="column.name"
+						class="flex min-h-7 cursor-pointer select-none items-center gap-2 rounded-4 px-2 text-base text-ink-gray-9 transition-colors duration-100 ease-out"
+						:class="index === activeIndex ? 'bg-surface-alpha-gray-2' : ''"
+						@mousemove="activeIndex = index"
+						@mousedown.prevent="select(index)"
+					>
+						<component
+							:is="columnIcon(column.type)"
+							class="size-4 shrink-0 text-ink-gray-5"
+							stroke-width="1.5"
+						/>
+						<span :title="column.name" class="flex-1 truncate text-start">
+							{{ column.name }}
+						</span>
+						<CornerDownLeft
+							v-if="index === activeIndex"
+							class="size-3.5 shrink-0 text-ink-gray-4"
+							stroke-width="1.5"
+						/>
+					</div>
 				</div>
 				<div
-					v-for="(column, index) in matched"
-					:key="column.name"
-					class="flex min-h-7 cursor-pointer select-none items-center gap-2 rounded-4 px-2 text-base text-ink-gray-9 transition-colors duration-100 ease-out"
-					:class="index === activeIndex ? 'bg-surface-alpha-gray-2' : ''"
-					@mousemove="activeIndex = index"
-					@mousedown.prevent="select(index)"
+					class="px-3 py-1.5 text-sm text-ink-gray-5"
+					:class="matched.length ? 'border-t border-outline-gray-1' : ''"
 				>
-					<component
-						:is="columnIcon(column.type)"
-						class="size-4 shrink-0 text-ink-gray-5"
-						stroke-width="1.5"
-					/>
-					<span :title="column.name" class="flex-1 truncate text-start">
-						{{ column.name }}
-					</span>
-					<CornerDownLeft
-						v-if="index === activeIndex"
-						class="size-3.5 shrink-0 text-ink-gray-4"
-						stroke-width="1.5"
-					/>
+					<template v-if="props.matchCount === 1">{{ __('1 row matches') }}</template>
+					<template v-else-if="props.matchCount">
+						{{ __('{0} rows match', String(props.matchCount)) }}
+					</template>
+					<template v-else>{{ __('No rows match') }}</template>
 				</div>
 			</div>
-			<div
-				class="px-3 py-1.5 text-sm text-ink-gray-5"
-				:class="matched.length ? 'border-t border-outline-gray-1' : ''"
-			>
-				<template v-if="props.matchCount === 1">{{ __('1 row matches') }}</template>
-				<template v-else-if="props.matchCount">
-					{{ __('{0} rows match', String(props.matchCount)) }}
-				</template>
-				<template v-else>{{ __('No rows match') }}</template>
-			</div>
-		</div>
-	</div>
+		</template>
+	</Popover>
 </template>

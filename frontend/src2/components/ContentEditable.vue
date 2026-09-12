@@ -65,11 +65,12 @@ const props = defineProps({
 })
 
 // Copied from frappe-ui TextInput, `focus:` rewritten as `focus-within:`.
-// frappe-ui keeps these tables private, so the copy drifts every time the input
-// is restyled. See docs/projects/table-experience/issues/07-frappe-ui-gaps.md
-// Font-size is left out on purpose: the caller's text style owns type, and a
-// `text-base` here would outrank a frappe-ui component class like
-// `text-lg-semibold`.
+// `useInputClasses` now publishes these tables with the focus prefix as an
+// argument, but not in a shape this box can take: its `ghost` draws no focus
+// ring, and its sizes carry a font-size. Font-size is left out here on purpose,
+// because the caller's text style owns type and a `text-base` would outrank a
+// frappe-ui component class like `text-lg-semibold`. See
+// docs/projects/table-experience/issues/07-frappe-ui-gaps.md
 const sizeClasses = {
 	// gaps assume the 14px icon every input in this app draws, so the text
 	// starts where TextInput's `ps-8` / `ps-9` / `ps-10` puts it
