@@ -19,6 +19,8 @@ from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     IbisQueryBuilder,
     execute_ibis_query,
     get_columns_from_schema,
+    is_carried_currency_column,
+    is_hidden_column,
 )
 from insights.insights.query_utils import (
     extract_query_deps_from_operations,
@@ -29,7 +31,7 @@ from insights.insights.query_utils import (
     table_references,
     transitive_closure,
 )
-from insights.utils import as_text, deep_convert_dict_to_dict
+from insights.utils import as_text, deep_convert_dict_to_dict, get_currency_symbols
 
 
 class InsightsQueryv3(Document):
@@ -196,6 +198,9 @@ class InsightsQueryv3(Document):
 
         columns = get_columns_from_schema(ibis_query.schema())
 
+        carried = [c["name"] for c in columns if is_carried_currency_column(c["name"])]
+        codes = {row[name] for name in carried for row in results}
+
         sql = None
         with suppress(Exception):
             for op in frappe.parse_json(self.operations) or []:
@@ -207,6 +212,7 @@ class InsightsQueryv3(Document):
             "sql": ibis.to_sql(ibis_query),
             "columns": columns,
             "rows": results,
+            "currency_symbols": get_currency_symbols(codes),
             "time_taken": time_taken,
             "is_aggregated_sql": _sql_has_group_by(sql) if sql else False,
         }
@@ -260,6 +266,10 @@ class InsightsQueryv3(Document):
 
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
+
+        hidden = [col for col in ibis_query.columns if is_hidden_column(col)]
+        if hidden:
+            ibis_query = ibis_query.drop(*hidden)
 
         import ibis.expr.datatypes as dt
 
@@ -324,8 +334,7 @@ class InsightsQueryv3(Document):
     @insights_whitelist()
     def get_columns_for_selection(self, active_operation_idx: int | None = None):
         ibis_query = self.build(active_operation_idx)
-        columns = get_columns_from_schema(ibis_query.schema())
-        return columns
+        return [c for c in get_columns_from_schema(ibis_query.schema()) if not c.get("hidden")]
 
     def evaluate_alert_expression(self, expression):
         builder = IbisQueryBuilder(self)

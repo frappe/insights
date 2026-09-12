@@ -223,8 +223,10 @@ export function makeQuery(name: string) {
 			if (!response) return
 
 			result.value.executedSQL = response.sql
-			result.value.columns = response.columns
+			// the row keeps a hidden column; only the listing drops it
+			result.value.columns = response.columns.filter((c: QueryResultColumn) => !c.hidden)
 			result.value.rows = response.rows
+			Object.assign(session.site.currency_symbols, response.currency_symbols || {})
 			result.value.totalRowCount = 0
 			result.value.formattedRows = getFormattedRows(result.value, query.doc.operations)
 

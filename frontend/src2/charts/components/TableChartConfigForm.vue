@@ -47,6 +47,9 @@ watchEffect(() => {
 	}
 })
 
+// a pivot aggregates on its own path and ignores a measure's format
+const isPivoted = computed(() => config.value.columns?.some((c) => c?.column_name))
+
 const measuresAsDimensions = computed<DimensionOption[]>(() =>
 	props.columnOptions
 		.filter((o) => FIELDTYPES.NUMBER.includes(o.data_type))
@@ -258,7 +261,7 @@ function updateTextWrap(column_name: string, wrap: boolean | undefined) {
 						<MeasurePicker
 							:model-value="item"
 							:column-options="props.columnOptions"
-							:enable-format="true"
+							:enable-format="!isPivoted"
 							@update:model-value="Object.assign(item, $event || {})"
 							@remove="config.values.splice(index, 1)"
 						/>
