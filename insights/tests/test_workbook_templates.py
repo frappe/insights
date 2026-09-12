@@ -62,6 +62,35 @@ def bumped_version(template_name, version):
     return patch("insights.api.templates._discover_templates", return_value=registry)
 
 
+def money_measures(node):
+    """Every measure in a chart that prints an amount, wherever it sits in the config."""
+    if isinstance(node, dict):
+        if node.get("format") == "currency":
+            yield node
+        for value in node.values():
+            yield from money_measures(value)
+    elif isinstance(node, list):
+        for value in node:
+            yield from money_measures(value)
+
+
+def query_columns(query):
+    """The columns a template query makes, and whether that is all of them.
+
+    A source table's own columns are not written in the operations, so the set
+    is open until a `select` names every column that survives it.
+    """
+    columns, closed = set(), False
+    for op in query["operations"]:
+        if op["type"] == "join":
+            columns.update(column["column_name"] for column in op.get("select_columns") or [])
+        elif op["type"] == "select":
+            columns, closed = set(op["column_names"]), True
+        elif op["type"] == "mutate":
+            columns.add(op["new_name"])
+    return columns, closed
+
+
 def cleanup_template_workbooks():
     # template workbooks are owned by Administrator now, so owner-scoped cleanup
     # can't reach them — delete by their derived origin tag instead
@@ -359,6 +388,19 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
         self.assertEqual(
             frappe.db.get_value("Insights Workbook", workbook_name, "imported_version"), TEMPLATE_VERSION
         )
+
+    def test_every_money_measure_names_a_currency_column_its_query_makes(self):
+        for name in get_template_names():
+            workbook = get_template_workbook(name)["dependencies"]
+            for chart_name, chart in workbook["charts"].items():
+                for measure in money_measures(chart):
+                    column = measure.get("currency_column")
+                    self.assertTrue(column, f"{chart_name} formats money without a currency column")
+                    columns, closed = query_columns(workbook["queries"][chart["query"]])
+                    if closed or column in columns:
+                        self.assertIn(
+                            column, columns, f"{chart_name} names a currency column its query drops"
+                        )
 
     def test_every_committed_template_is_valid_and_importable(self):
         """CI guard: every committed manifest parses with the required keys and
