@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { DatePicker } from 'frappe-ui'
-import { computed, onMounted, watch } from 'vue'
+import { useChartTokens } from 'frappe-ui/charts'
+import { computed, onMounted, ref, watch } from 'vue'
 import FormControl from '../../components/FormControl.vue'
 import RadioGroup from '../../components/ui/Radio.vue'
 import RadioGroupItem from '../../components/ui/RadioGroupItem.vue'
@@ -20,6 +21,7 @@ import {
 	text_rules,
 	TextOperator,
 } from './formatting_utils'
+import { colorScaleDirection, magnitudeScale } from './formatting_colors'
 const format = defineModel<FormattingMode>({ required: true })
 const props = defineProps<{
 	columnOptions: ColumnOption[] | GroupedColumnOption[]
@@ -204,14 +206,21 @@ const rankOperatorOptions = [
 	{ label: __('Below average'), value: 'below_average' as RankOperator },
 ]
 
+// The swatches draw the ramp they pick, so the option cannot name a color the
+// scale does not paint. `useChartTokens` needs an element to scope the lookup;
+// an empty ref reads the document, which is where the ramps are defined.
+const { tokens } = useChartTokens(ref<HTMLElement>())
+
 const colorScaleOptions = [
 	{
-		label: __('Red-Green'),
-		value: 'Red-Green',
+		label: __('Higher values'),
+		value: 'ascending',
+		swatches: computed(() => magnitudeScale(tokens.value, 'ascending')),
 	},
 	{
-		label: __('Green-Red'),
-		value: 'Green-Red',
+		label: __('Lower values'),
+		value: 'descending',
+		swatches: computed(() => magnitudeScale(tokens.value, 'descending')),
 	},
 ]
 
@@ -221,17 +230,17 @@ const ruleTypeOptions = computed(() => {
 
 	if (['Decimal', 'Number', 'Integer'].includes(columnType.value || '')) {
 		options.push(
-			{ label: __('Value Rules'), value: 'cell_rules' },
-			{ label: __('Ranking Rules'), value: 'rank_rules' },
+			{ label: __('Value'), value: 'cell_rules' },
+			{ label: __('Rank'), value: 'rank_rules' },
 		)
 	}
 
 	if (['String', 'Text'].includes(columnType.value || '')) {
-		options.push({ label: __('Text Rules'), value: 'text_rules' })
+		options.push({ label: __('Text'), value: 'text_rules' })
 	}
 
 	if (['Date', 'Datetime', 'Time'].includes(columnType.value || '')) {
-		options.push({ label: __('Date Rules'), value: 'date_rules' })
+		options.push({ label: __('Date'), value: 'date_rules' })
 	}
 
 	return options
@@ -325,43 +334,43 @@ const isInvalidColumn = computed(() => {
 <template>
 	<div class="flex flex-col gap-1.5 relative">
 		<Combobox
-			:label="'Column'"
+			:label="__('Column')"
 			:placeholder="__('Column')"
 			:modelValue="format.column?.column_name"
 			:options="availableColumns"
 			@update:modelValue="onColumnChange($event)"
 		/>
-		<p v-if="isInvalidColumn" class="text-xs text-ink-red-6">Invalid Column</p>
+		<p v-if="isInvalidColumn" class="text-xs text-ink-red-5">
+			{{ __('This column is not in the chart any more. Pick another one.') }}
+		</p>
 	</div>
 
 	<template v-if="!isInvalidColumn">
 		<div v-if="props.formatMode === 'color_scale'" class="w-full flex flex-col gap-4">
 			<div>
-				<h3 class="text-sm text-ink-gray-5 mb-3">Color</h3>
+				<h3 class="text-sm text-ink-gray-5 mb-3">{{ __('Darker shade for') }}</h3>
 				<RadioGroup
 					name="color-scale"
-					:modelValue="(format as color_scale).colorScale"
+					:modelValue="colorScaleDirection((format as color_scale).colorScale)"
 					@update:modelValue="onColorScaleChange($event)"
 				>
-					<RadioGroupItem value="Red-Green" class="[&_label]:w-full">
+					<RadioGroupItem
+						v-for="option in colorScaleOptions"
+						:key="option.value"
+						:value="option.value"
+						class="[&_label]:w-full"
+					>
 						<div class="flex items-center justify-between gap-2 w-full">
-							<span class="text-sm">Red to Green</span>
-							<div class="flex h-2 w-32">
-								<div class="w-1/2 bg-red-400"></div>
-								<div class="w-1/2 bg-red-300"></div>
-								<div class="w-1/2 bg-green-300"></div>
-								<div class="w-1/2 bg-green-500"></div>
-							</div>
-						</div>
-					</RadioGroupItem>
-					<RadioGroupItem value="Green-Red" class="[&_label]:w-full">
-						<div class="flex items-center justify-between gap-2 w-full">
-							<span class="text-sm">Green to Red</span>
-							<div class="flex h-2 w-32">
-								<div class="w-1/2 bg-green-500"></div>
-								<div class="w-1/2 bg-green-300"></div>
-								<div class="w-1/2 bg-red-300"></div>
-								<div class="w-1/2 bg-red-400"></div>
+							<span class="text-sm">{{ option.label }}</span>
+							<!-- the empty slot is drawn too: a scale that starts at
+							     nothing should show that it does -->
+							<div class="flex h-2 w-32 rounded-sm ring-1 ring-outline-gray-1">
+								<div
+									v-for="(fill, i) in option.swatches.value"
+									:key="i"
+									class="flex-1"
+									:style="{ backgroundColor: fill?.backgroundColor }"
+								></div>
 							</div>
 						</div>
 					</RadioGroupItem>
@@ -370,7 +379,7 @@ const isInvalidColumn = computed(() => {
 
 			<div>
 				<div class="flex items-center gap-2 mb-3">
-					<h3 class="text-sm text-ink-gray-5">Scale Scope</h3>
+					<h3 class="text-sm text-ink-gray-5">{{ __('Compare against') }}</h3>
 				</div>
 				<RadioGroup
 					name="scale-scope"
@@ -379,18 +388,18 @@ const isInvalidColumn = computed(() => {
 				>
 					<RadioGroupItem value="global" class="[&_label]:w-full">
 						<div class="flex flex-col gap-0.5">
-							<span class="text-sm-medium">Global</span>
-							<span class="text-xs text-ink-gray-4"
-								>Compare across all formatted columns</span
-							>
+							<span class="text-sm-medium">{{ __('All columns with a scale') }}</span>
+							<span class="text-xs text-ink-gray-4">
+								{{ __('One shared range, so the columns read side by side') }}
+							</span>
 						</div>
 					</RadioGroupItem>
 					<RadioGroupItem value="local" class="[&_label]:w-full">
 						<div class="flex flex-col gap-0.5">
-							<span class="text-sm-medium">Local</span>
-							<span class="text-xs text-ink-gray-4"
-								>Compare within each column independently</span
-							>
+							<span class="text-sm-medium">{{ __('This column only') }}</span>
+							<span class="text-xs text-ink-gray-4">
+								{{ __('The column gets its own range') }}
+							</span>
 						</div>
 					</RadioGroupItem>
 				</RadioGroup>
@@ -401,8 +410,8 @@ const isInvalidColumn = computed(() => {
 			<template v-if="ruleTypeOptions.length > 1">
 				<FormControl
 					type="select"
-					:label="'Rule Type'"
-					:placeholder="__('Rule Type')"
+					:label="__('Match by')"
+					:placeholder="__('Match by')"
 					:modelValue="format.mode"
 					:options="ruleTypeOptions"
 					@update:modelValue="onRuleTypeChange($event)"
@@ -412,15 +421,15 @@ const isInvalidColumn = computed(() => {
 			<template v-if="isValueRule">
 				<FormControl
 					type="select"
-					:label="'Condition'"
-					:placeholder="__('Operator')"
+					:label="__('Condition')"
+					:placeholder="__('Condition')"
 					:modelValue="(format as cell_rules).operator"
 					:options="operatorOptions"
 					@update:modelValue="onOperatorChange($event)"
 				/>
 				<FormControl
 					type="number"
-					:label="'Compare to'"
+					:label="__('Value')"
 					:modelValue="(format as cell_rules).value"
 					:placeholder="__('Value')"
 					@update:modelValue="format.value = Number($event)"
@@ -438,7 +447,7 @@ const isInvalidColumn = computed(() => {
 				<template v-if="isTextValueRule">
 					<FormControl
 						type="text"
-						:label="'Text Value'"
+						:label="__('Text')"
 						:modelValue="(format as text_rules).value"
 						:placeholder="__('Enter text')"
 						@update:modelValue="format.value = $event"
@@ -455,7 +464,7 @@ const isInvalidColumn = computed(() => {
 					@update:modelValue="onOperatorChange($event)"
 				/>
 				<template v-if="isDateValueRule">
-					<h3 class="text-sm text-ink-gray-5">Date Value</h3>
+					<h3 class="text-sm text-ink-gray-5">{{ __('Date') }}</h3>
 					<template v-if="(format as date_rules).operator === 'date_between'">
 						<!-- todo: find a proper fix for datepicker v-model -->
 						<DatePicker
@@ -475,21 +484,21 @@ const isInvalidColumn = computed(() => {
 			<template v-if="isRankRule">
 				<FormControl
 					type="select"
-					:placeholder="__('Ranking Condition')"
-					:label="'Rule'"
+					:placeholder="__('Condition')"
+					:label="__('Condition')"
 					:modelValue="(format as rank_rules).operator"
 					:options="rankOperatorOptions"
 					@update:modelValue="onOperatorChange($event)"
 				/>
 				<template v-if="isRankValueRule">
 					<FormControl
-						:label="'value'"
+						:label="__('How many')"
 						type="number"
 						:modelValue="(format as rank_rules).value"
 						:placeholder="
 							(format as rank_rules).operator?.includes('percent')
-								? 'Percentage (1-100)'
-								: 'Number of items'
+								? __('A percentage, 1 to 100')
+								: __('A number of rows')
 						"
 						@update:modelValue="format.value = Number($event)"
 					/>
@@ -498,7 +507,7 @@ const isInvalidColumn = computed(() => {
 
 			<FormControl
 				type="select"
-				:label="'Color'"
+				:label="__('Color')"
 				:placeholder="__('Color')"
 				:modelValue="currentColor"
 				:options="highlightColorOptions"

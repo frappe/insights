@@ -6,6 +6,7 @@ import {
 	BubbleChartConfig,
 	DonutChartConfig,
 	FunnelChartConfig,
+	HeatmapChartConfig,
 	LineChartConfig,
 	MapChartConfig,
 	NumberChartConfig,
@@ -14,9 +15,11 @@ import {
 } from '../../types/chart.types'
 import { DimensionOption } from '../../types/query.types'
 import { Chart } from '../chart'
+import type { ChartRead } from '../chart_read'
 import BarChartConfigForm from './BarChartConfigForm.vue'
 import DonutChartConfigForm from './DonutChartConfigForm.vue'
 import FunnelChartConfigForm from './FunnelChartConfigForm.vue'
+import HeatmapChartConfigForm from './HeatmapChartConfigForm.vue'
 import LineChartConfigForm from './LineChartConfigForm.vue'
 import MapChartConfigForm from './MapChartConfigForm.vue'
 import NumberChartConfigForm from './NumberChartConfigForm.vue'
@@ -25,6 +28,9 @@ import SankeyChartConfigForm from './SankeyChartConfigForm.vue'
 import TableChartConfigForm from './TableChartConfigForm.vue'
 
 const props = defineProps<{ chart: Chart }>()
+
+// a saved region mapping re-shapes the rows, so the preview has to run again
+const preview = inject('chartPreview') as ChartRead
 
 const chartQuery = computed(() => {
 	if (!props.chart.doc.query) return {} as Query
@@ -43,64 +49,75 @@ const dimensions = computed<DimensionOption[]>(() => {
 const columnOptions = computed(() => chartQuery.value.result?.columnOptions || [])
 const queryResult = computed(() => chartQuery.value.result)
 
+// What the chart actually drew, not what the query returned. A table pivots
+// after the query, so `Revenue___Women` exists here and nowhere else — and a
+// formatting rule must name the column it formats.
+const resultColumnOptions = computed(() => preview.result?.columnOptions || [])
 </script>
 
 <template>
 	<NumberChartConfigForm
 		v-if="props.chart.doc.chart_type == 'Number'"
-		v-model="(props.chart.doc.config as NumberChartConfig)"
+		v-model="props.chart.doc.config as NumberChartConfig"
 		:dimensions="dimensions"
 		:column-options="columnOptions"
 	/>
 	<DonutChartConfigForm
 		v-if="props.chart.doc.chart_type == 'Donut'"
-		v-model="(props.chart.doc.config as DonutChartConfig)"
+		v-model="props.chart.doc.config as DonutChartConfig"
 		:dimensions="dimensions"
 		:column-options="columnOptions"
 	/>
 	<FunnelChartConfigForm
 		v-if="props.chart.doc.chart_type == 'Funnel'"
-		v-model="(props.chart.doc.config as FunnelChartConfig)"
+		v-model="props.chart.doc.config as FunnelChartConfig"
 		:dimensions="dimensions"
 		:column-options="columnOptions"
 	/>
 	<TableChartConfigForm
 		v-if="props.chart.doc.chart_type == 'Table'"
-		v-model="(props.chart.doc.config as TableChartConfig)"
+		v-model="props.chart.doc.config as TableChartConfig"
 		:dimensions="dimensions"
 		:column-options="columnOptions"
+		:result-column-options="resultColumnOptions"
 	/>
 	<BarChartConfigForm
 		v-if="props.chart.doc.chart_type == 'Bar' || props.chart.doc.chart_type == 'Row'"
-		v-model="(props.chart.doc.config as BarChartConfig)"
+		v-model="props.chart.doc.config as BarChartConfig"
 		:dimensions="dimensions"
 		:column-options="columnOptions"
 	/>
 	<LineChartConfigForm
 		v-if="props.chart.doc.chart_type == 'Line'"
-		v-model="(props.chart.doc.config as LineChartConfig)"
+		v-model="props.chart.doc.config as LineChartConfig"
 		:dimensions="dimensions"
 		:column-options="columnOptions"
 	/>
 	<MapChartConfigForm
 		v-if="props.chart.doc.chart_type == 'Map'"
-		v-model="(props.chart.doc.config as MapChartConfig)"
+		v-model="props.chart.doc.config as MapChartConfig"
 		:dimensions="dimensions"
 		:column-options="columnOptions"
 		:chart-name="props.chart.doc.name"
 		:query-name="props.chart.doc.query"
 		:query-result="queryResult"
-		@mappingsSaved="() => props.chart.refresh(true,true)"
+		@mappingsSaved="() => preview.load(true)"
 	/>
 	<BubbleChartConfigForm
 		v-if="props.chart.doc.chart_type == 'Bubble'"
-		v-model="(props.chart.doc.config as BubbleChartConfig)"
+		v-model="props.chart.doc.config as BubbleChartConfig"
 		:dimensions="dimensions"
 		:column-options="columnOptions"
 	/>
 	<SankeyChartConfigForm
 		v-if="props.chart.doc.chart_type == 'Sankey'"
-		v-model="(props.chart.doc.config as SankeyChartConfig)"
+		v-model="props.chart.doc.config as SankeyChartConfig"
+		:dimensions="dimensions"
+		:column-options="columnOptions"
+	/>
+	<HeatmapChartConfigForm
+		v-if="props.chart.doc.chart_type == 'Heatmap'"
+		v-model="props.chart.doc.config as HeatmapChartConfig"
 		:dimensions="dimensions"
 		:column-options="columnOptions"
 	/>

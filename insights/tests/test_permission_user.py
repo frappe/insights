@@ -24,7 +24,6 @@ from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import (
     DT,
     as_user,
-    create_test_chart,
     create_test_query,
     create_test_workbook,
     create_user,
@@ -89,9 +88,34 @@ class TestPermissionUser(InsightsIntegrationTestCase):
         cls.query = create_test_query(
             PUBLISHER, cls.workbook, title="Permission User Query", operations=todo_operations()
         ).name
-        cls.chart = create_test_chart(
-            PUBLISHER, cls.workbook, query=cls.query, title="Permission User Chart"
-        ).name
+        # a chart a public link can draw: one row per todo, so the rows a guest
+        # gets back are the descriptions the identity decides
+        with as_user(PUBLISHER):
+            cls.chart = (
+                frappe.get_doc(
+                    {
+                        "doctype": DT.CHART,
+                        "title": "Permission User Chart",
+                        "workbook": cls.workbook,
+                        "query": cls.query,
+                        "chart_type": "Table",
+                        "config": {
+                            "rows": [
+                                {
+                                    "column_name": "description",
+                                    "dimension_name": "description",
+                                    "data_type": "String",
+                                }
+                            ],
+                            "columns": [],
+                            "values": [],
+                            "order_by": [],
+                        },
+                    }
+                )
+                .insert()
+                .name
+            )
 
     @classmethod
     def after_class(cls):
@@ -138,10 +162,11 @@ class TestPermissionUser(InsightsIntegrationTestCase):
         return sorted(row["description"] for row in result["rows"])
 
     def run_as_guest(self, **kwargs):
-        docs = frappe.as_json({"doctype": DT.QUERY, "name": self.query})
+        """What a public link fetches: the chart's own rows, through `get_data`."""
+        docs = frappe.as_json({"doctype": DT.CHART, "name": self.chart})
         kwargs.setdefault("docs", docs)
         with as_user("Guest"), db_connections(), as_http_request():
-            return run_doc_method(method="execute", **kwargs)
+            return run_doc_method(method="get_data", **kwargs)
 
     # publishing
 
@@ -185,11 +210,11 @@ class TestPermissionUser(InsightsIntegrationTestCase):
 
     def test_a_public_link_does_not_switch_the_session_user(self):
         self.publish()
-        docs = frappe.as_json({"doctype": DT.QUERY, "name": self.query})
+        docs = frappe.as_json({"doctype": DT.CHART, "name": self.chart})
 
         with as_user("Guest"), db_connections(), as_http_request():
             with patch.object(frappe, "set_user", side_effect=AssertionError("set_user in a request")):
-                result = run_doc_method(method="execute", docs=docs)
+                result = run_doc_method(method="get_data", docs=docs)
             self.assertEqual(frappe.session.user, "Guest")
 
         self.assertEqual(self.descriptions(result), sorted(PUBLISHER_TODOS))
@@ -204,7 +229,7 @@ class TestPermissionUser(InsightsIntegrationTestCase):
         read off the stored root instead."""
         self.publish()
 
-        forged = frappe.get_doc(DT.QUERY, self.query).as_dict()
+        forged = frappe.get_doc(DT.CHART, self.chart).as_dict()
         forged.update({"permission_user": "Administrator", "owner": "Administrator"})
 
         result = self.run_as_guest(docs=frappe.as_json(forged))

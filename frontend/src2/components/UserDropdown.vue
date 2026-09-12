@@ -3,7 +3,7 @@
 		<Dropdown :options="userDropdownOptions">
 			<template v-slot="{ open }">
 				<button
-					class="flex h-12 items-center rounded-md py-2 duration-300 ease-in-out"
+					class="flex h-12 items-center rounded-5 py-2 duration-300 ease-in-out"
 					:class="
 						props.isCollapsed
 							? 'w-auto px-0'
@@ -15,7 +15,7 @@
 					<img
 						src="../assets/insights-logo-new.svg"
 						alt="logo"
-						class="h-8 w-8 flex-shrink-0 rounded"
+						class="h-8 w-8 flex-shrink-0 rounded-4"
 					/>
 					<div
 						class="flex flex-1 flex-col text-left duration-300 ease-in-out"
@@ -69,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import { call, Dropdown, useTheme } from 'frappe-ui'
+import { call, Dropdown, useColorScheme } from 'frappe-ui'
 import {
 	ChevronDown,
 	HelpCircle,
@@ -90,8 +90,8 @@ const props = defineProps<{ isCollapsed?: boolean }>()
 
 const showLoginToFCDialog = ref(false)
 
-const { currentTheme, toggleTheme } = useTheme()
-const isDark = computed(() => currentTheme.value === 'dark')
+const { colorScheme, toggleColorScheme } = useColorScheme()
+const isDark = computed(() => colorScheme.value === 'dark')
 
 const userDropdownOptions = computed(() => {
 	const options: { label: string; icon: any; onClick: () => void }[] = [
@@ -125,7 +125,7 @@ const userDropdownOptions = computed(() => {
 	options.push({
 		label: isDark.value ? __('Light mode') : __('Dark mode'),
 		icon: h(isDark.value ? Sun : Moon),
-		onClick: toggleTheme,
+		onClick: toggleColorScheme,
 	})
 	options.push({
 		label: __('Log out'),

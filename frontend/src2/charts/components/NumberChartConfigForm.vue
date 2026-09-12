@@ -1,15 +1,20 @@
 <script setup lang="ts">
 import { debounce } from 'frappe-ui'
-import { computed, watchEffect } from 'vue'
+import { computed } from 'vue'
 import ColorInput from '../../components/ColorInput.vue'
 import DraggableList from '../../components/DraggableList.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { FIELDTYPES } from '../../helpers/constants'
+import { DEFAULT_CHOICE, periodOf, periodOfChoice } from '../window'
 import { NumberChartConfig, NumberColumnOptions } from '../../types/chart.types'
-import { ColumnOption, Dimension, DimensionOption, MeasureOption } from '../../types/query.types'
+import { ColumnOption, Dimension, DimensionOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
+import NumberFormatFields from './NumberFormatFields.vue'
+import NumberFormatSection from './NumberFormatSection.vue'
+import NumberValueContext from './NumberValueContext.vue'
+import NumberWindowPicker from './NumberWindowPicker.vue'
 
 const props = defineProps<{
 	dimensions: DimensionOption[]
@@ -21,7 +26,6 @@ const config = defineModel<NumberChartConfig>({
 	default: () => ({
 		number_columns: [],
 		number_column_options: [],
-		comparison: false,
 		sparkline: false,
 	}),
 })
@@ -30,24 +34,9 @@ const date_dimensions = computed(() =>
 	props.dimensions.filter((d) => FIELDTYPES.DATE.includes(d.data_type)),
 )
 
-watchEffect(() => {
-	if (!config.value.number_columns?.length) {
-		addNumberColumn()
-	}
-	if (!config.value.date_column) {
-		config.value.date_column = {} as DimensionOption
-	}
-	if (!config.value.number_column_options) {
-		config.value.number_column_options = []
-	}
-})
-
-function addNumberColumn() {
-	if (!config.value.number_columns) {
-		config.value.number_columns = []
-	}
-	config.value.number_columns.push({} as MeasureOption)
-}
+// What the card reads, which is what decides whether a period comparison is on
+// offer and whether a sparkline has a series behind it.
+const period = computed(() => periodOf(config.value))
 
 const updateColor = debounce((color: string) => {
 	config.value.sparkline_color = color
@@ -62,6 +51,56 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 	}
 	config.value.number_column_options[index][option] = value
 }
+
+/**
+ * Moves `negative_is_better` onto each value.
+ *
+ * What a value is compared against is a per-value setting too, and
+ * `insights.patches.normalize_number_card_comparisons` moved that, so this is
+ * the last chart-level setting left to lower.
+ *
+ * How a number prints is not here: `number_format` and `number_formats` sit over
+ * the old spellings rather than replacing them, so nothing has to be rewritten.
+ */
+function lowerChartLevelSettings() {
+	const chart = config.value
+	// Nothing to move, so nothing is written. A form that rewrote the config on
+	// open would mark every chart it was opened on dirty.
+	if (!chart.negative_is_better) return
+
+	chart.number_columns?.forEach((_, index) => {
+		// A value that set something of its own already overrode the chart, so
+		// lowering the chart's onto it would undo the override.
+		chart.number_column_options[index] = {
+			negative_is_better: chart.negative_is_better,
+			...(chart.number_column_options[index] || {}),
+		}
+	})
+
+	delete chart.negative_is_better
+}
+
+/**
+ * The column and the period are one decision, so one handler answers both.
+ *
+ * A date column that groups nothing is a date column doing nothing, which is
+ * why the picker offers no "None" — picking a column picks a period, and
+ * dropping the column drops it. Written only on an author's action, never on
+ * open, so no chart is dirtied by being looked at.
+ */
+function setDateColumn(dimension?: Dimension) {
+	config.value.date_column = dimension || ({} as Dimension)
+
+	if (!config.value.date_column?.column_name) {
+		delete config.value.window
+		return
+	}
+	if (!periodOf(config.value)) {
+		config.value.window = periodOfChoice(DEFAULT_CHOICE)
+	}
+}
+
+lowerChartLevelSettings()
 </script>
 
 <template>
@@ -76,41 +115,18 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 								:model-value="item"
 								:column-options="props.columnOptions"
 								:enable-format="true"
+								config-width="19rem"
 								@update:model-value="Object.assign(item, $event || {})"
 								@remove="config.number_columns.splice(index, 1)"
 							>
-								<template #config-fields>
-									<InlineFormControlLabel label="Prefix">
-										<FormControl
-											autocomplete="off"
-											:modelValue="getNumberOption(index, 'prefix')"
-											@update:modelValue="
-												setNumberOption(index, 'prefix', $event)
-											"
-										/>
-									</InlineFormControlLabel>
-									<InlineFormControlLabel label="Suffix">
-										<FormControl
-											autocomplete="off"
-											:modelValue="getNumberOption(index, 'suffix')"
-											@update:modelValue="
-												setNumberOption(index, 'suffix', $event)
-											"
-										/>
-									</InlineFormControlLabel>
-									<InlineFormControlLabel label="Decimal">
-										<FormControl
-											autocomplete="off"
-											:modelValue="getNumberOption(index, 'decimal')"
-											@update:modelValue="
-												setNumberOption(index, 'decimal', $event)
-											"
-											type="number"
-										/>
-									</InlineFormControlLabel>
+								<template #config-fields="{ close: closeSettings }">
+									<NumberFormatFields
+										:config="config"
+										:measure-name="item.measure_name"
+									/>
 									<InlineFormControlLabel label="Color">
 										<ColorInput
-											:model-value="getNumberOption(index, 'color')"
+											:model-value="getNumberOption(index, 'color') as string"
 											@update:model-value="
 												setNumberOption(index, 'color', $event)
 											"
@@ -119,12 +135,31 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 									</InlineFormControlLabel>
 
 									<Toggle
-										label="Show short numbers"
-										:modelValue="getNumberOption(index, 'shorten_numbers')"
+										label="Negative is better"
+										:modelValue="getNumberOption(index, 'negative_is_better')"
 										@update:modelValue="
-											setNumberOption(index, 'shorten_numbers', $event)
+											setNumberOption(index, 'negative_is_better', $event)
 										"
 									/>
+
+									<div class="mt-1 border-t pt-2">
+										<NumberValueContext
+											:column-options="props.columnOptions"
+											:period="period"
+											:date-column="config.date_column as Dimension"
+											:target="getNumberOption(index, 'target') as any"
+											:comparison="
+												getNumberOption(index, 'comparison') as any
+											"
+											@update:target="
+												setNumberOption(index, 'target', $event)
+											"
+											@update:comparison="
+												setNumberOption(index, 'comparison', $event)
+											"
+											@dialog-open="closeSettings"
+										/>
+									</div>
 								</template>
 							</MeasurePicker>
 						</template>
@@ -137,48 +172,29 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 					</button>
 				</div>
 			</div>
+		</div>
+	</CollapsibleSection>
 
+	<CollapsibleSection title="Date">
+		<div class="flex flex-col gap-3 pt-1">
 			<DimensionPicker
-				label="Date"
+				label="Column"
 				:options="date_dimensions"
+				:enable-granularity="false"
 				:model-value="config.date_column as Dimension"
-				@update:model-value="config.date_column = $event || {}"
+				@update:model-value="setDateColumn($event)"
 			/>
 
-			<InlineFormControlLabel label="Prefix">
-				<FormControl v-model="config.prefix" autocomplete="off" />
-			</InlineFormControlLabel>
-			<InlineFormControlLabel label="Suffix">
-				<FormControl v-model="config.suffix" autocomplete="off" />
-			</InlineFormControlLabel>
-			<InlineFormControlLabel label="Decimal">
-				<FormControl v-model="config.decimal" type="number" autocomplete="off" />
-			</InlineFormControlLabel>
-
-			<Toggle label="Show short numbers" v-model="config.shorten_numbers" />
-
-			<Toggle
-				v-if="config.date_column?.column_name"
-				label="Show comparison"
-				v-model="config.comparison"
+			<NumberWindowPicker
+				v-model="config.window"
+				:has-date-column="Boolean(config.date_column?.column_name)"
 			/>
 
-			<Toggle
-				v-if="config.comparison"
-				label="Negative is better"
-				v-model="config.negative_is_better"
-			/>
+			<!-- No period, no series: the card is one number, so a sparkline would
+			     be one point. -->
+			<Toggle v-if="period" label="Sparkline" v-model="config.sparkline" />
 
-			<Toggle
-				v-if="config.date_column?.column_name"
-				label="Show sparkline"
-				v-model="config.sparkline"
-			/>
-
-			<InlineFormControlLabel
-				v-if="config.date_column?.column_name && config.sparkline"
-				label="Color"
-			>
+			<InlineFormControlLabel v-if="period && config.sparkline" label="Color">
 				<ColorInput
 					:model-value="config.sparkline_color"
 					@update:model-value="updateColor($event)"
@@ -187,4 +203,6 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 			</InlineFormControlLabel>
 		</div>
 	</CollapsibleSection>
+
+	<NumberFormatSection :config="config" />
 </template>

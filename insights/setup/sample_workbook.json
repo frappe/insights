@@ -392,48 +392,101 @@
           {
             "chart": "sj4rjuvvpu",
             "layout": {
-              "h": 3,
+              "h": 7,
               "i": "1geec587",
               "moved": false,
-              "w": 20,
+              "w": 4,
               "x": 0,
               "y": 0
             },
-            "type": "chart"
+            "type": "chart",
+            "column": "Orders"
+          },
+          {
+            "chart": "sj4rjuvvpu",
+            "layout": {
+              "h": 7,
+              "i": "1geec587-2",
+              "moved": false,
+              "w": 4,
+              "x": 4,
+              "y": 0
+            },
+            "type": "chart",
+            "column": "Items"
+          },
+          {
+            "chart": "sj4rjuvvpu",
+            "layout": {
+              "h": 7,
+              "i": "1geec587-3",
+              "moved": false,
+              "w": 4,
+              "x": 8,
+              "y": 0
+            },
+            "type": "chart",
+            "column": "Net Total"
+          },
+          {
+            "chart": "sj4rjuvvpu",
+            "layout": {
+              "h": 7,
+              "i": "1geec587-4",
+              "moved": false,
+              "w": 4,
+              "x": 12,
+              "y": 0
+            },
+            "type": "chart",
+            "column": "Freight"
+          },
+          {
+            "chart": "sj4rjuvvpu",
+            "layout": {
+              "h": 7,
+              "i": "1geec587-5",
+              "moved": false,
+              "w": 4,
+              "x": 16,
+              "y": 0
+            },
+            "type": "chart",
+            "column": "Grand Total"
           },
           {
             "chart": "sj4r5sn1ro",
             "layout": {
-              "h": 8,
+              "h": 20,
               "i": "1kpzltkq",
               "moved": false,
               "w": 10,
               "x": 0,
-              "y": 3
+              "y": 8
             },
             "type": "chart"
           },
           {
             "chart": "sj4rdmcvpa",
             "layout": {
-              "h": 8,
+              "h": 20,
               "i": "2mkbxvt3",
               "moved": false,
               "w": 10,
               "x": 10,
-              "y": 3
+              "y": 8
             },
             "type": "chart"
           },
           {
             "chart": "sj4rdo50er",
             "layout": {
-              "h": 11,
+              "h": 27,
               "i": "b6n952s4",
               "moved": false,
               "w": 20,
               "x": 0,
-              "y": 11
+              "y": 28
             },
             "type": "chart"
           }

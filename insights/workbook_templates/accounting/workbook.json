@@ -550,7 +550,6 @@
 							"format": "currency"
 						}
 					],
-					"comparison": false,
 					"sparkline": false,
 					"shorten_numbers": true
 				}
@@ -573,7 +572,6 @@
 							"format": "currency"
 						}
 					],
-					"comparison": false,
 					"sparkline": false,
 					"shorten_numbers": true
 				}
@@ -597,7 +595,6 @@
 							"data_type": "Decimal"
 						}
 					],
-					"comparison": false,
 					"sparkline": false,
 					"shorten_numbers": false,
 					"suffix": "%",
@@ -623,7 +620,6 @@
 							"data_type": "Decimal"
 						}
 					],
-					"comparison": false,
 					"sparkline": false,
 					"shorten_numbers": false,
 					"suffix": "%",
@@ -648,7 +644,6 @@
 							"format": "currency"
 						}
 					],
-					"comparison": false,
 					"sparkline": false,
 					"shorten_numbers": true
 				}
@@ -971,7 +966,7 @@
 							"x": 0,
 							"y": 0,
 							"w": 4,
-							"h": 1
+							"h": 2
 						}
 					},
 					{
@@ -991,7 +986,7 @@
 							"x": 4,
 							"y": 0,
 							"w": 4,
-							"h": 1
+							"h": 2
 						}
 					},
 					{
@@ -1000,9 +995,9 @@
 						"layout": {
 							"i": "i-total-ar",
 							"x": 0,
-							"y": 1,
+							"y": 2,
 							"w": 4,
-							"h": 3
+							"h": 4
 						}
 					},
 					{
@@ -1011,9 +1006,9 @@
 						"layout": {
 							"i": "i-total-ap",
 							"x": 4,
-							"y": 1,
+							"y": 2,
 							"w": 4,
-							"h": 3
+							"h": 4
 						}
 					},
 					{
@@ -1022,9 +1017,9 @@
 						"layout": {
 							"i": "i-pct-overdue",
 							"x": 8,
-							"y": 1,
+							"y": 2,
 							"w": 4,
-							"h": 3
+							"h": 4
 						}
 					},
 					{
@@ -1033,9 +1028,9 @@
 						"layout": {
 							"i": "i-pct-over90",
 							"x": 12,
-							"y": 1,
+							"y": 2,
 							"w": 4,
-							"h": 3
+							"h": 4
 						}
 					},
 					{
@@ -1044,9 +1039,9 @@
 						"layout": {
 							"i": "i-net-cash",
 							"x": 16,
-							"y": 1,
+							"y": 2,
 							"w": 4,
-							"h": 3
+							"h": 4
 						}
 					},
 					{
@@ -1055,9 +1050,9 @@
 						"layout": {
 							"i": "i-ar-ageing",
 							"x": 0,
-							"y": 4,
+							"y": 6,
 							"w": 10,
-							"h": 8
+							"h": 20
 						}
 					},
 					{
@@ -1066,9 +1061,9 @@
 						"layout": {
 							"i": "i-ap-ageing",
 							"x": 10,
-							"y": 4,
+							"y": 6,
 							"w": 10,
-							"h": 8
+							"h": 20
 						}
 					},
 					{
@@ -1077,9 +1072,9 @@
 						"layout": {
 							"i": "i-cash-in-out",
 							"x": 0,
-							"y": 12,
+							"y": 26,
 							"w": 10,
-							"h": 8
+							"h": 20
 						}
 					},
 					{
@@ -1088,9 +1083,9 @@
 						"layout": {
 							"i": "i-inv-coll",
 							"x": 10,
-							"y": 12,
+							"y": 26,
 							"w": 10,
-							"h": 8
+							"h": 20
 						}
 					},
 					{
@@ -1099,9 +1094,9 @@
 						"layout": {
 							"i": "i-top-overdue",
 							"x": 0,
-							"y": 20,
+							"y": 46,
 							"w": 10,
-							"h": 9
+							"h": 23
 						}
 					},
 					{
@@ -1110,9 +1105,9 @@
 						"layout": {
 							"i": "i-due-30",
 							"x": 10,
-							"y": 20,
+							"y": 46,
 							"w": 10,
-							"h": 9
+							"h": 23
 						}
 					},
 					{
@@ -1123,7 +1118,7 @@
 							"x": 8,
 							"y": 0,
 							"w": 12,
-							"h": 1
+							"h": 2
 						}
 					}
 				]

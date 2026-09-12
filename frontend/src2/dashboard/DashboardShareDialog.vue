@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { Badge, Tooltip } from 'frappe-ui'
+import { Badge, toast, Tooltip } from 'frappe-ui'
 import { computed, inject, ref, unref } from 'vue'
 import UserSelector from '../components/UserSelector.vue'
 import { copy, copyToClipboard } from '../helpers'
 import session from '../session'
 import useUserStore from '../users/users'
 import { Dashboard } from './dashboard'
-import { createToast } from '../helpers/toasts'
 import { __ } from '../translation'
 
 const show = defineModel()
@@ -42,10 +41,7 @@ function saveChanges() {
 		is_shared_with_organization: organizationAccess.value,
 		people_with_access: peopleWithAccess.value.map((u) => u.email),
 	})
-	createToast({
-		variant: 'success',
-		title: __('Dashboard Access Updated'),
-	})
+	toast.success(__('Dashboard Access Updated'))
 	show.value = false
 }
 
@@ -95,6 +91,7 @@ const generalAccess = computed({
 					<div class="flex gap-2">
 						<div class="flex-1">
 							<Combobox
+								class="w-full"
 								placeholder="Select an option"
 								v-model="generalAccess"
 								:options="[

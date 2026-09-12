@@ -14,7 +14,7 @@ const editedText = ref(unref(props.item.text))
 <template>
 	<div
 		v-if="props.item.text"
-		class="prose prose-v3 h-full w-full max-w-none overflow-auto text-ink-gray-7"
+		class="prose prose-v3 h-full w-full max-w-none overflow-auto text-ink-gray-7 flex items-center"
 		v-html="props.item.text"
 	></div>
 	<div
@@ -56,7 +56,7 @@ const editedText = ref(unref(props.item.text))
 					<template #default="{ editor }">
 						<EditorContent
 							:editor="editor"
-							class="h-auto min-h-[8rem] cursor-text rounded bg-surface-gray-2 p-2"
+							class="h-auto min-h-[8rem] cursor-text rounded-4 bg-surface-gray-2 p-2"
 						/>
 					</template>
 				</Editor>

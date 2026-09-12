@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { useStorage } from '@vueuse/core'
-import { call } from 'frappe-ui'
+import { call, toast } from 'frappe-ui'
 import { Sparkles } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
-import { createToast } from '../helpers/toasts'
 import session from '../session'
 import { __ } from '../translation'
 
@@ -22,16 +21,12 @@ async function setupDemoData() {
 	try {
 		await call('insights.setup.setup_wizard.setup_demo_data')
 		session.user.has_demo_data = true
-		createToast({
-			title: __('Demo Data Ready'),
-			message: __('Sample data with workbook has been set up successfully'),
-			variant: 'success',
+		toast.success(__('Demo Data Ready'), {
+			description: __('Sample data with workbook has been set up successfully'),
 		})
 	} catch {
-		createToast({
-			title: __('Setup Failed'),
-			message: __('Failed to setup demo data'),
-			variant: 'error',
+		toast.error(__('Setup Failed'), {
+			description: __('Failed to setup demo data'),
 		})
 	} finally {
 		loading.value = false
@@ -46,7 +41,7 @@ function dismiss() {
 <template>
 	<div
 		v-if="show"
-		class="flex flex-col gap-3 rounded-lg bg-surface-base px-3 py-2.5 text-sm shadow-sm"
+		class="flex flex-col gap-3 rounded-6 bg-surface-base px-3 py-2.5 text-sm shadow-sm"
 	>
 		<div class="flex items-start justify-between">
 			<div class="flex flex-col gap-1">

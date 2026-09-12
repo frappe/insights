@@ -30,7 +30,7 @@ watch(searchQuery, (query) => {
 <template>
 	<div class="flex h-full flex-col overflow-hidden">
 		<div class="flex items-center space-x-2">
-			<div class="rounded bg-surface-gray-2 p-1">
+			<div class="rounded-4 bg-surface-gray-2 p-1">
 				<Book class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 			</div>
 			<div class="text-lg">{{ __('Workbooks') }}</div>

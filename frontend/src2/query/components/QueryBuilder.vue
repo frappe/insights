@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { inject, onBeforeUnmount } from 'vue'
+import { inject, onBeforeUnmount, ref } from 'vue'
 import { Query } from '../query'
+import QueryActions from './QueryActions.vue'
 import QueryBuilderSourceSelector from './QueryBuilderSourceSelector.vue'
 import QueryBuilderTable from './QueryBuilderTable.vue'
-import QueryExecutionStatus from './QueryExecutionStatus.vue'
-import QueryToolbar from './QueryToolbar.vue'
+import QueryHeader from './QueryHeader.vue'
 import QueryInfo from './QueryInfo.vue'
 import QueryOperations from './QueryOperations.vue'
 import { useMagicKeys } from '@vueuse/core'
 import { whenever } from '@vueuse/core'
 
 const query = inject<Query>('query')!
+const $find = ref<HTMLElement>()
 query.autoExecute = true
 
 const keys = useMagicKeys()
@@ -28,13 +29,14 @@ onBeforeUnmount(() => {
 
 <template>
 	<div class="flex flex-1 overflow-hidden">
-		<div class="relative flex h-full flex-1 flex-col gap-3 overflow-hidden p-4">
+		<div class="relative flex h-full flex-1 flex-col gap-3 overflow-hidden px-4 pb-4 pt-3">
 			<QueryBuilderSourceSelector v-if="!query.doc.operations.length" />
 			<template v-else>
-				<QueryToolbar>
-					<QueryExecutionStatus />
-				</QueryToolbar>
-				<QueryBuilderTable></QueryBuilderTable>
+				<QueryHeader>
+					<div ref="$find" class="flex"></div>
+					<QueryActions />
+				</QueryHeader>
+				<QueryBuilderTable :find-target="$find" />
 			</template>
 		</div>
 		<div

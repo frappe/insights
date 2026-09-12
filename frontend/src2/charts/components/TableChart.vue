@@ -1,70 +1,86 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
-import QueryDataTable from '../../query/components/QueryDataTable.vue'
-import { column } from '../../query/helpers'
-import { TableChartConfig } from '../../types/chart.types'
-import { DataFormat, SortDirection } from '../../types/query.types'
-import { Chart } from '../chart'
-import ChartTitle from './ChartTitle.vue'
+import { ChartContainer } from 'frappe-ui/charts'
+import { computed, inject, ref } from 'vue'
+import DataTable from '../../components/DataTable.vue'
+import type { QueryResultColumn, QueryResultRow } from '../../types/query.types'
+import { tableFindKey, type TableCellEvent, type TableChartProps } from '../adapter/table'
 
-const props = defineProps<{ chart: Chart }>()
-const tableConfig = computed(() => props.chart.doc.config as TableChartConfig)
+// The grid a Table Chart draws instead of a plot. It is a filler like any
+// other: the title and every state around it are `ChartBody`'s, and the card is
+// whoever framed it, so nothing here draws a surface of its own. It holds the
+// table and reports a cell, and everything it puts on the table was decided in
+// `adapter/table.ts`.
+const props = defineProps<TableChartProps>()
 
-// Maps a value column to its display format (e.g. percent) so the table can
-// render a rate measure as `59%` instead of `0.59`.
-const columnFormats = computed(() => {
-	const formats: Record<string, DataFormat> = {}
-	tableConfig.value.values?.forEach((measure) => {
-		if (measure?.measure_name && measure.format) {
-			formats[measure.measure_name] = measure.format
-		}
-	})
-	return formats
+const emit = defineEmits<{
+	// eslint-disable-next-line no-unused-vars
+	cellClick: [event: TableCellEvent]
+}>()
+
+// The find the host's box asks for. It runs over the rows this grid was handed
+// — formatted, so a date matches the way it prints — and never over the ones
+// the server kept back. A host with no find box provides none and every row
+// stands.
+const findText = inject(tableFindKey, ref(''))
+const matches = computed(() => {
+	const text = findText.value.trim().toLowerCase()
+	if (!text) return props.rows
+	return props.rows.filter((row) =>
+		props.columns.some((column) =>
+			String(row[column.name] ?? '')
+				.toLowerCase()
+				.includes(text),
+		),
+	)
 })
 
-function onSortChange(column_name: string, sort_order: SortDirection) {
-	const existingOrder = props.chart.doc.config.order_by.find(
-		(order) => order.column.column_name === column_name,
-	)
-	if (existingOrder) {
-		if (sort_order) {
-			existingOrder.direction = sort_order
-		} else {
-			props.chart.doc.config.order_by = props.chart.doc.config.order_by.filter(
-				(order) => order.column.column_name !== column_name,
-			)
-		}
-	} else {
-		if (!sort_order) return
-		props.chart.doc.config.order_by.push({
-			column: column(column_name),
-			direction: sort_order,
-		})
-	}
+function onDrilldown(column: QueryResultColumn, row: QueryResultRow) {
+	emit('cellClick', { column, row })
 }
 </script>
 
 <template>
-	<div
-		class="flex h-full w-full flex-col divide-y overflow-hidden rounded bg-surface-base border border-outline-gray-2"
-	>
-		<ChartTitle :title="props.chart.doc.title" />
-		<QueryDataTable
-			:query="props.chart.dataQuery"
-			:show-filter-row="tableConfig.show_filter_row"
-			:show-column-totals="tableConfig.show_column_totals"
-			:show-row-totals="tableConfig.show_row_totals"
-			:compact-numbers="tableConfig.compact_numbers"
-			:enable-color-scale="tableConfig.enable_color_scale"
-			:format-group="tableConfig.conditional_formatting"
-			:enable-sort="true"
-			:enable-drill-down="true"
-			:on-sort-change="onSortChange"
-			:sticky-columns="tableConfig.sticky_columns"
-			:column-widths="tableConfig.column_widths"
-			:text-wrap="tableConfig.text_wrap"
-			:column-formats="columnFormats"
-			:replace-nulls-with-zeros="true"
-		></QueryDataTable>
-	</div>
+	<ChartContainer :title="props.title">
+		<template v-if="$slots.actions" #actions>
+			<slot name="actions" />
+		</template>
+
+		<!-- The grid runs to the card's own edges, so its first and last columns
+		     end on the card border instead of floating 16px inside it. Nothing
+		     else in the card moves: the title keeps the card's padding, and the
+		     card clips the overhang. The frame names its own padding in
+		     `--chart-card-inset`, and a table with no card around it bleeds by
+		     nothing.
+		     The last column drops its own right border once it is flush: the
+		     card's border is already that line, and both drawn is a double rule.
+		     A box of its own, not classes on the table: DataTable renders a
+		     fragment — the grid, the empty state and the loading veil are
+		     siblings — so an inherited class would reach none of them. `relative`
+		     is for the veil, which is absolute and should cover the bled width. -->
+		<div
+			class="relative mt-1 h-full [&_tr>*:last-child]:border-r-0 [margin-inline:calc(var(--chart-card-inset,0px)*-1)] [width:calc(100%_+_2_*_var(--chart-card-inset,0px))]"
+		>
+			<DataTable
+				:columns="props.columns"
+				:rows="matches"
+				:loading="props.loading"
+				:sort-order="props.sortOrder"
+				:on-sort-change="props.onSortChange"
+				:on-drilldown="props.drillable ? onDrilldown : undefined"
+				:show-filter-row="props.showFilterRow"
+				:show-column-totals="props.showColumnTotals"
+				:show-row-totals="props.showRowTotals"
+				:enable-color-scale="props.enableColorScale"
+				:format-group="props.formatGroup"
+				:sticky-columns="props.stickyColumns"
+				:column-widths="props.columnWidths"
+				:text-wrap="props.textWrap"
+				:column-formats="props.columnFormats"
+				:number-format="props.numberFormat"
+				:number-formats="props.numberFormats"
+				:cell-link="props.cellLink"
+				:replace-nulls-with-zeros="true"
+			/>
+		</div>
+	</ChartContainer>
 </template>

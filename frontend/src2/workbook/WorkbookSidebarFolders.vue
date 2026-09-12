@@ -3,7 +3,7 @@ import { Folder, FolderOpen, FolderPlus, PenLine, Plus, X } from 'lucide-vue-nex
 import { computed, inject, ref } from 'vue'
 import Draggable from 'vuedraggable'
 import type { WorkbookChart, WorkbookFolder, WorkbookQuery } from '../types/workbook.types'
-import { workbookKey } from './workbook'
+import { workbookKey } from './workbook_key'
 
 const section = defineProps<{
 	title: string
@@ -130,7 +130,7 @@ function onListChange(
 </script>
 
 <template>
-	<div class="flex flex-col px-3.5 pt-3">
+	<div class="flex flex-col px-3.5 pt-3.5">
 		<div class="mb-1 flex h-6 items-center justify-between">
 			<div class="flex items-center gap-1">
 				<div class="text-sm-medium">{{ section.title }}</div>
@@ -142,7 +142,7 @@ function onListChange(
 					:label="__('New folder in {0}', section.title)"
 					@click="workbook.addFolder(`Untitled`, section.type)"
 				>
-					<FolderPlus class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
+					<FolderPlus class="h-4 w-4 text-ink-gray-5" stroke-width="1.5" />
 				</Button>
 				<Button
 					class="!h-fit !p-1"
@@ -150,14 +150,14 @@ function onListChange(
 					:label="__('Add {0}', section.title)"
 					@click="section.add()"
 				>
-					<Plus class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
+					<Plus class="h-4 w-4 text-ink-gray-5" stroke-width="1.5" />
 				</Button>
 			</div>
 		</div>
 
 		<div
 			v-if="!section.items.length && !folders.length"
-			class="flex h-12 flex-col items-center justify-center rounded border border-dashed border-outline-gray-2 py-2"
+			class="flex h-12 flex-col items-center justify-center rounded-4 border border-dashed border-outline-gray-2 py-2"
 		>
 			<div class="text-xs text-ink-gray-4">{{ section.emptyMessage }}</div>
 		</div>
@@ -167,7 +167,6 @@ function onListChange(
 				:model-value="rootItems"
 				:group="dragGroup"
 				item-key="name"
-				class="min-h-6"
 				:animation="150"
 				:delay="150"
 				:delay-on-touch-only="true"
@@ -179,32 +178,36 @@ function onListChange(
 			>
 				<template #item="{ element: row }">
 					<div
-						class="group w-full cursor-pointer rounded transition-all hover:bg-surface-gray-2"
+						class="group w-full cursor-pointer rounded-4 transition-all hover:bg-surface-gray-2"
 						:class="section.isActive(row) ? 'bg-surface-gray-3' : ''"
 					>
 						<router-link
 							:to="route(row)"
-							class="flex h-7.5 items-center justify-between rounded pl-1.5 text-sm"
+							class="flex h-7.5 items-center justify-between rounded-4 pl-1.5 text-sm"
 						>
-							<div class="flex gap-1.5 overflow-hidden">
+							<div class="flex items-center gap-1.5 overflow-hidden">
 								<div class="flex-shrink-0">
 									<slot name="item-icon" :item="row" />
 								</div>
 								<p class="truncate">{{ row.title }}</p>
 							</div>
 							<button
-								class="invisible cursor-pointer rounded px-1.5 py-1 transition-all hover:bg-surface-gray-3 group-hover:visible"
+								class="invisible cursor-pointer rounded-4 px-1.5 py-1 transition-all hover:bg-surface-gray-3 group-hover:visible"
 								:aria-label="__('Remove {0}', row.title)"
 								@click.prevent.stop="section.remove(row)"
 							>
-								<X class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
+								<X class="h-4 w-4 text-ink-gray-5" stroke-width="1.5" />
 							</button>
 						</router-link>
 					</div>
 				</template>
 			</Draggable>
 
-			<div v-for="folder in sortedFolders" :key="folder.name" class="rounded transition-all">
+			<div
+				v-for="folder in sortedFolders"
+				:key="folder.name"
+				class="rounded-4 transition-all"
+			>
 				<Draggable
 					:model-value="folderItems[folder.name] || []"
 					:group="dragGroup"
@@ -224,7 +227,7 @@ function onListChange(
 					<template #header>
 						<div
 							:class="[
-								'folder-header group flex h-7.5 cursor-pointer items-center justify-between rounded px-1.5 transition-all hover:bg-surface-gray-2',
+								'folder-header group flex h-7.5 cursor-pointer items-center justify-between rounded-4 px-1.5 transition-all hover:bg-surface-gray-2',
 								editingFolderName === folder.name
 									? 'ring-1 ring-outline-gray-3'
 									: '',
@@ -259,19 +262,19 @@ function onListChange(
 								class="invisible flex gap-0.5 group-hover:visible"
 							>
 								<button
-									class="cursor-pointer rounded p-1 transition-all hover:bg-surface-gray-3"
+									class="cursor-pointer rounded-4 p-1 transition-all hover:bg-surface-gray-3"
 									@click.stop="startRenameFolder(folder, $event)"
 								>
 									<PenLine
-										class="h-3.5 w-3.5 text-ink-gray-6"
+										class="h-3.5 w-3.5 text-ink-gray-5"
 										stroke-width="1.5"
 									/>
 								</button>
 								<button
-									class="cursor-pointer rounded p-1 transition-all hover:bg-surface-gray-3"
+									class="cursor-pointer rounded-4 p-1 transition-all hover:bg-surface-gray-3"
 									@click.stop="removeFolder(folder, $event)"
 								>
-									<X class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />
+									<X class="h-3.5 w-3.5 text-ink-gray-5" stroke-width="1.5" />
 								</button>
 							</div>
 						</div>
@@ -291,25 +294,25 @@ function onListChange(
 					<template #item="{ element: row }">
 						<div v-show="isFolderExpanded(folder.name)" class="ml-[22px]">
 							<div
-								class="group w-full cursor-pointer rounded transition-all hover:bg-surface-gray-2"
+								class="group w-full cursor-pointer rounded-4 transition-all hover:bg-surface-gray-2"
 								:class="section.isActive(row) ? 'bg-surface-gray-3' : ''"
 							>
 								<router-link
 									:to="route(row)"
-									class="flex h-7.5 items-center justify-between rounded pl-1.5 text-sm"
+									class="flex h-7.5 items-center justify-between rounded-4 pl-1.5 text-sm"
 								>
-									<div class="flex gap-1.5 overflow-hidden">
+									<div class="flex items-center gap-1.5 overflow-hidden">
 										<div class="flex-shrink-0">
 											<slot name="item-icon" :item="row" />
 										</div>
 										<p class="truncate">{{ row.title }}</p>
 									</div>
 									<button
-										class="invisible cursor-pointer rounded px-1.5 py-1 transition-all hover:bg-surface-gray-3 group-hover:visible"
+										class="invisible cursor-pointer rounded-4 px-1.5 py-1 transition-all hover:bg-surface-gray-3 group-hover:visible"
 										:aria-label="__('Remove {0}', row.title)"
 										@click.prevent.stop="section.remove(row)"
 									>
-										<X class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
+										<X class="h-4 w-4 text-ink-gray-5" stroke-width="1.5" />
 									</button>
 								</router-link>
 							</div>
@@ -323,7 +326,7 @@ function onListChange(
 
 <style scoped>
 .sortable-ghost {
-	@apply rounded bg-surface-gray-3 opacity-60;
+	@apply rounded-4 bg-surface-gray-3 opacity-60;
 }
 
 .sortable-chosen {

@@ -84,17 +84,10 @@ def get_public_dashboard_holding(chart: str) -> str | None:
 
 
 def get_charts_built_on(query: str) -> list[str]:
-    """Charts that read `query`, oldest first.
-
-    A chart reads two: the query the author built, and the `data_query` the
-    chart mints for itself. Either link makes the query reachable.
-    """
+    """Charts that read `query`, oldest first."""
     return frappe.get_all(
         "Insights Chart v3",
-        or_filters=[
-            ["query", "=", query],
-            ["data_query", "=", query],
-        ],
+        filters={"query": query},
         order_by="creation asc",
         pluck="name",
     )
@@ -134,12 +127,8 @@ def is_being_previewed(doctype: str, name: str):
     if doctype == "Insights Chart v3":
         return name in charts
 
-    linked = frappe.get_all(
-        "Insights Chart v3",
-        filters={"name": ["in", charts]},
-        fields=["query", "data_query"],
-    )
-    return any(name in (chart.query, chart.data_query) for chart in linked)
+    linked = frappe.get_all("Insights Chart v3", filters={"name": ["in", charts]}, pluck="query")
+    return name in linked
 
 
 def get_preview_key():

@@ -29,14 +29,14 @@ const show = defineModel()
 						@click="type.onClick?.()"
 					>
 						<div
-							class="rounded border p-4 text-ink-gray-4 shadow-sm transition-all group-hover:scale-105"
+							class="rounded-4 p-4 text-ink-gray-4 shadow-sm transition-all group-hover:scale-105"
 						>
 							<component :is="type.icon" />
 						</div>
 						<div>
 							<div class="flex items-center space-x-2">
 								<p
-									class="text-lg-medium leading-6 text-ink-gray-8 transition-colors group-hover:text-ink-blue-6"
+									class="text-lg-medium leading-6 text-ink-gray-8 transition-colors group-hover:text-ink-blue-5"
 								>
 									{{ type.label }}
 								</p>

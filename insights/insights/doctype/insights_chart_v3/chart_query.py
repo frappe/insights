@@ -1,0 +1,927 @@
+# Copyright (c) 2025, Frappe Technologies Pvt. Ltd. and contributors
+# For license information, please see license.txt
+
+"""The operations a chart runs, derived from its config.
+
+A chart is a source query plus a shape: which columns group it, which measures
+it draws, how it is sorted. That shape used to be turned into operations by the
+browser and parked in a second query document, so a chart only had rows after
+somebody opened it in the builder. Here the shape is turned into operations
+wherever the chart runs, from the config alone.
+
+The output is `source + config filters + the chart's own summarize/pivot +
+order-by`, in that order. Dashboard filter state is not part of it — it arrives
+as the `adhoc_filters` argument of execution and is applied to the query it
+names.
+
+A windowed number card also derives a second list, `sparkline_operations`. It
+answers how the number moved rather than what the number is, and the two
+questions cannot share one summarize.
+
+Nothing here reads the database or a document: it is a function of chart type,
+source query name and config, so the same three inputs always give the same
+operations.
+"""
+
+import copy
+import json
+
+from frappe import _
+
+AXIS_CHARTS = ("Bar", "Line", "Row")
+CHART_TYPES = (
+    "Number",
+    *AXIS_CHARTS,
+    "Donut",
+    "Funnel",
+    "Table",
+    "Map",
+    "Bubble",
+    "Sankey",
+    "Heatmap",
+)
+
+DEFAULT_MAX_COLUMN_VALUES = 10
+
+# A dimension that carries an order of its own is drawn in that order. One that
+# carries none is left in the order the result arrived in. Dates and times are
+# the ordered ones.
+ORDERED_TYPES = ("Date", "Datetime", "Time")
+
+
+def derive_operations(chart_type: str, query: str, config: dict | None) -> list[dict]:
+    """The operations JSON this chart executes.
+
+    Call `config_errors` first. Every slot below is read for what it names, so a
+    config that has not passed those checks either draws the wrong thing or is
+    not a shape this can read at all.
+    """
+    config = _config_for_derivation(config, chart_type)
+
+    operations = [_source(query)]
+    _add_filters(operations, config)
+    _add_chart_operation(operations, chart_type, config)
+    _add_order_by_from_config(operations, config)
+    _add_axis_time_order(operations, chart_type, config)
+    return operations
+
+
+def sparkline_operations(chart_type: str, query: str, config: dict | None) -> list[dict]:
+    """The operations a windowed card's sparkline runs, empty when it needs none.
+
+    A windowed card returns one row per window, so the rows behind the number
+    draw a two-point line. The series is a second question — how the number
+    moved inside the window — and it is asked as a second query.
+
+    Nothing new derives it. Inside one window a finer grain *is* the split, so
+    this is the shape an axis chart already derives: the configured window's
+    filter, a summarize one grain finer, and an ascending sort. The comparison
+    window is left out, because it is not part of the picture the card draws.
+
+    Adding the card's own rows up into a series was the alternative. It is
+    silently wrong for every measure that does not add up — an average, a count
+    distinct, a percent — so the series is asked for rather than reconstructed.
+    """
+    if chart_type != "Number":
+        return []
+
+    config = _config_for_derivation(config, chart_type)
+    if not config.get("sparkline"):
+        return []
+
+    date_column = config.get("date_column") or {}
+    # Only a span needs this. A grain card already returns one row per period, so
+    # its own readings are the series.
+    window = _period(config)
+    grain = SPARKLINE_GRAINS.get(_span_unit(window.get("span")))
+    measures = _named_measures(config.get("number_columns"))
+    if not grain or not date_column.get("column_name") or not measures:
+        return []
+
+    operations = [_source(query)]
+    _add_filters(operations, config)
+    operations.append(
+        {
+            "type": "filter_group",
+            "logical_operator": "And",
+            "filters": [_within(date_column, _timespan(window, None))],
+        }
+    )
+    # the readings alone: a target and a comparison are read off the card's own
+    # row, and no sparkline is drawn behind either
+    operations.append(_summarize(measures=measures, dimensions=[{**date_column, "granularity": grain}]))
+    _add_order_by(operations, _result_column(date_column), "asc")
+
+    return operations
+
+
+def column_granularity(operations: list[dict]) -> dict:
+    """The grain each date column was grouped by, so a client can format it.
+
+    The grain lives in the summarize or pivot step. A viewer never receives the
+    step itself, so this map is what it gets instead — one grain per column.
+    """
+    granularity = {}
+    for operation in operations:
+        if operation.get("type") == "summarize":
+            dimensions = operation.get("dimensions") or []
+        elif operation.get("type") == "pivot_wider":
+            dimensions = operation.get("rows") or []
+        else:
+            continue
+
+        for dimension in dimensions:
+            if dimension.get("granularity"):
+                granularity[_result_column(dimension)] = dimension["granularity"]
+
+    return granularity
+
+
+def config_errors(chart_type: str, query: str, config: dict | None) -> list[str]:
+    """Why this chart cannot be drawn, empty when it can.
+
+    Everything a shape needs to name a column: no query, no chart type, a slot
+    holding something that names nothing, or a slot the chart type reads and the
+    config leaves empty.
+    """
+    errors = []
+
+    if not query:
+        errors.append(_("Query is required"))
+    if not chart_type:
+        errors.append(_("Chart type is required"))
+    if chart_type not in CHART_TYPES:
+        errors.append(_("Invalid chart type: {0}").format(chart_type))
+
+    # a slot of the wrong kind is read no further: every check below reads slots
+    # for what they name, which is only possible once they are the right kind
+    malformed = _malformed_slots(config)
+    if malformed:
+        return errors + malformed
+
+    config = _config_for_derivation(config, chart_type)
+
+    if chart_type in AXIS_CHARTS:
+        x_axis = config.get("x_axis") or {}
+        dimension = x_axis.get("dimension") or {}
+        split_by = (config.get("split_by") or {}).get("dimension") or {}
+        if not dimension.get("column_name"):
+            errors.append(_("X-axis is required"))
+        if dimension.get("column_name") and dimension.get("column_name") == split_by.get("column_name"):
+            errors.append(_("X-axis and Split by cannot be the same"))
+
+    if chart_type == "Number":
+        if not _named_measures(config.get("number_columns")):
+            errors.append(_("Number column is required"))
+        errors += _window_errors(config)
+        errors += _measure_name_errors(config)
+
+    if chart_type == "Donut":
+        if not (config.get("label_column") or {}).get("column_name"):
+            errors.append(_("Label column is required"))
+        if not (config.get("value_column") or {}).get("measure_name"):
+            errors.append(_("Value column is required"))
+
+    if chart_type == "Funnel":
+        # measures mode needs one measure, grouped mode needs a label and a value
+        has_measures = any((m or {}).get("measure_name") for m in config.get("measures") or [])
+        has_label = (config.get("label_column") or {}).get("column_name")
+        has_value = (config.get("value_column") or {}).get("measure_name")
+        if not has_measures and not (has_label and has_value):
+            errors.append(_("Add a measure, or set a label and value column"))
+
+    if chart_type == "Table":
+        if not _named_dimensions(config.get("rows")):
+            errors.append(_("Rows are required"))
+
+    if chart_type == "Map":
+        if not (config.get("location_column") or {}).get("column_name"):
+            errors.append(_("Location column is required"))
+        if not (config.get("value_column") or {}).get("measure_name"):
+            errors.append(_("Value column is required"))
+
+    if chart_type == "Bubble":
+        if not (config.get("xAxis") or {}).get("measure_name"):
+            errors.append(_("X-axis is required"))
+        if not (config.get("yAxis") or {}).get("measure_name"):
+            errors.append(_("Y-axis is required"))
+
+    if chart_type == "Sankey":
+        if not (config.get("source_column") or {}).get("column_name"):
+            errors.append(_("Source column is required"))
+        if not (config.get("target_column") or {}).get("column_name"):
+            errors.append(_("Target column is required"))
+        if not (config.get("value_column") or {}).get("measure_name"):
+            errors.append(_("Value column is required"))
+
+    if chart_type == "Heatmap":
+        x_column = config.get("x_column") or {}
+        y_column = config.get("y_column") or {}
+        if not x_column.get("column_name"):
+            errors.append(_("X-axis is required"))
+        if not y_column.get("column_name"):
+            errors.append(_("Y-axis is required"))
+        if x_column.get("column_name") and x_column.get("column_name") == y_column.get("column_name"):
+            errors.append(_("X-axis and Y-axis cannot be the same"))
+        if not (config.get("value_column") or {}).get("measure_name"):
+            errors.append(_("Value column is required"))
+
+    return errors
+
+
+def _period(config: dict) -> dict:
+    """The period a card reads, from whichever shape wrote it.
+
+    A period names one group-by: a `span` filters to a stretch of the calendar
+    and groups by which stretch a row fell in, a `grain` filters nothing and
+    groups by the grain. Before this field existed, a granularity on the date
+    column did what a grain does, so it is lifted here rather than branched on
+    twice.
+    """
+    window = config.get("window") or {}
+    if window.get("span") or window.get("grain"):
+        return window
+
+    grain = (config.get("date_column") or {}).get("granularity")
+    return {"grain": grain} if grain else {}
+
+
+def _window_errors(config: dict) -> list[str]:
+    """Why a card with a period cannot be derived, empty when it can.
+
+    Derivation falls back to its ungrouped shape for a period it cannot read.
+    That draws a number over all time under the period's own title, which is a
+    wrong reading nothing else reports.
+    """
+    if not _period(config):
+        return []
+
+    if not (config.get("date_column") or {}).get("column_name"):
+        return [_("Date column is required to read a period")]
+
+    return []
+
+
+# the shape, per chart type
+
+
+def _add_chart_operation(operations: list[dict], chart_type: str, config: dict):
+    if chart_type in AXIS_CHARTS:
+        _add_axis_operation(operations, config)
+    elif chart_type == "Number":
+        _add_number_operation(operations, config)
+    elif chart_type == "Donut":
+        _add_donut_operation(operations, config)
+    elif chart_type == "Funnel":
+        _add_funnel_operation(operations, config)
+    elif chart_type == "Table":
+        _add_table_operation(operations, config)
+    elif chart_type == "Map":
+        _add_map_operation(operations, config)
+    elif chart_type == "Bubble":
+        _add_bubble_operation(operations, config)
+    elif chart_type == "Sankey":
+        _add_sankey_operation(operations, config)
+    elif chart_type == "Heatmap":
+        _add_heatmap_operation(operations, config)
+
+
+def _add_axis_operation(operations: list[dict], config: dict):
+    series = (config.get("y_axis") or {}).get("series") or []
+    values = _named_measures(s.get("measure") for s in series) or [count_of_rows()]
+
+    x_dimension = (config.get("x_axis") or {}).get("dimension") or {}
+    split_by = (config.get("split_by") or {}).get("dimension") or {}
+
+    if split_by.get("column_name"):
+        # A split fans every measure out into one column per split value, which
+        # is a value per mark rather than per category. A tooltip measure has no
+        # such shape, so it is left out rather than pivoted into one.
+        operations.append(
+            _pivot_wider(
+                rows=[x_dimension],
+                columns=[split_by],
+                values=values,
+                max_column_values=(config.get("split_by") or {}).get("max_split_values")
+                or DEFAULT_MAX_COLUMN_VALUES,
+            )
+        )
+        return
+
+    # Tooltip measures go into the same summarize, so they arrive as one more value
+    # per plotted row. They are named apart from the drawn ones only by the
+    # config, which is what keeps them out of the chart.
+    #
+    # A name already drawn is dropped: two measures under one alias is one
+    # column, and the chart would lose the series to the tooltip.
+    drawn = {m["measure_name"] for m in values}
+    tooltip = [
+        m
+        for m in _named_measures((config.get("tooltip") or {}).get("measures") or [])
+        if m["measure_name"] not in drawn
+    ]
+    operations.append(_summarize(measures=values + tooltip, dimensions=[x_dimension]))
+
+
+def _add_number_operation(operations: list[dict], config: dict):
+    """One row per period, oldest last.
+
+    Every shape here agrees on where the reading is: the last row. What differs
+    is how the rows are cut, and a card with no period is cut into one.
+    """
+    date_column = config.get("date_column") or {}
+    window = _period(config)
+
+    if not date_column.get("column_name"):
+        operations.append(_summarize(measures=_number_measures(config), dimensions=[]))
+        return
+
+    if window.get("span"):
+        _add_window_operations(operations, config, window, date_column)
+        return
+
+    if window.get("grain"):
+        # A grain filters nothing: the card reads the newest period the data has,
+        # and the row before it is what a `previous` comparison reads. That is the
+        # shape a date dimension already groups by, so the grain goes on the
+        # dimension.
+        date_column = {**date_column, "granularity": window["grain"]}
+        operations.append(_summarize(measures=_number_measures(config), dimensions=[date_column]))
+        _add_order_by(operations, _result_column(date_column), "asc")
+        return
+
+    # No period, so no group-by. The date column is the sparkline's axis here, not
+    # something the reading is cut by.
+    operations.append(_summarize(measures=_number_measures(config), dimensions=[]))
+
+
+def _add_window_operations(operations: list[dict], config: dict, window: dict, date_column: dict):
+    """One row per window, oldest first.
+
+    The card reads the last row. Which of the earlier rows a reading is measured
+    against is answered by `comparison_timespans` and not by counting back, so
+    two readings comparing against different windows each read their own.
+
+    The group-by is the window itself, not the unit its span names. A span of
+    several periods grouped by its unit comes back as one row per period, and
+    the card reads the newest period as if it were the whole window.
+
+    The windows stay unresolved. Both the filter and the dimension carry the
+    span, and the engine turns it into dates while it runs, where the clock and
+    the fiscal calendar already are — a span resolved here would derive
+    different operations tomorrow.
+    """
+    windows = [_timespan(window, None)]
+    windows += [_timespan(window, shift) for shift in _comparison_shifts(config, window["span"])]
+
+    filters = [_within(date_column, timespan) for timespan in windows]
+    operations.append({"type": "filter_group", "logical_operator": "Or", "filters": filters})
+
+    dimension = {**date_column, "windows": windows}
+    # the grain a window groups by is the window, so a grain the config carries
+    # for the unwindowed card says nothing here and would be formatted as if it did
+    dimension.pop("granularity", None)
+    operations.append(_summarize(measures=_number_measures(config), dimensions=[dimension]))
+
+    _add_order_by(operations, _result_column(date_column), "asc")
+
+
+# The grain a sparkline splits its window by: one step below the unit the span
+# names. A day-long window is left out — its finer grains are clock grains, and
+# a day of hours is a different picture from a period of periods.
+SPARKLINE_GRAINS = {
+    "week": "day",
+    "month": "day",
+    "quarter": "month",
+    "year": "month",
+    "fiscal year": "month",
+}
+
+
+def _span_unit(span: str | None) -> str:
+    """The unit a span names, read the way `get_window` reads it.
+
+    The unit is in the string and the dates are not, so reading it here leaves
+    derivation pure — the span stays unresolved.
+    """
+    if not span:
+        return ""
+
+    span = span.lower().replace("(include current)", "").strip()
+    if span.endswith("to date"):
+        span = span[: -len("to date")].strip()
+    elif span.endswith("s"):
+        span = span[:-1]
+
+    return "fiscal year" if "fiscal year" in span else span.rsplit(" ", 1)[-1]
+
+
+def _span_periods(span: str) -> int:
+    """How many whole periods a span covers, which is how far back the one
+    before it sits. Only a run of periods covers more than one."""
+    text = span.lower().strip()
+    include_current = "(include current)" in text
+    text = text.replace("(include current)", "").strip()
+    if not text.startswith("last "):
+        return 1
+
+    words = text.split(" ")
+    count = int(words[1]) if len(words) > 1 and words[1].isdigit() else 1
+    return max(1, count) + (1 if include_current else 0)
+
+
+def comparison_sources(chart_type: str, config: dict | None) -> list[str]:
+    """The comparisons this card's readings ask, once each, in the order asked."""
+    if chart_type != "Number":
+        return []
+
+    config = _config_for_derivation(config, chart_type)
+    sources = []
+    for options in config.get("number_column_options") or []:
+        source = ((options or {}).get("comparison") or {}).get("source")
+        if source and source not in sources:
+            sources.append(source)
+    return sources
+
+
+def comparison_timespans(chart_type: str, config: dict | None) -> dict[str, dict]:
+    """The stretch each comparison reads, keyed by the source that asks for it.
+
+    A card fetches one stretch per distinct comparison and gets one row each,
+    which is what a reading is measured against. Which row is which is a
+    question of dates, and dates are what a span does not carry, so the caller
+    resolves these against the rows rather than the browser counting back from
+    the end — a stretch with no data returns no row at all.
+
+    Empty for a grain period: it filters nothing and every period it has is
+    already a row.
+    """
+    if chart_type != "Number":
+        return {}
+
+    config = _config_for_derivation(config, chart_type)
+    window = _period(config)
+    if not window.get("span"):
+        return {}
+
+    timespans = {}
+    for source in comparison_sources(chart_type, config):
+        shift = _comparison_shift({"source": source}, window["span"])
+        if shift:
+            timespans[source] = _timespan(window, shift)
+
+    return timespans
+
+
+def period_column(chart_type: str, config: dict | None) -> str:
+    """The result column a card's periods come back under."""
+    if chart_type != "Number":
+        return ""
+    config = _config_for_derivation(config, chart_type)
+    return _result_column(config.get("date_column") or {})
+
+
+def _comparison_shifts(config: dict, span: str) -> list[dict]:
+    """The windows the comparisons ask for, beside the configured one.
+
+    A comparison states the question and the span answers it, so the shift is
+    derived here rather than stored: the period before this one is the same span
+    moved back by its own length, and a year back is the same span anchored a
+    year earlier. A card whose period changed therefore fetches what its
+    comparison now means, with nothing to keep in step.
+
+    Two values comparing against the same window ask for one window, so the same
+    shift twice is one filter and one row.
+    """
+    shifts = []
+    for source in comparison_sources("Number", config):
+        shift = _comparison_shift({"source": source}, span)
+        if shift and shift not in shifts:
+            shifts.append(shift)
+
+    return shifts
+
+
+def _comparison_shift(comparison: dict, span: str) -> dict | None:
+    """The window one comparison asks for, or nothing when it asks for no
+    second window."""
+    if comparison.get("source") == "last year":
+        return {"unit": "year", "count": -1}
+    if comparison.get("source") != "previous":
+        return None
+
+    unit = _span_unit(span)
+    return {"unit": unit, "count": -_span_periods(span)} if unit else None
+
+
+def _timespan(window: dict, shift: dict | None) -> dict:
+    """One window, as the engine reads it: a span, what it is anchored to, and
+    how far the anchor moves."""
+    timespan = {"span": window["span"]}
+    if window.get("anchor"):
+        timespan["anchor"] = window["anchor"]
+    if shift:
+        timespan["shift"] = shift
+
+    return timespan
+
+
+def _within(date_column: dict, timespan: dict) -> dict:
+    return {
+        "column": {"type": "column", "column_name": date_column["column_name"]},
+        "operator": "within",
+        "value": timespan,
+    }
+
+
+def _number_measures(config: dict) -> list[dict]:
+    """The measures a Number Chart summarizes: its readings, their targets, and
+    what they are compared with.
+
+    A target or a comparison read off a measure is a column of the card's own
+    result, so the summarize has to carry it even though no card is drawn
+    behind it. Two readings measured against the same measure share one column,
+    which is why the list is deduped by name — `_measure_name_errors` is what
+    guarantees a shared name means a shared measure.
+    """
+    measures = []
+    named = set()
+    for measure in _all_number_measures(config):
+        if measure["measure_name"] not in named:
+            named.add(measure["measure_name"])
+            measures.append(measure)
+
+    return measures
+
+
+def _all_number_measures(config: dict):
+    """Every measure the card's config names, duplicates included: the readings
+    first, then each reading's target and comparison."""
+    yield from _named_measures(config.get("number_columns"))
+    for options in config.get("number_column_options") or []:
+        for slot in ("target", "comparison"):
+            measure = ((options or {}).get(slot) or {}).get("measure") or {}
+            if measure.get("measure_name"):
+                yield measure
+
+
+def _measure_name_errors(config: dict) -> list[str]:
+    """The names that name two different measures on one card, empty when none do.
+
+    A name is a column of the card's one result, and the card reads every
+    reading, target and comparison back by name. Two measures under one name
+    collapse to one column, so every card that named the other one silently
+    reads a number it never asked for.
+    """
+    computations = {}
+    errors = []
+    for measure in _all_number_measures(config):
+        name = measure["measure_name"]
+        computation = _computation(measure)
+        if name in computations and computations[name] != computation:
+            errors.append(_('"{0}" names two different measures. Rename one.').format(name))
+        computations.setdefault(name, computation)
+
+    return errors
+
+
+def _computation(measure: dict) -> str:
+    """What a measure computes, minus how it is displayed.
+
+    A comparison picked to match a reading names the same fold without carrying
+    the reading's display options, and the two are still one column.
+    """
+    keys = ("expression", "column_name", "aggregation")
+    return json.dumps({key: measure.get(key) for key in keys}, sort_keys=True, default=str)
+
+
+def _add_donut_operation(operations: list[dict], config: dict):
+    value_column = config.get("value_column") or {}
+    operations.append(_summarize(measures=[value_column], dimensions=[config.get("label_column") or {}]))
+    _add_order_by(operations, value_column.get("measure_name"), "desc")
+
+
+def _add_funnel_operation(operations: list[dict], config: dict):
+    # measures mode: every measure is a stage, aggregated over the whole result
+    # with no group-by, so one row carries them all
+    measures = _named_measures(config.get("measures"))
+    if measures:
+        operations.append(_summarize(measures=measures, dimensions=[]))
+        return
+
+    # grouped mode: one row per stage, biggest first
+    value_column = config.get("value_column") or {}
+    label_column = config.get("label_column") or {}
+    if not value_column.get("measure_name") or not label_column.get("column_name"):
+        return
+
+    operations.append(_summarize(measures=[value_column], dimensions=[label_column]))
+    _add_order_by(operations, value_column.get("measure_name"), "desc")
+
+
+def _add_table_operation(operations: list[dict], config: dict):
+    rows = _named_dimensions(config.get("rows"))
+    columns = _named_dimensions(config.get("columns"))
+    values = _named_measures(config.get("values"))
+
+    if columns:
+        operations.append(
+            _pivot_wider(
+                rows=rows,
+                columns=columns,
+                values=values,
+                max_column_values=config.get("max_column_values") or DEFAULT_MAX_COLUMN_VALUES,
+            )
+        )
+        return
+
+    operations.append(_summarize(measures=values, dimensions=rows))
+
+
+def _add_map_operation(operations: list[dict], config: dict):
+    operations.append(
+        _summarize(
+            measures=[config.get("value_column") or {}],
+            dimensions=[config.get("location_column") or {}],
+        )
+    )
+
+
+def _add_sankey_operation(operations: list[dict], config: dict):
+    # a link is one row per source and target, so the two of them group it
+    operations.append(
+        _summarize(
+            measures=[config.get("value_column") or {}],
+            dimensions=[config.get("source_column") or {}, config.get("target_column") or {}],
+        )
+    )
+
+
+def _add_heatmap_operation(operations: list[dict], config: dict):
+    # a cell is one row per pair of the two dimensions, so the two of them group it
+    x_column = config.get("x_column") or {}
+    y_column = config.get("y_column") or {}
+    operations.append(
+        _summarize(
+            measures=[config.get("value_column") or {}],
+            dimensions=[x_column, y_column],
+        )
+    )
+    # A grid reads its axes off the row order: the renderer registers a category
+    # the first time a row names it, so the order rows arrive in is the order the
+    # axes are drawn in. Unsorted rows draw the months of a date column scattered.
+    # Sorting on both cuts is what puts each axis in its own order.
+    _add_order_by(operations, _result_column(x_column), "asc")
+    _add_order_by(operations, _result_column(y_column), "asc")
+
+
+def _add_bubble_operation(operations: list[dict], config: dict):
+    measures = _named_measures([config.get("xAxis"), config.get("yAxis"), config.get("size_column")])
+    dimensions = _named_dimensions([config.get("dimension"), config.get("quadrant_column")])
+    operations.append(_summarize(measures=measures, dimensions=dimensions))
+
+
+# operations
+
+
+def _source(query: str) -> dict:
+    # `workbook` is carried by the reference but never read to resolve it: a
+    # query name is unique on the site. The shipped format writes 0 here.
+    return {"type": "source", "table": {"type": "query", "workbook": "", "query_name": query}}
+
+
+def _summarize(measures: list[dict], dimensions: list[dict]) -> dict:
+    return {"type": "summarize", "measures": measures, "dimensions": dimensions}
+
+
+def _pivot_wider(rows, columns, values, max_column_values) -> dict:
+    return {
+        "type": "pivot_wider",
+        "rows": rows,
+        "columns": columns,
+        "values": values,
+        "max_column_values": max_column_values,
+    }
+
+
+def _order_by(column_name: str, direction: str) -> dict:
+    return {
+        "type": "order_by",
+        "column": {"type": "column", "column_name": column_name},
+        "direction": direction,
+    }
+
+
+def count_of_rows() -> dict:
+    """The measure a chart draws when it declares none of its own."""
+    return {
+        "column_name": "count",
+        "data_type": "Integer",
+        "aggregation": "count",
+        "measure_name": "count_of_rows",
+    }
+
+
+def _add_filters(operations: list[dict], config: dict):
+    filters = config.get("filters") or {}
+    if not filters.get("filters"):
+        return
+    operations.append({"type": "filter_group", **filters})
+
+
+def _add_axis_time_order(operations: list[dict], chart_type: str, config: dict):
+    """An axis chart on a date x axis runs forwards, unless it already says so.
+
+    A line joins its points in the order the rows arrive, and a summarize hands
+    back no order at all, so a timeline nobody sorted draws itself doubling back
+    on itself. Bars hide it: a time axis places each bar at its own date. So the
+    sort is added here rather than at the renderer, where only one of the two
+    marks would show it missing.
+
+    Only for a dimension that carries an order of its own. A chart grouped by
+    status or territory keeps the order its author sorted it into — ranking is
+    the reading there, and inventing one would be the implicit sort this avoids.
+
+    Last, because ibis reads the newest sort as the primary key: an author's
+    sort on a measure survives as the tiebreak and the timeline still runs
+    forwards. A sort the author already put on the x column is left alone —
+    either direction is monotone, so either one draws a line that does not
+    cross itself.
+    """
+    if chart_type not in AXIS_CHARTS:
+        return
+
+    dimension = (config.get("x_axis") or {}).get("dimension") or {}
+    if dimension.get("data_type") not in ORDERED_TYPES:
+        return
+
+    column_name = _result_column(dimension)
+    if not column_name:
+        return
+    for operation in operations:
+        if operation["type"] == "order_by" and operation["column"]["column_name"] == column_name:
+            return
+
+    operations.append(_order_by(column_name, "asc"))
+
+
+def _add_order_by_from_config(operations: list[dict], config: dict):
+    for sort in config.get("order_by") or []:
+        column_name = (sort.get("column") or {}).get("column_name")
+        if column_name and sort.get("direction"):
+            _add_order_by(operations, column_name, sort["direction"])
+
+
+def _add_order_by(operations: list[dict], column_name: str, direction: str):
+    """One sort per column, last one wins.
+
+    Donut and Funnel sort by their measure before the config's own sorts are
+    read, so a chart sorted on that same measure must move the sort rather than
+    add a second one — two order-by steps on one column conflict.
+    """
+    if not column_name:
+        return
+
+    for index, operation in enumerate(operations):
+        if operation["type"] != "order_by":
+            continue
+        if operation["column"]["column_name"] != column_name:
+            continue
+        if operation["direction"] != direction:
+            operations[index] = _order_by(column_name, direction)
+        return
+
+    operations.append(_order_by(column_name, direction))
+
+
+# config
+
+
+def _config_for_derivation(config: dict | None, chart_type: str) -> dict:
+    """The config as derivation reads it, whatever version wrote it.
+
+    Old configs are missing slots and carry older shapes for the axes. The
+    builder repairs them on load, so a config that never went through a recent
+    builder session still has to derive the same operations here.
+    """
+    config = _older_shapes_repaired(copy.deepcopy(config) if config else {})
+
+    for dimension in [
+        (config.get("x_axis") or {}).get("dimension"),
+        (config.get("split_by") or {}).get("dimension"),
+        config.get("date_column"),
+        config.get("label_column"),
+        *(config.get("rows") or []),
+        *(config.get("columns") or []),
+    ]:
+        if isinstance(dimension, dict) and not dimension.get("dimension_name"):
+            if dimension.get("column_name"):
+                dimension["dimension_name"] = dimension["column_name"]
+
+    return config
+
+
+def _older_shapes_repaired(config: dict) -> dict:
+    """The slots an older release wrote differently, in today's shape.
+
+    A slot holding something no repair understands is left as it is, for
+    `config_errors` to report.
+    """
+    if config.get("x_axis"):
+        config["x_axis"] = _axis_with_dimension(config["x_axis"])
+    if config.get("split_by"):
+        config["split_by"] = _axis_with_dimension(config["split_by"])
+    if isinstance(config.get("y_axis"), list):
+        config["y_axis"] = {"series": [{"measure": measure} for measure in config["y_axis"]]}
+
+    return config
+
+
+def _axis_with_dimension(axis) -> dict:
+    """An axis used to be the dimension itself, before it grew display options."""
+    if isinstance(axis, dict) and axis.get("column_name"):
+        return {"dimension": axis}
+    return axis
+
+
+# every slot derivation reads, and the kind of thing it must hold to be read: a
+# dict names one thing — a column, a measure, a filter group — and a list names
+# several, each item naming one. Nested slots are read the same way, one level in.
+SLOT_SHAPES = {
+    "x_axis": {"dimension": {}},
+    "split_by": {"dimension": {}},
+    "y_axis": {"series": [{"measure": {}}]},
+    "date_column": {},
+    "label_column": {},
+    "value_column": {},
+    "location_column": {},
+    "source_column": {},
+    "target_column": {},
+    "x_column": {},
+    "y_column": {},
+    "xAxis": {},
+    "yAxis": {},
+    "size_column": {},
+    "dimension": {},
+    "quadrant_column": {},
+    "filters": {"filters": [{}]},
+    "number_columns": [{}],
+    "number_column_options": [{"target": {"measure": {}}, "comparison": {"measure": {}}}],
+    "window": {},
+    "measures": [{}],
+    "rows": [{}],
+    "columns": [{}],
+    "values": [{}],
+    "order_by": [{"column": {}}],
+}
+
+
+def _malformed_slots(config: dict | None) -> list[str]:
+    """The slots holding something derivation cannot read.
+
+    A slot that holds a bare string where a column belongs names nothing, and no
+    repair can make it name something — the chart is misconfigured, the same as
+    one with the slot left empty. Reporting it is what lets the checks in
+    `config_errors`, and derivation after them, ask a slot what it names.
+    """
+    if not config:
+        return []
+    if not isinstance(config, dict):
+        return [_("Chart config must be an object")]
+
+    return _slot_errors(_older_shapes_repaired(copy.deepcopy(config)), SLOT_SHAPES, "")
+
+
+def _slot_errors(value, shape, slot: str) -> list[str]:
+    if not value:
+        return []
+
+    if isinstance(shape, list):
+        if not isinstance(value, list):
+            return [_("{0} is malformed").format(slot)]
+        return [error for item in value for error in _slot_errors(item, shape[0], slot)]
+
+    if not isinstance(value, dict):
+        return [_("{0} is malformed").format(slot)]
+
+    return [
+        error
+        for key, inner in shape.items()
+        for error in _slot_errors(value.get(key), inner, f"{slot}.{key}" if slot else key)
+    ]
+
+
+def _result_column(dimension: dict) -> str:
+    """The name a dimension's column comes back under, which is what a sort names.
+
+    A dimension renames its output column, and falls back to the column it reads.
+    """
+    return (dimension or {}).get("dimension_name") or (dimension or {}).get("column_name") or ""
+
+
+def _named_measures(measures) -> list[dict]:
+    return [m for m in (measures or []) if m and m.get("measure_name")]
+
+
+def _named_dimensions(dimensions) -> list[dict]:
+    return [d for d in (dimensions or []) if d and d.get("column_name")]

@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { useStorage, useWindowSize } from '@vueuse/core'
+import { TabButtons } from 'frappe-ui'
 import { Edit3, RefreshCcw, Share2 } from 'lucide-vue-next'
 import { computed, provide, ref, watchEffect } from 'vue'
 import ContentEditable from '../components/ContentEditable.vue'
-import { downloadImage, safeJSONParse, waitUntil } from '../helpers'
-import { WorkbookChart, WorkbookQuery } from '../types/workbook.types'
+import { downloadImage, safeJSONParse } from '../helpers'
+import LoadingOverlay from '../components/LoadingOverlay.vue'
+import { BreakpointKey, Layout, WorkbookChart, WorkbookQuery } from '../types/workbook.types'
 import useDashboard from './dashboard'
 import DashboardChartSelectorDialog from './DashboardChartSelectorDialog.vue'
 import DashboardItem from './DashboardItem.vue'
 import DashboardShareDialog from './DashboardShareDialog.vue'
-import VueGridLayout from './VueGridLayout.vue'
+import EditableGridLayout from './EditableGridLayout.vue'
+import { BASE_BREAKPOINT, BREAKPOINTS } from './grid_placement'
 import { __ } from '../translation'
 
 const props = defineProps<{
@@ -31,8 +34,6 @@ watchEffect(() => {
 		dashboard.autoSave = true
 	}
 })
-
-await waitUntil(() => dashboard.isloaded)
 
 const showChartSelectorDialog = ref(false)
 
@@ -58,6 +59,28 @@ const showShareDialog = ref(false)
 
 const verticalCompact = useStorage('dashboard_vertical_compact', true)
 
+// One entry per breakpoint, widest first — the layout an author arranges first
+// reads first. A new width is a row in `BREAKPOINTS` and turns up here on its
+// own, so this switch cannot fall behind the layouts the grid can draw.
+const widths = computed(() =>
+	[...BREAKPOINTS].reverse().map((breakpoint) => ({
+		value: breakpoint.key,
+		icon: breakpoint.icon,
+		label: __(breakpoint.label),
+		tooltip: __('Arrange the {0} layout').replace('{0}', __(breakpoint.label).toLowerCase()),
+	})),
+)
+
+// An author arranging a narrower breakpoint is given a box that width, rather
+// than a wide grid told to pretend. The grid then measures the breakpoint it is
+// arranging, the cards lay their contents out at the width they will have, and
+// a drag lands where the reader will see it.
+const arrangedBox = computed(() => {
+	const breakpoint = BREAKPOINTS.find((item) => item.key === dashboard.arranging)
+	if (!breakpoint || breakpoint === BASE_BREAKPOINT) return undefined
+	return { maxWidth: `${breakpoint.maxWidth}px` }
+})
+
 const dashboardContainer = ref<HTMLElement | null>(null)
 async function downloadDashboardImage() {
 	if (!dashboardContainer.value) return
@@ -67,10 +90,12 @@ async function downloadDashboardImage() {
 
 <template>
 	<div class="relative flex h-full w-full overflow-hidden">
+		<LoadingOverlay v-if="dashboard.pending" />
 		<div class="relative flex h-full w-full flex-col overflow-hidden">
-			<div class="flex items-center justify-between p-4 pb-3">
+			<!-- the first card's own 8px inset completes the query view's 12px gap -->
+			<div class="flex h-7 items-center justify-between mx-4 mt-3 mb-1">
 				<ContentEditable
-					class="cursor-text rounded-sm text-lg-semibold !text-ink-gray-7 focus:ring-2 focus:ring-outline-gray-6 focus:ring-offset-4"
+					class="-ml-2 cursor-text text-lg-semibold !text-ink-gray-7"
 					:modelValue="dashboard.doc.title"
 					@returned="dashboard.doc.title = $event"
 					@blur="dashboard.doc.title = $event"
@@ -107,6 +132,11 @@ async function downloadDashboardImage() {
 							<Edit3 class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 						</template>
 					</Button>
+					<TabButtons
+						v-if="dashboard.editing"
+						v-model="dashboard.arranging"
+						:options="widths"
+					/>
 					<Button
 						v-if="dashboard.editing"
 						variant="outline"
@@ -184,27 +214,24 @@ async function downloadDashboardImage() {
 				@dragover="onDragOver"
 				@drop="onDrop"
 			>
-				<VueGridLayout
+				<EditableGridLayout
 					v-if="dashboard.doc.items.length > 0"
-					class="h-fit w-full"
+					class="mx-auto h-fit w-full"
 					:class="[dashboard.editing ? 'mb-[20rem] !select-none' : '']"
-					:cols="20"
+					:style="arrangedBox"
+					:breakpoint="dashboard.arranging"
 					:disabled="!dashboard.editing"
 					:verticalCompact="verticalCompact"
-					:modelValue="dashboard.doc.items.map((item) => item.layout)"
-					@update:modelValue="
-						(newLayout) => {
-							if (!newLayout) return
-							dashboard.doc.items.forEach((item, idx) => {
-								item.layout = newLayout[idx]
-							})
-						}
+					:items="dashboard.doc.items"
+					:rules="dashboard.cellRules"
+					@move="
+						(key: BreakpointKey, layouts: Layout[]) => dashboard.moveItems(key, layouts)
 					"
 				>
 					<template #item="{ index }">
 						<DashboardItem :index="index" :item="dashboard.doc.items[index]" />
 					</template>
-				</VueGridLayout>
+				</EditableGridLayout>
 			</div>
 		</div>
 	</div>

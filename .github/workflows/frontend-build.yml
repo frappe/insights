@@ -20,6 +20,15 @@ jobs:
       - name: Install Yarn
         run: npm install -g yarn
 
+      # frontend/package.json links `@framework/ui` to a sibling frappe app, the
+      # way a bench lays one out. Only the ui folder is read, so the clone takes
+      # nothing else.
+      - name: Fetch the frappe ui shim
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse \
+            https://github.com/frappe/frappe.git ../frappe
+          git -C ../frappe sparse-checkout set ui
+
       - name: Install dependencies and build
         run: |
           yarn install

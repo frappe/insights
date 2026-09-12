@@ -261,7 +261,7 @@ Three things the chart will not give you.
    label as `1.8K`. Assert the abbreviation, or read the exact number from the
    result preview table below the chart.
 3. **Data labels are off by default.** Only axis ticks and category labels are
-   in the DOM until a flow turns `Show Data Labels` on.
+   in the DOM until a flow turns `Data labels` on.
 
 ## What a flow test may assert
 

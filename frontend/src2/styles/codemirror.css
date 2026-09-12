@@ -47,13 +47,13 @@
 	outline: none !important;
 }
 .cm-tooltip-autocomplete {
-	@apply !rounded-lg !shadow-md !bg-surface-base !p-1.5 !border-none;
+	@apply !rounded-6 !shadow-md !bg-surface-base !p-1.5 !border-none;
 }
 .cm-tooltip-autocomplete > ul {
 	font-family: 'Inter' !important;
 }
 .cm-tooltip-autocomplete ul li[aria-selected='true'] {
-	@apply !rounded !bg-surface-gray-3/80;
+	@apply !rounded-4 !bg-surface-gray-3/80;
 	color: var(--ink-gray-8) !important;
 }
 .cm-completionLabel {

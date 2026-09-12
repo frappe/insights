@@ -26,7 +26,8 @@ frappe-ui in `frontend/src2/`, built with Vite.
   `frappe/insights`
 - Frontend dev server: `cd frontend && yarn dev`. Build UI on frappe-ui components
   and semantic tokens (`text-ink-*`, `bg-surface-*`, `border-outline-*`); no raw
-  buttons or hardcoded colors
+  buttons or hardcoded colors. When frappe-ui has no component for it, build one
+  that matches the taste of its frappe-ui neighbours
 - Run the bench's pre-commit hooks before committing
 
 ## Agent skills

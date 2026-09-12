@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watchEffect } from 'vue'
+import { computed } from 'vue'
 import { __ } from '../../translation'
 import { FIELDTYPES } from '../../helpers/constants'
 import { FunnelChartConfig } from '../../types/chart.types'
@@ -13,6 +13,7 @@ import {
 import DraggableList from '../../components/DraggableList.vue'
 import CollapsibleSection from './CollapsibleSection.vue'
 import MeasurePicker from './MeasurePicker.vue'
+import NumberFormatSection from './NumberFormatSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
 
 const props = defineProps<{
@@ -27,18 +28,6 @@ const config = defineModel<FunnelChartConfig>({
 		label_column: {},
 		value_column: {},
 	}),
-})
-
-watchEffect(() => {
-	if (!config.value.measures) {
-		config.value.measures = []
-	}
-	if (!config.value.label_column) {
-		config.value.label_column = {} as Dimension
-	}
-	if (!config.value.value_column) {
-		config.value.value_column = {} as Measure
-	}
 })
 
 // Measures mode is active once any stage has a picked measure. When it isn't,
@@ -98,7 +87,15 @@ const discrete_dimensions = computed(() =>
 				/>
 			</template>
 
-			<Toggle v-model="config.show_percentage" :label="__('Show Percentage')" />
+			<Toggle v-model="config.show_percentage" :label="__('Percentage')" />
 		</div>
 	</CollapsibleSection>
+
+	<!-- One format for the whole funnel, not one per stage: the stages are the
+	     same quantity counted at different points, and v2 prints them against a
+	     single scale. A per-stage override would draw nothing. -->
+	<NumberFormatSection
+		:config="config"
+		:sole-measure-name="hasMeasures ? undefined : config.value_column?.measure_name"
+	/>
 </template>

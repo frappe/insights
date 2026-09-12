@@ -318,45 +318,6 @@ export async function deleteTeam(api: FrappeApi, teamName: string): Promise<void
 }
 
 /**
- * Fill in the derived Query a Chart executes.
- *
- * The chart builder writes this. It compiles the chart config into operations,
- * puts them on the Chart's `data_query`, and the resource autosaves them. A
- * Chart seeded over REST never passes through the builder, so its `data_query`
- * holds no operations.
- *
- * A signed-in viewer never notices, because the browser sends the operations it
- * just compiled. A public execution reloads the stored document and drops the
- * caller's copy, so a published Chart whose `data_query` is empty renders
- * nothing at all.
- */
-export async function buildChartDataQuery(
-	api: FrappeApi,
-	chart: SeededChart,
-	dimension: Dimension = ORDER_STATUS_DIMENSION,
-): Promise<void> {
-	const doc = await api.getDoc<{ data_query: string }>(DOCTYPE.CHART, chart.name)
-	await api.updateDoc(DOCTYPE.QUERY, doc.data_query, {
-		use_live_connection: 1,
-		operations: [
-			{ type: 'source', table: { type: 'query', workbook: '', query_name: chart.query } },
-			{
-				type: 'summarize',
-				measures: [
-					{
-						measure_name: 'count_of_rows',
-						column_name: 'count',
-						data_type: 'Integer',
-						aggregation: 'count',
-					},
-				],
-				dimensions: [dimension],
-			},
-		],
-	})
-}
-
-/**
  * The Data Source the upload dialog writes into.
  *
  * `insights.api.get_file_data` creates it on the first upload a site ever

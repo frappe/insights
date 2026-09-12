@@ -26,6 +26,29 @@ function chartOf(page: Page): Locator {
 }
 
 /**
+ * The chart card's own contents: the picture and the legend, and nothing of the
+ * page around it.
+ *
+ * locator: a chart that draws plain HTML — a Number card, a Funnel — has no
+ * echarts node to name, and the result preview under the builder repeats every
+ * label the chart draws. `ChartBody` is the one element that holds the chart
+ * alone, whatever the type.
+ */
+function cardOf(page: Page): Locator {
+	return page.getByTestId('chart')
+}
+
+/**
+ * The chart's legend.
+ *
+ * locator: the legend is HTML beside the picture, not part of the echarts node,
+ * so a series name is reached here and never inside the chart.
+ */
+function legendOf(page: Page): Locator {
+	return page.locator('[data-slot="chart-legend"]')
+}
+
+/**
  * The rows of the result preview under the chart.
  *
  * locator: `<thead>` uses `<td>`, and `<tbody>` ends with a cell-less spacer
@@ -219,10 +242,11 @@ test.describe('charts', () => {
 		await measureDialog.getByText('order_id', { exact: true }).click()
 
 		// A Donut legend spells the share out beside the slice name. 1,778 of the
-		// 2,000 orders are delivered, which rounds to 89%.
-		const chart = chartOf(page)
-		await expect(chart.getByText('delivered (89%)')).toBeVisible()
-		await expect(chart.getByText('canceled (3%)')).toBeVisible()
+		// 2,000 orders are delivered, which rounds to 89%. Every legend entry is
+		// a toggle, so its accessible name says what a press would do.
+		const legend = legendOf(page)
+		await expect(legend.getByRole('button', { name: 'Hide delivered' })).toContainText('89%')
+		await expect(legend.getByRole('button', { name: 'Hide canceled' })).toContainText('3%')
 	})
 
 	test('a user changes chart type and config survives where it can', async ({
@@ -263,11 +287,11 @@ test.describe('charts', () => {
 		await expect(rendered.getByText('1.8K')).toBeVisible()
 
 		// Donut is not an axis chart, so crossing that boundary drops the axis
-		// config and leaves the chart with nothing to draw.
+		// config and leaves the chart with nothing to draw. The card says which
+		// slots the new type needs filled, in place of the picture.
 		await page.getByRole('button', { name: 'Donut', exact: true }).click()
-		await expect(
-			page.getByText('Pick a chart type and configure options to see the chart here'),
-		).toBeVisible()
+		await expect(cardOf(page).getByText('Label column is required')).toBeVisible()
+		await expect(cardOf(page).getByText('Value column is required')).toBeVisible()
 
 		// The filter and the limit sit outside the type-specific config, so they
 		// survive every switch. The count beside the heading is part of its name.
@@ -344,10 +368,12 @@ test.describe('charts', () => {
 		await page.getByRole('option', { name: 'order_status' }).click()
 
 		// The split turns one count into one series per order status, and each
-		// series name reaches the legend as a real text node.
-		await expect(rendered.getByText('delivered')).toBeVisible()
-		await expect(rendered.getByText('canceled')).toBeVisible()
-		await expect(rendered.getByText('unavailable')).toBeVisible()
+		// series reaches the legend as an entry of its own. The legend titles a
+		// series name it was given in lower case.
+		const legend = legendOf(page)
+		await expect(legend.getByRole('button', { name: 'Hide Delivered' })).toBeVisible()
+		await expect(legend.getByRole('button', { name: 'Hide Canceled' })).toBeVisible()
+		await expect(legend.getByRole('button', { name: 'Hide Unavailable' })).toBeVisible()
 	})
 
 	test('a user adds a second measure', async ({
@@ -368,7 +394,7 @@ test.describe('charts', () => {
 		const rendered = chartOf(page)
 		await expect(rendered.getByText('delivered')).toBeVisible()
 		// One series draws no legend, so neither measure name is on the chart yet.
-		await expect(rendered.getByText('count_of_rows')).toHaveCount(0)
+		await expect(legendOf(page)).toHaveCount(0)
 
 		const yAxis = section(page, 'Y Axis')
 		await yAxis.getByRole('button', { name: '+ Add series' }).click()
@@ -378,8 +404,11 @@ test.describe('charts', () => {
 		await measureDialog.getByText('customer_id', { exact: true }).click()
 
 		// Two series draw a legend, one entry per measure.
-		await expect(rendered.getByText('count_of_rows')).toBeVisible()
-		await expect(rendered.getByText('count_distinct_of_customer_id')).toBeVisible()
+		const legend = legendOf(page)
+		await expect(legend.getByRole('button', { name: 'Hide Count Of Rows' })).toBeVisible()
+		await expect(
+			legend.getByRole('button', { name: 'Hide Count Distinct Of Customer Id' }),
+		).toBeVisible()
 	})
 
 	test('a user sorts a chart and flips it to descending', async ({
@@ -407,10 +436,7 @@ test.describe('charts', () => {
 		// 2,000 demo orders are unavailable.
 		await expect(previewRows(page).first()).toContainText('unavailable')
 
-		// locator: the direction toggle is icon-only and carries no accessible
-		// name. It is the first button of the sort row, ahead of the column
-		// picker and the remove button.
-		await section(page, 'Sort').locator('div.flex.rounded > button:first-child').click()
+		await section(page, 'Sort').getByRole('button', { name: 'Toggle sort direction' }).click()
 
 		// Descending puts the most common status first. 1,778 orders are
 		// delivered. The flip lands inside the save the sort above started, so
@@ -522,9 +548,12 @@ test.describe('charts', () => {
 		// is an axis line or a split line, and those carry `fill="none"`.
 		await rendered.locator('path[fill]:not([fill="none"])').click()
 
-		// The drill-down opens the rows behind the bar. 53 of the 2,000 demo
-		// orders are canceled.
-		const drillDown = page.getByRole('dialog', { name: 'Drill Down' })
+		// A click offers two drill-downs: the rows behind the bar, or a
+		// breakdown by another dimension. 53 of the 2,000 demo orders are
+		// canceled.
+		await page.getByRole('button', { name: 'View rows' }).click()
+
+		const drillDown = page.getByRole('dialog')
 		await expect(drillDown.locator('tbody tr:has(td)')).toHaveCount(53)
 		await expect(drillDown.getByRole('cell', { name: 'canceled' })).not.toHaveCount(0)
 	})
@@ -552,27 +581,28 @@ test.describe('charts', () => {
 		})
 		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/chart/${chart.name}`)
 
-		// A funnel writes each stage's share beside its value. 1,778 of the
+		// A funnel writes each stage's share under its value. The leading stage
+		// carries none, because it has nothing to convert from. 1,778 of the
 		// 2,000 demo orders are delivered, which leads, and 85 are shipped.
-		const rendered = chartOf(page)
-		await expect(rendered.getByText('1.78K (100%)')).toBeVisible()
-		await expect(rendered.getByText('85 (5%)')).toBeVisible()
-
-		const toggle = page.getByRole('switch', { name: 'Show Percentage' })
-		await toggle.click()
-
-		// The toggle drives only the label text, so the stages stay and their
-		// shares go.
-		await expect(rendered.getByText('1.78K', { exact: true })).toBeVisible()
+		const rendered = cardOf(page)
+		await expect(rendered.getByText('1,778', { exact: true })).toBeVisible()
 		await expect(rendered.getByText('85', { exact: true })).toBeVisible()
-		await expect(rendered.getByText('delivered')).toBeVisible()
+		await expect(rendered.getByText('5%', { exact: true })).toBeVisible()
 
-		// Turning it back on brings them back. The shares live only in the
-		// funnel's label closures, so nothing else about the chart changes
-		// across either click.
+		const toggle = page.getByRole('switch', { name: 'Percentage' })
 		await toggle.click()
-		await expect(rendered.getByText('1.78K (100%)')).toBeVisible()
-		await expect(rendered.getByText('85 (5%)')).toBeVisible()
+
+		// The toggle drives only the share line, so the stages stay and their
+		// shares go.
+		await expect(rendered.getByText('5%', { exact: true })).toHaveCount(0)
+		await expect(rendered.getByText('1,778', { exact: true })).toBeVisible()
+		await expect(rendered.getByText('85', { exact: true })).toBeVisible()
+		await expect(rendered.getByText('delivered', { exact: true })).toBeVisible()
+
+		// Turning it back on brings them back. Nothing else about the chart
+		// changes across either click.
+		await toggle.click()
+		await expect(rendered.getByText('5%', { exact: true })).toBeVisible()
 	})
 
 	test('a number card shows a comparison and a sparkline', async ({
@@ -605,14 +635,15 @@ test.describe('charts', () => {
 		// September.
 		await expect(card.getByText('count_of_rows')).toBeVisible()
 		await expect(card.getByText('74', { exact: true })).toBeVisible()
-		await expect(card.getByText('↓')).toBeVisible()
-		await expect(card.getByText('-12.94%')).toBeVisible()
+		// locator: the fall reads as an arrow, which is an icon and carries no
+		// text. The share beside it is the size of the fall, unsigned.
+		await expect(card.locator('.lucide-arrow-down-left')).toBeVisible()
+		await expect(card.getByText('12.9%')).toBeVisible()
+		await expect(card.getByText('vs previous month')).toBeVisible()
 
-		// The sparkline is an echarts chart of its own, and the only one a Number
-		// chart draws. It plots one filled area over the date column.
-		const sparkline = chartOf(page)
-		await expect(sparkline).toBeVisible()
-		await expect(sparkline.locator('path[fill]:not([fill="none"])')).not.toHaveCount(0)
+		// The sparkline is drawn in the card itself, not as a chart of its own:
+		// one filled area under a line, down to the card's bottom edge.
+		await expect(cardOf(page).locator('svg path[fill]:not([fill="none"])')).not.toHaveCount(0)
 	})
 
 	test('a user renames a chart while it saves and the newer name wins', async ({

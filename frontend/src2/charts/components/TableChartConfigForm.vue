@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Badge, Button, FormControl } from 'frappe-ui'
 import { Plus, X } from 'lucide-vue-next'
-import { computed, ref, watchEffect } from 'vue'
+import { computed, ref } from 'vue'
 import DraggableList from '../../components/DraggableList.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { FIELDTYPES } from '../../helpers/constants'
@@ -13,10 +13,14 @@ import { ColumnOption, DimensionDataType, DimensionOption } from '../../types/qu
 import CollapsibleSection from './CollapsibleSection.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
+import NumberFormatFields from './NumberFormatFields.vue'
+import NumberFormatSection from './NumberFormatSection.vue'
 const props = defineProps<{
 	formatGroup?: FormatGroupArgs
 	dimensions: DimensionOption[]
 	columnOptions: ColumnOption[]
+	/** The columns the chart drew. A pivot's columns exist only here. */
+	resultColumnOptions?: ColumnOption[]
 }>()
 
 const emit = defineEmits({ select: (args: FormatGroupArgs) => true })
@@ -34,18 +38,6 @@ const config = defineModel<TableChartConfig>({
 const showFormatSelectorDialog = ref(false)
 const editingRuleIndex = ref<number | null>(null)
 const editingRule = ref<FormattingMode | null>(null)
-
-watchEffect(() => {
-	if (!config.value.rows?.length) {
-		config.value.rows = [{} as any]
-	}
-	if (!config.value.columns?.length) {
-		config.value.columns = [{} as any]
-	}
-	if (!config.value.values?.length) {
-		config.value.values = [{} as any]
-	}
-})
 
 const measuresAsDimensions = computed<DimensionOption[]>(() =>
 	props.columnOptions
@@ -87,7 +79,14 @@ const measuresAndDimensions = computed(() => {
 	return [...measures, ...dimensions, ...rows]
 })
 
-const colOptions = computed(() => (measuresAndDimensions.value as ColumnOption[]) || [])
+// A rule names a column the table drew, so the drawn columns are the list. The
+// configured measures and dimensions stand in until the chart has run once,
+// which is also the whole list when the table does not pivot.
+const colOptions = computed<ColumnOption[]>(() =>
+	props.resultColumnOptions?.length
+		? props.resultColumnOptions
+		: (measuresAndDimensions.value as ColumnOption[]),
+)
 
 function editRule(index: number) {
 	const ruleToEditValue = config.value.conditional_formatting?.formats[index]
@@ -124,7 +123,7 @@ function handleFormatSelect(formatGroup: FormatGroupArgs) {
 }
 
 function getColumnType(column_name: string) {
-	const col = measuresAndDimensions.value.find((col) => col.value === column_name)
+	const col = colOptions.value.find((col) => col.value === column_name)
 	if (!col) {
 		return 'String'
 	}
@@ -179,7 +178,7 @@ function updateTextWrap(column_name: string, wrap: boolean | undefined) {
 						@remove="config.rows.splice(index, 1)"
 					>
 						<template #config-fields>
-							<InlineFormControlLabel label="Width">
+							<InlineFormControlLabel label="Width" control-width="4.5rem">
 								<FormControl
 									type="number"
 									:modelValue="config.column_widths?.[item.dimension_name]"
@@ -192,12 +191,12 @@ function updateTextWrap(column_name: string, wrap: boolean | undefined) {
 								/>
 							</InlineFormControlLabel>
 							<Toggle
-								label="Wrap Text"
+								label="Wrap text"
 								:modelValue="config.text_wrap?.[item.dimension_name]"
 								@update:modelValue="updateTextWrap(item.dimension_name, $event)"
 							/>
 							<Toggle
-								label="Pin Column"
+								label="Pin column"
 								:modelValue="config.sticky_columns?.includes(item.dimension_name)"
 								@update:modelValue="toggleStickyColumn(item.dimension_name, $event)"
 							/>
@@ -237,12 +236,13 @@ function updateTextWrap(column_name: string, wrap: boolean | undefined) {
 
 			<InlineFormControlLabel
 				v-if="config.columns.length"
-				class="!w-1/2"
-				label="Max Column Values"
+				label="Max values"
+				control-width="4rem"
 			>
 				<FormControl
 					type="number"
 					autocomplete="off"
+					placeholder="10"
 					:modelValue="config.max_column_values"
 					@update:modelValue="config.max_column_values = $event"
 				/>
@@ -261,7 +261,14 @@ function updateTextWrap(column_name: string, wrap: boolean | undefined) {
 							:enable-format="true"
 							@update:model-value="Object.assign(item, $event || {})"
 							@remove="config.values.splice(index, 1)"
-						/>
+						>
+							<template #config-fields>
+								<NumberFormatFields
+									:config="config"
+									:measure-name="item.measure_name"
+								/>
+							</template>
+						</MeasurePicker>
 					</template>
 				</DraggableList>
 				<button
@@ -271,13 +278,12 @@ function updateTextWrap(column_name: string, wrap: boolean | undefined) {
 					+ Add column
 				</button>
 			</div>
-			<Toggle label="Show Filters" v-model="config.show_filter_row" />
-			<Toggle label="Show Row Totals" v-model="config.show_row_totals" />
-			<Toggle label="Show Column Totals" v-model="config.show_column_totals" />
-			<Toggle label="Compact Number Format" v-model="config.compact_numbers" />
+			<Toggle label="Filters" v-model="config.show_filter_row" />
+			<Toggle label="Row totals" v-model="config.show_row_totals" />
+			<Toggle label="Column totals" v-model="config.show_column_totals" />
 			<Toggle
 				v-if="config.values.length === 1"
-				label="Show Color Scale"
+				label="Color scale"
 				v-model="config.enable_color_scale"
 			/>
 		</div>
@@ -293,9 +299,9 @@ function updateTextWrap(column_name: string, wrap: boolean | undefined) {
 				<div
 					v-for="(rule, idx) in config.conditional_formatting?.formats"
 					:key="idx"
-					class="flex rounded"
+					class="flex rounded-4"
 				>
-					<div class="flex-1 overflow-hidden">
+					<div class="min-w-0 flex-1">
 						<Button
 							class="w-full !justify-start rounded-r-none [&>span]:truncate"
 							@click="editRule(idx)"
@@ -327,6 +333,8 @@ function updateTextWrap(column_name: string, wrap: boolean | undefined) {
 			</Button>
 		</div>
 	</CollapsibleSection>
+
+	<NumberFormatSection :config="config" />
 
 	<ConditonalFormattingDialog
 		v-if="showFormatSelectorDialog"

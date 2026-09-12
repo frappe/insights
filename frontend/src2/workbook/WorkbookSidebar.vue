@@ -5,7 +5,7 @@ import { computed, inject } from 'vue'
 import { useRoute } from 'vue-router'
 import WorkbookSidebarListSection from './WorkbookSidebarListSection.vue'
 import WorkbookSidebarFolders from './WorkbookSidebarFolders.vue'
-import { workbookKey } from './workbook'
+import { workbookKey } from './workbook_key'
 import ChartIcon from '../charts/components/ChartIcon.vue'
 
 const workbook = inject(workbookKey)!
@@ -40,15 +40,15 @@ const activeQueryName = computed(() => {
 			<template #item-icon="{ item }">
 				<ScrollText
 					v-if="item.is_native_query"
-					class="h-4 w-4 text-ink-gray-6"
+					class="h-4 w-4 text-ink-gray-5"
 					stroke-width="1.5"
 				/>
 				<Braces
 					v-else-if="item.is_script_query"
-					class="h-4 w-4 text-ink-gray-6"
+					class="h-4 w-4 text-ink-gray-5"
 					stroke-width="1.5"
 				/>
-				<Table2 v-else class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
+				<Table2 v-else class="h-4 w-4 text-ink-gray-5" stroke-width="1.5" />
 			</template>
 		</WorkbookSidebarFolders>
 
@@ -83,7 +83,7 @@ const activeQueryName = computed(() => {
 			}"
 		>
 			<template #item-icon>
-				<LayoutPanelTop class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
+				<LayoutPanelTop class="h-4 w-4 text-ink-gray-5" stroke-width="1.5" />
 			</template>
 		</WorkbookSidebarListSection>
 	</div>

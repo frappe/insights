@@ -9,19 +9,19 @@ const query = inject('query') as Query
 
 <template>
 	<Popover side="bottom" align="start">
-		<template #trigger="{ isOpen }">
+		<template #trigger="{ open }">
 			<Button
 				variant="ghost"
 				size="lg"
 				class="rounded-none"
-				:class="{ 'bg-surface-gray-2': isOpen }"
+				:class="{ 'bg-surface-gray-2': open }"
 			>
 				<template #icon>
 					<ColumnsIcon class="h-5 w-5 text-ink-gray-6" stroke-width="1.5" />
 				</template>
 			</Button>
 		</template>
-		<template #default="{ toggle: togglePopover, isOpen }">
+		<template #default="{ toggle: togglePopover, open }">
 			<div class="flex flex-col p-2">
 				<!-- select all -->
 				<div class="mb-2 flex items-center gap-1">

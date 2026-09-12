@@ -87,7 +87,6 @@ export type InsightsChartv3 = {
 	title: string
 	workbook: string
 	query: string
-	data_query: string
 	chart_type: ChartType
 	sort_order: number
 	folder?: string | null
@@ -128,19 +127,60 @@ export type WorkbookDashboardItem =
 	| WorkbookDashboardText
 	| WorkbookDashboardFilter
 
-export type Layout = {
-	i: string
+/** Where a cell sits: a column, a row, and a span of each. */
+export type Placement = {
 	x: number
 	y: number
 	w: number
 	h: number
 }
-export type WorkbookDashboardChart = {
+
+/** A placement with the cell it belongs to. What a grid is drawn from. */
+export type Layout = Placement & {
+	/** The cell's identity, stable across a move. */
+	i: string
+}
+
+/**
+ * The widths a dashboard is laid out for, narrowest first.
+ *
+ * A key names a layout an author can arrange, not a screen — the grid picks one
+ * by its own box, so a dashboard in a narrow desk panel is served the same
+ * layout as one on a phone. Another width is another key here, and the table in
+ * `grid_placement.ts` that says how wide each one is.
+ */
+export type BreakpointKey = 'sm' | 'lg'
+
+/**
+ * What every dashboard item carries about where it sits.
+ *
+ * `layout` is the placement at the widest breakpoint, and it is the one every
+ * item has — it is what a dashboard authored before there was more than one
+ * width already holds, and what a new item is given. `layouts` holds the
+ * narrower ones, and only the ones an author arranged: a breakpoint an
+ * item says nothing about is derived from the next wider one, so a dashboard
+ * nobody has laid out for a phone still reads on a phone.
+ *
+ * Both are read through `placementsFor` and written through `writePlacement`.
+ * Nothing else may reach for either field, because those two functions are what
+ * knows that the widest breakpoint is stored apart from the rest.
+ */
+export type WorkbookDashboardItemLayout = {
+	layout: Layout
+	layouts?: Partial<Record<BreakpointKey, Placement>>
+}
+
+export type WorkbookDashboardChart = WorkbookDashboardItemLayout & {
 	type: 'chart'
 	chart: string
-	layout: Layout
+	/**
+	 * The reading this cell draws, by its `measure_name`. Only a Number chart
+	 * states several, so only its cells name one, and a cell written before this
+	 * field existed names none and draws the first.
+	 */
+	column?: string
 }
-export type WorkbookDashboardFilter = {
+export type WorkbookDashboardFilter = WorkbookDashboardItemLayout & {
 	type: 'filter'
 	filter_name: string
 	filter_type: FilterType
@@ -148,13 +188,16 @@ export type WorkbookDashboardFilter = {
 	default_operator?: FilterOperator
 	default_value?: FilterValue
 	icon?: string
-	layout: Layout
 }
-export type WorkbookDashboardText = {
+export type WorkbookDashboardText = WorkbookDashboardItemLayout & {
 	type: 'text'
 	text: string
-	layout: Layout
 }
+
+// dashboard filter state, keyed by filter name. Which query a filter lands on is
+// the server's business — every surface sends the state and the grid it sits
+// on, and the links are read there.
+export type ViewerFilters = Record<string, { operator: FilterOperator; value: FilterValue }>
 
 export type ShareAccess = 'view' | 'edit' | undefined
 export type WorkbookSharePermission = {

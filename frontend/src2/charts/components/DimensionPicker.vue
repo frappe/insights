@@ -8,10 +8,19 @@ import { COLUMN_TYPES, getDefaultGranularity, getGranularityOptions } from '../.
 import { Dimension, DimensionOption } from '../../types/query.types'
 
 const emit = defineEmits({ remove: () => true })
-const props = defineProps<{
-	label?: string
-	options: DimensionOption[]
-}>()
+const props = withDefaults(
+	defineProps<{
+		label?: string
+		options: DimensionOption[]
+		/**
+		 * Off for a picker whose chart groups by something else. A number card
+		 * groups by its Period, so a grain here would be a second group-by that
+		 * the card silently drops.
+		 */
+		enableGranularity?: boolean
+	}>(),
+	{ enableGranularity: true },
+)
 
 const dimension = defineModel<Dimension>({
 	required: true,
@@ -31,7 +40,9 @@ if (!dimension.value.dimension_name && dimension.value.column_name) {
 const granularityOptions = computed(() => getGranularityOptions(dimension.value.data_type))
 
 watchEffect(() => {
-	const allowedGranularities = new Set(granularityOptions.value.map((option) => option.value))
+	const allowedGranularities = new Set(
+		props.enableGranularity ? granularityOptions.value.map((option) => option.value) : [],
+	)
 
 	if (!allowedGranularities.size) {
 		// deleted, not set to `undefined`: a config is stored as JSON, so a key
@@ -59,8 +70,8 @@ function selectDimension(option?: DimensionOption) {
 </script>
 
 <template>
-	<div class="flex items-end gap-1 overflow-hidden">
-		<div class="flex-1 overflow-hidden">
+	<div class="flex min-w-0 items-end gap-1">
+		<div class="min-w-0 flex-1">
 			<Combobox
 				placeholder="Select a column"
 				:options="props.options"
@@ -114,7 +125,10 @@ function selectDimension(option?: DimensionOption) {
 						/>
 					</InlineFormControlLabel>
 
-					<InlineFormControlLabel v-if="isDate(dimension.data_type)" label="Granularity">
+					<InlineFormControlLabel
+						v-if="props.enableGranularity && isDate(dimension.data_type)"
+						label="Granularity"
+					>
 						<FormControl
 							type="select"
 							v-model="dimension.granularity"

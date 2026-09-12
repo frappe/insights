@@ -216,7 +216,7 @@ function getOptions(region: Region) {
 							<h3 class="text-sm-bold text-ink-gray-8">Unresolved Locations</h3>
 						</div>
 						<div
-							class="h-[15rem] flex flex-col overflow-hidden rounded-md border bg-surface-base"
+							class="h-[15rem] flex flex-col overflow-hidden rounded-5 border bg-surface-base"
 						>
 							<div class="z-10 bg-surface-base">
 								<TextInput
@@ -238,6 +238,7 @@ function getOptions(region: Region) {
 
 									<div class="w-56 flex-shrink-0">
 										<Combobox
+											class="w-full"
 											placeholder="Select region..."
 											:modelValue="localMappings[region.user_region] || ''"
 											@update:modelValue="
@@ -260,7 +261,7 @@ function getOptions(region: Region) {
 							<h3 class="text-sm-medium text-ink-gray-8">Resolved</h3>
 						</div>
 
-						<div class="h-[10rem] overflow-y-auto rounded-md border bg-surface-base">
+						<div class="h-[10rem] overflow-y-auto rounded-5 border bg-surface-base">
 							<div class="flex flex-col divide-y h-full">
 								<div
 									v-if="manualMappings.length === 0"
@@ -279,6 +280,7 @@ function getOptions(region: Region) {
 
 									<div class="w-56 flex-shrink-0">
 										<Combobox
+											class="w-full"
 											:modelValue="mapping.mapped_to"
 											@update:modelValue="
 												updateMapping(mapping.user_region, $event)
@@ -296,7 +298,7 @@ function getOptions(region: Region) {
 									<Button
 										variant="icon"
 										@click="removeMapping(mapping.user_region)"
-										class="text-ink-red-7"
+										class="text-ink-red-6"
 										:icon="Trash2Icon"
 									>
 									</Button>

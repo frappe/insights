@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { computed, watchEffect } from 'vue'
-import { __ } from '../../translation'
+import { computed } from 'vue'
 import { FIELDTYPES } from '../../helpers/constants'
 import { DonutChartConfig } from '../../types/chart.types'
-import { ColumnOption, Dimension, DimensionOption, Measure } from '../../types/query.types'
+import { ColumnOption, DimensionOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
+import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
+import NumberFormatSection from './NumberFormatSection.vue'
 
 const props = defineProps<{
 	dimensions: DimensionOption[]
@@ -19,15 +20,6 @@ const config = defineModel<DonutChartConfig>({
 		label_column: {},
 		value_column: {},
 	}),
-})
-
-watchEffect(() => {
-	if (!config.value.label_column) {
-		config.value.label_column = {} as Dimension
-	}
-	if (!config.value.value_column) {
-		config.value.value_column = {} as Measure
-	}
 })
 
 const discrete_dimensions = computed(() =>
@@ -48,20 +40,12 @@ const discrete_dimensions = computed(() =>
 				v-model="config.value_column"
 				:column-options="props.columnOptions"
 			/>
-			<FormControl
-				v-if="!config.show_inline_labels"
-				v-model="config.legend_position"
-				label="Legend Position"
-				type="select"
-				:options="[
-					{ label: __('Top'), value: 'top' },
-					{ label: __('Bottom'), value: 'bottom' },
-					{ label: __('Left'), value: 'left' },
-					{ label: __('Right'), value: 'right' },
-				]"
-			/>
-			<FormControl v-model="config.max_slices" label="Max Slices" type="number" min="1" />
-			<Toggle v-model="config.show_inline_labels" label="Inline Labels" />
+			<InlineFormControlLabel label="Max slices" control-width="4rem">
+				<FormControl v-model="config.max_slices" type="number" min="1" placeholder="10" />
+			</InlineFormControlLabel>
+			<Toggle v-model="config.show_inline_labels" label="Inline labels" />
 		</div>
 	</CollapsibleSection>
+
+	<NumberFormatSection :config="config" :sole-measure-name="config.value_column?.measure_name" />
 </template>

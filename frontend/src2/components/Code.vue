@@ -27,7 +27,7 @@ import { Decoration, EditorView, ViewPlugin } from '@codemirror/view'
 import { computed, onMounted, ref, watch } from 'vue'
 import { Codemirror } from 'vue-codemirror'
 import { dracula, tomorrow } from 'thememirror'
-import { useTheme } from 'frappe-ui'
+import { useColorScheme } from 'frappe-ui'
 
 const props = defineProps({
 	modelValue: String,
@@ -195,7 +195,7 @@ const autocompletionOptions = {
 	closeOnBlur: false,
 	maxRenderedOptions: 10,
 	icons: false,
-	optionClass: () => 'flex h-7 !px-2 items-center rounded !text-ink-gray-5',
+	optionClass: () => 'flex h-7 !px-2 items-center rounded-4 !text-ink-gray-5',
 }
 if (props.completions) {
 	autocompletionOptions.override = [
@@ -207,12 +207,12 @@ if (props.completions) {
 
 // Editor theme follows the app theme so the code surface flips with dark mode
 // instead of staying on the light `tomorrow` palette.
-const { currentTheme } = useTheme()
+const { colorScheme } = useColorScheme()
 const extensions = computed(() => {
 	const exts = [
 		language,
 		closeBrackets(),
-		currentTheme.value === 'dark' ? dracula : tomorrow,
+		colorScheme.value === 'dark' ? dracula : tomorrow,
 		validationLinter,
 		autocompletion(autocompletionOptions),
 	]

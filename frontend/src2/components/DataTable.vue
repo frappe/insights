@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { watchDebounced } from '@vueuse/core'
 import { Button, LoadingIndicator } from 'frappe-ui'
-import { Plus, Search, Table2Icon } from 'lucide-vue-next'
-import { computed, nextTick, ref } from 'vue'
+import { useChartTokens } from 'frappe-ui/charts'
+import { ExternalLink, Plus, Search, Table2Icon } from 'lucide-vue-next'
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { usePagination } from '../composables/usePagination'
-import { createHeaders, formatNumber, getFormatUnits, getShortNumber } from '../helpers'
+import { createHeaders } from '../helpers'
+import { numberFormatter, type NumberFormatter } from '../charts/number_format'
 import { FIELDTYPES } from '../helpers/constants'
 import {
 	applyDateRule,
@@ -15,12 +17,19 @@ import {
 	date_rules,
 	FormatGroupArgs,
 	FormattingMode,
-	garByPercentage,
-	ragByPercentage,
 	rank_rules,
+	rulesByColumn,
 	text_rules,
 } from '../query/components/formatting_utils'
+import {
+	colorScaleDirection,
+	fillAt,
+	magnitudeScale,
+	statusFill,
+	type CellFill,
+} from '../query/components/formatting_colors'
 import { matchesFilter, parseFilterString } from '../query/helpers'
+import { NumberFormat } from '../types/chart.types'
 import {
 	DataFormat,
 	QueryResultColumn,
@@ -28,6 +37,7 @@ import {
 	SortDirection,
 	SortOrder,
 } from '../types/query.types'
+import { RESULT_GRID_HOST } from './result_pane/result_grid'
 import DataTableColumn from './DataTableColumn.vue'
 import DataTableFooter from './DataTableFooter.vue'
 import LazyTextInput from './LazyTextInput.vue'
@@ -38,30 +48,32 @@ const props = defineProps<{
 	showRowTotals?: boolean
 	showColumnTotals?: boolean
 	showFilterRow?: boolean
-	enablePagination?: boolean
 	enableColorScale?: boolean
 	enableNewColumn?: boolean
 	replaceNullsWithZeros?: boolean
-	compactNumbers?: boolean
 	loading?: boolean
 	filtering?: boolean
-	onExport?: Function
-	downloading?: boolean
 	formatGroup?: FormatGroupArgs
 	sortOrder?: SortOrder
 	onSortChange?: (column_name: string, direction: SortDirection) => void
 	onColumnRename?: (column_name: string, new_name: string) => void
-	onDrilldown?: (column: QueryResultColumn, row: QueryResultRow) => void
+	// the event too: a caller that opens a menu at the click needs the point, and
+	// the cell is the only thing that knows where it was
+	onDrilldown?: (column: QueryResultColumn, row: QueryResultRow, event: MouseEvent) => void
+	// where a cell's value points, when it points anywhere. The table draws the
+	// link and knows nothing about what is behind it
+	cellLink?: (column: QueryResultColumn, row: QueryResultRow) => string | undefined
 	stickyColumns?: string[]
 	columnWidths?: Record<string, number>
 	textWrap?: Record<string, boolean>
 	columnFormats?: Record<string, DataFormat>
+	/** How every cell prints, before a column says otherwise. */
+	numberFormat?: NumberFormat
+	/** How one column prints, by name. Overrides `numberFormat` key by key. */
+	numberFormats?: Record<string, NumberFormat>
 	pageSize?: number
 	displayPageSize?: number
-	totalRowCount?: number
-	onPageChange?: (page: number) => void
 	currentPage?: number
-	onFetchCount?: () => Promise<void> | void
 	onFilterChange?: (filters: Record<string, string>) => void
 }>()
 
@@ -98,6 +110,12 @@ const isUrl = (value: any): boolean => {
 	} catch {
 		return false
 	}
+}
+
+const linkOf = (col: QueryResultColumn, row: QueryResultRow): string | undefined => {
+	const href = props.cellLink?.(col, row)
+	if (href) return href
+	return isUrl(row[col.name]) ? String(row[col.name]).trim() : undefined
 }
 
 const $header = ref<HTMLElement>()
@@ -222,24 +240,29 @@ const totalColumnTotal = computed(() => {
 	return Object.values(totalPerColumn.value).reduce((acc, val) => acc + val, 0)
 })
 
+// The cursor is the host's — a pane above passes the page down and slices the
+// rows itself. What is left here is the row gutter: `rowDisplayOffset` is what
+// makes row 1 of page 3 print as 201.
 const pagination = usePagination({
 	pageSize: computed(() => props.pageSize ?? 100),
 	displayPageSize: computed(() => props.displayPageSize ?? 100),
 	rowCount: computed(() => visibleRows.value?.length ?? 0),
-	totalRowCount: computed(() => props.totalRowCount),
 	currentPage: computed(() => props.currentPage),
-	onPageChange: props.onPageChange,
-	enabled: computed(() => Boolean(props.enablePagination)),
 })
 
-const colorByPercentage = {
-	0: 'bg-white text-ink-gray-8',
-	10: 'bg-[#338AD8]/10 text-ink-gray-8',
-	30: 'bg-[#338AD8]/30 text-ink-gray-8',
-	60: 'bg-[#338AD8]/60 text-ink-gray-8',
-	90: 'bg-[#338AD8]/90 text-white',
-	100: 'bg-[#338AD8] text-white',
-}
+// The grid draws in the same colors every chart does, so a scale reads the
+// same whether it is a heatmap or a column of numbers. `useChartTokens`
+// re-resolves when the theme flips.
+const $root = ref<HTMLElement>()
+const { tokens } = useChartTokens($root)
+
+// Built once per theme rather than per cell: every cell in a column reads the
+// same scale, and a grid asks for it thousands of times. The chart-wide toggle
+// and a column's own rule draw from the same two, so they cannot disagree.
+const scales = computed(() => ({
+	ascending: magnitudeScale(tokens.value, 'ascending'),
+	descending: magnitudeScale(tokens.value, 'descending'),
+}))
 
 const colorByValues = computed(() => {
 	const columns = props.columns
@@ -260,74 +283,21 @@ const colorByValues = computed(() => {
 
 	uniqueValues = uniqueValues.sort((a, b) => a - b)
 	const max = uniqueValues[uniqueValues.length - 1]
-	const uniqueValuesNormalized = uniqueValues.map((val) => Math.round((val / max) * 100))
-	const _colorByValues: Record<number, string> = {}
-	uniqueValuesNormalized.forEach((percentVal, index) => {
-		for (const [percent, color] of Object.entries(colorByPercentage)) {
-			if (percentVal <= Number(percent)) {
-				_colorByValues[uniqueValues[index]] = color
-				break
-			}
-		}
+	const _colorByValues: Record<number, CellFill> = {}
+	uniqueValues.forEach((value) => {
+		const fill = fillAt(scales.value.ascending, Math.round((value / max) * 100))
+		if (fill) _colorByValues[value] = fill
 	})
 
 	return _colorByValues
 })
 
-const formattingRulesByColumn = computed(() => {
-	const { formats } = props.formatGroup || {}
-	const columns = props.columns || []
-	const result: Record<string, FormattingMode[]> = {}
-
-	if (!formats?.length) return result
-
-	// ibis generates pivot columns as {measure}___{dim_value1}___{dim_value2}...
-	// so the measure name is always the first part
-	const getMeasureName = (name: string) => (name.includes('___') ? name.split('___')[0] : name)
-
-	formats.forEach((format) => {
-		const target = 'column' in format ? format.column?.column_name : null
-		if (!target) return
-
-		// get matches (direct or pivot suffix)
-		const matchedColumns = columns.filter((col) => {
-			const measureName = getMeasureName(col.name)
-			return measureName === target || col.name.endsWith(`___${target}`)
-		})
-
-		if (matchedColumns.length > 0) {
-			matchedColumns.forEach((col) => {
-				;(result[col.name] ??= []).push(format)
-			})
-		} else {
-			// Only apply to numeric value columns
-			// We skip index 0 since its the dimension/row header
-			columns.forEach((col, idx) => {
-				const isNumeric = FIELDTYPES.NUMBER.includes(col.type)
-				if (idx > 0 && isNumeric) {
-					;(result[col.name] ??= []).push(format)
-				}
-			})
-		}
-	})
-
-	return result
-})
-
-function getColorClass(colorName: string): string {
-	if (!colorName) return 'bg-surface-gray-6'
-
-	switch (colorName.toLowerCase()) {
-		case 'red':
-			return 'bg-[#d87373] text-white'
-		case 'green':
-			return 'bg-[#6DB678] text-white'
-		case 'amber':
-			return 'bg-[#F8D16E] text-black'
-		default:
-			return colorName.startsWith('bg-') ? colorName : 'bg-surface-gray-6'
-	}
-}
+const formattingRulesByColumn = computed(() =>
+	rulesByColumn(
+		props.formatGroup?.formats,
+		(props.columns || []).map((col) => col.name),
+	),
+)
 
 const getColumnMinMax = (columnName: string) => {
 	const colorScaleFormats = formattingRulesByColumn.value[columnName]?.filter(
@@ -394,17 +364,11 @@ const getColumnMinMax = (columnName: string) => {
 	}
 }
 
-function getDefaultColorScaleClass(colName: string, val: any): string {
-	if (props.enableColorScale && isNumberColumn(colName)) {
-		const numVal = Number(val)
-		if (!isNaN(numVal)) {
-			const colorByValue = colorByValues.value as Record<number, string>
-			if (colorByValue && colorByValue[numVal]) {
-				return colorByValue[numVal]
-			}
-		}
-	}
-	return ''
+function getDefaultColorScaleFill(colName: string, val: any): CellFill | undefined {
+	if (!props.enableColorScale || !isNumberColumn(colName)) return undefined
+	const numVal = Number(val)
+	if (isNaN(numVal)) return undefined
+	return (colorByValues.value as Record<number, CellFill>)[numVal]
 }
 
 function normalizeCellValue(colName: string, val: any) {
@@ -414,128 +378,140 @@ function normalizeCellValue(colName: string, val: any) {
 	return val
 }
 
-function getHighlightClassFromRules(colName: string, val: any, rules: FormattingMode[]): string {
+/** The color the first matching rule asks for, if any rule matches. */
+function matchedRuleColor(colName: string, val: any, rules: FormattingMode[]): string | undefined {
+	const value = normalizeCellValue(colName, val)
+
 	for (const format of rules) {
-		let isHighlighted = false
-		let colorClass = ''
-
-		const normalizedValue = normalizeCellValue(colName, val)
-
 		if (format.mode === 'cell_rules' && format.operator && format.value !== undefined) {
-			const rule = {
-				column: colName,
-				operator: format.operator,
-				value: format.value,
-				color: format.color,
-				mode: 'cell_rules',
-			} as unknown as cell_rules
-
-			if (applyRule(normalizedValue, rule)) {
-				isHighlighted = true
-				colorClass = getColorClass(format.color as string)
-			}
+			const rule = { ...format, column: colName } as unknown as cell_rules
+			if (applyRule(value, rule)) return format.color
 		} else if (format.mode === 'text_rules') {
-			const textRule = format as text_rules
-			if (applyTextRule(normalizedValue, textRule)) {
-				isHighlighted = true
-				colorClass = getColorClass(textRule.color)
-			}
+			if (applyTextRule(value, format as text_rules)) return format.color
 		} else if (format.mode === 'date_rules') {
-			const dateRule = format as date_rules
-			if (applyDateRule(normalizedValue, dateRule)) {
-				isHighlighted = true
-				colorClass = getColorClass(dateRule.color)
-			}
+			if (applyDateRule(value, format as date_rules)) return format.color
 		} else if (format.mode === 'rank_rules') {
-			const rankRule = format as rank_rules
 			const allColumnValues =
 				props.rows?.map((row) => normalizeCellValue(colName, row[colName])) || []
-			if (applyRankRule(normalizedValue, rankRule, allColumnValues)) {
-				isHighlighted = true
-				colorClass = getColorClass(rankRule.color)
-			}
-		}
-
-		if (isHighlighted && colorClass) {
-			return colorClass
+			if (applyRankRule(value, format as rank_rules, allColumnValues)) return format.color
 		}
 	}
-	return ''
+	return undefined
 }
 
-function getColorScaleClassFromFormat(colName: string, val: any, format: FormattingMode): string {
-	if (format.mode !== 'color_scale') return ''
+function getColorScaleFillFromFormat(
+	colName: string,
+	val: any,
+	format: FormattingMode,
+): CellFill | undefined {
+	if (format.mode !== 'color_scale') return undefined
 	const numVal = Number(val)
-	if (isNaN(numVal)) return ''
+	if (isNaN(numVal)) return undefined
 
 	const { min, max } = getColumnMinMax(colName)
-	let percentile: number = 0
-	const normalizedValue = (numVal - min) / (max - min)
-	percentile = Math.round(normalizedValue * 100)
-	percentile = Math.max(0, Math.min(100, percentile))
+	const percentile = Math.round(((numVal - min) / (max - min)) * 100)
 
-	let colorScale: Record<string, string>
-	if (format.colorScale) {
-		format.colorScale == 'Red-Green'
-			? (colorScale = ragByPercentage)
-			: (colorScale = garByPercentage)
-	} else {
-		colorScale = ragByPercentage
-	}
-
-	const thresholds = Object.keys(colorScale)
-		.map(Number)
-		.sort((a, b) => a - b)
-
-	let selectedThreshold = thresholds[0]
-	for (const threshold of thresholds) {
-		if (percentile >= threshold) {
-			selectedThreshold = threshold
-		}
-	}
-	const thresholdKey = String(selectedThreshold)
-	const bgClass = colorScale[thresholdKey]?.trim() || 'bg-surface-gray-4'
-	return `${bgClass}`
+	return fillAt(scales.value[colorScaleDirection(format.colorScale)], percentile)
 }
 
-function getColorScaleClassFromRules(colName: string, val: any, rules: FormattingMode[]): string {
+function getColorScaleFillFromRules(
+	colName: string,
+	val: any,
+	rules: FormattingMode[],
+): CellFill | undefined {
 	for (const format of rules) {
 		if (format.mode === 'color_scale') {
-			const cls = getColorScaleClassFromFormat(colName, val, format)
-			if (cls) return cls
+			const fill = getColorScaleFillFromFormat(colName, val, format)
+			if (fill) return fill
 		}
 	}
-	return ''
+	return undefined
 }
 
-function getCellStyleClass(colName: string, val: any): string {
-	const defaultScale = getDefaultColorScaleClass(colName, val)
-	if (defaultScale) return defaultScale
+type CellPaint = Partial<CellFill> & { borderColor?: string }
+
+/**
+ * A filled cell draws its gridline in its own fill. The table's border is an
+ * outline gray picked to separate two bare cells, and any color over a fill is
+ * a seam — recoloring it only changes which color cuts the block. Painting the
+ * border in the fill leaves the cell edge where it was, so nothing reflows,
+ * and a run of filled cells reads as one block.
+ */
+function paint(fill: CellFill): CellPaint {
+	return { ...fill, borderColor: fill.backgroundColor }
+}
+
+/**
+ * What paints a cell. A rule verdict is a semantic class, a scale stop is a
+ * resolved color, and one call hands back whichever applies so the cell binds
+ * both the same way. A cell that nothing paints keeps the table's own grid.
+ */
+function getCellPaint(colName: string, val: any): CellPaint {
+	const defaultScale = getDefaultColorScaleFill(colName, val)
+	if (defaultScale) return paint(defaultScale)
 
 	const rules = formattingRulesByColumn.value[colName]
-	if (!rules?.length) return ''
+	if (!rules?.length) return {}
 
-	const highlight = getHighlightClassFromRules(colName, val, rules)
-	if (highlight) return highlight
+	const ruleColor = matchedRuleColor(colName, val, rules)
+	if (ruleColor) return paint(statusFill(ruleColor, tokens.value))
 
-	const scale = getColorScaleClassFromRules(colName, val, rules)
-	if (scale) return scale
+	const scale = getColorScaleFillFromRules(colName, val, rules)
+	if (scale) return paint(scale)
 
-	return ''
+	return {}
 }
+
+// The grid formats its cells the way every chart does: it states the policy and
+// the one resolver answers it. A column is looked up by name, which is what the
+// Measure behind it is called. A total belongs to no column and prints under
+// the table's own default.
+const cellFormatters = computed(() => {
+	const formatters: Record<string, NumberFormatter> = {}
+	for (const column of props.columns || []) {
+		formatters[column.name] = numberFormatter(
+			{ number_format: props.numberFormat, number_formats: props.numberFormats },
+			{ measure_name: column.name, format: props.columnFormats?.[column.name] },
+		)
+	}
+	return formatters
+})
+
+const defaultFormatter = computed(() => numberFormatter(props.numberFormat))
 
 function _formatNumber(value: any, columnName?: string) {
+	const format = (columnName && cellFormatters.value[columnName]) || defaultFormatter.value
 	const isNull = value === null || value === undefined
+	// A zero standing in for a missing number is still a number of this column,
+	// so it prints in the column's own units.
 	if (isNull) {
-		return props.replaceNullsWithZeros ? 0 : 'null'
+		return props.replaceNullsWithZeros ? format(0) : 'null'
 	}
-	const { scale, prefix, suffix } = getFormatUnits(
-		columnName ? props.columnFormats?.[columnName] : undefined,
-	)
-	const scaled = value * scale
-	const printed = props.compactNumbers ? getShortNumber(scaled) : formatNumber(scaled)
-	return `${prefix}${printed}${suffix}`
+	return format(value)
 }
+
+/**
+ * Bring a column into view and mark it for a moment.
+ *
+ * The pane around the grid owns the find and asks for this. The grid owns where
+ * a column sits, which is why the pane asks rather than reaching for the cell
+ * itself. A grid drawn outside a pane registers with nobody and is never asked.
+ */
+function scrollToColumn(column_name: string) {
+	nextTick(() => {
+		const cell = $root.value?.querySelector(
+			`td[data-column-name="${column_name}"]`,
+		) as HTMLElement | null
+		if (!cell) return
+		cell.scrollIntoView({ inline: 'center', block: 'nearest' })
+		cell.classList.add('bg-surface-gray-3')
+		setTimeout(() => cell.classList.remove('bg-surface-gray-3'), 600)
+	})
+}
+
+const pane = inject(RESULT_GRID_HOST, null)
+onMounted(() => pane?.setGrid({ scrollToColumn }))
+onBeforeUnmount(() => pane?.setGrid(undefined))
 
 const showNewColumn = ref(false)
 function toggleNewColumn() {
@@ -555,6 +531,7 @@ function toggleNewColumn() {
 <template>
 	<div
 		v-if="columns?.length || rows?.length"
+		ref="$root"
 		class="flex h-full w-full flex-col overflow-hidden text-sm"
 	>
 		<div class="w-full flex-1 overflow-y-auto">
@@ -562,7 +539,7 @@ function toggleNewColumn() {
 				<thead ref="$header" class="sticky top-0 z-10 bg-surface-gray-1">
 					<tr v-for="headerRow in headers">
 						<td
-							class="sticky left-0 h-8 whitespace-nowrap border-b border-r bg-surface-gray-1 px-3"
+							class="sticky left-0 z-[1] h-8 whitespace-nowrap border-b border-r bg-surface-gray-1 px-3"
 							data-column-name="__index"
 							width="1px"
 						></td>
@@ -575,7 +552,7 @@ function toggleNewColumn() {
 									? 'text-right'
 									: 'text-left',
 								isStickyColumn(header.column.name)
-									? 'sticky bg-surface-gray-1'
+									? 'sticky z-[1] bg-surface-gray-1'
 									: '',
 							]"
 							:style="{
@@ -644,14 +621,16 @@ function toggleNewColumn() {
 
 					<tr v-if="props.showFilterRow">
 						<td
-							class="sticky left-0 h-8 whitespace-nowrap border-b border-r bg-surface-gray-1 px-3"
+							class="sticky left-0 z-[1] h-8 whitespace-nowrap border-b border-r bg-surface-gray-1 px-3"
 							width="1px"
 						></td>
 						<td
 							v-for="(column, idx) in props.columns"
 							:key="idx"
 							class="h-8 border-b border-r p-1"
-							:class="isStickyColumn(column.name) ? 'sticky bg-surface-gray-1' : ''"
+							:class="
+								isStickyColumn(column.name) ? 'sticky z-[1] bg-surface-gray-1' : ''
+							"
 							:style="{
 								...getStickyColumnStyle(column.name),
 								...getColumnWidthStyle(column.name),
@@ -697,7 +676,7 @@ function toggleNewColumn() {
 						:key="idx"
 					>
 						<td
-							class="tnum sticky left-0 h-8 whitespace-nowrap border-b border-r bg-surface-base px-3 text-right text-xs"
+							class="tnum sticky left-0 z-[1] h-8 whitespace-nowrap border-b border-r bg-surface-base px-3 text-right text-xs"
 							width="1px"
 							height="30px"
 						>
@@ -706,34 +685,54 @@ function toggleNewColumn() {
 
 						<td
 							v-for="col in props.columns"
-							class="h-8 border-b border-r px-3 text-ink-gray-7 leading-5 py-1.5"
+							class="group/cell h-8 border-b border-r px-3 text-ink-gray-7 leading-5 py-1.5"
 							:class="[
 								getTextWrapClass(col.name),
 								isNumberColumn(col.name) ? 'tnum text-right' : 'text-left',
-								props.enableColorScale && isNumberColumn(col.name)
-									? colorByValues[row[col.name]]
-									: '',
 								isNumberColumn(col.name) && props.onDrilldown
 									? 'cursor-pointer'
 									: '',
-								getCellStyleClass(col.name, row[col.name]),
-								isStickyColumn(col.name) ? 'sticky bg-surface-base' : '',
+								isStickyColumn(col.name) ? 'sticky z-[1] bg-surface-base' : '',
 							]"
 							:style="{
 								...getStickyColumnStyle(col.name),
 								...getColumnWidthStyle(col.name),
+								...getCellPaint(col.name, row[col.name]),
 							}"
 							height="30px"
-							@dblclick="isNumberColumn(col.name) && props.onDrilldown?.(col, row)"
+							@dblclick="
+								isNumberColumn(col.name) && props.onDrilldown?.(col, row, $event)
+							"
 						>
 							<template v-if="isNumberColumn(col.name)">
 								{{ _formatNumber(row[col.name], col.name) }}
 							</template>
-							<template v-else-if="isUrl(row[col.name])">
-								<a :href="row[col.name]" target="_blank" class="underline">
-									{{ row[col.name] }}
-								</a>
-							</template>
+							<!-- the whole value is the control, so a link needs no column
+							     of its own. The icon marks the one that leaves, and it
+							     is drawn only under the pointer: a column where every
+							     row links would otherwise be a column of icons. Its
+							     space is held either way, so nothing shifts on hover.
+
+							     The cell is what is pointed at, not the text: a value
+							     short of the column's width would otherwise leave the
+							     icon out of reach of most of the cell. The group is
+							     named for it, because a card names a hover group of
+							     its own around the whole table and a bare
+							     `group-hover` answers whichever ancestor carries the
+							     class. -->
+							<a
+								v-else-if="linkOf(col, row)"
+								:href="linkOf(col, row)"
+								target="_blank"
+								rel="noopener noreferrer"
+								class="inline-flex max-w-full items-center gap-1 hover:underline"
+							>
+								<span class="truncate">{{ row[col.name] }}</span>
+								<ExternalLink
+									class="size-3 shrink-0 text-ink-gray-5 opacity-0 transition-opacity group-hover/cell:opacity-100"
+									stroke-width="1.5"
+								/>
+							</a>
 
 							<template v-else>
 								{{ row[col.name] }}
@@ -750,17 +749,19 @@ function toggleNewColumn() {
 						</td>
 					</tr>
 
+					<!-- The cells carry the closing rule, not the row: under
+					     `border-separate` a border on a `tr` is never painted. -->
 					<tr
 						v-if="props.showColumnTotals && totalPerColumn"
-						class="sticky bottom-0 border-b bg-surface-base"
+						class="sticky bottom-0 bg-surface-base"
 					>
-						<td class="h-8 whitespace-nowrap border-r border-t px-3"></td>
+						<td class="h-8 whitespace-nowrap border-b border-r border-t px-3"></td>
 						<td
 							v-for="col in props.columns"
-							class="h-8 truncate border-r border-t px-3 font-bold text-ink-gray-7"
+							class="h-8 truncate border-b border-r border-t px-3 font-bold text-ink-gray-7"
 							:class="[
 								isNumberColumn(col.name) ? 'tnum text-right' : 'text-left',
-								isStickyColumn(col.name) ? 'sticky bg-surface-base' : '',
+								isStickyColumn(col.name) ? 'sticky z-[1] bg-surface-base' : '',
 							]"
 							:style="{
 								...getStickyColumnStyle(col.name),
@@ -776,7 +777,7 @@ function toggleNewColumn() {
 
 						<td
 							v-if="props.showRowTotals && totalColumnTotal"
-							class="tnum h-8 border-r border-t px-3 text-right font-bold"
+							class="tnum h-8 border-b border-r border-t px-3 text-right font-bold"
 						>
 							{{ _formatNumber(totalColumnTotal) }}
 						</td>
@@ -787,18 +788,9 @@ function toggleNewColumn() {
 			</table>
 		</div>
 		<slot name="footer">
-			<DataTableFooter
-				:pagination="props.enablePagination ? pagination : undefined"
-				:total-row-count="props.totalRowCount"
-				:on-fetch-count="props.onFetchCount"
-				@prev="pagination.prev"
-				@next="pagination.next"
-			>
-				<template #left>
+			<DataTableFooter>
+				<template v-if="$slots['footer-left']" #left>
 					<slot name="footer-left" />
-				</template>
-				<template #actions>
-					<slot name="footer-right-actions" />
 				</template>
 			</DataTableFooter>
 		</slot>
@@ -813,7 +805,7 @@ function toggleNewColumn() {
 
 	<div
 		v-if="props.loading && !props.filtering"
-		class="absolute top-10 flex h-[calc(100%-2.5rem)] rounded-b w-full items-center justify-center bg-surface-base/30 backdrop-blur-sm"
+		class="absolute top-10 flex h-[calc(100%-2.5rem)] rounded-b-4 w-full items-center justify-center bg-surface-base/30 backdrop-blur-sm"
 	>
 		<LoadingIndicator class="h-5 w-5 text-ink-gray-4" />
 	</div>

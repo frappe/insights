@@ -294,13 +294,11 @@ def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
 # preview, and reshapes the query - and those are for the builder, not for the
 # published document.
 PUBLIC_METHOD_ARGS = {
-    ("Insights Query v3", "execute"): {"adhoc_filters", "page", "page_size"},
-    ("Insights Query v3", "download_results"): {"format", "adhoc_filters"},
+    ("Insights Chart v3", "get_data"): {"page", "page_size", "chart_name", "dashboard_items", "filters"},
     ("Insights Dashboard v3", "get_distinct_column_values"): {
-        "query",
-        "column_name",
+        "filter_name",
         "search_term",
-        "adhoc_filters",
+        "filter_context",
     },
     ("Insights Dashboard v3", "track_view"): set(),
 }
