@@ -1,11 +1,11 @@
 <script setup lang="ts">
-// The popover's inside: one input, the path as tokens before its text, and
-// under it one list per stage. reka's combobox owns the highlight and the arrow
-// keys; this file owns what a pick means.
-import { Badge, Tooltip } from 'frappe-ui'
+// The popover's inside: one input, and under it one list per stage. reka's
+// combobox owns the highlight and the arrow keys; this file owns what a pick
+// means.
+import { Badge, KeyboardShortcut, Tooltip } from 'frappe-ui'
 import { Delete, Plus, Search } from 'lucide-vue-next'
 import { ComboboxInput, ComboboxRoot } from 'reka-ui'
-import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { __ } from '../../translation'
 import type { FilterOperator, FilterValue, QueryResultColumn } from '../../types/query.types'
 import {
@@ -367,34 +367,33 @@ const emptyText = computed(() => {
 	return ''
 })
 
+/**
+ * The prompt carries what the path tokens used to. A value stage names the
+ * column and the operator it is filling in, because the operator is what says
+ * how much to type; the operator stage names the column alone, the operator
+ * being the thing the reader is there to pick.
+ */
 const placeholder = computed(() => {
+	const name = column.value?.name ?? ''
+	const word = op.value?.word ?? ''
 	if (stage.value === 'overview') return __('Filters…')
 	if (stage.value === 'column') return __('Filter by…')
-	if (stage.value === 'operator') return __('Operator…')
-	if (stage.value === 'relative') return __('Last, Next or This…')
-	if (stage.value === 'unit')
-		return relative.direction === 'current' ? __('Unit…') : __('N, e.g. 10')
-	if (multi.value) return __('Search values…')
-	if (kind.value === 'text') return __('Type a value…')
-	if (kind.value === 'number') return between.value ? __('e.g. 30 to 50') : __('Type a number…')
-	if (calendar.value) return calendar.value === 'range' ? __('From – to…') : __('Date…')
-	return __('e.g. last 3 months')
-})
-
-// --- tokens ----------------------------------------------------------------
-
-const VALUE_STAGES: Stage[] = ['value', 'relative', 'unit']
-
-const tokens = computed(() => {
-	// a column mount names its column on the trigger, and its operator beside it
-	if (props.column) return []
-	const path: string[] = []
-	if (column.value && stage.value !== 'column' && stage.value !== 'overview')
-		path.push(column.value.name)
-	if (op.value && VALUE_STAGES.includes(stage.value)) path.push(op.value.sign)
-	if (stage.value === 'unit')
-		path.push(RELATIVE_DIRECTIONS.find((d) => d.key === relative.direction)!.label)
-	return path
+	if (stage.value === 'operator') return name ? `${name}…` : __('Operator…')
+	if (stage.value === 'relative')
+		return word
+			? __('{0} Last, Next or This…', word.charAt(0).toUpperCase() + word.slice(1))
+			: __('Last, Next or This…')
+	if (stage.value === 'unit') {
+		if (relative.direction === 'current') return __('This week, month, quarter…')
+		const label = RELATIVE_DIRECTIONS.find((d) => d.key === relative.direction)!.label
+		return __('{0} how many?', label)
+	}
+	if (!name || !op.value) return __('Type a value…')
+	// numbers read by their sign, and a range keeps its example: `between 30 and
+	// 50` would teach a separator the input does not parse
+	if (kind.value === 'number')
+		return between.value ? __('{0} between, e.g. 30 to 50', name) : `${name} ${op.value.sign} …`
+	return `${name} ${word}…`
 })
 
 // --- picks -----------------------------------------------------------------
@@ -496,10 +495,6 @@ onBeforeUnmount(() => {
 // --- keys ------------------------------------------------------------------
 
 function back() {
-	if (multi.value && picked.value.length) {
-		picked.value = picked.value.slice(0, -1)
-		return
-	}
 	const previous = history.value.pop()
 	if (!previous) return
 	if (stage.value === 'value') clearValue()
@@ -514,12 +509,6 @@ function back() {
 	stage.value = previous
 	search.value = ''
 	if (previous === 'operator' && op.value) highlight(op.value.operator)
-}
-
-function backTo(count: number) {
-	let guard = 8
-	while (tokens.value.length > count && guard--) back()
-	focusInput()
 }
 
 function onKeydown(event: KeyboardEvent) {
@@ -543,6 +532,26 @@ function onKeydown(event: KeyboardEvent) {
 		commit()
 	}
 }
+
+/**
+ * What the keys do here, named for the stage in front of the reader. Enter is
+ * the row under the highlight, so it says `Apply` only where there is no row to
+ * take it. `Mod+Enter` stands apart because a multi stage's Enter ticks rather
+ * than commits, and Backspace leaves the text alone while there is text.
+ *
+ * The opening stage says nothing. Enter on the row under the highlight is the
+ * only key it takes, and a list a reader is already arrowing through does not
+ * need a line under it to say so.
+ */
+const keyHints = computed(() => {
+	if (!history.value.length) return []
+	const hints: { combo: string; label: string }[] = []
+	if (rows.value.length) hints.push({ combo: 'Enter', label: __('Select') })
+	else if (draft.value) hints.push({ combo: 'Enter', label: __('Apply') })
+	if (multi.value && draft.value) hints.push({ combo: 'Mod+Enter', label: __('Apply') })
+	if (history.value.length && !search.value) hints.push({ combo: 'Backspace', label: __('Back') })
+	return hints
+})
 
 const isMac = navigator.platform.toUpperCase().includes('MAC')
 
@@ -577,8 +586,10 @@ const inputRef = ref<any>(null)
 function focusInput() {
 	nextTick(() => inputRef.value?.$el?.focus({ preventScroll: true }))
 }
-// the popover declines the focus reka would take, so one plain call is enough
-onMounted(() => inputRef.value?.$el?.focus({ preventScroll: true }))
+// The opening focus is reka's: it focuses the first tabbable in the panel, which
+// is the input. Taking it by hand here instead lands too early for a panel inside
+// a dialog — the dialog's focus trap is released only once the popover's own
+// focus scope is on the stack, and until then it pulls the caret back out.
 </script>
 
 <template>
@@ -597,19 +608,6 @@ onMounted(() => inputRef.value?.$el?.focus({ preventScroll: true }))
 	>
 		<div class="flex items-center gap-2 border-b border-outline-gray-1 px-3">
 			<Search v-if="!column" class="size-4 shrink-0 text-ink-gray-5" stroke-width="1.5" />
-			<span v-if="tokens.length" class="-me-1 flex shrink-0 items-center gap-1">
-				<button
-					v-for="(token, index) in tokens"
-					:key="`t:${index}`"
-					type="button"
-					class="shrink-0 text-base text-ink-gray-8 outline-none"
-					:class="index ? 'font-medium' : ''"
-					@mousedown.prevent
-					@click="backTo(index)"
-				>
-					{{ token }}
-				</button>
-			</span>
 			<ComboboxInput
 				ref="inputRef"
 				v-model="search"
@@ -617,14 +615,20 @@ onMounted(() => inputRef.value?.$el?.focus({ preventScroll: true }))
 				:placeholder="placeholder"
 				@keydown="onKeydown"
 			/>
-			<Badge
+			<!-- the count alone: the word "selected" is what the checkboxes below
+			     already say, and the row has 240px to hold the input as well -->
+			<Tooltip
 				v-if="multi && picked.length"
-				variant="subtle"
-				theme="gray"
-				size="sm"
-				class="shrink-0"
-				:label="__('{0} selected', String(picked.length))"
-			/>
+				:text="__('{0} selected', String(picked.length))"
+			>
+				<Badge
+					variant="subtle"
+					theme="gray"
+					size="sm"
+					class="shrink-0"
+					:label="String(picked.length)"
+				/>
+			</Tooltip>
 			<Tooltip v-else-if="history.length && !search" :text="__('Back')">
 				<Delete class="size-4 shrink-0 text-ink-gray-4" stroke-width="1.5" />
 			</Tooltip>
@@ -643,5 +647,37 @@ onMounted(() => inputRef.value?.$el?.focus({ preventScroll: true }))
 		<div v-if="calendar" :class="rows.length ? 'border-t border-outline-gray-1' : ''">
 			<FilterPickerCalendar :mode="calendar" :text="search" @write="search = $event" />
 		</div>
+
+		<!-- The row grows in rather than appearing: it arrives a stage after the
+		     panel opened, under a list the reader is already reading. The rows of
+		     the grid are what is animated, so the height comes from the line
+		     itself and no number here stands for it. -->
+		<Transition
+			enter-active-class="transition-[grid-template-rows,opacity] duration-150 ease-out"
+			enter-from-class="grid-rows-[0fr] opacity-0"
+			enter-to-class="grid-rows-[1fr] opacity-100"
+			leave-active-class="transition-[grid-template-rows,opacity] duration-100 ease-in"
+			leave-from-class="grid-rows-[1fr] opacity-100"
+			leave-to-class="grid-rows-[0fr] opacity-0"
+		>
+			<div v-if="keyHints.length" class="grid">
+				<div class="overflow-hidden">
+					<div
+						class="flex items-center justify-between border-t border-outline-gray-1 px-3 py-1.5"
+					>
+						<span
+							v-for="hint in keyHints"
+							:key="hint.combo"
+							class="flex items-center gap-1.5"
+						>
+							<!-- the component sets its own `text-sm`, so the smaller size
+							     has to outrank it -->
+							<KeyboardShortcut :combo="hint.combo" class="!text-xs" />
+							<span class="text-xs text-ink-gray-5">{{ hint.label }}</span>
+						</span>
+					</div>
+				</div>
+			</div>
+		</Transition>
 	</ComboboxRoot>
 </template>

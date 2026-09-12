@@ -66,13 +66,7 @@ const valueText = computed(() => {
 
 <template>
 	<div class="inline-flex">
-		<Popover
-			v-model:open="open"
-			bare
-			:align="column ? 'start' : 'end'"
-			:offset="4"
-			:auto-focus="false"
-		>
+		<Popover v-model:open="open" bare :align="column ? 'start' : 'end'" :offset="4">
 			<template #trigger="{ toggle }">
 				<slot name="trigger" :filter="filter" :open="open" :toggle="toggle">
 					<Button v-if="column" variant="subtle" :class="count ? '' : 'text-ink-gray-5'">
