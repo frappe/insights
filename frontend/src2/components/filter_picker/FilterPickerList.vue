@@ -74,6 +74,7 @@ function keyOf(item: ListItem, stage: string) {
 				<div v-if="item.separated" class="-mx-1 my-1 border-t border-outline-gray-1" />
 				<ComboboxItem
 					:value="valueOf(item)"
+					:data-row-key="item.key"
 					:class="[itemClasses, rowClasses]"
 					@select="onSelect(item, $event)"
 					@mousedown.prevent

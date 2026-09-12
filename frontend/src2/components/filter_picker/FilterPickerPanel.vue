@@ -576,15 +576,15 @@ function highlight(value: string) {
 	nextTick(() => comboRef.value?.highlightItem?.(value))
 }
 
-/** the row under reka's highlight, found by the value the row was given */
+/**
+ * The row under reka's highlight. The combobox hands out the element and no way
+ * back to the item behind it — `getItems` is a listbox thing, not a combobox
+ * one — so the row writes its key onto itself for this.
+ */
 function highlightedRow(): ListItem | undefined {
-	const el = comboRef.value?.highlightedElement
-	if (!el) return undefined
-	const item = comboRef.value
-		?.getItems?.()
-		?.find((candidate: { ref: HTMLElement }) => candidate.ref === el)
-	if (!item) return undefined
-	return rows.value.find((row) => (row.tick ? row.label : row.key) === item.value)
+	const key = (comboRef.value?.highlightedElement as HTMLElement | undefined)?.dataset.rowKey
+	if (!key) return undefined
+	return rows.value.find((row) => row.key === key)
 }
 
 // a stage change, a commit or a late batch of values leaves the highlight on a
