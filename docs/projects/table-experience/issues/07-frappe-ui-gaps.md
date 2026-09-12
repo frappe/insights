@@ -27,7 +27,9 @@ Six commits on `picker-gaps` in `~/frappe/frappe-ui`, off v1.0.0-beta.63, not ye
 
 Three of the four are in. `FilterPickerCalendar` renders the two calendars and keeps only the text mapping, since the calendars seed their own view from the value. `ResultFind` is a real `Popover` on `trigger="manual"` and `:auto-focus="false"`, so the panel is portalled and carries no `z-[100]`. `ChartBuilderActions` dropped its `-my-1`.
 
-`ContentEditable` keeps its copy. `useInputClasses` does not fit it: the composable's `ghost` is `border-0` with no focus surface, where this box draws a transparent border that recolors on focus, and its size table carries a font-size that a caller's own `text-lg-semibold` would have to outrank. Taking it would change the look at all four call sites. The gap is narrower than it was, not closed — it wants a `ghost` that rings on focus, and type left to the caller.
+Gap 3 is closed as won't-fix, and `ContentEditable` hardcodes its style instead. `useInputClasses` cannot express this box: its rest state is one variant and its focus state is another, and `spec/inputs.md` closes the variant scale at `subtle | outline | ghost`, so neither a fourth variant nor a redefined `ghost` is available. Nor was the box using the scale — no call site passes `size` or `variant`, so seven class rows served one combination, and the one live size is already overridden at the table column header. The component now carries that one combination, plus the disabled state the column header needs, and its dead `tag`, `value`, `noHtml`, `noNl` and `contenteditable` props are gone with it.
+
+Dropping the ask drops the font-size option too: it was only a step to adopting the composable, and there is no other consumer. `useInputClasses` should stay extracted, since `TextInput` reads it, but its `frappe-ui/experimental` export existed for Insights and can go.
 
 **The app does not build on the beta.62 pin**, and did not before this either: the calendars, `autoFocus` and the composable are all unreleased. `wt link frappe-ui` is what builds it until `picker-gaps` is pushed and a release carries it.
 
