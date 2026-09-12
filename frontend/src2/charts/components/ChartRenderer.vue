@@ -61,9 +61,18 @@ function expand() {
 			     page's acts here, and the ones this card offers follow them in the
 			     same row. A second bar in the same corner would sit on top of the
 			     first. -->
-			<template v-if="$slots.actions || $slots.hoverActions || canMaximize" #actions>
+			<!-- while the expanded dialog is up it draws this same row, and the acts
+			     in it hold state the host owns: mounted twice they would answer the
+			     same model from two places -->
+			<template
+				v-if="
+					!showExpandedChartDialog &&
+					($slots.actions || $slots.hoverActions || canMaximize)
+				"
+				#actions
+			>
 				<div class="flex items-center gap-1">
-					<slot name="actions" />
+					<slot name="actions" :expanded="false" />
 					<!-- what the card offers over the chart it draws, read off the card
 					     rather than asked for: shown on hover, so a dashboard of cards
 					     is a page of pictures until one is pointed at -->
@@ -96,18 +105,28 @@ function expand() {
 	<Dialog v-if="chart" v-model:open="showExpandedChartDialog" size="7xl" bare>
 		<template #default>
 			<div class="relative w-full" :class="expandWide ? 'h-[50vh]' : 'h-[75vh]'">
+				<!-- the same header row as the card, with close where expand was:
+				     nothing here hides behind hover, the dialog is already pointed at -->
 				<ChartCardFrame
 					:chart="props.chart"
 					:column="props.column"
 					@segment-click="clicked = $event"
-				/>
-				<div class="absolute top-2 right-2">
-					<Button variant="ghost" @click="showExpandedChartDialog = false">
-						<template #icon>
-							<XIcon class="size-4 text-ink-gray-6" />
-						</template>
-					</Button>
-				</div>
+				>
+					<template #actions>
+						<div class="flex items-center gap-1">
+							<!-- `expanded` is how the host knows not to hide its acts behind a
+							     hover: the group that reveals them is the card, and the dialog
+							     is drawn outside it -->
+							<slot name="actions" :expanded="true" />
+							<slot name="hoverActions" />
+							<Button variant="ghost" @click="showExpandedChartDialog = false">
+								<template #icon>
+									<XIcon class="size-4 text-ink-gray-6" />
+								</template>
+							</Button>
+						</div>
+					</template>
+				</ChartCardFrame>
 			</div>
 		</template>
 	</Dialog>

@@ -145,7 +145,7 @@ function editChart() {
 		:column="column"
 		:actions-revealed="actionsActive"
 	>
-		<template v-if="isTable" #actions>
+		<template v-if="isTable" #actions="{ expanded }">
 			<TableCardActions
 				v-model:filters="cardFilters"
 				v-model:find-text="findText"
@@ -153,7 +153,7 @@ function editChart() {
 				v-model:active="actionsActive"
 				:columns="columns"
 				:values-provider="valuesProvider"
-				:reveal="!dashboard.shared"
+				:reveal="!dashboard.shared && !expanded"
 			/>
 		</template>
 		<template v-if="canEditChart" #hoverActions>
