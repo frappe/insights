@@ -51,10 +51,24 @@ function clearFind() {
 // The grid is the host's, so where a column sits is the grid's to know. The
 // pane knows only that the find asked for one.
 const $grid = ref<ResultGrid>()
-provide(RESULT_GRID_HOST, { setGrid: (grid?: ResultGrid) => ($grid.value = grid) })
+// A jump from the no-match body asks a grid that is not mounted: clearing the
+// term is what brings it back, so the ask waits for the grid that answers it.
+let pendingColumn: string | undefined
+provide(RESULT_GRID_HOST, {
+	setGrid: (grid?: ResultGrid) => {
+		$grid.value = grid
+		if (!grid || !pendingColumn) return
+		grid.scrollToColumn(pendingColumn)
+		pendingColumn = undefined
+	},
+})
 
 function jumpToColumn(column_name: string) {
-	$grid.value?.scrollToColumn(column_name)
+	if (!$grid.value) {
+		pendingColumn = column_name
+		return
+	}
+	$grid.value.scrollToColumn(column_name)
 }
 
 // --- paging: one cursor, owned here so the footer can print its range -------
