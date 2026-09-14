@@ -53,6 +53,7 @@ class TestChartQueryCacheRetirement(InsightsIntegrationTestCase):
         frappe.db.sql(f"update `tab{CHART}` set `{FIELD}` = %s where name = %s", (query.name, chart.name))
         return chart.name, query.name
 
+    # @feature upgrade.cached-queries-removed
     def test_a_cached_query_is_deleted(self):
         _chart, cache = self.cached_query()
 
@@ -60,6 +61,7 @@ class TestChartQueryCacheRetirement(InsightsIntegrationTestCase):
 
         self.assertFalse(frappe.db.exists(QUERY, cache))
 
+    # @feature upgrade.cached-queries-removed
     def test_a_cache_is_deleted_without_a_job(self):
         """A site can hold thousands of caches, and a job per delete floods the
         queue the moment the patch commits."""
@@ -71,6 +73,7 @@ class TestChartQueryCacheRetirement(InsightsIntegrationTestCase):
         self.assertFalse(frappe.db.exists(QUERY, cache))
         enqueue.assert_not_called()
 
+    # @feature upgrade.cached-queries-removed
     def test_an_alert_and_the_history_go_with_the_cache(self):
         _chart, cache = self.cached_query()
         alert = frappe.get_doc(
@@ -94,6 +97,7 @@ class TestChartQueryCacheRetirement(InsightsIntegrationTestCase):
     def queries_in_workbook(self):
         return frappe.get_all(QUERY, filters={"workbook": self.workbook}, pluck="name", order_by="name")
 
+    # @feature upgrade.cached-queries-removed
     def test_a_second_run_deletes_nothing(self):
         chart, cache = self.cached_query()
         mine = create_test_query(OWNER, self.workbook, title="Chart Query Cache Test Survivor")
@@ -111,6 +115,7 @@ class TestChartQueryCacheRetirement(InsightsIntegrationTestCase):
             frappe.db.sql_list(f"select `{FIELD}` from `tab{CHART}` where name = %s", chart), [cache]
         )
 
+    # @feature upgrade.cached-queries-removed
     def test_a_cache_a_chart_reads_is_kept(self):
         """No surface offers a cache in the query picker, so this should not
         happen — and the delete is permanent, so the chart's own field says so
@@ -132,6 +137,7 @@ class TestChartQueryCacheRetirement(InsightsIntegrationTestCase):
         self.assertTrue(frappe.db.exists(QUERY, cache))
         self.assertEqual(frappe.db.get_value(DT.CHART, reader.name, "query"), cache)
 
+    # @feature upgrade.cached-queries-removed
     def test_a_cache_another_query_sources_is_kept(self):
         """A cache a query reads is not a cache any more, and the delete is
         forced: it would take the reader's source with it."""
@@ -150,6 +156,7 @@ class TestChartQueryCacheRetirement(InsightsIntegrationTestCase):
 
         self.assertTrue(frappe.db.exists(QUERY, cache))
 
+    # @feature upgrade.cached-queries-removed
     def test_a_query_no_chart_cached_is_left_alone(self):
         mine = create_test_query(OWNER, self.workbook, title="Chart Query Cache Test Own Query")
 

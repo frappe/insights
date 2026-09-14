@@ -10,6 +10,7 @@ function adapt(spec: SankeyChartSpec) {
 }
 
 describe('a sankey', () => {
+	// @feature charts.type-sankey
 	it('names the node a flow leaves, the one it arrives at, and what runs along it', () => {
 		const input = sankeyChart({
 			title: 'Traffic to category',
@@ -28,6 +29,7 @@ describe('a sankey', () => {
 		expect(props.data).toBe(input.result.rows)
 	})
 
+	// @feature charts.sankey-orientation-align
 	it('runs the flow the way the Chart asked, and pins its nodes where it said', () => {
 		const props = adapt({
 			source: 'traffic_source',
@@ -40,6 +42,7 @@ describe('a sankey', () => {
 		expect(props.nodeAlign).toBe('left')
 	})
 
+	// @feature charts.type-sankey
 	it('draws nothing until the Chart names all three columns', () => {
 		expect(
 			adaptChart(sankeyChart({ source: '', target: 'category', measure: 'revenue' })),
@@ -54,6 +57,7 @@ describe('a sankey', () => {
 })
 
 describe('drilling into a flow', () => {
+	// @feature charts.drill-segment
 	it('names the value column and the row the band was drawn from', () => {
 		const input = sankeyChart({
 			source: 'traffic_source',

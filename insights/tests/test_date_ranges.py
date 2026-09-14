@@ -27,6 +27,7 @@ class TestWeekDateRanges(InsightsIntegrationTestCase):
                 result = [get_date_str(d) for d in get_date_range(timespan, include_current)]
                 self.assertEqual(result, dates, timespan)
 
+    # @feature settings.week-start
     def test_week_ranges_start_on_monday(self):
         with self.change_settings("Insights Settings", week_starts_on="Monday"):
             self.assert_ranges(
@@ -38,6 +39,7 @@ class TestWeekDateRanges(InsightsIntegrationTestCase):
                 }
             )
 
+    # @feature settings.week-start
     def test_week_ranges_follow_the_configured_start_day(self):
         with self.change_settings("Insights Settings", week_starts_on="Sunday"):
             self.assert_ranges(
@@ -49,6 +51,7 @@ class TestWeekDateRanges(InsightsIntegrationTestCase):
                 }
             )
 
+    # @feature query.filter-relative-date-include-current
     def test_include_current_extends_to_this_week(self):
         with self.change_settings("Insights Settings", week_starts_on="Monday"):
             self.assert_ranges(
@@ -61,6 +64,7 @@ class TestWeekDateRanges(InsightsIntegrationTestCase):
 
 
 class TestToDateWindows(InsightsIntegrationTestCase):
+    # @feature charts.number-period
     def test_a_to_date_window_ends_at_the_anchor(self):
         with self.change_settings(
             "Insights Settings", week_starts_on="Sunday", fiscal_year_start="2020-04-01"
@@ -77,6 +81,7 @@ class TestToDateWindows(InsightsIntegrationTestCase):
                 result = [get_date_str(d) for d in get_window(span, ANCHOR)]
                 self.assertEqual(result, dates, span)
 
+    # @feature charts.number-period
     def test_on_the_last_day_of_a_period_it_equals_the_whole_period(self):
         with self.change_settings("Insights Settings", fiscal_year_start="2020-04-01"):
             last_days = {
@@ -93,6 +98,7 @@ class TestToDateWindows(InsightsIntegrationTestCase):
                     unit,
                 )
 
+    # @feature charts.number-period
     def test_the_old_spans_are_unchanged(self):
         with self.change_settings("Insights Settings", week_starts_on="Monday"):
             spans = [
@@ -112,10 +118,12 @@ class TestToDateWindows(InsightsIntegrationTestCase):
                     span,
                 )
 
+    # @feature charts.number-period
     def test_an_unknown_unit_is_rejected(self):
         with self.assertRaises(Exception):
             get_window("fortnight to date", ANCHOR)
 
+    # @feature charts.number-period
     def test_a_counted_span_to_date_is_rejected(self):
         """A period so far is one period. "last 7 days to date" names a count the
         shape cannot carry, and reading it as today would drop the count."""
@@ -124,6 +132,7 @@ class TestToDateWindows(InsightsIntegrationTestCase):
 
 
 class TestShiftAnchor(InsightsIntegrationTestCase):
+    # @feature query.filter-relative-date-shift
     def test_every_unit_moves_the_anchor(self):
         shifts = {
             ("day", -1): "2026-08-09",
@@ -137,15 +146,18 @@ class TestShiftAnchor(InsightsIntegrationTestCase):
         for (unit, count), expected in shifts.items():
             self.assertEqual(shift_anchor(ANCHOR, unit, count), getdate(expected), unit)
 
+    # @feature query.filter-relative-date-shift
     def test_a_leap_day_lands_on_the_last_day_of_february(self):
         leap_day = getdate("2024-02-29")
         self.assertEqual(shift_anchor(leap_day, "year", -1), getdate("2023-02-28"))
         self.assertEqual(shift_anchor(leap_day, "year", 1), getdate("2025-02-28"))
 
+    # @feature query.filter-relative-date-shift
     def test_a_month_end_lands_inside_a_shorter_month(self):
         self.assertEqual(shift_anchor(getdate("2026-03-31"), "month", -1), getdate("2026-02-28"))
         self.assertEqual(shift_anchor(getdate("2026-01-31"), "month", 1), getdate("2026-02-28"))
 
+    # @feature charts.number-period
     def test_the_window_is_recomputed_from_the_moved_anchor(self):
         # the start stays at the year, which a shift of the endpoints would move
         self.assertEqual(
@@ -153,12 +165,14 @@ class TestShiftAnchor(InsightsIntegrationTestCase):
             (getdate("2026-01-01"), getdate("2026-07-10")),
         )
 
+    # @feature charts.number-period
     def test_a_shifted_to_date_window_stays_to_date(self):
         self.assertEqual(
             get_window("quarter to date", shift_anchor(ANCHOR, "year", -1)),
             (getdate("2025-07-01"), getdate("2025-08-10")),
         )
 
+    # @feature charts.number-period
     def test_an_unknown_unit_is_rejected(self):
         with self.assertRaises(Exception):
             shift_anchor(ANCHOR, "fortnight", -1)
@@ -169,12 +183,14 @@ class TestTimespanFilter(InsightsIntegrationTestCase):
         expression = handle_timespan(sa_column("posting_date"), timespan)
         return str(expression.compile(compile_kwargs={"literal_binds": True}))
 
+    # @feature query.filter-relative-date
     def test_a_to_date_span_filters_up_to_today(self):
         with patch(NOW, return_value="2026-08-10"):
             sql = self.compiled("Month to Date")
             self.assertIn("2026-08-01 00:00:00", sql)
             self.assertIn("2026-08-10 23:59:59", sql)
 
+    # @feature settings.week-start
     def test_an_existing_span_is_unchanged(self):
         with self.change_settings("Insights Settings", week_starts_on="Monday"):
             with patch(NOW, return_value="2022-11-26"):
@@ -182,12 +198,14 @@ class TestTimespanFilter(InsightsIntegrationTestCase):
                 self.assertIn("2022-11-21 00:00:00", sql)
                 self.assertIn("2022-11-27 23:59:59", sql)
 
+    # @feature query.filter-relative-date
     def test_a_span_given_as_a_list_is_joined(self):
         with patch(NOW, return_value="2022-11-26"):
             sql = self.compiled(["Last", "7", "Days"])
             self.assertIn("2022-11-19 00:00:00", sql)
             self.assertIn("2022-11-25 23:59:59", sql)
 
+    # @feature query.filter-relative-date
     def test_a_span_given_as_a_list_with_a_number_in_it_is_joined(self):
         """The column header seeds the count as a number, not as its word."""
         with patch(NOW, return_value="2022-11-26"):
@@ -195,12 +213,14 @@ class TestTimespanFilter(InsightsIntegrationTestCase):
             self.assertIn("2022-11-25 00:00:00", sql)
             self.assertIn("2022-11-25 23:59:59", sql)
 
+    # @feature query.filter-relative-date
     def test_a_span_naming_no_count_reads_as_one_period(self):
         with patch(NOW, return_value="2022-11-26"):
             sql = self.compiled("Last Month")
             self.assertIn("2022-10-01 00:00:00", sql)
             self.assertIn("2022-10-31 23:59:59", sql)
 
+    # @feature query.filter-relative-date-shift
     def test_a_span_can_pin_its_own_anchor(self):
         """A card that must read the same figure whenever it is opened."""
         with patch(NOW, return_value="2026-11-30"):
@@ -208,6 +228,7 @@ class TestTimespanFilter(InsightsIntegrationTestCase):
             self.assertIn("2026-08-01 00:00:00", sql)
             self.assertIn("2026-08-10 23:59:59", sql)
 
+    # @feature query.filter-relative-date-shift
     def test_a_shift_moves_the_anchor_and_the_span_is_measured_again(self):
         """The same ten days a fiscal year back, not the span's dates moved."""
         with self.change_settings("Insights Settings", fiscal_year_start="2020-04-01"):
@@ -221,12 +242,14 @@ class TestTimespanFilter(InsightsIntegrationTestCase):
             self.assertIn("2025-08-01 00:00:00", sql)
             self.assertIn("2025-08-10 23:59:59", sql)
 
+    # @feature query.filter-relative-date-shift
     def test_a_shift_with_no_anchor_moves_today(self):
         with patch(NOW, return_value="2026-08-10"):
             sql = self.compiled({"span": "month to date", "shift": {"unit": "year", "count": -1}})
             self.assertIn("2025-08-01 00:00:00", sql)
             self.assertIn("2025-08-10 23:59:59", sql)
 
+    # @feature query.filter-relative-date
     def test_a_value_naming_no_span_is_rejected(self):
         with self.assertRaises(Exception):
             self.compiled({"anchor": "2026-08-10"})
@@ -248,6 +271,7 @@ class TestDirectionalSpans(InsightsIntegrationTestCase):
                 result = [get_date_str(d) for d in get_date_range(timespan, include_current, ANCHOR)]
                 self.assertEqual(result, dates, timespan)
 
+    # @feature query.filter-relative-date
     def test_a_forward_span_runs_from_the_next_period_to_the_nth(self):
         self.assert_ranges(
             {
@@ -260,6 +284,7 @@ class TestDirectionalSpans(InsightsIntegrationTestCase):
             }
         )
 
+    # @feature query.filter-relative-date
     def test_a_backward_span_runs_from_the_nth_period_to_the_previous(self):
         self.assert_ranges(
             {
@@ -272,6 +297,7 @@ class TestDirectionalSpans(InsightsIntegrationTestCase):
             }
         )
 
+    # @feature query.filter-relative-date
     def test_one_period_is_the_period_next_to_the_anchor(self):
         self.assert_ranges(
             {
@@ -282,6 +308,7 @@ class TestDirectionalSpans(InsightsIntegrationTestCase):
             }
         )
 
+    # @feature query.filter-relative-date-include-current
     def test_including_the_current_period_extends_the_near_end(self):
         self.assert_ranges(
             {

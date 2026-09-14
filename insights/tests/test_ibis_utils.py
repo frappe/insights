@@ -41,6 +41,7 @@ results = [
             },
         ]
 
+    # @feature query.summarize-grain
     def test_summary_query_groups_time_values_by_supported_granularities(self):
         cases = [
             ("hour", {"09:00:00": 2, "14:00:00": 1}),
@@ -80,6 +81,7 @@ results = [
 
                 self.assertEqual(actual, expected)
 
+    # @feature query.summarize-grain
     def test_summary_query_rejects_calendar_buckets_for_time_columns(self):
         operations = [
             *self.make_time_source_operations(),
@@ -127,6 +129,7 @@ class TestIbisPivotWider(IbisQueryBuilderTestCase):
         result = self.build_query(operations).execute()
         return result.drop(columns=["month"]).sum().to_dict()
 
+    # @feature charts.split-by-max-values query.pivot-wider
     def test_pivot_keeps_the_biggest_split_value_out_of_others(self):
         # "zulu" sorts last but sells the most, so an alphabetical cut would
         # hide the biggest series inside "Others"
@@ -140,6 +143,7 @@ class TestIbisPivotWider(IbisQueryBuilderTestCase):
 
         self.assertEqual(self.pivot_totals(sales, 2), {"alpha": 30, "zulu": 300, "Others": 5})
 
+    # @feature charts.split-by-max-values query.pivot-wider
     def test_pivot_adds_no_others_column_when_it_cuts_nothing(self):
         # as many regions as the cap allows, so "Others" would hold nothing
         sales = [
@@ -204,13 +208,16 @@ class TestIbisWindowedNumberCard(IbisQueryBuilderTestCase):
             "number_column_options": [{"comparison": comparison} if comparison else {}],
         }
 
+    # @feature charts.number-period
     def test_a_window_reads_the_days_it_covers(self):
         self.assertEqual(self.revenue_by_window(self.config()), [100])
 
+    # @feature charts.number-comparison
     def test_a_comparison_window_is_the_row_before_the_reading(self):
         comparison = {"source": "last year"}
         self.assertEqual(self.revenue_by_window(self.config(comparison)), [60, 100])
 
+    # @feature charts.number-period
     def test_a_window_of_several_periods_is_one_row_holding_the_whole_window(self):
         """`last 3 months` covers three months and reads as one number.
 
@@ -239,6 +246,7 @@ class TestIbisWindowedNumberCard(IbisQueryBuilderTestCase):
             ["2025-05-01", "2026-05-01"],
         )
 
+    # @feature charts.number-comparison
     def test_windows_that_overlap_each_read_their_whole_stretch(self):
         """A span longer than the shift its comparison moves by overlaps it.
 
@@ -263,6 +271,7 @@ class TestIbisWindowedNumberCard(IbisQueryBuilderTestCase):
             ["2024-08-01", "2025-08-01"],
         )
 
+    # @feature charts.number-period
     def test_a_window_holding_no_rows_is_a_row_of_nulls(self):
         """The card reads its rows by position, so a span that came back as
         nothing would print its neighbor's figure under this span's caption:
@@ -282,6 +291,7 @@ class TestIbisWindowedNumberCard(IbisQueryBuilderTestCase):
         self.assertEqual(result["Revenue"].isna().tolist(), [False, True])
         self.assertEqual(result["Revenue"][0], 60)
 
+    # @feature charts.number-sparkline
     def test_a_sparkline_reads_the_window_one_day_at_a_time(self):
         """The card's own rows are one per span. The picture under the number
         is the same span cut by the grain below the span's unit."""
@@ -306,6 +316,7 @@ class TestIbisWindowedNumberCard(IbisQueryBuilderTestCase):
         # the number itself is unmoved by the second query
         self.assertEqual(list(self.windowed_result(config, sales)["Revenue"]), [60, 105])
 
+    # @feature charts.number-period
     def test_a_window_refuses_to_group_by_anything_else(self):
         """The span is the whole of the grouping.
 

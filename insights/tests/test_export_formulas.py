@@ -41,12 +41,15 @@ class TestFormulasAreNeutralised(UnitTestCase):
     def frame(self):
         return pd.DataFrame({"name": [PAYLOAD, "Ada Lovelace"], "amount": [1, 2]})
 
+    # @feature query.download-cell-is-data
     def test_a_formula_is_quoted_in_csv(self):
         self.assertIn(f"'{PAYLOAD}", as_text(self.frame()).to_csv(index=False))
 
+    # @feature query.download-cell-is-data
     def test_a_formula_does_not_become_a_formula_cell_in_excel(self):
         self.assertNotIn("<f>", sheet_xml(as_text(self.frame())))
 
+    # @feature query.download-cell-is-data
     def test_the_triggers_that_always_open_a_formula(self):
         triggers = ("=SUM(A1)", "\tone", "\rone", "\none")
         self.assertEqual(
@@ -54,6 +57,7 @@ class TestFormulasAreNeutralised(UnitTestCase):
             [f"'{value}" for value in triggers],
         )
 
+    # @feature query.download-cell-is-data
     def test_an_ambiguous_start_that_can_call_something_is_quoted(self):
         payloads = (
             "@SUM(A1)",
@@ -71,29 +75,37 @@ class TestFormulasAreNeutralised(UnitTestCase):
 class TestOrdinaryDataSurvives(UnitTestCase):
     """The cost of the rule, pinned so it cannot grow."""
 
+    # @feature query.download-cell-is-data
     def test_a_handle_keeps_its_at_sign(self):
         self.assertEqual(exported(handle=["@acmecorp"])["handle"][0], "@acmecorp")
 
+    # @feature query.download-cell-is-data
     def test_an_email_address_is_untouched(self):
         self.assertEqual(exported(cc=["@ada@example.com"])["cc"][0], "@ada@example.com")
 
+    # @feature query.download-cell-is-data
     def test_a_phone_number_keeps_its_plus(self):
         self.assertEqual(exported(phone=["+91 9876543210"])["phone"][0], "+91 9876543210")
 
+    # @feature query.download-cell-is-data
     def test_a_negative_held_as_text_is_untouched(self):
         values = ["-5", "-1234.50", "-0.5"]
         self.assertEqual(list(exported(value=values)["value"]), values)
 
+    # @feature query.download-cell-is-data
     def test_numbers_are_untouched(self):
         self.assertEqual(exported(amount=[-5, 12])["amount"][0], -5)
 
+    # @feature query.download-cell-is-data
     def test_headers_are_not_rewritten(self):
         """They name the columns of whatever reads the file next."""
         self.assertEqual(list(exported(**{PAYLOAD: ["value"]}).columns), [PAYLOAD])
 
+    # @feature query.download-cell-is-data
     def test_ordinary_text_is_untouched(self):
         self.assertEqual(exported(name=["Ada Lovelace"])["name"][0], "Ada Lovelace")
 
+    # @feature query.download-cell-is-data
     def test_column_types_survive(self):
         """A number written as text would import as text."""
         frame = pd.DataFrame({"n": [1], "f": [1.5], "d": pd.to_datetime(["2024-01-01"])})
@@ -103,6 +115,7 @@ class TestOrdinaryDataSurvives(UnitTestCase):
 class TestEveryStringColumnReadsTheRule(UnitTestCase):
     """ibis hands back arrow-backed strings, which are not `object` dtype."""
 
+    # @feature query.download-cell-is-data
     def test_an_arrow_backed_column_is_quoted(self):
         frame = pd.DataFrame({"value": pd.array([PAYLOAD, "Ada"], dtype="string[pyarrow]")})
         self.assertEqual(as_text(frame)["value"][0], f"'{PAYLOAD}")
@@ -137,9 +150,11 @@ class TestQueryExportAppliesTheRule(InsightsIntegrationTestCase):
         ):
             return doc.download_results(format=format)
 
+    # @feature query.download-results
     def test_the_csv_download_quotes_a_formula(self):
         self.assertIn(f"'{PAYLOAD}", self.download("csv"))
 
+    # @feature query.download-results
     def test_the_excel_download_writes_no_formula_cell(self):
         workbook = base64.b64decode(self.download("excel"))
         with ZipFile(BytesIO(workbook)) as sheet:

@@ -48,6 +48,7 @@ class TestNumberCardComparisons(InsightsIntegrationTestCase):
 
     SAVEPOINT = "test_number_card_comparisons"
 
+    # @feature upgrade.number-older-shapes
     def test_the_chart_flag_becomes_one_previous_comparison_per_reading(self):
         chart = config("Revenue", "Profit", comparison=True)
 
@@ -56,6 +57,7 @@ class TestNumberCardComparisons(InsightsIntegrationTestCase):
         self.assertNotIn("comparison", chart)
         self.assertEqual([o["comparison"] for o in options_of(chart)], [PREVIOUS, PREVIOUS])
 
+    # @feature upgrade.number-older-shapes
     def test_a_reading_that_names_its_own_keeps_it(self):
         named = {"comparison": {"source": "constant", "value": 10}}
         chart = config("Revenue", "Profit", options=[named, {}], comparison=True)
@@ -65,6 +67,7 @@ class TestNumberCardComparisons(InsightsIntegrationTestCase):
         self.assertEqual(options_of(chart)[0]["comparison"], named["comparison"])
         self.assertEqual(options_of(chart)[1]["comparison"], PREVIOUS)
 
+    # @feature upgrade.number-older-shapes
     def test_a_reference_list_becomes_the_movement_and_the_target(self):
         chart = config(
             "Revenue",
@@ -88,6 +91,7 @@ class TestNumberCardComparisons(InsightsIntegrationTestCase):
         )
         self.assertEqual(beside["target"], {"value": 400})
 
+    # @feature upgrade.number-older-shapes
     def test_a_reading_that_named_no_reference_compares_nothing(self):
         # An author who removed the last one meant to, so the chart's own flag
         # does not come back for it.
@@ -97,6 +101,7 @@ class TestNumberCardComparisons(InsightsIntegrationTestCase):
 
         self.assertEqual(options_of(chart)[0], {})
 
+    # @feature upgrade.number-older-shapes
     def test_a_granularity_on_the_date_column_becomes_the_cards_period(self):
         """A granularity used to group the card, and the period does that now.
 
@@ -110,6 +115,7 @@ class TestNumberCardComparisons(InsightsIntegrationTestCase):
         self.assertEqual(chart["window"], {"grain": "month"})
         self.assertNotIn("granularity", chart["date_column"])
 
+    # @feature upgrade.number-older-shapes
     def test_a_chart_that_already_names_a_period_only_drops_the_granularity(self):
         """The period the author picked wins: a grain beside it would group the
         card a second time."""
@@ -124,6 +130,7 @@ class TestNumberCardComparisons(InsightsIntegrationTestCase):
         self.assertEqual(chart["window"], {"span": "month to date"})
         self.assertNotIn("granularity", chart["date_column"])
 
+    # @feature upgrade.number-older-shapes
     def test_a_shifted_window_becomes_the_question_it_asked(self):
         """The shift was how the period of the day fetched the comparison. The
         period fetches it where the card is read now, so only the question is
@@ -145,11 +152,13 @@ class TestNumberCardComparisons(InsightsIntegrationTestCase):
             [{"source": "last year"}, PREVIOUS],
         )
 
+    # @feature upgrade.number-older-shapes
     def test_a_chart_already_in_the_shape_is_left_alone(self):
         chart = config("Revenue", options=[{"comparison": PREVIOUS}])
 
         self.assertFalse(normalize(chart))
 
+    # @feature upgrade.number-older-shapes
     def test_a_second_run_changes_nothing(self):
         chart = config("Revenue", comparison=True)
 
@@ -173,6 +182,7 @@ class TestNumberCardComparisonPatch(InsightsIntegrationTestCase):
             frappe.delete_doc(DT.CHART, chart, force=True)
         frappe.delete_doc(DT.WORKBOOK, cls.workbook, force=True)
 
+    # @feature upgrade.number-older-shapes
     def test_the_stored_chart_is_rewritten(self):
         chart = (
             frappe.get_doc(

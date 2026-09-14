@@ -123,6 +123,7 @@ class TestAgentSearch(InsightsIntegrationTestCase):
     def hit_for(self, hits, name):
         return next((hit for hit in hits if hit["name"] == name), None)
 
+    # @feature permissions.search-respects-access
     def test_a_title_match_is_returned(self):
         hit = self.hit_for(self.search(OWNER), self.titled_query)
         self.assertIsNotNone(hit)
@@ -131,11 +132,13 @@ class TestAgentSearch(InsightsIntegrationTestCase):
         self.assertEqual(hit["workbook"], self.workbook)
         self.assertEqual(hit["workbook_title"], WORKBOOK_TITLE)
 
+    # @feature permissions.search-respects-access
     def test_a_body_match_is_returned(self):
         hit = self.hit_for(self.search(OWNER), self.bodied_query)
         self.assertIsNotNone(hit)
         self.assertEqual(hit["matched_field"], "operations")
 
+    # @feature permissions.search-respects-access
     def test_the_snippet_quotes_the_term(self):
         hit = self.hit_for(self.search(OWNER), self.bodied_query)
         # the match is marked where it sits, so the column reads as `**term**_share`
@@ -143,30 +146,36 @@ class TestAgentSearch(InsightsIntegrationTestCase):
         # a snippet is an excerpt, not the field
         self.assertLess(len(hit["snippet"]), 300)
 
+    # @feature permissions.search-respects-access
     def test_a_title_match_outranks_a_body_match(self):
         hits = self.search(OWNER)
         names = [hit["name"] for hit in hits]
         self.assertLess(names.index(self.titled_query), names.index(self.bodied_query))
 
+    # @feature permissions.search-respects-access
     def test_usage_counts_a_query_behind_a_charted_dashboard(self):
         hit = self.hit_for(self.search(OWNER), self.bodied_query)
         self.assertEqual(hit["used_by_charts"], 1)
         self.assertEqual(hit["used_by_dashboards"], 1)
         self.assertEqual(hit["dashboard_views"], self.recent_views)
 
+    # @feature permissions.search-respects-access
     def test_a_query_nothing_reads_carries_no_usage(self):
         hit = self.hit_for(self.search(OWNER), self.titled_query)
         self.assertEqual(hit["used_by_charts"], 0)
         self.assertEqual(hit["used_by_dashboards"], 0)
         self.assertEqual(hit["dashboard_views"], 0)
 
+    # @feature permissions.search-respects-access
     def test_an_unreadable_workbook_yields_no_hit_and_no_snippet(self):
         """The rule the whole endpoint rests on."""
         self.assertEqual(self.search(OUTSIDER), [])
 
+    # @feature permissions.search-respects-access
     def test_a_blank_term_searches_nothing(self):
         self.assertEqual(self.search(OWNER, term="   "), [])
 
+    # @feature permissions.search-respects-access
     def test_search_columns_reads_the_stored_columns(self):
         frappe.db.set_value(
             DT.TABLE,
@@ -192,6 +201,7 @@ class TestAgentSearch(InsightsIntegrationTestCase):
             },
         )
 
+    # @feature permissions.search-respects-access
     def test_search_columns_skips_a_table_the_caller_may_not_read(self):
         frappe.db.set_value(
             DT.TABLE,

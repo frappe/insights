@@ -9,6 +9,7 @@ import {
 	moveNumberReadingOptions,
 	normalizeChartConfig,
 	removeNumberReading,
+	resetChartConfig,
 	setDimensionNames,
 } from './helpers'
 
@@ -32,6 +33,7 @@ function config(series: any[], tooltip?: any[]) {
 }
 
 describe('a series the author hid from the chart', () => {
+	// @feature charts.tooltip-measures
 	it('becomes a tooltip Measure', () => {
 		const migrated = handleOldHideFromChart(
 			config([
@@ -43,6 +45,7 @@ describe('a series the author hid from the chart', () => {
 		expect(migrated.tooltip.measures.map((m: any) => m.measure_name)).toEqual(['orders'])
 	})
 
+	// @feature charts.tooltip-measures
 	it('keeps the flag, so the same config migrates the same way twice', () => {
 		const once = handleOldHideFromChart(
 			config([
@@ -54,6 +57,7 @@ describe('a series the author hid from the chart', () => {
 		expect(twice.tooltip.measures.map((m: any) => m.measure_name)).toEqual(['orders'])
 	})
 
+	// @feature charts.tooltip-measures
 	it('joins the tooltip Measures already there rather than replacing them', () => {
 		const migrated = handleOldHideFromChart(
 			config(
@@ -70,6 +74,7 @@ describe('a series the author hid from the chart', () => {
 		])
 	})
 
+	// @feature charts.tooltip-measures
 	it('is not written twice when the tooltip already names it', () => {
 		const migrated = handleOldHideFromChart(
 			config(
@@ -85,6 +90,7 @@ describe('a series the author hid from the chart', () => {
 })
 
 describe('a config with nothing to migrate', () => {
+	// @feature charts.tooltip-measures
 	it('is left alone when no series is hidden', () => {
 		const before = config([{ measure: measure('revenue') }])
 		expect(handleOldHideFromChart(before).tooltip).toBeUndefined()
@@ -92,6 +98,7 @@ describe('a config with nothing to migrate', () => {
 
 	// Moving every series would leave the adapter no value column to plot, and it
 	// draws nothing at all rather than an empty plot.
+	// @feature charts.tooltip-measures
 	it('is left alone when every series is hidden', () => {
 		const before = config([
 			{ measure: measure('revenue'), hide_from_chart: true },
@@ -102,6 +109,7 @@ describe('a config with nothing to migrate', () => {
 		expect(after.y_axis.series).toHaveLength(2)
 	})
 
+	// @feature charts.tooltip-measures
 	it('leaves a chart type that carries no series untouched', () => {
 		const before = { label_column: {}, value_column: {} } as any
 		expect(handleOldHideFromChart(before)).toBe(before)
@@ -111,6 +119,7 @@ describe('a config with nothing to migrate', () => {
 describe('a Dimension saved before it carried its own name', () => {
 	// Every slot, so a reader never falls back to `column_name` for the ones the
 	// normalizer forgot.
+	// @feature charts.dimension-label
 	it('is named after its column, in every slot a Dimension stands in', () => {
 		const before = {
 			x_axis: { dimension: { column_name: 'region' } },
@@ -145,6 +154,7 @@ describe('a Dimension saved before it carried its own name', () => {
 		expect(after.columns[0].dimension_name).toBe('month')
 	})
 
+	// @feature charts.dimension-label
 	it('keeps the name it already carries', () => {
 		const after = setDimensionNames({ x_column: { column_name: 'day', dimension_name: 'Day' } })
 		expect(after.x_column.dimension_name).toBe('Day')
@@ -152,6 +162,7 @@ describe('a Dimension saved before it carried its own name', () => {
 })
 
 describe('getGranularity', () => {
+	// @feature charts.dimension-grain
 	it('reads the grain off a slot only the newer chart types carry', () => {
 		const config = {
 			x_column: { dimension_name: 'posting_date', granularity: 'month' },
@@ -159,6 +170,7 @@ describe('getGranularity', () => {
 		expect(getGranularity('posting_date', config)).toBe('month')
 	})
 
+	// @feature charts.dimension-grain
 	it('reads the grain off an axis', () => {
 		const config = {
 			x_axis: { dimension: { dimension_name: 'posting_date', granularity: 'week' } },
@@ -166,6 +178,7 @@ describe('getGranularity', () => {
 		expect(getGranularity('posting_date', config)).toBe('week')
 	})
 
+	// @feature charts.dimension-grain
 	it('answers with nothing for a column no slot holds', () => {
 		expect(getGranularity('posting_date', { rows: [] } as any)).toBeUndefined()
 	})
@@ -175,6 +188,7 @@ describe('a Bar with a split axis', () => {
 	// The form disables the toggle, and it disables it for a chart it was handed
 	// already settled: a rule the form writes at setup is a saved chart rewritten
 	// by the act of opening its options.
+	// @feature charts.bar-stack
 	it('cannot stack, whatever it was saved with', () => {
 		const after = ensureConfigSlots(
 			{
@@ -191,6 +205,7 @@ describe('a Bar with a split axis', () => {
 		expect(after.y_axis.stack).toBe(false)
 	})
 
+	// @feature charts.bar-overlap
 	it('cannot overlap either, which the form disables and never unset', () => {
 		const after = ensureConfigSlots(
 			{
@@ -209,6 +224,7 @@ describe('a Bar with a split axis', () => {
 
 	// The Align picker has no blank option, so a series the author never opened
 	// carries no align at all. The renderer draws it on the left.
+	// @feature charts.series-align
 	it('reads a series with no align as the left one', () => {
 		const after = ensureConfigSlots(
 			{
@@ -222,6 +238,7 @@ describe('a Bar with a split axis', () => {
 		expect(after.y_axis.stack).toBe(false)
 	})
 
+	// @feature charts.bar-normalize
 	it('cannot normalize, which carries a stack with it', () => {
 		const after = ensureConfigSlots(
 			{
@@ -235,6 +252,7 @@ describe('a Bar with a split axis', () => {
 		expect(after.y_axis.normalize).toBe(false)
 	})
 
+	// @feature charts.bar-stack
 	it('keeps the flag while every series is on one side', () => {
 		const after = ensureConfigSlots(
 			{ y_axis: { stack: true, series: [{ measure: {}, align: 'Left' }] } },
@@ -247,6 +265,7 @@ describe('a Bar with a split axis', () => {
 describe('a Row with a series aligned right', () => {
 	// A Row draws horizontally, and frappe-ui gives a horizontal mark no second
 	// value axis: both series land on one scale, so stacking still means something.
+	// @feature charts.bar-stack
 	it('keeps stacking, because a Row has no second value axis to split onto', () => {
 		const after = ensureConfigSlots(
 			{
@@ -264,6 +283,7 @@ describe('a Row with a series aligned right', () => {
 describe('a chart saved with a hidden series aligned right', () => {
 	// The hidden series moves to the tooltip, so it is not a side of a split axis.
 	// The split-axis rule must not read it on its way out.
+	// @feature charts.bar-stack
 	it('keeps stacking once the hidden series has moved to the tooltip', () => {
 		const after = normalizeChartConfig(
 			{
@@ -283,16 +303,19 @@ describe('a chart saved with a hidden series aligned right', () => {
 })
 
 describe('the stack default on a Bar', () => {
+	// @feature charts.bar-stack
 	it('is written for a chart that names no series yet', () => {
 		const after = ensureConfigSlots({}, 'Bar')
 		expect(after.y_axis.stack).toBe(true)
 	})
 
+	// @feature charts.bar-stack
 	it('is left off a saved chart that was drawn grouped', () => {
 		const after = ensureConfigSlots(config([{ measure: measure('revenue') }]), 'Bar')
 		expect(after.y_axis.stack).toBeUndefined()
 	})
 
+	// @feature charts.bar-stack
 	it('keeps what the author chose', () => {
 		const before = config([{ measure: measure('revenue') }])
 		before.y_axis.stack = true
@@ -301,6 +324,7 @@ describe('the stack default on a Bar', () => {
 })
 
 describe('a series whose type the form wrote in the other case', () => {
+	// @feature charts.series-type
 	it('is folded to the case the renderer reads', () => {
 		const before = config([
 			{ measure: measure('revenue') },
@@ -309,6 +333,7 @@ describe('a series whose type the form wrote in the other case', () => {
 		expect(handleOldSeriesTypes(before).y_axis.series[1].type).toBe('line')
 	})
 
+	// @feature charts.series-type
 	it('leaves a chart that names no series alone', () => {
 		expect(handleOldSeriesTypes({} as any)).toEqual({})
 	})
@@ -323,6 +348,7 @@ describe('a Number card saved in an older shape', () => {
 		...rest,
 	})
 
+	// @feature upgrade.number-older-shapes
 	it('reads the chart-level flag as one previous comparison per reading', () => {
 		const config = handleOldNumberShapes(
 			numberCard(['revenue', 'profit'], { comparison: true }),
@@ -335,6 +361,7 @@ describe('a Number card saved in an older shape', () => {
 		])
 	})
 
+	// @feature upgrade.number-older-shapes
 	it('reads a reference list as the movement and the target', () => {
 		const config = handleOldNumberShapes(
 			numberCard(['revenue'], {
@@ -359,6 +386,7 @@ describe('a Number card saved in an older shape', () => {
 		expect(beside.target).toEqual({ value: 400 })
 	})
 
+	// @feature upgrade.number-older-shapes
 	it('raises a granularity on the date column into the period', () => {
 		const config = handleOldNumberShapes(
 			numberCard(['revenue'], {
@@ -370,6 +398,7 @@ describe('a Number card saved in an older shape', () => {
 		expect(config.date_column.granularity).toBeUndefined()
 	})
 
+	// @feature upgrade.number-older-shapes
 	it('reads a shifted window comparison as the question it asked', () => {
 		const config = handleOldNumberShapes(
 			numberCard(['revenue'], {
@@ -382,6 +411,7 @@ describe('a Number card saved in an older shape', () => {
 		expect(config.number_column_options[0].comparison).toEqual({ source: 'last year' })
 	})
 
+	// @feature upgrade.number-older-shapes
 	it('leaves a reading that names its own alone', () => {
 		const named = { source: 'constant', value: 10 }
 		const config = handleOldNumberShapes(
@@ -404,12 +434,14 @@ describe('the half of a config that decides which rows come back', () => {
 		...extra,
 	})
 
+	// @feature charts.series-color
 	it('is unmoved by a series color', () => {
 		const before = dataSelection(bar([{ measure: measure('revenue') }]))
 		const after = dataSelection(bar([{ measure: measure('revenue'), color: ['#fff'] }]))
 		expect(after).toEqual(before)
 	})
 
+	// @feature charts.style-change-no-rerun
 	it('is unmoved by a data label, an axis label or a number format', () => {
 		const before = dataSelection(bar([{ measure: measure('revenue') }]))
 		const after = dataSelection(
@@ -421,18 +453,21 @@ describe('the half of a config that decides which rows come back', () => {
 		expect(after).toEqual(before)
 	})
 
+	// @feature charts.style-change-no-rerun
 	it('moves when a measure changes', () => {
 		const before = dataSelection(bar([{ measure: measure('revenue') }]))
 		const after = dataSelection(bar([{ measure: measure('margin') }]))
 		expect(after).not.toEqual(before)
 	})
 
+	// @feature charts.limit
 	it('moves when the row cap changes', () => {
 		const before = dataSelection(bar([{ measure: measure('revenue') }]))
 		const after = dataSelection(bar([{ measure: measure('revenue') }], { limit: 50 }))
 		expect(after).not.toEqual(before)
 	})
 
+	// @feature charts.style-change-no-rerun
 	it('reads a tooltip measure, which is fetched and not drawn', () => {
 		const before = dataSelection(bar([{ measure: measure('revenue') }]))
 		const after = dataSelection(
@@ -441,6 +476,7 @@ describe('the half of a config that decides which rows come back', () => {
 		expect(after).not.toEqual(before)
 	})
 
+	// @feature charts.style-change-no-rerun
 	it("moves when a reading's comparison changes, which fetches its own rows", () => {
 		const card = (comparison: any) => ({
 			number_columns: [measure('revenue')],
@@ -449,6 +485,48 @@ describe('the half of a config that decides which rows come back', () => {
 		expect(dataSelection(card({ source: 'previous' }))).not.toEqual(
 			dataSelection(card({ source: 'last year' })),
 		)
+	})
+})
+
+// Taking the options back is not taking the chart back: the query the card runs
+// is `filters` and `limit`, and a reset that dropped them would send the author
+// back to a reading of every row.
+
+describe('a chart whose author took the options back', () => {
+	// @feature charts.reset-options
+	it('a reset keeps the filters and the limit and empties every slot', () => {
+		const filters = {
+			logical_operator: 'And',
+			filters: [
+				{
+					column: { column_name: 'region' },
+					operator: '=',
+					value: 'North',
+				},
+			],
+		}
+
+		const reset = resetChartConfig(
+			{
+				x_axis: { dimension: { column_name: 'region', dimension_name: 'region' } },
+				y_axis: {
+					series: [{ measure: measure('revenue') }, { measure: measure('margin') }],
+					stack: true,
+				},
+				order_by: [{ column: { column_name: 'revenue' }, direction: 'desc' }],
+				filters,
+				limit: 10,
+			},
+			'Bar',
+		)
+
+		expect(reset).toEqual({
+			x_axis: { dimension: {} },
+			y_axis: { series: [{ measure: {} }], stack: true },
+			order_by: [],
+			filters,
+			limit: 10,
+		})
 	})
 })
 
@@ -464,6 +542,7 @@ describe("a reading's options follow the reading", () => {
 		number_column_options: [{ target: 'ta' }, { target: 'tb' }, { target: 'tc' }],
 	})
 
+	// @feature charts.number-readings
 	it("drops the removed reading's options, not the next one's", () => {
 		const config = card()
 		removeNumberReading(config, 1)
@@ -471,6 +550,7 @@ describe("a reading's options follow the reading", () => {
 		expect(config.number_column_options).toEqual([{ target: 'ta' }, { target: 'tc' }])
 	})
 
+	// @feature charts.number-readings
 	it("moves the dragged reading's options with it", () => {
 		const config = card()
 		// what `DraggableList` does to the readings before it reports the move
@@ -484,6 +564,7 @@ describe("a reading's options follow the reading", () => {
 		])
 	})
 
+	// @feature charts.number-readings
 	it('pads a short options array first, so the pairing cannot slide', () => {
 		// an option is written only where an author set one
 		const config = {
@@ -495,6 +576,7 @@ describe("a reading's options follow the reading", () => {
 		expect(config.number_column_options).toEqual([{}, {}])
 	})
 
+	// @feature charts.number-readings
 	it('writes an options array where the card has none', () => {
 		const config = { number_columns: [measure('a'), measure('b')] } as any
 		moveNumberReadingOptions(config, 1, 0)

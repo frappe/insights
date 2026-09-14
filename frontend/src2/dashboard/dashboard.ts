@@ -643,26 +643,11 @@ function makeDashboard(name: string, isShared: boolean) {
 	// The author's default is what a filter opens on, not what it returns to: a
 	// reader who has picked something has an entry of their own, and `store` gave
 	// it back above. A default seeds a filter the reader has not answered.
-	//
-	// Whether the default says enough to run is the operator's answer, not the
-	// value's — `is_set` asks about the column itself and carries no value, which
-	// is the same rule the server states in `_filter_is_set`.
 	waitUntil(() => dashboard.isloaded).then(() => {
-		dashboard.doc.items.forEach((item) => {
-			if (item.type != 'filter') return
-			const filterItem = item as WorkbookDashboardFilter
-			if (filterItem.filter_name in filterStates.value) return
-
-			const operator = filterItem.default_operator
-			if (!operator) return
-			const kind = FILTER_TYPE_KINDS[filterItem.filter_type]
-			const needsValue = operatorOf(kind, operator)?.needsValue ?? true
-			if (needsValue && !filterItem.default_value) return
-
-			filterStates.value[filterItem.filter_name] = {
-				operator,
-				value: filterItem.default_value,
-			}
+		const defaults = defaultFilterStates(dashboard.doc.items)
+		Object.entries(defaults).forEach(([filter_name, state]) => {
+			if (filter_name in filterStates.value) return
+			filterStates.value[filter_name] = state
 		})
 	})
 
@@ -743,6 +728,33 @@ function getDashboardResource(name: string) {
 		dashboard.onAfterLoad(() => dashboard.call('track_view').catch(() => {}))
 	}
 	return dashboard
+}
+
+/**
+ * What every filter on a dashboard opens on, as its author set it.
+ *
+ * Whether a default says enough to run is the operator's answer, not the
+ * value's — `is_set` asks about the column itself and carries no value, which is
+ * the same rule the server states in `_filter_is_set`.
+ */
+export function defaultFilterStates(items: WorkbookDashboardItem[]): ViewerFilters {
+	const states: ViewerFilters = {}
+	items.forEach((item) => {
+		if (item.type != 'filter') return
+		const filterItem = item as WorkbookDashboardFilter
+
+		const operator = filterItem.default_operator
+		if (!operator) return
+		const kind = FILTER_TYPE_KINDS[filterItem.filter_type]
+		const needsValue = operatorOf(kind, operator)?.needsValue ?? true
+		if (needsValue && !filterItem.default_value) return
+
+		states[filterItem.filter_name] = {
+			operator,
+			value: filterItem.default_value,
+		}
+	})
+	return states
 }
 
 export function newDashboard() {

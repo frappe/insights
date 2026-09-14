@@ -143,6 +143,7 @@ class TestNumberCardSparkline(InsightsIntegrationTestCase):
     def days(self, result):
         return [(str(row["date"])[:10], row["count"]) for row in result["sparkline"]["rows"]]
 
+    # @feature charts.number-sparkline
     def test_the_series_splits_the_cards_own_window_by_day(self):
         _, chart = self.make_card()
 
@@ -152,6 +153,7 @@ class TestNumberCardSparkline(InsightsIntegrationTestCase):
         self.assertEqual([row["count"] for row in result["rows"]], [3])
         self.assertEqual(self.days(result), [("2026-08-03", 2), ("2026-08-09", 1)])
 
+    # @feature charts.number-sparkline
     def test_one_filter_reaches_the_number_and_the_series(self):
         """A filter that moves the number and leaves the series behind draws a
         trend of a number nobody is reading."""
@@ -162,6 +164,7 @@ class TestNumberCardSparkline(InsightsIntegrationTestCase):
         self.assertEqual([row["count"] for row in result["rows"]], [1])
         self.assertEqual(self.days(result), [("2026-08-09", 1)])
 
+    # @feature charts.number-sparkline
     def test_nothing_but_a_windowed_sparkline_runs_a_second_query(self):
         for case, kwargs in [
             ("the sparkline is off", {"sparkline": False}),
@@ -171,6 +174,7 @@ class TestNumberCardSparkline(InsightsIntegrationTestCase):
                 _, chart = self.make_card(**kwargs)
                 self.assertNotIn("sparkline", self.fetch(chart))
 
+    # @feature charts.number-sparkline
     def test_the_number_reads_the_same_whether_the_trend_is_drawn_or_not(self):
         """The trend is asked beside the number, never instead of it."""
         _, drawn = self.make_card()

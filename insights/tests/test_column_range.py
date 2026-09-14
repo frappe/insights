@@ -108,9 +108,11 @@ class TestColumnRange(InsightsIntegrationTestCase):
         with as_user(AUTHOR), db_connections():
             return frappe.get_doc(DT.QUERY, self.query).column_range(column_name)
 
+    # @feature query.filter-number-range
     def test_a_whole_number_column_reports_its_smallest_and_largest(self):
         self.assertEqual(self.column_range("weight"), [LENGTHS[0], LENGTHS[-1]])
 
+    # @feature query.filter-number-range
     def test_a_whole_number_range_can_be_sent_to_the_browser(self):
         """The picker's presets are built from this, and the client swallows the
         error, so a range that cannot be serialized reads as a column with no

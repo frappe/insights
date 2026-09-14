@@ -31,6 +31,7 @@ class TestExpressionIsolation(UnitTestCase):
 
     # --- the rule covers what ibis actually ships ---
 
+    # @feature query.expression-cannot-reach-files
     def test_the_rule_covers_every_io_name_ibis_exports(self):
         """The rule, not the names: an ibis upgrade must not need an edit here."""
         from insights.insights.doctype.insights_data_source_v3.ibis.utils import is_io_attribute
@@ -45,6 +46,7 @@ class TestExpressionIsolation(UnitTestCase):
         for name in io_names:
             self.assertTrue(is_io_attribute(name), f"{name} is I/O but the rule allows it")
 
+    # @feature query.expression-cannot-reach-files
     def test_no_io_name_is_reachable_from_the_context(self):
         """Every namespace an expression reaches by attribute must be clean.
 
@@ -61,15 +63,18 @@ class TestExpressionIsolation(UnitTestCase):
 
     # --- the readers and writers themselves ---
 
+    # @feature query.expression-cannot-reach-files
     def test_a_reader_is_refused(self):
         self.assert_refused("ibis.read_csv('/tmp/does-not-matter.csv')")
         self.assert_refused("ibis.read_json('/tmp/does-not-matter.csv')")
         self.assert_refused("ibis.read_parquet('/tmp/does-not-matter.csv')")
         self.assert_refused("ibis.read_delta('/tmp/does-not-matter.csv')")
 
+    # @feature query.expression-cannot-reach-files
     def test_a_reader_given_a_url_is_refused(self):
         self.assert_refused("ibis.read_csv('http://example.invalid/x.csv')")
 
+    # @feature query.expression-cannot-reach-files
     def test_a_writer_is_refused(self):
         """The context carries table and column objects, so an output method on
         one of them is as reachable as a top-level name."""
@@ -79,12 +84,14 @@ class TestExpressionIsolation(UnitTestCase):
         self.assert_refused(f"ibis.memtable({{'a': [1, 2]}}).to_csv({target!r})")
         self.assertFalse(os.path.exists(target))
 
+    # @feature query.expression-cannot-reach-files
     def test_the_rule_holds_for_a_multi_statement_script(self):
         """A single expression takes the safe_eval branch, several take safe_exec."""
         self.assert_refused("path = '/tmp/does-not-matter.csv'\nibis.read_csv(path)")
 
     # --- the legitimate path still works ---
 
+    # @feature query.expression-cannot-reach-files
     def test_pure_expressions_still_evaluate(self):
         self.assertIsNotNone(self.evaluate("ibis.literal(1) + 1"))
         self.assertIsNotNone(self.evaluate("ibis.ifelse(ibis.literal(True), 1, 2)"))

@@ -28,6 +28,7 @@ const measure = (name: string, format?: 'currency' | 'percent') => ({
 })
 
 describe('what the locale says', () => {
+	// @feature charts.number-format
 	it('groups the digits and keeps what the number carries, up to two places', () => {
 		const print = numberFormatter()
 		expect(print(1234567)).toBe('1,234,567')
@@ -35,6 +36,7 @@ describe('what the locale says', () => {
 		expect(print(1.23456)).toBe('1.23')
 	})
 
+	// @feature charts.number-format
 	it('says nothing about a value that is not a number', () => {
 		const print = numberFormatter()
 		expect(print(null as any)).toBe('')
@@ -44,10 +46,12 @@ describe('what the locale says', () => {
 })
 
 describe("what the Measure's own format says", () => {
+	// @feature charts.measure-unit
 	it('scales a percent Measure and states the unit', () => {
 		expect(numberFormatter(null, measure('rate', 'percent'))(0.42)).toBe('42%')
 	})
 
+	// @feature charts.measure-unit
 	it('prints the site currency where the site puts it', () => {
 		session.site.currency = 'INR'
 		session.site.currency_symbols = { INR: { symbol: '₹', symbol_on_right: false } }
@@ -60,6 +64,7 @@ describe("what the Measure's own format says", () => {
 		session.site.currency_symbols = {}
 	})
 
+	// @feature charts.measure-unit
 	it('prints the currency the rows carry, and none when they mix', () => {
 		session.site.currency = 'INR'
 		session.site.currency_symbols = {
@@ -82,6 +87,7 @@ describe("what the Measure's own format says", () => {
 })
 
 describe('what the chart says', () => {
+	// @feature charts.number-format
 	it('shortens, fixes the places, and states its own units', () => {
 		const config = {
 			number_format: { shorten: true, decimals: 2, prefix: '$', suffix: '/mo' },
@@ -89,15 +95,18 @@ describe('what the chart says', () => {
 		expect(numberFormatter(config, measure('revenue'))(1234567)).toBe('$1.23M/mo')
 	})
 
+	// @feature charts.number-format
 	it('prints no decimals when it asks for none', () => {
 		expect(numberFormatter({ number_format: { decimals: 0 } })(1234.56)).toBe('1,235')
 	})
 
+	// @feature charts.number-format
 	it('stands in for the unit the Measure states', () => {
 		const config = { number_format: { suffix: ' pts' } }
 		expect(numberFormatter(config, measure('rate', 'percent'))(0.42)).toBe('42 pts')
 	})
 
+	// @feature charts.measure-unit
 	it('scales a percent Measure whatever it prints around it', () => {
 		expect(
 			numberFormatOf({ number_format: { suffix: 'x' } }, measure('rate', 'percent')),
@@ -108,30 +117,36 @@ describe('what the chart says', () => {
 describe('a precision the number cannot print', () => {
 	// `Intl.NumberFormat` throws outside 0..20 places, which takes down the whole
 	// chart rather than one value. The resolver clamps, so no config can do it.
+	// @feature charts.number-format
 	it('reads a negative number of places as none', () => {
 		expect(numberFormatter({ number_format: { decimals: -2 } })(1234.56)).toBe('1,235')
 	})
 
+	// @feature charts.number-format
 	it('reads more places than the printer holds as the most it holds', () => {
 		expect(readNumberFormat({ decimals: 40 }).decimals).toBe(20)
 	})
 
+	// @feature charts.number-format
 	it('reads a fractional number of places as the whole one under it', () => {
 		expect(readNumberFormat({ decimals: 2.7 }).decimals).toBe(2)
 	})
 })
 
 describe('a negative number', () => {
+	// @feature charts.number-format
 	it('carries its sign outside the unit', () => {
 		expect(printNumber(-1234, { scale: 1, prefix: '$ ', decimals: 0 })).toBe('-$ 1,234')
 		expect(printNumber(-1234567, { scale: 1, prefix: '$ ', shorten: true })).toBe('-$ 1.2M')
 	})
 
+	// @feature charts.number-format
 	it('prints no sign once it rounds away', () => {
 		expect(printNumber(-0.004, { scale: 1, decimals: 2 })).toBe('0.00')
 		expect(printNumber(-0.004, { scale: 1 })).toBe('0.00')
 	})
 
+	// @feature charts.number-format
 	it('carries its sign where the locale prints its own digits', () => {
 		const locale = session.user.locale
 		session.user.locale = 'fa'
@@ -145,11 +160,13 @@ describe('a negative number', () => {
 describe('the precision an unstated one falls back on', () => {
 	// One function answers this for every field that shows it, so the chart's
 	// own precision and a Measure's cannot state different defaults.
+	// @feature charts.number-format-shorten
 	it('is the one place a shortened number prints', () => {
 		expect(defaultDecimals(true)).toBe(1)
 		expect(printNumber(1234.56, { scale: 1, shorten: true })).toBe('1.2K')
 	})
 
+	// @feature charts.number-format-shorten
 	it('is nothing when the number does not shorten, because the locale picks it', () => {
 		expect(defaultDecimals(false)).toBeUndefined()
 		expect(defaultDecimals(undefined)).toBeUndefined()
@@ -157,6 +174,7 @@ describe('the precision an unstated one falls back on', () => {
 })
 
 describe('what one Measure says', () => {
+	// @feature charts.number-format
 	it('overrides the chart, key by key', () => {
 		const config = {
 			number_format: { shorten: true, prefix: '$' },
@@ -167,6 +185,7 @@ describe('what one Measure says', () => {
 		expect(numberFormatter(config, measure('refunds'))(1234567)).toBe('-$1.2M')
 	})
 
+	// @feature charts.number-format
 	it('clears an inherited affix with an empty one', () => {
 		const config = {
 			number_format: { prefix: '$' },
@@ -177,15 +196,18 @@ describe('what one Measure says', () => {
 })
 
 describe('the spellings an older release wrote', () => {
+	// @feature charts.number-format-older-spellings
 	it("reads a table's compact_numbers as the chart's own shorten", () => {
 		expect(readNumberFormat({ compact_numbers: true })).toEqual({ shorten: true })
 	})
 
+	// @feature charts.number-format-older-spellings
 	it("reads a Number chart's chart-level settings as its default", () => {
 		const config = { shorten_numbers: true, decimal: 1, prefix: '$' }
 		expect(numberFormatter(config, measure('revenue'))(1234567)).toBe('$1.2M')
 	})
 
+	// @feature charts.number-format-older-spellings
 	it("reads a Number chart's per-value settings as that Measure's own", () => {
 		const config = {
 			shorten_numbers: true,
@@ -196,6 +218,7 @@ describe('the spellings an older release wrote', () => {
 		expect(numberFormatter(config, measure('revenue'))(1234567)).toBe('1.2M')
 	})
 
+	// @feature charts.number-format-older-spellings
 	it('is overridden by the spelling the forms write now', () => {
 		const config = {
 			shorten_numbers: true,
@@ -222,6 +245,7 @@ const plotted: Array<[string, ChartAdapterInput, string]> = [
 ]
 
 describe.each(plotted)('the %s chart', (_type, input, where) => {
+	// @feature charts.number-format
 	it('prints its numbers through the resolver', () => {
 		const filler = adaptChart(input)
 		if (!filler) throw new Error('the adapter drew nothing for this Chart')

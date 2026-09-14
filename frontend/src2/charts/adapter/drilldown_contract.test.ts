@@ -29,6 +29,7 @@ const drillable: Array<[string, ChartAdapterInput]> = [
 ]
 
 describe.each(drillable)('the %s chart', (_type, input) => {
+	// @feature charts.drill-segment
 	it('names an event its component declares', () => {
 		const filler = adaptChart(input)
 		if (!filler) throw new Error('the adapter drew nothing for this Chart')

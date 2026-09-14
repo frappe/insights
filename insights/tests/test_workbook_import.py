@@ -78,6 +78,7 @@ class ImportedReferencesPointAtTheNewCopies(InsightsIntegrationTestCase):
             frappe.delete_doc(DT.WORKBOOK, workbook, force=True, delete_permanently=True)
         delete_users(OWNER, IMPORTER)
 
+    # @feature permissions.import-without-access
     def test_a_workbook_file_imports_for_someone_who_cannot_read_its_queries(self):
         with as_user(IMPORTER):
             self.assertFalse(
@@ -90,6 +91,7 @@ class ImportedReferencesPointAtTheNewCopies(InsightsIntegrationTestCase):
         queries = frappe.get_all(DT.QUERY, filters={"workbook": imported}, pluck="name")
         self.assertEqual(len(queries), 2)
 
+    # @feature workbook.copy-paste
     def test_the_import_answers_with_the_name_every_copy_took(self):
         """The shipped skill reads this map to edit what it just imported."""
         with as_user(IMPORTER):
@@ -103,6 +105,7 @@ class ImportedReferencesPointAtTheNewCopies(InsightsIntegrationTestCase):
             sorted(frappe.get_all(DT.QUERY, filters={"workbook": result["workbook"]}, pluck="name")),
         )
 
+    # @feature workbook.copy-paste
     def test_an_imported_reference_names_the_imported_copy(self):
         with as_user(IMPORTER):
             imported = import_workbook(self.file)["workbook"]
@@ -151,6 +154,7 @@ class ImportingOneQueryCarriesItsReferences(InsightsIntegrationTestCase):
             frappe.delete_doc(DT.WORKBOOK, workbook, force=True, delete_permanently=True)
         delete_users(OWNER, IMPORTER)
 
+    # @feature query.copy-paste
     def test_a_query_file_imports_for_someone_who_cannot_read_its_reference(self):
         with as_user(IMPORTER):
             self.assertFalse(
@@ -161,6 +165,7 @@ class ImportingOneQueryCarriesItsReferences(InsightsIntegrationTestCase):
 
         self.assertTrue(frappe.db.exists(DT.QUERY, imported))
 
+    # @feature query.copy-paste
     def test_the_imported_reference_names_the_imported_copy(self):
         with as_user(IMPORTER):
             imported = import_query(self.file, self.target)
@@ -227,6 +232,7 @@ class ImportingOneQueryCopiesAReferenceOnce(InsightsIntegrationTestCase):
             frappe.delete_doc(DT.WORKBOOK, workbook, force=True, delete_permanently=True)
         delete_users(OWNER, IMPORTER)
 
+    # @feature query.copy-paste
     def test_a_query_reached_by_two_branches_is_imported_once(self):
         """One import, so the count is the import's own work."""
         with as_user(IMPORTER):
@@ -280,6 +286,7 @@ class ImportingOneChartCarriesItsQuery(InsightsIntegrationTestCase):
             frappe.delete_doc(DT.WORKBOOK, workbook, force=True, delete_permanently=True)
         delete_users(OWNER, IMPORTER)
 
+    # @feature charts.copy-paste permissions.import-without-access
     def test_a_chart_file_imports_for_someone_who_cannot_read_its_query(self):
         with as_user(IMPORTER):
             self.assertFalse(
@@ -328,6 +335,7 @@ class ImportingAcrossSitesIgnoresTheWorkbookNameInTheFile(InsightsIntegrationTes
             frappe.delete_doc(DT.WORKBOOK, workbook, force=True, delete_permanently=True)
         delete_users(OWNER, IMPORTER)
 
+    # @feature workbook.copy-paste
     def test_a_file_naming_the_target_workbook_still_copies_its_queries(self):
         """The other site's workbook happened to be numbered like this one's."""
         file = frappe.parse_json(frappe.as_json(self.file))

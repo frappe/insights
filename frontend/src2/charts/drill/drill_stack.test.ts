@@ -45,6 +45,7 @@ function click(
 const columnsOf = (segment: { pins: { column: string }[] }) => segment.pins.map((pin) => pin.column)
 
 describe('what a segment click pins', () => {
+	// @feature charts.drill-segment
 	it('pins the Dimension the bar stands at, as an equality on a literal', () => {
 		const segment = click(
 			axisChart({ type: 'Bar', dimension: 'region', measures: ['revenue'] }),
@@ -56,6 +57,7 @@ describe('what a segment click pins', () => {
 		expect(segment.measure).toBe('revenue')
 	})
 
+	// @feature charts.drill-segment
 	it('files the pin under the column the query has, and reads the value off the column the result has', () => {
 		// A summarize names its output after the Dimension. The drill is validated
 		// against the surface *before* it, which still calls the column its own name.
@@ -76,6 +78,7 @@ describe('what a segment click pins', () => {
 		])
 	})
 
+	// @feature charts.drill-segment
 	it('pins nothing at all for a number card that reads no period', () => {
 		const segment = click(
 			numberChart({ values: [{ name: 'revenue', readings: [100] }] }),
@@ -86,6 +89,7 @@ describe('what a segment click pins', () => {
 		expect(segment.measure).toBe('revenue')
 	})
 
+	// @feature charts.drill-number-card
 	it('pins the window a card’s reading stands on, and reads it as the window', () => {
 		// The reading is the newest period and the row carries the day it opens.
 		// Which stretch that day stands for is the span's answer, on both sides:
@@ -104,6 +108,7 @@ describe('what a segment click pins', () => {
 		expect(segment.pins).toEqual([{ column: 'posting_date', value: 'February, 2026' }])
 	})
 
+	// @feature charts.drill-number-card
 	it('pins the bucket a card grouped by a grain reads', () => {
 		const card = numberChart({
 			values: [{ name: 'revenue', readings: [80, 100] }],
@@ -120,6 +125,7 @@ describe('what a segment click pins', () => {
 		expect(segment.pins).toEqual([{ column: 'posting_date', value: 'February, 2026' }])
 	})
 
+	// @feature charts.drill-segment
 	it('pins the segment a donut was clicked on', () => {
 		const segment = click(
 			donutChart({ category: 'status', measure: 'count' }),
@@ -129,6 +135,7 @@ describe('what a segment click pins', () => {
 		expect(segment.filters).toEqual([{ column: 'status', operator: '=', value: 'South' }])
 	})
 
+	// @feature charts.drill-segment
 	it('pins the absence itself when the segment stands for the rows with no value', () => {
 		const chart: DrillChart = {
 			chart_type: 'Donut',
@@ -146,6 +153,7 @@ describe('what a segment click pins', () => {
 		])
 	})
 
+	// @feature charts.drill-segment
 	it('pins both ends of a Sankey flow', () => {
 		const segment = click(
 			sankeyChart({ source: 'channel', target: 'category', measure: 'orders' }),
@@ -170,6 +178,7 @@ describe('a segment a split or a pivot drew', () => {
 		splitBy: { dimension: 'department', into: ['Men', 'Women'] },
 	}
 
+	// @feature charts.drill-segment
 	it('pins the axis value and the series value, and re-measures the Measure behind the segment', () => {
 		// The clicked column is a pivoted one — the split's value is in its name and
 		// nowhere else. Sending it as the Measure would name a column the
@@ -183,6 +192,7 @@ describe('a segment a split or a pivot drew', () => {
 		expect(segment.measure).toBe('profit')
 	})
 
+	// @feature charts.drill-segment
 	it('reads the Measure off the config when a lone Measure left the column unnamed', () => {
 		const segment = click(axisChart({ ...split, measures: ['revenue'] }), 'Women')
 		expect(segment.filters).toContainEqual({
@@ -193,6 +203,7 @@ describe('a segment a split or a pivot drew', () => {
 		expect(segment.measure).toBe('revenue')
 	})
 
+	// @feature charts.drill-segment
 	it('pins the row Dimensions and the column value of a pivot-table cell', () => {
 		const segment = click(
 			tableChart({
@@ -230,18 +241,21 @@ describe('a segment on a date', () => {
 	// A bar grouped by month covers a span, but working the span out needs the
 	// grain, and the grain lives in the pipeline the server cuts. The client
 	// says which bucket was clicked and nothing about how to match it.
+	// @feature charts.drill-date-segment
 	it('pins the bucket the bar stands for, and leaves the span to the pipeline', () => {
 		expect(dated('month').filters).toEqual([
 			{ column: 'order_date', operator: '=', value: '2026-03-01' },
 		])
 	})
 
+	// @feature charts.drill-date-segment
 	it('says the same for a grain a plain calendar has no name for', () => {
 		expect(dated('fiscal_year').filters).toEqual([
 			{ column: 'order_date', operator: '=', value: '2026-03-01' },
 		])
 	})
 
+	// @feature charts.drill-date-segment
 	it('reads the pin at the grain the bar was grouped by', () => {
 		expect(dated('month').pins[0].value).toBe('March, 2026')
 	})
@@ -255,6 +269,7 @@ describe('what "break down by" offers', () => {
 		{ name: 'priority', type: 'String' },
 	]
 
+	// @feature charts.drill-breakdown-offers
 	it('drops the columns the click already pins', () => {
 		const segment = click(
 			axisChart({ type: 'Bar', dimension: 'status', measures: ['count'] }),
@@ -265,12 +280,14 @@ describe('what "break down by" offers', () => {
 		).not.toContain('status')
 	})
 
+	// @feature charts.drill-breakdown-offers
 	it('drops a column a level further up already fixed', () => {
 		expect(breakdownCandidates(available, ['status', 'region'], []).map((d) => d.name)).toEqual(
 			['owner', 'priority'],
 		)
 	})
 
+	// @feature charts.drill-breakdown-offers
 	it('offers the Chart’s own other Dimensions first, in the order it declares them', () => {
 		// A number card pins nothing, and the Dimension its readings are grouped by
 		// is still one the chart talks about.
@@ -288,6 +305,7 @@ describe('what "break down by" offers', () => {
 		).toEqual(['priority', 'owner', 'region', 'status'])
 	})
 
+	// @feature charts.drill-breakdown-offers
 	it('sorts everything the Chart never named alphabetically', () => {
 		const segment = segmentOf(
 			{ chart_type: 'Number', config: { number_columns: [] } as unknown as ChartConfig },
@@ -324,6 +342,7 @@ const west: DrillEntry = {
 }
 
 describe('the crumbs', () => {
+	// @feature charts.drill-breadcrumbs
 	it('reads as one crumb per level, and nothing else', () => {
 		const stack = makeDrillStack()
 		stack.push(overdue)
@@ -331,12 +350,14 @@ describe('the crumbs', () => {
 		expect(stack.crumbs.map((crumb) => crumb.label)).toEqual(['by Region', 'Rows'])
 	})
 
+	// @feature charts.drill-breadcrumbs
 	it('sends the levels and nothing else', () => {
 		const stack = makeDrillStack()
 		stack.push(overdue)
 		expect(stack.levels).toEqual([overdue.level])
 	})
 
+	// @feature charts.drill-breadcrumbs
 	it('gives every crumb a depth of its own', () => {
 		// they used to come in pairs, where a level's value and its action both
 		// popped to the same place — so half the trail led where its neighbour did
@@ -346,6 +367,7 @@ describe('the crumbs', () => {
 		expect(stack.crumbs.map((crumb) => crumb.depth)).toEqual([1, 2])
 	})
 
+	// @feature charts.drill-number-card
 	it('carries a crumb for a level whose segment pins nothing, as a number card does', () => {
 		const stack = makeDrillStack()
 		stack.push({ ...overdue, pins: [] })
@@ -354,6 +376,7 @@ describe('the crumbs', () => {
 })
 
 describe('the pins', () => {
+	// @feature charts.drill-segment
 	it('reads as the values the reader passed through, each under its column', () => {
 		const stack = makeDrillStack()
 		stack.push(overdue)
@@ -364,6 +387,7 @@ describe('the pins', () => {
 		])
 	})
 
+	// @feature charts.drill-segment
 	it('skips a level that pins nothing', () => {
 		const stack = makeDrillStack()
 		stack.push({ ...overdue, pins: [] })
@@ -371,6 +395,7 @@ describe('the pins', () => {
 		expect(stack.pins).toEqual([{ column: 'region', value: 'West' }])
 	})
 
+	// @feature charts.drill-segment
 	it('drops away with the levels a pop removes', () => {
 		const stack = makeDrillStack()
 		stack.push(overdue)
@@ -379,6 +404,7 @@ describe('the pins', () => {
 		expect(stack.pins).toEqual([{ column: 'status', value: 'Overdue' }])
 	})
 
+	// @feature charts.drill-breakdown-offers
 	it('collects every column the path has fixed, so the menu stops offering them', () => {
 		const stack = makeDrillStack()
 		stack.push(overdue)
@@ -388,6 +414,7 @@ describe('the pins', () => {
 })
 
 describe('retracing', () => {
+	// @feature charts.drill-breadcrumbs
 	it('pops to the level a crumb stands for', () => {
 		const stack = makeDrillStack()
 		stack.push(overdue)
@@ -398,6 +425,7 @@ describe('retracing', () => {
 		expect(stack.crumbs.map((crumb) => crumb.label)).toEqual(['by Region'])
 	})
 
+	// @feature charts.drill-breadcrumbs
 	it('pops back out of the dialog altogether', () => {
 		const stack = makeDrillStack()
 		stack.push(overdue)
@@ -414,6 +442,7 @@ describe('what the dialog has already been told', () => {
 		rows: [{ name: 'TODO-1' }],
 	}
 
+	// @feature charts.drill-breadcrumbs
 	it('serves a level it has already asked for, so a pop costs nothing', () => {
 		const stack = makeDrillStack()
 		stack.push(overdue)
@@ -425,6 +454,7 @@ describe('what the dialog has already been told', () => {
 		expect(stack.answer()).toEqual(rows)
 	})
 
+	// @feature charts.drill-breadcrumbs
 	it('holds an answer against the whole path, not against how deep it was', () => {
 		// Pop and drill somewhere else and the depth is the same. Serving the old
 		// level's rows there would be the wrong rows under the right crumb.
@@ -450,6 +480,7 @@ describe('reading a level at another grain', () => {
 		actionLabel: 'by Due Date',
 	}
 
+	// @feature charts.drill-grain
 	it('says the grain on the level itself, so the server is told what to group by', () => {
 		const stack = makeDrillStack()
 		stack.push(byDate)
@@ -462,6 +493,7 @@ describe('reading a level at another grain', () => {
 		])
 	})
 
+	// @feature charts.drill-grain
 	it('replaces the level instead of descending, so back still goes where it went', () => {
 		const stack = makeDrillStack()
 		stack.push(overdue)
@@ -473,6 +505,7 @@ describe('reading a level at another grain', () => {
 		expect(stack.levels).toEqual([overdue.level])
 	})
 
+	// @feature charts.drill-grain
 	it('says nothing about a level that groups nothing', () => {
 		const stack = makeDrillStack()
 		stack.push(west)
@@ -480,6 +513,7 @@ describe('reading a level at another grain', () => {
 		expect(stack.levels).toEqual([west.level])
 	})
 
+	// @feature charts.drill-grain
 	it('writes the grain the server derived onto the level itself', () => {
 		// Nobody chose it, and it is still what this level is: a click on one of
 		// these buckets pins its first moment, and the level below can only read
@@ -495,6 +529,7 @@ describe('reading a level at another grain', () => {
 		])
 	})
 
+	// @feature charts.drill-grain
 	it('settles the level a derived grain came back for, so returning to it costs nothing', () => {
 		// The unsaid grain and the one the answer named are the same question. Left
 		// unsaid on the level, they file under two keys, and the reader asking for
@@ -515,6 +550,7 @@ describe('reading a level at another grain', () => {
 		expect(stack.answer()).toEqual(monthly)
 	})
 
+	// @feature charts.drill-grain
 	it('leaves a level that groups nothing alone, however its answer reads', () => {
 		const stack = makeDrillStack()
 		stack.push(west)
@@ -522,6 +558,7 @@ describe('reading a level at another grain', () => {
 		expect(stack.levels).toEqual([west.level])
 	})
 
+	// @feature charts.drill-grain
 	it('holds an answer against the grain it was asked at', () => {
 		// The same level at another grain is another question, so the rows already
 		// held are not an answer to it — and going back to a grain already asked
@@ -550,6 +587,7 @@ describe('the grains a breakdown can be read at', () => {
 		{ name: 'status', type: 'String' },
 	]
 
+	// @feature charts.drill-grain
 	it('offers the calendar grains for a date', () => {
 		expect(grainsFor(dimensions, 'due_date').map((grain) => grain.value)).toContain('month')
 		expect(grainsFor(dimensions, 'creation').map((grain) => grain.value)).toContain(
@@ -557,10 +595,12 @@ describe('the grains a breakdown can be read at', () => {
 		)
 	})
 
+	// @feature charts.drill-grain
 	it('offers none for a column with no order of its own', () => {
 		expect(grainsFor(dimensions, 'status')).toEqual([])
 	})
 
+	// @feature charts.drill-grain
 	it('offers none for a column the response never carried', () => {
 		expect(grainsFor(dimensions, 'owner')).toEqual([])
 	})
@@ -584,12 +624,14 @@ describe('a query result read as a chart', () => {
 		table: { type: 'table' as const, data_source: 'Site DB', table_name: 'tabToDo' },
 	}
 
+	// @feature query.result-drill
 	it('reads nothing out of a pipeline that aggregates nothing', () => {
 		// a raw result has no numbers with rows behind them, so there is no
 		// segment for a click to pin
 		expect(queryResultChart([source])).toBeUndefined()
 	})
 
+	// @feature query.result-drill
 	it('reads a summarize as the rows and values a Table declares', () => {
 		const chart = queryResultChart([
 			source,
@@ -603,6 +645,7 @@ describe('a query result read as a chart', () => {
 		])
 	})
 
+	// @feature query.result-drill
 	it('reads a pivot as the rows and the columns it spread the values across', () => {
 		const chart = queryResultChart([
 			source,
@@ -618,6 +661,7 @@ describe('a query result read as a chart', () => {
 		])
 	})
 
+	// @feature query.result-drill
 	it('reads the last operation that aggregated, which is the one the result came off', () => {
 		const chart = queryResultChart([
 			source,
@@ -634,6 +678,7 @@ describe('a query result read as a chart', () => {
 // NULL` under a crumb reading "(blank)".
 
 describe('what a funnel stage pins', () => {
+	// @feature charts.drill-segment
 	it('pins the Label column, when the stages are the rows of a Dimension', () => {
 		const funnel = funnelChart({
 			dimension: 'stage',
@@ -648,6 +693,7 @@ describe('what a funnel stage pins', () => {
 		])
 	})
 
+	// @feature charts.drill-segment
 	it('pins nothing but the stage, when the stages are Measures', () => {
 		const funnel = funnelChart({
 			dimension: 'stage',

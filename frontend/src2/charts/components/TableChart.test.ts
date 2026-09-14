@@ -20,6 +20,7 @@ const props: TableChartProps = {
 }
 
 describe('a grid with no card-filter holder above it', () => {
+	// @feature charts.table-renders-outside-dashboard
 	it('draws its rows instead of throwing', async () => {
 		const app = createSSRApp({ render: () => h(TableChart, props) })
 		// the app registers frappe-ui's components globally; this render is one

@@ -15,30 +15,36 @@ const columns: QueryResultColumn[] = [
 ]
 
 describe('findRows', () => {
+	// @feature query.result-find
 	it('returns every row for an empty or blank term', () => {
 		expect(findRows(rows, '')).toBe(rows)
 		expect(findRows(rows, '   ')).toBe(rows)
 	})
 
+	// @feature query.result-find dashboard.card-find
 	it('matches any column, case-insensitively', () => {
 		expect(findRows(rows, 'acme')).toEqual([rows[0]])
 		expect(findRows(rows, 'CEMENT')).toEqual([rows[2]])
 	})
 
+	// @feature query.result-find
 	it('matches a substring of a printed number', () => {
 		expect(findRows(rows, '12')).toEqual([rows[0], rows[1]])
 	})
 
+	// @feature query.result-find
 	it('treats a null cell as empty rather than as "null"', () => {
 		expect(findRows(rows, 'null')).toEqual([])
 	})
 })
 
 describe('findColumns', () => {
+	// @feature query.result-find
 	it('matches nothing for an empty term', () => {
 		expect(findColumns(columns, '')).toEqual([])
 	})
 
+	// @feature query.result-find
 	it('matches column names case-insensitively, in result order', () => {
 		expect(findColumns(columns, 'M').map((c) => c.name)).toEqual(['customer', 'amount'])
 		expect(findColumns(columns, 'ON').map((c) => c.name)).toEqual(['paid_on'])

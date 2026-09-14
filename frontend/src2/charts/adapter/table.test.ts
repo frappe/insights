@@ -18,6 +18,7 @@ function adapt(input: ChartAdapterInput) {
 const propsOf = (spec: TableChartSpec) => adapt(tableChart(spec)).props
 
 describe('the grid', () => {
+	// @feature charts.type-table
 	it('draws the result as it stands, formatted for reading', () => {
 		const input = tableChart({ rows: ['region'], values: ['revenue'] })
 		const { component, props } = adapt(input)
@@ -27,6 +28,7 @@ describe('the grid', () => {
 		expect(props.rows).toBe(input.result.formattedRows)
 	})
 
+	// @feature charts.table-rows-columns-values
 	it('takes a pivot as the columns the server sent back', () => {
 		// The pivot happens in SQL, so a split value reaches the table as a column
 		// like any other. Nothing here re-shapes the rows.
@@ -42,6 +44,7 @@ describe('the grid', () => {
 		])
 	})
 
+	// @feature charts.type-table
 	it('draws nothing until the result holds a column', () => {
 		const input = tableChart({ values: ['revenue'] })
 		expect(adaptChart({ ...input, result: { ...input.result, columns: [] } })).toBeUndefined()
@@ -49,6 +52,7 @@ describe('the grid', () => {
 })
 
 describe('what the author put on the table', () => {
+	// @feature charts.table-totals charts.table-column-width charts.table-wrap-text charts.table-pin-column charts.table-color-scale
 	it('asks for the totals, the filter row and the reading options it was set', () => {
 		const props = propsOf({
 			rows: ['category'],
@@ -73,6 +77,7 @@ describe('what the author put on the table', () => {
 		expect(props.textWrap).toEqual({ category: true })
 	})
 
+	// @feature charts.number-format
 	it('hands the grid the format policy, chart default and per-value alike', () => {
 		const props = propsOf({
 			rows: ['category'],
@@ -84,6 +89,7 @@ describe('what the author put on the table', () => {
 		expect(props.numberFormats).toEqual({ refunds: { prefix: '-$' } })
 	})
 
+	// @feature charts.table-totals
 	it('asks for nothing the Chart did not set', () => {
 		const props = propsOf({ rows: ['category'], values: ['revenue'] })
 		expect(props.showFilterRow).toBeUndefined()
@@ -96,6 +102,7 @@ describe('what the author put on the table', () => {
 		expect(props.columnFormats).toBeUndefined()
 	})
 
+	// @feature charts.table-conditional-formatting
 	it('carries a conditional format to the column it was set on', () => {
 		const props = propsOf({
 			rows: ['category'],
@@ -107,6 +114,7 @@ describe('what the author put on the table', () => {
 		])
 	})
 
+	// @feature charts.measure-unit
 	it('tells the table which Measure holds a rate, so it prints one', () => {
 		const props = propsOf({
 			rows: ['category'],
@@ -117,6 +125,7 @@ describe('what the author put on the table', () => {
 })
 
 describe('the sort', () => {
+	// @feature charts.table-header-sort
 	it('draws the arrows the Chart is ordered by', () => {
 		const props = propsOf({
 			rows: ['category'],
@@ -126,6 +135,7 @@ describe('the sort', () => {
 		expect(props.sortOrder).toEqual({ revenue: 'desc' })
 	})
 
+	// @feature charts.table-header-sort
 	it('writes a sort back to the Chart, which is what the next run reads', () => {
 		const input = tableChart({ rows: ['category'], values: ['revenue'] })
 
@@ -139,6 +149,7 @@ describe('the sort', () => {
 		expect(adapt(input).props.sortOrder).toEqual({})
 	})
 
+	// @feature charts.table-header-sort
 	it('offers a reader no sort at all', () => {
 		// A sort re-runs the query off a rewritten config, and a reader holds
 		// neither half, so the arrow is left out rather than drawn dead.
@@ -157,6 +168,7 @@ describe('the sort', () => {
 describe('a run in flight', () => {
 	// The card draws the one veil, over the whole card. A second one inside the
 	// grid drew two over a table.
+	// @feature charts.table-loading
 	it('is not the grid to say: the card veils it', () => {
 		const input = tableChart({ rows: ['category'], values: ['revenue'] })
 		expect(adapt({ ...input, executing: true }).props).not.toHaveProperty('loading')
@@ -171,6 +183,7 @@ describe('the record a row names', () => {
 		recordLinks: { category: 'Sales Order' },
 	})
 
+	// @feature charts.table-record-link
 	it('links the named column to the document the raw row names', () => {
 		const input = tableChart({ rows: ['category'], values: ['revenue'] })
 		const props = adapt(withLink(input)).props
@@ -180,6 +193,7 @@ describe('the record a row names', () => {
 		)
 	})
 
+	// @feature charts.table-record-link
 	it('leaves every other column a value', () => {
 		const input = tableChart({ rows: ['category'], values: ['revenue'] })
 		const props = adapt(withLink(input)).props
@@ -189,10 +203,12 @@ describe('the record a row names', () => {
 		).toBeUndefined()
 	})
 
+	// @feature charts.table-record-link
 	it('draws no link at all where the server named no column', () => {
 		expect(propsOf({ rows: ['category'], values: ['revenue'] }).cellLink).toBeUndefined()
 	})
 
+	// @feature charts.table-record-link
 	it('names no record from a row the result does not carry', () => {
 		const input = tableChart({ rows: ['category'], values: ['revenue'] })
 		const props = adapt(withLink(input)).props
@@ -202,6 +218,7 @@ describe('the record a row names', () => {
 })
 
 describe('drilling into a cell', () => {
+	// @feature charts.drill-segment
 	it('names the column and the row behind it', () => {
 		const input = tableChart({ rows: ['category'], values: ['revenue'] })
 		const filler = adapt(input)
@@ -218,6 +235,7 @@ describe('drilling into a cell', () => {
 
 	// Only the rows the table was handed have a raw row behind them, so `rawRowOf`
 	// returns nothing for any other row.
+	// @feature charts.drill-segment
 	it('drills into nothing from a row the result does not carry', () => {
 		const input = tableChart({ rows: ['category'], values: ['revenue'] })
 		const filler = adapt(input)
@@ -232,6 +250,7 @@ describe('drilling into a cell', () => {
 
 	// Inspecting a cell changes nothing about the Chart, so a reader is offered it
 	// too — unlike the sort beside it, which rewrites the config.
+	// @feature charts.drill-segment
 	it('is offered to a reader too, who inspects without rewriting anything', () => {
 		const props = adapt({ ...tableChart({ values: ['revenue'] }), readonly: true }).props
 		expect(props.drillable).toBe(true)
@@ -240,6 +259,7 @@ describe('drilling into a cell', () => {
 
 	// A public link's feed has no drill endpoint behind it, so the affordance
 	// would lead nowhere.
+	// @feature charts.drill-segment
 	it('is not offered where the feed answers no drill', () => {
 		const props = adapt({ ...tableChart({ values: ['revenue'] }), drillable: false }).props
 		expect(props.drillable).toBeUndefined()
@@ -252,22 +272,26 @@ describe('the filter row', () => {
 		{ name: 'revenue', type: 'Decimal' },
 	]
 
+	// @feature charts.table-filter-row
 	it('states a comparison as a rule the server runs, not a printed value', () => {
 		expect(cardFilterRules({ revenue: '>1000' }, columns)).toEqual([
 			{ column: columns[1], operator: '>', value: 1000 },
 		])
 	})
 
+	// @feature charts.table-filter-row
 	it('states anything else as a substring', () => {
 		expect(cardFilterRules({ region: 'nor' }, columns)).toEqual([
 			{ column: columns[0], operator: 'contains', value: 'nor' },
 		])
 	})
 
+	// @feature charts.table-filter-row
 	it('states nothing for an empty box, or for a column the grid no longer draws', () => {
 		expect(cardFilterRules({ region: '', gone: 'x' }, columns)).toEqual([])
 	})
 
+	// @feature charts.table-filter-row
 	it('states no substring for a column that has none, rather than a rule that throws', () => {
 		// `contains` runs as `like`, which a date does not answer: a month
 		// summarized into the first column used to take the whole card down.
@@ -278,6 +302,7 @@ describe('the filter row', () => {
 		expect(cardFilterRules({ order_date: 'jan', shipped_at: '2024' }, typed)).toEqual([])
 	})
 
+	// @feature charts.table-filter-row
 	it('states no comparison for a column that has none, rather than a rule that throws', () => {
 		// A comparison is against a number, and the server compares no string or
 		// date with one: `>2024` in a date's box took the whole card down.

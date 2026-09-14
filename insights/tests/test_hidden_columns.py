@@ -90,11 +90,13 @@ class TestHiddenColumns(InsightsIntegrationTestCase):
             result = frappe.get_doc(DT.QUERY, self.query).execute(force=True)
         return result, {row["status"]: row["todos__currency"] for row in result["rows"]}
 
+    # @feature query.summarize-currency-carried
     def test_the_name_says_what_is_carried(self):
         # the client reads the code off the row by this name
         self.assertTrue(is_hidden_column("todos__currency"))
         self.assertFalse(is_hidden_column("todos"))
 
+    # @feature query.summarize-currency-carried
     def test_a_query_built_on_this_one_hides_the_carried_column_too(self):
         operations = [
             {
@@ -110,6 +112,7 @@ class TestHiddenColumns(InsightsIntegrationTestCase):
         self.assertTrue(by_name["todos__currency"].get("hidden"))
         self.assertNotIn("todos__currency", [c["name"] for c in offered])
 
+    # @feature query.summarize-currency-carried
     def test_a_carried_column_is_marked_and_its_value_still_rides_in_the_row(self):
         result, by_status = self.carried()
         by_name = {c["name"]: c for c in result["columns"]}
@@ -119,11 +122,13 @@ class TestHiddenColumns(InsightsIntegrationTestCase):
         self.assertEqual(result["currency_symbols"]["High"]["symbol"], "High")
         self.assertNotIn(None, result["currency_symbols"])
 
+    # @feature query.summarize-currency-carried
     def test_a_group_holding_a_row_without_a_code_carries_none(self):
         # min and max skip nulls, so a null row must void the group on its own
         _, by_status = self.carried()
         self.assertIsNone(by_status["Closed"])
 
+    # @feature query.summarize-currency-carried
     def test_a_carried_column_is_not_offered_to_the_author(self):
         with as_user(ADMIN):
             offered = frappe.get_doc(DT.QUERY, self.query).get_columns_for_selection()
@@ -131,6 +136,7 @@ class TestHiddenColumns(InsightsIntegrationTestCase):
         self.assertIn("todos", names)
         self.assertNotIn("todos__currency", names)
 
+    # @feature query.summarize-currency-carried
     def test_a_currency_column_that_is_gone_carries_none_rather_than_failing(self):
         # a missing column must not fail the query, and it carries null, not the site currency
         operations = copy.deepcopy(OPERATIONS)
@@ -140,6 +146,7 @@ class TestHiddenColumns(InsightsIntegrationTestCase):
             result = query.execute(force=True)
         self.assertTrue(all(row["todos__currency"] is None for row in result["rows"]))
 
+    # @feature query.summarize-currency-carried
     def test_a_carried_column_does_not_leave_in_an_export(self):
         frappe.db.set_single_value("Insights Settings", "allow_download", 1)
         with as_user(ADMIN):

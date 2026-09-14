@@ -12,6 +12,7 @@ function adapt(spec: BubbleChartSpec) {
 const propsOf = (spec: BubbleChartSpec) => adapt(spec).props
 
 describe('a bubble chart', () => {
+	// @feature charts.type-bubble charts.bubble-size-name-color
 	it('reads one Measure against another, sized and named by two more columns', () => {
 		const input = bubbleChart({
 			title: 'Revenue vs profit',
@@ -35,6 +36,7 @@ describe('a bubble chart', () => {
 		expect(props.data).toBe(input.result.rows)
 	})
 
+	// @feature charts.type-bubble
 	it('names only the columns the Chart filled', () => {
 		const props = propsOf({ x: 'revenue', y: 'profit' })
 		expect(props.size).toBeUndefined()
@@ -42,6 +44,7 @@ describe('a bubble chart', () => {
 		expect(props.series).toBeUndefined()
 	})
 
+	// @feature charts.bubble-data-labels
 	it('prints each point’s own name beside it when the Chart asks', () => {
 		// The name column, not a measure: both measures are on the axes already.
 		const props = propsOf({ x: 'revenue', y: 'profit', label: 'category', dataLabels: true })
@@ -49,12 +52,14 @@ describe('a bubble chart', () => {
 		expect(props.label).toBe('category')
 	})
 
+	// @feature charts.bubble-data-labels
 	it('prints none by default', () => {
 		expect(
 			propsOf({ x: 'revenue', y: 'profit', label: 'category' }).showDataLabels,
 		).toBeUndefined()
 	})
 
+	// @feature charts.type-bubble
 	it('draws nothing until the Chart names both Measures', () => {
 		expect(adaptChart(bubbleChart({ x: '', y: 'profit' }))).toBeUndefined()
 		expect(adaptChart(bubbleChart({ x: 'revenue', y: '' }))).toBeUndefined()
@@ -62,6 +67,7 @@ describe('a bubble chart', () => {
 })
 
 describe('the quadrant dividers', () => {
+	// @feature charts.bubble-quadrants
 	it('cuts the plot in four with a rule on each scale', () => {
 		// Both axes of a scatter are value axes, so the vertical rule sits at a
 		// number on the horizontal scale rather than at a category.
@@ -89,6 +95,7 @@ describe('the quadrant dividers', () => {
 		])
 	})
 
+	// @feature charts.bubble-quadrants
 	it('draws only the rule the Chart set a value for', () => {
 		expect(
 			propsOf({ x: 'revenue', y: 'profit', quadrants: { x: 100 } }).referenceLines,
@@ -97,12 +104,14 @@ describe('the quadrant dividers', () => {
 		])
 	})
 
+	// @feature charts.bubble-quadrants
 	it('computes no divider of its own', () => {
 		// Nothing derives a midpoint from the data, before or after the swap: the
 		// line sits where the author put it, or nowhere.
 		expect(propsOf({ x: 'revenue', y: 'profit', quadrants: {} }).referenceLines).toBeUndefined()
 	})
 
+	// @feature charts.bubble-quadrants
 	it('draws none when the Chart keeps the values but switched them off', () => {
 		expect(
 			propsOf({ x: 'revenue', y: 'profit', quadrants: { x: 100, y: 50, shown: false } })
@@ -112,6 +121,7 @@ describe('the quadrant dividers', () => {
 })
 
 describe('drilling into a point', () => {
+	// @feature charts.drill-segment
 	it('names the vertical Measure and the row behind the point', () => {
 		const input = bubbleChart({ x: 'revenue', y: 'profit', group: 'department' })
 		const row = input.result.rows[1]

@@ -24,16 +24,19 @@ def fingerprint(rows):
 class TestDemoDataGenerator(unittest.TestCase):
     """The generator has no Frappe dependency, so these tests need no site."""
 
+    # @feature settings.demo-data
     def test_same_seed_gives_same_rows(self):
         first = build_rows(DEMO_SPEC, DEMO_SPEC.seed)
         second = build_rows(DEMO_SPEC, DEMO_SPEC.seed)
         self.assertEqual(fingerprint(first), fingerprint(second))
 
+    # @feature settings.demo-data
     def test_another_seed_gives_other_rows(self):
         first = build_rows(DEMO_SPEC, DEMO_SPEC.seed)
         second = build_rows(DEMO_SPEC, DEMO_SPEC.seed + 1)
         self.assertNotEqual(fingerprint(first), fingerprint(second))
 
+    # @feature settings.demo-data
     def test_every_foreign_key_joins(self):
         with tempfile.TemporaryDirectory() as directory:
             path = generate(os.path.join(directory, "demo.duckdb"))
@@ -41,6 +44,7 @@ class TestDemoDataGenerator(unittest.TestCase):
                 self.assertGreater(matched, 0, f"{table}.{key} matched no rows")
                 self.assertEqual(orphans, 0, f"{table}.{key} left orphans")
 
+    # @feature settings.demo-data
     def test_a_trimmed_parent_fails_the_check(self):
         """The committed fixture was trimmed per table, which orphaned every child row."""
         import duckdb
@@ -54,6 +58,7 @@ class TestDemoDataGenerator(unittest.TestCase):
             with self.assertRaises(BrokenFixture):
                 check_integrity(path)
 
+    # @feature settings.demo-data
     def test_an_invalid_spec_writes_nothing(self):
         with tempfile.TemporaryDirectory() as directory:
             path = os.path.join(directory, "demo.duckdb")
@@ -61,6 +66,7 @@ class TestDemoDataGenerator(unittest.TestCase):
                 generate(path, spec=_spec_with_no_customers())
             self.assertFalse(os.path.exists(path), "a rejected spec must leave no file")
 
+    # @feature settings.demo-data
     def test_sample_workbook_query_returns_rows(self):
         """The seeded workbook charts undelivered orders joined to their line items."""
         import duckdb

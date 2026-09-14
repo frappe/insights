@@ -127,6 +127,7 @@ class TestNumberCardComparisonRows(InsightsIntegrationTestCase):
         with db_connections():
             return frappe.get_doc(DT.CHART, chart.name).get_data(force=True)
 
+    # @feature charts.number-comparison
     def test_two_readings_asking_different_questions_read_different_rows(self):
         """The one case counting back from the end cannot answer: both readings
         would have read the row before the last, and the card comparing with a
@@ -136,12 +137,14 @@ class TestNumberCardComparisonRows(InsightsIntegrationTestCase):
         self.assertEqual([row["count_0"] for row in result["rows"]], [1, 2, 3])
         self.assertEqual(result["comparison_rows"], {"previous": 1, "last year": 0})
 
+    # @feature charts.number-comparison
     def test_one_question_asked_twice_reads_one_row(self):
         result = self.fetch(["previous", "previous"])
 
         self.assertEqual([row["count_0"] for row in result["rows"]], [2, 3])
         self.assertEqual(result["comparison_rows"], {"previous": 0})
 
+    # @feature charts.number-comparison
     def test_a_stretch_with_no_data_is_still_a_row_of_its_own(self):
         """Every stretch the card asked for comes back, empty or not, because
         the card reads its rows by position. So the comparison still names a
@@ -151,5 +154,6 @@ class TestNumberCardComparisonRows(InsightsIntegrationTestCase):
         self.assertEqual([row["count_0"] for row in result["rows"]], [0, 0, 2])
         self.assertEqual(result["comparison_rows"], {"previous": 1, "last year": 0})
 
+    # @feature charts.number-comparison
     def test_a_card_nothing_compares_names_no_rows(self):
         self.assertNotIn("comparison_rows", self.fetch([None]))

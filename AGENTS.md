@@ -42,6 +42,18 @@ question. Effort docs are branch-scoped: they are removed when the branch merges
 and the ADR is what survives. GitHub Issues on `frappe/insights` is the public
 queue, not this tracker. See `docs/agents/issue-tracker.md`.
 
+### Tests
+
+Three layers, one feature list. Every test names a row of `docs/features.md` in a
+`@feature` directive; CI regenerates `docs/coverage.md` from them. See
+`docs/agents/testing.md`.
+
+### Tests
+
+Three layers, one feature list. Every test names a row of `docs/features.md` in a
+`@feature` directive; CI regenerates `docs/coverage.md` from them. See
+`docs/agents/testing.md`.
+
 ### Domain docs
 
 Single-context: `CONTEXT.md` at the root + `docs/adr/`. See `docs/agents/domain.md`.

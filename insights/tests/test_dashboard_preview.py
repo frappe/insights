@@ -101,21 +101,25 @@ class TestDashboardPreview(InsightsIntegrationTestCase):
             doc.generate_dashboard_preview()
         return opened
 
+    # @feature dashboard.preview-image
     def test_the_browser_opens_this_site(self):
         self.assertNotIn(ATTACKER_HOST, self.render(self.dashboard)["url"])
 
+    # @feature dashboard.preview-image
     def test_the_key_opens_the_dashboard_being_previewed(self):
         public = self.render(self.dashboard)["public"]
         self.assertTrue(public[(DT.DASHBOARD, self.dashboard)])
         self.assertTrue(public[(DT.CHART, self.chart)])
         self.assertTrue(public[(DT.QUERY, self.query)])
 
+    # @feature dashboard.preview-image
     def test_the_key_opens_nothing_else(self):
         public = self.render(self.dashboard)["public"]
         self.assertFalse(public[(DT.DASHBOARD, self.other_dashboard)])
         self.assertFalse(public[(DT.CHART, self.other_chart)])
         self.assertFalse(public[(DT.QUERY, self.other_query)])
 
+    # @feature dashboard.preview-image
     def test_a_spent_key_opens_nothing(self):
         opened = self.render(self.dashboard)
         frappe.local.request = EnvironBuilder(headers={"X-Insights-Preview-Key": opened["key"]}).get_request()

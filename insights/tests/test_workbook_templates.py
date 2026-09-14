@@ -121,10 +121,12 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
     def after_test(self):
         cleanup_template_workbooks()
 
+    # @feature templates.library
     def test_templates_hidden_when_required_apps_missing(self):
         with self.as_user(USER_1), installed_apps(APPS_WITHOUT_ERPNEXT):
             self.assertEqual(get_workbook_templates(), [])
 
+    # @feature templates.library
     def test_templates_listed_when_required_apps_installed(self):
         with self.as_user(USER_1), installed_apps(APPS_WITH_ERPNEXT):
             templates = {t["name"]: t for t in get_workbook_templates()}
@@ -148,6 +150,7 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
             templates[TEMPLATE_WITH_PREVIEW]["preview_image"].startswith("data:image/png;base64,")
         )
 
+    # @feature templates.import
     def test_import_is_shared_site_wide_and_marks_template(self):
         with self.as_user(ADMIN_USER), installed_apps(APPS_WITH_ERPNEXT):
             result = create_workbook_from_template(TEMPLATE)
@@ -171,6 +174,7 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
             sales = {t["name"]: t for t in get_workbook_templates()}[TEMPLATE]
             self.assertIsNone(sales["imported_workbook"])
 
+    # @feature templates.import
     def test_imported_workbook_owned_by_administrator_and_org_shared(self):
         with self.as_user(ADMIN_USER), installed_apps(APPS_WITH_ERPNEXT):
             workbook_name = create_workbook_from_template(TEMPLATE)["workbook"]
@@ -192,6 +196,7 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
         self.assertTrue(share["read"])
         self.assertFalse(share["write"])
 
+    # @feature templates.import
     def test_non_admin_can_read_but_not_write_shared_copy(self):
         with self.as_user(ADMIN_USER), installed_apps(APPS_WITH_ERPNEXT):
             workbook_name = create_workbook_from_template(TEMPLATE)["workbook"]
@@ -200,6 +205,7 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
         with self.as_user(USER_2):
             self.assertFalse(frappe.has_permission("Insights Workbook", ptype="write", doc=workbook_name))
 
+    # @feature templates.import templates.open
     def test_double_import_returns_existing_without_duplicating(self):
         with self.as_user(ADMIN_USER), installed_apps(APPS_WITH_ERPNEXT):
             first = create_workbook_from_template(TEMPLATE)
@@ -208,6 +214,23 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
         self.assertEqual(first["workbook"], second["workbook"])
         self.assertEqual(frappe.db.count("Insights Workbook", {"from_template": TEMPLATE}), 1)
 
+    # @feature templates.open
+    def test_opening_a_template_answers_with_the_workbook_and_its_first_dashboard(self):
+        """The client lands on a dashboard, so the answer has to name one."""
+        with self.as_user(ADMIN_USER), installed_apps(APPS_WITH_ERPNEXT):
+            result = create_workbook_from_template(TEMPLATE)
+
+        dashboards = frappe.get_all(
+            "Insights Dashboard v3",
+            filters={"workbook": result["workbook"]},
+            pluck="name",
+            order_by="creation asc",
+        )
+
+        self.assertTrue(dashboards, "the template must import at least one dashboard")
+        self.assertEqual(result["dashboard"], dashboards[0])
+
+    # @feature templates.import
     def test_non_admin_cannot_import(self):
         with self.as_user(USER_1), installed_apps(APPS_WITH_ERPNEXT):
             with self.assertRaises(frappe.PermissionError):
@@ -215,16 +238,19 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
         # and nothing was created
         self.assertEqual(frappe.db.count("Insights Workbook", {"from_template": TEMPLATE}), 0)
 
+    # @feature templates.import
     def test_create_blocked_when_required_apps_missing(self):
         with self.as_user(ADMIN_USER), installed_apps(APPS_WITHOUT_ERPNEXT):
             with self.assertRaises(frappe.ValidationError):
                 create_workbook_from_template(TEMPLATE)
 
+    # @feature templates.import
     def test_create_rejects_unknown_template(self):
         with self.as_user(ADMIN_USER):
             with self.assertRaises(frappe.ValidationError):
                 create_workbook_from_template("../../../etc/passwd")
 
+    # @feature templates.import
     def test_create_workbook_from_template_round_trips(self):
         template = get_template_workbook(TEMPLATE)
 
@@ -269,6 +295,7 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
         for item in chart_items:
             self.assertIn(item["chart"], new_chart_names)
 
+    # @feature templates.import
     def test_import_records_version_and_is_pristine(self):
         with self.as_user(ADMIN_USER), installed_apps(APPS_WITH_ERPNEXT):
             workbook_name = create_workbook_from_template(TEMPLATE)["workbook"]
@@ -286,6 +313,7 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
         self.assertFalse(sales["update_available"])
         self.assertFalse(sales["customized"])
 
+    # @feature templates.update
     def test_update_offered_when_newer_version_ships(self):
         with self.as_user(ADMIN_USER), installed_apps(APPS_WITH_ERPNEXT):
             create_workbook_from_template(TEMPLATE)
@@ -295,6 +323,7 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
         self.assertTrue(sales["update_available"])
         self.assertFalse(sales["customized"])  # untouched copy
 
+    # @feature templates.update
     def test_update_replaces_contents_in_place(self):
         with self.as_user(ADMIN_USER), installed_apps(APPS_WITH_ERPNEXT):
             workbook_name = create_workbook_from_template(TEMPLATE)["workbook"]
@@ -319,6 +348,7 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
         self.assertEqual(frappe.db.get_value("Insights Workbook", workbook_name, "owner"), "Administrator")
         self.assertFalse(_is_customized(workbook_name))
 
+    # @feature templates.auto-update-pristine
     def test_migrate_sync_auto_updates_pristine_copy(self):
         with self.as_user(ADMIN_USER), installed_apps(APPS_WITH_ERPNEXT):
             workbook_name = create_workbook_from_template(TEMPLATE)["workbook"]
@@ -330,6 +360,7 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
             frappe.db.get_value("Insights Workbook", workbook_name, "imported_version"), NEXT_VERSION
         )
 
+    # @feature templates.auto-update-pristine
     def test_migrate_restamps_a_copy_its_own_patches_rewrote(self):
         with self.as_user(ADMIN_USER), installed_apps(APPS_WITH_ERPNEXT):
             workbook_name = create_workbook_from_template(TEMPLATE)["workbook"]
@@ -346,6 +377,7 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
         # the site never edited it, so it still takes the next update
         self.assertFalse(_is_customized(workbook_name))
 
+    # @feature templates.auto-update-pristine
     def test_a_failed_pristine_read_leaves_the_stamps_alone(self):
         """Re-stamping nothing would read every copy as edited, for good."""
         with self.as_user(ADMIN_USER), installed_apps(APPS_WITH_ERPNEXT):
@@ -365,6 +397,7 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
         # still customized, and the next migrate reads the copies before it writes
         self.assertTrue(_is_customized(workbook_name))
 
+    # @feature templates.auto-update-pristine
     def test_one_unreadable_copy_does_not_cost_the_others_their_restamp(self):
         with self.as_user(ADMIN_USER), installed_apps(APPS_WITH_ERPNEXT):
             workbook_name = create_workbook_from_template(TEMPLATE)["workbook"]
@@ -381,6 +414,7 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
 
         self.assertFalse(_is_customized(workbook_name))
 
+    # @feature templates.auto-update-pristine
     def test_migrate_sync_leaves_customized_copy_for_manual_update(self):
         with self.as_user(ADMIN_USER), installed_apps(APPS_WITH_ERPNEXT):
             workbook_name = create_workbook_from_template(TEMPLATE)["workbook"]
@@ -404,6 +438,7 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
         self.assertTrue(sales["update_available"])
         self.assertTrue(sales["customized"])
 
+    # @feature templates.auto-update-pristine
     def test_migrate_sync_rolls_back_a_failed_update(self):
         with self.as_user(ADMIN_USER), installed_apps(APPS_WITH_ERPNEXT):
             workbook_name = create_workbook_from_template(TEMPLATE)["workbook"]
@@ -427,6 +462,7 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
             frappe.db.get_value("Insights Workbook", workbook_name, "imported_version"), TEMPLATE_VERSION
         )
 
+    # @feature templates.auto-update-pristine
     def test_legacy_copy_without_version_adopts_current_as_baseline(self):
         with self.as_user(ADMIN_USER), installed_apps(APPS_WITH_ERPNEXT):
             workbook_name = create_workbook_from_template(TEMPLATE)["workbook"]
@@ -444,6 +480,7 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
             frappe.db.get_value("Insights Workbook", workbook_name, "imported_version"), TEMPLATE_VERSION
         )
 
+    # @feature templates.shipped-are-valid
     def test_every_money_measure_names_a_currency_column_its_query_makes(self):
         for name in get_template_names():
             workbook = get_template_workbook(name)["dependencies"]
@@ -457,6 +494,7 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
                             column, columns, f"{chart_name} names a currency column its query drops"
                         )
 
+    # @feature templates.shipped-are-valid
     def test_every_committed_template_is_valid_and_importable(self):
         """CI guard: every committed manifest parses with the required keys and
         every committed workbook.json imports without error."""

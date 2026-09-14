@@ -317,6 +317,19 @@ export function setDimensionNames(config: any) {
 	return config
 }
 
+/**
+ * What a chart keeps when its author takes the options back: the rows that come
+ * back, and nothing about how they are drawn. `filters` and `limit` are the half
+ * of the config that decides which rows those are, so a reset leaves them as
+ * they stand and refills the slots the new type reads.
+ */
+export function resetChartConfig(config: any, chart_type: string) {
+	return ensureConfigSlots(
+		{ order_by: [], filters: config.filters, limit: config.limit },
+		chart_type,
+	)
+}
+
 // Every saved config passes through here before anything reads it: the slots are
 // read without guarding, and a config saved by an older version may not have
 // them. The chart store runs it on load, and the viewer endpoint's config runs it

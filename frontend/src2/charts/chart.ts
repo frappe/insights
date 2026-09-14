@@ -13,7 +13,12 @@ import { AXIS_CHARTS } from '../types/chart.types'
 import { InsightsChartv3 } from '../types/workbook.types'
 import { getLinkedQueries } from '../query/linked_queries'
 import { renameChartReads } from './chart_read'
-import { configDimensions, ensureConfigSlots, normalizeChartConfig } from './helpers'
+import {
+	configDimensions,
+	ensureConfigSlots,
+	normalizeChartConfig,
+	resetChartConfig,
+} from './helpers'
 
 const charts = new Map<string, Chart>()
 
@@ -74,12 +79,7 @@ function makeChart(name: string) {
 
 	function resetConfig() {
 		// @ts-ignore
-		chart.doc.config = {
-			order_by: [],
-			filters: chart.doc.config.filters,
-			limit: chart.doc.config.limit,
-		}
-		ensureConfigSlots(chart.doc.config, chart.doc.chart_type)
+		chart.doc.config = resetChartConfig(chart.doc.config, chart.doc.chart_type)
 	}
 
 	// when chart type changes from axis to non-axis or vice versa reset the config

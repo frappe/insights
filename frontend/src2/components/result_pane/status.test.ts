@@ -6,14 +6,17 @@ import { fetchTiming } from './status'
 const result = (patch: Partial<QueryResult>) => ({ ...emptyResult(), ...patch })
 
 describe('fetchTiming', () => {
+	// @feature query.result-timing
 	it('says nothing about a result that never ran', () => {
 		expect(fetchTiming(result({}))).toBe('')
 	})
 
+	// @feature query.result-timing
 	it('names the cache instead of a duration', () => {
 		expect(fetchTiming(result({ executedSQL: 'select 1', timeTaken: -1 }))).toBe('from cache')
 	})
 
+	// @feature query.result-timing
 	it('prints a duration without trailing zeros', () => {
 		expect(fetchTiming(result({ executedSQL: 'select 1', timeTaken: 1.2 }))).toBe(
 			'fetched in 1.2s',

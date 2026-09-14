@@ -2,6 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '../fixtures'
 import { INSIGHTS_PATH } from '../helpers/auth'
 import {
+	deleteUploadedFiles,
 	deleteUploadedTable,
 	uploadCsvTable,
 	uniqueTableName,
@@ -25,11 +26,20 @@ function header(page: Page): Locator {
 const CSV = ['region,order_count', 'Andromeda,12', 'Cassiopeia,34', 'Perseus,56'].join('\n')
 
 test.describe('data-source', () => {
+	// @feature data-source.table-list data-source.table-preview data-source.list
 	test("a user browses a data source's table list and previews a table", async ({
 		page,
 		demoDataSource,
 	}) => {
-		await page.goto(`${INSIGHTS_PATH}/data-source/${demoDataSource}`)
+		// The source list searches by title, client side, and a row is the route
+		// into the source.
+		await page.goto(`${INSIGHTS_PATH}/data-source`)
+		await page.getByPlaceholder('Search by Title').fill('demo')
+		await expect(page.getByText('Demo Data', { exact: true })).toBeVisible()
+		await expect(page.getByText('Uploads', { exact: true })).toHaveCount(0)
+
+		await page.getByText('Demo Data', { exact: true }).click()
+		await expect(page).toHaveURL(new RegExp(`/data-source/${demoDataSource}$`))
 
 		await expect(page.getByText('orders', { exact: true })).toBeVisible()
 		await expect(page.getByText('customers', { exact: true })).toBeVisible()
@@ -44,17 +54,28 @@ test.describe('data-source', () => {
 		await expect(page.getByRole('cell', { name: 'seller_city' })).toBeVisible()
 		await expect(page.getByRole('cell', { name: 'SELL-0001' })).toBeVisible()
 		await expect(page.getByRole('cell', { name: 'manaus' })).not.toHaveCount(0)
-		// The preview reads the first 100 rows, and `sellers` holds 60.
+		// The preview reads the first 100 rows, and `sellers` holds 60, so the
+		// footer counts every row the table holds.
 		await expect(dataRows(page)).toHaveCount(60)
-		await expect(page.getByText('Showing only the first 100 rows')).toBeVisible()
+		await expect(page.getByText('First 100 rows')).toBeVisible()
+		await expect(page.getByText('Showing 60 rows')).toBeVisible()
 	})
 
+	// @feature data-source.upload-file data-source.upload-table-name
 	test('a user uploads a CSV and it becomes a queryable table', async ({
 		page,
 		adminApi,
 		workbook,
 	}) => {
 		const table = uniqueTableName('upload')
+		// The file is named apart from the table, so the name the flow types is
+		// the only thing that can have named the imported table.
+		const file = uniqueTableName('file')
+		const upload = {
+			name: `${file}.csv`,
+			mimeType: 'text/csv',
+			buffer: Buffer.from(CSV),
+		}
 
 		try {
 			await page.goto(`${INSIGHTS_PATH}/data-source`)
@@ -63,18 +84,31 @@ test.describe('data-source', () => {
 
 			// locator: the file input is the one frappe-ui's FileUploader hides
 			// behind its drop zone. It carries no label and no accessible name.
-			await page.locator('input[type="file"]').setInputFiles({
-				name: `${table}.csv`,
-				mimeType: 'text/csv',
-				buffer: Buffer.from(CSV),
-			})
+			await page.locator('input[type="file"]').setInputFiles(upload)
 
 			// The dialog renames itself once it has read the file, and shows what
 			// it read.
 			const dialog = page.getByRole('dialog', { name: 'Import Table' })
 			await expect(dialog.getByRole('cell', { name: 'Andromeda' })).toBeVisible()
+
+			// Reset File puts the drop zone back, so the dialog holds no file and
+			// no name. It renames itself with them, so the assertions below it
+			// read the page and not the dialog this flow named.
+			await dialog.getByRole('button', { name: 'Reset File' }).click()
+			await expect(
+				page.getByText('Select a CSV, Excel, or JSON file to upload'),
+			).toBeVisible()
+			await expect(page.getByLabel('Table Name')).toHaveCount(0)
+
+			await page.locator('input[type="file"]').setInputFiles(upload)
+			await expect(dialog.getByRole('cell', { name: 'Andromeda' })).toBeVisible()
 			await expect(dialog.getByRole('cell', { name: 'order_count' })).toBeVisible()
 			await expect(dialog.getByText('Showing 3 of 3 rows')).toBeVisible()
+
+			// The name field opens on the file's own name, and the flow renames the
+			// table the import will write.
+			await expect(dialog.getByLabel('Table Name')).toHaveValue(file)
+			await dialog.getByLabel('Table Name').fill(table)
 
 			await dialog.getByRole('button', { name: 'Import', exact: true }).click()
 
@@ -98,9 +132,13 @@ test.describe('data-source', () => {
 				table,
 				file: '',
 			})
+			// The file carries a name of its own, so it is not matched by the
+			// table's prefix and goes separately.
+			await deleteUploadedFiles(adminApi, file)
 		}
 	})
 
+	// @feature data-source.test-connection data-source.connect-mariadb
 	test('a user connects a new database and the connection test reports', async ({ page }) => {
 		const title = uniqueTitle('Data Source')
 
@@ -120,8 +158,10 @@ test.describe('data-source', () => {
 
 		await dialog.getByRole('button', { name: 'Connect' }).click()
 
+		// The refusal is reported on the button that ran the test. The toast
+		// beside it carries the driver's own message and fades, so the button is
+		// what this flow reads.
 		await expect(dialog.getByRole('button', { name: 'Failed, Retry?' })).toBeVisible()
-		await expect(page.getByText('Error', { exact: true })).toBeVisible()
 		// A failed test blocks the data source, so the flow leaves nothing behind.
 		await expect(dialog.getByRole('button', { name: 'Add Data Source' })).toBeDisabled()
 
@@ -130,6 +170,7 @@ test.describe('data-source', () => {
 		await expect(page.getByText(title)).toHaveCount(0)
 	})
 
+	// @feature data-store.import-table
 	test('a user imports a table into the data store', async ({ page, adminApi }) => {
 		// A Table Import runs on the `long` queue, and one bench worker serves
 		// `short`, `default` and `long` in that order. The suite's own teardown

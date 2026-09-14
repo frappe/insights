@@ -88,6 +88,7 @@ class TestNumberCellSplit(InsightsIntegrationTestCase):
             "layout": {"i": "kpis", "x": 0, "y": 0, "w": 20, "h": 8, **layout},
         }
 
+    # @feature dashboard.number-cell-per-reading
     def test_the_cell_that_held_them_becomes_one_cell_each(self):
         chart = self.create_chart(
             number_config(
@@ -108,6 +109,7 @@ class TestNumberCellSplit(InsightsIntegrationTestCase):
         self.assertEqual({b["y"] for b in boxes}, {4})
         self.assertEqual([b["i"] for b in boxes], ["kpis", "kpis-2", "kpis-3"])
 
+    # @feature dashboard.number-cell-per-reading
     def test_the_chart_keeps_every_reading_it_states(self):
         chart = self.create_chart(number_config(measure("Revenue", "amount"), measure("Profit", "profit")))
         self.create_dashboard([self.cell(chart)])
@@ -117,6 +119,7 @@ class TestNumberCellSplit(InsightsIntegrationTestCase):
         config = frappe.parse_json(frappe.db.get_value(DT.CHART, chart, "config"))
         self.assertEqual([m["measure_name"] for m in config["number_columns"]], ["Revenue", "Profit"])
 
+    # @feature dashboard.number-cell-per-reading
     def test_each_cell_takes_the_height_its_own_card_needs(self):
         chart = self.create_chart(
             number_config(
@@ -131,6 +134,7 @@ class TestNumberCellSplit(InsightsIntegrationTestCase):
 
         self.assertEqual([item["layout"]["h"] for item in self.items_of(dashboard)], [4, 5])
 
+    # @feature dashboard.number-cell-per-reading
     def test_the_cells_under_it_drop_past_the_new_ones(self):
         # A compared reading is a row taller than the cell that held it, so what
         # stood under that cell now stands inside the tallest new one.
@@ -152,6 +156,7 @@ class TestNumberCellSplit(InsightsIntegrationTestCase):
         stacked = [item["layout"] for item in items if item["layout"]["i"] != "note"]
         self.assertGreaterEqual(note["layout"]["y"], max(box["y"] + box["h"] for box in stacked))
 
+    # @feature dashboard.number-cell-per-reading
     def test_a_chart_stating_one_reading_leaves_its_cell_alone(self):
         chart = self.create_chart(number_config(measure("Revenue", "amount")))
         dashboard = self.create_dashboard([self.cell(chart)])
@@ -162,6 +167,7 @@ class TestNumberCellSplit(InsightsIntegrationTestCase):
         self.assertEqual(len(items), 1)
         self.assertNotIn("column", items[0])
 
+    # @feature dashboard.number-cell-per-reading
     def test_the_charts_the_dashboard_links_stay_right(self):
         # The derived table is the charts the grid names, and the patch writes
         # more cells on the same chart — so it is still the answer afterwards.
@@ -173,6 +179,7 @@ class TestNumberCellSplit(InsightsIntegrationTestCase):
         doc = frappe.get_doc(DT.DASHBOARD, dashboard)
         self.assertEqual([row.chart for row in doc.linked_charts], [chart])
 
+    # @feature dashboard.number-cell-per-reading
     def test_a_second_run_changes_nothing(self):
         chart = self.create_chart(number_config(measure("Revenue", "amount"), measure("Profit", "profit")))
         dashboard = self.create_dashboard([self.cell(chart)])
@@ -195,6 +202,7 @@ class TestNumberCellExpansion(InsightsIntegrationTestCase):
         columns = [{"measure_name": name} for name in "abcde"[:readings]]
         return {"c": {"sparkline": False, "number_columns": columns}}
 
+    # @feature dashboard.number-cell-per-reading
     def test_the_readings_share_the_width_the_cell_had(self):
         items = [{"type": "chart", "chart": "c", "layout": {"i": "a", "x": 0, "y": 0, "w": 20, "h": 8}}]
 
@@ -203,6 +211,7 @@ class TestNumberCellExpansion(InsightsIntegrationTestCase):
         self.assertEqual([item["layout"]["w"] for item in items], [7, 7, 6])
         self.assertEqual([item["layout"]["x"] for item in items], [0, 7, 14])
 
+    # @feature dashboard.number-cell-per-reading
     def test_a_width_that_does_not_divide_goes_to_the_leftmost_readings(self):
         items = [{"type": "chart", "chart": "c", "layout": {"i": "a", "x": 2, "y": 1, "w": 7, "h": 8}}]
 
@@ -211,6 +220,7 @@ class TestNumberCellExpansion(InsightsIntegrationTestCase):
         boxes = [item["layout"] for item in items]
         self.assertEqual([(b["x"], b["y"], b["w"]) for b in boxes], [(2, 1, 4), (6, 1, 3)])
 
+    # @feature dashboard.number-cell-per-reading
     def test_every_breakpoint_the_cell_was_arranged_for_is_split_too(self):
         items = [
             {
@@ -226,6 +236,7 @@ class TestNumberCellExpansion(InsightsIntegrationTestCase):
         self.assertEqual([item["layouts"]["sm"]["w"] for item in items], [10, 10])
         self.assertEqual([item["layouts"]["sm"]["x"] for item in items], [0, 10])
 
+    # @feature dashboard.number-cell-per-reading
     def test_a_cell_too_narrow_to_share_gives_each_reading_one_column(self):
         # Nothing wraps and nothing below moves: a cramped card is the author's
         # to widen.
@@ -238,6 +249,7 @@ class TestNumberCellExpansion(InsightsIntegrationTestCase):
         self.assertEqual([b["x"] for b in boxes], [0, 1, 2, 3, 4])
         self.assertEqual({b["y"] for b in boxes}, {0})
 
+    # @feature dashboard.number-cell-per-reading
     def test_a_cell_that_already_names_a_reading_is_left_alone(self):
         items = [
             {
@@ -251,12 +263,14 @@ class TestNumberCellExpansion(InsightsIntegrationTestCase):
         self.assertFalse(expand_items(items, self.configs()))
         self.assertEqual(len(items), 1)
 
+    # @feature dashboard.number-cell-per-reading
     def test_a_grid_holding_no_such_chart_is_left_alone(self):
         items = [{"type": "text", "text": "hello", "layout": {"i": "t", "x": 0, "y": 0, "w": 4, "h": 2}}]
 
         self.assertFalse(expand_items(items, self.configs()))
         self.assertEqual(len(items), 1)
 
+    # @feature dashboard.number-cell-per-reading
     def test_one_unreadable_item_does_not_stop_the_split(self):
         items = [
             "not an item",
@@ -267,6 +281,7 @@ class TestNumberCellExpansion(InsightsIntegrationTestCase):
 
         self.assertEqual([item["layout"]["w"] for item in items[1:]], [10, 10])
 
+    # @feature dashboard.number-cell-per-reading
     def test_a_minted_id_does_not_take_one_the_grid_already_holds(self):
         # `layout.i` keys the map the reader places by, so a repeat drops a cell
         items = [

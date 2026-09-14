@@ -208,31 +208,37 @@ class TestCardFilterValues(InsightsIntegrationTestCase):
         with as_user(AUTHOR), db_connections():
             return frappe.get_doc(DT.DASHBOARD, self.dashboard).get_card_column_range(chart, column)
 
+    # @feature dashboard.card-filter
     def test_a_card_filter_offers_only_what_the_card_draws(self):
         """The card draws the open todos, so the closed one is not a value its
         filter may offer."""
         self.assertEqual(sorted(self.values(self.table, "description")), OPEN_TODOS)
 
+    # @feature dashboard.card-filter
     def test_a_card_filter_s_range_covers_only_what_the_card_draws(self):
         """A range read off more rows than the card draws is the same overreach
         as a value list read off them."""
         self.assertEqual(self.column_range(self.table, "weight"), [OPEN_LENGTHS[0], OPEN_LENGTHS[-1]])
 
+    # @feature dashboard.card-filter
     def test_an_axis_chart_s_own_dimension_can_be_filtered(self):
         """The x-axis is a column the card draws, the same as a table's rows."""
         self.assertEqual(sorted(self.values(self.bar, "description")), OPEN_TODOS)
 
+    # @feature dashboard.card-filter
     def test_a_measure_the_card_draws_offers_no_values(self):
         """A measure is computed over the result and holds no source column. The
         picker asks anyway, so this is a normal reader action and not a refusal."""
         self.assertEqual(self.values(self.table, "Todos"), [])
         self.assertIsNone(self.column_range(self.table, "Todos"))
 
+    # @feature dashboard.card-filter
     def test_a_column_a_pivot_made_offers_no_values(self):
         """A pivot names its columns after the values its data holds, so the
         config cannot say which ones the card draws."""
         self.assertEqual(self.values(self.pivot, "Open"), [])
 
+    # @feature dashboard.card-filter
     def test_a_column_the_card_does_not_draw_is_refused(self):
         with self.assertRaises(frappe.PermissionError):
             self.values(self.bar, "status")

@@ -62,6 +62,7 @@ class TestSankeyAggregationRepair(InsightsIntegrationTestCase):
     def config_of(self, chart):
         return frappe.parse_json(frappe.db.get_value(DT.CHART, chart, "config"))
 
+    # @feature charts.sankey-source-target-value
     def test_a_counting_sankey_is_repaired(self):
         chart = self.create_chart("Sankey", sankey_config("count", "count_of_value"))
 
@@ -73,6 +74,7 @@ class TestSankeyAggregationRepair(InsightsIntegrationTestCase):
             "the aggregation and the measure name must move together",
         )
 
+    # @feature charts.sankey-source-target-value
     def test_a_distinct_counting_sankey_is_repaired(self):
         chart = self.create_chart("Sankey", sankey_config("count_distinct", "count_distinct_of_value"))
 
@@ -80,6 +82,7 @@ class TestSankeyAggregationRepair(InsightsIntegrationTestCase):
 
         self.assertEqual(self.config_of(chart)["value_column"], value_column("sum", "sum_of_value"))
 
+    # @feature charts.sankey-source-target-value
     def test_a_measure_name_the_author_typed_is_kept(self):
         chart = self.create_chart("Sankey", sankey_config("count", "Sessions"))
 
@@ -91,6 +94,7 @@ class TestSankeyAggregationRepair(InsightsIntegrationTestCase):
             "a name that does not spell out the old function says nothing about it",
         )
 
+    # @feature charts.sankey-source-target-value
     def test_a_count_over_a_column_that_cannot_be_summed_is_left_alone(self):
         """A count is offered over every column, a sum only over the numeric ones.
 
@@ -106,6 +110,7 @@ class TestSankeyAggregationRepair(InsightsIntegrationTestCase):
 
                 self.assertEqual(self.config_of(chart), config)
 
+    # @feature charts.sankey-source-target-value
     def test_a_count_over_a_column_of_no_stated_type_is_left_alone(self):
         """The premise is a column that is already a `COUNT(*)`, and a config that
         does not say cannot be read as meeting it."""
@@ -117,6 +122,7 @@ class TestSankeyAggregationRepair(InsightsIntegrationTestCase):
 
         self.assertEqual(self.config_of(chart), config)
 
+    # @feature charts.sankey-source-target-value
     def test_a_summing_sankey_is_left_alone(self):
         config = sankey_config("sum", "sum_of_value")
         chart = self.create_chart("Sankey", config)
@@ -125,6 +131,7 @@ class TestSankeyAggregationRepair(InsightsIntegrationTestCase):
 
         self.assertEqual(self.config_of(chart), config)
 
+    # @feature charts.sankey-source-target-value
     def test_a_counting_chart_of_another_type_is_left_alone(self):
         config = {
             "x_axis": {"dimension": {"column_name": "source", "dimension_name": "source"}},
@@ -136,6 +143,7 @@ class TestSankeyAggregationRepair(InsightsIntegrationTestCase):
 
         self.assertEqual(self.config_of(chart), config)
 
+    # @feature charts.sankey-source-target-value
     def test_a_second_run_changes_nothing(self):
         chart = self.create_chart("Sankey", sankey_config("count", "count_of_value"))
 

@@ -44,6 +44,7 @@ def boxes(items):
 
 
 class TestRescaleItems(unittest.TestCase):
+    # @feature upgrade.older-grid-read
     def test_a_box_keeps_the_pixels_it_covered(self):
         """Top and height are scaled alike, so the grid comes out where it was:
         the first cell stood at 104px and stands at 110px."""
@@ -53,6 +54,7 @@ class TestRescaleItems(unittest.TestCase):
 
         self.assertEqual([(b["y"], b["h"]) for b in boxes(rescaled)], [(5, 8), (13, 3)])
 
+    # @feature upgrade.older-grid-read
     def test_a_filter_cell_is_two_rows(self):
         items = [filter_cell("f", h=1), filter_cell("g", x=4, h=1)]
 
@@ -60,6 +62,7 @@ class TestRescaleItems(unittest.TestCase):
 
         self.assertEqual([b["h"] for b in boxes(rescaled)], [2, 2])
 
+    # @feature upgrade.older-grid-read
     def test_a_number_cell_is_as_tall_as_its_card(self):
         configs = {
             "plain": number_config("Revenue"),
@@ -81,6 +84,7 @@ class TestRescaleItems(unittest.TestCase):
 
         self.assertEqual([b["h"] for b in boxes(rescaled)], [4, 5, 7])
 
+    # @feature upgrade.older-grid-read
     def test_a_grain_card_keeps_its_sparkline_band(self):
         """The card's own rule and not the server's: a grain card draws its own
         readings as the series, so the band is there and the cell holds it."""
@@ -98,6 +102,7 @@ class TestRescaleItems(unittest.TestCase):
 
         self.assertEqual(boxes(rescaled)[0]["h"], 7)
 
+    # @feature upgrade.older-grid-read
     def test_a_card_whose_date_column_is_not_a_shape_it_reads_is_only_scaled(self):
         """One unreadable config must not abort the migrate."""
         configs = {"odd": number_config("Spend", sparkline=True, date_column="posting_date")}
@@ -107,6 +112,7 @@ class TestRescaleItems(unittest.TestCase):
 
         self.assertEqual(boxes(rescaled)[0]["h"], 4)
 
+    # @feature upgrade.older-grid-read
     def test_a_cell_on_no_number_chart_is_only_scaled(self):
         items = [chart_cell("a", chart="bar", h=8)]
 
@@ -114,6 +120,7 @@ class TestRescaleItems(unittest.TestCase):
 
         self.assertEqual(boxes(rescaled)[0]["h"], 19)
 
+    # @feature upgrade.older-grid-read
     def test_every_breakpoint_the_cell_was_arranged_for_is_rewritten(self):
         items = [filter_cell("f", h=1)]
         items[0]["layouts"] = {"sm": {"x": 0, "y": 0, "w": 20, "h": 1}}
@@ -122,6 +129,7 @@ class TestRescaleItems(unittest.TestCase):
 
         self.assertEqual(rescaled[0]["layouts"]["sm"]["h"], 2)
 
+    # @feature upgrade.older-grid-read
     def test_a_gap_the_rescale_opens_is_left_open(self):
         """Scaling a row up rounds, and a rounded cell can leave a gap under itself.
         Closing it would also close the gaps the author meant, and nothing stored
@@ -135,6 +143,7 @@ class TestRescaleItems(unittest.TestCase):
 
         self.assertEqual([(b["y"], b["h"]) for b in boxes(rescaled)], [(0, 2), (3, 4)])
 
+    # @feature upgrade.older-grid-read
     def test_one_unreadable_item_does_not_stop_the_rescale(self):
         items = ["not an item", text_cell("t", y=2, h=3)]
 
@@ -142,6 +151,7 @@ class TestRescaleItems(unittest.TestCase):
 
         self.assertEqual(rescaled[1]["layout"]["h"], 8)
 
+    # @feature upgrade.older-grid-read
     def test_an_unreadable_layouts_does_not_stop_the_rescale(self):
         items = [
             {
@@ -156,6 +166,7 @@ class TestRescaleItems(unittest.TestCase):
 
         self.assertEqual(rescaled[0]["layout"]["h"], 8)
 
+    # @feature upgrade.older-grid-read
     def test_a_grid_with_nothing_on_it_is_left_alone(self):
         self.assertIsNone(rescale_items([], {}))
 
@@ -174,19 +185,23 @@ class TestAlreadyRescaled(InsightsIntegrationTestCase):
     def log(self, patch_name, skipped=0):
         frappe.get_doc({"doctype": "Patch Log", "patch": patch_name, "skipped": skipped}).insert()
 
+    # @feature upgrade.older-grid-read
     def test_a_run_that_landed_stops_the_next_one(self):
         self.log(self.PATCH)
         self.assertTrue(already_rescaled())
 
+    # @feature upgrade.older-grid-read
     def test_a_re_run_under_a_suffix_is_the_same_run(self):
         self.log(f"{self.PATCH} #2")
         self.assertTrue(already_rescaled())
 
+    # @feature upgrade.older-grid-read
     def test_a_skipped_run_leaves_the_retry_open(self):
         # `migrate --skip-failing` logs a skipped row after rolling the data back
         self.log(f"{self.PATCH} #2", skipped=1)
         self.assertFalse(already_rescaled())
 
+    # @feature upgrade.older-grid-read
     def test_another_patch_is_not_read_as_this_one(self):
         # the underscores in the module path are not single-character wildcards
         self.log("insights.patches.probeXrescale #2")

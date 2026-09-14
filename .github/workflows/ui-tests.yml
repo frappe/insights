@@ -119,6 +119,10 @@ jobs:
           yarn install --frozen-lockfile
           yarn build
 
+      - name: Run unit tests
+        working-directory: ${{ env.BENCH_PATH }}/apps/insights/frontend
+        run: yarn test
+
       # `frontend/e2e/AGENTS.md` tells an agent that lint refuses a sleep, a
       # conditional and `test.only`. This is what makes that true.
       - name: Lint the suite

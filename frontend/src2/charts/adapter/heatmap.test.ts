@@ -10,6 +10,7 @@ function adapt(spec: HeatmapChartSpec) {
 }
 
 describe('a heatmap', () => {
+	// @feature charts.type-heatmap
 	it('names the two columns the grid is cut by, and what colors a cell', () => {
 		const input = heatmapChart({
 			title: 'Orders by day and hour',
@@ -28,6 +29,7 @@ describe('a heatmap', () => {
 		expect(props.data).toBe(input.result.rows)
 	})
 
+	// @feature charts.heatmap-palette-range charts.heatmap-show-values
 	it('prints the numbers and scales the color the way the Chart asked', () => {
 		const props = adapt({
 			x: 'day',
@@ -44,6 +46,7 @@ describe('a heatmap', () => {
 		expect(props.max).toBe(50)
 	})
 
+	// @feature charts.heatmap-palette-range
 	it('leaves the scale to the data until the Chart pins an end of it', () => {
 		const props = adapt({ x: 'day', y: 'hour', measure: 'orders' }).props
 		expect(props.min).toBeUndefined()
@@ -51,6 +54,7 @@ describe('a heatmap', () => {
 		expect(props.showValues).toBeUndefined()
 	})
 
+	// @feature charts.dimension-grain
 	it('prints a date cut at the grain it was grouped by', () => {
 		// A grid cuts by categories, so neither axis is the time axis that prints
 		// an axis chart's dates. The grain has to come across as a formatter.
@@ -64,12 +68,14 @@ describe('a heatmap', () => {
 		expect(props.yAxis).toBeUndefined()
 	})
 
+	// @feature charts.heatmap-two-cuts
 	it('leaves a plain category to print itself', () => {
 		const props = adapt({ x: 'day', y: 'hour', measure: 'orders' }).props
 		expect(props.xAxis).toBeUndefined()
 		expect(props.yAxis).toBeUndefined()
 	})
 
+	// @feature charts.type-heatmap
 	it('draws nothing until the Chart names all three columns', () => {
 		expect(adaptChart(heatmapChart({ x: '', y: 'hour', measure: 'orders' }))).toBeUndefined()
 		expect(adaptChart(heatmapChart({ x: 'day', y: '', measure: 'orders' }))).toBeUndefined()
@@ -78,6 +84,7 @@ describe('a heatmap', () => {
 })
 
 describe('drilling into a cell', () => {
+	// @feature charts.drill-segment
 	it('names the value column and the row the cell was drawn from', () => {
 		const input = heatmapChart({ x: 'day', y: 'hour', measure: 'orders' })
 		const row = input.result.rows[1]

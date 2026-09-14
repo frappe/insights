@@ -35,6 +35,7 @@ class TestJobState(InsightsIntegrationTestCase):
     def stored_state(self):
         return json.loads(frappe.db.get_value("Insights Table Import Job", self.job.name, "state") or "{}")
 
+    # @feature data-store.import-cursor
     def test_setting_state_does_not_touch_the_job_row(self):
         state = JobState(self.job)
         state.set("cursor", "2026-08-13")
@@ -46,6 +47,7 @@ class TestJobState(InsightsIntegrationTestCase):
             "a run that fails after this point must start again from the old cursor",
         )
 
+    # @feature data-store.import-cursor
     def test_saving_state_writes_the_job_row(self):
         state = JobState(self.job)
         state.set("cursor", "2026-08-13")
@@ -53,6 +55,7 @@ class TestJobState(InsightsIntegrationTestCase):
 
         self.assertEqual(self.stored_state()["cursor"], "2026-08-13")
 
+    # @feature data-store.import-cursor
     def test_clear_and_delete_are_also_deferred(self):
         state = JobState(self.job)
         state.delete("cursor")

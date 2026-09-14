@@ -15,6 +15,7 @@ vi.mock('frappe-ui', () => ({
 }))
 
 describe('a drill level', () => {
+	// @feature dashboard.card-filter
 	it('carries the card filter the read runs under', async () => {
 		await fetchAuthoringDrillData(
 			{ query: 'query-1', chart_type: 'Bar', config: {} as any },
@@ -38,6 +39,7 @@ describe('a drill level', () => {
 		expect(args.card_filters).toEqual([{ column: 'city', operator: '=', value: 'delhi' }])
 	})
 
+	// @feature dashboard.card-filter
 	it('names no card filter where the surface holds none', async () => {
 		await fetchAuthoringDrillData({ query: 'query-1', operations: [] }, [])
 

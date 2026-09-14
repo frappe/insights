@@ -57,6 +57,7 @@ class TestNativeSQL(InsightsIntegrationTestCase):
 
     # --- the query the database runs ---
 
+    # @feature query.native-sql
     def test_a_query_that_opens_with_a_cte_runs(self):
         # ibis 11 re-attaches a query's CTEs without clearing them first, because
         # sqlglot 28 renamed the key it clears. MariaDB rejects the doubled pair.
@@ -64,6 +65,7 @@ class TestNativeSQL(InsightsIntegrationTestCase):
 
         self.assertEqual(len(rows), 1)
 
+    # @feature query.native-sql
     def test_a_query_with_several_ctes_runs(self):
         rows = self.run_native_sql(
             """
@@ -75,11 +77,13 @@ class TestNativeSQL(InsightsIntegrationTestCase):
 
         self.assertEqual(len(rows), 1)
 
+    # @feature query.native-sql
     def test_a_query_without_a_cte_runs(self):
         rows = self.run_native_sql("select name from `tabUser` limit 1")
 
         self.assertEqual(len(rows), 1)
 
+    # @feature query.native-sql
     def test_a_trailing_semicolon_survives_the_nesting(self):
         # the nesting brackets the query, and a semicolon inside them is a syntax error
         rows = self.run_native_sql(
@@ -88,6 +92,7 @@ class TestNativeSQL(InsightsIntegrationTestCase):
 
         self.assertEqual(len(rows), 1)
 
+    # @feature query.native-sql
     def test_a_rewritten_query_that_opens_with_a_cte_runs(self):
         # the two rewrites meet here: the tables are replaced, then the result is nested
         raw_sql = "with recent as (select name from `tabUser` limit 1) select * from recent"
@@ -101,6 +106,7 @@ class TestNativeSQL(InsightsIntegrationTestCase):
 
         self.assertEqual(len(rows), 1)
 
+    # @feature query.native-sql-one-statement
     def test_more_than_one_statement_is_refused(self):
         # ibis runs one statement, and both rewrites read the first one only
         with self.assertRaises(frappe.ValidationError):
@@ -108,6 +114,7 @@ class TestNativeSQL(InsightsIntegrationTestCase):
 
     # --- the permission rewrite ---
 
+    # @feature query.native-sql
     def test_two_spellings_of_one_table_produce_no_cte(self):
         # MariaDB matches CTE names case-insensitively, so a CTE per spelling was
         # rejected with "Duplicate query name". A reference carries no name.
@@ -123,6 +130,7 @@ class TestNativeSQL(InsightsIntegrationTestCase):
         self.assertEqual(self.cte_names(rewritten), [])
         self.assertEqual(self.table_names(rewritten), ["tabUser", "tabuser"])
 
+    # @feature query.native-sql
     def test_table_name_needing_quotes_runs_on_the_source(self):
         # the alias used to be rendered with sqlglot's default dialect, which gave
         # MariaDB a string literal instead of an identifier
@@ -130,16 +138,19 @@ class TestNativeSQL(InsightsIntegrationTestCase):
 
         self.assertIn("`tabInsights Table v3`", rewritten)
 
+    # @feature query.native-sql
     def test_unaliased_reference_keeps_the_table_name(self):
         rewritten = self.rewrite("select `tabUser`.name from `tabUser` limit 1")
 
         self.assertIn("AS `tabUser`", rewritten)
 
+    # @feature query.native-sql
     def test_aliased_reference_keeps_its_alias(self):
         rewritten = self.rewrite("select u.name from `tabUser` u limit 1")
 
         self.assertIn("AS u", rewritten)
 
+    # @feature query.native-sql
     def test_the_query_keeps_its_own_cte(self):
         raw_sql = "with recent as (select name from `tabUser`) select * from recent limit 1"
 
@@ -147,13 +158,32 @@ class TestNativeSQL(InsightsIntegrationTestCase):
 
         self.assertEqual(self.cte_names(rewritten), ["recent"])
 
+    # @feature query.native-sql
     def test_sql_is_untouched_when_no_table_is_bound(self):
         raw_sql = "select 1 as one"
 
         self.assertEqual(self.rewrite(raw_sql, {}), raw_sql)
 
+    # @feature query.native-sql-one-statement
     def test_a_schema_qualified_table_is_refused(self):
         # the binding is looked up by the bare name, so reading `sales.orders`
         # would bind whichever `orders` the default schema holds
         with self.assertRaises(frappe.ValidationError):
             self.builder._get_sql_table_names("select * from sales.orders", dialect=self.dialect)
+
+    # --- the format button ---
+
+    # @feature query.native-sql-format
+    def test_format_reindents_a_native_query_and_hands_a_builder_query_back_untouched(self):
+        raw_sql = "select name,status from tabToDo where status='Open'"
+
+        native_query = frappe.new_doc("Insights Query v3")
+        native_query.is_native_query = 1
+        builder_query = frappe.new_doc("Insights Query v3")
+        builder_query.is_builder_query = 1
+
+        self.assertEqual(
+            native_query.format(raw_sql),
+            "SELECT name,\n       status\nFROM tabToDo\nWHERE status='Open'",
+        )
+        self.assertEqual(builder_query.format(raw_sql), raw_sql)

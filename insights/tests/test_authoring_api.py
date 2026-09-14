@@ -160,6 +160,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         with as_user(user), db_connections():
             return [d["name"] for d in get_drill_dimensions(**kwargs)["dimensions"]]
 
+    # @feature charts.preview
     def test_a_config_that_was_never_saved_draws_rows(self):
         query, _ = self.make_content()
 
@@ -175,6 +176,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         self.assertEqual([column["name"] for column in result["columns"]], ["description", "count"])
         self.assertEqual(result["errors"], [])
 
+    # @feature charts.preview charts.view-sql
     def test_the_preview_says_what_it_ran(self):
         query, _ = self.make_content()
 
@@ -188,6 +190,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         self.assertEqual(result["operations"][0]["table"]["query_name"], query.name)
         self.assertIn("select", result["sql"].lower())
 
+    # @feature charts.preview
     def test_the_preview_runs_what_the_saved_chart_would(self):
         query, chart = self.make_content()
 
@@ -197,6 +200,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         # every reader of the saved chart gets
         self.assertEqual(result["operations"], chart.get_operations())
 
+    # @feature charts.missing-slot-message
     def test_a_half_configured_chart_says_what_is_missing(self):
         query, _ = self.make_content()
         config = table_config()
@@ -209,6 +213,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         self.assertEqual(result["errors"], ["Rows are required"])
         self.assertNotIn("rows", result)
 
+    # @feature charts.preview
     def test_the_grain_comes_back_with_the_rows(self):
         query, _ = self.make_content()
         config = table_config()
@@ -225,6 +230,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
         self.assertEqual(result["granularity"], {"creation": "month"})
 
+    # @feature charts.preview
     def test_a_saved_chart_answers_with_the_grain_and_the_links_too(self):
         """A share link reads the chart's own `get_data`, never this endpoint.
         Without the grain a table grouped by month prints `2024-01-01` where the
@@ -263,6 +269,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
             },
         ]
 
+    # @feature dashboard.filter-links
     def test_the_grids_filters_reach_the_preview(self):
         query, chart = self.make_content()
 
@@ -281,6 +288,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         # the filter lands on is read off the links here, as it is for a reader
         self.assertEqual(self.descriptions(result), [AUTHOR_TODOS[0]])
 
+    # @feature dashboard.filter-links
     def test_a_filter_linked_to_another_card_leaves_this_one_alone(self):
         query, chart = self.make_content()
         items = self.grid_items(chart.name, query.name)
@@ -304,6 +312,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
     # tested here is only what differs: naming the shape instead of a chart, and
     # the pipeline that comes back with the rows.
 
+    # @feature charts.drill-rows
     def test_a_config_that_was_never_saved_can_be_drilled(self):
         query, _ = self.make_content()
 
@@ -323,6 +332,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         )
         self.assertIn("description", [column["name"] for column in result["columns"]])
 
+    # @feature charts.drill-rows
     def test_a_pipeline_that_belongs_to_no_chart_can_be_drilled(self):
         query, _ = self.make_content()
 
@@ -341,6 +351,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         )
         self.assertIn("description", [column["name"] for column in result["columns"]])
 
+    # @feature charts.drill-breakdown
     def test_a_breakdown_of_an_unsaved_shape_groups_by_the_chosen_column(self):
         query, _ = self.make_content()
 
@@ -354,6 +365,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         self.assertEqual([column["name"] for column in result["columns"]], ["priority", "Todos"])
         self.assertEqual([(row["priority"], row["Todos"]) for row in result["rows"]], [("Medium", 2)])
 
+    # @feature charts.drill-breakdown-shape
     def test_a_breakdown_here_says_how_to_draw_it_too(self):
         query, _ = self.make_content()
 
@@ -376,6 +388,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         self.assertEqual((ordered["ordered"], ordered["granularity"]), (True, "minute"))
         self.assertEqual((ranked["ordered"], ranked["granularity"]), (False, None))
 
+    # @feature charts.drill-open-as-query
     def test_the_answer_carries_the_pipeline_the_level_opens_as(self):
         query, _ = self.make_content()
 
@@ -397,6 +410,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         # and the connection it has to run on, which is the chart's
         self.assertTrue(result["use_live_connection"])
 
+    # @feature charts.drill-open-as-query
     def test_a_breakdown_opens_as_the_query_that_produced_its_ranking(self):
         query, _ = self.make_content()
 
@@ -414,6 +428,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
             ["source", "filter", "filter_group", "summarize", "order_by"],
         )
 
+    # @feature charts.drill-open-as-query
     def test_a_rows_level_here_is_answered_with_its_pipeline_and_not_its_rows(self):
         query, _ = self.make_content()
 
@@ -449,6 +464,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         self.assertEqual([(row["priority"], row["Todos"]) for row in breakdown["rows"]], [("Medium", 2)])
         self.assertEqual(breakdown["total_row_count"], 1)
 
+    # @feature charts.drill-breakdown-offers
     def test_the_candidates_can_be_asked_for_on_their_own(self):
         query, _ = self.make_content()
 
@@ -464,6 +480,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         self.assertNotIn("Todos", names)
         self.assertNotIn("docstatus", names)
 
+    # @feature charts.drill-breakdown-offers
     def test_a_pipeline_that_aggregates_nothing_offers_no_candidates(self):
         query, _ = self.make_content()
 
@@ -473,6 +490,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         # when the answer is that it cannot
         self.assertEqual(names, [])
 
+    # @feature charts.drill-breakdown-offers
     def test_the_candidates_ride_the_previews_rows(self):
         query, _ = self.make_content()
 
@@ -486,6 +504,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
     # the gate
 
+    # @feature permissions.authoring-needs-seat
     def test_a_reader_without_an_authoring_seat_is_refused(self):
         query, _ = self.make_content()
         self.assertNotIn("Insights User", frappe.get_roles(READER))
@@ -493,6 +512,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         with self.assertRaises(frappe.PermissionError):
             self.preview(READER, chart_type="Table", query=query.name, config=table_config())
 
+    # @feature permissions.authoring-needs-seat
     def test_a_query_the_caller_cannot_read_is_refused(self):
         query, _ = self.make_content()
 
@@ -501,6 +521,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         with self.assertRaises(frappe.PermissionError):
             self.preview(OUTSIDER, chart_type="Table", query=query.name, config=table_config())
 
+    # @feature permissions.authoring-needs-seat
     def test_a_reader_without_an_authoring_seat_cannot_drill(self):
         query, _ = self.make_content()
 
@@ -517,6 +538,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         with self.assertRaises(frappe.PermissionError):
             self.candidates(READER, query=query.name, operations=summarized_operations())
 
+    # @feature permissions.authoring-needs-seat
     def test_a_query_the_caller_cannot_read_cannot_be_drilled(self):
         query, _ = self.make_content()
 
@@ -530,6 +552,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
                 drill_stack=[rows_level([equals("status", "Open")], measure="Todos")],
             )
 
+    # @feature permissions.authoring-needs-seat
     def test_a_document_the_caller_cannot_read_cannot_name_the_preview(self):
         query, chart = self.make_content()
 

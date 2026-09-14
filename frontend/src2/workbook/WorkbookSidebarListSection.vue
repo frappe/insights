@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Plus, X } from 'lucide-vue-next'
+import { setDraggedItem } from './workbook_drag'
 const section = defineProps<{
 	title: string
 	emptyMessage: string
@@ -11,10 +12,9 @@ const section = defineProps<{
 	route: (item: any) => string
 }>()
 
-function setDraggedItem(event: DragEvent, row: any) {
+function onDragStart(event: DragEvent, row: any) {
 	if (!event.dataTransfer) return
-	const data = JSON.stringify({ type: section.title, item: row })
-	event.dataTransfer.setData('text/plain', data)
+	setDraggedItem(event.dataTransfer, section.title, row)
 }
 </script>
 
@@ -50,7 +50,7 @@ function setDraggedItem(event: DragEvent, row: any) {
 					section.isActive(row) ? ' bg-surface-gray-2' : ' hover:border-outline-gray-2'
 				"
 				draggable="true"
-				@dragstart="setDraggedItem($event, row)"
+				@dragstart="onDragStart($event, row)"
 			>
 				<router-link
 					:to="route(row)"

@@ -18,6 +18,7 @@ const lifecycle = [
 ]
 
 describe('a funnel built from one row per stage', () => {
+	// @feature charts.type-funnel
 	it('names the stage column and the value column, and hands the rows over', () => {
 		const input = funnelChart({
 			title: 'Order lifecycle',
@@ -34,6 +35,7 @@ describe('a funnel built from one row per stage', () => {
 		expect(props.data).toBe(input.result.rows)
 	})
 
+	// @feature charts.funnel-percentages
 	it('prints the conversion rate unless the Chart switched it off', () => {
 		// It is what a funnel is read for, and v2 prints it by default, so only
 		// the Chart that turned it off has anything to say.
@@ -50,6 +52,7 @@ describe('a funnel built from one row per stage', () => {
 		).toBe(false)
 	})
 
+	// @feature charts.type-funnel
 	it('draws nothing until the Chart names both columns', () => {
 		expect(adaptChart(funnelChart({ dimension: 'status', stages: lifecycle }))).toBeUndefined()
 		expect(adaptChart(funnelChart({ measure: 'items', stages: lifecycle }))).toBeUndefined()
@@ -57,6 +60,7 @@ describe('a funnel built from one row per stage', () => {
 })
 
 describe('a funnel built from several Measures on one row', () => {
+	// @feature charts.funnel-stages
 	it('turns the one row on its side, one row per stage', () => {
 		// v2 reads a stage column and a value column, and the Measures shape has
 		// neither: the stages stand side by side on a single row. Reshaping data
@@ -70,6 +74,7 @@ describe('a funnel built from several Measures on one row', () => {
 		])
 	})
 
+	// @feature charts.funnel-stages
 	it('takes the Measures over the grouped columns when the Chart carries both', () => {
 		const props = propsOf({
 			dimension: 'status',
@@ -83,6 +88,7 @@ describe('a funnel built from several Measures on one row', () => {
 })
 
 describe('drilling into a stage', () => {
+	// @feature charts.drill-segment
 	it('names the value column and the row the stage was drawn from', () => {
 		const input = funnelChart({ dimension: 'status', measure: 'items', stages: lifecycle })
 		const row = input.result.rows[1]
@@ -97,6 +103,7 @@ describe('drilling into a stage', () => {
 		).toEqual({ column: 'items', row })
 	})
 
+	// @feature charts.drill-segment
 	it('names the Measure behind a stage, and the one row every stage was read off', () => {
 		const input = funnelChart({ measures: lifecycle })
 		const filler = adaptChart(input)!
@@ -113,6 +120,7 @@ describe('drilling into a stage', () => {
 })
 
 describe('how a funnel prints its numbers', () => {
+	// @feature charts.number-format
 	it('prints every stage against the one format the Chart set', () => {
 		const format = propsOf({
 			measures: lifecycle,
@@ -122,6 +130,7 @@ describe('how a funnel prints its numbers', () => {
 		expect(format(800)).toBe('800 items')
 	})
 
+	// @feature charts.number-format
 	it('prints a grouped funnel the same way', () => {
 		const format = propsOf({
 			dimension: 'status',
@@ -134,6 +143,7 @@ describe('how a funnel prints its numbers', () => {
 })
 
 describe('a stage the query returned nothing for', () => {
+	// @feature charts.type-funnel
 	it('draws as no stage rather than as a stage of zero', () => {
 		const props = propsOf({
 			measures: [

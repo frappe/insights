@@ -3,6 +3,7 @@ import { INSIGHTS_PATH } from '../helpers/auth'
 import { publishChart, publishDashboard, unpublishDashboard } from '../helpers/insights'
 
 test.describe('shared', () => {
+	// @feature shared.dashboard-link
 	test('a logged-out visitor opens a shared dashboard link and sees charts', async ({
 		guestPage,
 		adminApi,
@@ -27,6 +28,7 @@ test.describe('shared', () => {
 		await expect(rendered.getByText('canceled')).toBeVisible()
 	})
 
+	// @feature shared.chart-link
 	test('a logged-out visitor opens a shared chart link', async ({
 		guestPage,
 		adminApi,
@@ -46,6 +48,7 @@ test.describe('shared', () => {
 		await expect(rendered.getByText('canceled')).toBeVisible()
 	})
 
+	// @feature shared.revoke
 	test('a revoked public link stops working', async ({
 		guestPage,
 		adminApi,

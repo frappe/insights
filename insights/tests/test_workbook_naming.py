@@ -12,6 +12,7 @@ from insights.tests.base import InsightsIntegrationTestCase
 
 
 class TestWorkbookNaming(InsightsIntegrationTestCase):
+    # @feature upgrade.older-export-imports
     def test_numeric_name_is_stored_as_string(self):
         frappe.flags.in_import = True
         try:

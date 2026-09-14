@@ -26,6 +26,7 @@ class TestDeskFormEscapesTheTableLabel(UnitTestCase):
     `frappe.confirm` and a dialog title append what it produces as HTML.
     """
 
+    # @feature data-source.table-label-is-text
     def test_every_read_of_the_label_is_escaped(self):
         form = (APP / "insights/insights/doctype/insights_table_v3/insights_table_v3.js").read_text()
         # Collapsed, so a reformat that rewraps the call cannot fail the rule.

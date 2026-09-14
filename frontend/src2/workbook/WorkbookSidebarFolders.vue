@@ -3,6 +3,7 @@ import { Folder, FolderOpen, FolderPlus, PenLine, Plus, X } from 'lucide-vue-nex
 import { computed, inject, ref } from 'vue'
 import Draggable from 'vuedraggable'
 import type { WorkbookChart, WorkbookFolder, WorkbookQuery } from '../types/workbook.types'
+import { setDraggedItem } from './workbook_drag'
 import { workbookKey } from './workbook_key'
 
 const section = defineProps<{
@@ -18,6 +19,15 @@ const section = defineProps<{
 }>()
 
 const workbook = inject(workbookKey)!
+
+// Sortable owns the dragstart on these rows, so the payload a row carries out
+// of the sidebar is written through Sortable's own `setData`. The row it hands
+// back is an element; `data-name` is what names the item again.
+function setDragData(dataTransfer: DataTransfer, row: HTMLElement) {
+	const dragged = section.items.find((item) => item.name === row.dataset.name)
+	if (!dragged) return
+	setDraggedItem(dataTransfer, section.title, dragged)
+}
 
 // One shared group so items can be dragged freely between the root list and
 // any folder list of the same section type.
@@ -174,10 +184,12 @@ function onListChange(
 				:empty-insert-threshold="20"
 				ghost-class="sortable-ghost"
 				chosen-class="sortable-chosen"
+				:set-data="setDragData"
 				@change="(e: any) => onListChange(rootItems, e, null)"
 			>
 				<template #item="{ element: row }">
 					<div
+						:data-name="row.name"
 						class="group w-full cursor-pointer rounded-4 transition-all hover:bg-surface-gray-2"
 						:class="section.isActive(row) ? 'bg-surface-gray-3' : ''"
 					>
@@ -220,6 +232,7 @@ function onListChange(
 					:empty-insert-threshold="20"
 					ghost-class="sortable-ghost"
 					chosen-class="sortable-chosen"
+					:set-data="setDragData"
 					@change="
 						(e: any) => onListChange(folderItems[folder.name] || [], e, folder.name)
 					"
@@ -292,7 +305,11 @@ function onListChange(
 					</template>
 
 					<template #item="{ element: row }">
-						<div v-show="isFolderExpanded(folder.name)" class="ml-[22px]">
+						<div
+							v-show="isFolderExpanded(folder.name)"
+							:data-name="row.name"
+							class="ml-[22px]"
+						>
 							<div
 								class="group w-full cursor-pointer rounded-4 transition-all hover:bg-surface-gray-2"
 								:class="section.isActive(row) ? 'bg-surface-gray-3' : ''"

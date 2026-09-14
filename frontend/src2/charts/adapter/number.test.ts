@@ -28,6 +28,7 @@ const monthly = { name: 'created_at', type: 'Datetime', granularity: 'month' } a
 const revenue = { name: 'Revenue', readings: [12300] }
 
 describe('a Number Chart with several values', () => {
+	// @feature charts.type-number
 	it('previews every reading, one card behind each of them', () => {
 		// What the workbook editor draws: the chart states three readings, so all
 		// three stand side by side. It draws no chrome — the card around it is the
@@ -45,6 +46,7 @@ describe('a Number Chart with several values', () => {
 		expect(props.cards.map((card: any) => card.value)).toEqual([100, 40, 7])
 	})
 
+	// @feature dashboard.number-cell-per-reading
 	it('previews the cards at cell size when no cell names a reading', () => {
 		// The editor has no cell to fill, so each card carries the height a cell
 		// of its rows would give it, and the row is told to draw them that way.
@@ -56,22 +58,27 @@ describe('a Number Chart with several values', () => {
 		expect(cell.props.preview).toBe(false)
 	})
 
+	// @feature charts.number-readings
 	it('draws the cards itself, so the chrome draws none around them', () => {
 		expect(drawsOwnCards('Number')).toBe(true)
 	})
 
+	// @feature charts.type-number
 	it('reads the newest row, which is the reading a card states', () => {
 		expect(cardsOf({ values: [{ name: 'Revenue', readings: [100, 300] }] })[0].value).toBe(300)
 	})
 
+	// @feature charts.number-readings
 	it('leaves a value with no reading empty, rather than calling it zero', () => {
 		expect(cardsOf({ values: [{ name: 'Revenue', readings: [null] }] })[0].value).toBeNull()
 	})
 
+	// @feature charts.type-number
 	it('draws nothing until the Chart names a Measure', () => {
 		expect(adaptChart(numberChart({ values: [] }))).toBeUndefined()
 	})
 
+	// @feature charts.number-readings
 	it('stands the grid up from the config alone, so the cards wear the states', () => {
 		// The cards are this type's only surface: a chart still running, or one
 		// that failed, is drawn on them and not on a chrome it does not have. So
@@ -91,6 +98,7 @@ describe('a Number Chart with several values', () => {
 })
 
 describe('how a reading is printed', () => {
+	// @feature charts.number-readings
 	it('takes the units and the rounding each value set for itself', () => {
 		const cards = cardsOf({
 			values: [
@@ -103,6 +111,7 @@ describe('how a reading is printed', () => {
 		expect(cards[1].compact).toBeUndefined()
 	})
 
+	// @feature charts.number-readings
 	it('falls back to what the Chart set for every value', () => {
 		const cards = cardsOf({
 			values: [
@@ -116,6 +125,7 @@ describe('how a reading is printed', () => {
 		expect(cards[1].precision).toBe(0)
 	})
 
+	// @feature charts.number-reading-color
 	it('prints a value in the ink it was given, and only that value', () => {
 		// One color for one reading: it colors the number, not the card it stands in.
 		const cards = cardsOf({
@@ -128,6 +138,7 @@ describe('how a reading is printed', () => {
 		expect(cards[1].color).toBeUndefined()
 	})
 
+	// @feature charts.measure-unit
 	it('scales a Measure that holds a fraction and states the unit', () => {
 		// v2 prints a number. What the number means stays the caller's.
 		const card = cardsOf({ values: [{ name: 'Margin', readings: [0.42], percent: true }] })[0]
@@ -137,6 +148,7 @@ describe('how a reading is printed', () => {
 })
 
 describe('the target', () => {
+	// @feature charts.number-target
 	it('hands the card the number itself, not a percentage of it reached', () => {
 		// The card prints `$300 / $400` on the value line, in the units the value
 		// is already formatted in, so the fraction states the attainment.
@@ -149,6 +161,7 @@ describe('the target', () => {
 		expect(card.deltaCaption).toBeUndefined()
 	})
 
+	// @feature charts.number-target
 	it('reads a target column off the same row the reading came from', () => {
 		// A target is the target for the period on the card, not for the series.
 		const card = cardsOf({
@@ -159,6 +172,7 @@ describe('the target', () => {
 		expect(card.target).toBe(400)
 	})
 
+	// @feature charts.number-target
 	it('scales a target the way it scales the fraction it is measured against', () => {
 		const card = cardsOf({
 			values: [{ name: 'Margin', readings: [0.42], percent: true, targetValue: 0.5 }],
@@ -166,6 +180,7 @@ describe('the target', () => {
 		expect(card.target).toBe(50)
 	})
 
+	// @feature charts.number-target
 	it('names none when the value aims at nothing, or at a column with no number', () => {
 		expect(
 			cardsOf({ values: [{ name: 'Revenue', readings: [300] }] })[0].target,
@@ -185,6 +200,7 @@ describe('the comparison', () => {
 		period: monthly,
 	}
 
+	// @feature charts.number-comparison
 	it('derives the change from the reading before it, as a percentage', () => {
 		// v2 takes a computed delta and prints it. The arithmetic is the caller's.
 		const card = cardsOf(previous)[0]
@@ -192,10 +208,12 @@ describe('the comparison', () => {
 		expect(card.deltaSuffix).toBe('%')
 	})
 
+	// @feature charts.number-comparison
 	it('says what the change is measured against, at the grain it was grouped by', () => {
 		expect(cardsOf(previous)[0].deltaCaption).toBe('vs previous month')
 	})
 
+	// @feature upgrade.number-older-shapes
 	it('reads that grain off the period, so a migrated card keeps its caption', () => {
 		// The grain moved onto the chart and the form deletes it from the
 		// dimension. Reading the dimension would leave the delta row unworded.
@@ -207,6 +225,7 @@ describe('the comparison', () => {
 		expect(defaultComparisonLabel({ source: 'previous' }, migrated)).toBe('vs previous month')
 	})
 
+	// @feature charts.number-comparison
 	it('words a span comparison off the window its period fetched', () => {
 		// Derivation returns the shifted span as the row before the last one, so
 		// the figure reads the way a grain's does. What it is called comes from
@@ -223,6 +242,7 @@ describe('the comparison', () => {
 		expect(card.deltaCaption).toBe('vs same period last year')
 	})
 
+	// @feature charts.number-comparison
 	it('answers the same question against the period the card holds now', () => {
 		// The stored comparison is the question alone. An author who switches the
 		// period switches what answers it, and the caption follows the answer.
@@ -241,6 +261,7 @@ describe('the comparison', () => {
 		expect(grain.deltaCaption).toBe('vs previous month')
 	})
 
+	// @feature charts.number-comparison
 	it('holds each reading against the window its own question asked for', () => {
 		// The one case counting back from the end cannot answer: three periods
 		// come back oldest first, and both readings would have read the middle
@@ -262,6 +283,7 @@ describe('the comparison', () => {
 		expect(cards[1].deltaCaption).toBe('vs same period last year')
 	})
 
+	// @feature charts.number-comparison
 	it('says what it would have compared against when that window came back empty', () => {
 		// The question stands — the card asked it and the server ran it — so the
 		// caption prints with no figure in front of it.
@@ -275,6 +297,7 @@ describe('the comparison', () => {
 		expect(card.deltaCaption).toBe('vs same period last month')
 	})
 
+	// @feature charts.number-comparison
 	it('prints no delta for a question the period cannot answer', () => {
 		// A grain cannot name the period a year back, so the card says nothing
 		// rather than printing the period before this one under that caption.
@@ -289,6 +312,7 @@ describe('the comparison', () => {
 		expect(card.deltaCaption).toBeUndefined()
 	})
 
+	// @feature charts.number-comparison
 	it('measures against a fixed number, and calls it the target when unworded', () => {
 		const card = cardsOf({
 			values: [
@@ -303,6 +327,7 @@ describe('the comparison', () => {
 		expect(card.deltaCaption).toBe('vs target')
 	})
 
+	// @feature charts.number-comparison
 	it('measures against a column, read off the row the reading came from', () => {
 		const card = cardsOf({
 			values: [
@@ -317,6 +342,7 @@ describe('the comparison', () => {
 		expect(card.delta).toBe(-25)
 	})
 
+	// @feature charts.number-comparison-show
 	it("states the gap in the value's own units when asked for a difference", () => {
 		// The gap is money, so it carries the money sign the reading carries.
 		const card = cardsOf({
@@ -335,6 +361,7 @@ describe('the comparison', () => {
 		expect(card.deltaCaption).toBe('vs plan')
 	})
 
+	// @feature charts.number-comparison-show
 	it('leaves the unit off the gap, because the value line already carries it', () => {
 		// The card reads "67 days / 45 days": a third "days" on the delta row
 		// says nothing and pushes the caption out of the card.
@@ -353,6 +380,7 @@ describe('the comparison', () => {
 		expect(card.deltaSuffix).toBeUndefined()
 	})
 
+	// @feature charts.number-comparison-show
 	it("prints a percent measure's gap in points, not percent", () => {
 		// 42% against a 42.8% target is a gap of 0.8 points, not -0.8%.
 		const card = cardsOf({
@@ -369,6 +397,7 @@ describe('the comparison', () => {
 		expect(card.deltaSuffix).toBe(' pts')
 	})
 
+	// @feature charts.number-comparison charts.number-negative-is-better
 	it('signs the change the way the data moved, and leaves the coloring to v2', () => {
 		// The card flips its colors for a Measure where a fall is better, so
 		// flipping the number here as well would flip it back.
@@ -387,6 +416,24 @@ describe('the comparison', () => {
 		expect(card.negativeIsBetter).toBe(true)
 	})
 
+	// @feature charts.number-comparison-caption
+	it('prints the caption the author wrote in place of the default one', () => {
+		const worded = cardsOf({
+			values: [
+				{
+					name: 'Revenue',
+					readings: [200, 300],
+					comparison: { source: 'previous', label: 'vs plan' },
+				},
+			],
+			period: monthly,
+		})[0]
+		expect(worded.deltaCaption).toBe('vs plan')
+
+		expect(cardsOf(previous)[0].deltaCaption).toBe('vs previous month')
+	})
+
+	// @feature charts.number-comparison
 	it('states no change when there is nothing to measure one from', () => {
 		expect(
 			cardsOf({
@@ -405,6 +452,7 @@ describe('the comparison', () => {
 		).toBeNull()
 	})
 
+	// @feature charts.number-comparison
 	it('draws no delta row when the comparison names no number to hold the reading against', () => {
 		const card = cardsOf({
 			values: [{ name: 'Revenue', readings: [300], comparison: { source: 'constant' } }],
@@ -413,6 +461,7 @@ describe('the comparison', () => {
 		expect(card.deltaCaption).toBeUndefined()
 	})
 
+	// @feature charts.number-comparison
 	it('states none at all on a value that compares nothing', () => {
 		const card = cardsOf({ values: [{ name: 'Revenue', readings: [200, 300] }] })[0]
 		expect(card.delta).toBeUndefined()
@@ -421,6 +470,7 @@ describe('the comparison', () => {
 })
 
 describe('a card carrying both a target and a comparison', () => {
+	// @feature charts.number-target
 	it('aims at the one and moves against the other, each in its own line', () => {
 		const card = cardsOf({
 			values: [
@@ -440,6 +490,7 @@ describe('a card carrying both a target and a comparison', () => {
 })
 
 describe('the sparkline', () => {
+	// @feature charts.number-sparkline
 	it('carries every reading, oldest first, and the color the Chart chose', () => {
 		const card = cardsOf({
 			values: [{ name: 'Items', readings: [7, 9, 8] }],
@@ -450,6 +501,7 @@ describe('the sparkline', () => {
 		expect(card.sparkline).toEqual({ data: [7, 9, 8], color: '#2490EF' })
 	})
 
+	// @feature charts.number-date-column
 	it('draws none without a Dimension to run the trend along', () => {
 		expect(
 			cardsOf({ values: [{ name: 'Items', readings: [7, 9] }], sparkline: true })[0]
@@ -457,6 +509,7 @@ describe('the sparkline', () => {
 		).toBeUndefined()
 	})
 
+	// @feature charts.number-sparkline
 	it('draws the second run when there is one, not the two rows of a window', () => {
 		// a span card's rows are one per period: the reading and what it is
 		// held against. The trend inside the span is a run of its own.
@@ -470,6 +523,7 @@ describe('the sparkline', () => {
 		expect(card.sparkline).toEqual({ data: [10, 20, 30] })
 	})
 
+	// @feature charts.number-sparkline
 	it('draws nothing for a windowed card until its second run lands', () => {
 		// Its own rows are the reading and what it is held against, so drawing
 		// them made a two-point line that read as a trend.
@@ -483,6 +537,7 @@ describe('the sparkline', () => {
 		expect(card.sparkline).toBeUndefined()
 	})
 
+	// @feature charts.number-sparkline
 	it('reads each value off its own column of the second run', () => {
 		const cards = cardsOf({
 			values: [
@@ -501,6 +556,7 @@ describe('the sparkline', () => {
 })
 
 describe('drilling into a reading', () => {
+	// @feature charts.drill-segment
 	it('names the value the reader pointed at, and the row it was read off', () => {
 		const input = numberChart({
 			values: [{ name: 'Revenue', readings: [200, 300] }],
@@ -518,6 +574,7 @@ describe('the rows a Number cell takes', () => {
 	const rowsFor = (spec: NumberChartSpec) =>
 		numberCardRows(numberChart(spec).config as NumberChartConfig, spec.column)
 
+	// @feature dashboard.cell-height-rule
 	it('is answered for the reading the cell names, not for the chart', () => {
 		const spec: NumberChartSpec = {
 			values: [
@@ -530,10 +587,12 @@ describe('the rows a Number cell takes', () => {
 		expect(rowsFor({ ...spec, column: 'Profit' })).toBe(5)
 	})
 
+	// @feature dashboard.cell-height-rule
 	it('is a title and a reading when nothing stands under them', () => {
 		expect(rowsFor({ values: [revenue] })).toBe(4)
 	})
 
+	// @feature dashboard.cell-height-rule
 	it('adds the delta row for a reading that is compared with something', () => {
 		expect(
 			rowsFor({
@@ -543,14 +602,17 @@ describe('the rows a Number cell takes', () => {
 		).toBe(5)
 	})
 
+	// @feature dashboard.cell-height-rule
 	it('adds the sparkline band under that, compared or not', () => {
 		expect(rowsFor({ values: [revenue], period: monthly, sparkline: true })).toBe(7)
 	})
 
+	// @feature dashboard.cell-height-rule
 	it('draws no sparkline band without a Dimension to run the trend along', () => {
 		expect(rowsFor({ values: [revenue], sparkline: true })).toBe(4)
 	})
 
+	// @feature dashboard.cell-height-rule
 	it('leaves every card less than a row of slack', () => {
 		// What picks the row height: the three heights the card has, and how much
 		// of the last row each of them wastes.
@@ -566,6 +628,7 @@ describe('the rows a Number cell takes', () => {
 })
 
 describe('a Chart naming one Measure twice', () => {
+	// @feature charts.number-readings
 	it('draws it once, because a reading is named by its Measure', () => {
 		const cards = cardsOf({
 			values: [
@@ -586,22 +649,26 @@ describe('the reading a dashboard cell names', () => {
 		],
 	}
 
+	// @feature dashboard.number-cell-per-reading
 	it('is the only card the cell draws', () => {
 		const cards = cardsOf({ ...three, column: 'Profit' })
 		expect(cards).toHaveLength(1)
 		expect(cards[0]).toMatchObject({ title: 'Profit', value: 40, column: 'Profit' })
 	})
 
+	// @feature dashboard.number-cell-per-reading
 	it('carries the settings that stand beside that reading, not another one', () => {
 		expect(cardsOf({ ...three, column: 'Profit' })[0].color).toBeUndefined()
 		expect(cardsOf({ ...three, column: 'Revenue' })[0].color).toBe('#2490EF')
 	})
 
+	// @feature dashboard.number-cell-per-reading
 	it('is the first reading when the cell names none', () => {
 		// A cell written before cells could name a reading keeps the reading it drew.
 		expect(cardsOf({ ...three, column: undefined })[0].title).toBe('Revenue')
 	})
 
+	// @feature charts.drill-number-card
 	it('drills into the reading the cell names', () => {
 		const input = { ...numberChart({ ...three, column: 'Items' }) }
 		expect(adaptChart(input)!.drillDown!.cardClick({ column: 'Items' })).toEqual({
@@ -614,11 +681,13 @@ describe('the reading a dashboard cell names', () => {
 describe('a cell naming a reading the Chart no longer states', () => {
 	const gone = () => cardsOf({ values: [{ name: 'Revenue', readings: [100] }], column: 'Margin' })
 
+	// @feature dashboard.number-cell-per-reading
 	it('draws the card that named it, so the reader is told which one went', () => {
 		expect(gone()).toHaveLength(1)
 		expect(gone()[0]).toMatchObject({ column: 'Margin', title: 'Margin', missing: true })
 	})
 
+	// @feature dashboard.number-cell-per-reading
 	it('states no reading, rather than the one that took its place', () => {
 		expect(gone()[0].value).toBeNull()
 	})

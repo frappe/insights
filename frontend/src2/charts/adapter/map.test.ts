@@ -15,6 +15,7 @@ function adapt(spec: MapChartSpec) {
 
 const propsOf = (spec: MapChartSpec) => adapt(spec).props
 
+// @feature charts.type-map
 it('registers its series into the same echarts the chart mounts through', () => {
 	// Map is the one chart type Insights registers an echarts module for, and
 	// echarts keeps that registry in module state. frappe-ui is linked from the
@@ -26,6 +27,7 @@ it('registers its series into the same echarts the chart mounts through', () => 
 })
 
 describe('the geography', () => {
+	// @feature charts.type-map
 	it('names the map, the measure and the regions', () => {
 		const props = propsOf({
 			title: 'Revenue by country',
@@ -44,18 +46,21 @@ describe('the geography', () => {
 		])
 	})
 
+	// @feature charts.map-type
 	it('draws the India map when the Chart asks for it', () => {
 		expect(propsOf({ mapType: 'india', regions: [{ region: 'Goa', value: 1 }] }).map).toBe(
 			'india',
 		)
 	})
 
+	// @feature charts.type-map
 	it('draws nothing without both a region column and a measure', () => {
 		const input = mapChart({ regions: [{ region: 'India', value: 30 }] })
 		input.result.columns = input.result.columns.filter((c) => c.name !== 'revenue')
 		expect(adaptChart(input)).toBeUndefined()
 	})
 
+	// @feature charts.type-map
 	it('reads the biggest region first', () => {
 		const props = propsOf({
 			regions: [
@@ -66,6 +71,7 @@ describe('the geography', () => {
 		expect(props.regions.map((region: any) => region.name)).toEqual(['India', 'Japan'])
 	})
 
+	// @feature charts.type-map
 	it('sums the rows that land on one region', () => {
 		// A region column is not a group by: two spellings of one country arrive
 		// as two rows and the geography can only draw one shape for them.
@@ -78,6 +84,7 @@ describe('the geography', () => {
 		expect(props.regions).toEqual([{ name: 'India', value: 42 }])
 	})
 
+	// @feature charts.type-map
 	it('leaves out a row with no region', () => {
 		const props = propsOf({
 			regions: [
@@ -106,6 +113,7 @@ describe('region mappings', () => {
 		},
 	}
 
+	// @feature charts.map-region-mapping
 	it('draws a mapped region under the name the geography carries', () => {
 		expect(propsOf(gallery).regions).toEqual([
 			{ name: 'United States of America', value: 500 },
@@ -114,6 +122,7 @@ describe('region mappings', () => {
 		])
 	})
 
+	// @feature charts.map-region-mapping
 	it('resolves a click on a mapped region back to its row', () => {
 		const input = mapChart(gallery)
 		const filler = adaptChart(input)!
@@ -127,6 +136,7 @@ describe('region mappings', () => {
 		})
 	})
 
+	// @feature charts.map-region-mapping
 	it('resolves a click on an unmapped region by its own name', () => {
 		const input = mapChart(gallery)
 		expect(adaptChart(input)!.drillDown!.regionClick('India')).toEqual({
@@ -135,6 +145,7 @@ describe('region mappings', () => {
 		})
 	})
 
+	// @feature charts.map-region-mapping
 	it('resolves a click whatever case the geography spells it in', () => {
 		const input = mapChart({ regions: [{ region: 'india', value: 30 }] })
 		expect(adaptChart(input)!.drillDown!.regionClick('INDIA')).toEqual({
@@ -143,6 +154,7 @@ describe('region mappings', () => {
 		})
 	})
 
+	// @feature charts.map-region-mapping
 	it('drills into every row a folded region was summed from', () => {
 		// Two spellings the mapping folds into one shape. The click stands for the
 		// shape, so it carries both spellings and not the last row that fed it.
@@ -160,6 +172,7 @@ describe('region mappings', () => {
 		})
 	})
 
+	// @feature charts.map-region-mapping
 	it('reports nothing for a region the query returned no rows for', () => {
 		const input = mapChart(gallery)
 		expect(adaptChart(input)!.drillDown!.regionClick('Chad')).toBeUndefined()
@@ -172,12 +185,14 @@ describe('the natural-breaks scale', () => {
 			regions: values.map((value, index) => ({ region: `r${index}`, value })),
 		}).buckets
 
+	// @feature charts.map-color-scale
 	it('spans exactly what the data does, smallest value to largest', () => {
 		const buckets = bucketsFor([5, 40, 60, 900])
 		expect(buckets[0].min).toBe(5)
 		expect(buckets[buckets.length - 1].max).toBe(900)
 	})
 
+	// @feature charts.map-color-scale
 	it('runs low to high with no gap between one class and the next', () => {
 		// A class standing for one value is as wide as that value: four regions
 		// cut into four classes gives each one a class of its own.
@@ -188,10 +203,12 @@ describe('the natural-breaks scale', () => {
 		})
 	})
 
+	// @feature charts.map-color-scale
 	it('stops at five classes however many regions there are', () => {
 		expect(bucketsFor([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]).length).toBe(5)
 	})
 
+	// @feature charts.map-color-scale
 	it('cuts where the data parts, so a long tail does not flatten the rest', () => {
 		// One outlier and a tight cluster. A scale cut into equal widths would put
 		// the whole cluster in one class and leave three empty. The breaks put the
@@ -203,10 +220,12 @@ describe('the natural-breaks scale', () => {
 		expect(buckets[0].max).toBeLessThan(1000)
 	})
 
+	// @feature charts.map-color-scale
 	it('takes one class from one region', () => {
 		expect(bucketsFor([42])).toEqual([{ min: 42, max: 42 }])
 	})
 
+	// @feature charts.map-color-scale
 	it('classifies a loss too, so it is not drawn as a region with no row', () => {
 		// The unvalued shade is what a region the query returned nothing for gets.
 		// A profit measure is negative wherever the business lost money, and a
@@ -216,6 +235,7 @@ describe('the natural-breaks scale', () => {
 		expect(buckets[buckets.length - 1].max).toBe(900)
 	})
 
+	// @feature charts.map-color-scale
 	it('classifies nothing when the query returned no region at all', () => {
 		expect(bucketsFor([])).toEqual([])
 	})

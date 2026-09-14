@@ -36,9 +36,11 @@ class TestDashboardCompactLayout(InsightsIntegrationTestCase):
             {"doctype": DT.DASHBOARD, "title": title, "workbook": self.workbook, "items": []}
         ).insert()
 
+    # @feature dashboard.compact-layout
     def test_a_new_dashboard_closes_its_gaps(self):
         self.assertEqual(self.create_dashboard("New Compact Dashboard").vertical_compact_layout, 1)
 
+    # @feature dashboard.compact-layout
     def test_the_patch_closes_the_gaps_of_a_dashboard_drawn_before_the_field(self):
         """Nothing wrote the field, so a row from before it reads as 0 and would
         re-arrange itself on deploy."""

@@ -16,6 +16,7 @@ function adapt(spec: AxisChartSpec) {
 const propsOf = (spec: AxisChartSpec) => adapt(spec).props
 
 describe('the three axis types', () => {
+	// @feature charts.type-bar
 	it('draws a Bar Chart as a bar chart, its Measures in a list', () => {
 		const { component, props } = adapt({
 			type: 'Bar',
@@ -30,18 +31,21 @@ describe('the three axis types', () => {
 		expect(props.horizontal).toBeUndefined()
 	})
 
+	// @feature charts.type-line
 	it('draws a Line Chart as a line chart', () => {
 		const filler = adapt({ type: 'Line', dimension: 'region', measures: ['revenue'] })
 		expect(filler.component).toBe(LineChart)
 		expect(filler.props.horizontal).toBeUndefined()
 	})
 
+	// @feature charts.type-row
 	it('draws a Row Chart as a bar chart lying down', () => {
 		const filler = adapt({ type: 'Row', dimension: 'region', measures: ['revenue'] })
 		expect(filler.component).toBe(BarChart)
 		expect(filler.props.horizontal).toBe(true)
 	})
 
+	// @feature charts.y-axis-series
 	it('hands the result over as it stands, in the order it arrived', () => {
 		// The category order is the chart's reading of the data, and a row chart
 		// reads it top down. Both belong to the renderer, so nothing is sorted or
@@ -60,6 +64,7 @@ describe('the three axis types', () => {
 		])
 	})
 
+	// @feature charts.type-bar
 	it('draws nothing until the Chart names a Dimension and the result holds a number', () => {
 		expect(
 			adaptChart(axisChart({ type: 'Bar', dimension: '', measures: ['revenue'] })),
@@ -71,12 +76,14 @@ describe('the three axis types', () => {
 })
 
 describe('the category axis', () => {
+	// @feature charts.x-axis
 	it('reads a text Dimension as categories', () => {
 		expect(propsOf({ type: 'Bar', dimension: 'region', measures: ['revenue'] }).xAxis).toEqual({
 			type: 'category',
 		})
 	})
 
+	// @feature charts.x-axis
 	it('reads a date Dimension as a timeline at the grain it was grouped by', () => {
 		expect(
 			propsOf({
@@ -87,6 +94,7 @@ describe('the category axis', () => {
 		).toEqual({ type: 'time', timeGrain: 'month' })
 	})
 
+	// @feature charts.x-axis
 	it('prints a fiscal year itself, which a plain calendar has no grain for', () => {
 		const xAxis = propsOf({
 			type: 'Line',
@@ -97,6 +105,7 @@ describe('the category axis', () => {
 		expect(xAxis.format('2026-06-01')).toMatch(/^FY /)
 	})
 
+	// @feature charts.x-axis
 	it('reads a numeric Dimension as a quantity', () => {
 		expect(
 			propsOf({
@@ -109,6 +118,7 @@ describe('the category axis', () => {
 })
 
 describe('a split Dimension', () => {
+	// @feature charts.split-by
 	it('reads its series off the result, which is the only place they are named', () => {
 		const props = propsOf({
 			type: 'Bar',
@@ -120,6 +130,7 @@ describe('a split Dimension', () => {
 		expect(props.x).toBe('order_date')
 	})
 
+	// @feature charts.split-by
 	it('keeps every Measure of a split apart, one series per column', () => {
 		expect(
 			propsOf({
@@ -131,6 +142,7 @@ describe('a split Dimension', () => {
 		).toEqual(['revenue___North', 'revenue___South', 'margin___North', 'margin___South'])
 	})
 
+	// @feature charts.split-by-max-values
 	it('takes the collapsed tail as one more series, and caps nothing itself', () => {
 		// Ranking the values, rewriting the tail and pivoting all happen in SQL,
 		// so "Others" reaches the chart as a column like any other. Capping again
@@ -150,12 +162,14 @@ describe('a split Dimension', () => {
 })
 
 describe('the marks a series draws as', () => {
+	// @feature charts.series-type
 	it('leaves a series that draws the chart’s own mark unstyled', () => {
 		expect(
 			propsOf({ type: 'Bar', dimension: 'region', measures: ['revenue'] }).seriesConfig,
 		).toBeUndefined()
 	})
 
+	// @feature charts.series-type
 	it('draws a rate as a line over the bars it is read against', () => {
 		expect(
 			propsOf({
@@ -166,6 +180,7 @@ describe('the marks a series draws as', () => {
 		).toEqual({ margin_rate: { type: 'line' } })
 	})
 
+	// @feature charts.series-type
 	it('reads a mark the form wrote in the other case', () => {
 		// Three releases of the Y Axis form wrote 'Line' and 'Bar'.
 		expect(
@@ -177,6 +192,7 @@ describe('the marks a series draws as', () => {
 		).toEqual({ margin_rate: { type: 'line' } })
 	})
 
+	// @feature charts.line-area
 	it('draws a line series with a fill under it as an area', () => {
 		expect(
 			propsOf({
@@ -189,6 +205,7 @@ describe('the marks a series draws as', () => {
 		).toEqual({ revenue: { type: 'area', smooth: true } })
 	})
 
+	// @feature charts.series-type charts.line-data-points
 	it('lets a Series override what the whole axis asked for', () => {
 		expect(
 			propsOf({
@@ -203,6 +220,47 @@ describe('the marks a series draws as', () => {
 		})
 	})
 
+	// @feature charts.series-data-labels
+	it('labels every series when the axis asks, and one series can ask alone', () => {
+		expect(
+			propsOf({
+				type: 'Bar',
+				dimension: 'region',
+				measures: ['revenue', 'target'],
+				dataLabels: true,
+			}).seriesConfig,
+		).toEqual({ revenue: { showDataLabels: true }, target: { showDataLabels: true } })
+
+		expect(
+			propsOf({
+				type: 'Bar',
+				dimension: 'region',
+				measures: ['revenue', { name: 'target', dataLabels: true }],
+			}).seriesConfig,
+		).toEqual({ target: { showDataLabels: true } })
+	})
+
+	// @feature charts.line-smooth
+	it('curves a line when the axis asks, and one series can ask alone', () => {
+		expect(
+			propsOf({
+				type: 'Line',
+				dimension: 'region',
+				measures: ['revenue', 'target'],
+				smooth: true,
+			}).seriesConfig,
+		).toEqual({ revenue: { smooth: true }, target: { smooth: true } })
+
+		expect(
+			propsOf({
+				type: 'Line',
+				dimension: 'region',
+				measures: ['revenue', { name: 'target', smooth: true }],
+			}).seriesConfig,
+		).toEqual({ target: { smooth: true } })
+	})
+
+	// @feature charts.split-by
 	it('leaves the columns of a split uncolored, which the one color would flatten', () => {
 		// A split hands one Series every column it produced, and the form writes
 		// one color. Painting it on each of them draws the whole split in a single
@@ -220,6 +278,7 @@ describe('the marks a series draws as', () => {
 		})
 	})
 
+	// @feature charts.bar-overlap
 	it('sends bars standing in front of each other through `echartOptions`', () => {
 		// Overlap is an instruction to the renderer, not a reading of the data.
 		const props = propsOf({
@@ -235,6 +294,7 @@ describe('the marks a series draws as', () => {
 })
 
 describe('the second value axis', () => {
+	// @feature charts.series-align
 	it('measures a Series aligned right against an axis of its own', () => {
 		const props = propsOf({
 			type: 'Bar',
@@ -244,6 +304,7 @@ describe('the second value axis', () => {
 		expect(props.seriesConfig.margin_rate.axis).toBe('y2')
 	})
 
+	// @feature charts.series-align
 	it('leaves a Series where it stands when it changes axis', () => {
 		// The series are drawn and colored in `y` order, so a Series that moved
 		// down the list to reach the second axis would change color on the way.
@@ -255,6 +316,7 @@ describe('the second value axis', () => {
 		expect(props.y).toEqual(['margin_rate', 'revenue'])
 	})
 
+	// @feature charts.type-row
 	it('says the same for a row chart, whose one value axis is v2’s concern', () => {
 		// A row chart runs its value axis across the plot. A second one along the
 		// other edge is unreadable, so v2 draws none and reads every series against
@@ -270,6 +332,7 @@ describe('the second value axis', () => {
 })
 
 describe('the value axis', () => {
+	// @feature charts.axis-label
 	it('titles the axis only when the Chart asks for the title to show', () => {
 		expect(
 			propsOf({
@@ -283,6 +346,7 @@ describe('the value axis', () => {
 		).toMatchObject({ title: 'Revenue (₹)', min: 0, max: 500 })
 	})
 
+	// @feature charts.bar-normalize
 	it('reads stacked shares against the scale they are shares of', () => {
 		const props = propsOf({
 			type: 'Bar',
@@ -300,6 +364,25 @@ describe('the value axis', () => {
 		expect(Object.keys(props.yAxis)).toEqual(['format'])
 	})
 
+	// @feature charts.axis-min-max
+	it('pins the value axis to the bounds the author set, and leaves it free otherwise', () => {
+		const bounded = propsOf({
+			type: 'Bar',
+			dimension: 'region',
+			measures: ['revenue'],
+			min: 0,
+			max: 500,
+		}).yAxis
+		expect(bounded.min).toBe(0)
+		expect(bounded.max).toBe(500)
+
+		// A bound nobody set is no bound: echarts fits the axis to the data, and a
+		// key holding `undefined` would pin it to nothing.
+		const free = propsOf({ type: 'Bar', dimension: 'region', measures: ['revenue'] }).yAxis
+		expect(Object.keys(free)).toEqual(['format'])
+	})
+
+	// @feature charts.bar-stack
 	it('stacks without normalizing when only the stack was asked for', () => {
 		expect(
 			propsOf({
@@ -313,6 +396,7 @@ describe('the value axis', () => {
 })
 
 describe('reference lines', () => {
+	// @feature charts.reference-lines
 	it('draws a target across the plot, and a marker down it', () => {
 		expect(
 			propsOf({
@@ -330,6 +414,7 @@ describe('reference lines', () => {
 		])
 	})
 
+	// @feature charts.reference-lines
 	it('reads a right-aligned line against the axis its series is measured on', () => {
 		expect(
 			propsOf({
@@ -341,6 +426,7 @@ describe('reference lines', () => {
 		).toEqual([{ value: 30, axis: 'y2' }])
 	})
 
+	// @feature charts.reference-lines
 	it('drops a line with nothing to sit at', () => {
 		expect(
 			propsOf({
@@ -352,6 +438,7 @@ describe('reference lines', () => {
 		).toEqual([{ value: 0, axis: 'y' }])
 	})
 
+	// @feature charts.reference-lines
 	it('adds nothing at all when the Chart has none', () => {
 		expect(
 			propsOf({ type: 'Bar', dimension: 'region', measures: ['revenue'] }).referenceLines,
@@ -373,10 +460,12 @@ describe('a reference line at an aggregate', () => {
 	})
 	const valueOf = (line: ReferenceLine) => propsOf(spec(line)).referenceLines?.[0]?.value
 
+	// @feature charts.reference-lines
 	it('reads the average of what the Chart draws', () => {
 		expect(valueOf({ aggregate: 'average', measure_name: 'revenue' })).toBe(30)
 	})
 
+	// @feature charts.reference-lines
 	it('reads the median, min, max and sum off the same numbers', () => {
 		expect(valueOf({ aggregate: 'median', measure_name: 'revenue' })).toBe(20)
 		expect(valueOf({ aggregate: 'min', measure_name: 'revenue' })).toBe(10)
@@ -384,6 +473,7 @@ describe('a reference line at an aggregate', () => {
 		expect(valueOf({ aggregate: 'sum', measure_name: 'revenue' })).toBe(90)
 	})
 
+	// @feature charts.reference-lines
 	it('averages the two middle readings when there is no middle one', () => {
 		expect(
 			propsOf({
@@ -397,6 +487,7 @@ describe('a reference line at an aggregate', () => {
 		).toEqual([{ value: 20, axis: 'y', label: 'Median revenue: 20' }])
 	})
 
+	// @feature charts.reference-lines
 	it('reads every column a split named after its own values', () => {
 		// One Measure, four cells. The rule sits at the average cell, which is what
 		// a reader compares each bar against.
@@ -413,6 +504,7 @@ describe('a reference line at an aggregate', () => {
 		).toEqual([{ value: 25, axis: 'y', label: 'Avg revenue: 25' }])
 	})
 
+	// @feature charts.reference-lines
 	it('reads its own Measure and no other', () => {
 		expect(
 			propsOf({
@@ -426,6 +518,7 @@ describe('a reference line at an aggregate', () => {
 		).toBe(15)
 	})
 
+	// @feature charts.reference-lines
 	it('skips a cell it cannot read rather than counting it as zero', () => {
 		expect(
 			propsOf({
@@ -439,6 +532,7 @@ describe('a reference line at an aggregate', () => {
 		).toBe(10)
 	})
 
+	// @feature charts.reference-lines
 	it('reads a right-aligned computed line against the second axis', () => {
 		expect(
 			propsOf({
@@ -452,6 +546,7 @@ describe('a reference line at an aggregate', () => {
 		).toEqual([{ value: 8, axis: 'y2', label: 'Max margin_rate: 8' }])
 	})
 
+	// @feature charts.reference-lines
 	it("labels a right-aligned line in the second axis's own unit", () => {
 		expect(
 			propsOf({
@@ -465,6 +560,7 @@ describe('a reference line at an aggregate', () => {
 		).toEqual([{ value: 0.08, axis: 'y2', label: 'Max margin_rate: 8%' }])
 	})
 
+	// @feature charts.reference-lines
 	it('names itself after the aggregate it read, printed as the axis prints it', () => {
 		expect(
 			propsOf({
@@ -478,6 +574,7 @@ describe('a reference line at an aggregate', () => {
 		).toEqual([{ value: 1200000, axis: 'y', label: 'Avg revenue: 1,200,000' }])
 	})
 
+	// @feature charts.reference-lines
 	it('prints the label the author typed instead of its own', () => {
 		expect(
 			propsOf(spec({ aggregate: 'average', measure_name: 'revenue', label: 'Target' }))
@@ -485,15 +582,18 @@ describe('a reference line at an aggregate', () => {
 		).toEqual([{ value: 30, axis: 'y', label: 'Target' }])
 	})
 
+	// @feature charts.reference-lines
 	it('drops a line whose Measure the Chart does not draw', () => {
 		expect(valueOf({ aggregate: 'average', measure_name: 'target' })).toBeUndefined()
 	})
 
+	// @feature charts.reference-lines
 	it('drops a line with a Measure but no aggregate, and an aggregate but no Measure', () => {
 		expect(valueOf({ measure_name: 'revenue' })).toBeUndefined()
 		expect(valueOf({ aggregate: 'average' })).toBeUndefined()
 	})
 
+	// @feature charts.reference-lines
 	it('drops a line whose Measure came back with nothing numeric', () => {
 		expect(
 			propsOf({
@@ -516,6 +616,7 @@ describe('a Measure that only reaches the tooltip', () => {
 		tooltipMeasures: ['order_count'],
 	}
 
+	// @feature charts.tooltip-measures
 	it('is handed over as a tooltip column, not as a series', () => {
 		const props = propsOf(spec)
 		expect(props.y).toEqual(['conversion_rate'])
@@ -525,6 +626,7 @@ describe('a Measure that only reaches the tooltip', () => {
 
 	// The result carries it as one more numeric column, so without the config
 	// saying otherwise it would be read as a series and drawn.
+	// @feature charts.tooltip-measures
 	it('is taken out of the columns the chart draws', () => {
 		const input = axisChart(spec)
 		expect(input.result.columns.map((column) => column.name)).toContain('order_count')
@@ -533,10 +635,12 @@ describe('a Measure that only reaches the tooltip', () => {
 
 	// The chart labels a column the way it labels a series it draws, so naming
 	// one here would make the same Measure read two ways.
+	// @feature charts.tooltip-measures
 	it('names itself the way a drawn Measure does', () => {
 		expect(propsOf(spec).tooltipColumns[0].label).toBeUndefined()
 	})
 
+	// @feature charts.tooltip-measures
 	it('prints through the Chart number format, the way a series value does', () => {
 		const input = axisChart(spec)
 		// The Chart-level default every value inherits.
@@ -545,6 +649,7 @@ describe('a Measure that only reaches the tooltip', () => {
 		expect(format(1840)).toBe('#1,840')
 	})
 
+	// @feature charts.tooltip-measures
 	it('prints a text attribute as it stands', () => {
 		const format = propsOf(spec).tooltipColumns[0].format
 		expect(format('Outerwear')).toBe('Outerwear')
@@ -553,6 +658,7 @@ describe('a Measure that only reaches the tooltip', () => {
 	// A split turns every Measure into one column per split value, which is a
 	// value per mark. The server leaves tooltip Measures out of that pivot, so
 	// there is no column for one to arrive on.
+	// @feature charts.tooltip-measures
 	it('is dropped under a split', () => {
 		const props = propsOf({
 			...spec,
@@ -564,6 +670,7 @@ describe('a Measure that only reaches the tooltip', () => {
 
 	// A tooltip Measure is not drawn, but it is measured. A target on the tooltip
 	// is the kind of number a rule reads, so a line has to be able to name one.
+	// @feature charts.tooltip-measures
 	it('can still back a computed reference line', () => {
 		const props = propsOf({
 			...spec,
@@ -575,6 +682,7 @@ describe('a Measure that only reaches the tooltip', () => {
 		])
 	})
 
+	// @feature charts.tooltip-measures
 	it('says nothing when the Chart names none', () => {
 		const props = propsOf({ type: 'Bar', dimension: 'region', measures: ['revenue'] })
 		expect(props.tooltipColumns).toBeUndefined()
@@ -582,6 +690,7 @@ describe('a Measure that only reaches the tooltip', () => {
 
 	// Two Measures under one name is one column. Drawing wins: the chart would
 	// otherwise lose a series to the tooltip.
+	// @feature charts.tooltip-measures
 	it('yields a name the chart already draws', () => {
 		const props = propsOf({
 			type: 'Bar',
@@ -595,6 +704,7 @@ describe('a Measure that only reaches the tooltip', () => {
 })
 
 describe('drilling into a point', () => {
+	// @feature charts.drill-segment
 	it('names the column and the row behind it, off the event alone', () => {
 		const input = axisChart({
 			type: 'Bar',
@@ -616,6 +726,7 @@ describe('drilling into a point', () => {
 
 	// The column a split segment names is a pivoted one, which only the result
 	// carries — a drill that named the Measure would fail to find it there.
+	// @feature charts.drill-segment
 	it('names the pivoted column a split segment was drawn from', () => {
 		const input = axisChart({
 			type: 'Bar',

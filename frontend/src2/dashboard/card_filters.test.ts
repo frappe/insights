@@ -1,24 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Filter } from '../components/filter_picker/filter_picker'
-
-// The store reads a document and draws cards, and neither is what a card filter
-// is about: the browser the module is written for is stubbed down to what the
-// store touches while it is built.
-vi.hoisted(() => {
-	const stub: any = {
-		setTimeout: globalThis.setTimeout.bind(globalThis),
-		clearTimeout: globalThis.clearTimeout.bind(globalThis),
-		addEventListener() {},
-		removeEventListener() {},
-		innerWidth: 1400,
-		innerHeight: 900,
-		localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
-		document: { createElement: () => ({ style: {} }) },
-	}
-	;(globalThis as any).window = stub
-	;(globalThis as any).document = stub.document
-	;(globalThis as any).localStorage = stub.localStorage
-})
+import type { WorkbookDashboardItem } from '../types/workbook.types'
 
 vi.mock('../router', () => ({
 	default: { push() {}, resolve: () => ({ href: '/' }) },
@@ -35,7 +17,7 @@ vi.mock('frappe-ui', async (importOriginal) => ({
 	call: () => Promise.resolve({ message: {} }),
 }))
 
-import useDashboard from './dashboard'
+import useDashboard, { defaultFilterStates } from './dashboard'
 
 // A card has two filter controls, the picker in its title row and the table's
 // filter row, and each states only its own rules. Held as one list, the row
@@ -59,6 +41,31 @@ function newDashboard() {
 }
 
 describe('what narrows a card', () => {
+	// @feature dashboard.filter-default
+	it('seeds a filter with the default the author set, and an is_set default needs no value', () => {
+		const filter = (filter_name: string, rest: any) =>
+			({
+				type: 'filter',
+				filter_name,
+				filter_type: 'String',
+				links: {},
+				...rest,
+			}) as unknown as WorkbookDashboardItem
+
+		expect(
+			defaultFilterStates([
+				filter('status', { default_operator: '=', default_value: 'canceled' }),
+				filter('region', { default_operator: 'is_set' }),
+				filter('seller', { default_operator: '=' }),
+			]),
+		).toEqual({
+			status: { operator: '=', value: 'canceled' },
+			// `is_set` asks about the column itself, so it says enough to run
+			region: { operator: 'is_set', value: undefined },
+		})
+	})
+
+	// @feature dashboard.card-filter
 	it('is both controls, whichever the reader wrote last', () => {
 		const dashboard = newDashboard()
 
@@ -68,6 +75,7 @@ describe('what narrows a card', () => {
 		expect(dashboard.cardFiltersOn('chart-1')).toEqual([status, region])
 	})
 
+	// @feature dashboard.card-filter
 	it('keeps what the row stated when the picker is written', () => {
 		const dashboard = newDashboard()
 
@@ -77,6 +85,7 @@ describe('what narrows a card', () => {
 		expect(dashboard.cardFiltersOn('chart-1')).toEqual([status, region])
 	})
 
+	// @feature dashboard.card-filter
 	it('is one card at a time', () => {
 		const dashboard = newDashboard()
 
@@ -86,6 +95,7 @@ describe('what narrows a card', () => {
 		expect(dashboard.cardIsFiltered('chart-2')).toBe(false)
 	})
 
+	// @feature charts.reset-filters
 	it('is taken back whole by a reset, both controls at once', () => {
 		const dashboard = newDashboard()
 

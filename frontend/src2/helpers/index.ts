@@ -1,8 +1,8 @@
 import { watchDebounced } from '@vueuse/core'
 import { __ } from '../translation'
-import { isEqual } from 'es-toolkit'
+import { debounce, isEqual } from 'es-toolkit'
 import { toPng } from 'html-to-image'
-import { call, debounce, toast } from 'frappe-ui'
+import { call, toast } from 'frappe-ui'
 import type { Socket } from 'socket.io-client'
 import {
 	inject,
@@ -114,8 +114,12 @@ export function waitUntil(fn: () => boolean) {
 }
 
 export function store<T>(key: string, value: () => T) {
-	const stored = localStorage.getItem(key)
-	watchDebounced(value, (val) => localStorage.setItem(key, JSON.stringify(val)), {
+	// vitest has no localStorage; the value still works, it is just not remembered
+	const storage = globalThis.localStorage
+	if (!storage) return value()
+
+	const stored = storage.getItem(key)
+	watchDebounced(value, (val) => storage.setItem(key, JSON.stringify(val)), {
 		debounce: 500,
 		deep: true,
 	})
