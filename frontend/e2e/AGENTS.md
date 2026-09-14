@@ -160,7 +160,7 @@ Try in this order. Stop at the first that works.
 1. `getByRole` — `getByRole('button', { name: 'New Workbook' })`
 2. `getByLabel` / `getByPlaceholder` — `getByPlaceholder('Search by title')`
 3. `getByText` — for rendered content, not for controls
-4. `getByTestId` — see below, the app has none yet
+4. `getByTestId` — see below, the app ships three
 
 A raw CSS locator needs a comment on the line above stating why the ladder
 failed:
@@ -189,8 +189,9 @@ XPath is banned outright.
   the tab bar. Prefer adding `:label="__('Export')"` to that Button in
   `frontend/src2/` over writing a CSS locator. It adds an accessible name and
   changes no behavior. List any such edit in your pull request.
-- **`src2` ships zero `data-testid` attributes.** `getByTestId` works only after
-  you add one. Add one only when the ladder and the `:label` route both fail.
+- **`src2` ships three `data-testid` attributes**, and no more: `chart` on a
+  chart's body, `dashboard-cell` and `dashboard-cell-resize` on a grid cell. Add
+  a fourth only when the ladder and the `:label` route both fail.
 - **Labels pass through `__()`.** The test site runs in English, so the source
   string is the rendered string. This app defines its own `__` in
   `frontend/src2/translation.ts`. It takes positional arguments, not an array,
@@ -205,9 +206,9 @@ XPath is banned outright.
   `WorkbookSidebarFolders.vue` draws Queries and Charts.
   `WorkbookSidebarListSection.vue` draws Dashboards only. Edit the right one.
   Check the rendered DOM before you trust a source read.
-- **Charts render as SVG**, so axis labels, legend entries and data labels are
-  real `<text>` nodes. `getByText('delivered')` reaches them. Map charts are the
-  one exception and render to canvas. See "Asserting on a chart" below.
+- **A chart's picture renders as SVG**, so axis labels and data labels are real
+  `<text>` nodes. The legend is HTML beside it, and several chart types draw no
+  picture at all. See "Asserting on a chart" below.
 - **The results table is a real `<table>`.** Body rows are role `row` and cells
   are role `cell`.
 
@@ -239,29 +240,38 @@ assert on it unless your flow is about paging.
 
 ### Asserting on a chart
 
-A chart is assertable in text. Insights renders echarts in SVG mode, so every
-axis label, legend entry and data label is a real `<text>` node in the DOM, and
-no chart except Map draws to a canvas.
+A chart is assertable in text, and it is drawn in two layers. The picture is echarts in SVG mode, so every axis label and data label is a real `<text>` node. Everything around it — the legend above all — is plain HTML beside the picture, and a chart type that draws no picture at all (a Number card, a Funnel, a Table) has no echarts node to name.
 
 Scope to the chart. The result preview under the chart builder repeats every
 category label, so an unscoped `getByText('delivered')` matches twice.
+`charts.spec.ts` holds the three locators this section describes — reuse them.
 
 ```ts
-// locator: echarts writes `_echarts_instance_` on the element it renders into,
-// so this names the chart and nothing else on the page.
-const chart = page.locator('[_echarts_instance_]')
-await expect(chart.getByText('delivered')).toBeVisible()
+// locator: `ChartBody` is the one element that holds the chart alone, whatever
+// the type draws. It is `data-testid="chart"`.
+const card = page.getByTestId('chart')
+// locator: echarts writes `_echarts_instance_` on the element it renders into.
+// Only the types that draw a picture have one.
+const plot = page.locator('[_echarts_instance_]')
+// locator: the legend is HTML, not part of the picture, and its entries are
+// buttons — clicking one switches the series off.
+const legend = page.locator('[data-slot="chart-legend"]')
+
+await expect(plot.getByText('delivered')).toBeVisible()
+await expect(legend.getByRole('button', { name: 'Revenue' })).toBeVisible()
 ```
 
-Three things the chart will not give you.
+Four things the chart will not give you.
 
-1. **Category order is not stable between runs.** Assert that a label is there,
+1. **A series name is not in the picture.** It is a legend button. Reach it
+   through the legend, never inside the echarts node.
+2. **Category order is not stable between runs.** Assert that a label is there,
    never where it is.
-2. **Values are abbreviated.** A bar of 1,778 renders its axis tick and its data
+3. **Values are abbreviated.** A bar of 1,778 renders its axis tick and its data
    label as `1.8K`. Assert the abbreviation, or read the exact number from the
    result preview table below the chart.
-3. **Data labels are off by default.** Only axis ticks and category labels are
-   in the DOM until a flow turns `Show Data Labels` on.
+4. **Data labels are off by default.** Only axis ticks and category labels are
+   in the DOM until a flow turns `Data labels` on.
 
 ## What a flow test may assert
 

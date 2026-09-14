@@ -31,6 +31,6 @@ resource the user cannot edit in the UI.
 
 # Builder query flags
 
-Queries you create are builder queries: `is_builder_query: 1`, `use_live_connection: 1`,
-`is_native_query: 0`, `is_script_query: 0`. Only a `sql` query flips to `is_native_query: 1`,
-`is_builder_query: 0`.
+Queries you create are builder queries: `is_builder_query: 1`, `is_native_query: 0`, `is_script_query: 0`. Only a `sql` query flips to `is_native_query: 1`, `is_builder_query: 0`.
+
+`use_live_connection` is not one of those three. It picks where the query reads — 1 the source database, 0 the data store — and it is a choice per query. See `documents.md` and `SKILL.md`.

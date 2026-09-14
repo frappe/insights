@@ -15,16 +15,19 @@ there. Leave the grid to the charts.
 
 ## Layout
 
-The grid is **20 columns wide**. `h` counts rows of about 30px. Every item needs a `layout` with a
-unique `i`. If two items share an `i`, the grid drops one of them.
+The grid is **20 columns wide**. `h` counts rows of 22px. Every item needs a `layout` with a unique `i`. If two items share an `i`, the grid drops one of them.
 
 ```json
-{ "type": "chart", "chart": "<chart doc name>", "layout": { "i": "item-revenue-trend", "x": 0, "y": 4, "w": 10, "h": 8 } }
+{ "type": "chart", "chart": "<chart doc name>", "layout": { "i": "item-revenue-trend", "x": 0, "y": 4, "w": 10, "h": 20 } }
 ```
 
-Match the sizes the app itself uses when a person adds an item: a Number chart `w:20 h:3`, any other
-chart `w:10 h:8`, a filter `w:4 h:1`. Widen a table or a long time series to `w:20`. Lay out top to
-bottom: filters, KPIs, trends, then detail tables.
+Match the sizes the app itself uses when a person adds an item: any chart but a Number `w:10 h:20`, a filter `w:4 h:2`. Widen a table or a long time series to `w:20`. Lay out top to bottom: filters, readings, trends, then detail tables.
+
+A Number chart is not one cell. Each of its readings is a cell of its own at `w:4`, as tall as what that reading draws: `h:4` for a title and a value, `h:5` when the reading names a comparison, `h:7` when the chart draws a sparkline. Every one of those cells carries the same `chart`, and names its reading in `column` — the reading's `measure_name`:
+
+```json
+{ "type": "chart", "chart": "<chart doc name>", "column": "Revenue", "layout": { "i": "kpi-revenue", "x": 0, "y": 0, "w": 4, "h": 5 } }
+```
 
 ## Editing a live dashboard — merge, never rewrite
 
@@ -59,8 +62,10 @@ The key is not `layout.i`, because the UI generates its own ids:
 
 | Item type | Match a live item by |
 |---|---|
-| `chart` | its `chart` — the chart document name |
+| `chart` | its `chart` — the chart document name — and its `column`, which a Number cell names |
 | `filter` | its `filter_name` |
+
+A Number chart puts several cells on one dashboard, all naming the same chart, so the chart name alone matches all of them and keeps one. The reading in `column` is what tells them apart.
 
 Four rules the merge must keep:
 
@@ -97,7 +102,7 @@ pipeline, before the chart's own aggregation. Two consequences:
     "tc-kpis": "`tq-sales-invoices`.`posting_date`",
     "tc-top-items": "`tq-sales-invoice-items`.`posting_date`"
   },
-  "layout": { "i": "filter-date", "x": 0, "y": 0, "w": 4, "h": 1 }
+  "layout": { "i": "filter-date", "x": 0, "y": 0, "w": 4, "h": 2 }
 }
 ```
 

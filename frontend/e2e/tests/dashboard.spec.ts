@@ -4,18 +4,17 @@ import { INSIGHTS_PATH } from '../helpers/auth'
 import { createChart, createDashboard, uniqueTitle } from '../helpers/insights'
 
 /**
- * A dashboard item is a grid cell from grid-layout-plus, which gives it no role
- * and no accessible name. Scoping to it also keeps the workbook sidebar, which
- * lists the same chart titles, out of every assertion.
+ * A dashboard item is a grid cell `StaticGridLayout` places, which gives it no
+ * role and no accessible name. Scoping to it also keeps the workbook sidebar,
+ * which lists the same chart titles, out of every assertion.
  */
-// locator: grid-layout-plus renders plain divs and names them only by class.
-const items = (page: Page): Locator => page.locator('.vgl-item')
+const items = (page: Page): Locator => page.getByTestId('dashboard-cell')
 
 /**
  * The chart itself. echarts writes `_echarts_instance_` on the element it
  * renders into, so this names the charts and nothing else on the page.
  */
-// locator: an echarts canvas host carries no role and no accessible name.
+// locator: an echarts host carries no role and no accessible name.
 const charts = (page: Page): Locator => page.locator('[_echarts_instance_]')
 
 /**
@@ -174,8 +173,8 @@ test.describe('dashboard', () => {
 		const item = items(page).filter({ hasText: chart.title })
 		const start = (await item.boundingBox())!
 
-		// A grid item is its own drag handle. interact.js reads a pointer path, so
-		// the move runs in steps and not as a single jump.
+		// A grid item is its own drag handle. The grid follows the pointer, so the
+		// move runs in steps and not as a single jump.
 		await page.mouse.move(start.x + 40, start.y + 20)
 		await page.mouse.down()
 		await page.mouse.move(start.x + 240, start.y + 20, { steps: 20 })
@@ -183,9 +182,7 @@ test.describe('dashboard', () => {
 
 		await expect.poll(async () => (await item.boundingBox())!.x).toBeGreaterThan(start.x + 100)
 
-		// locator: the resize grip is a bare div that grid-layout-plus names only
-		// by class.
-		const grip = item.locator('.vgl-item__resizer')
+		const grip = item.getByTestId('dashboard-cell-resize')
 		const gripBox = (await grip.boundingBox())!
 		await page.mouse.move(gripBox.x + 5, gripBox.y + 5)
 		await page.mouse.down()

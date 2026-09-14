@@ -16,6 +16,9 @@ frappe-ui in `frontend/src2/`, built with Vite.
   query logic
 - Query engine: operations JSON → ibis → SQL, against the source or the DuckDB data
   store (`insights_data_source_v3/data_warehouse.py`, `ibis_utils.py`)
+- `skills/` — the skills this app ships for other agents to use against a live
+  site (`insights-workbook-cli`). They document the API contract, so a change to
+  what a whitelisted method returns is a change to them
 - `CONTEXT.md` — the glossary; use its terms in code, tickets, and commits
 
 ## Working here
@@ -26,7 +29,8 @@ frappe-ui in `frontend/src2/`, built with Vite.
   `frappe/insights`
 - Frontend dev server: `cd frontend && yarn dev`. Build UI on frappe-ui components
   and semantic tokens (`text-ink-*`, `bg-surface-*`, `border-outline-*`); no raw
-  buttons or hardcoded colors
+  buttons or hardcoded colors. When frappe-ui has no component for it, build one
+  that matches the taste of its frappe-ui neighbors
 - Run the bench's pre-commit hooks before committing
 
 ## Agent skills
