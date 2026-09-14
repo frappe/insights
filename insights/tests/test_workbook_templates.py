@@ -8,12 +8,14 @@ from insights.api.templates import (
     MANIFEST_REQUIRED_KEYS,
     _discover_templates,
     _is_customized,
+    _workbook_checksum,
     create_workbook_from_template,
     get_template_manifest,
     get_template_names,
     get_template_path,
     get_template_workbook,
     get_workbook_templates,
+    restamp_template_copies,
     sync_workbook_template_updates,
     update_workbook_from_template,
 )
@@ -21,6 +23,7 @@ from insights.insights.doctype.insights_workbook.insights_workbook import (
     InsightsWorkbook,
     import_workbook,
 )
+from insights.migrate import after_migrate, before_migrate
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import USER_1, create_test_user, delete_users
 from insights.tests.workbook_utils import get_workbook
@@ -261,7 +264,8 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
         dashboard_name = workbook["dashboards"][0]["name"]
         items = frappe.parse_json(frappe.db.get_value("Insights Dashboard v3", dashboard_name, "items"))
         chart_items = [item for item in items if item["type"] == "chart"]
-        self.assertEqual(len(chart_items), len(template_charts))
+        # A Number chart draws one reading per cell, so cells can outnumber charts.
+        self.assertEqual(len({item["chart"] for item in chart_items}), len(template_charts))
         for item in chart_items:
             self.assertIn(item["chart"], new_chart_names)
 
@@ -325,6 +329,57 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
         self.assertEqual(
             frappe.db.get_value("Insights Workbook", workbook_name, "imported_version"), NEXT_VERSION
         )
+
+    def test_migrate_restamps_a_copy_its_own_patches_rewrote(self):
+        with self.as_user(ADMIN_USER), installed_apps(APPS_WITH_ERPNEXT):
+            workbook_name = create_workbook_from_template(TEMPLATE)["workbook"]
+
+        before_migrate()
+
+        # what a patch does: rewrite content the fingerprint covers
+        chart = frappe.get_all("Insights Chart v3", {"workbook": workbook_name}, pluck="name")[0]
+        frappe.db.set_value("Insights Chart v3", chart, "config", json.dumps({"chart_type": "Bar"}))
+        self.assertTrue(_is_customized(workbook_name))
+
+        after_migrate()
+
+        # the site never edited it, so it still takes the next update
+        self.assertFalse(_is_customized(workbook_name))
+
+    def test_a_failed_pristine_read_leaves_the_stamps_alone(self):
+        """Re-stamping nothing would read every copy as edited, for good."""
+        with self.as_user(ADMIN_USER), installed_apps(APPS_WITH_ERPNEXT):
+            workbook_name = create_workbook_from_template(TEMPLATE)["workbook"]
+
+        with patch(
+            "insights.api.templates.pristine_template_copies",
+            side_effect=Exception("cannot read"),
+        ):
+            before_migrate()
+
+        chart = frappe.get_all("Insights Chart v3", {"workbook": workbook_name}, pluck="name")[0]
+        frappe.db.set_value("Insights Chart v3", chart, "config", json.dumps({"chart_type": "Bar"}))
+
+        after_migrate()
+
+        # still customized, and the next migrate reads the copies before it writes
+        self.assertTrue(_is_customized(workbook_name))
+
+    def test_one_unreadable_copy_does_not_cost_the_others_their_restamp(self):
+        with self.as_user(ADMIN_USER), installed_apps(APPS_WITH_ERPNEXT):
+            workbook_name = create_workbook_from_template(TEMPLATE)["workbook"]
+
+        real_checksum = _workbook_checksum
+
+        def raise_for_the_first(name):
+            if name == "a-copy-that-cannot-be-read":
+                raise Exception("cannot export")
+            return real_checksum(name)
+
+        with patch("insights.api.templates._workbook_checksum", side_effect=raise_for_the_first):
+            restamp_template_copies(["a-copy-that-cannot-be-read", workbook_name])
+
+        self.assertFalse(_is_customized(workbook_name))
 
     def test_migrate_sync_leaves_customized_copy_for_manual_update(self):
         with self.as_user(ADMIN_USER), installed_apps(APPS_WITH_ERPNEXT):
@@ -426,6 +481,6 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
                     workbook = json.load(f)
                 self.assertTrue(workbook.get("doc", {}).get("title"), f"{name}/workbook.json has no title")
 
-                imported_name = import_workbook(workbook)
+                imported_name = import_workbook(workbook)["workbook"]
                 self.assertTrue(frappe.db.exists("Insights Workbook", imported_name))
                 frappe.delete_doc("Insights Workbook", imported_name, force=True)

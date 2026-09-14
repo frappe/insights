@@ -83,6 +83,14 @@ class InsightsIntegrationTestCase(IntegrationTestCase):
         self.addCleanup(clear_cache)
         self.addCleanup(frappe.db.set_single_value, "Insights Settings", "enable_permissions", original)
 
+    def descriptions(self, result):
+        """The `description` column of a result, sorted.
+
+        The test tables carry one text column, so a sorted list of it is how
+        these suites compare the rows a read returned.
+        """
+        return sorted(row["description"] for row in result["rows"])
+
     def assert_visible_to(self, user, doctype, name, message=None):
         with self.as_user(user):
             self.assertTrue(

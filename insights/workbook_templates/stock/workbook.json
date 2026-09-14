@@ -446,7 +446,6 @@
 					"number_column_options": [
 						{}
 					],
-					"comparison": false,
 					"sparkline": false,
 					"shorten_numbers": true,
 					"decimal": 2,
@@ -475,7 +474,6 @@
 					"number_column_options": [
 						{}
 					],
-					"comparison": false,
 					"sparkline": false,
 					"shorten_numbers": true,
 					"decimal": 2,
@@ -502,7 +500,6 @@
 					"number_column_options": [
 						{}
 					],
-					"comparison": false,
 					"sparkline": false,
 					"shorten_numbers": false,
 					"decimal": 0,
@@ -531,7 +528,6 @@
 					"number_column_options": [
 						{}
 					],
-					"comparison": false,
 					"sparkline": false,
 					"shorten_numbers": true,
 					"decimal": 2,
@@ -844,7 +840,7 @@
 							"x": 0,
 							"y": 0,
 							"w": 4,
-							"h": 1
+							"h": 2
 						}
 					},
 					{
@@ -869,7 +865,7 @@
 							"x": 4,
 							"y": 0,
 							"w": 4,
-							"h": 1
+							"h": 2
 						}
 					},
 					{
@@ -894,7 +890,7 @@
 							"x": 8,
 							"y": 0,
 							"w": 4,
-							"h": 1
+							"h": 2
 						}
 					},
 					{
@@ -903,9 +899,9 @@
 						"layout": {
 							"i": "c-total",
 							"x": 0,
-							"y": 1,
+							"y": 3,
 							"w": 4,
-							"h": 3
+							"h": 4
 						}
 					},
 					{
@@ -914,9 +910,9 @@
 						"layout": {
 							"i": "c-change",
 							"x": 4,
-							"y": 1,
+							"y": 3,
 							"w": 4,
-							"h": 3
+							"h": 4
 						}
 					},
 					{
@@ -925,9 +921,9 @@
 						"layout": {
 							"i": "c-reorder-num",
 							"x": 8,
-							"y": 1,
+							"y": 3,
 							"w": 4,
-							"h": 3
+							"h": 4
 						}
 					},
 					{
@@ -936,9 +932,9 @@
 						"layout": {
 							"i": "c-dead",
 							"x": 12,
-							"y": 1,
+							"y": 3,
 							"w": 4,
-							"h": 3
+							"h": 4
 						}
 					},
 					{
@@ -947,9 +943,9 @@
 						"layout": {
 							"i": "c-by-wh",
 							"x": 0,
-							"y": 4,
+							"y": 7,
 							"w": 10,
-							"h": 8
+							"h": 20
 						}
 					},
 					{
@@ -958,9 +954,9 @@
 						"layout": {
 							"i": "c-by-ig",
 							"x": 10,
-							"y": 4,
+							"y": 7,
 							"w": 10,
-							"h": 8
+							"h": 20
 						}
 					},
 					{
@@ -969,9 +965,9 @@
 						"layout": {
 							"i": "c-ageing",
 							"x": 0,
-							"y": 12,
+							"y": 27,
 							"w": 10,
-							"h": 8
+							"h": 20
 						}
 					},
 					{
@@ -980,9 +976,9 @@
 						"layout": {
 							"i": "c-in-out",
 							"x": 10,
-							"y": 12,
+							"y": 27,
 							"w": 10,
-							"h": 8
+							"h": 20
 						}
 					},
 					{
@@ -991,9 +987,9 @@
 						"layout": {
 							"i": "c-reorder-tbl",
 							"x": 0,
-							"y": 20,
+							"y": 47,
 							"w": 10,
-							"h": 9
+							"h": 23
 						}
 					},
 					{
@@ -1002,9 +998,9 @@
 						"layout": {
 							"i": "c-top-items",
 							"x": 10,
-							"y": 20,
+							"y": 47,
 							"w": 10,
-							"h": 9
+							"h": 23
 						}
 					},
 					{
@@ -1015,7 +1011,7 @@
 							"x": 12,
 							"y": 0,
 							"w": 8,
-							"h": 1
+							"h": 2
 						}
 					}
 				]

@@ -303,7 +303,7 @@ def create_workbook_from_template(template_name: str) -> dict:
         # Import as the caller (don't frappe.set_user mid-request — it rewrites the
         # session sid and logs the user out), then hand the copy to Administrator so
         # it becomes a shared org resource that everyone else reads via the share.
-        workbook_name = import_workbook(get_template_workbook(template_name))
+        workbook_name = import_workbook(get_template_workbook(template_name))["workbook"]
         # tag the origin so the library can mark this template as imported
         frappe.db.set_value("Insights Workbook", workbook_name, "from_template", template_name)
         _reassign_to_administrator(workbook_name)
@@ -320,6 +320,26 @@ def create_workbook_from_template(template_name: str) -> dict:
     return _template_import_result(workbook_name)
 
 
+def _chart_query_caches(workbook_name: str) -> set[str]:
+    """The per-chart cache queries a site still holds before the retirement patch.
+
+    `export()` left these out while charts linked one, and the fingerprint every
+    existing copy carries was taken without them. Dropping a field leaves its
+    column, so the orphan column is what names them until
+    `retire_chart_query_cache` has deleted the rows.
+    """
+    if "data_query" not in frappe.db.get_table_columns("Insights Chart v3"):
+        return set()
+
+    return set(
+        frappe.db.sql_list(
+            """select distinct `data_query` from `tabInsights Chart v3`
+            where `workbook` = %s and ifnull(`data_query`, '') != ''""",
+            workbook_name,
+        )
+    )
+
+
 def _workbook_checksum(workbook_name: str) -> str:
     """A content fingerprint of the workbook, stable across re-reads but sensitive
     to any edit of its queries/charts/dashboards. Compared against the value
@@ -327,6 +347,9 @@ def _workbook_checksum(workbook_name: str) -> str:
     `timestamp` is dropped because export() stamps it fresh every call."""
     payload = frappe.get_doc("Insights Workbook", workbook_name).export()
     payload.pop("timestamp", None)
+    queries = (payload.get("dependencies") or {}).get("queries") or {}
+    for name in _chart_query_caches(workbook_name):
+        queries.pop(name, None)
     serialized = json.dumps(payload, sort_keys=True, default=str)
     return hashlib.sha256(serialized.encode()).hexdigest()
 
@@ -348,6 +371,44 @@ def _stamp_template_version(workbook_name: str, manifest: dict) -> None:
             "imported_checksum": _workbook_checksum(workbook_name),
         },
     )
+
+
+def pristine_template_copies() -> list[str]:
+    """The imported template copies the site has not edited.
+
+    A migration that rewrites anything `export()` carries moves every copy's
+    fingerprint, and a copy whose fingerprint has moved reads as edited and is
+    never auto-updated again. So `before_migrate` reads this once, before any
+    patch writes, and `after_migrate` re-stamps what it named.
+    """
+    pristine = []
+    for name in get_imported_templates().values():
+        # Read per workbook: one copy whose export raises costs that copy its
+        # re-stamp, and not every other copy on the site.
+        try:
+            if not _is_customized(name):
+                pristine.append(name)
+        except Exception:
+            frappe.log_error(title=f"Error reading pristine template copy {name}")
+
+    return pristine
+
+
+def restamp_template_copies(workbook_names: list[str]) -> None:
+    """Stamp each copy's contents as imported, so a migration's own rewrite is
+    not read as the site's edit."""
+    for workbook_name in workbook_names:
+        # per workbook, for the reason `pristine_template_copies` states
+        try:
+            frappe.db.set_value(
+                "Insights Workbook",
+                workbook_name,
+                "imported_checksum",
+                _workbook_checksum(workbook_name),
+                update_modified=False,
+            )
+        except Exception:
+            frappe.log_error(title=f"Error re-stamping template copy {workbook_name}")
 
 
 def _replace_workbook_contents(workbook_name: str, workbook_json: dict) -> None:

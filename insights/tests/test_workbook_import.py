@@ -84,15 +84,28 @@ class ImportedReferencesPointAtTheNewCopies(InsightsIntegrationTestCase):
                 frappe.has_permission(DT.QUERY, ptype="read", doc=self.source),
                 "the fixture needs the importer to have no access to the exported queries",
             )
-            imported = import_workbook(self.file)
+            imported = import_workbook(self.file)["workbook"]
         self.made_workbooks.append(imported)
 
         queries = frappe.get_all(DT.QUERY, filters={"workbook": imported}, pluck="name")
         self.assertEqual(len(queries), 2)
 
+    def test_the_import_answers_with_the_name_every_copy_took(self):
+        """The shipped skill reads this map to edit what it just imported."""
+        with as_user(IMPORTER):
+            result = import_workbook(self.file)
+        self.made_workbooks.append(result["workbook"])
+
+        names = result["names"]
+        self.assertEqual(names[self.workbook], result["workbook"])
+        self.assertEqual(
+            sorted(names[name] for name in (self.source, self.consumer)),
+            sorted(frappe.get_all(DT.QUERY, filters={"workbook": result["workbook"]}, pluck="name")),
+        )
+
     def test_an_imported_reference_names_the_imported_copy(self):
         with as_user(IMPORTER):
-            imported = import_workbook(self.file)
+            imported = import_workbook(self.file)["workbook"]
         self.made_workbooks.append(imported)
 
         deps = set()
