@@ -9,9 +9,16 @@ on:
       - 'docs/**'
       - '**.md'
   workflow_dispatch:
+    inputs:
+      workers:
+        description: Playwright workers
+        default: '2'
+      repeat:
+        description: Runs of each flow, to surface a flake
+        default: '1'
 
 concurrency:
-  group: ui-${{ github.event_name }}-${{ github.event.number || github.ref }}
+  group: ui-${{ github.event_name }}-${{ github.event.number || github.ref }}-${{ inputs.workers }}
   cancel-in-progress: true
 
 permissions:
@@ -175,7 +182,7 @@ jobs:
 
       - name: Run Playwright tests
         working-directory: ${{ env.BENCH_PATH }}/apps/insights/frontend
-        run: npx playwright test
+        run: npx playwright test --workers=${{ inputs.workers || 2 }} --repeat-each=${{ inputs.repeat || 1 }}
         env:
           CI: "Yes"
           E2E_BASE_URL: ${{ env.SITE_URL }}

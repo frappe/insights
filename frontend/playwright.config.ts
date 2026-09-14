@@ -49,9 +49,9 @@ export default defineConfig({
 	reporter: process.env.CI
 		? [['github'], ['html', { open: 'never' }]]
 		: [['list'], ['html', { open: 'never' }]],
-	// A flow that runs a query waits on DuckDB and on ibis compilation, so the
-	// generator default of 30 seconds is too tight for an author flow.
-	timeout: 90_000,
+	// Five times the slowest local flow (8.9 s, the data store import), so a
+	// CI runner two or three times slower still fits.
+	timeout: 45_000,
 	expect: {
 		// Playwright's 5 second default expires while a first query execution is
 		// still running. Raise a single assertion above this where the flow needs
