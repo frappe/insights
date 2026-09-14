@@ -27,7 +27,11 @@ from insights.insights.doctype.insights_data_source_v3.data_warehouse import is_
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
 )
-from insights.insights.query_builders.sql_functions import handle_timespan
+from insights.insights.query_builders.sql_functions import (
+    add_start_and_end_time,
+    handle_timespan,
+    resolve_timespan,
+)
 from insights.insights.query_utils import extract_sql_table_refs, get_direct_dependencies
 from insights.utils import create_execution_log
 from insights.utils import deep_convert_dict_to_dict as _dict
@@ -51,6 +55,12 @@ SQL_COLUMN_RELATION = "_insights_sql_column"
 
 # the alias a native SQL query is nested under before ibis sees it
 NATIVE_SQL_RELATION = "_insights_native_sql"
+
+# The aggregations whose group values add up to the value of the whole. Only
+# these let a set of groups be read as parts of one total: two groups' averages
+# do not average, and two distinct counts do not add. An expression measure
+# names no aggregation at all, so it is never one of them.
+ADDITIVE_AGGREGATIONS = ("sum", "count")
 
 
 # the summarize carries a money measure's currency code as `<measure>__currency`,
@@ -200,12 +210,25 @@ class IbisQueryBuilder:
 
     @cached_property
     def saved_references(self):
-        """The references stored on this query, which `validate` authorised.
+        """The references this execution is already authorized for.
 
         Read from the row, not from the document being built: that one may have
-        come from a request body, which authorises nothing.
+        come from a request body, which authorizes nothing.
+
+        Two rows answer, because two kinds of document reach here under a name. A
+        saved query carries the dependencies `validate` authorized. A chart runs a
+        query document it mints from its config under the chart's own name, and
+        what that pipeline sources is the chart's stored `query` link, which
+        `check_chart_query_access` authorized when it was written.
         """
-        return set(get_direct_dependencies(self.doc.get("name")))
+        name = self.doc.get("name")
+        references = set(get_direct_dependencies(name))
+
+        chart_query = frappe.db.get_value("Insights Chart v3", name, "query")
+        if chart_query:
+            references.add(chart_query)
+
+        return references
 
     def check_query_reference(self, query_name):
         """A saved reference is authorised. Anything else is checked now."""
@@ -633,6 +656,9 @@ class IbisQueryBuilder:
             )
 
     def apply_summary(self, summarize_args):
+        if any(dimension.get("windows") for dimension in summarize_args.dimensions):
+            return self.aggregate_by_window(summarize_args)
+
         aggregates = [self.translate_measure(measure) for measure in summarize_args.measures]
         aggregates = {agg.get_name(): agg for agg in aggregates}
         aggregates.update(self.translate_carried_currencies(summarize_args.measures))
@@ -651,6 +677,58 @@ class IbisQueryBuilder:
             one_currency = (col.min() == col.max()) & ~col.isnull().any()
             carried[name] = ibis.ifelse(one_currency, col.min(), ibis.null()).cast("string")
         return carried
+
+    def aggregate_by_window(self, summarize_args):
+        """One aggregate per span, unioned, each named by the date it starts on.
+
+        A card grouped by spans gets one row per span whatever it covers, and
+        the start dates sort the spans oldest first, the order a number card
+        reads its rows in. A span holding no rows is a row too, with null
+        measures: the card reads its rows by position, so a span that came back
+        as nothing would hand the reading its neighbor's figure. A span carries
+        no dates until here, because the clock and the fiscal calendar are only
+        known while the query runs.
+
+        Every span reads its own stretch whole, so spans that overlap both count
+        the rows they share: a span longer than the shift its comparison moves
+        by (a year of months against last year) still reads the figure for the
+        whole of it.
+
+        The span is the whole of the grouping. A dimension beside it would cut
+        each span again, and a second span dimension has no meaning: two sets
+        of spans name no rows in common.
+        """
+        dimensions = summarize_args.dimensions
+        if len(dimensions) != 1 or not dimensions[0].get("windows"):
+            frappe.throw(frappe._("A summarize grouped by a span can group by nothing else"))
+
+        windowed = dimensions[0]
+
+        column = self.get_column(windowed.column_name)
+        window_name = windowed.dimension_name or windowed.column_name
+        dtype = self.get_ibis_dtype(windowed.data_type) if windowed.data_type else None
+
+        base = self.query
+        rows = []
+        for start, end in sorted({resolve_timespan(window) for window in windowed.windows}):
+            bounds = add_start_and_end_time([start, end])
+            self.query = base.filter(column.between(*bounds))
+
+            aggregates = [self.translate_measure(measure) for measure in summarize_args.measures]
+            aggregates = {agg.get_name(): agg for agg in aggregates}
+            aggregates.update(self.translate_carried_currencies(summarize_args.measures))
+
+            label = ibis.literal(start)
+            label = label.cast(dtype) if dtype else label
+            # projected beside the aggregate, not grouped by: an ungrouped
+            # aggregate over no rows is still one row, with null measures. The
+            # card reads its rows by position, so a span that drops out shifts
+            # every reading onto the wrong span.
+            row = self.query.aggregate(**aggregates).mutate(**{window_name: label})
+            rows.append(row.select(window_name, *aggregates))
+
+        self.query = base
+        return ibis.union(*rows)
 
     def apply_order_by(self, order_by_args):
         order_by_column = self.get_column(order_by_args.column.column_name, throw=False)
@@ -685,13 +763,17 @@ class IbisQueryBuilder:
             max_names = pivot_args.get("max_column_values", 10)
             max_names = int(max_names)
             max_names = max(1, min(max_names, 100))
-            names = self.query.select(names_from).order_by(names_from).distinct().limit(max_names).execute()
-            names = names.fillna("null").values
+            value_names = [value.get_name() for value in values]
+            # ranking sums the measure, which only says which series is biggest
+            # when the measure adds up
+            first = (pivot_args["values"] or [{}])[0]
+            additive = (first.get("aggregation") or "") in ADDITIVE_AGGREGATIONS
+            names, has_tail = self.get_top_pivot_names(names_from, value_names if additive else [], max_names)
 
             # If we've limited the number of distinct column values, bucket the
             # remaining values into an "Others" group so charts show the rest.
             # This currently supports the common case of a single pivot column.
-            if len(names) == max_names and len(columns) == 1:
+            if has_tail and len(columns) == 1:
                 selected_names = [str(v) for v in names.flatten()]
 
                 col_name = columns[0].get_name()
@@ -716,6 +798,32 @@ class IbisQueryBuilder:
             )
 
         return self.query
+
+    def get_top_pivot_names(self, names_from, value_names, max_names):
+        """The distinct column values a pivot keeps, and whether it cut any.
+
+        Everything the cut leaves out lands in "Others", so this ranking decides
+        which series a chart draws. Rank by the measure, not by the value's own
+        name: alphabetical order drops the largest series into the tail. Several
+        measures rank by the first. With none, and with a measure that does not
+        add up, whose sum ranks nothing, the pivot only shows which groups
+        exist, so the number of rows ranks them.
+
+        The names come back in their own ascending order, which becomes the
+        column order. A split on a date stays chronological that way.
+        """
+        rank = getattr(self.query, value_names[0]).sum() if value_names else self.query.count()
+        ranked = self.query.aggregate(**{"__rank__": rank}, by=names_from)
+        # names_from breaks a tie, so an equal measure keeps the same set every run
+        ranked = ranked.order_by([ibis.desc("__rank__"), *names_from])
+        # one past the cap tells a real cut apart from a set that just fits, which
+        # keeps an empty "Others" column out of the result
+        ranked = ranked.limit(max_names + 1)
+
+        top = ranked.execute()
+        has_tail = len(top) > max_names
+        top = top.head(max_names).sort_values(names_from, na_position="last")
+        return top[names_from].fillna("null").values, has_tail
 
     def apply_custom_operation(self, operation):
         return self.evaluate_expression(operation.expression.expression)
