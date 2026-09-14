@@ -106,7 +106,8 @@ class TestQuerying(InsightsIntegrationTestCase):
             todo = frappe.get_doc({"doctype": "ToDo", **record}).insert(ignore_permissions=True)
             todo_names.append(todo.name)
 
-        frappe.db.commit()
+        # The query reads tabToDo over the Site DB source's own ibis.mysql connection.
+        frappe.db.commit()  # nosemgrep
         return todo_names
 
     def get_query(self, query_name):
@@ -386,7 +387,6 @@ class TestQuerying(InsightsIntegrationTestCase):
             ],
         )
 
-        frappe.db.commit()
         result = execute_test_query(derived_query.name)
 
         with db_connections():
@@ -413,7 +413,6 @@ class TestQuerying(InsightsIntegrationTestCase):
             operations=[query_source(first_query.name)],
         )
 
-        frappe.db.commit()
         first_query_doc = self.get_query(first_query.name)
         first_query_doc.operations = [query_source(second_query.name)]
 
@@ -430,7 +429,8 @@ class TestQuerying(InsightsIntegrationTestCase):
             }
         ).insert(ignore_permissions=True)
         frappe.db.set_value("ToDo", todo.name, "date", None, update_modified=False)
-        frappe.db.commit()
+        # The emptied date has to be on disk for the source's own connection to read it.
+        frappe.db.commit()  # nosemgrep
         return todo.name
 
     def seed_unassigned_todo(self):
@@ -442,7 +442,8 @@ class TestQuerying(InsightsIntegrationTestCase):
                 "date": add_days(nowdate(), 4),
             }
         ).insert(ignore_permissions=True)
-        frappe.db.commit()
+        # The query reads tabToDo over the Site DB source's own ibis.mysql connection.
+        frappe.db.commit()  # nosemgrep
         return todo.name
 
     def prefix_filter(self):
@@ -456,7 +457,6 @@ class TestQuerying(InsightsIntegrationTestCase):
     def run_pipeline(self, title, operations):
         workbook = create_test_workbook(USER_1)
         query = create_test_query(USER_1, workbook.name, title=title, operations=operations)
-        frappe.db.commit()
         return execute_test_query(query.name)
 
     # @feature query.select-columns query.select-columns-order
@@ -714,7 +714,6 @@ class TestQuerying(InsightsIntegrationTestCase):
             title="Workbook Flow Test Query Union Other",
             operations=[table_source(), self.prefix_filter()],
         )
-        frappe.db.commit()
 
         def run(distinct):
             query = create_test_query(
@@ -731,7 +730,6 @@ class TestQuerying(InsightsIntegrationTestCase):
                     },
                 ],
             )
-            frappe.db.commit()
             return execute_test_query(query.name)
 
         kept_twice = run(False)
@@ -753,7 +751,8 @@ class TestQuerying(InsightsIntegrationTestCase):
         todo_names = self.seed_todos()
         for position, todo_name in enumerate(sorted(todo_names), start=1):
             frappe.db.set_value("ToDo", todo_name, "idx", position, update_modified=False)
-        frappe.db.commit()
+        # idx is read back over the Site DB source's own ibis.mysql connection.
+        frappe.db.commit()  # nosemgrep
 
         result = self.run_pipeline(
             "Workbook Flow Test Query Aggregations",
@@ -844,7 +843,6 @@ class TestQuerying(InsightsIntegrationTestCase):
             title="Workbook Flow Test Query Refresh",
             operations=[table_source(), self.prefix_filter()],
         )
-        frappe.db.commit()
 
         # a stale "In Progress" log left on the site would make the importer
         # report an import already under way and queue nothing
@@ -852,7 +850,6 @@ class TestQuerying(InsightsIntegrationTestCase):
             "Insights Table Import Log",
             {"data_source": "Site DB", "table_name": "tabToDo", "status": "In Progress"},
         )
-        frappe.db.commit()
 
         # the queue is the boundary: the import itself is a background job, and
         # whether one is already sitting on the queue is the queue's state, not
@@ -882,7 +879,6 @@ class TestQuerying(InsightsIntegrationTestCase):
                     "operations": [],
                 }
             ).insert()
-        frappe.db.commit()
 
         with self.assertRaises(frappe.ValidationError) as refusal:
             self.get_query(sourceless.name).refresh_stored_tables()

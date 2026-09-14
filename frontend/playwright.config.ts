@@ -42,7 +42,7 @@ export default defineConfig({
 	fullyParallel: true,
 	grepInvert: excludeQuarantined,
 	forbidOnly: !!process.env.CI,
-	retries: process.env.CI ? 2 : 0,
+	retries: process.env.CI ? 1 : 0,
 	// Two ran a full run green and three lost a flow. See "Two workers, in CI
 	// and locally" in `frontend/e2e/AGENTS.md` for the measurement.
 	workers: 2,

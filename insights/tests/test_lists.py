@@ -94,7 +94,6 @@ class TestWorkbookList(InsightsIntegrationTestCase):
         self.assertEqual(listed, [self.OTHERS, self.OWN])
 
         frappe.get_doc(DT.WORKBOOK, self.own).save(ignore_permissions=True)
-        frappe.db.commit()
 
         with self.as_user(OWNER):
             after_a_save = ours(get_workbooks(limit=20))

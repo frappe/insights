@@ -785,7 +785,7 @@ class IbisQueryBuilder:
                 self.query = self.query.mutate(**{col_name: others_expr})
 
                 # ensure the pivot names include the 'Others' bucket
-                names = list(map(str, selected_names))
+                names = [str(name) for name in selected_names]
                 names.append("Others")
 
             return self.query.pivot_wider(

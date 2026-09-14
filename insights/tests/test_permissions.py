@@ -662,7 +662,6 @@ class TestTableRowRestriction(InsightsIntegrationTestCase):
                 },
             ],
         )
-        frappe.db.commit()
         with self.as_user(user):
             rows = execute_test_query(query.name)["rows"]
         return sorted(row["status"] for row in rows)

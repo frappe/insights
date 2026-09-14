@@ -74,15 +74,12 @@ class TestHiddenColumns(InsightsIntegrationTestCase):
                 make_todo("Closed", "Medium"),
                 make_todo("Closed", None),
             ]
-        # the query reads over its own connection, so commit
-        frappe.db.commit()
 
     @classmethod
     def after_class(cls):
         frappe.delete_doc(DT.WORKBOOK, cls.workbook, force=True, ignore_permissions=True)
         for todo in cls.todos:
             frappe.delete_doc("ToDo", todo, force=True, ignore_permissions=True)
-        frappe.db.commit()
         delete_users(ADMIN)
 
     def carried(self):

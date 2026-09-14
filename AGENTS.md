@@ -32,6 +32,7 @@ frappe-ui in `frontend/src2/`, built with Vite.
   buttons or hardcoded colors. When frappe-ui has no component for it, build one
   that matches the taste of its frappe-ui neighbors
 - Run the bench's pre-commit hooks before committing
+- Semgrep runs at the pre-push stage: install it once with `pre-commit install --hook-type pre-push`, or run `pre-commit run semgrep --hook-stage pre-push --from-ref upstream/develop --to-ref HEAD` before a push
 
 ## Agent skills
 
