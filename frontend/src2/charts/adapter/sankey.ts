@@ -22,7 +22,7 @@ export function adaptSankeyChart(input: ChartAdapterInput): ChartFiller | undefi
 		value,
 		format: numberFormatter(config, config.value_column, input.result.rows),
 	}
-	if (config.orient) props.orient = config.orient
+	if (config.orient === 'vertical') props.vertical = true
 	if (config.node_align) props.nodeAlign = config.node_align
 
 	return {

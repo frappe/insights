@@ -244,7 +244,6 @@ def chart_derivation_fixtures():
                 "filters": {"filters": [], "logical_operator": "And"},
                 "limit": 100,
                 "order_by": [],
-                "show_percentage": True,
                 "measures": [
                     {
                         "aggregation": "count",

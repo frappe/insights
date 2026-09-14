@@ -91,9 +91,5 @@ function funnelProps(
 		value,
 		format: numberFormatter(config, measure, input.result.rows),
 	}
-	// v2 prints the conversion rate unless told otherwise, which is what a funnel
-	// is read for. The square-root stage scaling is gone with it: the geometry is
-	// v2's, and Insights no longer has a say in how wide a stage is drawn.
-	if (config.show_percentage === false) props.showPercentages = false
 	return props
 }

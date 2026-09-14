@@ -149,7 +149,6 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | charts.donut-max-slices | A user caps the slices drawn; the rest collapse into a tail. |
 | charts.donut-inline-labels | A user prints the shares on the slices instead of a legend. |
 | charts.funnel-stages | A user builds a funnel from several measures, one stage each, or from a label and value column. |
-| charts.funnel-percentages | A user turns the stage-to-stage percentage on or off. |
 | charts.table-rows-columns-values | A user lays out a Table chart as row dimensions, pivot columns and measures. |
 | charts.table-max-column-values | A user caps how many pivoted columns are drawn. |
 | charts.table-column-width | A user fixes a column's width. |

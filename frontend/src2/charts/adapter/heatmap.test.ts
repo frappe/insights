@@ -40,7 +40,7 @@ describe('a heatmap', () => {
 			min: -10,
 			max: 50,
 		}).props
-		expect(props.showValues).toBe(true)
+		expect(props.showDataLabels).toBe(true)
 		expect(props.palette).toBe('diverging')
 		expect(props.min).toBe(-10)
 		expect(props.max).toBe(50)
@@ -51,7 +51,7 @@ describe('a heatmap', () => {
 		const props = adapt({ x: 'day', y: 'hour', measure: 'orders' }).props
 		expect(props.min).toBeUndefined()
 		expect(props.max).toBeUndefined()
-		expect(props.showValues).toBeUndefined()
+		expect(props.showDataLabels).toBeUndefined()
 	})
 
 	// @feature charts.dimension-grain

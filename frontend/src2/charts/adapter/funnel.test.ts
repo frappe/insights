@@ -35,23 +35,6 @@ describe('a funnel built from one row per stage', () => {
 		expect(props.data).toBe(input.result.rows)
 	})
 
-	// @feature charts.funnel-percentages
-	it('prints the conversion rate unless the Chart switched it off', () => {
-		// It is what a funnel is read for, and v2 prints it by default, so only
-		// the Chart that turned it off has anything to say.
-		expect(
-			propsOf({ dimension: 'status', measure: 'items', stages: lifecycle }).showPercentages,
-		).toBeUndefined()
-		expect(
-			propsOf({
-				dimension: 'status',
-				measure: 'items',
-				stages: lifecycle,
-				showPercentage: false,
-			}).showPercentages,
-		).toBe(false)
-	})
-
 	// @feature charts.type-funnel
 	it('draws nothing until the Chart names both columns', () => {
 		expect(adaptChart(funnelChart({ dimension: 'status', stages: lifecycle }))).toBeUndefined()

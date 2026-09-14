@@ -137,7 +137,7 @@ function adaptAxisChart(
 			// The typed event carries the row it drew, so nothing maps an index
 			// back onto the result.
 			select: (event: ChartDatapointEvent) => ({
-				column: event.seriesName,
+				column: event.name,
 				row: event.row,
 			}),
 		},

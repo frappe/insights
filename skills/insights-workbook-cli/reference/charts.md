@@ -139,7 +139,7 @@ Keys on every chart config:
 ```
 
 Use `Donut` for part-of-whole with few categories. `Funnel` takes the same `label_column` and
-`value_column`, plus `show_percentage`, and orders the stages by `order_by`. It also takes
+`value_column`, and orders the stages by `order_by`. It also takes
 `measures: [...]`, where each measure is one stage. Sortable stage labels (`"1. Total"`,
 `"2. Ordered"`) keep the funnel in order.
 

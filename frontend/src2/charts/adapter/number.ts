@@ -10,7 +10,7 @@ import type {
 	NumberTarget,
 } from '../../types/chart.types'
 import type { Dimension, Measure, QueryResultRow } from '../../types/query.types'
-import { numberFormatOf } from '../number_format'
+import { numberFormatOf, printNumber } from '../number_format'
 import { LAST_YEAR, periodOf, previousWindowShift, windowShiftLabel } from '../window'
 import NumberCards from '../components/NumberCards.vue'
 import type { ChartAdapterInput, ChartFiller } from './types'
@@ -156,8 +156,10 @@ function readingOf(
 	if (options.color) card.color = options.color
 	if (format.prefix) card.prefix = format.prefix
 	if (format.suffix) card.suffix = format.suffix
-	if (format.decimals !== undefined) card.precision = format.decimals
-	if (format.shorten) card.compact = true
+	// The card prints the prefix and suffix around what `format` returns, and the
+	// value is already scaled, so the formatter prints digits alone.
+	const digits = { ...format, prefix: undefined, suffix: undefined, scale: 1 }
+	card.format = (value) => printNumber(value, digits)
 
 	const { target, comparison } = options
 

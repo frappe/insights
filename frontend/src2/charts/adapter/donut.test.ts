@@ -57,7 +57,7 @@ describe('a donut', () => {
 	// @feature charts.donut-inline-labels
 	it('prints the shares beside the ring when the Chart asks for them', () => {
 		const props = propsOf({ category: 'category', measure: 'revenue', inlineLabels: true })
-		expect(props.showInlineLabels).toBe(true)
+		expect(props.showDataLabels).toBe(true)
 	})
 
 	// @feature charts.donut-inline-labels

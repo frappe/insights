@@ -716,8 +716,7 @@ describe('drilling into a point', () => {
 
 		expect(
 			filler.drillDown!.select({
-				seriesName: 'revenue',
-				dataIndex: 1,
+				name: 'revenue',
 				value: row.revenue,
 				row,
 			}),
@@ -739,8 +738,7 @@ describe('drilling into a point', () => {
 
 		for (const series of filler.props.y as string[]) {
 			const target = filler.drillDown!.select({
-				seriesName: series,
-				dataIndex: 0,
+				name: series,
 				value: row[series],
 				row,
 			})

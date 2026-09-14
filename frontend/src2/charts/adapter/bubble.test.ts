@@ -128,7 +128,7 @@ describe('drilling into a point', () => {
 
 		expect(
 			adaptChart(input)!.drillDown!.select({
-				seriesName: 'Men',
+				name: 'Men',
 				x: 30,
 				y: 40,
 				size: null,

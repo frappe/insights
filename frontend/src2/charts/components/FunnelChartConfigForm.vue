@@ -82,8 +82,6 @@ const discrete_dimensions = computed(() =>
 					@update:model-value="config.value_column = $event || ({} as Measure)"
 				/>
 			</template>
-
-			<Toggle v-model="config.show_percentage" :label="__('Percentage')" />
 		</div>
 	</CollapsibleSection>
 

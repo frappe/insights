@@ -299,7 +299,6 @@ export type FunnelChartSpec = {
 	measures?: FunnelStageSpec[]
 	/** How every stage prints. One funnel is one scale, so there is no per-stage one. */
 	numberFormat?: NumberFormat
-	showPercentage?: boolean
 }
 
 export function funnelChart(spec: FunnelChartSpec): ChartAdapterInput {
@@ -313,7 +312,6 @@ export function funnelChart(spec: FunnelChartSpec): ChartAdapterInput {
 		...(value_column ? { value_column } : {}),
 		...(measures.length ? { measures } : {}),
 		...(spec.numberFormat ? { number_format: spec.numberFormat } : {}),
-		...(spec.showPercentage !== undefined ? { show_percentage: spec.showPercentage } : {}),
 	} as unknown as ChartConfig
 
 	const result = spec.measures

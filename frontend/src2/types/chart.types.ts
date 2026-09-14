@@ -291,7 +291,6 @@ export type FunnelChartConfig = NumberFormatConfig & {
 	// Grouped (long-format) mode: group `label_column` and read `value_column` per row.
 	label_column?: Dimension
 	value_column?: Measure
-	show_percentage?: boolean
 }
 
 export type TableChartConfig = NumberFormatConfig & {

@@ -106,9 +106,10 @@ describe('how a reading is printed', () => {
 				{ name: 'Items', readings: [7] },
 			],
 		})
-		expect(cards[0]).toMatchObject({ prefix: '$', precision: 1, compact: true })
+		expect(cards[0].prefix).toBe('$')
+		expect(cards[0].format!(12345)).toBe('12.3K')
 		expect(cards[1].prefix).toBeUndefined()
-		expect(cards[1].compact).toBeUndefined()
+		expect(cards[1].format!(7)).toBe('7')
 	})
 
 	// @feature charts.number-readings
@@ -121,8 +122,9 @@ describe('how a reading is printed', () => {
 			decimal: 2,
 			suffix: ' sold',
 		})
-		expect(cards[0]).toMatchObject({ precision: 2, suffix: ' sold' })
-		expect(cards[1].precision).toBe(0)
+		expect(cards[0].suffix).toBe(' sold')
+		expect(cards[0].format!(12300)).toBe('12,300.00')
+		expect(cards[1].format!(7.4)).toBe('7')
 	})
 
 	// @feature charts.number-reading-color

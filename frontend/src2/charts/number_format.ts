@@ -86,7 +86,7 @@ const SHORT_DECIMALS = 1
  * The format one Measure of a chart prints in, with every layer merged.
  *
  * Charts hand the formatter to v2 and never see this. The Number card does:
- * v2's card takes the prefix, the suffix and the precision as props of its own,
+ * v2's card takes the prefix and the suffix as props of its own,
  * because it prints a target and a delta beside the reading and formats all
  * three alike. So the pieces are exported, and the card maps them across.
  */

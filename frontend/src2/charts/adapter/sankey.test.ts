@@ -38,7 +38,7 @@ describe('a sankey', () => {
 			orient: 'vertical',
 			nodeAlign: 'left',
 		}).props
-		expect(props.orient).toBe('vertical')
+		expect(props.vertical).toBe(true)
 		expect(props.nodeAlign).toBe('left')
 	})
 

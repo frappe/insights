@@ -637,54 +637,6 @@ test.describe('charts', () => {
 		await expect(drillDown.getByRole('cell', { name: 'canceled' })).not.toHaveCount(0)
 	})
 
-	// @feature charts.funnel-percentages
-	test('a user turns off percentages on a Funnel chart', async ({
-		page,
-		adminApi,
-		demoDataSource,
-		workbookWithQuery,
-	}) => {
-		const { workbook, query } = workbookWithQuery
-		// Two stages, largest first. A funnel truncates a label that outgrows
-		// its bar, and it reads every share against the leading stage.
-		const chart = await createChart(adminApi, {
-			workbook: workbook.name,
-			query: query.name,
-			chartType: 'Funnel',
-			config: {
-				label_column: ORDER_STATUS,
-				value_column: COUNT_OF_ROWS,
-				show_percentage: true,
-				order_by: [{ column: { column_name: 'count_of_rows' }, direction: 'desc' }],
-				limit: 2,
-			},
-		})
-		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/chart/${chart.name}`)
-
-		// A funnel writes each stage's share under its value. The leading stage
-		// carries none, because it has nothing to convert from. 1,778 of the
-		// 2,000 demo orders are delivered, which leads, and 85 are shipped.
-		const rendered = cardOf(page)
-		await expect(rendered.getByText('1,778', { exact: true })).toBeVisible()
-		await expect(rendered.getByText('85', { exact: true })).toBeVisible()
-		await expect(rendered.getByText('5%', { exact: true })).toBeVisible()
-
-		const toggle = page.getByRole('switch', { name: 'Percentage' })
-		await toggle.click()
-
-		// The toggle drives only the share line, so the stages stay and their
-		// shares go.
-		await expect(rendered.getByText('5%', { exact: true })).toHaveCount(0)
-		await expect(rendered.getByText('1,778', { exact: true })).toBeVisible()
-		await expect(rendered.getByText('85', { exact: true })).toBeVisible()
-		await expect(rendered.getByText('delivered', { exact: true })).toBeVisible()
-
-		// Turning it back on brings them back. Nothing else about the chart
-		// changes across either click.
-		await toggle.click()
-		await expect(rendered.getByText('5%', { exact: true })).toBeVisible()
-	})
-
 	// @feature charts.number-comparison charts.number-sparkline
 	test('a number card shows a comparison and a sparkline', async ({
 		page,

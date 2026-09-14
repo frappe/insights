@@ -669,7 +669,6 @@
 						"data_type": "Decimal",
 						"aggregation": "sum"
 					},
-					"show_percentage": true,
 					"label_position": "left",
 					"order_by": [],
 					"limit": 100,

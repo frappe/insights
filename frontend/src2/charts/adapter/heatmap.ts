@@ -34,7 +34,7 @@ export function adaptHeatmapChart(input: ChartAdapterInput): ChartFiller | undef
 	if (xFormat) props.xAxis = { format: xFormat }
 	if (yFormat) props.yAxis = { format: yFormat }
 
-	if (config.show_values) props.showValues = true
+	if (config.show_values) props.showDataLabels = true
 	if (config.palette) props.palette = config.palette
 	if (typeof config.min === 'number') props.min = config.min
 	if (typeof config.max === 'number') props.max = config.max

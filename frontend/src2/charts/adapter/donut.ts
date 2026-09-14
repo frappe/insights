@@ -25,7 +25,7 @@ export function adaptDonutChart(input: ChartAdapterInput): ChartFiller | undefin
 	// stored a `legend_position`, which is dropped: where the legend sits is the
 	// library's to decide, and nothing states it any more.
 	if (config.max_slices) props.maxSlices = config.max_slices
-	if (config.show_inline_labels) props.showInlineLabels = true
+	if (config.show_inline_labels) props.showDataLabels = true
 
 	return {
 		component: DonutChart,
