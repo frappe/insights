@@ -91,7 +91,7 @@
    "read_only": 1
   },
   {
-   "default": "0",
+   "default": "1",
    "description": "Automatically arrange cards vertically to fill empty spaces",
    "fieldname": "vertical_compact_layout",
    "fieldtype": "Check",
