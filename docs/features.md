@@ -156,7 +156,6 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | charts.table-wrap-text | A user wraps long text in a column. |
 | charts.table-pin-column | A user pins a column so it stays visible while scrolling. |
 | charts.table-totals | A user adds a totals row or a totals column. |
-| charts.table-filter-row | A user shows a filter box above each column; a comparison runs on the server, anything else narrows by substring, and a non-numeric column takes no comparison. |
 | charts.table-color-scale | A user colors cells by magnitude. |
 | charts.table-conditional-formatting | A user adds a formatting rule to a Table chart and it reaches the column, or every pivoted column, it names. |
 | charts.table-header-sort | A user sorts a Table chart by clicking a column header, and the sort is saved to the chart; a reader sorts nothing. |

@@ -576,31 +576,3 @@ export const limit = query_operation_types.limit.init
 export const custom_operation = query_operation_types.custom_operation.init
 export const sql = query_operation_types.sql.init
 export const code = query_operation_types.code.init
-
-// ─── Inline column filter utilities ──────────────────────────────────────────
-
-// Operators checked longest-first so ">=" is not mistaken for ">"
-const NUMERIC_OPERATORS = ['>=', '<=', '!=', '>', '<', '='] as const
-export type NumericOperator = (typeof NUMERIC_OPERATORS)[number]
-
-export type ParsedFilter =
-	| { kind: 'numeric'; operator: NumericOperator; num: number }
-	| { kind: 'text'; text: string }
-
-/**
- * Parse a raw filter string (e.g. ">= 100", "foo") into a structured form.
- * Returns null when the string is empty or the numeric part cannot be parsed.
- */
-export function parseFilterString(filterStr: string): ParsedFilter | null {
-	if (!filterStr) return null
-
-	const op = NUMERIC_OPERATORS.find((o) => filterStr.startsWith(o))
-	if (op) {
-		const rest = filterStr.slice(op.length).trim()
-		const num = Number(rest)
-		if (rest === '' || isNaN(num)) return null
-		return { kind: 'numeric', operator: op, num }
-	}
-
-	return { kind: 'text', text: filterStr }
-}

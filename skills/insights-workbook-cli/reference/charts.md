@@ -158,7 +158,7 @@ Use `Donut` for part-of-whole with few categories. `Funnel` takes the same `labe
 ```
 
 Empty `columns` gives a grouped table (summarize by `rows`). Non-empty `columns` pivots, capped by
-`max_column_values`. Other options: `show_filter_row`, `show_column_totals`, `enable_color_scale`.
+`max_column_values`. Other options: `show_column_totals`, `enable_color_scale`.
 
 To show a detail listing with one row per document, put the identifying columns in `rows`. A group by
 a unique column such as `name` yields one row each. Use `max` for pass-through numbers that must not

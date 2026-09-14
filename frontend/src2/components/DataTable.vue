@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { watchDebounced } from '@vueuse/core'
 import { Button, LoadingIndicator } from 'frappe-ui'
 import { useChartTokens } from 'frappe-ui/charts'
-import { ExternalLink, Plus, Search, Table2Icon } from 'lucide-vue-next'
-import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { ExternalLink, Plus, Table2Icon } from 'lucide-vue-next'
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { usePagination } from '../composables/usePagination'
 import { createHeaders } from '../helpers'
 import { carriedCurrency, numberFormatter, type NumberFormatter } from '../charts/number_format'
@@ -41,14 +40,12 @@ import {
 import { RESULT_GRID_HOST } from './result_pane/result_grid'
 import DataTableColumn from './DataTableColumn.vue'
 import DataTableFooter from './DataTableFooter.vue'
-import LazyTextInput from './LazyTextInput.vue'
 
 const props = defineProps<{
 	columns: QueryResultColumn[] | undefined
 	rows: QueryResultRow[] | undefined
 	showRowTotals?: boolean
 	showColumnTotals?: boolean
-	showFilterRow?: boolean
 	enableColorScale?: boolean
 	enableNewColumn?: boolean
 	replaceNullsWithZeros?: boolean
@@ -74,9 +71,6 @@ const props = defineProps<{
 	numberFormats?: Record<string, NumberFormat>
 	pageSize?: number
 	currentPage?: number
-	/** What the filter row's boxes hold, when the host owns them. */
-	filterText?: Record<string, string>
-	onFilterChange?: (filters: Record<string, string>) => void
 }>()
 
 const headers = computed(() => {
@@ -179,34 +173,6 @@ const getTextWrapClass = (column: string) => {
 	return 'truncate'
 }
 
-// The filter row narrows the rows on the server, so the boxes say what to ask
-// for and never what to hide: the host takes the text, turns it into rules and
-// runs the query again. A host that owns the text (a card whose reset empties
-// the row) hands it in. One that does not gets the grid's own.
-const ownFilterText = ref<Record<string, string>>({})
-const filterPerColumn = computed(() => props.filterText ?? ownFilterText.value)
-
-// A filter is typed against a column, and the columns change under it: a query
-// edit, a pivot, a chart type switch. A key left behind goes on narrowing rows
-// by a column nothing draws any more, with no box to clear it in.
-watch(
-	() => props.columns?.map((column) => column.name).join('\u0000'),
-	() => {
-		const drawn = new Set((props.columns || []).map((column) => column.name))
-		for (const name of Object.keys(filterPerColumn.value)) {
-			if (!drawn.has(name)) delete filterPerColumn.value[name]
-		}
-	},
-)
-
-watchDebounced(
-	filterPerColumn,
-	(filters) => {
-		props.onFilterChange?.(filters)
-	},
-	{ deep: true, debounce: 300 },
-)
-
 const totalPerColumn = computed(() => {
 	const columns = props.columns
 	const rows = props.rows
@@ -275,8 +241,7 @@ const formattingRulesByColumn = computed(() =>
 
 // Every column's values, read once per grid: a scale and a rank rule both ask
 // for them per cell, and a grid has thousands of cells. They are the rows the
-// grid draws: a row the filter row left out of the query is not one the reader
-// ranks against.
+// grid draws.
 const columnValues = computed(() => {
 	const values: Record<string, any[]> = {}
 	const rows = props.rows || []
@@ -644,50 +609,6 @@ function toggleNewColumn() {
 						<td
 							v-if="props.showRowTotals"
 							class="h-8 border-b border-r px-3 text-right"
-							width="1px"
-						>
-							<div class="truncate pl-3 pr-20"></div>
-						</td>
-					</tr>
-
-					<tr v-if="props.showFilterRow">
-						<td
-							class="sticky left-0 z-[1] h-8 whitespace-nowrap border-b border-r bg-surface-gray-1 px-3"
-							width="1px"
-						></td>
-						<td
-							v-for="(column, idx) in props.columns"
-							:key="idx"
-							class="h-8 border-b border-r p-1"
-							:class="
-								isStickyColumn(column.name) ? 'sticky z-[1] bg-surface-gray-1' : ''
-							"
-							:style="{
-								...getStickyColumnStyle(column.name),
-								...getColumnWidthStyle(column.name),
-							}"
-						>
-							<LazyTextInput
-								:model-value="filterPerColumn[column.name]"
-								@update:model-value="
-									(value) => (filterPerColumn[column.name] = value)
-								"
-								class="[&_input]:h-6 [&_input]:bg-surface-gray-3/80"
-							>
-								<template #prefix>
-									<Search class="size-3.5 text-ink-gray-4" :stroke-width="1.5" />
-								</template>
-								<template #suffix>
-									<LoadingIndicator
-										v-if="props.loading || props.filtering"
-										class="size-3.5 text-ink-gray-4"
-									/>
-								</template>
-							</LazyTextInput>
-						</td>
-						<td
-							v-if="props.showRowTotals"
-							class="border-b border-r px-3 text-right"
 							width="1px"
 						>
 							<div class="truncate pl-3 pr-20"></div>

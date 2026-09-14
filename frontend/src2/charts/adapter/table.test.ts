@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import TableChart from '../components/TableChart.vue'
-import type { QueryResultColumn } from '../../types/query.types'
 import { tableChart, type TableChartSpec } from './fixtures'
-import { cardFilterRules } from './table'
 import { adaptChart } from './index'
 import type { ChartAdapterInput } from './types'
 
@@ -53,11 +51,10 @@ describe('the grid', () => {
 
 describe('what the author put on the table', () => {
 	// @feature charts.table-totals charts.table-column-width charts.table-wrap-text charts.table-pin-column charts.table-color-scale
-	it('asks for the totals, the filter row and the reading options it was set', () => {
+	it('asks for the totals and the reading options it was set', () => {
 		const props = propsOf({
 			rows: ['category'],
 			values: ['revenue'],
-			filterRow: true,
 			rowTotals: true,
 			columnTotals: true,
 			compactNumbers: true,
@@ -67,7 +64,6 @@ describe('what the author put on the table', () => {
 			textWrap: { category: true },
 		})
 
-		expect(props.showFilterRow).toBe(true)
 		expect(props.showRowTotals).toBe(true)
 		expect(props.showColumnTotals).toBe(true)
 		expect(props.numberFormat).toEqual({ shorten: true })
@@ -92,7 +88,6 @@ describe('what the author put on the table', () => {
 	// @feature charts.table-totals
 	it('asks for nothing the Chart did not set', () => {
 		const props = propsOf({ rows: ['category'], values: ['revenue'] })
-		expect(props.showFilterRow).toBeUndefined()
 		expect(props.showRowTotals).toBeUndefined()
 		expect(props.showColumnTotals).toBeUndefined()
 		expect(props.numberFormat).toBeUndefined()
@@ -263,53 +258,5 @@ describe('drilling into a cell', () => {
 	it('is not offered where the feed answers no drill', () => {
 		const props = adapt({ ...tableChart({ values: ['revenue'] }), drillable: false }).props
 		expect(props.drillable).toBeUndefined()
-	})
-})
-
-describe('the filter row', () => {
-	const columns: QueryResultColumn[] = [
-		{ name: 'region', type: 'String' },
-		{ name: 'revenue', type: 'Decimal' },
-	]
-
-	// @feature charts.table-filter-row
-	it('states a comparison as a rule the server runs, not a printed value', () => {
-		expect(cardFilterRules({ revenue: '>1000' }, columns)).toEqual([
-			{ column: columns[1], operator: '>', value: 1000 },
-		])
-	})
-
-	// @feature charts.table-filter-row
-	it('states anything else as a substring', () => {
-		expect(cardFilterRules({ region: 'nor' }, columns)).toEqual([
-			{ column: columns[0], operator: 'contains', value: 'nor' },
-		])
-	})
-
-	// @feature charts.table-filter-row
-	it('states nothing for an empty box, or for a column the grid no longer draws', () => {
-		expect(cardFilterRules({ region: '', gone: 'x' }, columns)).toEqual([])
-	})
-
-	// @feature charts.table-filter-row
-	it('states no substring for a column that has none, rather than a rule that throws', () => {
-		// `contains` runs as `like`, which a date does not answer: a month
-		// summarized into the first column used to take the whole card down.
-		const typed: QueryResultColumn[] = [
-			{ name: 'order_date', type: 'Date' },
-			{ name: 'shipped_at', type: 'Datetime' },
-		]
-		expect(cardFilterRules({ order_date: 'jan', shipped_at: '2024' }, typed)).toEqual([])
-	})
-
-	// @feature charts.table-filter-row
-	it('states no comparison for a column that has none, rather than a rule that throws', () => {
-		// A comparison is against a number, and the server compares no string or
-		// date with one: `>2024` in a date's box took the whole card down.
-		const typed: QueryResultColumn[] = [
-			{ name: 'region', type: 'String' },
-			{ name: 'order_date', type: 'Date' },
-		]
-		expect(cardFilterRules({ region: '>5', order_date: '>2024' }, typed)).toEqual([])
 	})
 })

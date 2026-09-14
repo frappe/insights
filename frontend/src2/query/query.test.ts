@@ -14,7 +14,7 @@ vi.mock('frappe-ui', async (importOriginal) => ({
 
 import { makeAdhocQuery } from './query'
 
-// The total is fetched under a query, and the filter row writes one of the
+// The total is fetched under a query, and adhoc filters are one of the
 // query's two halves. A count left standing over a narrowed result states a
 // total nothing produced, and keeps "Next" live onto an empty page.
 

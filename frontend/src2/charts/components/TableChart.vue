@@ -4,13 +4,7 @@ import { computed, inject, ref } from 'vue'
 import DataTable from '../../components/DataTable.vue'
 import { findRows } from '../../components/result_pane/find'
 import type { QueryResultColumn, QueryResultRow } from '../../types/query.types'
-import {
-	cardFilterRules,
-	tableCardFilterKey,
-	tableFindKey,
-	type TableCellEvent,
-	type TableChartProps,
-} from '../adapter/table'
+import { tableFindKey, type TableCellEvent, type TableChartProps } from '../adapter/table'
 
 // The grid a Table Chart draws instead of a plot. It is a filler like any
 // other: the title and every state around it are `ChartBody`'s, and the card is
@@ -30,19 +24,6 @@ const emit = defineEmits<{
 // stands.
 const findText = inject(tableFindKey, ref(''))
 const matches = computed(() => findRows(props.rows, findText.value))
-
-// The filter row is the read's card filter, written one box per column: the
-// read holds the text and takes the rules, and `ChartBody` hands it down on
-// every surface. So the row is drawn wherever the config asks for it.
-//
-// A grid drawn outside a chart surface has no read behind it — a drill level
-// that falls back to a table is drawn in the dialog, which is `ChartBody`'s
-// sibling — so the holder is optional, and there the grid keeps its own text.
-const cardFilter = inject(tableCardFilterKey, undefined)
-
-function onFilterChange(text: Record<string, string>) {
-	cardFilter?.apply(cardFilterRules(text, props.columns))
-}
 
 function onDrilldown(column: QueryResultColumn, row: QueryResultRow) {
 	emit('cellClick', { column, row })
@@ -77,9 +58,6 @@ function onDrilldown(column: QueryResultColumn, row: QueryResultRow) {
 				:sort-order="props.sortOrder"
 				:on-sort-change="props.onSortChange"
 				:on-drilldown="props.drillable ? onDrilldown : undefined"
-				:show-filter-row="props.showFilterRow"
-				:filter-text="cardFilter?.text.value"
-				:on-filter-change="cardFilter ? onFilterChange : undefined"
 				:show-column-totals="props.showColumnTotals"
 				:show-row-totals="props.showRowTotals"
 				:enable-color-scale="props.enableColorScale"

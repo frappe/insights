@@ -858,7 +858,7 @@ export function makeQuery(name: string) {
 	// The count belongs to the query and not to the page: a page turn runs the
 	// same query again and the total it was fetched for still holds. What retires
 	// it is anything the count was fetched under — the pipeline, and the adhoc
-	// filters a filter row writes beside it. Both are replaced whole, so a
+	// filters beside it. Both are replaced whole, so a
 	// shallow watch sees every change.
 	watch([currentOperations, adhocFilters], () => {
 		currentPage.value = 1

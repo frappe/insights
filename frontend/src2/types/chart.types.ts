@@ -299,7 +299,6 @@ export type TableChartConfig = NumberFormatConfig & {
 	columns: Dimension[]
 	values: Measure[]
 	max_column_values?: number
-	show_filter_row?: boolean
 	show_row_totals?: boolean
 	show_column_totals?: boolean
 	/** What `number_format.shorten` says now. Read as the chart's default. */

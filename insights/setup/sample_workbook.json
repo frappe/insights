@@ -382,7 +382,6 @@
             }
           ],
           "show_column_totals": false,
-          "show_filter_row": true,
           "show_row_totals": false,
           "values": [
             {

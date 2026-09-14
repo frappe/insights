@@ -19,11 +19,6 @@ vi.mock('frappe-ui', async (importOriginal) => ({
 
 import useDashboard, { defaultFilterStates } from './dashboard'
 
-// A card has two filter controls, the picker in its title row and the table's
-// filter row, and each states only its own rules. Held as one list, the row
-// wrote the boxes back over the picker's rules and the card silently counted
-// the rows a stated filter excluded.
-
 const status: Filter = {
 	column: { name: 'status', type: 'String' },
 	operator: '=',
@@ -66,41 +61,20 @@ describe('what narrows a card', () => {
 	})
 
 	// @feature dashboard.card-filter
-	it('is both controls, whichever the reader wrote last', () => {
-		const dashboard = newDashboard()
-
-		dashboard.setCardFilters('chart-1', 'picker', [status])
-		dashboard.setCardFilters('chart-1', 'row', [region])
-
-		expect(dashboard.cardFiltersOn('chart-1')).toEqual([status, region])
-	})
-
-	// @feature dashboard.card-filter
-	it('keeps what the row stated when the picker is written', () => {
-		const dashboard = newDashboard()
-
-		dashboard.setCardFilters('chart-1', 'row', [region])
-		dashboard.setCardFilters('chart-1', 'picker', [status])
-
-		expect(dashboard.cardFiltersOn('chart-1')).toEqual([status, region])
-	})
-
-	// @feature dashboard.card-filter
 	it('is one card at a time', () => {
 		const dashboard = newDashboard()
 
-		dashboard.setCardFilters('chart-1', 'picker', [status])
+		dashboard.setCardFilters('chart-1', [status])
 
 		expect(dashboard.cardFiltersOn('chart-2')).toEqual([])
 		expect(dashboard.cardIsFiltered('chart-2')).toBe(false)
 	})
 
 	// @feature charts.reset-filters
-	it('is taken back whole by a reset, both controls at once', () => {
+	it('is taken back whole by a reset', () => {
 		const dashboard = newDashboard()
 
-		dashboard.setCardFilters('chart-1', 'picker', [status])
-		dashboard.setCardFilters('chart-1', 'row', [region])
+		dashboard.setCardFilters('chart-1', [status, region])
 		expect(dashboard.cardIsFiltered('chart-1')).toBe(true)
 
 		dashboard.resetCardFilters('chart-1')

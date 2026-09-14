@@ -97,15 +97,10 @@ const columns = computed<QueryResultColumn[]>(() => {
 // and the one the reader put on the card itself. Offered only when there is
 // something to take back, so an empty card that nobody filtered says only that
 // it is empty.
-//
-// The table's filter row narrows the card the way the picker does, routed
-// through the grid's read surface, and the two are taken back together. The
-// boxes' text is the read's, and emptying it is what clears the row.
 const filtered = computed(() =>
 	Boolean(props.item.chart && dashboard.cardIsFiltered(props.item.chart)),
 )
 function resetFilters() {
-	if (read.value) read.value.cardFilterText = {}
 	if (props.item.chart) dashboard.resetCardFilters(props.item.chart)
 }
 
@@ -115,14 +110,10 @@ function rangeProvider(column: QueryResultColumn) {
 	return dashboard.getCardColumnRange(chart_name, column.name)
 }
 
-// The picker states its own rules and the filter row states the boxes', and the
-// card is narrowed by both. So the picker shows and writes back its half alone:
-// listing the row's rules here would let a pick that never touched them take
-// them off.
 const cardFilters = computed<Filter[]>({
-	get: () => (props.item.chart && dashboard.cardFilters[props.item.chart]?.picker) || [],
+	get: () => (props.item.chart && dashboard.cardFilters[props.item.chart]) || [],
 	set: (filters) => {
-		if (props.item.chart) dashboard.setCardFilters(props.item.chart, 'picker', filters)
+		if (props.item.chart) dashboard.setCardFilters(props.item.chart, filters)
 	},
 })
 

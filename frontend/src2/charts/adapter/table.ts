@@ -1,7 +1,5 @@
 import type { InjectionKey, Ref } from 'vue'
-import { column, parseFilterString, rawRowOf } from '../../query/helpers'
-import type { Filter } from '../../components/filter_picker/filter_picker'
-import { FIELDTYPES } from '../../helpers/constants'
+import { column, rawRowOf } from '../../query/helpers'
 import type { FormatGroupArgs } from '../../query/components/formatting_utils'
 import type { NumberFormat, TableChartConfig } from '../../types/chart.types'
 import { readNumberFormat } from '../number_format'
@@ -37,60 +35,6 @@ type StoredTableConfig = TableChartConfig & { order_by: OrderByArgs[] }
  */
 export const tableFindKey: InjectionKey<Ref<string>> = Symbol('tableFind')
 
-/**
- * The card filter the read holds, written by the grid's filter row.
- *
- * A rule typed in the row is a filter on the card and runs where every other
- * card filter runs — on the server, over the whole result — so the row reports
- * what was typed and the read routes it. Narrowing the drawn rows in the
- * browser read the printed value, and `>1000` against "1,234" is `NaN`.
- *
- * The text is the read's too: the same reset that takes the rules off empties
- * the boxes that wrote them. `ChartBody` provides it from the read it draws, so
- * the row is drawn wherever the config asks for it — a surface that keeps the
- * rules itself, as a dashboard does, takes them off the read instead.
- */
-export type TableCardFilter = {
-	/** What the boxes hold, one string per column. The row writes into it. */
-	text: Readonly<Ref<Record<string, string>>>
-	/** The rules the row now states. */
-	// eslint-disable-next-line no-unused-vars
-	apply: (filters: Filter[]) => void
-}
-
-export const tableCardFilterKey: InjectionKey<TableCardFilter> = Symbol('tableCardFilter')
-
-/**
- * The filter row's boxes as rules, for every grid that draws one. The grammar is
- * the result pane's — a comparison where the box opens with one, a substring
- * otherwise — read here once, and against the columns the grid draws so a box
- * left over from a column that went writes no rule.
- *
- * A substring is a rule only a text column has: `contains` runs as `like` on the
- * server, and a date or a boolean has no `like`, so the query threw instead of
- * narrowing. A comparison is a rule only a number column has, for the same
- * reason: `>5` against a string or a date is two types the server cannot
- * compare. Typing prose into such a box states nothing, and states it quietly.
- */
-export function cardFilterRules(
-	text: Record<string, string>,
-	columns: QueryResultColumn[],
-): Filter[] {
-	const rules: Filter[] = []
-	for (const column of columns) {
-		const parsed = parseFilterString(text[column.name] || '')
-		if (!parsed) continue
-		if (parsed.kind === 'numeric') {
-			if (FIELDTYPES.NUMBER.includes(column.type)) {
-				rules.push({ column, operator: parsed.operator, value: parsed.num })
-			}
-		} else if (FIELDTYPES.TEXT.includes(column.type)) {
-			rules.push({ column, operator: 'contains', value: parsed.text })
-		}
-	}
-	return rules
-}
-
 /** The cell a reader asked for the rows behind. */
 export type TableCellEvent = { column: QueryResultColumn; row: QueryResultRow }
 
@@ -106,7 +50,6 @@ export type TableChartProps = {
 	onSortChange?: (column_name: string, direction: SortDirection) => void
 	/** Whether a cell may be pointed at for the rows behind it. */
 	drillable?: boolean
-	showFilterRow?: boolean
 	showColumnTotals?: boolean
 	showRowTotals?: boolean
 	enableColorScale?: boolean
@@ -146,7 +89,6 @@ export function adaptTableChart(input: ChartAdapterInput): ChartFiller | undefin
 	}
 	if (input.drillable ?? true) props.drillable = true
 
-	if (config.show_filter_row) props.showFilterRow = true
 	if (config.show_column_totals) props.showColumnTotals = true
 	if (config.show_row_totals) props.showRowTotals = true
 	if (config.enable_color_scale) props.enableColorScale = true

@@ -267,7 +267,6 @@ function updateTextWrap(column_name: string, wrap: boolean | undefined) {
 				</DraggableList>
 				<AddSlotButton :label="__('Add column')" @click="config.values.push({} as any)" />
 			</div>
-			<Toggle :label="__('Filters')" v-model="config.show_filter_row" />
 			<Toggle :label="__('Row totals')" v-model="config.show_row_totals" />
 			<Toggle :label="__('Column totals')" v-model="config.show_column_totals" />
 			<Toggle

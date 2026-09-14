@@ -1,16 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import DataTable from '../../components/DataTable.vue'
-import {
-	AdhocFilters,
-	FilterArgs,
-	QueryResultColumn,
-	QueryResultRow,
-	SortDirection,
-} from '../../types/query.types'
+import { QueryResultColumn, QueryResultRow, SortDirection } from '../../types/query.types'
 
-import { column, filter_group, rawRowOf } from '../helpers'
-import { cardFilterRules } from '../../charts/adapter/table'
+import { column, rawRowOf } from '../helpers'
 import { ResultTable } from '../result_table'
 import type { ChartSegmentClick } from '../../charts/drill/segment_click'
 
@@ -106,28 +99,6 @@ function cellLink(column: QueryResultColumn, formattedRow: QueryResultRow) {
 	const row = rawRowOf(props.query.result, formattedRow)
 	return row ? props.getCellLink?.(column, row) : undefined
 }
-
-function onFilterChange(filters: Record<string, string>) {
-	const adhocFilters = {} as AdhocFilters
-
-	// One builder for the row's rules, shared with every grid: a second copy is
-	// how this one stated a substring filter on a column with no substring operator.
-	const allRules: FilterArgs[] = cardFilterRules(filters, columns.value).map((rule) => ({
-		column: column(rule.column.name),
-		operator: rule.operator,
-		value: rule.value,
-	}))
-
-	if (allRules.length && props.query.name) {
-		adhocFilters[props.query.name] = filter_group({
-			logical_operator: 'And',
-			filters: allRules,
-		})
-	}
-
-	props.query.adhocFilters = adhocFilters
-	props.query.goToPage?.(1)
-}
 </script>
 
 <template>
@@ -138,7 +109,6 @@ function onFilterChange(filters: Record<string, string>) {
 		:rows="rows"
 		:page-size="pageSize"
 		:current-page="currentPage"
-		:on-filter-change="onFilterChange"
 		:sort-order="sortOrder"
 		:on-sort-change="props.enableSort ? onSortChange : undefined"
 		:on-column-rename="props.enableColumnRename ? onRename : undefined"

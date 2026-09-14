@@ -54,15 +54,6 @@ export function parseFilterLink(link: string) {
 }
 
 /**
- * Which of a card's two filter controls a reader wrote through: the picker in
- * the card's title row, or the table's filter row.
- */
-export type CardFilterControl = 'picker' | 'row'
-
-/** What each control states, held apart because each writes only its own. */
-export type CardFilters = Record<CardFilterControl, Filter[]>
-
-/**
  * The narrowest window the grid can be arranged in. Below it the layout is the
  * derived one, which is not the author's to save.
  */
@@ -157,26 +148,14 @@ function makeDashboard(name: string, isShared: boolean) {
 	// What a reader filtered one card down to, per chart. It is a filter the
 	// reader owns and the document never holds: not saved with the dashboard, and
 	// not stored beside the filter states, so a reload clears it.
-	//
-	// Two controls write it and each states only its own rules: the picker in the
-	// card's title row holds a list, and the table's filter row builds one from
-	// the boxes alone. Kept apart so that writing one does not answer for the
-	// other — a reader who typed in a box used to lose every rule the picker
-	// held, silently. The card reads both, `And`-composed.
-	const cardFilters = ref<Record<string, CardFilters>>({})
+	const cardFilters = ref<Record<string, Filter[]>>({})
 
-	function cardFiltersFor(chart_name: string): CardFilters {
-		return cardFilters.value[chart_name] || { picker: [], row: [] }
-	}
-
-	/** Both controls' rules as the one list a card is narrowed by. */
 	function cardFiltersOn(chart_name: string): Filter[] {
-		const held = cardFiltersFor(chart_name)
-		return [...held.picker, ...held.row]
+		return cardFilters.value[chart_name] || []
 	}
 
-	function setCardFilters(chart_name: string, control: CardFilterControl, filters: Filter[]) {
-		cardFilters.value[chart_name] = { ...cardFiltersFor(chart_name), [control]: filters }
+	function setCardFilters(chart_name: string, filters: Filter[]) {
+		cardFilters.value[chart_name] = filters
 		refreshChart(chart_name)
 	}
 
@@ -476,11 +455,6 @@ function makeDashboard(name: string, isShared: boolean) {
 		id: `dashboard:${name}`,
 		filterContext: filterContextFor,
 		canEdit: () => dashboard.doc.has_workbook_access,
-		// The grid holds what the reader filtered each card down to, because the
-		// picker in the card's title row, the table's filter row and "Reset
-		// filters" are three acts on one card. The read reaches only the row's
-		// half of it — the picker writes its own.
-		applyCardFilters: (chart_name, filters) => setCardFilters(chart_name, 'row', filters),
 	}
 
 	function chartRead(chart_name: string) {

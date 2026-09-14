@@ -742,7 +742,6 @@ export type TableChartSpec = {
 	categories?: any[]
 	/** The order the Chart itself asks for, which the sort arrows are read off. */
 	sortedBy?: { column: string; direction: 'asc' | 'desc' }[]
-	filterRow?: boolean
 	rowTotals?: boolean
 	columnTotals?: boolean
 	/** What a release before `number_format` called shortening. Read as an alias. */
@@ -776,7 +775,6 @@ export function tableChart(spec: TableChartSpec): ChartAdapterInput {
 			column: { type: 'column', column_name: order.column },
 			direction: order.direction,
 		})),
-		...(spec.filterRow ? { show_filter_row: true } : {}),
 		...(spec.rowTotals ? { show_row_totals: true } : {}),
 		...(spec.columnTotals ? { show_column_totals: true } : {}),
 		...(spec.compactNumbers ? { compact_numbers: true } : {}),

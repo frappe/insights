@@ -28,7 +28,6 @@ import type {
 	QueryResultColumn,
 } from '../types/query.types'
 import type { ChartType } from '../types/chart.types'
-import type { Filter } from '../components/filter_picker/filter_picker'
 import type { InsightsChartv3, ViewerFilters, WorkbookDashboardItem } from '../types/workbook.types'
 import type { Chart } from './chart'
 import type { RecordLinks } from './record_link'
@@ -120,13 +119,6 @@ export type ChartReadSurface = {
 	// document lands. A surface that leaves it out authors.
 	// eslint-disable-next-line no-unused-vars
 	canEdit?: () => boolean
-	// where a filter the reader wrote on the card goes, for a surface that holds
-	// them itself: a grid keeps one list per chart, because the picker in the
-	// card's title row and the grid's own "Reset filters" write and clear the
-	// same list the table's filter row does. A surface that leaves it out lets
-	// the read hold its own.
-	// eslint-disable-next-line no-unused-vars
-	applyCardFilters?: (chart_name: string, filters: Filter[]) => void
 }
 
 /** A read is one chart, as one feed's surface reads it. */
@@ -167,42 +159,14 @@ export type ChartFeed = {
 export function makeChartRead(
 	feed: ChartFeed,
 	// the surface this read belongs to: what it narrows the chart by, asked on
-	// every load, and where a filter written on the card goes. A read with no
-	// surface narrows itself and nothing else.
+	// every load
 	surface?: ChartReadSurface,
 ) {
 	// the preview feed hands over a ref to the document it is editing
 	const doc = computed(() => unref(feed.doc))
 
-	// What the reader narrowed this read down to, and the boxes a table's filter
-	// row wrote it in. Every read holds both, so the row is drawn on every
-	// surface: a card filter narrows the query this read runs, and a read is the
-	// one thing every surface has. A surface that keeps the rules itself takes
-	// them through `applyCardFilters` and leaves these empty.
-	const cardFilterText = ref<Record<string, string>>({})
-	const ownCardFilters = ref<CardFilter[]>([])
-
-	function applyCardFilters(filters: Filter[]) {
-		if (surface?.applyCardFilters) {
-			surface.applyCardFilters(doc.value.name, filters)
-			return
-		}
-		ownCardFilters.value = filters.map((filter) => ({
-			column: filter.column.name,
-			operator: filter.operator,
-			value: filter.value,
-		}))
-		load()
-	}
-
-	// The surface's narrowing, carrying this read's own card filter where the
-	// surface routes none. A chart on its own page names itself so the server has
-	// a query to land the rule on.
 	function filterContext(): DashboardFilterContext | undefined {
-		const context = surface?.filterContext(doc.value.name)
-		if (!ownCardFilters.value.length) return context
-		if (!context) return { chart: doc.value.name, cardFilters: ownCardFilters.value }
-		return { ...context, cardFilters: [...context.cardFilters, ...ownCardFilters.value] }
+		return surface?.filterContext(doc.value.name)
 	}
 	const result = ref<QueryResult>(emptyResult())
 	// the series a span card's sparkline is drawn from, when the server ran
@@ -386,9 +350,6 @@ export function makeChartRead(
 		recordLinks,
 		comparisonRows,
 		drillSubject,
-		cardFilterText,
-		cardFilters: ownCardFilters,
-		applyCardFilters,
 
 		ready,
 		stale,

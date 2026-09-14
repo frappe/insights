@@ -6,8 +6,7 @@ import type { TableChartProps } from '../adapter/table'
 
 // A Table is drawn outside a chart surface too: a drill level whose answer holds
 // no numeric column falls back to a grid, and the dialog that draws it is
-// `ChartBody`'s sibling, so no card-filter holder is provided. The grid has to
-// draw anyway — it used to throw on the missing injection and blank the dialog.
+// `ChartBody`'s sibling, so nothing a surface provides is there.
 
 const props: TableChartProps = {
 	columns: [
@@ -16,10 +15,9 @@ const props: TableChartProps = {
 	],
 	rows: [{ region: 'north', order_date: '2024-01-01' }],
 	sortOrder: {},
-	showFilterRow: true,
 }
 
-describe('a grid with no card-filter holder above it', () => {
+describe('a grid drawn outside a chart surface', () => {
 	// @feature charts.table-renders-outside-dashboard
 	it('draws its rows instead of throwing', async () => {
 		const app = createSSRApp({ render: () => h(TableChart, props) })

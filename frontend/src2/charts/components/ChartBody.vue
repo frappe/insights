@@ -3,12 +3,10 @@ import DOMPurify from 'dompurify'
 import { Button, LoadingIndicator } from 'frappe-ui'
 import { ChartContainer } from 'frappe-ui/charts'
 import { AlertTriangle, RefreshCcw } from 'lucide-vue-next'
-import { computed, onBeforeUnmount, provide, ref, shallowRef, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { __ } from '../../translation'
 import { emptyResult } from '../../query/helpers'
-import type { Filter } from '../../components/filter_picker/filter_picker'
 import { adaptChart, drawsOwnCards, type ChartStateProps, type DrillDownTarget } from '../adapter'
-import { tableCardFilterKey } from '../adapter/table'
 import { ChartRead } from '../chart_read'
 import { segmentClickEvents, type ChartSegmentClick, type ClickPoint } from '../drill/segment_click'
 import ChartSectionEmptySvg from './ChartSectionEmptySvg.vue'
@@ -61,21 +59,6 @@ const emit = defineEmits<{
 }>()
 
 const readonly = computed(() => props.readonly || props.chart.doc.can_edit === false)
-
-// The card filter a table's filter row writes, which is the read's: a rule
-// typed in the row narrows the query this read runs, on every surface. Provided
-// here and not by the host, because the read is the one thing every surface
-// has — gating the row on the host is what left the builder and a public link
-// with a grid that could not be filtered at all.
-//
-// A computed and not the ref itself: the card a cell draws can be pointed at
-// another chart, and the holder has to follow the read that replaces it. The
-// row writes the boxes' text into it, key by key, and the read is what empties
-// them.
-provide(tableCardFilterKey, {
-	text: computed(() => props.chart.cardFilterText),
-	apply: (filters: Filter[]) => props.chart.applyCardFilters(filters),
-})
 
 const chart_type = computed(() => props.chart.doc.chart_type)
 const config = computed(() => props.chart.doc.config)
