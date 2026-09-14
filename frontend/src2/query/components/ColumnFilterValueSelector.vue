@@ -84,7 +84,7 @@ function toggleSort() {
 			</FormControl>
 			<button
 				@click.stop="toggleSort"
-				class="flex h-7 w-7 items-center justify-center rounded border border-outline-gray-2 bg-surface-base hover:bg-surface-gray-1"
+				class="flex h-7 w-7 items-center justify-center rounded-4 border border-outline-gray-2 bg-surface-base hover:bg-surface-gray-1"
 				:title="sortOrder === 'asc' ? 'Sort descending' : 'Sort ascending'"
 			>
 				<component :is="sortOrder === 'asc' ? ArrowDownAZ : ArrowUpAZ" class="h-4 w-4" />
@@ -94,7 +94,7 @@ function toggleSort() {
 			<div
 				v-for="(value, idx) in sortedValues.slice(0, 50)"
 				:key="value || idx"
-				class="flex cursor-pointer items-center justify-between gap-2 rounded px-1 py-1.5 text-base hover:bg-surface-gray-2"
+				class="flex cursor-pointer items-center justify-between gap-2 rounded-4 px-1 py-1.5 text-base hover:bg-surface-gray-2"
 				@click.prevent.stop="toggleValue(value)"
 			>
 				<Checkbox

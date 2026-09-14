@@ -1,10 +1,10 @@
 <script setup lang="tsx">
 import { watchDebounced } from '@vueuse/core'
 import { __ } from '../translation'
-import { Avatar, ListView } from 'frappe-ui'
+import { Avatar } from 'frappe-ui'
+import { ListView } from 'frappe-ui/experimental'
 import { Plus } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
-import Checkbox from '../components/Checkbox.vue'
 import { copy } from '../helpers'
 import session from '../session'
 import CreateTeamDialog from '../teams/CreateTeamDialog.vue'

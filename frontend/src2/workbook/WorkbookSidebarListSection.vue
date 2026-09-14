@@ -19,7 +19,7 @@ function setDraggedItem(event: DragEvent, row: any) {
 </script>
 
 <template>
-	<div class="flex flex-col px-3.5 pt-3">
+	<div class="flex flex-col px-3.5 pt-3.5">
 		<div class="mb-1 flex h-6 items-center justify-between">
 			<div class="flex items-center gap-1">
 				<div class="text-sm-medium">{{ section.title }}</div>
@@ -31,13 +31,13 @@ function setDraggedItem(event: DragEvent, row: any) {
 					:label="__('Add {0}', section.title)"
 					@click="section.add()"
 				>
-					<Plus class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
+					<Plus class="h-4 w-4 text-ink-gray-5" stroke-width="1.5" />
 				</Button>
 			</div>
 		</div>
 		<div
 			v-if="!section.items.length"
-			class="flex h-12 flex-col items-center justify-center rounded border border-dashed border-outline-gray-2 py-2"
+			class="flex h-12 flex-col items-center justify-center rounded-4 border border-dashed border-outline-gray-2 py-2"
 		>
 			<div class="text-xs text-ink-gray-4">{{ section.emptyMessage }}</div>
 		</div>
@@ -45,7 +45,7 @@ function setDraggedItem(event: DragEvent, row: any) {
 			<div
 				v-for="(row, idx) in section.items"
 				:key="row[section.itemKey]"
-				class="group w-full cursor-pointer rounded transition-all hover:bg-surface-gray-2"
+				class="group w-full cursor-pointer rounded-4 transition-all hover:bg-surface-gray-2"
 				:class="
 					section.isActive(row) ? ' bg-surface-gray-2' : ' hover:border-outline-gray-2'
 				"
@@ -54,20 +54,20 @@ function setDraggedItem(event: DragEvent, row: any) {
 			>
 				<router-link
 					:to="route(row)"
-					class="flex h-7.5 items-center justify-between rounded pl-1.5 text-sm"
+					class="flex h-7.5 items-center justify-between rounded-4 pl-1.5 text-sm"
 				>
-					<div class="flex gap-1.5 overflow-hidden">
+					<div class="flex items-center gap-1.5 overflow-hidden">
 						<div class="flex-shrink-0">
 							<slot name="item-icon" :item="row" />
 						</div>
 						<p class="truncate">{{ row.title }}</p>
 					</div>
 					<button
-						class="invisible cursor-pointer rounded px-1.5 py-1 transition-all hover:bg-surface-gray-2 group-hover:visible"
+						class="invisible cursor-pointer rounded-4 px-1.5 py-1 transition-all hover:bg-surface-gray-2 group-hover:visible"
 						:aria-label="__('Remove {0}', row.title)"
 						@click.prevent.stop="section.remove(row)"
 					>
-						<X class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
+						<X class="h-4 w-4 text-ink-gray-5" stroke-width="1.5" />
 					</button>
 				</router-link>
 			</div>

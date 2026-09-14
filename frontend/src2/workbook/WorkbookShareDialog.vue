@@ -1,14 +1,15 @@
 <script setup lang="ts">
+import { toast } from 'frappe-ui'
 import { Building2 } from 'lucide-vue-next'
 import { __ } from '../translation'
 import { computed, inject, ref } from 'vue'
 import UserSelector from '../components/UserSelector.vue'
 import { showErrorToast } from '../helpers'
-import { createToast } from '../helpers/toasts'
 import session from '../session'
 import { ShareAccess, WorkbookSharePermission } from '../types/workbook.types'
 import useUserStore from '../users/users'
-import { Workbook, workbookKey } from './workbook'
+import type { Workbook } from './workbook'
+import { workbookKey } from './workbook_key'
 
 const show = defineModel()
 const originalOrganizationAccess = ref<'view' | 'edit'>()
@@ -88,10 +89,7 @@ function updatePermissions() {
 		})
 		.then(() => {
 			show.value = false
-			createToast({
-				title: __('Permissions updated'),
-				variant: 'success',
-			})
+			toast.success(__('Permissions updated'))
 		})
 		.catch(showErrorToast)
 }
@@ -112,8 +110,8 @@ function updatePermissions() {
 	>
 		<template #default>
 			<div class="-mb-4 flex flex-col gap-3 text-base">
-				<div class="flex items-center gap-3 rounded border px-3 py-2">
-					<Building2 class="h-6 w-6 text-ink-blue-6" stroke-width="1.5" />
+				<div class="flex items-center gap-3 rounded-4 border px-3 py-2">
+					<Building2 class="h-6 w-6 text-ink-blue-5" stroke-width="1.5" />
 					<div class="flex flex-1 flex-col">
 						<div class="font-medium leading-5 text-ink-gray-7">Organization Access</div>
 						<div class="text-sm text-ink-gray-6">
@@ -182,7 +180,7 @@ function updatePermissions() {
 						<Dropdown
 							v-if="user.email !== session.user.email"
 							class="flex-shrink-0"
-							placement="right"
+							align="end"
 							:options="accessOptions(user.email)"
 							:button="{
 								iconRight: 'lucide-chevron-down',
@@ -201,7 +199,7 @@ function updatePermissions() {
 
 					<div
 						v-if="userPermissions.filter((u) => u.access).length === 0"
-						class="rounded border border-dashed border-outline-gray-2 px-32 py-6 text-center text-sm text-ink-gray-4"
+						class="rounded-4 border border-dashed border-outline-gray-2 px-32 py-6 text-center text-sm text-ink-gray-4"
 					>
 						{{
 							organizationAccess

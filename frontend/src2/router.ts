@@ -1,6 +1,27 @@
+import { call } from 'frappe-ui'
 import { createRouter, createWebHistory, RouteLocation } from 'vue-router'
 import { APP_PATH } from './app_path.ts'
 import session from './session.ts'
+
+// A v2 chart or dashboard keeps its old name in `old_name`, and a link written
+// then still carries it. Resolving in the guard puts the current name in the
+// URL and lets the page take its name as a plain prop.
+function resolveRenamed(method: string, argument: string, param: string) {
+	return async (to: RouteLocation) => {
+		const old = String(to.params[param])
+		// a name that cannot be resolved is still a name: the page opens on it
+		// and says it cannot find it, rather than the navigation being dropped
+		const current = await call(method, { [argument]: old }).catch(() => old)
+		if (!current || current === old) return true
+		return {
+			name: to.name as string,
+			params: { ...to.params, [param]: current },
+			query: to.query,
+			hash: to.hash,
+			replace: true,
+		}
+	}
+}
 
 const routes = [
 	{
@@ -25,6 +46,11 @@ const routes = [
 		name: 'Dashboard',
 		path: '/dashboards/:name',
 		component: () => import('./dashboard/Dashboard.vue'),
+		beforeEnter: resolveRenamed(
+			'insights.api.shared.get_dashboard_name',
+			'dashboard_name',
+			'name',
+		),
 	},
 	{
 		path: '/workbook',
@@ -92,6 +118,11 @@ const routes = [
 		name: 'SharedChart',
 		path: '/shared/chart/:chart_name',
 		component: () => import('./charts/SharedChart.vue'),
+		beforeEnter: resolveRenamed(
+			'insights.api.shared.get_chart_name',
+			'chart_name',
+			'chart_name',
+		),
 		meta: {
 			hideSidebar: true,
 			isGuestView: true,
@@ -102,6 +133,11 @@ const routes = [
 		name: 'SharedDashboard',
 		path: '/shared/dashboard/:dashboard_name',
 		component: () => import('./dashboard/SharedDashboard.vue'),
+		beforeEnter: resolveRenamed(
+			'insights.api.shared.get_dashboard_name',
+			'dashboard_name',
+			'dashboard_name',
+		),
 		meta: {
 			hideSidebar: true,
 			isGuestView: true,

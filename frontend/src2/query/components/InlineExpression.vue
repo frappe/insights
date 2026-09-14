@@ -11,7 +11,7 @@ const modelValue = defineModel<Expression>({
 </script>
 
 <template>
-	<div class="min-h-[1.75rem] w-full rounded border text-sm">
+	<div class="min-h-[1.75rem] w-full rounded-4 border text-sm">
 		<Code
 			class="inline-expression"
 			v-model="modelValue.expression"

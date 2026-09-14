@@ -266,7 +266,6 @@ def _charts_reading(queries: list[str], workbooks: list[str]) -> tuple[dict, dic
     or_filters = {}
     if queries:
         or_filters["query"] = ["in", queries]
-        or_filters["data_query"] = ["in", queries]
     if workbooks:
         or_filters["workbook"] = ["in", workbooks]
     if not or_filters:
@@ -275,16 +274,15 @@ def _charts_reading(queries: list[str], workbooks: list[str]) -> tuple[dict, dic
     charts = frappe.get_list(
         CHART,
         or_filters=or_filters,
-        fields=["name", "query", "data_query", "workbook"],
+        fields=["name", "query", "workbook"],
         limit=0,
     )
 
     of_query = {}
     of_workbook = {}
     for chart in charts:
-        for query in (chart.query, chart.data_query):
-            if query in queries:
-                of_query.setdefault(query, set()).add(chart.name)
+        if chart.query in queries:
+            of_query.setdefault(chart.query, set()).add(chart.name)
         if chart.workbook in workbooks:
             of_workbook.setdefault(chart.workbook, set()).add(chart.name)
     return of_query, of_workbook

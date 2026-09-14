@@ -88,6 +88,7 @@ const fetchColumnValues = debounce((searchTxt: string) => {
 	<div class="flex flex-1 gap-2">
 		<div id="column_name" class="flex-1 flex-shrink-0">
 			<Combobox
+				class="w-full"
 				placeholder="Column"
 				:modelValue="filter.column.column_name"
 				:options="props.columnOptions"
@@ -137,7 +138,7 @@ const fetchColumnValues = debounce((searchTxt: string) => {
 			/>
 			<MultiSelect
 				v-else-if="valueSelectorType === 'select'"
-				class="max-w-[200px]"
+				class="w-full"
 				placeholder="Value"
 				:modelValue="(filter.value as string[]) || []"
 				:options="distinctColumnValues.map((v: any) => ({ label: String(v), value: v }))"

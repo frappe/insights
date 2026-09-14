@@ -16,11 +16,11 @@ function onRename() {
 
 <template>
 	<Popover side="right" align="start">
-		<template #trigger="{ isOpen }">
+		<template #trigger="{ open }">
 			<Button
 				variant="ghost"
 				class="w-full !justify-start"
-				:class="{ ' !bg-surface-gray-2': isOpen }"
+				:class="{ ' !bg-surface-gray-2': open }"
 			>
 				<template #icon>
 					<div class="flex w-full items-center gap-2 px-1.5 text-base">

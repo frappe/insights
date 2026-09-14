@@ -1,21 +1,23 @@
 <script setup lang="ts">
+import { toast } from 'frappe-ui'
 import { Wand2 } from 'lucide-vue-next'
 import { computed, h, inject, ref } from 'vue'
 import Code from '../../components/Code.vue'
 import { useShortcut } from '../../composables/useShortcut'
 import useDataSourceStore from '../../data_source/data_source'
 import { wheneverChanges } from '../../helpers'
-import { createToast } from '../../helpers/toasts'
 import { __ } from '../../translation'
 import { Query } from '../query'
-import QueryExecutionStatus from './QueryExecutionStatus.vue'
-import QueryToolbar from './QueryToolbar.vue'
+import ResultPane from '../../components/result_pane/ResultPane.vue'
+import QueryActions from './QueryActions.vue'
 import QueryDataTable from './QueryDataTable.vue'
+import QueryHeader from './QueryHeader.vue'
 import QueryInfo from './QueryInfo.vue'
 import SchemaExplorer from './SchemaExplorer.vue'
 import DataSourceSelector from './source_selector/DataSourceSelector.vue'
 
 const query = inject<Query>('query')!
+const $find = ref<HTMLElement>()
 query.autoExecute = false
 query.ensureResult()
 
@@ -25,10 +27,7 @@ const sql = ref(operation ? operation.raw_sql : '')
 
 function execute(force: boolean = false) {
 	if (!data_source.value) {
-		createToast({
-			title: __('Please select a data source first'),
-			variant: 'error',
-		})
+		toast.error(__('Please select a data source first'))
 		return
 	}
 	query.setSQL(
@@ -51,10 +50,7 @@ async function format() {
 			data_source: data_source.value,
 		})
 	} catch (error) {
-		createToast({
-			title: __('Failed to format SQL'),
-			variant: 'error',
-		})
+		toast.error(__('Failed to format SQL'))
 	} finally {
 		formatting.value = false
 	}
@@ -119,18 +115,32 @@ const completions = computed(() => {
 useShortcut('Meta+e', () => {
 	execute(true)
 })
+
+// The SQL in the editor reaches the query only on a run, so the text is a
+// staleness source of its own — the query's own check cannot see it.
+const stale = computed(() => {
+	const operation = query.getSQLOperation()
+	return sql.value !== (operation ? operation.raw_sql : '') || query.isStale
+})
 </script>
 
 <template>
 	<div class="flex flex-1 overflow-hidden">
-		<div class="relative flex h-full flex-1 flex-col gap-3 overflow-hidden p-4">
-			<!-- Toolbar -->
-			<QueryToolbar :on-execute="() => execute(true)" :extra-actions="extraActions">
-				<DataSourceSelector v-model="data_source" placeholder="Select a data source" />
-			</QueryToolbar>
+		<div class="relative flex h-full flex-1 flex-col gap-3 overflow-hidden px-4 pb-4 pt-3">
+			<QueryHeader>
+				<DataSourceSelector
+					v-model="data_source"
+					:placeholder="__('Select a data source')"
+				/>
+				<QueryActions
+					:on-execute="() => execute(true)"
+					:extra-actions="extraActions"
+					:stale="stale"
+				/>
+			</QueryHeader>
 
 			<!-- SQL Editor -->
-			<div class="relative flex flex-1 flex-col overflow-hidden rounded border">
+			<div class="relative flex flex-1 flex-col overflow-hidden rounded-4 border">
 				<Code
 					ref="codeEditor"
 					:key="completions.tables.length"
@@ -142,9 +152,18 @@ useShortcut('Meta+e', () => {
 			</div>
 
 			<!-- Results Table -->
-			<QueryExecutionStatus />
-			<div class="relative flex h-[45%] w-full flex-col overflow-hidden rounded border">
-				<QueryDataTable :query="query" :enable-alerts="true" />
+			<div class="relative flex h-[45%] w-full flex-col gap-2">
+				<div ref="$find" class="flex flex-shrink-0"></div>
+				<ResultPane :query="query" :stale="stale" :find-target="$find">
+					<template #grid="{ rows, currentPage, pageSize }">
+						<QueryDataTable
+							:query="query"
+							:rows="rows"
+							:current-page="currentPage"
+							:page-size="pageSize"
+						/>
+					</template>
+				</ResultPane>
 			</div>
 		</div>
 

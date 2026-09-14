@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Breadcrumbs, ListView } from 'frappe-ui'
+import { Breadcrumbs } from 'frappe-ui'
+import { ListView } from 'frappe-ui/experimental'
 import { PlusIcon, SearchIcon } from 'lucide-vue-next'
 import { computed, onMounted, ref } from 'vue'
 import { getDatabaseLogo } from '../data_source/data_source'
