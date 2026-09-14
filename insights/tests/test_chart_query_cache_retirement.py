@@ -6,9 +6,11 @@ the doctype. The column it left behind is what the patch reads its way out by.
 See `insights/patches/retire_chart_query_cache.py`.
 """
 
+from unittest.mock import patch
+
 import frappe
 
-from insights.patches.retire_chart_query_cache import CHART, FIELD, QUERY, REFERENCE
+from insights.patches.retire_chart_query_cache import ALERT, CHART, FIELD, QUERY, REFERENCE
 from insights.patches.retire_chart_query_cache import execute as retire
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import DT, create_test_query, create_test_workbook
@@ -57,6 +59,37 @@ class TestChartQueryCacheRetirement(InsightsIntegrationTestCase):
         retire()
 
         self.assertFalse(frappe.db.exists(QUERY, cache))
+
+    def test_a_cache_is_deleted_without_a_job(self):
+        """A site can hold thousands of caches, and a job per delete floods the
+        queue the moment the patch commits."""
+        _chart, cache = self.cached_query()
+
+        with patch("frappe.enqueue") as enqueue:
+            retire()
+
+        self.assertFalse(frappe.db.exists(QUERY, cache))
+        enqueue.assert_not_called()
+
+    def test_an_alert_and_the_history_go_with_the_cache(self):
+        _chart, cache = self.cached_query()
+        alert = frappe.get_doc(
+            {
+                "doctype": ALERT,
+                "title": "Chart Query Cache Test Alert",
+                "query": cache,
+                "condition": "count > 0",
+            }
+        )
+        alert.db_insert()
+        frappe.get_doc({"doctype": "Version", "ref_doctype": QUERY, "docname": cache, "data": "{}"}).insert(
+            ignore_permissions=True
+        )
+
+        retire()
+
+        self.assertFalse(frappe.db.exists(ALERT, alert.name))
+        self.assertFalse(frappe.db.exists("Version", {"ref_doctype": QUERY, "docname": cache}))
 
     def queries_in_workbook(self):
         return frappe.get_all(QUERY, filters={"workbook": self.workbook}, pluck="name", order_by="name")
