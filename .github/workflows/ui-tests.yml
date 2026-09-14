@@ -12,7 +12,7 @@ on:
     inputs:
       workers:
         description: Playwright workers
-        default: '2'
+        default: '4'
       repeat:
         description: Runs of each flow, to surface a flake
         default: '1'
@@ -182,7 +182,7 @@ jobs:
 
       - name: Run Playwright tests
         working-directory: ${{ env.BENCH_PATH }}/apps/insights/frontend
-        run: npx playwright test --workers=${{ inputs.workers || 2 }} --repeat-each=${{ inputs.repeat || 1 }}
+        run: npx playwright test --workers=${{ inputs.workers || 4 }} --repeat-each=${{ inputs.repeat || 1 }}
         env:
           CI: "Yes"
           E2E_BASE_URL: ${{ env.SITE_URL }}

@@ -91,11 +91,19 @@ export function watchToggle(
 function _watch(source: WatchSource, callback: WatchCallback, options: WatchOptions = {}) {
 	let _callback = callback
 
-	if (options.debounce) {
-		_callback = debounce(_callback, options.debounce)
-	}
+	const debounced = options.debounce ? debounce(_callback, options.debounce) : undefined
+	if (debounced) _callback = debounced
 
-	return vueWatch(source, _callback, options)
+	// A debounced callback outlives the watcher: detaching the source leaves the
+	// queued call to fire. So the stop handle drops the queue as well, and a
+	// `toggleCondition` that has gone false gets no further callback — an
+	// autosave queued before an author started editing would otherwise write
+	// their arrangement mid-edit.
+	const stop = vueWatch(source, _callback, options)
+	return () => {
+		debounced?.cancel()
+		stop()
+	}
 }
 
 export function waitUntil(fn: () => boolean) {

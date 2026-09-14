@@ -227,9 +227,19 @@ test.describe('dashboard', () => {
 			.toBeGreaterThan(start.height + 50)
 
 		const moved = (await item.boundingBox())!
+
+		// Done leaves edit mode before the write it starts has answered, and the
+		// reload below would cut a write still in flight. The Dashboard's own
+		// `set_value` is the only signal it landed — nothing on screen says so.
+		const written = page.waitForResponse(
+			(response) =>
+				response.url().includes('/api/method/frappe.client.set_value') &&
+				response.request().postDataJSON()?.doctype === 'Insights Dashboard v3',
+		)
 		await page.getByRole('button', { name: 'Done', exact: true }).click()
 		// Done saves and leaves edit mode, and the Edit button is what says so.
 		await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible()
+		await written
 		await page.reload()
 
 		// The layout survives the save, so the item comes back where it was left.
