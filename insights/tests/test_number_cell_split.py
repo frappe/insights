@@ -105,7 +105,7 @@ class TestNumberCellSplit(InsightsIntegrationTestCase):
         self.assertEqual([item["column"] for item in items], ["Revenue", "Profit", "Orders"])
         self.assertTrue(all(item["chart"] == chart for item in items))
         boxes = [item["layout"] for item in items]
-        self.assertEqual([(b["x"], b["w"]) for b in boxes], [(2, 6), (8, 6), (14, 6)])
+        self.assertEqual([(b["x"], b["w"]) for b in boxes], [(2, 4), (6, 4), (10, 4)])
         self.assertEqual({b["y"] for b in boxes}, {4})
         self.assertEqual([b["i"] for b in boxes], ["kpis", "kpis-2", "kpis-3"])
 
@@ -204,12 +204,21 @@ class TestNumberCellExpansion(InsightsIntegrationTestCase):
 
     # @feature dashboard.number-cell-per-reading
     def test_the_readings_share_the_width_the_cell_had(self):
-        items = [{"type": "chart", "chart": "c", "layout": {"i": "a", "x": 0, "y": 0, "w": 20, "h": 8}}]
+        items = [{"type": "chart", "chart": "c", "layout": {"i": "a", "x": 0, "y": 0, "w": 11, "h": 8}}]
 
         expand_items(items, self.configs())
 
-        self.assertEqual([item["layout"]["w"] for item in items], [7, 7, 6])
-        self.assertEqual([item["layout"]["x"] for item in items], [0, 7, 14])
+        self.assertEqual([item["layout"]["w"] for item in items], [4, 4, 3])
+        self.assertEqual([item["layout"]["x"] for item in items], [0, 4, 8])
+
+    # @feature dashboard.number-cell-per-reading
+    def test_no_reading_is_wider_than_develop_drew_it(self):
+        items = [{"type": "chart", "chart": "c", "layout": {"i": "a", "x": 0, "y": 0, "w": 20, "h": 8}}]
+
+        expand_items(items, self.configs(2))
+
+        self.assertEqual([item["layout"]["w"] for item in items], [4, 4])
+        self.assertEqual([item["layout"]["x"] for item in items], [0, 4])
 
     # @feature dashboard.number-cell-per-reading
     def test_a_width_that_does_not_divide_goes_to_the_leftmost_readings(self):
@@ -279,7 +288,7 @@ class TestNumberCellExpansion(InsightsIntegrationTestCase):
 
         self.assertTrue(expand_items(items, self.configs(2)))
 
-        self.assertEqual([item["layout"]["w"] for item in items[1:]], [10, 10])
+        self.assertEqual([item["layout"]["w"] for item in items[1:]], [4, 4])
 
     # @feature dashboard.number-cell-per-reading
     def test_a_minted_id_does_not_take_one_the_grid_already_holds(self):

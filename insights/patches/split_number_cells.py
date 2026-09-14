@@ -10,6 +10,10 @@ from insights.patches.resize_dashboard_cells import (
     settle_items,
 )
 
+# The widest a reading's card is made. On develop the readings drew in one cell
+# on a grid of up to 5 per row, so a reading was 4 of the 20 columns wide.
+READING_COLUMNS = 4
+
 
 def execute():
     """A dashboard cell draws one reading, so a cell on a Number chart that
@@ -87,7 +91,7 @@ def expand_item(item: dict, configs: dict, taken: set) -> list[dict] | None:
         return None
 
     heights = [card_rows(config, reading) for reading in readings]
-    boxes = lay_out(item.get("layout") or {}, heights)
+    boxes = lay_out(item.get("layout") or {}, heights, READING_COLUMNS)
     arranged = (
         {
             key: lay_out(box, heights)
@@ -111,14 +115,15 @@ def expand_item(item: dict, configs: dict, taken: set) -> list[dict] | None:
     return cells
 
 
-def lay_out(box: dict, heights: list[int]) -> list[dict]:
+def lay_out(box: dict, heights: list[int], widest: int | None = None) -> list[dict]:
     """One cell per height, sharing the cell's width, all on the cell's row.
 
     The one cell's width is what the author gave the row, so the readings share
-    it the way they shared the card: 7 columns for two readings is 4 and 3. A
-    cell too narrow to give each reading a column gives them one each anyway —
-    a cramped card is the author's to widen, and wrapping would move everything
-    below instead.
+    it the way they shared the card: 7 columns for two readings is 4 and 3. No
+    share is wider than `widest`, so a wide cell leaves its right end free, as
+    an author narrowing the cards by hand would. A cell too narrow to give each
+    reading a column gives them one each anyway — a cramped card is the
+    author's to widen, and wrapping would move everything below instead.
     """
     left = box.get("w") or len(heights)
     x, y = box.get("x") or 0, box.get("y") or 0
@@ -126,6 +131,8 @@ def lay_out(box: dict, heights: list[int]) -> list[dict]:
     cells = []
     for index, height in enumerate(heights):
         width = max(1, math.ceil(left / (len(heights) - index)))
+        if widest:
+            width = min(width, widest)
         cell = dict(box)
         cell["x"] = x
         cell["y"] = y
