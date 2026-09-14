@@ -23,7 +23,7 @@ wheneverChanges(
 </script>
 
 <template>
-	<InlineFormControlLabel label="Query">
+	<InlineFormControlLabel :label="__('Query')">
 		<Combobox
 			class="w-full"
 			:options="props.queries"

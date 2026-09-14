@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, watchEffect } from 'vue'
+import { computed } from 'vue'
 import { SplitBy } from '../../types/chart.types'
 import { DimensionOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
+import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import DimensionPicker from './DimensionPicker.vue'
 
 const props = defineProps<{
@@ -14,20 +15,9 @@ const split_by = defineModel<SplitBy>({
 	default: () => ({}),
 })
 
-watchEffect(() => {
-	if (!split_by.value) {
-		split_by.value = {
-			dimension: {} as DimensionOption,
-			max_split_values: 10,
-		}
-	}
-	if (!split_by.value.dimension) {
-		split_by.value.dimension = {} as DimensionOption
-	}
-	if (split_by.value.max_split_values == undefined) {
-		split_by.value.max_split_values = 10
-	}
-})
+// Nothing is seeded here. Writing the config on mount is one autosave and two
+// re-runs of the chart data for opening a chart, and the count the server falls
+// back to is the count the input shows as its placeholder.
 
 // TODO: debug why v-model="split_by.dimension" doesn't work
 const dimension = computed({
@@ -42,25 +32,29 @@ const dimension = computed({
 </script>
 
 <template>
-	<CollapsibleSection title="Split Series">
+	<CollapsibleSection :title="__('Split Series')">
 		<div class="flex flex-col gap-3 pt-1">
 			<DimensionPicker
-				label="Split By"
+				:label="__('Split by')"
 				:options="props.dimensions"
 				:modelValue="dimension"
 				@update:modelValue="dimension = $event || {}"
 				@remove="dimension = {}"
 			/>
 
-			<FormControl
+			<InlineFormControlLabel
 				v-if="dimension?.column_name"
-				type="number"
-				label="Max Split Values"
-				placeholder="Split Values"
-				autocomplete="off"
-				:modelValue="split_by.max_split_values"
-				@update:modelValue="split_by.max_split_values = $event"
-			/>
+				:label="__('Max values')"
+				control-width="4rem"
+			>
+				<FormControl
+					type="number"
+					placeholder="10"
+					autocomplete="off"
+					:modelValue="split_by.max_split_values"
+					@update:modelValue="split_by.max_split_values = $event"
+				/>
+			</InlineFormControlLabel>
 		</div>
 	</CollapsibleSection>
 </template>

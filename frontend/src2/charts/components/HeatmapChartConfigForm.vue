@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { __ } from '../../translation'
-import { SankeyChartConfig } from '../../types/chart.types'
+import { HeatmapChartConfig } from '../../types/chart.types'
 import { ColumnOption, DimensionOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
+import NumberInput from '../../components/NumberInput.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
 import NumberFormatSection from './NumberFormatSection.vue'
@@ -13,11 +14,11 @@ const props = defineProps<{
 	columnOptions: ColumnOption[]
 }>()
 
-const config = defineModel<SankeyChartConfig>({
+const config = defineModel<HeatmapChartConfig>({
 	required: true,
 	default: () => ({
-		source_column: {},
-		target_column: {},
+		x_column: {},
+		y_column: {},
 		value_column: {},
 	}),
 })
@@ -27,13 +28,13 @@ const config = defineModel<SankeyChartConfig>({
 	<CollapsibleSection :title="__('Options')">
 		<div class="flex flex-col gap-3 pt-1">
 			<DimensionPicker
-				:label="__('Source')"
-				v-model="config.source_column"
+				:label="__('X axis')"
+				v-model="config.x_column"
 				:options="props.dimensions"
 			/>
 			<DimensionPicker
-				:label="__('Target')"
-				v-model="config.target_column"
+				:label="__('Y axis')"
+				v-model="config.y_column"
 				:options="props.dimensions"
 			/>
 			<MeasurePicker
@@ -41,27 +42,23 @@ const config = defineModel<SankeyChartConfig>({
 				v-model="config.value_column"
 				:column-options="props.columnOptions"
 			/>
-			<InlineFormControlLabel :label="__('Orientation')" control-width="7rem">
+			<InlineFormControlLabel :label="__('Color scale')" control-width="7rem">
 				<FormControl
-					v-model="config.orient"
+					v-model="config.palette"
 					type="select"
 					:options="[
-						{ label: __('Horizontal'), value: 'horizontal' },
-						{ label: __('Vertical'), value: 'vertical' },
+						{ label: __('Sequential'), value: 'sequential' },
+						{ label: __('Diverging'), value: 'diverging' },
 					]"
 				/>
 			</InlineFormControlLabel>
-			<InlineFormControlLabel :label="__('Align')" control-width="6rem">
-				<FormControl
-					v-model="config.node_align"
-					type="select"
-					:options="[
-						{ label: __('Justify'), value: 'justify' },
-						{ label: __('Left'), value: 'left' },
-						{ label: __('Right'), value: 'right' },
-					]"
-				/>
+			<InlineFormControlLabel :label="__('Scale floor')" control-width="4rem">
+				<NumberInput v-model="config.min" :placeholder="__('Lowest')" />
 			</InlineFormControlLabel>
+			<InlineFormControlLabel :label="__('Scale ceiling')" control-width="4rem">
+				<NumberInput v-model="config.max" :placeholder="__('Highest')" />
+			</InlineFormControlLabel>
+			<Toggle v-model="config.show_values" :label="__('Values')" />
 		</div>
 	</CollapsibleSection>
 

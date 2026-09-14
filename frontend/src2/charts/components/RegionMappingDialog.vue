@@ -200,7 +200,7 @@ function getOptions(region: Region) {
 			<div v-if="loading" class="flex h-[28rem] items-center justify-center">
 				<div class="flex flex-col items-center gap-3">
 					<LoadingIndicator class="h-5 w-5 text-ink-gray-3" />
-					<span class="text-sm text-ink-gray-4">Loading</span>
+					<span class="text-sm text-ink-gray-4">{{ __('Loading') }}</span>
 				</div>
 			</div>
 
@@ -213,15 +213,17 @@ function getOptions(region: Region) {
 							<h3 class="text-sm-medium text-ink-gray-6">
 								{{ unresolvedRegions.length }}
 							</h3>
-							<h3 class="text-sm-bold text-ink-gray-8">Unresolved Locations</h3>
+							<h3 class="text-sm-bold text-ink-gray-8">
+								{{ __('Unresolved Locations') }}
+							</h3>
 						</div>
 						<div
-							class="h-[15rem] flex flex-col overflow-hidden rounded-md border bg-surface-base"
+							class="h-[15rem] flex flex-col overflow-hidden rounded-5 border bg-surface-base"
 						>
 							<div class="z-10 bg-surface-base">
 								<TextInput
 									v-model="searchQuery"
-									placeholder="Search locations"
+									:placeholder="__('Search locations')"
 									class="w-1/3 p-2"
 									variant="subtle"
 								/>
@@ -238,7 +240,8 @@ function getOptions(region: Region) {
 
 									<div class="w-56 flex-shrink-0">
 										<Combobox
-											placeholder="Select region..."
+											class="w-full"
+											:placeholder="__('Select region...')"
 											:modelValue="localMappings[region.user_region] || ''"
 											@update:modelValue="
 												updateMapping(region.user_region, $event)
@@ -257,10 +260,10 @@ function getOptions(region: Region) {
 							<h3 class="text-sm-medium text-ink-gray-6">
 								{{ manualMappings.length }}
 							</h3>
-							<h3 class="text-sm-medium text-ink-gray-8">Resolved</h3>
+							<h3 class="text-sm-medium text-ink-gray-8">{{ __('Resolved') }}</h3>
 						</div>
 
-						<div class="h-[10rem] overflow-y-auto rounded-md border bg-surface-base">
+						<div class="h-[10rem] overflow-y-auto rounded-5 border bg-surface-base">
 							<div class="flex flex-col divide-y h-full">
 								<div
 									v-if="manualMappings.length === 0"
@@ -279,6 +282,7 @@ function getOptions(region: Region) {
 
 									<div class="w-56 flex-shrink-0">
 										<Combobox
+											class="w-full"
 											:modelValue="mapping.mapped_to"
 											@update:modelValue="
 												updateMapping(mapping.user_region, $event)
@@ -289,14 +293,14 @@ function getOptions(region: Region) {
 													suggestions: [],
 												})
 											"
-											placeholder="Select region..."
+											:placeholder="__('Select region...')"
 										/>
 									</div>
 
 									<Button
 										variant="icon"
 										@click="removeMapping(mapping.user_region)"
-										class="text-ink-red-7"
+										class="text-ink-red-6"
 										:icon="Trash2Icon"
 									>
 									</Button>
