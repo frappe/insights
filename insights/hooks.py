@@ -15,7 +15,10 @@ require_type_annotated_api_methods = True
 # Sites that already serve something at /insights (e.g. a website page) can move
 # the app elsewhere by setting `insights_path` in site config. Stored without
 # slashes so everything below can build paths as f"/{insights_path}".
-insights_path = (frappe.conf.insights_path or "insights").strip("/") or "insights"
+# `website_route_rules` and `add_to_apps_screen` are plain module-level data, so
+# the path has to be known at import time; a bench process serving several sites
+# takes the value of whichever site imported this module first.
+insights_path = (frappe.conf.insights_path or "insights").strip("/") or "insights"  # nosemgrep
 
 add_to_apps_screen = [
     {
@@ -94,6 +97,7 @@ app_include_js = "insights_nudge.bundle.js"
 
 # before_install = "insights.install.before_install"
 after_install = "insights.migrate.after_migrate"
+before_migrate = "insights.migrate.before_migrate"
 after_migrate = "insights.migrate.after_migrate"
 
 after_request = ["insights.insights.doctype.insights_data_source_v3.insights_data_source_v3.after_request"]

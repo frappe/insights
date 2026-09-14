@@ -27,6 +27,7 @@ def make_invitation(email):
 
 
 class TestInvitationKeyIsStoredHashed(IntegrationTestCase):
+    # @feature settings.invite-users
     def test_the_key_is_stored_hashed(self):
         from insights.insights.doctype.insights_user_invitation.insights_user_invitation import hash_key
 
@@ -35,6 +36,7 @@ class TestInvitationKeyIsStoredHashed(IntegrationTestCase):
         self.assertNotEqual(stored, invitation._plain_key)
         self.assertEqual(stored, hash_key(invitation._plain_key))
 
+    # @feature settings.invite-users
     def test_the_invitation_email_carries_the_key(self):
         """The mailed link has to hold the key itself, or nothing can redeem it."""
         with patch.object(frappe, "sendmail") as sendmail:
@@ -46,6 +48,7 @@ class TestInvitationKeyIsStoredHashed(IntegrationTestCase):
         self.assertIn(invitation._plain_key, link)
         self.assertNotIn(invitation.key, link)
 
+    # @feature settings.invite-users
     def test_the_stored_value_is_not_the_key(self):
         """What the row holds cannot be redeemed; what was mailed can."""
         from insights.insights.doctype.insights_user_invitation.insights_user_invitation import (
@@ -57,6 +60,7 @@ class TestInvitationKeyIsStoredHashed(IntegrationTestCase):
         self.assertIsNone(get_invitation_by_key(stored))
         self.assertEqual(get_invitation_by_key(invitation._plain_key), invitation.name)
 
+    # @feature settings.invite-users
     def test_only_admins_hold_a_grant_on_the_doctype(self):
         """The users screen reads invitations through an admin-only endpoint, so
         no other role needs this doctype."""
@@ -85,6 +89,7 @@ class TestInvitationDoesNotAuthenticate(IntegrationTestCase):
         accept_invitation(key=key)
         return frappe.local.response
 
+    # @feature settings.invite-users
     def test_an_existing_account_is_not_signed_in(self):
         """The invitation still applies; the sign-in is left to the account holder."""
         email = "existing-account@example.com"
@@ -105,6 +110,7 @@ class TestInvitationDoesNotAuthenticate(IntegrationTestCase):
         )
         self.assertIn("Insights User", frappe.get_roles(email))
 
+    # @feature settings.invite-users
     def test_a_new_invitee_is_signed_in(self):
         """A new invitee has no password yet, so the link is how they first get in."""
         email = "brand-new-invitee@example.com"
@@ -118,6 +124,7 @@ class TestInvitationDoesNotAuthenticate(IntegrationTestCase):
         self.assertNotEqual(response.location, "/login")
         self.assertIn("Insights User", frappe.get_roles(email))
 
+    # @feature settings.invite-users
     def test_an_unknown_key_is_refused(self):
         with self.assertRaises(frappe.ValidationError):
             accept_invitation(key="not-a-real-key")

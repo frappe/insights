@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { call } from 'frappe-ui'
+import { call, toast } from 'frappe-ui'
 import { __ } from '../translation'
 import { ref } from 'vue'
-import { createToast } from '../helpers/toasts'
 import DatePickerControl from '../query/components/DatePickerControl.vue'
 import session from '../session'
 import SettingItem from './SettingItem.vue'
@@ -18,16 +17,12 @@ async function setupDemoData() {
 	try {
 		await call('insights.setup.setup_wizard.setup_demo_data')
 		session.user.has_demo_data = true
-		createToast({
-			title: __('Demo Data Ready'),
-			message: __('Sample data and workbook have been set up successfully'),
-			variant: 'success',
+		toast.success(__('Demo Data Ready'), {
+			description: __('Sample data and workbook have been set up successfully'),
 		})
 	} catch {
-		createToast({
-			title: __('Setup Failed'),
-			message: __('Failed to setup demo data'),
-			variant: 'error',
+		toast.error(__('Setup Failed'), {
+			description: __('Failed to setup demo data'),
 		})
 	} finally {
 		demoLoading.value = false
@@ -42,8 +37,8 @@ async function setupDemoData() {
 			label="Logo"
 			description="Appears in the top left corner of the application and in the browser tab next to the page title. Recommended size: 32x32px in PNG format."
 		>
-			<div class="flex h-full w-full items-center justify-center rounded border">
-				<img src="../assets/insights-logo-new.svg" alt="Logo" class="w-8 rounded" />
+			<div class="flex h-full w-full items-center justify-center rounded-4 border">
+				<img src="../assets/insights-logo-new.svg" alt="Logo" class="w-8 rounded-4" />
 			</div>
 		</SettingItem>
 

@@ -92,7 +92,7 @@ function confirmSelections() {
 <template>
 	<Dialog :open="showDialog" size="2xl" bare>
 		<template #default>
-			<div class="min-w-[36rem] rounded-lg bg-surface-base px-4 pb-6 pt-5 text-base sm:px-6">
+			<div class="min-w-[36rem] rounded-6 bg-surface-base px-4 pb-6 pt-5 text-base sm:px-6">
 				<div class="flex items-center justify-between pb-4">
 					<h3 class="text-3xl-semibold leading-6 text-ink-gray-8">Pivot</h3>
 					<Button variant="ghost" @click="showDialog = false" icon="lucide-x" size="md" />

@@ -24,7 +24,7 @@ query, compiled to SQL through ibis.
 _Avoid_: transform, step
 
 **Chart**:
-An aggregated visualization over a query, configured with dimensions and measures.
+An aggregation over a query, drawn as one picture, configured with dimensions and measures.
 Charts aggregate; a mid-pipeline `summarize` in a query is a grain change, not
 presentation.
 _Avoid_: visual, graph
@@ -36,18 +36,74 @@ A grid of charts, filters, and text blocks; each item carries a Layout.
 A dashboard-level control that routes filter conditions into the queries behind its
 linked charts.
 
+**Filter picker**:
+The one control that writes a filter, wherever a reader writes one — a dashboard filter, a card filter, a drill. It searches column, then operator, then value. The query's own filter operation is still the builder's control. The ADR names it as the host left to wire.
+_Avoid_: palette (it is how the picker behaves, not what it is called. "palette" in Insights prose is a set of colors)
+
 **Measure**:
 A column or expression aggregated with an aggregation type (sum, count, …).
 _Avoid_: metric
 
 **Dimension**:
-A column that results are grouped or split by, optionally with a date granularity.
+A column that results are grouped or split by, optionally at a Grain.
 _Avoid_: group-by column
+
+**Grain**:
+The unit a date or ordered column is grouped by — day, week, month, quarter, year. "Grain" is the prose word. The identifier stays `granularity`: the key on a Dimension, the doctype field, and the wire field a card receives — do not rename it. frappe-ui's own prop type is `TimeGrain`. Both words are correct in their own layer. The one exception is a Number chart's Period, whose key is `window.grain`, because it sits beside `span` and a `granularity` there would read as the Dimension's.
+_Avoid_: granularity (in prose — `granularity` is the stored key), bucket, resolution
+
+**Reading**:
+One measure a Number chart states, drawn as a card of its own — its value, its format, its Period comparison and its target. `number_columns` names the readings and `number_column_options` carries each one's own settings, positionally. A dashboard cell draws one reading and names it in `reading`, by its `id`, so renaming the measure keeps the cell. A Number chart on a dashboard is as many cells as it has readings.
+_Avoid_: KPI, metric, data point ("card" is the thing drawn, "reading" is what it states)
+
+**Period**:
+The stretch of the date column one Number card reads, and the unit its comparison steps back by. Stored as `window`, holding one of a `span` or a `grain` and never both. It is the only thing that groups a card by date: left out, the card is one number over the whole result and its date column only feeds the sparkline.
+_Avoid_: slice, window (in prose — `window` is the stored key), timeframe
+
+**Span**:
+A Period the engine resolves against the clock, written as the string `get_window` parses — `month to date`, `current month`, `last 3 months (include current)`. It filters to the stretch it names and groups by which stretch a row fell in, so a comparison gets a real row of its own. A `grain` Period filters nothing and groups by the grain instead.
+_Avoid_: timespan (Frappe's word for the same thing, kept only in the `within` operator's value)
 
 **Expression**:
 An inline calculated column, measure, or filter written in the ibis-based expression
 syntax.
 _Avoid_: formula
+
+### Drill-down
+
+**Drill**:
+Reading what a number in a chart is made of. A drill cuts the chart's pipeline before its aggregation operation and reads the surface underneath. The builder's chart preview, its dashboard grid and the query builder's result table offer the same drill.
+_Avoid_: drill-through, explore
+
+**Surface**:
+Three senses, one per layer.
+
+1. The rows under a chart's aggregation — the pipeline cut just before its
+   summarize or pivot operation (`chart_drill.py`). This surface is the exposure
+   bound. A drill may name only its columns, so a drill never reaches past what
+   the chart already published.
+2. A screen a user works on: the public page, an authoring surface. Read
+   surfaces and authoring surfaces get different answers from the server.
+3. frappe-ui's `bg-surface-*` token, a background step in the design system.
+
+Each layer means one of them, so say which when a sentence could take two. None of the three is renamed.
+_Avoid_: view, canvas, pane (for meaning 2)
+
+**Segment**:
+The part of a chart a reader clicked — one bar, one wedge, one point. It goes to the server as its dimension values, plain triples of column, operator and value, never as operations. One level of a drill stack carries one segment, and levels accumulate, so each level narrows the rows further.
+_Avoid_: slice, data point, cell (a cell is the dashboard's grid unit, and a Table chart's)
+
+**Breakdown**:
+One of the two answers a drill level can ask for: group the segment by one more column of the surface. The other answer is rows — the rows behind the segment, and the word the wire, the code and the UI all use. A breakdown draws as an ad-hoc chart the answer picks for itself, and a click on it recurses.
+_Avoid_: split, group-by (that is a Dimension), and records, docs, entries for the rows answer
+
+**Additive**:
+Whether a level's group values add up to the value of the segment above them. True of a sum and a count, false of an average, a distinct count and an expression. The server says it on the answer, beside the order the rows run in, because a column of decimals does not say which aggregation made it. A breakdown reads it to decide whether it may draw itself as parts of one whole.
+_Avoid_: summable, part-of-whole (that is what being additive licenses)
+
+**Record Link**:
+Which columns of a result name a desk document, and which doctype they name. A cell holds a document when its column came from a site-DB table and holds an id there — the table's own `name`, or one of its `Link` fields. Where a column came from is traced through the pipeline, never guessed from its name, and a trace that cannot be followed (an expression, a union, raw SQL, another data source) draws no link rather than one that lands on the wrong document. The server answers it on a drill's rows level and on a Table chart's result, and the value is the control: a linked cell opens the document's form, every other cell stays a value. The word "record" is kept for the identifier — `record_links` on the wire, `record_link.py`, `recordUrl` — and never used in prose or in the UI for the rows answer: the drill menu says View rows.
+_Avoid_: record (in prose or in the UI), drill-to-detail, doc link
 
 ### Data
 
@@ -91,6 +147,18 @@ An app-provided, self-contained UI unit that the framework mounts into a host pa
 shared runtime. Declared via the `ui_islands` hook; Insights ships `insights.dashboard`
 and `insights.chart`.
 _Avoid_: widget, block, embed (embed = the public iframe-sharing feature)
+
+**Chrome**:
+Everything around a plot: the card, the title, the actions, the legend, the tooltip, and the loading, error and empty states. frappe-ui charts v2 owns it for every Insights chart. See `charts-render-through-frappe-ui`.
+_Avoid_: frame, shell, container
+
+**Plot**:
+The picture inside the chrome — the marks that carry the data. The only part that varies by chart type, and it has three fillers: a charts v2 component, an Insights plot built on v2's `useChart` (Map), or none at all (Table).
+_Avoid_: graph, canvas, visual
+
+**Adapter**:
+The one module that turns a stored Chart config and a query result into the props of a charts v2 component (`frontend/src2/charts/adapter/`). One pure function per chart type. Insights builds no ECharts option for a type v2 admits.
+_Avoid_: mapper, translator, transformer
 
 ### Sharing & governance
 

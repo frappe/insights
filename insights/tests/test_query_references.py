@@ -109,16 +109,19 @@ class AReferenceInTheRequestIsChecked:
     def before_test(self):
         self.set_team_permissions(self.ENABLE_PERMISSIONS)
 
+    # @feature permissions.query-reference-checked
     def test_the_owner_query_is_not_readable_by_the_other_user(self):
         """The baseline the refusals below are measured against."""
         with self.as_user(OTHER):
             self.assertFalse(frappe.has_permission(DT.QUERY, ptype="read", doc=self.owner_query))
 
+    # @feature query.source-query
     def test_a_saved_chain_resolves_for_its_owner(self):
         with self.as_user(OWNER), db_connections():
             result = frappe.get_doc(DT.QUERY, self.owner_reference).execute()
         self.assertEqual(result["rows"][0]["secret"], SECRET)
 
+    # @feature permissions.query-reference-checked
     def test_a_reference_sent_inline_is_refused(self):
         """The operations arrive in the request, so the reference need not be saved."""
         with self.as_user(OTHER):
@@ -136,6 +139,7 @@ class AReferenceInTheRequestIsChecked:
             with self.assertRaises(frappe.PermissionError), db_connections():
                 doc.execute()
 
+    # @feature permissions.query-reference-checked
     def test_forged_operations_on_a_saved_query_are_refused(self):
         """What was saved is the row, not what the request says was saved."""
         with self.as_user(OTHER):
@@ -144,6 +148,7 @@ class AReferenceInTheRequestIsChecked:
             with self.assertRaises(frappe.PermissionError), db_connections():
                 doc.execute()
 
+    # @feature permissions.query-reference-checked
     def test_a_refused_reference_returns_no_sql(self):
         """The compiled SQL is the query's logic, so a refusal returns none of it."""
         with self.as_user(OTHER):
@@ -189,6 +194,7 @@ class ASavedReferenceCarriesItsOwnAccess:
     def before_test(self):
         self.set_team_permissions(self.ENABLE_PERMISSIONS)
 
+    # @feature permissions.chart-access-follows
     def test_the_share_carries_the_chart_and_its_query_only(self):
         """The baseline: a shared chart does not carry the workbook behind it."""
         with self.as_user(VIEWER):
@@ -196,12 +202,14 @@ class ASavedReferenceCarriesItsOwnAccess:
             self.assertTrue(frappe.has_permission(DT.QUERY, ptype="read", doc=self.consumer))
             self.assertFalse(frappe.has_permission(DT.QUERY, ptype="read", doc=self.base))
 
+    # @feature permissions.chart-access-follows
     def test_someone_with_the_chart_can_run_the_chain(self):
         """Running the query they may read is what the share is for."""
         with self.as_user(VIEWER), db_connections():
             result = frappe.get_doc(DT.QUERY, self.consumer).execute()
         self.assertEqual(result["rows"][0]["secret"], SECRET)
 
+    # @feature query.source-query
     def test_the_chain_runs_before_the_reference_index_is_built(self):
         """`Insights Query Reference` is rebuilt by a background job after the save
         commits, so it lags. What was saved is what decides, and it cannot wait."""
@@ -216,6 +224,7 @@ class ASavedReferenceCarriesItsOwnAccess:
             result = frappe.get_doc(DT.QUERY, self.consumer).execute()
         self.assertEqual(result["rows"][0]["secret"], SECRET)
 
+    # @feature query.copy-paste
     def test_an_export_carries_its_references_before_the_index_is_built(self):
         """An export packs the queries it is built on. Which those are comes from
         the query, not from the index that a background job rebuilds."""
@@ -230,6 +239,7 @@ class ASavedReferenceCarriesItsOwnAccess:
             exported = frappe.get_doc(DT.QUERY, self.consumer).export()
         self.assertIn(self.base, exported["dependencies"]["queries"])
 
+    # @feature query.copy-paste
     def test_an_export_skips_a_reference_whose_query_is_gone(self):
         """`on_trash` drops the edge rows but not the operations that name the
         query, so the export list carries a name with no row behind it."""
@@ -242,11 +252,13 @@ class ASavedReferenceCarriesItsOwnAccess:
 
         self.assertEqual(exported["dependencies"]["queries"], {})
 
+    # @feature permissions.query-reference-checked
     def test_a_reference_cannot_be_saved_to_an_unreadable_query(self):
         """Where the check lives."""
         with self.as_user(VIEWER), self.assertRaises(frappe.PermissionError):
             create_referencing_query(VIEWER, self.viewer_workbook, self.base, "Chain Forged Consumer")
 
+    # @feature permissions.query-reference-checked
     def test_a_reference_added_on_update_is_checked_too(self):
         """An existing query is not a way around the check."""
         with self.as_user(VIEWER):
@@ -257,43 +269,52 @@ class ASavedReferenceCarriesItsOwnAccess:
 
 
 class DashboardFilterReadsTheQuery:
-    """The same rule where a dashboard filter names a query.
+    """A dashboard filter names its own query, and the caller never does.
 
-    A filter links a column as `` `<query>`.`<column>` ``. The dashboard says
-    which columns it filters on, so it cannot also be what says which queries the
-    caller may reach.
+    A filter links a column as `` `<query>`.`<column>` ``. The caller sends the
+    filter's name and `filter_source` reads the link off the stored dashboard, so
+    the query a lookup runs against is the dashboard's word and not the request's.
+
+    A link is followed only through a chart the dashboard actually holds, which is
+    what keeps `links` from reaching a query on its own: putting the chart there
+    was already checked.
     """
 
     ENABLE_PERMISSIONS = 0
+    FILTER_NAME = "Secret"
 
     @classmethod
     def before_class(cls):
         create_test_users()
         cls.owner_workbook = create_test_workbook(OWNER, title="Filter Owner Workbook").name
         cls.owner_query = create_source_query(OWNER, cls.owner_workbook, "Filter Owner Source").name
+        cls.owner_chart = create_test_chart(
+            OWNER, cls.owner_workbook, query=cls.owner_query, title="Filter Owner Chart"
+        ).name
 
         cls.other_workbook = create_test_workbook(OTHER, title="Filter Other Workbook").name
-        cls.other_query = create_source_query(OTHER, cls.other_workbook, "Filter Other Source").name
 
-        cls.owner_dashboard = cls.create_dashboard(OWNER, cls.owner_workbook, cls.owner_query)
-        cls.other_dashboard = cls.create_dashboard(OTHER, cls.other_workbook, cls.owner_query)
+        cls.owner_dashboard = cls.create_dashboard(OWNER, cls.owner_workbook, cls.owner_chart)
+        # the same link, on a dashboard that does not hold the chart it names
+        cls.detached_dashboard = cls.create_dashboard(
+            OWNER, cls.owner_workbook, cls.owner_chart, hold_the_chart=False
+        )
 
     @classmethod
-    def create_dashboard(cls, owner, workbook, query):
+    def create_dashboard(cls, owner, workbook, chart, hold_the_chart=True):
+        link = {chart: f"`{cls.owner_query}`.`secret`"}
+        items = [{"id": "filter-1", "type": "filter", "filter_name": cls.FILTER_NAME, "links": link}]
+        if hold_the_chart:
+            items.insert(0, {"id": "chart-1", "type": "chart", "chart": chart})
+
         with as_user(owner):
             return (
                 frappe.get_doc(
                     {
                         "doctype": DT.DASHBOARD,
-                        "title": f"Filter Dashboard {workbook}",
+                        "title": f"Filter Dashboard {workbook} {len(items)}",
                         "workbook": workbook,
-                        "items": [
-                            {
-                                "id": "filter-1",
-                                "type": "filter",
-                                "links": {"chart-1": f"`{query}`.`secret`"},
-                            }
-                        ],
+                        "items": items,
                     }
                 )
                 .insert()
@@ -309,18 +330,56 @@ class DashboardFilterReadsTheQuery:
     def before_test(self):
         self.set_team_permissions(self.ENABLE_PERMISSIONS)
 
-    def distinct_values(self, dashboard, query):
+    def distinct_values(self, dashboard, filter_name):
         with db_connections():
-            return frappe.get_doc(DT.DASHBOARD, dashboard).get_distinct_column_values(query, "secret")
+            return frappe.get_doc(DT.DASHBOARD, dashboard).get_distinct_column_values(filter_name)
 
-    def test_a_filter_reads_a_query_its_owner_may_read(self):
+    # @feature dashboard.filter-values
+    def test_a_filter_offers_the_values_of_the_column_it_links(self):
         with self.as_user(OWNER):
-            values = self.distinct_values(self.owner_dashboard, self.owner_query)
+            values = self.distinct_values(self.owner_dashboard, self.FILTER_NAME)
         self.assertEqual(values, [SECRET])
 
+    # @feature dashboard.filter-values
+    def test_a_filter_the_dashboard_does_not_declare_is_refused(self):
+        """A name is all the caller sends, so an unknown one reaches no query."""
+        with self.as_user(OWNER), self.assertRaises(frappe.PermissionError):
+            self.distinct_values(self.owner_dashboard, "Not A Filter")
+
+    # @feature dashboard.filter-values
+    def test_a_link_to_a_chart_the_dashboard_does_not_hold_is_not_followed(self):
+        """`links` alone cannot reach a query: the chart has to be on the page."""
+        with self.as_user(OWNER), self.assertRaises(frappe.PermissionError):
+            self.distinct_values(self.detached_dashboard, self.FILTER_NAME)
+
+    # @feature permissions.query-reference-checked
     def test_a_filter_cannot_read_a_query_its_owner_may_not(self):
+        """The read on the dashboard is settled upstream of this method, so the
+        caller's read on the query behind the filter is checked here too."""
         with self.as_user(OTHER), self.assertRaises(frappe.PermissionError):
-            self.distinct_values(self.other_dashboard, self.owner_query)
+            self.distinct_values(self.owner_dashboard, self.FILTER_NAME)
+
+    # @feature permissions.request-body-not-trusted
+    def test_items_sent_with_the_request_do_not_decide_the_column(self):
+        """A method runs on the body the client sends, so the link is read off
+        the row and not off the `items` that arrive with the call."""
+        forged = frappe.get_doc(
+            {
+                "doctype": DT.DASHBOARD,
+                "name": self.owner_dashboard,
+                "items": [
+                    {"id": "chart-1", "type": "chart", "chart": self.owner_chart},
+                    {
+                        "id": "filter-1",
+                        "type": "filter",
+                        "filter_name": self.FILTER_NAME,
+                        "links": {self.owner_chart: f"`{self.owner_query}`.`amount`"},
+                    },
+                ],
+            }
+        )
+        with self.as_user(OWNER), db_connections():
+            self.assertEqual(forged.get_distinct_column_values(self.FILTER_NAME), [SECRET])
 
 
 class ChartExportReadsTheQuery:
@@ -371,12 +430,14 @@ class ChartExportReadsTheQuery:
         }
         return run_doc_method("export", {**body, **claims})
 
+    # @feature charts.copy-paste
     def test_a_chart_exports_the_query_its_owner_may_read(self):
         """The baseline: the export carries the linked query."""
         with self.as_user(OWNER):
             exported = self.export_chart(self.owner_chart)
         self.assertIn(self.owner_query, exported["dependencies"]["queries"])
 
+    # @feature permissions.request-body-not-trusted
     def test_a_chart_cannot_export_a_query_its_caller_may_not_read(self):
         """The link is sent with the request, so the stored chart says nothing
         about which query the export reads."""
@@ -424,6 +485,7 @@ class TestSourceTablesComeFromTheQuery(InsightsIntegrationTestCase):
         cleanup_test_fixtures()
         delete_users(OWNER)
 
+    # @feature query.source-query
     def test_the_tables_are_found_before_the_index_is_built(self):
         frappe.db.delete("Insights Query Reference", {"query": self.query})
         self.addCleanup(
@@ -436,6 +498,64 @@ class TestSourceTablesComeFromTheQuery(InsightsIntegrationTestCase):
             tables = frappe.get_doc(DT.QUERY, self.query).get_source_tables()
 
         self.assertEqual(tables, [{"data_source": TEST_DS, "table_name": "table1"}])
+
+
+class TestTheLineageGraph(InsightsIntegrationTestCase):
+    """The graph the lineage dialog draws is built from the reference rows."""
+
+    @classmethod
+    def before_class(cls):
+        create_test_users()
+        create_test_data_sources()
+        create_test_tables()
+        cls.workbook = create_test_workbook(OWNER, title="Lineage Workbook").name
+        cls.source_query = create_query_over_a_table(OWNER, cls.workbook, "Lineage Source Query").name
+        with as_user(OWNER):
+            cls.derived_query = (
+                frappe.get_doc(
+                    {
+                        "doctype": DT.QUERY,
+                        "title": "Lineage Derived Query",
+                        "workbook": cls.workbook,
+                        "use_live_connection": 1,
+                        "is_builder_query": 1,
+                        "operations": reference_operations(cls.source_query),
+                    }
+                )
+                .insert()
+                .name
+            )
+
+    @classmethod
+    def after_class(cls):
+        frappe.delete_doc(DT.WORKBOOK, cls.workbook, force=True, ignore_permissions=True)
+        cleanup_test_fixtures()
+        delete_users(OWNER)
+
+    # @feature workbook.lineage
+    def test_the_lineage_graph_draws_an_edge_from_a_query_to_the_query_it_reads(self):
+        graph = frappe.get_doc(DT.WORKBOOK, self.workbook).get_lineage_graph()
+
+        table_id = f"table::{TEST_DS}::table1"
+        source_id = f"query::{self.source_query}"
+        derived_id = f"query::{self.derived_query}"
+
+        self.assertEqual(
+            {node["id"]: node["node_type"] for node in graph["nodes"]},
+            {table_id: "table", source_id: "query", derived_id: "query"},
+        )
+        self.assertEqual(
+            {(edge["source"], edge["target"]) for edge in graph["edges"]},
+            {(table_id, source_id), (source_id, derived_id)},
+        )
+        self.assertEqual(
+            {node["id"]: node["label"] for node in graph["nodes"]},
+            {
+                table_id: "table1",
+                source_id: "Lineage Source Query",
+                derived_id: "Lineage Derived Query",
+            },
+        )
 
 
 class TestAReferenceInTheRequestIsChecked(AReferenceInTheRequestIsChecked, InsightsIntegrationTestCase):

@@ -209,7 +209,7 @@ template is a good one: `doc list "Insights Workbook" --fields name,title,from_t
 
 ## 3. Reuse what the user already has
 
-People share workbooks. A metric somebody already defined and uses every day is more
+People share workbooks. A measure somebody already defined and uses every day is more
 likely correct than one you derive from column names. **Run these searches before you read the
 schema.**
 
@@ -292,12 +292,12 @@ Before you author anything, post a scope block. It states:
 
 - the target workbook, by name
 - the tables to draw from, and the grain of each query
-- every metric, with the exact columns it computes from
+- every measure, with the exact columns it computes from
 - any definition you reused, and where it came from
 - the dimensions and the filters
 - what the user is actually looking at, so the dashboard leads with it
 
-When more than one column could serve a metric, name the candidates and ask which one.
+When more than one column could serve a measure, name the candidates and ask which one.
 Never resolve that ambiguity alone. Never carry an unasked choice into the closing
 summary.
 
@@ -387,7 +387,7 @@ Create them in dependency order, and keep the name the site returns for each:
 1. **Queries.** Set `workbook`, `title`, `operations`, and the builder flags from
    `reference/rules.md`.
 2. **Charts.** Set `workbook`, `title`, `query` (the query's real document name),
-   `chart_type` and `config`. The chart creates its own empty `data_query` on save.
+   `chart_type` and `config`.
 3. **Dashboards.** Set `workbook`, `title` and `items`. Chart items name the chart's
    real document name. Filter links name the real query name. Author `chart` and `filter`
    items only. Never a `text` item.
@@ -472,8 +472,7 @@ frappectl -s $SITE method call execute \
 
 ### Check 2 — every chart's columns exist
 
-A chart has no result of its own until the UI opens it. `data_query` is empty at
-creation, so executing it proves nothing.
+A chart has no result of its own. Its aggregation is built at render time, so there is nothing to execute.
 
 Verify a chart against its base query:
 

@@ -42,17 +42,21 @@ def resolving_to(*addresses: str):
 
 
 class TestPublicUrlValidation(UnitTestCase):
+    # @feature alerts.webhook-address-policy
     def test_http_is_refused(self):
         with self.assertRaises(OutboundRequestRefused):
             validate_public_url("http://example.com/hook")
 
+    # @feature alerts.webhook-address-policy
     def test_scheme_without_hostname_is_refused(self):
         with self.assertRaises(OutboundRequestRefused):
             validate_public_url("https:///hook")
 
+    # @feature alerts.webhook-address-policy
     def test_https_url_passes(self):
         validate_public_url("https://example.com/hook")
 
+    # @feature alerts.webhook-address-policy
     def test_validation_does_not_resolve(self):
         """It runs inside a save, so it must not wait on a resolver."""
         with patch("socket.getaddrinfo") as getaddrinfo:
@@ -61,35 +65,43 @@ class TestPublicUrlValidation(UnitTestCase):
 
 
 class TestPublicAddressResolution(UnitTestCase):
+    # @feature alerts.webhook-address-policy
     def test_public_address_is_returned(self):
         with resolving_to(PUBLIC):
             self.assertEqual(resolve_public_address("example.com", 443), PUBLIC)
 
+    # @feature alerts.webhook-address-policy
     def test_loopback_is_refused(self):
         with resolving_to("127.0.0.1"), self.assertRaises(OutboundRequestRefused):
             resolve_public_address("example.com", 443)
 
+    # @feature alerts.webhook-address-policy
     def test_private_range_is_refused(self):
         with resolving_to("10.0.0.1"), self.assertRaises(OutboundRequestRefused):
             resolve_public_address("example.com", 443)
 
+    # @feature alerts.webhook-address-policy
     def test_link_local_metadata_address_is_refused(self):
         with resolving_to("169.254.169.254"), self.assertRaises(OutboundRequestRefused):
             resolve_public_address("example.com", 443)
 
+    # @feature alerts.webhook-address-policy
     def test_ipv6_loopback_is_refused(self):
         with resolving_to("::1"), self.assertRaises(OutboundRequestRefused):
             resolve_public_address("example.com", 443)
 
+    # @feature alerts.webhook-address-policy
     def test_ipv4_mapped_ipv6_is_unwrapped_before_the_check(self):
         with resolving_to("::ffff:127.0.0.1"), self.assertRaises(OutboundRequestRefused):
             resolve_public_address("example.com", 443)
 
+    # @feature alerts.webhook-address-policy
     def test_one_private_answer_refuses_the_whole_name(self):
         """A name that answers with both is still a way onto the network."""
         with resolving_to(PUBLIC, "10.0.0.1"), self.assertRaises(OutboundRequestRefused):
             resolve_public_address("example.com", 443)
 
+    # @feature alerts.webhook-address-policy
     def test_unresolvable_host_is_refused(self):
         with patch("socket.getaddrinfo", side_effect=socket.gaierror):
             with self.assertRaises(OutboundRequestRefused):
@@ -97,6 +109,7 @@ class TestPublicAddressResolution(UnitTestCase):
 
 
 class TestPostToPublicUrl(UnitTestCase):
+    # @feature alerts.webhook-address-policy
     def test_rebinding_is_refused_while_connecting(self):
         """The check that survives a lookup answering differently the second time.
 
@@ -116,6 +129,7 @@ class TestPostToPublicUrl(UnitTestCase):
             with self.assertRaisesRegex(OutboundRequestRefused, "non-public address"):
                 post_to_public_url("https://example.com/hook", data="{}", headers={})
 
+    # @feature alerts.webhook-address-policy
     def test_a_proxy_is_refused(self):
         """A proxy connects for us, which leaves no address here to check."""
         with self.assertRaises(OutboundRequestRefused):

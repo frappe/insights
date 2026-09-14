@@ -87,16 +87,19 @@ def mariadb_kwargs(**fields):
 
 
 class TestPostgresSSL(UnitTestCase):
+    # @feature data-source.ssl
     def test_ssl_without_an_authority_only_encrypts(self):
         kwargs = postgres_kwargs()
         self.assertEqual(kwargs["sslmode"], "require")
         self.assertNotIn("sslrootcert", kwargs)
 
+    # @feature data-source.ssl
     def test_an_authority_turns_the_same_flag_into_verification(self):
         kwargs = postgres_kwargs(ssl_ca=CA_CERTIFICATE)
         self.assertEqual(kwargs["sslmode"], "verify-full")
         self.assertIn(CA_CERTIFICATE, kwargs["anchor"])
 
+    # @feature data-source.ssl
     def test_no_ssl_sends_no_ssl_options(self):
         kwargs = postgres_kwargs(use_ssl=0)
         self.assertNotIn("sslmode", kwargs)
@@ -104,16 +107,19 @@ class TestPostgresSSL(UnitTestCase):
 
 
 class TestMariaDBSSL(UnitTestCase):
+    # @feature data-source.ssl
     def test_ssl_without_an_authority_only_encrypts(self):
         kwargs = mariadb_kwargs()
         self.assertEqual(kwargs["ssl_mode"], "REQUIRED")
         self.assertNotIn("ssl", kwargs)
 
+    # @feature data-source.ssl
     def test_an_authority_sends_both_the_mode_and_the_certificate(self):
         kwargs = mariadb_kwargs(ssl_ca=CA_CERTIFICATE)
         self.assertEqual(kwargs["ssl_mode"], "VERIFY_IDENTITY")
         self.assertIn(CA_CERTIFICATE, kwargs["anchor"])
 
+    # @feature data-source.ssl
     def test_no_ssl_disables_it(self):
         kwargs = mariadb_kwargs(use_ssl=0)
         self.assertEqual(kwargs["ssl_mode"], "DISABLED")

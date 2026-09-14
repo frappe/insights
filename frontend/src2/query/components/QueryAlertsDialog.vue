@@ -1,6 +1,6 @@
 <script setup lang="tsx">
 import { useTimeAgo } from '@vueuse/core'
-import { ListView } from 'frappe-ui'
+import { ListView } from 'frappe-ui/experimental'
 import { Plus, SearchIcon } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import IndicatorIcon from '../../components/Icons/IndicatorIcon.vue'
@@ -44,7 +44,7 @@ const listOptions = ref({
 				return props.row.disabled ? __('Disabled') : __('Enabled')
 			},
 			prefix: (props: any) => {
-				const color = props.row.disabled ? 'text-ink-gray-4' : 'text-ink-green-6'
+				const color = props.row.disabled ? 'text-ink-gray-4' : 'text-ink-green-5'
 				return <IndicatorIcon class={color} />
 			},
 		},

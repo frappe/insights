@@ -33,7 +33,25 @@ repos:
     rev: v3.1.0
     hooks:
       - id: prettier
-        types_or: [javascript, vue, scss]
+        types_or: [javascript, jsx, ts, tsx, vue, scss]
+
+  # Pre-push, not pre-commit: the rule files are fetched on every run, so it fails offline.
+  - repo: https://github.com/semgrep/pre-commit
+    rev: v1.177.0
+    hooks:
+      - id: semgrep
+        name: Run Frappe semgrep rules
+        types: [python]
+        stages: [pre-push]
+        args:
+          - --config=https://raw.githubusercontent.com/frappe/semgrep-rules/b101a16e69df049b3fed1478bcc16223e957cca2/rules/frappe_correctness.yml
+          - --config=https://raw.githubusercontent.com/frappe/semgrep-rules/b101a16e69df049b3fed1478bcc16223e957cca2/rules/code_quality.yml
+          - --config=https://raw.githubusercontent.com/frappe/semgrep-rules/b101a16e69df049b3fed1478bcc16223e957cca2/rules/hooks.yml
+          - --config=r/python.lang.correctness
+          - --error
+          - --disable-version-check
+          - --quiet
+          - --skip-unknown-extensions
 
 ci:
     autoupdate_schedule: weekly

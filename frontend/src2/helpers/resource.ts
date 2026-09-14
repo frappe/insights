@@ -5,6 +5,7 @@ import { call } from 'frappe-ui'
 import { computed, reactive, ref, UnwrapRef } from 'vue'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import { copy, showErrorToast, waitUntil, watchToggle } from './index'
+import { mergeWriteAnswer } from './write_answer'
 // import json_diff from 'https://cdn.jsdelivr.net/npm/json-diff@1.0.6/+esm'
 
 type Document = {
@@ -35,7 +36,7 @@ type DocumentResourceOptions<T extends Document> = {
 export default function useDocumentResource<T extends Document>(
 	doctype: string,
 	name: string,
-	options: DocumentResourceOptions<T>
+	options: DocumentResourceOptions<T>,
 ) {
 	const doc = ref(options.initialDoc)
 	const originalDoc = ref(copy(options.initialDoc))
@@ -66,6 +67,10 @@ export default function useDocumentResource<T extends Document>(
 	// wrote the `undefined` writes it again.
 	const isDirty = computed(() => !isEqual(copy(doc.value), originalDoc.value))
 
+	// A surface waits on this before it draws the document. A local document has
+	// nothing to load, so it is ready the moment it is made.
+	const isPending = computed(() => !isLoaded.value && !isLocal.value)
+
 	async function insertDoc() {
 		if (!isLocal.value) return
 		await executeHooks(lifecycleHooks.beforeInsert)
@@ -83,6 +88,8 @@ export default function useDocumentResource<T extends Document>(
 
 		updateDocState(newDoc, sentDoc)
 		isLocal.value = false
+		// the document exists now, so a surface that waits for one may open on it
+		isLoaded.value = true
 		await executeHooks(lifecycleHooks.afterInsert)
 		return newDoc
 	}
@@ -173,8 +180,8 @@ export default function useDocumentResource<T extends Document>(
 			.finally(() => (isDeleting.value = false))
 	}
 
-	// `sentDoc` is the deep clone a write carried. Pass it to keep the edits the
-	// user made while that write was in flight. Leave it out to replace the
+	// `sentDoc` is the deep clone a write carried. Pass it and the answer is read
+	// as the receipt it is — see `mergeWriteAnswer`. Leave it out to replace the
 	// document, which is what a load wants.
 	function updateDocState(newDoc: any, sentDoc?: any) {
 		const currentDoc = removeMetaFields(doc.value)
@@ -185,15 +192,7 @@ export default function useDocumentResource<T extends Document>(
 		originalDoc.value = copy(answer)
 
 		if (sentDoc) {
-			for (const field of Object.keys(currentDoc)) {
-				const current = copy(currentDoc[field])
-				// An `undefined` value is dropped by `copy`, so keeping one here
-				// would make the document dirty forever. Let the answer win.
-				if (current === undefined) continue
-				if (isEqual(current, sentDoc[field])) continue
-				// The field moved after the write left, so the newer value wins.
-				;(answer as any)[field] = current
-			}
+			mergeWriteAnswer(currentDoc, answer, sentDoc)
 		}
 
 		doc.value = answer
@@ -228,7 +227,8 @@ export default function useDocumentResource<T extends Document>(
 
 		if (storage.value?.doc) {
 			const isStale =
-				new Date(doc.value.modified).getTime() > new Date(storage.value.doc.modified).getTime()
+				new Date(doc.value.modified).getTime() >
+				new Date(storage.value.doc.modified).getTime()
 
 			if (!isStale) {
 				doc.value = storage.value.doc
@@ -249,7 +249,7 @@ export default function useDocumentResource<T extends Document>(
 			{
 				immediate: true,
 				deep: true,
-			}
+			},
 		)
 	}
 
@@ -274,6 +274,7 @@ export default function useDocumentResource<T extends Document>(
 		islocal: isLocal,
 		loading: isLoading,
 		isloaded: isLoaded,
+		pending: isPending,
 		saving: isSaving,
 		deleting: isDeleting,
 		autoSave: autoSave,

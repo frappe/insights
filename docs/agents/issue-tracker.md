@@ -21,8 +21,8 @@ Don't create or triage GitHub issues unless explicitly asked.
   `docs/projects/<effort-slug>/issues/<NN>-<slug>.md`, numbered from `01` —
   never a single combined tickets file
 - Every ticket carries a `Status:` line near the top. Wayfinder tickets use
-  `claimed` and `resolved` (see *Wayfinding operations*). Tickets raised from an
-  incoming GitHub issue use the triage roles instead: `needs-triage`,
+  `open`, `claimed` and `resolved` (see *Wayfinding operations*). Tickets raised
+  from an incoming GitHub issue use the triage roles instead: `needs-triage`,
   `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`
 - Comments and conversation history append to the bottom of the file under a
   `## Comments` heading
@@ -57,7 +57,8 @@ Used by `/wayfinder`. The **map** is a file with one **child** file per ticket.
 - **Map**: `docs/projects/<effort>/map.md` — the Notes / Decisions-so-far / Fog body.
 - **Child ticket**: `docs/projects/<effort>/issues/NN-<slug>.md`, numbered from `01`,
   with the question in the body. A `Type:` line records the ticket type
-  (`research`/`prototype`/`grilling`/`task`); a `Status:` line records `claimed`/`resolved`.
+  (`research`/`prototype`/`grilling`/`task`); a `Status:` line records
+  `open`/`claimed`/`resolved`.
 - **Blocking**: a `Blocked by: NN, NN` line near the top. A ticket is unblocked
   when every file it lists is `resolved`.
 - **Frontier**: scan `docs/projects/<effort>/issues/` for files that are open,

@@ -59,16 +59,19 @@ class TestDataSourceCredentials(InsightsIntegrationTestCase):
             doc.apply_fieldlevel_read_permissions()
             return doc
 
+    # @feature data-source.credentials-stay-with-admins
     def test_an_insights_user_reads_no_credential_field(self):
         doc = self.read_as(USER)
         for fieldname in CREDENTIAL_FIELDS:
             self.assertIsNone(doc.get(fieldname), f"{fieldname} reached an Insights User")
 
+    # @feature data-source.credentials-stay-with-admins
     def test_an_insights_admin_still_reads_the_credentials(self):
         doc = self.read_as(ADMIN)
         self.assertEqual(doc.connection_string, CONNECTION_STRING)
         self.assertEqual(doc.bigquery_service_account_key, SERVICE_ACCOUNT_KEY)
 
+    # @feature data-source.credentials-stay-with-admins
     def test_a_credential_field_is_dropped_from_a_list_field_list(self):
         with self.as_user(USER):
             rows = frappe.get_list(
@@ -78,6 +81,7 @@ class TestDataSourceCredentials(InsightsIntegrationTestCase):
             )
         self.assertEqual(rows, [{"name": self.data_source}])
 
+    # @feature data-source.credentials-stay-with-admins
     def test_the_generic_document_route_returns_no_credentials(self):
         """`frappe.client.get` is what `/api/resource/<doctype>/<name>` calls."""
         import frappe.client
@@ -87,6 +91,7 @@ class TestDataSourceCredentials(InsightsIntegrationTestCase):
         for fieldname in CREDENTIAL_FIELDS:
             self.assertIsNone(doc.get(fieldname), f"{fieldname} reached an Insights User")
 
+    # @feature data-source.credentials-stay-with-admins
     def test_the_title_stays_readable(self):
         """The permlevel bounds the credentials, not the document."""
         with self.as_user(USER):

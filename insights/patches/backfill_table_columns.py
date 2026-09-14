@@ -12,9 +12,23 @@ def execute():
     """Write down the columns of every table synced before the sync recorded them.
 
     Without this, column search sees only the tables synced after the upgrade.
-    Reading a table's shape needs the source, so this is one connection per table
-    and it runs once.
+
+    Reading a table's shape needs the source, so this is one connection per table,
+    and a source that is firewalled or asleep is a timeout per table. That cost
+    does not belong inside `bench migrate`, which has to finish whether or not a
+    customer's database answers, so the backfill is a job. Until it runs, column
+    search matches fewer tables and nothing else.
     """
+    frappe.enqueue(
+        backfill_table_columns,
+        queue="long",
+        timeout=3600,
+        job_id="insights::backfill_table_columns",
+        deduplicate=True,
+    )
+
+
+def backfill_table_columns():
     tables = frappe.get_all(
         "Insights Table v3",
         filters={"columns": ["is", "not set"]},

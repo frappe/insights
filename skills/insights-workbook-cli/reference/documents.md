@@ -23,7 +23,7 @@ If you delete a workbook, you delete its queries, charts, dashboards and folders
 {
   "workbook": "42",
   "title": "Sales Invoices",
-  "use_live_connection": 0,
+  "use_live_connection": 1,
   "is_builder_query": 1,
   "is_native_query": 0,
   "is_script_query": 0,
@@ -58,10 +58,8 @@ If you delete a workbook, you delete its queries, charts, dashboards and folders
 
 - `query` is the base query's real document name.
 - `chart_type` and `config` shapes are in `charts.md`.
-- On save the chart creates its own empty `data_query`. This second `Insights Query v3` document
-  holds the aggregation the UI builds at render time. You never write it. Running it proves
-  nothing until somebody opens the chart.
-- If you delete a chart, its `data_query` goes too.
+- A chart holds no query of its own. Its aggregation is built at render time, so there is nothing
+  to run but the base query.
 
 ## Insights Dashboard v3
 

@@ -241,9 +241,10 @@ def get_stored_columns(
     stored is left out - it has nothing to report.
 
     `contains` drops a table whose stored list does not hold the string at all, before
-    the permission checks run. A search then costs what it matches rather than what the
-    instance holds. The test reads types as well as names, so it over-includes and never
-    under-includes; the caller narrows the result either way.
+    the permission checks run. The read itself is still every table's stored list. It
+    is the permission check, the expensive half, that a search pays only for what it
+    matches. The test reads types as well as names, so it over-includes and never
+    under-includes. The caller narrows the result either way.
     """
     tables = frappe.get_list(
         "Insights Table v3",

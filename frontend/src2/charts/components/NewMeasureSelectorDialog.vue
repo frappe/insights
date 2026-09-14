@@ -110,15 +110,15 @@ function resetNewMeasure() {
 						<FormControl
 							type="text"
 							class="flex-1"
-							:label="__('Measure Name')"
+							:label="__('Measure name')"
 							autocomplete="off"
-							placeholder="Measure Name"
+							:placeholder="__('Measure name')"
 							v-model="newMeasure.name"
 						/>
 						<FormControl
 							type="select"
 							class="flex-1"
-							:label="__('Data Type')"
+							:label="__('Data type')"
 							autocomplete="off"
 							:options="columnTypes"
 							v-model="newMeasure.type"

@@ -1,8 +1,7 @@
 import { useTimeAgo } from '@vueuse/core'
-import { call } from 'frappe-ui'
+import { call, toast } from 'frappe-ui'
 import { reactive, ref } from 'vue'
 import { confirmDialog } from '../helpers/confirm_dialog'
-import { createToast } from '../helpers/toasts'
 import router from '../router'
 import { __ } from '../translation'
 import { WorkbookListItem } from '../types/workbook.types'
@@ -35,15 +34,14 @@ function importWorkbook(workbook: any) {
 		title: __('Import Workbook'),
 		message: __('Are you sure you want to import this workbook?'),
 		onSuccess: () => {
-			call('insights.api.workbooks.import_workbook', { workbook }).then((name: string) => {
-				getWorkbooks().then(() => {
-					createToast({
-						message: __('Workbook imported successfully'),
-						variant: 'success',
+			call('insights.api.workbooks.import_workbook', { workbook }).then(
+				(imported: { workbook: string }) => {
+					getWorkbooks().then(() => {
+						toast.success(__('Workbook imported successfully'))
 					})
-				})
-				router.push(`/workbook/${name}`)
-			})
+					router.push(`/workbook/${imported.workbook}`)
+				},
+			)
 		},
 	})
 }

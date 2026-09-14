@@ -42,16 +42,15 @@ export default defineConfig({
 	fullyParallel: true,
 	grepInvert: excludeQuarantined,
 	forbidOnly: !!process.env.CI,
-	retries: process.env.CI ? 2 : 0,
-	// Two ran a full run green and three lost a flow. See "Two workers, in CI
-	// and locally" in `frontend/e2e/AGENTS.md` for the measurement.
-	workers: 2,
+	retries: process.env.CI ? 1 : 0,
+	// Four ran fastest on the CI runner and six ran slower. See "Four workers,
+	// in CI and locally" in `frontend/e2e/AGENTS.md` for the measurement.
+	workers: 4,
 	reporter: process.env.CI
 		? [['github'], ['html', { open: 'never' }]]
 		: [['list'], ['html', { open: 'never' }]],
-	// A flow that runs a query waits on DuckDB and on ibis compilation, so the
-	// generator default of 30 seconds is too tight for an author flow.
-	timeout: 90_000,
+	// Twice the slowest CI flow (18 s). See `frontend/e2e/AGENTS.md`.
+	timeout: 40_000,
 	expect: {
 		// Playwright's 5 second default expires while a first query execution is
 		// still running. Raise a single assertion above this where the flow needs

@@ -66,6 +66,7 @@ class TestSiteDBRowPermissions(InsightsIntegrationTestCase):
         with self.as_user(user):
             return len(frappe.get_list("ToDo", limit_page_length=0))
 
+    # @feature data-source.table-preview
     def test_row_count_matches_permitted_rows(self):
         for user in (USER_A, USER_B):
             with self.as_user(user):
@@ -74,6 +75,7 @@ class TestSiteDBRowPermissions(InsightsIntegrationTestCase):
                     self.permitted_count(user),
                 )
 
+    # @feature data-source.table-preview settings.apply-user-permissions
     def test_preview_shows_only_permitted_rows(self):
         for user in (USER_A, USER_B):
             with self.as_user(user):
@@ -81,6 +83,7 @@ class TestSiteDBRowPermissions(InsightsIntegrationTestCase):
                 allowed = set(frappe.get_list("ToDo", pluck="name", limit_page_length=0))
                 self.assertEqual({row["name"] for row in rows}, allowed)
 
+    # @feature data-source.table-preview
     def test_column_list_survives_permission_filtering(self):
         # the row filter is a semi-join, so it must not drop columns from the preview
         with self.as_user(USER_A):

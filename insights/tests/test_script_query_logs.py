@@ -28,6 +28,7 @@ class TestScriptQueryLogs(InsightsIntegrationTestCase):
         self.assertEqual(len(events), 1)
         return events[0]["message"]["logs"]
 
+    # @feature query.script-logs
     def test_error_is_logged_with_line_number(self):
         code = "\n".join(
             [
@@ -42,6 +43,7 @@ class TestScriptQueryLogs(InsightsIntegrationTestCase):
         self.assertIn("Line 2: results = rows[5]", logs[-1])
         self.assertIn("IndexError", logs[-1])
 
+    # @feature query.script-logs
     def test_syntax_error_is_logged(self):
         published, error = self.run_code("results = [")
 
@@ -49,6 +51,7 @@ class TestScriptQueryLogs(InsightsIntegrationTestCase):
         logs = self.get_logs(published)
         self.assertIn("SyntaxError", logs[-1])
 
+    # @feature query.script-logs
     def test_prints_before_the_error_survive(self):
         code = "\n".join(
             [
@@ -63,6 +66,7 @@ class TestScriptQueryLogs(InsightsIntegrationTestCase):
         self.assertEqual(logs[0], "step one")
         self.assertIn("ValueError: boom", logs[-1])
 
+    # @feature query.script-logs
     def test_logs_are_published_on_success(self):
         code = "\n".join(
             [
@@ -77,6 +81,7 @@ class TestScriptQueryLogs(InsightsIntegrationTestCase):
         self.assertEqual(logs[0], "done")
         self.assertRegex(logs[-1], r"^1 rows in [\d.]+s$")
 
+    # @feature query.script
     def test_empty_results_give_an_empty_table(self):
         published, results = self.run_code("results = []")
 
@@ -84,11 +89,13 @@ class TestScriptQueryLogs(InsightsIntegrationTestCase):
         self.assertEqual(len(results), 0)
         self.assertRegex(self.get_logs(published)[-1], r"^0 rows in [\d.]+s$")
 
+    # @feature query.script-variables
     def test_variables_reach_the_script(self):
         _published, results = self.run_code("results = [{'a': token}]")
 
         self.assertEqual(results["a"].tolist(), ["secret"])
 
+    # @feature query.script-variables
     def test_resolve_variables_reads_plain_dicts(self):
         variables = [{"variable_name": "token", "variable_value": "secret"}]
         self.assertEqual(resolve_variables(variables), {"token": "secret"})
@@ -108,12 +115,14 @@ class TestScriptQueryCache(InsightsIntegrationTestCase):
         builder.force = force
         return builder.build()
 
+    # @feature query.script
     def test_empty_results_build_a_queryable_table(self):
         result = self.build("results = []").execute()
 
         self.assertEqual(list(result.columns), ["results"])
         self.assertEqual(len(result), 0)
 
+    # @feature query.script-variables
     def test_a_variable_change_reruns_the_script(self):
         code = "results = [{'a': token}]"
 
@@ -123,6 +132,7 @@ class TestScriptQueryCache(InsightsIntegrationTestCase):
         second = self.build(code, variables=[{"variable_name": "token", "variable_value": "two"}])
         self.assertEqual(second.execute()["a"].tolist(), ["two"])
 
+    # @feature query.script-force-run
     def test_force_skips_the_code_cache(self):
         code = "import_count = frappe.db.count('DocType')\nresults = [{'a': import_count}]"
 

@@ -160,7 +160,7 @@ Try in this order. Stop at the first that works.
 1. `getByRole` — `getByRole('button', { name: 'New Workbook' })`
 2. `getByLabel` / `getByPlaceholder` — `getByPlaceholder('Search by title')`
 3. `getByText` — for rendered content, not for controls
-4. `getByTestId` — see below, the app has none yet
+4. `getByTestId` — see below, the app ships three
 
 A raw CSS locator needs a comment on the line above stating why the ladder
 failed:
@@ -189,8 +189,9 @@ XPath is banned outright.
   the tab bar. Prefer adding `:label="__('Export')"` to that Button in
   `frontend/src2/` over writing a CSS locator. It adds an accessible name and
   changes no behavior. List any such edit in your pull request.
-- **`src2` ships zero `data-testid` attributes.** `getByTestId` works only after
-  you add one. Add one only when the ladder and the `:label` route both fail.
+- **`src2` ships three `data-testid` attributes**, and no more: `chart` on a
+  chart's body, `dashboard-cell` and `dashboard-cell-resize` on a grid cell. Add
+  a fourth only when the ladder and the `:label` route both fail.
 - **Labels pass through `__()`.** The test site runs in English, so the source
   string is the rendered string. This app defines its own `__` in
   `frontend/src2/translation.ts`. It takes positional arguments, not an array,
@@ -205,9 +206,9 @@ XPath is banned outright.
   `WorkbookSidebarFolders.vue` draws Queries and Charts.
   `WorkbookSidebarListSection.vue` draws Dashboards only. Edit the right one.
   Check the rendered DOM before you trust a source read.
-- **Charts render as SVG**, so axis labels, legend entries and data labels are
-  real `<text>` nodes. `getByText('delivered')` reaches them. Map charts are the
-  one exception and render to canvas. See "Asserting on a chart" below.
+- **A chart's picture renders as SVG**, so axis labels and data labels are real
+  `<text>` nodes. The legend is HTML beside it, and several chart types draw no
+  picture at all. See "Asserting on a chart" below.
 - **The results table is a real `<table>`.** Body rows are role `row` and cells
   are role `cell`.
 
@@ -239,29 +240,38 @@ assert on it unless your flow is about paging.
 
 ### Asserting on a chart
 
-A chart is assertable in text. Insights renders echarts in SVG mode, so every
-axis label, legend entry and data label is a real `<text>` node in the DOM, and
-no chart except Map draws to a canvas.
+A chart is assertable in text, and it is drawn in two layers. The picture is echarts in SVG mode, so every axis label and data label is a real `<text>` node. Everything around it — the legend above all — is plain HTML beside the picture, and a chart type that draws no picture at all (a Number card, a Funnel, a Table) has no echarts node to name.
 
 Scope to the chart. The result preview under the chart builder repeats every
 category label, so an unscoped `getByText('delivered')` matches twice.
+`charts.spec.ts` holds the three locators this section describes — reuse them.
 
 ```ts
-// locator: echarts writes `_echarts_instance_` on the element it renders into,
-// so this names the chart and nothing else on the page.
-const chart = page.locator('[_echarts_instance_]')
-await expect(chart.getByText('delivered')).toBeVisible()
+// locator: `ChartBody` is the one element that holds the chart alone, whatever
+// the type draws. It is `data-testid="chart"`.
+const card = page.getByTestId('chart')
+// locator: echarts writes `_echarts_instance_` on the element it renders into.
+// Only the types that draw a picture have one.
+const plot = page.locator('[_echarts_instance_]')
+// locator: the legend is HTML, not part of the picture, and its entries are
+// buttons — clicking one switches the series off.
+const legend = page.locator('[data-slot="chart-legend"]')
+
+await expect(plot.getByText('delivered')).toBeVisible()
+await expect(legend.getByRole('button', { name: 'Revenue' })).toBeVisible()
 ```
 
-Three things the chart will not give you.
+Four things the chart will not give you.
 
-1. **Category order is not stable between runs.** Assert that a label is there,
+1. **A series name is not in the picture.** It is a legend button. Reach it
+   through the legend, never inside the echarts node.
+2. **Category order is not stable between runs.** Assert that a label is there,
    never where it is.
-2. **Values are abbreviated.** A bar of 1,778 renders its axis tick and its data
+3. **Values are abbreviated.** A bar of 1,778 renders its axis tick and its data
    label as `1.8K`. Assert the abbreviation, or read the exact number from the
    result preview table below the chart.
-3. **Data labels are off by default.** Only axis ticks and category labels are
-   in the DOM until a flow turns `Show Data Labels` on.
+4. **Data labels are off by default.** Only axis ticks and category labels are
+   in the DOM until a flow turns `Data labels` on.
 
 ## What a flow test may assert
 
@@ -450,69 +460,13 @@ otherwise.** Read the queue before you read the tests:
 redis-cli -p <redis_queue_port> llen "rq:queue:<bench>:default"
 ```
 
-### Two workers, in CI and locally
+### Four workers, in CI and locally
 
-`playwright.config.ts` pins `workers: 2`, in CI and locally.
+`playwright.config.ts` pins `workers: 4`, in CI and locally.
 
-Two ran green over a full run in 2.0 minutes. Three ran green over twelve full
-runs, then lost a flow. That is the whole measurement.
+Measured 2026-09-14 on the CI runner, every flow three times: 3 workers 465 s with one flow failing, 4 workers 431 s, 6 workers 493 s. The single flaky flow was the same at every count, so the count was not the cause. Two workers had run 61 flows in 154 s, so four is only about 15 percent faster: the runner saturates at the server, not the browser. The limiter is not the cap either; `_default_limit()` in `frappe/concurrency_limiter.py` returns `None` under `bench start`, which is what CI runs. Raising the count further buys nothing until the server does.
 
-**The cause is not established.** The server does cap live queries at 2, through
-`_default_limit()` in `frappe/concurrency_limiter.py`. The client absorbs that
-cap on its own. `src2/query/execution_queue.ts` keeps 6 queries in flight and
-retries a rejection 8 times with backoff, so one tab already sits well above the
-ceiling and still renders. Do not treat the cap as the reason.
-
-**A cheaper lever exists.** Lower `MAX_IN_FLIGHT` under test before you change
-the worker count. Nobody has tried it.
-
-Serving CI under gunicorn was tried and reverted. Every test timed out and the
-run took 16 minutes.
-
-**Raising this is untested.** Measure over at least five full runs at the new
-count before you believe a result.
-
-## Quarantine
-
-Tag a flaky test `@quarantine` and it leaves every run, which keeps the merge
-gate green while you fix it. Fix or delete it inside a week, because a
-quarantine list nobody clears is worse than a red test.
-
-Quarantine by tag, never by skip:
-
-```ts
-// quarantined 2026-08-27, ticket 21
-test('a user drills down from a chart into rows', { tag: '@quarantine' }, async ({ page }) => {
-```
-
-The merge gate excludes `@quarantine`. `test.skip` and `test.only` are lint
-errors, so the tag is the only route. Open a ticket on the map when you
-quarantine, and put its number in the comment above the test.
-
-## Lint
-
-`yarn lint:e2e` runs `eslint-plugin-playwright` over this folder. Run it before
-you report done. It must report no errors.
-
-Errors, all of them correctness:
-
-| Rule | What it stops |
-| --- | --- |
-| `no-conditional-in-test`, `no-conditional-expect` | branching tests |
-| `no-wait-for-timeout`, `no-wait-for-selector`, `no-wait-for-navigation`, `no-networkidle` | hard waits |
-| `no-focused-test`, `no-skipped-test` | `test.only`, `test.skip` |
-| `missing-playwright-await`, `valid-expect`, `valid-expect-in-promise`, `no-useless-await` | missing and stray awaits |
-| `prefer-web-first-assertions` | `expect(await ...isVisible())` |
-| `expect-expect` | a test that asserts nothing |
-| `require-top-level-describe` | a file without its area describe |
-| `no-element-handle`, `no-eval`, `no-page-pause`, `no-unsafe-references` | reaching past the locator API |
-| `valid-title`, `valid-test-tags` | malformed titles and tags |
-
-Style rules stay warnings: `no-nth-methods`, `no-force-option`,
-`prefer-locator`, `prefer-to-have-count`, `no-get-by-title` and the rest. A
-warning says your locator is fragile. Read it before you ignore it.
-
-## Worked examples
+The timeout is 40 s, twice the slowest CI flow at 18 s. A flow past that is hung, not slow.
 
 ### An author flow
 

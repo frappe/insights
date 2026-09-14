@@ -17,6 +17,18 @@ function workbookTitle(page: Page): Locator {
 }
 
 /**
+ * A query's or a dashboard's own title, which edits in place.
+ *
+ * locator: every title is a `ContentEditable`, a div with no role that Chromium
+ * exposes as plain text. Three of them can share a screen — the workbook's, the
+ * query's and the dashboard's — and the only thing that tells them apart is the
+ * type scale each caller passes in.
+ */
+function itemTitle(page: Page, scale: string): Locator {
+	return page.locator(`.${scale} > .contenteditable`)
+}
+
+/**
  * locator: the workbook actions menu opens from an icon-only button that
  * carries no accessible name. `aria-haspopup` marks it as the only menu trigger
  * in the navbar.
@@ -48,6 +60,7 @@ async function dragOnto(page: Page, item: Locator, target: Locator) {
 }
 
 test.describe('workbook', () => {
+	// @feature workbook.create
 	test('a user creates a workbook from the list', async ({ page, adminApi }) => {
 		await page.goto(`${INSIGHTS_PATH}/workbook`)
 		await page.getByRole('button', { name: 'New Workbook' }).click()
@@ -68,7 +81,8 @@ test.describe('workbook', () => {
 		await deleteWorkbook(adminApi, name)
 	})
 
-	test('a user opens a workbook and switches query, chart, dashboard tabs', async ({
+	// @feature workbook.open-tabs query.rename dashboard.rename
+	test('a user opens a workbook, switches tabs and renames the query and the dashboard', async ({
 		page,
 		demoDataSource,
 		workbookWithDashboard,
@@ -94,12 +108,36 @@ test.describe('workbook', () => {
 			new RegExp(`/workbook/${workbook.name}/dashboard/${dashboard.name}$`),
 		)
 		// The dashboard draws the chart narrower, and echarts drops the category
-		// labels that no longer fit. The value axis still runs to a 1.8K tick,
+		// labels that no longer fit. The value axis still runs to a 1,800 tick,
 		// because 1,778 of the 2,000 orders are delivered.
-		await expect(rendered.getByText('1.8K')).toBeVisible()
+		await expect(rendered.getByText('1,800')).toBeVisible()
 		await expect(page.getByRole('button', { name: 'Refresh' })).toBeVisible()
+
+		// A title edits in place and is mirrored onto the workbook, so the
+		// sidebar entry is what says the rename landed. The dashboard is on
+		// screen, so it goes first.
+		await itemTitle(page, 'text-lg-semibold').fill('Ops board')
+		await itemTitle(page, 'text-lg-semibold').press('Enter')
+		await expect(page.getByRole('link', { name: 'Ops board' })).toBeVisible()
+		await expectSaved(page)
+
+		await page.getByRole('link', { name: query.title }).click()
+		await expect(page.getByRole('cell', { name: 'order_status' })).toBeVisible()
+		await itemTitle(page, 'text-md-medium').fill('Orders by status')
+		await itemTitle(page, 'text-md-medium').press('Enter')
+		await expect(page.getByRole('link', { name: 'Orders by status' })).toBeVisible()
+		await expectSaved(page)
+
+		await page.reload()
+
+		// Both names survive the save, and the old ones are gone from the sidebar.
+		await expect(page.getByRole('link', { name: 'Orders by status' })).toBeVisible()
+		await expect(page.getByRole('link', { name: 'Ops board' })).toBeVisible()
+		await expect(page.getByRole('link', { name: query.title })).toHaveCount(0)
+		await expect(page.getByRole('link', { name: dashboard.title })).toHaveCount(0)
 	})
 
+	// @feature workbook.rename
 	test('a user renames a workbook', async ({ page, workbook }) => {
 		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}`)
 		const title = workbookTitle(page)
@@ -120,6 +158,7 @@ test.describe('workbook', () => {
 		await expect(page.getByText(workbook.title, { exact: true })).toHaveCount(0)
 	})
 
+	// @feature workbook.save
 	test('a workbook saves and survives a reload', async ({ page, workbook }) => {
 		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}`)
 		await expect(page.getByRole('link', { name: 'Query 1' })).toBeVisible()
@@ -137,6 +176,7 @@ test.describe('workbook', () => {
 		await expect(page).toHaveURL(new RegExp(`/workbook/${workbook.name}/dashboard/`))
 	})
 
+	// @feature workbook.delete
 	test('a user deletes a workbook', async ({ page, workbook }) => {
 		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}`)
 		await expect(workbookTitle(page)).toHaveText(workbook.title)
@@ -156,6 +196,7 @@ test.describe('workbook', () => {
 		await expect(page.getByText('No Workbooks')).not.toHaveCount(0)
 	})
 
+	// @feature workbook.folders
 	test('a user creates a folder and moves a query into it', async ({
 		page,
 		demoDataSource,
@@ -184,6 +225,7 @@ test.describe('workbook', () => {
 		await expect(item).toBeHidden()
 	})
 
+	// @feature permissions.share-workbook-user
 	test('a user shares a workbook with another user', async ({ page, viewerPage, workbook }) => {
 		await viewerPage.goto(`${INSIGHTS_PATH}/workbook`)
 		await expect(viewerPage.getByText(workbook.title)).toHaveCount(0)
@@ -205,5 +247,31 @@ test.describe('workbook', () => {
 
 		await viewerPage.goto(`${INSIGHTS_PATH}/workbook`)
 		await expect(viewerPage.getByText(workbook.title)).toBeVisible()
+	})
+
+	// @feature workbook.remove-item
+	test('a user removes a query from the sidebar and it stays gone after a reload', async ({
+		page,
+		demoDataSource,
+		workbookWithQuery,
+	}) => {
+		const { workbook, query } = workbookWithQuery
+		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}`)
+		const item = page.getByRole('link', { name: query.title })
+		await expect(item).toBeVisible()
+
+		// The row's X is the only control on it that carries a name.
+		await item.hover()
+		await page.getByRole('button', { name: `Remove ${query.title}` }).click()
+
+		const confirm = page.getByRole('dialog', { name: 'Delete Query' })
+		await expect(confirm.getByText('Are you sure you want to delete this query?')).toBeVisible()
+		await confirm.getByRole('button', { name: 'Confirm' }).click()
+
+		await expect(item).toHaveCount(0)
+		await expectSaved(page)
+
+		await page.reload()
+		await expect(item).toHaveCount(0)
 	})
 })

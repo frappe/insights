@@ -9,6 +9,7 @@ import {
 } from '../helpers/insights'
 
 test.describe('permissions', () => {
+	// @feature permissions.viewer-sees-granted workbook.list
 	test('a viewer sees only the workbooks granted to them', async ({ adminApi, viewerPage }) => {
 		// Both titles carry one marker, so the list search reaches this pair and
 		// nothing else. Other agents seed workbooks into the same site, so a count
@@ -28,6 +29,7 @@ test.describe('permissions', () => {
 		await deleteWorkbook(adminApi, hidden.name)
 	})
 
+	// @feature permissions.viewer-cannot-edit workbook.read-only-shield
 	test('a viewer cannot edit a workbook they can read', async ({
 		adminApi,
 		demoDataSource,
@@ -57,6 +59,7 @@ test.describe('permissions', () => {
 		await expect(viewerPage.getByRole('button', { name: 'Share' })).toHaveCount(0)
 	})
 
+	// @feature permissions.team-grant
 	test('an admin creates a team and grants a resource', async ({
 		page,
 		adminApi,
@@ -97,6 +100,7 @@ test.describe('permissions', () => {
 		await deleteTeam(adminApi, teamName)
 	})
 
+	// @feature permissions.no-source-access-no-query
 	test('a user without data source access cannot query it', async ({
 		adminApi,
 		demoDataSource,

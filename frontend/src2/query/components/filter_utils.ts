@@ -1,5 +1,5 @@
+import { FILTER_TYPE_KINDS, operators } from '../../components/filter_picker/filter_picker'
 import { FIELDTYPES, FilterType } from '../../helpers/constants'
-import { __ } from '../../translation'
 import {
 	ColumnDataType,
 	FilterExpression,
@@ -7,44 +7,17 @@ import {
 	FilterRule,
 } from '../../types/query.types'
 
+/**
+ * The operators a filter of this type offers, in the picker's own vocabulary.
+ *
+ * One table, in `filter_picker`. Two lists of operators meant a filter authored
+ * here reopened in the picker as a different rule.
+ */
 export function getOperatorOptions(filterType: FilterType) {
-	const options = [] as { label: string; value: FilterOperator }[]
-	if (filterType === 'String') {
-		options.push({ label: __('is'), value: 'in' }) // value selector
-		options.push({ label: __('is not'), value: 'not_in' }) // value selector
-		options.push({ label: __('equals'), value: '=' }) // text
-		options.push({ label: __('not equals'), value: '!=' }) // text
-		options.push({ label: __('contains'), value: 'contains' }) // text
-		options.push({ label: __('does not contain'), value: 'not_contains' }) // text
-		options.push({ label: __('starts with'), value: 'starts_with' }) // text
-		options.push({ label: __('ends with'), value: 'ends_with' }) // text
-		options.push({ label: __('is set'), value: 'is_set' }) // no value
-		options.push({ label: __('is not set'), value: 'is_not_set' }) // no value
-	}
-	if (filterType === 'Number') {
-		options.push({ label: __('equals'), value: '=' })
-		options.push({ label: __('not equals'), value: '!=' })
-		options.push({ label: __('greater than'), value: '>' })
-		options.push({ label: __('greater than or equals'), value: '>=' })
-		options.push({ label: __('less than'), value: '<' })
-		options.push({ label: __('less than or equals'), value: '<=' })
-		options.push({ label: __('between'), value: 'between' })
-		options.push({ label: __('is set'), value: 'is_set' })
-		options.push({ label: __('is not set'), value: 'is_not_set' })
-	}
-	if (filterType === 'Date') {
-		options.push({ label: __('between'), value: 'between' })
-		options.push({ label: __('equals'), value: '=' })
-		options.push({ label: __('not equals'), value: '!=' })
-		options.push({ label: __('greater than'), value: '>' })
-		options.push({ label: __('greater than or equals'), value: '>=' })
-		options.push({ label: __('less than'), value: '<' })
-		options.push({ label: __('less than or equals'), value: '<=' })
-		options.push({ label: __('within'), value: 'within' })
-		options.push({ label: __('is set'), value: 'is_set' })
-		options.push({ label: __('is not set'), value: 'is_not_set' })
-	}
-	return options
+	return operators()[FILTER_TYPE_KINDS[filterType]].map((op) => ({
+		label: op.word,
+		value: op.operator,
+	}))
 }
 
 export function getValueSelectorType(operator: FilterOperator, filterType: FilterType) {
@@ -57,7 +30,11 @@ export function getValueSelectorType(operator: FilterOperator, filterType: Filte
 		return operator === 'between' ? 'text' : 'number'
 	}
 	if (filterType === 'Date') {
-		return operator === 'between' ? 'date_range' : operator === 'within' ? 'relative_date' : 'date'
+		return operator === 'between'
+			? 'date_range'
+			: operator === 'within'
+			  ? 'relative_date'
+			  : 'date'
 	}
 	return 'text'
 }
@@ -112,7 +89,7 @@ export function isFilterValid(filter: FilterRule, filterType: FilterType) {
 			return Boolean(
 				Array.isArray(filter.value) &&
 					filter.value.length &&
-					filter.value.every((v: any) => typeof v === 'string')
+					filter.value.every((v: any) => typeof v === 'string'),
 			)
 		} else {
 			return typeof filter.value === 'string'
@@ -129,7 +106,7 @@ export function isFilterValid(filter: FilterRule, filterType: FilterType) {
 			return Boolean(
 				Array.isArray(filter.value) &&
 					filter.value.length === 2 &&
-					filter.value.every((v: any) => typeof v === 'string')
+					filter.value.every((v: any) => typeof v === 'string'),
 			)
 		}
 	}

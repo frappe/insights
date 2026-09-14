@@ -7,6 +7,7 @@ import { DOCTYPE } from '../helpers/insights'
  * spec fails for a seeding reason and never for a rendering one.
  */
 test.describe('seeding', () => {
+	// @feature tooling.e2e-seeding
 	test('gives a test a Workbook with one Query over the demo Data Source', async ({
 		adminApi,
 		workbookWithQuery,
@@ -19,6 +20,7 @@ test.describe('seeding', () => {
 		expect(query.title).toBe(workbookWithQuery.query.title)
 	})
 
+	// @feature tooling.e2e-seeding
 	test('gives a test a saved Chart over that Query', async ({ adminApi, workbookWithChart }) => {
 		const chart = await adminApi.getDoc<{
 			query: string
@@ -30,6 +32,7 @@ test.describe('seeding', () => {
 		expect(chart.chart_type).toBe('Bar')
 	})
 
+	// @feature tooling.e2e-seeding
 	test('signs the viewer in as its own Insights user', async ({ viewerApi }) => {
 		const own = await viewerApi.getDoc<{ name: string }>(DOCTYPE.USER, VIEWER_EMAIL)
 		expect(own.name).toBe(VIEWER_EMAIL)

@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import DOMPurify from 'dompurify'
 import { Editor, EditorContent, RichTextKit } from 'frappe-ui/editor'
-import { inject, ref, unref } from 'vue'
+import { computed, inject, ref, unref } from 'vue'
 import { WorkbookDashboardText } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
 import { __ } from '../translation'
@@ -9,14 +10,21 @@ const dashboard = inject<Dashboard>('dashboard')!
 const props = defineProps<{ item: WorkbookDashboardText }>()
 
 const editedText = ref(unref(props.item.text))
+
+// The card is authored as rich text and drawn as HTML, and a public link draws
+// it to a reader with no session. The dashboard sanitizes a text item on the way
+// in, so this is the second half of the same rule: an item a patch wrote, or one
+// stored before that rule existed, still reaches the DOM through here.
+const textHtml = computed(() => (props.item.text ? DOMPurify.sanitize(props.item.text) : ''))
 </script>
 
 <template>
-	<div
-		v-if="props.item.text"
-		class="prose prose-v3 h-full w-full max-w-none overflow-auto text-ink-gray-7"
-		v-html="props.item.text"
-	></div>
+	<!-- centered with `my-auto` on the content rather than `justify-center` on the
+	     box: a centered flex column scrolls away from text taller than the cell,
+	     and the top of it can never be reached -->
+	<div v-if="props.item.text" class="flex h-full w-full flex-col overflow-auto">
+		<div class="prose prose-v3 my-auto max-w-none text-ink-gray-7" v-html="textHtml"></div>
+	</div>
 	<div
 		v-else-if="dashboard.editing"
 		class="flex h-full w-full items-center text-sm text-ink-gray-4"
@@ -56,7 +64,7 @@ const editedText = ref(unref(props.item.text))
 					<template #default="{ editor }">
 						<EditorContent
 							:editor="editor"
-							class="h-auto min-h-[8rem] cursor-text rounded bg-surface-gray-2 p-2"
+							class="h-auto min-h-[8rem] cursor-text rounded-4 bg-surface-gray-2 p-2"
 						/>
 					</template>
 				</Editor>

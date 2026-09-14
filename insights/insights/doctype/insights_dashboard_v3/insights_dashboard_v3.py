@@ -12,7 +12,15 @@ from frappe.query_builder.functions import Now
 from frappe.utils.html_utils import sanitize_html
 from frappe.utils.telemetry import capture
 
+from insights.insights.doctype.insights_chart_v3.chart_query import (
+    config_filter_group,
+    derive_operations,
+    result_column,
+)
 from insights.utils import DocShare, File, get_app_url
+
+# a filter links a column as "links": { '<chart>': "`<query>`.`<column>`" }
+LINK_COLUMN = re.compile(r"^`([^`]+)`\.`([^`]+)`$")
 
 
 class InsightsDashboardv3(Document):
@@ -120,46 +128,188 @@ class InsightsDashboardv3(Document):
         self.enqueue_update_dashboard_preview()
 
     def set_linked_charts(self):
-        self.set(
-            "linked_charts",
-            [{"chart": item["chart"]} for item in frappe.parse_json(self.items) if item["type"] == "chart"],
+        """The charts the grid names, once each.
+
+        A Number chart draws one reading per cell, so several cells can name one
+        chart. This table answers which charts the dashboard reaches, which is a
+        question about charts and not about cells.
+        """
+        charts = dict.fromkeys(
+            item["chart"] for item in frappe.parse_json(self.items) if item["type"] == "chart"
         )
+        self.set("linked_charts", [{"chart": chart} for chart in charts])
+
+    def filter_source(self, filter_name: str) -> tuple[str, str, str] | None:
+        """The chart, query and column a named filter on this dashboard reads.
+
+        The stored items, deliberately. This is what decides which column a
+        caller may ask for at all, so it is read from the row rather than from
+        `self`, which a method call builds out of the request body — and a
+        caller that names the filter never has to be handed the link that says
+        where it lands.
+        """
+        stored = frappe.db.get_value(self.doctype, self.name, "items")
+        items = frappe.parse_json(stored) or []
+        charts = {item.get("chart") for item in items if item.get("type") == "chart"}
+
+        for item in items:
+            if item.get("type") != "filter" or item.get("filter_name") != filter_name:
+                continue
+            for chart, link in (item.get("links") or {}).items():
+                match = LINK_COLUMN.match(link or "")
+                if match and chart in charts:
+                    return chart, *match.groups()
+
+        return None
 
     @frappe.whitelist()
     def get_distinct_column_values(
-        self, query: str, column_name: str, search_term: str | None = None, adhoc_filters: dict | None = None
+        self,
+        filter_name: str,
+        search_term: str | None = None,
+        filter_context: dict | None = None,
     ):
+        """The values one of this dashboard's filters offers.
+
+        Who may read this dashboard was settled before this ran: the builder
+        reaches it through `run_doc_method`, and a public link through the same
+        endpoint's public fallback. The read is the whole gate, so this reaches the
+        query's plain method rather than the `Insights User` endpoint.
+
+        `filter_context` is what the rest of the grid currently holds, unrouted:
+        the `chart` the links are followed under, and the `filters` state. Routing
+        happens here for the same reason it does everywhere else. This filter is
+        left out of its own list, or picking a second value would be impossible.
+
+        The routing table is this document's own `items`, never the request's: a
+        link names a query and a column, and a forged one would narrow this list
+        by a column nobody published, which answers a question about it. The
+        builder's unsaved grid still routes, because `run_doc_method` builds
+        `self` out of its request body, and the public fallback re-reads the
+        stored document, which is the same rule `filter_source` states.
+        """
+        query, column_name, adhoc_filters = self._filter_column_source(filter_name, filter_context)
+        doc = frappe.get_cached_doc("Insights Query v3", query)
+        return doc.distinct_column_values(column_name, search_term=search_term, adhoc_filters=adhoc_filters)
+
+    def _filter_column_source(self, filter_name: str, filter_context: dict | None = None):
+        """Where one of this dashboard's own filters lands, and what the rest of
+        the grid narrows it by.
+
+        One answer for the values a filter offers and for the range it offers, so
+        the two cannot read different rows.
+        """
         from insights.permissions import check_referenced_query_access
 
-        is_guest = frappe.session.user == "Guest"
-        if is_guest and not self.is_public:
-            raise frappe.PermissionError
-
-        if not self.is_filter_column(query, column_name):
+        source = self.filter_source(filter_name)
+        if not source:
             frappe.throw(
-                frappe._("This column is not available as a filter on this dashboard"),
+                frappe._("This filter is not available on this dashboard"),
                 frappe.PermissionError,
             )
+        _chart, query, column_name = source
+
+        adhoc_filters = None
+        if filter_context:
+            adhoc_filters = route_filters(
+                self.items,
+                filter_context.get("chart"),
+                filter_context.get("filters"),
+                filter_name,
+            )
+
+        # The stored row says which query the filter lands on, and the same person
+        # who asks the question wrote that row. So the caller's read on the query
+        # is checked here too — reading a dashboard already grants it on every
+        # query behind its charts.
+        check_referenced_query_access(query)
+
+        return query, column_name, adhoc_filters
+
+    @frappe.whitelist()
+    def get_card_column_values(self, chart: str, column: str, search_term: str | None = None):
+        """The values a reader's own card filter offers, for a card on this grid.
+
+        A card filter is not a saved filter. The author never named it, so
+        `filter_source` cannot answer where it lands. What it may ask for is
+        settled the same way: the stored items say which charts this dashboard
+        draws, and the card's own operations say which columns it draws and which
+        source column each of them reads. A column the card does not draw is not
+        one a reader may ask about, and a column no source column holds (a
+        measure, a column a pivot made) offers no values rather than refusing.
+
+        The card's own filters narrow the list, so it never offers what the card
+        does not show.
+
+        This lives here, and not on the query, because the dashboard is what a
+        public reader was published. Reaching the query's own method would ask a
+        document the reader holds no permission on.
+        """
+        from insights.permissions import check_referenced_query_access
+
+        query, column_name, card_filters = self._card_filter_source(chart, column)
+        if not column_name:
+            return []
 
         check_referenced_query_access(query)
 
         doc = frappe.get_cached_doc("Insights Query v3", query)
-        return doc.get_distinct_column_values(
-            column_name, search_term=search_term, adhoc_filters=adhoc_filters
-        )
+        return doc.distinct_column_values(column_name, search_term=search_term, adhoc_filters=card_filters)
 
-    def is_filter_column(self, query, column_name):
-        # a filter links a column as "links": { '<chart>': "`<query>`.`<column>`" }
-        pattern = "^`([^`]+)`\\.`([^`]+)`$"
-        items = frappe.parse_json(self.items)
-        for item in items:
-            if item["type"] != "filter":
-                continue
-            for linked_column in item.get("links", {}).values():
-                match = re.match(pattern, linked_column)
-                if match and match.groups() == (query, column_name):
-                    return True
-        return False
+    def _card_filter_source(self, chart: str, column: str) -> tuple[str, str | None, dict | None]:
+        """Where a card filter on this grid lands, refusing what it may not ask.
+
+        The stored items, for the reason `filter_source` states them: `self` is
+        built out of the request body for a signed-in caller, so what a reader may
+        ask about is read from the row.
+        """
+        stored = frappe.parse_json(frappe.db.get_value(self.doctype, self.name, "items")) or []
+        charts = {item.get("chart") for item in stored if item.get("type") == "chart"}
+        if chart not in charts:
+            frappe.throw(
+                frappe._("This chart is not on this dashboard"),
+                frappe.PermissionError,
+            )
+
+        query, column_name, card_filters = card_filter_source(chart, column)
+        if not query:
+            frappe.throw(
+                frappe._("This column cannot be filtered"),
+                frappe.PermissionError,
+            )
+
+        return query, column_name, card_filters
+
+    @frappe.whitelist()
+    def get_card_column_range(self, chart: str, column: str):
+        """The range a reader's own card filter offers, for a card on this grid.
+
+        Addressed, gated and narrowed the way `get_card_column_values` is: a
+        range read off more rows than the card draws is the same overreach as a
+        value list read off them.
+        """
+        from insights.permissions import check_referenced_query_access
+
+        query, column_name, card_filters = self._card_filter_source(chart, column)
+        if not column_name:
+            return None
+
+        check_referenced_query_access(query)
+
+        doc = frappe.get_cached_doc("Insights Query v3", query)
+        return doc.column_range(column_name, adhoc_filters=card_filters)
+
+    @frappe.whitelist()
+    def get_filter_column_range(self, filter_name: str, filter_context: dict | None = None):
+        """The range one of this dashboard's own filters offers.
+
+        Addressed and routed the way `get_distinct_column_values` is: the preset
+        ranges a picker offers and the values it lists answer the same question
+        about the same rows.
+        """
+        query, column_name, adhoc_filters = self._filter_column_source(filter_name, filter_context)
+        doc = frappe.get_cached_doc("Insights Query v3", query)
+        return doc.column_range(column_name, adhoc_filters=adhoc_filters)
 
     def enqueue_update_dashboard_preview(self):
         if self.is_new() or not self.get_doc_before_save() or frappe.flags.in_patch:
@@ -313,6 +463,163 @@ class InsightsDashboardv3(Document):
             capture("dashboard_shared_with_user", "insights")
         if is_public:
             capture("dashboard_set_public", "insights")
+
+
+# The two operators that ask about the column itself, so they stand without a value.
+VALUELESS_OPERATORS = ("is_set", "is_not_set")
+
+
+def _filter_is_set(state: dict) -> bool:
+    """Whether a filter's state says enough to run.
+
+    A filter picked an operator and not yet a value is the normal half-filled
+    state of the picker, and routing it would narrow every chart on the page by
+    a comparison against nothing.
+    """
+    operator = state.get("operator")
+    if not operator:
+        return False
+    if operator in VALUELESS_OPERATORS:
+        return True
+    return state.get("value") not in (None, "", [])
+
+
+def route_filters(
+    items, chart: str, filter_states: dict | None, exclude_filter: str | None = None
+) -> dict | None:
+    """Dashboard filter state, routed to the queries the filters are linked to.
+
+    One router for every surface. The builder is editing items it has not saved
+    yet, so it sends those. A reading surface names its dashboard, and the
+    routing table is read from that dashboard's stored items. Routing is the
+    same either way, and it belongs on this side: a link names a query and a
+    column, and the client never has to take the link apart.
+
+    `exclude_filter` leaves one filter out. A filter offering its own values
+    must not narrow them by what it currently holds, or picking a second value
+    would be impossible.
+    """
+    if not filter_states:
+        return None
+
+    filters_by_query = {}
+
+    for item in frappe.parse_json(items) or []:
+        if item.get("type") != "filter":
+            continue
+
+        filter_name = item.get("filter_name")
+        if exclude_filter and filter_name == exclude_filter:
+            continue
+
+        state = filter_states.get(filter_name) or {}
+        if not _filter_is_set(state):
+            continue
+
+        link = (item.get("links") or {}).get(chart)
+        match = LINK_COLUMN.match(link) if link else None
+        if not match:
+            continue
+
+        query, column = match.groups()
+        group = filters_by_query.setdefault(
+            query, {"type": "filter_group", "logical_operator": "And", "filters": []}
+        )
+        group["filters"].append(
+            {
+                "type": "filter",
+                "column": {"type": "column", "column_name": column},
+                "operator": state["operator"],
+                "value": state.get("value"),
+            }
+        )
+
+    return filters_by_query or None
+
+
+def card_filter_source(chart: str, column: str) -> tuple[str | None, str | None, dict | None]:
+    """Where a card filter lands: the card's query, the source column the named
+    column reads, and the narrowing the card itself already applies.
+
+    The card's own operations answer all three, so every chart type is read the
+    same way. Its aggregating operation names every column the picture holds
+    (the dimensions it groups by, under the names they come back as, and the
+    measures it states), and a column no operation names is not one the card
+    draws. That is a
+    `None` query, which is what the caller refuses.
+
+    A dimension reads a source column, and that column is where its values come
+    from. A measure reads none: it is computed over the result, and so is every
+    column a pivot makes. Both are drawn and offer no values, which is what a
+    source column of `None` says. A pivot names its columns after the values its
+    data holds, so on a pivoted card that is the answer for every column the
+    config does not name.
+
+    The card's own filters come back with it because a list offering what the
+    card does not show reaches past what the chart published.
+    """
+    query, chart_type, config = frappe.db.get_value(
+        "Insights Chart v3", chart, ["query", "chart_type", "config"]
+    ) or (None, None, None)
+    if not query:
+        return None, None, None
+
+    config = frappe.parse_json(config or "{}")
+    filter_group = config_filter_group(config)
+    card_filters = {query: filter_group} if filter_group else None
+
+    for operation in derive_operations(chart_type, query, config):
+        if operation["type"] == "summarize":
+            dimensions, measures = operation["dimensions"], operation["measures"]
+        elif operation["type"] == "pivot_wider":
+            dimensions, measures = [*operation["rows"], *operation["columns"]], operation["values"]
+        else:
+            continue
+
+        for dimension in dimensions:
+            if dimension and result_column(dimension) == column:
+                return query, dimension.get("column_name"), card_filters
+
+        if any(measure and measure.get("measure_name") == column for measure in measures):
+            return query, None, card_filters
+
+        if operation["type"] == "pivot_wider":
+            return query, None, card_filters
+
+    return None, None, None
+
+
+def route_card_filters(chart: str, card_filters: list | None, adhoc_filters: dict | None) -> dict | None:
+    """The reader's own filters on one card, landing on the card's own query.
+
+    A card filter is the reader's and not the author's: it names a column the
+    card draws and reaches no further, so it is taken from the request whole on
+    every surface, public included. It lands under the chart's own name, which is
+    what the chart's derived query is called, so the rule falls after the chart's
+    summarize — on the columns the card draws, measures included.
+    """
+    rules = []
+    for card_filter in frappe.parse_json(card_filters) or []:
+        column = card_filter.get("column")
+        operator = card_filter.get("operator")
+        if not column or not isinstance(column, str) or not operator:
+            continue
+        rules.append(
+            {
+                "type": "filter",
+                "column": {"type": "column", "column_name": column},
+                "operator": operator,
+                "value": card_filter.get("value"),
+            }
+        )
+
+    if not rules:
+        return adhoc_filters
+
+    routed = dict(adhoc_filters or {})
+    group = routed.setdefault(chart, {"type": "filter_group", "logical_operator": "And", "filters": []})
+    group["filters"] = [*group["filters"], *rules]
+    return routed
 
 
 def get_page_preview(url: str, headers: dict | None = None) -> bytes:

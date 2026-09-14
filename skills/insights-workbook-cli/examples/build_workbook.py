@@ -128,9 +128,13 @@ def drop_scratch():
 
 
 def item_key(item):
-    """What identifies an item across runs. The UI writes its own `layout.i`."""
+    """What identifies an item across runs. The UI writes its own `layout.i`.
+
+    A Number chart draws one cell per reading, every one of them naming the same
+    chart, so its `reading` is part of the key.
+    """
     if item.get("type") == "chart":
-        return ("chart", item.get("chart"))
+        return ("chart", item.get("chart"), item.get("reading"))
     if item.get("type") == "filter":
         return ("filter", item.get("filter_name"))
     return ("item", (item.get("layout") or {}).get("i"))
@@ -273,7 +277,7 @@ def build():
                 {
                     "type": "chart",
                     "chart": charts["revenue_trend"],
-                    "layout": {"i": "item-revenue-trend", "x": 0, "y": 0, "w": 20, "h": 9},
+                    "layout": {"i": "item-revenue-trend", "x": 0, "y": 0, "w": 20, "h": 20},
                 },
                 {
                     "type": "filter",
@@ -282,7 +286,7 @@ def build():
                     "default_operator": "within",
                     "default_value": "Last 12 months",
                     "links": {charts["revenue_trend"]: f"`{queries['invoices']}`.`posting_date`"},
-                    "layout": {"i": "filter-date", "x": 0, "y": 9, "w": 4, "h": 1},
+                    "layout": {"i": "filter-date", "x": 0, "y": 20, "w": 4, "h": 2},
                 },
             ],
         },
@@ -310,6 +314,8 @@ DIMENSION_KEYS = {
     "location_column",
     "source_column",
     "target_column",
+    "x_column",
+    "y_column",
 }
 MEASURE_KEYS = {
     "number_columns",
@@ -471,7 +477,7 @@ def verify():
     for q in queries:
         operations = operations_by_query[q["name"]]
         if not operations:
-            continue  # a chart's own data_query is empty until the UI opens it
+            continue
         try:
             result = execute(q["name"])
         except SystemExit as e:

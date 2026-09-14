@@ -1,7 +1,7 @@
 import { useDebouncedRefHistory } from '@vueuse/core'
 import { Buffer } from 'buffer'
 import { isEqual } from 'es-toolkit'
-import { call, dayjs } from 'frappe-ui'
+import { call, dayjs, toast } from 'frappe-ui'
 import { computed, reactive, ref, toRefs, unref, watch } from 'vue'
 import {
 	copy,
@@ -16,9 +16,7 @@ import {
 import { confirmDialog } from '../helpers/confirm_dialog'
 import { FIELDTYPES } from '../helpers/constants'
 import useDocumentResource from '../helpers/resource'
-import { createToast } from '../helpers/toasts'
 import { __ } from '../translation'
-import router from '../router'
 import session from '../session'
 import { isServerBusyError, scheduleQueryExecution } from './execution_queue'
 import {
@@ -27,18 +25,14 @@ import {
 	ColumnDataType,
 	ColumnOption,
 	CustomOperationArgs,
-	Dimension,
-	FilterArgs,
 	FilterGroupArgs,
 	FilterRule,
 	JoinArgs,
-	Measure,
 	Mutate,
 	MutateArgs,
 	Operation,
 	OrderByArgs,
 	PivotWiderArgs,
-	QueryResult,
 	QueryResultColumn,
 	QueryResultRow,
 	Rename,
@@ -52,15 +46,14 @@ import {
 	aggregations,
 } from '../types/query.types'
 import { InsightsQueryv3, QueryVariable } from '../types/workbook.types'
-import useWorkbook from '../workbook/workbook'
 import {
 	cast,
 	code,
 	column,
 	custom_operation,
+	emptyResult,
 	expression,
 	filter_group,
-	getAggregateConditions,
 	getDimensions,
 	getFormattedRows,
 	getMeasures,
@@ -158,18 +151,18 @@ export function makeQuery(name: string) {
 
 	const isServerBusy = ref(false)
 	const executionError = ref('')
-	const result = ref({ ...EMPTY_RESULT })
+	const result = ref(emptyResult())
 	const executing = ref(false)
 	const downloading = ref(false)
 	const currentDownloadToken = ref<number | null>(null)
 	const currentPage = ref(1)
 	const pageSize = ref(100)
-	let lastExecutionArgs: {
+	const lastExecutionArgs = ref<{
 		operations: Operation[]
 		adhoc_filters?: AdhocFilters
 		page?: number
 		page_size?: number
-	}
+	}>()
 	let currentExecutionToken = 0
 
 	const adhocFilters = ref<AdhocFilters>()
@@ -194,7 +187,7 @@ export function makeQuery(name: string) {
 		if (!query.islocal) {
 			await waitUntil(() => query.isloaded)
 		}
-		if (lastExecutionArgs && isEqual(lastExecutionArgs, currentExecutionArgs())) {
+		if (lastExecutionArgs.value && isEqual(lastExecutionArgs.value, currentExecutionArgs())) {
 			return
 		}
 		return execute()
@@ -216,10 +209,10 @@ export function makeQuery(name: string) {
 		// recorded before the request, and above the empty-operations return,
 		// because both paths replace `result`. A caller watching it would
 		// otherwise re-ask before the write landed, or never see one at all.
-		lastExecutionArgs = currentExecutionArgs()
+		lastExecutionArgs.value = currentExecutionArgs()
 
 		if (!query.doc.operations.length) {
-			result.value = { ...EMPTY_RESULT }
+			result.value = emptyResult()
 			return
 		}
 
@@ -236,47 +229,46 @@ export function makeQuery(name: string) {
 					page: currentPage.value,
 					page_size: pageSize.value,
 				}),
-			{ isStale, priority: executionPriority.value }
+			{ isStale, priority: executionPriority.value },
 		)
-		.then((response: any) => {
-			if (isStale()) return
-			if (!response) return
+			.then((response: any) => {
+				if (isStale()) return
+				if (!response) return
 
-			result.value.executedSQL = response.sql
-			// the row keeps a hidden column; only the listing drops it
-			result.value.columns = response.columns.filter((c: QueryResultColumn) => !c.hidden)
-			result.value.rows = response.rows
-			Object.assign(session.site.currency_symbols, response.currency_symbols || {})
-			result.value.totalRowCount = 0
-			result.value.formattedRows = getFormattedRows(result.value, query.doc.operations)
+				result.value.executedSQL = response.sql
+				// the row keeps a hidden column; only the listing drops it
+				result.value.columns = response.columns.filter((c: QueryResultColumn) => !c.hidden)
+				result.value.rows = response.rows
+				Object.assign(session.site.currency_symbols, response.currency_symbols || {})
+				result.value.formattedRows = getFormattedRows(result.value, query.doc.operations)
 
-			const aggregationPrefixes = aggregations.map((a) => `${a}_`)
-			const isAggregatedSql = Boolean(response.is_aggregated_sql)
-			const isMeasureColumn = (column: QueryResultColumn) =>
-				measureColumns.value.includes(column.name) ||
-				aggregationPrefixes.some((prefix) => column.name.startsWith(prefix)) ||
-				(isAggregatedSql && FIELDTYPES.NUMBER.includes(column.type))
+				const aggregationPrefixes = aggregations.map((a) => `${a}_`)
+				const isAggregatedSql = Boolean(response.is_aggregated_sql)
+				const isMeasureColumn = (column: QueryResultColumn) =>
+					measureColumns.value.includes(column.name) ||
+					aggregationPrefixes.some((prefix) => column.name.startsWith(prefix)) ||
+					(isAggregatedSql && FIELDTYPES.NUMBER.includes(column.type))
 
-			result.value.columnOptions = result.value.columns.map((column) => {
-				return {
-					label: column.name,
-					value: column.name,
-					description: column.type,
-					query: query.doc.name,
-					data_type: column.type,
-					is_measure: isMeasureColumn(column),
-				}
+				result.value.columnOptions = result.value.columns.map((column) => {
+					return {
+						label: column.name,
+						value: column.name,
+						description: column.type,
+						query: query.doc.name,
+						data_type: column.type,
+						is_measure: isMeasureColumn(column),
+					}
+				})
+				result.value.timeTaken = response.time_taken
+				result.value.lastExecutedAt = new Date()
 			})
-			result.value.timeTaken = response.time_taken
-			result.value.lastExecutedAt = new Date()
-		})
 			.catch((err) => {
 				if (isStale()) return
 				isServerBusy.value = isServerBusyError(err)
 				// a failed run used to clear the table and say nothing, so the
 				// message has to survive the reset for the editor to show it
 				executionError.value = isServerBusy.value ? '' : getErrorMessage(err)
-				result.value = { ...EMPTY_RESULT }
+				result.value = emptyResult()
 			})
 			.finally(() => {
 				if (isStale()) return
@@ -306,7 +298,7 @@ export function makeQuery(name: string) {
 			query.call('get_count', {
 				active_operation_idx: activeOperationIdx.value,
 				adhoc_filters: adhocFilters.value,
-			})
+			}),
 		)
 			.then((count: number) => {
 				result.value.totalRowCount = count || 0
@@ -449,12 +441,12 @@ export function makeQuery(name: string) {
 			(op) =>
 				op.type === 'order_by' &&
 				op.column.column_name === args.column.column_name &&
-				op.direction === args.direction
+				op.direction === args.direction,
 		)
 		if (existingOrderBy) return
 
 		const existingOrderByIndex = currentOperations.value.findIndex(
-			(op) => op.type === 'order_by' && op.column.column_name === args.column.column_name
+			(op) => op.type === 'order_by' && op.column.column_name === args.column.column_name,
 		)
 		if (existingOrderByIndex > -1) {
 			query.doc.operations[existingOrderByIndex] = order_by(args)
@@ -465,7 +457,7 @@ export function makeQuery(name: string) {
 
 	function removeOrderBy(column_name: string) {
 		const index = query.doc.operations.findIndex(
-			(op) => op.type === 'order_by' && op.column.column_name === column_name
+			(op) => op.type === 'order_by' && op.column.column_name === column_name,
 		)
 		if (index > -1) {
 			query.doc.operations.splice(index, 1)
@@ -497,7 +489,7 @@ export function makeQuery(name: string) {
 	function renameColumn(oldName: string, newName: string) {
 		// Check if there's a mutate operation with the old name
 		const existingMutateIdx = currentOperations.value.findIndex(
-			(op) => op.type === 'mutate' && op.new_name === oldName
+			(op) => op.type === 'mutate' && op.new_name === oldName,
 		)
 
 		if (existingMutateIdx !== -1) {
@@ -511,7 +503,7 @@ export function makeQuery(name: string) {
 		}
 
 		const existingRenameIdx = currentOperations.value.findIndex(
-			(op) => op.type === 'rename' && op.new_name === oldName
+			(op) => op.type === 'rename' && op.new_name === oldName,
 		)
 
 		if (existingRenameIdx === -1) {
@@ -520,7 +512,7 @@ export function makeQuery(name: string) {
 				rename({
 					column: column(oldName),
 					new_name: newName,
-				})
+				}),
 			)
 			return
 		}
@@ -540,7 +532,7 @@ export function makeQuery(name: string) {
 			rename({
 				column: column(originalColumnName),
 				new_name: newName,
-			})
+			}),
 		)
 	}
 
@@ -563,7 +555,7 @@ export function makeQuery(name: string) {
 	function changeColumnType(column_name: string, newType: ColumnDataType) {
 		// Check if there's a mutate operation with the old name
 		const existingMutateIdx = currentOperations.value.findIndex(
-			(op) => op.type === 'mutate' && op.new_name === column_name
+			(op) => op.type === 'mutate' && op.new_name === column_name,
 		)
 
 		if (existingMutateIdx !== -1) {
@@ -580,7 +572,7 @@ export function makeQuery(name: string) {
 			cast({
 				column: column(column_name),
 				data_type: newType,
-			})
+			}),
 		)
 	}
 
@@ -600,85 +592,75 @@ export function makeQuery(name: string) {
 		activeOperationIdx.value = newOperations.length - 1
 	}
 
-	function downloadResults(format: string = 'csv', filename?: string) {
-		const _downloadResults = () => {
-			downloading.value = true
-			const token = Date.now() + Math.random()
-			currentDownloadToken.value = token
-			return call('insights.api.run_doc_method', {
-				method: 'download_results',
-				docs: {
-					...(query.doc || {}),
-					__islocal: query.islocal,
-				},
-				args: {
-					format,
-					active_operation_idx: activeOperationIdx.value,
-					adhoc_filters: adhocFilters.value,
-				},
+	function exportResults(format: string = 'csv', filename?: string) {
+		downloading.value = true
+		const token = Date.now() + Math.random()
+		currentDownloadToken.value = token
+		return call('insights.api.run_doc_method', {
+			method: 'download_results',
+			docs: {
+				...(query.doc || {}),
+				__islocal: query.islocal,
+			},
+			args: {
+				format,
+				active_operation_idx: activeOperationIdx.value,
+				adhoc_filters: adhocFilters.value,
+			},
+		})
+			.then((payload: any) => {
+				if (currentDownloadToken.value !== token) return
+				const data: string = payload?.message
+				if (!data) {
+					toast.warning(__('Download Failed'), {
+						description: __('No data found to download.'),
+					})
+					return
+				}
+
+				let blob: Blob
+				let extension: string
+				let mimeType: string
+
+				if (format === 'excel') {
+					const bytes = Buffer.from(data, 'base64')
+					blob = new Blob([bytes], {
+						type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+					})
+					extension = 'xlsx'
+					mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+				} else {
+					blob = new Blob([data], { type: 'text/csv' })
+					extension = 'csv'
+					mimeType = 'text/csv'
+				}
+
+				const url = window.URL.createObjectURL(blob)
+				const a = document.createElement('a')
+				a.setAttribute('hidden', '')
+				a.setAttribute('href', url)
+				const finalFileName = `${filename || query.doc.title || 'data'}.${extension}`
+				a.setAttribute('download', finalFileName)
+				document.body.appendChild(a)
+				a.click()
+				document.body.removeChild(a)
+				window.URL.revokeObjectURL(url)
+				toast.success(__('Export Successful'), {
+					description: __(`File "{0}" exported successfully`, finalFileName),
+				})
 			})
-				.then((payload: any) => {
-					if (currentDownloadToken.value !== token) return
-					const data: string = payload?.message
-					if (!data) {
-						createToast({
-							title: __('Download Failed'),
-							message: __('No data found to download.'),
-							variant: 'warning',
-						})
-						return
-					}
-
-					let blob: Blob
-					let extension: string
-					let mimeType: string
-
-					if (format === 'excel') {
-						const bytes = Buffer.from(data, 'base64')
-						blob = new Blob([bytes], {
-							type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-						})
-						extension = 'xlsx'
-						mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-					} else {
-						blob = new Blob([data], { type: 'text/csv' })
-						extension = 'csv'
-						mimeType = 'text/csv'
-					}
-
-					const url = window.URL.createObjectURL(blob)
-					const a = document.createElement('a')
-					a.setAttribute('hidden', '')
-					a.setAttribute('href', url)
-					const finalFileName = `${filename || query.doc.title || 'data'}.${extension}`
-					a.setAttribute('download', finalFileName)
-					document.body.appendChild(a)
-					a.click()
-					document.body.removeChild(a)
-					window.URL.revokeObjectURL(url)
-					createToast({
-						title: __('Export Successful'),
-						message: __(`File "{0}" exported successfully`, finalFileName),
-						variant: 'success',
-					})
+			.catch((error: any) => {
+				if (currentDownloadToken.value !== token) return
+				toast.error(__('Download Failed'), {
+					description: error?.message || __('Failed to download file'),
 				})
-				.catch((error: any) => {
-					if (currentDownloadToken.value !== token) return
-					createToast({
-						title: __('Download Failed'),
-						message: error?.message || __('Failed to download file'),
-						variant: 'error',
-					})
-				})
-				.finally(() => {
-					if (currentDownloadToken.value === token) {
-						downloading.value = false
-						currentDownloadToken.value = null
-					}
-				})
-		}
-
-		_downloadResults()
+			})
+			.finally(() => {
+				if (currentDownloadToken.value === token) {
+					downloading.value = false
+					currentDownloadToken.value = null
+				}
+			})
 	}
 
 	function cancelDownload() {
@@ -686,11 +668,15 @@ export function makeQuery(name: string) {
 		downloading.value = false
 	}
 
-	function exportResults(format: string, filename: string) {
-		downloadResults(format, filename)
-	}
-
-	function getDistinctColumnValues(column: string, search_term: string = '', limit: number = 20) {
+	// `adhoc_filters` is an argument so a caller listing the values of a filter it
+	// is editing can leave that filter out, which is the only way picking a second
+	// value stays possible.
+	function getDistinctColumnValues(
+		column: string,
+		search_term: string = '',
+		limit: number = 20,
+		adhoc_filters: AdhocFilters | undefined = adhocFilters.value,
+	) {
 		let _activeOperationIdx = activeOperationIdx.value
 		if (activeEditIndex.value > -1) {
 			_activeOperationIdx = activeEditIndex.value - 1
@@ -698,10 +684,27 @@ export function makeQuery(name: string) {
 
 		return query.call('get_distinct_column_values', {
 			active_operation_idx: _activeOperationIdx,
-			adhoc_filters: adhocFilters.value,
+			adhoc_filters,
 			column_name: column,
 			search_term,
 			limit,
+		})
+	}
+
+	/** The smallest and largest a numeric column goes, for a filter's presets. */
+	function getColumnRange(
+		column: string,
+		adhoc_filters: AdhocFilters | undefined = adhocFilters.value,
+	) {
+		let _activeOperationIdx = activeOperationIdx.value
+		if (activeEditIndex.value > -1) {
+			_activeOperationIdx = activeEditIndex.value - 1
+		}
+
+		return query.call('get_column_range', {
+			active_operation_idx: _activeOperationIdx,
+			adhoc_filters,
+			column_name: column,
 		})
 	}
 
@@ -773,293 +776,22 @@ export function makeQuery(name: string) {
 		return query
 			.save()
 			.then(() => {
-				createToast({
-					title: __('Variables Updated'),
-					message: __('Script variables have been saved securely.'),
-					variant: 'success',
+				toast.success(__('Variables Updated'), {
+					description: __('Script variables have been saved securely.'),
 				})
 			})
 			.catch((error) => {
-				createToast({
-					title: __('Failed to Update Variables'),
-					message: error.message || __('An error occurred while saving variables.'),
-					variant: 'error',
+				toast.error(__('Failed to Update Variables'), {
+					description: error.message || __('An error occurred while saving variables.'),
 				})
 				throw error
 			})
 	}
 
-	async function getDrillDownQuery(col: QueryResultColumn, row: QueryResultRow) {
-		if (!session.isLoggedIn) {
-			return
-		}
-
-		const rowIndex = result.value.formattedRows.findIndex((r) => r === row)
-		const currRow = result.value.rows[rowIndex]
-
-		// Get the effective operations — inlining source query ops if needed
-		const operations = await getEffectiveOperationsForDrillDown(
-			copy(query.doc.operations),
-			currRow,
-			col,
-		)
-		if (!operations) {
-			// error toast was already shown
-			return
-		}
-
-		const { ops, filters: inheritedFilters } = operations
-
-		// Now find the last summarize/pivot in the resolved operations
-		const reversedOps = ops.slice().reverse()
-
-		let drillDownFilters: FilterArgs[] = []
-		let sliceIdx = -1
-
-		const lastPivotIdx = reversedOps.findIndex((op: Operation) => op.type === 'pivot_wider')
-		if (lastPivotIdx !== -1) {
-			sliceIdx = reversedOps.length - lastPivotIdx - 1
-			drillDownFilters = getDrillDownFiltersForPivot(ops, sliceIdx, col, currRow)
-		}
-
-		const lastSummarizeIdx = reversedOps.findIndex((op: Operation) => op.type === 'summarize')
-		if (lastSummarizeIdx !== -1) {
-			sliceIdx = reversedOps.length - lastSummarizeIdx - 1
-			drillDownFilters = getDrillDownFiltersForSummarize(ops, sliceIdx, col, currRow)
-		}
-
-		const drill_down_query = makeAdhocQuery()
-		drill_down_query.doc.title = 'Drill Down'
-		drill_down_query.doc.use_live_connection = query.doc.use_live_connection
-		drill_down_query.autoExecute = true
-
-		drill_down_query.setOperations(ops.slice(0, sliceIdx))
-		drill_down_query.addFilterGroup({
-			logical_operator: 'And',
-			filters: [...inheritedFilters, ...drillDownFilters],
-		})
-
-		return drill_down_query
-	}
-
-	/**
-	 * Returns the effective operations list for drill-down.
-	 *
-	 * If the current operations already have a summarize/pivot, return them as-is.
-	 * Otherwise, if the source is another query, inline that source query's operations
-	 * (prepending any filters from the current query) so the drill-down can find the
-	 * source query's summarize and slice through it.
-	 *
-	 * Returns null and shows a toast if drill-down is not possible.
-	 */
-	async function getEffectiveOperationsForDrillDown(
-		operations: Operation[],
-		currRow: QueryResultRow,
-		col: QueryResultColumn,
-		_visitedQueries: Set<string> = new Set(),
-	): Promise<{ ops: Operation[]; filters: FilterArgs[] } | null> {
-		// If there's a local summarize/pivot, no inlining needed
-		const hasSummarizeOrPivot = operations.find(
-			(op) => op.type === 'summarize' || op.type === 'pivot_wider',
-		)
-		if (hasSummarizeOrPivot) {
-			// Basic validation
-			if (!result.value.columns?.length) {
-				createToast({
-					title: __('Failed to drill down'),
-					message: 'No columns found in the result',
-					variant: 'warning',
-				})
-				return null
-			}
-			if (!currRow) {
-				createToast({
-					title: __('Failed to drill down'),
-					message: 'Row not found',
-					variant: 'warning',
-				})
-				return null
-			}
-			return { ops: operations, filters: [] }
-		}
-
-		// No local summarize/pivot — check if the source is another query
-		const sourceOp = operations.find((op) => op.type === 'source') as Source | undefined
-		if (
-			!sourceOp ||
-			sourceOp.table.type !== 'query'
-		) {
-			createToast({
-				title: __('Failed to drill down'),
-				message: __('Drill down is only supported on summarized data'),
-				variant: 'warning',
-			})
-			return null
-		}
-
-		const sourceQueryName = sourceOp.table.query_name
-
-		// Guard against circular references
-		if (_visitedQueries.has(sourceQueryName)) {
-			createToast({
-				title: __('Failed to drill down'),
-				message: __('Drill down is only supported on summarized data'),
-				variant: 'warning',
-			})
-			return null
-		}
-
-		// Load the source query's operations
-		const sourceQuery = useQuery(sourceQueryName)
-		await waitUntil(() => sourceQuery.isloaded)
-
-		const sourceOps = copy(sourceQuery.doc.operations)
-
-		// Merge: source query's operations + any filter_groups from the current query
-		// (filters applied on top of the source query should still be respected)
-		const mergedOps = [
-			...sourceOps,
-			...operations.filter((op) => op.type === 'filter_group'),
-		]
-
-		// Recursively resolve — the source query might itself have a query source
-		return getEffectiveOperationsForDrillDown(
-			mergedOps,
-			currRow,
-			col,
-			_visitedQueries.add(sourceQueryName),
-		)
-	}
-
-	function getFiltersForDimension(dim: Dimension, value: string) {
-		const filters: FilterRule[] = []
-
-		if (!FIELDTYPES.DATE.includes(dim.data_type)) {
-			filters.push({
-				column: column(dim.column_name),
-				operator: '=',
-				value: value,
-			})
-		}
-
-		if (FIELDTYPES.DATE.includes(dim.data_type)) {
-			if (!value) {
-				filters.push({ column: column(dim.column_name), operator: 'is_not_set', value: '' })
-				return filters
-			}
-
-			const start = dayjs(value)
-			// since fiscal year is not supported in dayjs
-			// we will treat it as year for drill down purposes
-			const granularity = dim.granularity === 'fiscal_year' ? 'year' : dim.granularity
-
-			filters.push({
-				column: column(dim.column_name),
-				operator: '>=',
-				value: start.format('YYYY-MM-DD HH:mm:ss'),
-			})
-
-			if (granularity) {
-				const end = start.clone().add(1, granularity)
-				filters.push({
-					column: column(dim.column_name),
-					operator: '<',
-					value: end.format('YYYY-MM-DD HH:mm:ss'),
-				})
-			}
-		}
-
-		return filters
-	}
-
-	function getFiltersForMeasure(measure: Measure, columnName: string) {
-		if (
-			measure.measure_name !== columnName ||
-			'expression' in measure === false ||
-			!measure.expression
-		) {
-			return []
-		}
-
-		return getAggregateConditions(measure.expression.expression).map((condition) => ({
-			expression: expression(condition),
-		}))
-	}
-
-	function getDrillDownFiltersForSummarize(
-		operations: Operation[],
-		summarizeIdx: number,
-		col: QueryResultColumn,
-		row: QueryResultRow
-	) {
-		const filters: FilterArgs[] = []
-		const summarizeOperation = operations[summarizeIdx] as Summarize
-		summarizeOperation.dimensions.forEach((c) => {
-			filters.push(...getFiltersForDimension(c, row[c.dimension_name]))
-		})
-
-		summarizeOperation.measures.forEach((m) => {
-			filters.push(...getFiltersForMeasure(m, col.name))
-		})
-
-		return filters
-	}
-
-	function getDrillDownFiltersForPivot(
-		operations: Operation[],
-		pivotIdx: number,
-		col: QueryResultColumn,
-		row: QueryResultRow
-	) {
-		const pivotOperation = operations[pivotIdx] as PivotWiderArgs
-
-		const filters: FilterArgs[] = []
-		pivotOperation.rows.forEach((c) => {
-			filters.push(...getFiltersForDimension(c, row[c.dimension_name]))
-		})
-
-		const pivotColumnValues = col.name.split('___').reverse()
-		// each value in the pivot column values corresponds to a column in the pivot operation "columns"
-		// for eg. if the pivot column values are ["A", "B", "C"], then these values correspond to
-		// pivotOperation.columns[0], pivotOperation.columns[1], pivotOperation.columns[2]
-		pivotOperation.columns.forEach((c, idx) => {
-			if (pivotColumnValues[idx]) {
-				filters.push(...getFiltersForDimension(c, pivotColumnValues[idx]))
-			}
-		})
-
-		// if there are more than one value then there are two headers in the pivot table
-		// the last one displays the measure name, so we get the current measure name from pivotColumnValues
-		const selectedValueColumn =
-			pivotOperation.values.length == 1
-				? pivotOperation.values[0].measure_name
-				: (pivotColumnValues[pivotColumnValues.length - 1] as string)
-		pivotOperation.values.forEach((m) => {
-			return filters.push(...getFiltersForMeasure(m, selectedValueColumn))
-		})
-
-		return filters
-	}
-
-
 	function copyQuery() {
 		query.call('export').then((data) => {
 			copyToClipboard(JSON.stringify(data, null, 2))
 		})
-	}
-
-	function duplicateQuery() {
-		const workbook = useWorkbook(query.doc.workbook)
-		return query
-			.call('duplicate')
-			.then((newQueryName: string) => {
-				createToast({
-					title: __('Query duplicated'),
-					variant: 'success',
-				})
-				router.push(`/workbook/${query.doc.workbook}/query/${newQueryName}`)
-			})
-			.then(workbook.load)
 	}
 
 	const history = useDebouncedRefHistory(
@@ -1082,7 +814,7 @@ export function makeQuery(name: string) {
 			deep: true,
 			capacity: 100,
 			debounce: 500,
-		}
+		},
 	)
 
 	const importingTables = ref(false)
@@ -1090,21 +822,31 @@ export function makeQuery(name: string) {
 		importingTables.value = true
 		try {
 			const response = await query.call('refresh_stored_tables')
-			createToast({
-				title: __('Import Started'),
-				message: response?.message || __('Importing tables to data store'),
-				variant: 'success',
+			toast.success(__('Import Started'), {
+				description: response?.message || __('Importing tables to data store'),
 			})
 		} catch (error: any) {
-			createToast({
-				title: __('Import Failed'),
-				message: error?.message || __('Failed to import tables to data store'),
-				variant: 'error',
+			toast.error(__('Import Failed'), {
+				description: error?.message || __('Failed to import tables to data store'),
 			})
 		} finally {
 			importingTables.value = false
 		}
 	}
+
+	// The result no longer answers the pipeline it was run for. Only an editor
+	// that does not auto-execute can be in this state, and it is the same
+	// comparison `ensureResult` makes.
+	//
+	// It reads the operations, so it sees an edit only once the editor has
+	// written one. The script editor writes on a debounce and needs nothing
+	// more. The native editor writes only on Run — `setSQL` writes and executes
+	// in one step — so it adds the editor text to this in its own `stale`.
+	const isStale = computed(
+		() =>
+			Boolean(lastExecutionArgs.value) &&
+			!isEqual(lastExecutionArgs.value, currentExecutionArgs()),
+	)
 
 	const autoExecute = ref(false)
 	watchToggle(currentOperations, () => autoExecute.value && ensureResult(), {
@@ -1113,30 +855,22 @@ export function makeQuery(name: string) {
 		toggleCondition: () => autoExecute.value,
 	})
 
-	watch(currentOperations, () => {
+	// The count belongs to the query and not to the page: a page turn runs the
+	// same query again and the total it was fetched for still holds. What retires
+	// it is anything the count was fetched under — the pipeline, and the adhoc
+	// filters beside it. Both are replaced whole, so a
+	// shallow watch sees every change.
+	watch([currentOperations, adhocFilters], () => {
 		currentPage.value = 1
 		result.value.totalRowCount = 0
 	})
 
-	waitUntil(() => query.isloaded).then(() => {
-		wheneverChanges(
-			() => query.doc.title,
-			() => {
-				if (!query.doc.workbook) return
-				const workbook = useWorkbook(query.doc.workbook)
-				for (const q of workbook.doc.queries) {
-					if (q.name === query.doc.name) {
-						q.title = query.doc.title
-						break
-					}
-				}
-			},
-			{ debounce: 500 }
-		)
-	})
-
 	return reactive({
 		...toRefs(query),
+
+		// a saved query has a document to wait for, a throwaway one never does —
+		// either way this is when there is something to draw a table from
+		ready: computed(() => query.isloaded || query.islocal),
 
 		activeOperationIdx,
 		activeEditIndex,
@@ -1148,6 +882,7 @@ export function makeQuery(name: string) {
 
 		autoExecute,
 		executing,
+		isStale,
 		fetchingCount,
 		isServerBusy,
 		executionError,
@@ -1183,8 +918,8 @@ export function makeQuery(name: string) {
 		addCustomOperation,
 
 		getDistinctColumnValues,
+		getColumnRange,
 		getColumnsForSelection,
-		downloadResults,
 		exportResults,
 		downloading,
 		cancelDownload,
@@ -1201,29 +936,19 @@ export function makeQuery(name: string) {
 		getDimension,
 		getMeasure,
 
-		getDrillDownQuery,
 		copy: copyQuery,
-		duplicate: duplicateQuery,
 
 		history,
+		// Not while an operation is open for editing: undo walks the whole pipeline
+		// and the open editor holds one of its operations. The idle value is `-1`, which is
+		// truthy, so `!activeEditIndex` read every idle query as mid-edit.
 		canUndo() {
-			return !activeEditIndex.value && !executing.value
+			return activeEditIndex.value === -1 && !executing.value
 		},
 		canRedo() {
-			return !activeEditIndex.value && !executing.value
+			return activeEditIndex.value === -1 && !executing.value
 		},
 	})
-}
-
-export const EMPTY_RESULT: QueryResult = {
-	executedSQL: '',
-	totalRowCount: 0,
-	rows: [],
-	formattedRows: [],
-	columns: [],
-	columnOptions: [],
-	timeTaken: 0,
-	lastExecutedAt: new Date(),
 }
 
 export type Query = ReturnType<typeof makeQuery>
@@ -1253,7 +978,7 @@ function getQueryResource(name: string) {
 			if (query.doc.read_only) {
 				query.autoSave = false
 			}
-		}
+		},
 	)
 	return query
 }

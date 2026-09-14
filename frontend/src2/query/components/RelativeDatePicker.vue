@@ -45,7 +45,7 @@ const toggleLabel = (span: string, intervalType: string) =>
 </script>
 
 <template>
-	<div class="flex w-[15rem] select-none flex-col gap-2 rounded bg-surface-base text-base">
+	<div class="flex w-[15rem] select-none flex-col gap-2 rounded-4 bg-surface-base text-base">
 		<div class="flex gap-2">
 			<FormControl
 				type="select"

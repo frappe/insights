@@ -6,6 +6,7 @@ from insights.api.user import USER_FIELDS, get_users, user_lookup_allowed
 from insights.api.workbooks import get_share_permissions, update_share_permissions
 from insights.decorators import insights_whitelist
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
+from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 from insights.insights.doctype.insights_team.insights_team import clear_cache as clear_team_cache
 from insights.permissions import PERMISSION_DOCTYPES
 from insights.tests.base import InsightsIntegrationTestCase
@@ -15,6 +16,7 @@ from insights.tests.factories import (
     create_test_dashboard,
     create_test_query,
     create_test_workbook,
+    execute_test_query,
 )
 from insights.tests.permissions_utils import (
     ADMIN,
@@ -92,6 +94,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         create_test_team("team2", [USER_3])
         return granted
 
+    # @feature permissions.non-insights-user
     def test_permissions_for_non_insights_user(self):
         with self.as_user(NON_INSIGHTS_USER):
             for doctype in PERMISSION_DOCTYPES:
@@ -103,6 +106,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
             with self.assertRaises(frappe.PermissionError):
                 protected_insights_call()
 
+    # @feature permissions.team-off-open settings.permissions-toggle
     def test_permissions_on_team_based_doctype_with_team_permissions_disabled(self):
         create_test_data_sources()
         create_test_tables()
@@ -112,6 +116,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         self.assert_visible_to(USER_2, DT.DATA_SOURCE, TEST_DS)
         self.assert_visible_to(USER_2, DT.TABLE, TEST_TABLE1)
 
+    # @feature permissions.team-grant settings.permissions-toggle
     def test_permission_on_team_based_doctype_with_team_permissions_enabled(self):
         create_test_data_sources()
         create_test_tables()
@@ -139,6 +144,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         self.assert_visible_to(USER_1, DT.DATA_SOURCE, TEST_DS)
         self.assert_visible_to(USER_1, DT.TABLE, TEST_TABLE1)
 
+    # @feature permissions.team-grant
     def test_resource_grant_reaches_the_granted_team_only(self):
         """A grant is held by a team, so only that team's members may use it.
 
@@ -156,6 +162,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
             for doctype, name in granted.items():
                 self.assert_no_access_to(user, doctype, name)
 
+    # @feature permissions.team-off-open
     def test_resource_grant_is_inert_while_team_permissions_are_off(self):
         """Team membership is not read while the setting is off, so no grant applies.
 
@@ -172,6 +179,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
             self.assert_no_access_to(user, DT.CHART, granted[DT.CHART])
             self.assert_no_access_to(user, DT.DASHBOARD, granted[DT.DASHBOARD])
 
+    # @feature permissions.admin-bypass
     def test_permission_for_admin_on_team_based_doctype_with_team_permissions_enabled(
         self,
     ):
@@ -182,6 +190,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         self.assert_visible_to(ADMIN, DT.DATA_SOURCE, TEST_DS)
         self.assert_visible_to(ADMIN, DT.TABLE, TEST_TABLE1)
 
+    # @feature permissions.viewer-sees-granted
     def test_permission_for_workbook(self):
         workbook = create_test_workbook(USER_1)
 
@@ -206,6 +215,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
 
         self.assert_not_visible_to(USER_2, DT.WORKBOOK, workbook.name)
 
+    # @feature permissions.share-user-lookup
     def test_workbook_owner_can_look_up_users_to_share_with(self):
         # the share picker reads this roster, so an owner without an admin role
         # must find the other Insights users in it - with or without team permissions
@@ -219,6 +229,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
                 self.assertIn(ADMIN, emails)
                 self.assertNotIn(NON_INSIGHTS_USER, emails)
 
+    # @feature permissions.share-user-lookup
     def test_roster_carries_nothing_but_directory_fields(self):
         # the api is the only way into `User`, so its field list is the whole
         # exposure - no phone number or api key may ride along
@@ -229,6 +240,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         for user in users:
             self.assertEqual(set(user.keys()), set(USER_FIELDS) | {"type"})
 
+    # @feature permissions.share-user-lookup settings.users-list
     def test_users_are_found_by_name_or_by_email(self):
         # the two are alternatives: matching a name must not also require the
         # address to match
@@ -241,6 +253,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         self.assertIn(USER_1, by_name)
         self.assertIn(USER_2, by_name)
 
+    # @feature permissions.share-user-lookup
     def test_user_lookup_is_on_for_a_site_that_never_set_it(self):
         # a Check stays out of `tabSingles` until the doc is first saved, and
         # `get_single_value` casts the missing value to 0. A setting named for
@@ -256,6 +269,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         with self.as_user(USER_1):
             self.assertIn(USER_2, [user["email"] for user in get_users()])
 
+    # @feature permissions.share-user-lookup
     def test_user_lookup_can_be_turned_off(self):
         # an open-signup site turns the roster off; sharing then works by naming
         # an address rather than picking one, so the roster may hold only the caller
@@ -269,6 +283,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         with self.as_user(ADMIN):
             self.assertIn(USER_2, [user["email"] for user in get_users()])
 
+    # @feature permissions.share-workbook-user
     def test_workbook_owned_by_administrator_can_still_be_shared(self):
         # a template import leaves Administrator owning the workbook, and the
         # owner rides along on every share update the dialog sends back
@@ -284,6 +299,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
 
         self.assert_visible_to(USER_1, DT.WORKBOOK, workbook.name)
 
+    # @feature permissions.share-workbook-user
     def test_workbook_cannot_be_shared_with_a_non_insights_user(self):
         workbook = create_test_workbook(USER_1)
 
@@ -294,6 +310,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
                     [{"user": NON_INSIGHTS_USER, "read": 1, "write": 0}],
                 )
 
+    # @feature permissions.share-user-lookup
     def test_team_membership_is_listed_for_admins_only(self):
         self.set_team_permissions(True)
 
@@ -303,6 +320,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         with self.as_user(ADMIN):
             self.assertIn("teams", get_users()[0])
 
+    # @feature permissions.share-dashboard
     def test_permission_for_dashboard(self):
         workbook = create_test_workbook(USER_1)
         dashboard = create_test_dashboard(USER_1, workbook.name)
@@ -334,6 +352,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
                     title="Permissions Test Dashboard Read Only",
                 )
 
+    # @feature permissions.chart-access-follows
     def test_permission_for_chart(self):
         workbook = create_test_workbook(USER_1)
         query = create_test_query(USER_1, workbook.name)
@@ -381,6 +400,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
             update_dashboard_access(dashboard.name, [USER_2])
         self.assert_visible_to(USER_2, DT.CHART, chart.name)
 
+    # @feature permissions.chart-access-follows
     def test_permission_for_query(self):
         workbook = create_test_workbook(USER_1)
         query = create_test_query(USER_1, workbook.name)
@@ -416,19 +436,16 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         chart = frappe.get_doc(DT.CHART, chart.name)
 
         self.assert_not_visible_to(USER_2, DT.QUERY, query.name)
-        self.assert_not_visible_to(USER_2, DT.QUERY, chart.data_query)
 
         with self.as_user(USER_1):
             share_chart(chart.name, USER_2)
 
         self.assert_visible_to(USER_2, DT.QUERY, query.name)
-        self.assert_visible_to(USER_2, DT.QUERY, chart.data_query)
 
         with self.as_user(USER_1):
             unshare_chart(chart.name, USER_2)
 
         self.assert_not_visible_to(USER_2, DT.QUERY, query.name)
-        self.assert_not_visible_to(USER_2, DT.QUERY, chart.data_query)
 
         dashboard = create_test_dashboard(
             USER_1,
@@ -440,7 +457,6 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
             update_dashboard_access(dashboard.name, [USER_2])
 
         self.assert_visible_to(USER_2, DT.QUERY, query.name)
-        self.assert_visible_to(USER_2, DT.QUERY, chart.data_query)
 
         with self.as_user(NON_INSIGHTS_USER):
             with self.assertRaises(frappe.PermissionError):
@@ -450,6 +466,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
                     title="Permissions Test Query Non Insights",
                 )
 
+    # @feature permissions.download-gated
     def test_download_results_requires_export_permission(self):
         workbook = create_test_workbook(USER_1)
         query = create_test_query(USER_1, workbook.name)
@@ -474,6 +491,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
                 csv_data = query_doc.download_results(format="csv")
             self.assertIsInstance(csv_data, str)
 
+    # @feature permissions.download-gated
     def test_download_results_requires_document_access(self):
         workbook = create_test_workbook(USER_1)
         query = create_test_query(USER_1, workbook.name)
@@ -496,6 +514,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
                 csv_data = query_doc.download_results(format="csv")
             self.assertIsInstance(csv_data, str)
 
+    # @feature permissions.download-gated
     def test_download_results_allowed_with_read_only_share(self):
         workbook = create_test_workbook(USER_1)
         query = create_test_query(USER_1, workbook.name)
@@ -522,6 +541,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
                 csv_data = query_doc.download_results(format="csv")
             self.assertIsInstance(csv_data, str)
 
+    # @feature permissions.download-gated settings.allow-download
     def test_download_results_blocked_when_globally_disabled(self):
         workbook = create_test_workbook(USER_1)
         query = create_test_query(USER_1, workbook.name)
@@ -535,3 +555,129 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
             query_doc = frappe.get_doc(DT.QUERY, query.name)
             with self.assertRaisesRegex(frappe.PermissionError, "not allowed to download"):
                 query_doc.download_results(format="csv")
+
+
+class TestTableRowRestriction(InsightsIntegrationTestCase):
+    """A team's grant can carry an expression, and it cuts the rows the member reads.
+
+    The restriction rides `Insights Resource Permission.table_restrictions` and is
+    applied where every table read funnels through, so it reaches a query, a
+    preview and a chart alike. An admin is not restricted.
+    """
+
+    SITE_DB = "Site DB"
+    TABLE = "tabToDo"
+    PREFIX = "Row Restriction Test"
+
+    @classmethod
+    def before_class(cls):
+        cleanup_test_fixtures()
+        create_test_users()
+        cls.settings_was = {
+            "enable_permissions": frappe.db.get_single_value(DT.SETTINGS, "enable_permissions"),
+            "apply_user_permissions": frappe.db.get_single_value(DT.SETTINGS, "apply_user_permissions"),
+        }
+        frappe.db.set_single_value(DT.SETTINGS, "enable_permissions", 1)
+        # the row filter under test is the team's, so the per-user one stays off
+        frappe.db.set_single_value(DT.SETTINGS, "apply_user_permissions", 0)
+
+        cls.table_row = get_table_name(cls.SITE_DB, cls.TABLE)
+        if not frappe.db.exists(DT.TABLE, cls.table_row):
+            frappe.get_doc(
+                {
+                    "doctype": DT.TABLE,
+                    "table": cls.TABLE,
+                    "label": cls.TABLE,
+                    "data_source": cls.SITE_DB,
+                    "sync_mode": "Full",
+                }
+            ).insert(ignore_permissions=True)
+
+        cls.todos = [
+            frappe.get_doc(
+                {
+                    "doctype": "ToDo",
+                    "description": f"{cls.PREFIX} {status} {i}",
+                    "status": status,
+                }
+            )
+            .insert(ignore_permissions=True)
+            .name
+            for status, i in (("Open", 1), ("Open", 2), ("Closed", 3))
+        ]
+
+        create_test_team(
+            "team1",
+            [USER_1],
+            grants=[(DT.DATA_SOURCE, cls.SITE_DB)],
+        )
+        team = frappe.get_doc(DT.TEAM, "team1")
+        team.append(
+            "team_permissions",
+            {
+                "resource_type": DT.TABLE,
+                "resource_name": cls.table_row,
+                "table_restrictions": "status == 'Open'",
+            },
+        )
+        team.save(ignore_permissions=True)
+        clear_team_cache()
+
+    @classmethod
+    def after_class(cls):
+        for name in cls.todos:
+            frappe.delete_doc("ToDo", name, force=True, ignore_permissions=True)
+        for key, value in cls.settings_was.items():
+            frappe.db.set_single_value(DT.SETTINGS, key, value)
+        clear_team_cache()
+        cleanup_test_fixtures()
+
+    def before_test(self):
+        clear_team_cache()
+
+    def after_test(self):
+        clear_team_cache()
+
+    def statuses_read_by(self, user):
+        """The statuses this suite's own todos come back with, for `user`."""
+        workbook = create_test_workbook(user, title=f"Row Restriction Workbook {user}")
+        query = create_test_query(
+            user,
+            workbook.name,
+            title=f"Row Restriction Query {user}",
+            operations=[
+                {
+                    "type": "source",
+                    "table": {
+                        "type": "table",
+                        "data_source": self.SITE_DB,
+                        "table_name": self.TABLE,
+                    },
+                },
+                {
+                    "type": "filter",
+                    "column": {"type": "column", "column_name": "description"},
+                    "operator": "contains",
+                    "value": self.PREFIX,
+                },
+            ],
+        )
+        with self.as_user(user):
+            rows = execute_test_query(query.name)["rows"]
+        return sorted(row["status"] for row in rows)
+
+    # @feature permissions.table-row-restriction
+    def test_a_teams_row_restriction_hides_the_rows_its_expression_excludes(self):
+        self.assertEqual(self.statuses_read_by(USER_1), ["Open", "Open"])
+        self.assertEqual(self.statuses_read_by(ADMIN), ["Closed", "Open", "Open"])
+
+        # a second team granting the same table without an expression does not
+        # lift the restriction the first one carries
+        create_test_team(
+            "team2",
+            [USER_1],
+            grants=[(DT.DATA_SOURCE, self.SITE_DB), (DT.TABLE, self.table_row)],
+        )
+        clear_team_cache()
+
+        self.assertEqual(self.statuses_read_by(USER_1), ["Open", "Open"])

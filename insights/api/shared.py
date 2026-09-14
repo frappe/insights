@@ -83,18 +83,68 @@ def get_public_dashboard_holding(chart: str) -> str | None:
     return public[0] if public else None
 
 
-def get_charts_built_on(query: str) -> list[str]:
-    """Charts that read `query`, oldest first.
+def stored_dashboard_items(chart: str, dashboard: str | None = None) -> list | None:
+    """The routing table a read of `chart` through a share link filters through.
 
-    A chart reads two: the query the author built, and the `data_query` the
-    chart mints for itself. Either link makes the query reachable.
+    The link names the dashboard it opens, and that dashboard's stored items are
+    the real links. A reader who may read that dashboard routes through it — a
+    guest because it is published, a signed-in reader because the share granted
+    them the document. A link that names no dashboard, or one this reader cannot
+    read, falls back to the dashboard that published the chart.
     """
+    if dashboard and can_route_through(dashboard, chart):
+        stored = frappe.db.get_value("Insights Dashboard v3", dashboard, "items")
+        return frappe.parse_json(stored) or []
+
+    return published_dashboard_items(chart)
+
+
+def can_route_through(dashboard: str, chart: str) -> bool:
+    """Whether this reader may filter `chart` through `dashboard`'s links.
+
+    The dashboard must hold the chart, so a routing table cannot be borrowed
+    from a grid the card is not on, and the reader must be able to read the
+    dashboard: published, or granted to them.
+    """
+    if not isinstance(dashboard, str) or not frappe.db.exists(
+        "Insights Dashboard Chart v3", {"parent": dashboard, "chart": chart}
+    ):
+        return False
+
+    if is_public_dashboard(dashboard):
+        return True
+
+    return bool(frappe.has_permission("Insights Dashboard v3", ptype="read", doc=dashboard))
+
+
+def published_dashboard_items(chart: str) -> list | None:
+    """The routing table a public read of `chart` filters through.
+
+    A filter link names a query and a column, so a routing table sent with the
+    request is a reader naming any column of any query the chart's graph reaches.
+    The dashboard that published the chart is the one that holds the real links,
+    and it is stored, so that is what a public read routes through.
+
+    A chart published in its own right carries no dashboard and so no filters.
+    """
+    previewed = get_previewed_dashboard()
+    if previewed and is_being_previewed("Insights Chart v3", chart):
+        root = ("Insights Dashboard v3", previewed)
+    else:
+        root = get_public_root("Insights Chart v3", chart)
+
+    if not root or root[0] != "Insights Dashboard v3":
+        return None
+
+    stored = frappe.db.get_value("Insights Dashboard v3", root[1], "items")
+    return frappe.parse_json(stored) or []
+
+
+def get_charts_built_on(query: str) -> list[str]:
+    """Charts that read `query`, oldest first."""
     return frappe.get_all(
         "Insights Chart v3",
-        or_filters=[
-            ["query", "=", query],
-            ["data_query", "=", query],
-        ],
+        filters={"query": query},
         order_by="creation asc",
         pluck="name",
     )
@@ -134,12 +184,8 @@ def is_being_previewed(doctype: str, name: str):
     if doctype == "Insights Chart v3":
         return name in charts
 
-    linked = frappe.get_all(
-        "Insights Chart v3",
-        filters={"name": ["in", charts]},
-        fields=["query", "data_query"],
-    )
-    return any(name in (chart.query, chart.data_query) for chart in linked)
+    linked = frappe.get_all("Insights Chart v3", filters={"name": ["in", charts]}, pluck="query")
+    return name in linked
 
 
 def get_preview_key():
@@ -165,21 +211,33 @@ def is_public_dashboard(name: str):
     )
 
 
-@frappe.whitelist(allow_guest=True)
+def current_name(doctype: str, name: str):
+    """The name a document goes by now, for a link that still calls it by its old one.
+
+    A v2 chart or dashboard keeps its old name in `old_name`, and a link written
+    then carries it. Open to a guest because a public link has to resolve, so the
+    answer is limited to what the caller may already reach: a document they can
+    read, or one that is published. Anything else comes back as it was asked,
+    and the page says it cannot find it.
+    """
+    if not isinstance(name, str) or frappe.db.exists(doctype, name):
+        return name
+
+    renamed = frappe.db.exists(doctype, {"old_name": name})
+    if not renamed:
+        return name
+
+    may_read = frappe.has_permission(doctype, ptype="read", doc=renamed)
+    return renamed if may_read or is_public(doctype, renamed) else name
+
+
+@frappe.whitelist(allow_guest=True)  # nosemgrep - answers only for a document the
+# caller can already read or one that is published
 def get_dashboard_name(dashboard_name: str):
-    name = dashboard_name
-    if not frappe.db.exists("Insights Dashboard v3", name):
-        new_name = frappe.db.exists("Insights Dashboard v3", {"old_name": name})
-        if new_name:
-            name = new_name
-    return name
+    return current_name("Insights Dashboard v3", dashboard_name)
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=True)  # nosemgrep - answers only for a document the
+# caller can already read or one that is published
 def get_chart_name(chart_name: str):
-    name = chart_name
-    if not frappe.db.exists("Insights Chart v3", name):
-        new_name = frappe.db.exists("Insights Chart v3", {"old_name": name})
-        if new_name:
-            name = new_name
-    return name
+    return current_name("Insights Chart v3", chart_name)

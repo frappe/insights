@@ -7,7 +7,7 @@ FROM its base query. It appends its own `summarize` from the config (or `pivot_w
 or columns dimension is set), then `order_by` and `limit`. Insights applies dashboard filters to the
 base query *before* that aggregation. So base queries stay per-row.
 
-Chart types: `Number`, `Bar`, `Line`, `Row`, `Donut`, `Funnel`, `Table`, `Map`, `Bubble`, `Sankey`.
+Chart types: `Number`, `Bar`, `Line`, `Row`, `Donut`, `Funnel`, `Table`, `Map`, `Bubble`, `Sankey`, `Heatmap`.
 
 ## Titles
 
@@ -20,8 +20,8 @@ Rest". "Top 10 Customers by Order Value".
 **Never put a date, a date range or an era in a title.** Not "Revenue Since 2026-07-08", not "Signups,
 Last 6 Weeks", not "Q3". Three reasons, and each one alone is enough:
 
-- The dashboard filter owns the window, and the user changes it. The title then lies.
-- A relative window ("Last 6 Weeks") is true on the day you write it and wrong every day after.
+- The dashboard filter owns the period, and the user changes it. The title then lies.
+- A relative period ("Last 6 Weeks") is true on the day you write it and wrong every day after.
 - A date you hardcode into a query filter is a fact about the data, not about the chart. It belongs
   in your reply to the user, where you can explain it.
 
@@ -37,13 +37,18 @@ measure does.
 
 Keys on every chart config:
 
+- `number_format`: how the chart prints a number — `{ "shorten": true, "decimals": 2, "prefix": "₹ ",
+  "suffix": "" }`. Every value of the chart inherits it.
+- `number_formats`: one Measure's own format, keyed by `measure_name`, overriding `number_format`
+  key by key. A chart drawing one measure writes the Measure's entry and leaves the default empty.
+
 - `order_by`: list of `{ "column": { "type": "column", "column_name": "..." }, "direction": "asc"|"desc" }`.
   The names here are **post-aggregation** names, so sorting by a measure uses its `measure_name`
   (`"Revenue"`), not the underlying column.
 - `limit`: integer (use it for top-N).
 - `filters`: a chart-local filter group. Use `{"logical_operator": "And", "filters": []}` when unused.
 
-## Number (KPI cards)
+## Number (reading cards)
 
 ```json
 {
@@ -52,14 +57,18 @@ Keys on every chart config:
     { "measure_name": "Avg Invoice Value", "column_name": "base_net_total", "data_type": "Decimal", "aggregation": "avg" },
     { "measure_name": "Active Customers", "column_name": "customer", "data_type": "Integer", "aggregation": "count_distinct" }
   ],
+  "number_formats": {
+    "Revenue": { "prefix": "₹ ", "decimals": 2, "shorten": true },
+    "Avg Invoice Value": { "prefix": "₹ ", "decimals": 2, "shorten": true }
+  },
   "number_column_options": [
-    { "prefix": "₹ ", "decimal": 2, "shorten_numbers": true },
-    { "prefix": "₹ ", "decimal": 2, "shorten_numbers": true },
-    { "shorten_numbers": false }
+    { "comparison": { "source": "previous" } },
+    {},
+    {}
   ],
-  "comparison": true,
   "sparkline": true,
-  "date_column": { "dimension_name": "posting_date", "column_name": "posting_date", "data_type": "Date", "granularity": "month" },
+  "date_column": { "dimension_name": "posting_date", "column_name": "posting_date", "data_type": "Date" },
+  "window": { "grain": "month" },
   "order_by": [ { "column": { "type": "column", "column_name": "posting_date" }, "direction": "asc" } ],
   "limit": 100,
   "filters": { "logical_operator": "And", "filters": [] }
@@ -68,13 +77,22 @@ Keys on every chart config:
 
 - **Number cards do not show the chart title.** `measure_name` is the visible label. Make it readable
   ("Avg Invoice Value", not `avg_invoice_value`). The no-dates rule applies to a `measure_name` too.
-- The card shows the **last row's** value. Without a `date_column` the query gives one aggregated
-  row, the grand total. A snapshot card wants that. With a `date_column` the card shows the latest
-  period and the delta against the previous one.
-- `comparison` and `sparkline` need a `date_column` and an ascending `order_by` on it, otherwise the
-  delta compares arbitrary rows.
-- `number_column_options` is positional: one entry per measure, same order.
-- A KPI row is normally ONE Number chart with several measures, not several charts.
+- The card shows the **last row's** value. Without a `window` the query gives one aggregated row,
+  the grand total. A snapshot card wants that. `window` is what groups the card by date: `grain`
+  ("month") gives one row per period in the data, `span` ("month to date") one row per stretch of
+  the calendar. Either needs `date_column`.
+- `number_column_options` is positional: one entry per measure, same order. It carries what belongs
+  to the reading: `comparison`, `target`, `negative_is_better`, `color`.
+- A comparison belongs to one reading, in that reading's options entry. `source` is `previous`,
+  `last year`, `constant` (with `value`) or `measure` (with `measure`). `show` prints the gap as a
+  percent (`change`, the default) or a signed number (`delta`), and `label` renames it. `previous`
+  and `last year` both need a Period. Beside a `grain` the comparison is the row before the last,
+  so the ascending `order_by` on the date column is what makes it the right row. Beside a `span`
+  Insights fetches the earlier period itself and matches it by date. `last year` needs a `span`, and
+  prints nothing beside a `grain`. A second comparison is a second card.
+- `target` sits beside it, also per reading: `{ "value": 750000 }` or `{ "measure": { ... } }`.
+- `sparkline` is chart-level and needs a `date_column` and that same ascending `order_by`.
+- A row of readings is normally ONE Number chart with several measures, not several charts.
 
 ## Bar / Line / Row (axis charts)
 
@@ -96,11 +114,21 @@ Keys on every chart config:
   line or bar per value). Cap it. One series per customer is unreadable.
 - Bar `y_axis` extras: `stack`, `normalize`, `overlap`. Line: `smooth`, `show_area`,
   `show_data_points`. Per-series `type: "line" | "bar"` gives a mixed chart. `align: "Right"` puts a
-  series on the secondary axis.
+  series on the secondary axis. A chart with a series on each axis draws two scales, so it neither
+  stacks, overlaps nor normalizes.
+- `y_axis.reference_lines`: a list of rules drawn across the plot. Each is
+  `{ "axis": "y", "measure_name": "Revenue", "aggregate": "average", "label": "Average" }` — an
+  aggregate of one of the chart's own measures, named and not copied — or a constant with `value`.
+  `axis: "x"` draws a vertical rule at a category or date value. `align` picks the axis a `y` rule
+  is read against, and `label_placement`, `color` and `dashed` are the rest of its look.
+- `tooltip: { "measures": [ ... ] }`: measures that reach the tooltip and nothing else — no series,
+  no legend entry, no place on the value axis. For the count behind a rate, or a target beside an
+  actual. A dimension cannot go here: every tooltip value is one per plotted row.
 - `Row` is a horizontal bar. Use it for a top-N ranking: dimension on `x_axis`, `order_by` the
   measure name desc, `limit: 10`.
-- Put a time series on `Line`, with the date dimension on the x-axis and an ascending `order_by`.
-  Without the sort the line zigzags.
+- Put a time series on `Line`, with the date dimension on the x-axis. A chart nobody sorted runs
+  forwards on its own. An `order_by` you write wins over that, so sort only when the reading is a
+  ranking rather than a timeline.
 
 ## Donut / Funnel
 
@@ -111,7 +139,7 @@ Keys on every chart config:
 ```
 
 Use `Donut` for part-of-whole with few categories. `Funnel` takes the same `label_column` and
-`value_column`, plus `show_percentage`, and orders the stages by `order_by`. It also takes
+`value_column`, and orders the stages by `order_by`. It also takes
 `measures: [...]`, where each measure is one stage. Sortable stage labels (`"1. Total"`,
 `"2. Ordered"`) keep the funnel in order.
 
@@ -130,8 +158,7 @@ Use `Donut` for part-of-whole with few categories. `Funnel` takes the same `labe
 ```
 
 Empty `columns` gives a grouped table (summarize by `rows`). Non-empty `columns` pivots, capped by
-`max_column_values`. Other options: `show_filter_row`, `show_column_totals`, `compact_numbers`,
-`enable_color_scale`.
+`max_column_values`. Other options: `show_column_totals`, `enable_color_scale`.
 
 To show a detail listing with one row per document, put the identifying columns in `rows`. A group by
 a unique column such as `name` yields one row each. Use `max` for pass-through numbers that must not
@@ -142,11 +169,16 @@ be summed.
 - `Map`: `location_column` (dimension), `value_column` (measure), `map_type: "world" | "india"`.
 - `Bubble`: `xAxis`, `yAxis`, `size_column` (measures), `dimension` (one point per value).
 - `Sankey`: `source_column`, `target_column` (dimensions), `value_column` (measure).
+- `Heatmap`: `x_column`, `y_column` (dimensions) and `value_column` (measure) — one cell per pair of
+  their values. `show_values` prints the number in the cell, `palette` is `sequential` (a magnitude)
+  or `diverging` (centered on zero, for signed data), and `min`/`max` pin the ends of the color scale
+  that the data's own ends set otherwise.
 
 ## Choosing
 
 Single number → `Number`. Over time → `Line`. Compare categories → `Bar`. Ranked top-N → `Row`.
 Part of a whole, few slices → `Donut`. Stages → `Funnel`. Row-level detail or a cross-tab → `Table`.
+Two dimensions against one measure → `Heatmap`.
 Keep the existing chart type unless the request implies a change.
 
 ## Making it readable
@@ -172,7 +204,7 @@ strongly as a bucket of 545. Pair it with a `Table` beside it. The table holds t
 distinct entity count. The bar gives the shape. The table gives the n, so nobody misreads a thin
 bucket as a strong result.
 
-**Lead with the answer.** The first chart is the one that answers the user's question. KPIs above
+**Lead with the answer.** The first chart is the one that answers the user's question. Readings above
 trends, trends above breakdowns, detail tables last. A dashboard that opens on a breakdown makes the
 reader hunt.
 
@@ -196,10 +228,10 @@ rule 1 in `rules.md`, and the strongest reason not to pre-aggregate.
 Three things to know:
 
 - **A pre-aggregated base query costs a click.** The first drill-down lands on the base query's
-  aggregated rows, not the source rows. The dialog's own table drills again. The second click inlines
-  the base query's pipeline and reaches the source rows. It works. It is one click of confusion you
-  authored.
-- **A chain with no `summarize` anywhere cannot drill down at all.** Insights walks the query chain
-  to find one. When it finds none, it toasts "Drill down is only supported on summarized data".
+  aggregated rows, not the source rows. The dialog's own table drills again to reach them. It works.
+  It is one click of confusion you authored.
+- **A pipeline that aggregates nowhere cannot drill down at all.** Insights cuts at the last
+  `summarize` or `pivot_wider` in the chart's own pipeline. With none it answers "Nothing here
+  aggregates any rows, so there is nothing behind it".
 - **The clicked column must be numeric** on a `Number` card and a `Table`. A count measure typed as
   `String` renders and cannot be drilled. Type every measure.

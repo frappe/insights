@@ -47,7 +47,7 @@ decides whether to encode it, `format_table_name` encodes it,
 `split_table_name` decodes it, `strip_schema_prefix` decodes it again for the
 doctype mapping, `table_identity` undoes the encoding to compare,
 `reconcile_table_names` finds the records the encoding stranded, and
-`table_rename` rewrites six referrers when the encoding changes.
+`table_rename` rewrites five referrers when the encoding changes.
 
 ## Decision
 

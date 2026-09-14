@@ -13,7 +13,6 @@ type SessionUser = {
 	locale: string
 	has_desk_access?: boolean
 	has_demo_data: boolean
-	fiscal_year_start: string
 }
 
 // Settings of the site, not of whoever is reading it. A guest opening a public
@@ -22,6 +21,10 @@ type SessionUser = {
 type CurrencySymbol = { symbol: string; symbol_on_right: boolean }
 type SiteInfo = {
 	country: string
+	/** The day a week is counted from, as `Insights Settings` names it. */
+	week_starts_on: string
+	/** The date a fiscal year starts on, as `Insights Settings` holds it. */
+	fiscal_year_start: string
 	// stands in for a measure that names no currency column
 	currency: string | null
 	// starts with the site currency; each result adds its codes
@@ -30,6 +33,8 @@ type SiteInfo = {
 
 const emptySite: SiteInfo = {
 	country: '',
+	week_starts_on: 'Monday',
+	fiscal_year_start: '1995-04-01',
 	currency: null,
 	currency_symbols: {},
 }
@@ -45,7 +50,6 @@ const emptyUser: SessionUser = {
 	can_download: true,
 	locale: 'en-US',
 	has_demo_data: false,
-	fiscal_year_start: '01-04-2020',
 }
 
 const session = reactive({
