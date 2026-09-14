@@ -162,6 +162,12 @@ export function ensureConfigSlots(config: any, chart_type: string) {
 	if (chart_type === 'Number') {
 		// one empty value, so the form opens on a picker rather than on nothing
 		config.number_columns = config.number_columns?.length ? config.number_columns : [{}]
+		// A reading saved without an id takes its Measure's name: the same id on
+		// every load, and the name a cell written before ids named it by.
+		// `reading_id` in `resize_dashboard_cells.py` reads it the same way.
+		for (const reading of config.number_columns) {
+			if (reading && !reading.id) reading.id = reading.measure_name || getUniqueId()
+		}
 		config.number_column_options = config.number_column_options || []
 		config.date_column = config.date_column || {}
 	}

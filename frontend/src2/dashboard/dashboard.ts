@@ -224,17 +224,17 @@ function makeDashboard(name: string, isShared: boolean) {
 		let x = 0
 		let rowY = y
 		let rowHeight = 0
-		for (const column of readings) {
+		for (const reading of readings) {
 			if (x + NUMBER_CARD_COLUMNS > GRID_COLUMNS) {
 				x = 0
 				rowY += rowHeight
 				rowHeight = 0
 			}
-			const h = numberCardRows(config, column)
+			const h = numberCardRows(config, reading)
 			cells.push({
 				type: 'chart',
 				chart: chart.name,
-				...(column ? { column } : {}),
+				...(reading ? { reading } : {}),
 				layout: { i: getUniqueId(), x, y: rowY, w: NUMBER_CARD_COLUMNS, h },
 			})
 			x += NUMBER_CARD_COLUMNS
@@ -293,7 +293,7 @@ function makeDashboard(name: string, isShared: boolean) {
 			const chart = chartsByName.value[item.chart]
 			if (chart?.doc?.chart_type !== 'Number') continue
 			rules[item.layout.i] = {
-				height: numberCardRows(chart.doc.config as NumberChartConfig, item.column),
+				height: numberCardRows(chart.doc.config as NumberChartConfig, item.reading),
 				halfWidth: true,
 			}
 		}

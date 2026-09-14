@@ -54,7 +54,7 @@ describe('a Number Chart with several values', () => {
 		expect(props.preview).toBe(true)
 		expect(props.cards[0].height).toBe(4 * 22 - 16)
 
-		const cell = adapt({ values: [{ name: 'Revenue', readings: [100] }], column: 'Revenue' })
+		const cell = adapt({ values: [{ name: 'Revenue', readings: [100] }], reading: 'Revenue' })
 		expect(cell.props.preview).toBe(false)
 	})
 
@@ -572,7 +572,7 @@ describe('drilling into a reading', () => {
 
 describe('the rows a Number cell takes', () => {
 	const rowsFor = (spec: NumberChartSpec) =>
-		numberCardRows(numberChart(spec).config as NumberChartConfig, spec.column)
+		numberCardRows(numberChart(spec).config as NumberChartConfig, spec.reading)
 
 	// @feature dashboard.cell-height-rule
 	it('is answered for the reading the cell names, not for the chart', () => {
@@ -583,8 +583,8 @@ describe('the rows a Number cell takes', () => {
 			],
 			period: monthly,
 		}
-		expect(rowsFor({ ...spec, column: 'Revenue' })).toBe(4)
-		expect(rowsFor({ ...spec, column: 'Profit' })).toBe(5)
+		expect(rowsFor({ ...spec, reading: 'Revenue' })).toBe(4)
+		expect(rowsFor({ ...spec, reading: 'Profit' })).toBe(5)
 	})
 
 	// @feature dashboard.cell-height-rule
@@ -651,26 +651,41 @@ describe('the reading a dashboard cell names', () => {
 
 	// @feature dashboard.number-cell-per-reading
 	it('is the only card the cell draws', () => {
-		const cards = cardsOf({ ...three, column: 'Profit' })
+		const cards = cardsOf({ ...three, reading: 'Profit' })
 		expect(cards).toHaveLength(1)
 		expect(cards[0]).toMatchObject({ title: 'Profit', value: 40, column: 'Profit' })
 	})
 
 	// @feature dashboard.number-cell-per-reading
+	it('is found by its id, so renaming its Measure keeps the cell', () => {
+		const input = numberChart({
+			values: [
+				{ name: 'Revenue', readings: [100] },
+				{ name: 'Margin', readings: [40] },
+			],
+			reading: 'profit',
+		})
+		;(input.config as NumberChartConfig).number_columns[1].id = 'profit'
+		expect(adaptChart(input)!.props.cards).toEqual([
+			expect.objectContaining({ title: 'Margin', value: 40 }),
+		])
+	})
+
+	// @feature dashboard.number-cell-per-reading
 	it('carries the settings that stand beside that reading, not another one', () => {
-		expect(cardsOf({ ...three, column: 'Profit' })[0].color).toBeUndefined()
-		expect(cardsOf({ ...three, column: 'Revenue' })[0].color).toBe('#2490EF')
+		expect(cardsOf({ ...three, reading: 'Profit' })[0].color).toBeUndefined()
+		expect(cardsOf({ ...three, reading: 'Revenue' })[0].color).toBe('#2490EF')
 	})
 
 	// @feature dashboard.number-cell-per-reading
 	it('is the first reading when the cell names none', () => {
 		// A cell written before cells could name a reading keeps the reading it drew.
-		expect(cardsOf({ ...three, column: undefined })[0].title).toBe('Revenue')
+		expect(cardsOf({ ...three, reading: undefined })[0].title).toBe('Revenue')
 	})
 
 	// @feature charts.drill-number-card
 	it('drills into the reading the cell names', () => {
-		const input = { ...numberChart({ ...three, column: 'Items' }) }
+		const input = { ...numberChart({ ...three, reading: 'Items' }) }
 		expect(adaptChart(input)!.drillDown!.cardClick({ column: 'Items' })).toEqual({
 			column: 'Items',
 			row: input.result.rows[0],
@@ -679,12 +694,13 @@ describe('the reading a dashboard cell names', () => {
 })
 
 describe('a cell naming a reading the Chart no longer states', () => {
-	const gone = () => cardsOf({ values: [{ name: 'Revenue', readings: [100] }], column: 'Margin' })
+	const gone = () =>
+		cardsOf({ values: [{ name: 'Revenue', readings: [100] }], reading: 'Margin' })
 
 	// @feature dashboard.number-cell-per-reading
-	it('draws the card that named it, so the reader is told which one went', () => {
+	it('draws a card where it stood, so the cell stays until the author removes it', () => {
 		expect(gone()).toHaveLength(1)
-		expect(gone()[0]).toMatchObject({ column: 'Margin', title: 'Margin', missing: true })
+		expect(gone()[0]).toMatchObject({ title: '', missing: true })
 	})
 
 	// @feature dashboard.number-cell-per-reading

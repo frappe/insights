@@ -131,10 +131,10 @@ def item_key(item):
     """What identifies an item across runs. The UI writes its own `layout.i`.
 
     A Number chart draws one cell per reading, every one of them naming the same
-    chart, so the reading in `column` is part of the key.
+    chart, so its `reading` is part of the key.
     """
     if item.get("type") == "chart":
-        return ("chart", item.get("chart"), item.get("column"))
+        return ("chart", item.get("chart"), item.get("reading"))
     if item.get("type") == "filter":
         return ("filter", item.get("filter_name"))
     return ("item", (item.get("layout") or {}).get("i"))

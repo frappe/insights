@@ -76,7 +76,7 @@ class TestRescaleItems(unittest.TestCase):
         }
         items = [
             chart_cell("a", chart="plain", h=8),
-            chart_cell("b", chart="compared", x=4, h=8, column="Churn"),
+            chart_cell("b", chart="compared", x=4, h=8, reading="Churn"),
             chart_cell("c", chart="trending", x=8, h=8),
         ]
 

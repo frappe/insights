@@ -53,7 +53,7 @@ The unit a date or ordered column is grouped by — day, week, month, quarter, y
 _Avoid_: granularity (in prose — `granularity` is the stored key), bucket, resolution
 
 **Reading**:
-One measure a Number chart states, drawn as a card of its own — its value, its format, its Period comparison and its target. `number_columns` names the readings and `number_column_options` carries each one's own settings, positionally. A dashboard cell draws one reading and names it in `column`, by its `measure_name`, so a Number chart on a dashboard is as many cells as it has readings.
+One measure a Number chart states, drawn as a card of its own — its value, its format, its Period comparison and its target. `number_columns` names the readings and `number_column_options` carries each one's own settings, positionally. A dashboard cell draws one reading and names it in `reading`, by its `id`, so renaming the measure keeps the cell. A Number chart on a dashboard is as many cells as it has readings.
 _Avoid_: KPI, metric, data point ("card" is the thing drawn, "reading" is what it states)
 
 **Period**:

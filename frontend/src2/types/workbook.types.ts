@@ -174,11 +174,11 @@ export type WorkbookDashboardChart = WorkbookDashboardItemLayout & {
 	type: 'chart'
 	chart: string
 	/**
-	 * The reading this cell draws, by its `measure_name`. Only a Number chart
-	 * states several, so only its cells name one, and a cell written before this
-	 * field existed names none and draws the first.
+	 * The reading this cell draws, by its `id`. Only a Number chart states
+	 * several, so only its cells name one, and a cell written before this field
+	 * existed names none and draws the first.
 	 */
-	column?: string
+	reading?: string
 }
 export type WorkbookDashboardFilter = WorkbookDashboardItemLayout & {
 	type: 'filter'

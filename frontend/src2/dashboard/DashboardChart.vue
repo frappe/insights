@@ -44,8 +44,8 @@ watch(
 // A cell always names the reading it draws. One written before a cell could
 // name one draws the first, and says so here rather than leaving the chart to
 // guess which surface it is on.
-const column = computed(
-	() => props.item.column ?? numberReadings(read.value?.doc.config as NumberChartConfig)[0],
+const reading = computed(
+	() => props.item.reading ?? numberReadings(read.value?.doc.config as NumberChartConfig)[0],
 )
 
 // a cell can be pointed at a chart after it was dropped, so neither the provide
@@ -165,7 +165,7 @@ function editChart() {
 	<ChartChrome
 		v-if="read && dashboard.shared"
 		:chart="read"
-		:column="column"
+		:reading="reading"
 		readonly
 		:filtered="filtered"
 		@reset-filters="resetFilters"
@@ -184,7 +184,7 @@ function editChart() {
 	<ChartRenderer
 		v-else-if="read"
 		:chart="read"
-		:column="column"
+		:reading="reading"
 		:actions-revealed="actionsActive"
 		:filtered="filtered"
 		@reset-filters="resetFilters"

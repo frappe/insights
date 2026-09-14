@@ -226,7 +226,8 @@ export type NumberPeriod = {
 )
 
 export type NumberChartConfig = NumberFormatConfig & {
-	number_columns: Measure[]
+	/** A cell names a reading by `id`, so renaming its Measure keeps the cell. */
+	number_columns: (Measure & { id: string })[]
 	number_column_options: NumberColumnOptions[]
 	sparkline: boolean
 	sparkline_color?: string

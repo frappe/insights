@@ -699,7 +699,7 @@
 							"w": 5,
 							"h": 7
 						},
-						"column": "Spend"
+						"reading": "Spend"
 					},
 					{
 						"type": "chart",
@@ -711,7 +711,7 @@
 							"w": 5,
 							"h": 7
 						},
-						"column": "Active Suppliers"
+						"reading": "Active Suppliers"
 					},
 					{
 						"type": "chart",
@@ -723,7 +723,7 @@
 							"w": 5,
 							"h": 7
 						},
-						"column": "PO Count"
+						"reading": "PO Count"
 					},
 					{
 						"type": "chart",
@@ -735,7 +735,7 @@
 							"w": 5,
 							"h": 7
 						},
-						"column": "Avg PO Value"
+						"reading": "Avg PO Value"
 					},
 					{
 						"type": "chart",

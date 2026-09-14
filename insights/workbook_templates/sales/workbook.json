@@ -839,7 +839,7 @@
 							"w": 4,
 							"h": 7
 						},
-						"column": "Revenue"
+						"reading": "Revenue"
 					},
 					{
 						"type": "chart",
@@ -851,7 +851,7 @@
 							"w": 4,
 							"h": 7
 						},
-						"column": "Invoices"
+						"reading": "Invoices"
 					},
 					{
 						"type": "chart",
@@ -863,7 +863,7 @@
 							"w": 4,
 							"h": 7
 						},
-						"column": "Avg Invoice Value"
+						"reading": "Avg Invoice Value"
 					},
 					{
 						"type": "chart",
@@ -875,7 +875,7 @@
 							"w": 4,
 							"h": 7
 						},
-						"column": "Active Customers"
+						"reading": "Active Customers"
 					},
 					{
 						"type": "chart",

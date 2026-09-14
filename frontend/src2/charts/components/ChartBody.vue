@@ -48,7 +48,7 @@ const props = defineProps<{
 	title?: string
 	// which reading to draw, for a Number Chart. A host that draws one reading per
 	// cell says which. One that draws the chart says nothing and gets them all.
-	column?: string
+	reading?: string
 	readonly?: boolean
 	// whether filters narrowed the rows, so an empty card can offer to clear them.
 	// Only a surface that owns filter state can say, and only it can reset them.
@@ -100,7 +100,7 @@ const filler = computed(() => {
 		sparklineResult: props.chart.sparklineResult,
 		comparisonRows: props.chart.comparisonRows,
 		title: props.title,
-		column: props.column,
+		reading: props.reading,
 		readonly: readonly.value,
 		drillable: props.chart.drillable,
 		executing: props.chart.executing,

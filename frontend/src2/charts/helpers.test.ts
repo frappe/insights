@@ -583,3 +583,20 @@ describe("a reading's options follow the reading", () => {
 		expect(config.number_column_options).toEqual([{}, {}])
 	})
 })
+
+describe('a Number reading saved without an id', () => {
+	// @feature dashboard.number-cell-per-reading
+	it('takes its Measure name, the name a cell written before ids named it by', () => {
+		const after = ensureConfigSlots({ number_columns: [measure('Revenue')] }, 'Number')
+		expect(after.number_columns[0].id).toBe('Revenue')
+	})
+
+	// @feature dashboard.number-cell-per-reading
+	it('keeps the id it was saved with when its Measure is renamed', () => {
+		const after = ensureConfigSlots(
+			{ number_columns: [{ ...measure('Margin'), id: 'Profit' }] },
+			'Number',
+		)
+		expect(after.number_columns[0].id).toBe('Profit')
+	})
+})

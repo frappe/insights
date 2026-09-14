@@ -52,9 +52,9 @@ export function adaptNumberChart(input: ChartAdapterInput): ChartFiller | undefi
 
 	// A dashboard cell names the one reading it draws. A surface that names none
 	// — the workbook editor — previews them all.
-	const drawn = input.column ? [input.column] : numberReadings(config)
-	const cards = drawn.map((column) =>
-		cardFor(config, rows, column, input.comparisonRows, input.sparklineResult?.rows),
+	const drawn = input.reading ? [input.reading] : numberReadings(config)
+	const cards = drawn.map((reading) =>
+		cardFor(config, rows, reading, input.comparisonRows, input.sparklineResult?.rows),
 	)
 
 	// Nothing to drill into until there is a row behind the reading, and the card
@@ -66,7 +66,7 @@ export function adaptNumberChart(input: ChartAdapterInput): ChartFiller | undefi
 	// them, so the preview is what the dashboard draws and not a guess at it.
 	const filler: ChartFiller = {
 		component: NumberCards,
-		props: { cards, preview: !input.column, drillable },
+		props: { cards, preview: !input.reading, drillable },
 	}
 	if (drillable) {
 		filler.drillDown = {
@@ -79,15 +79,15 @@ export function adaptNumberChart(input: ChartAdapterInput): ChartFiller | undefi
 	return filler
 }
 
-/** The readings a Number Chart states, in the order it states them. */
+/** The ids of the readings a Number Chart states, in the order it states them. */
 export function numberReadings(config?: NumberChartConfig): string[] {
 	// a cell can name a chart that is not there, and asking a card with no config
 	// what it reads is a fair question with an empty answer
 	const named = (config?.number_columns || [])
 		.filter((measure) => measure?.measure_name)
-		.map((measure) => measure.measure_name)
-	// A reading is named by its Measure, so the same name twice is one reading:
-	// a cell names it, and `readingIndex` answers with the first that carries it.
+		.map((measure) => measure.id)
+	// Two readings saved without ids under one name took one id, so they are one
+	// reading: a cell names it, and `readingIndex` answers with the first.
 	return [...new Set(named)]
 }
 
@@ -99,31 +99,30 @@ export function numberReadings(config?: NumberChartConfig): string[] {
  * Naming none is naming the first: a cell written before a cell could name one
  * draws what it has always drawn.
  */
-function readingIndex(config: NumberChartConfig, column?: string): number {
+function readingIndex(config: NumberChartConfig, reading?: string): number {
 	const columns = config.number_columns || []
-	return column
-		? columns.findIndex((measure) => measure?.measure_name === column)
+	return reading
+		? columns.findIndex((measure) => measure?.measure_name && measure.id === reading)
 		: columns.findIndex((measure) => measure?.measure_name)
 }
 
 /**
  * The card behind one reading.
  *
- * A cell can name a reading the chart no longer states — an author renamed the
- * Measure, or removed it. The card stands where it stood and says so, rather
+ * A cell can name a reading the chart no longer states — an author removed it. The card stands where it stood and says so, rather
  * than the cell vanishing under an author who never asked for that.
  */
 function cardFor(
 	config: NumberChartConfig,
 	rows: QueryResultRow[],
-	column: string,
+	reading: string,
 	comparisonRows?: Record<string, number | null>,
 	series?: QueryResultRow[],
 ): NumberCardEntry {
-	const index = readingIndex(config, column)
+	const index = readingIndex(config, reading)
 	const measure = (config.number_columns || [])[index]
-	const height = numberCardHeight(config, column)
-	if (!measure) return { column, title: column, value: null, missing: true, height }
+	const height = numberCardHeight(config, reading)
+	if (!measure) return { column: reading, title: '', value: null, missing: true, height }
 	return { ...readingOf(config, rows, measure, index, comparisonRows, series), height }
 }
 
@@ -352,8 +351,8 @@ const CARD = {
  * chart dropped keeps the height the chart's own settings give it, so the cell
  * does not move under the author while they decide what to do about it.
  */
-export function numberCardRows(config: NumberChartConfig, column?: string): number {
-	const options = config.number_column_options?.[readingIndex(config, column)] || {}
+export function numberCardRows(config: NumberChartConfig, reading?: string): number {
+	const options = config.number_column_options?.[readingIndex(config, reading)] || {}
 	const comparison = options.comparison
 	const sparkline = Boolean(config.sparkline && config.date_column?.column_name)
 
@@ -365,6 +364,6 @@ export function numberCardRows(config: NumberChartConfig, column?: string): numb
 }
 
 /** The card's own height in a cell of `numberCardRows` rows: the rows less the cell's padding. */
-export function numberCardHeight(config: NumberChartConfig, column?: string): number {
-	return numberCardRows(config, column) * ROW_HEIGHT - CARD.cellPadding
+export function numberCardHeight(config: NumberChartConfig, reading?: string): number {
+	return numberCardRows(config, reading) * ROW_HEIGHT - CARD.cellPadding
 }

@@ -14,7 +14,7 @@ import ChartBody from './ChartBody.vue'
 const props = defineProps<{
 	chart: ChartRead
 	/** Which reading to draw, for a Number Chart. See `ChartBody`. */
-	column?: string
+	reading?: string
 	readonly?: boolean
 	filtered?: boolean
 }>()
@@ -42,7 +42,7 @@ const card = computed(() => !drawsOwnCards(props.chart.doc.chart_type))
 				<ChartBody
 					:chart="props.chart"
 					:title="props.chart.doc.title"
-					:column="props.column"
+					:reading="props.reading"
 					:readonly="props.readonly"
 					:filtered="props.filtered"
 					@segment-click="emit('segmentClick', $event)"

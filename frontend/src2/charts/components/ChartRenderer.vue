@@ -14,7 +14,7 @@ import ChartChrome from './ChartChrome.vue'
 // find box) has taken the pointer out of the hover group, and says so
 const props = defineProps<{
 	chart: ChartRead
-	column?: string
+	reading?: string
 	hideMaximize?: boolean
 	actionsRevealed?: boolean
 	/** Whether the reader narrowed these rows, and can take that back. */
@@ -59,7 +59,7 @@ function expand() {
 	<div ref="card" class="group relative h-full w-full">
 		<ChartChrome
 			:chart="props.chart"
-			:column="props.column"
+			:reading="props.reading"
 			:filtered="props.filtered"
 			@segment-click="clicked = $event"
 			@reset-filters="emit('resetFilters')"
@@ -117,7 +117,7 @@ function expand() {
 				     nothing here hides behind hover, the dialog is already pointed at -->
 				<ChartChrome
 					:chart="props.chart"
-					:column="props.column"
+					:reading="props.reading"
 					:filtered="props.filtered"
 					@segment-click="clicked = $event"
 					@reset-filters="emit('resetFilters')"

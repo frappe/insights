@@ -543,8 +543,8 @@ type NumberValueSpec = {
 export type NumberChartSpec = {
 	title?: string
 	values: NumberValueSpec[]
-	/** The one reading a dashboard cell names. Absent draws every value. */
-	column?: string
+	/** The one reading a dashboard cell names, by id. Absent draws every value. */
+	reading?: string
 	/** The Dimension the readings are grouped by. A comparison and a sparkline both need one. */
 	period?: DimensionSpec
 	sparkline?: boolean
@@ -571,9 +571,11 @@ export type NumberChartSpec = {
 
 export function numberChart(spec: NumberChartSpec): ChartAdapterInput {
 	const period = spec.period ? toDimension(spec.period) : undefined
-	const number_columns = spec.values.map((value) =>
-		toMeasure(value.name, value.percent ? 'percent' : undefined),
-	)
+	// a reading's id is its name, the id a reading saved without one is given
+	const number_columns = spec.values.map((value) => ({
+		...toMeasure(value.name, value.percent ? 'percent' : undefined),
+		id: value.name,
+	}))
 
 	const config = {
 		number_columns,
@@ -616,7 +618,7 @@ export function numberChart(spec: NumberChartSpec): ChartAdapterInput {
 	return {
 		chart_type: 'Number',
 		title: spec.title,
-		...(spec.column ? { column: spec.column } : {}),
+		...(spec.reading ? { reading: spec.reading } : {}),
 		config,
 		comparisonRows: spec.comparisonRows ?? comparisonRowsOf(spec, periods),
 		result: resultWith(

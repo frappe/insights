@@ -422,7 +422,7 @@
               "y": 0
             },
             "type": "chart",
-            "column": "Orders"
+            "reading": "Orders"
           },
           {
             "chart": "sj4rjuvvpu",
@@ -435,7 +435,7 @@
               "y": 0
             },
             "type": "chart",
-            "column": "Items"
+            "reading": "Items"
           },
           {
             "chart": "sj4rjuvvpu",
@@ -448,7 +448,7 @@
               "y": 0
             },
             "type": "chart",
-            "column": "Net Total"
+            "reading": "Net Total"
           },
           {
             "chart": "sj4rjuvvpu",
@@ -461,7 +461,7 @@
               "y": 0
             },
             "type": "chart",
-            "column": "Freight"
+            "reading": "Freight"
           },
           {
             "chart": "sj4rjuvvpu",
@@ -474,7 +474,7 @@
               "y": 0
             },
             "type": "chart",
-            "column": "Grand Total"
+            "reading": "Grand Total"
           },
           {
             "chart": "sj4r5sn1ro",

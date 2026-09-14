@@ -82,7 +82,7 @@ def expand_item(item: dict, configs: dict, taken: set) -> list[dict] | None:
     A cell drawing a chart that states one reading needs no name for it: naming
     none is naming the first, which is what it already drew.
     """
-    if item.get("type") != "chart" or item.get("column"):
+    if item.get("type") != "chart" or item.get("reading"):
         return None
 
     config = configs.get(item.get("chart"))
@@ -105,7 +105,7 @@ def expand_item(item: dict, configs: dict, taken: set) -> list[dict] | None:
     cells = []
     for index, reading in enumerate(readings):
         cell = copy.deepcopy(item)
-        cell["column"] = reading
+        cell["reading"] = reading
         cell["layout"] = boxes[index]
         cell["layout"]["i"] = _cell_id(item.get("layout") or {}, index, taken)
         taken.add(cell["layout"]["i"])

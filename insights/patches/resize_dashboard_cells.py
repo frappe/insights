@@ -126,7 +126,7 @@ def fixed_rows(item: dict, configs: dict) -> int | None:
     if item.get("type") == "filter":
         return FILTER_ROWS
     if item.get("type") == "chart" and item.get("chart") in configs:
-        return card_rows(configs[item["chart"]], item.get("column"))
+        return card_rows(configs[item["chart"]], item.get("reading"))
     return None
 
 
@@ -154,11 +154,17 @@ def _draws_sparkline(config: dict) -> bool:
 
 
 def number_readings(config: dict) -> list[str]:
-    """The readings a Number chart states, in the order it states them."""
+    """The ids of the readings a Number chart states, in the order it states them."""
     columns = config.get("number_columns")
     if not isinstance(columns, list):
         return []
-    return [c["measure_name"] for c in columns if isinstance(c, dict) and c.get("measure_name")]
+    return [reading_id(c) for c in columns if isinstance(c, dict) and c.get("measure_name")]
+
+
+def reading_id(reading: dict) -> str:
+    """What a cell names a reading by. One saved without an id takes its Measure's
+    name, as `ensureConfigSlots` in `charts/helpers.ts` gives it."""
+    return reading.get("id") or reading["measure_name"]
 
 
 def _compared(config: dict, reading: str | None) -> bool:
@@ -173,9 +179,7 @@ def _options_of(config: dict, reading: str | None) -> dict:
         (
             i
             for i, c in enumerate(columns)
-            if isinstance(c, dict)
-            and c.get("measure_name")
-            and (reading is None or c["measure_name"] == reading)
+            if isinstance(c, dict) and c.get("measure_name") and (reading is None or reading_id(c) == reading)
         ),
         -1,
     )

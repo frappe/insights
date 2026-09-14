@@ -5,6 +5,7 @@ import { computed } from 'vue'
 import ColorInput from '../../components/ColorInput.vue'
 import DraggableList from '../../components/DraggableList.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
+import { getUniqueId } from '../../helpers'
 import { FIELDTYPES } from '../../helpers/constants'
 import { moveNumberReadingOptions, removeNumberReading } from '../helpers'
 import { DEFAULT_CHOICE, periodOf, periodOfChoice } from '../window'
@@ -155,7 +156,7 @@ function setDateColumn(dimension?: Dimension) {
 					</DraggableList>
 					<AddSlotButton
 						:label="__('Add reading')"
-						@click="config.number_columns.push({} as any)"
+						@click="config.number_columns.push({ id: getUniqueId() } as any)"
 					/>
 				</div>
 			</div>

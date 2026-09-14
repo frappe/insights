@@ -102,7 +102,7 @@ class TestNumberCellSplit(InsightsIntegrationTestCase):
         run_patch()
 
         items = self.items_of(dashboard)
-        self.assertEqual([item["column"] for item in items], ["Revenue", "Profit", "Orders"])
+        self.assertEqual([item["reading"] for item in items], ["Revenue", "Profit", "Orders"])
         self.assertTrue(all(item["chart"] == chart for item in items))
         boxes = [item["layout"] for item in items]
         self.assertEqual([(b["x"], b["w"]) for b in boxes], [(2, 4), (6, 4), (10, 4)])
@@ -146,7 +146,7 @@ class TestNumberCellSplit(InsightsIntegrationTestCase):
             )
         )
         below = self.cell(chart, i="note", y=4, w=20, h=4)
-        below["column"] = "Revenue"
+        below["reading"] = "Revenue"
         dashboard = self.create_dashboard([self.cell(chart, w=20, h=4), below])
 
         run_patch()
@@ -165,7 +165,7 @@ class TestNumberCellSplit(InsightsIntegrationTestCase):
 
         items = self.items_of(dashboard)
         self.assertEqual(len(items), 1)
-        self.assertNotIn("column", items[0])
+        self.assertNotIn("reading", items[0])
 
     # @feature dashboard.number-cell-per-reading
     def test_the_charts_the_dashboard_links_stay_right(self):
@@ -201,6 +201,16 @@ class TestNumberCellExpansion(InsightsIntegrationTestCase):
         """One Number chart named `c`, stating `readings` readings."""
         columns = [{"measure_name": name} for name in "abcde"[:readings]]
         return {"c": {"sparkline": False, "number_columns": columns}}
+
+    # @feature dashboard.number-cell-per-reading
+    def test_each_cell_names_its_reading_by_id(self):
+        # a reading saved without an id is named by its Measure, as the app names it
+        configs = {"c": {"number_columns": [{"measure_name": "a", "id": "r1"}, {"measure_name": "b"}]}}
+        items = [{"type": "chart", "chart": "c", "layout": {"i": "a", "x": 0, "y": 0, "w": 8, "h": 8}}]
+
+        expand_items(items, configs)
+
+        self.assertEqual([item["reading"] for item in items], ["r1", "b"])
 
     # @feature dashboard.number-cell-per-reading
     def test_the_readings_share_the_width_the_cell_had(self):
@@ -264,7 +274,7 @@ class TestNumberCellExpansion(InsightsIntegrationTestCase):
             {
                 "type": "chart",
                 "chart": "c",
-                "column": "b",
+                "reading": "b",
                 "layout": {"i": "a", "x": 0, "y": 0, "w": 4, "h": 4},
             }
         ]
