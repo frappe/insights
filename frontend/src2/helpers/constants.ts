@@ -31,7 +31,7 @@ export const COLUMN_TYPES = [
 ] as const
 
 export const FILTER_TYPES = ['String', 'Number', 'Date'] as const
-export type FilterType = typeof FILTER_TYPES[number]
+export type FilterType = (typeof FILTER_TYPES)[number]
 
 export const joinTypes = [
 	{
@@ -61,22 +61,24 @@ export const joinTypes = [
 	},
 ] as const
 
-
 export const granularityOptions = [
 	{ label: __('Second'), value: 'second' },
 	{ label: __('Minute'), value: 'minute' },
 	{ label: __('Hour'), value: 'hour' },
-	{ label: __('Day'), value: 'day'},
-	{ label: __('Week'), value: 'week'},
-	{ label: __('Month'), value: 'month'},
-	{ label: __('Quarter'), value: 'quarter'},
-	{ label: __('Year'), value: 'year'},
-	{ label: __('Fiscal Year'), value: 'fiscal_year'},
+	{ label: __('Day'), value: 'day' },
+	{ label: __('Week'), value: 'week' },
+	{ label: __('Month'), value: 'month' },
+	{ label: __('Quarter'), value: 'quarter' },
+	{ label: __('Year'), value: 'year' },
+	{ label: __('Fiscal Year'), value: 'fiscal_year' },
 ] as const
 
-export type GranularityType = typeof granularityOptions[number]['value']
+export type GranularityType = (typeof granularityOptions)[number]['value']
 
 export const timeGranularityOptions = granularityOptions.slice(0, 3)
+
+// A Date has no time part, so the engine cannot truncate one to a sub-day grain.
+export const dateGranularityOptions = granularityOptions.slice(3)
 
 export function isCalendarDateType(dataType?: string) {
 	return CalendarDateTypes.includes(dataType || '')
@@ -85,6 +87,10 @@ export function isCalendarDateType(dataType?: string) {
 export function getGranularityOptions(dataType?: string) {
 	if (TimeTypes.includes(dataType || '')) {
 		return timeGranularityOptions
+	}
+
+	if (dataType === 'Date') {
+		return dateGranularityOptions
 	}
 
 	if (isCalendarDateType(dataType)) {

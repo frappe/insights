@@ -2,8 +2,8 @@ import { watchDebounced } from '@vueuse/core'
 import { __ } from '../translation'
 import { isEqual } from 'es-toolkit'
 import { toPng } from 'html-to-image'
-import { call, debounce } from 'frappe-ui'
-import { Socket } from 'socket.io-client'
+import { call, debounce, toast } from 'frappe-ui'
+import type { Socket } from 'socket.io-client'
 import {
 	inject,
 	watch,
@@ -11,7 +11,7 @@ import {
 	watch as vueWatch,
 	WatchCallback,
 	WatchSource,
-	WatchStopHandle
+	WatchStopHandle,
 } from 'vue'
 import { getFormattedDate } from '../query/helpers'
 import session from '../session'
@@ -23,20 +23,9 @@ import {
 	QueryResultColumn,
 } from '../types/query.types'
 import { FIELDTYPES } from './constants'
-import { createToast } from './toasts'
 
 export function getUniqueId(length = 8) {
 	return (+new Date() * Math.random()).toString(36).substring(0, length)
-}
-
-export function titleCase(str: string) {
-	return str
-		.toLowerCase()
-		.split(' ')
-		.map(function (word) {
-			return word.charAt(0).toUpperCase() + word.slice(1)
-		})
-		.join(' ')
 }
 
 export function copy<T>(obj: T) {
@@ -49,11 +38,12 @@ export function wheneverChanges(source: WatchSource, callback: WatchCallback, op
 	return watchDebounced(
 		source,
 		(val, _, onCleanup) => {
-			if (isEqual(val, preVal)) return
+			// against a clone, because `preVal` is one — see `isDirty` in ./resource
+			if (isEqual(copy(val), preVal)) return
 			preVal = copy(val)
 			callback(val, preVal, onCleanup)
 		},
-		options
+		options,
 	)
 }
 
@@ -63,7 +53,11 @@ export type WatchOptions = {
 	debounce?: number
 	toggleCondition?: () => boolean
 }
-export function watchToggle(source: WatchSource, callback: WatchCallback, options: WatchOptions = {}) {
+export function watchToggle(
+	source: WatchSource,
+	callback: WatchCallback,
+	options: WatchOptions = {},
+) {
 	const attachSourceWatcher = () => _watch(source, callback, options)
 
 	if (!options.toggleCondition) {
@@ -89,7 +83,7 @@ export function watchToggle(source: WatchSource, callback: WatchCallback, option
 			},
 			{
 				immediate: true,
-			}
+			},
 		)
 	}
 }
@@ -141,11 +135,7 @@ export function getErrorMessage(err: any) {
 }
 
 export function showErrorToast(err: Error, raise = true) {
-	createToast({
-		variant: 'error',
-		title: __('Error'),
-		message: getErrorMessage(err),
-	})
+	toast.error(getErrorMessage(err))
 	if (raise) throw err
 }
 
@@ -171,9 +161,18 @@ export function downloadImage(element: HTMLElement, filename: string, scale = 2,
 		.catch((err) => showErrorToast(err, false))
 }
 
-export function formatNumber(number: number, precision = 0) {
-	if (isNaN(number)) return number
-	precision = precision || guessPrecision(number)
+/** A cell read as a number, or nothing: null, blank and text are not zero. */
+export function toNumber(value: any): number | null {
+	if (value === null || value === undefined || value === '') return null
+	const number = Number(value)
+	return Number.isNaN(number) ? null : number
+}
+
+// `precision` is left out, not zeroed, when nobody states one: a caller asking
+// for no decimals means no decimals, and `0 || guess` swallowed that.
+export function formatNumber(number: number, precision?: number): string {
+	if (isNaN(number)) return String(number)
+	precision = precision ?? guessPrecision(number)
 	const locale = session.site?.country == 'India' ? 'en-IN' : session.user?.locale
 	return new Intl.NumberFormat(locale || 'en-US', {
 		minimumFractionDigits: precision,
@@ -214,7 +213,6 @@ export function guessPrecision(number: number) {
 	if (decimalIndex === -1) return 0
 	return Math.min(str.length - decimalIndex - 1, 2)
 }
-
 
 export function getShortNumber(number: number, precision = 0) {
 	const locale = session.site?.country == 'India' ? 'en-IN' : session.user?.locale
@@ -268,10 +266,7 @@ export function safeJSONParse(str: string, defaultValue = null) {
 		console.log(str)
 		console.error(e)
 		console.groupEnd()
-		createToast({
-			message: __('Error parsing JSON'),
-			variant: 'error',
-		})
+		toast.error(__('Error parsing JSON'))
 		return defaultValue
 	}
 }
@@ -295,10 +290,11 @@ export function copyToClipboard(text: string | Promise<string>) {
 }
 
 function showCopyToast(success: boolean) {
-	createToast({
-		variant: success ? 'success' : 'error',
-		title: success ? __('Copied to clipboard') : __('Failed to copy to clipboard'),
-	})
+	if (success) {
+		toast.success(__('Copied to clipboard'))
+	} else {
+		toast.error(__('Failed to copy to clipboard'))
+	}
 }
 
 export function ellipsis(value: string, length: number) {
@@ -309,25 +305,25 @@ export function ellipsis(value: string, length: number) {
 }
 
 export function flattenOptions(
-	options: DropdownOption[] | GroupedDropdownOption[]
+	options: DropdownOption[] | GroupedDropdownOption[],
 ): DropdownOption[] {
 	if (!options.length) return []
 	return 'group' in options[0]
-		? (options as GroupedDropdownOption[]).map((c) => c.items).flat()
+		? (options as GroupedDropdownOption[]).map((c) => c.options).flat()
 		: (options as DropdownOption[])
 }
 
 export function groupOptions<T extends DropdownOption>(
 	options: T[],
-	groupBy: keyof T
+	groupBy: keyof T,
 ): GroupedDropdownOption[] {
 	return options.reduce((acc, option) => {
 		const group = option[groupBy] as string
 		const index = acc.findIndex((g) => g.group === group)
 		if (index === -1) {
-			acc.push({ group, items: [option] })
+			acc.push({ group, options: [option] })
 		} else {
-			acc[index].items.push(option)
+			acc[index].options.push(option)
 		}
 		return acc
 	}, [] as GroupedDropdownOption[])
@@ -390,9 +386,9 @@ export function createHeaders(columns: QueryResultColumn[]) {
 		return {
 			...column,
 			isNested: column.name.includes('___'),
-			// ibis returns nested columns as value1___column1, value2___column1, value3___column1
-			// using the columns as it is will show the value1 on the top and column1, column2, column3 as nested columns
-			// so we reverse the parts to show column1 on the top and value1, value2, value3 as nested columns
+			// ibis pivots to measure___value1___value2, deepest value last. A
+			// header reads the other way round, the outermost dimension on the
+			// top row and the measure on the bottom, so the parts are reversed.
 			parts: column.name.split('___').reverse(),
 		}
 	})
@@ -455,7 +451,9 @@ export function createHeaders(columns: QueryResultColumn[]) {
 		const areDates = areValidDates(headerRow.map((header) => header.label))
 		if (!areDates) continue
 
-		const areFirstOfFiscalYear = areFirstDayOfFiscalYear(headerRow.map((header) => header.label))
+		const areFirstOfFiscalYear = areFirstDayOfFiscalYear(
+			headerRow.map((header) => header.label),
+		)
 		const areFirstOfYear = areFirstDayOfYear(headerRow.map((header) => header.label))
 		const areFirstOfMonth = areFirstDayOfMonth(headerRow.map((header) => header.label))
 
@@ -478,7 +476,7 @@ export function createHeaders(columns: QueryResultColumn[]) {
 }
 
 function areFirstDayOfFiscalYear(data: string[]) {
-	const fiscalYearStart = session.user?.fiscal_year_start
+	const fiscalYearStart = session.site?.fiscal_year_start
 	if (!fiscalYearStart) return false
 
 	const start = new Date(fiscalYearStart)
@@ -544,7 +542,7 @@ export function toTitleCase(str: string): string {
 		.replace(/&/g, 'and')
 		.toLowerCase()
 		.split(' ')
-		.map(word => {
+		.map((word) => {
 			if (word === 'and') return 'and'
 			return word.charAt(0).toUpperCase() + word.slice(1)
 		})
