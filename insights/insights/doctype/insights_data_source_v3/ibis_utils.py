@@ -10,8 +10,14 @@ import numpy as np
 import pandas as pd
 import sqlglot as sg
 import sqlparse
+<<<<<<< HEAD
 from frappe.utils.data import flt
 from frappe.utils.safe_exec import safe_eval, safe_exec
+=======
+from frappe.utils.data import flt, orjson_dumps
+from frappe.utils.response import json_handler
+from frappe.utils.safe_exec import SERVER_SCRIPT_FILE_PREFIX, safe_eval, safe_exec
+>>>>>>> a3e0b03 (fix(data-store): a division by zero returns null, as on the live connection (#1397))
 from ibis import _
 from ibis.expr.datatypes import DataType
 from ibis.expr.operations.relations import DatabaseTable, Field
@@ -1211,7 +1217,8 @@ def cache_results(cache_key, result: pd.DataFrame, cache_expiry=3600):
     }
     frappe.cache().set_value(
         _results_cache_key(cache_key),
-        frappe.as_json(payload),
+        # the response writes inf and NaN as null, and so must the cache that orjson reads back
+        orjson_dumps(payload, default=json_handler),
         expires_in_sec=cache_expiry,
     )
 
