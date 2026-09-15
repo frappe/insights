@@ -76,6 +76,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | query.result-find | A user searches within the result rows and columns. |
 | query.result-pagination | A user pages through the result rows. |
 | query.result-timing | The result pane states how long the run took, or that it came from cache. |
+| query.result-cache | A re-run reads the result from the cache, with infinity and NaN read back as blanks. |
 | query.result-raw-row | The raw row behind a formatted result row is the one at the same position, across re-runs. |
 | query.result-drill | A user clicks a cell of a summarized result and drills into it as a chart would. |
 | query.conditional-formatting | A user highlights result cells by a rule or colors them on a scale. |
@@ -331,6 +332,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | data-store.import-cursor | An incremental import's cursor describes what is in the store, not what a run intended. |
 | data-store.failed-import-notice | A reader is told when a table's newest import failed, and nothing while one runs or a retry is queued. |
 | data-store.write-lock | A write waits for readers to finish and gives up at a timeout. |
+| data-store.division-by-zero | A division by zero returns null in the data store, as it does on the live connection. |
 | data-store.cleanup-prunes-stale | The weekly cleanup drops a table no query has used, and keeps one used recently, nested, freshly imported or incremental. |
 | data-store.cleanup-keeps-unexplained | The cleanup deletes only what it can rebuild and keeps an unexplained orphan. |
 | data-store.compaction | The store file is compacted without losing data, and small files are left alone. |

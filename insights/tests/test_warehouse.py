@@ -169,6 +169,14 @@ class TestWarehouse(InsightsIntegrationTestCase):
                 ],
             )
 
+    # @feature data-store.division-by-zero
+    def test_a_division_by_zero_returns_null_as_on_the_live_connection(self):
+        with self.warehouse_db() as db:
+            row = db.sql("SELECT 5.0 / 0 AS positive, -5 / 0 AS negative, 0 / 0 AS undefined").execute()
+            self.assertEqual(
+                row.isna().to_dict("records"), [{"positive": True, "negative": True, "undefined": True}]
+            )
+
 
 class TestWarehouseWriteLock(InsightsIntegrationTestCase):
     """A writer must wait out the readers holding the warehouse file."""

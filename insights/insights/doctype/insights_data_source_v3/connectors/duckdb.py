@@ -58,6 +58,8 @@ def open_local_duckdb(
     private_folder = os.path.realpath(get_files_path(is_private=1))
     private_folder = _escape_sql_path(private_folder)
     db.raw_sql(f"SET home_directory='{private_folder}'")
+    # a division by zero returns inf by default; live connections return NULL
+    db.raw_sql("SET ieee_floating_point_ops = false")
 
     if not read_only and allowed_dir:
         resolved_dir = os.path.realpath(allowed_dir)
@@ -190,6 +192,7 @@ def get_http_duckdb_connection(data_source, name, db_name):
     db.attach(attach_url, name, read_only=True)
     db.raw_sql(f"USE '{name}'")
     db.raw_sql("SET enable_external_access=false")
+    db.raw_sql("SET ieee_floating_point_ops = false")
     return db
 
 
