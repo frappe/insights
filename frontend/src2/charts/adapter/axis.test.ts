@@ -393,6 +393,69 @@ describe('the value axis', () => {
 			}).stacked,
 		).toBe(true)
 	})
+
+	// @feature charts.axis-min-max
+	it('ignores a bound that is not a number', () => {
+		// a cleared box saved '', which frappe-ui would pin the axis to
+		const props = propsOf({
+			type: 'Bar',
+			dimension: 'region',
+			measures: ['revenue'],
+			min: '' as any,
+			max: '' as any,
+		})
+		expect(Object.keys(props.yAxis)).toEqual(['format'])
+	})
+})
+
+describe('bars on both value axes', () => {
+	// A series with no align draws on the left.
+	// @feature charts.bar-stack charts.bar-normalize charts.series-align
+	it('neither stack nor normalize, whatever the Chart saved', () => {
+		const measures = ['revenue', { name: 'refunds', axis: 'right' as const }]
+		expect(
+			propsOf({ type: 'Bar', dimension: 'region', measures, stacked: true }).stacked,
+		).toBeUndefined()
+		expect(
+			propsOf({ type: 'Bar', dimension: 'region', measures, stacked: true, normalized: true })
+				.stacked,
+		).toBeUndefined()
+	})
+
+	// @feature charts.bar-overlap
+	it('do not overlap', () => {
+		const props = propsOf({
+			type: 'Bar',
+			dimension: 'region',
+			measures: ['revenue', { name: 'refunds', axis: 'right' }],
+			overlap: true,
+		})
+		expect(props.seriesConfig?.revenue?.echartOptions).toBeUndefined()
+	})
+
+	// A line never stacks, so the bars on the left stack alone on their own scale.
+	// @feature charts.bar-stack
+	it('are not what a line on the right makes, so the bars still stack', () => {
+		const props = propsOf({
+			type: 'Bar',
+			dimension: 'region',
+			measures: ['revenue', 'refunds', { name: 'sla', mark: 'Line', axis: 'right' }],
+			stacked: true,
+		})
+		expect(props.stacked).toBe(true)
+	})
+
+	// A Row draws horizontally, and frappe-ui gives it no second value axis.
+	// @feature charts.bar-stack
+	it('never happen on a Row, so it keeps stacking', () => {
+		const props = propsOf({
+			type: 'Row',
+			dimension: 'region',
+			measures: ['revenue', { name: 'refunds', axis: 'right' }],
+			stacked: true,
+		})
+		expect(props.stacked).toBe(true)
+	})
 })
 
 describe('reference lines', () => {

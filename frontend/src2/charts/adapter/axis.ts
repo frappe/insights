@@ -25,6 +25,7 @@ import type {
 	YAxisLine,
 } from '../../types/chart.types'
 import type { Dimension, QueryResultRow } from '../../types/query.types'
+import { hasBarsOnBothAxes } from '../helpers'
 import { numberFormatter, type NumberFormatter } from '../number_format'
 import type { ChartAdapterInput, ChartFiller } from './types'
 
@@ -71,6 +72,8 @@ function adaptAxisChart(
 	if (!columns.length) return
 
 	const y_axis = config.y_axis
+	const barsOnBothAxes = hasBarsOnBothAxes(y_axis?.series, mark, horizontal)
+	const overlap = Boolean((y_axis as YAxisBar | undefined)?.overlap) && !barsOnBothAxes
 
 	const seriesByColumn = new Map(columns.map((column) => [column, seriesFor(config, column)]))
 	// A split hands one Series several columns, and the color the form wrote is
@@ -86,7 +89,7 @@ function adaptAxisChart(
 	for (const column of columns) {
 		const series = seriesByColumn.get(column)
 		const owns = series ? columnsOwned.get(series) === 1 : false
-		const style = styleFor(config, series, mark, owns)
+		const style = styleFor(config, series, mark, owns, overlap)
 		if (Object.keys(style).length) seriesConfig[column] = style
 	}
 
@@ -102,7 +105,7 @@ function adaptAxisChart(
 	if (Object.keys(seriesConfig).length) props.seriesConfig = seriesConfig
 	if (horizontal) props.horizontal = true
 
-	const stacked = stackingFor(y_axis)
+	const stacked = stackingFor(y_axis, barsOnBothAxes)
 	if (stacked) props.stacked = stacked
 
 	// One formatter per axis, not per series: v2 prints a value against the axis
@@ -223,11 +226,11 @@ function styleFor(
 	series: Series | undefined,
 	mark: ChartMark,
 	ownsOneColumn: boolean,
+	overlap: boolean,
 ): SeriesStyle {
 	// the slots the normalizer writes, read the way every other line here reads
 	// them: an entry point that bypasses it must not blank the card
 	const line = (config.y_axis || {}) as YAxisLine
-	const bar = (config.y_axis || {}) as YAxisBar
 	const style: SeriesStyle = {}
 
 	// The form wrote 'Line' where the type declares 'line'. normalizeChartConfig
@@ -258,7 +261,7 @@ function styleFor(
 	// Bars standing in front of each other rather than beside them is an
 	// instruction to the renderer, not a reading of the data, so it goes through
 	// `echartOptions` rather than asking for a prop of its own.
-	if (type === 'bar' && bar.overlap) style.echartOptions = { barGap: '-100%' }
+	if (type === 'bar' && overlap) style.echartOptions = { barGap: '-100%' }
 
 	return style
 }
@@ -267,8 +270,13 @@ function styleFor(
  * `normalize` reads every value as a share of its category, which only holds
  * once the shares are stacked into one column — so it carries the stack with it.
  * `overlap` puts the bars in front of each other, which a stack cannot do.
+ * Bars on both axes are two scales, and no column sums them.
  */
-function stackingFor(y_axis: MixedChartConfig['y_axis']): boolean | 'normalized' | undefined {
+function stackingFor(
+	y_axis: MixedChartConfig['y_axis'],
+	barsOnBothAxes: boolean,
+): boolean | 'normalized' | undefined {
+	if (barsOnBothAxes) return undefined
 	const bar = (y_axis || {}) as YAxisBar
 	if (bar.normalize) return 'normalized'
 	if (bar.stack && !bar.overlap) return true
@@ -315,8 +323,8 @@ function valueAxisFor(
 	if (y_axis?.show_axis_label && y_axis.axis_label) axis.title = y_axis.axis_label
 	// A normalized axis is pinned to the share it reads, 0 to 100.
 	if (normalized) return axis
-	if (y_axis?.min !== undefined) axis.min = y_axis.min
-	if (y_axis?.max !== undefined) axis.max = y_axis.max
+	if (typeof y_axis?.min === 'number') axis.min = y_axis.min
+	if (typeof y_axis?.max === 'number') axis.max = y_axis.max
 	return axis
 }
 

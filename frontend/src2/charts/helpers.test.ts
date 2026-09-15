@@ -184,121 +184,38 @@ describe('getGranularity', () => {
 	})
 })
 
-describe('a Bar with a split axis', () => {
-	// The form disables the toggle, and it disables it for a chart it was handed
-	// already settled: a rule the form writes at setup is a saved chart rewritten
-	// by the act of opening its options.
+describe('a Bar saved with bars on both axes', () => {
+	// The adapter ignores the flags while the layout holds. Writing them back on
+	// load would lose them for good the next time the rule is corrected.
 	// @feature charts.bar-stack
-	it('cannot stack, whatever it was saved with', () => {
-		const after = ensureConfigSlots(
-			{
-				y_axis: {
-					stack: true,
-					series: [
-						{ measure: {}, align: 'Left' },
-						{ measure: {}, align: 'Right' },
-					],
-				},
-			},
-			'Bar',
-		)
-		expect(after.y_axis.stack).toBe(false)
-	})
-
-	// @feature charts.bar-overlap
-	it('cannot overlap either, which the form disables and never unset', () => {
-		const after = ensureConfigSlots(
-			{
-				y_axis: {
-					overlap: true,
-					series: [
-						{ measure: {}, align: 'Left' },
-						{ measure: {}, align: 'Right' },
-					],
-				},
-			},
-			'Bar',
-		)
-		expect(after.y_axis.overlap).toBe(false)
-	})
-
-	// The Align picker has no blank option, so a series the author never opened
-	// carries no align at all. The renderer draws it on the left.
-	// @feature charts.series-align
-	it('reads a series with no align as the left one', () => {
-		const after = ensureConfigSlots(
-			{
-				y_axis: {
-					stack: true,
-					series: [{ measure: {} }, { measure: {}, align: 'Right' }],
-				},
-			},
-			'Bar',
-		)
-		expect(after.y_axis.stack).toBe(false)
-	})
-
-	// @feature charts.bar-normalize
-	it('cannot normalize, which carries a stack with it', () => {
-		const after = ensureConfigSlots(
-			{
-				y_axis: {
-					normalize: true,
-					series: [{ measure: {} }, { measure: {}, align: 'Right' }],
-				},
-			},
-			'Bar',
-		)
-		expect(after.y_axis.normalize).toBe(false)
-	})
-
-	// @feature charts.bar-stack
-	it('keeps the flag while every series is on one side', () => {
-		const after = ensureConfigSlots(
-			{ y_axis: { stack: true, series: [{ measure: {}, align: 'Left' }] } },
-			'Bar',
-		)
-		expect(after.y_axis.stack).toBe(true)
-	})
-})
-
-describe('a Row with a series aligned right', () => {
-	// A Row draws horizontally, and frappe-ui gives a horizontal mark no second
-	// value axis: both series land on one scale, so stacking still means something.
-	// @feature charts.bar-stack
-	it('keeps stacking, because a Row has no second value axis to split onto', () => {
-		const after = ensureConfigSlots(
-			{
-				y_axis: {
-					stack: true,
-					series: [{ measure: {} }, { measure: {}, align: 'Right' }],
-				},
-			},
-			'Row',
-		)
-		expect(after.y_axis.stack).toBe(true)
-	})
-})
-
-describe('a chart saved with a hidden series aligned right', () => {
-	// The hidden series moves to the tooltip, so it is not a side of a split axis.
-	// The split-axis rule must not read it on its way out.
-	// @feature charts.bar-stack
-	it('keeps stacking once the hidden series has moved to the tooltip', () => {
+	it('keeps the flags it was saved with', () => {
 		const after = normalizeChartConfig(
 			{
 				y_axis: {
 					stack: true,
+					overlap: true,
+					normalize: true,
 					series: [
 						{ measure: measure('revenue') },
-						{ measure: measure('margin'), align: 'Right', hide_from_chart: true },
+						{ measure: measure('refunds'), align: 'Right' },
 					],
 				},
 			},
 			'Bar',
 		)
-		expect(after.y_axis.series).toHaveLength(1)
-		expect(after.y_axis.stack).toBe(true)
+		expect(after.y_axis).toMatchObject({ stack: true, overlap: true, normalize: true })
+	})
+})
+
+describe('a y axis saved with a cleared bound', () => {
+	// @feature charts.axis-min-max
+	it('drops the empty bound and keeps the one the author typed', () => {
+		const before = config([{ measure: measure('revenue') }])
+		before.y_axis.min = '5'
+		before.y_axis.max = ''
+		const after = normalizeChartConfig(before, 'Bar')
+		expect(after.y_axis.min).toBe(5)
+		expect('max' in after.y_axis).toBe(false)
 	})
 })
 

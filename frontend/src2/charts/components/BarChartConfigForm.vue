@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, watchEffect } from 'vue'
+import { computed } from 'vue'
 import { BarChartConfig, YAxisBar } from '../../types/chart.types'
 import { ColumnOption, DimensionOption } from '../../types/query.types'
-import { hasSplitAxis } from '../helpers'
+import { hasBarsOnBothAxes } from '../helpers'
 import ReferenceLinesConfig from './ReferenceLinesConfig.vue'
 import SplitByConfig from './SplitByConfig.vue'
 import TooltipConfig from './TooltipConfig.vue'
@@ -24,17 +24,11 @@ const config = defineModel<BarChartConfig>({
 	}),
 })
 
-const hasAxisSplit = computed(() => hasSplitAxis(config.value.y_axis.series, props.chartType))
-
-// The slots, the stack default and the split-axis rule are settled on load, by
-// `ensureConfigSlots`. This answers the edit that splits the axis while the form
-// is open, and writes nothing to a chart that arrives already settled.
-watchEffect(() => {
-	if (!hasAxisSplit.value) return
-	if (config.value.y_axis.stack) config.value.y_axis.stack = false
-	if (config.value.y_axis.overlap) config.value.y_axis.overlap = false
-	if (config.value.y_axis.normalize) config.value.y_axis.normalize = false
-})
+// The flags stay as saved, and the adapter ignores them while bars sit on both
+// axes, so the switches show what is drawn rather than what is saved.
+const barsOnBothAxes = computed(() =>
+	hasBarsOnBothAxes(config.value.y_axis.series, 'bar', props.chartType === 'Row'),
+)
 </script>
 
 <template>
@@ -44,18 +38,21 @@ watchEffect(() => {
 		<template #y-axis-settings="{ y_axis }">
 			<Toggle
 				:label="__('Stack')"
-				v-model="(y_axis as YAxisBar).stack"
-				:disabled="hasAxisSplit"
+				:model-value="barsOnBothAxes ? false : (y_axis as YAxisBar).stack"
+				@update:model-value="(y_axis as YAxisBar).stack = Boolean($event)"
+				:disabled="barsOnBothAxes"
 			/>
 			<Toggle
 				:label="__('Overlap')"
-				v-model="(y_axis as YAxisBar).overlap"
-				:disabled="hasAxisSplit"
+				:model-value="barsOnBothAxes ? false : (y_axis as YAxisBar).overlap"
+				@update:model-value="(y_axis as YAxisBar).overlap = Boolean($event)"
+				:disabled="barsOnBothAxes"
 			/>
 			<Toggle
 				:label="__('Normalize')"
-				v-model="(y_axis as YAxisBar).normalize"
-				:disabled="hasAxisSplit"
+				:model-value="barsOnBothAxes ? false : (y_axis as YAxisBar).normalize"
+				@update:model-value="(y_axis as YAxisBar).normalize = Boolean($event)"
+				:disabled="barsOnBothAxes"
 			/>
 		</template>
 	</YAxisConfig>
