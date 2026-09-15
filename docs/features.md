@@ -121,7 +121,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | charts.series-data-labels | A user shows value labels on one series or on the whole axis. |
 | charts.axis-label | A user shows and names the y-axis label. |
 | charts.axis-min-max | A user pins the y-axis scale bounds. |
-| charts.bar-stack | A user stacks the bars; a split chart cannot stack. |
+| charts.bar-stack | A user stacks the bars; a chart with bars on both axes cannot stack. |
 | charts.bar-normalize | A user normalizes stacked bars to shares of the whole. |
 | charts.bar-overlap | A user overlaps bars instead of grouping them. |
 | charts.line-smooth | A user draws a line series curved. |

@@ -99,22 +99,42 @@ export function handleOldSeriesTypes(config: any) {
 }
 
 /**
- * Whether an axis chart draws one series against a scale of its own. The load
- * path and the config form both rule on it, so they rule through one answer.
+ * Whether a chart draws bars against both value axes, which is the one layout a
+ * stack cannot read: the segments of one column would sum two scales. A line
+ * never stacks, so bars on the left beside a line on the right still do. The
+ * adapter and the config form both rule on it, so they rule through one answer.
+ * Neither writes it back: a saved flag outlives a rule that is later corrected.
  *
- * A Row draws its marks horizontally, and frappe-ui gives a horizontal mark no
- * second value axis (`hasSecondaryValueAxis`), so a Row never splits however its
- * series are aligned.
+ * `mark` is what a series with no type draws as. frappe-ui gives a horizontal
+ * chart no second value axis (`hasSecondaryValueAxis`), so it never has bars on both.
  */
-export function hasSplitAxis(
-	series: { align?: string }[] | undefined,
-	chart_type: string,
+export function hasBarsOnBothAxes(
+	series: { align?: string; type?: string }[] | undefined,
+	mark: string,
+	horizontal: boolean,
 ): boolean {
-	if (chart_type === 'Row') return false
-	return Boolean(
-		series?.some((s) => (s?.align || 'Left') === 'Left') &&
-			series?.some((s) => s?.align === 'Right'),
+	if (horizontal) return false
+	// the adapter can be handed a config the normalizer never saw, so the old 'Bar' counts too
+	const bars = (series || []).filter((s) => (s?.type?.toLowerCase() || mark) === 'bar')
+	return (
+		bars.some((s) => (s?.align || 'Left') === 'Left') && bars.some((s) => s?.align === 'Right')
 	)
+}
+
+// The Y Axis form wrote a number box's text, and a cleared box wrote ''. frappe-ui
+// takes '' as a bound, because it is not absent to `??`, and pins the axis at 0.
+export function handleOldAxisBounds(config: any) {
+	const y_axis = config?.y_axis
+	if (!y_axis || Array.isArray(y_axis)) return config
+
+	for (const bound of ['min', 'max'] as const) {
+		if (!(bound in y_axis)) continue
+		const value = y_axis[bound]
+		const number = Number(value)
+		if (value === '' || value === null || !Number.isFinite(number)) delete y_axis[bound]
+		else y_axis[bound] = number
+	}
+	return config
 }
 
 // Every chart type reads a fixed set of slots off the config, and the validator and the
@@ -144,18 +164,6 @@ export function ensureConfigSlots(config: any, chart_type: string) {
 	if ((chart_type === 'Bar' || chart_type === 'Row') && !authored) {
 		if (config.y_axis.stack === undefined) {
 			config.y_axis.stack = true
-		}
-	}
-
-	// A split axis neither stacks, overlaps nor normalizes: the two sides are
-	// different scales. Settled on load and not in the form, or a saved chart
-	// would be rewritten by the act of opening its options. Only a set flag is
-	// unset, so a chart that names neither stays clean.
-	if (chart_type === 'Bar' || chart_type === 'Row') {
-		if (hasSplitAxis(config.y_axis?.series, chart_type)) {
-			if (config.y_axis.stack) config.y_axis.stack = false
-			if (config.y_axis.overlap) config.y_axis.overlap = false
-			if (config.y_axis.normalize) config.y_axis.normalize = false
 		}
 	}
 
@@ -362,9 +370,8 @@ export function normalizeChartConfig(config: any, chart_type: string) {
 	}
 
 	config = setDimensionNames(config)
-	// before `ensureConfigSlots`: the split-axis rule reads the series list, and a
-	// series this one drops is one the rule must not see.
 	config = handleOldHideFromChart(config)
+	config = handleOldAxisBounds(config)
 	config = ensureConfigSlots(config, chart_type)
 	config = handleOldReferenceLines(config)
 	config = handleOldSeriesTypes(config)
