@@ -1,6 +1,8 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+from collections import Counter
+
 import frappe
 from frappe.core.doctype.role.role import get_users as get_users_with_role
 from frappe.model.document import Document
@@ -11,6 +13,7 @@ from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     exec_with_return,
 )
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
+from insights.telemetry import capture_share_granted
 
 # the resource types a team grant may name, and the `object` each reports as
 SHARED_OBJECT = {
@@ -64,6 +67,21 @@ class InsightsTeam(Document):
         clear_cache()
         if self.team_name == "Admin" and self.has_value_changed("team_members"):
             self.set_admin_roles()
+        self.capture_new_grants()
+
+    def capture_new_grants(self):
+        before = self.get_doc_before_save()
+        held_before = set()
+        if before:
+            held_before = {(d.resource_type, d.resource_name) for d in before.team_permissions}
+
+        granted = Counter(
+            d.resource_type
+            for d in self.team_permissions
+            if (d.resource_type, d.resource_name) not in held_before
+        )
+        for resource_type, count in granted.items():
+            capture_share_granted(SHARED_OBJECT[resource_type], "team", count)
 
     def prevent_admin_team_deletion(self):
         if self.team_name == "Admin":

@@ -3,6 +3,7 @@ from frappe import _
 
 from insights.decorators import insights_whitelist
 from insights.permissions import get_insights_users
+from insights.telemetry import capture_share_granted
 from insights.utils import DocShare
 
 
@@ -211,6 +212,9 @@ def update_share_permissions(
         if share.user and share.user not in allowed_users:
             frappe.delete_doc("DocShare", share.name, ignore_permissions=True)
 
+    shared_users = {share.user for share in existing_shares if share.user}
+    shared_with_organization = any(share.everyone for share in existing_shares)
+
     for permission in user_permissions:
         doc = DocShare.get_or_create_doc(
             share_doctype="Insights Workbook",
@@ -234,6 +238,12 @@ def update_share_permissions(
         public_docshare.save(ignore_permissions=True)
     elif public_docshare.name:
         public_docshare.delete(ignore_permissions=True)
+
+    newly_shared = allowed_users - shared_users
+    if newly_shared:
+        capture_share_granted("workbook", "user", len(newly_shared))
+    if organization_access and not shared_with_organization:
+        capture_share_granted("workbook", "org", 1)
 
 
 # folder Management APIs

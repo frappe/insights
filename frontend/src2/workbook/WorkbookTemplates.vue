@@ -3,7 +3,6 @@ import { Badge, Button, call, Dialog, toast } from 'frappe-ui'
 import { CheckCircle2, LayoutTemplate } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useTelemetry } from '@framework/ui/telemetry/index.ts'
 import { __ } from '../translation'
 
 export type WorkbookTemplate = {
@@ -42,7 +41,6 @@ const sections = computed(() => {
 })
 
 const router = useRouter()
-const { capture } = useTelemetry()
 
 // name of the template currently being imported, so only its card spins
 const importing = ref<string | null>(null)
@@ -53,11 +51,6 @@ function importTemplate(template: WorkbookTemplate) {
 		template_name: template.name,
 	})
 		.then((result: { workbook: number; dashboard: string | null }) => {
-			capture('workbook_template_imported', {
-				template: template.name,
-				app: template.app,
-				module: template.module,
-			})
 			toast.success(__('{0} imported', template.title))
 			router.push(
 				result.dashboard

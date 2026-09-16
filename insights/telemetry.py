@@ -1,6 +1,7 @@
 """Every event Insights sends to Pulse, with the properties `docs/telemetry.md`
 puts on all of them."""
 
+import re
 from contextlib import suppress
 
 import frappe
@@ -23,6 +24,42 @@ def capture(event: str, interval: str | None = None, **props):
             properties={**default_properties(), **props},
             interval=interval,
         )
+
+
+def capture_share_granted(object: str, with_: str, count: int):
+    """`with` is a Python keyword, so the catalogue's property name cannot be a kwarg."""
+    capture("share_granted", object=object, count=count, **{"with": with_})
+
+
+PUNCTUATION = re.compile(r"[^\w\s]")
+WHITESPACE = re.compile(r"\s+")
+
+
+def normalized_publisher(publisher: str) -> str:
+    """One spelling for a publisher, so `Pvt. Ltd.` and `Pvt Ltd` are one name."""
+    return WHITESPACE.sub(" ", PUNCTUATION.sub(" ", publisher.lower())).strip()
+
+
+# the three spellings Frappe's own apps declare
+STANDARD_PUBLISHERS = frozenset(
+    normalized_publisher(name)
+    for name in ("Frappe Technologies", "Frappe Technologies Pvt. Ltd.", "Frappe Technologies Pvt Ltd")
+)
+
+
+def is_standard_app(app: str) -> bool:
+    """Whether an app's name may leave the site, per `docs/telemetry.md`.
+
+    Frappe publishes it, which the app declares itself in `app_publisher`. The
+    name has to be one Frappe's own apps declare: any app on the bench writes
+    that hook, so an app called `frappe_crm_addon` passes a substring test.
+    """
+    try:
+        publishers = frappe.get_hooks("app_publisher", app_name=app) or []
+    except Exception:
+        # reading the hook imports the app, which a faked or broken one cannot satisfy
+        return False
+    return any(normalized_publisher(publisher) in STANDARD_PUBLISHERS for publisher in publishers)
 
 
 @site_cache(ttl=24 * 60 * 60)
