@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import NumberInput from '../components/NumberInput.vue'
 import SettingItem from './SettingItem.vue'
 import useSettings from './settings'
 
@@ -21,14 +22,14 @@ settings.load()
 			label="Row Limit"
 			description="Set the maximum number of rows per table that will be imported into the data store. Default is 10,00,000"
 		>
-			<FormControl v-model="settings.doc.max_records_to_sync" class="w-28" type="number" />
+			<NumberInput v-model="settings.doc.max_records_to_sync" class="w-28" />
 		</SettingItem>
 
 		<SettingItem
 			label="Memory Limit"
 			description="Set the maximum memory usage while importing tables into the data store. Default is 512MB"
 		>
-			<FormControl v-model="settings.doc.max_memory_usage" class="w-28" type="number" />
+			<NumberInput v-model="settings.doc.max_memory_usage" class="w-28" />
 		</SettingItem>
 
 		<div class="flex justify-end">

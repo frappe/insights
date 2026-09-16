@@ -131,6 +131,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | charts.sort | A user sorts a chart by a column and flips the direction; a date axis runs forwards unless the author turns it. |
 | charts.filter | A user filters a chart independently of its query. |
 | charts.limit | A user caps the rows the chart's query returns. |
+| charts.config-typed-values | A number a user types into a chart's settings is stored as a number, and a column they pick is stored as that column alone. |
 | charts.style-change-no-rerun | A change to labels, colors or number format redraws the chart without re-running its query; a measure or comparison change re-runs it. |
 | charts.number-format | A user sets a prefix, suffix and decimals for the chart, and one measure overrides it key by key. |
 | charts.number-format-shorten | A user abbreviates large numbers. |

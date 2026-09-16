@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, watchEffect } from 'vue'
+import NumberInput from '../../components/NumberInput.vue'
 import { copy } from '../../helpers'
 import { FilterOperator } from '../../types/query.types'
 import { isValidNumber } from './filter_utils'
@@ -58,17 +59,13 @@ const state = computed({
 
 <template>
 	<div class="flex gap-2">
-		<FormControl
-			type="number"
-			autocomplete="off"
+		<NumberInput
 			placeholder="Min"
 			label="Min"
 			:modelValue="state.min"
 			@update:modelValue="state = { ...state, min: $event }"
 		/>
-		<FormControl
-			type="number"
-			autocomplete="off"
+		<NumberInput
 			placeholder="Max"
 			label="Max"
 			:modelValue="state.max"

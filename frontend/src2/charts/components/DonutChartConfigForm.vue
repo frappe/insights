@@ -4,6 +4,7 @@ import { FIELDTYPES } from '../../helpers/constants'
 import { DonutChartConfig } from '../../types/chart.types'
 import { ColumnOption, DimensionOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
+import NumberInput from '../../components/NumberInput.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
@@ -41,7 +42,7 @@ const discrete_dimensions = computed(() =>
 				:column-options="props.columnOptions"
 			/>
 			<InlineFormControlLabel :label="__('Max segments')" control-width="4rem">
-				<FormControl v-model="config.max_slices" type="number" min="1" placeholder="10" />
+				<NumberInput v-model="config.max_slices" min="1" placeholder="10" />
 			</InlineFormControlLabel>
 			<Toggle v-model="config.show_inline_labels" :label="__('Inline labels')" />
 		</div>

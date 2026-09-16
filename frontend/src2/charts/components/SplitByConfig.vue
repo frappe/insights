@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { SplitBy } from '../../types/chart.types'
 import { DimensionOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
+import NumberInput from '../../components/NumberInput.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import DimensionPicker from './DimensionPicker.vue'
 
@@ -47,10 +48,8 @@ const dimension = computed({
 				:label="__('Max values')"
 				control-width="4rem"
 			>
-				<FormControl
-					type="number"
+				<NumberInput
 					placeholder="10"
-					autocomplete="off"
 					:modelValue="split_by.max_split_values"
 					@update:modelValue="split_by.max_split_values = $event"
 				/>
