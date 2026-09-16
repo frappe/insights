@@ -41,6 +41,15 @@ CLEANUP_LOCK_TIMEOUT = 15 * 60
 # Rebuilding the file is only worth the disk and time above these thresholds.
 COMPACT_MIN_FILE_SIZE = 100 * 1024 * 1024
 COMPACT_MIN_FREE_RATIO = 0.2
+DEFAULT_ROW_LIMIT = 10_00_000
+
+
+def row_limit(table_row_limit: int | None = None) -> int:
+    return (
+        table_row_limit
+        or frappe.db.get_single_value("Insights Settings", "max_records_to_sync")
+        or DEFAULT_ROW_LIMIT
+    )
 
 
 def quote_ident(name: str) -> str:
@@ -528,11 +537,7 @@ class WarehouseTableImporter:
             ],
             as_dict=True,
         )
-        self.settings.row_limit = (
-            table_doc.row_limit
-            or frappe.db.get_single_value("Insights Settings", "max_records_to_sync")
-            or 10_00_000
-        )
+        self.settings.row_limit = row_limit(table_doc.row_limit)
         self.settings.before_import_script = table_doc.before_import_script or ""
         self.settings.memory_limit = (
             frappe.db.get_single_value("Insights Settings", "max_memory_usage") or 512
