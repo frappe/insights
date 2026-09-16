@@ -54,7 +54,7 @@ Shipping events exist to answer these. An event that answers none of them is pla
 | Event | Fires when | Properties | Features |
 |---|---|---|---|
 | `workbook_created` | a workbook document is inserted, backend | `from_template: bool` | workbook.create |
-| `workbook_template_imported` | a template is imported, backend | `template: slug`, `app: standard app name` | templates.import |
+| `workbook_template_imported` | a template is imported, backend | `template: slug`, `app: the app the template is for, named when Frappe publishes it` | templates.import |
 | `workbook_library_opened` | the template library opens | | templates.library |
 | `query_created` | a query is added | `interface: builder, sql, script` | query.interface-picker |
 | `query_failed` | a run is refused or fails, backend | `interface`, `error_kind: syntax, unknown_column, permission, connection, timeout, refused, other`, `data_store: bool`, `source_type: as data_source_created.type, unknown when the query reads more than one source` | query.expression-validation, query.unknown-operation-refused, query.source-cycle-refused, query.native-sql-one-statement |
