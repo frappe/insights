@@ -949,7 +949,9 @@ def normalize_number_shapes(config: dict) -> bool:
     the stored configs in `normalize_number_card_comparisons`.
     """
     flag = config.pop("comparison", None)
-    moved = _raise_period(config) or flag is not None
+    # the other chart-level flag: which way is up, once, for every reading
+    better = config.pop("negative_is_better", None)
+    moved = _raise_period(config) or flag is not None or better is not None
 
     columns = config.get("number_columns")
     if not isinstance(columns, list):
@@ -963,8 +965,19 @@ def normalize_number_shapes(config: dict) -> bool:
     for index in range(len(columns)):
         while len(options) <= index:
             options.append({})
-        beside = options[index] if isinstance(options[index], dict) else {}
-        options[index] = beside
+            moved = True
+        if not isinstance(options[index], dict):
+            # an option nothing can read is no option, and the reading beside it
+            # is drawn without one either way
+            options[index] = {}
+            moved = True
+        beside = options[index]
+
+        # a reading that said which way is up already overrode the chart, so the
+        # chart's flag only fills the ones that said nothing
+        if better and beside.get("negative_is_better") is None:
+            beside["negative_is_better"] = better
+            moved = True
 
         measured = _measured_against(beside, flag)
         if beside.pop("references", None) is not None:
