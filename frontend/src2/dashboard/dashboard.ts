@@ -158,7 +158,7 @@ function makeDashboard(name: string, isShared: boolean) {
 		refreshChart(chart_name)
 	}
 
-	async function addChart(charts: WorkbookChart[]) {
+	async function addChart(charts: WorkbookChart[], via: 'selector' | 'drag') {
 		const maxY = getMaxY()
 		for (const chart of charts) {
 			const placed = dashboard.doc.items.some(
@@ -167,7 +167,7 @@ function makeDashboard(name: string, isShared: boolean) {
 			if (placed) continue
 			dashboard.doc.items.push(...(await cellsFor(chart, maxY)))
 		}
-		capture('dashboard_chart_added')
+		capture('dashboard_chart_added', { via })
 	}
 
 	/**
