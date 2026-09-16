@@ -128,7 +128,7 @@ export function operatorOf(kind: FilterKind, operator: FilterOperator): Operator
 	return operators()[kind].find((op) => op.operator === operator)
 }
 
-function defaultOperator(kind: FilterKind): OperatorDef {
+export function defaultOperator(kind: FilterKind): OperatorDef {
 	const operator: FilterOperator = kind === 'text' ? 'in' : kind === 'number' ? '>=' : 'between'
 	return operatorOf(kind, operator) as OperatorDef
 }

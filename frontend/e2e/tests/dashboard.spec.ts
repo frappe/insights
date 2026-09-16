@@ -166,12 +166,11 @@ test.describe('dashboard', () => {
 		// axis runs to the 1,778 delivered orders and tops out at a 1,800 tick.
 		await expect(charts(page).getByText('1,800')).toBeVisible({ timeout: 30_000 })
 
-		// A filter that names its column opens on the operator, then on the values
-		// that column holds. A value list commits when the panel closes, and the
+		// A filter that names its column opens on the values that column holds, under
+		// the default `is`. A value list commits when the panel closes, and the
 		// trigger is what closes it.
 		const trigger = page.getByRole('button', { name: 'Status', exact: true })
 		await trigger.click()
-		await page.getByRole('option', { name: 'is', exact: true }).click()
 		await page.getByRole('option', { name: 'canceled' }).click()
 		await trigger.click()
 
@@ -390,10 +389,9 @@ test.describe('dashboard', () => {
 		await expect(page.getByRole('button', { name: 'Status', exact: true })).toBeVisible()
 		await page.getByRole('button', { name: 'Done', exact: true }).click()
 
-		// The filter names its own column, so the picker opens on the operator.
+		// The filter names its own column, so the picker opens on the values `is` offers.
 		const trigger = page.getByRole('button', { name: 'Status', exact: true })
 		await trigger.click()
-		await page.getByRole('option', { name: 'is', exact: true }).click()
 
 		// No linked chart names a column, so the filter can read no values from
 		// the data and offers none of the order statuses to pick.
@@ -402,10 +400,9 @@ test.describe('dashboard', () => {
 		await expect(popover(page).getByText('canceled')).toHaveCount(0)
 
 		// A typed value applies all the same, and nothing tells the user that the
-		// filter reaches no chart. The trigger closes the picker, which reopens
-		// on the operator, and `equals` is the one that takes a typed value.
-		await trigger.click()
-		await trigger.click()
+		// filter reaches no chart. Back steps to the operators, and `equals` is
+		// the one that takes a typed value.
+		await popover(page).getByRole('button', { name: 'Back', exact: true }).click()
 		// An operator row reads as its word, with its sign beside it.
 		await page.getByRole('option', { name: 'equals =', exact: true }).click()
 		await popover(page).getByRole('combobox').fill('canceled')

@@ -2,7 +2,7 @@
 // The popover's inside: one input, and under it one list per stage. reka's
 // combobox owns the highlight and the arrow keys; this file owns what a pick
 // means.
-import { Badge, KeyboardShortcut, Tooltip } from 'frappe-ui'
+import { Badge, Button, KeyboardShortcut, Tooltip } from 'frappe-ui'
 import { Delete, Plus, Search } from 'lucide-vue-next'
 import { ComboboxInput, ComboboxRoot } from 'reka-ui'
 import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
@@ -13,6 +13,7 @@ import type { FilterOperator, FilterValue, QueryResultColumn } from '../../types
 import {
 	calendarOf,
 	datePresets,
+	defaultOperator,
 	formatDate,
 	isMulti,
 	kindOf,
@@ -109,11 +110,6 @@ function onComboModel(value: unknown) {
 	if (multi.value) picked.value = (value as string[]) || []
 }
 
-function firstStage(): Stage {
-	if (props.column) return 'operator'
-	return props.filters.length ? 'overview' : 'column'
-}
-
 function clearValue() {
 	picked.value = []
 	sticky.value = []
@@ -135,7 +131,14 @@ function reset() {
 	editing.value = undefined
 	search.value = ''
 	clearValue()
-	stage.value = firstStage()
+	// Most dashboard filters keep the default operator, so its values come first.
+	if (props.column) {
+		op.value = defaultOperator(kindOf(props.column.type))
+		history.value = ['operator']
+		stage.value = 'value'
+		return
+	}
+	stage.value = props.filters.length ? 'overview' : 'column'
 }
 
 function load(filter: Filter) {
@@ -595,9 +598,10 @@ function onKeydown(event: KeyboardEvent) {
  * take it. `Mod+Enter` stands apart because a multi stage's Enter ticks rather
  * than commits, and Backspace leaves the text alone while there is text.
  *
- * The opening stage says nothing. Enter on the row under the highlight is the
- * only key it takes, and a list a reader is already arrowing through does not
- * need a line under it to say so.
+ * A stage with nothing behind it says nothing. Enter on the row under the
+ * highlight is the only key it takes, and a list a reader is already arrowing
+ * through does not need a line under it to say so. A column mount opens on the
+ * values with the operators behind it, so it says Back from the start.
  */
 const keyHints = computed(() => {
 	if (!history.value.length) return []
@@ -699,7 +703,18 @@ function focusInput() {
 				/>
 			</Tooltip>
 			<Tooltip v-else-if="history.length && !search" :text="__('Back')">
-				<Delete class="size-4 shrink-0 text-ink-gray-4" stroke-width="1.5" />
+				<Button
+					variant="ghost"
+					size="xs"
+					:label="__('Back')"
+					class="-me-1.5 shrink-0"
+					@mousedown.prevent
+					@click="back()"
+				>
+					<template #icon>
+						<Delete class="size-4 text-ink-gray-4" stroke-width="1.5" />
+					</template>
+				</Button>
 			</Tooltip>
 		</div>
 
