@@ -60,7 +60,7 @@ Shipping events exist to answer these. An event that answers none of them is pla
 | `query_failed` | a run is refused or fails, backend | `interface`, `error_kind: syntax, unknown_column, permission, connection, timeout, refused, other`, `data_store: bool`, `source_type: as data_source_created.type, unknown when the query reads more than one source` | query.expression-validation, query.unknown-operation-refused, query.source-cycle-refused, query.native-sql-one-statement |
 | `chart_created` | a chart is added | | charts.type-* |
 | `dashboard_created` | a dashboard is added | | dashboard.create-add-chart |
-| `dashboard_chart_added` | a chart lands on a dashboard | `via: selector, drag` | dashboard.create-add-chart, dashboard.chart-selector, dashboard.drag-chart-from-sidebar |
+| `dashboard_chart_added` | a chart lands on a dashboard | `via: selector, drag`, `count: int` | dashboard.create-add-chart, dashboard.chart-selector, dashboard.drag-chart-from-sidebar |
 | `share_granted` | access is given, backend | `object: workbook, dashboard, chart, data_source, table`, `with: user, org, team, public`, `count: int` | permissions.share-workbook-user, permissions.share-workbook-org, permissions.share-dashboard, permissions.team-grant, shared.dashboard-link, shared.chart-link, templates.import |
 | `data_source_created` | a source is saved, backend | `type: site_db or database_type lowercased: mariadb, postgresql, clickhouse, duckdb, sqlite, bigquery`, `ssl: bool` | data-source.connect-*, data-source.ssl |
 | `data_source_tested` | a connection test returns, backend | `type`, `ok: bool`, `error_kind` | data-source.test-connection, data-source.connection-error-detail |
