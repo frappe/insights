@@ -21,7 +21,11 @@
 		</div>
 		<div>
 			<DemoDataBanner v-if="!isSidebarCollapsed" class="m-2 p-2" />
+<<<<<<< HEAD
 			<V2MigrationBanner v-if="!isSidebarCollapsed" class="m-2 p-2" />
+=======
+			<SecurityUpdateCard v-if="!isSidebarCollapsed" class="m-2" />
+>>>>>>> ce0dff6 (feat: notify admins of an Insights release with security fixes (#1402))
 			<TrialBanner v-if="is_fc_site" :is-sidebar-collapsed="isSidebarCollapsed" />
 			<SidebarLink
 				:label="isSidebarCollapsed ? __('Expand') : __('Collapse')"
@@ -65,7 +69,11 @@ import useSettings, {
 import Settings from '../settings/Settings.vue'
 import SidebarLink from './SidebarLink.vue'
 import DemoDataBanner from './DemoDataBanner.vue'
+<<<<<<< HEAD
 import V2MigrationBanner from './V2MigrationBanner.vue'
+=======
+import SecurityUpdateCard from './SecurityUpdateCard.vue'
+>>>>>>> ce0dff6 (feat: notify admins of an Insights release with security fixes (#1402))
 import UserDropdown from './UserDropdown.vue'
 import { TrialBanner } from 'frappe-ui/frappe'
 import { __ } from '../translation'

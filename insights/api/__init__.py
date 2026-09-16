@@ -1,6 +1,7 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+import json
 import os
 
 import frappe
@@ -28,7 +29,40 @@ def get_app_version():
     return frappe.get_attr("insights" + ".__version__")
 
 
+<<<<<<< HEAD
 @frappe.whitelist(allow_guest=True)  # nosemgrep - the payload is the site's display
+=======
+@insights_whitelist(role="Insights Admin")
+def get_security_update():
+    """The Insights release with security fixes that the framework's weekly update check found."""
+    from frappe.utils.frappecloud import on_frappecloud
+
+    if frappe.get_system_settings("disable_system_update_notification"):
+        return
+
+    current_version = frappe.get_attr("insights.__version__")
+    updates = json.loads(frappe.cache.get_value("changelog-update-info") or "{}")
+    for app in (app for apps in updates.values() for app in apps):
+        # the issue count describes the version the weekly check ran on, which the site may have left;
+        # a framework before v15.26 cached no count
+        if (
+            app.get("app_name") == "insights"
+            and app.get("current_version") == current_version
+            and app.get("security_issues")
+        ):
+            return {
+                "current_version": current_version,
+                "available_version": app["available_version"],
+                "security_issues": app["security_issues"],
+                "advisories_url": f"https://github.com/{app['org_name']}/insights/security/advisories",
+                "frappe_cloud_url": f"https://frappecloud.com/dashboard/sites/{frappe.local.site}"
+                if on_frappecloud()
+                else None,
+            }
+
+
+@frappe.whitelist(allow_guest=True)  # nosemgrep - the payload is the site's country and
+>>>>>>> ce0dff6 (feat: notify admins of an Insights release with security fixes (#1402))
 # currency, which a public dashboard already prints
 def get_site_info():
     """Settings of the site, not of whoever reads it. A guest opening a public
