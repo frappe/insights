@@ -53,6 +53,16 @@ repos:
           - --quiet
           - --skip-unknown-extensions
 
+  - repo: local
+    hooks:
+      - id: feature-coverage
+        name: Check feature coverage
+        entry: python insights/tests/features.py check
+        language: python
+        pass_filenames: false
+        stages: [pre-push]
+        files: ^(insights/.*test_.*\.py|frontend/(src2|e2e/tests)/.*\.(test|spec)\.ts|docs/(features|coverage)\.md|insights/tests/features\.py)$
+
 ci:
     autoupdate_schedule: weekly
     skip: []
