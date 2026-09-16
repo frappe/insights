@@ -37,6 +37,28 @@ def capture_share_granted(object: str, with_: str, count: int):
     capture("share_granted", object=object, count=count, **{"with": with_})
 
 
+ROW_BUCKETS = ((10_000, "under_10k"), (100_000, "10k_to_100k"), (1_000_000, "100k_to_1m"))
+DURATION_BUCKETS = ((1, "under_1s"), (5, "1_to_5s"), (30, "5_to_30s"))
+
+
+def rows_bucket(n: int) -> str:
+    """The bucket `docs/telemetry.md` puts a row count in."""
+    return _bucket(n, ROW_BUCKETS, "over_1m")
+
+
+def duration_bucket(seconds: float) -> str:
+    """The bucket `docs/telemetry.md` puts a duration in."""
+    return _bucket(seconds, DURATION_BUCKETS, "over_30s")
+
+
+def _bucket(value, buckets: tuple[tuple[float, str], ...], last: str) -> str:
+    """A bucket holds its lower bound and stops short of its upper one."""
+    for upper, name in buckets:
+        if value < upper:
+            return name
+    return last
+
+
 PUNCTUATION = re.compile(r"[^\w\s]")
 WHITESPACE = re.compile(r"\s+")
 

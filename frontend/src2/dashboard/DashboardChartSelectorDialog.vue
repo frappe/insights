@@ -50,7 +50,7 @@ function toggleSelectAll() {
 const areAllSelected = computed(() => selectedCharts.value.length === props.chartOptions.length)
 const areNoneSelected = computed(() => selectedCharts.value.length === 0)
 function confirmSelection() {
-	dashboard.addChart(selectedCharts.value)
+	dashboard.addChart(selectedCharts.value, 'selector')
 	selectedCharts.value = []
 	showDialog.value = false
 }

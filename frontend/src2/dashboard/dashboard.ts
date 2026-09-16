@@ -55,7 +55,7 @@ function makeDashboard(name: string) {
 	const filters = ref<Record<string, FilterArgs[]>>({})
 	const filterStates = ref<Record<string, FilterState>>({})
 
-	function addChart(charts: WorkbookChart[]) {
+	function addChart(charts: WorkbookChart[], via: 'selector' | 'drag') {
 		const maxY = getMaxY()
 		charts.forEach((chart) => {
 			if (
@@ -74,7 +74,7 @@ function makeDashboard(name: string) {
 				})
 			}
 		})
-		capture('dashboard_chart_added')
+		capture('dashboard_chart_added', { via })
 	}
 
 	function getMaxY() {
