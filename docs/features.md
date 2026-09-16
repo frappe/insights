@@ -372,6 +372,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | settings.fiscal-year-start | An admin sets the fiscal year start and fiscal year ranges follow it. |
 | settings.demo-data | An admin sets up demo data and a demo workbook. |
 | settings.demo-banner-dismiss | A user dismisses the demo data banner and it stays hidden. |
+| settings.security-update-notice | An admin sees a sidebar notice while a newer Insights release fixes security issues. |
 | settings.invite-users | An admin invites users by email; the link carries a key stored only hashed, and accepting signs in only a new account. |
 | settings.users-list | An admin searches the user list by name or email. |
 | settings.permissions-toggle | An admin turns team-based permissions on. |
