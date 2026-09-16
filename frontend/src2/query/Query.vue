@@ -6,7 +6,6 @@ import QueryBuilder from './components/QueryBuilder.vue'
 import ScriptQueryEditor from './components/ScriptQueryEditor.vue'
 import useQuery from './query'
 import { waitUntil } from '../helpers'
-// @ts-ignore
 import { useTelemetry } from '../telemetry'
 
 const { capture } = useTelemetry()
@@ -19,9 +18,9 @@ await waitUntil(() => query.isloaded)
 
 const hasSourceOp = computed(() => query.doc.operations.find((op) => op.type === 'source'))
 
-const queryType = {
-	'query-builder': 'visual',
-	'sql-editor': 'native',
+const queryInterface = {
+	'query-builder': 'builder',
+	'sql-editor': 'sql',
 	'script-editor': 'script',
 }
 
@@ -30,7 +29,7 @@ function setQueryType(interfaceType: 'query-builder' | 'sql-editor' | 'script-ed
 	query.doc.is_native_query = interfaceType === 'sql-editor'
 	query.doc.is_script_query = interfaceType === 'script-editor'
 	query.doc.is_builder_query = interfaceType === 'query-builder'
-	capture('query_created', { editor: queryType[interfaceType] })
+	capture('query_created', { interface: queryInterface[interfaceType] })
 }
 </script>
 

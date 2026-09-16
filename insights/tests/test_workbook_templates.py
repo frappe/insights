@@ -32,6 +32,8 @@ TEMPLATE_MODULE = "Selling"
 # a committed template that ships a preview.png, so preview handling stays covered
 TEMPLATE_WITH_PREVIEW = "insights/stock"
 
+WORKBOOK_CAPTURE = "insights.insights.doctype.insights_workbook.insights_workbook.capture"
+
 # derived from the shipped manifest so a template version bump doesn't need edits
 # scattered across every assertion; NEXT_VERSION stands in for a newer release
 TEMPLATE_VERSION = get_template_manifest(TEMPLATE)["version"]
@@ -49,6 +51,12 @@ def installed_apps(apps):
     # patch our narrow seam, not the global — patching frappe.get_installed_apps
     # breaks other apps' insert hooks on multi-app sites
     return patch("insights.api.templates.get_installed_apps", return_value=set(apps))
+
+
+def standard_apps(apps):
+    # is_standard_app reads app_publisher off a real installation, which neither a
+    # faked app nor a bench without ERPNext can answer — state the premise instead
+    return patch("insights.api.templates.is_standard_app", side_effect=lambda app: app in set(apps))
 
 
 def bumped_version(template_name, version):
@@ -222,6 +230,34 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
             with self.assertRaises(frappe.ValidationError):
                 create_workbook_from_template("../../../etc/passwd")
 
+    # @feature templates.import
+    def test_an_import_reports_the_template_and_the_app_it_is_for(self):
+        with self.as_user(ADMIN_USER), installed_apps(APPS_WITH_ERPNEXT), standard_apps(APPS_WITH_ERPNEXT):
+            with (
+                patch("insights.api.templates.capture") as sender,
+                patch(WORKBOOK_CAPTURE) as workbook_sender,
+            ):
+                create_workbook_from_template(TEMPLATE)
+
+        sender.assert_called_once()
+        args, kwargs = sender.call_args
+        self.assertEqual(args, ("workbook_template_imported",))
+        self.assertEqual(kwargs, {"template": TEMPLATE, "app": "erpnext"})
+
+        workbook_sender.assert_called_once_with("workbook_created", from_template=True)
+
+    # @feature templates.import
+    def test_an_import_withholds_an_app_frappe_does_not_publish(self):
+        with self.as_user(ADMIN_USER), installed_apps(APPS_WITH_ERPNEXT), standard_apps([]):
+            with patch("insights.api.templates.capture") as sender:
+                create_workbook_from_template(TEMPLATE)
+
+        sender.assert_called_once()
+        args, kwargs = sender.call_args
+        self.assertEqual(args, ("workbook_template_imported",))
+        self.assertEqual(kwargs, {"template": TEMPLATE})
+
+    # @feature templates.import
     def test_create_workbook_from_template_round_trips(self):
         template = get_template_workbook(TEMPLATE)
 

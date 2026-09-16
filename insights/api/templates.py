@@ -9,6 +9,7 @@ from frappe.utils import cint
 from frappe.utils.synchronization import filelock
 
 from insights.decorators import insights_whitelist
+from insights.telemetry import capture, capture_share_granted, is_standard_app
 from insights.utils import DocShare, deep_convert_dict_to_dict
 
 MANIFEST_REQUIRED_KEYS = ["title", "description", "required_apps", "source_doctypes"]
@@ -263,6 +264,7 @@ def _share_with_organization(workbook_name: str) -> None:
     # DocShare's own share-permission check — ignore_share_permission does.
     share.flags.ignore_share_permission = True
     share.save(ignore_permissions=True)
+    capture_share_granted("workbook", "org", 1)
 
 
 def _template_import_result(workbook_name: str) -> dict:
@@ -303,21 +305,29 @@ def create_workbook_from_template(template_name: str) -> dict:
         # Import as the caller (don't frappe.set_user mid-request — it rewrites the
         # session sid and logs the user out), then hand the copy to Administrator so
         # it becomes a shared org resource that everyone else reads via the share.
-        workbook_name = import_workbook(get_template_workbook(template_name))
-        # tag the origin so the library can mark this template as imported
-        frappe.db.set_value("Insights Workbook", workbook_name, "from_template", template_name)
+        # tag the origin before the insert, so the library can mark this template
+        # as imported and the creation event knows it came from one
+        workbook_name = import_workbook(get_template_workbook(template_name), from_template=template_name)
         _reassign_to_administrator(workbook_name)
         _share_with_organization(workbook_name)
         # record which shipped version this copy holds, and a fingerprint of it as
         # imported — the fingerprint is what later tells a pristine copy (safe to
         # auto-update) from one the site has edited (update only on request)
         _stamp_template_version(workbook_name, manifest)
+        capture_template_imported(template_name)
         # Commit inside the lock so the copy is visible to the next admin who
         # takes it — the lock only serializes; without the commit the next holder
         # reads a pre-insert snapshot and creates a silent duplicate.
         frappe.db.commit()  # nosemgrep — intentional commit inside the import lock (see above)
 
     return _template_import_result(workbook_name)
+
+
+def capture_template_imported(template_name: str) -> None:
+    """Report the import, naming the app the template is for when Frappe publishes that app."""
+    app = _grouping_app(_resolve_template(template_name))
+    props = {"app": app} if is_standard_app(app) else {}
+    capture("workbook_template_imported", template=template_name, **props)
 
 
 def _workbook_checksum(workbook_name: str) -> str:

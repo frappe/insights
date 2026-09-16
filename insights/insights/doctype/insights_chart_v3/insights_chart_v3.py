@@ -5,6 +5,7 @@ import frappe
 from frappe.model.document import Document
 
 from insights.insights.doctype.insights_query_v3.insights_query_v3 import import_query
+from insights.telemetry import capture_share_granted
 from insights.utils import deep_convert_dict_to_dict
 
 
@@ -63,12 +64,15 @@ class InsightsChartv3(Document):
             frappe.throw(frappe._("You do not have permission to share this chart"), frappe.PermissionError)
 
         is_public = bool(frappe.parse_json(is_public))
+        was_public = self.is_public
         self.db_set(
             {
                 "is_public": int(is_public),
                 "permission_user": frappe.session.user if is_public else None,
             }
         )
+        if is_public and not was_public:
+            capture_share_granted("chart", "public", 1)
 
     def before_save(self):
         self.set_data_query()

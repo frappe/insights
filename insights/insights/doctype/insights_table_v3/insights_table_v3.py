@@ -29,6 +29,8 @@ class InsightsTablev3(Document):
 
         before_import_script: DF.Code | None
         data_source: DF.Link
+        estimated_on: DF.Datetime | None
+        estimated_row_count: DF.Int
         label: DF.Data
         last_sync_bookmark: DF.Data | None
         last_synced_on: DF.Datetime | None
