@@ -61,6 +61,8 @@ const drillable = computed(() => props.drillable !== false && !props.card.missin
 </script>
 
 <template>
+	<!-- `NumberCard` cuts its title to one line and draws no tooltip for it, so the
+	     whole card shows the title on hover -->
 	<div
 		class="min-w-0"
 		:class="[
@@ -68,6 +70,7 @@ const drillable = computed(() => props.drillable !== false && !props.card.missin
 			drillable ? 'cursor-pointer' : undefined,
 		]"
 		:style="preview ? { height: `${card.height}px` } : undefined"
+		:title="card.title"
 		@click="drillable && emit('cardClick', { column: card.column })"
 	>
 		<NumberCard
