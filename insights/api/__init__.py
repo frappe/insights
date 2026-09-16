@@ -341,7 +341,7 @@ PUBLIC_METHOD_ARGS = {
     ("Insights Dashboard v3", "get_card_column_values"): {"chart", "column", "search_term"},
     ("Insights Dashboard v3", "get_card_column_range"): {"chart", "column"},
     ("Insights Dashboard v3", "get_filter_column_range"): {"filter_name", "filter_context"},
-    ("Insights Dashboard v3", "track_view"): set(),
+    ("Insights Dashboard v3", "track_view"): {"surface"},
 }
 
 
