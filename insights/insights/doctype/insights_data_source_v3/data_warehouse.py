@@ -30,6 +30,16 @@ from insights.utils import InsightsDataSourcev3, InsightsTablev3
 
 WAREHOUSE_DB_NAME = "insights"
 
+DEFAULT_ROW_LIMIT = 10_00_000
+
+
+def row_limit(table_row_limit: int | None = None) -> int:
+    return (
+        table_row_limit
+        or frappe.db.get_single_value("Insights Settings", "max_records_to_sync")
+        or DEFAULT_ROW_LIMIT
+    )
+
 
 class Warehouse:
     def __init__(self):
@@ -495,11 +505,7 @@ class WarehouseTableImporter:
             ],
             as_dict=True,
         )
-        self.settings.row_limit = (
-            table_doc.row_limit
-            or frappe.db.get_single_value("Insights Settings", "max_records_to_sync")
-            or 10_00_000
-        )
+        self.settings.row_limit = row_limit(table_doc.row_limit)
         self.settings.before_import_script = table_doc.before_import_script or ""
         self.settings.memory_limit = (
             frappe.db.get_single_value("Insights Settings", "max_memory_usage") or 512
