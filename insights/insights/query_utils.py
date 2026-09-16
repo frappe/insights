@@ -169,10 +169,19 @@ def get_direct_dependencies(query_name: str) -> list[str]:
     return list(referenced_queries(operations))
 
 
-def transitive_closure(start: str) -> set[str]:
-    """Return all query names reachable from start (not including start itself)."""
+def transitive_closure(start: str, start_operations=None) -> set[str]:
+    """Return all query names reachable from start (not including start itself).
+
+    `start_operations` walks from a document in hand rather than from the row. A
+    chart runs a query document that was never saved. Its row then answers with
+    another pipeline's operations, or with nothing.
+    """
     reachable: set[str] = set()
-    stack = list(get_direct_dependencies(start))
+    stack = (
+        list(referenced_queries(start_operations))
+        if start_operations is not None
+        else get_direct_dependencies(start)
+    )
     while stack:
         node = stack.pop()
         if node in reachable:
@@ -180,6 +189,28 @@ def transitive_closure(start: str) -> set[str]:
         reachable.add(node)
         stack.extend(get_direct_dependencies(node))
     return reachable
+
+
+def source_tables(query_name: str, operations=None) -> list[dict]:
+    """The tables a query reads, through every query it reads."""
+    if operations is None:
+        operations = frappe.db.get_value("Insights Query v3", query_name, "operations")
+
+    reachable = transitive_closure(query_name, operations)
+    pipelines = [operations] + [
+        frappe.db.get_value("Insights Query v3", name, "operations") for name in reachable
+    ]
+
+    seen: set[tuple] = set()
+    tables = []
+    for pipeline in pipelines:
+        for ref in table_references(pipeline):
+            key = (ref["data_source"], ref["table_name"])
+            if key in seen:
+                continue
+            seen.add(key)
+            tables.append(ref)
+    return tables
 
 
 def find_cycle(start: str, new_direct_deps: list[str]) -> list[str] | None:

@@ -28,9 +28,8 @@ from insights.insights.query_utils import (
     find_cycle,
     get_direct_dependencies,
     referenced_queries,
+    source_tables,
     sync_query_references,
-    table_references,
-    transitive_closure,
 )
 from insights.utils import as_text, deep_convert_dict_to_dict, get_currency_symbols
 
@@ -150,17 +149,7 @@ class InsightsQueryv3(Document):
         Which tables a query reads is a forward question, so each row answers its
         own. The edge table lags every write, and this runs right after a save.
         """
-        seen: set[tuple] = set()
-        tables = []
-        for name in {self.name} | transitive_closure(self.name):
-            operations = frappe.db.get_value("Insights Query v3", name, "operations")
-            for ref in table_references(operations):
-                key = (ref["data_source"], ref["table_name"])
-                if key in seen:
-                    continue
-                seen.add(key)
-                tables.append(ref)
-        return tables
+        return source_tables(self.name, self.operations)
 
     def build(self, active_operation_idx=None, use_live_connection=None):
         builder = IbisQueryBuilder(self, active_operation_idx)
@@ -173,6 +162,10 @@ class InsightsQueryv3(Document):
             frappe.throw(frappe._("Failed to build query"), QueryRefused)
 
         return ibis_query
+
+    def read_sources(self) -> set[str]:
+        """The data sources of every table this query reads, its references included."""
+        return {ref["data_source"] for ref in self.get_source_tables()}
 
     @frappe.whitelist()
     def execute(
@@ -399,12 +392,12 @@ class InsightsQueryv3(Document):
     @insights_whitelist(role="Insights Admin")
     def refresh_stored_tables(self):
         """Import all source tables used in this query to the data store"""
-        source_tables = self.get_source_tables()
-        if not source_tables:
+        tables = self.get_source_tables()
+        if not tables:
             frappe.throw("No tables found in the query to import")
 
         imported_count = 0
-        for table in source_tables:
+        for table in tables:
             data_source = table.get("data_source")
             table_name = table.get("table_name")
             if data_source and table_name:
