@@ -1,6 +1,6 @@
 import { call, toast } from 'frappe-ui'
 import { __ } from '../translation'
-import { useTelemetry } from '@framework/ui/telemetry/index.ts'
+import { useTelemetry } from '../telemetry'
 import { computed, reactive, toRefs } from 'vue'
 import useChart, { newChart } from '../charts/chart'
 import useDashboard, { newDashboard } from '../dashboard/dashboard'
@@ -411,6 +411,17 @@ function makeWorkbook(name: string) {
 
 export type Workbook = ReturnType<typeof makeWorkbook>
 
+// Where this open came from. The page has two signals: the history entry it was
+// pushed from, and the referrer when there is none. Every other arrival is a
+// link.
+function openedVia() {
+	const back = router.options.history.state.back
+	if (back === '/workbook') return 'list'
+	if (back === '/') return 'recent'
+	if (!back && document.referrer.startsWith(`${location.origin}/app`)) return 'desk'
+	return 'link'
+}
+
 export function getWorkbookResource(name: string) {
 	const doctype = 'Insights Workbook'
 	const workbook = useDocumentResource<InsightsWorkbook>(doctype, name, {
@@ -436,7 +447,7 @@ export function getWorkbookResource(name: string) {
 		},
 	})
 
-	workbook.onAfterLoad(() => workbook.call('track_view').catch(() => {}))
+	workbook.onAfterLoad(() => workbook.call('track_view', { via: openedVia() }).catch(() => {}))
 	wheneverChanges(
 		() => workbook.doc.read_only,
 		() => {

@@ -174,6 +174,7 @@ scheduler_events = {
     ],
     "daily": [
         "insights.api.data_store.sync_tables",
+        "insights.telemetry_scan.run_site_scan",
     ],
     "weekly": [
         "insights.insights.doctype.insights_data_source_v3.data_warehouse.cleanup_data_store",

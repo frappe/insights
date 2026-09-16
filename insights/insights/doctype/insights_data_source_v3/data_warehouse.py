@@ -41,6 +41,15 @@ CLEANUP_LOCK_TIMEOUT = 15 * 60
 # Rebuilding the file is only worth the disk and time above these thresholds.
 COMPACT_MIN_FILE_SIZE = 100 * 1024 * 1024
 COMPACT_MIN_FREE_RATIO = 0.2
+DEFAULT_ROW_LIMIT = 10_00_000
+
+
+def row_limit(table_row_limit: int | None = None) -> int:
+    return (
+        table_row_limit
+        or frappe.db.get_single_value("Insights Settings", "max_records_to_sync")
+        or DEFAULT_ROW_LIMIT
+    )
 
 
 def quote_ident(name: str) -> str:
@@ -429,6 +438,8 @@ class WarehouseTableImporter:
         self.sync_strategy = "Append Only"
         self.writer_mode = "replace"  # overridden to "append" for incremental syncs
 
+        self.resumed = False
+
         self.log = None
         self.last_log_time = None
         self.settings = frappe._dict()
@@ -483,6 +494,7 @@ class WarehouseTableImporter:
                 raise
             finally:
                 self.update_log()
+                self.capture_outcome()
 
         insights.create_toast(
             f"Imported {self.table.table_name} to the data store. "
@@ -528,11 +540,7 @@ class WarehouseTableImporter:
             ],
             as_dict=True,
         )
-        self.settings.row_limit = (
-            table_doc.row_limit
-            or frappe.db.get_single_value("Insights Settings", "max_records_to_sync")
-            or 10_00_000
-        )
+        self.settings.row_limit = row_limit(table_doc.row_limit)
         self.settings.before_import_script = table_doc.before_import_script or ""
         self.settings.memory_limit = (
             frappe.db.get_single_value("Insights Settings", "max_memory_usage") or 512
@@ -636,6 +644,7 @@ class WarehouseTableImporter:
                 bookmark = ""
 
         if bookmark:
+            self.resumed = True
             return bookmark
 
         if self.settings.sync_from:
@@ -740,6 +749,30 @@ class WarehouseTableImporter:
 
         self._log(f"Total Batches: {batch_number + 1} Total Rows: {total_rows}")
         return total_rows
+
+    def capture_outcome(self):
+        """Report how the import ended, and nothing about what it read.
+
+        The table, the source and the query stay here. Only the outcome, the
+        size and the duration travel, and the counts as buckets.
+        """
+        from insights.telemetry import capture, duration_bucket, rows_bucket
+
+        rows = self.log.rows_imported or 0
+        capture(
+            "data_store_imported",
+            outcome="ok" if self.log.status == "Completed" else "failed",
+            hit_row_limit=self.hit_row_limit(rows),
+            rows_bucket=rows_bucket(rows),
+            duration_bucket=duration_bucket(self.log.time_taken or 0),
+            resumed=self.resumed,
+        )
+
+    def hit_row_limit(self, rows: int) -> bool:
+        """An incremental run is never capped, so only a full one can reach the limit."""
+        if self.settings.sync_mode != "Full" or not self.settings.row_limit:
+            return False
+        return rows >= self.settings.row_limit
 
     def update_log(self):
         ended_at = frappe.utils.now()

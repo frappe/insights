@@ -10,17 +10,20 @@ from frappe.model.document import Document
 from frappe.query_builder import Interval
 from frappe.query_builder.functions import Now
 from frappe.utils.html_utils import sanitize_html
-from frappe.utils.telemetry import capture
 
 from insights.insights.doctype.insights_chart_v3.chart_query import (
     config_filter_group,
     derive_operations,
     result_column,
 )
+from insights.telemetry import capture, capture_share_granted
 from insights.utils import DocShare, File, get_app_url
 
 # a filter links a column as "links": { '<chart>': "`<query>`.`<column>`" }
 LINK_COLUMN = re.compile(r"^`([^`]+)`\.`([^`]+)`$")
+
+# Which page the view came from, as `docs/telemetry.md` names them.
+VIEW_SURFACES = {"workbook", "shared", "dashboards"}
 
 
 class InsightsDashboardv3(Document):
@@ -80,7 +83,7 @@ class InsightsDashboardv3(Document):
         check_dashboard_chart_access(self)
 
     @frappe.whitelist()
-    def track_view(self):
+    def track_view(self, surface: str | None = None):
         view_log = frappe.qb.DocType("View Log")
         last_viewed_recently = frappe.db.get_value(
             view_log,
@@ -94,6 +97,10 @@ class InsightsDashboardv3(Document):
         )
         if not last_viewed_recently:
             self.add_viewed(force=True)
+
+        if surface not in VIEW_SURFACES:
+            surface = "shared" if frappe.session.user == "Guest" else "workbook"
+        capture("dashboard_viewed", interval="1d", surface=surface)
 
     def get_valid_dict(self, *args, **kwargs):
         if isinstance(self.items, list):
@@ -450,6 +457,8 @@ class InsightsDashboardv3(Document):
             for share in org_shares:
                 frappe.delete_doc("DocShare", share.name, ignore_permissions=True)
 
+        was_public = self.is_public
+
         # a public execution has no caller of its own, so the rows it returns are
         # filtered by whoever published the dashboard
         self.db_set(
@@ -459,10 +468,13 @@ class InsightsDashboardv3(Document):
             }
         )
 
-        if people_with_access:
-            capture("dashboard_shared_with_user", "insights")
-        if is_public:
-            capture("dashboard_set_public", "insights")
+        newly_shared = set(people_with_access) - set(existing_share_users)
+        if newly_shared:
+            capture_share_granted("dashboard", "user", len(newly_shared))
+        if is_shared_with_organization and not org_shares:
+            capture_share_granted("dashboard", "org", 1)
+        if is_public and not was_public:
+            capture_share_granted("dashboard", "public", 1)
 
 
 # The two operators that ask about the column itself, so they stand without a value.

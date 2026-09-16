@@ -16,8 +16,7 @@ import {
 import { getUniqueId, safeJSONParse, showErrorToast, store, waitUntil } from '../helpers'
 import useDocumentResource from '../helpers/resource'
 import router from '../router'
-import session from '../session'
-import { useTelemetry } from '@framework/ui/telemetry/index.ts'
+import { useTelemetry } from '../telemetry'
 import type { NumberChartConfig } from '../types/chart.types'
 import { FilterOperator, FilterValue } from '../types/query.types'
 import {
@@ -107,7 +106,7 @@ export default function useDashboard(name: string, shared = false) {
 
 function makeDashboard(name: string, isShared: boolean) {
 	const { capture } = useTelemetry()
-	const dashboard = getDashboardResource(name)
+	const dashboard = getDashboardResource(name, isShared)
 
 	const editing = ref(false)
 	const editingItemIndex = ref<number>()
@@ -159,7 +158,7 @@ function makeDashboard(name: string, isShared: boolean) {
 		refreshChart(chart_name)
 	}
 
-	async function addChart(charts: WorkbookChart[]) {
+	async function addChart(charts: WorkbookChart[], via: 'selector' | 'drag') {
 		const maxY = getMaxY()
 		for (const chart of charts) {
 			const placed = dashboard.doc.items.some(
@@ -168,7 +167,7 @@ function makeDashboard(name: string, isShared: boolean) {
 			if (placed) continue
 			dashboard.doc.items.push(...(await cellsFor(chart, maxY)))
 		}
-		capture('dashboard_chart_added')
+		capture('dashboard_chart_added', { via })
 	}
 
 	/**
@@ -687,7 +686,15 @@ const INITIAL_DOC: InsightsDashboardv3 = {
 	has_workbook_access: false,
 }
 
-function getDashboardResource(name: string) {
+// Which page this view is on. `shared` is the store's own key, so a public link
+// is known before any route. The other two come from the route the load happens
+// on.
+function viewedOn(isShared: boolean) {
+	if (isShared) return 'shared'
+	return router.currentRoute.value.name === 'Dashboard' ? 'dashboards' : 'workbook'
+}
+
+function getDashboardResource(name: string, isShared = false) {
 	const doctype = 'Insights Dashboard v3'
 	const dashboard = useDocumentResource<InsightsDashboardv3>(doctype, name, {
 		initialDoc: { ...INITIAL_DOC, name },
@@ -698,9 +705,9 @@ function getDashboardResource(name: string) {
 			return doc
 		},
 	})
-	if (session.isLoggedIn) {
-		dashboard.onAfterLoad(() => dashboard.call('track_view').catch(() => {}))
-	}
+	dashboard.onAfterLoad(() =>
+		dashboard.call('track_view', { surface: viewedOn(isShared) }).catch(() => {}),
+	)
 	return dashboard
 }
 

@@ -25,6 +25,7 @@ from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 impor
 )
 from insights.insights.doctype.insights_query_v3.insights_query_v3 import import_query
 from insights.insights.query_builders.sql_functions import resolve_timespan
+from insights.telemetry import capture_share_granted
 from insights.utils import deep_convert_dict_to_dict
 
 QUERY = "Insights Query v3"
@@ -102,12 +103,15 @@ class InsightsChartv3(Document):
             frappe.throw(frappe._("You do not have permission to share this chart"), frappe.PermissionError)
 
         is_public = bool(frappe.parse_json(is_public))
+        was_public = self.is_public
         self.db_set(
             {
                 "is_public": int(is_public),
                 "permission_user": frappe.session.user if is_public else None,
             }
         )
+        if is_public and not was_public:
+            capture_share_granted("chart", "public", 1)
 
     def on_trash(self):
         # Clean up empty folders
@@ -293,7 +297,21 @@ class InsightsChartv3(Document):
         query.title = self.title
         query.workbook = self.workbook
         query.operations = frappe.as_json(self.get_operations() if operations is None else operations)
-        query.use_live_connection = frappe.db.get_value(QUERY, self.query, "use_live_connection")
+        source = (
+            frappe.db.get_value(
+                QUERY,
+                self.query,
+                ["use_live_connection", "is_native_query", "is_script_query", "is_builder_query"],
+                as_dict=True,
+            )
+            or frappe._dict()
+        )
+        # a chart run belongs to the editor its source query was written in, which
+        # is what a failure report names it by
+        query.use_live_connection = source.use_live_connection
+        query.is_native_query = source.is_native_query
+        query.is_script_query = source.is_script_query
+        query.is_builder_query = source.is_builder_query
         query.flags.execution_reference = self.query
         return query
 

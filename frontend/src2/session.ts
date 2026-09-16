@@ -29,6 +29,9 @@ type SiteInfo = {
 	currency: string | null
 	// starts with the site currency; each result adds its codes
 	currency_symbols: Record<string, CurrencySymbol>
+	/** The two properties `docs/telemetry.md` puts on every event. */
+	app_version: string
+	entry: string
 }
 
 const emptySite: SiteInfo = {
@@ -37,6 +40,8 @@ const emptySite: SiteInfo = {
 	fiscal_year_start: '1995-04-01',
 	currency: null,
 	currency_symbols: {},
+	app_version: '',
+	entry: '',
 }
 
 const emptyUser: SessionUser = {

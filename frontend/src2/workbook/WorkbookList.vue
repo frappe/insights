@@ -13,7 +13,7 @@ import useWorkbook, { newWorkbookName } from './workbook'
 import { getWorkbookColumns } from './workbookListColumns'
 import useWorkbooks from './workbooks'
 import WorkbookTemplates, { WorkbookTemplate } from './WorkbookTemplates.vue'
-import { useTelemetry } from '@framework/ui/telemetry/index.ts'
+import { useTelemetry } from '../telemetry'
 
 const router = useRouter()
 const userStore = useUserStore()
