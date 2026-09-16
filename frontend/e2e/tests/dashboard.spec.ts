@@ -188,6 +188,26 @@ test.describe('dashboard', () => {
 		await expect(trigger).toBeVisible()
 		await expect(page.getByRole('button', { name: 'Status is canceled' })).toHaveCount(0)
 		await expect(charts(page).getByText('1,800')).toBeVisible({ timeout: 30_000 })
+
+		// Unticking every value and clicking away takes the filter off too.
+		await trigger.click()
+		await page.getByRole('option', { name: 'canceled' }).click()
+		await page.getByRole('option', { name: 'shipped' }).click()
+		await trigger.click()
+		const applied = page.getByRole('button', { name: 'Status is canceled, shipped' })
+		await expect(applied).toBeVisible()
+
+		await applied.click()
+		await page.getByRole('option', { name: 'canceled' }).click()
+		await page.getByRole('option', { name: 'shipped' }).click()
+		// Click the card's corner to close the panel. The panel covers the card's top,
+		// and a click on the corner opens nothing.
+		const cell = items(page).filter({ hasText: chart.title })
+		const box = (await cell.boundingBox())!
+		await cell.click({ position: { x: box.width - 4, y: box.height - 4 } })
+
+		await expect(trigger).toBeVisible()
+		await expect(charts(page).getByText('1,800')).toBeVisible({ timeout: 30_000 })
 	})
 
 	// @feature dashboard.move-resize dashboard.reset-layout

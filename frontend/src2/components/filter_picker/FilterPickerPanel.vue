@@ -5,7 +5,7 @@
 import { Badge, Button, KeyboardShortcut, Tooltip } from 'frappe-ui'
 import { Delete, Plus, Search } from 'lucide-vue-next'
 import { ComboboxInput, ComboboxRoot } from 'reka-ui'
-import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, reactive, ref, shallowRef, watch } from 'vue'
 import { isMac } from '../../composables/useShortcut'
 import { columnIcon } from '../../query/column_icon'
 import { __ } from '../../translation'
@@ -70,7 +70,9 @@ const history = ref<Stage[]>([])
 const column = ref<QueryResultColumn | undefined>(props.column)
 const op = ref<OperatorDef | undefined>()
 const search = ref('')
-const editing = ref<Filter | undefined>()
+// shallow, so it is the host's own object: the host finds the rule to replace or
+// remove by identity, and a deep ref would hand back a proxy of it
+const editing = shallowRef<Filter | undefined>()
 
 const picked = ref<string[]>([])
 /** the values already ticked when the multi stage opened, in tick order */
