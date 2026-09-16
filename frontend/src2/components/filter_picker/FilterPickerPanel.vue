@@ -26,6 +26,7 @@ import {
 	pathOf,
 	relativeDirections,
 	relativeRow,
+	selectedRowKey,
 	spanDates,
 	spanOf,
 	splitPair,
@@ -100,9 +101,10 @@ const relativeForm = computed(() => ({
 	includeCurrent: relative.includeCurrent,
 }))
 
-/** reka holds the ticks while the text `=` / `≠` stage is up, nothing otherwise */
-const NONE: string[] = []
-const comboModel = computed(() => (multi.value ? picked.value : NONE))
+/** reka holds the ticks on the text `=` / `≠` stage, and the key of the edited rule's row on every other stage */
+const comboModel = computed(() =>
+	multi.value ? picked.value : editing.value && selectedRowKey(editing.value, stage.value),
+)
 function onComboModel(value: unknown) {
 	if (multi.value) picked.value = (value as string[]) || []
 }

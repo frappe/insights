@@ -7,6 +7,7 @@ import {
 	numberQuickValues,
 	operatorOf,
 	resolveSpan,
+	selectedRowKey,
 	spanLabel,
 	toFilterArgs,
 	unitOf,
@@ -172,5 +173,30 @@ describe('the numbers a number filter offers', () => {
 			[50, 75],
 			[75, 100],
 		])
+	})
+})
+
+describe('the row a reopened rule marks', () => {
+	const posted: QueryResultColumn = { name: 'posting_date', type: 'Date' }
+	const status: QueryResultColumn = { name: 'status', type: 'String' }
+
+	// A rule an older control wrote as `=` over a list reopens as `is`, so that is
+	// the operator row it marks.
+	// @feature query.reopen-operation
+	it('marks the operator the rule reopens as', () => {
+		expect(selectedRowKey({ column: status, operator: '=', value: ['Open'] }, 'operator')).toBe(
+			'in',
+		)
+	})
+
+	// @feature query.filter-relative-date
+	it('marks the preset or the unit a span was picked from, and nothing for a shifted span', () => {
+		const within = (value: any) => ({ column: posted, operator: 'within' as const, value })
+		expect(selectedRowKey(within({ span: 'last 7 days' }), 'value')).toBe('span:last 7 days')
+		expect(selectedRowKey(within(['last', '26', 'weeks']), 'unit')).toBe('span:last 26 weeks')
+		// the picker stores "3 months ago" as the current month from a shifted anchor
+		expect(
+			selectedRowKey(within({ span: 'current month', anchor: '2026-05-10' }), 'value'),
+		).toBeUndefined()
 	})
 })
