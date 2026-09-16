@@ -160,14 +160,18 @@ function makeDashboard(name: string, isShared: boolean) {
 
 	async function addChart(charts: WorkbookChart[], via: 'selector' | 'drag') {
 		const maxY = getMaxY()
+		let added = 0
 		for (const chart of charts) {
 			const placed = dashboard.doc.items.some(
 				(item) => item.type === 'chart' && item.chart === chart.name,
 			)
 			if (placed) continue
 			dashboard.doc.items.push(...(await cellsFor(chart, maxY)))
+			added++
 		}
-		capture('dashboard_chart_added', { via })
+		if (added) {
+			capture('dashboard_chart_added', { via, count: added })
+		}
 	}
 
 	/**
