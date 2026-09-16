@@ -83,11 +83,19 @@ function expand() {
 					<slot name="actions" :expanded="false" />
 					<!-- what the card offers over the chart it draws, read off the card
 					     rather than asked for: shown on hover, so a dashboard of cards
-					     is a page of pictures until one is pointed at -->
+					     is a page of pictures until one is pointed at. Hidden acts get zero
+					     width, not transparency, because a transparent act still takes its
+					     width from the title. They are not `hidden`, because a hidden act
+					     leaves the tab order, and on most cards nothing else can take focus
+					     to show it -->
 					<div
 						v-if="canMaximize || $slots.hoverActions"
-						class="flex gap-1 transition-opacity group-hover:opacity-100"
-						:class="props.actionsRevealed ? '' : 'opacity-0'"
+						class="flex gap-1"
+						:class="
+							props.actionsRevealed
+								? ''
+								: 'w-0 overflow-hidden group-focus-within:w-auto group-focus-within:overflow-visible group-hover:w-auto group-hover:overflow-visible'
+						"
 					>
 						<slot name="hoverActions" />
 						<Tooltip v-if="canMaximize" :text="__('Expand')">

@@ -128,7 +128,7 @@ export function operatorOf(kind: FilterKind, operator: FilterOperator): Operator
 	return operators()[kind].find((op) => op.operator === operator)
 }
 
-function defaultOperator(kind: FilterKind): OperatorDef {
+export function defaultOperator(kind: FilterKind): OperatorDef {
 	const operator: FilterOperator = kind === 'text' ? 'in' : kind === 'number' ? '>=' : 'between'
 	return operatorOf(kind, operator) as OperatorDef
 }
@@ -685,6 +685,19 @@ export function pathOf(filter: Filter): Path {
 	}
 	const op = operatorOf('date', operator) || base.op
 	return { ...base, op, text: String(value ?? '') }
+}
+
+/** The key of the row a reopened rule reads as, on the stage in front of the reader. */
+export function selectedRowKey(filter: Filter, stage: Stage): string | undefined {
+	const path = pathOf(filter)
+	if (stage === 'operator') return path.op.operator
+	if (filter.operator !== 'within') return undefined
+	if (stage === 'unit') return path.relative && `span:${spanOf(path.relative)}`
+
+	// an anchored span is a shifted period, not the preset its span names
+	const timespan = timespanOf(filter.value)
+	if (stage !== 'value' || !timespan || timespan.anchor || !isPreset(timespan.span)) return
+	return `span:${timespan.span}`
 }
 
 export function toFilterArgs(filter: Filter): FilterArgs {

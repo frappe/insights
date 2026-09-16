@@ -3,7 +3,8 @@
 // picker: a Filter button, and the stages that let the reader choose a column,
 // an operator and a value, with the applied filters on an overview stage
 // inside. With `column` the column is already chosen, the trigger names it,
-// opening lands on the operator stage, and the model holds at most one filter.
+// and the model holds at most one filter. Opening lands on the values of the
+// default operator, with the operators one step back.
 import { Badge, Button, Popover } from 'frappe-ui'
 import { ListFilter, X } from 'lucide-vue-next'
 import { computed } from 'vue'

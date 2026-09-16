@@ -12,7 +12,7 @@ Four hosts let a reader narrow rows by column, operator and value: the dashboard
 
 ## Decision
 
-One component serves every host. A host with the column already chosen mounts it with `column` set and it opens on the operator stage. The others open on a column list.
+One component serves every host. A host with the column already chosen mounts it with `column` set. It opens on the values of the kind's default operator, with the operators one step back. The others open on a column list.
 
 It behaves like a command palette: one search input, and under it a list per stage, column then operator then value. Typing narrows the list, Enter picks, Backspace on an empty input steps back, Cmd+Enter commits. Applied filters show on an overview stage inside, never as chips in the host. A multi-value pick commits when the popover closes. Every other value commits on Enter. No Apply button.
 
