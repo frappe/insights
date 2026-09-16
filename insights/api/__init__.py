@@ -9,6 +9,7 @@ from frappe.defaults import get_user_default, set_user_default
 from frappe.handler import is_valid_http_method, is_whitelisted
 from frappe.monitor import add_data_to_monitor
 
+import insights
 from insights.api.shared import get_public_permission_user, is_public
 from insights.decorators import insights_whitelist
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
@@ -21,6 +22,7 @@ from insights.insights.doctype.insights_team.insights_team import (
     check_data_source_permission,
 )
 from insights.permission_user import permission_user
+from insights.telemetry import get_entry
 from insights.utils import get_currency_symbols, get_owned_file
 
 
@@ -63,7 +65,16 @@ def get_security_update():
 def get_site_info():
     """Settings of the site, not of whoever reads it. A guest opening a public
     dashboard needs them to print an amount the way the workbook does."""
-    return get_currency_info()
+    return {
+        # the two properties `docs/telemetry.md` puts on every event. The browser
+        # has no other way to read them, and only a signed-in one ever sends one
+        **(
+            {"app_version": insights.__version__, "entry": get_entry()}
+            if frappe.session.user != "Guest"
+            else {}
+        ),
+        **get_currency_info(),
+    }
 
 
 def get_currency_info():

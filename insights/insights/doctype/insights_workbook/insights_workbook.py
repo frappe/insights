@@ -2,17 +2,15 @@
 # For license information, please see license.txt
 
 
-from contextlib import suppress
-
 import frappe
 import frappe.utils
 from frappe.model.document import Document
 from frappe.model.naming import getseries
 from frappe.query_builder import Interval
 from frappe.query_builder.functions import Now
-from frappe.utils.telemetry import capture
 
 from insights.insights.query_utils import referenced_queries
+from insights.telemetry import capture
 from insights.utils import deep_convert_dict_to_dict
 
 # `tabSeries` key the workbook counter lives under.
@@ -66,7 +64,7 @@ class InsightsWorkbook(Document):
             frappe.delete_doc("Insights Folder", f.name, force=True, ignore_permissions=True)
 
     def after_insert(self):
-        capture("workbook_created", "insights")
+        capture("workbook_created", from_template=bool(self.from_template))
 
         # If this is a restored workbook (has data_backup) then restore child documents
         if not self.data_backup:
@@ -253,13 +251,7 @@ class InsightsWorkbook(Document):
 
         # adoption signal for library workbooks; interval dedupes to once/user/site/day
         if self.from_template:
-            with suppress(Exception):
-                capture(
-                    "workbook_template_used",
-                    "insights",
-                    properties={"template": self.from_template},
-                    interval="1d",
-                )
+            capture("workbook_template_used", interval="1d", template=self.from_template)
 
     @frappe.whitelist()
     def export(self):

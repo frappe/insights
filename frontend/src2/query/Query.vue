@@ -6,7 +6,6 @@ import QueryBuilder from './components/QueryBuilder.vue'
 import ScriptQueryEditor from './components/ScriptQueryEditor.vue'
 import useQuery from './query'
 import { waitUntil } from '../helpers'
-// @ts-ignore
 import { useTelemetry } from '../telemetry'
 
 const { capture } = useTelemetry()
