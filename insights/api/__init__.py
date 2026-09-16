@@ -8,6 +8,7 @@ import frappe
 from frappe.handler import is_valid_http_method, is_whitelisted
 from frappe.monitor import add_data_to_monitor
 
+import insights
 from insights.api.shared import get_public_permission_user, is_public
 from insights.decorators import insights_whitelist
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
@@ -21,6 +22,7 @@ from insights.insights.doctype.insights_team.insights_team import (
 )
 from insights.insights.query_builders.sql_functions import get_fiscal_year_start_date
 from insights.permission_user import permission_user
+from insights.telemetry import get_entry
 from insights.utils import get_currency_symbols, get_owned_file
 
 
@@ -65,6 +67,13 @@ def get_site_info():
     dashboard needs them to print an amount the way the workbook does."""
     return {
         "country": frappe.db.get_single_value("System Settings", "country"),
+        # the two properties `docs/telemetry.md` puts on every event. The browser
+        # has no other way to read them, and only a signed-in one ever sends one
+        **(
+            {"app_version": insights.__version__, "entry": get_entry()}
+            if frappe.session.user != "Guest"
+            else {}
+        ),
         # The calendar the site counts by. A span the browser resolves (a week, a
         # fiscal year to date) has to land on the days the server's `get_window`
         # lands on. Both are site settings, not the reader's, so a guest gets them too.

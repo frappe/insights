@@ -17,7 +17,7 @@ import { getUniqueId, safeJSONParse, showErrorToast, store, waitUntil } from '..
 import useDocumentResource from '../helpers/resource'
 import router from '../router'
 import session from '../session'
-import { useTelemetry } from '@framework/ui/telemetry/index.ts'
+import { useTelemetry } from '../telemetry'
 import type { NumberChartConfig } from '../types/chart.types'
 import { FilterOperator, FilterValue } from '../types/query.types'
 import {

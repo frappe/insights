@@ -6,8 +6,7 @@ import QueryBuilder from './components/QueryBuilder.vue'
 import ScriptQueryEditor from './components/ScriptQueryEditor.vue'
 import useQuery from './query'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
-// @ts-ignore
-import { useTelemetry } from '@framework/ui/telemetry/index.ts'
+import { useTelemetry } from '../telemetry'
 
 const { capture } = useTelemetry()
 const props = defineProps<{ query_name: string }>()
