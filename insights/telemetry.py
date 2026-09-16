@@ -9,6 +9,12 @@ from frappe.utils import telemetry as frappe_telemetry
 from frappe.utils.caching import site_cache
 
 import insights
+from insights.exceptions import (
+    ExpressionSyntaxError,
+    QueryRefused,
+    QueryTimeout,
+    UnknownColumn,
+)
 
 
 def default_properties() -> dict:
@@ -70,3 +76,33 @@ def get_entry():
     if frappe.conf.get("fc_team"):
         return "saas_trial"
     return "self_hosted"
+
+
+def error_kind(exc: BaseException) -> str:
+    """Which kind of failure an exception is, from the closed list in `docs/telemetry.md`.
+
+    The class answers, never the message. Every message here is translated and
+    reworded, and a wording change must not move a failure into `other`.
+    """
+    from ibis.common.exceptions import OperationNotDefinedError
+
+    from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
+        CircularQueryReferenceError,
+    )
+    from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
+        DataSourceConnectionError,
+    )
+
+    if isinstance(exc, frappe.PermissionError):
+        return "permission"
+    if isinstance(exc, QueryTimeout):
+        return "timeout"
+    if isinstance(exc, DataSourceConnectionError):
+        return "connection"
+    if isinstance(exc, QueryRefused | CircularQueryReferenceError | OperationNotDefinedError):
+        return "refused"
+    if isinstance(exc, ExpressionSyntaxError | SyntaxError):
+        return "syntax"
+    if isinstance(exc, UnknownColumn):
+        return "unknown_column"
+    return "other"

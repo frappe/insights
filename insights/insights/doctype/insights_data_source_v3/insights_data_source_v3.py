@@ -40,6 +40,11 @@ class DataSourceConnectionError(frappe.ValidationError):
     pass
 
 
+def source_type(database_type: str | None, is_site_db: bool = False) -> str:
+    """The value `docs/telemetry.md` puts on a source's `type`."""
+    return "site_db" if is_site_db else (database_type or "unknown").lower()
+
+
 class InsightsDataSourceDocument:
     def autoname(self):
         self.name = frappe.scrub(self.title)
