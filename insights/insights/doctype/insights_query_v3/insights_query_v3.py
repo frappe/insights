@@ -14,6 +14,7 @@ from frappe.model.document import Document
 from ibis import _
 
 from insights.decorators import insights_whitelist
+from insights.exceptions import QueryRefused
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     CircularQueryReferenceError,
     IbisQueryBuilder,
@@ -169,7 +170,7 @@ class InsightsQueryv3(Document):
         ibis_query = builder.build()
 
         if ibis_query is None:
-            frappe.throw("Failed to build query")
+            frappe.throw(frappe._("Failed to build query"), QueryRefused)
 
         return ibis_query
 
