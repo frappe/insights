@@ -12,8 +12,7 @@ import numpy as np
 import pandas as pd
 import sqlglot as sg
 import sqlparse
-from frappe.utils.data import flt, orjson_dumps
-from frappe.utils.response import json_handler
+from frappe.utils.data import flt
 from frappe.utils.safe_exec import SERVER_SCRIPT_FILE_PREFIX, safe_eval, safe_exec
 from ibis import _
 from ibis.expr.datatypes import DataType
@@ -1324,14 +1323,15 @@ def _results_cache_key(cache_key):
 
 
 def cache_results(cache_key, result: pd.DataFrame, cache_expiry=3600):
+    # json.dumps writes inf and NaN as tokens orjson refuses to read back
+    result = result.replace({np.inf: None, -np.inf: None, np.nan: None, pd.NaT: None})
     payload = {
         "columns": list(result.columns),
         "rows": result.to_dict(orient="records"),
     }
     frappe.cache().set_value(
         _results_cache_key(cache_key),
-        # the response writes inf and NaN as null, and so must the cache that orjson reads back
-        orjson_dumps(payload, default=json_handler),
+        frappe.as_json(payload),
         expires_in_sec=cache_expiry,
     )
 
