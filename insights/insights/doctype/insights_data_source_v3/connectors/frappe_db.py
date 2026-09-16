@@ -10,11 +10,11 @@ from .mariadb import get_mariadb_connection
 from .postgresql import get_postgres_connection
 
 
-def get_frappedb_connection(data_source):
+def get_frappedb_connection(data_source, socket=None):
     if data_source.database_type == "PostgreSQL":
         return get_postgres_connection(data_source)
-    else:
-        return get_mariadb_connection(data_source)
+
+    return get_mariadb_connection(data_source, socket=socket)
 
 
 def get_primary_data_source():
@@ -36,13 +36,16 @@ def get_primary_data_source():
         site_db.port = 5432 if site_db.database_type == "PostgreSQL" else 3306
 
     if not site_db.database_name:
-        site_db.database_name = frappe.conf.db_name
+        site_db.database_name = frappe.conf.get("db_name")
 
     if not site_db.username:
-        site_db.username = frappe.conf.db_name
+        site_db.username = (
+            frappe.conf.get("db_user")
+            or frappe.conf.get("db_name")
+        )
 
     if not site_db.password:
-        site_db.password = frappe.conf.db_password
+        site_db.password = frappe.conf.get("db_password")
 
     if site_db.use_ssl is None:
         site_db.use_ssl = False
@@ -70,17 +73,18 @@ def get_replica_data_source():
 
 
 def get_sitedb_connection():
-    # If replica is configured, try replica connection first
     if frappe.conf.read_from_replica:
         try:
             replica = get_replica_data_source()
             return get_frappedb_connection(replica)
         except Exception:
-            # If replica fails, fall back to primary
             pass
 
     primary = get_primary_data_source()
-    return get_frappedb_connection(primary)
+    return get_frappedb_connection(
+        primary,
+        socket=frappe.conf.get("db_socket"),
+    )
 
 
 def is_frappe_db(data_source):
