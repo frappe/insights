@@ -32,6 +32,8 @@ TEMPLATE_MODULE = "Selling"
 # a committed template that ships a preview.png, so preview handling stays covered
 TEMPLATE_WITH_PREVIEW = "insights/stock"
 
+WORKBOOK_CAPTURE = "insights.insights.doctype.insights_workbook.insights_workbook.capture"
+
 # derived from the shipped manifest so a template version bump doesn't need edits
 # scattered across every assertion; NEXT_VERSION stands in for a newer release
 TEMPLATE_VERSION = get_template_manifest(TEMPLATE)["version"]
@@ -231,13 +233,18 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
     # @feature templates.import
     def test_an_import_reports_the_template_and_the_app_it_is_for(self):
         with self.as_user(ADMIN_USER), installed_apps(APPS_WITH_ERPNEXT), standard_apps(APPS_WITH_ERPNEXT):
-            with patch("insights.api.templates.capture") as sender:
+            with (
+                patch("insights.api.templates.capture") as sender,
+                patch(WORKBOOK_CAPTURE) as workbook_sender,
+            ):
                 create_workbook_from_template(TEMPLATE)
 
         sender.assert_called_once()
         args, kwargs = sender.call_args
         self.assertEqual(args, ("workbook_template_imported",))
         self.assertEqual(kwargs, {"template": TEMPLATE, "app": "erpnext"})
+
+        workbook_sender.assert_called_once_with("workbook_created", from_template=True)
 
     # @feature templates.import
     def test_an_import_withholds_an_app_frappe_does_not_publish(self):

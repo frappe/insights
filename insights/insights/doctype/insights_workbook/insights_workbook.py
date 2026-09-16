@@ -512,13 +512,14 @@ def _rewrite_query_references(operations, id_map: dict) -> str:
     return frappe.as_json(operations)
 
 
-def import_workbook(workbook):
+def import_workbook(workbook, from_template: str | None = None):
     workbook = frappe.parse_json(workbook)
     workbook = deep_convert_dict_to_dict(workbook)
 
     # Create a new Insights Workbook
     new_workbook = frappe.new_doc("Insights Workbook")
     new_workbook.title = workbook["doc"]["title"]
+    new_workbook.from_template = from_template
     new_workbook.insert()
     new_workbook.restore_workbook_contents(
         workbook,

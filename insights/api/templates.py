@@ -305,9 +305,9 @@ def create_workbook_from_template(template_name: str) -> dict:
         # Import as the caller (don't frappe.set_user mid-request — it rewrites the
         # session sid and logs the user out), then hand the copy to Administrator so
         # it becomes a shared org resource that everyone else reads via the share.
-        workbook_name = import_workbook(get_template_workbook(template_name))
-        # tag the origin so the library can mark this template as imported
-        frappe.db.set_value("Insights Workbook", workbook_name, "from_template", template_name)
+        # tag the origin before the insert, so the library can mark this template
+        # as imported and the creation event knows it came from one
+        workbook_name = import_workbook(get_template_workbook(template_name), from_template=template_name)
         _reassign_to_administrator(workbook_name)
         _share_with_organization(workbook_name)
         # record which shipped version this copy holds, and a fingerprint of it as
