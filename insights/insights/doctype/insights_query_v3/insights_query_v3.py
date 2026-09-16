@@ -23,6 +23,7 @@ from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     is_carried_currency_column,
     is_hidden_column,
 )
+from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import source_type
 from insights.insights.query_utils import (
     extract_query_deps_from_operations,
     find_cycle,
@@ -176,12 +177,80 @@ class InsightsQueryv3(Document):
 
         return ibis_query
 
+    @property
+    def interface(self):
+        """The editor this query was written in.
+
+        A row that names none of them is a builder query, the same answer the
+        client gives a query saved before the flags existed.
+        """
+        if self.is_native_query:
+            return "sql"
+        if self.is_script_query:
+            return "script"
+        return "builder"
+
+    @property
+    def source_type(self):
+        """The kind of database this query reads, `unknown` unless it reads one.
+
+        A query has no data source link. The source sits on each operation, and a
+        pipeline may join two of them.
+        """
+        sources = self.read_sources()
+        if len(sources) != 1:
+            return "unknown"
+
+        source = frappe.db.get_value(
+            "Insights Data Source v3", sources.pop(), ["database_type", "is_site_db"], as_dict=True
+        )
+        if not source:
+            return "unknown"
+        return source_type(source.database_type, source.is_site_db)
+
     def read_sources(self) -> set[str]:
         """The data sources of every table this query reads, its references included."""
         return {ref["data_source"] for ref in self.get_source_tables()}
 
+    def capture_failure(self, exc: Exception):
+        """Report that a run failed, and what kind of failure it was.
+
+        Nothing else about it leaves the site: the SQL, the message and the names
+        of columns and tables all stay here.
+        """
+        from insights.telemetry import capture, error_kind
+
+        with suppress(Exception):
+            capture(
+                "query_failed",
+                interface=self.interface,
+                error_kind=error_kind(exc),
+                data_store=not self.use_live_connection,
+                source_type=self.source_type,
+            )
+
     @frappe.whitelist()
     def execute(
+        self,
+        active_operation_idx: int | None = None,
+        adhoc_filters: dict | None = None,
+        force: bool = False,
+        page: int = 1,
+        page_size: int = 100,
+    ):
+        """Run this query and answer with its rows.
+
+        Every surface's run arrives here: the builder, the SQL and script
+        editors, and the query a chart mints from its config. So this method
+        reports a failure once, and the failure travels on unchanged.
+        """
+        try:
+            return self._run(active_operation_idx, adhoc_filters, force, page, page_size)
+        except Exception as e:
+            self.capture_failure(e)
+            raise
+
+    def _run(
         self,
         active_operation_idx: int | None = None,
         adhoc_filters: dict | None = None,

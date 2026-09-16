@@ -297,7 +297,21 @@ class InsightsChartv3(Document):
         query.title = self.title
         query.workbook = self.workbook
         query.operations = frappe.as_json(self.get_operations() if operations is None else operations)
-        query.use_live_connection = frappe.db.get_value(QUERY, self.query, "use_live_connection")
+        source = (
+            frappe.db.get_value(
+                QUERY,
+                self.query,
+                ["use_live_connection", "is_native_query", "is_script_query", "is_builder_query"],
+                as_dict=True,
+            )
+            or frappe._dict()
+        )
+        # a chart run belongs to the editor its source query was written in, which
+        # is what a failure report names it by
+        query.use_live_connection = source.use_live_connection
+        query.is_native_query = source.is_native_query
+        query.is_script_query = source.is_script_query
+        query.is_builder_query = source.is_builder_query
         query.flags.execution_reference = self.query
         return query
 
