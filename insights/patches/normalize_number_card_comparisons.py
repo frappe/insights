@@ -13,8 +13,10 @@ def execute():
     and a `comparison` beside the reading, the `references` list before it, and
     a chart-level `comparison` flag before that, which said one previous-period
     comparison for every reading. Two have written the period the card reads: the
-    chart's own `window`, and a granularity on the date column before it. Every
-    chart is rewritten into the first of each, so nothing reads the older shapes.
+    chart's own `window`, and a granularity on the date column before it. Two more
+    said which way is up: the reading's own flag, and a chart-level one before it.
+    Every chart is rewritten into the first of each, so nothing reads the older
+    shapes.
 
     Idempotent — a chart already in the shape is left alone.
     """

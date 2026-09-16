@@ -2,6 +2,7 @@
 import { Combobox, Tooltip } from 'frappe-ui'
 import { InfoIcon } from 'lucide-vue-next'
 import { computed } from 'vue'
+import NumberInput from '../../components/NumberInput.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { __ } from '../../translation'
 import type { NumberChartConfig } from '../../types/chart.types'
@@ -62,8 +63,10 @@ function setSpan(span: WindowSpan) {
 	period.value = { span: buildWindowSpan(span), ...(anchor ? { anchor } : {}) }
 }
 
-function setCount(count: any) {
-	if (span.value) setSpan({ ...span.value, count: Number(count) || 1 })
+function setCount(count?: number) {
+	// A span of no periods is not a span, and the sentence around the box reads
+	// a count. An empty box is a box being retyped, so it counts as 1.
+	if (span.value) setSpan({ ...span.value, count: count || 1 })
 }
 
 function setIncludeCurrent(includeCurrent: boolean) {
@@ -107,9 +110,7 @@ function setIncludeCurrent(includeCurrent: boolean) {
 					<span class="text-p-sm text-ink-gray-5">
 						{{ lastSpanSentence(span.unit, span.count || 1)[0] }}
 					</span>
-					<FormControl
-						type="number"
-						autocomplete="off"
+					<NumberInput
 						class="w-14"
 						:min="1"
 						:modelValue="span.count"

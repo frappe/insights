@@ -13,6 +13,7 @@ from insights.insights.doctype.insights_chart_v3.chart_query import (
     comparison_timespans,
     config_errors,
     derive_operations,
+    normalize_chart_config,
     period_column,
     reads_newest_first,
     sparkline_operations,
@@ -69,6 +70,19 @@ class InsightsChartv3(Document):
         from insights.permissions import check_chart_query_access
 
         check_chart_query_access(self)
+        self.normalize_config()
+
+    def normalize_config(self):
+        """The config stored in the shape every reader reads, whoever wrote it.
+
+        The builder is one writer of a config. A workbook import and a template
+        another app ships are the others, and either can deliver a shape an
+        older release wrote. Every one of them arrives here, so this is where an
+        older shape stops being stored.
+        """
+        config = frappe.parse_json(self.config)
+        if isinstance(config, dict):
+            self.config = normalize_chart_config(config, self.chart_type)
 
     @frappe.whitelist()
     def update_access(self, is_public: bool):

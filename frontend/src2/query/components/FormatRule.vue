@@ -3,6 +3,7 @@ import { DatePicker } from 'frappe-ui'
 import { useChartTokens } from 'frappe-ui/charts'
 import { computed, onMounted, ref, watch } from 'vue'
 import FormControl from '../../components/FormControl.vue'
+import NumberInput from '../../components/NumberInput.vue'
 import RadioGroup from '../../components/ui/Radio.vue'
 import RadioGroupItem from '../../components/ui/RadioGroupItem.vue'
 import { flattenOptions } from '../../helpers'
@@ -427,12 +428,11 @@ const isInvalidColumn = computed(() => {
 					:options="operatorOptions"
 					@update:modelValue="onOperatorChange($event)"
 				/>
-				<FormControl
-					type="number"
+				<NumberInput
 					:label="__('Value')"
 					:modelValue="(format as cell_rules).value"
 					:placeholder="__('Value')"
-					@update:modelValue="format.value = Number($event)"
+					@update:modelValue="format.value = $event"
 				/>
 			</template>
 
@@ -491,16 +491,15 @@ const isInvalidColumn = computed(() => {
 					@update:modelValue="onOperatorChange($event)"
 				/>
 				<template v-if="isRankValueRule">
-					<FormControl
+					<NumberInput
 						:label="__('How many')"
-						type="number"
 						:modelValue="(format as rank_rules).value"
 						:placeholder="
 							(format as rank_rules).operator?.includes('percent')
 								? __('A percentage, 1 to 100')
 								: __('A number of rows')
 						"
-						@update:modelValue="format.value = Number($event)"
+						@update:modelValue="format.value = $event"
 					/>
 				</template>
 			</template>

@@ -3,6 +3,7 @@ import { useMagicKeys, watchDebounced, whenever } from '@vueuse/core'
 import { Badge } from 'frappe-ui'
 import { onBeforeUnmount, provide, ref } from 'vue'
 import InlineFormControlLabel from '../components/InlineFormControlLabel.vue'
+import NumberInput from '../components/NumberInput.vue'
 import LazyTextInput from '../components/LazyTextInput.vue'
 import { downloadImage, waitUntil } from '../helpers'
 import { DropdownOption } from '../types/query.types'
@@ -134,7 +135,7 @@ const showShareDialog = ref(false)
 			</CollapsibleSection>
 
 			<CollapsibleSection title="Limit" collapsed>
-				<FormControl v-model="chart.doc.config.limit" type="number" />
+				<NumberInput v-model="chart.doc.config.limit" />
 			</CollapsibleSection>
 		</div>
 	</div>

@@ -96,8 +96,8 @@ export type ReferenceAggregate = 'average' | 'median' | 'min' | 'max' | 'sum'
 export type ReferenceLine = {
 	// What this line is, for as long as it exists. The form keys its rows on it:
 	// keyed by index, removing one re-keys every line after it and an open
-	// settings popover ends up over a different line. Written on load by
-	// `normalizeChartConfig` for a line saved before it existed.
+	// settings popover ends up over a different line. A line saved before it
+	// existed was given one by `insights.patches.normalize_chart_configs`.
 	id?: string
 	// 'y' draws a horizontal line at a measure value, 'x' a vertical line at a category/date value
 	axis?: 'x' | 'y'
@@ -110,7 +110,8 @@ export type ReferenceLine = {
 	measure_name?: string
 	aggregate?: ReferenceAggregate
 	// What develop called the same thing before this branch named it `aggregate`.
-	// Charts saved on develop carry it, so normalizeChartConfig reads it and drops it.
+	// The patch dropped it from every stored config. The server's read path
+	// still reads it, for a config an import delivers.
 	statistic?: ReferenceAggregate | null
 	label?: string
 	// Which end of the rule the label sits at, and which side of it. Left unset,
@@ -128,8 +129,8 @@ export type Series = {
 	align?: 'Left' | 'Right'
 	show_data_labels?: boolean
 	// A series drawn at zero opacity and kept out of the legend, i.e. a Measure
-	// that reached the tooltip and nothing else. `tooltip.measures` says that,
-	// so normalizeChartConfig moves it there. Read, never written.
+	// that reached the tooltip and nothing else. `tooltip.measures` says that, so
+	// `insights.patches.normalize_chart_configs` moved it there. Read, never written.
 	hide_from_chart?: boolean
 }
 export type YAxisLine = Series & {

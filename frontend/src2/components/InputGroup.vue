@@ -2,6 +2,7 @@
 import { TextInput } from 'frappe-ui'
 import { computed } from 'vue'
 import { startDrag } from '../helpers/drag'
+import { asNumber } from '../helpers/typed_input'
 
 /**
  * One control made of several fields, after Builder's box controls.
@@ -34,8 +35,10 @@ export type InputGroupField = {
 
 const props = defineProps<{ fields: InputGroupField[] }>()
 
+// A number field reports the number it names, using the one conversion every
+// number box in a config form shares.
 // eslint-disable-next-line no-unused-vars
-const emit = defineEmits<{ update: [key: string, value: string] }>()
+const emit = defineEmits<{ update: [key: string, value: string | number | undefined] }>()
 
 const columns = computed(() => ({
 	gridTemplateColumns: `repeat(${props.fields.length}, minmax(0, 1fr))`,
@@ -50,7 +53,7 @@ function step(field: InputGroupField, by: number) {
 	const low = field.min ?? -Infinity
 	const high = field.max ?? Infinity
 	const next = (isNaN(from) ? 0 : from) + by * (field.step ?? 1)
-	emit('update', field.key, String(Math.min(high, Math.max(low, next))))
+	emit('update', field.key, Math.min(high, Math.max(low, next)))
 }
 
 function onKeydown(event: KeyboardEvent, field: InputGroupField) {
@@ -75,7 +78,7 @@ function onLabelDrag(event: MouseEvent, field: InputGroupField) {
 			const low = field.min ?? -Infinity
 			const high = field.max ?? Infinity
 			const next = start + by * (field.step ?? 1)
-			emit('update', field.key, String(Math.min(high, Math.max(low, next))))
+			emit('update', field.key, Math.min(high, Math.max(low, next)))
 		},
 	})
 }
@@ -104,7 +107,9 @@ function onLabelDrag(event: MouseEvent, field: InputGroupField) {
 				:min="field.min"
 				:max="field.max"
 				:step="field.step"
-				@update:modelValue="emit('update', field.key, String($event))"
+				@update:modelValue="
+					emit('update', field.key, steps(field) ? asNumber($event) : String($event))
+				"
 				@keydown="onKeydown($event, field)"
 			/>
 		</div>

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import AddSlotButton from './AddSlotButton.vue'
-import { Badge, Button, FormControl } from 'frappe-ui'
+import { Badge, Button } from 'frappe-ui'
 import { Plus, X } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import DraggableList from '../../components/DraggableList.vue'
+import NumberInput from '../../components/NumberInput.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { FIELDTYPES } from '../../helpers/constants'
 import ConditonalFormattingDialog from '../../query/components/ConditonalFormattingDialog.vue'
@@ -147,14 +148,14 @@ function toggleStickyColumn(column_name: string, is_sticky: boolean) {
 	}
 }
 
-function updateColumnWidth(column_name: string, width: number | string | undefined) {
+function updateColumnWidth(column_name: string, width: number | undefined) {
 	if (!config.value.column_widths) {
 		config.value.column_widths = {}
 	}
-	if (width === undefined || width === '' || width === null) {
+	if (width === undefined) {
 		delete config.value.column_widths[column_name]
 	} else {
-		config.value.column_widths[column_name] = Number(width)
+		config.value.column_widths[column_name] = width
 	}
 }
 
@@ -183,8 +184,7 @@ function updateTextWrap(column_name: string, wrap: boolean | undefined) {
 					>
 						<template #config-fields>
 							<InlineFormControlLabel :label="__('Width')" control-width="4.5rem">
-								<FormControl
-									type="number"
+								<NumberInput
 									:modelValue="config.column_widths?.[item.dimension_name]"
 									@update:modelValue="
 										updateColumnWidth(item.dimension_name, $event)
@@ -233,9 +233,7 @@ function updateTextWrap(column_name: string, wrap: boolean | undefined) {
 				:label="__('Max values')"
 				control-width="4rem"
 			>
-				<FormControl
-					type="number"
-					autocomplete="off"
+				<NumberInput
 					placeholder="10"
 					:modelValue="config.max_column_values"
 					@update:modelValue="config.max_column_values = $event"

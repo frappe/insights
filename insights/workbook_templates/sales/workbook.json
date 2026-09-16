@@ -552,7 +552,6 @@
 						"data_type": "Decimal",
 						"aggregation": "sum"
 					},
-					"legend_position": "bottom",
 					"order_by": [],
 					"limit": 100,
 					"filters": {
@@ -669,7 +668,6 @@
 						"data_type": "Decimal",
 						"aggregation": "sum"
 					},
-					"label_position": "left",
 					"order_by": [],
 					"limit": 100,
 					"filters": {

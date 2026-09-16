@@ -25,6 +25,7 @@ operations.
 
 import copy
 import json
+import secrets
 
 from frappe import _
 
@@ -895,47 +896,16 @@ def _add_order_by(operations: list[dict], column_name: str, direction: str):
 def _config_for_derivation(config: dict | None, chart_type: str) -> dict:
     """The config as derivation reads it, whatever version wrote it.
 
-    Old configs are missing slots and carry older shapes for the axes. The
-    builder repairs them on load, so a config that never went through a recent
-    builder session still has to derive the same operations here.
+    The rules of `normalize_chart_config` that a reader needs. Two configs
+    still need them: one stored before the patch ran, and one a writer
+    delivered without `validate`. The rules that decide what is drawn are left to it:
+    an id minted here would be a new id on every read.
     """
-    config = _older_shapes_repaired(copy.deepcopy(config) if config else {}, chart_type)
-
-    for dimension in [
-        (config.get("x_axis") or {}).get("dimension"),
-        (config.get("split_by") or {}).get("dimension"),
-        config.get("date_column"),
-        config.get("label_column"),
-        *(config.get("rows") or []),
-        *(config.get("columns") or []),
-    ]:
-        if isinstance(dimension, dict) and not dimension.get("dimension_name"):
-            if dimension.get("column_name"):
-                dimension["dimension_name"] = dimension["column_name"]
-
-    return config
-
-
-def _older_shapes_repaired(config: dict, chart_type: str | None = None) -> dict:
-    """The slots an older release wrote differently, in today's shape.
-
-    A slot holding something no repair understands is left as it is, for
-    `config_errors` to report.
-    """
+    config = copy.deepcopy(config) if config else {}
     if chart_type == "Number":
-        # what `normalize_number_card_comparisons` rewrote on migrate. A writer
-        # that is not the builder can still deliver an older shape after that ran
-        # (a workbook import, a template another app ships, a hotfix), and a card
-        # in one would draw its reading with no comparison and say nothing.
         normalize_number_shapes(config)
-
-    if config.get("x_axis"):
-        config["x_axis"] = _axis_with_dimension(config["x_axis"])
-    if config.get("split_by"):
-        config["split_by"] = _axis_with_dimension(config["split_by"])
-    if isinstance(config.get("y_axis"), list):
-        config["y_axis"] = {"series": [{"measure": measure} for measure in config["y_axis"]]}
-
+    _axes_in_todays_shape(config)
+    _name_dimensions(config)
     return config
 
 
@@ -944,12 +914,15 @@ def normalize_number_shapes(config: dict) -> bool:
     where the card reads them, in place. Answers whether anything moved.
 
     Three releases have written what a reading is measured against, and two have
-    written the period it reads. Derivation reads the newest of each, so this is
-    what every older shape is read through: on the read path here, and once over
-    the stored configs in `normalize_number_card_comparisons`.
+    written the period it reads. Every reader reads the newest of each.
+    `normalize_chart_config` therefore holds this rule and stores the card in
+    that shape. `normalize_number_card_comparisons` runs it once over the cards
+    already stored.
     """
     flag = config.pop("comparison", None)
-    moved = _raise_period(config) or flag is not None
+    # the other chart-level flag: which way is up, once, for every reading
+    better = config.pop("negative_is_better", None)
+    moved = _raise_period(config) or flag is not None or better is not None
 
     columns = config.get("number_columns")
     if not isinstance(columns, list):
@@ -963,8 +936,19 @@ def normalize_number_shapes(config: dict) -> bool:
     for index in range(len(columns)):
         while len(options) <= index:
             options.append({})
-        beside = options[index] if isinstance(options[index], dict) else {}
-        options[index] = beside
+            moved = True
+        if not isinstance(options[index], dict):
+            # an option nothing can read is no option, and the reading beside it
+            # is drawn without one either way
+            options[index] = {}
+            moved = True
+        beside = options[index]
+
+        # a reading that said which way is up already overrode the chart, so the
+        # chart's flag only fills the ones that said nothing
+        if better and beside.get("negative_is_better") is None:
+            beside["negative_is_better"] = better
+            moved = True
 
         measured = _measured_against(beside, flag)
         if beside.pop("references", None) is not None:
@@ -1090,6 +1074,318 @@ def _axis_with_dimension(axis) -> dict:
     return axis
 
 
+def _y_axis_as_object(y_axis) -> dict:
+    """The value axis used to be the list of measures drawn on it."""
+    return {"series": [{"measure": measure} for measure in y_axis]}
+
+
+# The single-Dimension slots a config can carry, over every chart type. The
+# counterpart of `DIMENSION_SLOTS` in the frontend's chart helpers.
+DIMENSION_SLOTS = (
+    "date_column",
+    "label_column",
+    "source_column",
+    "target_column",
+    "x_column",
+    "y_column",
+    "dimension",
+    "quadrant_column",
+    "location_column",
+)
+MEASURE_SLOTS = ("value_column", "size_column", "xAxis", "yAxis")
+MEASURE_LIST_SLOTS = ("number_columns", "measures", "values")
+
+# What a picker left in a slot beside the Dimension or the Measure it wrote
+# there: the `label` and the `value` the dropdown drew the column with, and on
+# the older ones the `type` and the `resolvedSlots` that resolved it. Named one
+# by one, because a slot keeps every key it carries that is not one of these —
+# a field a chart type gains later is the author's, not a dropdown's leftover.
+DROPDOWN_KEYS = ("label", "value", "type", "resolvedSlots")
+
+# The maps a config keys by text its author wrote: a Measure's name in
+# `number_formats`, a region a source returned under `region_mappings`, a
+# column's name in `text_wrap`. A key there names nothing a chart type declares,
+# so the number rules read the values and never the keys — a Measure named `max`
+# is not a number box. `column_widths` is one too, and has its own branch below
+# because its values are the numbers.
+USER_KEYED_MAPS = frozenset({"number_formats", "text_wrap", "world", "india"})
+
+# Every key a chart type declares as a number. A number box wrote its text, and
+# a cleared box wrote `''`, which is not absent to the reader that falls back on
+# a default.
+NUMBER_KEYS = frozenset(
+    {
+        "limit",
+        "min",
+        "max",
+        "max_slices",
+        "max_split_values",
+        "max_column_values",
+        "decimal",
+        "decimals",
+        "xAxis_refLine",
+        "yAxis_refLine",
+    }
+)
+
+
+def normalize_chart_config(config: dict, chart_type: str | None = None) -> dict:
+    """The config in the shape every reader reads. The one given is not touched.
+
+    The rewrite of every older config shape, as one pass over one config. The
+    builder used to do this on load, which put the rewrite and the author's own
+    edit in the same save. `validate` does it on the way in, and
+    `insights.patches.normalize_chart_configs` does it once over the stored
+    rows.
+
+    The order is the old load path's. An axis un-flattens before anything names
+    the dimensions in it. A reference line reads the series a hidden one has
+    already left.
+
+    Idempotent: a config already in the shape comes back equal to itself.
+    """
+    written = copy.deepcopy(config)
+
+    if chart_type == "Number":
+        normalize_number_shapes(written)
+
+    _axes_in_todays_shape(written)
+    _name_dimensions(written)
+    _identify_readings(written)
+    _hidden_series_to_tooltip(written)
+    _axis_bounds_as_numbers(written)
+    _identify_reference_lines(written)
+    _series_marks_in_lower_case(written)
+    _numbers_where_a_number_is_declared(written)
+    _slots_hold_what_they_declare(written)
+    return written
+
+
+def _axes_in_todays_shape(config: dict) -> None:
+    """The axes an older release wrote differently, in the shape they hold now."""
+    if config.get("x_axis"):
+        config["x_axis"] = _axis_with_dimension(config["x_axis"])
+    if config.get("split_by"):
+        config["split_by"] = _axis_with_dimension(config["split_by"])
+    if isinstance(config.get("y_axis"), list):
+        config["y_axis"] = _y_axis_as_object(config["y_axis"])
+
+
+def _name_dimensions(config: dict) -> None:
+    """A dimension is labelled by its column until its author relabels it."""
+    for dimension in _config_dimensions(config):
+        if not dimension.get("dimension_name") and dimension.get("column_name"):
+            dimension["dimension_name"] = dimension["column_name"]
+
+
+def _identify_readings(config: dict) -> None:
+    """A Number card's reading, and the id a dashboard cell names it by.
+
+    The reading takes its Measure's name, which is the name a cell written
+    before ids named it by — `reading_id` in `resize_dashboard_cells.py` reads
+    it the same way. The builder used to mint this on load, so opening a card
+    saved before ids existed wrote one into it.
+    """
+    readings = config.get("number_columns")
+    if not isinstance(readings, list):
+        return
+    for reading in readings:
+        if isinstance(reading, dict) and not reading.get("id"):
+            reading["id"] = reading.get("measure_name") or secrets.token_hex(4)
+
+
+def _hidden_series_to_tooltip(config: dict) -> None:
+    """`hide_from_chart` drew a series at zero opacity and kept it out of the
+    legend, which left its value reaching the tooltip and nothing else.
+    `tooltip.measures` says that directly.
+
+    A chart that hid every series is left alone: moving them all leaves nothing
+    to plot, and the adapter draws nothing at all rather than an empty plot.
+    """
+    series = (config.get("y_axis") or {}).get("series") if isinstance(config.get("y_axis"), dict) else None
+    if not isinstance(series, list):
+        return
+
+    hidden = [s for s in series if isinstance(s, dict) and s.get("hide_from_chart")]
+    if not hidden or len(hidden) == len(series):
+        return
+
+    carried = (config.get("tooltip") or {}).get("measures") or []
+    named = {m.get("measure_name") for m in carried if isinstance(m, dict)}
+    moved = [
+        s["measure"]
+        for s in hidden
+        if isinstance(s.get("measure"), dict)
+        and s["measure"].get("measure_name")
+        and s["measure"]["measure_name"] not in named
+    ]
+
+    config["tooltip"] = {"measures": [*carried, *moved]}
+    config["y_axis"]["series"] = [s for s in series if not (isinstance(s, dict) and s.get("hide_from_chart"))]
+
+
+def _axis_bounds_as_numbers(config: dict) -> None:
+    """The form wrote a bound as text, and a cleared box wrote `''`. The
+    renderer reads `''` as a bound and pins the axis at zero."""
+    y_axis = config.get("y_axis")
+    if not isinstance(y_axis, dict):
+        return
+    for bound in ("min", "max"):
+        if bound not in y_axis:
+            continue
+        number = _as_number(y_axis[bound])
+        if number is None:
+            del y_axis[bound]
+        else:
+            y_axis[bound] = number
+
+
+def _identify_reference_lines(config: dict) -> None:
+    """A line's id, and `statistic` read as the `aggregate` it became.
+
+    The form keys its rows on the id: keyed by index, removing one line re-keys
+    every line after it. `statistic` read every plotted number on the axis, so
+    it named no Measure — the nearest one is the first series that axis draws.
+    """
+    y_axis = config.get("y_axis")
+    lines = y_axis.get("reference_lines") if isinstance(y_axis, dict) else None
+    if not isinstance(lines, list):
+        return
+
+    series = y_axis.get("series") or []
+    for line in lines:
+        if not isinstance(line, dict):
+            continue
+        if not line.get("id"):
+            line["id"] = secrets.token_hex(4)
+        if not line.get("statistic"):
+            line.pop("statistic", None)
+            continue
+        if not line.get("aggregate"):
+            align = "Right" if line.get("align") == "Right" else "Left"
+            drawn = [s for s in series if isinstance(s, dict)]
+            target = next((s for s in drawn if (s.get("align") or "Left") == align), None)
+            target = target or (drawn[0] if drawn else None)
+            measure_name = ((target or {}).get("measure") or {}).get("measure_name")
+            if measure_name:
+                line["aggregate"] = line["statistic"]
+                line["measure_name"] = measure_name
+                line["axis"] = "y"
+        line.pop("statistic", None)
+
+
+def _series_marks_in_lower_case(config: dict) -> None:
+    """The Y Axis form wrote 'Line' and 'Bar' where a series type declares
+    'line' and 'bar'. The renderer refuses a mark it does not know and draws the
+    chart's own instead. A series saved in the old case therefore stopped
+    drawing as itself."""
+    y_axis = config.get("y_axis")
+    series = y_axis.get("series") if isinstance(y_axis, dict) else None
+    if not isinstance(series, list):
+        return
+    for serie in series:
+        if isinstance(serie, dict) and isinstance(serie.get("type"), str):
+            serie["type"] = serie["type"].lower()
+
+
+def _numbers_where_a_number_is_declared(node) -> None:
+    """Every number key of every slot, holding the number it names.
+
+    One walk, not one repair per field. The control wrote the bad value, not
+    the slot, so every slot that control reached carries it.
+    """
+    if isinstance(node, list):
+        for item in node:
+            _numbers_where_a_number_is_declared(item)
+        return
+    if not isinstance(node, dict):
+        return
+
+    for key, value in list(node.items()):
+        if key == "column_widths" and isinstance(value, dict):
+            node[key] = {column: _as_number(width) for column, width in value.items()}
+            node[key] = {column: width for column, width in node[key].items() if width is not None}
+        elif key in USER_KEYED_MAPS and isinstance(value, dict):
+            for held in value.values():
+                _numbers_where_a_number_is_declared(held)
+        elif key in NUMBER_KEYS and not isinstance(value, bool):
+            number = _as_number(value)
+            if number is None:
+                del node[key]
+            else:
+                node[key] = number
+        else:
+            _numbers_where_a_number_is_declared(value)
+
+
+def _slots_hold_what_they_declare(config: dict) -> None:
+    """Drops what a picker left beside a Dimension or a Measure, so each slot
+    holds only what it declares."""
+    for slot in (*_config_dimensions(config), *_config_measures(config)):
+        for key in DROPDOWN_KEYS:
+            slot.pop(key, None)
+
+
+def _config_dimensions(config: dict) -> list[dict]:
+    """Every Dimension a config carries, in whichever slot holds it."""
+    dimensions = []
+
+    def collect(dimension):
+        if isinstance(dimension, dict):
+            dimensions.append(dimension)
+
+    for axis in ("x_axis", "split_by"):
+        if isinstance(config.get(axis), dict):
+            collect(config[axis].get("dimension"))
+    for slot in DIMENSION_SLOTS:
+        collect(config.get(slot))
+    for slot in ("rows", "columns"):
+        if isinstance(config.get(slot), list):
+            for item in config[slot]:
+                collect(item)
+
+    return dimensions
+
+
+def _config_measures(config: dict) -> list[dict]:
+    """Every Measure a config carries, in whichever slot holds it."""
+    measures = []
+
+    def collect(measure):
+        if isinstance(measure, dict):
+            measures.append(measure)
+
+    if isinstance(config.get("y_axis"), dict):
+        for serie in config["y_axis"].get("series") or []:
+            if isinstance(serie, dict):
+                collect(serie.get("measure"))
+    if isinstance(config.get("tooltip"), dict):
+        for measure in config["tooltip"].get("measures") or []:
+            collect(measure)
+    for slot in MEASURE_SLOTS:
+        collect(config.get(slot))
+    for slot in MEASURE_LIST_SLOTS:
+        if isinstance(config.get(slot), list):
+            for item in config[slot]:
+                collect(item)
+
+    return measures
+
+
+def _as_number(value):
+    """A number box's value as the number it names, or nothing at all. The
+    counterpart of `asNumber` in the frontend's typed input helpers."""
+    if value is None or isinstance(value, bool) or value == "":
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    if number != number or number in (float("inf"), float("-inf")):
+        return None
+    return int(number) if number.is_integer() else number
+
+
 # every slot derivation reads, and the kind of thing it must hold to be read: a
 # dict names one thing (a column, a measure, a filter group) and a list names
 # several, each item naming one. Nested slots are read the same way, one level in.
@@ -1135,7 +1431,7 @@ def _malformed_slots(config: dict | None, chart_type: str | None = None) -> list
     if not isinstance(config, dict):
         return [_("Chart config must be an object")]
 
-    return _slot_errors(_older_shapes_repaired(copy.deepcopy(config), chart_type), SLOT_SHAPES, "")
+    return _slot_errors(_config_for_derivation(config, chart_type), SLOT_SHAPES, "")
 
 
 # The word a slot is named by on screen. `config_errors` states these for a slot

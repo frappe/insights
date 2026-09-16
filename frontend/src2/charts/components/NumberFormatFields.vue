@@ -75,19 +75,11 @@ function write(key: keyof NumberFormat, value: any) {
 }
 
 // A negative precision is not a precision, and the resolver clamps one away.
-// The field refuses to hold one so what is stored says what is drawn.
-function writeDecimals(value: any) {
-	const decimals = Number(value)
-	if (value === '' || value === null || value === undefined || isNaN(decimals)) {
-		write('decimals', undefined)
-		return
-	}
-	write('decimals', Math.max(0, Math.floor(decimals)))
-}
-
-function writeField(key: string, value: string) {
-	if (key === 'decimals') return writeDecimals(value)
-	write(key as keyof NumberFormat, value)
+// The field refuses to hold one so what is stored says what is drawn. The number
+// itself arrives as one: `InputGroup` reports a number field as a number.
+function writeField(key: string, value: string | number | undefined) {
+	if (key !== 'decimals') return write(key as keyof NumberFormat, value)
+	write('decimals', value === undefined ? undefined : Math.max(0, Math.floor(Number(value))))
 }
 
 // A placeholder answers one of two questions, in this order: what does this

@@ -5,6 +5,7 @@ import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import LazyTextInput from '../../components/LazyTextInput.vue'
 import { isDate } from '../../helpers'
 import { COLUMN_TYPES, getDefaultGranularity, getGranularityOptions } from '../../helpers/constants'
+import { asDimension } from '../../helpers/typed_input'
 import { Dimension, DimensionOption } from '../../types/query.types'
 
 const emit = defineEmits({ remove: () => true })
@@ -65,7 +66,7 @@ function selectDimension(option?: DimensionOption) {
 		}
 		return
 	}
-	dimension.value = option
+	dimension.value = asDimension(option)
 }
 </script>
 

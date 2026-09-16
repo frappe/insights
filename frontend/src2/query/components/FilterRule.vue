@@ -8,6 +8,7 @@ import {
 	FilterRule,
 	GroupedColumnOption,
 } from '../../types/query.types'
+import NumberInput from '../../components/NumberInput.vue'
 import { column } from '../helpers'
 import useQuery from '../query'
 import DatePickerControl from './DatePickerControl.vue'
@@ -112,12 +113,11 @@ const fetchColumnValues = debounce((searchTxt: string) => {
 				placeholder="Value"
 				autocomplete="off"
 			/>
-			<FormControl
+			<NumberInput
 				v-else-if="valueSelectorType === 'number'"
-				type="number"
-				:modelValue="filter.value"
+				:modelValue="filter.value as number"
 				placeholder="Value"
-				@update:modelValue="filter.value = Number($event)"
+				@update:modelValue="filter.value = $event"
 			/>
 			<DatePickerControl
 				v-else-if="valueSelectorType === 'date'"

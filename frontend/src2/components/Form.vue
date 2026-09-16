@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { FormControl } from 'frappe-ui'
 import { computed, watch } from 'vue'
+import NumberInput from './NumberInput.vue'
 
 const props = defineProps<{
 	fields: {
@@ -63,7 +65,8 @@ defineExpose({
 		<div class="flex flex-col gap-4">
 			<template v-for="field in fields" :key="field.name">
 				<div class="relative" v-if="isVisible(field)">
-					<FormControl
+					<component
+						:is="field.type === 'number' ? NumberInput : FormControl"
 						autocomplete="off"
 						:type="field.type"
 						:label="field.label"

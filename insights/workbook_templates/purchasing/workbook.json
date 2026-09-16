@@ -486,7 +486,6 @@
 						"data_type": "Decimal",
 						"aggregation": "sum"
 					},
-					"legend_position": "bottom",
 					"order_by": [],
 					"limit": 100,
 					"filters": {
@@ -559,7 +558,6 @@
 						"data_type": "Integer",
 						"aggregation": "count"
 					},
-					"legend_position": "bottom",
 					"order_by": [],
 					"limit": 100,
 					"filters": {

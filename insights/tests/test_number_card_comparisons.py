@@ -152,6 +152,35 @@ class TestNumberCardComparisons(InsightsIntegrationTestCase):
             [{"source": "last year"}, PREVIOUS],
         )
 
+    # @feature charts.number-negative-is-better upgrade.number-older-shapes
+    def test_the_chart_flag_for_which_way_is_up_becomes_each_readings(self):
+        chart = config("Revenue", "Churn", options=[{"negative_is_better": False}, {}])
+        chart["negative_is_better"] = True
+
+        self.assertTrue(normalize(chart))
+
+        self.assertNotIn("negative_is_better", chart)
+        # the reading that said which way is up already overrode the chart
+        self.assertEqual([o["negative_is_better"] for o in options_of(chart)], [False, True])
+
+    # @feature charts.number-negative-is-better upgrade.number-older-shapes
+    def test_a_chart_that_said_a_rise_is_better_says_it_nowhere_else(self):
+        chart = config("Revenue")
+        chart["negative_is_better"] = False
+
+        self.assertTrue(normalize(chart))
+
+        self.assertNotIn("negative_is_better", chart)
+        self.assertNotIn("negative_is_better", options_of(chart)[0])
+
+    # @feature charts.number-readings upgrade.number-older-shapes
+    def test_every_reading_is_given_the_options_it_is_drawn_with(self):
+        chart = config("Revenue", "Profit", "Churn", options=[{"color": "red"}])
+
+        self.assertTrue(normalize(chart))
+
+        self.assertEqual(options_of(chart), [{"color": "red"}, {}, {}])
+
     # @feature upgrade.number-older-shapes
     def test_a_chart_already_in_the_shape_is_left_alone(self):
         chart = config("Revenue", options=[{"comparison": PREVIOUS}])
