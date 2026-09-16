@@ -12,6 +12,14 @@ from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
 )
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 
+# the resource types a team grant may name, and the `object` each reports as
+SHARED_OBJECT = {
+    "Insights Data Source v3": "data_source",
+    "Insights Table v3": "table",
+    "Insights Dashboard v3": "dashboard",
+    "Insights Chart v3": "chart",
+}
+
 
 class InsightsTeam(Document):
     # begin: auto-generated types
@@ -45,12 +53,7 @@ class InsightsTeam(Document):
                 frappe.throw("Admin team name cannot be changed")
 
         for d in self.team_permissions:
-            if d.resource_type not in [
-                "Insights Data Source v3",
-                "Insights Table v3",
-                "Insights Dashboard v3",
-                "Insights Chart v3",
-            ]:
+            if d.resource_type not in SHARED_OBJECT:
                 frappe.throw(f"Invalid resource type: {d.resource_type}")
 
     def on_trash(self):
