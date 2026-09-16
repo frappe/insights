@@ -7,7 +7,6 @@ import {
 	normalizeChartConfig,
 	removeNumberReading,
 	resetChartConfig,
-	setDimensionNames,
 } from './helpers'
 
 const measure = (name: string) => ({
@@ -24,51 +23,6 @@ function config(series: any[], tooltip?: any[]) {
 		...(tooltip ? { tooltip: { measures: tooltip } } : {}),
 	} as any
 }
-
-describe('a Dimension saved before it carried its own name', () => {
-	// Every slot, so a reader never falls back to `column_name` for the ones the
-	// normalizer forgot.
-	// @feature charts.dimension-label
-	it('is named after its column, in every slot a Dimension stands in', () => {
-		const before = {
-			x_axis: { dimension: { column_name: 'region' } },
-			split_by: { dimension: { column_name: 'channel' } },
-			date_column: { column_name: 'posting_date' },
-			label_column: { column_name: 'item' },
-			source_column: { column_name: 'from' },
-			target_column: { column_name: 'to' },
-			x_column: { column_name: 'day' },
-			y_column: { column_name: 'hour' },
-			dimension: { column_name: 'customer' },
-			quadrant_column: { column_name: 'territory' },
-			location_column: { column_name: 'state' },
-			rows: [{ column_name: 'company' }],
-			columns: [{ column_name: 'month' }],
-		} as any
-
-		const after = setDimensionNames(before)
-
-		expect(after.x_axis.dimension.dimension_name).toBe('region')
-		expect(after.split_by.dimension.dimension_name).toBe('channel')
-		expect(after.date_column.dimension_name).toBe('posting_date')
-		expect(after.label_column.dimension_name).toBe('item')
-		expect(after.source_column.dimension_name).toBe('from')
-		expect(after.target_column.dimension_name).toBe('to')
-		expect(after.x_column.dimension_name).toBe('day')
-		expect(after.y_column.dimension_name).toBe('hour')
-		expect(after.dimension.dimension_name).toBe('customer')
-		expect(after.quadrant_column.dimension_name).toBe('territory')
-		expect(after.location_column.dimension_name).toBe('state')
-		expect(after.rows[0].dimension_name).toBe('company')
-		expect(after.columns[0].dimension_name).toBe('month')
-	})
-
-	// @feature charts.dimension-label
-	it('keeps the name it already carries', () => {
-		const after = setDimensionNames({ x_column: { column_name: 'day', dimension_name: 'Day' } })
-		expect(after.x_column.dimension_name).toBe('Day')
-	})
-})
 
 describe('getGranularity', () => {
 	// @feature charts.dimension-grain
@@ -292,23 +246,6 @@ describe("a reading's options follow the reading", () => {
 		const config = { number_columns: [measure('a'), measure('b')] } as any
 		moveNumberReadingOptions(config, 1, 0)
 		expect(config.number_column_options).toEqual([{}, {}])
-	})
-})
-
-describe('a Number reading saved without an id', () => {
-	// @feature dashboard.number-cell-per-reading
-	it('takes its Measure name, the name a cell written before ids named it by', () => {
-		const after = ensureConfigSlots({ number_columns: [measure('Revenue')] }, 'Number')
-		expect(after.number_columns[0].id).toBe('Revenue')
-	})
-
-	// @feature dashboard.number-cell-per-reading
-	it('keeps the id it was saved with when its Measure is renamed', () => {
-		const after = ensureConfigSlots(
-			{ number_columns: [{ ...measure('Margin'), id: 'Profit' }] },
-			'Number',
-		)
-		expect(after.number_columns[0].id).toBe('Profit')
 	})
 })
 

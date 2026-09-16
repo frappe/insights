@@ -151,6 +151,43 @@ class TestChartConfigNormalization(InsightsIntegrationTestCase):
         self.assertEqual(written["split_by"]["max_split_values"], 10)
         self.assertEqual(written["number_column_options"][0]["decimal"], 2)
 
+    # Every slot, so a reader never falls back to `column_name` for the ones the
+    # rewrite forgot.
+    # @feature charts.dimension-label upgrade.chart-config-older-shapes
+    def test_a_dimension_saved_before_it_carried_a_name_is_named_after_its_column(self):
+        written = normalize(
+            {
+                "x_axis": {"dimension": {"column_name": "region"}},
+                "split_by": {"dimension": {"column_name": "channel"}},
+                "date_column": {"column_name": "posting_date"},
+                "label_column": {"column_name": "item"},
+                "source_column": {"column_name": "from"},
+                "target_column": {"column_name": "to"},
+                "x_column": {"column_name": "day"},
+                "y_column": {"column_name": "hour"},
+                "dimension": {"column_name": "customer"},
+                "quadrant_column": {"column_name": "territory"},
+                "location_column": {"column_name": "state"},
+                "rows": [{"column_name": "company"}],
+                "columns": [{"column_name": "month", "dimension_name": "Month"}],
+            }
+        )
+
+        self.assertEqual(written["x_axis"]["dimension"]["dimension_name"], "region")
+        self.assertEqual(written["split_by"]["dimension"]["dimension_name"], "channel")
+        self.assertEqual(written["date_column"]["dimension_name"], "posting_date")
+        self.assertEqual(written["label_column"]["dimension_name"], "item")
+        self.assertEqual(written["source_column"]["dimension_name"], "from")
+        self.assertEqual(written["target_column"]["dimension_name"], "to")
+        self.assertEqual(written["x_column"]["dimension_name"], "day")
+        self.assertEqual(written["y_column"]["dimension_name"], "hour")
+        self.assertEqual(written["dimension"]["dimension_name"], "customer")
+        self.assertEqual(written["quadrant_column"]["dimension_name"], "territory")
+        self.assertEqual(written["location_column"]["dimension_name"], "state")
+        self.assertEqual(written["rows"][0]["dimension_name"], "company")
+        # the name its author gave it stands
+        self.assertEqual(written["columns"][0]["dimension_name"], "Month")
+
     # @feature charts.config-typed-values upgrade.chart-config-older-shapes
     def test_a_slot_holds_the_dimension_and_not_the_option_the_picker_handed_it(self):
         written = normalize(
@@ -184,6 +221,21 @@ class TestChartConfigNormalization(InsightsIntegrationTestCase):
 
         self.assertEqual(written["number_columns"][0]["id"], "Revenue")
         self.assertNotIn("label", written["number_columns"][0])
+
+    # @feature charts.number-readings dashboard.number-cell-per-reading upgrade.chart-config-older-shapes
+    def test_a_reading_saved_before_ids_takes_its_measures_name(self):
+        written = normalize({"number_columns": [measure("Revenue"), {**measure("Margin"), "id": "Profit"}]})
+
+        self.assertEqual(written["number_columns"][0]["id"], "Revenue")
+        # the id it was saved with stands, whatever its Measure is called now
+        self.assertEqual(written["number_columns"][1]["id"], "Profit")
+
+    # @feature charts.number-readings upgrade.chart-config-older-shapes
+    def test_a_reading_that_names_no_measure_takes_an_id_that_stands(self):
+        written = normalize({"number_columns": [{}]})
+
+        self.assertTrue(written["number_columns"][0]["id"])
+        self.assertEqual(normalize(written), written)
 
     # The rewrite drops what a picker left. It does not hold the slot to a list
     # of allowed keys, because a field a chart type gains later is nobody's

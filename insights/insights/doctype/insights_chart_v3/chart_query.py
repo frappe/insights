@@ -1151,6 +1151,7 @@ def normalize_chart_config(config: dict, chart_type: str | None = None) -> dict:
 
     _axes_in_todays_shape(written)
     _name_dimensions(written)
+    _identify_readings(written)
     _hidden_series_to_tooltip(written)
     _axis_bounds_as_numbers(written)
     _identify_reference_lines(written)
@@ -1175,6 +1176,22 @@ def _name_dimensions(config: dict) -> None:
     for dimension in _config_dimensions(config):
         if not dimension.get("dimension_name") and dimension.get("column_name"):
             dimension["dimension_name"] = dimension["column_name"]
+
+
+def _identify_readings(config: dict) -> None:
+    """A Number card's reading, and the id a dashboard cell names it by.
+
+    The reading takes its Measure's name, which is the name a cell written
+    before ids named it by — `reading_id` in `resize_dashboard_cells.py` reads
+    it the same way. The builder used to mint this on load, so opening a card
+    saved before ids existed wrote one into it.
+    """
+    readings = config.get("number_columns")
+    if not isinstance(readings, list):
+        return
+    for reading in readings:
+        if isinstance(reading, dict) and not reading.get("id"):
+            reading["id"] = reading.get("measure_name") or secrets.token_hex(4)
 
 
 def _hidden_series_to_tooltip(config: dict) -> None:

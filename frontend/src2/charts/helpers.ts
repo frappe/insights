@@ -1,4 +1,3 @@
-import { getUniqueId } from '../helpers'
 import { AXIS_CHARTS, ChartConfig } from '../types/chart.types'
 
 // What a Chart's config needs doing to it before anything reads it. Drawing is
@@ -64,12 +63,6 @@ export function ensureConfigSlots(config: any, chart_type: string) {
 		// one empty value, so a card that names no reading opens on a picker
 		// rather than on nothing
 		config.number_columns = config.number_columns || [{}]
-		// A reading saved without an id takes its Measure's name: the same id on
-		// every load, and the name a cell written before ids named it by.
-		// `reading_id` in `resize_dashboard_cells.py` reads it the same way.
-		for (const reading of config.number_columns) {
-			if (reading && !reading.id) reading.id = reading.measure_name || getUniqueId()
-		}
 		config.number_column_options = config.number_column_options || []
 		config.date_column = config.date_column || {}
 	}
@@ -216,15 +209,6 @@ export function dataSelection(config: any) {
 	}
 }
 
-export function setDimensionNames(config: any) {
-	for (const dimension of configDimensions(config)) {
-		if (!dimension.dimension_name && dimension.column_name) {
-			dimension.dimension_name = dimension.column_name
-		}
-	}
-	return config
-}
-
 /**
  * What a chart keeps when its author takes the options back: the rows that come
  * back, and nothing about how they are drawn. `filters` and `limit` are the half
@@ -255,7 +239,6 @@ export function normalizeChartConfig(config: any, chart_type: string) {
 		? config.filters
 		: { filters: [], logical_operator: 'And' }
 
-	config = setDimensionNames(config)
 	config = ensureConfigSlots(config, chart_type)
 	return config
 }

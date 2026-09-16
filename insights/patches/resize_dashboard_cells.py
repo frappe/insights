@@ -163,7 +163,7 @@ def number_readings(config: dict) -> list[str]:
 
 def reading_id(reading: dict) -> str:
     """What a cell names a reading by. One saved without an id takes its Measure's
-    name, as `ensureConfigSlots` in `charts/helpers.ts` gives it."""
+    name, as `_identify_readings` in `chart_query.py` gives it."""
     return reading.get("id") or reading["measure_name"]
 
 
