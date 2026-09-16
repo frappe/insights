@@ -220,7 +220,7 @@ def get_table_stats(data_source: str, table_name: str) -> dict:
         .where(
             (ImportLog.data_source == data_source)
             & (ImportLog.table_name == table_name)
-            & (ImportLog.status == "Success")
+            & (ImportLog.status == "Completed")
         )
         .orderby(ImportLog.creation, order=frappe.qb.desc)
         .limit(1)
