@@ -1205,6 +1205,8 @@ def _results_cache_key(cache_key):
 
 
 def cache_results(cache_key, result: pd.DataFrame, cache_expiry=3600):
+    # json.dumps writes inf and NaN as tokens orjson refuses to read back
+    result = result.replace({np.inf: None, -np.inf: None, np.nan: None, pd.NaT: None})
     payload = {
         "columns": list(result.columns),
         "rows": result.to_dict(orient="records"),
