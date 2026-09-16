@@ -16,6 +16,9 @@ from insights.utils import deep_convert_dict_to_dict
 # `tabSeries` key the workbook counter lives under.
 WORKBOOK_SERIES_KEY = "Insights Workbook"
 
+# Where an open came from, as `docs/telemetry.md` names them.
+OPEN_VIA = {"list", "recent", "desk", "link"}
+
 
 class InsightsWorkbook(Document):
     # begin: auto-generated types
@@ -234,7 +237,7 @@ class InsightsWorkbook(Document):
         return d
 
     @frappe.whitelist()
-    def track_view(self):
+    def track_view(self, via: str | None = None):
         view_log = frappe.qb.DocType("View Log")
         last_viewed_recently = frappe.db.get_value(
             view_log,
@@ -248,6 +251,8 @@ class InsightsWorkbook(Document):
         )
         if not last_viewed_recently:
             self.add_viewed(force=True)
+
+        capture("workbook_opened", interval="1d", via=via if via in OPEN_VIA else "link")
 
         # adoption signal for library workbooks; interval dedupes to once/user/site/day
         if self.from_template:

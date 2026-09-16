@@ -342,7 +342,7 @@ PUBLIC_METHOD_ARGS = {
         "search_term",
         "adhoc_filters",
     },
-    ("Insights Dashboard v3", "track_view"): set(),
+    ("Insights Dashboard v3", "track_view"): {"surface"},
 }
 
 

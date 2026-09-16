@@ -13,7 +13,7 @@ import {
 import useDocumentResource from '../helpers/resource'
 import { isFilterValid } from '../query/components/filter_utils'
 import { column, filter_group } from '../query/helpers'
-import session from '../session'
+import router from '../router'
 import { AdhocFilters, FilterArgs, FilterGroup, FilterOperator, FilterValue } from '../types/query.types'
 import {
 	InsightsDashboardv3,
@@ -430,6 +430,13 @@ const INITIAL_DOC: InsightsDashboardv3 = {
 	has_workbook_access: false,
 }
 
+// Which page this view is on, read off the route the load happens on.
+function viewedOn() {
+	const page = router.currentRoute.value.name
+	if (page === 'SharedDashboard') return 'shared'
+	return page === 'Dashboard' ? 'dashboards' : 'workbook'
+}
+
 function getDashboardResource(name: string) {
 	const doctype = 'Insights Dashboard v3'
 	const dashboard = useDocumentResource<InsightsDashboardv3>(doctype, name, {
@@ -449,9 +456,9 @@ function getDashboardResource(name: string) {
 			return doc
 		},
 	})
-	if (session.isLoggedIn) {
-		dashboard.onAfterLoad(() => dashboard.call('track_view').catch(() => { }))
-	}
+	dashboard.onAfterLoad(() =>
+		dashboard.call('track_view', { surface: viewedOn() }).catch(() => {}),
+	)
 	wheneverChanges(() => dashboard.doc.read_only, () => {
 		if (dashboard.doc.read_only) {
 			dashboard.autoSave = false

@@ -11,8 +11,11 @@ from frappe.query_builder import Interval
 from frappe.query_builder.functions import Now
 from frappe.utils.html_utils import sanitize_html
 
-from insights.telemetry import capture_share_granted
+from insights.telemetry import capture, capture_share_granted
 from insights.utils import DocShare, File
+
+# Which page the view came from, as `docs/telemetry.md` names them.
+VIEW_SURFACES = {"workbook", "shared", "dashboards"}
 
 
 class InsightsDashboardv3(Document):
@@ -72,7 +75,7 @@ class InsightsDashboardv3(Document):
         check_dashboard_chart_access(self)
 
     @frappe.whitelist()
-    def track_view(self):
+    def track_view(self, surface: str | None = None):
         view_log = frappe.qb.DocType("View Log")
         last_viewed_recently = frappe.db.get_value(
             view_log,
@@ -86,6 +89,10 @@ class InsightsDashboardv3(Document):
         )
         if not last_viewed_recently:
             self.add_viewed(force=True)
+
+        if surface not in VIEW_SURFACES:
+            surface = "shared" if frappe.session.user == "Guest" else "workbook"
+        capture("dashboard_viewed", interval="1d", surface=surface)
 
     def get_valid_dict(self, *args, **kwargs):
         if isinstance(self.items, list):
