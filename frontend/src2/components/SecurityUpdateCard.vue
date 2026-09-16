@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useStorage } from '@vueuse/core'
-import { call, SidebarCard } from 'frappe-ui'
+import { call } from 'frappe-ui'
+import { TriangleAlert, X } from 'lucide-vue-next'
 import { computed, ref, watchEffect } from 'vue'
 import session from '../session'
 import { __ } from '../translation'
@@ -56,13 +57,25 @@ const action = computed(() => {
 </script>
 
 <template>
-	<SidebarCard
+	<div
 		v-if="show && update"
-		theme="amber"
-		:title="__('Security issues')"
-		:description="description"
-		:action="action"
-		dismissible
-		@dismiss="dismissedVersion = update.available_version"
-	/>
+		class="flex flex-col gap-3 rounded-lg bg-white px-3 py-2.5 text-sm shadow-sm"
+	>
+		<div class="flex items-start justify-between gap-2">
+			<div class="flex flex-col gap-1">
+				<div class="flex items-center gap-1.5 font-medium text-p-base text-ink-gray-8">
+					<TriangleAlert class="h-3.5 w-3.5 shrink-0 text-ink-amber-3" />
+					{{ __('Security issues') }}
+				</div>
+				<div class="text-p-xs text-ink-gray-6">{{ description }}</div>
+			</div>
+			<Button
+				class="shrink-0"
+				variant="ghost"
+				:icon="X"
+				@click="dismissedVersion = update.available_version"
+			/>
+		</div>
+		<Button :label="action.label" variant="subtle" @click="action.onClick" />
+	</div>
 </template>

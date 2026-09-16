@@ -29,9 +29,6 @@ def get_app_version():
     return frappe.get_attr("insights" + ".__version__")
 
 
-<<<<<<< HEAD
-@frappe.whitelist(allow_guest=True)  # nosemgrep - the payload is the site's display
-=======
 @insights_whitelist(role="Insights Admin")
 def get_security_update():
     """The Insights release with security fixes that the framework's weekly update check found."""
@@ -61,8 +58,7 @@ def get_security_update():
             }
 
 
-@frappe.whitelist(allow_guest=True)  # nosemgrep - the payload is the site's country and
->>>>>>> ce0dff6 (feat: notify admins of an Insights release with security fixes (#1402))
+@frappe.whitelist(allow_guest=True)  # nosemgrep - the payload is the site's display
 # currency, which a public dashboard already prints
 def get_site_info():
     """Settings of the site, not of whoever reads it. A guest opening a public
