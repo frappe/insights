@@ -247,5 +247,5 @@ class TestDuplicate(InsightsIntegrationTestCase):
         self.assertEqual(copy.workbook, self.workbook)
         self.assertEqual(copy.query, query.name)
         self.assertEqual(copy.chart_type, chart.chart_type)
-        self.assertEqual(frappe.parse_json(copy.config), config)
+        self.assertEqual(frappe.parse_json(copy.config), frappe.parse_json(chart.config))
         self.assertFalse(copy.is_public)

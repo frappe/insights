@@ -391,6 +391,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | Slug | Feature |
 |---|---|
 | upgrade.number-older-shapes | A Number chart saved before periods and per-reading comparisons existed reads the same as it did. |
+| upgrade.chart-config-older-shapes | A chart saved in an older shape reads the same as it did, and opening it changes nothing its author stated. |
 | upgrade.cached-queries-removed | The query documents charts once cached their query in are removed, unless something still reads them. |
 | upgrade.older-grid-read | A dashboard arranged before the grid row changed keeps the pixels it covered. |
 | upgrade.older-export-imports | A workbook exported before names became strings still imports. |

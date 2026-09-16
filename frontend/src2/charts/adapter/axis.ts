@@ -233,9 +233,9 @@ function styleFor(
 	const line = (config.y_axis || {}) as YAxisLine
 	const style: SeriesStyle = {}
 
-	// The form wrote 'Line' where the type declares 'line'. normalizeChartConfig
-	// folds those, and an entry point that bypasses it must not silently draw the
-	// chart's own mark instead.
+	// The form wrote 'Line' where the type declares 'line'.
+	// `insights.patches.normalize_chart_configs` folded the stored ones. A config
+	// an import delivers must still not silently draw the chart's own mark.
 	const asked = (series?.type?.toLowerCase() as ChartMark) || mark
 	const area = asked === 'line' && ((series as SeriesLine)?.show_area ?? line.show_area)
 	const type = area ? 'area' : asked
