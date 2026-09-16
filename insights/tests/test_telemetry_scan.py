@@ -276,6 +276,18 @@ class TestSiteScan(InsightsIntegrationTestCase):
         self.assertEqual(after[key], before[key] + 2)
 
     # @feature telemetry.site-scan
+    def test_the_scan_reads_every_query_s_operations_in_one_go(self):
+        with patch.object(frappe.db, "get_value", wraps=frappe.db.get_value) as reader:
+            site_tables()
+
+        per_query_reads = [
+            call
+            for call in reader.call_args_list
+            if call.args[:1] == (DT.QUERY,) and "operations" in call.args
+        ]
+        self.assertEqual(per_query_reads, [])
+
+    # @feature telemetry.site-scan
     def test_a_chart_with_no_query_is_counted_apart_from_the_ones_the_fit_judged(self):
         before = site_tables()
         chart = create_test_chart(USER, self.workbook, title="Site Scan Chart Without A Query")

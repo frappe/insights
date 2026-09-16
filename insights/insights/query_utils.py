@@ -151,7 +151,18 @@ def sync_query_references(query_name: str, operations) -> None:
         bulk_insert("Insights Query Reference", docs)
 
 
-def get_direct_dependencies(query_name: str) -> list[str]:
+def query_operations(query_name: str, operations_by_name: dict[str, list] | None = None):
+    """A query's stored operations, from a lookup the caller prepared when it has one.
+
+    A caller walking every query on the site reads them all in one go and hands
+    the lookup down, so a walk of n hops costs one read instead of n.
+    """
+    if operations_by_name is not None:
+        return operations_by_name.get(query_name)
+    return frappe.db.get_value("Insights Query v3", query_name, "operations")
+
+
+def get_direct_dependencies(query_name: str, operations_by_name: dict[str, list] | None = None) -> list[str]:
     """Return the query names this query directly depends on.
 
     Read from the query's own `operations`, not from `Insights Query Reference`.
@@ -165,11 +176,12 @@ def get_direct_dependencies(query_name: str) -> list[str]:
     if not query_name:
         return []
 
-    operations = frappe.db.get_value("Insights Query v3", query_name, "operations")
-    return list(referenced_queries(operations))
+    return list(referenced_queries(query_operations(query_name, operations_by_name)))
 
 
-def transitive_closure(start: str, start_operations=None) -> set[str]:
+def transitive_closure(
+    start: str, start_operations=None, operations_by_name: dict[str, list] | None = None
+) -> set[str]:
     """Return all query names reachable from start (not including start itself).
 
     `start_operations` walks from a document in hand rather than from the row. A
@@ -180,26 +192,26 @@ def transitive_closure(start: str, start_operations=None) -> set[str]:
     stack = (
         list(referenced_queries(start_operations))
         if start_operations is not None
-        else get_direct_dependencies(start)
+        else get_direct_dependencies(start, operations_by_name)
     )
     while stack:
         node = stack.pop()
         if node in reachable:
             continue
         reachable.add(node)
-        stack.extend(get_direct_dependencies(node))
+        stack.extend(get_direct_dependencies(node, operations_by_name))
     return reachable
 
 
-def source_tables(query_name: str, operations=None) -> list[dict]:
+def source_tables(
+    query_name: str, operations=None, operations_by_name: dict[str, list] | None = None
+) -> list[dict]:
     """The tables a query reads, through every query it reads."""
     if operations is None:
-        operations = frappe.db.get_value("Insights Query v3", query_name, "operations")
+        operations = query_operations(query_name, operations_by_name)
 
-    reachable = transitive_closure(query_name, operations)
-    pipelines = [operations] + [
-        frappe.db.get_value("Insights Query v3", name, "operations") for name in reachable
-    ]
+    reachable = transitive_closure(query_name, operations, operations_by_name)
+    pipelines = [operations] + [query_operations(name, operations_by_name) for name in reachable]
 
     seen: set[tuple] = set()
     tables = []

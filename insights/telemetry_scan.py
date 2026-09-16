@@ -360,7 +360,8 @@ def collect_expression(expression, expressions: list):
 
 
 def site_tables() -> dict:
-    queries_per_table = tables_queries_read()
+    operations_by_query = all_query_operations()
+    queries_per_table = tables_queries_read(operations_by_query)
     estimates = row_estimates(queries_per_table.keys())
     settings = table_settings(queries_per_table.keys())
     limit = row_limit()
@@ -376,11 +377,22 @@ def site_tables() -> dict:
         "store_enabled": bool(frappe.db.get_single_value("Insights Settings", "enable_data_store")),
         "row_limit": limit,
         "tables_over_limit": over_limit[:LIST_LIMIT],
-        **chart_fit(estimates, settings),
+        **chart_fit(estimates, settings, operations_by_query),
     }
 
 
-def tables_queries_read() -> dict:
+def all_query_operations() -> dict:
+    """Every query's operations, read once.
+
+    The scan walks the whole site, and a walk that reads a query per hop reads
+    the same rows again for every query above them.
+    """
+    return {
+        query.name: query.operations for query in frappe.get_all(QUERY_DOCTYPE, fields=["name", "operations"])
+    }
+
+
+def tables_queries_read(operations_by_query: dict | None = None) -> dict:
     """Every (data source, table) a query reads, with how many queries read it.
 
     Through the queries a query reads, so a wrapper counts the tables under it.
@@ -391,9 +403,12 @@ def tables_queries_read() -> dict:
     only carries a query saved since it shipped, so it answers for a fraction of
     an older site.
     """
+    if operations_by_query is None:
+        operations_by_query = all_query_operations()
+
     reads = Counter()
-    for query in frappe.get_all(QUERY_DOCTYPE, fields=["name", "operations"]):
-        for ref in source_tables(query.name, query.operations):
+    for name, operations in operations_by_query.items():
+        for ref in source_tables(name, operations, operations_by_query):
             reads[(ref["data_source"], ref["table_name"])] += 1
     return reads
 
@@ -459,7 +474,7 @@ def fits(key, estimates: dict, settings: dict):
     return estimate < row_limit(setting and setting.row_limit)
 
 
-def chart_fit(estimates: dict, settings: dict) -> dict:
+def chart_fit(estimates: dict, settings: dict, operations_by_query: dict) -> dict:
     """How many charts the data store would hold.
 
     A chart reading one table nobody estimated is `charts_unknown`, and in
@@ -480,7 +495,8 @@ def chart_fit(estimates: dict, settings: dict) -> dict:
     for chart in charts:
         if chart.query and chart.query not in read_by:
             read_by[chart.query] = {
-                (ref["data_source"], ref["table_name"]) for ref in source_tables(chart.query)
+                (ref["data_source"], ref["table_name"])
+                for ref in source_tables(chart.query, operations_by_name=operations_by_query)
             }
         verdicts = [fits(key, estimates, settings) for key in read_by.get(chart.query, ())]
         if not verdicts:
