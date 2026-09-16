@@ -57,6 +57,7 @@ function makeDashboard(name: string) {
 
 	function addChart(charts: WorkbookChart[], via: 'selector' | 'drag') {
 		const maxY = getMaxY()
+		let added = 0
 		charts.forEach((chart) => {
 			if (
 				!dashboard.doc.items.some((item) => item.type === 'chart' && item.chart === chart.name)
@@ -72,9 +73,12 @@ function makeDashboard(name: string) {
 						h: chart.chart_type === 'Number' ? 3 : 8,
 					},
 				})
+				added++
 			}
 		})
-		capture('dashboard_chart_added', { via })
+		if (added) {
+			capture('dashboard_chart_added', { via, count: added })
+		}
 	}
 
 	function getMaxY() {
