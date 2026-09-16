@@ -403,3 +403,16 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | tooling.workbook-skill-verify | The workbook skill's verify step reads a chart config the way the app does, so an agent authoring over the API is told what it got wrong. |
 | tooling.feature-coverage | The coverage table is generated from the `@feature` directives on the tests, and CI fails when a test has none or names a slug the feature list does not. |
 | tooling.e2e-seeding | An e2e test gets a seeded workbook, chart and viewer over REST before the browser opens. |
+
+## telemetry
+
+| Slug | Feature |
+|---|---|
+| telemetry.defaults | Every event carries the app version and the site's entry cohort. |
+| telemetry.share-granted | Granting access to a workbook, dashboard or chart records one event naming the object and who received it. |
+| telemetry.daily-activity | Opening a workbook or viewing a dashboard records at most one row per user per day. |
+| telemetry.query-failed | A refused or failed run records its error kind and interface, never its SQL or column names. |
+| telemetry.site-scan | A daily scan reports the site's profile, query shapes and table fit as three events, each under Pulse's size cap. |
+| telemetry.row-estimate | The scan stores a catalog row estimate on each queried table, off the query path, and skips a source that does not answer. |
+| telemetry.standard-names-only | Only standard doctypes and apps leave the site by name; custom ones are counted. |
+| telemetry.source-outcomes | Connecting, testing and importing a source records its type and outcome, never its credentials or SQL. |

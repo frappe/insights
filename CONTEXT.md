@@ -17,6 +17,13 @@ An ordered pipeline of Operations producing tabular, per-row results. Queries re
 rows; aggregation for presentation belongs to Charts.
 _Avoid_: dataset
 
+**Query interface**:
+The editor a query is written in — `builder`, `sql` or `script`. Those three are the
+only names for them: the `interface` property a query answers with, the value the
+telemetry event carries, and the word the picker uses. A query that names neither
+`is_native_query` nor `is_script_query` is a builder query.
+_Avoid_: visual, native, mode, editor type
+
 **Operation**:
 One step in a query pipeline — `source`, `join`, `union`, `filter_group`, `select`,
 `mutate`, `summarize`, `order_by`, `limit`, `pivot_wider`, …. Stored as JSON on the
