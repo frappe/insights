@@ -126,6 +126,31 @@
 						}
 					},
 					{
+						"type": "join",
+						"join_type": "left",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabCompany"
+						},
+						"select_columns": [
+							{
+								"type": "column",
+								"column_name": "default_currency"
+							}
+						],
+						"join_condition": {
+							"left_column": {
+								"type": "column",
+								"column_name": "company"
+							},
+							"right_column": {
+								"type": "column",
+								"column_name": "name"
+							}
+						}
+					},
+					{
 						"type": "mutate",
 						"new_name": "days_overdue",
 						"data_type": "Integer",
@@ -288,6 +313,31 @@
 						}
 					},
 					{
+						"type": "join",
+						"join_type": "left",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabCompany"
+						},
+						"select_columns": [
+							{
+								"type": "column",
+								"column_name": "default_currency"
+							}
+						],
+						"join_condition": {
+							"left_column": {
+								"type": "column",
+								"column_name": "company"
+							},
+							"right_column": {
+								"type": "column",
+								"column_name": "name"
+							}
+						}
+					},
+					{
 						"type": "mutate",
 						"new_name": "days_overdue",
 						"data_type": "Integer",
@@ -359,6 +409,31 @@
 								]
 							}
 						]
+					},
+					{
+						"type": "join",
+						"join_type": "left",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabCompany"
+						},
+						"select_columns": [
+							{
+								"type": "column",
+								"column_name": "default_currency"
+							}
+						],
+						"join_condition": {
+							"left_column": {
+								"type": "column",
+								"column_name": "company"
+							},
+							"right_column": {
+								"type": "column",
+								"column_name": "name"
+							}
+						}
 					},
 					{
 						"type": "mutate",
@@ -547,7 +622,8 @@
 							"column_name": "outstanding",
 							"data_type": "Decimal",
 							"aggregation": "sum",
-							"format": "currency"
+							"format": "currency",
+							"currency_column": "default_currency"
 						}
 					],
 					"comparison": false,
@@ -570,7 +646,8 @@
 							"column_name": "outstanding",
 							"data_type": "Decimal",
 							"aggregation": "sum",
-							"format": "currency"
+							"format": "currency",
+							"currency_column": "default_currency"
 						}
 					],
 					"comparison": false,
@@ -645,7 +722,8 @@
 							"column_name": "net_amount",
 							"data_type": "Decimal",
 							"aggregation": "sum",
-							"format": "currency"
+							"format": "currency",
+							"currency_column": "default_currency"
 						}
 					],
 					"comparison": false,
@@ -756,14 +834,16 @@
 							"column_name": "outstanding",
 							"data_type": "Decimal",
 							"aggregation": "sum",
-							"format": "currency"
+							"format": "currency",
+							"currency_column": "default_currency"
 						},
 						{
 							"measure_name": "Overdue",
 							"column_name": "overdue_outstanding",
 							"data_type": "Decimal",
 							"aggregation": "sum",
-							"format": "currency"
+							"format": "currency",
+							"currency_column": "default_currency"
 						},
 						{
 							"measure_name": "Oldest Days",
@@ -817,7 +897,8 @@
 							"column_name": "outstanding",
 							"data_type": "Decimal",
 							"aggregation": "sum",
-							"format": "currency"
+							"format": "currency",
+							"currency_column": "default_currency"
 						}
 					],
 					"filters": {

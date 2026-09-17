@@ -5,11 +5,12 @@ import frappe
 from insights.api import get_currency_info, get_site_info
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import as_user
+from insights.utils import get_currency_symbols
 
 
 def _defaults(currency=None, hide_symbol=None):
-    """Stand in for the two default reads get_currency_info makes, so a test
-    states a site's currency without writing the shared site's defaults."""
+    """Stand in for the two default reads `get_currency_info` and `get_currency_symbols`
+    make, so a test states a site's currency without writing the shared site's defaults."""
     return (
         patch.object(frappe.db, "get_default", return_value=currency),
         patch.object(frappe.defaults, "get_global_default", return_value=hide_symbol),
@@ -17,45 +18,55 @@ def _defaults(currency=None, hide_symbol=None):
 
 
 class TestCurrencyInfo(InsightsIntegrationTestCase):
-    # two tests edit a Currency record to state a shape the site does not have
+    # tests edit Currency records to state a shape the site does not have
     SAVEPOINT = "test_currency_info"
 
-    def test_symbol_comes_from_the_site_currency(self):
+    def test_the_session_starts_with_the_site_currency_and_its_symbol(self):
         currency, hidden = _defaults("USD")
         with currency, hidden:
             self.assertEqual(
                 get_currency_info(),
-                {"currency": "USD", "currency_symbol": "$", "currency_symbol_on_right": False},
+                {"currency": "USD", "currency_symbols": {"USD": {"symbol": "$", "symbol_on_right": False}}},
             )
 
-    def test_symbol_sits_on_the_right_when_the_currency_says_so(self):
-        frappe.db.set_value("Currency", "SEK", "symbol_on_right", 1)
-        currency, hidden = _defaults("SEK")
-        with currency, hidden:
-            info = get_currency_info()
-        self.assertEqual(info["currency"], "SEK")
-        self.assertTrue(info["currency_symbol_on_right"])
+    def test_a_symbol_is_looked_up_by_the_code_a_result_carries(self):
+        # a disabled currency resolves like an enabled one
+        frappe.db.set_value("Currency", "SEK", {"enabled": 0, "symbol_on_right": 1})
+        _, hidden = _defaults()
+        with hidden:
+            symbols = get_currency_symbols(["INR", "SEK"])
+        self.assertEqual(symbols["INR"]["symbol"], "₹")
+        self.assertEqual(symbols["SEK"], {"symbol": "kr", "symbol_on_right": True})
 
     def test_a_currency_without_a_symbol_prints_as_its_code(self):
         frappe.db.set_value("Currency", "XAF", "symbol", "")
-        currency, hidden = _defaults("XAF")
-        with currency, hidden:
-            self.assertEqual(get_currency_info()["currency_symbol"], "XAF")
+        _, hidden = _defaults()
+        with hidden:
+            self.assertEqual(get_currency_symbols(["XAF"])["XAF"]["symbol"], "XAF")
 
-    def test_hide_currency_symbol_empties_the_symbol(self):
+    def test_a_code_with_no_currency_row_prints_as_itself(self):
+        # a CSV value has no Currency row, and the amount still prints
+        _, hidden = _defaults()
+        with hidden:
+            self.assertEqual(
+                get_currency_symbols(["High"])["High"], {"symbol": "High", "symbol_on_right": False}
+            )
+
+    def test_a_null_code_is_skipped(self):
+        _, hidden = _defaults()
+        with hidden:
+            self.assertEqual(get_currency_symbols([None, ""]), {})
+
+    def test_hide_currency_symbol_empties_every_lookup(self):
         currency, hidden = _defaults("INR", hide_symbol="1")
         with currency, hidden:
-            info = get_currency_info()
-        self.assertEqual(info["currency"], "INR")
-        self.assertEqual(info["currency_symbol"], "")
+            self.assertEqual(get_currency_info(), {"currency": "INR", "currency_symbols": {}})
+            self.assertEqual(get_currency_symbols(["USD"]), {})
 
-    def test_a_site_without_a_currency_prints_amounts_bare(self):
+    def test_a_site_without_a_currency_has_none_to_assume(self):
         currency, hidden = _defaults(None)
         with currency, hidden, patch.object(frappe.db, "get_single_value", return_value=""):
-            self.assertEqual(
-                get_currency_info(),
-                {"currency": None, "currency_symbol": "", "currency_symbol_on_right": False},
-            )
+            self.assertEqual(get_currency_info(), {"currency": None, "currency_symbols": {}})
 
     def test_a_guest_reading_a_public_dashboard_gets_the_symbol(self):
         # the guest whitelist is the point of the endpoint: a shared chart is
@@ -63,7 +74,7 @@ class TestCurrencyInfo(InsightsIntegrationTestCase):
         self.assertIn(get_site_info, frappe.guest_methods)
         currency, hidden = _defaults("USD")
         with as_user("Guest"), currency, hidden:
-            self.assertEqual(get_site_info()["currency_symbol"], "$")
+            self.assertEqual(get_site_info()["currency_symbols"]["USD"]["symbol"], "$")
 
     def test_the_client_can_reach_it_the_way_it_calls_it(self):
         # frappe-ui's `call` posts. An endpoint declared GET-only answers it

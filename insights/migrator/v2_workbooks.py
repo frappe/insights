@@ -651,6 +651,10 @@ def _write(plan: DashboardPlan, items: list[dict], owner: str) -> MigrationResul
     for v2_name in plan.unresolved_data_sources:
         plan.data_source_map[v2_name] = copy_data_source_to_v3(v2_name)
 
+    # v2 handed every chart the whole result, cut only at this setting. A v3 chart
+    # fetches 100 rows unless its config says otherwise.
+    row_limit = frappe.db.get_single_value("Insights Settings", "query_result_limit") or 500
+
     workbook = frappe.new_doc(V3_WORKBOOK)
     workbook.title = plan.title
     workbook.owner = owner
@@ -684,7 +688,7 @@ def _write(plan: DashboardPlan, items: list[dict], owner: str) -> MigrationResul
         doc.owner = owner
         doc.sort_order = order
         doc.chart_type = chart.chart_type
-        doc.config = chart.config
+        doc.config = {**chart.config, "limit": row_limit}
         doc.query = result.query_names.get(chart.query)
         # `data_query` is left alone: `set_data_query` makes it in before_save.
         doc.insert(ignore_permissions=True)

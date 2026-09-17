@@ -600,10 +600,29 @@ def _translate_table(translated, options, types):
     translated.config = {"rows": rows, "columns": [], "values": values, **_table_flags(translated, options)}
 
 
+def _pivot_value(types, name, described_type):
+    """v2 summed a value it could cast to a number, and counted the rows of one it could not."""
+    data_type = types.type_of(name) or described_type
+    if data_type and data_type not in MEASURE_TYPES:
+        return {
+            "measure_name": name,
+            "column_name": "count",
+            "aggregation": "count",
+            "data_type": "Integer",
+        }
+    return types.measure(name)
+
+
 def _translate_pivot_table(translated, options, types):
     rows = _pivot_columns(options.get("rows"))
     columns = _pivot_columns(options.get("columns"))
     values = _pivot_columns(options.get("values"))
+    # The picker stored each value's type as `description`, which is all a SQL query has
+    described_types = {
+        entry.get("value"): entry.get("description")
+        for entry in options.get("values") or []
+        if isinstance(entry, dict)
+    }
     if not rows and not values:
         translated.gaps.append(
             Gap("missing_columns", translated.source, "Pivot table has no rows or values in v2")
@@ -614,7 +633,7 @@ def _translate_pivot_table(translated, options, types):
     translated.config = {
         "rows": [types.dimension(name) for name in rows],
         "columns": [types.dimension(name) for name in columns],
-        "values": [types.measure(name) for name in values],
+        "values": [_pivot_value(types, name, described_types.get(name)) for name in values],
         **_table_flags(translated, options),
     }
 

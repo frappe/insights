@@ -14,22 +14,25 @@ from frappe.model.document import Document
 from ibis import _
 
 from insights.decorators import insights_whitelist
+from insights.exceptions import QueryRefused
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     CircularQueryReferenceError,
     IbisQueryBuilder,
     execute_ibis_query,
     get_columns_from_schema,
+    is_carried_currency_column,
+    is_hidden_column,
 )
+from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import source_type
 from insights.insights.query_utils import (
     extract_query_deps_from_operations,
     find_cycle,
     get_direct_dependencies,
     referenced_queries,
+    source_tables,
     sync_query_references,
-    table_references,
-    transitive_closure,
 )
-from insights.utils import as_text, deep_convert_dict_to_dict
+from insights.utils import as_text, deep_convert_dict_to_dict, get_currency_symbols
 
 
 class InsightsQueryv3(Document):
@@ -147,17 +150,7 @@ class InsightsQueryv3(Document):
         Which tables a query reads is a forward question, so each row answers its
         own. The edge table lags every write, and this runs right after a save.
         """
-        seen: set[tuple] = set()
-        tables = []
-        for name in {self.name} | transitive_closure(self.name):
-            operations = frappe.db.get_value("Insights Query v3", name, "operations")
-            for ref in table_references(operations):
-                key = (ref["data_source"], ref["table_name"])
-                if key in seen:
-                    continue
-                seen.add(key)
-                tables.append(ref)
-        return tables
+        return source_tables(self.name, self.operations)
 
     def build(self, active_operation_idx=None, use_live_connection=None):
         builder = IbisQueryBuilder(self, active_operation_idx)
@@ -167,12 +160,84 @@ class InsightsQueryv3(Document):
         ibis_query = builder.build()
 
         if ibis_query is None:
-            frappe.throw("Failed to build query")
+            frappe.throw(frappe._("Failed to build query"), QueryRefused)
 
         return ibis_query
 
+    @property
+    def interface(self):
+        """The editor this query was written in.
+
+        A row that names none of them is a builder query, the same answer the
+        client gives a query saved before the flags existed.
+        """
+        if self.is_native_query:
+            return "sql"
+        if self.is_script_query:
+            return "script"
+        return "builder"
+
+    @property
+    def source_type(self):
+        """The kind of database this query reads, `unknown` unless it reads one.
+
+        A query has no data source link. The source sits on each operation, and a
+        pipeline may join two of them.
+        """
+        sources = self.read_sources()
+        if len(sources) != 1:
+            return "unknown"
+
+        source = frappe.db.get_value(
+            "Insights Data Source v3", sources.pop(), ["database_type", "is_site_db"], as_dict=True
+        )
+        if not source:
+            return "unknown"
+        return source_type(source.database_type, source.is_site_db)
+
+    def read_sources(self) -> set[str]:
+        """The data sources of every table this query reads, its references included."""
+        return {ref["data_source"] for ref in self.get_source_tables()}
+
+    def capture_failure(self, exc: Exception):
+        """Report that a run failed, and what kind of failure it was.
+
+        Nothing else about it leaves the site: the SQL, the message and the names
+        of columns and tables all stay here.
+        """
+        from insights.telemetry import capture, error_kind
+
+        with suppress(Exception):
+            capture(
+                "query_failed",
+                interface=self.interface,
+                error_kind=error_kind(exc),
+                data_store=not self.use_live_connection,
+                source_type=self.source_type,
+            )
+
     @frappe.whitelist()
     def execute(
+        self,
+        active_operation_idx: int | None = None,
+        adhoc_filters: dict | None = None,
+        force: bool = False,
+        page: int = 1,
+        page_size: int = 100,
+    ):
+        """Run this query and answer with its rows.
+
+        Every surface's run arrives here: the builder, the SQL and script
+        editors, and the query a chart mints from its config. So this method
+        reports a failure once, and the failure travels on unchanged.
+        """
+        try:
+            return self._run(active_operation_idx, adhoc_filters, force, page, page_size)
+        except Exception as e:
+            self.capture_failure(e)
+            raise
+
+    def _run(
         self,
         active_operation_idx: int | None = None,
         adhoc_filters: dict | None = None,
@@ -196,6 +261,9 @@ class InsightsQueryv3(Document):
 
         columns = get_columns_from_schema(ibis_query.schema())
 
+        carried = [c["name"] for c in columns if is_carried_currency_column(c["name"])]
+        codes = {row[name] for name in carried for row in results}
+
         sql = None
         with suppress(Exception):
             for op in frappe.parse_json(self.operations) or []:
@@ -207,6 +275,7 @@ class InsightsQueryv3(Document):
             "sql": ibis.to_sql(ibis_query),
             "columns": columns,
             "rows": results,
+            "currency_symbols": get_currency_symbols(codes),
             "time_taken": time_taken,
             "is_aggregated_sql": _sql_has_group_by(sql) if sql else False,
         }
@@ -260,6 +329,10 @@ class InsightsQueryv3(Document):
 
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
+
+        hidden = [col for col in ibis_query.columns if is_hidden_column(col)]
+        if hidden:
+            ibis_query = ibis_query.drop(*hidden)
 
         import ibis.expr.datatypes as dt
 
@@ -324,8 +397,7 @@ class InsightsQueryv3(Document):
     @insights_whitelist()
     def get_columns_for_selection(self, active_operation_idx: int | None = None):
         ibis_query = self.build(active_operation_idx)
-        columns = get_columns_from_schema(ibis_query.schema())
-        return columns
+        return [c for c in get_columns_from_schema(ibis_query.schema()) if not c.get("hidden")]
 
     def evaluate_alert_expression(self, expression):
         builder = IbisQueryBuilder(self)
@@ -389,12 +461,12 @@ class InsightsQueryv3(Document):
     @insights_whitelist(role="Insights Admin")
     def refresh_stored_tables(self):
         """Import all source tables used in this query to the data store"""
-        source_tables = self.get_source_tables()
-        if not source_tables:
+        tables = self.get_source_tables()
+        if not tables:
             frappe.throw("No tables found in the query to import")
 
         imported_count = 0
-        for table in source_tables:
+        for table in tables:
             data_source = table.get("data_source")
             table_name = table.get("table_name")
             if data_source and table_name:

@@ -29,6 +29,8 @@ class InsightsTablev3(Document):
 
         before_import_script: DF.Code | None
         data_source: DF.Link
+        estimated_on: DF.Datetime | None
+        estimated_row_count: DF.Int
         label: DF.Data
         last_sync_bookmark: DF.Data | None
         last_synced_on: DF.Datetime | None
@@ -220,7 +222,7 @@ def get_table_stats(data_source: str, table_name: str) -> dict:
         .where(
             (ImportLog.data_source == data_source)
             & (ImportLog.table_name == table_name)
-            & (ImportLog.status == "Success")
+            & (ImportLog.status == "Completed")
         )
         .orderby(ImportLog.creation, order=frappe.qb.desc)
         .limit(1)

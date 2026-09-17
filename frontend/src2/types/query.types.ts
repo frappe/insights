@@ -19,12 +19,14 @@ export type ColumnMeasure = {
 	data_type: MeasureDataType
 	aggregation: AggregationType
 	format?: DataFormat
+	currency_column?: string
 }
 export type ExpressionMeasure = {
 	measure_name: string
 	expression: Expression
 	data_type: MeasureDataType
 	format?: DataFormat
+	currency_column?: string
 }
 export type MeasureOption = Measure & { label: string; value: string }
 export type Dimension = {
@@ -202,6 +204,7 @@ export type QueryResultRow = Record<string, any>
 export type QueryResultColumn = {
 	name: string
 	type: ColumnDataType
+	hidden?: boolean
 }
 
 export type DropdownOption = {

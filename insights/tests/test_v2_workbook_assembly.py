@@ -441,6 +441,11 @@ class TestV2WorkbookAssembly(InsightsIntegrationTestCase):
         self.assertEqual(chart.query, self.result.query_names[self.STORED])
         self.assertEqual(chart.chart_type, "Bar")
 
+    def test_a_chart_fetches_as_many_rows_as_v2_showed(self):
+        expected = frappe.db.get_single_value("Insights Settings", "query_result_limit") or 500
+        for config in frappe.get_all(DT.CHART, filters={"workbook": self.result.workbook}, pluck="config"):
+            self.assertEqual(json.loads(config)["limit"], expected)
+
     def test_every_item_lands_on_the_v3_dashboard(self):
         items = frappe.parse_json(frappe.db.get_value(DT.DASHBOARD, self.result.dashboard, "items"))
 

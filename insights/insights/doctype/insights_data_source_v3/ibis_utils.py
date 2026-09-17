@@ -21,6 +21,12 @@ from ibis.expr.types import Table as IbisQuery
 import insights
 from insights import create_toast
 from insights.cache_utils import make_digest
+from insights.exceptions import (
+    ExpressionSyntaxError,
+    QueryRefused,
+    QueryTimeout,
+    UnknownColumn,
+)
 from insights.insights.doctype.insights_data_source_v3.data_warehouse import is_warehouse
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
@@ -49,6 +55,75 @@ SQL_COLUMN_RELATION = "_insights_sql_column"
 
 # the alias a native SQL query is nested under before ibis sees it
 NATIVE_SQL_RELATION = "_insights_native_sql"
+
+
+# the summarize carries a money measure's currency code as `<measure>__currency`,
+# because the code must survive aggregation. The client reads it by that name
+# (`currencyColumnName` in query/helpers.ts), so the suffix is a contract. A column
+# so named is hidden in every schema read.
+CARRIED_CURRENCY_SUFFIX = "__currency"
+
+
+def is_carried_currency_column(name: str) -> bool:
+    return name.endswith(CARRIED_CURRENCY_SUFFIX)
+
+
+# a carried currency is the only kind of hidden column today
+def is_hidden_column(name: str) -> bool:
+    return is_carried_currency_column(name)
+
+
+def get_carried_currency_columns(measures) -> dict[str, str]:
+    """Carried column name to the source column it is read from."""
+    return {
+        f"{measure['measure_name']}{CARRIED_CURRENCY_SUFFIX}": measure["currency_column"]
+        for measure in measures or []
+        if measure.get("format") == "currency" and measure.get("currency_column")
+    }
+
+
+def null_check(is_null, x):
+    if is_null:
+        rt = x.isnull()
+        if x.type().is_string():
+            rt = rt | (x == "")
+    else:
+        rt = x.notnull()
+        if x.type().is_string():
+            rt = rt & (x != "")
+    return rt
+
+
+FILTER_OPERATORS = {
+    ">": lambda x, y: x > y,
+    "<": lambda x, y: x < y,
+    "=": lambda x, y: x == y,
+    "!=": lambda x, y: x != y,
+    ">=": lambda x, y: x >= y,
+    "<=": lambda x, y: x <= y,
+    "in": lambda x, y: x.isin(y),
+    "not_in": lambda x, y: ~x.isin(y),
+    "is_set": lambda x, y: null_check(False, x),
+    "is_not_set": lambda x, y: null_check(True, x),
+    "contains": lambda x, y: x.like(f"%{y}%"),
+    "not_contains": lambda x, y: ~x.like(f"%{y}%"),
+    "starts_with": lambda x, y: x.like(f"{y}%"),
+    "ends_with": lambda x, y: x.like(f"%{y}"),
+    "between": lambda x, y: x.between(y[0], y[1]),
+    "within": lambda x, y: handle_timespan(x, y),
+}
+
+AGGREGATIONS = {
+    "count": lambda column: column.count(),
+    "count_distinct": lambda column: column.nunique(),
+    "sum": lambda column: column.sum(),
+    "avg": lambda column: column.mean(),
+    "min": lambda column: column.min(),
+    "max": lambda column: column.max(),
+}
+
+# `full` is the client's word for what ibis calls an outer join
+JOIN_TYPES = {"inner": "inner", "left": "left", "right": "right", "full": "outer"}
 
 
 class CircularQueryReferenceError(frappe.ValidationError):
@@ -196,7 +271,7 @@ class IbisQueryBuilder:
             _table = q.build(use_live_connection=self.use_live_connection)
 
         if _table is None:
-            frappe.throw("Table or Query not found")
+            frappe.throw(frappe._("Table or Query not found"), UnknownColumn)
 
         return _table
 
@@ -246,7 +321,7 @@ class IbisQueryBuilder:
                     return self.query[sanitize_name(remainder)]
 
         if throw:
-            frappe.throw(f"Column {column_name} does not exist in the table")
+            frappe.throw(f"Column {column_name} does not exist in the table", UnknownColumn)
 
     def apply_source(self, source_args):
         return self.get_table_or_query(source_args.table)
@@ -254,7 +329,9 @@ class IbisQueryBuilder:
     def apply_join(self, join_args):
         right_table = self.get_right_table(join_args)
         join_condition = self.translate_join_condition(join_args, right_table)
-        join_type = "outer" if join_args.join_type == "full" else join_args.join_type
+        join_type = JOIN_TYPES.get(join_args.join_type)
+        if join_type is None:
+            frappe.throw(frappe._("Join type {0} is not supported").format(join_args.join_type), QueryRefused)
         right_table = self.rename_duplicate_columns(right_table)
         return self.query.join(
             right_table,
@@ -317,7 +394,7 @@ class IbisQueryBuilder:
                 rc = rt[right_column.column_name]
                 return lc.cast(rc.type()) == rc
 
-            frappe.throw("Join condition is not valid")
+            frappe.throw(frappe._("Join condition is not valid"), QueryRefused)
 
         join_condition = join_args.join_condition
         if join_condition.join_expression and join_condition.join_expression.expression:
@@ -357,7 +434,7 @@ class IbisQueryBuilder:
             while is_conflicting(f"{new_name}_{n}"):
                 n += 1
                 if n > 20:
-                    frappe.throw("Too many duplicate columns")
+                    frappe.throw(frappe._("Too many duplicate columns"), QueryRefused)
 
             return f"{new_name}_{n}"
 
@@ -372,8 +449,8 @@ class IbisQueryBuilder:
 
         if not common_columns:
             frappe.throw(
-                "Both tables must have at least one common column to perform union",
-                title="Cannot Perform Union",
+                frappe._("Both tables must have at least one common column to perform union"),
+                title=frappe._("Cannot Perform Union"),
             )
 
         # ensure columns have the same data types
@@ -403,7 +480,7 @@ class IbisQueryBuilder:
         operator_fn = self.get_operator(filter_operator)
 
         if operator_fn is None:
-            frappe.throw(f"Operator {filter_operator} is not supported")
+            frappe.throw(f"Operator {filter_operator} is not supported", QueryRefused)
 
         right_column = (
             self.get_column(filter_value.column_name)
@@ -433,35 +510,7 @@ class IbisQueryBuilder:
         return operator_fn(left, right_value)
 
     def get_operator(self, operator):
-        def null_check(is_null, x):
-            if is_null:
-                rt = x.isnull()
-                if x.type().is_string():
-                    rt = rt | (x == "")
-            else:
-                rt = x.notnull()
-                if x.type().is_string():
-                    rt = rt & (x != "")
-            return rt
-
-        return {
-            ">": lambda x, y: x > y,
-            "<": lambda x, y: x < y,
-            "=": lambda x, y: x == y,
-            "!=": lambda x, y: x != y,
-            ">=": lambda x, y: x >= y,
-            "<=": lambda x, y: x <= y,
-            "in": lambda x, y: x.isin(y),
-            "not_in": lambda x, y: ~x.isin(y),
-            "is_set": lambda x, y: null_check(False, x),
-            "is_not_set": lambda x, y: null_check(True, x),
-            "contains": lambda x, y: x.like(f"%{y}%"),
-            "not_contains": lambda x, y: ~x.like(f"%{y}%"),
-            "starts_with": lambda x, y: x.like(f"{y}%"),
-            "ends_with": lambda x, y: x.like(f"%{y}"),
-            "between": lambda x, y: x.between(y[0], y[1]),
-            "within": lambda x, y: handle_timespan(x, y),
-        }[operator]
+        return FILTER_OPERATORS.get(operator)
 
     def apply_filter_group(self, filter_group_args):
         filters = filter_group_args.filters
@@ -476,7 +525,7 @@ class IbisQueryBuilder:
         elif logical_operator == "Or":
             return self.query.filter(ibis.or_(*conditions))
 
-        frappe.throw(f"Logical operator {logical_operator} is not supported")
+        frappe.throw(f"Logical operator {logical_operator} is not supported", QueryRefused)
 
     def apply_select(self, select_args):
         select_args = _dict(select_args)
@@ -545,11 +594,13 @@ class IbisQueryBuilder:
         if not new_name or not raw_sql or not raw_sql.strip():
             frappe.throw(
                 frappe._("A SQL column needs both a name and an expression"),
+                QueryRefused,
             )
 
         if not sql_column_args.data_source:
             frappe.throw(
                 frappe._("A SQL column needs the data source its expression is written for"),
+                QueryRefused,
             )
 
         data_source = frappe.get_doc("Insights Data Source v3", sql_column_args.data_source)
@@ -582,11 +633,13 @@ class IbisQueryBuilder:
         except Exception as e:
             frappe.throw(
                 frappe._("Failed to parse the SQL column expression: {0}").format(e),
+                QueryRefused,
             )
 
         if len(parsed) != 1 or not isinstance(parsed[0], sg.exp.Select):
             frappe.throw(
                 frappe._("A SQL column expression must be a single expression"),
+                QueryRefused,
             )
 
         select = parsed[0]
@@ -595,13 +648,28 @@ class IbisQueryBuilder:
         if nested or tables != {SQL_COLUMN_RELATION}:
             frappe.throw(
                 frappe._("A SQL column expression cannot read another table"),
+                QueryRefused,
             )
 
     def apply_summary(self, summarize_args):
         aggregates = [self.translate_measure(measure) for measure in summarize_args.measures]
         aggregates = {agg.get_name(): agg for agg in aggregates}
+        aggregates.update(self.translate_carried_currencies(summarize_args.measures))
         group_bys = [self.translate_dimension(dimension) for dimension in summarize_args.dimensions]
         return self.query.aggregate(**aggregates, by=group_bys)
+
+    def translate_carried_currencies(self, measures):
+        carried = {}
+        for name, column_name in get_carried_currency_columns(measures).items():
+            # a missing column must not fail the query; it carries null and the amount prints bare
+            col = self.get_column(column_name, throw=False)
+            if col is None:
+                carried[name] = ibis.null().cast("string")
+                continue
+            # min and max skip nulls, so a row with no code is checked apart
+            one_currency = (col.min() == col.max()) & ~col.isnull().any()
+            carried[name] = ibis.ifelse(one_currency, col.min(), ibis.null()).cast("string")
+        return carried
 
     def apply_order_by(self, order_by_args):
         order_by_column = self.get_column(order_by_args.column.column_name, throw=False)
@@ -728,8 +796,9 @@ class IbisQueryBuilder:
 
         else:
             frappe.throw(
-                "SQL query must start with a SELECT or WITH statement",
-                title="Invalid SQL Query",
+                frappe._("SQL query must start with a SELECT or WITH statement"),
+                QueryRefused,
+                title=frappe._("Invalid SQL Query"),
             )
 
         return results
@@ -744,14 +813,16 @@ class IbisQueryBuilder:
         if len(statements) > 1:
             frappe.throw(
                 frappe._("Multiple SQL statements are not supported for native queries"),
+                QueryRefused,
                 title=frappe._("Unsupported SQL Query"),
             )
 
         if not use_live_connection:
             if raw_sql.lower().startswith("exec"):
                 frappe.throw(
-                    "Stored procedures are not supported with Data Store for native queries",
-                    title="Unsupported SQL Query",
+                    frappe._("Stored procedures are not supported with Data Store for native queries"),
+                    QueryRefused,
+                    title=frappe._("Unsupported SQL Query"),
                 )
 
         return raw_sql
@@ -764,14 +835,16 @@ class IbisQueryBuilder:
             transpiled_sql = sg.transpile(raw_sql, read=source_dialect, write="duckdb")
         except Exception as e:
             frappe.throw(
-                f"Failed to translate SQL query for Data Store execution: {e}",
-                title="Unsupported SQL Query",
+                frappe._("Failed to translate SQL query for Data Store execution: {0}").format(e),
+                QueryRefused,
+                title=frappe._("Unsupported SQL Query"),
             )
 
         if not transpiled_sql:
             frappe.throw(
-                "Failed to translate SQL query for Data Store execution",
-                title="Unsupported SQL Query",
+                frappe._("Failed to translate SQL query for Data Store execution"),
+                QueryRefused,
+                title=frappe._("Unsupported SQL Query"),
             )
 
         return transpiled_sql[0]
@@ -784,6 +857,7 @@ class IbisQueryBuilder:
             if table_ref.db or table_ref.catalog:
                 frappe.throw(
                     frappe._("Schema-qualified table names are not supported for native queries yet"),
+                    QueryRefused,
                     title=frappe._("Unsupported SQL Query"),
                 )
 
@@ -944,20 +1018,10 @@ class IbisQueryBuilder:
         return data_type in ["Date", "Datetime", "Time"]
 
     def apply_aggregate(self, column, aggregate_function):
-        if aggregate_function == "count_distinct":
-            return column.nunique()
-        if aggregate_function == "count":
-            return column.count()
-        if aggregate_function == "sum":
-            return column.sum()
-        if aggregate_function == "avg":
-            return column.mean()
-        if aggregate_function == "min":
-            return column.min()
-        if aggregate_function == "max":
-            return column.max()
-
-        frappe.throw(f"Aggregate function {aggregate_function} is not supported")
+        aggregate = AGGREGATIONS.get(aggregate_function)
+        if aggregate is None:
+            frappe.throw(f"Aggregate function {aggregate_function} is not supported", QueryRefused)
+        return aggregate(column)
 
     def apply_granularity(self, column, granularity, data_type=None):
         supported_granularities = [
@@ -974,8 +1038,11 @@ class IbisQueryBuilder:
         if granularity not in supported_granularities:
             supported = ", ".join(supported_granularities)
             frappe.throw(
-                f"Granularity {granularity} is not supported for {data_type} columns. Supported granularities: {supported}",
-                title="Unsupported Granularity",
+                frappe._(
+                    "Granularity {0} is not supported for {1} columns. Supported granularities: {2}"
+                ).format(granularity, data_type, supported),
+                QueryRefused,
+                title=frappe._("Unsupported Granularity"),
             )
 
         if granularity == "week":
@@ -993,7 +1060,7 @@ class IbisQueryBuilder:
             "year": "Y",
         }
         if granularity not in truncate_unit:
-            frappe.throw(f"Granularity {granularity} is not supported")
+            frappe.throw(f"Granularity {granularity} is not supported", QueryRefused)
         return column.truncate(truncate_unit[granularity]).name(column.get_name())
 
     def apply_time_granularity(self, column, granularity):
@@ -1001,8 +1068,11 @@ class IbisQueryBuilder:
         if granularity not in supported_granularities:
             supported = ", ".join(supported_granularities)
             frappe.throw(
-                f"Granularity {granularity} is not supported for Time columns. Supported granularities: {supported}",
-                title="Unsupported Granularity",
+                frappe._(
+                    "Granularity {0} is not supported for Time columns. Supported granularities: {1}"
+                ).format(granularity, supported),
+                QueryRefused,
+                title=frappe._("Unsupported Granularity"),
             )
 
         time_string = column.cast("string")
@@ -1013,11 +1083,11 @@ class IbisQueryBuilder:
         if granularity == "second":
             return time_string.substr(0, 8)
 
-        frappe.throw(f"Granularity {granularity} is not supported for Time columns")
+        frappe.throw(f"Granularity {granularity} is not supported for Time columns", QueryRefused)
 
     def evaluate_expression(self, expression, additonal_context=None):
         if not expression or not expression.strip():
-            raise ValueError(f"Invalid expression: {expression}")
+            raise ExpressionSyntaxError(f"Invalid expression: {expression}")
 
         frappe.flags.current_ibis_query = self.query
         context = frappe._dict()
@@ -1098,6 +1168,7 @@ def execute_ibis_query(
             frappe.throw(
                 title="Query Timeout",
                 msg=f"Query execution time exceeded the limit of {max_time} seconds. Please try again with a smaller timespan or a more specific filter.",
+                exc=QueryTimeout,
             )
         raise e
 
@@ -1131,6 +1202,7 @@ def get_columns_from_schema(schema: ibis.Schema):
         {
             "name": col,
             "type": to_insights_type(dtype),
+            **({"hidden": True} if is_hidden_column(col) else {}),
         }
         for col, dtype in schema.items()
     ]
@@ -1165,6 +1237,8 @@ def _results_cache_key(cache_key):
 
 
 def cache_results(cache_key, result: pd.DataFrame, cache_expiry=3600):
+    # json.dumps writes inf and NaN as tokens orjson refuses to read back
+    result = result.replace({np.inf: None, -np.inf: None, np.nan: None, pd.NaT: None})
     payload = {
         "columns": list(result.columns),
         "rows": result.to_dict(orient="records"),
@@ -1200,7 +1274,7 @@ def exec_with_return(
     tree = ast.parse(script)
 
     if not tree.body:
-        raise ValueError("Empty code")
+        raise ExpressionSyntaxError("Empty code")
 
     output_expression = script
 

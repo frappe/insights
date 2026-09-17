@@ -41,6 +41,31 @@
 								"value": 1
 							}
 						]
+					},
+					{
+						"type": "join",
+						"join_type": "left",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabCompany"
+						},
+						"select_columns": [
+							{
+								"type": "column",
+								"column_name": "default_currency"
+							}
+						],
+						"join_condition": {
+							"left_column": {
+								"type": "column",
+								"column_name": "company"
+							},
+							"right_column": {
+								"type": "column",
+								"column_name": "name"
+							}
+						}
 					}
 				]
 			},
@@ -332,6 +357,31 @@
 						]
 					},
 					{
+						"type": "join",
+						"join_type": "left",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabCompany"
+						},
+						"select_columns": [
+							{
+								"type": "column",
+								"column_name": "default_currency"
+							}
+						],
+						"join_condition": {
+							"left_column": {
+								"type": "column",
+								"column_name": "company"
+							},
+							"right_column": {
+								"type": "column",
+								"column_name": "name"
+							}
+						}
+					},
+					{
 						"type": "mutate",
 						"new_name": "days_late",
 						"data_type": "Integer",
@@ -359,7 +409,8 @@
 							"column_name": "base_net_total",
 							"data_type": "Decimal",
 							"aggregation": "sum",
-							"format": "currency"
+							"format": "currency",
+							"currency_column": "default_currency"
 						},
 						{
 							"measure_name": "Invoices",
@@ -372,7 +423,8 @@
 							"column_name": "base_net_total",
 							"data_type": "Decimal",
 							"aggregation": "avg",
-							"format": "currency"
+							"format": "currency",
+							"currency_column": "default_currency"
 						},
 						{
 							"measure_name": "Active Customers",
@@ -694,7 +746,8 @@
 							"column_name": "base_grand_total",
 							"data_type": "Decimal",
 							"aggregation": "sum",
-							"format": "currency"
+							"format": "currency",
+							"currency_column": "default_currency"
 						}
 					],
 					"order_by": [
