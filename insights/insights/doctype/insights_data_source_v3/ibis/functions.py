@@ -592,6 +592,9 @@ def _json_text(column: ir.StringColumn, path: str):
     JSON to string otherwise yields the literal text ``'null'``, which silently
     poisons comparisons and type inference. Numeric path segments index arrays.
     """
+    if column.get_backend().name == "duckdb":
+        return _duckdb_json_text(column, path)
+
     value = normalize_json(column).cast("json")
     for segment in str(path).split("."):
         if not segment:
@@ -610,6 +613,39 @@ def _json_text(column: ir.StringColumn, path: str):
         else_=text,
     )
     return (text == "null").ifelse(ibis.null(), text)
+
+
+@ibis.udf.scalar.builtin(name="json_valid")
+def _json_valid(value: str) -> bool: ...
+
+
+@ibis.udf.scalar.builtin(name="json_extract_string")
+def _json_extract_string(value: str, path: str) -> str: ...
+
+
+def _duckdb_json_text(column: ir.StringColumn, path: str):
+    # normalize only the rows that are not JSON already: the regexes cost more than
+    # the parse, and they corrupt a valid document whose values hold a quote
+    normalized = normalize_json(column)
+    document = ibis.cases(
+        (_json_valid(column), column),
+        (_json_valid(normalized), normalized),
+    )
+    return _json_extract_string(document, _duckdb_json_path(path))
+
+
+def _duckdb_json_path(path: str) -> str:
+    json_path = "$"
+    for segment in str(path).split("."):
+        if not segment:
+            continue
+        if segment.lstrip("-").isdigit():
+            index = int(segment)
+            json_path += f"[{index}]" if index >= 0 else f"[#{index}]"
+        else:
+            key = segment.replace("\\", "\\\\").replace('"', '\\"')
+            json_path += f'."{key}"'
+    return json_path
 
 
 def json_value(column: ir.StringColumn, path: str, type: str = "string"):
