@@ -258,7 +258,8 @@ function makeDashboard(name: string, isShared: boolean) {
 	 * author sets the width and the height follows the config — including after the
 	 * config changes in the workbook. And two of them fit one narrow row, where
 	 * every other cell takes the row to itself. A filter cell is its trigger, which
-	 * is one height and never anything else.
+	 * is one height and never anything else. It keeps its row, so no card fills the
+	 * space beside the filters.
 	 *
 	 * Nothing is written back. The height is derived on every read, so a chart
 	 * edited in another tab needs no layout save to be drawn at its new height, and
@@ -268,7 +269,7 @@ function makeDashboard(name: string, isShared: boolean) {
 		const rules: CellRules = {}
 		for (const item of dashboard.doc.items) {
 			if (item.type === 'filter') {
-				rules[item.layout.i] = { height: FILTER_ROWS }
+				rules[item.layout.i] = { height: FILTER_ROWS, exclusiveRow: true }
 				continue
 			}
 			if (item.type !== 'chart' || !item.chart) continue

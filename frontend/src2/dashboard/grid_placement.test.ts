@@ -127,6 +127,41 @@ describe('resolveLayouts', () => {
 	// the cell under the pointer, and the grid it was dropped onto
 	const dragged = (x: number, y: number) => cell('dragged', x, y, 6, 2)
 
+	// @feature dashboard.filter-row
+	it('moves a card off the row of the filters beside it, and keeps the filters together', () => {
+		const grid = [
+			cell('card', 0, 0, 8, 6),
+			cell('date', 8, 0, 4, 2),
+			cell('region', 12, 0, 4, 2),
+		]
+		const rules = { date: { exclusiveRow: true }, region: { exclusiveRow: true } }
+		expect(resolveLayouts(grid, { rules })).toEqual([
+			cell('card', 0, 2, 8, 6),
+			cell('date', 8, 0, 4, 2),
+			cell('region', 12, 0, 4, 2),
+		])
+	})
+
+	// @feature dashboard.filter-row
+	it('moves the filters below a card dragged onto their row', () => {
+		const grid = [dragged(10, 0), cell('date', 0, 0, 4, 2)]
+		const rules = { date: { exclusiveRow: true } }
+		expect(resolveLayouts(grid, { pinned: 'dragged', rules })).toEqual([
+			dragged(10, 0),
+			cell('date', 0, 2, 4, 2),
+		])
+	})
+
+	// @feature dashboard.filter-row
+	it('does not compact a card up beside a filter', () => {
+		const grid = [cell('date', 0, 0, 4, 2), cell('card', 10, 6, 10, 6)]
+		const rules = { date: { exclusiveRow: true } }
+		expect(resolveLayouts(grid, { verticalCompact: true, rules })).toEqual([
+			cell('date', 0, 0, 4, 2),
+			cell('card', 10, 2, 10, 6),
+		])
+	})
+
 	// @feature dashboard.move-resize
 	it('leaves the dragged cell where the pointer put it', () => {
 		const settled = resolveLayouts([dragged(0, 0), cell('b', 0, 0, 6, 2)], {

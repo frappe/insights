@@ -112,6 +112,7 @@ function start(kind: Gesture['kind'], i: string, event: PointerEvent) {
 	// from the cells the author can see, or the card jumps on the first move.
 	const from = resolveLayouts(stored.value, {
 		verticalCompact: Boolean(props.verticalCompact),
+		rules: props.rules,
 	})
 	const grabbed = from.find((item) => item.i === i)
 	if (!grabbed) return
@@ -172,7 +173,11 @@ function track(event: PointerEvent) {
 	if (!sameCell(asked, current.asked)) {
 		const settled = resolveLayouts(
 			current.from.map((item) => (item.i === current.i ? asked : item)),
-			{ pinned: current.i, verticalCompact: Boolean(props.verticalCompact) },
+			{
+				pinned: current.i,
+				verticalCompact: Boolean(props.verticalCompact),
+				rules: props.rules,
+			},
 		)
 		current.asked = asked
 		current.landed = settled.find((item) => item.i === current.i) || asked
@@ -228,6 +233,7 @@ const lifted = computed(() => {
 			:layouts="layouts"
 			:breakpoint="active.key"
 			:verticalCompact="verticalCompact"
+			:rules="rules"
 			:lifted="lifted"
 		>
 			<template #item="cell">
