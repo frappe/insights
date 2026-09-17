@@ -219,6 +219,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | dashboard.filter-default | A user sets a filter's default operator and value. |
 | dashboard.filter-icon | A user picks an icon for a filter's trigger. |
 | dashboard.filter-clear | A reader clears a dashboard filter's value. |
+| dashboard.filter-row | No card shares a row with a dashboard filter; of the two, the one placed lower moves below the other. |
 | dashboard.text-block | A user adds a text block and its rich text is saved safe to render. |
 | dashboard.remove-item | A user removes an item from the dashboard. |
 | dashboard.reset-layout | A user discards unsaved layout changes. |

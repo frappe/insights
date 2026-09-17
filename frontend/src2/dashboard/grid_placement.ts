@@ -33,8 +33,24 @@ export function layoutRank(layout: Layout) {
 	return layout.y * GRID_COLUMNS + layout.x
 }
 
-function overlaps(a: Layout, b: Layout) {
-	return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y
+function sharesRows(a: Layout, b: Layout) {
+	return a.y < b.y + b.h && a.y + a.h > b.y
+}
+
+/** Whether two cells may not stand where they are: one on the other, or side by side across an `exclusiveRow`. */
+function collides(a: Layout, b: Layout, rules?: CellRules) {
+	if (!sharesRows(a, b)) return false
+	if (Boolean(rules?.[a.i]?.exclusiveRow) !== Boolean(rules?.[b.i]?.exclusiveRow)) return true
+	return a.x < b.x + b.w && a.x + a.w > b.x
+}
+
+/**
+ * Top row first, then left to right. On one row an `exclusiveRow` cell goes
+ * first, so it keeps the row and the cell beside it is the one that moves.
+ */
+function readingOrder(a: Layout, b: Layout, rules?: CellRules) {
+	const exclusive = (item: Layout) => (rules?.[item.i]?.exclusiveRow ? 0 : 1)
+	return a.y - b.y || exclusive(a) - exclusive(b) || a.x - b.x
 }
 
 /**
@@ -44,14 +60,14 @@ function overlaps(a: Layout, b: Layout) {
  * holds, not a field the dashboard stores, and it can be turned on over a grid
  * laid out loosely, so the gaps close here rather than at save time.
  */
-export function compactLayouts(layouts: Layout[]): Layout[] {
+export function compactLayouts(layouts: Layout[], rules?: CellRules): Layout[] {
 	const placed: Layout[] = []
-	// top row first, then left to right — a cell can only rest on one already placed
-	const order = [...layouts].sort((a, b) => a.y - b.y || a.x - b.x)
+	// a cell can only rest on one already placed
+	const order = [...layouts].sort((a, b) => readingOrder(a, b, rules))
 
 	for (const item of order) {
 		let y = item.y
-		while (y > 0 && !placed.some((other) => overlaps({ ...item, y: y - 1 }, other))) {
+		while (y > 0 && !placed.some((other) => collides({ ...item, y: y - 1 }, other, rules))) {
 			y--
 		}
 		placed.push({ ...item, y })
@@ -72,6 +88,8 @@ export type CellRule = {
 	height?: number
 	/** Half the grid where a breakpoint would otherwise stack it full width. */
 	halfWidth?: boolean
+	/** Shares its rows only with cells under the same rule. Any other cell moves below it. */
+	exclusiveRow?: boolean
 }
 
 export type CellRules = Record<string, CellRule>
@@ -135,12 +153,13 @@ export function stackLayouts(
  */
 export function resolveLayouts(
 	layouts: Layout[],
-	options: { pinned?: string; verticalCompact?: boolean },
+	options: { pinned?: string; verticalCompact?: boolean; rules?: CellRules },
 ): Layout[] {
+	const { rules } = options
 	const order = [...layouts].sort((a, b) => {
 		if (a.i === options.pinned) return -1
 		if (b.i === options.pinned) return 1
-		return a.y - b.y || a.x - b.x
+		return readingOrder(a, b, rules)
 	})
 
 	const settled: Layout[] = []
@@ -148,9 +167,9 @@ export function resolveLayouts(
 		let y = item.y
 		// drop past each cell it lands on until it clears them all
 		for (
-			let hit = settled.find((other) => overlaps({ ...item, y }, other));
+			let hit = settled.find((other) => collides({ ...item, y }, other, rules));
 			hit;
-			hit = settled.find((other) => overlaps({ ...item, y }, other))
+			hit = settled.find((other) => collides({ ...item, y }, other, rules))
 		) {
 			y = hit.y + hit.h
 		}
@@ -159,7 +178,7 @@ export function resolveLayouts(
 
 	// A push-down opens gaps above. Closing them is the same rule the reader's
 	// grid obeys, so the author is looking at the saved layout the whole time.
-	const closed = options.verticalCompact ? compactLayouts(settled) : settled
+	const closed = options.verticalCompact ? compactLayouts(settled, rules) : settled
 
 	const byId = new Map(closed.map((item) => [item.i, item]))
 	return layouts.map((item) => byId.get(item.i) || item)
@@ -181,9 +200,9 @@ export type GridPlacement = {
  */
 export function placeGrid(
 	layouts: Layout[],
-	options: { columns: number; verticalCompact?: boolean },
+	options: { columns: number; verticalCompact?: boolean; rules?: CellRules },
 ): GridPlacement {
-	const placed = options.verticalCompact ? compactLayouts(layouts) : layouts
+	const placed = options.verticalCompact ? compactLayouts(layouts, options.rules) : layouts
 
 	const cells: Record<string, Layout> = {}
 	for (const item of placed) cells[item.i] = item
@@ -277,7 +296,7 @@ export function placementsFor(
 				items.map((item) => item.layout),
 				rules,
 			),
-			{ verticalCompact: false },
+			{ verticalCompact: false, rules },
 		)
 	}
 
@@ -299,7 +318,7 @@ export function placementsFor(
 	// An item added after this breakpoint was arranged is placed among cells that
 	// know nothing about it. Settling drops whatever lands on something below it,
 	// and leaves every cell that clears the others where its author put it.
-	return resolveLayouts(merged, { verticalCompact: false })
+	return resolveLayouts(merged, { verticalCompact: false, rules })
 }
 
 /**
@@ -335,7 +354,7 @@ export function derivedPlacement(
 	if (!options?.verticalCompact) return placed[index]
 	// compaction reorders the cells, so the answer is found by id
 	const id = item.layout.i
-	return compactLayouts(placed).find((layout) => layout.i === id)
+	return compactLayouts(placed, rules).find((layout) => layout.i === id)
 }
 
 export function sameBox(a: Layout, b: Layout) {

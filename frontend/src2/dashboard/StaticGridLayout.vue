@@ -42,8 +42,9 @@ const props = defineProps<{
 	layouts?: Layout[]
 	/**
 	 * What the dashboard knows about a cell that its layout does not say: the
-	 * height it always takes, and whether it goes half width where a breakpoint
-	 * stacks. Ignored when `layouts` is given — those are already placed.
+	 * height it always takes, whether it goes half width where a breakpoint
+	 * stacks, and whether it keeps its row. Given `layouts` are already placed,
+	 * but compacting them still obeys the rules.
 	 */
 	rules?: CellRules
 	disabled?: boolean
@@ -74,6 +75,7 @@ const placement = computed(() =>
 	placeGrid(layouts.value, {
 		columns: active.value.columns,
 		verticalCompact: Boolean(props.verticalCompact),
+		rules: props.rules,
 	}),
 )
 
