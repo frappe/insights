@@ -154,7 +154,7 @@ export function numberFormatter(
 }
 
 /**
- * The currency code a Measure's rows carry, under `<measure>__currency`.
+ * The currency code a Measure's rows carry, under `<measure>__insights_currency`.
  * `undefined` when the Measure names no currency column, so the site's stands
  * in. `null` when the rows mix codes: a total over amounts in different
  * currencies is an amount in none, and prints bare.

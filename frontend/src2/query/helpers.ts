@@ -105,7 +105,7 @@ export const expression = (expression: string): Expression => ({
 
 // the server's summarize carries a money measure's currency code under this name;
 // `CARRIED_CURRENCY_SUFFIX` in ibis_utils.py must match
-export const currencyColumnName = (measure_name: string) => `${measure_name}__currency`
+export const currencyColumnName = (measure_name: string) => `${measure_name}__insights_currency`
 
 // `undefined`: the measure names no column. `null`: the row mixes currencies.
 export function getRowCurrency(row: any, measure_name: string): string | null | undefined {

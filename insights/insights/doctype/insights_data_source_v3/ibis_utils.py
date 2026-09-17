@@ -69,11 +69,12 @@ NATIVE_SQL_RELATION = "_insights_native_sql"
 ADDITIVE_AGGREGATIONS = ("sum", "count")
 
 
-# the summarize carries a money measure's currency code as `<measure>__currency`,
+# the summarize carries a money measure's currency code as `<measure>__insights_currency`,
 # because the code must survive aggregation. The client reads it by that name
 # (`currencyColumnName` in query/helpers.ts), so the suffix is a contract. A column
-# so named is hidden in every schema read.
-CARRIED_CURRENCY_SUFFIX = "__currency"
+# so named is hidden in every schema read, so the suffix must not be one a source
+# column could end in.
+CARRIED_CURRENCY_SUFFIX = "__insights_currency"
 
 
 def is_carried_currency_column(name: str) -> bool:

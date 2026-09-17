@@ -72,10 +72,10 @@ describe("what the Measure's own format says", () => {
 			AED: { symbol: 'د.إ', symbol_on_right: true },
 		}
 		const revenue = measure('revenue', 'currency')
-		const dirhams = [{ revenue: 1200, revenue__currency: 'AED' }]
+		const dirhams = [{ revenue: 1200, revenue__insights_currency: 'AED' }]
 		expect(numberFormatter(null, revenue, dirhams)(1200)).toBe('1,200 د.إ')
 
-		const mixed = [...dirhams, { revenue: 1200, revenue__currency: 'INR' }]
+		const mixed = [...dirhams, { revenue: 1200, revenue__insights_currency: 'INR' }]
 		expect(numberFormatter(null, revenue, mixed)(1200)).toBe('1,200')
 
 		const uncarried = [{ revenue: 1200 }]
