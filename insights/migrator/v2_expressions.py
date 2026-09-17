@@ -133,8 +133,8 @@ GRANULARITY_PARTS = {
 # which `sql_column` rejects. The query drops to the whole-query compiled SQL instead.
 BLOCKING_FUNCTIONS = frozenset({"descendants", "descendants_and_self"})
 
-# A column bound by bare name loses to a function of the same name, because v3 binds
-# the functions last. Anything here is reached through `q[...]` instead.
+# A column bound by bare name loses to any name v3 binds after the columns, which is
+# every name `get_functions()` returns. Anything here is reached through `q[...]` instead.
 V3_FUNCTION_NAMES = frozenset(
     DIRECT_FUNCTIONS
     | set(RENAMED_FUNCTIONS.values())
@@ -148,6 +148,7 @@ V3_FUNCTION_NAMES = frozenset(
         "date_add",
         "date_diff",
         "date_sub",
+        "day_name",
         "desc",
         "ends_with",
         "filter_first_row",
@@ -155,12 +156,18 @@ V3_FUNCTION_NAMES = frozenset(
         "fiscal_year_start",
         "format_date",
         "get_retention_data",
+        "get_week_start_day_index",
         "group_concat",
+        "handle_timespan",
+        "ibis",
         "if_else",
+        "infer_type_from_list",
         "is_first_row",
         "is_last_row",
         "is_not_between",
         "json_extract",
+        "json_value",
+        "JSON_VALUE_TYPES",
         "length",
         "literal",
         "median",
@@ -168,13 +175,17 @@ V3_FUNCTION_NAMES = frozenset(
         "next_period_value",
         "next_value",
         "normalize_json",
+        "now_datetime",
+        "null_if",
         "one_if",
         "pad_number",
         "percentage_change",
         "previous_period_value",
         "previous_value",
         "row_number",
+        "s",
         "second",
+        "selectors",
         "sql",
         "starts_with",
         "textsplit",
