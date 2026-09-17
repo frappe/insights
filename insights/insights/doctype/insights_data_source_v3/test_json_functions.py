@@ -15,6 +15,12 @@ ROWS = [
     '{\n "product": "erpnext",\n "site": "a.frappe.cloud"\n}',
     # an explicit null, and a nested object
     '{"product": null, "amount": "12.5", "ok": true, "address": {"city": "Pune"}, "items": [{"n": "first"}]}',
+    # a Python dict written with str()
+    "{'product': 'crm', 'note': 'it\\'s fine'}",
+    # valid JSON whose value holds a quote before a comma
+    '{"product": "rock \'n\', roll"}',
+    "not json",
+    '{"product": "null"}',
 ]
 
 
@@ -22,7 +28,9 @@ class TestJsonFunctions(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.con = ibis.duckdb.connect()
-        cls.table = cls.con.create_table("json_fixture", ibis.memtable({"p": ROWS, "team": ["abc", ""]}))
+        cls.table = cls.con.create_table(
+            "json_fixture", ibis.memtable({"p": ROWS, "team": ["abc", "", *["abc"] * (len(ROWS) - 2)]})
+        )
 
     def _values(self, expr):
         return self.table.select(v=expr).to_pandas()["v"].tolist()
@@ -38,8 +46,29 @@ class TestJsonFunctions(unittest.TestCase):
         self.assertIsNone(self._values(json_value(self.table.p, "product"))[1])
 
     # @feature query.expression-json
+    def test_the_string_null_stays_text(self):
+        self.assertEqual(self._values(json_value(self.table.p, "product"))[5], "null")
+
+    # @feature query.expression-json
     def test_missing_key_is_empty(self):
-        self.assertEqual(self._values(json_value(self.table.p, "nope")), [None, None])
+        self.assertEqual(self._values(json_value(self.table.p, "nope")), [None] * len(ROWS))
+
+    # @feature query.expression-json
+    def test_reads_a_python_dict_row_next_to_json_rows(self):
+        self.assertEqual(self._values(json_value(self.table.p, "product"))[2], "crm")
+        self.assertEqual(self._values(json_value(self.table.p, "note"))[2], "it's fine")
+
+    # @feature query.expression-json
+    def test_valid_json_is_read_as_written(self):
+        self.assertEqual(self._values(json_value(self.table.p, "product"))[3], "rock 'n', roll")
+
+    # @feature query.expression-json
+    def test_a_row_that_is_not_json_is_empty(self):
+        self.assertIsNone(self._values(json_value(self.table.p, "product"))[4])
+
+    # @feature query.expression-json
+    def test_reads_list_positions_from_the_end(self):
+        self.assertEqual(self._values(json_value(self.table.p, "items.-1.n"))[1], "first")
 
     # @feature query.expression-json
     def test_reads_nested_keys_and_list_positions(self):
@@ -64,4 +93,4 @@ class TestJsonFunctions(unittest.TestCase):
 
     # @feature query.expression-json
     def test_null_if_blanks_a_placeholder_value(self):
-        self.assertEqual(self._values(null_if(self.table.team, "")), ["abc", None])
+        self.assertEqual(self._values(null_if(self.table.team, ""))[:2], ["abc", None])
