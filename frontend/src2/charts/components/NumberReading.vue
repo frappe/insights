@@ -107,9 +107,18 @@ const drillable = computed(() => props.drillable !== false && !props.card.missin
 			     inset, so it is the glyph and not its hit box that stands the
 			     card's own distance from the edge. -->
 			<template v-if="retryable || $slots.actions" #actions>
+				<!-- The host's own acts, beside the card's. A click on one of them
+				     is not a click on the reading, so it stops here rather than
+				     opening a drill. See `NumberCards`. They come before the retry
+				     because a host may hide them until hover, and a hidden act still
+				     takes its width. -->
+				<span class="flex items-center" @click.stop>
+					<slot name="actions" />
+				</span>
+
 				<Button
 					v-if="retryable"
-					:class="$slots.actions ? undefined : '-me-1.5'"
+					class="-me-1.5"
 					variant="ghost"
 					size="xs"
 					:title="__('Retry')"
@@ -119,13 +128,6 @@ const drillable = computed(() => props.drillable !== false && !props.card.missin
 						<RefreshCcw class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />
 					</template>
 				</Button>
-
-				<!-- The host's own acts, beside the card's. A click on one of them
-				     is not a click on the reading, so it stops here rather than
-				     opening a drill. See `NumberCards`. -->
-				<span class="flex items-center" @click.stop>
-					<slot name="actions" />
-				</span>
 			</template>
 		</NumberCard>
 	</div>

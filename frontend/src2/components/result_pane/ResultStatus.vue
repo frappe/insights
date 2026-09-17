@@ -4,6 +4,7 @@ import { RefreshCw } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import type { PaginationState } from '../../composables/usePagination'
 import { __ } from '../../translation'
+import { knownRowCount, rangeAroundCount, rowCountText } from './status'
 
 // What the result is, in one line: how many rows, what the run cost, and when.
 // Every editor used to write its own copy of the cache line. This is the one.
@@ -26,15 +27,17 @@ const props = defineProps<{
 	narrowed?: { matched: number; loaded: number }
 }>()
 
-/**
- * The count, when one is settled: the server's if it reported one, and the
- * loaded count when nobody is going to ask for one. A count still to be
- * fetched is not settled, so it reads as unknown rather than as the page.
- */
-const settledCount = computed(() => {
-	if (props.totalRowCount) return props.totalRowCount
-	return props.onFetchCount ? undefined : props.loadedCount
-})
+const settledCount = computed(() =>
+	knownRowCount({
+		totalRowCount: props.totalRowCount,
+		loadedCount: props.loadedCount,
+		fetchable: Boolean(props.onFetchCount),
+		paging: props.paging,
+	}),
+)
+const unknownCountRange = computed(() =>
+	props.paging ? rangeAroundCount(props.paging.from.value, props.paging.to.value) : ['', ''],
+)
 
 /**
  * True when the page is the whole result. A range that starts at the first row
@@ -83,7 +86,7 @@ async function fetchCount() {
 				}}
 			</span>
 			<span v-else-if="showsEverything">
-				{{ __('Showing {0} rows', settledCount!.toLocaleString()) }}
+				{{ rowCountText(settledCount!) }}
 			</span>
 			<template v-else-if="props.paging">
 				<span v-if="settledCount !== undefined">
@@ -96,18 +99,8 @@ async function fetchCount() {
 						)
 					}}
 				</span>
-				<!-- An unfetched count leaves the sentence whole and puts the ask
-				     after it, rather than cutting it around the control. -->
 				<template v-else>
-					<span>
-						{{
-							__(
-								'Showing {0}–{1} rows',
-								String(props.paging.from.value),
-								String(props.paging.to.value),
-							)
-						}}
-					</span>
+					<span v-if="unknownCountRange[0]">{{ unknownCountRange[0] }}</span>
 					<LoadingIndicator
 						v-if="fetchingCount"
 						class="inline h-3.5 w-3.5 text-ink-gray-4"
@@ -119,6 +112,7 @@ async function fetchCount() {
 							@click="fetchCount"
 						/>
 					</Tooltip>
+					<span v-if="unknownCountRange[1]">{{ unknownCountRange[1] }}</span>
 				</template>
 			</template>
 			<span v-else>{{ __('Showing 0 rows') }}</span>
