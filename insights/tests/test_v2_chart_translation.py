@@ -194,6 +194,26 @@ class TestChartTypesTranslate(UnitTestCase):
         self.assertEqual([c["column_name"] for c in translated.config["columns"]], ["Creation"])
         self.assertEqual([v["column_name"] for v in translated.config["values"]], ["Revenue"])
 
+    def test_a_pivot_value_v2_could_not_cast_to_a_number_counts_rows(self):
+        """A SQL query stores no column types, so the picker's `description` decides."""
+        translated = self.translate(
+            "Pivot Table",
+            {
+                "rows": [{"label": "Customer", "value": "Customer", "description": "String"}],
+                "columns": [{"label": "Status", "value": "Status", "description": "String"}],
+                "values": [
+                    {"label": "ID", "value": "ID", "description": "String"},
+                    {"label": "Amount", "value": "Amount", "description": "Decimal"},
+                ],
+            },
+            columns=[],
+        )
+        count, amount = translated.config["values"]
+        self.assertEqual(
+            (count["measure_name"], count["column_name"], count["aggregation"]), ("ID", "count", "count")
+        )
+        self.assertEqual((amount["column_name"], amount["aggregation"]), ("Amount", "sum"))
+
     def test_a_scatter_on_two_measures_becomes_a_bubble(self):
         translated = self.translate(
             "Scatter", {"xAxis": [{"column": "Revenue"}], "yAxis": [{"column": "Count of Records"}]}
