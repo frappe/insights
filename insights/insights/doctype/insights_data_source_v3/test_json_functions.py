@@ -3,9 +3,11 @@
 
 import unittest
 
+import frappe
 import ibis
 
 from insights.insights.doctype.insights_data_source_v3.ibis.functions import (
+    json_extract,
     json_value,
     null_if,
 )
@@ -94,3 +96,19 @@ class TestJsonFunctions(unittest.TestCase):
     # @feature query.expression-json
     def test_null_if_blanks_a_placeholder_value(self):
         self.assertEqual(self._values(null_if(self.table.team, ""))[:2], ["abc", None])
+
+    # @feature query.expression-json
+    def test_json_extract_infers_a_type_from_the_values_that_are_set(self):
+        table = self.con.create_table(
+            "json_extract_fixture", ibis.memtable({"p": ['{"n": 5}', '{"n": null}', '{"k": null}']})
+        )
+        previous = frappe.flags.current_ibis_query
+        frappe.flags.current_ibis_query = table
+        try:
+            schema = json_extract(table.p, "n", "k").schema()
+        finally:
+            frappe.flags.current_ibis_query = previous
+
+        self.assertTrue(schema["n"].is_integer())
+        # every sampled value is empty, so there is no type to infer
+        self.assertTrue(schema["k"].is_string())

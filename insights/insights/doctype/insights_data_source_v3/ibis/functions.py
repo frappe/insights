@@ -700,7 +700,8 @@ def json_extract(column: ir.StringColumn, *field_names: str):
 
     for field in field_names:
         clean_col = clean_columns[field]
-        values = data[field].tolist()
+        # a null says nothing about the type, and infer_type reads it as a number
+        values = data[field].dropna().tolist()
 
         if values:
             # infer_type_from_list speaks Frappe's type names ("Integer"), which ibis
