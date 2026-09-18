@@ -569,6 +569,117 @@ def textsplit(column: ir.StringColumn, delimiter: str, max_splits: int):
     return query
 
 
+JSON_VALUE_TYPES = {
+    "string": "string",
+    "text": "string",
+    "int": "int64",
+    "integer": "int64",
+    "float": "float64",
+    "decimal": "float64",
+    "number": "float64",
+    "bool": "boolean",
+    "boolean": "boolean",
+    "date": "date",
+    "datetime": "timestamp",
+    "timestamp": "timestamp",
+}
+
+
+def _json_text(column: ir.StringColumn, path: str):
+    """Walk a dotted `path` into a JSON string column and return it as text.
+
+    Returns SQL NULL for both a missing key and an explicit JSON ``null`` — casting
+    JSON to string otherwise yields the literal text ``'null'``, which silently
+    poisons comparisons and type inference. Numeric path segments index arrays.
+    """
+    if column.get_backend().name == "duckdb":
+        return _duckdb_json_text(column, path)
+
+    value = normalize_json(column).cast("json")
+    for segment in str(path).split("."):
+        if not segment:
+            continue
+        value = value[int(segment)] if segment.lstrip("-").isdigit() else value[segment]
+
+    text = value.cast("string")
+    # strip the quotes JSON puts around string values
+    text = ibis.cases(
+        (
+            text.startswith('"') & text.endswith('"'),
+            text.substr(1, text.length() - 2),
+        ),
+        (text.startswith('"'), text.substr(1)),
+        (text.endswith('"'), text.substr(0, text.length() - 1)),
+        else_=text,
+    )
+    return (text == "null").ifelse(ibis.null(), text)
+
+
+@ibis.udf.scalar.builtin(name="json_valid")
+def _json_valid(value: str) -> bool: ...
+
+
+@ibis.udf.scalar.builtin(name="json_extract_string")
+def _json_extract_string(value: str, path: str) -> str: ...
+
+
+def _duckdb_json_text(column: ir.StringColumn, path: str):
+    # normalize only the rows that are not JSON already: the regexes cost more than
+    # the parse, and they corrupt a valid document whose values hold a quote
+    normalized = normalize_json(column)
+    document = ibis.cases(
+        (_json_valid(column), column),
+        (_json_valid(normalized), normalized),
+    )
+    return _json_extract_string(document, _duckdb_json_path(path))
+
+
+def _duckdb_json_path(path: str) -> str:
+    json_path = "$"
+    for segment in str(path).split("."):
+        if not segment:
+            continue
+        if segment.lstrip("-").isdigit():
+            index = int(segment)
+            json_path += f"[{index}]" if index >= 0 else f"[#{index}]"
+        else:
+            key = segment.replace("\\", "\\\\").replace('"', '\\"')
+            json_path += f'."{key}"'
+    return json_path
+
+
+def json_value(column: ir.StringColumn, path: str, type: str = "string"):
+    """
+    def json_value(column, path, type='string')
+
+    Read a single value out of a JSON column as a regular column.
+
+    Unlike json_extract, this returns a value you can use anywhere — inside filters,
+    summaries or other expressions — and you say what the type is instead of it being
+    guessed. A missing key or a JSON null gives an empty value. Use dots to reach
+    nested keys, and numbers to pick out of a list.
+
+    Types: string, int, float, bool, date, timestamp
+
+    Examples:
+    - json_value(properties, 'product')
+    - json_value(properties, 'address.city')
+    - json_value(properties, 'items.0.name')
+    - json_value(payload, 'amount', 'float')
+    - json_value(payload, 'signed_up_at', 'timestamp')
+    """
+    text = _json_text(column, path)
+
+    target = JSON_VALUE_TYPES.get(str(type).lower())
+    if target is None:
+        frappe.throw(
+            f"Invalid type '{type}' for json_value. Valid types: {', '.join(sorted(set(JSON_VALUE_TYPES)))}"
+        )
+
+    # try_cast so a stray malformed value becomes empty instead of failing the query
+    return text if target == "string" else text.try_cast(target)
+
+
 def json_extract(column: ir.StringColumn, *field_names: str):
     """
     def json_extract(column, *field_names)
@@ -583,33 +694,22 @@ def json_extract(column: ir.StringColumn, *field_names: str):
     if query is None:
         return column  # return original column if query is not found
 
-    json_column = normalize_json(column).cast("json")
-
-    # cast JSON values to string and remove quotes
-    clean_columns = {}
-    for field in field_names:
-        clean_col = json_column[field].cast("string")
-        # manually remove quotes for better compatibility
-        clean_col = ibis.cases(
-            (
-                clean_col.startswith('"') & clean_col.endswith('"'),
-                clean_col.substr(1, clean_col.length() - 2),
-            ),
-            (clean_col.startswith('"'), clean_col.substr(1)),
-            (clean_col.endswith('"'), clean_col.substr(0, clean_col.length() - 1)),
-            else_=clean_col,
-        )
-        clean_columns[field] = clean_col
+    clean_columns = {field: _json_text(column, field) for field in field_names}
 
     data = query.select(**clean_columns).limit(50).execute()
 
     for field in field_names:
         clean_col = clean_columns[field]
-        values = data[field].tolist()
+        # a null says nothing about the type, and infer_type reads it as a number
+        values = data[field].dropna().tolist()
 
         if values:
+            # infer_type_from_list speaks Frappe's type names ("Integer"), which ibis
+            # cannot coerce — translate before casting
             inferred_type = infer_type_from_list(values)
-            clean_col = clean_col.try_cast(inferred_type)
+            target = JSON_VALUE_TYPES.get(str(inferred_type).lower(), "string")
+            if target != "string":
+                clean_col = clean_col.try_cast(target)
 
         query = query.mutate({field: clean_col})
 
@@ -998,6 +1098,23 @@ def if_null(column, value):
     - if_null(email, 'No Email')
     """
     return ibis.coalesce(column, value)
+
+
+def null_if(column, value):
+    """
+    def null_if(column, value)
+
+    Treat a placeholder value as empty.
+
+    Useful when a source writes something like an empty string or 'undefined'
+    instead of leaving the value blank, which would otherwise be counted as a
+    real value.
+
+    Examples:
+    - null_if(team, '')
+    - null_if(city, 'undefined')
+    """
+    return (column == value).ifelse(ibis.null(), column)
 
 
 def asc(column):
