@@ -14,11 +14,11 @@ A single reader that plans a `fan-out` cannot run one. It says so in the first l
 
 ## The questions
 
-Four are asked of every large change:
+Four are asked of every large change. Each stays a question of its own, split when it is too wide, never folded into a feature question. *Measured: a plan that folded the main path into its feature questions missed five defects that throw.*
 
 1. **Who can read or write what.** Every whitelisted method, guest door and permission check the change adds or alters, as a guest, a reader the document is shared with, an author who lacks access to something the document refers to, and the owner. Which argument names the document that decides authorisation, and who supplies it.
 2. **What happens to a document saved on the base.** Every patch, every default and normalizer on the read path, every shipped fixture and template. What did the base write, and what does the new code make of it.
-3. **Does the main path work.** Build, save, view and share, for each kind of thing the change touches. Every action on the path is exercised, not a sample of them.
+3. **Does the main path work.** Build, save, view and share, for each kind of thing the change touches. Every action on the path is pressed, not located: list each button, menu item and shortcut on the surface, and for each follow the handler to its end with the state a real document has at that moment, for every type the surface serves. Finding that the handler exists is not the check. *Precedent: a reset action was present on every chart type and threw on three of them.*
 4. **Is everything the base had still there.** A census, not a trace. List every control, action, menu item, option and endpoint the base had on the surfaces the change touches, from the base's code. Each one is present at HEAD and still wired, or the change removed it on purpose and says so. A value question never finds what is missing. *Precedent: a rebuilt table lost its pager and its export, and one chart type's card lost every button its peers show; no question about a value reached either.*
 
 The rest come from what the change touches: one question per feature area, not per folder. A question that covers more than one reader can exhaust is split. *Measured: "is the value on screen what the query computes" found 1 of 15 known defects; split into number cards, axis values, formatting and tables, it found 6.*
@@ -27,7 +27,7 @@ A question has four parts:
 
 - the sentence a reader can answer yes or no
 - the entry points to start from
-- the cases to exhaust, as a list. Write them from what the feature does, not from a defect you suspect
+- the cases to exhaust, as a list. Write them from what the feature does, not from a defect you suspect. One case is always a census: every writer and every reader of the value the question is about, found by grep, not by following the one path you started on. *Precedent: a flag was checked from the form to the chart and cleared; a setup function nobody traced also wrote it, so every saved chart drew differently.*
 - the stage it belongs to, `design` or `works`
 
 A later round asks new questions in the areas with the fewest traced paths. It does not repeat a question to go deeper. *Measured: of 39 defects two rounds missed, 32 sat where no question had been asked.*
@@ -38,6 +38,7 @@ A reader gets `brief.md`, one stage file, one question, the bar and the settled 
 
 - **Trace the question end to end,** across files and across the server and the browser. Do not read file by file. Start at the entry points and follow each call until the value is stored, returned or drawn. Read the framework and frappe-ui source a claim depends on. Compare with the base when "did this work before" matters.
 - **Exhaust the cases.** Do not stop at the first findings. Every case in the question ends as a finding, a clean line or a dismissal.
+- **A census line is a list, not a verdict.** "All 14 present" is not a check. Name each item, and for each say where it is wired at HEAD. *Precedent: a census reached a card with no buttons and a reset that throws, and cleared each in one line.*
 - **A clean line names the value checked, and every writer and caller of it.** "The form writes `'Line'`, the adapter passes it through, the component accepts `'line' | 'bar'`" is a check. "The adapter passes a type prop" is not. *Precedent: a reader cleared a path because the prop existed; the form wrote a value the component rejected.*
 - **Run one real value through a transform.** For a patch, a rescale, a formatter or a parser, pick the value a real document holds, do the arithmetic by hand, and write the numbers in the line. *Precedent: a layout patch was cleared by reading it; its arithmetic assumed a row height no site had run.*
 - **A reader does not judge.** Report every defect you confirm, and propose its bar number, or `below`. Do not apply the bar, the settled list or "Do not flag": the merge does, in one place, and lists what it dropped. *Measured: readers reached 47 of 73 known defects, reported 17 and talked 30 away; none of the findings any reader did report was false.*
