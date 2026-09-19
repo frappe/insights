@@ -41,7 +41,6 @@ Resolved tickets.
 
 - Business Overview has no ERPNext dashboard to attach to. Whether it ships, and from which workspace, waits on the desk-entry decision.
 - HR is a seventh dashboard, shipped by `hrms` through the same contract. Whether it rides this effort is still open.
-- Executing ticket 03: the `v3` rename, Template retirement on `develop`, and the deprecation warning on `version-3-hotfix`. Each becomes a task once ticket 10 sets the order against the frappe PRs.
 - What a site sees when ERPNext ships a changed dashboard and the site has duplicated it. Falls out of Is Standard, but the reader-facing behaviour has not been stated.
 - Default filters and date ranges per dashboard, and whether a site can set them without duplicating (the preference overlay idea).
 

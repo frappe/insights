@@ -2,7 +2,7 @@
 
 Type: task
 Status: open
-Blocked by: 06
+Blocked by: 06, 11
 Repo: insights
 
 ## Question
