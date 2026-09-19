@@ -38,6 +38,7 @@ TABLE_DOCTYPE = "Insights Table v3"
 WORKBOOK_DOCTYPE = "Insights Workbook"
 
 UPLOADS_SOURCE = "uploads"
+DEMO_SOURCE = "demo_data"
 
 OPERATION_KINDS = {
     "source": "source",
@@ -152,17 +153,9 @@ def timeline() -> dict:
 
 
 def installed_on():
-    """When Insights arrived. A site installed before the row existed answers
-    with its oldest Insights document instead."""
-    row = frappe.db.get_value("Installed Application", {"app_name": "insights"}, "creation")
-    return row or min(
-        (
-            created
-            for created in (oldest(WORKBOOK_DOCTYPE), oldest(DATA_SOURCE_DOCTYPE, {"is_site_db": 0}))
-            if created
-        ),
-        default=None,
-    )
+    """Installing an app logs every patch it ships as run. A migrate rewrites
+    the `Installed Application` rows, so their creation is the last migrate."""
+    return oldest("Patch Log", {"patch": ["like", "insights.%"]})
 
 
 def oldest(doctype, filters=None):
@@ -197,6 +190,7 @@ def footprint() -> dict:
         "data_sources_clickhouse": kinds["clickhouse"],
         "data_sources_duckdb": kinds["duckdb"],
         "data_sources_file": kinds["file"],
+        "data_sources_demo": kinds["demo"],
         "data_sources_other": kinds["other"],
         "workbooks": frappe.db.count(WORKBOOK_DOCTYPE),
         "queries": frappe.db.count(QUERY_DOCTYPE),
@@ -215,6 +209,8 @@ def source_kind(source) -> str:
         return "site_db"
     if source.name == UPLOADS_SOURCE:
         return "file"
+    if source.name == DEMO_SOURCE:
+        return "demo"
     return {
         "MariaDB": "mariadb",
         "PostgreSQL": "postgresql",
@@ -478,9 +474,10 @@ def chart_fit(estimates: dict, settings: dict, operations_by_query: dict) -> dic
     neither of the other two counts. A source that did not answer is not a table
     that is too big.
 
-    `charts_total` is the charts the fit judged, so `charts_fit / charts_total`
-    is a rate. A chart with no query, or whose query reads no table, is judged
-    by nothing and has its own count.
+    `charts_total` is the charts that read a table, unknown ones included, so
+    the rate is `charts_fit / (charts_total - charts_unknown)`. A chart with no
+    query, or whose query reads no table, is judged by nothing and has its own
+    count.
     """
     charts = frappe.get_all(CHART_DOCTYPE, fields=["name", "query"])
     on_store = set(frappe.get_all(QUERY_DOCTYPE, filters={"use_live_connection": 0}, pluck="name"))
@@ -546,8 +543,7 @@ def row_estimates(keys) -> dict:
 def read_catalog(data_source: str, tables: set) -> dict:
     """Row counts the source already keeps, never a count query.
 
-    DuckDB, file and REST sources sit on the data store, where the store knows
-    the count. The scan asks them nothing.
+    A REST source has no catalog. The scan asks it nothing.
 
     A reader answers for the whole database, and this function picks out the
     tables a query reads. A table name a user typed never reaches the SQL.
@@ -599,10 +595,21 @@ def read_clickhouse_catalog(backend) -> dict:
     return {name: int(count or 0) for name, count in rows}
 
 
+def read_duckdb_catalog(backend) -> dict:
+    """Keyed by table name: a DuckDB source lists the tables of one schema."""
+    rows = fetch(
+        backend,
+        "select table_name, estimated_size from duckdb_tables()"
+        " where database_name = current_database() and schema_name = current_schema()",
+    )
+    return {name: int(count or 0) for name, count in rows}
+
+
 CATALOG_READERS = {
     "mysql": read_mariadb_catalog,
     "postgres": read_postgres_catalog,
     "clickhouse": read_clickhouse_catalog,
+    "duckdb": read_duckdb_catalog,
 }
 
 
