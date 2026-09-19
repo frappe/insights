@@ -1,6 +1,6 @@
-# iris — verdict and report
+# Code review: verdict and report
 
-The report format for `/iris-review`, read at phase 3. It lives outside the command so
+The report format for `/iris-code-review`, read at phase 3. It lives outside the command so
 the format cannot shape the search — length limits change what an agent looks for.
 
 **Looks good** / **Minor nits** / **Concerns**. Score out of 5. Check for a blocker first —
@@ -31,7 +31,7 @@ The reader must be able to stop after layer 1 and still know what is wrong.
 - Never report `Concerns` without `path:line`, the decision or precedent it breaks, and the
   consequence.
 - End a `Concerns` review with one line naming the smaller fix you would rather see.
-- **Write the review in STE.** The §8 standard you hold the PR to holds you too. One point
+- **Write the review in STE.** The prose standard in `quality.md` that you hold the PR to holds you too. One point
   per sentence, max 25 words, active voice, no semicolons, condition before command.
 - **Use an example whenever it makes the problem easier to grasp.** A made-up two-line
   before/after is fine and often better than a real one — its job is to explain, not to

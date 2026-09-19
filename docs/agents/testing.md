@@ -1,6 +1,6 @@
 # Testing
 
-How an agent writes a test during a feature, and how `/iris-review` judges one before merge. Browser flows have their own rules in `frontend/e2e/AGENTS.md`. This file does not repeat them.
+How an agent writes a test during a feature, and how `/iris-code-review` judges one before merge. Browser flows have their own rules in `frontend/e2e/AGENTS.md`. This file does not repeat them.
 
 ## Layers
 
@@ -56,7 +56,7 @@ Each rule answers a failure someone has recorded; the source is named in bracket
 - Assert the whole outcome, not fields that restate the fixture. A test that compares the output to the input it built is circular (codex, Böckeler).
 - Do not test a statically defined value (codex).
 - Never delete, skip or weaken a test to make a run green. A red test is a finding; report it (Beck, PostHog).
-- The reviewer is not the writer. The agent that wrote the code does not grade its tests; `/iris-review` does (Anthropic).
+- The reviewer is not the writer. The agent that wrote the code does not grade its tests; `/iris-code-review` does (Anthropic).
 
 ## Skip and retry
 
@@ -67,7 +67,7 @@ Each rule answers a failure someone has recorded; the source is named in bracket
 
 ## The pre-merge pass
 
-Before merge, prune. This pass is part of `/iris-review`; a test that fails it is a finding.
+Before merge, prune. This pass is part of `/iris-code-review`; a test that fails it is a finding.
 
 - A test whose failure would not change what a user sees, or what the engine returns.
 - A test that pins how the code works rather than what it does: a call sequence, a private helper, a DOM structure, a compiled SQL string in a browser test.
