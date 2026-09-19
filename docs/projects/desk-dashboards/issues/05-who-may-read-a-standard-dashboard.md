@@ -1,7 +1,7 @@
 # Who may read a standard dashboard
 
 Type: grilling
-Status: open
+Status: claimed
 Blocked by: 03
 Repo: insights
 
