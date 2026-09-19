@@ -5,7 +5,17 @@ on:
     # Daily at 02:00 AM UTC
     - cron: '0 2 * * *'
   workflow_dispatch:
+  # Every release is a push to version-3, so the PRs that feed it must install on both Frappe versions
+  pull_request:
+    branches: [version-3]
 
+<<<<<<< HEAD
+=======
+concurrency:
+  group: compat-matrix-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+>>>>>>> a0b1242 (ci: test develop on Frappe develop, and version-3 pull requests on v15 and v16 (#1424))
 permissions:
   contents: read
 
@@ -15,14 +25,32 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+<<<<<<< HEAD
         insights_branch: [main, version-3, develop]
         frappe_branch: [version-15, version-16]
+=======
+        # A pull request leaves insights_branch empty, so checkout takes the PR's own code.
+        # main is Insights v2, which never targeted Frappe v16. develop builds against the
+        # frappe app's `ui/`, which only Frappe develop ships.
+        include: >-
+          ${{ fromJSON(github.event_name == 'pull_request'
+          && '[{"frappe_branch": "version-15"}, {"frappe_branch": "version-16"}]'
+          || '[{"insights_branch": "main", "frappe_branch": "version-15"},
+          {"insights_branch": "version-3", "frappe_branch": "version-15"},
+          {"insights_branch": "version-3", "frappe_branch": "version-16"},
+          {"insights_branch": "develop", "frappe_branch": "develop"}]') }}
+>>>>>>> a0b1242 (ci: test develop on Frappe develop, and version-3 pull requests on v15 and v16 (#1424))
 
-    name: Install (Insights=${{ matrix.insights_branch }}, Frappe=${{ matrix.frappe_branch }})
+    name: Install (Insights=${{ matrix.insights_branch || github.head_ref }}, Frappe=${{ matrix.frappe_branch }})
 
     services:
       mariadb:
+<<<<<<< HEAD
         image: mariadb:10.6
+=======
+        # Each Frappe branch runs the MariaDB, Python and Node its own CI runs
+        image: mariadb:${{ matrix.frappe_branch == 'version-15' && '10.6' || '11.8' }}
+>>>>>>> a0b1242 (ci: test develop on Frappe develop, and version-3 pull requests on v15 and v16 (#1424))
         env:
           MYSQL_ROOT_PASSWORD: root
         ports:
@@ -48,12 +76,16 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.frappe_branch == 'version-16' && '3.14' || '3.10' }}
+          python-version: ${{ matrix.frappe_branch == 'version-15' && '3.10' || '3.14' }}
 
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
+<<<<<<< HEAD
           node-version: ${{ matrix.frappe_branch == 'version-16' && '24' || '18' }}
+=======
+          node-version: ${{ matrix.frappe_branch == 'version-15' && '18' || '24' }}
+>>>>>>> a0b1242 (ci: test develop on Frappe develop, and version-3 pull requests on v15 and v16 (#1424))
 
       - name: Install bench
         run: |
