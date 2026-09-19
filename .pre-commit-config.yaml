@@ -38,12 +38,14 @@ repos:
   # Pre-push, not pre-commit: the rule files are fetched on every run, so it fails offline.
   # CI runs this hook too. Keep the list equal to every rule file under rules/ at the pin.
   # The baseline reports only findings the pushed commits introduce, as `semgrep ci` does.
+  # It checks the baseline out in place, so parallel batches would scan each other's checkout.
   - repo: https://github.com/semgrep/pre-commit
     rev: v1.177.0
     hooks:
       - id: semgrep
         name: Run Frappe semgrep rules
         stages: [pre-push]
+        require_serial: true
         entry: bash -c 'SEMGREP_BASELINE_COMMIT="$PRE_COMMIT_FROM_REF" exec semgrep "$@"' --
         args:
           - --config=https://raw.githubusercontent.com/frappe/semgrep-rules/b101a16e69df049b3fed1478bcc16223e957cca2/rules/code_quality.yml
