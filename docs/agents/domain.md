@@ -35,7 +35,7 @@ Close-out is for the ones you missed, and there should be few.
 `docs/adr/<slug>.md`. No number.
 
 Numbers were dropped because they are allocated on a feature branch and
-collide on merge — two branches both took `0003`, and `iris-review.md` cited
+collide on merge — two branches both took `0003`, and `iris-code-review.md` cited
 two ADR numbers that resolved to the wrong documents. The slug is the stable
 name and the `Date:` line is the ordering, so the number carried nothing and
 broke on the one operation that matters.
