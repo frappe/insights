@@ -21,6 +21,8 @@ nothing internal references a route anyway.
 import frappe
 from frappe import _
 
+from insights.permissions import has_doc_permission
+
 DASHBOARD = "Insights Dashboard v3"
 CHART = "Insights Chart v3"
 
@@ -59,9 +61,13 @@ def resolve_for_read(doctype: str, reference: str) -> str:
     a document the current user cannot read. Both cases produce the identical
     error, which is the whole point: a read endpoint built on this cannot be
     used to probe what exists on the site.
+
+    Asks the Insights controller rather than `frappe.has_permission`, whose role
+    gate would need every reader, Guest included, to hold read on the doctype.
+    That grant would also open `/api/resource` to them.
     """
     name = resolve(doctype, reference)
-    if not name or not frappe.has_permission(doctype, ptype="read", doc=name):
+    if not name or not has_doc_permission(frappe.get_doc(doctype, name), "read", frappe.session.user):
         frappe.throw(_("Not Found"), exc=frappe.DoesNotExistError)
 
     return name

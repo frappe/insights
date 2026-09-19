@@ -131,7 +131,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-09-01 16:28:11.944860",
+ "modified": "2026-09-19 14:30:00.000000",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Dashboard v3",
@@ -170,14 +170,6 @@
    "permlevel": 1,
    "read": 1,
    "role": "Insights Admin"
-  },
-  {
-   "read": 1,
-   "role": "All"
-  },
-  {
-   "read": 1,
-   "role": "Guest"
   }
  ],
  "row_format": "Dynamic",
