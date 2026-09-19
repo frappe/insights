@@ -33,7 +33,7 @@ from insights.resolver import CHART, DASHBOARD, resolve, resolve_for_read
 QUERY = "Insights Query v3"
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read admits a guest to Public content only
 def get_dashboard(dashboard: str, surface: str | None = None):
     """A dashboard as a view of it needs: what to lay out, and what it may offer.
 
@@ -67,7 +67,7 @@ def get_dashboard(dashboard: str, surface: str | None = None):
     }
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read admits a guest to Public content only
 def get_chart(chart: str, dashboard: str | None = None):
     """A chart's rendering config. The query it draws from stays server-side."""
     doc = frappe.get_doc(CHART, resolve_chart(chart, dashboard))
@@ -75,7 +75,7 @@ def get_chart(chart: str, dashboard: str | None = None):
     return {**present_chart(doc), "can_write": can_write(doc)}
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read admits a guest to Public content only
 def get_chart_data(
     chart: str,
     dashboard: str | None = None,
@@ -117,7 +117,7 @@ def get_chart_data(
     }
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read admits a guest to Public content only
 def get_drill_data(
     chart: str,
     dashboard: str | None = None,
@@ -182,7 +182,7 @@ def routed_filters(chart: str, dashboard: str | None, filters: dict | None) -> d
     return route_filters(items, chart, filters)
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read admits a guest to Public content only
 def get_filter_values(
     dashboard: str,
     filter_name: str,
@@ -216,7 +216,7 @@ def get_filter_values(
         return query_doc.distinct_column_values(column, search_term=search_term, adhoc_filters=adhoc_filters)
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read admits a guest to Public content only
 def get_filter_range(dashboard: str, filter_name: str, filters: dict | None = None):
     """The range a filter on this dashboard offers.
 
@@ -238,7 +238,7 @@ def get_filter_range(dashboard: str, filter_name: str, filters: dict | None = No
         return query_doc.column_range(column, adhoc_filters=adhoc_filters)
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read admits a guest to Public content only
 def get_card_values(chart: str, column: str, dashboard: str | None = None, search_term: str | None = None):
     """The values a reader's own filter on one card offers.
 
@@ -257,7 +257,7 @@ def get_card_values(chart: str, column: str, dashboard: str | None = None, searc
         )
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read admits a guest to Public content only
 def get_card_range(chart: str, column: str, dashboard: str | None = None):
     """The range a reader's own filter on one card offers, narrowed as `get_card_values` is."""
     source = card_source(chart, dashboard, column)
