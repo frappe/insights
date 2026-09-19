@@ -32,11 +32,15 @@ Decided while charting, before tickets existed.
 - **Review is one sitting.** All six dashboards, all feedback at once, on frappe.io.
 - **Live queries only.** No snapshots, no data store. The 60 s timeout is the backstop; load is measured before review.
 
+Resolved tickets.
+
+- [Rebase feat/islands onto develop](issues/01-rebase-islands-onto-develop.md) — one three-way merge, then five commits. Readers go through `insights.api.view` only, with develop's card filters and filter picker. develop's templates survive.
+
 ## Not yet specified
 
 - Business Overview has no ERPNext dashboard to attach to. Whether it ships, and from which workspace, waits on the desk-entry decision.
 - HR is a seventh dashboard whose owner would be `hrms`, not ERPNext. Whether it rides this effort waits on the mechanism decision.
-- The four `workbook_templates/` on `feat/islands` differ from `develop`'s (smaller `workbook.json`, changed manifests). Which version survives the rebase, and whether Templates for ERPNext go away once standard content ships.
+- Whether Templates for ERPNext go away once standard content ships.
 - `CONTEXT.md` names the hook `insights_workbook_templates`; `hooks.py` says `insights_workbooks`. One of them is wrong.
 - What a site sees when ERPNext ships a changed dashboard and the site has duplicated it. Falls out of Is Standard, but the reader-facing behaviour has not been stated.
 - Default filters and date ranges per dashboard, and whether a site can set them without duplicating (the preference overlay idea).
