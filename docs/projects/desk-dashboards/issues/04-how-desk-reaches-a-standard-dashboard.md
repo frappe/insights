@@ -2,7 +2,7 @@
 
 Type: grilling
 Status: open
-Blocked by: 03
+Blocked by: 03, 10
 Repo: erpnext, insights
 
 ## Question
