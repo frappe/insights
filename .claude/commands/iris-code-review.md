@@ -68,7 +68,12 @@ check it.
 
 # Run the review
 
-Read `docs/agents/code-review/brief.md` and run its three phases.
+Plan first. Read `docs/agents/code-review/questions.md` and write the plan it asks for. You
+are one reader: when the plan says `fan-out`, say so as that file directs and review the
+part you can cover. A session that can start other agents runs the fan-out from the same
+file.
+
+Then read `docs/agents/code-review/brief.md` and run its three phases.
 
 The rules to check live in three stage files under `docs/agents/code-review/`. The stages
 run in this order, because a finding in one changes what the next is worth:
