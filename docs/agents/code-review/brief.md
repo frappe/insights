@@ -12,7 +12,7 @@ in `docs/adr/` that touch the changed area. Cite them; never paraphrase a decisi
 memory. If the branch carries `docs/projects/<effort>/`, read the map and any ticket the
 diff claims to resolve. Then investigate — spend most of your budget here. Read around the
 hunks, not just the hunks. Grep the other call sites of anything the diff touches.
-`git log --oneline -n 5 -- <file>` on suspicious files. Work through `design.md`, `works.md` and `quality.md`, in that order.
+`git log --oneline -n 5 -- <file>` on suspicious files. Work through the stages in the order the command gives.
 Cap: ~25 read/grep/glob, ~5 git.
 
 Write the result as a raw candidate list. Ugly is correct here. No format, no length
@@ -47,6 +47,18 @@ Then apply "Do not flag" below. Drop everything it forbids.
 its format. You may cut for length here. You may not soften a finding that survived phase
 2, and you may not drop one to fit a line count. If everything survived and the limit is
 tight, the score carries the weight, not the omission.
+
+## The bar
+
+A works finding is **must fix** when it clears one of these:
+
+1. Security: anyone reads or changes data their permissions do not grant, guest or signed in.
+2. Data loss or corruption: a save, migration or patch drops or rewrites stored content wrongly.
+3. Wrong value: a chart, card, drill or table shows a value that is not what the query computes, with nothing on screen to signal it.
+4. Broken on the main path: an author cannot build, save or view a chart or dashboard, or a reader cannot open a shared or public one. Throws, blanks, hangs.
+5. Regression: something that worked on the base and no longer does, for a common configuration.
+
+Mark it `must fix` in the report. The bar does not change the score, and it does not hide a finding below it. It tells the maintainer, and a fix pass, what cannot wait: while a review loop runs, a fix pass takes the must-fix findings only. The maintainer can set a tighter bar for one review; when the rulings name one, it replaces this list.
 
 ## Do not flag
 

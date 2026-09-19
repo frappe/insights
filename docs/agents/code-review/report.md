@@ -44,6 +44,7 @@ The reader must be able to stop after layer 1 and still know what is wrong.
   'smelly'"*. Say it is a feeling when it is.
 - No emoji, no filler. Zero issues → a one-line "Looks good" with what the change does.
   Never manufacture a concern.
+- **Group findings by stage, in stage order:** Design, Works, Quality. Leave out a heading with nothing under it. Start a works finding that clears the bar in `brief.md` with `must fix`.
 - **On re-review, account for the last review first.** Give each earlier finding one line:
   resolved (name the commit), stands, or settled. Then the new findings, if any. A settled
   finding is out of the score — "Settled: the SSL default, per @<author>" is the whole
