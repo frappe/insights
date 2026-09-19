@@ -6,11 +6,15 @@ behind the fit numbers come from a catalog read the scan owns. A source that
 will not answer costs its own tables, never the send.
 """
 
+import os
 from unittest.mock import MagicMock, patch
 
+import duckdb
 import frappe
+from frappe.utils import add_days, now_datetime
 
 from insights import telemetry_scan
+from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import get_duckdb_path
 from insights.telemetry import default_properties, is_standard_app
 from insights.telemetry_scan import (
     LIST_LIMIT,
@@ -21,6 +25,7 @@ from insights.telemetry_scan import (
     site_profile,
     site_queries,
     site_tables,
+    source_kind,
     tables_queries_read,
     within_cap,
 )
@@ -169,6 +174,15 @@ class TestSiteScan(InsightsIntegrationTestCase):
         self.assertIn("insights", props["apps"])
         self.assertEqual(props["custom_apps"], len(frappe.get_installed_apps()) - len(props["apps"]))
 
+    # @feature telemetry.site-scan
+    def test_the_install_date_survives_a_migrate(self):
+        first_patch = frappe.get_all(
+            "Patch Log", filters={"patch": ["like", "insights.%"]}, order_by="creation asc", pluck="name"
+        )[0]
+        frappe.db.set_value("Patch Log", first_patch, "creation", add_days(now_datetime(), -400))
+        frappe.get_single("Installed Applications").update_versions()
+        self.assertEqual(site_profile()["insights_installed_days_ago"], 400)
+
     # @feature telemetry.standard-names-only
     def test_a_custom_doctype_is_counted_and_never_named(self):
         props = site_tables()
@@ -301,6 +315,30 @@ class TestSiteScan(InsightsIntegrationTestCase):
     def test_the_catalog_answers_with_a_row_estimate_for_a_table_a_query_reads(self):
         estimates = read_catalog("Site DB", {"tabUser"})
         self.assertIsInstance(estimates["tabUser"], int)
+
+    # @feature telemetry.row-estimate
+    def test_a_duckdb_source_answers_with_a_row_estimate(self):
+        path = get_duckdb_path(frappe._dict(database_name="site_scan_duckdb"))
+        # the insert opens the file, and that connection would not see a table written after it
+        with duckdb.connect(path) as db:
+            db.sql("create or replace table orders as select * from range(42)")
+        self.addCleanup(os.remove, path)
+        source = frappe.get_doc(
+            {
+                "doctype": DT.DATA_SOURCE,
+                "title": "Site Scan DuckDB",
+                "database_type": "DuckDB",
+                "database_name": "site_scan_duckdb",
+            }
+        ).insert()
+        self.addCleanup(frappe.delete_doc, DT.DATA_SOURCE, source.name, force=True, ignore_permissions=True)
+
+        self.assertEqual(read_catalog(source.name, {"orders"}), {"orders": 42})
+
+    # @feature telemetry.site-scan
+    def test_the_demo_source_is_counted_apart_from_a_user_s_duckdb(self):
+        demo = frappe._dict(name="demo_data", database_type="DuckDB", is_site_db=0)
+        self.assertEqual(source_kind(demo), "demo")
 
     # @feature telemetry.row-estimate
     def test_two_postgres_schemas_holding_a_table_of_one_name_each_get_an_estimate(self):
