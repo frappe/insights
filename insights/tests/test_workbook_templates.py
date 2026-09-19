@@ -21,6 +21,7 @@ from insights.insights.doctype.insights_workbook.insights_workbook import (
     InsightsWorkbook,
     import_workbook,
 )
+from insights.migrate import apps_declaring_the_templates_hook, warn_about_the_templates_hook
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import USER_1, create_test_user, delete_users
 from insights.tests.workbook_utils import get_workbook
@@ -465,3 +466,47 @@ class TestWorkbookTemplates(InsightsIntegrationTestCase):
                 imported_name = import_workbook(workbook)
                 self.assertTrue(frappe.db.exists("Insights Workbook", imported_name))
                 frappe.delete_doc("Insights Workbook", imported_name, force=True)
+
+
+class TheTemplatesHookIsDeprecated(InsightsIntegrationTestCase):
+    """The hook retires on the next major version, and an app that declares it
+    hears so on the migrate that would otherwise read its templates."""
+
+    def warned(self, apps, declaring):
+        """The lines a migrate printed, with `apps` installed and `declaring`
+        pointing the hook at a directory."""
+        with (
+            patch("insights.migrate.frappe.get_installed_apps", return_value=apps),
+            patch(
+                "insights.migrate.frappe.get_hooks",
+                side_effect=lambda hook, app_name=None: (
+                    ["workbook_templates"] if app_name in declaring else []
+                ),
+            ),
+            patch("insights.migrate.click.secho") as printer,
+        ):
+            warn_about_the_templates_hook()
+
+        return [call.args[0] for call in printer.call_args_list]
+
+    def test_a_migrate_names_the_app_that_declares_the_hook(self):
+        (line,) = self.warned(["frappe", "insights", "hrms"], {"insights", "hrms"})
+
+        self.assertIn("hrms", line)
+        self.assertIn("insights_workbooks", line)
+        self.assertIn("deprecated", line)
+
+    def test_a_migrate_says_nothing_when_insights_is_the_only_app_that_declares_it(self):
+        self.assertEqual(self.warned(["frappe", "insights"], {"insights"}), [])
+
+    def test_an_app_that_cannot_be_imported_costs_no_other_app_its_warning(self):
+        def hooks(hook, app_name=None):
+            if app_name == "broken":
+                raise ImportError("no module named broken")
+            return ["workbook_templates"] if app_name == "hrms" else []
+
+        with (
+            patch("insights.migrate.frappe.get_installed_apps", return_value=["broken", "hrms"]),
+            patch("insights.migrate.frappe.get_hooks", side_effect=hooks),
+        ):
+            self.assertEqual(apps_declaring_the_templates_hook(), ["hrms"])
