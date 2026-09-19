@@ -82,7 +82,9 @@ trust.
 - A dependency on another open branch or a planned framework change, on a feature branch.
   Name it; do not block. A PR into `develop` that needs a pin move is different.
 - A missing button, banner, close control, section title, freshness indicator or hover
-  emphasis. Affordances get removed until they prove useful.
+  emphasis. Affordances get removed until they prove useful. This covers asking for a new
+  one. A control the base had, or that every peer of the surface has, going missing is a
+  regression.
 - One extra query, or a slow one-time job. Insights is not built for heavy sites.
 - A shared frappe-ui or framework component lacking what Insights needs. Parity is not a
   goal; Insights bridges on its side.
