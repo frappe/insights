@@ -8,7 +8,6 @@ nothing. It now decorates the endpoint itself.
 
 import frappe
 
-from insights.api.shared import is_public
 from insights.api.workbooks import (
     create_folder,
     delete_folder,
@@ -109,10 +108,3 @@ class EndpointsCheckArgumentTypes(InsightsIntegrationTestCase):
             folder = create_folder(self.workbook, "Arg Types Doomed Folder", "query")
             delete_folder(folder, 1)
             self.assertFalse(frappe.db.exists("Insights Folder", folder))
-
-    # @feature permissions.malformed-request-refused
-    def test_a_name_from_a_json_blob_is_still_a_name(self):
-        """`run_doc_method` reads `name` out of a payload frappe checks only as
-        a whole, so a dict can reach `frappe.db.exists` as a filter set."""
-        with as_user(OWNER):
-            self.assertFalse(is_public("Insights Chart v3", {"is_public": 1}))

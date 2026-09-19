@@ -224,7 +224,7 @@ export function resetChartConfig(config: any, chart_type: string) {
 
 // Every saved config passes through here before anything reads it: the slots are
 // read without guarding, and a config saved by an older version may not have
-// them. The chart store runs it on load, and the viewer endpoint's config runs it
+// them. The chart store runs it on load, and the view endpoint's config runs it
 // too — a card drawn on a desk page and the same card in the builder must not
 // disagree about what an old chart looks like.
 //

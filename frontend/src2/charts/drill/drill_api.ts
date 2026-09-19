@@ -5,20 +5,38 @@
 // knows an endpoint's name, its argument names, or the shape of its answer
 // beyond `DrillLevelData`.
 //
-// The wire contract:
+// There are two endpoints, one per source:
 //
+//     view.get_drill_data(chart, dashboard?, filters?, drill_stack)
 //     authoring.get_drill_data(query, drill_stack, chart_type?, config?, operations?, ...)
 //
-// It names what it is drilling — the config the chart builder is editing, or
-// the operations the query builder is — and `drill_stack` is the descriptor:
-// literals and an action per level. It returns the cut pipeline, so only
-// authors may call it.
+// A reader names the saved chart and the grid it sits on, and gets rows back.
+// The builder names what it is drilling — the config the chart builder is
+// editing, or the operations the query builder is — and gets the sliced pipeline
+// with them, which is why that endpoint is closed to anyone without an Insights
+// role. `drill_stack` is the same descriptor either way: literals and an action
+// per level.
 
 import { call } from 'frappe-ui'
 import type { ChartConfig } from '../../types/chart.types'
 import type { Operation } from '../../types/query.types'
-import type { DashboardFilterContext } from '../chart_read'
+import type { FilterValues } from '../../types/workbook.types'
+import type { DashboardFilterContext } from '../chart_view'
 import type { DrillDimension, DrillLevel, DrillLevelData } from './drill_stack'
+
+/** What a reader is drilling: the saved chart, and the grid it was clicked on. */
+export type ViewDrillSubject = {
+	chart: string
+	dashboard?: string
+	filters?: FilterValues
+}
+
+export function fetchViewDrillData(
+	subject: ViewDrillSubject,
+	drill_stack: DrillLevel[],
+): Promise<DrillLevelData> {
+	return call('insights.api.view.get_drill_data', { ...subject, drill_stack })
+}
 
 /**
  * What an authoring surface is drilling. Both forms name the source query — it

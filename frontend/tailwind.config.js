@@ -3,6 +3,18 @@ import frappeUIPreset, { content as frappeUIContent } from 'frappe-ui/tailwind'
 
 export default {
 	presets: [frappeUIPreset],
+	// A dashboard action names its icon as data (`pencil`), and the surface that
+	// draws it prefixes the class at run time. The scan never sees that literal,
+	// so the names the action list uses are declared here. A name missing from
+	// this list draws no icon, and nothing reports it.
+	safelist: [
+		'lucide-refresh-cw',
+		'lucide-refresh-ccw',
+		'lucide-download',
+		'lucide-pencil',
+		'lucide-check-square',
+		'lucide-square',
+	],
 	content: [
 		'./index.html',
 		'./src2/**/*.{vue,js,ts,jsx,tsx}',

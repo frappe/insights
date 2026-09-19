@@ -2,7 +2,7 @@
 import { ChartCard } from 'frappe-ui/charts'
 import { computed } from 'vue'
 import { drawsOwnCards } from '../adapter'
-import { ChartRead } from '../chart_read'
+import { ChartView } from '../chart_view'
 import type { ChartSegmentClick } from '../drill/segment_click'
 import ChartBody from './ChartBody.vue'
 
@@ -12,7 +12,7 @@ import ChartBody from './ChartBody.vue'
 // its own — a desk island — mounts the body instead and gets no second border
 // and no second title.
 const props = defineProps<{
-	chart: ChartRead
+	chart: ChartView
 	/** Which reading to draw, for a Number Chart. See `ChartBody`. */
 	reading?: string
 	readonly?: boolean

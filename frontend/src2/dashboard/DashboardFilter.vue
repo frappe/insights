@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Button } from 'frappe-ui'
 import { X } from 'lucide-vue-next'
-import { computed, inject, watch } from 'vue'
+import { computed, watch } from 'vue'
 import FilterPicker from '../components/filter_picker/FilterPicker.vue'
 import { summaryParts, type Filter } from '../components/filter_picker/filter_picker'
 import { columnIcon } from '../query/column_icon'
@@ -12,17 +12,21 @@ import {
 	FilterValue,
 	QueryResultColumn,
 } from '../types/query.types'
-import { WorkbookDashboardFilter } from '../types/workbook.types'
-import { Dashboard } from './dashboard'
-import DashboardFilterEditor from './DashboardFilterEditor.vue'
 import { filterIconClass } from './filter_icons'
+import type { DashboardView, DashboardViewItem } from './view'
 
-const dashboard = inject<Dashboard>('dashboard')!
-const props = defineProps<{ item: WorkbookDashboardFilter }>()
+// One filter cell, on every surface that draws a dashboard. Where its state
+// lives and which column it lands on are the page's: the builder keeps both in
+// its store, a view surface asks the server by filter name.
+const props = defineProps<{ item: DashboardViewItem; dashboard: DashboardView }>()
 
 // Derived, not copied: a key the editor removes has to leave the local view too,
 // and an assign onto a held object can only add.
-const filter = computed(() => ({ ...props.item, links: props.item.links || {} }))
+const filter = computed(() => ({
+	...props.item,
+	filter_name: props.item.filter_name || '',
+	filter_type: props.item.filter_type || 'String',
+}))
 
 // The picker reads a column; a dashboard filter names itself and states a
 // filter type. One column type per filter type, the one the picker reads back
@@ -42,17 +46,13 @@ const column = computed<QueryResultColumn>(() => ({
 // the link that says so is read there, so there is one lookup rather than one
 // per surface.
 function stringValuesProvider() {
-	return (search: string) => {
-		const firstLinkedChart = Object.keys(filter.value.links)?.[0]
-		if (!firstLinkedChart) return Promise.resolve([] as string[])
-		return dashboard.getDistinctColumnValues(filter.value.filter_name, search, firstLinkedChart)
-	}
+	return (search: string) => props.dashboard.filterValues(filter.value.filter_name, search)
 }
 
 // The numbers a number filter offers, cut from the column the link names. The
 // server finds that column, the same way it does for the value list.
 function rangeProvider() {
-	return dashboard.getFilterColumnRange(filter.value.filter_name)
+	return props.dashboard.filterRange(filter.value.filter_name)
 }
 
 // The author's icon is a `lucide-*` class Tailwind baked into the stylesheet. A
@@ -65,11 +65,11 @@ const iconClass = computed(() => filterIconClass(filter.value.icon))
 // and a control answering a copy would still read as set and push the value it
 // kept back on the next keystroke.
 const filterState = computed<{ operator?: FilterOperator; value?: FilterValue }>(
-	() => dashboard.filterStates[filter.value.filter_name] || {},
+	() => props.dashboard.filters[filter.value.filter_name] || {},
 )
 
 function setFilter(operator?: FilterOperator, value?: FilterValue) {
-	dashboard.updateFilterState(filter.value.filter_name, operator, value)
+	props.dashboard.setFilter(filter.value.filter_name, operator ? { operator, value } : undefined)
 }
 
 // no `immediate` — on mount, the state the store restored is what stands
@@ -155,6 +155,4 @@ function clear() {
 			<template #icon><X stroke-width="1.5" /></template>
 		</Button>
 	</div>
-
-	<DashboardFilterEditor v-if="dashboard.isEditingItem(props.item)" :item="props.item" />
 </template>

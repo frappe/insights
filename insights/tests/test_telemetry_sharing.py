@@ -93,7 +93,9 @@ class TestShareGranted(InsightsIntegrationTestCase):
 
         def publish():
             with self.as_user(OWNER):
-                frappe.get_doc(DT.DASHBOARD, dashboard.name).update_access({"is_public": True})
+                doc = frappe.get_doc(DT.DASHBOARD, dashboard.name)
+                doc.visibility = "Public"
+                doc.save()
 
         self.assertEqual(
             self.granted(publish),

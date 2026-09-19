@@ -7,7 +7,7 @@ import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { __ } from '../../translation'
 import { emptyResult } from '../../query/helpers'
 import { adaptChart, drawsOwnCards, type ChartStateProps, type DrillDownTarget } from '../adapter'
-import { ChartRead } from '../chart_read'
+import { ChartView } from '../chart_view'
 import { segmentClickEvents, type ChartSegmentClick, type ClickPoint } from '../drill/segment_click'
 import ChartSectionEmptySvg from './ChartSectionEmptySvg.vue'
 
@@ -40,7 +40,7 @@ import ChartSectionEmptySvg from './ChartSectionEmptySvg.vue'
 // not offered rather than offered and dead — and for the same reason a reader is
 // told about the data ("No data") where an author is told about the config.
 const props = defineProps<{
-	chart: ChartRead
+	chart: ChartView
 	// heads the chart. Left out, no title is drawn anywhere in it — which is what
 	// a host that prints its own asks for.
 	title?: string
@@ -58,7 +58,7 @@ const emit = defineEmits<{
 	resetFilters: []
 }>()
 
-const readonly = computed(() => props.readonly || props.chart.doc.can_edit === false)
+const readonly = computed(() => props.readonly || props.chart.doc.can_write === false)
 
 const chart_type = computed(() => props.chart.doc.chart_type)
 const config = computed(() => props.chart.doc.config)

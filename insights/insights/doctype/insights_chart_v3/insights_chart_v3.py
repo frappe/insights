@@ -6,7 +6,6 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import getdate
 
-from insights.api.shared import stored_dashboard_items
 from insights.insights.doctype.insights_chart_v3.chart_query import (
     column_granularity,
     comparison_sources,
@@ -19,13 +18,10 @@ from insights.insights.doctype.insights_chart_v3.chart_query import (
     sparkline_operations,
 )
 from insights.insights.doctype.insights_chart_v3.record_link import record_links
-from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import (
-    route_card_filters,
-    route_filters,
-)
+from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import route_card_filters
 from insights.insights.doctype.insights_query_v3.insights_query_v3 import import_query
 from insights.insights.query_builders.sql_functions import resolve_timespan
-from insights.telemetry import capture_share_granted
+from insights.permission_user import permission_user, permission_user_for
 from insights.utils import deep_convert_dict_to_dict
 
 QUERY = "Insights Query v3"
@@ -43,17 +39,22 @@ class InsightsChartv3(Document):
     from typing import TYPE_CHECKING
 
     if TYPE_CHECKING:
+        from frappe.core.doctype.has_role.has_role import HasRole
         from frappe.types import DF
 
+        apply_user_permissions: DF.Check
         chart_type: DF.Data | None
         config: DF.JSON | None
         folder: DF.Data | None
         is_public: DF.Check
+        is_standard: DF.Check
         old_name: DF.Data | None
         permission_user: DF.Link | None
         query: DF.Link | None
         sort_order: DF.Int
         title: DF.Data | None
+        visibility: DF.Literal["Private", "Roles", "Everyone", "Public"]
+        visible_to_roles: DF.TableMultiSelect[HasRole]
         workbook: DF.Link
     # end: auto-generated types
 
@@ -68,9 +69,15 @@ class InsightsChartv3(Document):
         return d
 
     def validate(self):
-        from insights.permissions import check_chart_query_access
+        from insights.permissions import (
+            check_chart_query_access,
+            validate_public_permissions,
+            validate_visibility,
+        )
 
         check_chart_query_access(self)
+        validate_visibility(self)
+        validate_public_permissions(self)
         self.normalize_config()
 
     def normalize_config(self):
@@ -84,34 +91,6 @@ class InsightsChartv3(Document):
         config = frappe.parse_json(self.config)
         if isinstance(config, dict):
             self.config = normalize_chart_config(config, self.chart_type)
-
-    @frappe.whitelist()
-    def update_access(self, is_public: bool):
-        """Publish this chart, or withdraw it.
-
-        Publishing is a grant of the publisher's own read access to everyone
-        with the link, so it is the `share` permission and not `write`. The
-        publisher is recorded here because the public execution has no caller of
-        its own to filter rows by. `is_public` and `permission_user` are both
-        permlevel 1, so this method is the only way in.
-
-        The `query` link needs no check here. This writes neither link nor
-        content, and a caller who reached this method can read the chart, which
-        `_build_query_permission_query` already turns into read on its query.
-        """
-        if not frappe.has_permission("Insights Chart v3", ptype="share", doc=self.name):
-            frappe.throw(frappe._("You do not have permission to share this chart"), frappe.PermissionError)
-
-        is_public = bool(frappe.parse_json(is_public))
-        was_public = self.is_public
-        self.db_set(
-            {
-                "is_public": int(is_public),
-                "permission_user": frappe.session.user if is_public else None,
-            }
-        )
-        if is_public and not was_public:
-            capture_share_granted("chart", "public", 1)
 
     def on_trash(self):
         # Clean up empty folders
@@ -140,28 +119,20 @@ class InsightsChartv3(Document):
         force: bool = False,
         page: int = 1,
         page_size: int | None = None,
-        dashboard_items: list | None = None,
-        dashboard: str | None = None,
-        filters: dict | None = None,
+        adhoc_filters: dict | None = None,
         card_filters: list | None = None,
     ):
-        """Fetch this chart's rows, for a surface that reads the saved chart.
+        """Fetch this chart's rows under the permissions declared on this document.
 
         A request may name a chart but must not describe one: `run_doc_method`
         builds `self` out of the request payload, so the stored chart is re-read
-        here and it alone decides the query that runs.
+        here and it alone decides whose permissions apply and the query that runs
+        under them.
 
-        Dashboard filter state arrives unrouted, as the grid's `dashboard_items`
-        and the `filters` state, and `route_filters` decides which query each
-        filter lands on, the same way it does for the builder's own feed in
-        `insights.api.authoring`. The links are followed under this chart's own
-        name, so another card's links cannot reach these rows.
-
-        A reader who follows a share link sends no `dashboard_items`: a link
-        names a query and a column, so a routing table from the request is a
-        reader naming columns nobody published. The link names its `dashboard`
-        instead, and the routing table is read from that dashboard's stored
-        items, for a guest and a signed-in reader alike.
+        Filter state arrives routed, keyed by the queries the links name.
+        Routing belongs to whoever resolved the dashboard the filters sit on —
+        `insights.api.view` for a saved one, `insights.api.authoring` for a
+        grid the builder has not saved.
 
         `card_filters` is the reader's own filter on this one card. It names a
         column the card draws, and it lands on the card's own derived query, so
@@ -176,32 +147,24 @@ class InsightsChartv3(Document):
         # a caller that names no page size gets the one the author configured, the
         # same answer the builder's own feed gives for this chart
         page_size = page_size or frappe.parse_json(chart.config or "{}").get("limit") or 100
-        adhoc_filters = None
-        if filters:
-            items = (
-                dashboard_items
-                if dashboard_items is not None
-                else stored_dashboard_items(self.name, dashboard)
-            )
-            adhoc_filters = route_filters(items, self.name, filters)
         adhoc_filters = route_card_filters(self.name, card_filters, adhoc_filters)
 
         query = chart.get_query()
-        result = query.execute(
-            force=force,
-            page=page,
-            page_size=page_size,
-            adhoc_filters=adhoc_filters,
-        )
+        with permission_user(permission_user_for(chart)):
+            result = query.execute(
+                force=force,
+                page=page,
+                page_size=page_size,
+                adhoc_filters=adhoc_filters,
+            )
+            sparkline = chart.get_sparkline_data(force=force, adhoc_filters=adhoc_filters)
         # A reading surface answers with rows and nothing about how they were
         # fetched. The SQL names tables, joins and columns the reader was never
-        # published, and a public link opens this method to a guest. The builder
+        # published, and `insights.api.view` opens this method to a guest. The builder
         # asks `insights.api.authoring` when it wants the SQL.
         result.pop("sql", None)
 
         result["rows"] = chart.periods_oldest_last(result["rows"])
-
-        sparkline = chart.get_sparkline_data(force=force, adhoc_filters=adhoc_filters)
 
         # the client formats and links by these, and a reading surface is the
         # only place it can learn them

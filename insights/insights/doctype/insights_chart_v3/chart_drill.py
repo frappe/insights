@@ -42,6 +42,7 @@ from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
 )
 from insights.insights.doctype.insights_query_v3.insights_query_v3 import set_adhoc_filters
 from insights.insights.query_builders.sql_functions import resolve_timespan
+from insights.permission_user import permission_user, permission_user_for
 
 ROWS = "rows"
 BREAKDOWN = "breakdown"
@@ -168,7 +169,8 @@ def drill_dimensions(chart, operations: list[dict] | None = None) -> list[dict]:
     if index is None:
         return []
 
-    return _dimensions_on(_surface(chart, operations, index))
+    with permission_user(permission_user_for(chart)):
+        return _dimensions_on(_surface(chart, operations, index))
 
 
 def drill_data(
@@ -184,7 +186,7 @@ def drill_data(
     pipeline it gets back: a rows level then answers with that pipeline and
     its columns rather than its rows, which is what an authoring surface asks
     for when it lifts the level into the query builder. It is off by default
-    because the reading surfaces must never receive the pipeline.
+    because a view must never receive the pipeline.
     """
     if not drill_stack:
         frappe.throw(_("Nothing to drill into: the drill stack is empty"))
@@ -199,62 +201,63 @@ def drill_data(
     step = operations[index]
     sliced = operations[:index]
 
-    surface = _surface(chart, operations, index)
+    with permission_user(permission_user_for(chart)):
+        surface = _surface(chart, operations, index)
 
-    last = drill_stack[-1]
-    action = _action(last)
-    segment = [*sliced, _filter_group(_segment_filters(drill_stack, step, surface))]
-    page_size = PAGE_SIZE
-    breakdown = None
-    if action["type"] == BREAKDOWN:
-        breakdown = _breakdown(chart, segment, action, step, surface, adhoc_filters)
-        page_size = BREAKDOWN_SIZE
+        last = drill_stack[-1]
+        action = _action(last)
+        segment = [*sliced, _filter_group(_segment_filters(drill_stack, step, surface))]
+        page_size = PAGE_SIZE
+        breakdown = None
+        if action["type"] == BREAKDOWN:
+            breakdown = _breakdown(chart, segment, action, step, surface, adhoc_filters)
+            page_size = BREAKDOWN_SIZE
 
-    tail = breakdown["operations"] if breakdown else _rows_order(_clicked(last), step, surface)
-    drilled = [*segment, *tail]
-    query = chart.get_query(operations=drilled)
+        tail = breakdown["operations"] if breakdown else _rows_order(_clicked(last), step, surface)
+        drilled = [*segment, *tail]
+        query = chart.get_query(operations=drilled)
 
-    if with_operations and action["type"] == ROWS:
-        # the caller runs this pipeline itself, so running it here would
-        # fetch the same rows twice and draw neither of them. The shape of a
-        # result is known before a row of it is
-        with set_adhoc_filters(adhoc_filters):
-            columns = get_columns_from_schema(query.build().schema())
+        if with_operations and action["type"] == ROWS:
+            # the caller runs this pipeline itself, so running it here would
+            # fetch the same rows twice and draw neither of them. The shape of a
+            # result is known before a row of it is
+            with set_adhoc_filters(adhoc_filters):
+                columns = get_columns_from_schema(query.build().schema())
 
-        return _handed_over(drilled, columns, sliced)
+            return _handed_over(drilled, columns, sliced)
 
-    # a level is fetched once and then kept by the dialog for as long as it
-    # is open, so back and crumb pops never come here
-    result = query.execute(adhoc_filters=adhoc_filters, page_size=page_size, force=True)
-    # the dialog shows one page and says so: "100 of 1,240" needs the 1,240
-    total_row_count = query.count_rows(adhoc_filters=adhoc_filters, force=True)
+        # a level is fetched once and then kept by the dialog for as long as it
+        # is open, so back and crumb pops never come here
+        result = query.execute(adhoc_filters=adhoc_filters, page_size=page_size, force=True)
+        # the dialog shows one page and says so: "100 of 1,240" needs the 1,240
+        total_row_count = query.count_rows(adhoc_filters=adhoc_filters, force=True)
 
-    ordered = bool(breakdown and breakdown["ordered"])
+        ordered = bool(breakdown and breakdown["ordered"])
 
-    response = {
-        "columns": result["columns"],
-        # the page of a series was taken from its recent end, and a series reads
-        # forwards
-        "rows": list(reversed(result["rows"])) if ordered else result["rows"],
-        "total_row_count": total_row_count,
-        # what the client draws this answer by, said outright rather than left
-        # to be inferred from a column type: which way the rows run, the grain
-        # they were grouped by, and whether they add up to the segment above
-        "ordered": ordered,
-        "granularity": breakdown["granularity"] if breakdown else None,
-        "additive": bool(breakdown and breakdown["additive"]),
-        "time_taken": result["time_taken"],
-        "executed_at": frappe.utils.now(),
-    }
+        response = {
+            "columns": result["columns"],
+            # the page of a series was taken from its recent end, and a series reads
+            # forwards
+            "rows": list(reversed(result["rows"])) if ordered else result["rows"],
+            "total_row_count": total_row_count,
+            # what the client draws this answer by, said outright rather than left
+            # to be inferred from a column type: which way the rows run, the grain
+            # they were grouped by, and whether they add up to the segment above
+            "ordered": ordered,
+            "granularity": breakdown["granularity"] if breakdown else None,
+            "additive": bool(breakdown and breakdown["additive"]),
+            "time_taken": result["time_taken"],
+            "executed_at": frappe.utils.now(),
+        }
 
-    links = record_links(sliced, result["columns"]) if action["type"] == ROWS else {}
-    if links:
-        response["record_links"] = links
+        links = record_links(sliced, result["columns"]) if action["type"] == ROWS else {}
+        if links:
+            response["record_links"] = links
 
-    if with_operations:
-        response["operations"] = drilled
+        if with_operations:
+            response["operations"] = drilled
 
-    return response
+        return response
 
 
 def _handed_over(drilled: list[dict], columns: list[dict], sliced: list[dict]) -> dict:

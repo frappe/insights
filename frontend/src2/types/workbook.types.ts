@@ -7,6 +7,10 @@ export interface QueryVariable {
 	variable_value: string
 }
 
+// the visibility levels are strict: each one includes the previous
+export type Visibility = 'Private' | 'Roles' | 'Everyone' | 'Public'
+export type VisibleToRole = { role: string }
+
 export type WorkbookListItem = {
 	title: string
 	name: string
@@ -90,7 +94,9 @@ export type InsightsChartv3 = {
 	chart_type: ChartType
 	sort_order: number
 	folder?: string | null
-	is_public: boolean
+	visibility: Visibility
+	visible_to_roles: VisibleToRole[]
+	apply_user_permissions: boolean
 	operations: Operation[]
 	use_live_connection?: boolean
 	config: ChartConfig & {
@@ -110,8 +116,8 @@ export type InsightsDashboardv3 = {
 	items: WorkbookDashboardItem[]
 	preview_image?: string
 	share_link?: string
-	is_public: boolean
-	is_shared_with_organization: boolean
+	visibility: Visibility
+	visible_to_roles: VisibleToRole[]
 	people_with_access: {
 		email: string
 		full_name: string
@@ -197,7 +203,7 @@ export type WorkbookDashboardText = WorkbookDashboardItemLayout & {
 // dashboard filter state, keyed by filter name. Which query a filter lands on is
 // the server's concern — every surface sends the state and the grid it sits
 // on, and the links are read there.
-export type ViewerFilters = Record<string, { operator: FilterOperator; value: FilterValue }>
+export type FilterValues = Record<string, { operator: FilterOperator; value: FilterValue }>
 
 export type ShareAccess = 'view' | 'edit' | undefined
 export type WorkbookSharePermission = {

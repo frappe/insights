@@ -1,0 +1,89 @@
+{
+	"parser": "vue-eslint-parser",
+	"parserOptions": {
+		"parser": "@typescript-eslint/parser",
+		"ecmaVersion": 2021,
+		"sourceType": "module",
+		"ecmaFeatures": {
+			"jsx": true
+		}
+	},
+	"overrides": [
+		{
+			"files": ["src2/islands/**"],
+			"rules": {
+				"no-restricted-imports": [
+					"error",
+					{
+						"patterns": [
+							{
+								"group": [
+									"**/router",
+									"**/router.ts",
+									"**/workbook/workbook",
+									"**/workbook/workbook.ts"
+								],
+								"message": "An island entry graph must not import the SPA router or the workbook store — an island mounts with neither. The item stores are refused by the island build instead, which sees the graph after types are erased, so `import type` from them stays fine."
+							}
+						],
+						"paths": [
+							{
+								"name": "vue-router",
+								"importNames": ["useRouter", "useRoute"],
+								"message": "An island mounts without a router instance, so its graph must not depend on one."
+							}
+						]
+					}
+				]
+			}
+		},
+		{
+			"files": [
+				"src2/dashboard/view.ts",
+				"src2/dashboard/filter_storage.ts",
+				"src2/dashboard/grid_placement.ts",
+				"src2/dashboard/DashboardPage.vue",
+				"src2/dashboard/DashboardBody.vue",
+				"src2/dashboard/DashboardActions.vue",
+				"src2/dashboard/StaticGridLayout.vue",
+				"src2/dashboard/DashboardItemView.vue",
+				"src2/dashboard/FilterControl.vue",
+				"src2/charts/ChartView.vue",
+				"src2/charts/chart_view.ts",
+				"src2/helpers/navigation.ts"
+			],
+			"rules": {
+				"no-restricted-imports": [
+					"error",
+					{
+						"patterns": [
+							{
+								"group": [
+									"**/router",
+									"**/router.ts",
+									"**/workbook/workbook",
+									"**/workbook/workbook.ts",
+									"**/charts/chart",
+									"**/charts/chart.ts",
+									"**/query/query",
+									"**/query/query.ts",
+									"**/dashboard/dashboard",
+									"**/dashboard/dashboard.ts",
+									"socket.io-client"
+								],
+								"message": "The view surface is what an island mounts, so it must reach none of the modules an island refuses: the SPA router, the item stores, or a socket of its own. A builder source is where a store belongs — see dashboard/builder.ts."
+							}
+						],
+						"paths": [
+							{
+								"name": "vue-router",
+								"importNames": ["useRouter", "useRoute"],
+								"message": "The view surface mounts without a router instance. Name a route and let `helpers/navigation` resolve it."
+							}
+						]
+					}
+				]
+			}
+		}
+	]
+}

@@ -2,7 +2,9 @@ import { frappeRequest, setConfig, useColorScheme } from 'frappe-ui'
 import { createPinia } from 'pinia'
 import { createApp, watchEffect } from 'vue'
 import App from './App.vue'
-import { registerControllers, registerGlobalComponents } from './globals.ts'
+import { registerControllers } from './controllers.ts'
+import { registerGlobalComponents } from './globals.ts'
+import { setRouter } from './helpers/navigation.ts'
 import './index.css'
 import router from './router.ts'
 import { translationPlugin } from './translation.ts'
@@ -21,6 +23,10 @@ const pinia = createPinia()
 
 app.use(pinia)
 app.use(router)
+setRouter({
+	resolveHref: (to) => router.resolve(to).href,
+	navigate: (to) => router.push(to),
+})
 
 const stop = watchEffect(() => {
 	if (session.isLoggedIn) {

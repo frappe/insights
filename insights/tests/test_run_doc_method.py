@@ -118,8 +118,8 @@ class StoredDocumentDecides:
         """The unsaved path is not a way in.
 
         A guest holds no permission on the doctype and no Insights role, so the
-        method surface refuses before a document is built. What a guest reaches is
-        a public document, and an unsaved one is nobody's.
+        method surface refuses before a document is built. A guest reads through
+        `insights.api.view` and reaches no document method at all.
         """
         with self.as_user("Guest"), self.assertRaises(frappe.PermissionError):
             run_doc_method(

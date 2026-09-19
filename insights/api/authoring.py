@@ -13,14 +13,14 @@ What makes this a separate endpoint is the rest of the answer: the operations
 the server derived, and the SQL they ran as. A saved chart's response carries
 neither, which is why a public link is safe to open to a guest. Here they are
 the point. The builder shows the SQL it ran and lifts a drill level into the
-query builder, so this endpoint is closed to anyone without an authoring seat.
+query builder, so this endpoint is closed to anyone without an Insights role.
 
 Two things are checked: the `Insights User` role `insights_whitelist` requires,
-which is the seat, and read on the source query, because naming a query is how
+which is the role, and read on the source query, because naming a query is how
 this endpoint says what to run. Nothing has been saved yet, so there is no
 document to check write on, and those two are the whole gate.
 
-The caller already holds the seat that lets them build any query, so a pipeline
+The caller already holds the role that lets them build any query, so a pipeline
 they send is one they could have run anyway. The engine applies their
 permissions to it either way.
 """
@@ -65,11 +65,11 @@ def get_chart_data(
 
     A card on the builder's dashboard grid also sends `dashboard_items`, the
     `filters` state and the `chart_name` those items link by. Routing them is
-    `route_filters`' job, the same one a saved chart's `get_data` calls. The
-    builder is editing items it has not saved, which is the only reason it sends
-    them rather than naming a dashboard. It does not widen this endpoint: what
-    comes back are filters keyed by the queries the links name, and a query the
-    chart does not read matches nothing in its graph.
+    `route_filters`' job, the same one `insights.api.view` calls for a saved
+    dashboard. The builder is editing items it has not saved, which is the only
+    reason it sends them rather than naming a dashboard. It does not widen this
+    endpoint: what comes back are filters keyed by the queries the links name,
+    and a query the chart does not read matches nothing in its graph.
 
     `card_filters` is the reader's own filter on one card. It names a column the
     card draws and lands on the card's own derived query.
@@ -144,7 +144,7 @@ def get_drill_data(
     which is why this endpoint exists.
 
     The answer carries the cut pipeline, because "open as query" hands the
-    level to the full builder. That field is what a reading surface must never
+    level to the full builder. That field is what a view must never
     receive (see the module docstring). A rows level here answers with that
     pipeline and its columns and no rows: the caller runs it itself.
     """
@@ -186,7 +186,7 @@ def get_drill_dimensions(
 
 
 def check_read_access(query: str, chart_name: str | None = None):
-    """Read on every document this request names. The seat is the decorator's."""
+    """Read on every document this request names. The role is the decorator's."""
     frappe.has_permission(QUERY, ptype="read", doc=query, throw=True)
 
     # the preview runs under the named chart, and that name tells the engine

@@ -121,6 +121,13 @@ function resetSession() {
 	Object.assign(session.user, { ...emptyUser })
 }
 
+// Who the browser is signed in as, straight from the cookie the server sets for
+// every session. Readable before `initialize` and inside the desk island, which
+// mounts a component with no SPA around it to run the session setup.
+export function getCurrentUser(): string {
+	return getSessionFromCookies().email || 'Guest'
+}
+
 function getSessionFromCookies() {
 	return document.cookie
 		.split('; ')

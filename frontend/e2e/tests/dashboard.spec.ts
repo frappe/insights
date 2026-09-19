@@ -363,7 +363,7 @@ test.describe('dashboard', () => {
 
 		const share = page.getByRole('dialog', { name: 'Share Dashboard' })
 		await share.getByPlaceholder('Select an option').click()
-		await page.getByRole('option', { name: 'Anyone with the link can view' }).click()
+		await page.getByRole('option', { name: 'Anyone with the link, including guests' }).click()
 
 		// The toast fires before the write returns, and nothing else on the page
 		// reports it, so the flow waits on the write itself. This is a wait, not
@@ -380,7 +380,7 @@ test.describe('dashboard', () => {
 		await page.reload()
 		await shareButton.click()
 		await expect(share.getByPlaceholder('Select an option')).toHaveValue(
-			'Anyone with the link can view',
+			'Anyone with the link, including guests',
 		)
 	})
 
@@ -453,10 +453,9 @@ test.describe('dashboard', () => {
 		await page.getByRole('button', { name: 'Edit', exact: true }).click()
 		await expect(items(page)).toHaveCount(0)
 
-		// locator: the grid's host is the only scrolling box on the dashboard and
-		// carries no role. It is the drop target, and an empty dashboard draws no
-		// grid inside it, so there is nothing else to aim at.
-		const grid = page.locator('div.overflow-y-auto.p-2.pt-0')
+		// An empty dashboard draws no grid, only its empty state, and that sits
+		// inside the box that takes the drop.
+		const grid = page.getByText('This dashboard is empty')
 		await page.getByRole('link', { name: chart.title }).dragTo(grid)
 
 		await expect(items(page).filter({ hasText: chart.title })).toHaveCount(1)
@@ -499,12 +498,18 @@ test.describe('dashboard', () => {
 		await page.goBack()
 		await expect(items(page).filter({ hasText: chart.title })).toHaveCount(1)
 
-		// locator: the dashboard header's overflow menu is an icon-only Button
-		// with no accessible name. `aria-haspopup` marks it as the header's only
-		// menu trigger.
-		await page.getByRole('banner').locator('button[aria-haspopup="menu"]').click()
-		await page.getByRole('menuitem', { name: 'Open Workbook' }).click()
+		// locator: the page header has no landmark role, and its overflow menu is
+		// an icon-only Button with no accessible name. It sits beside Refresh.
+		await page
+			.getByRole('button', { name: 'Refresh', exact: true })
+			.locator('xpath=..')
+			.locator('button[aria-haspopup="menu"]')
+			.click()
+		// the builder is workbook-scoped, so editing is how a reader opens the workbook
+		await page.getByRole('menuitem', { name: 'Edit' }).click()
 
-		await expect(page).toHaveURL(new RegExp(`/workbook/${workbook.name}`))
+		await expect(page).toHaveURL(
+			new RegExp(`/workbook/${workbook.name}/dashboard/${dashboard.name}$`),
+		)
 	})
 })

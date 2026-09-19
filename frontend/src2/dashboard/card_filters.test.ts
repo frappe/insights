@@ -17,7 +17,8 @@ vi.mock('frappe-ui', async (importOriginal) => ({
 	call: () => Promise.resolve({ message: {} }),
 }))
 
-import useDashboard, { defaultFilterStates } from './dashboard'
+import useDashboard from './dashboard'
+import { defaultFilterStates } from './view'
 
 const status: Filter = {
 	column: { name: 'status', type: 'String' },
@@ -37,7 +38,7 @@ function newDashboard() {
 
 describe('what narrows a card', () => {
 	// @feature dashboard.filter-default
-	it('seeds a filter with the default the author set, and an is_set default needs no value', () => {
+	it('seeds a filter with the default the owner set, and an is_set default needs no value', () => {
 		const filter = (filter_name: string, rest: any) =>
 			({
 				type: 'filter',

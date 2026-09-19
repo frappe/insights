@@ -96,8 +96,14 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
 
     # @feature permissions.non-insights-user
     def test_permissions_for_non_insights_user(self):
+        # charts and dashboards carry doctype-level read for everyone: the
+        # declared visibility narrows access per document, so viewing needs no
+        # Insights role (see test_visibility)
+        visibility_gated = ["Insights Chart v3", "Insights Dashboard v3"]
         with self.as_user(NON_INSIGHTS_USER):
             for doctype in PERMISSION_DOCTYPES:
+                if doctype in visibility_gated:
+                    continue
                 self.assertFalse(
                     frappe.has_permission(doctype, ptype="read"),
                     f"{doctype} should not be readable without an Insights role",

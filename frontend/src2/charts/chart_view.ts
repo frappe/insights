@@ -1,11 +1,12 @@
 // One chart as anything that draws it reads it: the config it draws itself from,
 // and the rows the server ran for it.
 //
-// Two feeds fill it. A public link names the saved chart to its own `get_data`,
-// which answers rows and nothing else — a reader never says what query to run,
+// Two sources fill it. A saved chart names itself to `insights.api.view`, which
+// answers rendering and nothing else — a reader never says what query to run,
 // and never learns what ran. The builder has no saved chart to name, so it sends
 // the config it is editing to `insights.api.authoring` and gets the derived
-// operations back with the rows. That endpoint needs an authoring seat.
+// operations back with the rows. That endpoint is closed to anyone without an
+// Insights role.
 //
 // Above the fetch the two are the same store: the same result, the same
 // loading, failure and empty states, the same freshness stamp, the same
@@ -28,10 +29,11 @@ import type {
 	QueryResultColumn,
 } from '../types/query.types'
 import type { ChartType } from '../types/chart.types'
-import type { InsightsChartv3, ViewerFilters, WorkbookDashboardItem } from '../types/workbook.types'
-import type { Chart } from './chart'
+import type { InsightsChartv3, FilterValues, WorkbookDashboardItem } from '../types/workbook.types'
 import type { RecordLinks } from './record_link'
 import type { DrillDimension, DrillLevel, DrillLevelData, DrillSubject } from './drill/drill_stack'
+import { fetchViewDrillData } from './drill/drill_api'
+import { normalizeChartConfig } from './helpers'
 import { labelWindowRows } from './window'
 
 /**
@@ -49,7 +51,7 @@ export type DashboardFilterContext = {
 	/** The dashboard drawing this card: the grid whose links route its filters. */
 	dashboard?: string
 	items?: WorkbookDashboardItem[]
-	filters?: ViewerFilters
+	filters?: FilterValues
 	/** What the reader narrowed this one card to, on the columns the card draws. */
 	cardFilters: CardFilter[]
 }
@@ -62,13 +64,13 @@ export type CardFilter = {
 }
 
 // everything a card draws the picture from. The builder's own document is one of
-// these, which is what lets the preview feed read straight off what is being edited
-export type ChartReadDoc = {
+// these, which is what lets the preview source read straight off what is being edited
+export type ChartViewDoc = {
 	name: string
 	title: string
 	chart_type: string
 	config: InsightsChartv3['config']
-	can_edit?: boolean
+	can_write?: boolean
 }
 
 type ChartDataResponse = {
@@ -108,7 +110,7 @@ type ChartDataResponse = {
  * one read each, and neither can move the other's rows. A reader that applies
  * nothing names no surface and shares the one unnamed read.
  */
-export type ChartReadSurface = {
+export type ChartViewSurface = {
 	id: string
 	// the filters this surface applies to the chart it names. It is asked at the
 	// moment of the read rather than stored on it, so a load always carries what
@@ -118,52 +120,52 @@ export type ChartReadSurface = {
 	// read, like the filters: a dashboard learns what its reader may do when its
 	// document lands. A surface that leaves it out authors.
 	// eslint-disable-next-line no-unused-vars
-	canEdit?: () => boolean
+	canWrite?: () => boolean
 }
 
-/** A read is one chart, as one feed's surface reads it. */
-function chartReadKey(feed: ChartFeedName, chart: Chart, surface?: ChartReadSurface) {
-	return `${feed}:${surface?.id || ''}:${chart.doc.name}`
+/** A read is one chart, as one source's surface reads it. */
+function chartViewKey(source: ChartSourceName, chart_name: string, surface?: ChartViewSurface) {
+	return `${source}:${surface?.id || ''}:${chart_name}`
 }
 
-/** Which feed the rows came from: the saved chart's, or the builder's. */
-export type ChartFeedName = 'saved' | 'preview'
+/** Which source the rows came from: the saved chart's, or the builder's. */
+export type ChartSourceName = 'saved' | 'preview'
 
-export type ChartFeed = {
-	doc: ChartReadDoc | ComputedRef<ChartReadDoc>
-	// the saved feed draws its frame from a second round trip. The preview feed
+export type ChartSource = {
+	doc: ChartViewDoc | ComputedRef<ChartViewDoc>
+	// the saved source draws its frame from a second round trip. The preview source
 	// already holds the document it is editing.
 	fetchDoc?: () => Promise<void>
 	fetchData: (
 		force: boolean,
 		filterContext?: DashboardFilterContext,
 	) => Promise<ChartDataResponse | undefined>
-	// What this feed would ask for, as a string. A load that would ask the same
+	// What this source would ask for, as a string. A load that would ask the same
 	// question again is dropped before it starts: the rows on screen are already
 	// its answer, and running it puts the card through its loading state for a
-	// picture that does not change. A feed that leaves it out runs every load.
+	// picture that does not change. A source that leaves it out runs every load.
 	requestKey?: (filterContext?: DashboardFilterContext) => string
-	// one level of a drill, through this feed's endpoint. The stack the dialog
+	// one level of a drill, through this source's endpoint. The stack the dialog
 	// holds is the whole request. No operations cross either way, except back out
 	// of the authoring endpoint.
 	fetchDrillData: (
 		levels: DrillLevel[],
 		filterContext?: DashboardFilterContext,
 	) => Promise<DrillLevelData>
-	// whether this feed answers a drill at all. A card draws the affordance only
+	// whether this source answers a drill at all. A card draws the affordance only
 	// where it leads somewhere, the way a table's sort is drawn only where the
 	// surface holds the config.
 	drillable?: boolean
 }
 
-export function makeChartRead(
-	feed: ChartFeed,
+export function makeChartView(
+	source: ChartSource,
 	// the surface this read belongs to: what it narrows the chart by, asked on
 	// every load
-	surface?: ChartReadSurface,
+	surface?: ChartViewSurface,
 ) {
-	// the preview feed hands over a ref to the document it is editing
-	const doc = computed(() => unref(feed.doc))
+	// the preview source hands over a ref to the document it is editing
+	const doc = computed(() => unref(source.doc))
 
 	function filterContext(): DashboardFilterContext | undefined {
 		return surface?.filterContext(doc.value.name)
@@ -217,7 +219,7 @@ export function makeChartRead(
 	}
 
 	async function load(force = false) {
-		const requestKey = feed.requestKey?.(filterContext())
+		const requestKey = source.requestKey?.(filterContext())
 		if (!force && !stale.value && requestKey !== undefined && requestKey === lastRequestKey)
 			return
 		lastRequestKey = requestKey
@@ -231,13 +233,13 @@ export function makeChartRead(
 		const token = ++currentLoad
 		const isStale = () => token !== currentLoad
 
-		const docLoad = feed.fetchDoc?.()
+		const docLoad = source.fetchDoc?.()
 		// Every card on a dashboard fires at once, and the server's query limiter
 		// turns the surplus away with a 503 rather than queueing them. Nothing is
 		// wrong when that happens — the card waits its turn and asks again, on the
 		// same queue the query builder uses. A real failure is not retried and
 		// reaches the card immediately.
-		const dataLoad = scheduleQueryExecution(() => feed.fetchData(force, filterContext()), {
+		const dataLoad = scheduleQueryExecution(() => source.fetchData(force, filterContext()), {
 			isStale,
 			priority: executionPriority.value,
 		})
@@ -248,7 +250,7 @@ export function makeChartRead(
 
 			const response = await dataLoad
 			if (isStale()) return
-			// a feed that answers nothing answers nothing about the chart either:
+			// a source that answers nothing answers nothing about the chart either:
 			// the card has no picture and no reason it has none, so it fails and
 			// the reader can ask again
 			if (!response) throw new Error(__('This chart could not be loaded'))
@@ -327,19 +329,19 @@ export function makeChartRead(
 	}
 
 	// Everything the drill dialog needs from this card. The card knows the shape a
-	// click is read against and the candidates a breakdown may offer. The feed
+	// click is read against and the candidates a breakdown may offer. The source
 	// knows the endpoint. Nothing above holds both halves.
 	const drillSubject = computed<DrillSubject>(() => ({
 		chart: { chart_type: doc.value.chart_type as ChartType, config: doc.value.config },
 		title: doc.value.title,
 		dimensions: drillDimensions.value,
-		fetch: (levels) => feed.fetchDrillData(levels, filterContext()),
+		fetch: (levels) => source.fetchDrillData(levels, filterContext()),
 	}))
 
-	const drillable = feed.drillable ?? true
+	const drillable = source.drillable ?? true
 
 	return reactive({
-		doc: feed.doc,
+		doc: source.doc,
 		drillable,
 		result,
 		sparklineResult,
@@ -365,7 +367,7 @@ export function makeChartRead(
 	})
 }
 
-export type ChartRead = ReturnType<typeof makeChartRead>
+export type ChartView = ReturnType<typeof makeChartView>
 
 /**
  * The read the chart builder draws, as the forms under it reach it.
@@ -373,34 +375,34 @@ export type ChartRead = ReturnType<typeof makeChartRead>
  * A key and not a string: the type travels with it, so a form that injects it
  * cannot name a read that was never provided.
  */
-export const chartPreviewKey: InjectionKey<ChartRead> = Symbol('chartPreview')
+export const chartPreviewKey: InjectionKey<ChartView> = Symbol('chartPreview')
 
-// One read per chart per surface per feed: the cards of one shared dashboard
+// One read per chart per surface per source: the cards of one shared dashboard
 // draw from the same rows, a second dashboard reading the same chart holds its
 // own, and the builder's preview of that chart is a read beside both. Both
-// feeds cache here, because what goes stale is the chart and not one of its
+// sources cache here, because what goes stale is the chart and not one of its
 // reads.
-const reads = new Map<string, { chart: string; read: ChartRead }>()
+const reads = new Map<string, { chart: string; read: ChartView }>()
 
 /**
- * The read behind one feed's surface, made on the first caller that asks for it.
+ * The read behind one source's surface, made on the first caller that asks for it.
  *
  * The key is built here rather than passed in: it is what tells one read from
  * another, and a caller free to hand over a key that disagrees with the chart
  * beside it can file a read where nothing invalidating that chart will find it.
  */
-export function cachedChartRead(
-	feed: ChartFeedName,
-	chart: Chart,
-	surface: ChartReadSurface | undefined,
-	make: () => ChartRead,
-): ChartRead {
-	const key = chartReadKey(feed, chart, surface)
+export function cachedChartView(
+	source: ChartSourceName,
+	chart_name: string,
+	surface: ChartViewSurface | undefined,
+	make: () => ChartView,
+): ChartView {
+	const key = chartViewKey(source, chart_name, surface)
 	const existing = reads.get(key)
 	if (existing) return existing.read
 
 	const read = make()
-	reads.set(key, { chart: String(chart.doc.name), read })
+	reads.set(key, { chart: chart_name, read })
 	return read
 }
 
@@ -411,13 +413,17 @@ export function cachedChartRead(
  * every invalidation after the insert names the real chart. Without this the
  * mark reaches nothing, and the card that drew the rows runs the query again.
  */
-export function renameChartReads(from: string, to: string) {
+export function renameChartViews(from: string, to: string) {
 	if (!from || !to || from === to) return
 	for (const [key, entry] of [...reads]) {
 		if (entry.chart !== from) continue
 		reads.delete(key)
 		reads.set(`${key.slice(0, key.length - from.length)}${to}`, { chart: to, read: entry.read })
 	}
+}
+
+function withoutHidden(columns?: QueryResultColumn[]): QueryResultColumn[] {
+	return (columns || []).filter((column) => !column.hidden)
 }
 
 /**
@@ -433,10 +439,6 @@ export function renameChartReads(from: string, to: string) {
  * the server, for rows that will have gone stale again by the time a card draws
  * them. A surface that mounts loads what it draws, and finds the mark waiting.
  */
-function withoutHidden(columns?: QueryResultColumn[]): QueryResultColumn[] {
-	return (columns || []).filter((column) => !column.hidden)
-}
-
 export function invalidateChart(chart_name: string) {
 	reads.forEach((entry) => {
 		if (entry.chart === chart_name) entry.read.stale = true
@@ -444,51 +446,73 @@ export function invalidateChart(chart_name: string) {
 }
 
 /**
- * The read feed for a public link: the saved chart, fetched through its own
- * `get_data` method by way of `run_doc_method`, which is where a guest's access
- * to a published chart is decided. The document itself comes with the chart
- * store, which a public link already loads the same way.
+ * The view source: a saved chart, named to the view endpoints.
  *
- * No drill: a public chart stays a picture, and the endpoint that would answer
- * a level needs an authoring seat.
+ * Every view surface comes through here — the public link, the app's dashboard
+ * page and the desk island alike. What runs is decided from the name, so nothing
+ * a reader sends can widen what they see, and no operations come back.
+ *
+ * `frame` is the chart's own frame, where the surface already holds it. A
+ * dashboard answers with every chart on it, so a card on one needs no second
+ * round trip.
  */
-export function useSharedChart(chart: Chart, surface?: ChartReadSurface) {
-	return cachedChartRead('saved', chart, surface, () => makeSharedChart(chart, surface))
+export function useChartView(chart_name: string, surface?: ChartViewSurface, frame?: ChartViewDoc) {
+	return cachedChartView('saved', chart_name, surface, () =>
+		makeSavedChartView(chart_name, surface, frame),
+	)
 }
 
-function makeSharedChart(chart: Chart, surface?: ChartReadSurface) {
+function makeSavedChartView(chart_name: string, surface?: ChartViewSurface, frame?: ChartViewDoc) {
+	const doc = reactive<ChartViewDoc>({
+		name: chart_name,
+		title: '',
+		chart_type: '',
+		config: normalizeChartConfig({}, ''),
+	})
+
+	// A config off the wire holds only what its owner set. The slots the card
+	// draws from are filled in here, once, wherever the frame came from.
+	function assignDoc(chart_doc: ChartViewDoc) {
+		Object.assign(doc, chart_doc)
+		doc.config = normalizeChartConfig(chart_doc.config || {}, chart_doc.chart_type)
+	}
+
+	if (frame) assignDoc(frame)
+
 	// A reader changes none of the config, so what the server is asked for is the
-	// chart's name and the narrowing the surface put on it.
+	// chart's name and the narrowing the surface put on it. Filter state goes by
+	// filter name: the server reads the links of the dashboard named here.
 	const request = (filterContext?: DashboardFilterContext) => ({
-		chart_name: chart.doc.name,
-		page_size: chart.doc.config.limit || 100,
-		// unrouted: the server reads the links under this chart's own name and
-		// decides which query each filter lands on. The routing table is not sent —
-		// a share link names the dashboard it opens and the server reads that
-		// dashboard's stored links.
+		chart: chart_name,
 		dashboard: filterContext?.dashboard,
 		filters: filterContext?.filters,
 		card_filters: filterContext?.cardFilters,
 	})
 
-	return makeChartRead(
+	return makeChartView(
 		{
-			// a public link draws a picture and nothing else
-			doc: computed(() => ({ ...chart.doc, can_edit: false }) as ChartReadDoc),
+			doc,
+			// only where the surface could not hand the frame over
+			fetchDoc: frame
+				? undefined
+				: () =>
+						call('insights.api.view.get_chart', { chart: chart_name }).then(
+							(chart_doc) => assignDoc(chart_doc as ChartViewDoc),
+						),
 			// A number card is one cell per reading, and every cell loads the chart
 			// it draws. Without a key each of them is a separate execution of the one
 			// query.
 			requestKey: (filterContext) => stableStringify(request(filterContext)),
-			fetchData: (force, filterContext) => {
-				const { chart_name, ...args } = request(filterContext)
-				return call('insights.api.run_doc_method', {
-					method: 'get_data',
-					docs: { doctype: 'Insights Chart v3', name: chart_name },
-					args: { force, ...args },
-				}).then((response: any) => response.message)
+			fetchData: (force, filterContext) =>
+				call('insights.api.view.get_chart_data', { ...request(filterContext), force }),
+			// Drilling is row exploration, and an anonymous reader is not offered it
+			// — a public chart stays a picture. The endpoint refuses Guest as well.
+			drillable: session.isLoggedIn,
+			// a card filter lands after the chart's summarize, where a drill does not go
+			fetchDrillData: (drill_stack, filterContext) => {
+				const { chart, dashboard, filters } = request(filterContext)
+				return fetchViewDrillData({ chart, dashboard, filters }, drill_stack)
 			},
-			drillable: false,
-			fetchDrillData: () => Promise.reject(new Error('A public chart cannot be drilled')),
 		},
 		surface,
 	)

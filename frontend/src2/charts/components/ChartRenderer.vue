@@ -2,7 +2,7 @@
 import { Button, Tooltip } from 'frappe-ui'
 import { Maximize, XIcon } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
-import { ChartRead } from '../chart_read'
+import { ChartView } from '../chart_view'
 import { __ } from '../../translation'
 import AuthoringDrillDown from '../drill/AuthoringDrillDown.vue'
 import type { ChartSegmentClick } from '../drill/segment_click'
@@ -13,7 +13,7 @@ import ChartChrome from './ChartChrome.vue'
 // `actionsRevealed`: a host whose own action is open (a portaled popover, a
 // find box) has taken the pointer out of the hover group, and says so
 const props = defineProps<{
-	chart: ChartRead
+	chart: ChartView
 	reading?: string
 	hideMaximize?: boolean
 	actionsRevealed?: boolean
@@ -25,9 +25,9 @@ const emit = defineEmits<{
 	resetFilters: []
 }>()
 
-// The author's drill is the reader's drill plus "open as query" — one dialog,
-// two feeds. What the card's store was built from decides which endpoint answers
-// a level, so nothing here says.
+// The owner's drill is the reader's drill plus "open as query" — one dialog,
+// two sources. What the card's store was built from decides which endpoint
+// answers a level, so nothing here says.
 const clicked = ref<ChartSegmentClick>()
 // a new card is a new drill: the stack belongs to the click that started it
 watch(

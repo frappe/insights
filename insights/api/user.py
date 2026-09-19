@@ -102,6 +102,22 @@ def get_users(search_term: str | None = None):
 
 
 @insights_whitelist()
+def get_roles():
+    """Roles an owner can name at the `Roles` visibility level"""
+    return frappe.get_all(
+        "Role",
+        filters={
+            "disabled": 0,
+            # "All" is every logged in user and "Guest" is every visitor,
+            # which the "Everyone" and "Public" levels already say
+            "name": ["not in", ("All", "Guest", "Administrator")],
+        },
+        pluck="name",
+        order_by="name asc",
+    )
+
+
+@insights_whitelist()
 def get_teams(search_term: str | None = None):
     teams = frappe.get_list(
         "Insights Team",

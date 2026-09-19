@@ -17,7 +17,7 @@ import type { ChartSegmentClick } from './segment_click'
 // It is a component of its own rather than a flag on the drill because of what
 // it imports. A query editor is the whole builder, and the desk island draws
 // charts without any of it — the same split `chart_preview` makes against
-// `chart_read`. A reading surface mounts `ChartDrillDown` and gets none of this.
+// `chart_view`. A view surface mounts `ChartDrillDown` and gets none of this.
 const props = defineProps<{
 	subject: DrillSubject
 	clicked: ChartSegmentClick

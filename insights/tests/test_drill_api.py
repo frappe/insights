@@ -2,7 +2,7 @@
 
 The walk is `chart_drill`'s: a chart document, a stack of levels, and the rows
 behind the segment the stack describes. It is tested at the layer, under the
-author who built the chart, because the layer is what every endpoint shares.
+owner who built the chart, because the layer is what every endpoint shares.
 `test_authoring_api` covers the builder's endpoint and what it adds.
 """
 
@@ -12,13 +12,19 @@ from unittest.mock import patch
 
 import frappe
 
+from insights.api.view import get_chart_data, get_drill_data
 from insights.insights.doctype.insights_chart_v3.chart_drill import drill_data, drill_dimensions
 from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import route_filters
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import DT, as_user, create_user, delete_users, delete_workbooks
 
-AUTHOR = "drill_api_author@test.com"
+OWNER = "drill_api_owner@test.com"
+# admitted by visibility, holds no Insights role at all: the desk reader
+DESK_USER = "drill_api_desk_user@test.com"
+# holds an Insights role, but the owner's content never admits them
+OUTSIDER = "drill_api_outsider@test.com"
+GUEST = "Guest"
 
 WORKBOOK_TITLE = "Drill API Test Workbook"
 DASHBOARD_TITLE = "Drill API Test Dashboard"
@@ -29,13 +35,14 @@ TODO_PREFIX = "Drill API Test"
 OPEN_HIGH = f"{TODO_PREFIX} open high"
 OPEN_LOW = f"{TODO_PREFIX} open low"
 CLOSED_HIGH = f"{TODO_PREFIX} closed high"
-AUTHOR_TODOS = {
+OWNER_TODOS = {
     OPEN_HIGH: ("Open", "High"),
     OPEN_LOW: ("Open", "Low"),
     CLOSED_HIGH: ("Closed", "High"),
 }
+OUTSIDER_TODO = f"{TODO_PREFIX} outsider open high"
 # those three by the number a ranked rows page puts first, biggest first
-BY_WEIGHT = sorted(AUTHOR_TODOS, key=len, reverse=True)
+BY_WEIGHT = sorted(OWNER_TODOS, key=len, reverse=True)
 
 # the todos the ordered tests break down: dated, spread unevenly over one year,
 # so chronological order and a ranking by the measure disagree about every
@@ -233,12 +240,15 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         frappe.db.set_single_value(DT.SETTINGS, "enable_permissions", 0)
         cls.cleanup()
 
-        create_user(AUTHOR, first_name="Drill", last_name="Author", roles="Insights User")
+        create_user(OWNER, first_name="Drill", last_name="Owner", roles="Insights User")
+        create_user(OUTSIDER, first_name="Drill", last_name="Outsider", roles="Insights User")
+        create_user(DESK_USER, first_name="Drill", last_name="Desk User")
 
-        for description, (status, priority) in AUTHOR_TODOS.items():
-            cls.make_todo(description, status, priority, AUTHOR)
+        for description, (status, priority) in OWNER_TODOS.items():
+            cls.make_todo(description, status, priority, OWNER)
+        cls.make_todo(OUTSIDER_TODO, "Open", "High", OUTSIDER)
         for description, (date, priority) in TIMELINE_TODOS.items():
-            cls.make_todo(description, "Open", priority, AUTHOR, date=date)
+            cls.make_todo(description, "Open", priority, OWNER, date=date)
 
     @classmethod
     def make_todo(cls, description, status, priority, allocated_to, date=None):
@@ -267,7 +277,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
                 "ToDo", filters={"description": ["like", f"%{prefix}%"]}, pluck="name"
             ):
                 frappe.delete_doc("ToDo", todo, force=True, ignore_permissions=True)
-        delete_users(AUTHOR)
+        delete_users(OWNER, OUTSIDER, DESK_USER)
 
     # fixtures
 
@@ -275,11 +285,13 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         self,
         chart_type="Bar",
         config=None,
+        visibility="Everyone",
         title=DASHBOARD_TITLE,
         operations=None,
+        apply_user_permissions=0,
     ):
-        """A dashboard the author owns, with one chart and one filter linked to it."""
-        with as_user(AUTHOR):
+        """A dashboard the owner owns, with one chart and one filter linked to it."""
+        with as_user(OWNER):
             workbook = frappe.get_doc({"doctype": DT.WORKBOOK, "title": WORKBOOK_TITLE}).insert()
             query = frappe.get_doc(
                 {
@@ -299,6 +311,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
                     "query": query.name,
                     "chart_type": chart_type,
                     "config": config if config is not None else bar_config(),
+                    "visibility": "Private",
                 }
             ).insert()
             dashboard = frappe.get_doc(
@@ -306,6 +319,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
                     "doctype": DT.DASHBOARD,
                     "title": title,
                     "workbook": workbook.name,
+                    "visibility": visibility,
                     "items": [
                         {
                             "type": "chart",
@@ -322,6 +336,9 @@ class TestDrillAPI(InsightsIntegrationTestCase):
                     ],
                 }
             ).insert()
+
+        chart = frappe.get_doc(DT.CHART, chart.name)
+        chart.db_set("apply_user_permissions", apply_user_permissions, update_modified=False)
 
         return (
             frappe.get_doc(DT.QUERY, query.name),
@@ -357,7 +374,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         _, chart, dashboard = self.make_content()
 
         result = self.drill(
-            AUTHOR,
+            OWNER,
             chart.name,
             dashboard.name,
             drill_stack=[rows_level(filters=[equals("status", "Open")], measure="count_of_rows")],
@@ -376,7 +393,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         _, chart, dashboard = self.make_content()
 
         result = self.drill(
-            AUTHOR,
+            OWNER,
             chart.name,
             dashboard.name,
             drill_stack=[
@@ -396,7 +413,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         _, chart, dashboard = self.make_content()
 
         result = self.drill(
-            AUTHOR,
+            OWNER,
             chart.name,
             dashboard.name,
             drill_stack=[breakdown_level("creation", measure="count_of_rows")],
@@ -405,7 +422,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         # the fixtures are created within one second, so the span asks for the finest
         # grain `GRAINS` offers and they all land within a bucket of it
         self.assertEqual(result["granularity"], "minute")
-        self.assertEqual(sum(row["count_of_rows"] for row in result["rows"]), len(AUTHOR_TODOS))
+        self.assertEqual(sum(row["count_of_rows"] for row in result["rows"]), len(OWNER_TODOS))
 
     # @feature charts.drill-breakdown
     def test_a_breakdown_is_cut_to_a_ranking(self):
@@ -419,7 +436,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
 
         with patch("insights.insights.doctype.insights_chart_v3.chart_drill.BREAKDOWN_SIZE", 2):
             result = self.drill(
-                AUTHOR,
+                OWNER,
                 chart.name,
                 dashboard.name,
                 drill_stack=[breakdown_level("description", measure="count_of_rows")],
@@ -436,7 +453,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
 
         with patch("insights.insights.doctype.insights_chart_v3.chart_drill.BREAKDOWN_SIZE", 1):
             result = self.drill(
-                AUTHOR,
+                OWNER,
                 chart.name,
                 dashboard.name,
                 drill_stack=[rows_level(measure="count_of_rows")],
@@ -453,7 +470,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             operations=weighted_operations(), config=bar_config([weight()])
         )
 
-        result = self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=[rows_level(measure="Weight")])
+        result = self.drill(OWNER, chart.name, dashboard.name, drill_stack=[rows_level(measure="Weight")])
 
         self.assertEqual([row["description"] for row in result["rows"]], BY_WEIGHT)
 
@@ -463,7 +480,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             operations=weighted_operations(), config=bar_config([weight()])
         )
 
-        result = self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=[rows_level()])
+        result = self.drill(OWNER, chart.name, dashboard.name, drill_stack=[rows_level()])
 
         self.assertEqual([row["description"] for row in result["rows"]], BY_WEIGHT)
 
@@ -472,9 +489,9 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         """Counting rows ranks none of them, and a name is no size."""
         _, chart, dashboard = self.make_content(config=bar_config([count()]))
 
-        result = self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=[rows_level(measure="Todos")])
+        result = self.drill(OWNER, chart.name, dashboard.name, drill_stack=[rows_level(measure="Todos")])
 
-        self.assertEqual(self.descriptions(result), sorted(AUTHOR_TODOS))
+        self.assertEqual(self.descriptions(result), sorted(OWNER_TODOS))
 
     # the order a breakdown comes back in
     #
@@ -485,7 +502,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
     def test_a_dimension_with_an_order_of_its_own_is_shown_in_it(self):
         _, chart, dashboard = self.timeline()
 
-        result = self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=[breakdown_level("date")])
+        result = self.drill(OWNER, chart.name, dashboard.name, drill_stack=[breakdown_level("date")])
 
         # a ranking would put February first and read as noise. A series reads
         # forwards, whatever the sizes along it
@@ -496,7 +513,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
     def test_a_dimension_without_one_is_still_ranked_by_the_measure(self):
         _, chart, dashboard = self.timeline()
 
-        result = self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=[breakdown_level("priority")])
+        result = self.drill(OWNER, chart.name, dashboard.name, drill_stack=[breakdown_level("priority")])
 
         # biggest first, which is the only reading a set of labels has
         self.assertEqual(
@@ -508,9 +525,9 @@ class TestDrillAPI(InsightsIntegrationTestCase):
     def test_the_answer_says_which_way_its_rows_run_and_what_they_are_bucketed_by(self):
         _, chart, dashboard = self.timeline()
 
-        ordered = self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=[breakdown_level("date")])
-        ranked = self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=[breakdown_level("priority")])
-        behind = self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=[rows_level()])
+        ordered = self.drill(OWNER, chart.name, dashboard.name, drill_stack=[breakdown_level("date")])
+        ranked = self.drill(OWNER, chart.name, dashboard.name, drill_stack=[breakdown_level("priority")])
+        behind = self.drill(OWNER, chart.name, dashboard.name, drill_stack=[rows_level()])
 
         # the client draws by what it is told, never by a column type it guesses from
         self.assertEqual((ordered["ordered"], ordered["granularity"]), (True, "month"))
@@ -525,14 +542,14 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         _, counted, dashboard = self.timeline()
         _, averaged, average_dashboard = self.timeline(config=bar_config(measures=[average()]))
 
-        added = self.drill(AUTHOR, counted.name, dashboard.name, drill_stack=[breakdown_level("priority")])
+        added = self.drill(OWNER, counted.name, dashboard.name, drill_stack=[breakdown_level("priority")])
         averages = self.drill(
-            AUTHOR,
+            OWNER,
             averaged.name,
             average_dashboard.name,
             drill_stack=[breakdown_level("priority")],
         )
-        behind = self.drill(AUTHOR, counted.name, dashboard.name, drill_stack=[rows_level()])
+        behind = self.drill(OWNER, counted.name, dashboard.name, drill_stack=[rows_level()])
 
         self.assertTrue(added["additive"])
         # two groups' averages do not average, so these are not parts of anything
@@ -545,9 +562,9 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         """A fixed default is arbitrary: one month of data is not ten years of it."""
         _, chart, dashboard = self.timeline()
 
-        year = self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=[breakdown_level("date")])
+        year = self.drill(OWNER, chart.name, dashboard.name, drill_stack=[breakdown_level("date")])
         february = self.drill(
-            AUTHOR,
+            OWNER,
             chart.name,
             dashboard.name,
             drill_stack=[
@@ -570,7 +587,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
 
         with patch("insights.insights.doctype.insights_chart_v3.chart_drill.BREAKDOWN_SIZE", 2):
             result = self.drill(
-                AUTHOR,
+                OWNER,
                 chart.name,
                 dashboard.name,
                 drill_stack=[breakdown_level("date", granularity="month")],
@@ -586,7 +603,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         _, chart, dashboard = self.timeline()
 
         result = self.drill(
-            AUTHOR,
+            OWNER,
             chart.name,
             dashboard.name,
             drill_stack=[breakdown_level("date", granularity="year")],
@@ -622,7 +639,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         )
         for on_chart, on_dashboard, level in refused:
             with self.assertRaises(frappe.ValidationError) as raised:
-                self.drill(AUTHOR, on_chart.name, on_dashboard.name, drill_stack=[level])
+                self.drill(OWNER, on_chart.name, on_dashboard.name, drill_stack=[level])
             self.assertIn("cannot be broken down by", str(raised.exception))
 
     # @feature charts.drill-grain
@@ -634,7 +651,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         ]
         _, chart, dashboard = self.make_content(operations=timed)
 
-        result = self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=[breakdown_level("creation")])
+        result = self.drill(OWNER, chart.name, dashboard.name, drill_stack=[breakdown_level("creation")])
 
         self.assertTrue(result["ordered"])
         # the fixtures are created within one second, so the derivation floors on its finest grain
@@ -648,7 +665,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         that makes the whole level look like it does not add up."""
         _, chart, dashboard = self.make_content(chart_type="Number", config=number_config())
 
-        result = self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=[breakdown_level("priority")])
+        result = self.drill(OWNER, chart.name, dashboard.name, drill_stack=[breakdown_level("priority")])
 
         self.assertEqual(self.column_names(result), ["priority", "Todos"])
         self.assertTrue(result["additive"])
@@ -665,7 +682,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         _, chart, dashboard = self.make_content(operations=timed)
 
         hours = self.drill(
-            AUTHOR,
+            OWNER,
             chart.name,
             dashboard.name,
             drill_stack=[breakdown_level("creation", granularity="hour")],
@@ -678,13 +695,13 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             breakdown_level("creation", granularity="hour"),
             rows_level(filters=[equals("creation", clicked)]),
         ]
-        behind = self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=stack)
-        self.assertEqual(behind["total_row_count"], len(AUTHOR_TODOS))
+        behind = self.drill(OWNER, chart.name, dashboard.name, drill_stack=stack)
+        self.assertEqual(behind["total_row_count"], len(OWNER_TODOS))
 
         # and the bucket it was narrowed by is an hour of the clock. A bound
         # carrying a date is one a store that does not coerce it away drops every
         # row for, and one carrying tomorrow's is a bucket nothing can be inside
-        handed = self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=stack, with_operations=True)
+        handed = self.drill(OWNER, chart.name, dashboard.name, drill_stack=stack, with_operations=True)
         bounds = [
             rule["value"]
             for operation in handed["operations"]
@@ -709,7 +726,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         )
 
         result = self.drill(
-            AUTHOR,
+            OWNER,
             chart.name,
             dashboard.name,
             drill_stack=[breakdown_level("priority", filters=[equals("status", "Open")], measure="Todos")],
@@ -722,7 +739,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         _, chart, dashboard = self.make_content()
 
         result = self.drill(
-            AUTHOR,
+            OWNER,
             chart.name,
             dashboard.name,
             drill_stack=[
@@ -740,9 +757,9 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             chart_type="Number", config={"number_columns": [count("Todos")]}
         )
 
-        result = self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=[rows_level(measure="Todos")])
+        result = self.drill(OWNER, chart.name, dashboard.name, drill_stack=[rows_level(measure="Todos")])
 
-        self.assertEqual(self.descriptions(result), sorted(AUTHOR_TODOS))
+        self.assertEqual(self.descriptions(result), sorted(OWNER_TODOS))
 
     # @feature charts.drill-number-card
     def test_a_windowed_card_drills_into_the_window_it_reads(self):
@@ -763,7 +780,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         )
 
         result = self.drill(
-            AUTHOR,
+            OWNER,
             chart.name,
             dashboard.name,
             drill_stack=[rows_level(filters=[equals("date", TIMELINE_MONTHS[1])], measure="Todos")],
@@ -786,7 +803,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         )
 
         result = self.drill(
-            AUTHOR,
+            OWNER,
             chart.name,
             dashboard.name,
             # the newest bucket, which is the one the card reads
@@ -810,7 +827,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             },
         )
 
-        result = self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=[rows_level(measure="Open")])
+        result = self.drill(OWNER, chart.name, dashboard.name, drill_stack=[rows_level(measure="Open")])
 
         # the rows behind the number are the ones the measure counted
         self.assertEqual(self.descriptions(result), sorted([OPEN_HIGH, OPEN_LOW]))
@@ -822,7 +839,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         _, chart, dashboard = self.make_content(chart_type="Table", config=pivot_config())
 
         result = self.drill(
-            AUTHOR,
+            OWNER,
             chart.name,
             dashboard.name,
             # the cell under the "High" column, on the "Open" row: the row
@@ -848,7 +865,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         )
 
         result = self.drill(
-            AUTHOR,
+            OWNER,
             chart.name,
             dashboard.name,
             # the axis value and the series value, both pinned by the one click
@@ -878,13 +895,13 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         this_month = frappe.utils.get_first_day(frappe.utils.today())
 
         rows = self.drill(
-            AUTHOR,
+            OWNER,
             chart.name,
             dashboard.name,
             drill_stack=[rows_level(filters=[equals("creation", str(this_month))])],
         )
         empty = self.drill(
-            AUTHOR,
+            OWNER,
             chart.name,
             dashboard.name,
             drill_stack=[
@@ -892,7 +909,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             ],
         )
 
-        self.assertEqual(self.descriptions(rows), sorted(AUTHOR_TODOS))
+        self.assertEqual(self.descriptions(rows), sorted(OWNER_TODOS))
         self.assertEqual(empty["rows"], [])
 
     # The chart's own operation is not the only thing that buckets a date: a
@@ -904,7 +921,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         _, chart, dashboard = self.timeline()
 
         result = self.drill(
-            AUTHOR,
+            OWNER,
             chart.name,
             dashboard.name,
             drill_stack=[
@@ -921,7 +938,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         _, chart, dashboard = self.timeline()
 
         result = self.drill(
-            AUTHOR,
+            OWNER,
             chart.name,
             dashboard.name,
             drill_stack=[
@@ -940,7 +957,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         _, chart, dashboard = self.timeline()
 
         result = self.drill(
-            AUTHOR,
+            OWNER,
             chart.name,
             dashboard.name,
             drill_stack=[
@@ -960,7 +977,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         _, chart, dashboard = self.timeline()
 
         result = self.drill(
-            AUTHOR,
+            OWNER,
             chart.name,
             dashboard.name,
             drill_stack=[
@@ -977,7 +994,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
 
         with self.assertRaises(frappe.ValidationError) as raised:
             self.drill(
-                AUTHOR,
+                OWNER,
                 chart.name,
                 dashboard.name,
                 drill_stack=[
@@ -999,7 +1016,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             [breakdown_level("password")],
         ):
             with self.assertRaises(frappe.ValidationError) as raised:
-                self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=stack)
+                self.drill(OWNER, chart.name, dashboard.name, drill_stack=stack)
             self.assertIn("is not a column", str(raised.exception))
 
     # @feature charts.drill-surface-bound
@@ -1007,7 +1024,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         query, chart, dashboard = self.make_content()
 
         result = self.drill(
-            AUTHOR,
+            OWNER,
             chart.name,
             dashboard.name,
             drill_stack=[rows_level(filters=[equals("status", "Open")])],
@@ -1024,7 +1041,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
     def test_the_chart_offers_the_dimensions_of_the_pre_summarize_surface(self):
         _, chart, _ = self.make_content()
 
-        with as_user(AUTHOR), db_connections():
+        with as_user(OWNER), db_connections():
             dimensions = {d["name"]: d["type"] for d in drill_dimensions(chart)}
         # the surface underneath the summarize, so a column the chart does not
         # draw is still a candidate
@@ -1041,7 +1058,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         _, chart, dashboard = self.make_content()
 
         result = self.drill(
-            AUTHOR,
+            OWNER,
             chart.name,
             dashboard.name,
             drill_stack=[rows_level(filters=[equals("status", "Open")])],
@@ -1064,7 +1081,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         _, chart, dashboard = self.make_content(operations=renamed)
 
         result = self.drill(
-            AUTHOR,
+            OWNER,
             chart.name,
             dashboard.name,
             drill_stack=[rows_level(filters=[equals("status", "Open")])],
@@ -1084,7 +1101,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         _, chart, dashboard = self.make_content(operations=dropped)
 
         result = self.drill(
-            AUTHOR,
+            OWNER,
             chart.name,
             dashboard.name,
             drill_stack=[rows_level(filters=[equals("status", "Open")])],
@@ -1102,7 +1119,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         )
 
         result = self.drill(
-            AUTHOR,
+            OWNER,
             chart.name,
             dashboard.name,
             drill_stack=[rows_level(filters=[equals("parenttype", "User")])],
@@ -1118,7 +1135,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         _, chart, dashboard = self.make_content()
 
         result = self.drill(
-            AUTHOR,
+            OWNER,
             chart.name,
             dashboard.name,
             drill_stack=[breakdown_level("priority", filters=[equals("status", "Open")])],
@@ -1133,7 +1150,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         _, chart, dashboard = self.make_content()
 
         result = self.drill(
-            AUTHOR,
+            OWNER,
             chart.name,
             dashboard.name,
             filters={"Description": {"operator": "contains", "value": "open low"}},
@@ -1155,7 +1172,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             query.name: filter_group("description", "contains", "open low"),
         }
 
-        with as_user(AUTHOR), db_connections():
+        with as_user(OWNER), db_connections():
             result = drill_data(
                 chart,
                 [rows_level(filters=[equals("status", "Open")])],
@@ -1165,9 +1182,62 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         # the query-keyed group still narrows the rows
         self.assertEqual(self.descriptions(result), [OPEN_LOW])
 
+    # who may drill, through `insights.api.view`
+
+    def view_drill(self, user, chart, dashboard, **kwargs):
+        with as_user(user), db_connections():
+            return get_drill_data(chart=chart, dashboard=dashboard, **kwargs)
+
+    # @feature dashboard.drill permissions.non-insights-user
+    def test_a_reader_without_an_insights_role_drills_what_they_can_see(self):
+        _, chart, dashboard = self.make_content()
+        self.assertNotIn("Insights User", frappe.get_roles(DESK_USER))
+
+        result = self.view_drill(
+            DESK_USER, chart.name, dashboard.name, drill_stack=[rows_level(measure="count_of_rows")]
+        )
+
+        self.assertEqual(self.descriptions(result), sorted(OWNER_TODOS))
+
+    # @feature dashboard.drill permissions.chart-apply-user-permissions
+    def test_the_drill_runs_under_the_permissions_the_chart_declares(self):
+        _, chart, dashboard = self.make_content(apply_user_permissions=1)
+
+        result = self.view_drill(
+            DESK_USER, chart.name, dashboard.name, drill_stack=[rows_level(measure="count_of_rows")]
+        )
+
+        # a checked box is the engine's native permission application, so a
+        # roleless reader sees none of the owner's rows behind the number either
+        self.assertEqual(self.descriptions(result), [])
+
+    # @feature permissions.denied-is-not-found
+    def test_an_outsider_is_answered_like_a_missing_reference(self):
+        _, chart, dashboard = self.make_content(visibility="Private")
+
+        with as_user(OUTSIDER):
+            for reference, on_dashboard in ((chart.name, None), (chart.name, dashboard.name)):
+                with self.assertRaises(frappe.DoesNotExistError):
+                    get_drill_data(chart=reference, dashboard=on_dashboard, drill_stack=[rows_level()])
+
+    # @feature shared.no-drill
+    def test_a_guest_gets_no_drill_on_public_content(self):
+        _, chart, dashboard = self.make_content()
+        dashboard.db_set("visibility", "Public", update_modified=False)
+
+        with as_user(GUEST), db_connections():
+            # the picture is public, and stays a picture
+            response = get_chart_data(chart=chart.name, dashboard=dashboard.name, force=True)
+            self.assertEqual(response["drill"]["dimensions"], [])
+
+            with self.assertRaises(frappe.PermissionError) as raised:
+                get_drill_data(chart=chart.name, dashboard=dashboard.name, drill_stack=[rows_level()])
+
+        self.assertNotIsInstance(raised.exception, frappe.DoesNotExistError)
+
     # @feature charts.drill-rows
     def test_a_stack_without_a_level_asks_for_nothing(self):
         _, chart, dashboard = self.make_content()
 
         with self.assertRaises(frappe.ValidationError):
-            self.drill(AUTHOR, chart.name, dashboard.name, drill_stack=[])
+            self.drill(OWNER, chart.name, dashboard.name, drill_stack=[])

@@ -15,7 +15,7 @@ import {
 } from '../../types/chart.types'
 import { DimensionOption } from '../../types/query.types'
 import { Chart } from '../chart'
-import { chartPreviewKey } from '../chart_read'
+import { chartPreviewKey } from '../chart_view'
 import BarChartConfigForm from './BarChartConfigForm.vue'
 import DonutChartConfigForm from './DonutChartConfigForm.vue'
 import FunnelChartConfigForm from './FunnelChartConfigForm.vue'
