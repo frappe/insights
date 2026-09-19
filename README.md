@@ -175,15 +175,13 @@ To setup the repository locally follow the steps mentioned below:
 
 ## Compatibility Matrix
 
-A [nightly workflow](.github/workflows/compat-matrix.yml) installs each branch and runs the test suite. It verifies these combinations:
+A [nightly workflow](.github/workflows/compat-matrix.yml) installs each branch and runs the test suite, on the Node and Python each Frappe branch supports. Pull requests into version-3 run it too. It verifies these combinations:
 
 | Insights Branch | Frappe Framework       | Node   | Python     |
 |-----------------|------------------------|--------|------------|
-| main            | version-15             | 20     | 3.10       |
-| version-3       | version-15, version-16 | 20, 24 | 3.10, 3.14 |
-| develop         | version-15, version-16 | 20, 24 | 3.10, 3.14 |
-
-> Note: the Node column lists the versions CI runs, not the minimum. Each branch declares its own minimum in `frontend/package.json`: `>=16.0.0` on main, `>=18` on version-3, `>=20.19.0` on develop.
+| main            | version-15             | 18     | 3.10       |
+| version-3       | version-15, version-16 | 18, 24 | 3.10, 3.14 |
+| develop         | develop                | 24     | 3.14       |
 
 ## Learn and connect
 
