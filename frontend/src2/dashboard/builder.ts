@@ -95,6 +95,10 @@ export function useDashboardBuilder(name: string, charts: WorkbookChart[]): Dash
 		filtered: dashboard.cardIsFiltered,
 		resetCardFilters: dashboard.resetCardFilters,
 		chartView: dashboard.chartView,
+		chartRoute: (chart: string) =>
+			dashboard.doc.has_workbook_access
+				? `/workbook/${dashboard.doc.workbook}/chart/${chart}`
+				: undefined,
 		loadChart,
 		refresh: dashboard.refresh,
 
@@ -139,10 +143,6 @@ export function useDashboardBuilder(name: string, charts: WorkbookChart[]): Dash
 				event.dataTransfer.dropEffect = 'copy'
 			},
 			drop: dropChart,
-			chartRoute: (chart: string) =>
-				dashboard.doc.has_workbook_access
-					? `/workbook/${dashboard.doc.workbook}/chart/${chart}`
-					: undefined,
 		}),
 	}) as DashboardInBuilder
 }

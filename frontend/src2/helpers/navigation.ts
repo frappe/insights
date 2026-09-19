@@ -7,6 +7,7 @@ import type { RouteLocationRaw } from 'vue-router'
 
 export type Router = {
 	resolveHref: (to: RouteLocationRaw) => string
+	navigate: (to: RouteLocationRaw) => void
 }
 
 let router: Router | null = null
@@ -18,4 +19,9 @@ export function setRouter(next: Router) {
 export function resolveHref(to: RouteLocationRaw): string {
 	if (router) return router.resolveHref(to)
 	return typeof to === 'string' ? to : ''
+}
+
+export function navigate(to: RouteLocationRaw) {
+	if (router) return router.navigate(to)
+	window.location.assign(resolveHref(to))
 }

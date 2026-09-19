@@ -31,7 +31,7 @@ const actionsActive = ref(false)
 // and the dashboard only names it, so the action sits on the card and never
 // touches the layout state.
 const chartRoute = computed(() =>
-	props.item.chart ? props.dashboard.builder?.chartRoute(props.item.chart) : undefined,
+	props.item.chart ? props.dashboard.chartRoute?.(props.item.chart) : undefined,
 )
 </script>
 

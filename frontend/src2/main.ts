@@ -25,6 +25,7 @@ app.use(pinia)
 app.use(router)
 setRouter({
 	resolveHref: (to) => router.resolve(to).href,
+	navigate: (to) => router.push(to),
 })
 
 const stop = watchEffect(() => {

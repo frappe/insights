@@ -14,7 +14,7 @@ const props = defineProps<DashboardCellProps>()
 </script>
 
 <template>
-	<div class="flex h-full w-full justify-start p-2">
+	<div class="group flex h-full w-full justify-start p-2">
 		<DashboardChartView
 			v-if="props.item.type === 'chart'"
 			:item="props.item"

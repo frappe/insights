@@ -31,6 +31,11 @@ setRouter({
 	// affordance for it.
 	resolveHref: (to) =>
 		typeof to === 'string' ? `${window.location.origin}${APP_PATH}${to}` : '',
+	// the page around the island is the host's, so leaving it is a page load
+	navigate: (to) => {
+		if (typeof to === 'string')
+			window.location.assign(`${window.location.origin}${APP_PATH}${to}`)
+	},
 })
 
 /**

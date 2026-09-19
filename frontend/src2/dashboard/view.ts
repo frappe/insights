@@ -205,8 +205,6 @@ export type DashboardBuilderActions = {
 	// a chart dragged in from the workbook's sidebar
 	dragOver: (event: DragEvent) => void
 	drop: (event: DragEvent) => void
-	// where a chart on this dashboard is edited, for an owner who may edit it
-	chartRoute: (chart: string) => string | undefined
 }
 
 /**
@@ -261,6 +259,9 @@ export type DashboardView = {
 	// reader who cannot edit — and for the builder, which is already there.
 	// Nothing navigates here; a surface resolves it the way its own links resolve
 	builderRoute?: string
+	// where a chart on this dashboard is edited, as an SPA route. Absent for a
+	// reader who cannot edit it
+	chartRoute?: (chart: string) => string | undefined
 	builder?: DashboardBuilderActions
 }
 
@@ -293,6 +294,8 @@ export function useDashboardView(
 		cardFilters: {} as Record<string, Filter[]>,
 		// where the builder for this dashboard is, for a reader who may edit it
 		builderRoute: undefined as string | undefined,
+		// the workbook a reader who may edit is sent to, for a chart on the grid
+		workbook: undefined as string | undefined,
 	})
 
 	// one read per chart, so the cells that draw one chart ask once
@@ -412,6 +415,7 @@ export function useDashboardView(
 		state.filters = {}
 		state.cardFilters = {}
 		state.builderRoute = undefined
+		state.workbook = undefined
 		// Every read closes over the dashboard it was built for, so the next one
 		// starts without them rather than with the last one's.
 		reads = new Map()
@@ -431,6 +435,7 @@ export function useDashboardView(
 				openReads()
 				if (doc.can_write && doc.workbook) {
 					state.builderRoute = `/workbook/${doc.workbook}/dashboard/${doc.name}`
+					state.workbook = doc.workbook
 				}
 			})
 			.catch(() => {
@@ -484,6 +489,8 @@ export function useDashboardView(
 		loadChart: (chart: string) => reads.get(chart)?.load(),
 		refresh,
 		builderRoute: computed(() => state.builderRoute),
+		chartRoute: (chart: string) =>
+			state.workbook ? `/workbook/${state.workbook}/chart/${chart}` : undefined,
 	}) as DashboardView
 }
 
