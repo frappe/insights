@@ -152,17 +152,9 @@ def timeline() -> dict:
 
 
 def installed_on():
-    """When Insights arrived. A site installed before the row existed answers
-    with its oldest Insights document instead."""
-    row = frappe.db.get_value("Installed Application", {"app_name": "insights"}, "creation")
-    return row or min(
-        (
-            created
-            for created in (oldest(WORKBOOK_DOCTYPE), oldest(DATA_SOURCE_DOCTYPE, {"is_site_db": 0}))
-            if created
-        ),
-        default=None,
-    )
+    """Installing an app logs every patch it ships as run. A migrate rewrites
+    the `Installed Application` rows, so their creation is the last migrate."""
+    return oldest("Patch Log", {"patch": ["like", "insights.%"]})
 
 
 def oldest(doctype, filters=None):

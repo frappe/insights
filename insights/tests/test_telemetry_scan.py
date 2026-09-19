@@ -9,6 +9,7 @@ will not answer costs its own tables, never the send.
 from unittest.mock import MagicMock, patch
 
 import frappe
+from frappe.utils import add_days, now_datetime
 
 from insights import telemetry_scan
 from insights.telemetry import default_properties, is_standard_app
@@ -168,6 +169,15 @@ class TestSiteScan(InsightsIntegrationTestCase):
         props = site_profile()
         self.assertIn("insights", props["apps"])
         self.assertEqual(props["custom_apps"], len(frappe.get_installed_apps()) - len(props["apps"]))
+
+    # @feature telemetry.site-scan
+    def test_the_install_date_survives_a_migrate(self):
+        first_patch = frappe.get_all(
+            "Patch Log", filters={"patch": ["like", "insights.%"]}, order_by="creation asc", pluck="name"
+        )[0]
+        frappe.db.set_value("Patch Log", first_patch, "creation", add_days(now_datetime(), -400))
+        frappe.get_single("Installed Applications").update_versions()
+        self.assertEqual(site_profile()["insights_installed_days_ago"], 400)
 
     # @feature telemetry.standard-names-only
     def test_a_custom_doctype_is_counted_and_never_named(self):
