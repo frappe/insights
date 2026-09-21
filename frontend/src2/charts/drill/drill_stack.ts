@@ -292,9 +292,12 @@ const PIVOTED_NULL = 'null'
  */
 function readPivotedColumn(
 	column: string,
-	columnDimensions: Dimension[],
-	measures: Measure[],
+	declared: DeclaredDimensions,
 ): { values: (string | null)[]; measure?: string } {
+	const { rows, columns: columnDimensions, measures } = declared
+	// A numeric row Dimension draws as a clickable number too, but its name is
+	// neither a Measure nor a split.
+	if (rows.some((dimension) => dimension.dimension_name === column)) return { values: [] }
 	if (!columnDimensions.length) return { values: [], measure: column }
 
 	const parts = column.split('___')
@@ -359,7 +362,7 @@ function labelForDimension(
  */
 export function segmentOf(chart: DrillChart, target: DrillDownTarget): DrillSegment {
 	const declared = declaredDimensions(chart)
-	const pivot = readPivotedColumn(target.column, declared.columns, declared.measures)
+	const pivot = readPivotedColumn(target.column, declared)
 
 	const filters: DrillFilter[] = []
 	const pins: DrillPin[] = []

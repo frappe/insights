@@ -230,6 +230,26 @@ describe('a segment a split or a pivot drew', () => {
 		])
 		expect(segment.measure).toBe('revenue')
 	})
+
+	// @feature charts.drill-segment
+	it('pins only the row a numeric row Dimension cell stands on, and names no Measure', () => {
+		const year = { name: 'year', type: 'Integer' } as const
+		const pivoted = click(
+			tableChart({
+				rows: [year],
+				pivot: { dimension: 'department', into: ['Men', 'Women'] },
+				values: ['revenue'],
+			}),
+			'year',
+			2,
+		)
+		const plain = click(tableChart({ rows: [year], values: ['revenue'] }), 'year', 2)
+
+		for (const segment of [pivoted, plain]) {
+			expect(segment.filters).toEqual([{ column: 'year', operator: '=', value: 2 }])
+			expect(segment.measure).toBeUndefined()
+		}
+	})
 })
 
 describe('a segment on a date', () => {
