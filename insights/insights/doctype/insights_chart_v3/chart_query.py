@@ -282,8 +282,14 @@ def _window_errors(config: dict) -> list[str]:
     if not _period(config):
         return []
 
-    if not (config.get("date_column") or {}).get("column_name"):
+    date_column = config.get("date_column") or {}
+    if not date_column.get("column_name"):
         return [_("Date column is required to read a period")]
+
+    # a time of day falls on no calendar: MariaDB reads a span over one as the
+    # whole table, and DuckDB refuses to cast it
+    if date_column.get("data_type") == "Time":
+        return [_("A period needs a Date or Datetime column, not a Time column")]
 
     return []
 

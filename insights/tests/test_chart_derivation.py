@@ -177,6 +177,19 @@ class TestChartDerivation(unittest.TestCase):
 
         self.assertTrue(config_errors("Number", "sales-invoice-lines", config))
 
+    # @feature charts.number-period
+    def test_a_period_on_a_time_column_is_reported(self):
+        """A time of day falls on no calendar, so a span or a grain over it reads
+        nothing a card could print."""
+        for window in ({"span": "month to date"}, {"grain": "month"}):
+            with self.subTest(window=window):
+                config = _windowed_config()
+                config["window"] = window
+                config["date_column"]["data_type"] = "Time"
+                self.assertTrue(config_errors("Number", "sales-invoice-lines", config))
+                config["date_column"]["data_type"] = "Datetime"
+                self.assertFalse(config_errors("Number", "sales-invoice-lines", config))
+
     # @feature charts.sankey-source-target-value
     def test_a_sankey_needs_a_source_a_target_and_a_value(self):
         case = derivation_case("Sankey")
