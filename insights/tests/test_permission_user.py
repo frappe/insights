@@ -317,6 +317,26 @@ class TestPermissionUser(InsightsIntegrationTestCase):
         self.assertEqual(as_publisher, sorted(PUBLISHER_TODOS))
         self.assertEqual(as_bystander, sorted(BYSTANDER_TODOS))
 
+    # @feature shared.rows-are-the-publishers
+    def test_a_public_link_response_does_not_name_the_publisher(self):
+        self.publish()
+        frappe.local.response = frappe._dict(docs=[])
+        self.run_as_guest()
+        self.assertNotIn(PUBLISHER, frappe.as_json(frappe.local.response))
+        # frappe-ui returns the whole response, which the page reads `.message` off,
+        # only while `docs` is set
+        self.assertEqual(frappe.local.response.docs, [{"doctype": DT.CHART, "name": self.chart}])
+
+    # @feature shared.chart-link
+    def test_a_public_document_read_does_not_name_the_publisher(self):
+        from insights.api import get_doc
+
+        self.publish()
+        with as_user("Guest"):
+            doc = get_doc(DT.CHART, self.chart)
+        self.assertEqual(doc["name"], self.chart)
+        self.assertNotIn(PUBLISHER, frappe.as_json(doc))
+
     # preview
 
     # @feature dashboard.preview-image
