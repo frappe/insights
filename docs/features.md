@@ -272,6 +272,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | shared.public-methods-bounded | A public link can call only the read methods it needs, with builder-only arguments stripped, and never a download. |
 | shared.filters-on-public-dashboard | A visitor uses the dashboard's filters and card filters, routed by the published dashboard's own links. |
 | shared.old-name-resolves | A link to a renamed public dashboard or chart still opens it; a private one gives nothing away. |
+| shared.missing-link | A link to a chart that cannot be read says so instead of loading forever. |
 | shared.currency-for-guest | A visitor sees amounts in the site's currency symbol. |
 | shared.read-once | Several cards drawing one chart under the same filters ask the server once. |
 
