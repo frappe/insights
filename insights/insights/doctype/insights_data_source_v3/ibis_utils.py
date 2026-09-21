@@ -144,6 +144,15 @@ class CircularQueryReferenceError(frappe.ValidationError):
     pass
 
 
+def pivot_name(column):
+    """The pivot column a split value lands in.
+
+    NULL gets a name of its own: `NULL IN (...)` is never true and a pivot
+    names no NULL column, so without one its rows fall out of every series.
+    """
+    return column.cast("string").fill_null("null")
+
+
 class IbisQueryBuilder:
     def __init__(self, doc, active_operation_idx=None):
         self.doc = doc
@@ -781,14 +790,6 @@ class IbisQueryBuilder:
                 **{value.get_name(): value for value in values}
             )
 
-            date_dimensions = [
-                self.translate_dimension(dim).get_name()
-                for dim in pivot_args["columns"]
-                if self.is_date_type(dim.data_type)
-            ]
-            if date_dimensions:
-                self.query = self.query.cast({dimension: "string" for dimension in date_dimensions})
-
             names_from = [col.get_name() for col in columns]
             max_names = pivot_args.get("max_column_values", 10)
             max_names = int(max_names)
@@ -799,6 +800,7 @@ class IbisQueryBuilder:
             first = (pivot_args["values"] or [{}])[0]
             additive = (first.get("aggregation") or "") in ADDITIVE_AGGREGATIONS
             names, has_tail = self.get_top_pivot_names(names_from, value_names if additive else [], max_names)
+            self.query = self.query.mutate(**{name: pivot_name(self.query[name]) for name in names_from})
 
             # If we've limited the number of distinct column values, bucket the
             # remaining values into an "Others" group so charts show the rest.
@@ -850,10 +852,18 @@ class IbisQueryBuilder:
         # keeps an empty "Others" column out of the result
         ranked = ranked.limit(max_names + 1)
 
+        # the name is computed by the database, so it is the very string the
+        # split column becomes in `apply_pivot`
+        labels = [f"__name_{i}__" for i in range(len(names_from))]
+        ranked = ranked.mutate(
+            **{label: pivot_name(ranked[name]) for label, name in zip(labels, names_from, strict=True)}
+        )
+
         top = ranked.execute()
         has_tail = len(top) > max_names
+        # sorted by the value, not its name, so numbers and dates keep their order
         top = top.head(max_names).sort_values(names_from, na_position="last")
-        return top[names_from].fillna("null").values, has_tail
+        return top[labels].values, has_tail
 
     def apply_custom_operation(self, operation):
         return self.evaluate_expression(operation.expression.expression)

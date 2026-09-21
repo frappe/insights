@@ -204,6 +204,16 @@ describe('a segment a split or a pivot drew', () => {
 	})
 
 	// @feature charts.drill-segment
+	it('pins the absence of a split value on the series the rows with none were drawn in', () => {
+		const segment = click(axisChart({ ...split, measures: ['revenue'] }), 'null')
+		expect(segment.filters).toContainEqual({
+			column: 'department',
+			operator: 'is_not_set',
+			value: '',
+		})
+	})
+
+	// @feature charts.drill-segment
 	it('pins the row Dimensions and the column value of a pivot-table cell', () => {
 		const segment = click(
 			tableChart({

@@ -153,6 +153,20 @@ class TestIbisPivotWider(IbisQueryBuilderTestCase):
 
         self.assertEqual(self.pivot_totals(sales, 2), {"alpha": 10, "zulu": 200})
 
+    # @feature query.pivot-wider
+    def test_pivot_draws_rows_with_no_split_value_as_their_own_series(self):
+        sales = [
+            {"month": "2026-01", "region": "alpha", "amount": 10},
+            {"month": "2026-01", "region": None, "amount": 100},
+            {"month": "2026-02", "region": "zulu", "amount": 200},
+            {"month": "2026-02", "region": None, "amount": 50},
+        ]
+
+        with self.subTest("cut"):
+            self.assertEqual(self.pivot_totals(sales, 2), {"null": 150, "zulu": 200, "Others": 10})
+        with self.subTest("no cut"):
+            self.assertEqual(self.pivot_totals(sales, 3), {"alpha": 10, "zulu": 200, "null": 150})
+
 
 class TestIbisWindowedNumberCard(IbisQueryBuilderTestCase):
     """The span a number card derives, executed.

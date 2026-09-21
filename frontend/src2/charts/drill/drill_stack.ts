@@ -279,6 +279,9 @@ export function declaredDimensionColumns(chart: DrillChart): string[] {
 	)
 }
 
+// the name the pivot gives the column of rows with no split value (`pivot_name`)
+const PIVOTED_NULL = 'null'
+
 /**
  * A pivoted column carries the split's values in its own name. The Measure
  * comes first and the Dimension values follow it in declaration order, which is
@@ -291,11 +294,13 @@ function readPivotedColumn(
 	column: string,
 	columnDimensions: Dimension[],
 	measures: Measure[],
-): { values: string[]; measure?: string } {
+): { values: (string | null)[]; measure?: string } {
 	if (!columnDimensions.length) return { values: [], measure: column }
 
 	const parts = column.split('___')
-	const values = parts.slice(-columnDimensions.length)
+	const values = parts
+		.slice(-columnDimensions.length)
+		.map((value) => (value === PIVOTED_NULL ? null : value))
 	const head = parts.slice(0, -columnDimensions.length)
 	const measure = head.length ? head.join('___') : measures[0]?.measure_name
 	return { values, measure }
