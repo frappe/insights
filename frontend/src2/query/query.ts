@@ -243,6 +243,7 @@ export function makeQuery(name: string) {
 				// the row keeps a hidden column; only the listing drops it
 				result.value.columns = response.columns.filter((c: QueryResultColumn) => !c.hidden)
 				result.value.rows = response.rows
+				result.value.recordLinks = response.record_links
 				Object.assign(session.site.currency_symbols, response.currency_symbols || {})
 				result.value.formattedRows = getFormattedRows(result.value, query.doc.operations)
 

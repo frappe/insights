@@ -15,6 +15,7 @@ from ibis import _
 
 from insights.decorators import insights_whitelist
 from insights.exceptions import QueryRefused
+from insights.insights.doctype.insights_chart_v3.record_link import record_links
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     CircularQueryReferenceError,
     IbisQueryBuilder,
@@ -284,7 +285,7 @@ class InsightsQueryv3(Document):
                     sql = op.get("raw_sql")
                     break
 
-        return {
+        response = {
             "sql": ibis.to_sql(ibis_query),
             "columns": columns,
             "rows": results,
@@ -292,6 +293,14 @@ class InsightsQueryv3(Document):
             "time_taken": time_taken,
             "is_aggregated_sql": _sql_has_group_by(sql) if sql else False,
         }
+
+        operations = frappe.parse_json(self.operations) or []
+        if active_operation_idx is not None and 0 <= active_operation_idx < len(operations):
+            operations = operations[: active_operation_idx + 1]
+        if links := record_links(operations, columns):
+            response["record_links"] = links
+
+        return response
 
     @insights_whitelist()
     def format(self, raw_sql: str):
