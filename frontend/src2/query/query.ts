@@ -82,6 +82,12 @@ export default function useQuery(name: string) {
 	return query
 }
 
+// A query some surface already opened, without opening it: a lookup that only
+// wants to read one must not cost a load.
+export function openedQuery(name: string): Query | undefined {
+	return queries.get(String(name))
+}
+
 // throwaway queries are never looked up by name, so keep them out of the shared
 // cache, otherwise every chart refresh/drill-down leaks an entry for the session
 export function makeAdhocQuery() {

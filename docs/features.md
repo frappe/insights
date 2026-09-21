@@ -226,6 +226,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | dashboard.reset-layout | A user discards unsaved layout changes. |
 | dashboard.rename | A user renames a dashboard. |
 | dashboard.refresh | A reader reloads a dashboard's chart data, with or without the cache. |
+| dashboard.card-follows-edits | A card redraws after its chart's config or its query was edited while the dashboard was closed. |
 | dashboard.export-png | A user downloads a dashboard as a PNG. |
 | dashboard.card-filter | A reader narrows one card with its own filter, and the filter offers only what the card draws. |
 | dashboard.card-find | A reader searches a table card's drawn rows. |
