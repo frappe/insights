@@ -379,8 +379,9 @@ class InsightsQueryv3(Document):
         if decimal_casts:
             ibis_query = ibis_query.mutate(**decimal_casts)
 
-        if hasattr(ibis_query, "limit"):
-            ibis_query = ibis_query.limit(100_000)
+        max_export_rows = frappe.db.get_single_value("Insights Settings", "max_export_rows")
+        if max_export_rows and hasattr(ibis_query, "limit"):
+            ibis_query = ibis_query.limit(max_export_rows)
 
         results, _ = execute_ibis_query(
             ibis_query,
