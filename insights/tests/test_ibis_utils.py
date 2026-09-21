@@ -352,3 +352,53 @@ class TestIbisWindowedNumberCard(IbisQueryBuilderTestCase):
             with self.subTest(dimensions=[d["dimension_name"] for d in dimensions]):
                 summarize = {"type": "summarize", "measures": measures, "dimensions": dimensions}
                 self.assertRaises(frappe.ValidationError, self.result_of, [None, summarize], sales)
+
+
+class TestIbisDateFilterOnDatetime(IbisQueryBuilderTestCase):
+    STAMPS = ("2026-08-04 23:00:00", "2026-08-05 00:00:00", "2026-08-05 17:30:00", "2026-08-06 00:00:00")
+
+    def filtered(self, operator, value, stamps=STAMPS):
+        rows = [{"posted_at": stamp} for stamp in stamps]
+        operations = [
+            {"type": "code", "code": f"results = {rows}"},
+            {
+                "type": "cast",
+                "column": {"type": "column", "column_name": "posted_at"},
+                "data_type": "Datetime",
+            },
+            {
+                "type": "filter",
+                "column": {"type": "column", "column_name": "posted_at"},
+                "operator": operator,
+                "value": value,
+            },
+        ]
+        result = self.build_query(operations).execute()
+        return sorted(str(stamp) for stamp in result["posted_at"])
+
+    # @feature query.filter-date-on-datetime
+    def test_a_date_on_a_datetime_column_compares_by_the_whole_day(self):
+        before, midnight, evening, next_day = self.STAMPS
+        cases = {
+            "=": [midnight, evening],
+            "!=": [before, next_day],
+            ">": [next_day],
+            ">=": [midnight, evening, next_day],
+            "<": [before],
+            "<=": [before, midnight, evening],
+        }
+        for operator, expected in cases.items():
+            with self.subTest(operator=operator):
+                self.assertEqual(self.filtered(operator, "2026-08-05"), expected)
+
+        # the last instant of a day is past 23:59:59
+        last_instant = "2026-08-05 23:59:59.500000"
+        stamps = (before, midnight, last_instant, next_day)
+        self.assertEqual(
+            self.filtered("between", ["2026-08-05", "2026-08-05"], stamps), [midnight, last_instant]
+        )
+
+    # @feature query.filter-date-on-datetime
+    def test_a_time_on_a_datetime_column_compares_by_that_instant(self):
+        _, midnight, evening, next_day = self.STAMPS
+        self.assertEqual(self.filtered(">", "2026-08-05 00:00:00"), [evening, next_day])

@@ -25,6 +25,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | query.filter-relative-date | A user filters on a date with the relative date picker: last, current or next N days, weeks, months, quarters, years or fiscal years. |
 | query.filter-relative-date-include-current | A relative date span can take in the current period. |
 | query.filter-relative-date-shift | A relative span can be measured from a shifted anchor rather than today. |
+| query.filter-date-on-datetime | A date picked for a Datetime column names that whole day, whichever operator compares it. |
 | query.filter-is-set | A user filters rows to those with or without a value. |
 | query.filter-expression | A user converts a filter row into a free-form expression. |
 | query.filter-row-duplicate | A user duplicates or removes one filter row. |

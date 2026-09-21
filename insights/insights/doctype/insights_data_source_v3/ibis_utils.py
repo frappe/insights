@@ -3,7 +3,7 @@ import sys
 import time
 import traceback
 from contextlib import contextmanager
-from datetime import date
+from datetime import date, datetime, timedelta
 from functools import cached_property
 
 import frappe
@@ -125,6 +125,18 @@ FILTER_OPERATORS = {
     "within": lambda x, y: handle_timespan(x, y),
 }
 
+# A bare date on a timestamp column names a whole day, so each operator reads
+# it as the day's bounds rather than its midnight: `<=` takes the whole day,
+# `>` starts the next one.
+DAY_OPERATORS = {
+    "=": lambda x, start, end: (x >= start) & (x < end),
+    "!=": lambda x, start, end: (x < start) | (x >= end),
+    ">": lambda x, start, end: x >= end,
+    ">=": lambda x, start, end: x >= start,
+    "<": lambda x, start, end: x < start,
+    "<=": lambda x, start, end: x < end,
+}
+
 AGGREGATIONS = {
     "count": lambda column: column.count(),
     "count_distinct": lambda column: column.nunique(),
@@ -142,6 +154,20 @@ class CircularQueryReferenceError(frappe.ValidationError):
     """Raised when a circular query reference is detected during query building."""
 
     pass
+
+
+def parse_bare_date(value):
+    """The date a `YYYY-MM-DD` value names, or None for anything else."""
+    if not isinstance(value, str):
+        return None
+    try:
+        return date.fromisoformat(value)
+    except ValueError:
+        return None
+
+
+def midnight(day):
+    return datetime.combine(day, datetime.min.time())
 
 
 def pivot_name(column):
@@ -541,6 +567,10 @@ class IbisQueryBuilder:
             start = filter_value[0]
             end = filter_value[1]
 
+            first, last = parse_bare_date(start), parse_bare_date(end)
+            if first and last and left.type().is_timestamp():
+                return (left >= midnight(first)) & (left < midnight(last) + timedelta(days=1))
+
             if isinstance(start, str) and isinstance(end, str):
                 contains_time = ":" in start or ":" in end
                 if not contains_time:
@@ -548,6 +578,11 @@ class IbisQueryBuilder:
                     end = f"{end} 23:59:59"
 
             filter_value = [start, end]
+
+        day = parse_bare_date(filter_value) if right_column is None else None
+        if day and filter_operator in DAY_OPERATORS and left.type().is_timestamp():
+            start = midnight(day)
+            return DAY_OPERATORS[filter_operator](left, start, start + timedelta(days=1))
 
         right_value = right_column if right_column is not None else filter_value
         return operator_fn(left, right_value)
