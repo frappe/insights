@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-06-21 10:42+0000\n"
-"PO-Revision-Date: 2026-09-07 08:43\n"
+"PO-Revision-Date: 2026-09-21 09:35\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Chinese Traditional\n"
 "MIME-Version: 1.0\n"
@@ -21,34 +21,34 @@ msgstr ""
 #. Option for the 'Cardinality' (Select) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "1:1"
-msgstr ""
+msgstr "1:1"
 
 #. Option for the 'Cardinality' (Select) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "1:N"
-msgstr ""
+msgstr "1:N"
 
 #: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.py:35
 msgid "A folder cannot be its own parent"
-msgstr ""
+msgstr "資料夾不能將自己設為上層資料夾"
 
 #. Label of the api_configuration_section (Section Break) field in DocType
 #. 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "API Configuration"
-msgstr ""
+msgstr "API 設定"
 
 #. Option for the 'Authentication Type' (Select) field in DocType 'Insights
 #. Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "API Key / Bearer Token"
-msgstr ""
+msgstr "API 金鑰／Bearer 權杖"
 
 #. Label of the api_password (Password) field in DocType 'Insights Data Source
 #. v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "API Password"
-msgstr ""
+msgstr "API 密碼"
 
 #. Label of the api_token (Password) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
@@ -58,11 +58,11 @@ msgstr "API 憑證"
 #. Label of the api_username (Data) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "API Username"
-msgstr ""
+msgstr "API 使用者名稱"
 
 #: frontend/src2/query/components/FormatRule.vue:203
 msgid "Above average"
-msgstr ""
+msgstr "高於平均值"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights User Invitation'
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
@@ -77,12 +77,12 @@ msgstr "接受時間"
 
 #: frontend/src2/settings/Settings.vue:10
 msgid "Account"
-msgstr ""
+msgstr "帳號"
 
 #. Label of the if_exists (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Action if table exists"
-msgstr ""
+msgstr "資料表已存在時的處理方式"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Data Source'
 #. Option for the 'Status' (Select) field in DocType 'Insights Data Source v3'
@@ -100,7 +100,7 @@ msgstr "新增"
 #: frontend/src2/data_source/ConnectMariaDBDialog.vue:106
 #: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:114
 msgid "Add Data Source"
-msgstr ""
+msgstr "新增資料來源"
 
 #: frontend/src2/query/components/FiltersSelector.vue:137
 msgid "Add Filter"
@@ -108,68 +108,68 @@ msgstr "新增篩選條件"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:62
 msgid "Add New Column"
-msgstr ""
+msgstr "新增欄"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:132
 msgid "Add Operation"
-msgstr ""
+msgstr "新增作業"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:63
 msgid "Add a new column based on existing columns"
-msgstr ""
+msgstr "依據現有的欄新增一個欄"
 
 #: frontend/src2/query/components/ColumnsSelectorDialog.vue:83
 #: frontend/src2/query/components/ColumnsSelectorDialog.vue:92
 msgid "Add column"
-msgstr ""
+msgstr "新增欄"
 
 #. Name of a role
 #: insights/insights/doctype/insights_query_reference/insights_query_reference.json
 msgid "Administrator"
-msgstr ""
+msgstr "系統管理員"
 
 #. Label of the aggregation (Data) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "Aggregation"
-msgstr ""
+msgstr "彙總"
 
 #. Label of the aggregation_condition (Code) field in DocType 'Insights Query
 #. Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "Aggregation Condition"
-msgstr ""
+msgstr "彙總條件"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:70
 msgid "Alert Created"
-msgstr ""
+msgstr "警示已建立"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:98
 msgid "Alert Disabled"
-msgstr ""
+msgstr "警示已停用"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:98
 msgid "Alert Enabled"
-msgstr ""
+msgstr "警示已啟用"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:144
 msgid "Alert Name"
-msgstr ""
+msgstr "警示名稱"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:87
 msgid "Alert Sent"
-msgstr ""
+msgstr "警示已傳送"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:70
 msgid "Alert Updated"
-msgstr ""
+msgstr "警示已更新"
 
 #: insights/insights/doctype/insights_alert/insights_alert.js:12
 msgid "Alert sent"
-msgstr ""
+msgstr "警示已傳送"
 
 #: frontend/src2/query/components/QueryAlertsDialog.vue:95
 msgid "Alerts"
-msgstr ""
+msgstr "警示"
 
 #: frontend/src2/dashboard/DashboardList.vue:26
 #: frontend/src2/workbook/WorkbookList.vue:43
@@ -179,80 +179,80 @@ msgstr "全部"
 #. Label of the allow_download (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Allow Data Download"
-msgstr ""
+msgstr "允許下載資料"
 
 #. Label of the allow_subquery (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Allow Subquery"
-msgstr ""
+msgstr "允許子查詢"
 
 #. Label of the allow_imports (Check) field in DocType 'Insights Data Source'
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 msgid "Allow Table Import"
-msgstr ""
+msgstr "允許匯入資料表"
 
 #. Label of the allowed_origins (Data) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Allowed Origins"
-msgstr ""
+msgstr "允許的來源網域"
 
 #: frontend/src2/query/components/FormatRule.vue:161
 msgid "Amber"
-msgstr ""
+msgstr "琥珀色"
 
 #. Label of the amended_from (Link) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Amended From"
-msgstr ""
+msgstr "修訂自"
 
 #: frontend/src2/dashboard/DashboardShareDialog.vue:110
 msgid "Anyone in the organization can view"
-msgstr ""
+msgstr "組織內的任何人皆可檢視"
 
 #: frontend/src2/dashboard/DashboardShareDialog.vue:106
 msgid "Anyone with the link can view"
-msgstr ""
+msgstr "擁有連結的任何人皆可檢視"
 
 #. Option for the 'Action if table exists' (Select) field in DocType 'Insights
 #. Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Append"
-msgstr ""
+msgstr "附加"
 
 #. Option for the 'Sync Strategy' (Select) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Append Only"
-msgstr ""
+msgstr "僅附加"
 
 #: frontend/src2/query/components/UnionSelectorDialog.vue:116
 msgid "Append Rows"
-msgstr ""
+msgstr "附加資料列"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:56
 msgid "Append Table"
-msgstr ""
+msgstr "附加資料表"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:57
 msgid "Append this table with another table or query"
-msgstr ""
+msgstr "將此資料表與其他資料表或查詢附加合併"
 
 #: frontend/src2/query/components/FiltersSelector.vue:145
 msgid "Apply Filters"
-msgstr ""
+msgstr "套用篩選條件"
 
 #. Label of the apply_user_permissions (Check) field in DocType 'Insights
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Apply User Permissions"
-msgstr ""
+msgstr "套用使用者權限"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:81
 msgid "Apply a custom operation using python script"
-msgstr ""
+msgstr "使用 Python 指令碼套用自訂作業"
 
 #: frontend/src2/components/UserDropdown.vue:131
 msgid "Are you sure you want to log out?"
-msgstr ""
+msgstr "確定要登出嗎？"
 
 #: frontend/src2/components/UserDropdown.vue:81
 msgid "Are you sure you want to login to your Frappe Cloud dashboard?"
@@ -262,33 +262,33 @@ msgstr "確定要登入你的 Frappe Cloud 儀表板嗎？"
 #. Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Authentication Type"
-msgstr ""
+msgstr "驗證類型"
 
 #. Label of the auto_execute_query (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Auto Execute Query"
-msgstr ""
+msgstr "自動執行查詢"
 
 #. Description of the 'Vertical Compact Layout' (Check) field in DocType
 #. 'Insights Dashboard v3'
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Automatically arrange cards vertically to fill empty spaces"
-msgstr ""
+msgstr "自動垂直排列卡片以填滿空白區域"
 
 #: frontend/src2/charts/components/MeasurePicker.vue:138
 msgid "Average of..."
-msgstr ""
+msgstr "平均值…"
 
 #. Label of the api_base_url (Data) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Base URL"
-msgstr ""
+msgstr "基底網址"
 
 #. Option for the 'Authentication Type' (Select) field in DocType 'Insights
 #. Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Basic Authentication"
-msgstr ""
+msgstr "基本驗證"
 
 #. Label of the batch_size (Int) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
@@ -299,41 +299,41 @@ msgstr "批量"
 #. v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Before Import Script"
-msgstr ""
+msgstr "匯入前指令碼"
 
 #: frontend/src2/query/components/FormatRule.vue:204
 msgid "Below average"
-msgstr ""
+msgstr "低於平均值"
 
 #. Option for the 'Database Type' (Select) field in DocType 'Insights Data
 #. Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "BigQuery"
-msgstr ""
+msgstr "BigQuery"
 
 #. Label of the bigquery_configuration_section (Section Break) field in DocType
 #. 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "BigQuery Configuration"
-msgstr ""
+msgstr "BigQuery 設定"
 
 #. Label of the bigquery_dataset_id (Data) field in DocType 'Insights Data
 #. Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "BigQuery Dataset ID"
-msgstr ""
+msgstr "BigQuery 資料集 ID"
 
 #. Label of the bigquery_project_id (Data) field in DocType 'Insights Data
 #. Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "BigQuery Project ID"
-msgstr ""
+msgstr "BigQuery 專案 ID"
 
 #. Label of the bigquery_service_account_key (JSON) field in DocType 'Insights
 #. Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "BigQuery Service Account Key (JSON)"
-msgstr ""
+msgstr "BigQuery 服務帳戶金鑰 (JSON)"
 
 #: frontend/src2/charts/components/DonutChartConfigForm.vue:58
 msgid "Bottom"
@@ -341,24 +341,24 @@ msgstr "底部"
 
 #: frontend/src2/query/components/FormatRule.vue:202
 msgid "Bottom N percent"
-msgstr ""
+msgstr "最後 N 百分比"
 
 #: frontend/src2/query/components/FormatRule.vue:200
 msgid "Bottom N values"
-msgstr ""
+msgstr "最後 N 個值"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:10
 msgid "Bulk Enqueue"
-msgstr ""
+msgstr "批次排入佇列"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:49
 msgid "Bulk Enqueue Import Job"
-msgstr ""
+msgstr "批次將匯入工作排入佇列"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:24
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:34
 msgid "Bulk Enqueue Progress"
-msgstr ""
+msgstr "批次排入佇列進度"
 
 #: frontend/src2/components/ExportDialog.vue:46
 msgid "CSV"
@@ -367,19 +367,19 @@ msgstr "CSV"
 #. Label of the query_result_expiry (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Cache Query Results For (Minutes)"
-msgstr ""
+msgstr "查詢結果快取時間 (分鐘)"
 
 #: frontend/src2/workbook/WorkbookShareDialog.vue:29
 #: frontend/src2/workbook/WorkbookShareDialog.vue:128
 #: frontend/src2/workbook/WorkbookShareDialog.vue:183
 msgid "Can Edit"
-msgstr ""
+msgstr "可編輯"
 
 #: frontend/src2/workbook/WorkbookShareDialog.vue:34
 #: frontend/src2/workbook/WorkbookShareDialog.vue:124
 #: frontend/src2/workbook/WorkbookShareDialog.vue:183
 msgid "Can View"
-msgstr ""
+msgstr "可檢視"
 
 #: frontend/src2/charts/components/RegionMappingDialog.vue:312
 #: frontend/src2/components/ExportDialog.vue:77
@@ -394,18 +394,18 @@ msgstr "取消"
 
 #: insights/api/workbooks.py:426
 msgid "Cannot delete a folder that is not empty. Move its contents out first."
-msgstr ""
+msgstr "無法刪除非空的資料夾，請先將其中的內容移出。"
 
 #. Label of the cardinality (Select) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "Cardinality"
-msgstr ""
+msgstr "關聯基數"
 
 #. Label of the channel (Select) field in DocType 'Insights Alert'
 #: frontend/src2/query/components/AlertSetupDialog.vue:171
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Channel"
-msgstr ""
+msgstr "頻道"
 
 #. Label of the chart (Link) field in DocType 'Insights Dashboard Chart v3'
 #. Label of the chart (Link) field in DocType 'Insights Query'
@@ -424,37 +424,37 @@ msgstr "圖表類型"
 
 #: frontend/src2/workbook/WorkbookSidebar.vue:57
 msgid "Charts"
-msgstr ""
+msgstr "圖表"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:154
 msgid "Check once a day"
-msgstr ""
+msgstr "每天檢查一次"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:156
 msgid "Check once a month"
-msgstr ""
+msgstr "每月檢查一次"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:155
 msgid "Check once a week"
-msgstr ""
+msgstr "每週檢查一次"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:153
 msgid "Check once an hour"
-msgstr ""
+msgstr "每小時檢查一次"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:38
 msgid "Choose Columns"
-msgstr ""
+msgstr "選擇欄"
 
 #. Description of the 'Sync Strategy' (Select) field in DocType 'Insights Table
 #. v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Choose how incremental sync writes rows: <b>Append Only</b> adds new rows, while <b>Update or Insert</b> updates matching keys and inserts new rows."
-msgstr ""
+msgstr "選擇增量同步寫入資料列的方式：<b>僅附加</b>只會新增資料列；<b>更新或插入</b>會更新符合索引鍵的資料列，並插入新的資料列。"
 
 #: insights/insights/doctype/insights_data_source_v3/ibis_utils.py:96
 msgid "Circular query reference detected while building \"{0}\""
-msgstr ""
+msgstr "建立「{0}」時偵測到循環查詢參照"
 
 #: frontend/src2/dashboard/DashboardFilterEditor.vue:243
 #: frontend/src2/query/components/FiltersSelector.vue:143
@@ -463,14 +463,14 @@ msgstr "清除"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:13
 msgid "Clear Warehouse Data"
-msgstr ""
+msgstr "清除資料倉儲資料"
 
 #. Option for the 'Database Type' (Select) field in DocType 'Insights Data
 #. Source v3'
 #: frontend/src2/data_source/DataSourceList.vue:58
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "ClickHouse"
-msgstr ""
+msgstr "ClickHouse"
 
 #: frontend/src2/query/components/source_selector/SourceSelectorDialog.vue:130
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:95
@@ -487,7 +487,7 @@ msgstr "顏色"
 
 #: frontend/src2/query/components/FormattingSelector.vue:60
 msgid "Color Scale"
-msgstr ""
+msgstr "色階"
 
 #. Label of the label (Data) field in DocType 'Insights Query Column'
 #. Label of the column (Data) field in DocType 'Insights Table Column'
@@ -514,11 +514,11 @@ msgstr "欄"
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Comma seperated URLs to whitelist for embedding charts & dashboards"
-msgstr ""
+msgstr "以逗號分隔的網址清單，用於允許嵌入圖表與儀表板"
 
 #: frontend/src2/dashboard/DashboardBuilder.vue:163
 msgid "Compact Layout"
-msgstr ""
+msgstr "精簡版面配置"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import
 #. Log'
@@ -539,7 +539,7 @@ msgstr "條件"
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
 #: insights/insights/doctype/insights_query_chart/insights_query_chart.json
 msgid "Config"
-msgstr ""
+msgstr "設定"
 
 #: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:132
 #: frontend/src2/components/ConfirmDialog.vue:26
@@ -556,39 +556,39 @@ msgstr "確認"
 #: frontend/src2/data_source/ConnectMariaDBDialog.vue:77
 #: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:85
 msgid "Connect"
-msgstr ""
+msgstr "連線"
 
 #: frontend/src2/data_source/ConnectClickhouseDialog.vue:120
 msgid "Connect to ClickHouse"
-msgstr ""
+msgstr "連線至 ClickHouse"
 
 #: frontend/src2/data_source/DataSourceList.vue:60
 msgid "Connect to ClickHouse database"
-msgstr ""
+msgstr "連線至 ClickHouse 資料庫"
 
 #: frontend/src2/data_source/ConnectDuckDBDialog.vue:95
 msgid "Connect to DuckDB"
-msgstr ""
+msgstr "連線至 DuckDB"
 
 #: frontend/src2/data_source/DataSourceList.vue:69
 msgid "Connect to DuckDB database"
-msgstr ""
+msgstr "連線至 DuckDB 資料庫"
 
 #: frontend/src2/data_source/ConnectMariaDBDialog.vue:120
 msgid "Connect to MariaDB"
-msgstr ""
+msgstr "連線至 MariaDB"
 
 #: frontend/src2/data_source/DataSourceList.vue:42
 msgid "Connect to MariaDB database"
-msgstr ""
+msgstr "連線至 MariaDB 資料庫"
 
 #: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:128
 msgid "Connect to PostgreSQL"
-msgstr ""
+msgstr "連線至 PostgreSQL"
 
 #: frontend/src2/data_source/DataSourceList.vue:51
 msgid "Connect to PostgreSQL database"
-msgstr ""
+msgstr "連線至 PostgreSQL 資料庫"
 
 #. Label of the connection_string (Small Text) field in DocType 'Insights Data
 #. Source'
@@ -597,7 +597,7 @@ msgstr ""
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Connection String"
-msgstr ""
+msgstr "連線字串"
 
 #. Label of the content (Code) field in DocType 'Insights Notebook Page'
 #: frontend/src2/dashboard/DashboardText.vue:45
@@ -607,24 +607,24 @@ msgstr "內容"
 
 #: frontend/src2/components/UserDropdown.vue:57
 msgid "Continue"
-msgstr ""
+msgstr "繼續"
 
 #: frontend/src2/query/components/FiltersSelector.vue:113
 msgid "Convert to Expression"
-msgstr ""
+msgstr "轉換為運算式"
 
 #: frontend/src2/charts/components/ChartBuilderToolbar.vue:60
 #: frontend/src2/workbook/WorkbookNavbarActions.vue:66
 msgid "Copy JSON"
-msgstr ""
+msgstr "複製 JSON"
 
 #: frontend/src2/query/components/QueryToolbar.vue:50
 msgid "Copy Query"
-msgstr ""
+msgstr "複製查詢"
 
 #: frontend/src2/charts/components/MeasurePicker.vue:136
 msgid "Count of..."
-msgstr ""
+msgstr "個數…"
 
 #: frontend/src2/teams/CreateTeamDialog.vue:18
 msgid "Create"
@@ -632,23 +632,23 @@ msgstr "建立"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:129
 msgid "Create Alert"
-msgstr ""
+msgstr "建立警示"
 
 #: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:97
 msgid "Create Measure"
-msgstr ""
+msgstr "建立量值"
 
 #: frontend/src2/settings/PermissionsSettings.vue:67
 #: frontend/src2/teams/CreateTeamDialog.vue:15
 #: frontend/src2/teams/TeamList.vue:65
 msgid "Create Team"
-msgstr ""
+msgstr "建立團隊"
 
 #: frontend/src2/dashboard/DashboardList.vue:29
 #: frontend/src2/data_source/DataSourceList.vue:119
 #: frontend/src2/workbook/WorkbookList.vue:44
 msgid "Created"
-msgstr ""
+msgstr "已建立"
 
 #: frontend/src2/query/components/QueryAlertsDialog.vue:52
 msgid "Created By"
@@ -656,60 +656,60 @@ msgstr "建立者"
 
 #: frontend/src2/teams/TeamList.vue:48
 msgid "Creation"
-msgstr "创建日期"
+msgstr "建立日期"
 
 #. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
 #: frontend/src2/query/components/AlertSetupDialog.vue:157
 #: frontend/src2/query/components/AlertSetupDialog.vue:163
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Cron"
-msgstr ""
+msgstr "Cron"
 
 #. Label of the cron_format (Data) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Cron Format"
-msgstr ""
+msgstr "Cron 格式"
 
 #. Description of the 'Schedule (Cron)' (Data) field in DocType 'Insights Table
 #. Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Cron expression to schedule the script. Note: The scheduler checks for jobs every hour."
-msgstr ""
+msgstr "用於排程此指令碼的 Cron 運算式。注意：排程器每小時檢查一次工作。"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Query Transform'
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
 msgid "CumulativeSum"
-msgstr ""
+msgstr "累計總和"
 
 #. Label of the sync_cursor_column (Data) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Cursor Column"
-msgstr ""
+msgstr "游標欄"
 
 #. Label of the custom_condition (Check) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Custom Condition"
-msgstr ""
+msgstr "自訂條件"
 
 #. Label of the api_custom_headers (JSON) field in DocType 'Insights Data
 #. Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Custom Headers"
-msgstr ""
+msgstr "自訂標頭"
 
 #: frontend/src2/query/components/JoinSelectorDialog.vue:316
 msgid "Custom Join Condition"
-msgstr ""
+msgstr "自訂聯結條件"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:80
 msgid "Custom Operation"
-msgstr ""
+msgstr "自訂作業"
 
 #. Description of the 'Custom Headers' (JSON) field in DocType 'Insights Data
 #. Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Custom headers for API requests (non-sensitive data only)"
-msgstr ""
+msgstr "API 要求的自訂標頭（僅限非敏感資料）"
 
 #. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -718,32 +718,32 @@ msgstr "每日"
 
 #: frontend/src2/dashboard/DashboardShareDialog.vue:48
 msgid "Dashboard Access Updated"
-msgstr ""
+msgstr "儀表板存取權已更新"
 
 #: frontend/src2/components/AppSidebar.vue:74
 #: frontend/src2/dashboard/Dashboard.vue:46
 #: frontend/src2/dashboard/DashboardList.vue:21
 #: frontend/src2/workbook/WorkbookSidebar.vue:75
 msgid "Dashboards"
-msgstr ""
+msgstr "儀表板"
 
 #: frontend/src2/dashboard/DashboardList.vue:93
 msgid "Dashboards shared with you will show up here."
-msgstr ""
+msgstr "與你共用的儀表板會顯示在這裡。"
 
 #: frontend/src2/dashboard/DashboardList.vue:83
 msgid "Dashboards you open will show up here."
-msgstr ""
+msgstr "你開啟過的儀表板會顯示在這裡。"
 
 #. Label of the data_backup (JSON) field in DocType 'Insights Workbook'
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
 msgid "Data Backup"
-msgstr ""
+msgstr "資料備份"
 
 #. Label of the data_query (Link) field in DocType 'Insights Chart v3'
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
 msgid "Data Query"
-msgstr ""
+msgstr "資料查詢"
 
 #. Label of the data_source (Link) field in DocType 'Insights Query'
 #. Label of the data_source (Data) field in DocType 'Insights Query Execution
@@ -774,11 +774,11 @@ msgstr "資料來源"
 #: frontend/src2/data_source/DataSourceTable.vue:25
 #: frontend/src2/data_source/DataSourceTableList.vue:65
 msgid "Data Sources"
-msgstr ""
+msgstr "資料來源"
 
 #: frontend/src2/data_source/DataSourceList.vue:141
 msgid "Data Sources | Insights"
-msgstr ""
+msgstr "資料來源 | Insights"
 
 #. Label of the data_store (Check) field in DocType 'Insights Query Execution
 #. Log'
@@ -787,16 +787,16 @@ msgstr ""
 #: frontend/src2/settings/Settings.vue:43
 #: insights/insights/doctype/insights_query_execution_log/insights_query_execution_log.json
 msgid "Data Store"
-msgstr ""
+msgstr "資料存放區"
 
 #: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:120
 msgid "Data Type"
-msgstr ""
+msgstr "資料類型"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Database"
-msgstr ""
+msgstr "資料庫"
 
 #. Label of the database_name (Data) field in DocType 'Insights Data Source'
 #. Label of the database_name (Data) field in DocType 'Insights Data Source v3'
@@ -806,7 +806,7 @@ msgstr ""
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Database Name"
-msgstr ""
+msgstr "資料庫名稱"
 
 #. Label of the database_type (Select) field in DocType 'Insights Data Source'
 #. Label of the database_type (Select) field in DocType 'Insights Data Source
@@ -814,7 +814,7 @@ msgstr ""
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Database Type"
-msgstr ""
+msgstr "資料庫類型"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -823,17 +823,17 @@ msgstr "日期"
 
 #: frontend/src2/query/components/FormatRule.vue:234
 msgid "Date Rules"
-msgstr ""
+msgstr "日期規則"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Datetime"
-msgstr ""
+msgstr "日期時間"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Decimal"
-msgstr ""
+msgstr "小數"
 
 #: frontend/src2/dashboard/DashboardFilterEditor.vue:236
 msgid "Default Value"
@@ -848,11 +848,11 @@ msgstr "刪除"
 #: frontend/src2/components/DemoDataBanner.vue:26
 #: frontend/src2/settings/GeneralSettings.vue:22
 msgid "Demo Data Ready"
-msgstr ""
+msgstr "示範資料已就緒"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:123
 msgid "Disable Alert"
-msgstr ""
+msgstr "停用警示"
 
 #. Label of the disabled (Check) field in DocType 'Insights Alert'
 #: frontend/src2/query/components/QueryAlertsDialog.vue:44
@@ -881,18 +881,18 @@ msgstr "草稿"
 
 #: frontend/src2/charts/components/DrillDown.vue:60
 msgid "Drill Down"
-msgstr ""
+msgstr "向下鑽研"
 
 #: frontend/src2/query/components/UnionSelectorDialog.vue:139
 msgid "Drop Duplicates"
-msgstr ""
+msgstr "移除重複項目"
 
 #. Option for the 'Database Type' (Select) field in DocType 'Insights Data
 #. Source v3'
 #: frontend/src2/data_source/DataSourceList.vue:67
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "DuckDB"
-msgstr ""
+msgstr "DuckDB"
 
 #: frontend/src2/query/components/FiltersSelector.vue:120
 #: frontend/src2/workbook/WorkbookNavbarActions.vue:60
@@ -901,16 +901,16 @@ msgstr "複製"
 
 #: frontend/src2/charts/components/ChartBuilderToolbar.vue:44
 msgid "Duplicate Chart"
-msgstr ""
+msgstr "複製圖表"
 
 #: frontend/src2/query/components/QueryToolbar.vue:45
 msgid "Duplicate Query"
-msgstr ""
+msgstr "複製查詢"
 
 #. Label of the time_taken (Int) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Duration (Seconds)"
-msgstr ""
+msgstr "耗時（秒）"
 
 #: frontend/src2/dashboard/DashboardItemActions.vue:14
 msgid "Edit"
@@ -918,11 +918,11 @@ msgstr "編輯"
 
 #: frontend/src2/dashboard/DashboardFilterEditor.vue:154
 msgid "Edit Filter"
-msgstr ""
+msgstr "編輯篩選條件"
 
 #: frontend/src2/dashboard/DashboardText.vue:24
 msgid "Edit Text"
-msgstr ""
+msgstr "編輯文字"
 
 #. Option for the 'Channel' (Select) field in DocType 'Insights Alert'
 #. Label of the email (Data) field in DocType 'Insights User Invitation'
@@ -942,31 +942,31 @@ msgstr "電子郵件寄送時間"
 
 #: frontend/src2/query/components/FiltersSelector.vue:134
 msgid "Empty - Click 'Add Filter' to add a filter"
-msgstr ""
+msgstr "尚無內容－按一下「新增篩選條件」來新增"
 
 #: frontend/src2/workbook/WorkbookList.vue:160
 msgid "Empty Folder"
-msgstr ""
+msgstr "空資料夾"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:123
 msgid "Enable Alert"
-msgstr ""
+msgstr "啟用警示"
 
 #. Label of the enable_data_store (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Enable Data Store"
-msgstr ""
+msgstr "啟用資料存放區"
 
 #. Label of the enable_permissions (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Enable Permissions"
-msgstr ""
+msgstr "啟用權限控管"
 
 #. Label of the enable_stored_procedure_execution (Check) field in DocType
 #. 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Enable Stored Procedure Execution"
-msgstr ""
+msgstr "啟用預存程序執行"
 
 #. Label of the enabled (Check) field in DocType 'Insights Table Import Job'
 #: frontend/src2/query/components/QueryAlertsDialog.vue:44
@@ -980,38 +980,38 @@ msgstr "已啟用"
 #. Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Ended At"
-msgstr ""
+msgstr "結束時間"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:6
 msgid "Enqueue"
-msgstr ""
+msgstr "排入佇列"
 
 #: frontend/src2/components/ExportDialog.vue:60
 msgid "Enter filename"
-msgstr ""
+msgstr "輸入檔案名稱"
 
 #: frontend/src2/dashboard/DashboardFilterEditor.vue:179
 msgid "Enter filter label..."
-msgstr ""
+msgstr "輸入篩選條件標籤…"
 
 #: frontend/src2/query/components/FormatRule.vue:443
 msgid "Enter text"
-msgstr ""
+msgstr "輸入文字"
 
 #: frontend/src2/data_source/ConnectDuckDBDialog.vue:33
 msgid "Enter the URL of the DuckDB file"
-msgstr ""
+msgstr "輸入 DuckDB 檔案的網址"
 
 #: frontend/src2/dashboard/DashboardText.vue:52
 msgid "Enter your text content here..."
-msgstr ""
+msgstr "在此輸入你的文字內容…"
 
 #. Label of the error (Text) field in DocType 'Insights Table Import'
 #. Label of the error (Code) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Error"
-msgstr ""
+msgstr "錯誤"
 
 #: frontend/src2/components/ExportDialog.vue:47
 msgid "Excel"
@@ -1019,30 +1019,30 @@ msgstr "Excel"
 
 #: frontend/src2/query/components/QueryToolbar.vue:69
 msgid "Execute"
-msgstr ""
+msgstr "執行"
 
 #: frontend/src2/query/components/QueryToolbar.vue:68
 msgid "Execute ({0})"
-msgstr ""
+msgstr "執行 ({0})"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:80
 msgid "Execution Count"
-msgstr ""
+msgstr "執行次數"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Execution Failed"
-msgstr ""
+msgstr "執行失敗"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Execution Successful"
-msgstr ""
+msgstr "執行成功"
 
 #. Label of the execution_time (Float) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Execution Time (seconds)"
-msgstr ""
+msgstr "執行時間（秒）"
 
 #: frontend/src2/components/AppSidebar.vue:26
 msgid "Expand"
@@ -1059,28 +1059,28 @@ msgstr "匯出"
 
 #: frontend/src2/components/ExportDialog.vue:35
 msgid "Export Data"
-msgstr ""
+msgstr "匯出資料"
 
 #: frontend/src2/components/ExportDialog.vue:44
 msgid "Export Format"
-msgstr ""
+msgstr "匯出格式"
 
 #: frontend/src2/charts/components/ChartBuilderToolbar.vue:32
 #: frontend/src2/dashboard/Dashboard.vue:61
 #: frontend/src2/dashboard/DashboardBuilder.vue:156
 msgid "Export as PNG"
-msgstr ""
+msgstr "匯出為 PNG"
 
 #. Label of the expression (JSON) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "Expression"
-msgstr ""
+msgstr "運算式"
 
 #. Option for the 'Action if table exists' (Select) field in DocType 'Insights
 #. Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Fail"
-msgstr ""
+msgstr "失敗"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import
@@ -1092,46 +1092,46 @@ msgstr "失敗"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:73
 msgid "Failed Syncs"
-msgstr ""
+msgstr "失敗的同步次數"
 
 #: frontend/src2/query/components/NativeQueryEditor.vue:55
 msgid "Failed to format SQL"
-msgstr ""
+msgstr "SQL 格式化失敗"
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:72
 msgid "Failed to import table"
-msgstr ""
+msgstr "資料表匯入失敗"
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:38
 msgid "Failed to process uploaded file"
-msgstr ""
+msgstr "無法處理上傳的檔案"
 
 #: frontend/src2/components/DemoDataBanner.vue:33
 #: frontend/src2/settings/GeneralSettings.vue:29
 msgid "Failed to setup demo data"
-msgstr ""
+msgstr "示範資料設定失敗"
 
 #: frontend/src2/dashboard/DashboardList.vue:28
 msgid "Favorites"
-msgstr ""
+msgstr "我的最愛"
 
 #: frontend/src2/query/components/QueryExecutionStatus.vue:18
 #: frontend/src2/query/components/ScriptQueryEditor.vue:128
 msgid "Fetched from cache"
-msgstr ""
+msgstr "取自快取"
 
 #: frontend/src2/query/components/QueryExecutionStatus.vue:21
 #: frontend/src2/query/components/ScriptQueryEditor.vue:129
 msgid "Fetched in {0}s"
-msgstr ""
+msgstr "耗時 {0} 秒取得"
 
 #: frontend/src2/data_source/ConnectDuckDBDialog.vue:28
 msgid "File URL"
-msgstr ""
+msgstr "檔案網址"
 
 #: frontend/src2/components/ExportDialog.vue:58
 msgid "Filename"
-msgstr ""
+msgstr "檔案名稱"
 
 #: frontend/src2/query/components/FiltersSelectorDialog.vue:21
 msgid "Filter"
@@ -1139,15 +1139,15 @@ msgstr "篩選條件"
 
 #: frontend/src2/dashboard/DashboardFilterEditor.vue:226
 msgid "Filter Icon"
-msgstr ""
+msgstr "篩選條件圖示"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:44
 msgid "Filter Rows"
-msgstr ""
+msgstr "篩選資料列"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:45
 msgid "Filter rows based on columns or expressions"
-msgstr ""
+msgstr "依欄或運算式篩選資料列"
 
 #. Label of the filters (JSON) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -1157,7 +1157,7 @@ msgstr "篩選條件"
 #. Label of the fiscal_year_start (Date) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Fiscal Year Start"
-msgstr ""
+msgstr "會計年度起始"
 
 #. Label of the folder (Link) field in DocType 'Insights Workbook'
 #: frontend/src2/components/FolderCard.vue:24
@@ -1167,58 +1167,58 @@ msgstr "資料夾"
 
 #: insights/api/workbooks.py:312
 msgid "Folder and item must belong to the same workbook"
-msgstr ""
+msgstr "資料夾與項目必須屬於同一個活頁簿"
 
 #: insights/api/workbooks.py:443 insights/api/workbooks.py:456
 msgid "Folder {0} does not exist"
-msgstr ""
+msgstr "資料夾 {0} 不存在"
 
 #: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.py:40
 msgid "Folders can only be nested up to {0} levels deep"
-msgstr ""
+msgstr "資料夾最多只能巢狀 {0} 層"
 
 #: frontend/src2/dashboard/DashboardBuilder.vue:151
 msgid "Force Refresh"
-msgstr ""
+msgstr "強制重新整理"
 
 #: frontend/src2/query/components/ScriptQueryEditor.vue:103
 msgid "Force Run"
-msgstr ""
+msgstr "強制執行"
 
 #. Label of the foreign_key (Data) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "Foreign Key"
-msgstr ""
+msgstr "外鍵"
 
 #. Label of the foreign_table (Data) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "Foreign Table"
-msgstr ""
+msgstr "外部資料表"
 
 #. Label of the foreign_table_label (Data) field in DocType 'Insights Table
 #. Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "Foreign Table Label"
-msgstr ""
+msgstr "外部資料表標籤"
 
 #. Label of the format_option (Code) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "Format Option"
-msgstr ""
+msgstr "格式選項"
 
 #: frontend/src2/query/components/NativeQueryEditor.vue:65
 msgid "Format SQL"
-msgstr ""
+msgstr "格式化 SQL"
 
 #: insights/config/desktop.py:11
 msgid "Frappe Insights"
-msgstr ""
+msgstr "Frappe Insights"
 
 #. Label of the frequency (Select) field in DocType 'Insights Alert'
 #: frontend/src2/query/components/AlertSetupDialog.vue:150
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Frequency"
-msgstr ""
+msgstr "頻率"
 
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
@@ -1229,7 +1229,7 @@ msgstr "星期五"
 #. Option for the 'Sync Mode' (Select) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Full"
-msgstr ""
+msgstr "完整"
 
 #: frontend/src2/settings/Settings.vue:23
 msgid "General"
@@ -1237,28 +1237,28 @@ msgstr "一般"
 
 #: frontend/src2/query/components/ViewSQLDialog.vue:16
 msgid "Generated SQL"
-msgstr ""
+msgstr "產生的 SQL"
 
 #: frontend/src2/query/components/FormatRule.vue:160
 msgid "Green"
-msgstr ""
+msgstr "綠色"
 
 #: frontend/src2/query/components/FormatRule.vue:213
 msgid "Green-Red"
-msgstr ""
+msgstr "綠－紅"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:68
 msgid "Group & Summarize"
-msgstr ""
+msgstr "分組與彙總"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:69
 msgid "Group rows by columns and summarize the data"
-msgstr ""
+msgstr "依欄將資料列分組並彙總資料"
 
 #. Label of the http_headers (JSON) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "HTTP Headers"
-msgstr ""
+msgstr "HTTP 標頭"
 
 #. Label of the hidden (Check) field in DocType 'Insights Table'
 #: insights/insights/doctype/insights_table/insights_table.json
@@ -1267,7 +1267,7 @@ msgstr "隱藏"
 
 #: frontend/src2/query/components/FormattingSelector.vue:59
 msgid "Highlight Cell"
-msgstr ""
+msgstr "醒目提示儲存格"
 
 #: frontend/src2/charts/components/SankeyChartConfigForm.vue:60
 msgid "Horizontal"
@@ -1281,7 +1281,7 @@ msgstr "水平"
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Host"
-msgstr ""
+msgstr "主持人"
 
 #. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -1299,32 +1299,32 @@ msgstr "匯入"
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:71
 msgid "Import Failed"
-msgstr ""
+msgstr "匯入失敗"
 
 #. Label of the import_job (Link) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Import Job"
-msgstr ""
+msgstr "匯入工作"
 
 #. Label of the query (Code) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Import Query"
-msgstr ""
+msgstr "匯入查詢"
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:96
 #: frontend/src2/data_store/DataStoreList.vue:61
 #: frontend/src2/data_store/DataStoreList.vue:79
 #: frontend/src2/data_store/ImportTableDialog.vue:59
 msgid "Import Table"
-msgstr ""
+msgstr "匯入資料表"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:8
 msgid "Import job has been queued"
-msgstr ""
+msgstr "匯入工作已排入佇列"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:6
 msgid "Import to Warehouse"
-msgstr ""
+msgstr "匯入至資料倉儲"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import
 #. Log'
@@ -1337,16 +1337,16 @@ msgstr "進行中"
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Inactive"
-msgstr ""
+msgstr "未啟用"
 
 #. Option for the 'Sync Mode' (Select) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Incremental"
-msgstr ""
+msgstr "增量"
 
 #: frontend/src2/charts/components/MapChartConfigForm.vue:55
 msgid "India"
-msgstr ""
+msgstr "印度"
 
 #. Name of a role
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -1366,182 +1366,182 @@ msgstr ""
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
 #: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.json
 msgid "Insights Admin"
-msgstr ""
+msgstr "Insights 管理員"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Insights Alert"
-msgstr ""
+msgstr "Insights 警示"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_chart/insights_chart.json
 msgid "Insights Chart"
-msgstr ""
+msgstr "Insights 圖表"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
 msgid "Insights Chart v3"
-msgstr ""
+msgstr "Insights 圖表 v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_dashboard/insights_dashboard.json
 msgid "Insights Dashboard"
-msgstr ""
+msgstr "Insights 儀表板"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_dashboard_chart_v3/insights_dashboard_chart_v3.json
 msgid "Insights Dashboard Chart v3"
-msgstr ""
+msgstr "Insights 儀表板圖表 v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_dashboard_item/insights_dashboard_item.json
 msgid "Insights Dashboard Item"
-msgstr ""
+msgstr "Insights 儀表板項目"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Insights Dashboard v3"
-msgstr ""
+msgstr "Insights 儀表板 v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 msgid "Insights Data Source"
-msgstr ""
+msgstr "Insights 資料來源"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Insights Data Source v3"
-msgstr ""
+msgstr "Insights 資料來源 v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_folder/insights_folder.json
 msgid "Insights Folder"
-msgstr ""
+msgstr "Insights 資料夾"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_notebook/insights_notebook.json
 msgid "Insights Notebook"
-msgstr ""
+msgstr "Insights 筆記本"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_notebook_page/insights_notebook_page.json
 msgid "Insights Notebook Page"
-msgstr ""
+msgstr "Insights 筆記本頁面"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Insights Query"
-msgstr ""
+msgstr "Insights 查詢"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_chart/insights_query_chart.json
 msgid "Insights Query Chart"
-msgstr ""
+msgstr "Insights 查詢圖表"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "Insights Query Column"
-msgstr ""
+msgstr "Insights 查詢欄"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_execution_log/insights_query_execution_log.json
 msgid "Insights Query Execution Log"
-msgstr ""
+msgstr "Insights 查詢執行記錄"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_reference/insights_query_reference.json
 msgid "Insights Query Reference"
-msgstr ""
+msgstr "Insights 查詢參照"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_result/insights_query_result.json
 msgid "Insights Query Result"
-msgstr ""
+msgstr "Insights 查詢結果"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_table/insights_query_table.json
 msgid "Insights Query Table"
-msgstr ""
+msgstr "Insights 查詢資料表"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
 msgid "Insights Query Transform"
-msgstr ""
+msgstr "Insights 查詢轉換"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_variable/insights_query_variable.json
 msgid "Insights Query Variable"
-msgstr ""
+msgstr "Insights 查詢變數"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Insights Query v3"
-msgstr ""
+msgstr "Insights 查詢 v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_resource_permission/insights_resource_permission.json
 msgid "Insights Resource Permission"
-msgstr ""
+msgstr "Insights 資源權限"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_secret_key/insights_secret_key.json
 msgid "Insights Secret Key"
-msgstr ""
+msgstr "Insights 密鑰"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Insights Settings"
-msgstr ""
+msgstr "Insights 設定"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table/insights_table.json
 msgid "Insights Table"
-msgstr ""
+msgstr "Insights 資料表"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Insights Table Column"
-msgstr ""
+msgstr "Insights 資料表欄"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Insights Table Import"
-msgstr ""
+msgstr "Insights 資料表匯入"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Insights Table Import Job"
-msgstr ""
+msgstr "Insights 資料表匯入工作"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Insights Table Import Log"
-msgstr ""
+msgstr "Insights 資料表匯入記錄"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "Insights Table Link"
-msgstr ""
+msgstr "Insights 資料表關聯"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
 msgid "Insights Table Link v3"
-msgstr ""
+msgstr "Insights 資料表關聯 v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Insights Table v3"
-msgstr ""
+msgstr "Insights 資料表 v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_team/insights_team.json
 msgid "Insights Team"
-msgstr ""
+msgstr "Insights 團隊"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_team_member/insights_team_member.json
 msgid "Insights Team Member"
-msgstr ""
+msgstr "Insights 團隊成員"
 
 #. Name of a role
 #: insights/insights/doctype/insights_alert/insights_alert.json
@@ -1569,27 +1569,27 @@ msgstr ""
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
 #: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.json
 msgid "Insights User"
-msgstr ""
+msgstr "Insights 使用者"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Insights User Invitation"
-msgstr ""
+msgstr "Insights 使用者邀請"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_workbook/insights_workbook.json
 msgid "Insights Workbook"
-msgstr ""
+msgstr "Insights 活頁簿"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.json
 msgid "Insights Workbook Folder"
-msgstr ""
+msgstr "Insights 活頁簿資料夾"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Integer"
-msgstr ""
+msgstr "整數"
 
 #. Label of the integrations_section (Section Break) field in DocType 'Insights
 #. Settings'
@@ -1600,12 +1600,12 @@ msgstr "整合"
 #: frontend/src2/settings/UsersSettings.vue:44
 #: frontend/src2/users/UserList.vue:44
 msgid "Invitation Expired"
-msgstr ""
+msgstr "邀請已到期"
 
 #: frontend/src2/settings/UsersSettings.vue:43
 #: frontend/src2/users/UserList.vue:43
 msgid "Invitation Sent"
-msgstr ""
+msgstr "邀請已傳送"
 
 #: frontend/src2/settings/UsersSettings.vue:85
 #: frontend/src2/settings/UsersSettings.vue:173
@@ -1621,39 +1621,39 @@ msgstr "邀請者"
 #. Label of the is_assisted_query (Check) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Is Assisted Query"
-msgstr ""
+msgstr "是否為輔助查詢"
 
 #. Label of the is_builder_query (Check) field in DocType 'Insights Query v3'
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Is Builder Query"
-msgstr ""
+msgstr "是否為建構器查詢"
 
 #. Label of the is_ducklake (Check) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Is DuckLake"
-msgstr ""
+msgstr "是否為 DuckLake"
 
 #. Label of the is_expanded (Check) field in DocType 'Insights Folder'
 #: insights/insights/doctype/insights_folder/insights_folder.json
 msgid "Is Expanded"
-msgstr ""
+msgstr "是否已展開"
 
 #. Label of the is_expression (Check) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "Is Expression"
-msgstr ""
+msgstr "是否為運算式"
 
 #. Label of the is_frappe_db (Check) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Is Frappe Database"
-msgstr ""
+msgstr "是否為 Frappe 資料庫"
 
 #. Label of the is_native_query (Check) field in DocType 'Insights Query'
 #. Label of the is_native_query (Check) field in DocType 'Insights Query v3'
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Is Native Query"
-msgstr ""
+msgstr "是否為原生查詢"
 
 #. Label of the is_public (Check) field in DocType 'Insights Chart'
 #. Label of the is_public (Check) field in DocType 'Insights Chart v3'
@@ -1664,36 +1664,36 @@ msgstr ""
 #: insights/insights/doctype/insights_dashboard/insights_dashboard.json
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Is Public"
-msgstr ""
+msgstr "是否為公開"
 
 #. Label of the is_query_based (Check) field in DocType 'Insights Table'
 #: insights/insights/doctype/insights_table/insights_table.json
 msgid "Is Query Based"
-msgstr ""
+msgstr "是否以查詢為基礎"
 
 #. Label of the is_saved_as_table (Check) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Is Saved as Table"
-msgstr ""
+msgstr "是否已另存為資料表"
 
 #. Label of the is_script_query (Check) field in DocType 'Insights Query'
 #. Label of the is_script_query (Check) field in DocType 'Insights Query v3'
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Is Script Query"
-msgstr ""
+msgstr "是否為指令碼查詢"
 
 #. Label of the is_site_db (Check) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Is Site Database"
-msgstr ""
+msgstr "是否為網站資料庫"
 
 #. Label of the items (Table) field in DocType 'Insights Dashboard'
 #. Label of the items (JSON) field in DocType 'Insights Dashboard v3'
 #: insights/insights/doctype/insights_dashboard/insights_dashboard.json
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Items"
-msgstr ""
+msgstr "品項"
 
 #. Label of the json (Code) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -1703,20 +1703,20 @@ msgstr "JSON"
 #. Label of the join (Code) field in DocType 'Insights Query Table'
 #: insights/insights/doctype/insights_query_table/insights_query_table.json
 msgid "Join"
-msgstr ""
+msgstr "加入"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:50
 #: frontend/src2/query/components/JoinSelectorDialog.vue:251
 msgid "Join Table"
-msgstr ""
+msgstr "聯結資料表"
 
 #: frontend/src2/components/UserDropdown.vue:121
 msgid "Join Telegram Group"
-msgstr ""
+msgstr "加入 Telegram 群組"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:51
 msgid "Join this table with another table or query"
-msgstr ""
+msgstr "將此資料表與其他資料表或查詢進行聯結"
 
 #: frontend/src2/charts/components/SankeyChartConfigForm.vue:69
 msgid "Justify"
@@ -1743,64 +1743,64 @@ msgstr "標籤"
 
 #: frontend/src2/users/UserList.vue:65
 msgid "Last Active"
-msgstr ""
+msgstr "最後活動"
 
 #. Label of the last_execution (Datetime) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:77
 msgid "Last Executed On"
-msgstr ""
+msgstr "最後執行於"
 
 #. Label of the last_execution (Datetime) field in DocType 'Insights Alert'
 #: frontend/src2/query/components/QueryAlertsDialog.vue:56
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Last Execution"
-msgstr ""
+msgstr "最後執行"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:66
 msgid "Last Import Duration"
-msgstr ""
+msgstr "上次匯入耗時"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:63
 msgid "Last Import Rows"
-msgstr ""
+msgstr "上次匯入列數"
 
 #. Label of the last_log (Link) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Last Log"
-msgstr ""
+msgstr "最後記錄"
 
 #. Label of the last_run (Datetime) field in DocType 'Insights Table Import
 #. Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Last Run"
-msgstr ""
+msgstr "最後執行"
 
 #. Label of the last_status (Data) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Last Status"
-msgstr ""
+msgstr "最後狀態"
 
 #. Label of the last_sync_bookmark (Data) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Last Sync Bookmark"
-msgstr ""
+msgstr "上次同步書籤"
 
 #: frontend/src2/data_store/DataStoreList.vue:48
 msgid "Last Synced"
-msgstr ""
+msgstr "最後同步"
 
 #. Label of the last_synced_on (Datetime) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:60
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Last Synced On"
-msgstr ""
+msgstr "最後同步於"
 
 #. Description of the 'Last Sync Bookmark' (Data) field in DocType 'Insights
 #. Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Last synced cursor value (set automatically)"
-msgstr ""
+msgstr "上次同步的游標值（自動設定）"
 
 #: frontend/src2/charts/components/DonutChartConfigForm.vue:59
 #: frontend/src2/charts/components/SankeyChartConfigForm.vue:70
@@ -1811,29 +1811,29 @@ msgstr "左"
 #: frontend/src2/query/components/JoinSelectorDialog.vue:280
 #: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
 msgid "Left Column"
-msgstr ""
+msgstr "左側欄"
 
 #. Label of the left_table (Data) field in DocType 'Insights Table Link v3'
 #: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
 msgid "Left Table"
-msgstr ""
+msgstr "左側資料表"
 
 #. Label of the tab_break_tvwi (Tab Break) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Legacy"
-msgstr ""
+msgstr "舊版"
 
 #. Label of the limit (Int) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Limit"
-msgstr ""
+msgstr "上限"
 
 #. Label of the linked_charts (Table MultiSelect) field in DocType 'Insights
 #. Dashboard v3'
 #: frontend/src2/dashboard/DashboardFilterEditor.vue:193
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Linked Charts"
-msgstr ""
+msgstr "已連結的圖表"
 
 #. Label of the table_links (Table) field in DocType 'Insights Table'
 #: insights/insights/doctype/insights_table/insights_table.json
@@ -1847,7 +1847,7 @@ msgstr "載入更多"
 
 #: frontend/src2/workbook/WorkbookLineageDialog.vue:179
 msgid "Loading\\u2026"
-msgstr ""
+msgstr "載入中\\u2026"
 
 #. Label of the output (Code) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
@@ -1861,7 +1861,7 @@ msgstr "登出"
 
 #: frontend/src2/components/UserDropdown.vue:158
 msgid "Login to Frappe Cloud"
-msgstr ""
+msgstr "登入 Frappe Cloud"
 
 #: frontend/src2/components/UserDropdown.vue:80
 msgid "Login to Frappe Cloud?"
@@ -1870,25 +1870,25 @@ msgstr "登入 Frappe Cloud？"
 #: frontend/src2/query/components/ScriptQueryEditor.vue:82
 #: frontend/src2/query/components/ScriptQueryEditor.vue:113
 msgid "Logs"
-msgstr ""
+msgstr "記錄"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Long Int"
-msgstr ""
+msgstr "長整數"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Long Text"
-msgstr ""
+msgstr "長文字"
 
 #: frontend/src2/teams/ManageTeamDialog.vue:64
 msgid "Manage Team"
-msgstr ""
+msgstr "管理團隊"
 
 #: frontend/src2/workbook/WorkbookShareDialog.vue:92
 msgid "Manage Workbook Access"
-msgstr ""
+msgstr "管理活頁簿存取權"
 
 #. Option for the 'Database Type' (Select) field in DocType 'Insights Data
 #. Source'
@@ -1898,47 +1898,47 @@ msgstr ""
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "MariaDB"
-msgstr ""
+msgstr "MariaDB"
 
 #: frontend/src2/dashboard/DashboardList.vue:78
 msgid "Mark a dashboard as favorite to see it here."
-msgstr ""
+msgstr "將儀表板加入我的最愛後，就會顯示在這裡。"
 
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.js:7
 msgid "Mark as Failed"
-msgstr ""
+msgstr "標示為失敗"
 
 #: frontend/src2/dashboard/DashboardText.vue:54
 msgid "Markdown supported"
-msgstr ""
+msgstr "支援 Markdown"
 
 #. Label of the max_execution_time (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Max Execution Time (Seconds)"
-msgstr ""
+msgstr "最長執行時間（秒）"
 
 #. Label of the max_memory_usage (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Max Memory Usage"
-msgstr ""
+msgstr "記憶體使用上限"
 
 #. Label of the max_records_to_sync (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Max Records To Sync"
-msgstr ""
+msgstr "同步筆數上限"
 
 #: frontend/src2/charts/components/MeasurePicker.vue:140
 msgid "Maximum of..."
-msgstr ""
+msgstr "最大值…"
 
 #: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:112
 msgid "Measure Name"
-msgstr ""
+msgstr "量值名稱"
 
 #. Label of the memory_limit (Int) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Memory Limit (MB)"
-msgstr ""
+msgstr "記憶體上限 (MB)"
 
 #. Label of the message (Markdown Editor) field in DocType 'Insights Alert'
 #: frontend/src2/query/components/AlertSetupDialog.vue:238
@@ -1948,7 +1948,7 @@ msgstr "訊息"
 
 #: frontend/src2/charts/components/MeasurePicker.vue:139
 msgid "Minimum of..."
-msgstr ""
+msgstr "最小值…"
 
 #: frontend/src2/data_source/DataSourceList.vue:120
 msgid "Modified"
@@ -1967,17 +1967,17 @@ msgstr "每月"
 
 #: frontend/src2/workbook/WorkbookList.vue:250
 msgid "Move to folder"
-msgstr ""
+msgstr "移動至資料夾"
 
 #. Option for the 'Cardinality' (Select) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "N:1"
-msgstr ""
+msgstr "N:1"
 
 #. Option for the 'Cardinality' (Select) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "N:N"
-msgstr ""
+msgstr "N:N"
 
 #. Label of the column (Data) field in DocType 'Insights Query Column'
 #: frontend/src2/components/VariablesDialog.vue:84
@@ -1988,39 +1988,39 @@ msgstr "名稱"
 #: frontend/src2/query/components/QueryAlertsDialog.vue:79
 #: frontend/src2/query/components/QueryAlertsDialog.vue:108
 msgid "New Alert"
-msgstr ""
+msgstr "新增警示"
 
 #: frontend/src2/workbook/WorkbookTabSwitcher.vue:63
 msgid "New Chart"
-msgstr ""
+msgstr "新圖表"
 
 #: frontend/src2/workbook/WorkbookTabSwitcher.vue:64
 msgid "New Dashboard"
-msgstr ""
+msgstr "新增儀表板"
 
 #: frontend/src2/data_source/DataSourceList.vue:133
 #: frontend/src2/data_source/DataSourceList.vue:148
 msgid "New Data Source"
-msgstr ""
+msgstr "新增資料來源"
 
 #: frontend/src2/workbook/WorkbookList.vue:105
 msgid "New Folder"
-msgstr ""
+msgstr "新資料夾"
 
 #: frontend/src2/workbook/WorkbookTabSwitcher.vue:62
 msgid "New Query"
-msgstr ""
+msgstr "新增查詢"
 
 #: frontend/src2/home/HomeQuickActions.vue:28
 #: frontend/src2/workbook/WorkbookList.vue:167
 #: frontend/src2/workbook/WorkbookList.vue:202
 msgid "New Workbook"
-msgstr ""
+msgstr "新增活頁簿"
 
 #. Label of the next_execution (Datetime) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Next Execution"
-msgstr ""
+msgstr "下次執行"
 
 #: frontend/src2/query/components/UnionSelectorDialog.vue:144
 msgid "No"
@@ -2028,88 +2028,88 @@ msgstr "否"
 
 #: frontend/src2/dashboard/DashboardList.vue:77
 msgid "No Favorites"
-msgstr ""
+msgstr "沒有我的最愛"
 
 #: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:90
 msgid "No Queries Found"
-msgstr ""
+msgstr "找不到查詢"
 
 #: frontend/src2/dashboard/DashboardList.vue:82
 msgid "No Recents"
-msgstr ""
+msgstr "沒有最近項目"
 
 #: frontend/src2/data_source/DataSourceTableList.vue:40
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:58
 msgid "No Tables Found"
-msgstr ""
+msgstr "找不到資料表"
 
 #: frontend/src2/data_store/DataStoreList.vue:57
 msgid "No Tables Stored"
-msgstr ""
+msgstr "沒有已儲存的資料表"
 
 #: frontend/src2/workbook/WorkbookList.vue:160
 msgid "No Workbooks"
-msgstr ""
+msgstr "沒有活頁簿"
 
 #: frontend/src2/query/components/QueryAlertsDialog.vue:76
 msgid "No alerts"
-msgstr ""
+msgstr "沒有警示"
 
 #: frontend/src2/query/components/ColumnsSelectorDialog.vue:108
 msgid "No columns selected"
-msgstr ""
+msgstr "未選取任何欄"
 
 #: frontend/src2/data_source/DataSourceList.vue:131
 msgid "No data sources to display."
-msgstr ""
+msgstr "沒有可顯示的資料來源。"
 
 #: frontend/src2/data_source/DataSourceList.vue:130
 msgid "No data sources."
-msgstr ""
+msgstr "沒有資料來源。"
 
 #: frontend/src2/dashboard/DashboardList.vue:98
 msgid "No folders or dashboards to display."
-msgstr ""
+msgstr "沒有可顯示的資料夾或儀表板。"
 
 #: frontend/src2/workbook/WorkbookList.vue:162
 msgid "No folders or workbooks here."
-msgstr ""
+msgstr "這裡沒有資料夾或活頁簿。"
 
 #: frontend/src2/data_source/DataSourceTableList.vue:41
 msgid "No tables found for the selected data source."
-msgstr ""
+msgstr "找不到所選資料來源的資料表。"
 
 #: frontend/src2/data_store/DataStoreList.vue:58
 msgid "No tables found in the data store."
-msgstr ""
+msgstr "在資料存放區中找不到資料表。"
 
 #: frontend/src2/settings/PermissionsSettings.vue:64
 #: frontend/src2/teams/TeamList.vue:62
 msgid "No teams to display."
-msgstr ""
+msgstr "沒有可顯示的團隊。"
 
 #: frontend/src2/settings/PermissionsSettings.vue:63
 #: frontend/src2/teams/TeamList.vue:61
 msgid "No teams."
-msgstr ""
+msgstr "沒有團隊。"
 
 #: frontend/src2/settings/UsersSettings.vue:82
 #: frontend/src2/users/UserList.vue:81
 msgid "No users to display."
-msgstr ""
+msgstr "沒有可顯示的使用者。"
 
 #: frontend/src2/settings/UsersSettings.vue:81
 #: frontend/src2/users/UserList.vue:80
 msgid "No users."
-msgstr ""
+msgstr "沒有使用者。"
 
 #: frontend/src2/home/HomeWorkbookList.vue:66
 msgid "No workbooks created"
-msgstr ""
+msgstr "尚未建立任何活頁簿"
 
 #: frontend/src2/workbook/WorkbookList.vue:163
 msgid "No workbooks to display."
-msgstr ""
+msgstr "沒有可顯示的活頁簿。"
 
 #. Option for the 'Authentication Type' (Select) field in DocType 'Insights
 #. Data Source v3'
@@ -2120,13 +2120,13 @@ msgstr "無"
 #. Label of the notebook (Link) field in DocType 'Insights Notebook Page'
 #: insights/insights/doctype/insights_notebook_page/insights_notebook_page.json
 msgid "Notebook"
-msgstr ""
+msgstr "筆記本"
 
 #: frontend/src2/dashboard/DashboardList.vue:87
 #: frontend/src2/dashboard/DashboardList.vue:92
 #: frontend/src2/dashboard/DashboardList.vue:97
 msgid "Nothing here"
-msgstr ""
+msgstr "這裡沒有任何項目"
 
 #. Label of the old_name (Data) field in DocType 'Insights Chart v3'
 #. Label of the old_name (Data) field in DocType 'Insights Dashboard v3'
@@ -2135,22 +2135,22 @@ msgstr ""
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Old Name"
-msgstr ""
+msgstr "舊名稱"
 
 #. Label of the onboarding_complete (Check) field in DocType 'Insights
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Onboarding Complete"
-msgstr ""
+msgstr "新手導覽完成"
 
 #: insights/api/workbooks.py:367
 msgid "Only an Insights Admin can manage workbook folders"
-msgstr ""
+msgstr "只有 Insights 管理員才能管理活頁簿資料夾"
 
 #: frontend/src2/dashboard/Dashboard.vue:68
 #: frontend/src2/dashboard/DashboardList.vue:117
 msgid "Open Workbook"
-msgstr ""
+msgstr "開啟活頁簿"
 
 #: frontend/src2/charts/components/ChartBuilderToolbar.vue:65
 #: frontend/src2/workbook/WorkbookNavbarActions.vue:79
@@ -2164,7 +2164,7 @@ msgstr "工序"
 
 #: frontend/src2/query/components/FormatRule.vue:416
 msgid "Operator"
-msgstr "操作员"
+msgstr "操作員"
 
 #. Label of the options (JSON) field in DocType 'Insights Chart'
 #. Label of the options (JSON) field in DocType 'Insights Dashboard Item'
@@ -2182,13 +2182,13 @@ msgstr "排序方式"
 
 #: frontend/src2/settings/Settings.vue:20
 msgid "Organization"
-msgstr "组织"
+msgstr "組織"
 
 #. Option for the 'Action if table exists' (Select) field in DocType 'Insights
 #. Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Overwrite"
-msgstr ""
+msgstr "覆寫"
 
 #: frontend/src2/data_source/DataSourceList.vue:106
 #: frontend/src2/teams/TeamList.vue:34
@@ -2199,18 +2199,18 @@ msgstr "擁有者"
 #. Folder'
 #: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.json
 msgid "Parent Folder"
-msgstr ""
+msgstr "上層資料夾"
 
 #. Label of the parquet_file (Text) field in DocType 'Insights Table Import
 #. Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Parquet File"
-msgstr ""
+msgstr "Parquet 檔案"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Partial Success"
-msgstr ""
+msgstr "部分成功"
 
 #. Label of the password (Password) field in DocType 'Insights Data Source'
 #. Label of the password (Password) field in DocType 'Insights Data Source v3'
@@ -2230,7 +2230,7 @@ msgstr "待處理"
 #. Option for the 'Status' (Select) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Pending Execution"
-msgstr ""
+msgstr "待執行"
 
 #: frontend/src2/settings/Settings.vue:38
 msgid "Permissions"
@@ -2238,31 +2238,31 @@ msgstr "權限"
 
 #: frontend/src2/workbook/WorkbookShareDialog.vue:82
 msgid "Permissions updated"
-msgstr ""
+msgstr "權限已更新"
 
 #. Description of the 'State (JSON)' (Code) field in DocType 'Insights Table
 #. Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Persistent state storage for the script"
-msgstr ""
+msgstr "供指令碼使用的持續性狀態儲存"
 
 #: frontend/src2/query/components/source_selector/SourceSelectorDialog.vue:125
 msgid "Pick Starting Data"
-msgstr ""
+msgstr "選擇起始資料"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Query Transform'
 #: frontend/src2/query/components/AddOperationPopover.vue:74
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
 msgid "Pivot"
-msgstr ""
+msgstr "樞紐分析"
 
 #: frontend/src2/query/components/NativeQueryEditor.vue:29
 msgid "Please select a data source first"
-msgstr ""
+msgstr "請先選取資料來源"
 
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:53
 msgid "Please wait while we refresh the tables from your data source"
-msgstr ""
+msgstr "正在從你的資料來源重新整理資料表，請稍候"
 
 #. Label of the port (Data) field in DocType 'Insights Data Source'
 #. Label of the port (Int) field in DocType 'Insights Data Source v3'
@@ -2272,12 +2272,12 @@ msgstr ""
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Port"
-msgstr ""
+msgstr "連接埠"
 
 #. Label of the layout (JSON) field in DocType 'Insights Dashboard Item'
 #: insights/insights/doctype/insights_dashboard_item/insights_dashboard_item.json
 msgid "Position & Size"
-msgstr ""
+msgstr "位置與大小"
 
 #. Option for the 'Database Type' (Select) field in DocType 'Insights Data
 #. Source'
@@ -2287,7 +2287,7 @@ msgstr ""
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "PostgreSQL"
-msgstr ""
+msgstr "PostgreSQL"
 
 #. Label of the preview_image (Data) field in DocType 'Insights Dashboard v3'
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
@@ -2297,13 +2297,13 @@ msgstr "預覽圖片"
 #. Label of the primary_key (Data) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "Primary Key"
-msgstr ""
+msgstr "主鍵"
 
 #. Label of the sync_primary_key_column (Data) field in DocType 'Insights Table
 #. v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Primary Key Column"
-msgstr ""
+msgstr "主鍵欄"
 
 #: frontend/src2/settings/Settings.vue:13
 msgid "Profile"
@@ -2314,13 +2314,13 @@ msgstr "個人檔案"
 #: insights/insights/doctype/insights_chart/insights_chart.json
 #: insights/insights/doctype/insights_dashboard/insights_dashboard.json
 msgid "Public Key"
-msgstr ""
+msgstr "公開金鑰"
 
 #: frontend/src2/query/components/source_selector/SourceSelectorDialog.vue:89
 #: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:59
 #: frontend/src2/workbook/WorkbookSidebar.vue:29
 msgid "Queries"
-msgstr ""
+msgstr "查詢"
 
 #. Label of the query (Link) field in DocType 'Insights Alert'
 #. Label of the query (Link) field in DocType 'Insights Chart'
@@ -2347,16 +2347,16 @@ msgstr ""
 #: insights/insights/doctype/insights_query_result/insights_query_result.json
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Query"
-msgstr ""
+msgstr "查詢"
 
 #: frontend/src2/workbook/WorkbookLineageDialog.vue:149
 msgid "Query Lineage"
-msgstr ""
+msgstr "查詢血緣關係"
 
 #. Label of the query_result_limit (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Query Result Limit"
-msgstr ""
+msgstr "查詢結果筆數上限"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
@@ -2365,52 +2365,52 @@ msgstr "已排入佇列"
 
 #: frontend/src2/home/HomeQuickActions.vue:21
 msgid "Quick Actions"
-msgstr ""
+msgstr "快速動作"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "REST API"
-msgstr ""
+msgstr "REST API"
 
 #: frontend/src2/query/components/FormatRule.vue:478
 msgid "Ranking Condition"
-msgstr ""
+msgstr "排名條件"
 
 #: frontend/src2/query/components/FormatRule.vue:225
 msgid "Ranking Rules"
-msgstr ""
+msgstr "排名規則"
 
 #: frontend/src2/dashboard/DashboardList.vue:27
 msgid "Recents"
-msgstr ""
+msgstr "最近項目"
 
 #. Label of the recipients (Small Text) field in DocType 'Insights Alert'
 #: frontend/src2/query/components/AlertSetupDialog.vue:181
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Recipients"
-msgstr ""
+msgstr "收件者"
 
 #: frontend/src2/query/components/FormatRule.vue:159
 msgid "Red"
-msgstr ""
+msgstr "紅色"
 
 #: frontend/src2/query/components/FormatRule.vue:209
 msgid "Red-Green"
-msgstr ""
+msgstr "紅－綠"
 
 #. Label of the ref_type (Select) field in DocType 'Insights Query Reference'
 #: insights/insights/doctype/insights_query_reference/insights_query_reference.json
 msgid "Reference Type"
-msgstr ""
+msgstr "參照類型"
 
 #. Label of the ref_query (Link) field in DocType 'Insights Query Reference'
 #: insights/insights/doctype/insights_query_reference/insights_query_reference.json
 msgid "Referenced Query"
-msgstr ""
+msgstr "被參照的查詢"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:84
 msgid "Referencing Queries"
-msgstr ""
+msgstr "參照此項目的查詢"
 
 #: frontend/src2/dashboard/Dashboard.vue:51
 #: frontend/src2/data_source/DataSourceTableList.vue:43
@@ -2419,20 +2419,20 @@ msgstr "重新整理"
 
 #: frontend/src2/dashboard/DashboardList.vue:122
 msgid "Refresh Preview"
-msgstr ""
+msgstr "重新整理預覽"
 
 #: frontend/src2/query/components/QueryToolbar.vue:28
 msgid "Refresh Stored Tables"
-msgstr ""
+msgstr "重新整理已儲存的資料表"
 
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:62
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:87
 msgid "Refresh Tables"
-msgstr ""
+msgstr "重新整理資料表"
 
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:52
 msgid "Refreshing Tables"
-msgstr ""
+msgstr "正在重新整理資料表"
 
 #: frontend/src2/query/components/FiltersSelector.vue:126
 #: frontend/src2/workbook/WorkbookShareDialog.vue:39
@@ -2441,52 +2441,52 @@ msgstr "移除"
 
 #: frontend/src2/components/DataTableColumn.vue:30
 msgid "Remove Sort"
-msgstr ""
+msgstr "移除排序"
 
 #: frontend/src2/dashboard/DashboardBuilder.vue:170
 msgid "Reset Layout"
-msgstr ""
+msgstr "重設版面配置"
 
 #: frontend/src2/charts/components/ChartBuilderToolbar.vue:49
 msgid "Reset Options"
-msgstr ""
+msgstr "重設選項"
 
 #: frontend/src2/charts/components/RegionMappingDialog.vue:194
 msgid "Resolve Locations"
-msgstr ""
+msgstr "解析地點"
 
 #. Label of the resource_name (Dynamic Link) field in DocType 'Insights
 #. Resource Permission'
 #: insights/insights/doctype/insights_resource_permission/insights_resource_permission.json
 msgid "Resource"
-msgstr ""
+msgstr "資源"
 
 #. Label of the resource_type (Link) field in DocType 'Insights Resource
 #. Permission'
 #: insights/insights/doctype/insights_resource_permission/insights_resource_permission.json
 msgid "Resource Type"
-msgstr ""
+msgstr "資源類型"
 
 #. Label of the result_name (Data) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Result"
-msgstr ""
+msgstr "結果"
 
 #. Label of the results_row_count (Int) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Result Row Count"
-msgstr ""
+msgstr "結果列數"
 
 #. Label of the results (Code) field in DocType 'Insights Query Result'
 #: insights/insights/doctype/insights_query_result/insights_query_result.json
 msgid "Results"
-msgstr ""
+msgstr "結果"
 
 #. Label of the results_row_count (Int) field in DocType 'Insights Query
 #. Result'
 #: insights/insights/doctype/insights_query_result/insights_query_result.json
 msgid "Results Row Count"
-msgstr ""
+msgstr "結果列數"
 
 #: frontend/src2/charts/components/DonutChartConfigForm.vue:60
 #: frontend/src2/charts/components/SankeyChartConfigForm.vue:71
@@ -2497,25 +2497,25 @@ msgstr "右"
 #: frontend/src2/query/components/JoinSelectorDialog.vue:294
 #: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
 msgid "Right Column"
-msgstr ""
+msgstr "右側欄"
 
 #. Label of the right_table (Data) field in DocType 'Insights Table Link v3'
 #: frontend/src2/query/components/JoinSelectorDialog.vue:260
 #: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
 msgid "Right Table"
-msgstr ""
+msgstr "右側資料表"
 
 #. Label of the row_limit (Int) field in DocType 'Insights Table Import Log'
 #. Label of the row_limit (Int) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Row Limit"
-msgstr ""
+msgstr "列數上限"
 
 #. Label of the row_size (Float) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Row Size (KB)"
-msgstr ""
+msgstr "列大小 (KB)"
 
 #. Label of the rows (Int) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
@@ -2526,7 +2526,7 @@ msgstr "列"
 #. Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Rows Imported"
-msgstr ""
+msgstr "已匯入列數"
 
 #: frontend/src2/query/components/FormatRule.vue:405
 msgid "Rule Type"
@@ -2535,18 +2535,18 @@ msgstr "規則類型"
 #: frontend/src2/query/components/ScriptQueryEditor.vue:94
 #: insights/insights/doctype/insights_query/insights_query.js:7
 msgid "Run"
-msgstr ""
+msgstr "執行"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:37
 msgid "Run {0} of {1}"
-msgstr ""
+msgstr "第 {0} 次執行，共 {1} 次"
 
 #. Label of the sql (Code) field in DocType 'Insights Query'
 #. Label of the sql (Code) field in DocType 'Insights Query Execution Log'
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_query_execution_log/insights_query_execution_log.json
 msgid "SQL"
-msgstr ""
+msgstr "SQL"
 
 #. Option for the 'Database Type' (Select) field in DocType 'Insights Data
 #. Source'
@@ -2555,15 +2555,15 @@ msgstr ""
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "SQLite"
-msgstr ""
+msgstr "SQLite"
 
 #: frontend/src2/settings/GeneralSettings.vue:23
 msgid "Sample data and workbook have been set up successfully"
-msgstr ""
+msgstr "範例資料與活頁簿已成功建立"
 
 #: frontend/src2/components/DemoDataBanner.vue:27
 msgid "Sample data with workbook has been set up successfully"
-msgstr ""
+msgstr "範例資料與活頁簿已成功建立完成"
 
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
@@ -2583,18 +2583,18 @@ msgstr "儲存變更"
 
 #: frontend/src2/components/VariablesDialog.vue:133
 msgid "Save Variables"
-msgstr ""
+msgstr "儲存變數"
 
 #. Label of the schedule (Data) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Schedule (Cron)"
-msgstr ""
+msgstr "排程 (Cron)"
 
 #. Label of the schema (Data) field in DocType 'Insights Data Source v3'
 #: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:57
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Schema"
-msgstr ""
+msgstr "結構描述"
 
 #. Label of the script (Code) field in DocType 'Insights Query'
 #. Label of the script (Code) field in DocType 'Insights Table Import Job'
@@ -2606,7 +2606,7 @@ msgstr "指令碼"
 #. Label of the script_log (Text) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Script Log"
-msgstr ""
+msgstr "指令碼記錄"
 
 #: frontend/src2/data_store/DataStoreList.vue:92
 #: frontend/src2/query/components/QueryAlertsDialog.vue:102
@@ -2618,102 +2618,102 @@ msgstr "搜尋"
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:75
 #: frontend/src2/query/components/source_selector/WorkbookQueryList.vue:63
 msgid "Search by Title"
-msgstr ""
+msgstr "依標題搜尋"
 
 #: frontend/src2/dashboard/DashboardChartSelectorDialog.vue:85
 msgid "Search by name"
-msgstr ""
+msgstr "依名稱搜尋"
 
 #: frontend/src2/dashboard/DashboardList.vue:159
 #: frontend/src2/workbook/WorkbookList.vue:225
 msgid "Search by title"
-msgstr ""
+msgstr "依標題搜尋"
 
 #: frontend/src2/workbook/WorkbookLineageDialog.vue:163
 msgid "Search nodes\\u2026"
-msgstr ""
+msgstr "搜尋節點\\u2026"
 
 #. Label of the secrets (Table) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Secrets"
-msgstr ""
+msgstr "機密資訊"
 
 #: frontend/src2/dashboard/DashboardChartSelectorDialog.vue:64
 msgid "Select Charts"
-msgstr ""
+msgstr "選取圖表"
 
 #: frontend/src2/query/components/ColumnsSelectorDialog.vue:62
 msgid "Select Columns"
-msgstr ""
+msgstr "選取欄"
 
 #: frontend/src2/query/components/JoinSelectorDialog.vue:363
 msgid "Select Columns to Add"
-msgstr ""
+msgstr "選取要新增的欄"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:203
 msgid "Select Field"
-msgstr ""
+msgstr "選取欄位"
 
 #: frontend/src2/query/components/JoinSelectorDialog.vue:335
 msgid "Select Join Type"
-msgstr ""
+msgstr "選取聯結類型"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:32
 msgid "Select Source"
-msgstr ""
+msgstr "選取來源"
 
 #: frontend/src2/query/components/UnionSelectorDialog.vue:126
 msgid "Select Table"
-msgstr ""
+msgstr "選取資料表"
 
 #: frontend/src2/dashboard/DashboardFilterEditor.vue:212
 msgid "Select a column"
-msgstr ""
+msgstr "選取欄"
 
 #: frontend/src2/data_source/DataSourceList.vue:170
 msgid "Select a data source"
-msgstr ""
+msgstr "選取資料來源"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:33
 msgid "Select a table or query to start building your query"
-msgstr ""
+msgstr "選取資料表或查詢，開始建立你的查詢"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:145
 msgid "Select an operation"
-msgstr ""
+msgstr "選取作業"
 
 #: frontend/src2/dashboard/DashboardFilterEditor.vue:255
 msgid "Select operator..."
-msgstr ""
+msgstr "選取運算子…"
 
 #: insights/insights/doctype/insights_alert/insights_alert.js:6
 msgid "Send Alert"
-msgstr ""
+msgstr "傳送警示"
 
 #: frontend/src2/settings/UsersSettings.vue:177
 #: frontend/src2/users/UserList.vue:178
 msgid "Send Invitation"
-msgstr ""
+msgstr "傳送邀請"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:117
 msgid "Send Test Alert"
-msgstr ""
+msgstr "傳送測試警示"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:197
 msgid "Send alert when"
-msgstr ""
+msgstr "傳送警示的時機"
 
 #: insights/insights/doctype/insights_alert/insights_alert.js:7
 msgid "Sending Alert..."
-msgstr ""
+msgstr "正在傳送警示…"
 
 #: frontend/src2/components/UserDropdown.vue:70
 msgid "Set Insights v2 as default"
-msgstr ""
+msgstr "將 Insights v2 設為預設"
 
 #: frontend/src2/query/components/QueryAlertsDialog.vue:77
 msgid "Set up alerts to get notified when a condition is met"
-msgstr ""
+msgstr "設定警示，在符合條件時收到通知"
 
 #: frontend/src2/components/AppSidebar.vue:95
 #: frontend/src2/settings/Settings.vue:58
@@ -2722,39 +2722,39 @@ msgstr "設定"
 
 #: frontend/src2/dashboard/DashboardFilterEditor.vue:29
 msgid "Setup"
-msgstr ""
+msgstr "設定"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:113
 msgid "Setup Alert"
-msgstr ""
+msgstr "設定警示"
 
 #. Label of the setup_complete (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Setup Complete"
-msgstr ""
+msgstr "設定完成"
 
 #: frontend/src2/components/DemoDataBanner.vue:64
 msgid "Setup Demo Data"
-msgstr ""
+msgstr "設定示範資料"
 
 #: frontend/src2/components/DemoDataBanner.vue:32
 #: frontend/src2/settings/GeneralSettings.vue:28
 msgid "Setup Failed"
-msgstr ""
+msgstr "設定失敗"
 
 #: frontend/src2/charts/components/ChartBuilderToolbar.vue:38
 #: frontend/src2/charts/components/ChartShareDialog.vue:35
 msgid "Share Chart"
-msgstr ""
+msgstr "共用圖表"
 
 #: frontend/src2/dashboard/DashboardShareDialog.vue:83
 msgid "Share Dashboard"
-msgstr ""
+msgstr "共用儀表板"
 
 #. Label of the share_link (Data) field in DocType 'Insights Dashboard v3'
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Share Link"
-msgstr ""
+msgstr "共用連結"
 
 #: frontend/src2/dashboard/DashboardList.vue:30
 #: frontend/src2/workbook/WorkbookList.vue:45
@@ -2763,24 +2763,24 @@ msgstr "已共用"
 
 #: frontend/src2/charts/components/FunnelChartConfigForm.vue:51
 msgid "Show Percentage"
-msgstr ""
+msgstr "顯示百分比"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:39
 msgid "Show or hide columns from the table"
-msgstr ""
+msgstr "顯示或隱藏資料表中的欄"
 
 #. Label of the is_site_db (Check) field in DocType 'Insights Data Source'
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 msgid "Site Database"
-msgstr ""
+msgstr "網站資料庫"
 
 #: frontend/src2/components/DataTableColumn.vue:20
 msgid "Sort Ascending"
-msgstr ""
+msgstr "遞增排序"
 
 #: frontend/src2/components/DataTableColumn.vue:25
 msgid "Sort Descending"
-msgstr ""
+msgstr "遞減排序"
 
 #. Label of the sort_order (Int) field in DocType 'Insights Folder'
 #: insights/insights/doctype/insights_folder/insights_folder.json
@@ -2795,51 +2795,51 @@ msgstr "來源"
 
 #: frontend/src2/dashboard/DashboardShareDialog.vue:114
 msgid "Specific people can view"
-msgstr ""
+msgstr "指定的人員可檢視"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:75
 msgid "Spreading column values into separate columns"
-msgstr ""
+msgstr "將欄中的值展開成個別的欄"
 
 #. Description of the 'Primary Key Column' (Data) field in DocType 'Insights
 #. Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Stable key used to identify the latest version of each logical row during incremental upserts."
-msgstr ""
+msgstr "在增量更新或插入時，用來識別每一筆邏輯資料列最新版本的穩定索引鍵。"
 
 #. Description of the 'Sync From' (Datetime) field in DocType 'Insights Table
 #. v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Start importing rows from this datetime onward (used on first sync only)"
-msgstr ""
+msgstr "從此日期時間起開始匯入資料列（僅在首次同步時使用）"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Started"
-msgstr ""
+msgstr "已開始"
 
 #. Label of the started_at (Datetime) field in DocType 'Insights Table Import
 #. Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Started At"
-msgstr ""
+msgstr "開始時間"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:27
 msgid "Starting..."
-msgstr ""
+msgstr "正在啟動…"
 
 #. Label of the state (Code) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "State (JSON)"
-msgstr ""
+msgstr "狀態 (JSON)"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:32
 msgid "Statistics"
-msgstr ""
+msgstr "統計"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:91
 msgid "Statistics — {0}"
-msgstr ""
+msgstr "統計 — {0}"
 
 #. Label of the status (Select) field in DocType 'Insights Data Source'
 #. Label of the status (Select) field in DocType 'Insights Data Source v3'
@@ -2865,7 +2865,7 @@ msgstr "狀態"
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Stored"
-msgstr ""
+msgstr "已儲存"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -2875,49 +2875,49 @@ msgstr "字串"
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Success"
-msgstr ""
+msgstr "成功"
 
 #: frontend/src2/charts/components/MeasurePicker.vue:137
 msgid "Sum of..."
-msgstr ""
+msgstr "總和…"
 
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Sunday"
-msgstr ""
+msgstr "星期日"
 
 #: frontend/src2/components/UserDropdown.vue:148
 msgid "Switch to Desk"
-msgstr ""
+msgstr "切換至 Desk"
 
 #: frontend/src2/components/UserDropdown.vue:54
 #: frontend/src2/components/UserDropdown.vue:140
 msgid "Switch to Insights v2"
-msgstr ""
+msgstr "切換至 Insights v2"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:58
 msgid "Sync"
-msgstr ""
+msgstr "同步"
 
 #. Label of the sync_from (Datetime) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Sync From"
-msgstr ""
+msgstr "同步起始時間"
 
 #. Label of the sync_mode (Select) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Sync Mode"
-msgstr ""
+msgstr "同步模式"
 
 #. Label of the sync_strategy (Select) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Sync Strategy"
-msgstr ""
+msgstr "同步策略"
 
 #: frontend/src2/query/components/source_selector/DataSourceTableList.vue:59
 msgid "Sync tables from your data source to get started"
-msgstr ""
+msgstr "從你的資料來源同步資料表以開始使用"
 
 #. Name of a role
 #: insights/insights/doctype/insights_chart/insights_chart.json
@@ -2953,18 +2953,18 @@ msgstr "系統管理員"
 #: insights/insights/doctype/insights_table/insights_table.json
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Table"
-msgstr ""
+msgstr "資料表"
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:64
 msgid "Table Imported"
-msgstr ""
+msgstr "資料表已匯入"
 
 #. Label of the table_label (Data) field in DocType 'Insights Query Column'
 #. Label of the table_label (Data) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Table Label"
-msgstr ""
+msgstr "資料表標籤"
 
 #. Label of the table_name (Data) field in DocType 'Insights Query Reference'
 #. Label of the table_name (Data) field in DocType 'Insights Table Import'
@@ -2977,38 +2977,38 @@ msgstr ""
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Table Name"
-msgstr ""
+msgstr "資料表名稱"
 
 #. Label of the table_restrictions (Data) field in DocType 'Insights Resource
 #. Permission'
 #: insights/insights/doctype/insights_resource_permission/insights_resource_permission.json
 msgid "Table Restrictions"
-msgstr ""
+msgstr "資料表限制"
 
 #. Label of the tables (Table) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Tables"
-msgstr ""
+msgstr "資料表"
 
 #: frontend/src2/teams/TeamList.vue:30
 msgid "Team"
-msgstr "团队"
+msgstr "團隊"
 
 #. Label of the team_members (Table) field in DocType 'Insights Team'
 #: insights/insights/doctype/insights_team/insights_team.json
 msgid "Team Members"
-msgstr ""
+msgstr "團隊成員"
 
 #. Label of the team_name (Data) field in DocType 'Insights Team'
 #: frontend/src2/settings/PermissionsSettings.vue:45
 #: insights/insights/doctype/insights_team/insights_team.json
 msgid "Team Name"
-msgstr ""
+msgstr "團隊名稱"
 
 #. Label of the team_permissions (Table) field in DocType 'Insights Team'
 #: insights/insights/doctype/insights_team/insights_team.json
 msgid "Team Permissions"
-msgstr ""
+msgstr "團隊權限"
 
 #: frontend/src2/teams/TeamList.vue:83
 msgid "Teams"
@@ -3017,25 +3017,25 @@ msgstr "團隊"
 #. Option for the 'Channel' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Telegram"
-msgstr ""
+msgstr "Telegram"
 
 #. Label of the telegram_api_token (Password) field in DocType 'Insights
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Telegram API Token"
-msgstr ""
+msgstr "Telegram API 權杖"
 
 #. Label of the telegram_chat_id (Data) field in DocType 'Insights Alert'
 #: frontend/src2/query/components/AlertSetupDialog.vue:188
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Telegram Chat ID"
-msgstr ""
+msgstr "Telegram 聊天室 ID"
 
 #. Description of the 'Cursor Column' (Data) field in DocType 'Insights Table
 #. v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Temporal column used to detect rows that changed since the last sync. Use <b>modified</b> for mutable tables and <b>creation</b> for append-only tables."
-msgstr ""
+msgstr "用來偵測自上次同步後有異動的資料列的時間欄。可異動的資料表請使用 <b>modified</b>，僅附加的資料表請使用 <b>creation</b>。"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -3044,11 +3044,11 @@ msgstr "文字"
 
 #: frontend/src2/query/components/FormatRule.vue:230
 msgid "Text Rules"
-msgstr ""
+msgstr "文字規則"
 
 #: frontend/src2/query/components/ColumnFilterTypeDate.vue:58
 msgid "This FY"
-msgstr ""
+msgstr "本會計年度"
 
 #: frontend/src2/query/components/ColumnFilterTypeDate.vue:55
 msgid "This Month"
@@ -3068,28 +3068,28 @@ msgstr "今年"
 
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.py:93
 msgid "This column is not available as a filter on this dashboard"
-msgstr ""
+msgstr "此欄無法在這個儀表板上作為篩選條件使用"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:15
 msgid "This will delete all warehouse data for <b>{0}</b> and reset the sync bookmark. Are you sure?"
-msgstr ""
+msgstr "此操作將刪除 <b>{0}</b> 的所有資料倉儲資料，並重設同步書籤。確定要繼續嗎？"
 
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Thursday"
-msgstr ""
+msgstr "星期四"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
 msgid "Time"
-msgstr ""
+msgstr "時間"
 
 #. Label of the time_taken (Float) field in DocType 'Insights Query Execution
 #. Log'
 #: insights/insights/doctype/insights_query_execution_log/insights_query_execution_log.json
 msgid "Time Taken (Seconds)"
-msgstr ""
+msgstr "耗費時間（秒）"
 
 #. Label of the title (Data) field in DocType 'Insights Alert'
 #. Label of the title (Data) field in DocType 'Insights Chart v3'
@@ -3141,19 +3141,19 @@ msgstr "頂部"
 
 #: frontend/src2/query/components/FormatRule.vue:201
 msgid "Top N percent"
-msgstr ""
+msgstr "前 N 百分比"
 
 #: frontend/src2/query/components/FormatRule.vue:199
 msgid "Top N values"
-msgstr ""
+msgstr "前 N 個值"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:70
 msgid "Total Sync Time"
-msgstr ""
+msgstr "同步總時間"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:69
 msgid "Total Syncs"
-msgstr ""
+msgstr "同步總次數"
 
 #. Label of the transform_tab (Tab Break) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -3163,22 +3163,22 @@ msgstr "轉換"
 #. Label of the transforms (Table) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Transforms"
-msgstr ""
+msgstr "轉換"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Query Transform'
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
 msgid "Transpose"
-msgstr ""
+msgstr "轉置"
 
 #: frontend/src2/components/DemoDataBanner.vue:50
 msgid "Try demo data"
-msgstr ""
+msgstr "試用示範資料"
 
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Tuesday"
-msgstr ""
+msgstr "星期二"
 
 #. Label of the item_type (Data) field in DocType 'Insights Dashboard Item'
 #. Label of the type (Select) field in DocType 'Insights Data Source v3'
@@ -3200,76 +3200,76 @@ msgstr "類型"
 
 #: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:72
 msgid "Unexpected validation error"
-msgstr ""
+msgstr "非預期的驗證錯誤"
 
 #: frontend/src2/charts/components/MeasurePicker.vue:141
 msgid "Unique Count of..."
-msgstr ""
+msgstr "相異個數…"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Query Transform'
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
 msgid "Unpivot"
-msgstr ""
+msgstr "逆樞紐分析"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:129
 msgid "Update Alert"
-msgstr ""
+msgstr "更新警示"
 
 #: frontend/src2/data_source/DataSourceTableList.vue:95
 msgid "Update Table Links"
-msgstr ""
+msgstr "更新資料表關聯"
 
 #: frontend/src2/data_source/DataSourceTableList.vue:82
 msgid "Update Tables"
-msgstr ""
+msgstr "更新資料表"
 
 #. Option for the 'Sync Strategy' (Select) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Update or Insert"
-msgstr ""
+msgstr "更新或插入"
 
 #: frontend/src2/data_source/DataSourceList.vue:76
 msgid "Upload CSV or Excel"
-msgstr ""
+msgstr "上傳 CSV 或 Excel"
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:96
 msgid "Upload CSV/Excel/JSON File"
-msgstr ""
+msgstr "上傳 CSV/Excel/JSON 檔案"
 
 #: frontend/src2/data_source/UploadCSVFileDialog.vue:37
 msgid "Upload Failed"
-msgstr ""
+msgstr "上傳失敗"
 
 #: frontend/src2/data_source/DataSourceList.vue:78
 msgid "Upload a CSV or Excel file to create a new data source"
-msgstr ""
+msgstr "上傳 CSV 或 Excel 檔案以建立新的資料來源"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:75
 msgid "Usage"
-msgstr ""
+msgstr "使用情況"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:231
 msgid "Use Custom Condition"
-msgstr ""
+msgstr "使用自訂條件"
 
 #. Label of the use_live_connection (Check) field in DocType 'Insights Query
 #. v3'
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Use Live Connection"
-msgstr ""
+msgstr "使用即時連線"
 
 #. Label of the use_ssl (Check) field in DocType 'Insights Data Source'
 #. Label of the use_ssl (Check) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Use SSL"
-msgstr ""
+msgstr "使用 SSL"
 
 #: frontend/src2/data_source/ConnectClickhouseDialog.vue:69
 #: frontend/src2/data_source/ConnectMariaDBDialog.vue:69
 #: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:77
 msgid "Use secure connection (SSL)?"
-msgstr ""
+msgstr "是否使用安全連線 (SSL)？"
 
 #. Label of the user (Link) field in DocType 'Insights Team Member'
 #: frontend/src2/settings/UsersSettings.vue:29
@@ -3286,7 +3286,7 @@ msgstr "使用者"
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Username"
-msgstr ""
+msgstr "使用者名稱"
 
 #: frontend/src2/settings/Settings.vue:33 frontend/src2/users/UserList.vue:146
 msgid "Users"
@@ -3294,7 +3294,7 @@ msgstr "使用者"
 
 #: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:57
 msgid "Validation failed"
-msgstr ""
+msgstr "驗證失敗"
 
 #. Label of the value (Password) field in DocType 'Insights Secret Key'
 #: frontend/src2/components/VariablesDialog.vue:85
@@ -3306,18 +3306,18 @@ msgstr "值"
 
 #: frontend/src2/query/components/FormatRule.vue:224
 msgid "Value Rules"
-msgstr ""
+msgstr "值規則"
 
 #. Label of the variable_name (Data) field in DocType 'Insights Query Variable'
 #: insights/insights/doctype/insights_query_variable/insights_query_variable.json
 msgid "Variable Name"
-msgstr "变量名"
+msgstr "變數名"
 
 #. Label of the variable_value (Password) field in DocType 'Insights Query
 #. Variable'
 #: insights/insights/doctype/insights_query_variable/insights_query_variable.json
 msgid "Variable Value"
-msgstr ""
+msgstr "變數值"
 
 #. Label of the variables (Table) field in DocType 'Insights Query'
 #. Label of the variables (Table) field in DocType 'Insights Query v3'
@@ -3327,11 +3327,11 @@ msgstr ""
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Variables"
-msgstr "变量"
+msgstr "變數"
 
 #: frontend/src2/components/VariablesDialog.vue:69
 msgid "Variables are used to store sensitive information such as API keys and credentials. They can be referenced and combined in your script just like any other variable. For eg."
-msgstr ""
+msgstr "變數可用來儲存 API 金鑰、認證等敏感資訊。你可以像使用其他變數一樣，在指令碼中參照及組合這些變數。例如："
 
 #: frontend/src2/charts/components/SankeyChartConfigForm.vue:61
 msgid "Vertical"
@@ -3341,36 +3341,36 @@ msgstr "垂直"
 #. Dashboard v3'
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Vertical Compact Layout"
-msgstr ""
+msgstr "垂直精簡版面配置"
 
 #: frontend/src2/workbook/WorkbookNavbarActions.vue:54
 msgid "View Lineage"
-msgstr ""
+msgstr "檢視血緣關係"
 
 #: frontend/src2/charts/components/ChartBuilderToolbar.vue:55
 #: frontend/src2/query/components/QueryToolbar.vue:40
 msgid "View SQL"
-msgstr ""
+msgstr "檢視 SQL"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:22
 msgid "Warehouse data cleared"
-msgstr ""
+msgstr "資料倉儲資料已清除"
 
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Wednesday"
-msgstr ""
+msgstr "星期三"
 
 #. Label of the week_starts_on (Select) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Week Starts On"
-msgstr ""
+msgstr "每週起始日"
 
 #. Option for the 'Frequency' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Weekly"
-msgstr ""
+msgstr "每週"
 
 #. Label of the workbook (Link) field in DocType 'Insights Chart v3'
 #. Label of the workbook (Link) field in DocType 'Insights Dashboard v3'
@@ -3381,23 +3381,23 @@ msgstr ""
 #: insights/insights/doctype/insights_folder/insights_folder.json
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Workbook"
-msgstr ""
+msgstr "活頁簿"
 
 #: frontend/src2/components/AppSidebar.vue:79
 #: frontend/src2/home/HomeWorkbookList.vue:36
 #: frontend/src2/workbook/WorkbookList.vue:37
 msgid "Workbooks"
-msgstr ""
+msgstr "活頁簿"
 
 #: frontend/src2/charts/components/MapChartConfigForm.vue:54
 msgid "World Map"
-msgstr ""
+msgstr "世界地圖"
 
 #. Description of the 'Script' (Code) field in DocType 'Insights Table Import
 #. Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Write Python code to fetch and transform data. Available globals:<br>• client: API client for the selected data source<br>• table: Write data to warehouse. Methods: insert(data, overwrite=False)<br>• state: Persist data between runs. Methods: get(key, default=None), set(key, value), delete(key), clear()<br>• secrets: Access secret keys. Methods: get(key)<br>• log(message): Log execution messages"
-msgstr ""
+msgstr "撰寫 Python 程式碼來擷取及轉換資料。可用的全域物件：<br>• client：所選資料來源的 API 用戶端<br>• table：將資料寫入資料倉儲。方法：insert(data, overwrite=False)<br>• state：在多次執行之間保存資料。方法：get(key, default=None)、set(key, value)、delete(key)、clear()<br>• secrets：存取密鑰。方法：get(key)<br>• log(message)：記錄執行訊息"
 
 #: frontend/src2/query/components/UnionSelectorDialog.vue:143
 msgid "Yes"
@@ -3405,191 +3405,191 @@ msgstr "是"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:251
 msgid "You can use markdown to format the message. Use double asterisks (**) for bold text. You can use the following fields in the message:"
-msgstr ""
+msgstr "你可以使用 Markdown 來格式化訊息，並以兩個星號 (**) 標示粗體文字。訊息中可以使用下列欄位："
 
 #: insights/decorators.py:26
 msgid "You do not have permission to access this resource"
-msgstr ""
+msgstr "你沒有存取此資源的權限"
 
 #: insights/api/workbooks.py:235 insights/api/workbooks.py:254
 #: insights/api/workbooks.py:267 insights/api/workbooks.py:295
 #: insights/api/workbooks.py:307 insights/api/workbooks.py:321
 #: insights/api/workbooks.py:440
 msgid "You do not have permission to modify this workbook"
-msgstr ""
+msgstr "你沒有修改此活頁簿的權限"
 
 #: insights/api/workbooks.py:131 insights/api/workbooks.py:187
 msgid "You do not have permission to share this workbook"
-msgstr ""
+msgstr "你沒有共用此活頁簿的權限"
 
 #: frontend/src2/dashboard/DashboardList.vue:88
 msgid "You haven't created any dashboards yet."
-msgstr ""
+msgstr "你尚未建立任何儀表板。"
 
 #: frontend/src2/home/HomeWorkbookList.vue:68
 msgid "Your workbooks will appear here. Create a new workbook to get started."
-msgstr ""
+msgstr "你的活頁簿會顯示在這裡。建立新的活頁簿即可開始使用。"
 
 #: frontend/src2/query/components/FormatRule.vue:194
 msgid "after date"
-msgstr ""
+msgstr "晚於日期"
 
 #. Option for the 'Order By' (Select) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "asc"
-msgstr ""
+msgstr "遞增"
 
 #: frontend/src2/query/components/FormatRule.vue:193
 msgid "before date"
-msgstr ""
+msgstr "早於日期"
 
 #: frontend/src2/query/components/FormatRule.vue:195
 msgid "between dates"
-msgstr ""
+msgstr "介於日期之間"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Folder'
 #: insights/insights/doctype/insights_folder/insights_folder.json
 msgid "chart"
-msgstr ""
+msgstr "圖表"
 
 #: frontend/src2/query/components/FormatRule.vue:174
 msgid "contains"
-msgstr ""
+msgstr "包含"
 
 #. Option for the 'Order By' (Select) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "desc"
-msgstr ""
+msgstr "遞減"
 
 #: frontend/src2/query/components/FormatRule.vue:175
 msgid "does not contain"
-msgstr ""
+msgstr "不包含"
 
 #: frontend/src2/query/components/FormatRule.vue:179
 msgid "does not equal"
-msgstr ""
+msgstr "不等於"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:165
 msgid "e.g. 0 0 12 * * ?"
-msgstr ""
+msgstr "例如。0 0 12 * * ？"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:190
 msgid "e.g. 123456789"
-msgstr ""
+msgstr "例如：123456789"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:146
 msgid "e.g. Low Inventory"
-msgstr ""
+msgstr "例如：庫存偏低"
 
 #: frontend/src2/components/VariablesDialog.vue:99
 msgid "e.g. api_key"
-msgstr ""
+msgstr "例如：api_key"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:183
 msgid "e.g. john@example.com, henry@example.com"
-msgstr ""
+msgstr "例如：john@example.com, henry@example.com"
 
 #: frontend/src2/workbook/WorkbookLineageDialog.vue:158
 msgid "edges"
-msgstr ""
+msgstr "連線"
 
 #: frontend/src2/query/components/FormatRule.vue:177
 msgid "ends with"
-msgstr ""
+msgstr "結尾為"
 
 #: frontend/src2/query/components/FormatRule.vue:165
 #: frontend/src2/query/components/FormatRule.vue:178
 msgid "equals"
-msgstr ""
+msgstr "等於"
 
 #. Label of the folder (Data) field in DocType 'Insights Chart v3'
 #. Label of the folder (Data) field in DocType 'Insights Query v3'
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "folder"
-msgstr ""
+msgstr "資料夾"
 
 #: frontend/src2/query/components/FormatRule.vue:167
 msgid "greater than"
-msgstr ""
+msgstr "大於"
 
 #: frontend/src2/query/components/FormatRule.vue:168
 msgid "greater than or equals"
-msgstr ""
+msgstr "大於或等於"
 
 #: frontend/src2/query/components/FormatRule.vue:180
 msgid "is empty"
-msgstr ""
+msgstr "為空白"
 
 #: frontend/src2/query/components/FormatRule.vue:191
 msgid "is last month"
-msgstr ""
+msgstr "為上個月"
 
 #: frontend/src2/query/components/FormatRule.vue:189
 msgid "is last week"
-msgstr ""
+msgstr "為上週"
 
 #: frontend/src2/query/components/FormatRule.vue:181
 msgid "is not empty"
-msgstr ""
+msgstr "不為空白"
 
 #: frontend/src2/query/components/FormatRule.vue:190
 msgid "is this month"
-msgstr ""
+msgstr "為本月"
 
 #: frontend/src2/query/components/FormatRule.vue:188
 msgid "is this week"
-msgstr ""
+msgstr "為本週"
 
 #: frontend/src2/query/components/FormatRule.vue:192
 msgid "is this year"
-msgstr ""
+msgstr "為今年"
 
 #: frontend/src2/query/components/FormatRule.vue:185
 msgid "is today"
-msgstr ""
+msgstr "為今天"
 
 #: frontend/src2/query/components/FormatRule.vue:187
 msgid "is tomorrow"
-msgstr ""
+msgstr "為明天"
 
 #: frontend/src2/query/components/FormatRule.vue:186
 msgid "is yesterday"
-msgstr ""
+msgstr "為昨天"
 
 #: frontend/src2/query/components/FormatRule.vue:169
 msgid "less than"
-msgstr ""
+msgstr "小於"
 
 #: frontend/src2/query/components/FormatRule.vue:170
 msgid "less than or equals"
-msgstr ""
+msgstr "小於或等於"
 
 #: frontend/src2/workbook/WorkbookLineageDialog.vue:157
 msgid "nodes"
-msgstr ""
+msgstr "節點"
 
 #: frontend/src2/query/components/FormatRule.vue:166
 msgid "not equals"
-msgstr ""
+msgstr "不等於"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Folder'
 #: insights/insights/doctype/insights_folder/insights_folder.json
 msgid "query"
-msgstr ""
+msgstr "查詢"
 
 #. Label of the sort_order (Int) field in DocType 'Insights Chart v3'
 #. Label of the sort_order (Int) field in DocType 'Insights Query v3'
 #: insights/insights/doctype/insights_chart_v3/insights_chart_v3.json
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "sort_order"
-msgstr ""
+msgstr "排序順序"
 
 #: frontend/src2/query/components/FormatRule.vue:176
 msgid "starts with"
-msgstr ""
+msgstr "開頭為"
 
 #: frontend/src2/query/components/ColumnsSelectorDialog.vue:120
 msgid "{0} columns selected"
-msgstr ""
+msgstr "已選取 {0} 個欄"
 
