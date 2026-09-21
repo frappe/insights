@@ -8,7 +8,7 @@ import DataTableFooter from '../DataTableFooter.vue'
 // The pane's bottom band: the result's status on the left, the pager and the
 // one act that takes the whole of it out on the right.
 const props = defineProps<{
-	/** absent while there is nothing to page through — a failed or empty run */
+	/** absent until a run has drawn columns */
 	pagination?: PaginationState
 	onExport?: () => void
 }>()
