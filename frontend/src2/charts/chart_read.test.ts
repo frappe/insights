@@ -116,3 +116,53 @@ describe('a card asked for its rows again', () => {
 		expect(read.result.rows).toEqual([{ region: 'South' }])
 	})
 })
+
+describe('a card paged past its first page', () => {
+	// @feature charts.table-pager
+	it('asks for the next page of the same question, and a new question starts on the first', async () => {
+		let question = 'todos by status'
+		const pages: number[] = []
+		const read = makeChartRead({
+			doc: { name: 'chart-3', title: 'Todos', chart_type: 'Table', config: {} as any },
+			requestKey: () => question,
+			fetchData: (_force, _filterContext, page) => {
+				pages.push(page)
+				return northThenSouth(page) as Promise<any>
+			},
+			fetchDrillData: () => Promise.reject(new Error('not asked')),
+		})
+
+		await read.load()
+		await read.goToPage!(2)
+		await read.load()
+		expect(read.currentPage).toBe(2)
+
+		question = 'todos by owner'
+		await read.load()
+
+		expect(pages).toEqual([1, 2, 1])
+		expect(read.currentPage).toBe(1)
+	})
+
+	// @feature charts.table-pager
+	it('keeps a chart that is not a table on its one picture', async () => {
+		const pages: number[] = []
+		const read = makeChartRead({
+			doc: { name: 'chart-4', title: 'Todos', chart_type: 'Bar', config: {} as any },
+			requestKey: () => 'todos by status',
+			fetchData: (_force, _filterContext, page) => {
+				pages.push(page)
+				return northThenSouth(page) as Promise<any>
+			},
+			fetchCount: () => Promise.resolve(250),
+			fetchDrillData: () => Promise.reject(new Error('not asked')),
+		})
+
+		await read.load()
+
+		expect(pages).toEqual([1])
+		expect(read.pageSize).toBeUndefined()
+		expect(read.goToPage).toBeUndefined()
+		expect(read.fetchResultCount).toBeUndefined()
+	})
+})

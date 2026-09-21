@@ -46,7 +46,8 @@ Keys on every chart config:
 - `order_by`: list of `{ "column": { "type": "column", "column_name": "..." }, "direction": "asc"|"desc" }`.
   The names here are **post-aggregation** names, so sorting by a measure uses its `measure_name`
   (`"Revenue"`), not the underlying column.
-- `limit`: integer (use it for top-N).
+- `limit`: integer (use it for top-N). A `Table` pages through every row, `limit` at a time, so a
+  top-N table puts a `limit` operation in its query instead.
 - `filters`: a chart-local filter group. Use `{"logical_operator": "And", "filters": []}` when unused.
 
 ## Number (reading cards)

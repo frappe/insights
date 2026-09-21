@@ -134,7 +134,10 @@ const showShareDialog = ref(false)
 				/>
 			</CollapsibleSection>
 
-			<CollapsibleSection title="Limit" collapsed>
+			<CollapsibleSection
+				:title="chart.doc.chart_type === 'Table' ? 'Rows per page' : 'Limit'"
+				collapsed
+			>
 				<NumberInput v-model="chart.doc.config.limit" />
 			</CollapsibleSection>
 		</div>

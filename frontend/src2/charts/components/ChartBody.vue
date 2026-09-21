@@ -87,6 +87,13 @@ const filler = computed(() => {
 		readonly: readonly.value,
 		drillable: props.chart.drillable,
 		executing: props.chart.executing,
+		page: {
+			current: props.chart.currentPage,
+			size: props.chart.pageSize,
+			totalRowCount: result.value.totalRowCount || undefined,
+			goTo: props.chart.goToPage,
+			fetchCount: props.chart.fetchResultCount,
+		},
 	})
 })
 

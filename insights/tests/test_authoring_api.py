@@ -1,5 +1,6 @@
 import frappe
 
+from insights.api.authoring import get_chart_count as get_authoring_count
 from insights.api.authoring import get_chart_data as get_authoring_data
 from insights.api.authoring import get_drill_data as get_authoring_drill
 from insights.api.authoring import get_drill_dimensions
@@ -255,6 +256,19 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
         self.assertEqual(result["granularity"], {"creation": "month"})
         self.assertEqual(result["record_links"], {"name": "ToDo"})
+
+    # @feature charts.table-pager
+    def test_the_count_covers_the_pages_the_rows_are_cut_into(self):
+        query, chart = self.make_content()
+        shape = {"chart_type": "Table", "query": query.name, "config": table_config()}
+
+        page = self.preview(AUTHOR, page_size=1, **shape)
+        with as_user(AUTHOR), db_connections():
+            preview_count = get_authoring_count(**shape)
+            saved_count = chart.get_count()
+
+        self.assertEqual(len(page["rows"]), 1)
+        self.assertEqual((preview_count, saved_count), (len(AUTHOR_TODOS), len(AUTHOR_TODOS)))
 
     def grid_items(self, chart: str, query: str, column: str = "description"):
         """A grid holding one chart card and one filter linked to it."""

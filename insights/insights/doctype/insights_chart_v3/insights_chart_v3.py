@@ -178,15 +178,7 @@ class InsightsChartv3(Document):
         # a caller that names no page size gets the one the author configured, the
         # same answer the builder's own feed gives for this chart
         page_size = page_size or frappe.parse_json(chart.config or "{}").get("limit") or 100
-        adhoc_filters = None
-        if filters:
-            items = (
-                dashboard_items
-                if dashboard_items is not None
-                else stored_dashboard_items(self.name, dashboard)
-            )
-            adhoc_filters = route_filters(items, self.name, filters)
-        adhoc_filters = route_card_filters(self.name, card_filters, adhoc_filters)
+        adhoc_filters = chart.reading_filters(dashboard_items, dashboard, filters, card_filters)
 
         query = chart.get_query()
         result = query.execute(
@@ -346,6 +338,38 @@ class InsightsChartv3(Document):
             )
 
         return derive_operations(self.chart_type, self.query, config)
+
+    @frappe.whitelist()
+    def get_count(
+        self,
+        dashboard_items: list | None = None,
+        dashboard: str | None = None,
+        filters: dict | None = None,
+        card_filters: list | None = None,
+        force: bool = False,
+    ):
+        """How many rows `get_data` pages through, under the same filters."""
+        chart = frappe.get_doc(self.doctype, self.name)
+        adhoc_filters = chart.reading_filters(dashboard_items, dashboard, filters, card_filters)
+        return chart.get_query().count_rows(adhoc_filters=adhoc_filters, force=force)
+
+    def reading_filters(
+        self,
+        dashboard_items: list | None = None,
+        dashboard: str | None = None,
+        filters: dict | None = None,
+        card_filters: list | None = None,
+    ):
+        """The filters a reading surface puts on this chart's rows, routed. See `get_data`."""
+        adhoc_filters = None
+        if filters:
+            items = (
+                dashboard_items
+                if dashboard_items is not None
+                else stored_dashboard_items(self.name, dashboard)
+            )
+            adhoc_filters = route_filters(items, self.name, filters)
+        return route_card_filters(self.name, card_filters, adhoc_filters)
 
     @frappe.whitelist()
     def export(self):

@@ -340,6 +340,7 @@ def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
 # query.
 PUBLIC_METHOD_ARGS = {
     ("Insights Chart v3", "get_data"): {"page", "page_size", "dashboard", "filters", "card_filters"},
+    ("Insights Chart v3", "get_count"): {"dashboard", "filters", "card_filters"},
     ("Insights Dashboard v3", "get_distinct_column_values"): {
         "filter_name",
         "search_term",

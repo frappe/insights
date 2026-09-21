@@ -136,8 +136,14 @@ export type ChartFeed = {
 	fetchDoc?: () => Promise<void>
 	fetchData: (
 		force: boolean,
-		filterContext?: DashboardFilterContext,
+		filterContext: DashboardFilterContext | undefined,
+		page: number,
 	) => Promise<ChartDataResponse | undefined>
+	// how many rows the pages are cut from, under the same filters
+	fetchCount?: (
+		filterContext: DashboardFilterContext | undefined,
+		force: boolean,
+	) => Promise<number>
 	// What this feed would ask for, as a string. A load that would ask the same
 	// question again is dropped before it starts: the rows on screen are already
 	// its answer, and running it puts the card through its loading state for a
@@ -203,9 +209,20 @@ export function makeChartRead(
 
 	const executionPriority = ref<number>()
 
+	// One page is one request, as long as the chart's own limit. Only a Table
+	// draws a page: every other chart draws its rows as one picture, so a later
+	// page would redraw it over rows it does not state.
+	const paged = computed(() => doc.value.chart_type === 'Table')
+	const currentPage = ref(1)
+	const pageSize = computed(() => (paged.value ? doc.value.config.limit || 100 : undefined))
+
 	let currentLoad = 0
 	// the question the rows on screen answer, so the same one is not asked twice
 	let lastRequestKey: string | undefined
+	// the same, less the page: a new question starts on its first page
+	let lastQuestion: string | undefined
+	// the count caches apart from the rows, so a refresh has to reach it too
+	let forceCount = false
 
 	// The rows and what is read off them are one picture, so a load that draws
 	// none leaves none: a comparison pairing kept past its rows names a row that
@@ -217,10 +234,17 @@ export function makeChartRead(
 	}
 
 	async function load(force = false) {
-		const requestKey = feed.requestKey?.(filterContext())
+		const question = feed.requestKey?.(filterContext())
+		const sameQuestion = question === lastQuestion
+		if (!sameQuestion) currentPage.value = 1
+		lastQuestion = question
+		const requestKey = question === undefined ? undefined : `${currentPage.value}:${question}`
 		if (!force && !stale.value && requestKey !== undefined && requestKey === lastRequestKey)
 			return
 		lastRequestKey = requestKey
+		if (force) forceCount = true
+		// a count answers the question and not the page, until a refresh re-runs it
+		const totalRowCount = sameQuestion && !force ? result.value.totalRowCount : 0
 		stale.value = false
 
 		executing.value = true
@@ -237,10 +261,14 @@ export function makeChartRead(
 		// wrong when that happens — the card waits its turn and asks again, on the
 		// same queue the query builder uses. A real failure is not retried and
 		// reaches the card immediately.
-		const dataLoad = scheduleQueryExecution(() => feed.fetchData(force, filterContext()), {
-			isStale,
-			priority: executionPriority.value,
-		})
+		const page = currentPage.value
+		const dataLoad = scheduleQueryExecution(
+			() => feed.fetchData(force, filterContext(), page),
+			{
+				isStale,
+				priority: executionPriority.value,
+			},
+		)
 
 		try {
 			await docLoad
@@ -289,9 +317,8 @@ export function makeChartRead(
 					data_type: column.type,
 				})),
 				// the page's length is not the count, and a reader that takes it for
-				// one stops at the first page. Nothing here says how many rows there
-				// are, so nothing claims to.
-				totalRowCount: 0,
+				// one stops at the first page. Only `fetchResultCount` says.
+				totalRowCount,
 				timeTaken: response.time_taken || 0,
 				lastExecutedAt: new Date(response.executed_at || Date.now()),
 			}
@@ -324,6 +351,19 @@ export function makeChartRead(
 		} finally {
 			if (!isStale()) executing.value = false
 		}
+	}
+
+	function goToPage(page: number) {
+		if (!paged.value || page < 1) return
+		currentPage.value = page
+		return load()
+	}
+
+	async function fetchResultCount() {
+		if (!feed.fetchCount) return
+		const force = forceCount
+		forceCount = false
+		result.value.totalRowCount = await feed.fetchCount(filterContext(), force)
 	}
 
 	// Everything the drill dialog needs from this card. The card knows the shape a
@@ -360,6 +400,14 @@ export function makeChartRead(
 		empty,
 		executedAt,
 		executionPriority,
+
+		currentPage,
+		pageSize,
+		// a surface pages a read that offers these, so a chart that is not paged offers none
+		goToPage: computed(() => (paged.value ? goToPage : undefined)),
+		fetchResultCount: computed(() =>
+			paged.value && feed.fetchCount ? fetchResultCount : undefined,
+		),
 
 		load,
 	})
@@ -479,10 +527,18 @@ function makeSharedChart(chart: Chart, surface?: ChartReadSurface) {
 			// it draws. Without a key each of them is a separate execution of the one
 			// query.
 			requestKey: (filterContext) => stableStringify(request(filterContext)),
-			fetchData: (force, filterContext) => {
+			fetchData: (force, filterContext, page) => {
 				const { chart_name, ...args } = request(filterContext)
 				return call('insights.api.run_doc_method', {
 					method: 'get_data',
+					docs: { doctype: 'Insights Chart v3', name: chart_name },
+					args: { force, page, ...args },
+				}).then((response: any) => response.message)
+			},
+			fetchCount: (filterContext, force) => {
+				const { chart_name, page_size, ...args } = request(filterContext)
+				return call('insights.api.run_doc_method', {
+					method: 'get_count',
 					docs: { doctype: 'Insights Chart v3', name: chart_name },
 					args: { force, ...args },
 				}).then((response: any) => response.message)

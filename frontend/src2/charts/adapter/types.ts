@@ -58,6 +58,20 @@ export type ChartAdapterInput = {
 	 * card's loading state before they are asked.
 	 */
 	executing?: boolean
+	/** Which page of the rows this is, for the filler that pages them — the grid. */
+	page?: ResultPage
+}
+
+/** One page of a chart's rows, and the way to the others. */
+export type ResultPage = {
+	current: number
+	/** Only a Table is paged. */
+	size?: number
+	/** Known once the reader asked for it. */
+	totalRowCount?: number
+	// eslint-disable-next-line no-unused-vars
+	goTo?: (page: number) => void
+	fetchCount?: () => Promise<void>
 }
 
 /** The point a reader clicked, as a drill reads it. */

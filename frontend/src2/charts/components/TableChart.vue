@@ -3,6 +3,9 @@ import { ChartContainer } from 'frappe-ui/charts'
 import { computed, inject, ref } from 'vue'
 import DataTable from '../../components/DataTable.vue'
 import { findRows } from '../../components/result_pane/find'
+import ResultFooter from '../../components/result_pane/ResultFooter.vue'
+import ResultStatus from '../../components/result_pane/ResultStatus.vue'
+import { usePagination } from '../../composables/usePagination'
 import type { QueryResultColumn, QueryResultRow } from '../../types/query.types'
 import { tableFindKey, type TableCellEvent, type TableChartProps } from '../adapter/table'
 
@@ -24,6 +27,15 @@ const emit = defineEmits<{
 // stands.
 const findText = inject(tableFindKey, ref(''))
 const matches = computed(() => findRows(props.rows, findText.value))
+
+const pagination = usePagination({
+	pageSize: () => props.page?.size ?? 100,
+	rowCount: () => props.rows.length,
+	totalRowCount: () => props.page?.totalRowCount,
+	currentPage: () => props.page?.current,
+	onPageChange: (page) => props.page?.goTo?.(page),
+	enabled: true,
+})
 
 function onDrilldown(column: QueryResultColumn, row: QueryResultRow) {
 	emit('cellClick', { column, row })
@@ -70,7 +82,22 @@ function onDrilldown(column: QueryResultColumn, row: QueryResultRow) {
 				:number-formats="props.numberFormats"
 				:cell-link="props.cellLink"
 				:replace-nulls-with-zeros="true"
-			/>
+				:current-page="props.page?.current"
+				:page-size="props.page?.size"
+			>
+				<template v-if="props.page" #footer>
+					<ResultFooter :pagination="pagination">
+						<template #left>
+							<ResultStatus
+								:paging="pagination"
+								:loaded-count="props.rows.length"
+								:total-row-count="props.page.totalRowCount"
+								:on-fetch-count="props.page.fetchCount"
+							/>
+						</template>
+					</ResultFooter>
+				</template>
+			</DataTable>
 		</div>
 	</ChartContainer>
 </template>
