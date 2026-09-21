@@ -341,27 +341,17 @@ class InsightsQueryv3(Document):
     def download_results(
         self, format: str = "csv", active_operation_idx: int | None = None, adhoc_filters: dict | None = None
     ):
-        from insights.insights.doctype.insights_team.insights_team import is_admin
+        check_download_access(self.doctype, self)
+        return self.export_rows(format, active_operation_idx, adhoc_filters)
 
-        if not is_admin(frappe.session.user) and not frappe.db.get_single_value(
-            "Insights Settings", "allow_download"
-        ):
-            frappe.throw(
-                "You are not allowed to download data. Contact your administrator.",
-                frappe.PermissionError,
-            )
+    def export_rows(
+        self, format: str = "csv", active_operation_idx: int | None = None, adhoc_filters: dict | None = None
+    ):
+        """Every row the query has, up to the export limit, as a CSV or a base64 Excel file.
 
-        if not is_admin(frappe.session.user) and not (
-            frappe.has_permission(self.doctype, ptype="export")
-            and frappe.has_permission(self.doctype, ptype="read", doc=self)
-        ):
-            frappe.throw(
-                frappe._(
-                    "Your role does not have the export permission for queries. Contact your administrator."
-                ),
-                frappe.PermissionError,
-            )
-
+        The access check is the caller's: a chart downloads its own rows through
+        a query nobody saved, so it checks read on the chart instead.
+        """
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
 
@@ -606,6 +596,32 @@ def already_in_workbook(query_name, workbook) -> bool:
         return False
 
     return frappe.db.get_value("Insights Query v3", query_name, "workbook") == workbook
+
+
+def check_download_access(doctype: str, doc):
+    """Whether the user may download the rows behind `doc`: the site allows it,
+    their role may export queries, and they can read `doc`. An admin always may."""
+    from insights.insights.doctype.insights_team.insights_team import is_admin
+
+    if is_admin(frappe.session.user):
+        return
+
+    if not frappe.db.get_single_value("Insights Settings", "allow_download"):
+        frappe.throw(
+            "You are not allowed to download data. Contact your administrator.",
+            frappe.PermissionError,
+        )
+
+    if not (
+        frappe.has_permission("Insights Query v3", ptype="export")
+        and frappe.has_permission(doctype, ptype="read", doc=doc)
+    ):
+        frappe.throw(
+            frappe._(
+                "Your role does not have the export permission for queries. Contact your administrator."
+            ),
+            frappe.PermissionError,
+        )
 
 
 def import_query(query, workbook, id_map=None):

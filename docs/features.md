@@ -177,6 +177,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | charts.heatmap-palette-range | A user picks a sequential or diverging palette and pins the ends of the color scale. |
 | charts.heatmap-show-values | A user prints the number inside each heatmap cell. |
 | charts.refresh | A user re-runs a chart's query. |
+| charts.export-rows | A user downloads a chart's own rows as CSV or Excel, up to the site's export limit. |
 | charts.export-png | A user downloads a chart as a PNG. |
 | charts.duplicate | A user duplicates a chart in the workbook. |
 | charts.reset-options | A user resets a chart's config to defaults. |

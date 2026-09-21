@@ -1,5 +1,6 @@
 import frappe
 
+from insights.api.authoring import download_chart_results as download_authoring_rows
 from insights.api.authoring import get_chart_count as get_authoring_count
 from insights.api.authoring import get_chart_data as get_authoring_data
 from insights.api.authoring import get_drill_data as get_authoring_drill
@@ -269,6 +270,31 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
         self.assertEqual(len(page["rows"]), 1)
         self.assertEqual((preview_count, saved_count), (len(AUTHOR_TODOS), len(AUTHOR_TODOS)))
+
+    # @feature charts.export-rows
+    def test_a_download_is_the_charts_own_rows_up_to_the_export_limit(self):
+        query, chart = self.make_content()
+        shape = {"chart_type": "Table", "query": query.name, "config": table_config()}
+        for field in ("allow_download", "max_export_rows"):
+            original = frappe.db.get_single_value(DT.SETTINGS, field)
+            self.addCleanup(frappe.db.set_single_value, DT.SETTINGS, field, original)
+        frappe.db.set_single_value(DT.SETTINGS, "allow_download", 1)
+        frappe.db.set_single_value(DT.SETTINGS, "max_export_rows", 0)
+
+        def lines(csv):
+            return csv.strip().splitlines()
+
+        with as_user(AUTHOR), db_connections():
+            preview_csv = download_authoring_rows(**shape)
+            saved_csv = chart.download_results()
+            frappe.db.set_single_value(DT.SETTINGS, "max_export_rows", 1)
+            limited_csv = chart.download_results()
+
+        # the chart's summarized rows, not the todos its query reads
+        self.assertEqual(lines(preview_csv), lines(saved_csv))
+        self.assertEqual(lines(saved_csv)[0], "description,count")
+        self.assertEqual(len(lines(saved_csv)), 1 + len(AUTHOR_TODOS))
+        self.assertEqual(len(lines(limited_csv)), 2)
 
     def grid_items(self, chart: str, query: str, column: str = "description"):
         """A grid holding one chart card and one filter linked to it."""

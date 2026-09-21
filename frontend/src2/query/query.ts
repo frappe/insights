@@ -1,5 +1,4 @@
 import { useDebouncedRefHistory } from '@vueuse/core'
-import { Buffer } from 'buffer'
 import { isEqual } from 'es-toolkit'
 import { call, dayjs, toast } from 'frappe-ui'
 import { computed, reactive, ref, toRefs, unref, watch } from 'vue'
@@ -16,6 +15,7 @@ import {
 import { confirmDialog } from '../helpers/confirm_dialog'
 import { FIELDTYPES } from '../helpers/constants'
 import useDocumentResource from '../helpers/resource'
+import { useResultExport } from '../helpers/result_export'
 import { __ } from '../translation'
 import session from '../session'
 import { isServerBusyError, scheduleQueryExecution } from './execution_queue'
@@ -159,8 +159,6 @@ export function makeQuery(name: string) {
 	const executionError = ref('')
 	const result = ref(emptyResult())
 	const executing = ref(false)
-	const downloading = ref(false)
-	const currentDownloadToken = ref<number | null>(null)
 	const currentPage = ref(1)
 	const pageSize = ref(100)
 	const lastExecutionArgs = ref<{
@@ -598,81 +596,22 @@ export function makeQuery(name: string) {
 		activeOperationIdx.value = newOperations.length - 1
 	}
 
-	function exportResults(format: string = 'csv', filename?: string) {
-		downloading.value = true
-		const token = Date.now() + Math.random()
-		currentDownloadToken.value = token
-		return call('insights.api.run_doc_method', {
-			method: 'download_results',
-			docs: {
-				...(query.doc || {}),
-				__islocal: query.islocal,
-			},
-			args: {
-				format,
-				active_operation_idx: activeOperationIdx.value,
-				adhoc_filters: adhocFilters.value,
-			},
-		})
-			.then((payload: any) => {
-				if (currentDownloadToken.value !== token) return
-				const data: string = payload?.message
-				if (!data) {
-					toast.warning(__('Download Failed'), {
-						description: __('No data found to download.'),
-					})
-					return
-				}
-
-				let blob: Blob
-				let extension: string
-				let mimeType: string
-
-				if (format === 'excel') {
-					const bytes = Buffer.from(data, 'base64')
-					blob = new Blob([bytes], {
-						type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-					})
-					extension = 'xlsx'
-					mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-				} else {
-					blob = new Blob([data], { type: 'text/csv' })
-					extension = 'csv'
-					mimeType = 'text/csv'
-				}
-
-				const url = window.URL.createObjectURL(blob)
-				const a = document.createElement('a')
-				a.setAttribute('hidden', '')
-				a.setAttribute('href', url)
-				const finalFileName = `${filename || query.doc.title || 'data'}.${extension}`
-				a.setAttribute('download', finalFileName)
-				document.body.appendChild(a)
-				a.click()
-				document.body.removeChild(a)
-				window.URL.revokeObjectURL(url)
-				toast.success(__('Export Successful'), {
-					description: __(`File "{0}" exported successfully`, finalFileName),
-				})
-			})
-			.catch((error: any) => {
-				if (currentDownloadToken.value !== token) return
-				toast.error(__('Download Failed'), {
-					description: error?.message || __('Failed to download file'),
-				})
-			})
-			.finally(() => {
-				if (currentDownloadToken.value === token) {
-					downloading.value = false
-					currentDownloadToken.value = null
-				}
-			})
-	}
-
-	function cancelDownload() {
-		currentDownloadToken.value = null
-		downloading.value = false
-	}
+	const { downloading, exportResults, cancelDownload } = useResultExport(
+		(format) =>
+			call('insights.api.run_doc_method', {
+				method: 'download_results',
+				docs: {
+					...(query.doc || {}),
+					__islocal: query.islocal,
+				},
+				args: {
+					format,
+					active_operation_idx: activeOperationIdx.value,
+					adhoc_filters: adhocFilters.value,
+				},
+			}).then((payload: any) => payload?.message),
+		() => query.doc.title,
+	)
 
 	// `adhoc_filters` is an argument so a caller listing the values of a filter it
 	// is editing can leave that filter out, which is the only way picking a second

@@ -60,6 +60,16 @@ export type ChartAdapterInput = {
 	executing?: boolean
 	/** Which page of the rows this is, for the filler that pages them — the grid. */
 	page?: ResultPage
+	/** Every row as a file, for the filler that offers one — the grid. */
+	download?: ResultDownload
+}
+
+/** A chart's rows as a file. */
+export type ResultDownload = {
+	downloading: boolean
+	// eslint-disable-next-line no-unused-vars
+	exportResults: (format: string, filename: string) => void
+	cancelDownload: () => void
 }
 
 /** One page of a chart's rows, and the way to the others. */

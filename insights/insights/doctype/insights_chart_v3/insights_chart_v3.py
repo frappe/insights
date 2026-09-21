@@ -7,6 +7,7 @@ from frappe.model.document import Document
 from frappe.utils import add_to_date, get_datetime, getdate
 
 from insights.api.shared import stored_dashboard_items
+from insights.decorators import insights_whitelist
 from insights.insights.doctype.insights_chart_v3.chart_query import (
     column_granularity,
     comparison_sources,
@@ -25,7 +26,10 @@ from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 impor
     route_card_filters,
     route_filters,
 )
-from insights.insights.doctype.insights_query_v3.insights_query_v3 import import_query
+from insights.insights.doctype.insights_query_v3.insights_query_v3 import (
+    check_download_access,
+    import_query,
+)
 from insights.insights.query_builders.sql_functions import resolve_timespan
 from insights.telemetry import capture_share_granted
 from insights.utils import deep_convert_dict_to_dict
@@ -352,6 +356,21 @@ class InsightsChartv3(Document):
         chart = frappe.get_doc(self.doctype, self.name)
         adhoc_filters = chart.reading_filters(dashboard_items, dashboard, filters, card_filters)
         return chart.get_query().count_rows(adhoc_filters=adhoc_filters, force=force)
+
+    @insights_whitelist()
+    def download_results(
+        self,
+        format: str = "csv",
+        dashboard_items: list | None = None,
+        dashboard: str | None = None,
+        filters: dict | None = None,
+        card_filters: list | None = None,
+    ):
+        """Every row `get_data` pages through, as a file, under the same filters."""
+        chart = frappe.get_doc(self.doctype, self.name)
+        check_download_access(self.doctype, chart)
+        adhoc_filters = chart.reading_filters(dashboard_items, dashboard, filters, card_filters)
+        return chart.get_query().export_rows(format, adhoc_filters=adhoc_filters)
 
     def reading_filters(
         self,

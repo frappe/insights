@@ -87,6 +87,10 @@ function makeChartPreview(chart: Chart, surface?: ChartReadSurface) {
 				const { page_size, ...args } = request(filterContext)
 				return call('insights.api.authoring.get_chart_count', { ...args, force })
 			},
+			fetchExport: (format, filterContext) => {
+				const { page_size, ...args } = request(filterContext)
+				return call('insights.api.authoring.download_chart_results', { ...args, format })
+			},
 			// the same config the picture was drawn from, so a drill answers for what
 			// is on screen rather than for whatever was last saved
 			fetchDrillData: (drill_stack, filterContext) =>

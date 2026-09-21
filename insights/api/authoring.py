@@ -38,6 +38,7 @@ from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 impor
     route_card_filters,
     route_filters,
 )
+from insights.insights.doctype.insights_query_v3.insights_query_v3 import check_download_access
 
 CHART = "Insights Chart v3"
 QUERY = "Insights Query v3"
@@ -142,6 +143,26 @@ def get_chart_count(
 
     chart = preview_chart(chart_type, query, config, name=chart_name)
     return chart.get_query().count_rows(adhoc_filters=adhoc_filters, force=force)
+
+
+@insights_whitelist()
+def download_chart_results(
+    chart_type: str,
+    query: str,
+    config: dict | None = None,
+    format: str = "csv",
+    chart_name: str | None = None,
+    dashboard_items: list | None = None,
+    filters: dict | None = None,
+    card_filters: list | None = None,
+):
+    """Every row `get_chart_data` pages through, as a file, under the same filters."""
+    check_read_access(query, chart_name)
+    check_download_access(QUERY, query)
+
+    adhoc_filters = preview_filters(chart_name, dashboard_items, filters, card_filters)
+    chart = preview_chart(chart_type, query, config, name=chart_name)
+    return chart.get_query().export_rows(format, adhoc_filters=adhoc_filters)
 
 
 @insights_whitelist()

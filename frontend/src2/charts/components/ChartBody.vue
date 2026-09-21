@@ -94,6 +94,14 @@ const filler = computed(() => {
 			goTo: props.chart.goToPage,
 			fetchCount: props.chart.fetchResultCount,
 		},
+		download:
+			props.chart.exportResults && props.chart.cancelDownload
+				? {
+						downloading: props.chart.downloading,
+						exportResults: props.chart.exportResults,
+						cancelDownload: props.chart.cancelDownload,
+				  }
+				: undefined,
 	})
 })
 

@@ -14,6 +14,7 @@
 import { call } from 'frappe-ui'
 import { computed, reactive, ref, unref, type ComputedRef, type InjectionKey } from 'vue'
 import { getErrorMessage } from '../helpers'
+import { useResultExport } from '../helpers/result_export'
 import { stableStringify } from '../helpers/stable_stringify'
 import { __ } from '../translation'
 import session, { type Session } from '../session'
@@ -144,6 +145,8 @@ export type ChartFeed = {
 		filterContext: DashboardFilterContext | undefined,
 		force: boolean,
 	) => Promise<number>
+	// every one of those rows as a file
+	fetchExport?: (format: string, filterContext?: DashboardFilterContext) => Promise<string>
 	// What this feed would ask for, as a string. A load that would ask the same
 	// question again is dropped before it starts: the rows on screen are already
 	// its answer, and running it puts the card through its loading state for a
@@ -366,6 +369,14 @@ export function makeChartRead(
 		result.value.totalRowCount = await feed.fetchCount(filterContext(), force)
 	}
 
+	const fetchExport = feed.fetchExport
+	const download = fetchExport
+		? useResultExport(
+				(format) => fetchExport(format, filterContext()),
+				() => doc.value.title,
+		  )
+		: undefined
+
 	// Everything the drill dialog needs from this card. The card knows the shape a
 	// click is read against and the candidates a breakdown may offer. The feed
 	// knows the endpoint. Nothing above holds both halves.
@@ -408,6 +419,9 @@ export function makeChartRead(
 		fetchResultCount: computed(() =>
 			paged.value && feed.fetchCount ? fetchResultCount : undefined,
 		),
+		downloading: download ? download.downloading : false,
+		exportResults: download?.exportResults,
+		cancelDownload: download?.cancelDownload,
 
 		load,
 	})
@@ -541,6 +555,14 @@ function makeSharedChart(chart: Chart, surface?: ChartReadSurface) {
 					method: 'get_count',
 					docs: { doctype: 'Insights Chart v3', name: chart_name },
 					args: { force, ...args },
+				}).then((response: any) => response.message)
+			},
+			fetchExport: (format, filterContext) => {
+				const { chart_name, page_size, ...args } = request(filterContext)
+				return call('insights.api.run_doc_method', {
+					method: 'download_results',
+					docs: { doctype: 'Insights Chart v3', name: chart_name },
+					args: { format, ...args },
 				}).then((response: any) => response.message)
 			},
 			drillable: false,

@@ -13,7 +13,7 @@ import type {
 	SortOrder,
 } from '../../types/query.types'
 import TableChart from '../components/TableChart.vue'
-import type { ChartAdapterInput, ChartFiller, ResultPage } from './types'
+import type { ChartAdapterInput, ChartFiller, ResultDownload, ResultPage } from './types'
 
 // Table is filler 3: no plot at all. A table maps no value to a visual
 // property, so v2's scope rule keeps it out of the library and Insights draws
@@ -67,6 +67,7 @@ export type TableChartProps = {
 	// eslint-disable-next-line no-unused-vars
 	cellLink?: (column: QueryResultColumn, row: QueryResultRow) => string | undefined
 	page?: ResultPage
+	download?: ResultDownload
 }
 
 export function adaptTableChart(input: ChartAdapterInput): ChartFiller | undefined {
@@ -90,6 +91,7 @@ export function adaptTableChart(input: ChartAdapterInput): ChartFiller | undefin
 	}
 	if (input.drillable ?? true) props.drillable = true
 	if (input.page) props.page = input.page
+	if (input.download) props.download = input.download
 
 	if (config.show_column_totals) props.showColumnTotals = true
 	if (config.show_row_totals) props.showRowTotals = true
