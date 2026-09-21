@@ -9,6 +9,7 @@
   "onboarding_section",
   "enable_permissions",
   "allow_download",
+  "max_export_rows",
   "enable_data_store",
   "apply_user_permissions",
   "disable_user_lookup",
@@ -81,6 +82,13 @@
    "fieldname": "allow_download",
    "fieldtype": "Check",
    "label": "Allow Data Download"
+  },
+  {
+   "default": "100000",
+   "fieldname": "max_export_rows",
+   "fieldtype": "Int",
+   "label": "Max Export Rows",
+   "non_negative": 1
   },
   {
    "fieldname": "integrations_section",
@@ -162,7 +170,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-04-28 13:08:07.166485",
+ "modified": "2026-09-21 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",

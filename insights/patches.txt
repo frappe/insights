@@ -28,3 +28,4 @@ insights.patches.split_number_cells
 insights.patches.close_dashboard_layout_gaps
 # after the number card patches: this one mints a reading's id, which those patches read
 insights.patches.normalize_chart_configs
+insights.patches.set_max_export_rows
