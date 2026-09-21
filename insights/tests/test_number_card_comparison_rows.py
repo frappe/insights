@@ -57,8 +57,8 @@ def _count(name):
     }
 
 
-def card_config(comparisons, anchor=ANCHOR):
-    """A card counting the todos of the month so far, one reading per entry.
+def card_config(comparisons, window):
+    """A card counting the todos of its period, one reading per entry.
 
     An entry of `None` is a reading nothing compares.
     """
@@ -69,7 +69,7 @@ def card_config(comparisons, anchor=ANCHOR):
             {"comparison": {"source": source}} if source else {} for source in comparisons
         ],
         "date_column": {"column_name": "date", "dimension_name": "date", "data_type": "Date"},
-        "window": {"span": "month to date", "anchor": anchor},
+        "window": window,
     }
 
 
@@ -101,7 +101,7 @@ class TestNumberCardComparisonRows(InsightsIntegrationTestCase):
         ):
             frappe.delete_doc("ToDo", todo, force=True, ignore_permissions=True)
 
-    def fetch(self, comparisons, anchor=ANCHOR):
+    def fetch(self, comparisons, anchor=ANCHOR, window=None):
         workbook = frappe.get_doc({"doctype": DT.WORKBOOK, "title": WORKBOOK_TITLE}).insert()
         query = frappe.get_doc(
             {
@@ -120,7 +120,7 @@ class TestNumberCardComparisonRows(InsightsIntegrationTestCase):
                 "workbook": workbook.name,
                 "query": query.name,
                 "chart_type": "Number",
-                "config": card_config(comparisons, anchor),
+                "config": card_config(comparisons, window or {"span": "month to date", "anchor": anchor}),
             }
         ).insert()
 
@@ -157,3 +157,20 @@ class TestNumberCardComparisonRows(InsightsIntegrationTestCase):
     # @feature charts.number-comparison
     def test_a_card_nothing_compares_names_no_rows(self):
         self.assertNotIn("comparison_rows", self.fetch([None]))
+
+    # @feature charts.number-comparison
+    def test_a_grain_card_reads_the_period_before_its_own(self):
+        result = self.fetch(["previous"], window={"grain": "month"})
+
+        self.assertEqual([row["count_0"] for row in result["rows"]], [1, 2, 3])
+        self.assertEqual(result["comparison_rows"], {"previous": 1})
+
+    # @feature charts.number-comparison
+    def test_a_grain_card_whose_previous_period_has_no_data_names_no_row(self):
+        """The day before the newest one has no todos, so the row before the
+        last is some earlier day, and reading it would print that day's figure
+        as the previous day's."""
+        result = self.fetch(["previous"], window={"grain": "day"})
+
+        self.assertEqual(str(result["rows"][-1]["date"])[:10], "2026-08-09")
+        self.assertEqual(result["comparison_rows"], {"previous": None})

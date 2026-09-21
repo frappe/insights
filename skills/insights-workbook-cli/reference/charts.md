@@ -86,7 +86,8 @@ Keys on every chart config:
 - A comparison belongs to one reading, in that reading's options entry. `source` is `previous`,
   `last year`, `constant` (with `value`) or `measure` (with `measure`). `show` prints the gap as a
   percent (`change`, the default) or a signed number (`delta`), and `label` renames it. `previous`
-  and `last year` both need a Period. Beside a `grain` the comparison is the row before the last. Beside a `span`
+  and `last year` both need a Period. Beside a `grain` the comparison is the period one grain before
+  the reading's, matched by date, and a period with no data prints no figure. Beside a `span`
   Insights fetches the earlier period itself and matches it by date. `last year` needs a `span`, and
   prints nothing beside a `grain`. A second comparison is a second card.
 - `target` sits beside it, also per reading: `{ "value": 750000 }` or `{ "measure": { ... } }`.

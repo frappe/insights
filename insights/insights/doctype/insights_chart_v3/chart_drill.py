@@ -34,6 +34,7 @@ from insights.insights.doctype.insights_chart_v3.chart_query import (
     ORDERED_TYPES,
     count_of_rows,
     drawn_measures,
+    grain_step,
 )
 from insights.insights.doctype.insights_chart_v3.record_link import record_links
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
@@ -596,7 +597,7 @@ def _grain_bucket(granularity: str, value, data_type: str) -> tuple:
     of day, and a bucket that would run past midnight ends where the day does:
     nothing on a clock is later, so it needs no upper end at all.
     """
-    step = {"fiscal_year": {"years": 1}, "quarter": {"months": 3}}.get(granularity) or {f"{granularity}s": 1}
+    step = grain_step(granularity)
     if data_type != "Time":
         start = get_datetime(value)
         return (start, add_to_date(start, **step))

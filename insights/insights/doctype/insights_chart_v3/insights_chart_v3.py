@@ -4,7 +4,7 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import getdate
+from frappe.utils import add_to_date, get_datetime, getdate
 
 from insights.api.shared import stored_dashboard_items
 from insights.insights.doctype.insights_chart_v3.chart_query import (
@@ -13,8 +13,10 @@ from insights.insights.doctype.insights_chart_v3.chart_query import (
     comparison_timespans,
     config_errors,
     derive_operations,
+    grain_step,
     normalize_chart_config,
     period_column,
+    period_grain,
     reads_newest_first,
     sparkline_operations,
 )
@@ -241,8 +243,10 @@ class InsightsChartv3(Document):
         calendar.
 
         A grain period fetches nothing beside itself, since every period it has
-        is already a row, so the period before this one is the row before the
-        last, and that is the whole of what it can answer.
+        is already a row. The period before this one is the last row's period
+        stepped back one grain, looked up by its date: the row before the last
+        is some earlier period when the data has a gap. That is the whole of
+        what a grain can answer.
 
         A source with no row to read is named with `None`: the question stands
         and the card prints it with no figure. A source that is missing is one
@@ -252,13 +256,19 @@ class InsightsChartv3(Document):
             return {}
 
         config = frappe.parse_json(self.config or "{}")
+        column = period_column(self.chart_type, config)
         timespans = comparison_timespans(self.chart_type, config)
         if not timespans:
             if "previous" not in comparison_sources(self.chart_type, config):
                 return {}
-            return {"previous": len(rows) - 2 if len(rows) > 1 else None}
+            grain = period_grain(self.chart_type, config)
+            last = rows[-1].get(column)
+            if not grain or not last:
+                return {"previous": None}
+            starts = {get_datetime(row[column]): index for index, row in enumerate(rows) if row.get(column)}
+            back = {unit: -count for unit, count in grain_step(grain).items()}
+            return {"previous": starts.get(add_to_date(get_datetime(last), **back))}
 
-        column = period_column(self.chart_type, config)
         starts = {getdate(row[column]): index for index, row in enumerate(rows) if row.get(column)}
 
         return {source: starts.get(resolve_timespan(timespan)[0]) for source, timespan in timespans.items()}
