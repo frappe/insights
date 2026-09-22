@@ -167,6 +167,38 @@ jobs:
               sys.exit(1)
           EOF
 
+      - name: Import Insights modules
+        working-directory: ${{ env.BENCH_PATH }}
+        run: |
+          # The tests import a few modules. A dependency release that moves a
+          # module Insights imports only fails when that module is imported.
+          ./env/bin/python - <<'EOF'
+          import importlib
+          import sys
+          from pathlib import Path
+
+          import insights
+
+          root = Path(insights.__file__).parent
+          failures = []
+          for path in sorted(root.rglob("*.py")):
+              relative = path.relative_to(root.parent).with_suffix("")
+              if any(part in ("tests", "public", "node_modules", "__main__") or part.startswith("test_") for part in relative.parts):
+                  continue
+              module = ".".join(relative.parts).removesuffix(".__init__")
+              try:
+                  importlib.import_module(module)
+              except ImportError as e:
+                  failures.append(f"{module}: {e}")
+              except Exception:
+                  # Modules that need a site or request fail here for reasons unrelated to dependencies
+                  pass
+
+          if failures:
+              print("Modules that fail to import:", *failures, sep="\n")
+              sys.exit(1)
+          EOF
+
       - name: Create Site and Run Tests
         working-directory: ${{ env.BENCH_PATH }}
         env:
@@ -212,6 +244,8 @@ jobs:
               | "- **\($job.name)** failed at `\($step)`. " + (
                   if $step == "Check dependency conflicts" or $step == "Upgrade dependencies to highest allowed" then
                     "Insights and Frappe allow versions of a package that no release satisfies both. Sites that update either app install the version one of them rejects, and break at import or migrate. Relax the Insights range and release before this Frappe version reaches sites."
+                  elif $step == "Import Insights modules" then
+                    "Insights code fails to import on the dependency versions this leg installed. Sites that install these versions break when the module loads. Fix the import, or cap the version and release."
                   elif $step == "Create Site and Run Tests" and ($job.name | contains("Dependencies=highest")) then
                     "Insights breaks on the newest versions its dependency ranges allow. Sites get these versions when another app or a later deploy upgrades them. Fix the code, or cap the version and release."
                   else
