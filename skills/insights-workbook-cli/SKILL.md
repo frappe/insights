@@ -1,7 +1,7 @@
 ---
 name: insights-workbook-cli
-version: 1
-description: Create, read, update and delete Frappe Insights v3 workbooks — queries, charts and dashboards — on any stock Insights site through the frappectl CLI. Use when the user asks for an Insights workbook, query, chart or dashboard, or wants an existing one changed, explained or deleted.
+version: 2
+description: Create, read, update and delete Frappe Insights workbooks — queries, charts and dashboards — on a stock Insights 4 (develop) site through the frappectl CLI. Use when the user asks for an Insights workbook, query, chart or dashboard, or wants an existing one changed, explained or deleted.
 ---
 
 # Insights workbooks over frappectl
@@ -9,8 +9,7 @@ description: Create, read, update and delete Frappe Insights v3 workbooks — qu
 You author workbook content and push it to a live Insights site with `frappectl`. This
 file is the procedure. `reference/` is the contract.
 
-This skill needs nothing installed on the site. It calls stock Insights v3 endpoints
-only.
+This skill needs nothing installed on the site. It calls stock Insights endpoints only, and it supports Insights 4 (develop) sites only. Section 1 checks the version.
 
 ## Before you start
 
@@ -56,10 +55,20 @@ Run the failing call again with `--debug` before you report it. The flag prints 
 request and the server's own messages to stderr. Insights often names its fault there
 and nowhere else.
 
+Four exception types do name a cause. Fix that part of the payload. Do not bisect:
+
+| Exception | Fix |
+|---|---|
+| `UnknownColumn` | A column, table or query name. Compare it with the table's columns or the base query's `columns`. |
+| `QueryRefused` | The operation's shape: a join type, operator, aggregation or granularity. Compare it with `reference/operations.md`. |
+| `ExpressionSyntaxError` | An expression. Check each function with `get_function_description`. |
+| `QueryTimeout` | The query's cost. Filter earlier, join less, or read the data store. |
+
 ## 1. Read the site before you plan
 
 ```sh
 frappectl -s $SITE auth whoami
+frappectl -s $SITE method call insights.api.get_app_version
 frappectl -s $SITE method call insights.api.data_sources.get_all_data_sources
 frappectl -s $SITE method call insights.api.workbooks.get_workbooks
 ```
@@ -70,14 +79,15 @@ workbook. Insights reports a missing grant as "not found". Ask the user to share
 
 ### Read the site's version too, not only its data
 
-Sites run different Insights versions, so an endpoint this file names may not be there. Ask before
-you depend on one:
+Read `get_app_version` before anything else. It returns a string such as `"4.0.0-dev"` or `"3.14.1"`. **If the major version is below 4, stop.** Tell the user this skill supports only Insights develop sites. An older site accepts payloads it does not understand and reports no error: it ignores unknown chart config keys, `import_workbook` returns only a name, and `json_value` is missing. The workbook then looks built and is wrong.
+
+A develop site can still be older than this file, so an endpoint this file names may not be there. Ask before you depend on one:
 
 ```sh
 frappectl -s $SITE method search -q <name>
 ```
 
-**Every procedure here works on a stock site with no newer endpoint.** A newer endpoint does the
+**Every procedure here works on a develop site with no newer endpoint.** A newer endpoint does the
 same job faster, never a different job. A missing endpoint costs round trips, never a result. If one
 is missing, take the plain path and carry on. Do not stop. Do not tell the user their site is behind
 unless they ask.
@@ -162,6 +172,12 @@ in the closing summary. One line each:
   because a table was not stored. Each one changes the number.
 
 Silence here reads as certainty. Do not spend certainty you do not have.
+
+### Tip when the ask names a chart but not a question
+
+Users who are not analysts often ask for a chart type ("a pie chart of orders by status") when what they want is an answer ("which orders are stuck"). Build what they asked for. Then, in the closing summary, add one line suggesting they describe what they want to learn next time, so you can choose the query and chart.
+
+Skip the tip when the ask already says what the chart is for. Give it once per conversation.
 
 ### A query spanning two data sources needs the data store
 
@@ -443,7 +459,7 @@ Two limits to read before you trust a stored table for a question about history:
 frappectl -s $SITE doc get "Insights Table v3" <name>
 ```
 
-`row_limit` caps the stored copy and keeps the **newest** rows. `sync_from` cuts off
+`row_limit` caps the stored copy and keeps the **newest** rows. An empty `row_limit` falls back to `max_records_to_sync` in Insights Settings, then to 1,000,000. `sync_from` cuts off
 everything before a date. A stored table is often a recent window, not the whole table.
 When the ask needs more history than the window holds, use `use_live_connection: 1` and
 say why.
@@ -470,11 +486,18 @@ frappectl -s $SITE method call execute \
   the row count. Never accept zero silently.
 - `page_size=5` is enough. You check that the query runs, not what the data says.
 
-### Check 2 — every chart's columns exist
+### Check 2 — every chart runs
 
-A chart has no result of its own. Its aggregation is built at render time, so there is nothing to execute.
+Saving a chart does not validate its config. A broken config fails only when the chart runs, with "Chart … is not configured" or an unknown column. So run every chart:
 
-Verify a chart against its base query:
+```sh
+frappectl -s $SITE method call get_data \
+  --doctype "Insights Chart v3" --name <chart_name> -F page_size=5
+```
+
+The response carries `columns` and `rows`. To test a config before you create the chart, send it to `insights.api.authoring.get_chart_data` (`chart_type`, `query`, `-F 'config:=<json>'`). A config it cannot draw comes back as `{"errors": [...]}`, not as an exception.
+
+When a chart fails, compare its config with its base query:
 
 1. Take `columns` from check 1 for the chart's `query`.
 2. Read every column name the chart's `config` names: dimensions, measures and chart
@@ -491,7 +514,7 @@ the chart renders in an arbitrary order. A ranking or a time series then reads a
 data. Skip this on a `Table` with non-empty `columns`, which makes its column names out
 of the data.
 
-This proves the column exists. It does not prove it is the right column, or that the
+This proves the chart runs. It does not prove it reads the right column, or that the
 number is right. Check 4 does that.
 
 ### Check 3 — every dashboard reference resolves
@@ -602,6 +625,7 @@ exists.
 | Purpose | Command |
 |---|---|
 | Who am I, and on which site | `auth whoami` |
+| Insights version | `method call insights.api.get_app_version` — stop below 4 |
 | List workbooks | `method call insights.api.workbooks.get_workbooks` (`search_term`, `limit`, `scope`) |
 | List data sources | `method call insights.api.data_sources.get_all_data_sources` |
 | Search tables, all sources | `method call insights.api.data_sources.get_data_source_tables` (`search_term`, `limit`; omit `data_source` to search every source) |
@@ -616,10 +640,12 @@ exists.
 | Every expression function | `method call insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_list` |
 | One function's signature and docstring | `method call insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_description` (`funcName`) |
 | Run a saved query | `method call execute --doctype "Insights Query v3" --name <n> -F page_size=5` |
+| Run a saved chart | `method call get_data --doctype "Insights Chart v3" --name <n> -F page_size=5` (`page`, `page_size`, `force`, `dashboard`, `filters`) |
+| Run an unsaved chart config | `method call insights.api.authoring.get_chart_data` (`chart_type`, `query`, `config`, `page_size`) — returns `{"errors": [...]}` for a config it cannot draw |
 | Create, read, patch, delete content | `doc create` / `doc get` / `doc list` / `doc update` / `doc delete` |
 | Import a workbook JSON | `api method/insights.api.workbooks.import_workbook --input <file>` |
 
-`get_distinct_column_values` returns at most 20 values, and it runs on a **query document**, not
+`get_distinct_column_values` returns 20 values unless `limit` asks for more, and it runs on a **query document**, not
 on a table. There is no endpoint that samples a raw table. Build a scratch query first. See
 "Sample with a scratch query" in section 5.
 

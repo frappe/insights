@@ -42,6 +42,21 @@ def create(doctype, doc):
     return name
 
 
+def run_chart(chart_name, page_size=5):
+    """Run a saved chart. Saving does not validate its config, so this is the only check."""
+    return call(
+        "method",
+        "call",
+        "get_data",
+        "--doctype",
+        "Insights Chart v3",
+        "--name",
+        chart_name,
+        "-F",
+        f"page_size={page_size}",
+    )
+
+
 def execute(query_name, page_size=5):
     return call(
         "method",
@@ -140,12 +155,35 @@ def item_key(item):
     return ("item", (item.get("layout") or {}).get("i"))
 
 
+GRID_COLUMNS = 20
+FILTER_WIDTH, FILTER_ROWS = 4, 2
+
+
+def filter_layout(items):
+    """Where the app puts a new filter: right of the last filter in the top filter row.
+
+    No chart may share a row with a filter. When that row is full or there is no
+    filter, the new one takes x:0 y:0 and every other item moves down a filter row.
+    """
+    filters = [i["layout"] for i in items if i.get("type") == "filter" and i.get("layout")]
+    if filters:
+        top = min(f["y"] for f in filters)
+        right = max(f["x"] + f["w"] for f in filters if f["y"] == top)
+        if right + FILTER_WIDTH <= GRID_COLUMNS:
+            return {"x": right, "y": top, "w": FILTER_WIDTH, "h": FILTER_ROWS}
+    for item in items:
+        if item.get("layout"):
+            item["layout"]["y"] += FILTER_ROWS
+    return {"x": 0, "y": 0, "w": FILTER_WIDTH, "h": FILTER_ROWS}
+
+
 def patch_dashboard(name, upsert=(), drop=()):
     """Merge items into a live dashboard.
 
-    A matched item keeps its live `layout` -- position and size belong to whoever last
-    dragged it -- and merges `links` key by key. An unmatched item is appended below the
-    current bottom. Everything else on the dashboard is left exactly as it is.
+    A matched item keeps its live `layout` and `layouts` -- position and size belong to
+    whoever last dragged it -- and merges `links` key by key. A new filter goes in the
+    top filter row. A new chart is appended below the current bottom, and the readings
+    of one Number chart sit side by side. Everything else is left exactly as it is.
 
     `drop` takes item_key() tuples. Pass one only when the user asked for that removal.
     """
@@ -156,7 +194,7 @@ def patch_dashboard(name, upsert=(), drop=()):
 
     live = {item_key(item): item for item in items}
     used_ids = {(i.get("layout") or {}).get("i") for i in items}
-    max_y = max((i["layout"]["y"] + i["layout"]["h"] for i in items if i.get("layout")), default=0)
+    last = None  # the chart item appended last, so the next reading can sit beside it
 
     for new in upsert:
         key = item_key(new)
@@ -164,23 +202,34 @@ def patch_dashboard(name, upsert=(), drop=()):
         if old is None:
             item = dict(new)
             layout = dict(item.get("layout") or {})
-            item_id = layout.get("i") or f"{key[0]}-{key[1]}"
+            item_id = layout.get("i") or "-".join(str(k) for k in key if k)
             while item_id in used_ids:
                 item_id += "-x"
-            layout["i"] = item_id
             used_ids.add(item_id)
-            layout.setdefault("x", 0)
-            layout.setdefault("y", max_y)
-            layout.setdefault("w", 10)
-            layout.setdefault("h", 8)
+            if item.get("type") == "filter":
+                if "y" not in layout:
+                    layout = {**filter_layout(items), **layout}
+            else:
+                max_y = max(
+                    (i["layout"]["y"] + i["layout"]["h"] for i in items if i.get("layout")), default=0
+                )
+                # a Number cell is one reading at w:4, as in the app; the grid sets its height
+                reading = bool(item.get("reading"))
+                x, y = 0, max_y
+                if reading and last and last.get("reading"):
+                    beside = last["layout"]["x"] + last["layout"]["w"]
+                    if beside + 4 <= GRID_COLUMNS:
+                        x, y = beside, last["layout"]["y"]
+                layout = {"x": x, "y": y, "w": 4 if reading else 10, "h": 5 if reading else 20, **layout}
+                last = item
+            layout["i"] = item_id
             item["layout"] = layout
-            max_y = layout["y"] + layout["h"]
             items.append(item)
             live[key] = item
         else:
             links = dict(old.get("links") or {})
             links.update(new.get("links") or {})
-            old.update({k: v for k, v in new.items() if k != "layout"})
+            old.update({k: v for k, v in new.items() if k not in ("layout", "layouts")})
             if links:
                 old["links"] = links
 
@@ -274,11 +323,7 @@ def build():
         {
             "title": "Sales Overview",
             "items": [
-                {
-                    "type": "chart",
-                    "chart": charts["revenue_trend"],
-                    "layout": {"i": "item-revenue-trend", "x": 0, "y": 0, "w": 20, "h": 20},
-                },
+                # Filters own the top row. No chart may share a row with one.
                 {
                     "type": "filter",
                     "filter_name": "Date Range",
@@ -286,7 +331,12 @@ def build():
                     "default_operator": "within",
                     "default_value": "Last 12 months",
                     "links": {charts["revenue_trend"]: f"`{queries['invoices']}`.`posting_date`"},
-                    "layout": {"i": "filter-date", "x": 0, "y": 20, "w": 4, "h": 2},
+                    "layout": {"i": "filter-date", "x": 0, "y": 0, "w": 4, "h": 2},
+                },
+                {
+                    "type": "chart",
+                    "chart": charts["revenue_trend"],
+                    "layout": {"i": "item-revenue-trend", "x": 0, "y": 2, "w": 20, "h": 20},
                 },
             ],
         },
@@ -502,22 +552,25 @@ def verify():
         else:
             print("  zero rows -- say so to the user. Only they know whether that is wrong.")
 
-    # Check 2 -- every chart's columns exist in its base query, and it sorts by a name
-    # its own aggregation produces.
+    # Check 2 -- every chart runs, and it sorts by a name its own aggregation produces.
+    # Saving does not validate a config, so a broken one fails only here.
     for c in charts:
-        cols = query_columns.get(c["query"])
-        if cols is None:
-            failures.append(f"chart {c['name']} ({c['title']}) has no runnable base query")
-            continue
         config = json.loads(c.get("config") or "{}")
         source, output, sorted_by = read_config(config)
 
-        missing = sorted(source - cols)
-        if missing:
-            failures.append(
-                f"chart {c['name']} ({c['title']}) names columns its query does not have: "
-                f"{missing}. The query has: {sorted(cols)}"
-            )
+        try:
+            result = run_chart(c["name"])
+            print(f"chart {c['name']} ({c['title']}): {len(result['rows'])} rows")
+        except SystemExit as e:
+            failures.append(f"chart {c['name']} ({c['title']}) did not run: {e}")
+            # The usual cause is a column the base query does not have.
+            cols = query_columns.get(c["query"])
+            missing = sorted(source - cols) if cols is not None else []
+            if missing:
+                failures.append(
+                    f"chart {c['name']} ({c['title']}) names columns its query does not have: "
+                    f"{missing}. The query has: {sorted(cols)}"
+                )
 
         # A pivoting Table makes its column names out of the data, so they are unknowable here.
         pivots = c.get("chart_type") == "Table" and config.get("columns")

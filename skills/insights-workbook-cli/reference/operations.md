@@ -26,12 +26,18 @@ A query's `operations` is a JSON array executed top to bottom. The first operati
 { "measure_name": "Outstanding", "data_type": "Decimal",
   "expression": { "type": "expression", "expression": "sum(debit) - sum(credit)" } }
 
+// Money measure — prints the currency code the rows carry in currency_column
+{ "measure_name": "Revenue", "column_name": "grand_total", "data_type": "Decimal", "aggregation": "sum",
+  "format": "currency", "currency_column": "currency" }
+
 // Dimension (granularity applies to Date/Datetime only: day | week | month | quarter | year | fiscal_year)
 { "dimension_name": "posting_date", "column_name": "posting_date", "data_type": "Date", "granularity": "month" }
 ```
 
 `data_type`: `String | Integer | Decimal | Date | Datetime | Time | Text`. Measures take
 `String | Integer | Decimal`. Dimensions take `String | Date | Datetime | Time`.
+
+A measure's `format` is `currency` or `percent`. A `currency` measure prints the symbol of `currency_column`, read per group. A group that mixes codes prints the number bare. With no `currency_column` it prints the site's currency. A summarize adds a hidden `<measure_name>__currency` column for it. A `percent` measure holds a ratio: Insights multiplies it by 100 and prints `%`.
 
 Datetime columns also accept `second`, `minute` and `hour` granularity. A Time column accepts only
 those three. Anything else fails with an "Unsupported Granularity" error that names the list.
@@ -69,9 +75,8 @@ is_set is_not_set`.
 
 - `in` / `not_in`: value is an array.
 - `between`: value is `[start, end]`. Bare date strings expand to full-day bounds.
-- `within` (Date columns): value is a timespan string, such as
-  `"Last N days|weeks|months|quarters|years"`, `"Current month"`, `"Next N weeks"` or
-  `"Last 1 fiscal year"`. For the running period, append `" (include current)"`.
+- `within` (Date columns): value is a timespan string. The grammar is `"<unit> to date"`,
+  `"Current <unit>"`, `"Last N <unit>s"` or `"Next N <unit>s"`, where the unit is day, week, month, quarter, year or fiscal year. `"Last month"` with no count means `"Last 1 month"`. To include the running period in a last or next span, append `" (include current)"`. The value can also be an object `{ "span": "Month to date", "anchor": "2026-06-30", "shift": { "unit": "year", "count": -1 } }`: `anchor` is the date the span resolves against (default today), and `shift` moves it.
 - `contains` / `not_contains` match `%value%`. Numerics become strings first.
 - `is_set` / `is_not_set` ignore `value`. For String columns an empty string counts as unset.
 - Column-vs-column: set `value` to a column ref `{ "type": "column", "column_name": "..." }`.
@@ -136,7 +141,7 @@ A Decimal expression declared `Integer` truncates.
 { "type": "union", "table": { "type": "query", "workbook": "<wb>", "query_name": "<other_query>" }, "distinct": false }
 ```
 
-Both sides need the same column names and types. To label each side, `mutate` a constant on both
+The result keeps only the columns both sides share, and drops the rest without a word. A shared column takes the left side's type. With no shared column the union fails. To label each side, `mutate` a constant on both
 first. Use `ibis.literal('1. Total')`, never a bare string (see reference/expressions.md).
 
 ## summarize — grain change only

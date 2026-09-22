@@ -1,8 +1,8 @@
 # insights-workbook-cli
 
-A skill that lets a coding agent build, edit and explain Frappe Insights v3 workbooks on
+A skill that lets a coding agent build, edit and explain Frappe Insights workbooks on
 a live site over `frappectl`. It needs no Insights source and installs nothing on the
-site.
+site. It supports Insights 4 (develop) sites only.
 
 `SKILL.md` is the procedure. `reference/` is the workbook contract.
 `examples/build_workbook.py` is the template the agent copies.

@@ -37,10 +37,11 @@ measure does.
 
 Keys on every chart config:
 
-- `number_format`: how the chart prints a number — `{ "shorten": true, "decimals": 2, "prefix": "₹ ",
+- `number_format`: how the chart prints a number — `{ "shorten": true, "decimals": 2, "prefix": "",
   "suffix": "" }`. Every value of the chart inherits it.
 - `number_formats`: one Measure's own format, keyed by `measure_name`, overriding `number_format`
   key by key. A chart drawing one measure writes the Measure's entry and leaves the default empty.
+- The unit belongs to the measure, not to a prefix. Set `format: "currency"` or `format: "percent"` on the measure (see `operations.md`). A `prefix` or `suffix` you write overrides the unit's symbol, so do not hard-code a currency symbol.
 
 - `order_by`: list of `{ "column": { "type": "column", "column_name": "..." }, "direction": "asc"|"desc" }`.
   The names here are **post-aggregation** names, so sorting by a measure uses its `measure_name`
@@ -53,13 +54,13 @@ Keys on every chart config:
 ```json
 {
   "number_columns": [
-    { "measure_name": "Revenue", "column_name": "base_net_total", "data_type": "Decimal", "aggregation": "sum" },
-    { "measure_name": "Avg Invoice Value", "column_name": "base_net_total", "data_type": "Decimal", "aggregation": "avg" },
+    { "measure_name": "Revenue", "column_name": "base_net_total", "data_type": "Decimal", "aggregation": "sum", "format": "currency" },
+    { "measure_name": "Avg Invoice Value", "column_name": "base_net_total", "data_type": "Decimal", "aggregation": "avg", "format": "currency" },
     { "measure_name": "Active Customers", "column_name": "customer", "data_type": "Integer", "aggregation": "count_distinct" }
   ],
   "number_formats": {
-    "Revenue": { "prefix": "₹ ", "decimals": 2, "shorten": true },
-    "Avg Invoice Value": { "prefix": "₹ ", "decimals": 2, "shorten": true }
+    "Revenue": { "decimals": 2, "shorten": true },
+    "Avg Invoice Value": { "decimals": 2, "shorten": true }
   },
   "number_column_options": [
     { "comparison": { "source": "previous" } },
@@ -69,7 +70,6 @@ Keys on every chart config:
   "sparkline": true,
   "date_column": { "dimension_name": "posting_date", "column_name": "posting_date", "data_type": "Date" },
   "window": { "grain": "month" },
-  "order_by": [ { "column": { "type": "column", "column_name": "posting_date" }, "direction": "asc" } ],
   "limit": 100,
   "filters": { "logical_operator": "And", "filters": [] }
 }
@@ -86,12 +86,13 @@ Keys on every chart config:
 - A comparison belongs to one reading, in that reading's options entry. `source` is `previous`,
   `last year`, `constant` (with `value`) or `measure` (with `measure`). `show` prints the gap as a
   percent (`change`, the default) or a signed number (`delta`), and `label` renames it. `previous`
-  and `last year` both need a Period. Beside a `grain` the comparison is the row before the last,
-  so the ascending `order_by` on the date column is what makes it the right row. Beside a `span`
+  and `last year` both need a Period. Beside a `grain` the comparison is the row before the last. Beside a `span`
   Insights fetches the earlier period itself and matches it by date. `last year` needs a `span`, and
   prints nothing beside a `grain`. A second comparison is a second card.
 - `target` sits beside it, also per reading: `{ "value": 750000 }` or `{ "measure": { ... } }`.
-- `sparkline` is chart-level and needs a `date_column` and that same ascending `order_by`.
+- The card sorts its own periods. An `order_by` on the date column is replaced, so do not write one.
+- `sparkline` is chart-level and draws only beside a `window`. A `grain` card draws its own periods. A `span` card runs a second query one grain finer, and draws nothing for a span of a day. Without a `window` there is no series.
+- Each reading gets an `id` when the chart is saved: its `measure_name`, unless you set one. A dashboard cell names the reading by this `id`. Two readings with the same `measure_name` get the same `id`, and a cell can reach only the first, so give every reading its own name.
 - A row of readings is normally ONE Number chart with several measures, not several charts.
 
 ## Bar / Line / Row (axis charts)
@@ -114,8 +115,7 @@ Keys on every chart config:
   line or bar per value). Cap it. One series per customer is unreadable.
 - Bar `y_axis` extras: `stack`, `normalize`, `overlap`. Line: `smooth`, `show_area`,
   `show_data_points`. Per-series `type: "line" | "bar"` gives a mixed chart. `align: "Right"` puts a
-  series on the secondary axis. A chart with a series on each axis draws two scales, so it neither
-  stacks, overlaps nor normalizes.
+  series on the secondary axis. A chart with bars on both axes neither stacks, overlaps nor normalizes. Bars beside a line on the other axis still stack.
 - `y_axis.reference_lines`: a list of rules drawn across the plot. Each is
   `{ "axis": "y", "measure_name": "Revenue", "aggregate": "average", "label": "Average" }` — an
   aggregate of one of the chart's own measures, named and not copied — or a constant with `value`.

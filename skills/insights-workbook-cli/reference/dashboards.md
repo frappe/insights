@@ -23,7 +23,11 @@ The grid is **20 columns wide**. `h` counts rows of 22px. Every item needs a `la
 
 Match the sizes the app itself uses when a person adds an item: any chart but a Number `w:10 h:20`, a filter `w:4 h:2`. Widen a table or a long time series to `w:20`. Lay out top to bottom: filters, readings, trends, then detail tables.
 
-A Number chart is not one cell. Each of its readings is a cell of its own at `w:4`, as tall as what that reading draws: `h:4` for a title and a value, `h:5` when the reading names a comparison, `h:7` when the chart draws a sparkline. Every one of those cells carries the same `chart`, and names its reading in `reading` — the reading's `id` in `number_columns`, or its `measure_name` when it has no `id`:
+Filters own their rows. No chart may share a row with a filter, and a chart you write into one overlaps it. So put every filter in the top row, side by side at `w:4 h:2`, and start the charts under it.
+
+`vertical_compact_layout` is on by default, so the grid pulls every item up until it rests on the one above. A `y` you write is where the item starts, not where it stays.
+
+A Number chart is not one cell. Each of its readings is a cell of its own at `w:4`, as tall as what that reading draws: `h:4` for a title and a value, `h:5` when the reading names a comparison, `h:7` when the chart draws a sparkline. Every one of those cells carries the same `chart`, and names its reading in `reading` — the reading's `id` in `number_columns`. Saving the chart sets a missing `id` to the `measure_name`, so read the chart back after you create it and take each `id` from its `number_columns`:
 
 ```json
 { "type": "chart", "chart": "<chart doc name>", "reading": "Revenue", "layout": { "i": "kpi-revenue", "x": 0, "y": 0, "w": 4, "h": 5 } }
@@ -55,7 +59,7 @@ that is a merge into the live array:
 1. `doc get` the dashboard and parse `items`.
 2. Match each item you want to change against a live item, by key.
 3. Change only the fields you mean to change. Keep the live `layout` as it is.
-4. Append anything new below the current bottom: `y = max(item.layout.y + item.layout.h)`.
+4. Append a new chart below the current bottom: `y = max(item.layout.y + item.layout.h)`. Put a new filter in the top filter row, right of the last filter. When that row is full or there is none, put it at `x:0 y:0` and move every other item down 2 rows, as the app does.
 5. Write the merged array back.
 
 The key is not `layout.i`, because the UI generates its own ids:
@@ -71,7 +75,7 @@ Four rules the merge must keep:
 
 - **Never drop an item you did not add.** Remove one only when the user asked for that removal, by
   name.
-- **Never overwrite a `layout`.** Position and size belong to whoever last dragged the item.
+- **Never overwrite a `layout` or `layouts`.** Position and size belong to whoever last dragged the item. `layouts` holds the item's place on a narrow screen.
 - **Merge a filter's `links` key by key.** Add the entry for your new chart. Leave every other entry
   alone, including one the user wired by hand.
 - **Keep keys you do not recognise**, on the item and on the document. Copy the live item and

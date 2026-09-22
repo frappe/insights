@@ -1,6 +1,6 @@
 # Hard rules
 
-Frappe Insights v3 stores everything as JSON. A **query** is a linear pipeline of operations, a
+Frappe Insights stores everything as JSON. A **query** is a linear pipeline of operations, a
 **chart** aggregates one query, a **dashboard** lays out charts and filters. You author that JSON.
 The app compiles it to ibis and runs it against the source database.
 
