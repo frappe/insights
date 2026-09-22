@@ -25,15 +25,20 @@ jobs:
         # A pull request leaves insights_branch empty, so checkout takes the PR's own code.
         # main is Insights v2, which never targeted Frappe v16. develop builds against the
         # frappe app's `ui/`, which only Frappe develop ships.
+        # dependencies: highest upgrades Insights' dependencies to the newest versions both
+        # apps allow, which a site gets once another app or a later deploy upgrades them.
         include: >-
           ${{ fromJSON(github.event_name == 'pull_request'
           && '[{"frappe_branch": "version-15"}, {"frappe_branch": "version-16"}]'
           || '[{"insights_branch": "main", "frappe_branch": "version-15"},
           {"insights_branch": "version-3", "frappe_branch": "version-15"},
           {"insights_branch": "version-3", "frappe_branch": "version-16"},
-          {"insights_branch": "develop", "frappe_branch": "develop"}]') }}
+          {"insights_branch": "develop", "frappe_branch": "develop"},
+          {"insights_branch": "version-3", "frappe_branch": "version-15", "dependencies": "highest"},
+          {"insights_branch": "version-3", "frappe_branch": "version-16", "dependencies": "highest"},
+          {"insights_branch": "develop", "frappe_branch": "develop", "dependencies": "highest"}]') }}
 
-    name: Install (Insights=${{ matrix.insights_branch || github.head_ref }}, Frappe=${{ matrix.frappe_branch }})
+    name: Install (Insights=${{ matrix.insights_branch || github.head_ref }}, Frappe=${{ matrix.frappe_branch }}${{ matrix.dependencies && format(', Dependencies={0}', matrix.dependencies) || '' }})
 
     services:
       mariadb:
@@ -109,10 +114,8 @@ jobs:
           mysql --host 127.0.0.1 --port 3306 -u root -p"$DB_ROOT_PASSWORD" -e "SET GLOBAL character_set_server = 'utf8mb4'"
           mysql --host 127.0.0.1 --port 3306 -u root -p"$DB_ROOT_PASSWORD" -e "SET GLOBAL collation_server = 'utf8mb4_unicode_ci'"
 
-      - name: Create Site, Install Insights, and Run Tests
+      - name: Install Insights
         working-directory: ${{ env.BENCH_PATH }}
-        env:
-          CI: "Yes"
         run: |
           # Install the checked-out Insights code into the bench
           bench get-app insights "$GITHUB_WORKSPACE"
@@ -120,7 +123,55 @@ jobs:
           # Install requirements
           bench setup requirements
 
-          # Create site and install Insights
+      - name: Upgrade dependencies to highest allowed
+        if: ${{ matrix.dependencies == 'highest' }}
+        working-directory: ${{ env.BENCH_PATH }}
+        run: |
+          # Naming the packages next to both apps resolves them against both
+          # apps' ranges at once, so a range no version satisfies fails here.
+          packages=$(./env/bin/python -c "
+          import re
+          from importlib.metadata import requires
+          print(' '.join(sorted({re.match(r'[A-Za-z0-9._-]+', r).group() for r in requires('insights')})))
+          ")
+          ./env/bin/python -m pip install --upgrade -e apps/frappe -e apps/insights $packages
+
+      - name: Check dependency conflicts
+        working-directory: ${{ env.BENCH_PATH }}
+        run: |
+          # bench installs one app at a time, so pip only warns when two apps'
+          # ranges disagree. Fail on the conflicts that involve Insights.
+          ./env/bin/python - <<'EOF'
+          import re
+          import subprocess
+          import sys
+          from importlib.metadata import requires
+
+          def canonical(name):
+              return re.sub(r"[-_.]+", "-", name).lower()
+
+          insights_packages = {canonical(re.match(r"[A-Za-z0-9._-]+", r).group()) for r in requires("insights")}
+          output = subprocess.run(
+              [sys.executable, "-m", "pip", "check"], capture_output=True, text=True
+          ).stdout
+          print(output)
+
+          conflicts = []
+          for line in output.splitlines():
+              match = re.match(r"(\S+) \S+ (?:has requirement|requires) ([A-Za-z0-9._-]+)", line)
+              if match and (canonical(match[1]) == "insights" or canonical(match[2]) in insights_packages):
+                  conflicts.append(line)
+
+          if conflicts:
+              print("Conflicts involving Insights:", *conflicts, sep="\n")
+              sys.exit(1)
+          EOF
+
+      - name: Create Site and Run Tests
+        working-directory: ${{ env.BENCH_PATH }}
+        env:
+          CI: "Yes"
+        run: |
           bench new-site "$SITE_NAME" \
             --db-root-password "$DB_ROOT_PASSWORD" \
             --admin-password "$ADMIN_PASSWORD"
@@ -133,6 +184,7 @@ jobs:
     if: ${{ failure() && github.event_name == 'schedule' }}
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: read
       issues: write
     steps:
@@ -149,6 +201,26 @@ jobs:
             --color d73a4a \
             --force
 
+          # One line per failed job, saying what breaks on sites if it ships
+          failures=$(gh run view "$GITHUB_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --json jobs \
+            --jq '.jobs[]
+              | select(.conclusion == "failure" and (.name | startswith("Install")))
+              | . as $job
+              | ([.steps[] | select(.conclusion == "failure") | .name][0] // "unknown step") as $step
+              | "- **\($job.name)** failed at `\($step)`. " + (
+                  if $step == "Check dependency conflicts" or $step == "Upgrade dependencies to highest allowed" then
+                    "Insights and Frappe allow versions of a package that no release satisfies both. Sites that update either app install the version one of them rejects, and break at import or migrate. Relax the Insights range and release before this Frappe version reaches sites."
+                  elif $step == "Create Site and Run Tests" and ($job.name | contains("Dependencies=highest")) then
+                    "Insights breaks on the newest versions its dependency ranges allow. Sites get these versions when another app or a later deploy upgrades them. Fix the code, or cap the version and release."
+                  else
+                    "Insights does not install or pass its tests on this Frappe branch."
+                  end
+                )')
+
+          body=$(printf '%s\n\nRun: %s' "$failures" "$RUN_URL")
+
           existing=$(gh issue list \
             --repo "$GITHUB_REPOSITORY" \
             --state open \
@@ -160,11 +232,11 @@ jobs:
           if [ -n "$existing" ]; then
             gh issue comment "$existing" \
               --repo "$GITHUB_REPOSITORY" \
-              --body "Still failing: $RUN_URL"
+              --body "$body"
           else
             gh issue create \
               --repo "$GITHUB_REPOSITORY" \
               --title "Nightly compatibility matrix is failing" \
               --label compat-matrix \
-              --body "The nightly compatibility matrix failed. Run: $RUN_URL"
+              --body "$body"
           fi
