@@ -13,6 +13,9 @@ dependencies = [
     "python-telegram-bot==12.8",
 ]
 
+[tool.bench.frappe-dependencies]
+frappe = ">=15.0.0"
+
 [build-system]
 requires = ["flit_core >=3.4,<4"]
 build-backend = "flit_core.buildapi"
