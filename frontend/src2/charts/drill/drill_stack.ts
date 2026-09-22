@@ -279,6 +279,9 @@ export function declaredDimensionColumns(chart: DrillChart): string[] {
 	)
 }
 
+// the name the pivot gives the column of rows with no split value (`pivot_name`)
+const PIVOTED_NULL = 'null'
+
 /**
  * A pivoted column carries the split's values in its own name. The Measure
  * comes first and the Dimension values follow it in declaration order, which is
@@ -289,13 +292,18 @@ export function declaredDimensionColumns(chart: DrillChart): string[] {
  */
 function readPivotedColumn(
 	column: string,
-	columnDimensions: Dimension[],
-	measures: Measure[],
-): { values: string[]; measure?: string } {
+	declared: DeclaredDimensions,
+): { values: (string | null)[]; measure?: string } {
+	const { rows, columns: columnDimensions, measures } = declared
+	// A numeric row Dimension draws as a clickable number too, but its name is
+	// neither a Measure nor a split.
+	if (rows.some((dimension) => dimension.dimension_name === column)) return { values: [] }
 	if (!columnDimensions.length) return { values: [], measure: column }
 
 	const parts = column.split('___')
-	const values = parts.slice(-columnDimensions.length)
+	const values = parts
+		.slice(-columnDimensions.length)
+		.map((value) => (value === PIVOTED_NULL ? null : value))
 	const head = parts.slice(0, -columnDimensions.length)
 	const measure = head.length ? head.join('___') : measures[0]?.measure_name
 	return { values, measure }
@@ -354,7 +362,7 @@ function labelForDimension(
  */
 export function segmentOf(chart: DrillChart, target: DrillDownTarget): DrillSegment {
 	const declared = declaredDimensions(chart)
-	const pivot = readPivotedColumn(target.column, declared.columns, declared.measures)
+	const pivot = readPivotedColumn(target.column, declared)
 
 	const filters: DrillFilter[] = []
 	const pins: DrillPin[] = []

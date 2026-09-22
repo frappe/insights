@@ -3,7 +3,7 @@ import sys
 import time
 import traceback
 from contextlib import contextmanager
-from datetime import date
+from datetime import date, datetime, timedelta
 from functools import cached_property
 
 import frappe
@@ -125,6 +125,18 @@ FILTER_OPERATORS = {
     "within": lambda x, y: handle_timespan(x, y),
 }
 
+# A bare date on a timestamp column names a whole day, so each operator reads
+# it as the day's bounds rather than its midnight: `<=` takes the whole day,
+# `>` starts the next one.
+DAY_OPERATORS = {
+    "=": lambda x, start, end: (x >= start) & (x < end),
+    "!=": lambda x, start, end: (x < start) | (x >= end),
+    ">": lambda x, start, end: x >= end,
+    ">=": lambda x, start, end: x >= start,
+    "<": lambda x, start, end: x < start,
+    "<=": lambda x, start, end: x < end,
+}
+
 AGGREGATIONS = {
     "count": lambda column: column.count(),
     "count_distinct": lambda column: column.nunique(),
@@ -142,6 +154,29 @@ class CircularQueryReferenceError(frappe.ValidationError):
     """Raised when a circular query reference is detected during query building."""
 
     pass
+
+
+def parse_bare_date(value):
+    """The date a `YYYY-MM-DD` value names, or None for anything else."""
+    if not isinstance(value, str):
+        return None
+    try:
+        return date.fromisoformat(value)
+    except ValueError:
+        return None
+
+
+def midnight(day):
+    return datetime.combine(day, datetime.min.time())
+
+
+def pivot_name(column):
+    """The pivot column a split value lands in.
+
+    NULL gets a name of its own: `NULL IN (...)` is never true and a pivot
+    names no NULL column, so without one its rows fall out of every series.
+    """
+    return column.cast("string").fill_null("null")
 
 
 class IbisQueryBuilder:
@@ -532,6 +567,10 @@ class IbisQueryBuilder:
             start = filter_value[0]
             end = filter_value[1]
 
+            first, last = parse_bare_date(start), parse_bare_date(end)
+            if first and last and left.type().is_timestamp():
+                return (left >= midnight(first)) & (left < midnight(last) + timedelta(days=1))
+
             if isinstance(start, str) and isinstance(end, str):
                 contains_time = ":" in start or ":" in end
                 if not contains_time:
@@ -539,6 +578,11 @@ class IbisQueryBuilder:
                     end = f"{end} 23:59:59"
 
             filter_value = [start, end]
+
+        day = parse_bare_date(filter_value) if right_column is None else None
+        if day and filter_operator in DAY_OPERATORS and left.type().is_timestamp():
+            start = midnight(day)
+            return DAY_OPERATORS[filter_operator](left, start, start + timedelta(days=1))
 
         right_value = right_column if right_column is not None else filter_value
         return operator_fn(left, right_value)
@@ -781,14 +825,6 @@ class IbisQueryBuilder:
                 **{value.get_name(): value for value in values}
             )
 
-            date_dimensions = [
-                self.translate_dimension(dim).get_name()
-                for dim in pivot_args["columns"]
-                if self.is_date_type(dim.data_type)
-            ]
-            if date_dimensions:
-                self.query = self.query.cast({dimension: "string" for dimension in date_dimensions})
-
             names_from = [col.get_name() for col in columns]
             max_names = pivot_args.get("max_column_values", 10)
             max_names = int(max_names)
@@ -799,6 +835,7 @@ class IbisQueryBuilder:
             first = (pivot_args["values"] or [{}])[0]
             additive = (first.get("aggregation") or "") in ADDITIVE_AGGREGATIONS
             names, has_tail = self.get_top_pivot_names(names_from, value_names if additive else [], max_names)
+            self.query = self.query.mutate(**{name: pivot_name(self.query[name]) for name in names_from})
 
             # If we've limited the number of distinct column values, bucket the
             # remaining values into an "Others" group so charts show the rest.
@@ -850,10 +887,18 @@ class IbisQueryBuilder:
         # keeps an empty "Others" column out of the result
         ranked = ranked.limit(max_names + 1)
 
+        # the name is computed by the database, so it is the very string the
+        # split column becomes in `apply_pivot`
+        labels = [f"__name_{i}__" for i in range(len(names_from))]
+        ranked = ranked.mutate(
+            **{label: pivot_name(ranked[name]) for label, name in zip(labels, names_from, strict=True)}
+        )
+
         top = ranked.execute()
         has_tail = len(top) > max_names
+        # sorted by the value, not its name, so numbers and dates keep their order
         top = top.head(max_names).sort_values(names_from, na_position="last")
-        return top[names_from].fillna("null").values, has_tail
+        return top[labels].values, has_tail
 
     def apply_custom_operation(self, operation):
         return self.evaluate_expression(operation.expression.expression)

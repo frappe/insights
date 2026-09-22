@@ -204,6 +204,16 @@ describe('a segment a split or a pivot drew', () => {
 	})
 
 	// @feature charts.drill-segment
+	it('pins the absence of a split value on the series the rows with none were drawn in', () => {
+		const segment = click(axisChart({ ...split, measures: ['revenue'] }), 'null')
+		expect(segment.filters).toContainEqual({
+			column: 'department',
+			operator: 'is_not_set',
+			value: '',
+		})
+	})
+
+	// @feature charts.drill-segment
 	it('pins the row Dimensions and the column value of a pivot-table cell', () => {
 		const segment = click(
 			tableChart({
@@ -219,6 +229,26 @@ describe('a segment a split or a pivot drew', () => {
 			{ column: 'department', operator: '=', value: 'Men' },
 		])
 		expect(segment.measure).toBe('revenue')
+	})
+
+	// @feature charts.drill-segment
+	it('pins only the row a numeric row Dimension cell stands on, and names no Measure', () => {
+		const year = { name: 'year', type: 'Integer' } as const
+		const pivoted = click(
+			tableChart({
+				rows: [year],
+				pivot: { dimension: 'department', into: ['Men', 'Women'] },
+				values: ['revenue'],
+			}),
+			'year',
+			2,
+		)
+		const plain = click(tableChart({ rows: [year], values: ['revenue'] }), 'year', 2)
+
+		for (const segment of [pivoted, plain]) {
+			expect(segment.filters).toEqual([{ column: 'year', operator: '=', value: 2 }])
+			expect(segment.measure).toBeUndefined()
+		}
 	})
 })
 

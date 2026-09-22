@@ -44,6 +44,7 @@ export default function useDocumentResource<T extends Document>(
 	const isLocal = ref(docname.value.startsWith('new-'))
 	const isLoading = ref(docname.value && !docname.value.startsWith('new-'))
 	const isLoaded = ref(false)
+	const isFailed = ref(false)
 	const isSaving = ref(false)
 	const isDeleting = ref(false)
 	const autoSave = ref(options.enableAutoSave ?? false)
@@ -68,7 +69,8 @@ export default function useDocumentResource<T extends Document>(
 	const isDirty = computed(() => !isEqual(copy(doc.value), originalDoc.value))
 
 	// A surface waits on this before it draws the document. A local document has
-	// nothing to load, so it is ready the moment it is made.
+	// nothing to load, so it is ready the moment it is made. A failed load stays
+	// pending: a surface that draws the failure reads `failed`.
 	const isPending = computed(() => !isLoaded.value && !isLocal.value)
 
 	async function insertDoc() {
@@ -139,12 +141,16 @@ export default function useDocumentResource<T extends Document>(
 		if (isLocal.value) return
 
 		isLoading.value = true
+		isFailed.value = false
 
 		const _doc = await call(methods.get, {
 			doctype,
 			name: docname.value,
 		})
-			.catch(showErrorToast)
+			.catch((error) => {
+				isFailed.value = true
+				showErrorToast(error)
+			})
 			.finally(() => (isLoading.value = false))
 
 		if (!_doc) return
@@ -262,7 +268,11 @@ export default function useDocumentResource<T extends Document>(
 		// })
 	}
 
-	loadDoc().then(setupLocalStorage).then(setupAutoSave)
+	// a document that failed to load has nothing to keep or save, and the toast
+	// has already said why
+	loadDoc()
+		.then(setupLocalStorage)
+		.then(setupAutoSave, () => {})
 	// setupRealtimeUpdates()
 
 	return reactive({
@@ -275,6 +285,7 @@ export default function useDocumentResource<T extends Document>(
 		loading: isLoading,
 		isloaded: isLoaded,
 		pending: isPending,
+		failed: isFailed,
 		saving: isSaving,
 		deleting: isDeleting,
 		autoSave: autoSave,

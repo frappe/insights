@@ -60,13 +60,10 @@ wheneverChanges(
 	(chart_name: string) => {
 		if (!chart_name) return
 		waitUntil(() => Boolean(chart.value?.isloaded)).then(() => {
-			// A read this cell is the first to draw, or one the chart went stale
-			// under while nothing was drawing it. `invalidateChart` marks rather
-			// than runs, so the mark is collected here — by the card that has
-			// somewhere to put the rows.
-			if (!read.value?.ready || read.value.stale) {
-				dashboard.refreshChart(chart_name)
-			}
+			// Every mount loads, and the read drops it when the rows on screen
+			// already answer the request: the chart or its query may have been
+			// edited while nothing was drawing it.
+			dashboard.refreshChart(chart_name)
 		})
 	},
 	{ immediate: true },

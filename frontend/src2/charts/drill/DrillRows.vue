@@ -97,15 +97,18 @@ watch(filters, () => {
 	query.goToPage(1)
 })
 
-// Which columns name a desk document is the server's answer, carried on the
-// level. Nothing here guesses a doctype from a column name: a miss shows no
-// control rather than a control that lands on the wrong document.
-const links = props.answer.record_links
+// Which columns name a desk document is the server's answer. Nothing here
+// guesses a doctype from a column name: a miss shows no control rather than a
+// control that lands on the wrong document. The level carries it until the
+// first run; every run after it answers for the pipeline the reader edited.
+const links = computed(() =>
+	query.result.executedSQL ? query.result.recordLinks : props.answer.record_links,
+)
 
 // The value is the control: a column that names a document links to its form,
 // and every other cell stays a value. A cell naming nothing gets no link.
 function recordLink(column: QueryResultColumn, row: QueryResultRow) {
-	const doctype = links?.[column.name]
+	const doctype = links.value?.[column.name]
 	return doctype ? recordUrl(doctype, row[column.name]) : undefined
 }
 

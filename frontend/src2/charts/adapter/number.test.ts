@@ -211,6 +211,16 @@ describe('the comparison', () => {
 	})
 
 	// @feature charts.number-comparison
+	it("prints the delta with the reading's own rounding", () => {
+		const card = cardsOf({
+			values: [{ name: 'Revenue', readings: [200, 300], comparison: previousPeriod }],
+			period: monthly,
+			decimal: 2,
+		})[0]
+		expect(card.deltaFormat!(1234.5)).toBe('1,234.50')
+	})
+
+	// @feature charts.number-comparison
 	it('says what the change is measured against, at the grain it was grouped by', () => {
 		expect(cardsOf(previous)[0].deltaCaption).toBe('vs previous month')
 	})

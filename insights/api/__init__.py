@@ -249,10 +249,10 @@ def get_doc(doctype: str, name: str | int):
             raise
         doc = frappe.get_doc(doctype, name)
         # the framework's own read path drops permlevel fields, and this branch
-        # goes around it. `permission_user` names a real person, so a public
-        # document must not carry it out to the internet.
+        # goes around it. `permission_user`, `owner` and `modified_by` name real
+        # people, so a public document must not carry them out to the internet.
         doc.apply_fieldlevel_read_permissions()
-        return doc.as_dict()
+        return doc.as_dict().update(owner=None, modified_by=None)
 
 
 def _execute_doc_method(doc, method: str, args: dict | None = None, ignore_permissions=False):
@@ -267,7 +267,14 @@ def _execute_doc_method(doc, method: str, args: dict | None = None, ignore_permi
 
     new_kwargs = frappe.get_newargs(fn, args or {})
     response = doc.run_method(method, **new_kwargs)
-    frappe.response.docs.append(doc)
+    if ignore_permissions:
+        # frappe-ui hands a caller the whole response only when `docs` is set, and
+        # the public page reads `.message` off it. A stub keeps that shape without
+        # the stored row, which names the publisher.
+        frappe.response.docs.append({"doctype": doc.doctype, "name": doc.name})
+    else:
+        doc.apply_fieldlevel_read_permissions()
+        frappe.response.docs.append(doc)
     frappe.response["message"] = response
     add_data_to_monitor(methodname=method)
     return response
@@ -333,6 +340,7 @@ def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
 # query.
 PUBLIC_METHOD_ARGS = {
     ("Insights Chart v3", "get_data"): {"page", "page_size", "dashboard", "filters", "card_filters"},
+    ("Insights Chart v3", "get_count"): {"dashboard", "filters", "card_filters"},
     ("Insights Dashboard v3", "get_distinct_column_values"): {
         "filter_name",
         "search_term",

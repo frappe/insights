@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { __ } from '../../translation'
 import { breakdownChart } from './breakdown_chart'
 import DrillDialog from './DrillDialog.vue'
@@ -95,7 +95,13 @@ function offerMenu(click: ChartSegmentClick, chart: DrillChart) {
 	pending.value = { segment: segmentOf(chart, click.target), point: click.point }
 }
 
-offerMenu(props.clicked, props.subject.chart)
+// A surface can hand a live instance a new click, as the query builder does when
+// a second click lands before the first one's round trip is back.
+watch(
+	() => props.clicked,
+	(click) => offerMenu(click, props.subject.chart),
+	{ immediate: true },
+)
 
 function descend(action: DrillAction) {
 	const offered = pending.value

@@ -670,7 +670,7 @@ test.describe('charts', () => {
 		// locator: the drop reads as an arrow, which is an icon and carries no
 		// text. The share beside it is the size of the drop, unsigned.
 		await expect(card.locator('.lucide-arrow-down-left')).toBeVisible()
-		await expect(card.getByText('12.9%')).toBeVisible()
+		await expect(card.getByText('12.94%')).toBeVisible()
 		await expect(card.getByText('vs previous month')).toBeVisible()
 
 		// The sparkline is drawn in the card itself, not as a chart of its own:

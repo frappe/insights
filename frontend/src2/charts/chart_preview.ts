@@ -9,6 +9,8 @@
 import { call } from 'frappe-ui'
 import { computed } from 'vue'
 import { stableStringify } from '../helpers/stable_stringify'
+import { getLinkedQueries } from '../query/linked_queries'
+import { openedQuery } from '../query/query'
 import { dataSelection } from './helpers'
 import type { Chart } from './chart'
 import {
@@ -61,14 +63,34 @@ function makeChartPreview(chart: Chart, surface?: ChartReadSurface) {
 					// a display option must not re-run the query, so the key names
 					// the half of the config that decides which rows come back
 					config: dataSelection(chart.doc.config),
+					// the server reads the saved queries by name, so a save to any of
+					// them is a new question under the same names. Only a query open
+					// here can be saved here, so an unopened one is not loaded to ask.
+					queries: openedQuery(chart.doc.query)
+						? [chart.doc.query, ...getLinkedQueries(chart.doc.query)].map(
+								(name) => openedQuery(name)?.doc.modified,
+						  )
+						: [],
 					// where a card sits is not what it asks for: a drag moves every
 					// box, and the key it is compared by must not move with it
 					dashboard_items: filterContext?.items?.map(
 						({ layout, layouts, ...item }) => item,
 					),
 				}),
-			fetchData: (force, filterContext) =>
-				call('insights.api.authoring.get_chart_data', { ...request(filterContext), force }),
+			fetchData: (force, filterContext, page) =>
+				call('insights.api.authoring.get_chart_data', {
+					...request(filterContext),
+					force,
+					page,
+				}),
+			fetchCount: (filterContext, force) => {
+				const { page_size, ...args } = request(filterContext)
+				return call('insights.api.authoring.get_chart_count', { ...args, force })
+			},
+			fetchExport: (format, filterContext) => {
+				const { page_size, ...args } = request(filterContext)
+				return call('insights.api.authoring.download_chart_results', { ...args, format })
+			},
 			// the same config the picture was drawn from, so a drill answers for what
 			// is on screen rather than for whatever was last saved
 			fetchDrillData: (drill_stack, filterContext) =>

@@ -67,6 +67,7 @@ export type InsightsQueryv3 = {
 	doctype: 'Insights Query v3'
 	name: string
 	owner: string
+	modified?: string
 	title: string
 	workbook: string
 	operations: Operation[]

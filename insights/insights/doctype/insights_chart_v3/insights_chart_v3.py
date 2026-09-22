@@ -4,17 +4,20 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import getdate
+from frappe.utils import add_to_date, get_datetime, getdate
 
 from insights.api.shared import stored_dashboard_items
+from insights.decorators import insights_whitelist
 from insights.insights.doctype.insights_chart_v3.chart_query import (
     column_granularity,
     comparison_sources,
     comparison_timespans,
     config_errors,
     derive_operations,
+    grain_step,
     normalize_chart_config,
     period_column,
+    period_grain,
     reads_newest_first,
     sparkline_operations,
 )
@@ -23,7 +26,10 @@ from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 impor
     route_card_filters,
     route_filters,
 )
-from insights.insights.doctype.insights_query_v3.insights_query_v3 import import_query
+from insights.insights.doctype.insights_query_v3.insights_query_v3 import (
+    check_download_access,
+    import_query,
+)
 from insights.insights.query_builders.sql_functions import resolve_timespan
 from insights.telemetry import capture_share_granted
 from insights.utils import deep_convert_dict_to_dict
@@ -176,15 +182,7 @@ class InsightsChartv3(Document):
         # a caller that names no page size gets the one the author configured, the
         # same answer the builder's own feed gives for this chart
         page_size = page_size or frappe.parse_json(chart.config or "{}").get("limit") or 100
-        adhoc_filters = None
-        if filters:
-            items = (
-                dashboard_items
-                if dashboard_items is not None
-                else stored_dashboard_items(self.name, dashboard)
-            )
-            adhoc_filters = route_filters(items, self.name, filters)
-        adhoc_filters = route_card_filters(self.name, card_filters, adhoc_filters)
+        adhoc_filters = chart.reading_filters(dashboard_items, dashboard, filters, card_filters)
 
         query = chart.get_query()
         result = query.execute(
@@ -241,8 +239,10 @@ class InsightsChartv3(Document):
         calendar.
 
         A grain period fetches nothing beside itself, since every period it has
-        is already a row, so the period before this one is the row before the
-        last, and that is the whole of what it can answer.
+        is already a row. The period before this one is the last row's period
+        stepped back one grain, looked up by its date: the row before the last
+        is some earlier period when the data has a gap. That is the whole of
+        what a grain can answer.
 
         A source with no row to read is named with `None`: the question stands
         and the card prints it with no figure. A source that is missing is one
@@ -252,13 +252,19 @@ class InsightsChartv3(Document):
             return {}
 
         config = frappe.parse_json(self.config or "{}")
+        column = period_column(self.chart_type, config)
         timespans = comparison_timespans(self.chart_type, config)
         if not timespans:
             if "previous" not in comparison_sources(self.chart_type, config):
                 return {}
-            return {"previous": len(rows) - 2 if len(rows) > 1 else None}
+            grain = period_grain(self.chart_type, config)
+            last = rows[-1].get(column)
+            if not grain or not last:
+                return {"previous": None}
+            starts = {get_datetime(row[column]): index for index, row in enumerate(rows) if row.get(column)}
+            back = {unit: -count for unit, count in grain_step(grain).items()}
+            return {"previous": starts.get(add_to_date(get_datetime(last), **back))}
 
-        column = period_column(self.chart_type, config)
         starts = {getdate(row[column]): index for index, row in enumerate(rows) if row.get(column)}
 
         return {source: starts.get(resolve_timespan(timespan)[0]) for source, timespan in timespans.items()}
@@ -336,6 +342,53 @@ class InsightsChartv3(Document):
             )
 
         return derive_operations(self.chart_type, self.query, config)
+
+    @frappe.whitelist()
+    def get_count(
+        self,
+        dashboard_items: list | None = None,
+        dashboard: str | None = None,
+        filters: dict | None = None,
+        card_filters: list | None = None,
+        force: bool = False,
+    ):
+        """How many rows `get_data` pages through, under the same filters."""
+        chart = frappe.get_doc(self.doctype, self.name)
+        adhoc_filters = chart.reading_filters(dashboard_items, dashboard, filters, card_filters)
+        return chart.get_query().count_rows(adhoc_filters=adhoc_filters, force=force)
+
+    @insights_whitelist()
+    def download_results(
+        self,
+        format: str = "csv",
+        dashboard_items: list | None = None,
+        dashboard: str | None = None,
+        filters: dict | None = None,
+        card_filters: list | None = None,
+    ):
+        """Every row `get_data` pages through, as a file, under the same filters."""
+        chart = frappe.get_doc(self.doctype, self.name)
+        check_download_access(self.doctype, chart)
+        adhoc_filters = chart.reading_filters(dashboard_items, dashboard, filters, card_filters)
+        return chart.get_query().export_rows(format, adhoc_filters=adhoc_filters)
+
+    def reading_filters(
+        self,
+        dashboard_items: list | None = None,
+        dashboard: str | None = None,
+        filters: dict | None = None,
+        card_filters: list | None = None,
+    ):
+        """The filters a reading surface puts on this chart's rows, routed. See `get_data`."""
+        adhoc_filters = None
+        if filters:
+            items = (
+                dashboard_items
+                if dashboard_items is not None
+                else stored_dashboard_items(self.name, dashboard)
+            )
+            adhoc_filters = route_filters(items, self.name, filters)
+        return route_card_filters(self.name, card_filters, adhoc_filters)
 
     @frappe.whitelist()
     def export(self):

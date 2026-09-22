@@ -38,6 +38,7 @@ from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 impor
     route_card_filters,
     route_filters,
 )
+from insights.insights.doctype.insights_query_v3.insights_query_v3 import check_download_access
 
 CHART = "Insights Chart v3"
 QUERY = "Insights Query v3"
@@ -76,8 +77,7 @@ def get_chart_data(
     """
     check_read_access(query, chart_name)
 
-    adhoc_filters = route_filters(dashboard_items, chart_name, filters) if chart_name else None
-    adhoc_filters = route_card_filters(chart_name, card_filters, adhoc_filters) if chart_name else None
+    adhoc_filters = preview_filters(chart_name, dashboard_items, filters, card_filters)
 
     errors = config_errors(chart_type, query, config)
     if errors:
@@ -124,6 +124,48 @@ def get_chart_data(
 
 
 @insights_whitelist()
+def get_chart_count(
+    chart_type: str,
+    query: str,
+    config: dict | None = None,
+    chart_name: str | None = None,
+    dashboard_items: list | None = None,
+    filters: dict | None = None,
+    card_filters: list | None = None,
+    force: bool = False,
+):
+    """How many rows `get_chart_data` pages through, under the same filters."""
+    check_read_access(query, chart_name)
+
+    adhoc_filters = preview_filters(chart_name, dashboard_items, filters, card_filters)
+    if config_errors(chart_type, query, config):
+        return 0
+
+    chart = preview_chart(chart_type, query, config, name=chart_name)
+    return chart.get_query().count_rows(adhoc_filters=adhoc_filters, force=force)
+
+
+@insights_whitelist()
+def download_chart_results(
+    chart_type: str,
+    query: str,
+    config: dict | None = None,
+    format: str = "csv",
+    chart_name: str | None = None,
+    dashboard_items: list | None = None,
+    filters: dict | None = None,
+    card_filters: list | None = None,
+):
+    """Every row `get_chart_data` pages through, as a file, under the same filters."""
+    check_read_access(query, chart_name)
+    check_download_access(QUERY, query)
+
+    adhoc_filters = preview_filters(chart_name, dashboard_items, filters, card_filters)
+    chart = preview_chart(chart_type, query, config, name=chart_name)
+    return chart.get_query().export_rows(format, adhoc_filters=adhoc_filters)
+
+
+@insights_whitelist()
 def get_drill_data(
     query: str,
     drill_stack: list,
@@ -151,8 +193,7 @@ def get_drill_data(
     check_read_access(query, chart_name)
 
     chart = preview_chart(chart_type, query, config, name=chart_name)
-    adhoc_filters = route_filters(dashboard_items, chart_name, filters) if chart_name else None
-    adhoc_filters = route_card_filters(chart_name, card_filters, adhoc_filters) if chart_name else None
+    adhoc_filters = preview_filters(chart_name, dashboard_items, filters, card_filters)
 
     response = drill_data(
         chart,
@@ -198,6 +239,19 @@ def check_read_access(query: str, chart_name: str | None = None):
     for doctype in (CHART, QUERY):
         if chart_name and frappe.db.exists(doctype, chart_name):
             frappe.has_permission(doctype, ptype="read", doc=chart_name, throw=True)
+
+
+def preview_filters(
+    chart_name: str | None,
+    dashboard_items: list | None,
+    filters: dict | None,
+    card_filters: list | None,
+):
+    """The grid's and the card's filters, routed to the chart being drawn."""
+    if not chart_name:
+        return None
+    adhoc_filters = route_filters(dashboard_items, chart_name, filters)
+    return route_card_filters(chart_name, card_filters, adhoc_filters)
 
 
 def preview_chart(chart_type: str | None, query: str, config: dict | None, name: str | None = None):

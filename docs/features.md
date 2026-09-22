@@ -25,6 +25,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | query.filter-relative-date | A user filters on a date with the relative date picker: last, current or next N days, weeks, months, quarters, years or fiscal years. |
 | query.filter-relative-date-include-current | A relative date span can take in the current period. |
 | query.filter-relative-date-shift | A relative span can be measured from a shifted anchor rather than today. |
+| query.filter-date-on-datetime | A date picked for a Datetime column names that whole day, whichever operator compares it. |
 | query.filter-is-set | A user filters rows to those with or without a value. |
 | query.filter-expression | A user converts a filter row into a free-form expression. |
 | query.filter-row-duplicate | A user duplicates or removes one filter row. |
@@ -161,6 +162,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | charts.table-conditional-formatting | A user adds a formatting rule to a Table chart and it reaches the column, or every pivoted column, it names. |
 | charts.table-header-sort | A user sorts a Table chart by clicking a column header, and the sort is saved to the chart; a reader sorts nothing. |
 | charts.table-record-link | A Table cell that names a desk document opens its form; every other cell stays a value. |
+| charts.table-pager | A Table chart pages past its first page and says how many rows it has. |
 | charts.table-loading | A Table chart's card, not its grid, veils a run in flight. |
 | charts.table-renders-outside-dashboard | A Table chart draws its rows outside a dashboard. |
 | charts.map-type | A user picks the world or India map. |
@@ -175,6 +177,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | charts.heatmap-palette-range | A user picks a sequential or diverging palette and pins the ends of the color scale. |
 | charts.heatmap-show-values | A user prints the number inside each heatmap cell. |
 | charts.refresh | A user re-runs a chart's query. |
+| charts.export-rows | A user downloads a chart's own rows as CSV or Excel, up to the site's export limit. |
 | charts.export-png | A user downloads a chart as a PNG. |
 | charts.duplicate | A user duplicates a chart in the workbook. |
 | charts.reset-options | A user resets a chart's config to defaults. |
@@ -225,6 +228,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | dashboard.reset-layout | A user discards unsaved layout changes. |
 | dashboard.rename | A user renames a dashboard. |
 | dashboard.refresh | A reader reloads a dashboard's chart data, with or without the cache. |
+| dashboard.card-follows-edits | A card redraws after its chart's config or its query was edited while the dashboard was closed. |
 | dashboard.export-png | A user downloads a dashboard as a PNG. |
 | dashboard.card-filter | A reader narrows one card with its own filter, and the filter offers only what the card draws. |
 | dashboard.card-find | A reader searches a table card's drawn rows. |
@@ -270,6 +274,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | shared.public-methods-bounded | A public link can call only the read methods it needs, with builder-only arguments stripped, and never a download. |
 | shared.filters-on-public-dashboard | A visitor uses the dashboard's filters and card filters, routed by the published dashboard's own links. |
 | shared.old-name-resolves | A link to a renamed public dashboard or chart still opens it; a private one gives nothing away. |
+| shared.missing-link | A link to a chart that cannot be read says so instead of loading forever. |
 | shared.currency-for-guest | A visitor sees amounts in the site's currency symbol. |
 | shared.read-once | Several cards drawing one chart under the same filters ask the server once. |
 

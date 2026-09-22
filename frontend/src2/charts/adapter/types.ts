@@ -58,6 +58,30 @@ export type ChartAdapterInput = {
 	 * card's loading state before they are asked.
 	 */
 	executing?: boolean
+	/** Which page of the rows this is, for the filler that pages them — the grid. */
+	page?: ResultPage
+	/** Every row as a file, for the filler that offers one — the grid. */
+	download?: ResultDownload
+}
+
+/** A chart's rows as a file. */
+export type ResultDownload = {
+	downloading: boolean
+	// eslint-disable-next-line no-unused-vars
+	exportResults: (format: string, filename: string) => void
+	cancelDownload: () => void
+}
+
+/** One page of a chart's rows, and the way to the others. */
+export type ResultPage = {
+	current: number
+	/** Only a Table is paged. */
+	size?: number
+	/** Known once the reader asked for it. */
+	totalRowCount?: number
+	// eslint-disable-next-line no-unused-vars
+	goTo?: (page: number) => void
+	fetchCount?: () => Promise<void>
 }
 
 /** The point a reader clicked, as a drill reads it. */

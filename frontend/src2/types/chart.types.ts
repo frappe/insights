@@ -242,7 +242,7 @@ export type NumberChartConfig = NumberFormatConfig & {
 	 *   period comparison shifts the span to an earlier one.
 	 * - `grain` filters nothing and groups by the date grain. One row per
 	 *   period present in the data, so the card reads the newest one there and
-	 *   a `previous` comparison reads the row before it.
+	 *   a `previous` comparison reads the period one grain before it.
 	 *
 	 * Left out, the card is one number over the whole result and the date column
 	 * only feeds the sparkline. Before this existed a granularity on

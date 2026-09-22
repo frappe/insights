@@ -156,10 +156,12 @@ function readingOf(
 	if (options.color) card.color = options.color
 	if (format.prefix) card.prefix = format.prefix
 	if (format.suffix) card.suffix = format.suffix
-	// The card prints the prefix and suffix around what `format` returns, and the
-	// value is already scaled, so the formatter prints digits alone.
+	// The card prints the prefixes and suffixes around what `format` and
+	// `deltaFormat` return, and the value is already scaled, so the formatter
+	// prints digits alone.
 	const digits = { ...format, prefix: undefined, suffix: undefined, scale: 1 }
 	card.format = (value) => printNumber(value, digits)
+	card.deltaFormat = card.format
 
 	const { target, comparison } = options
 
@@ -295,8 +297,8 @@ export function defaultComparisonLabel(
 
 	// Worded by the period the config holds, not by the row the server named: the
 	// form prints this as the caption's placeholder before a card has ever run.
-	// A shifted span is named by the shift, and a grain's row before the last
-	// one by the grain it was grouped by.
+	// A shifted span is named by the shift, and a grain's previous period by
+	// the grain it was grouped by.
 	const period = periodOf(config)
 	if (comparison.source === 'last year') {
 		return period?.span ? windowShiftLabel(LAST_YEAR) : undefined

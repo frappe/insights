@@ -111,7 +111,7 @@ const editTeam = ref<Team | null>(null)
 			<NumberInput v-model="settings.doc.max_export_rows" class="w-28" />
 		</SettingItem>
 
-		<div class="flex w-full flex-1 flex-col gap-3 overflow-auto">
+		<div class="flex w-full flex-col gap-3">
 			<SettingItem
 				label="Teams"
 				description="Create teams to group users and manage permissions."
@@ -128,7 +128,7 @@ const editTeam = ref<Team | null>(null)
 					</template>
 				</Button>
 			</SettingItem>
-			<ListView class="h-full" v-bind="listOptions"> </ListView>
+			<ListView v-bind="listOptions"> </ListView>
 		</div>
 	</div>
 

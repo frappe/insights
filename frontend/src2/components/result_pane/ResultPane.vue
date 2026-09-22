@@ -97,8 +97,11 @@ const bodyState = computed<'error' | 'loading' | 'nomatch' | 'nodata' | null>(()
 	return null
 })
 
-// there is a range to page through only when the grid is what the body draws
+// there is a range to print only when the grid is what the body draws
 const pageRange = computed(() => (bodyState.value ? undefined : pagination))
+// The pager belongs to the result, not to the grid: a page past the end draws
+// no rows, and the way back off it is the pager.
+const pager = computed(() => (columns.value.length ? pagination : undefined))
 
 const timeAgo = useTimeAgo(() => props.query.result.lastExecutedAt)
 const lastRun = computed(() => (props.query.result.executedSQL ? timeAgo.value : ''))
@@ -209,7 +212,7 @@ watch(
 			</div>
 
 			<ResultFooter
-				:pagination="pageRange"
+				:pagination="pager"
 				:on-export="canExport ? () => (showExportDialog = true) : undefined"
 			>
 				<template #left>

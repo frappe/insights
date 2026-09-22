@@ -6,7 +6,7 @@ import ColorInput from '../../components/ColorInput.vue'
 import DraggableList from '../../components/DraggableList.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { getUniqueId } from '../../helpers'
-import { FIELDTYPES } from '../../helpers/constants'
+import { isCalendarDateType } from '../../helpers/constants'
 import { moveNumberReadingOptions, removeNumberReading } from '../helpers'
 import { DEFAULT_CHOICE, periodOf, periodOfChoice } from '../window'
 import { NumberChartConfig, NumberColumnOptions } from '../../types/chart.types'
@@ -33,8 +33,9 @@ const config = defineModel<NumberChartConfig>({
 	}),
 })
 
+// picking a column writes a calendar period, which a time of day cannot carry
 const date_dimensions = computed(() =>
-	props.dimensions.filter((d) => FIELDTYPES.DATE.includes(d.data_type)),
+	props.dimensions.filter((d) => isCalendarDateType(d.data_type)),
 )
 
 // What the card reads, which is what decides whether a period comparison is on

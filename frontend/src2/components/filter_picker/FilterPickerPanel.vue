@@ -4,6 +4,7 @@
 // means.
 import { Badge, Button, KeyboardShortcut, Tooltip } from 'frappe-ui'
 import { Delete, Plus, Search } from 'lucide-vue-next'
+import { watchDebounced } from '@vueuse/core'
 import { ComboboxInput, ComboboxRoot } from 'reka-ui'
 import { computed, nextTick, onBeforeUnmount, reactive, ref, shallowRef, watch } from 'vue'
 import { isMac } from '../../composables/useShortcut'
@@ -176,26 +177,39 @@ else reset()
 const distinct = ref<string[]>([])
 const fetching = ref(false)
 let request = 0
+let asked: string | undefined
 
-watch(
-	[() => column.value?.name, search, multi],
-	async ([, text, isMultiStage]) => {
-		if (!isMultiStage || !column.value) {
-			distinct.value = []
-			return
-		}
-		const id = ++request
-		fetching.value = true
-		const values = await props
-			.valuesProvider(column.value)(text as string)
-			.catch(() => [])
-		if (id !== request) return
-		// reka's ComboboxItem throws on an empty value
-		distinct.value = values.filter(Boolean)
-		fetching.value = false
-	},
-	{ immediate: true },
-)
+// Each ask is a `SELECT DISTINCT` on the source, so typing waits for a pause
+// while opening a column asks at once. Opening one also clears the search,
+// which the debounced watch then hears as the same ask a second time.
+async function fetchDistinct() {
+	if (!multi.value || !column.value) {
+		asked = undefined
+		distinct.value = []
+		return
+	}
+	const text = search.value
+	const key = JSON.stringify([column.value.name, text])
+	if (key === asked) return
+	asked = key
+
+	const id = ++request
+	fetching.value = true
+	const values = await props
+		.valuesProvider(column.value)(text)
+		.catch(() => {
+			// a failed ask is not an answer, so the same one may be asked again
+			if (id === request) asked = undefined
+			return []
+		})
+	if (id !== request) return
+	// reka's ComboboxItem throws on an empty value
+	distinct.value = values.filter(Boolean)
+	fetching.value = false
+}
+
+watch([() => column.value?.name, multi], fetchDistinct, { immediate: true })
+watchDebounced(search, fetchDistinct, { debounce: 300 })
 
 // The column's own range, for the numbers the value stage offers. Fetched when
 // the stage opens on a number column and not before: a range is one aggregate

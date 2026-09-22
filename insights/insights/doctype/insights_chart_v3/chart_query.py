@@ -282,8 +282,14 @@ def _window_errors(config: dict) -> list[str]:
     if not _period(config):
         return []
 
-    if not (config.get("date_column") or {}).get("column_name"):
+    date_column = config.get("date_column") or {}
+    if not date_column.get("column_name"):
         return [_("Date column is required to read a period")]
+
+    # a time of day falls on no calendar: MariaDB reads a span over one as the
+    # whole table, and DuckDB refuses to cast it
+    if date_column.get("data_type") == "Time":
+        return [_("A period needs a Date or Datetime column, not a Time column")]
 
     return []
 
@@ -365,9 +371,9 @@ def _add_number_operation(operations: list[dict], config: dict):
 
     if window.get("grain"):
         # A grain filters nothing: the card reads the newest period the data has,
-        # and the row before it is what a `previous` comparison reads. That is the
-        # shape a date dimension already groups by, so the grain goes on the
-        # dimension.
+        # and the period one grain before it is what a `previous` comparison
+        # reads. That is the shape a date dimension already groups by, so the
+        # grain goes on the dimension.
         #
         # Which order the periods come back in is `_add_period_order`'s, once
         # the author's own sorts are in.
@@ -567,6 +573,18 @@ def period_column(chart_type: str, config: dict | None) -> str:
         return ""
     config = _config_for_derivation(config, chart_type)
     return result_column(config.get("date_column") or {})
+
+
+def period_grain(chart_type: str, config: dict | None) -> str:
+    """The grain a card's periods are grouped by, empty for a span or none."""
+    if chart_type != "Number":
+        return ""
+    return _period(_config_for_derivation(config, chart_type)).get("grain") or ""
+
+
+def grain_step(granularity: str) -> dict:
+    """One bucket of a grain, as `add_to_date` keyword arguments."""
+    return {"fiscal_year": {"years": 1}, "quarter": {"months": 3}}.get(granularity) or {f"{granularity}s": 1}
 
 
 def _comparison_shifts(config: dict, span: str) -> list[dict]:
