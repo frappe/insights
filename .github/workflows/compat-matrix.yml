@@ -179,6 +179,10 @@ jobs:
 
           import insights
 
+          # version-3 and main still list this patch, but every site that needs it has run it.
+          # It imports create_roles, which moved to a hook.
+          skip = {"insights.patches.add_roles"}
+
           root = Path(insights.__file__).parent
           failures = []
           for path in sorted(root.rglob("*.py")):
@@ -186,12 +190,12 @@ jobs:
               if any(part in ("tests", "public", "node_modules", "__main__") or part.startswith("test_") for part in relative.parts):
                   continue
               module = ".".join(relative.parts).removesuffix(".__init__")
+              if module in skip:
+                  continue
               try:
                   importlib.import_module(module)
               except ImportError as e:
-                  # A missing name inside Insights is its own bug, not a dependency's
-                  if (e.name or "").split(".")[0] != "insights":
-                      failures.append(f"{module}: {e}")
+                  failures.append(f"{module}: {e}")
               except Exception:
                   # Modules that need a site or request fail here for reasons unrelated to dependencies
                   pass
