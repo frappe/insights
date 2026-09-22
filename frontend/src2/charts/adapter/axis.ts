@@ -93,15 +93,20 @@ function adaptAxisChart(
 		if (Object.keys(style).length) seriesConfig[column] = style
 	}
 
+	// A horizontal bar chart runs its value axis across the plot and draws only
+	// one, so v2 reads every series against the primary there. Nothing here asks
+	// which way the bars run: knowing it twice is how the two answers drift apart.
+	const onRight = (column: string) => seriesByColumn.get(column)?.align === 'Right'
+	const right = columns.filter(onRight)
+
 	const props: BarChartProps = {
 		title: input.title,
 		data: input.result.rows,
 		x,
-		// Series colors are handed out along this list, so the scale a Series is read on is said
-		// in `seriesConfig` rather than by moving it.
-		y: columns,
+		y: columns.filter((column) => !onRight(column)),
 		xAxis: xAxisFor(dimension),
 	}
+	if (right.length) props.y2 = right
 	if (Object.keys(seriesConfig).length) props.seriesConfig = seriesConfig
 	if (horizontal) props.horizontal = true
 
@@ -114,8 +119,10 @@ function adaptAxisChart(
 	const primary = numberFormatter(config, measureOn(config, 'Left'), input.result.rows)
 	props.yAxis = valueAxisFor(y_axis, Boolean(stacked === 'normalized'), primary)
 
-	const right = measureOn(config, 'Right')
-	const secondary = right ? numberFormatter(config, right, input.result.rows) : undefined
+	const rightMeasure = measureOn(config, 'Right')
+	const secondary = rightMeasure
+		? numberFormatter(config, rightMeasure, input.result.rows)
+		: undefined
 	if (secondary) props.y2Axis = { format: secondary }
 
 	// A reference line reads any Measure the Chart carries, drawn or not: a rule
@@ -242,11 +249,6 @@ function styleFor(
 	if (type !== mark) style.type = type
 
 	if (ownsOneColumn && series?.color?.[0]) style.color = series.color[0]
-
-	// A horizontal bar chart runs its value axis across the plot and draws only
-	// one, so v2 reads every series against the primary there. Nothing here asks
-	// which way the bars run: knowing it twice is how the two answers drift apart.
-	if (series?.align === 'Right') style.axis = 'y2'
 
 	const showDataLabels = series?.show_data_labels ?? config.y_axis?.show_data_labels
 	if (showDataLabels) style.showDataLabels = true

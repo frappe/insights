@@ -21,7 +21,7 @@ const query = inject('query') as Query
 				</template>
 			</Button>
 		</template>
-		<template #default="{ toggle: togglePopover, open }">
+		<template #default="{ close, open }">
 			<div class="flex flex-col p-2">
 				<!-- select all -->
 				<div class="mb-2 flex items-center gap-1">

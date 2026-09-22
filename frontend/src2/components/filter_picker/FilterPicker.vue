@@ -34,6 +34,10 @@ defineSlots<{
 // a host may bind `v-model:open`, e.g. to keep a hover-revealed toolbar shown while the popover is up
 const open = defineModel<boolean>('open', { default: false })
 
+function toggle() {
+	open.value = !open.value
+}
+
 const count = computed(() => model.value.length)
 /** the column mount holds at most one filter, and its trigger reads it */
 const filter = computed(() => model.value[0])
@@ -71,7 +75,7 @@ const valueText = computed(() => {
 <template>
 	<div class="inline-flex">
 		<Popover v-model:open="open" bare :align="column ? 'start' : 'end'" :offset="4">
-			<template #trigger="{ toggle }">
+			<template #trigger>
 				<slot name="trigger" :filter="filter" :open="open" :toggle="toggle">
 					<Button v-if="column" variant="subtle" :class="count ? '' : 'text-ink-gray-5'">
 						<template #prefix>

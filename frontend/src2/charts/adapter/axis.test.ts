@@ -301,19 +301,18 @@ describe('the second value axis', () => {
 			dimension: 'region',
 			measures: ['revenue', { name: 'margin_rate', mark: 'line', axis: 'right' }],
 		})
-		expect(props.seriesConfig.margin_rate.axis).toBe('y2')
+		expect(props.y).toEqual(['revenue'])
+		expect(props.y2).toEqual(['margin_rate'])
 	})
 
 	// @feature charts.series-align
-	it('leaves a Series where it stands when it changes axis', () => {
-		// The series are drawn and colored in `y` order, so a Series that moved
-		// down the list to reach the second axis would change color on the way.
+	it('draws no second axis when every Series is aligned left', () => {
 		const props = propsOf({
 			type: 'Bar',
 			dimension: 'region',
-			measures: [{ name: 'margin_rate', axis: 'right' }, 'revenue'],
+			measures: ['revenue', 'margin_rate'],
 		})
-		expect(props.y).toEqual(['margin_rate', 'revenue'])
+		expect(props.y2).toBeUndefined()
 	})
 
 	// @feature charts.type-row
@@ -326,8 +325,8 @@ describe('the second value axis', () => {
 			dimension: 'region',
 			measures: ['revenue', { name: 'margin_rate', axis: 'right' }],
 		})
-		expect(props.y).toEqual(['revenue', 'margin_rate'])
-		expect(props.seriesConfig.margin_rate.axis).toBe('y2')
+		expect(props.y).toEqual(['revenue'])
+		expect(props.y2).toEqual(['margin_rate'])
 	})
 })
 

@@ -138,7 +138,7 @@ watch(
 				</Button>
 			</div>
 		</template>
-		<template #default="{ toggle: togglePopover, open }">
+		<template #default="{ close, open }">
 			<div v-if="open" class="flex min-w-fit flex-col p-1.5 pr-5">
 				<span class="flex h-6 items-center px-2 text-p-xs text-ink-gray-4">
 					{{ __('Select an operation') }}
@@ -152,7 +152,7 @@ watch(
 						@click="
 							() => {
 								button.onClick()
-								togglePopover()
+								close()
 							}
 						"
 					>

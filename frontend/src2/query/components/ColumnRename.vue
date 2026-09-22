@@ -33,16 +33,12 @@ function onRename() {
 				</template>
 			</Button>
 		</template>
-		<template #default="{ toggle: togglePopover }">
+		<template #default="{ close }">
 			<div class="flex flex-col gap-2 px-2.5 py-2">
 				<FormControl v-model="newName" label="New Column Name" />
 				<div class="flex justify-end gap-1">
-					<Button @click="togglePopover" icon="lucide-x"></Button>
-					<Button
-						variant="solid"
-						icon="lucide-check"
-						@click=";[onRename(), togglePopover()]"
-					>
+					<Button @click="close" icon="lucide-x"></Button>
+					<Button variant="solid" icon="lucide-check" @click=";[onRename(), close()]">
 					</Button>
 				</div>
 			</div>

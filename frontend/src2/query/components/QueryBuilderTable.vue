@@ -129,24 +129,20 @@ function addNewColumn() {
 									</template>
 								</Button>
 							</template>
-							<template #default="{ toggle: togglePopover, open }">
+							<template #default="{ close, open }">
 								<div v-if="open" class="flex min-w-[10rem] flex-col p-1">
 									<ColumnSort
 										:column="column"
-										@sort="onSort(column, $event), togglePopover()"
+										@sort="onSort(column, $event), close()"
 									/>
 									<ColumnFilter
 										:column="column"
-										@filter="
-											(op, val) => (
-												onFilter(column, op, val), togglePopover()
-											)
-										"
+										@filter="(op, val) => (onFilter(column, op, val), close())"
 										:valuesProvider="(searchTxt: string) => query.getDistinctColumnValues(column.name, searchTxt)"
 									/>
 									<ColumnRemove
 										:column="column"
-										@remove="onRemove(column), togglePopover()"
+										@remove="onRemove(column), close()"
 									/>
 								</div>
 							</template>
