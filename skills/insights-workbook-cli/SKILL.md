@@ -163,6 +163,12 @@ in the closing summary. One line each:
 
 Silence here reads as certainty. Do not spend certainty you do not have.
 
+### Tip when the ask names a chart but not a question
+
+Users who are not analysts often ask for a chart type ("a pie chart of orders by status") when what they want is an answer ("which orders are stuck"). Build what they asked for. Then, in the closing summary, add one line suggesting they describe what they want to learn next time, so you can choose the query and chart.
+
+Skip the tip when the ask already says what the chart is for. Give it once per conversation.
+
 ### A query spanning two data sources needs the data store
 
 One flag decides cross-source. With `use_live_connection: 0` every table resolves through the
