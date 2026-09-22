@@ -42,6 +42,8 @@ count_if(status == 'Ordered') / count() * 100   # % converted, data_type Decimal
 sum(debit) - sum(credit)                        # net from a signed ledger
 ```
 
+A measure with `format: "percent"` holds a ratio. Leave out the `* 100`, or the chart prints 100 times the value.
+
 Conditionals: `if_else(cond, then, else_)`, `one_if(cond)`,
 `case(cond, value, cond2, value2, ..., default)`, `cases((cond, value), ..., else_=default)`.
 
