@@ -330,9 +330,9 @@ const CARD = {
 	/** A dashboard cell's `p-2`, top and bottom. */
 	cellPadding: 2 * 8,
 	/**
-	 * ChartCard's 1px border and the least padding the card is centred in, top
-	 * and bottom. Not its `py-3`: sized for that, a card lands up to a row taller
-	 * than its content and centres into twice the padding.
+	 * ChartCard's 1px border and the `py-2` `NumberReading` gives it, top and
+	 * bottom. Not ChartCard's own `py-3`: sized for that, a card lands up to a
+	 * row taller than its content.
 	 */
 	chrome: 2 * (8 + 1),
 	/** `gap-1.5` between the card's blocks. */
