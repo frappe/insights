@@ -96,6 +96,26 @@ def deep_convert_dict_to_dict(d):
     return d
 
 
+def refuse_delete_while_linked(doc, taken: tuple[str, ...]) -> None:
+    """Refuse a delete frappe's link check will refuse, before `on_trash` changes anything.
+
+    frappe asks after `on_trash`, and a refusal there leaves every change the
+    hook made to whoever commits next. `taken` names the doctypes the hook
+    deletes or rewrites itself, so their links never refuse.
+    """
+    from frappe.model.delete_doc import (
+        get_dynamic_linked_docs,
+        get_linked_docs,
+        raise_link_exists_exception,
+    )
+
+    for link in (*get_linked_docs(doc), *get_dynamic_linked_docs(doc)):
+        if link["reference_doctype"] not in taken:
+            raise_link_exists_exception(
+                doc, link["reference_doctype"], link["reference_docname"], link.get("at_position", "")
+            )
+
+
 def create_execution_log(sql, time_taken=0, query_name=None, data_store=False):
     frappe.get_doc(
         {

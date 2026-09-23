@@ -17,7 +17,7 @@ from frappe.utils.password import get_decrypted_password
 from frappe.utils.safe_exec import safe_exec
 
 from insights.insights.doctype.insights_data_source_v3.data_warehouse import WarehouseTableWriter
-from insights.insights.doctype.insights_data_source_v3.ibis_utils import SafePandasDataFrame
+from insights.insights.doctype.insights_data_source_v3.sandbox import script_globals
 from insights.utils import InsightsDataSourcev3
 
 parse_cron = lru_cache(croniter)
@@ -199,23 +199,13 @@ class TableImportJobRun:
             "state": self.job_state,
             "secrets": JobSecrets(self.job),
             "log": self._log,
-            "pandas": frappe._dict(
-                {
-                    "DataFrame": SafePandasDataFrame,
-                }
-            ),
         }
 
         _locals = {}
 
         self._log("Executing script...")
 
-        safe_exec(
-            code,
-            _globals=_globals,
-            _locals=_locals,
-            restrict_commit_rollback=True,
-        )
+        safe_exec(code, _globals={**script_globals(), **_globals}, _locals=_locals)  # nosemgrep
 
         self._log("Script executed successfully")
 

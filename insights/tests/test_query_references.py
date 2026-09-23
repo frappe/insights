@@ -14,6 +14,7 @@ import frappe
 from frappe.utils import set_request
 
 from insights.api import run_doc_method
+from insights.api.workbooks import update_share_permissions
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
     db_connections,
 )
@@ -23,6 +24,7 @@ from insights.tests.factories import (
     DT,
     as_user,
     create_test_chart,
+    create_test_dashboard,
     create_test_workbook,
     delete_users,
 )
@@ -47,9 +49,12 @@ SOURCE_ROWS = f"results = [{{'secret': '{SECRET}', 'amount': 1}}]"
 
 
 def create_source_query(owner, workbook, title):
-    """A query that stands on its own, so no table permission enters the picture."""
-    with as_user(owner):
-        return frappe.get_doc(
+    """A query that stands on its own, so no table permission enters the picture.
+
+    A script, so an admin writes it (Q17); `owner` is who it is recorded as made by.
+    """
+    with as_user("Administrator"):
+        query = frappe.get_doc(
             {
                 "doctype": DT.QUERY,
                 "title": title,
@@ -59,6 +64,8 @@ def create_source_query(owner, workbook, title):
                 "operations": [{"type": "code", "code": SOURCE_ROWS}],
             }
         ).insert()
+    query.db_set("owner", owner, update_modified=False)
+    return query
 
 
 def reference_operations(query_name):
@@ -189,17 +196,68 @@ class ASavedReferenceCarriesItsOwnAccess:
     def after_class(cls):
         for name in (cls.workbook, cls.viewer_workbook):
             frappe.delete_doc(DT.WORKBOOK, name, force=True, ignore_permissions=True)
-        delete_users(OWNER, VIEWER)
+        delete_users(OWNER, VIEWER, OTHER)
 
     def before_test(self):
         self.set_team_permissions(self.ENABLE_PERMISSIONS)
 
     # @feature permissions.chart-access-follows
-    def test_the_share_carries_the_chart_and_its_query_only(self):
-        """The baseline: a shared chart does not carry the workbook behind it."""
+    def test_the_share_carries_the_chart_and_the_pipeline_it_reads(self):
+        """A shared chart carries every query its pipeline reads, and no more.
+
+        The card's number was computed through all of them - the engine treats
+        a saved reference as authorised - so refusing the reader one of them
+        served the number and refused the list of values in a column of it. It
+        still does not carry the workbook: a sibling query nothing on the chart
+        reads stays unreadable."""
         with self.as_user(VIEWER):
             self.assertTrue(frappe.has_permission(DT.CHART, ptype="read", doc=self.chart))
             self.assertTrue(frappe.has_permission(DT.QUERY, ptype="read", doc=self.consumer))
+            self.assertTrue(frappe.has_permission(DT.QUERY, ptype="read", doc=self.base))
+
+        with self.as_user(OWNER):
+            sibling = create_source_query(OWNER, self.workbook, "Chain Sibling").name
+
+        with self.as_user(VIEWER):
+            self.assertFalse(frappe.has_permission(DT.QUERY, ptype="read", doc=sibling))
+
+    # @feature permissions.chart-access-follows
+    def test_a_charts_grant_stops_at_its_own_workbook(self):
+        """frappe's `/api/resource` GET, PUT and DELETE ask `frappe.has_permission`
+        of a query by name. Write on one workbook is write on its charts, and a
+        chart there may read a query from a workbook this user cannot open. The
+        chart's grant never carries write or delete, and never leaves the
+        chart's own workbook."""
+        far = create_test_workbook(OWNER, title="Chain Far Workbook").name
+        self.addCleanup(frappe.delete_doc, DT.WORKBOOK, far, force=True, ignore_permissions=True)
+        far_query = create_source_query(OWNER, far, "Chain Far Source").name
+
+        near = create_test_workbook(OWNER, title="Chain Near Workbook").name
+        self.addCleanup(frappe.delete_doc, DT.WORKBOOK, near, force=True, ignore_permissions=True)
+        near_query = create_source_query(OWNER, near, "Chain Near Consumer").name
+        source_from(near_query, far_query)
+        create_test_chart(OWNER, near, query=near_query, title="Chain Near Chart")
+        with self.as_user(OWNER):
+            update_share_permissions(near, [{"user": OTHER, "read": 1, "write": 1}])
+
+        with self.as_user(OTHER):
+            self.assertTrue(frappe.has_permission(DT.QUERY, ptype="write", doc=near_query))
+            for ptype in ("read", "write", "delete"):
+                self.assertFalse(frappe.has_permission(DT.QUERY, ptype=ptype, doc=far_query), ptype)
+
+    # @feature permissions.chart-access-follows permissions.visibility
+    def test_a_level_alone_carries_no_query_behind_the_chart(self):
+        """frappe's `/api/resource` GET asks `frappe.has_permission` of a query
+        by name. A reader admitted to a chart by its visibility level was
+        published the picture, not the pipeline behind it."""
+        chart = create_test_chart(OWNER, self.workbook, query=self.consumer, title="Chain Open Chart")
+        with self.as_user(OWNER):
+            chart.visibility = "Everyone"
+            chart.save()
+
+        with self.as_user(OTHER):
+            self.assertTrue(frappe.has_permission(DT.CHART, ptype="read", doc=chart.name))
+            self.assertFalse(frappe.has_permission(DT.QUERY, ptype="read", doc=self.consumer))
             self.assertFalse(frappe.has_permission(DT.QUERY, ptype="read", doc=self.base))
 
     # @feature permissions.chart-access-follows
@@ -254,16 +312,22 @@ class ASavedReferenceCarriesItsOwnAccess:
 
     # @feature permissions.query-reference-checked
     def test_a_reference_cannot_be_saved_to_an_unreadable_query(self):
-        """Where the check lives."""
+        """Where the check lives. A query nothing this user may read sources."""
+        with self.as_user(OWNER):
+            unreadable = create_source_query(OWNER, self.workbook, "Chain Unshared Base").name
+
         with self.as_user(VIEWER), self.assertRaises(frappe.PermissionError):
-            create_referencing_query(VIEWER, self.viewer_workbook, self.base, "Chain Forged Consumer")
+            create_referencing_query(VIEWER, self.viewer_workbook, unreadable, "Chain Forged Consumer")
 
     # @feature permissions.query-reference-checked
     def test_a_reference_added_on_update_is_checked_too(self):
         """An existing query is not a way around the check."""
+        with self.as_user(OWNER):
+            unreadable = create_source_query(OWNER, self.workbook, "Chain Unshared Update Base").name
+
         with self.as_user(VIEWER):
             query = create_source_query(VIEWER, self.viewer_workbook, "Chain Viewer Source")
-            query.operations = reference_operations(self.base)
+            query.operations = reference_operations(unreadable)
             with self.assertRaises(frappe.PermissionError):
                 query.save()
 
@@ -272,7 +336,7 @@ class DashboardFilterReadsTheQuery:
     """A dashboard filter names its own query, and the caller never does.
 
     A filter links a column as `` `<query>`.`<column>` ``. The caller sends the
-    filter's name and `filter_source` reads the link off the stored dashboard, so
+    filter's name and `lookup_filter` reads the link off the stored dashboard, so
     the query a lookup runs against is the dashboard's word and not the request's.
 
     A link is followed only through a chart the dashboard actually holds, which is
@@ -352,12 +416,15 @@ class DashboardFilterReadsTheQuery:
         with self.as_user(OWNER), self.assertRaises(frappe.PermissionError):
             self.distinct_values(self.detached_dashboard, self.FILTER_NAME)
 
-    # @feature permissions.query-reference-checked
-    def test_a_filter_cannot_read_a_query_its_owner_may_not(self):
+    # @feature permissions.query-reference-checked permissions.not-permitted-chart
+    def test_a_filter_cannot_read_a_query_its_caller_may_not(self):
         """The read on the dashboard is settled upstream of this method, so the
-        caller's read on the query behind the filter is checked here too."""
-        with self.as_user(OTHER), self.assertRaises(frappe.PermissionError):
-            self.distinct_values(self.owner_dashboard, self.FILTER_NAME)
+        caller's read on the query behind the filter is checked here too. It
+        answers an empty list rather than throwing, because this is a wire
+        surface behind a dashboard the caller was admitted to - see
+        `insights/not_permitted.py`."""
+        with self.as_user(OTHER):
+            self.assertEqual(self.distinct_values(self.owner_dashboard, self.FILTER_NAME), [])
 
     # @feature permissions.request-body-not-trusted
     def test_items_sent_with_the_request_do_not_decide_the_column(self):
@@ -556,6 +623,296 @@ class TestTheLineageGraph(InsightsIntegrationTestCase):
                 derived_id: "Lineage Derived Query",
             },
         )
+
+
+def source_from(query_name, source):
+    """Point `query_name` at `source` without the save that would refuse another workbook's."""
+    frappe.db.set_value(
+        DT.QUERY,
+        query_name,
+        "operations",
+        frappe.as_json(reference_operations(source)),
+        update_modified=False,
+    )
+
+
+class TestCrossWorkbookSourcesAreCopied(InsightsIntegrationTestCase):
+    """`bench migrate` runs `copy_cross_workbook_query_sources` from `patches.txt`
+    over the queries a site already holds."""
+
+    @classmethod
+    def before_class(cls):
+        create_test_users()
+
+    @classmethod
+    def after_class(cls):
+        delete_users(OWNER)
+
+    def make_workbook(self, title):
+        name = create_test_workbook(OWNER, title=title).name
+        self.addCleanup(frappe.delete_doc, DT.WORKBOOK, name, force=True, ignore_permissions=True)
+        return name
+
+    def sources_of(self, query_name):
+        operations = frappe.parse_json(frappe.db.get_value(DT.QUERY, query_name, "operations"))
+        return [
+            op["table"]["query_name"] for op in operations if (op.get("table") or {}).get("type") == "query"
+        ]
+
+    # @feature query.source-query
+    def test_a_workbook_gets_its_own_copy_of_a_chain_it_sources_from_another(self):
+        from insights.patches.copy_cross_workbook_query_sources import execute
+
+        far = self.make_workbook("Copy Far Workbook")
+        base = create_source_query(OWNER, far, "Copy Base").name
+        middle = create_referencing_query(OWNER, far, base, "Copy Middle").name
+        far_operations = {q: frappe.db.get_value(DT.QUERY, q, "operations") for q in (base, middle)}
+
+        near = self.make_workbook("Copy Near Workbook")
+        first = create_source_query(OWNER, near, "Copy First Reader").name
+        second = create_source_query(OWNER, near, "Copy Second Reader").name
+        source_from(first, middle)
+        source_from(second, middle)
+
+        execute()
+
+        (copy,) = set(self.sources_of(first)) | set(self.sources_of(second))
+        self.assertNotEqual(copy, middle)
+        self.assertEqual(frappe.db.get_value(DT.QUERY, copy, ["workbook", "title"]), (near, "Copy Middle"))
+        (base_copy,) = self.sources_of(copy)
+        self.assertEqual(frappe.db.get_value(DT.QUERY, base_copy, ["workbook", "title"]), (near, "Copy Base"))
+
+        # the originals stay where they were, as they were
+        for query, operations in far_operations.items():
+            self.assertEqual(
+                frappe.db.get_value(DT.QUERY, query, ["workbook", "operations"]), (far, operations)
+            )
+
+        with self.as_user(OWNER), db_connections():
+            result = frappe.get_doc(DT.QUERY, first).execute()
+        self.assertEqual(result["rows"][0]["secret"], SECRET)
+
+        # a second run finds nothing left to copy
+        count = frappe.db.count(DT.QUERY)
+        execute()
+        self.assertEqual(frappe.db.count(DT.QUERY), count)
+
+    # @feature query.source-query dashboard.filter-links
+    def test_a_filter_linked_to_the_source_is_linked_to_the_copy(self):
+        """`route_filters` follows a link only to a query the card reads, and
+        after the patch the card reads the copy."""
+        from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import chart_reads
+        from insights.patches.copy_cross_workbook_query_sources import execute
+
+        far = self.make_workbook("Copy Link Far Workbook")
+        source = create_source_query(OWNER, far, "Copy Link Source").name
+
+        near = self.make_workbook("Copy Link Near Workbook")
+        reader = create_source_query(OWNER, near, "Copy Link Reader").name
+        source_from(reader, source)
+        chart = create_test_chart(OWNER, near, query=reader, title="Copy Link Chart").name
+        dashboard = create_test_dashboard(OWNER, near, chart, title="Copy Link Dashboard").name
+        items = frappe.parse_json(frappe.db.get_value(DT.DASHBOARD, dashboard, "items"))
+        items.append({"type": "filter", "filter_name": "secret", "links": {chart: f"`{source}`.`secret`"}})
+        frappe.db.set_value(DT.DASHBOARD, dashboard, "items", frappe.as_json(items), update_modified=False)
+
+        execute()
+
+        (copy,) = self.sources_of(reader)
+        (filter_item,) = [
+            item
+            for item in frappe.parse_json(frappe.db.get_value(DT.DASHBOARD, dashboard, "items"))
+            if item["type"] == "filter"
+        ]
+        self.assertEqual(filter_item["links"], {chart: f"`{copy}`.`secret`"})
+        self.assertTrue(chart_reads(chart, copy))
+
+    # @feature query.source-query dashboard.filter-links
+    def test_a_filter_linked_past_the_first_hop_is_linked_to_the_copy_whatever_the_order(self):
+        """`route_filters` again, over a chain that crosses two workbooks: a
+        reader in one workbook, its source in a second, and that one's source
+        in a third. The patch meets the readers in the order the rows come
+        back, and the second workbook's reader may already point at a copy of
+        its own by the time the first workbook copies it."""
+        from unittest.mock import patch
+
+        from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import chart_reads
+        from insights.patches import copy_cross_workbook_query_sources as module
+
+        third = self.make_workbook("Copy Hop Third Workbook")
+        far_source = create_source_query(OWNER, third, "Copy Hop Source").name
+        second = self.make_workbook("Copy Hop Second Workbook")
+        middle = create_source_query(OWNER, second, "Copy Hop Middle").name
+        source_from(middle, far_source)
+        near = self.make_workbook("Copy Hop Near Workbook")
+        reader = create_source_query(OWNER, near, "Copy Hop Reader").name
+        source_from(reader, middle)
+        chart = create_test_chart(OWNER, near, query=reader, title="Copy Hop Chart").name
+        dashboard = create_test_dashboard(OWNER, near, chart, title="Copy Hop Dashboard").name
+        items = frappe.parse_json(frappe.db.get_value(DT.DASHBOARD, dashboard, "items"))
+        items.append(
+            {"type": "filter", "filter_name": "secret", "links": {chart: f"`{far_source}`.`secret`"}}
+        )
+        frappe.db.set_value(DT.DASHBOARD, dashboard, "items", frappe.as_json(items), update_modified=False)
+
+        stored = module.foreign_sources
+        for first in (reader, middle):
+            with self.subTest(first=first):
+                frappe.db.savepoint("copy_hop")
+                in_order = lambda workbook_of, first=first: sorted(
+                    stored(workbook_of), key=lambda row: row[0] != first
+                )
+                with patch.object(module, "foreign_sources", in_order):
+                    module.execute()
+
+                (middle_copy,) = self.sources_of(reader)
+                (source_copy,) = self.sources_of(middle_copy)
+                self.assertEqual(frappe.db.get_value(DT.QUERY, source_copy, "workbook"), near)
+                (filter_item,) = [
+                    item
+                    for item in frappe.parse_json(frappe.db.get_value(DT.DASHBOARD, dashboard, "items"))
+                    if item["type"] == "filter"
+                ]
+                self.assertEqual(filter_item["links"], {chart: f"`{source_copy}`.`secret`"})
+                self.assertTrue(chart_reads(chart, source_copy))
+                frappe.db.rollback(save_point="copy_hop")
+
+    # @feature query.source-query
+    def test_a_copy_carries_a_sources_variables_without_their_values(self):
+        """A variable holds a script's credential, and the reading workbook's
+        collaborators may edit the copy that runs with it. The patch names the
+        copies that need a value entered."""
+        import contextlib
+        import io
+
+        from insights.patches.copy_cross_workbook_query_sources import execute
+
+        far = self.make_workbook("Copy Secret Far Workbook")
+        source = frappe.get_doc(DT.QUERY, create_source_query(OWNER, far, "Copy Secret Source").name)
+        source.append("variables", {"variable_name": "LOG_PASSWORD", "variable_value": "hunter2"})
+        source.save(ignore_permissions=True)
+
+        near = self.make_workbook("Copy Secret Near Workbook")
+        reader = create_source_query(OWNER, near, "Copy Secret Reader").name
+        source_from(reader, source.name)
+
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            execute()
+
+        (copy,) = self.sources_of(reader)
+        (variable,) = frappe.get_doc(DT.QUERY, copy).variables
+        self.assertEqual(variable.variable_name, "LOG_PASSWORD")
+        self.assertIsNone(variable.get_password("variable_value", raise_exception=False))
+        self.assertIn(copy, output.getvalue())
+        self.assertEqual(
+            frappe.get_doc(DT.QUERY, source.name).variables[0].get_password("variable_value"), "hunter2"
+        )
+
+
+class TestASourceIsAQueryOfItsOwnWorkbook(InsightsIntegrationTestCase):
+    """A query's sources are queries of its own workbook. Reuse across workbooks
+    comes through datasets, not through a reference."""
+
+    @classmethod
+    def before_class(cls):
+        create_test_users()
+
+    @classmethod
+    def after_class(cls):
+        delete_users(OWNER)
+
+    def setUp(self):
+        self.near = create_test_workbook(OWNER, title="Own Near Workbook").name
+        self.far = create_test_workbook(OWNER, title="Own Far Workbook").name
+        for name in (self.near, self.far):
+            self.addCleanup(frappe.delete_doc, DT.WORKBOOK, name, force=True, ignore_permissions=True)
+        self.far_query = create_source_query(OWNER, self.far, "Own Far Source").name
+
+    # @feature query.source-query
+    def test_saving_a_source_from_another_workbook_is_refused(self):
+        """`query.ts` saves the builder's operations through `frappe.client.save`,
+        which runs `validate`."""
+        with self.assertRaises(frappe.ValidationError):
+            create_referencing_query(OWNER, self.near, self.far_query, "Own Near Reader")
+
+    # @feature query.copy-paste
+    def test_pasting_a_source_from_another_workbook_is_refused(self):
+        """The paste handler sends a copied query's JSON to `InsightsWorkbook.import_query`.
+        A source the copy does not carry stays a reference to the query on this
+        site, which sits in another workbook."""
+        with self.as_user(OWNER):
+            reader = create_source_query(OWNER, self.far, "Own Far Reader")
+            source_from(reader.name, self.far_query)
+            exported = frappe.get_doc(DT.QUERY, reader.name).export()
+            exported["dependencies"]["queries"] = {}
+
+            with self.assertRaises(frappe.ValidationError):
+                frappe.get_doc(DT.WORKBOOK, self.near).import_query(exported)
+
+    # @feature query.source-query
+    def test_running_a_stored_source_from_another_workbook_is_refused(self):
+        """`resource.ts` runs a saved query through `insights.api.run_doc_method`
+        `execute`. A source stored before the rule is refused when it runs."""
+        reader = create_source_query(OWNER, self.near, "Own Near Stored Reader").name
+        source_from(reader, self.far_query)
+
+        with self.as_user(OWNER), db_connections(), self.assertRaises(frappe.ValidationError):
+            frappe.get_doc(DT.QUERY, reader).execute()
+
+
+class TestRemovingAQuery(InsightsIntegrationTestCase):
+    """The sidebar's remove calls `frappe.client.delete`. A query takes its
+    alerts and its reference edges with it, and a chart that reads it refuses."""
+
+    def setUp(self):
+        self.workbook = create_test_workbook("Administrator", title="Remove Query Workbook").name
+        self.addCleanup(frappe.delete_doc, DT.WORKBOOK, self.workbook, force=True, ignore_permissions=True)
+        self.base = create_source_query("Administrator", self.workbook, "Remove Query Base").name
+        self.consumer = create_referencing_query(
+            "Administrator", self.workbook, self.base, "Remove Query Consumer"
+        ).name
+        self.alert = (
+            frappe.get_doc(
+                {
+                    "doctype": "Insights Alert",
+                    "title": "Remove Query Alert",
+                    "channel": "Email",
+                    "query": self.base,
+                    "frequency": "Daily",
+                    "custom_condition": 1,
+                    "condition": "amount > 0",
+                    "message": "hello",
+                    "recipients": "someone@external.example.org",
+                }
+            )
+            .insert()
+            .name
+        )
+
+    def kept(self):
+        return (
+            frappe.db.exists("Insights Alert", self.alert),
+            frappe.db.exists("Insights Query Reference", {"ref_query": self.base}),
+        )
+
+    # @feature workbook.remove-item
+    def test_a_query_a_chart_reads_is_refused_before_it_takes_anything(self):
+        """frappe's link check comes after `on_trash`, so a script that catches
+        the refusal and commits kept a query with its alerts and edges gone."""
+        create_test_chart("Administrator", self.workbook, self.base, title="Remove Query Chart")
+
+        with self.assertRaises(frappe.LinkExistsError):
+            frappe.delete_doc(DT.QUERY, self.base)
+
+        self.assertTrue(all(self.kept()))
+
+    # @feature workbook.remove-item
+    def test_a_query_no_chart_reads_goes_with_its_alerts_and_edges(self):
+        frappe.delete_doc(DT.QUERY, self.base)
+
+        self.assertFalse(frappe.db.exists(DT.QUERY, self.base))
+        self.assertFalse(any(self.kept()))
 
 
 class TestAReferenceInTheRequestIsChecked(AReferenceInTheRequestIsChecked, InsightsIntegrationTestCase):

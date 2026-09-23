@@ -23,7 +23,8 @@ from insights.insights.doctype.insights_data_source_v3.ibis_utils import exec_wi
 
 class TestExpressionIsolation(UnitTestCase):
     def evaluate(self, expression):
-        return exec_with_return(expression, dict(get_functions()))
+        """`q` is the relation in hand, as `IbisQueryBuilder.evaluate_expression` passes it."""
+        return exec_with_return(expression, {**get_functions(), "q": ibis.memtable({"a": [1, 2]})})
 
     def assert_refused(self, expression):
         with self.assertRaises(frappe.PermissionError):
@@ -81,13 +82,47 @@ class TestExpressionIsolation(UnitTestCase):
         target = os.path.join(tempfile.gettempdir(), "insights_expression_io_test.csv")
         if os.path.exists(target):
             os.remove(target)
-        self.assert_refused(f"ibis.memtable({{'a': [1, 2]}}).to_csv({target!r})")
+        self.assert_refused(f"q.to_csv({target!r})")
         self.assertFalse(os.path.exists(target))
 
     # @feature query.expression-cannot-reach-files
     def test_the_rule_holds_for_a_multi_statement_script(self):
         """A single expression takes the safe_eval branch, several take safe_exec."""
-        self.assert_refused("path = '/tmp/does-not-matter.csv'\nibis.read_csv(path)")
+        self.assert_refused("written = q.to_csv('/tmp/does-not-matter.csv')\nwritten")
+
+    # @feature query.expression-cannot-reach-files
+    def test_nothing_reaches_the_connection_or_runs_the_query(self):
+        """`op()` leads to the backend a relation runs on; the rest run or compile
+        the query in hand, which an expression only describes."""
+        for name in (
+            "op",
+            "source",
+            "raw_sql",
+            "con",
+            "execute",
+            "compile",
+            "cache",
+            "preview",
+            "release",
+            "visualize",
+        ):
+            for expression in (
+                f"q.{name}()",
+                f"t = q.{name}()\nt",
+            ):
+                with self.subTest(name=name, expression=expression):
+                    self.assert_refused(expression)
+
+    # @feature query.expression-cannot-reach-files
+    def test_no_plain_name_runs_sql(self):
+        """A plain `sql(...)` would run `Table.sql` with no attribute for the
+        source check to see."""
+        from insights.insights.doctype.insights_data_source_v3.ibis.utils import get_function_list
+
+        self.assertNotIn("sql", get_function_list())
+        for expression in ("sql('select 1')", "query = 'select 1'\nsql(query)"):
+            with self.subTest(expression=expression), self.assertRaises(NameError):
+                self.evaluate(expression)
 
     # --- the legitimate path still works ---
 

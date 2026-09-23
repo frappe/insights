@@ -7,7 +7,7 @@ import traceback
 import frappe
 import ibis
 import ibis.expr.types as ir
-from frappe.utils.safe_exec import SERVER_SCRIPT_FILE_PREFIX, safe_exec
+from frappe.utils.safe_exec import SERVER_SCRIPT_FILE_PREFIX, NamespaceDict, safe_exec
 from ibis import selectors as s
 from jedi import Script
 
@@ -26,30 +26,51 @@ IO_ATTRIBUTE_NAMES = frozenset(
     }
 )
 
+# `op()` leads to the backend a relation runs on, and through it to the
+# connection, where any statement runs. The node graph is the only way there.
+BACKEND_ATTRIBUTE_NAMES = frozenset(
+    {"op", "source", "raw_sql", "con", "get_backend", "cache", "release", "visualize"}
+)
+# what runs or compiles the query in hand: a script may, an expression describes it
+RUN_ATTRIBUTE_NAMES = frozenset({"execute", "compile", "preview"})
+
 
 def is_io_attribute(name: str) -> bool:
     return name in IO_ATTRIBUTE_NAMES or name.startswith(IO_ATTRIBUTE_PREFIXES)
 
 
+def is_refused_in_expression(name: str) -> bool:
+    return is_io_attribute(name) or name in BACKEND_ATTRIBUTE_NAMES or name in RUN_ATTRIBUTE_NAMES
+
+
 def assert_expression_has_no_io(expression: str) -> None:
-    """Refuse an expression that names an I/O attribute.
+    """Refuse an expression that names an I/O, backend or run attribute.
 
     Checked in the source rather than at evaluation: RestrictedPython compiles
     `a.b` to a guard call carrying the literal `b` and leaves no `getattr`, so an
     attribute name is always spelled out here.
     """
+    for name in attributes_of(expression):
+        if is_refused_in_expression(name):
+            frappe.throw(
+                f"'{name}' is not available in an expression",
+                frappe.PermissionError,
+            )
+
+
+def runs_sql(expression: str) -> bool:
+    """Whether an expression calls `Table.sql`, which only trusted code may."""
+    return "sql" in attributes_of(expression)
+
+
+def attributes_of(expression: str) -> set[str]:
     try:
         tree = ast.parse(expression)
     except SyntaxError:
         # the caller reports syntax errors with a line and a column
-        return
+        return set()
 
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Attribute) and is_io_attribute(node.attr):
-            frappe.throw(
-                f"'{node.attr}' is not available in an expression",
-                frappe.PermissionError,
-            )
+    return {node.attr for node in ast.walk(tree) if isinstance(node, ast.Attribute)}
 
 
 def get_functions():
@@ -61,6 +82,7 @@ def get_functions():
         "ibis",
         "ir",
         "math",
+        "pd",
         "s",
     ]
     for key in dir(functions):
@@ -98,14 +120,12 @@ def get_functions():
         "least",
         "literal",
         "map",
-        "memtable",
         "now",
         "ntile",
         "null",
         "and_",
         "or_",
         "param",
-        "parse_sql",
         "percent_rank",
         "pi",
         "preceding",
@@ -116,9 +136,7 @@ def get_functions():
         "row_number",
         "rows_window",
         "schema",
-        "selectors",
         "struct",
-        "table",
         "time",
         "timestamp",
         "today",
@@ -129,7 +147,7 @@ def get_functions():
         "watermark",
         "window",
     )
-    context.ibis = frappe._dict()
+    context.ibis = NamespaceDict()
     for attr in allowed_ibis_attributes:
         if is_io_attribute(attr):
             raise ValueError(f"'{attr}' is an I/O function and does not belong in an expression")
@@ -409,8 +427,10 @@ def validate_types(expression: str, columns: list[dict]):
 
     try:
         validation_table = ibis.table(schema, name="validation_table")
+        from insights.insights.doctype.insights_data_source_v3.sandbox import expression_globals
+
         eval_context = eval_script(validation_table, schema)
-        safe_exec(expression, eval_context, restrict_commit_rollback=True)
+        safe_exec(expression, {**expression_globals(), **eval_context})  # nosemgrep
         return {"is_valid": True, "errors": []}
 
     except (AttributeError, TypeError) as e:

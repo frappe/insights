@@ -6,7 +6,6 @@ import ibis.expr.types as ir
 import ibis.selectors as s
 import pandas as pd
 from frappe.utils import now_datetime
-from ibis import _
 
 from insights.insights.query_builders.sql_functions import (
     get_week_start_day_index,
@@ -1062,18 +1061,6 @@ def row_number():
     Assign a unique number to each row.
     """
     return ibis.row_number()
-
-
-def sql(query):
-    """
-    def sql(query)
-
-    Execute a SQL query.
-
-    Examples:
-    - sql('SELECT * FROM table')
-    """
-    return _.sql(query)
 
 
 def coalesce(*args):
