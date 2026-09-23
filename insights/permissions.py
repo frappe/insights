@@ -123,6 +123,14 @@ class InsightsPermissions:
         docs = self._build_permission_query(doc.doctype, access_type)
         return docs.where(frappe.qb.DocType(doc.doctype).name == doc.name).limit(1).run(pluck="name")
 
+    def get_granted(self, doctype, ptype="read") -> list[str]:
+        """Names the user reaches through ownership, a share or a team.
+
+        The admin bypass is left out, so an admin's list shows what was given to
+        them, not every document on the site.
+        """
+        return self._build_permission_query(doctype, ptype).run(pluck=True)
+
     def _build_permission_query(self, doctype, ptype):
         """Returns a query to get docs with `ptype`  permission"""
         query = None

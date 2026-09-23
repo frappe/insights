@@ -75,7 +75,7 @@ test.describe('workbook', () => {
 
 		// The logo returns to the list without reloading the app.
 		await page.getByRole('link', { name: 'logo' }).click()
-		await page.getByPlaceholder('Search by title').fill(`Workbook ${name}`)
+		await page.getByPlaceholder('Title', { exact: true }).fill(`Workbook ${name}`)
 		await expect(page.getByText(`Workbook ${name}`)).toBeVisible()
 
 		await deleteWorkbook(adminApi, name)
@@ -153,7 +153,7 @@ test.describe('workbook', () => {
 		await expectSaved(page)
 
 		await page.getByRole('link', { name: 'logo' }).click()
-		await page.getByPlaceholder('Search by title').fill(renamed)
+		await page.getByPlaceholder('Title', { exact: true }).fill(renamed)
 		await expect(page.getByText(renamed)).toBeVisible()
 		await expect(page.getByText(workbook.title, { exact: true })).toHaveCount(0)
 	})
@@ -191,9 +191,9 @@ test.describe('workbook', () => {
 
 		// Deleting returns the user to the list, without the deleted workbook.
 		await expect(page).toHaveURL(new RegExp(`${INSIGHTS_PATH}/workbook$`))
-		await page.getByPlaceholder('Search by title').fill(workbook.title)
+		await page.getByPlaceholder('Title', { exact: true }).fill(workbook.title)
 		await expect(page.getByText(workbook.title, { exact: true })).toHaveCount(0)
-		await expect(page.getByText('No Workbooks')).not.toHaveCount(0)
+		await expect(page.getByText('No workbooks found')).not.toHaveCount(0)
 	})
 
 	// @feature workbook.folders

@@ -261,7 +261,6 @@ class TestWorkbook(InsightsIntegrationTestCase):
         )
         self.assertEqual(len(owner_workbooks), 1)
         self.assertEqual(owner_workbooks[0]["name"], bundle["workbook"].name)
-        self.assertEqual(owner_workbooks[0]["views"], 1)
         self.assertTrue(owner_workbooks[0]["shared_with_organization"])
 
         with self.as_user(COLLABORATOR):

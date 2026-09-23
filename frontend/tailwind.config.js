@@ -19,6 +19,8 @@ export default {
 		// itself. Remove this when the list moves to `frappe-ui/list`.
 		'./node_modules/frappe-ui/experimental/ListView/**/*.{vue,js,ts,jsx,tsx}',
 		'../node_modules/frappe-ui/experimental/ListView/**/*.{vue,js,ts,jsx,tsx}',
+		// @framework/ui ships no content list of its own.
+		'../../frappe/ui/src/**/*.{vue,js,ts,jsx,tsx}',
 	],
 	theme: {
 		container: {

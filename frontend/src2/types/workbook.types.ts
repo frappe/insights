@@ -15,8 +15,10 @@ export type WorkbookListItem = {
 	modified: string
 	created_from_now: string
 	modified_from_now: string
-	views: number
 	shared_with: string[]
+	data_sources: string[]
+	last_opened: string | null
+	last_opened_from_now: string
 	shared_with_organization?: boolean
 }
 

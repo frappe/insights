@@ -1,16 +1,19 @@
-<script setup lang="tsx">
-import { useMagicKeys, useStorage, whenever } from '@vueuse/core'
-import { Breadcrumbs, TabButtons, call } from 'frappe-ui'
-import { ListEmptyState, ListHeader, ListRows, ListView } from 'frappe-ui/experimental'
-import { LayoutTemplate as LayoutTemplateIcon, PlusIcon, SearchIcon } from 'lucide-vue-next'
-import { computed, ref, watchEffect } from 'vue'
+<script setup lang="ts">
+import { Filter, serializeFilters, type FilterField } from '@framework/ui/Filter'
+import { QuickFilter } from '@framework/ui/QuickFilter'
+import { useMagicKeys, whenever } from '@vueuse/core'
+import { Avatar, Breadcrumbs, MultiSelect, call } from 'frappe-ui'
+import { List, ListCell, ListHeader, ListHeaderCell, ListRow } from 'frappe-ui/list'
+import { LayoutTemplate as LayoutTemplateIcon, PlusIcon } from 'lucide-vue-next'
+import { accessIcon, accessLabel, AccessSource, useAccessSources } from '../components/access'
+import { computed, ref, toRef, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { wheneverChanges } from '../helpers'
 import session from '../session'
 import { __ } from '../translation'
+import { WorkbookListItem } from '../types/workbook.types'
 import useUserStore from '../users/users'
 import useWorkbook, { newWorkbookName } from './workbook'
-import { getWorkbookColumns } from './workbookListColumns'
 import useWorkbooks from './workbooks'
 import WorkbookTemplates, { WorkbookTemplate } from './WorkbookTemplates.vue'
 import { useTelemetry } from '../telemetry'
@@ -20,17 +23,35 @@ const userStore = useUserStore()
 const workbookStore = useWorkbooks()
 const { capture } = useTelemetry()
 
-type WorkbookScope = 'all' | 'owned' | 'shared'
+const {
+	options: sourceOptions,
+	selected: selectedSources,
+	shown: shownSources,
+	sources,
+} = useAccessSources('insights:workbook-access')
 
-const scopeTabs: { label: string; value: WorkbookScope }[] = [
-	{ label: __('All'), value: 'all' },
-	{ label: __('Created'), value: 'owned' },
-	{ label: __('Shared'), value: 'shared' },
+const filters = toRef(workbookStore, 'filters')
+const wireFilters = computed(() => serializeFilters(filters.value))
+// resolved by `get_workbooks`: a record field matches the picked document, and
+// data source and table match inside each query's JSON. `name` is the Title
+// field, so the quick filter types a title and flips to a workbook pick.
+const field = (fieldname: string, label: string, fieldtype: string, options?: string) =>
+	({ fieldname, value: fieldname, label, fieldtype, options }) as FilterField
+const titleField = field('name', __('Title'), 'Link', 'Insights Workbook')
+const queryField = field('query', __('Query'), 'Link', 'Insights Query v3')
+const dataSourceField = field('data_source', __('Data Source'), 'Link', 'Insights Data Source v3')
+const tableField = field('table_name', __('Table'), 'Link', 'Insights Table v3')
+const quickFields = [titleField, dataSourceField, tableField, queryField]
+const filterFields = [
+	titleField,
+	queryField,
+	field('chart', __('Chart'), 'Link', 'Insights Chart v3'),
+	field('dashboard', __('Dashboard'), 'Link', 'Insights Dashboard v3'),
+	dataSourceField,
+	tableField,
+	'owner',
+	'modified',
 ]
-
-// persist the chosen scope locally so it survives reloads
-const scope = useStorage<WorkbookScope>('insights:workbook-scope', 'all')
-const searchQuery = ref('')
 
 // "Load more" grows the page size and refetches
 const PAGE_SIZE = 20
@@ -38,10 +59,10 @@ const limit = ref(PAGE_SIZE)
 const hasMore = computed(() => workbookStore.workbooks.length >= limit.value)
 
 async function refresh() {
-	workbookStore.getWorkbooks(searchQuery.value, limit.value, scope.value)
+	workbookStore.getWorkbooks(undefined, limit.value, sources.value, wireFilters.value)
 }
 
-// reset pagination for a new query (scope/search change)
+// reset pagination for a new query (source or filter change)
 function reload() {
 	limit.value = PAGE_SIZE
 	refresh()
@@ -52,17 +73,17 @@ function loadMore() {
 	refresh()
 }
 
-// reset the list when the scope changes so a slow fetch can't keep showing the
-// previous scope's workbooks; search keeps previous data (no flicker)
+// reset the list when the sources change so a slow fetch can't keep showing the
+// previous sources' workbooks; search keeps previous data (no flicker)
 wheneverChanges(
-	() => scope.value,
+	() => sources.value,
 	() => {
 		workbookStore.workbooks = []
 		reload()
 	},
 	{ immediate: true },
 )
-wheneverChanges(searchQuery, reload, { debounce: 300 })
+wheneverChanges(wireFilters, reload, { debounce: 300 })
 
 // ---- create workbook ----
 const creatingWorkbook = ref(false)
@@ -93,27 +114,7 @@ function openLibrary() {
 	capture('workbook_library_opened')
 }
 
-const columns = getWorkbookColumns({ userStore })
-
-function onRowClick(row: any) {
-	router.push(`/workbook/${row.name}`)
-}
-
-const listOptions = computed(() => ({
-	columns,
-	rows: workbookStore.workbooks,
-	rowKey: 'name',
-	options: {
-		showTooltip: false,
-		onRowClick,
-		// actions are rendered via the ListEmptyState slot below — the built-in
-		// supports only one button, and we want New + Library side by side
-		emptyState: {
-			title: __('No Workbooks'),
-			description: __('No workbooks to display.'),
-		},
-	},
-}))
+const isNarrowed = computed(() => wireFilters.value.length > 0)
 
 const keys = useMagicKeys()
 const cmdV = keys['Meta+V']
@@ -165,70 +166,140 @@ watchEffect(() => {
 
 	<div class="mb-4 flex h-full flex-col gap-3 overflow-auto px-5 pt-3">
 		<div class="flex items-center justify-between gap-2 overflow-visible py-1">
-			<FormControl
-				class="w-64"
-				:placeholder="__('Search by title')"
-				v-model="searchQuery"
-				:debounce="300"
-				autocomplete="off"
-			>
-				<template #prefix>
-					<SearchIcon class="h-4 w-4 text-ink-gray-4" />
-				</template>
-			</FormControl>
-			<TabButtons :options="scopeTabs" v-model="scope" />
-		</div>
-		<!-- flex parent so ListView (whose root is flex-1) fills the height, which
-		lets the empty state center vertically instead of collapsing to the top -->
-		<div class="flex w-full flex-1 flex-col">
-			<ListView class="h-full" v-bind="listOptions">
-				<ListHeader />
-				<ListRows v-if="workbookStore.workbooks.length" />
-				<!-- skip the empty state while a fetch is in flight so it doesn't flash on tab switch -->
-				<!-- ListEmptyState already centers its slot content -->
-				<ListEmptyState v-else-if="!workbookStore.loading">
-					<div class="text-2xl-medium text-ink-gray-8">
-						{{ __('No Workbooks') }}
-					</div>
-					<div class="mt-1 text-base text-ink-gray-5">
-						{{
-							templates.length
-								? __('Create a workbook, or start from a prebuilt one.')
-								: __('No workbooks to display.')
-						}}
-					</div>
-					<div class="mt-4 flex items-center gap-2">
-						<Button
-							v-if="templates.length"
-							:label="__('Library')"
-							variant="outline"
-							@click="openLibrary"
-						>
-							<template #prefix>
-								<LayoutTemplateIcon class="w-4" />
-							</template>
-						</Button>
-						<Button
-							v-if="scope !== 'shared'"
-							:label="__('New Workbook')"
-							variant="solid"
-							:loading="creatingWorkbook"
-							@click="openNewWorkbook"
-						>
-							<template #prefix>
-								<PlusIcon class="w-4" />
-							</template>
-						</Button>
-					</div>
-				</ListEmptyState>
-			</ListView>
-			<div v-if="hasMore" class="flex pt-3">
-				<Button
-					:label="__('Load more')"
-					:loading="workbookStore.loading"
-					@click="loadMore"
+			<div class="flex min-w-0 flex-1 items-center gap-2">
+				<QuickFilter
+					class="min-w-0"
+					doctype="Insights Workbook"
+					:fields="quickFields"
+					v-model:filters="filters"
+				/>
+				<MultiSelect
+					class="w-40 shrink-0"
+					variant="subtle"
+					:placeholder="__('Access')"
+					:options="sourceOptions"
+					:modelValue="shownSources"
+					@update:modelValue="(next) => (selectedSources = next as AccessSource[])"
+				/>
+				<Filter
+					doctype="Insights Workbook"
+					align="start"
+					:fields="filterFields"
+					v-model="filters"
 				/>
 			</div>
+		</div>
+
+		<List
+			v-if="workbookStore.workbooks.length"
+			class="-mx-3 list-row-px-3"
+			:columns="['minmax(0,1fr)', '11rem', '10rem', '8rem', '8rem']"
+			:row-height="40"
+		>
+			<ListHeader class="sticky top-0 z-10 bg-surface-base">
+				<ListHeaderCell>{{ __('Title') }}</ListHeaderCell>
+				<ListHeaderCell>{{ __('Data Source') }}</ListHeaderCell>
+				<ListHeaderCell>{{ __('Access') }}</ListHeaderCell>
+				<ListHeaderCell>{{ __('Opened') }}</ListHeaderCell>
+				<ListHeaderCell>{{ __('Modified') }}</ListHeaderCell>
+			</ListHeader>
+			<ListRow
+				v-for="workbook in workbookStore.workbooks"
+				:key="workbook.name"
+				class="active:bg-surface-gray-2 sm:rounded-[10px] sm:hover:bg-surface-gray-1"
+			>
+				<ListCell>
+					<RouterLink
+						:to="`/workbook/${workbook.name}`"
+						class="absolute inset-0 sm:rounded-[10px]"
+						:aria-label="workbook.title"
+					/>
+					<Tooltip :text="userStore.getName(workbook.owner) || workbook.owner">
+						<Avatar
+							class="relative shrink-0"
+							size="sm"
+							:label="userStore.getName(workbook.owner) || workbook.owner"
+							:image="userStore.getImage(workbook.owner)"
+						/>
+					</Tooltip>
+					<span class="ml-3 truncate text-base text-ink-gray-8">{{
+						workbook.title
+					}}</span>
+				</ListCell>
+				<ListCell>
+					<span class="truncate text-base text-ink-gray-6">
+						{{ workbook.data_sources[0] }}
+					</span>
+					<span
+						v-if="workbook.data_sources.length > 1"
+						class="ml-1 shrink-0 text-base text-ink-gray-5"
+					>
+						+{{ workbook.data_sources.length - 1 }}
+					</span>
+				</ListCell>
+				<ListCell>
+					<component :is="accessIcon(workbook)" class="size-4 shrink-0 text-ink-gray-5" />
+					<span class="ml-2 truncate text-base text-ink-gray-6">
+						{{ accessLabel(workbook, userStore.getName) }}
+					</span>
+				</ListCell>
+				<ListCell>
+					<span class="truncate text-base text-ink-gray-6">
+						{{ workbook.last_opened_from_now }}
+					</span>
+				</ListCell>
+				<ListCell>
+					<span class="truncate text-base text-ink-gray-6">
+						{{ workbook.modified_from_now }}
+					</span>
+				</ListCell>
+			</ListRow>
+		</List>
+
+		<!-- skip the empty state while a fetch is in flight so it doesn't flash on tab switch -->
+		<div
+			v-else-if="!workbookStore.loading"
+			class="flex flex-1 flex-col items-center justify-center text-center"
+		>
+			<div class="text-2xl-medium text-ink-gray-8">
+				{{ isNarrowed ? __('No workbooks found') : __('No Workbooks') }}
+			</div>
+			<div class="mt-1 text-base text-ink-gray-5">
+				{{
+					isNarrowed
+						? __('Try a different search or filter.')
+						: templates.length
+						  ? __('Create a workbook, or start from a prebuilt one.')
+						  : __('No workbooks to display.')
+				}}
+			</div>
+			<div v-if="!isNarrowed" class="mt-4 flex items-center gap-2">
+				<Button
+					v-if="templates.length"
+					:label="__('Library')"
+					variant="outline"
+					@click="openLibrary"
+				>
+					<template #prefix>
+						<LayoutTemplateIcon class="w-4" />
+					</template>
+				</Button>
+				<Button
+					v-if="sources.includes('created')"
+					:label="__('New Workbook')"
+					variant="solid"
+					:loading="creatingWorkbook"
+					@click="openNewWorkbook"
+				>
+					<template #prefix>
+						<PlusIcon class="w-4" />
+					</template>
+				</Button>
+			</div>
+		</div>
+
+		<div v-if="hasMore" class="flex pb-3">
+			<Button :label="__('Load more')" :loading="workbookStore.loading" @click="loadMore" />
 		</div>
 	</div>
 </template>

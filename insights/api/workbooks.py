@@ -1,6 +1,16 @@
+import re
+
 import frappe
 from frappe import _
 
+from insights.api.list_filters import (
+    get_content_filters,
+    get_last_opened,
+    get_shares,
+    get_source_filters,
+    match_operations,
+    match_records,
+)
 from insights.decorators import insights_whitelist
 from insights.permissions import get_insights_users
 from insights.telemetry import capture_share_granted
@@ -27,58 +37,46 @@ def validate_shareable_users(emails):
         )
 
 
+# Filters the list's filter control declares beyond the workbook's own columns
+WORKBOOK_FILTERS = {
+    "name": match_records("Insights Workbook", "name"),
+    "query": match_records("Insights Query v3", "workbook"),
+    "chart": match_records("Insights Chart v3", "workbook"),
+    "dashboard": match_records("Insights Dashboard v3", "workbook"),
+    "data_source": match_operations("data_source", "workbook"),
+    "table_name": match_operations("table_name", "workbook"),
+}
+
+
 @insights_whitelist()
 def get_workbooks(
     search_term: str | None = None,
     limit: int = 100,
-    scope: str | None = None,
+    sources: list | None = None,
+    filters: list | None = None,
 ):
-    """Return workbooks accessible to the current user.
+    """Return workbooks from the chosen sources, last modified first.
 
-    scope:
-        "owned"  -> only workbooks owned by the current user
-        "shared" -> only workbooks owned by someone else (still permission filtered)
-        None     -> all accessible workbooks
+    sources: any of "created" (owned by the user), "shared" (given to the user
+    by someone else) and "others" (neither; only an admin reads any). Defaults
+    to created and shared.
     """
-    filters = {}
-    if scope == "owned":
-        filters["owner"] = frappe.session.user
-    elif scope == "shared":
-        filters["owner"] = ["!=", frappe.session.user]
-
-    or_filters = {"title": ["like", f"%{search_term}%"]} if search_term else None
+    list_filters = get_content_filters(filters or [], WORKBOOK_FILTERS)
+    list_filters += get_source_filters("Insights Workbook", sources)
 
     workbooks = frappe.get_list(
         "Insights Workbook",
-        filters=filters,
-        or_filters=or_filters,
-        fields=[
-            "name",
-            "title",
-            "owner",
-            "creation",
-            "modified",
-        ],
+        filters=list_filters,
+        or_filters={"title": ["like", f"%{search_term}%"]} if search_term else None,
+        fields=["name", "title", "owner", "creation", "modified"],
+        order_by="modified desc",
         limit=limit,
     )
-    # FIX: figure out how to use frappe.qb while respecting permissions
-    # TODO: use frappe.qb to get the view count
-    workbook_names = [workbook["name"] for workbook in workbooks]
-    workbook_views = frappe.get_all(
-        "View Log",
-        filters={
-            "reference_doctype": "Insights Workbook",
-            "reference_name": ["in", workbook_names],
-        },
-        fields=["reference_name", "name"],
-    )
-    for workbook in workbooks:
-        views = [view for view in workbook_views if view["reference_name"] == workbook["name"]]
-        workbook["views"] = len(views)
 
+    workbook_names = [workbook["name"] for workbook in workbooks]
     # batch the share lookups into two grouped queries instead of ~2 per
     # workbook (avoids an N+1 over the whole list)
-    org_shared, shared_users = _workbook_shares(workbook_names)
+    org_shared, shared_users = get_shares("Insights Workbook", workbook_names)
     for workbook in workbooks:
         name = workbook["name"]
         if name in org_shared:
@@ -86,44 +84,25 @@ def get_workbooks(
             continue
         workbook["shared_with"] = [user for user in shared_users.get(name, []) if user != workbook["owner"]]
 
+    data_sources = _workbook_data_sources(workbook_names)
+    last_opened = get_last_opened("Insights Workbook", workbook_names)
+    for workbook in workbooks:
+        workbook["data_sources"] = data_sources.get(workbook["name"], [])
+        workbook["last_opened"] = last_opened.get(workbook["name"])
+
     return workbooks
 
 
-def _workbook_shares(names: list[str]) -> tuple[set, dict]:
-    """Return (org-shared workbook names, {workbook name -> [users it's read-shared with]}).
-
-    Two queries for the whole list instead of an exists-check + fetch per workbook.
-    """
-    if not names:
-        return set(), {}
-
-    org_shared = set(
-        frappe.get_all(
-            "DocShare",
-            filters={
-                "share_doctype": "Insights Workbook",
-                "share_name": ["in", names],
-                "everyone": 1,
-                "read": 1,
-            },
-            pluck="share_name",
-        )
-    )
-
-    shared_users: dict[str, list] = {}
-    rows = frappe.get_all(
-        "DocShare",
-        filters={
-            "share_doctype": "Insights Workbook",
-            "share_name": ["in", names],
-            "read": 1,
-        },
-        fields=["share_name", "user"],
-    )
-    for row in rows:
-        shared_users.setdefault(row["share_name"], []).append(row["user"])
-
-    return org_shared, shared_users
+def _workbook_data_sources(names: list[str]) -> dict[str, list[str]]:
+    """Data sources each workbook's queries read, most used first."""
+    counts: dict[str, dict[str, int]] = {}
+    for query in frappe.get_all(
+        "Insights Query v3", filters={"workbook": ["in", names]}, fields=["workbook", "operations"]
+    ):
+        for source in re.findall(r'"data_source": "([^"]+)"', query.operations or ""):
+            sources = counts.setdefault(query.workbook, {})
+            sources[source] = sources.get(source, 0) + 1
+    return {name: sorted(sources, key=sources.get, reverse=True) for name, sources in counts.items()}
 
 
 @insights_whitelist()
