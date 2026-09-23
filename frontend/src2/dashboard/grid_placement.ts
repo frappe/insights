@@ -14,9 +14,9 @@ import type { BreakpointKey, Layout, WorkbookDashboardItemLayout } from '../type
  * Height of one grid row in px.
  *
  * Small enough that a card sized to its own content lands on a whole number of
- * rows. A Number card has three heights (86px, 108px and 148px, counted in
+ * rows. A Number card has three heights (85px, 108px and 148px, counted in
  * `numberCardRows`), and 22 is the row that wastes the least under all three:
- * 4, 5 and 7 rows, with 2px, 2px and 6px left over. It was 52, and every stored
+ * 4, 5 and 7 rows, with 3px, 2px and 6px left over. It was 52, and every stored
  * layout was rescaled when it changed.
  */
 export const ROW_HEIGHT = 22

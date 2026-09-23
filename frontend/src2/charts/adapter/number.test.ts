@@ -629,9 +629,9 @@ describe('the rows a Number cell takes', () => {
 		// What picks the row height: the three heights the card has, and how much
 		// of the last row each of them wastes.
 		for (const [rows, height] of [
-			[4, 85.95],
-			[5, 107.95],
-			[7, 147.95],
+			[4, 84.55],
+			[5, 108.1],
+			[7, 148.1],
 		]) {
 			expect(rows * ROW_HEIGHT).toBeGreaterThanOrEqual(height)
 			expect(rows * ROW_HEIGHT - height).toBeLessThan(ROW_HEIGHT)

@@ -75,7 +75,7 @@ const drillable = computed(() => props.drillable !== false && !props.card.missin
 	>
 		<NumberCard
 			v-bind="reading"
-			class="h-full"
+			class="flex h-full flex-col justify-center"
 			:loading="props.loading && !card.missing"
 			:error="failure?.headline"
 		>
