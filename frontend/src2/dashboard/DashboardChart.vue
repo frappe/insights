@@ -3,6 +3,7 @@ import { Button, Tooltip } from 'frappe-ui'
 import { AlertTriangle, Pencil } from 'lucide-vue-next'
 import { computed, inject, provide, ref, shallowRef, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { drawsOwnCards } from '../charts/adapter'
 import { numberReadings } from '../charts/adapter/number'
 import { tableFindKey } from '../charts/adapter/table'
 import useChart from '../charts/chart'
@@ -79,6 +80,10 @@ wheneverChanges(
 // drew and the store routes it as a filter item linked to this chart alone. Only
 // a table, because only a table shows the rows a rule is read against.
 const isTable = computed(() => read.value?.doc.chart_type === 'Table')
+// a card that draws itself heads its title with a zero-height row, which fits the smallest control
+const actionSize = computed(() =>
+	read.value && drawsOwnCards(read.value.doc.chart_type) ? 'xs' : 'sm',
+)
 
 // The rule is written against the columns the card drew, because that is where
 // the routed filter lands: the card filter links by the chart's name, so the
@@ -191,7 +196,7 @@ function editChart() {
 		</template>
 		<template v-if="canEditChart" #hoverActions>
 			<Tooltip :text="__('Edit Chart')">
-				<Button variant="ghost" @click="editChart()">
+				<Button variant="ghost" :size="actionSize" @click="editChart()">
 					<Pencil class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />
 				</Button>
 			</Tooltip>

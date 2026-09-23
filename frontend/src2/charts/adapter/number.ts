@@ -329,16 +329,20 @@ function previousLabel(config: NumberChartConfig): string | undefined {
 const CARD = {
 	/** A dashboard cell's `p-2`, top and bottom. */
 	cellPadding: 2 * 8,
-	/** ChartCard's `py-3` and its 1px border, top and bottom. */
-	chrome: 2 * (12 + 1),
+	/**
+	 * ChartCard's 1px border and the `py-2` `NumberReading` gives it, top and
+	 * bottom. Not ChartCard's own `py-3`: sized for that, a card lands up to a
+	 * row taller than its content.
+	 */
+	chrome: 2 * (8 + 1),
 	/** `gap-1.5` between the card's blocks. */
 	gap: 6,
-	/** The title: `text-sm`, 13px at a line height of 1.15. */
-	title: 13 * 1.15,
-	/** The reading: `text-3xl-semibold`, 20px at 1.15. */
-	value: 20 * 1.15,
-	/** The delta row: a `size-4` arrow, which stands taller than its own text. */
-	delta: 16,
+	/** The title: `text-sm`, 13px at a line height of 1.35. */
+	title: 13 * 1.35,
+	/** The reading: `text-3xl-semibold`, 20px at 1.35. */
+	value: 20 * 1.35,
+	/** The delta row: `text-sm`, whose line stands taller than its `size-4` arrow. */
+	delta: 13 * 1.35,
 	/** `pb-10`, the band the sparkline is drawn into. */
 	sparkline: 40,
 }

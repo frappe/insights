@@ -75,7 +75,7 @@ const drillable = computed(() => props.drillable !== false && !props.card.missin
 	>
 		<NumberCard
 			v-bind="reading"
-			class="h-full"
+			class="h-full !py-2"
 			:loading="props.loading && !card.missing"
 			:error="failure?.headline"
 		>
@@ -112,7 +112,7 @@ const drillable = computed(() => props.drillable !== false && !props.card.missin
 				     opening a drill. See `NumberCards`. They come before the retry
 				     because a host may hide them until hover, and a hidden act still
 				     takes its width. -->
-				<span class="flex items-center" @click.stop>
+				<span class="flex items-center last:-me-1.5" @click.stop>
 					<slot name="actions" />
 				</span>
 
