@@ -1,0 +1,83 @@
+"""Whose rows a link published before `visibility` keeps serving.
+
+See `insights/patches/run_public_charts_as_owner.py`. The base recorded the
+publisher on the document that published the content and filtered a public read
+by that person; the Check this branch reads instead can only name the owner.
+
+What a test on a migrated bench can reach: a site that never had the base's
+`permission_user` column, the one a v3 release before v3.13 upgrades from.
+Adding or dropping the column is a DDL, which commits, so the arm that reads a
+recorded publisher cannot be exercised here without breaking every savepoint
+this suite runs inside, and the column's absence is stated rather than made.
+"""
+
+from unittest.mock import patch
+
+import frappe
+
+from insights.patches.run_public_charts_as_owner import execute as run_public_charts_as_owner
+from insights.tests.base import InsightsIntegrationTestCase
+from insights.tests.factories import (
+    DT,
+    create_test_chart,
+    create_test_dashboard,
+    create_test_query,
+    create_test_workbook,
+    create_user,
+    delete_users,
+)
+
+OWNER = "Administrator"
+PREFIX = "Public Rung Test"
+PUBLISHER = "public_rung_publisher@test.com"
+
+
+class TestPublicLinkPublisher(InsightsIntegrationTestCase):
+    SAVEPOINT = "test_public_link_publisher"
+
+    @classmethod
+    def before_class(cls):
+        workbook = create_test_workbook(OWNER, title=PREFIX)
+        query = create_test_query(OWNER, workbook.name, title=f"{PREFIX} Query")
+        cls.chart = create_test_chart(OWNER, workbook.name, query.name, title=f"{PREFIX} Chart").name
+        cls.dashboard = create_test_dashboard(
+            OWNER, workbook.name, cls.chart, title=f"{PREFIX} Dashboard"
+        ).name
+        cls.workbook = workbook.name
+        create_user(PUBLISHER, first_name="Public", last_name="Publisher", roles="Insights User")
+
+    @classmethod
+    def after_class(cls):
+        frappe.delete_doc(DT.WORKBOOK, cls.workbook, force=True, ignore_permissions=True)
+        delete_users(PUBLISHER)
+
+    # the migrated shape, written the way the earlier patches write it
+    def published(self):
+        frappe.db.set_value(DT.DASHBOARD, self.dashboard, "visibility", "Public")
+        frappe.db.set_value(DT.CHART, self.chart, "run_as_owner", 0)
+
+    def run_patch_without_the_column(self):
+        with patch.object(frappe.db, "has_column", return_value=False):
+            run_public_charts_as_owner()
+
+    # @feature shared.chart-on-public-dashboard permissions.chart-run-as-owner
+    def test_a_link_published_before_the_publisher_was_recorded_runs_as_its_owner(self):
+        """The base's own backfill wrote the publishing document's owner into the
+        column it added, and the link served that person's rows."""
+        self.published()
+
+        self.run_patch_without_the_column()
+
+        self.assertTrue(frappe.db.get_value(DT.CHART, self.chart, "run_as_owner"))
+
+    # @feature shared.chart-on-public-dashboard permissions.chart-run-as-owner
+    def test_a_link_another_person_published_keeps_running_as_its_reader(self):
+        """Checking the box would hand the guest the chart owner's rows, and the
+        base was serving the dashboard owner's. The card refuses instead, and the
+        owner decides from the chart's own share dialog."""
+        self.published()
+        frappe.db.set_value(DT.DASHBOARD, self.dashboard, "owner", PUBLISHER)
+
+        self.run_patch_without_the_column()
+
+        self.assertFalse(frappe.db.get_value(DT.CHART, self.chart, "run_as_owner"))

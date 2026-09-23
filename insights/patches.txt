@@ -16,6 +16,8 @@ insights.patches.strip_default_schema_from_table_names
 insights.patches.hash_invitation_keys
 insights.patches.backfill_permission_user
 insights.patches.backfill_table_columns
+insights.patches.set_visibility_from_is_public
+insights.patches.run_public_charts_as_owner
 insights.patches.repair_sankey_value_aggregation
 insights.patches.retire_chart_query_cache
 # re-run: the first pass left a chart-level direction flag and short option lists
@@ -26,4 +28,11 @@ insights.patches.split_number_cells
 insights.patches.close_dashboard_layout_gaps
 # after the number card patches: this one mints a reading's id, which those patches read
 insights.patches.normalize_chart_configs
+insights.patches.set_visibility_from_org_shares
+insights.patches.retire_site_apply_user_permissions
+insights.patches.retire_content_permission_user
+insights.patches.copy_cross_workbook_query_sources
+insights.patches.number_duplicate_folder_titles
+insights.patches.reshape_member_shares
+insights.patches.delete_orphaned_variable_secrets
 insights.patches.set_max_export_rows
