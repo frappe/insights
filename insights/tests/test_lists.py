@@ -11,19 +11,23 @@ rows it must drop are both named.
 
 import frappe
 from frappe.desk.like import toggle_like
+from frappe.desk.search import search_link
 
-from insights.api.dashboards import get_dashboards, get_recent_dashboards
+from insights.api.dashboards import get_dashboards
 from insights.api.data_store import get_data_store_tables
 from insights.api.workbooks import get_workbooks, update_share_permissions
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import (
     DT,
     as_user,
+    create_test_chart,
     create_test_dashboard,
+    create_test_query,
     create_test_workbook,
     delete_users,
 )
 from insights.tests.permissions_utils import (
+    ADMIN,
     TEST_DS,
     USER_1,
     USER_2,
@@ -54,6 +58,9 @@ class TestWorkbookList(InsightsIntegrationTestCase):
         create_test_users()
         cls.own = create_test_workbook(OWNER, title=cls.OWN).name
         cls.others = create_test_workbook(OTHER, title=cls.OTHERS).name
+        cls.query = create_test_query(OWNER, cls.own, title=f"{TITLE_PREFIX} ESOP Grants").name
+        cls.chart = create_test_chart(OWNER, cls.own, query=cls.query, title=f"{TITLE_PREFIX} Grants").name
+        cls.dashboard = create_test_dashboard(OWNER, cls.own, title=f"{TITLE_PREFIX} Board").name
         with as_user(OTHER):
             update_share_permissions(cls.others, [{"user": OWNER, "read": 1, "write": 0}])
 
@@ -61,7 +68,7 @@ class TestWorkbookList(InsightsIntegrationTestCase):
     def after_class(cls):
         for name in (cls.own, cls.others):
             frappe.delete_doc(DT.WORKBOOK, name, force=True, ignore_permissions=True)
-        delete_users(OWNER, OTHER)
+        delete_users(OWNER, OTHER, ADMIN)
 
     # @feature workbook.list
     def test_the_workbook_list_narrows_by_title_and_the_shared_lens_keeps_only_other_peoples_workbooks(
@@ -70,8 +77,8 @@ class TestWorkbookList(InsightsIntegrationTestCase):
         with self.as_user(OWNER):
             everything = ours(get_workbooks())
             searched = ours(get_workbooks(search_term="Workbook Theirs"))
-            owned = ours(get_workbooks(scope="owned"))
-            shared = ours(get_workbooks(scope="shared"))
+            owned = ours(get_workbooks(sources=["created"]))
+            shared = ours(get_workbooks(sources=["shared"]))
             capped = get_workbooks(limit=1)
 
         self.assertEqual(sorted(everything), [self.OWN, self.OTHERS])
@@ -81,24 +88,75 @@ class TestWorkbookList(InsightsIntegrationTestCase):
         self.assertEqual(len(capped), 1)
 
     # @feature workbook.home-recent
-    def test_the_home_list_puts_the_workbook_created_last_first(self):
-        """Recent means newest, not last touched.
-
-        The list carries the order `Insights Workbook` sorts in, which is
-        `creation desc`. Saving an older workbook again does not move it up, so
-        a home page that wants last-touched order cannot get it from here.
-        """
+    def test_the_list_puts_the_workbook_modified_last_first(self):
+        frappe.get_doc(DT.WORKBOOK, self.others).save(ignore_permissions=True)
         with self.as_user(OWNER):
             listed = ours(get_workbooks(limit=20))
 
         self.assertEqual(listed, [self.OTHERS, self.OWN])
 
         frappe.get_doc(DT.WORKBOOK, self.own).save(ignore_permissions=True)
-
         with self.as_user(OWNER):
             after_a_save = ours(get_workbooks(limit=20))
 
-        self.assertEqual(after_a_save, [self.OTHERS, self.OWN])
+        self.assertEqual(after_a_save, [self.OWN, self.OTHERS])
+
+    # @feature workbook.list-everyone
+    def test_an_admin_lists_only_what_was_given_to_them_until_they_ask_for_everyones(self):
+        with self.as_user(ADMIN):
+            everything = ours(get_workbooks())
+            everyones = ours(get_workbooks(sources=["created", "shared", "others"]))
+            others = ours(get_workbooks(sources=["others"]))
+        with self.as_user(OWNER):
+            not_created = ours(get_workbooks(sources=["shared", "others"]))
+
+        self.assertEqual(everything, [])
+        self.assertEqual(sorted(everyones), [self.OWN, self.OTHERS])
+        self.assertEqual(sorted(others), [self.OWN, self.OTHERS])
+        self.assertEqual(not_created, [self.OTHERS])
+
+    # @feature workbook.list-filter
+    def test_the_list_filters_on_what_a_workbook_contains(self):
+        def listed(*filters):
+            with self.as_user(OWNER):
+                return sorted(ours(get_workbooks(filters=list(filters))))
+
+        self.assertEqual(listed(["query", "LIKE", "%esop%"]), [self.OWN])
+        self.assertEqual(listed(["query", "=", self.query]), [self.OWN])
+        self.assertEqual(listed(["chart", "in", [self.chart]]), [self.OWN])
+        self.assertEqual(listed(["dashboard", "=", self.dashboard]), [self.OWN])
+        self.assertEqual(listed(["name", "=", self.others]), [self.OTHERS])
+        self.assertEqual(listed(["name", "LIKE", "%Theirs%"]), [self.OTHERS])
+        self.assertEqual(listed(["data_source", "=", "Site DB"]), [self.OWN])
+        self.assertEqual(listed(["data_source", "in", ["Site DB", TEST_DS]]), [self.OWN])
+        self.assertEqual(listed(["table_name", "LIKE", "%ToDo%"]), [self.OWN])
+        todo = frappe.db.get_value(DT.TABLE, {"data_source": "Site DB", "table": "tabToDo"})
+        if not todo:
+            todo = (
+                frappe.get_doc(
+                    {"doctype": DT.TABLE, "data_source": "Site DB", "table": "tabToDo", "label": "ToDo"}
+                )
+                .insert(ignore_permissions=True)
+                .name
+            )
+        self.assertEqual(listed(["table_name", "=", todo]), [self.OWN])
+        self.assertEqual(listed(["data_source", "!=", "Site DB"]), [self.OTHERS])
+        self.assertEqual(listed(["query", "is", "not set"]), [self.OTHERS])
+        self.assertEqual(listed(["title", "LIKE", "%Theirs%"]), [self.OTHERS])
+
+    # @feature workbook.list-filter
+    def test_a_query_option_names_its_workbook(self):
+        with self.as_user(OWNER):
+            options = search_link(DT.QUERY, "ESOP Grants")
+
+        self.assertIn(
+            {
+                "value": self.query,
+                "label": f"{TITLE_PREFIX} ESOP Grants",
+                "description": f"{self.query}, {self.OWN}",
+            },
+            options,
+        )
 
 
 class TestDashboardList(InsightsIntegrationTestCase):
@@ -125,36 +183,42 @@ class TestDashboardList(InsightsIntegrationTestCase):
     def test_the_dashboard_list_narrows_by_title_and_the_lenses_keep_their_own(self):
         with self.as_user(OWNER):
             everything = ours(get_dashboards())
-            searched = ours(get_dashboards(search_term="Dashboard Theirs"))
-            owned = ours(get_dashboards(scope="owned"))
-            shared = ours(get_dashboards(scope="shared"))
+            searched = ours(get_dashboards(filters=[["name", "LIKE", "%Dashboard Theirs%"]]))
+            owned = ours(get_dashboards(sources=["created"]))
+            shared = ours(get_dashboards(sources=["shared"]))
+        with self.as_user(ADMIN):
+            admins = ours(get_dashboards())
+            everyones = ours(get_dashboards(sources=["created", "shared", "others"]))
 
         self.assertEqual(sorted(everything), [self.OWN, self.OTHERS])
         self.assertEqual(searched, [self.OTHERS])
         self.assertEqual(owned, [self.OWN])
         self.assertEqual(shared, [self.OTHERS])
+        self.assertEqual(admins, [])
+        self.assertEqual(sorted(everyones), [self.OWN, self.OTHERS])
 
     # @feature dashboard.list
-    def test_the_recent_list_puts_the_dashboard_opened_last_first(self):
+    def test_the_list_puts_the_dashboard_opened_last_first(self):
         with self.as_user(OWNER):
             frappe.get_doc(DT.DASHBOARD, self.others).track_view()
             frappe.get_doc(DT.DASHBOARD, self.own).track_view()
-            recent = ours(get_recent_dashboards())
+            listed = ours(get_dashboards())
 
-        self.assertEqual(recent, [self.OWN, self.OTHERS])
+        self.assertEqual(listed, [self.OWN, self.OTHERS])
 
     # @feature dashboard.favorite
-    def test_a_favorited_dashboard_is_marked_and_listed_under_favorites(self):
+    def test_a_favorited_dashboard_is_marked_and_listed_first(self):
         with self.as_user(OWNER):
+            frappe.get_doc(DT.DASHBOARD, self.others).track_view()
             toggle_like(DT.DASHBOARD, self.own, add="Yes")
             self.addCleanup(self.unlike)
 
+            listed = ours(get_dashboards())
             marked = {row["title"]: bool(row.get("is_favourite")) for row in get_dashboards()}
-            favorites = ours(get_dashboards(get_favorites=True))
 
         self.assertTrue(marked[self.OWN])
         self.assertFalse(marked[self.OTHERS])
-        self.assertEqual(favorites, [self.OWN])
+        self.assertEqual(listed, [self.OWN, self.OTHERS])
 
     def unlike(self):
         with self.as_user(OWNER):

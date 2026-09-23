@@ -246,3 +246,9 @@ website_route_rules = [
     {"from_route": f"/{insights_path}/<path:app_path>", "to_route": "_insights"},
     {"from_route": f"/{insights_path}", "to_route": "_insights"},
 ]
+
+standard_queries = {
+    "Insights Query v3": "insights.api.search.search_workbook_items",
+    "Insights Chart v3": "insights.api.search.search_workbook_items",
+    "Insights Dashboard v3": "insights.api.search.search_workbook_items",
+}

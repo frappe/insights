@@ -73,9 +73,11 @@ frappectl -s $SITE method call insights.api.data_sources.get_all_data_sources
 frappectl -s $SITE method call insights.api.workbooks.get_workbooks
 ```
 
-You act as the profile's user, and you see what that user sees. If the user names a
-workbook that `get_workbooks` does not list, it is a missing share, not a missing
-workbook. Insights reports a missing grant as "not found". Ask the user to share it.
+You act as the profile's user, and you see what that user sees. `get_workbooks` lists what
+the user created or was given, admins included. An admin finds anyone else's workbook with
+`sources=["created","shared","others"]`. For anyone else, a workbook it does not list is a
+missing share, not a missing workbook. Insights reports a missing grant as "not found". Ask
+the user to share it.
 
 ### Read the site's version too, not only its data
 
@@ -247,8 +249,8 @@ frappectl -s $SITE doc list "Insights Chart v3" \
   --filters-json '{"title":["like","%partner%"]}' --fields name,title,workbook,chart_type --all
 ```
 
-`get_workbooks` searches titles only, so run the query and chart searches too. A workbook titled
-"Cloud Metrics" can hold the partner definition.
+`search_term` matches workbook titles only, so run the query and chart searches too. A workbook
+titled "Cloud Metrics" can hold the partner definition.
 
 These searches work on every site. A newer site carries one endpoint that runs them all in a single
 call. Probe for it once. Use it when it is there:
@@ -626,7 +628,7 @@ exists.
 |---|---|
 | Who am I, and on which site | `auth whoami` |
 | Insights version | `method call insights.api.get_app_version` — stop below 4 |
-| List workbooks | `method call insights.api.workbooks.get_workbooks` (`search_term`, `limit`, `scope`) |
+| List workbooks | `method call insights.api.workbooks.get_workbooks` (`search_term`, `limit`, `sources`: any of `created`, `shared`, `others`; `filters`: `[field, operator, value]` over workbook columns or `query`, `chart`, `dashboard`, `data_source`, `table_name`) |
 | List data sources | `method call insights.api.data_sources.get_all_data_sources` |
 | Search tables, all sources | `method call insights.api.data_sources.get_data_source_tables` (`search_term`, `limit`; omit `data_source` to search every source) |
 | Table columns and types | `method call insights.api.data_sources.get_data_source_table_columns` (`data_source`, `table_name`) |

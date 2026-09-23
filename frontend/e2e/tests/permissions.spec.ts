@@ -20,7 +20,7 @@ test.describe('permissions', () => {
 		await shareWorkbook(adminApi, granted.name, [{ user: VIEWER_EMAIL, access: 'view' }])
 
 		await viewerPage.goto(`${INSIGHTS_PATH}/workbook`)
-		await viewerPage.getByPlaceholder('Search by title').fill(marker)
+		await viewerPage.getByPlaceholder('Title', { exact: true }).fill(marker)
 
 		await expect(viewerPage.getByText(granted.title)).toBeVisible()
 		await expect(viewerPage.getByText(hidden.title)).toHaveCount(0)
