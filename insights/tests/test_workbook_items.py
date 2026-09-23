@@ -234,7 +234,6 @@ class TestDuplicate(InsightsIntegrationTestCase):
         chart = create_test_chart(OWNER, self.workbook, query=query.name, title="Duplicate Source Chart")
         config = {"x_axis": {"dimension": {"column_name": "status"}}, "limit": 10}
         chart.config = config
-        chart.is_public = 1
         chart.save()
 
         with self.as_user(OWNER):
@@ -248,4 +247,56 @@ class TestDuplicate(InsightsIntegrationTestCase):
         self.assertEqual(copy.query, query.name)
         self.assertEqual(copy.chart_type, chart.chart_type)
         self.assertEqual(frappe.parse_json(copy.config), frappe.parse_json(chart.config))
-        self.assertFalse(copy.is_public)
+
+
+class TestRemove(InsightsIntegrationTestCase):
+    """Removing an item deletes it, whatever else in the app names it."""
+
+    @classmethod
+    def before_class(cls):
+        create_test_users()
+        cls.workbook = create_test_workbook(OWNER, title="Remove Workbook").name
+
+    @classmethod
+    def after_class(cls):
+        frappe.delete_doc(DT.WORKBOOK, cls.workbook, force=True, ignore_permissions=True)
+        delete_users(OWNER, OTHER)
+
+    # @feature workbook.remove-item
+    def test_a_chart_on_a_dashboard_is_deleted_and_its_cells_go_with_it(self):
+        """The sidebar's remove calls `frappe.client.delete`, which the grid's
+        own link to the chart used to refuse."""
+        query = create_test_query(OWNER, self.workbook, title="Remove Chart Query")
+        chart = create_test_chart(OWNER, self.workbook, query=query.name, title="Remove Chart")
+        kept = create_test_chart(OWNER, self.workbook, query=query.name, title="Kept Chart")
+        with as_user(OWNER):
+            dashboard = frappe.get_doc(
+                {
+                    "doctype": DT.DASHBOARD,
+                    "title": "Remove Dashboard",
+                    "workbook": self.workbook,
+                    "items": [
+                        {"id": "removed", "type": "chart", "chart": chart.name},
+                        {"id": "kept", "type": "chart", "chart": kept.name},
+                        {
+                            "id": "filter",
+                            "type": "filter",
+                            "filter_name": "Status",
+                            "filter_type": "String",
+                            "links": {
+                                chart.name: f"`{query.name}`.`status`",
+                                kept.name: f"`{query.name}`.`status`",
+                            },
+                        },
+                    ],
+                }
+            ).insert()
+
+            frappe.delete_doc(DT.CHART, chart.name)
+
+        self.assertFalse(frappe.db.exists(DT.CHART, chart.name))
+        dashboard.reload()
+        items = frappe.parse_json(dashboard.items)
+        self.assertEqual([item["id"] for item in items], ["kept", "filter"])
+        self.assertEqual(list(items[1]["links"]), [kept.name])
+        self.assertEqual([row.chart for row in dashboard.linked_charts], [kept.name])

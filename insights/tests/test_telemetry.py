@@ -25,20 +25,20 @@ class TestTelemetryDefaults(InsightsIntegrationTestCase):
             patch("frappe.get_installed_apps", return_value=list(installed_apps)),
             patch.object(frappe, "conf", frappe._dict(conf or {})),
         ):
-            capture("workbook_created", interval="1d", from_template=True)
+            capture("workbook_opened", interval="1d", via="link")
         return sender.call_args
 
     # @feature telemetry.defaults
     def test_an_event_carries_the_app_version_and_the_entry_cohort(self):
         args, kwargs = self.sent()
-        self.assertEqual(args, ("workbook_created", "insights"))
+        self.assertEqual(args, ("workbook_opened", "insights"))
         self.assertEqual(kwargs["interval"], "1d")
         self.assertEqual(
             kwargs["properties"],
             {
                 "app_version": insights.__version__,
                 "entry": "self_hosted",
-                "from_template": True,
+                "via": "link",
             },
         )
 

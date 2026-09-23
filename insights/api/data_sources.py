@@ -1,5 +1,6 @@
 import frappe
 
+from insights import user_permissions
 from insights.decorators import insights_whitelist
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     execute_ibis_query,
@@ -17,6 +18,8 @@ from insights.insights.doctype.insights_team.insights_team import (
     check_data_source_permission,
     check_table_permission,
 )
+from insights.not_permitted import answers_refusal
+from insights.permission_user import permission_user
 
 
 @insights_whitelist()
@@ -75,12 +78,20 @@ def get_permitted_ibis_table(data_source: str, table_name: str):
     instead of pulling the table into the data store. Everything else — team table
     restrictions, doctype row and column permissions — is what the query builder applies,
     and the preview must not show more than a query over the same table would return.
+
+    A preview is the one execution nothing declares: no chart names it, so the
+    rows are the caller's own and never a third person's. Said here rather than
+    inherited — `get_permission_user` answers with whatever execution encloses
+    it, and a preview is never inside one.
     """
-    return InsightsTablev3.get_ibis_table(data_source, table_name, use_live_connection=True)
+    with permission_user(frappe.session.user):
+        return InsightsTablev3.get_ibis_table(data_source, table_name, use_live_connection=True)
 
 
 @insights_whitelist()
+@answers_refusal(lambda: {"columns": [], "rows": []})
 def get_data_source_table(data_source: str, table_name: str):
+    user_permissions.forget()
     q = get_permitted_ibis_table(data_source, table_name).head(100)
     data, _ = execute_ibis_query(q, cache_expiry=24 * 60 * 60)
 
@@ -89,17 +100,29 @@ def get_data_source_table(data_source: str, table_name: str):
         "data_source": data_source,
         "columns": get_columns_from_schema(q.schema()),
         "rows": data.to_dict(orient="records"),
+        # the table is read as the caller, so what narrowed it is theirs, in
+        # the keys a card carries it under
+        **user_permissions.scope(frappe.session.user),
     }
 
 
 @insights_whitelist()
 def get_data_source_table_row_count(data_source: str, table_name: str):
+    """How many rows the table holds.
+
+    A refusal is raised rather than answered. The whole point of
+    `answers_refusal` is that a refused card must not read as zero, and a count
+    is the one answer whose empty value *is* zero: there is nothing here for a
+    marker to ride on, so "0 rows" would say the table is empty to a caller who
+    may not read it.
+    """
     table = get_permitted_ibis_table(data_source, table_name)
     result = table.count().execute()
     return int(result)
 
 
 @insights_whitelist()
+@answers_refusal(list)
 def get_data_source_table_columns(data_source: str, table_name: str):
     table = get_permitted_ibis_table(data_source, table_name)
     return [

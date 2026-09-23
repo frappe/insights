@@ -102,6 +102,23 @@ def get_users(search_term: str | None = None):
 
 
 @insights_whitelist()
+def get_roles():
+    """Roles a writer can name at the `Roles` visibility level.
+
+    The picker offers what the server accepts: `UNNAMEABLE_ROLES` is where the
+    rule lives, and `validate_visibility` is what enforces it.
+    """
+    from insights.permissions import UNNAMEABLE_ROLES
+
+    return frappe.get_all(
+        "Role",
+        filters={"disabled": 0, "name": ["not in", UNNAMEABLE_ROLES]},
+        pluck="name",
+        order_by="name asc",
+    )
+
+
+@insights_whitelist()
 def get_teams(search_term: str | None = None):
     teams = frappe.get_list(
         "Insights Team",

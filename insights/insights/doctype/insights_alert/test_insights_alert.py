@@ -10,12 +10,14 @@ from frappe.utils import add_to_date, now_datetime, validate_email_address
 
 from insights.http import OutboundRequestRefused
 from insights.insights.doctype.insights_alert.insights_alert import (
-    WEBHOOK_MAX_ROWS,
+    ALERT_MAX_ROWS,
     InsightsAlert,
     send_alerts,
 )
+from insights.permission_user import permission_user
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import (
+    as_user,
     create_test_query,
     create_test_workbook,
     create_user,
@@ -70,9 +72,9 @@ class TestWebhookPayload(IntegrationTestCase):
 
     # @feature alerts.webhook
     def test_rows_are_capped_and_the_cap_is_declared(self):
-        payload, _ = self.post_one(message_context(row_count=WEBHOOK_MAX_ROWS + 150))
-        self.assertEqual(len(payload["context"]["rows"]), WEBHOOK_MAX_ROWS)
-        self.assertEqual(payload["context"]["count"], WEBHOOK_MAX_ROWS + 150)
+        payload, _ = self.post_one(message_context(row_count=ALERT_MAX_ROWS + 150))
+        self.assertEqual(len(payload["context"]["rows"]), ALERT_MAX_ROWS)
+        self.assertEqual(payload["context"]["count"], ALERT_MAX_ROWS + 150)
         self.assertTrue(payload["context"]["truncated"])
 
     # @feature alerts.webhook
@@ -155,6 +157,90 @@ class TestFailedAlertIsNotRetriedEveryTick(InsightsIntegrationTestCase):
             send_alerts()
 
         self.assertIsNotNone(frappe.db.get_value("Insights Alert", self.alert.name, "last_execution"))
+
+    # @feature alerts.failed-run-recorded
+    def test_the_owner_is_told_a_run_failed_and_not_why(self):
+        """`send_alerts` mails the owner. The scheduler's session is
+        Administrator, so a connection error was composed for someone who may
+        configure the source, naming its host; that stays in the Error Log."""
+        frappe.db.set_value("Insights Alert", self.alert.name, "last_execution", None)
+        # `send_alerts` rolls back what it catches
+        frappe.db.commit()  # nosemgrep
+        detail = "Can't connect to MySQL server on '10.0.4.12'"
+
+        with (
+            patch.object(InsightsAlert, "evaluate_condition", side_effect=frappe.ValidationError(detail)),
+            patch("frappe.sendmail") as sendmail,
+        ):
+            send_alerts()
+
+        message = sendmail.call_args.kwargs["message"]
+        self.assertIn(self.alert.title, message)
+        self.assertNotIn("10.0.4.12", message)
+        self.assertTrue(frappe.db.exists("Error Log", {"method": f"Failed to send alert: {self.alert.name}"}))
+
+
+class ATickRunsEveryAlert(InsightsIntegrationTestCase):
+    """`send_alerts`, the scheduler's four-minute tick. What it does after one
+    alert fails writes and commits too, and a failure there must not cost the
+    alerts after it their window."""
+
+    @classmethod
+    def before_class(cls):
+        cls.workbook = create_test_workbook("Administrator", title="Alert Tick Workbook")
+        query = create_test_query("Administrator", cls.workbook.name, title="Alert Tick Query")
+        cls.alerts = [
+            frappe.get_doc(
+                doctype="Insights Alert",
+                title=f"Alert Tick {index}",
+                channel="Webhook",
+                query=query.name,
+                frequency="Daily",
+                condition="q['status'] == 'Open'",
+                custom_condition=1,
+                message="{{ rows }}",
+                webhook_url="https://example.com/hooks/insights",
+                webhook_token="sekret-token",
+            )
+            .insert()
+            .name
+            for index in (1, 2)
+        ]
+
+    @classmethod
+    def after_class(cls):
+        for name in cls.alerts:
+            frappe.delete_doc("Insights Alert", name, force=True)
+        frappe.delete_doc("Insights Workbook", cls.workbook.name, force=True)
+
+    def tried(self, refusal, aftermath: str) -> list[str]:
+        """The alerts of this class the tick tried, when every send is refused
+        with `refusal` and `aftermath` raises."""
+        tried = []
+
+        def send(alert):
+            tried.append(alert.name)
+            raise refusal
+
+        module = "insights.insights.doctype.insights_alert.insights_alert"
+        with (
+            patch.object(InsightsAlert, "is_event_due", return_value=True),
+            patch.object(InsightsAlert, "send_alert", autospec=True, side_effect=send),
+            patch(f"{module}.{aftermath}", side_effect=frappe.QueryDeadlockError("deadlock")),
+        ):
+            send_alerts()
+
+        return sorted(name for name in tried if name in self.alerts)
+
+    # @feature alerts.failed-run-recorded
+    def test_a_failed_record_of_a_failed_run_does_not_stop_the_tick(self):
+        self.assertEqual(self.tried(requests.ConnectionError("down"), "record_execution"), self.alerts)
+
+    # @feature alerts.failed-run-recorded
+    def test_a_failed_stop_of_a_refused_alert_does_not_stop_the_tick(self):
+        from insights.insights.doctype.insights_alert.insights_alert import SendRefused
+
+        self.assertEqual(self.tried(SendRefused("disabled"), "stop"), self.alerts)
 
 
 class TestEmailRecipients(InsightsIntegrationTestCase):
@@ -411,6 +497,206 @@ class TestCondition(AlertOverSeededTodos):
         for status, i in (("Open", 1), ("Open", 2), ("Closed", 3)):
             self.assertIn(f"{ALERT_TODO_PREFIX} {status} {i}", body)
         self.assertIn("<table", body)
+
+
+class TestRowsAnAlertCarries(AlertOverSeededTodos):
+    # @feature alerts.message alerts.webhook
+    def test_the_rows_stop_at_the_cap_and_the_count_is_the_whole_result(self):
+        """`send_alert` builds one context for every channel, so the count it
+        reports is the query's and not the page's, and a mail says what it left out."""
+        alert = self.make_alert(message="{{ count }} open\n\n{{ rows }}")
+
+        with patch(f"{InsightsAlert.__module__}.ALERT_MAX_ROWS", 2):
+            context = alert.get_message_context()
+
+        self.assertEqual(context["count"], 3)
+        self.assertEqual(len(context["rows"]), 2)
+        body = alert.evaluate_message(context)
+        self.assertIn("3 open", body)
+        self.assertIn("The first 2 of 3 rows", body)
+
+    # @feature alerts.message alerts.webhook
+    def test_the_rows_and_the_count_are_read_when_the_condition_fires(self):
+        """`send_alert` builds its message from `get_message_context` after the
+        condition, which reads the table fresh. An author's earlier run caches
+        rows and count under two lifetimes, so the mail read either one stale."""
+        query = frappe.get_doc("Insights Query v3", self.query)
+        query.execute(page_size=ALERT_MAX_ROWS)
+        query.count_rows()
+
+        todo = frappe.get_doc(
+            {"doctype": "ToDo", "description": f"{ALERT_TODO_PREFIX} Open 4", "status": "Open"}
+        ).insert(ignore_permissions=True)
+        # the query reads over the data source's own connection
+        frappe.db.commit()  # nosemgrep
+        self.addCleanup(frappe.db.commit)  # nosemgrep
+        self.addCleanup(frappe.delete_doc, "ToDo", todo.name, force=True, ignore_permissions=True)
+
+        context = self.make_alert().get_message_context()
+
+        self.assertEqual(context["count"], 4)
+        self.assertIn(f"{ALERT_TODO_PREFIX} Open 4", [row["description"] for row in context["rows"]])
+
+    # @feature alerts.condition alerts.message
+    def test_a_script_query_is_read_fresh_for_the_condition_and_the_count(self):
+        """`send_alert` decides on `evaluate_condition` and mails
+        `get_message_context`. A script's output is cached apart from the SQL
+        over it, so an earlier run fired the condition and printed the count
+        off rows the script no longer returns."""
+        script = self.make_script_query(
+            "results = frappe.get_all('ToDo', "
+            f"filters={{'description': ['like', '{ALERT_TODO_PREFIX} Script%']}}, "
+            "fields=['description', 'status'])"
+        )
+        closed = frappe.get_doc(
+            {"doctype": "ToDo", "description": f"{ALERT_TODO_PREFIX} Script 1", "status": "Closed"}
+        ).insert(ignore_permissions=True)
+        self.addCleanup(frappe.delete_doc, "ToDo", closed.name, force=True, ignore_permissions=True)
+        alert = self.make_alert(query=script, condition="status == 'Open'")
+        # an author's run of the query, and an earlier tick
+        frappe.get_doc("Insights Query v3", script).execute()
+        self.assertFalse(alert.evaluate_condition())
+
+        opened = frappe.get_doc(
+            {"doctype": "ToDo", "description": f"{ALERT_TODO_PREFIX} Script 2", "status": "Open"}
+        ).insert(ignore_permissions=True)
+        self.addCleanup(frappe.delete_doc, "ToDo", opened.name, force=True, ignore_permissions=True)
+
+        self.assertTrue(alert.evaluate_condition())
+        self.assertEqual(alert.get_message_context()["count"], 2)
+
+    def make_script_query(self, code):
+        return create_test_query(
+            "Administrator",
+            self.workbook,
+            title="Alert Script Query",
+            operations=[{"type": "code", "code": code}],
+        ).name
+
+
+class TestWhoMaySend(AlertOverSeededTodos):
+    """Sending mails the author's recipients, so it asks for more than reading
+    the alert, and the user it runs as is asked again at every send."""
+
+    READER = "alert_reader@test.com"
+
+    @classmethod
+    def before_class(cls):
+        super().before_class()
+        create_user(cls.READER, first_name="Alert", last_name="Reader", roles="Insights User")
+
+    @classmethod
+    def after_class(cls):
+        super().after_class()
+        delete_users(cls.READER)
+
+    # @feature alerts.test-send
+    def test_a_collaborator_who_may_only_read_the_alert_cannot_send_it(self):
+        """`AlertSetupDialog` calls `test_alert` through `run_doc_method`, which
+        checks read only; the desk form calls `send_alert` the same way."""
+        from insights.api.workbooks import update_share_permissions
+
+        alert = self.make_alert(condition="status == 'Open'")
+        update_share_permissions(self.workbook, [{"user": self.READER, "read": 1, "write": 0}])
+
+        with as_user(self.READER), patch("frappe.sendmail") as sendmail:
+            stored = frappe.get_doc("Insights Alert", alert.name)
+            self.assertTrue(stored.has_permission("read"))
+            for send in (stored.test_alert, stored.send_alert):
+                with self.subTest(send.__name__), self.assertRaises(frappe.PermissionError):
+                    send()
+
+        self.assertEqual(sendmail.call_count, 0)
+        self.assertIsNone(frappe.db.get_value("Insights Alert", alert.name, "last_execution"))
+
+    # @feature alerts.test-send
+    def test_an_unsaved_alert_is_sent_by_a_writer_of_its_workbook_only(self):
+        """`QueryAlertsDialog` calls `test_alert` through `run_doc_method` on an
+        alert it has not saved yet, named `new-alert-…`. A reader of the
+        workbook may send the same payload with recipients of their choosing."""
+        from insights.api.workbooks import update_share_permissions
+
+        def send_unsaved(name):
+            alert = frappe.new_doc("Insights Alert")
+            alert.update(
+                {
+                    "title": "Open todos",
+                    "channel": "Email",
+                    "query": self.query,
+                    "frequency": "Daily",
+                    "custom_condition": 1,
+                    "condition": "status == 'Open'",
+                    "message": "hello",
+                    "recipients": "someone@external.example.org",
+                }
+            )
+            alert.name = name
+            with as_user(self.READER), patch("frappe.sendmail") as sendmail:
+                alert.test_alert()
+            return sendmail.call_count
+
+        for name in (None, "new-alert-abc123"):
+            with self.subTest(name=name):
+                update_share_permissions(self.workbook, [{"user": self.READER, "read": 1, "write": 0}])
+                with self.assertRaises(frappe.PermissionError):
+                    send_unsaved(name)
+
+                update_share_permissions(self.workbook, [{"user": self.READER, "read": 1, "write": 1}])
+                self.assertEqual(send_unsaved(name), 1)
+
+    # @feature alerts.enable
+    def test_an_edit_by_another_writer_keeps_the_enabler_and_the_form_names_them(self):
+        """`AlertSetupDialog` reads `permission_user` through `insights.api.get_doc`
+        to say who the alert runs as. Ruling Q11: writers are trusted, so an edit
+        does not move it."""
+        from insights.api import get_doc
+        from insights.api.workbooks import update_share_permissions
+
+        alert = self.make_alert()
+        update_share_permissions(self.workbook, [{"user": self.READER, "read": 1, "write": 1}])
+
+        with as_user(self.READER):
+            edited = frappe.get_doc("Insights Alert", alert.name)
+            edited.recipients = self.READER
+            edited.save()
+            loaded = get_doc("Insights Alert", alert.name)
+
+        self.assertEqual(loaded["permission_user"], "Administrator")
+
+    # @feature alerts.enable
+    def test_an_alert_whose_user_lost_the_query_sends_nothing(self):
+        """`send_alerts` runs each alert as the user who enabled it. A share
+        revoked since then reaches the next send, not only the next save."""
+        from insights.api.workbooks import update_share_permissions
+
+        alert = self.make_alert(condition="status == 'Open'")
+        # enabled by the reader, who has since lost the workbook
+        alert.db_set("permission_user", self.READER, update_modified=False)
+        update_share_permissions(self.workbook, [])
+
+        with permission_user(self.READER), patch("frappe.sendmail") as sendmail:
+            with self.assertRaises(frappe.PermissionError):
+                alert.send_alert()
+
+        self.assertEqual(sendmail.call_count, 0)
+
+    # @feature alerts.enable query.script
+    def test_an_alerts_script_reads_as_the_user_who_enabled_it(self):
+        """`send_alerts` enters `permission_user` for the enabler and reads the
+        rows it mails through `get_message_context`. The scheduler's session is
+        Administrator, and the script read as the session."""
+        query = create_test_query(
+            "Administrator",
+            self.workbook,
+            title="Alert Script Reader",
+            operations=[{"type": "code", "code": "results = [{'user': frappe.session.user}]"}],
+        ).name
+        alert = self.make_alert(query=query, condition="user != ''")
+
+        for runs_as in (self.READER, "Administrator"):
+            with self.subTest(runs_as=runs_as), permission_user(runs_as):
+                self.assertEqual([row["user"] for row in alert.get_message_context()["rows"]], [runs_as])
+        self.assertEqual(frappe.session.user, "Administrator")
 
 
 class TestSchedule(AlertOverSeededTodos):

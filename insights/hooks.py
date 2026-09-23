@@ -147,6 +147,7 @@ permission_query_conditions = {
     "Insights Chart v3": "insights.permissions.get_permission_query_conditions",
     "Insights Dashboard v3": "insights.permissions.get_permission_query_conditions",
     "Insights Alert": "insights.permissions.get_permission_query_conditions",
+    "Insights Folder": "insights.permissions.get_permission_query_conditions",
 }
 
 has_permission = {
@@ -158,6 +159,7 @@ has_permission = {
     "Insights Chart v3": "insights.permissions.has_doc_permission",
     "Insights Dashboard v3": "insights.permissions.has_doc_permission",
     "Insights Alert": "insights.permissions.has_doc_permission",
+    "Insights Folder": "insights.permissions.has_doc_permission",
 }
 
 # DocType Class
@@ -183,6 +185,14 @@ doc_events = {
     },
     "Dashboard Chart": {
         "onload": "insights.desk.claim",
+    },
+    "DocShare": {
+        "validate": "insights.permissions.validate_member_share",
+    },
+    # the tables of workbook members
+    ("Insights Dashboard Chart v3", "Has Role", "Insights Query Variable"): {
+        "validate": "insights.permissions.refuse_member_row_alone",
+        "on_trash": "insights.permissions.refuse_member_row_alone",
     },
 }
 

@@ -9,19 +9,19 @@ from unittest.mock import patch
 
 import frappe
 
-from insights.api.templates import create_workbook_from_template
 from insights.api.workbooks import update_share_permissions
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import (
     DT,
+    create_test_chart,
     create_test_dashboard,
+    create_test_query,
     create_test_workbook,
     create_user,
     delete_users,
     delete_workbooks,
 )
 
-TEMPLATE = "insights/sales"
 OWNER = "share_granted_owner@test.com"
 VIEWER = "share_granted_viewer@test.com"
 WORKBOOK_TITLE = "Share Granted Test Workbook"
@@ -93,7 +93,9 @@ class TestShareGranted(InsightsIntegrationTestCase):
 
         def publish():
             with self.as_user(OWNER):
-                frappe.get_doc(DT.DASHBOARD, dashboard.name).update_access({"is_public": True})
+                doc = frappe.get_doc(DT.DASHBOARD, dashboard.name)
+                doc.visibility = "Public"
+                doc.save()
 
         self.assertEqual(
             self.granted(publish),
@@ -101,22 +103,19 @@ class TestShareGranted(InsightsIntegrationTestCase):
         )
 
     # @feature telemetry.share-granted
-    def test_an_imported_template_grants_the_organization(self):
-        def import_template():
-            with (
-                self.as_user(OWNER),
-                patch(
-                    "insights.api.templates.get_installed_apps",
-                    return_value={"frappe", "insights", "erpnext"},
-                ),
-            ):
-                imported = create_workbook_from_template(TEMPLATE)["workbook"]
-                self.addCleanup(frappe.delete_doc, DT.WORKBOOK, imported, force=True)
+    def test_a_publish_the_save_refuses_grants_nothing(self):
+        query = create_test_query(OWNER, self.workbook.name)
+        chart = create_test_chart(OWNER, self.workbook.name, query=query.name)
+        dashboard = create_test_dashboard(OWNER, self.workbook.name, chart=chart.name)
 
-        self.assertEqual(
-            self.granted(import_template),
-            [{"object": "workbook", "with": "org", "count": 1}],
-        )
+        def publish():
+            with self.as_user(OWNER):
+                doc = frappe.get_doc(DT.DASHBOARD, dashboard.name)
+                doc.visibility = "Public"
+                with self.assertRaises(frappe.ValidationError):
+                    doc.save()
+
+        self.assertEqual(self.granted(publish), [])
 
     # @feature telemetry.share-granted
     def test_a_team_grant_names_the_resource_type(self):

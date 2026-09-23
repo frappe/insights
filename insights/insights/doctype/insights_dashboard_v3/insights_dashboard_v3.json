@@ -5,18 +5,21 @@
  "engine": "InnoDB",
  "field_order": [
   "title",
+  "route",
   "preview_image",
   "share_link",
   "column_break_owsx",
   "workbook",
-  "is_public",
-  "permission_user",
+  "visibility",
+  "visible_to_roles",
   "vertical_compact_layout",
   "section_break_lgpd",
   "items",
   "section_break_aocd",
   "linked_charts",
-  "old_name"
+  "old_name",
+  "is_standard",
+  "kept_for_desk"
  ],
  "fields": [
   {
@@ -50,28 +53,13 @@
    "label": "Workbook",
    "options": "Insights Workbook",
    "reqd": 1,
-   "search_index": 1
+   "search_index": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "share_link",
    "fieldtype": "Data",
    "label": "Share Link"
-  },
-  {
-   "default": "0",
-   "fieldname": "is_public",
-   "fieldtype": "Check",
-   "in_list_view": 1,
-   "label": "Is Public",
-   "permlevel": 1
-  },
-  {
-   "fieldname": "permission_user",
-   "fieldtype": "Link",
-   "label": "Based on Permissions For User",
-   "options": "User",
-   "permlevel": 1,
-   "read_only": 1
   },
   {
    "fieldname": "section_break_aocd",
@@ -96,11 +84,46 @@
    "fieldname": "vertical_compact_layout",
    "fieldtype": "Check",
    "label": "Vertical Compact Layout"
+  },
+  {
+   "fieldname": "route",
+   "fieldtype": "Data",
+   "label": "Route",
+   "search_index": 1
+  },
+  {
+   "default": "Private",
+   "fieldname": "visibility",
+   "fieldtype": "Select",
+   "label": "Visibility",
+   "options": "Private\nRoles\nEveryone\nPublic"
+  },
+  {
+   "depends_on": "eval:doc.visibility === 'Roles'",
+   "fieldname": "visible_to_roles",
+   "fieldtype": "Table MultiSelect",
+   "label": "Visible To Roles",
+   "options": "Has Role"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_standard",
+   "fieldtype": "Check",
+   "label": "Is Standard",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "kept_for_desk",
+   "fieldtype": "Check",
+   "label": "Kept for Desk",
+   "no_copy": 1,
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-09-01 16:28:11.944860",
+ "modified": "2026-09-23 22:12:13.288255",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Dashboard v3",

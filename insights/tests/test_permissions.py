@@ -2,6 +2,7 @@ import frappe
 import frappe.share
 from frappe.permissions import update_permission_property
 
+from insights.api.alerts import get_alerts
 from insights.api.user import USER_FIELDS, get_users, user_lookup_allowed
 from insights.api.workbooks import get_share_permissions, update_share_permissions
 from insights.decorators import insights_whitelist
@@ -96,8 +97,14 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
 
     # @feature permissions.non-insights-user
     def test_permissions_for_non_insights_user(self):
+        # charts and dashboards carry doctype-level read for everyone: the
+        # declared visibility narrows access per document, so viewing needs no
+        # Insights role (see test_visibility)
+        visibility_gated = ["Insights Chart v3", "Insights Dashboard v3"]
         with self.as_user(NON_INSIGHTS_USER):
             for doctype in PERMISSION_DOCTYPES:
+                if doctype in visibility_gated:
+                    continue
                 self.assertFalse(
                     frappe.has_permission(doctype, ptype="read"),
                     f"{doctype} should not be readable without an Insights role",
@@ -161,6 +168,30 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         for user in (USER_2, USER_3):
             for doctype, name in granted.items():
                 self.assert_no_access_to(user, doctype, name)
+
+    # @feature permissions.team-off-open permissions.non-insights-user
+    def test_team_permissions_off_open_every_source_to_insights_users_only(self):
+        """`InsightsTablev3.get_ibis_table`, which every build reads a table
+        through, as the user a chart runs as: a guest on a Public chart, or a
+        signed-in reader with no Insights role on an `Everyone` one. The
+        not-permitted preflight asks the same `check_table_permission`."""
+        from insights.insights.doctype.insights_table_v3.insights_table_v3 import InsightsTablev3
+        from insights.insights.doctype.insights_team.insights_team import check_table_permission
+        from insights.not_permitted import NotPermitted
+        from insights.permission_user import permission_user
+
+        create_test_data_sources()
+        create_test_tables()
+        self.set_team_permissions(False)
+
+        for user, admitted in ((USER_1, True), (ADMIN, True), (NON_INSIGHTS_USER, False), ("Guest", False)):
+            with self.subTest(user=user):
+                self.assertIs(
+                    check_table_permission(TEST_DS, "table1", user=user, raise_error=False), admitted
+                )
+                if not admitted:
+                    with permission_user(user), self.assertRaisesRegex(NotPermitted, "access this table"):
+                        InsightsTablev3.get_ibis_table(TEST_DS, "table1", use_live_connection=True)
 
     # @feature permissions.team-off-open
     def test_resource_grant_is_inert_while_team_permissions_are_off(self):
@@ -285,7 +316,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
 
     # @feature permissions.share-workbook-user
     def test_workbook_owned_by_administrator_can_still_be_shared(self):
-        # a template import leaves Administrator owning the workbook, and the
+        # an import leaves Administrator owning the workbook, and the
         # owner rides along on every share update the dialog sends back
         workbook = create_test_workbook("Administrator")
 
@@ -309,6 +340,493 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
                     workbook.name,
                     [{"user": NON_INSIGHTS_USER, "read": 1, "write": 0}],
                 )
+
+    # @feature permissions.share-workbook-user
+    def test_a_share_the_workbook_already_holds_is_kept_not_named_again(self):
+        """`WorkbookShareDialog` seeds its list from `get_share_permissions` and
+        posts it back whole through `update_share_permissions` on every save, so
+        a share written before the rule - or to someone who has since left
+        Insights - comes back each time. Keeping or narrowing it names nobody;
+        widening it to edit does."""
+        workbook = create_test_workbook(USER_1)
+        frappe.share.add(DT.WORKBOOK, workbook.name, user=NON_INSIGHTS_USER, read=1, notify=0)
+
+        def echoed(**access):
+            shown = get_share_permissions(workbook.name)["user_permissions"]
+            return [{**permission, **access.get(permission["user"], {})} for permission in shown]
+
+        with self.as_user(USER_1):
+            update_share_permissions(workbook.name, [*echoed(), {"user": USER_2, "read": 1, "write": 0}])
+            self.assert_visible_to(USER_2, DT.WORKBOOK, workbook.name)
+
+            with self.assertRaisesRegex(frappe.ValidationError, "not an Insights user"):
+                update_share_permissions(
+                    workbook.name, echoed(**{NON_INSIGHTS_USER: {"read": 0, "write": 1}})
+                )
+
+            update_share_permissions(workbook.name, echoed(**{USER_2: {"read": 0, "write": 1}}))
+            update_share_permissions(workbook.name, echoed(**{USER_2: {"read": 1, "write": 0}}))
+
+        shared = frappe.get_all(
+            "DocShare",
+            filters={"share_doctype": DT.WORKBOOK, "share_name": workbook.name, "everyone": 0},
+            fields=["user", "write"],
+        )
+        self.assertEqual(
+            {share.user: share.write for share in shared},
+            {USER_1: 1, USER_2: 0, NON_INSIGHTS_USER: 0},
+        )
+
+    # @feature permissions.share-workbook-user
+    def test_a_removed_share_given_back_is_named_again(self):
+        """`WorkbookShareDialog` removes a person by posting them with no access,
+        which leaves their share row at read 0 and write 0. Giving it back
+        widens their access, so `update_share_permissions` asks about them."""
+        workbook = create_test_workbook(USER_1)
+        frappe.share.add(DT.WORKBOOK, workbook.name, user=NON_INSIGHTS_USER, read=1, notify=0)
+
+        with self.as_user(USER_1):
+            update_share_permissions(workbook.name, [{"user": NON_INSIGHTS_USER, "read": 0, "write": 0}])
+            with self.assertRaisesRegex(frappe.ValidationError, "not an Insights user"):
+                update_share_permissions(workbook.name, [{"user": NON_INSIGHTS_USER, "read": 1, "write": 0}])
+
+    # @feature permissions.viewer-cannot-edit
+    def test_a_folder_is_read_and_changed_on_its_workbook_grant(self):
+        """`frappe.client.set_value`, `frappe.client.delete` and `frappe.get_list`
+        reach a folder past the five folder endpoints, which ask the workbook."""
+        workbook = create_test_workbook(USER_1)
+        folder = frappe.get_doc(
+            {"doctype": "Insights Folder", "workbook": workbook.name, "title": "Payroll", "type": "query"}
+        ).insert(ignore_permissions=True)
+
+        def grants(user):
+            with self.as_user(user):
+                listed = folder.name in frappe.get_list(
+                    "Insights Folder", filters={"workbook": workbook.name}, pluck="name"
+                )
+                return {
+                    "list": listed,
+                    **{
+                        ptype: bool(frappe.has_permission("Insights Folder", ptype=ptype, doc=folder.name))
+                        for ptype in ("read", "write", "delete")
+                    },
+                }
+
+        none = {"list": False, "read": False, "write": False, "delete": False}
+        self.assertEqual(grants(USER_2), none)
+
+        frappe.db.set_value("Insights Folder", folder.name, "owner", USER_2)
+        self.assertEqual(grants(USER_2), none)
+
+        frappe.share.add(DT.WORKBOOK, workbook.name, user=USER_2, read=1, notify=0)
+        self.assertEqual(grants(USER_2), {"list": True, "read": True, "write": False, "delete": False})
+
+        frappe.share.add(DT.WORKBOOK, workbook.name, user=USER_2, read=1, write=1, notify=0)
+        self.assertEqual(grants(USER_2), {"list": True, "read": True, "write": True, "delete": True})
+
+    # @feature permissions.member-stays-in-its-workbook
+    def test_a_member_never_moves_to_another_workbook(self):
+        """`frappe.client.set_value`, the desk form's save and `/api/resource`
+        reach every member past the workbook endpoints. A member's workbook is
+        the root of every grant on it, so a move would hand it to the target's
+        editors: refused for an editor of both workbooks, and for an admin."""
+        source = create_test_workbook(USER_1)
+        target = create_test_workbook(USER_1, title="Permissions Test Target Workbook")
+        query = create_test_query(USER_1, source.name)
+        target_query = create_test_query(USER_1, target.name)
+        chart = create_test_chart(USER_1, source.name, query.name)
+        dashboard = create_test_dashboard(USER_1, source.name)
+        folder = frappe.get_doc(
+            {"doctype": "Insights Folder", "workbook": source.name, "title": "Payroll", "type": "query"}
+        ).insert(ignore_permissions=True)
+        alert = frappe.get_doc(
+            {
+                "doctype": "Insights Alert",
+                "title": "Moved alert",
+                "channel": "Email",
+                "query": query.name,
+                "frequency": "Daily",
+                "custom_condition": 1,
+                "condition": "True",
+                "message": "hello",
+                "recipients": "someone@external.example.org",
+                "disabled": 1,
+            }
+        ).insert(ignore_permissions=True)
+
+        moves = [
+            (DT.QUERY, query.name, "workbook", target.name),
+            (DT.CHART, chart.name, "workbook", target.name),
+            (DT.DASHBOARD, dashboard.name, "workbook", target.name),
+            ("Insights Folder", folder.name, "workbook", target.name),
+            # an alert belongs to its query's workbook
+            ("Insights Alert", alert.name, "query", target_query.name),
+        ]
+        for user in (USER_1, ADMIN):
+            for doctype, name, field, value in moves:
+                before = frappe.db.get_value(doctype, name, field)
+                with self.as_user(user), self.assertRaises(frappe.CannotChangeConstantError):
+                    frappe.client.set_value(doctype, name, field, value)
+                self.assertEqual(frappe.db.get_value(doctype, name, field), before, (user, doctype))
+
+    # @feature permissions.member-write-follows-workbook
+    def test_write_on_a_member_comes_only_from_write_on_its_workbook(self):
+        """`can_write` - behind `view`, `authoring.is_author` and each member's
+        `as_dict` read_only flag - `frappe.client.save`, `frappe.client.delete`,
+        `update_access` and the workbook sidebar's list all ask this seam.
+        Owning a member grants nothing, and a team grant on a chart or a
+        dashboard reads it and no more - so a person removed from the workbook loses what they made
+        there. An edit share on the workbook changes every member, share
+        included: `validate_visibility`, `update_access` and `can_share` ask it."""
+        self.set_team_permissions(True)
+        workbook = create_test_workbook(USER_1)
+        query = create_test_query(USER_1, workbook.name)
+        chart = create_test_chart(USER_1, workbook.name, query.name)
+        dashboard = create_test_dashboard(USER_1, workbook.name, chart.name)
+        alert = frappe.get_doc(
+            {
+                "doctype": "Insights Alert",
+                "title": "Owned alert",
+                "channel": "Email",
+                "query": query.name,
+                "frequency": "Daily",
+                "custom_condition": 1,
+                "condition": "True",
+                "message": "hello",
+                "recipients": "someone@external.example.org",
+                "disabled": 1,
+            }
+        ).insert(ignore_permissions=True)
+        folder = frappe.get_doc(
+            {"doctype": "Insights Folder", "workbook": workbook.name, "title": "Owned", "type": "query"}
+        ).insert(ignore_permissions=True)
+        members = [
+            (DT.QUERY, query.name),
+            (DT.CHART, chart.name),
+            (DT.DASHBOARD, dashboard.name),
+            ("Insights Alert", alert.name),
+            ("Insights Folder", folder.name),
+        ]
+
+        def grants(user, doctype, name):
+            with self.as_user(user):
+                return {
+                    ptype: bool(frappe.has_permission(doctype, ptype=ptype, doc=name))
+                    for ptype in ("read", "write", "delete", "share")
+                }
+
+        nothing = {"read": False, "write": False, "delete": False, "share": False}
+        read_only = {"read": True, "write": False, "delete": False, "share": False}
+        edit = {"read": True, "write": True, "delete": True, "share": True}
+
+        # USER_2 owns every member; USER_3's team is granted the chart and the dashboard
+        for doctype, name in members:
+            frappe.db.set_value(doctype, name, "owner", USER_2)
+        create_test_team("team1", [USER_3], [(DT.CHART, chart.name), (DT.DASHBOARD, dashboard.name)])
+
+        for doctype, name in members:
+            self.assertEqual(grants(USER_2, doctype, name), nothing, (USER_2, doctype))
+            self.assert_not_visible_to(USER_2, doctype, name)
+            self.assertEqual(grants(USER_1, doctype, name), edit, (USER_1, doctype))
+        for doctype, name in ((DT.CHART, chart.name), (DT.DASHBOARD, dashboard.name)):
+            self.assertEqual(grants(USER_3, doctype, name), read_only, (USER_3, doctype))
+        # the team reads the query behind the chart, never an alert on that query
+        self.assertTrue(grants(USER_3, DT.QUERY, query.name)["read"])
+        self.assertEqual(grants(USER_3, "Insights Alert", alert.name), nothing)
+        self.assert_not_visible_to(USER_3, "Insights Alert", alert.name)
+
+        # a new alert is a new member of its query's workbook
+        def new_alert():
+            return frappe.copy_doc(alert).insert()
+
+        with self.as_user(USER_1):
+            update_share_permissions(workbook.name, [{"user": USER_2, "read": 1, "write": 0}])
+        for doctype, name in members:
+            self.assertEqual(grants(USER_2, doctype, name), read_only, ("viewer", doctype))
+        with self.as_user(USER_2), self.assertRaises(frappe.PermissionError):
+            new_alert()
+
+        with self.as_user(USER_1):
+            update_share_permissions(
+                workbook.name,
+                [{"user": USER_2, "read": 1, "write": 1}, {"user": USER_3, "read": 1, "write": 1}],
+            )
+        for user in (USER_2, USER_3):
+            for doctype, name in members:
+                self.assertEqual(grants(user, doctype, name), edit, (user, doctype))
+        with self.as_user(USER_2):
+            new_alert()
+
+        with self.as_user(USER_1):
+            update_share_permissions(workbook.name, [])
+        for doctype, name in members:
+            self.assertEqual(grants(USER_2, doctype, name), nothing, ("removed", doctype))
+            self.assert_not_visible_to(USER_2, doctype, name)
+
+        # the workbook's own share flag, which desk can write, reaches no member
+        with self.as_user(USER_1):
+            frappe.share.add(DT.WORKBOOK, workbook.name, user=USER_2, read=1, share=1, notify=0)
+        for doctype, name in members:
+            self.assertFalse(grants(USER_2, doctype, name)["share"], ("workbook share", doctype))
+
+    # @feature permissions.member-row-saved-with-member
+    def test_a_row_of_a_member_is_saved_with_it_and_never_on_its_own(self):
+        """`frappe.client.save` and `/api/resource` (save, and `frappe.delete_doc`
+        for a delete) reach a child row on its own, and the member's save never runs a row's own
+        hooks. So the dashboard's `set_linked_charts` and chart checks, the
+        visibility checks and the standard guard run only through the member."""
+        workbook = create_test_workbook(USER_1)
+        query = create_test_query(USER_1, workbook.name)
+        chart = create_test_chart(USER_1, workbook.name, query.name)
+        dashboard = create_test_dashboard(USER_1, workbook.name, chart.name)
+        others = create_test_workbook(USER_2)
+        private_chart = create_test_chart(USER_2, others.name, create_test_query(USER_2, others.name).name)
+
+        with self.as_user(USER_1):
+            forged = [
+                {"parent": dashboard.name, "parentfield": "linked_charts", "chart": private_chart.name},
+                {"parent": dashboard.name, "parentfield": "visible_to_roles", "role": "All"},
+                {"parent": chart.name, "parentfield": "visible_to_roles", "role": "All"},
+                {"parent": query.name, "parentfield": "variables", "variable_name": "key"},
+            ]
+            for row in forged:
+                parenttype = dashboard.doctype if row["parent"] == dashboard.name else None
+                parenttype = parenttype or (chart.doctype if row["parent"] == chart.name else query.doctype)
+                child = frappe.get_meta(parenttype).get_field(row["parentfield"]).options
+                with self.assertRaisesRegex(frappe.ValidationError, "not on its own", msg=row):
+                    frappe.client.save({"doctype": child, "parenttype": parenttype, **row})
+            self.assertFalse(frappe.has_permission(DT.CHART, ptype="read", doc=private_chart.name))
+
+            # a stored row, changed or deleted on its own
+            linked = frappe.get_doc(dashboard.doctype, dashboard.name).linked_charts[0]
+            with self.assertRaisesRegex(frappe.ValidationError, "not on its own"):
+                frappe.client.save({**linked.as_dict(), "chart": private_chart.name})
+            with self.assertRaisesRegex(frappe.ValidationError, "not on its own"):
+                frappe.delete_doc(linked.doctype, linked.name)
+            self.assertEqual(
+                [row.chart for row in frappe.get_doc(dashboard.doctype, dashboard.name).linked_charts],
+                [chart.name],
+            )
+
+            # through the member, the same rows save
+            writable = frappe.get_doc(chart.doctype, chart.name)
+            writable.visibility = "Roles"
+            writable.append("visible_to_roles", {"role": "Insights User"})
+            writable.save()
+
+        # every table of every member, whoever saves the row
+        for doctype in PERMISSION_DOCTYPES:
+            meta = frappe.get_meta(doctype)
+            if not meta.has_field("workbook") and doctype != "Insights Alert":
+                continue
+            for field in meta.get_table_fields():
+                with self.assertRaisesRegex(
+                    frappe.ValidationError, "not on its own", msg=(doctype, field.fieldname)
+                ):
+                    frappe.get_doc(
+                        {
+                            "doctype": field.options,
+                            "parenttype": doctype,
+                            "parentfield": field.fieldname,
+                            "parent": "anything",
+                        }
+                    ).insert(ignore_permissions=True, ignore_mandatory=True)
+
+        # a row of anything else is frappe's business
+        role = frappe.get_doc({"doctype": "Role", "role_name": "Member Row Test"}).insert()
+        frappe.get_doc(
+            {
+                "doctype": "Has Role",
+                "parenttype": "User",
+                "parentfield": "roles",
+                "parent": USER_3,
+                "role": role.name,
+            }
+        ).insert(ignore_permissions=True)
+        self.assertTrue(frappe.db.exists("Has Role", {"parent": USER_3, "role": role.name}))
+
+    # @feature permissions.member-row-saved-with-member
+    def test_a_row_of_a_member_is_refused_on_its_own_under_any_spelling_of_its_parent(self):
+        """`frappe.client.save` resolves a row's `parenttype` to its doctype by a
+        case-insensitive lookup and judges that parent, then stores the string
+        sent, which every reader of the row matches in SQL. So each spelling
+        frappe resolves to a member is the member."""
+        workbook = create_test_workbook(USER_1)
+        query = create_test_query(USER_1, workbook.name)
+        chart = create_test_chart(USER_1, workbook.name, query.name)
+        dashboard = create_test_dashboard(USER_1, workbook.name, chart.name)
+        others = create_test_workbook(USER_2)
+        private_chart = create_test_chart(USER_2, others.name, create_test_query(USER_2, others.name).name)
+
+        rows = [
+            (dashboard, {"parentfield": "linked_charts", "chart": private_chart.name}),
+            (dashboard, {"parentfield": "visible_to_roles", "role": "All"}),
+            (chart, {"parentfield": "visible_to_roles", "role": "Insights User"}),
+            (query, {"parentfield": "variables", "variable_name": "key"}),
+        ]
+        with self.as_user(USER_1):
+            for member, row in rows:
+                child = member.meta.get_field(row["parentfield"]).options
+                for spelling in (member.doctype.lower(), member.doctype.upper(), member.doctype + " "):
+                    with self.assertRaisesRegex(frappe.ValidationError, "not on its own", msg=spelling):
+                        frappe.client.save(
+                            {"doctype": child, "parenttype": spelling, "parent": member.name, **row}
+                        )
+            self.assertFalse(frappe.has_permission(DT.CHART, ptype="read", doc=private_chart.name))
+
+            # a stored row, respelled
+            linked = frappe.get_doc(dashboard.doctype, dashboard.name).linked_charts[0]
+            with self.assertRaisesRegex(frappe.ValidationError, "not on its own"):
+                frappe.client.save(
+                    {**linked.as_dict(), "parenttype": dashboard.doctype.lower(), "chart": private_chart.name}
+                )
+        self.assertFalse(
+            frappe.db.exists(
+                "Insights Dashboard Chart v3", {"parent": dashboard.name, "chart": private_chart.name}
+            )
+        )
+
+        # a row of anything else under another spelling is frappe's business
+        role = frappe.get_doc({"doctype": "Role", "role_name": "Member Row Spelling Test"}).insert()
+        frappe.get_doc(
+            {
+                "doctype": "Has Role",
+                "parenttype": "user",
+                "parentfield": "roles",
+                "parent": USER_3,
+                "role": role.name,
+            }
+        ).insert(ignore_permissions=True)
+        self.assertTrue(frappe.db.exists("Has Role", {"parent": USER_3, "role": role.name}))
+
+    # @feature permissions.member-share-names-a-reader
+    def test_a_share_on_a_member_is_a_named_read_share_on_a_dashboard_or_chart(self):
+        """The desk Share sidebar and `frappe.share.add` write a DocShare,
+        `InsightsDashboardv3.update_access` writes a named read one, and
+        `frappe.has_permission` asks any of them after the controller refuses.
+        Any other shape on a member is refused where it is written, and `bench
+        migrate` reshapes or clears one written before. The workbook's own
+        shares, from `update_share_permissions`, are not members' and keep
+        every flag."""
+        from insights.patches.reshape_member_shares import execute as reshape_member_shares
+
+        workbook = create_test_workbook(USER_1)
+        query = create_test_query(USER_1, workbook.name)
+        chart = create_test_chart(USER_1, workbook.name, query.name)
+        dashboard = create_test_dashboard(USER_1, workbook.name, chart.name)
+        folder = frappe.get_doc(
+            {"doctype": "Insights Folder", "workbook": workbook.name, "title": "Payroll", "type": "query"}
+        ).insert(ignore_permissions=True)
+        alert = frappe.get_doc(
+            {
+                "doctype": "Insights Alert",
+                "title": "Shared alert",
+                "channel": "Email",
+                "query": query.name,
+                "frequency": "Daily",
+                "custom_condition": 1,
+                "condition": "True",
+                "message": "hello",
+                "recipients": "someone@external.example.org",
+                "disabled": 1,
+            }
+        ).insert(ignore_permissions=True)
+        members = [
+            (DT.QUERY, query.name),
+            (DT.CHART, chart.name),
+            (DT.DASHBOARD, dashboard.name),
+            ("Insights Folder", folder.name),
+            ("Insights Alert", alert.name),
+        ]
+
+        shareable = {DT.CHART, DT.DASHBOARD}
+
+        def grants(user, doctype, name):
+            with self.as_user(user):
+                return {
+                    ptype: bool(frappe.has_permission(doctype, ptype=ptype, doc=name))
+                    for ptype in ("read", "write", "share")
+                }
+
+        nothing = {"read": False, "write": False, "share": False}
+        read_only = {"read": True, "write": False, "share": False}
+
+        refused_shapes = [
+            {"user": USER_2, "read": 1, "write": 1},
+            {"user": USER_2, "read": 1, "share": 1},
+            {"everyone": 1, "read": 1},
+        ]
+        for doctype, name in members:
+            shapes = refused_shapes if doctype in shareable else [{"user": USER_2, "read": 1}]
+            for shape in shapes:
+                with self.as_user(USER_1), self.assertRaises(frappe.ValidationError, msg=(doctype, shape)):
+                    frappe.share.add(doctype, name, notify=0, **shape)
+            self.assertEqual(grants(USER_2, doctype, name), nothing, doctype)
+
+        for doctype in shareable:
+            name = dict(members)[doctype]
+            with self.as_user(USER_1):
+                frappe.share.add(doctype, name, user=USER_2, read=1, notify=0)
+            self.assertEqual(grants(USER_2, doctype, name), read_only, doctype)
+        with self.as_user(USER_1):
+            update_dashboard_access(dashboard.name, [USER_2, USER_3])
+        self.assertEqual(grants(USER_3, DT.DASHBOARD, dashboard.name), read_only)
+
+        # rows from before the rule: USER_3 holds every flag on every member,
+        # and the organisation reads the chart
+        frappe.db.delete("DocShare", {"share_doctype": ("in", [d for d, _ in members])})
+        for doctype, name in members:
+            frappe.get_doc(
+                {
+                    "doctype": "DocShare",
+                    "share_doctype": doctype,
+                    "share_name": name,
+                    "user": USER_3,
+                    "read": 1,
+                    "write": 1,
+                    "share": 1,
+                }
+            ).db_insert()
+        frappe.get_doc(
+            {
+                "doctype": "DocShare",
+                "share_doctype": DT.CHART,
+                "share_name": chart.name,
+                "everyone": 1,
+                "read": 1,
+            }
+        ).db_insert()
+        self.assertTrue(all(grants(USER_3, doctype, name)["write"] for doctype, name in members))
+
+        reshape_member_shares()
+        self.assertEqual(
+            frappe.get_all(
+                "DocShare",
+                filters={"share_doctype": ("in", [doctype for doctype, _ in members])},
+                fields=["share_doctype", "user", "everyone", "read", "write", "share"],
+                order_by="share_doctype",
+            ),
+            [
+                {"share_doctype": doctype, "user": USER_3, "everyone": 0, "read": 1, "write": 0, "share": 0}
+                for doctype in sorted(shareable)
+            ],
+        )
+        # the query is read through the chart, and an alert on it only through the workbook
+        for doctype, name in members:
+            expected = nothing if doctype in ("Insights Folder", "Insights Alert") else read_only
+            self.assertEqual(grants(USER_3, doctype, name), expected, doctype)
+            self.assertEqual(grants(USER_2, doctype, name), nothing, doctype)
+        with self.as_user(USER_3):
+            self.assertEqual(get_alerts(query.name), [])
+
+        with self.as_user(USER_1):
+            frappe.share.add(DT.WORKBOOK, workbook.name, user=USER_2, read=1, write=1, share=1, notify=0)
+        for doctype, name in members:
+            self.assertEqual(
+                grants(USER_2, doctype, name), {"read": True, "write": True, "share": True}, doctype
+            )
+        with self.as_user(USER_2):
+            self.assertEqual([row.name for row in get_alerts(query.name)], [alert.name])
 
     # @feature permissions.share-user-lookup
     def test_team_membership_is_listed_for_admins_only(self):
@@ -456,7 +974,8 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         with self.as_user(USER_1):
             update_dashboard_access(dashboard.name, [USER_2])
 
-        self.assert_visible_to(USER_2, DT.QUERY, query.name)
+        # a dashboard hands out the chart's picture, not the query behind it
+        self.assert_not_visible_to(USER_2, DT.QUERY, query.name)
 
         with self.as_user(NON_INSIGHTS_USER):
             with self.assertRaises(frappe.PermissionError):
@@ -479,7 +998,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
 
         with self.as_user(USER_1):
             query_doc = frappe.get_doc(DT.QUERY, query.name)
-            with self.assertRaisesRegex(frappe.PermissionError, "export permission"):
+            with self.assertRaisesRegex(frappe.PermissionError, "not allowed to download"):
                 query_doc.download_results(format="csv")
 
         update_permission_property(DT.QUERY, "Insights User", 0, "export", 1)
@@ -513,6 +1032,21 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
             with db_connections():
                 csv_data = query_doc.download_results(format="csv")
             self.assertIsInstance(csv_data, str)
+
+    # @feature permissions.download-gated permissions.request-body-not-trusted
+    def test_download_results_decides_against_the_stored_query(self):
+        """`run_doc_method` builds the document out of the request body, so the
+        `owner` the gate's last check reads is whatever the caller sent."""
+        workbook = create_test_workbook(USER_1)
+        query = create_test_query(USER_1, workbook.name)
+        frappe.db.set_single_value(DT.SETTINGS, "allow_download", 1)
+        self.set_team_permissions(True)
+
+        with self.as_user(USER_2):
+            self.assertTrue(frappe.has_permission(DT.QUERY, ptype="export"))
+            forged = frappe.get_doc({**frappe.get_doc(DT.QUERY, query.name).as_dict(), "owner": USER_2})
+            with self.assertRaisesRegex(frappe.PermissionError, "not allowed to download"):
+                forged.download_results(format="csv")
 
     # @feature permissions.download-gated
     def test_download_results_allowed_with_read_only_share(self):
@@ -558,7 +1092,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
 
 
 class TestTableRowRestriction(InsightsIntegrationTestCase):
-    """A team's grant can carry an expression, and it cuts the rows the member reads.
+    """A team's grant can carry an expression, and it cuts the rows the grant gives.
 
     The restriction rides `Insights Resource Permission.table_restrictions` and is
     applied where every table read funnels through, so it reaches a query, a
@@ -575,11 +1109,8 @@ class TestTableRowRestriction(InsightsIntegrationTestCase):
         create_test_users()
         cls.settings_was = {
             "enable_permissions": frappe.db.get_single_value(DT.SETTINGS, "enable_permissions"),
-            "apply_user_permissions": frappe.db.get_single_value(DT.SETTINGS, "apply_user_permissions"),
         }
         frappe.db.set_single_value(DT.SETTINGS, "enable_permissions", 1)
-        # the row filter under test is the team's, so the per-user one stays off
-        frappe.db.set_single_value(DT.SETTINGS, "apply_user_permissions", 0)
 
         cls.table_row = get_table_name(cls.SITE_DB, cls.TABLE)
         if not frappe.db.exists(DT.TABLE, cls.table_row):
@@ -599,10 +1130,15 @@ class TestTableRowRestriction(InsightsIntegrationTestCase):
                     "doctype": "ToDo",
                     "description": f"{cls.PREFIX} {status} {i}",
                     "status": status,
+                    # the row filter under test is the team's, so each reader gets
+                    # a set of their own that frappe's own permissions admit whole
+                    "allocated_to": user,
+                    "assigned_by": "Administrator",
                 }
             )
             .insert(ignore_permissions=True)
             .name
+            for user in (USER_1, ADMIN)
             for status, i in (("Open", 1), ("Open", 2), ("Closed", 3))
         ]
 
@@ -667,17 +1203,39 @@ class TestTableRowRestriction(InsightsIntegrationTestCase):
         return sorted(row["status"] for row in rows)
 
     # @feature permissions.table-row-restriction
-    def test_a_teams_row_restriction_hides_the_rows_its_expression_excludes(self):
-        self.assertEqual(self.statuses_read_by(USER_1), ["Open", "Open"])
+    def test_a_teams_row_restriction_cuts_only_the_rows_its_grant_adds(self):
+        """A query each reader runs, as `execute_test_query` runs it. On site
+        data desk admits the reader's own todos, closed one included, and the
+        grant adds the other reader's open ones - never their closed one."""
+        self.assertEqual(self.statuses_read_by(USER_1), ["Closed", "Open", "Open", "Open", "Open"])
         self.assertEqual(self.statuses_read_by(ADMIN), ["Closed", "Open", "Open"])
 
-        # a second team granting the same table without an expression does not
-        # lift the restriction the first one carries
-        create_test_team(
-            "team2",
-            [USER_1],
-            grants=[(DT.DATA_SOURCE, self.SITE_DB), (DT.TABLE, self.table_row)],
-        )
-        clear_team_cache()
+    # @feature permissions.table-row-restriction
+    def test_one_teams_grant_never_narrows_anothers(self):
+        """A query `execute_test_query` runs, as a reader in two teams that both
+        grant the table. Each grant admits the rows its own restriction allows,
+        and a grant with none admits the whole table."""
+        team = self.second_team("status == 'Closed'")
+        # the other reader's closed todo, which only the second team admits
+        self.assertEqual(self.statuses_read_by(USER_1), ["Closed", "Closed", "Open", "Open", "Open", "Open"])
 
-        self.assertEqual(self.statuses_read_by(USER_1), ["Open", "Open"])
+        team.team_permissions[-1].table_restrictions = "status == 'Nothing'"
+        team.save(ignore_permissions=True)
+        clear_team_cache()
+        self.assertEqual(self.statuses_read_by(USER_1), ["Closed", "Open", "Open", "Open", "Open"])
+
+        team.team_permissions[-1].table_restrictions = None
+        team.save(ignore_permissions=True)
+        clear_team_cache()
+        self.assertEqual(self.statuses_read_by(USER_1), ["Closed", "Closed", "Open", "Open", "Open", "Open"])
+
+    def second_team(self, restriction):
+        team = create_test_team("team2", [USER_1], grants=[(DT.DATA_SOURCE, self.SITE_DB)])
+        self.addCleanup(frappe.delete_doc, DT.TEAM, team.name, force=True, ignore_permissions=True)
+        team.append(
+            "team_permissions",
+            {"resource_type": DT.TABLE, "resource_name": self.table_row, "table_restrictions": restriction},
+        )
+        team.save(ignore_permissions=True)
+        clear_team_cache()
+        return team

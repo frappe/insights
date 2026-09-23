@@ -32,9 +32,6 @@ class TestSiteDBRowPermissions(InsightsIntegrationTestCase):
 
     @classmethod
     def before_class(cls):
-        cls.settings_was = frappe.db.get_single_value("Insights Settings", "apply_user_permissions")
-        frappe.db.set_single_value("Insights Settings", "apply_user_permissions", 1)
-
         create_user(USER_A)
         create_user(USER_B)
 
@@ -60,7 +57,6 @@ class TestSiteDBRowPermissions(InsightsIntegrationTestCase):
                 frappe.delete_doc("ToDo", name, force=True, ignore_permissions=True)
         for email in (USER_A, USER_B):
             frappe.delete_doc("User", email, force=True, ignore_permissions=True)
-        frappe.db.set_single_value("Insights Settings", "apply_user_permissions", cls.settings_was)
 
     def permitted_count(self, user):
         with self.as_user(user):
@@ -75,7 +71,7 @@ class TestSiteDBRowPermissions(InsightsIntegrationTestCase):
                     self.permitted_count(user),
                 )
 
-    # @feature data-source.table-preview settings.apply-user-permissions
+    # @feature data-source.table-preview permissions.site-user-permissions
     def test_preview_shows_only_permitted_rows(self):
         for user in (USER_A, USER_B):
             with self.as_user(user):

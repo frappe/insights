@@ -17,16 +17,21 @@ from insights.http import post_to_public_url, validate_public_url
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
     db_connections,
 )
-from insights.permission_user import permission_user
+from insights.permission_user import get_permission_user, may_run_as, permission_user
+from insights.permissions import workbook_of
 from insights.utils import deep_convert_dict_to_dict
 
 # The payload is a contract with somebody else's code. Version it, so it can
 # change without breaking every receiver that already parses it.
 WEBHOOK_PAYLOAD_VERSION = 1
 
-# A query with no ceiling on its rows must not become a POST with no ceiling on
-# its body. `count` still reports the real total.
-WEBHOOK_MAX_ROWS = 100
+# A query with no ceiling on its rows must not become a mail or a POST with no
+# ceiling on its body. `count` still reports the real total.
+ALERT_MAX_ROWS = 100
+
+
+class SendRefused(frappe.PermissionError):
+    """The user an alert runs as may not send it. A scheduled run stops the alert on it."""
 
 
 class InsightsAlert(Document):
@@ -56,6 +61,7 @@ class InsightsAlert(Document):
     # end: auto-generated types
 
     def validate(self):
+        self.check_trusted_code()
         if self.disabled:
             return
 
@@ -107,11 +113,36 @@ class InsightsAlert(Document):
         validate_public_url(self.webhook_url)
 
     def has_query_permission(self):
-        if not frappe.has_permission("Insights Query v3", "read", self.query):
-            frappe.throw("You do not have permission to access this query")
+        """Whether the user this runs as may read the alert's query.
+
+        Asked at save of whoever saves, and at every send of whoever enabled it:
+        a share revoked or a level lowered since the save must stop the next mail.
+        """
+        from insights.permissions import can_read_referenced_query
+
+        if not can_read_referenced_query(self.query):
+            frappe.throw(_("You do not have permission to access this query"), frappe.PermissionError)
 
     @frappe.whitelist()
     def send_alert(self, force: bool = False):
+        # Sending is an act on the author's recipients, not a read of the alert:
+        # `run_doc_method` and the desk form check read only. Asked of whoever
+        # the alert runs as, because the scheduler's session is Administrator,
+        # and of the document, not its name: an unsaved alert has no row to
+        # load, and is judged on its query's workbook.
+        runs_as = get_permission_user()
+        if not may_run_as(self.doctype, self, runs_as):
+            if not frappe.db.get_value("User", runs_as, "enabled"):
+                frappe.throw(_("{0}, who this alert runs as, is disabled.").format(runs_as), SendRefused)
+            workbook = workbook_of(self)
+            frappe.throw(
+                _("{0}, who this alert runs as, may not edit the workbook {1}.").format(
+                    runs_as, frappe.db.get_value("Insights Workbook", workbook, "title") or workbook
+                ),
+                SendRefused,
+            )
+        self.has_query_permission()
+
         results = self.evaluate_condition()
         if not results and not force:
             return
@@ -146,8 +177,8 @@ class InsightsAlert(Document):
                 "alert": context["alert"]["title"],
                 "query": context["query"]["title"],
                 "count": context["count"],
-                "rows": context["rows"][:WEBHOOK_MAX_ROWS],
-                "truncated": context["count"] > WEBHOOK_MAX_ROWS,
+                "rows": context["rows"][:ALERT_MAX_ROWS],
+                "truncated": context["count"] > ALERT_MAX_ROWS,
                 "triggered_at": get_datetime_str(now_datetime()),
             },
         }
@@ -179,15 +210,8 @@ class InsightsAlert(Document):
             )
 
     def get_author_email(self):
-        """The address a reply reaches.
-
-        `owner` is a User name, which is an address for an account created from
-        an invite and the literal "Administrator" for the admin. `sendmail`
-        refuses a reply_to it cannot parse, so an author it cannot resolve
-        leaves the mail without one rather than unsent.
-        """
-        email = frappe.db.get_value("User", self.owner, "email")
-        return email if email and validate_email_address(email) else None
+        """The address a reply reaches, or none: a mail without a reply-to beats one unsent."""
+        return email_of(self.owner)
 
     def send_email_alert(self, message):
         """Mail the alert, marked as one.
@@ -204,7 +228,16 @@ class InsightsAlert(Document):
             now=True,
         )
 
+    def check_trusted_code(self):
+        """The condition is compared with the stored alert's, not with the one a
+        save saw: a send runs the condition in the request body, saved or not."""
+        from insights.permissions import check_trusted_code_author
+
+        stored = frappe.db.get_value(self.doctype, self.name, "condition") if self.name else None
+        check_trusted_code_author([(self.title, {"expression": self.condition}, {"expression": stored})])
+
     def evaluate_condition(self):
+        self.check_trusted_code()
         doc = frappe.get_doc("Insights Query v3", self.query)
         with db_connections():
             return doc.evaluate_alert_expression(self.condition)
@@ -232,17 +265,21 @@ class InsightsAlert(Document):
         )
 
     def get_message_context(self):
+        # read now, as the condition that fired was: a cached page and a cached
+        # count carry two lifetimes and need not match it or each other
         doc = frappe.get_doc("Insights Query v3", self.query)
         with db_connections():
-            data = doc.execute()
+            rows = doc.execute(page_size=ALERT_MAX_ROWS, force=True)["rows"]
+            count = doc.count_rows(force=True)
 
-        rows = data["rows"]
         datatable = pd.DataFrame(rows).to_html(index=False)
+        if count > len(rows):
+            datatable += "<p>{}</p>".format(_("The first {0} of {1} rows").format(len(rows), count))
         datatable = f"<div class='datatable-container'>{datatable}</div>"
         return deep_convert_dict_to_dict(
             {
                 "rows": rows,
-                "count": len(rows),
+                "count": count,
                 "query": {
                     "title": doc.title,
                 },
@@ -302,18 +339,32 @@ class InsightsAlert(Document):
 def send_alerts():
     alerts = frappe.get_all("Insights Alert", filters={"disabled": 0}, fields=["name", "permission_user"])
     for alert in alerts:
+        # what a failed run does next writes and commits too, and a failure
+        # there must not cost the alerts after it their window
         try:
-            alert_doc = frappe.get_cached_doc("Insights Alert", alert.name)
-            if alert_doc.is_event_due():
-                # the scheduler runs as Administrator, so without this the alert
-                # would read every row of every table it names
-                with permission_user(alert.permission_user):
-                    alert_doc.send_alert()
-            frappe.db.commit()
+            run_alert(alert)
         except Exception:
             frappe.db.rollback()
-            frappe.log_error(title=f"Failed to send alert: {alert.name}")
-            record_execution(alert.name)
+            frappe.log_error(title=f"Failed to record the failed run of alert: {alert.name}")
+
+
+def run_alert(alert):
+    try:
+        alert_doc = frappe.get_cached_doc("Insights Alert", alert.name)
+        if alert_doc.is_event_due():
+            # the scheduler runs as Administrator, so without this the alert
+            # would read every row of every table it names
+            with permission_user(alert.permission_user):
+                alert_doc.send_alert()
+        frappe.db.commit()
+    except SendRefused as refusal:
+        frappe.db.rollback()
+        stop(alert.name, str(refusal))
+    except Exception:
+        frappe.db.rollback()
+        frappe.log_error(title=f"Failed to send alert: {alert.name}")
+        record_execution(alert.name)
+        tell_owner_it_failed(alert.name)
 
 
 def record_execution(name: str):
@@ -331,6 +382,75 @@ def record_execution(name: str):
     # The caller rolled back the failed alert. Without a commit of its own this
     # write goes out with the next one, or with nothing at all.
     frappe.db.commit()  # nosemgrep
+
+
+def stop(name: str, cause: str):
+    """Disable an alert whose enabler may no longer send it, and tell the workbook's owner why.
+
+    Every later window would be refused the same way, so it does not run again
+    until somebody enables it, which makes them the user it runs as. The
+    alert's own owner is often the enabler, disabled or removed, so the
+    workbook's owner is the one told.
+    """
+    frappe.db.set_value("Insights Alert", name, "disabled", 1)
+    # the caller rolled back, so this write needs a commit of its own
+    frappe.db.commit()  # nosemgrep
+
+    try:
+        alert = frappe.get_doc("Insights Alert", name)
+        owner = email_of(frappe.db.get_value("Insights Workbook", workbook_of(alert), "owner"))
+        if not owner:
+            return
+        frappe.sendmail(
+            recipients=[owner],
+            subject=_("Insights Alert stopped: {0}").format(alert.title),
+            message=_(
+                "The alert {0} has stopped and is now disabled. {1} Enable it again to run it as yourself."
+            ).format(escape_html(alert.title), escape_html(cause)),
+            now=True,
+        )
+    except Exception:
+        frappe.log_error(title=f"Failed to tell the workbook owner that alert {name} stopped")
+
+
+def email_of(user: str | None) -> str | None:
+    """The address a mail to `user` reaches.
+
+    A User name is an address for an account created from an invite and the
+    literal "Administrator" for the admin. `sendmail` refuses an address it
+    cannot parse, so a user it cannot resolve gets nothing rather than failing
+    the mail.
+    """
+    email = user and frappe.db.get_value("User", user, "email")
+    return email if email and validate_email_address(email) else None
+
+
+def tell_owner_it_failed(name: str):
+    """Mail the alert's owner that a scheduled run failed.
+
+    Nobody watches a scheduled run, and an alert that stops sending reads the
+    same as one whose condition was never met. The next attempt is the next
+    scheduled window, so this is at most one mail per window.
+
+    The fact and not the error: the scheduler's session is Administrator, so an
+    error was composed for someone who may configure the data source, and a
+    driver's names the host and the account. That stays in the Error Log.
+    """
+    try:
+        alert = frappe.get_doc("Insights Alert", name)
+        owner = alert.get_author_email()
+        if not owner:
+            return
+        frappe.sendmail(
+            recipients=[owner],
+            subject=_("Insights Alert failed: {0}").format(alert.title),
+            message=_(
+                "The alert {0} could not run. It will try again at its next scheduled time. Ask your administrator for the error."
+            ).format(escape_html(alert.title)),
+            now=True,
+        )
+    except Exception:
+        frappe.log_error(title=f"Failed to tell the owner of alert {name} that it failed")
 
 
 class TelegramAlert:

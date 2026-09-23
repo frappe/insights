@@ -1,21 +1,20 @@
-"""A public link, a preview and an alert each run as somebody.
+"""A preview and an alert each run as somebody.
 
-None of the three has a caller whose permissions can decide the rows, so each
-names a user at the moment it was published or enabled. The engine filters by
-that user. The session user is left alone, so nothing here may call
-`frappe.set_user`.
+Neither has a caller whose permissions can decide the rows, so each names a user
+at the moment the privileged act happened — minting a preview key, enabling an
+alert. The engine filters by that user, and the session user is left alone, so
+nothing here may call `frappe.set_user`.
+
+A public link names its user another way. Content declares its own
+`run_as_owner`, and `test_run_as_owner` is where that is held.
 
 The fixtures below sit on `tabToDo`, whose permission query restricts a
 non-System-Manager to their own assignments. That is the row-level difference
 every test turns on.
 """
 
-from contextlib import contextmanager
-from unittest.mock import patch
-
 import frappe
 
-from insights.api import run_doc_method
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
     db_connections,
 )
@@ -32,23 +31,10 @@ from insights.tests.factories import (
 )
 
 PUBLISHER = "permission_user_publisher@test.com"
-BYSTANDER = "permission_user_bystander@test.com"
+EDITOR = "permission_user_editor@test.com"
 
 WORKBOOK_TITLE = "Permission User Test Workbook"
 TODO_PREFIX = "Permission User Test"
-
-PUBLISHER_TODOS = [f"{TODO_PREFIX} publisher 1", f"{TODO_PREFIX} publisher 2"]
-BYSTANDER_TODOS = [f"{TODO_PREFIX} bystander 1"]
-
-
-@contextmanager
-def as_http_request():
-    """`insights.api.run_doc_method` validates the HTTP method, so fake a request."""
-    frappe.local.request = frappe._dict(method="POST", headers={})
-    try:
-        yield
-    finally:
-        del frappe.local.request
 
 
 def todo_operations():
@@ -66,289 +52,36 @@ def todo_operations():
     ]
 
 
-class TestPermissionUser(InsightsIntegrationTestCase):
+class TestPreviewKeyNamesItsUser(InsightsIntegrationTestCase):
+    """A preview has no caller, so the key carries the user it was cut for."""
+
     @classmethod
     def before_class(cls):
-        cls.cleanup()
+        delete_users(PUBLISHER)
         create_user(PUBLISHER, first_name="Perm", last_name="Publisher", roles="Insights User")
-        create_user(BYSTANDER, first_name="Perm", last_name="Bystander", roles="Insights User")
-
-        for user, descriptions in ((PUBLISHER, PUBLISHER_TODOS), (BYSTANDER, BYSTANDER_TODOS)):
-            for description in descriptions:
-                frappe.get_doc(
-                    {
-                        "doctype": "ToDo",
-                        "description": description,
-                        "allocated_to": user,
-                        "assigned_by": "Administrator",
-                    }
-                ).insert(ignore_permissions=True)
-
-        cls.workbook = create_test_workbook(PUBLISHER, title=WORKBOOK_TITLE).name
-        cls.query = create_test_query(
-            PUBLISHER, cls.workbook, title="Permission User Query", operations=todo_operations()
-        ).name
-        # a chart a public link can draw: one row per todo, so the rows a guest
-        # gets back are the descriptions the identity decides
-        with as_user(PUBLISHER):
-            cls.chart = (
-                frappe.get_doc(
-                    {
-                        "doctype": DT.CHART,
-                        "title": "Permission User Chart",
-                        "workbook": cls.workbook,
-                        "query": cls.query,
-                        "chart_type": "Table",
-                        "config": {
-                            "rows": [
-                                {
-                                    "column_name": "description",
-                                    "dimension_name": "description",
-                                    "data_type": "String",
-                                }
-                            ],
-                            "columns": [],
-                            "values": [],
-                            "order_by": [],
-                        },
-                    }
-                )
-                .insert()
-                .name
-            )
 
     @classmethod
     def after_class(cls):
-        cls.cleanup()
-
-    @classmethod
-    def cleanup(cls):
-        delete_workbooks(title_prefix=WORKBOOK_TITLE)
-        for todo in frappe.get_all(
-            "ToDo", filters={"description": ["like", f"%{TODO_PREFIX}%"]}, pluck="name"
-        ):
-            frappe.delete_doc("ToDo", todo, force=True, ignore_permissions=True)
-        delete_users(PUBLISHER, BYSTANDER)
-
-    def publish_dashboard(self, title):
-        with as_user(PUBLISHER):
-            dashboard = frappe.get_doc(
-                {
-                    "doctype": DT.DASHBOARD,
-                    "title": title,
-                    "workbook": self.workbook,
-                    "items": [{"id": "chart-1", "type": "chart", "chart": self.chart}],
-                }
-            ).insert()
-            dashboard.update_access(
-                {"is_public": 1, "is_shared_with_organization": 0, "people_with_access": []}
-            )
-        # a public dashboard on the shared chart is a root every other test here
-        # would then resolve to, so it does not outlive the test that made it
-        self.addCleanup(frappe.delete_doc, DT.DASHBOARD, dashboard.name, force=True)
-        return dashboard.name
-
-    def publish(self, user=PUBLISHER):
-        with as_user(user):
-            frappe.get_doc(DT.CHART, self.chart).update_access(is_public=True)
-        self.addCleanup(
-            frappe.db.set_value,
-            DT.CHART,
-            self.chart,
-            {"is_public": 0, "permission_user": None},
-        )
-
-    def descriptions(self, result):
-        return sorted(row["description"] for row in result["rows"])
-
-    def run_as_guest(self, **kwargs):
-        """What a public link fetches: the chart's own rows, through `get_data`."""
-        docs = frappe.as_json({"doctype": DT.CHART, "name": self.chart})
-        kwargs.setdefault("docs", docs)
-        with as_user("Guest"), db_connections(), as_http_request():
-            return run_doc_method(method="get_data", **kwargs)
-
-    # publishing
-
-    # @feature shared.chart-link
-    def test_publishing_records_the_publisher(self):
-        self.publish()
-        self.assertEqual(frappe.db.get_value(DT.CHART, self.chart, "permission_user"), PUBLISHER)
-
-    # @feature shared.revoke
-    def test_withdrawing_clears_the_publisher(self):
-        self.publish()
-        with as_user(PUBLISHER):
-            frappe.get_doc(DT.CHART, self.chart).update_access(is_public=False)
-        self.assertFalse(frappe.db.get_value(DT.CHART, self.chart, "permission_user"))
-
-    # @feature shared.publish-needs-share
-    def test_a_plain_write_cannot_publish(self):
-        """`is_public` is permlevel 1, so the generic write surface cannot reach it."""
-        with as_user(PUBLISHER):
-            chart = frappe.get_doc(DT.CHART, self.chart)
-            chart.is_public = 1
-            chart.save()
-
-        self.assertFalse(frappe.db.get_value(DT.CHART, self.chart, "is_public"))
-
-    # @feature shared.publish-needs-share
-    def test_a_plain_write_cannot_name_a_permission_user(self):
-        with as_user(PUBLISHER):
-            chart = frappe.get_doc(DT.CHART, self.chart)
-            chart.permission_user = "Administrator"
-            chart.save()
-
-        self.assertFalse(frappe.db.get_value(DT.CHART, self.chart, "permission_user"))
-
-    # @feature shared.publish-needs-share
-    def test_publishing_needs_share_access(self):
-        with as_user(BYSTANDER), self.assertRaises(frappe.PermissionError):
-            frappe.get_doc(DT.CHART, self.chart).update_access(is_public=True)
-
-    # execution
-
-    # @feature shared.rows-are-the-publishers
-    def test_a_public_link_returns_only_the_publisher_rows(self):
-        self.publish()
-        result = self.run_as_guest()
-        self.assertEqual(self.descriptions(result), sorted(PUBLISHER_TODOS))
-
-    # @feature shared.rows-are-the-publishers
-    def test_a_public_link_does_not_switch_the_session_user(self):
-        self.publish()
-        docs = frappe.as_json({"doctype": DT.CHART, "name": self.chart})
-
-        with as_user("Guest"), db_connections(), as_http_request():
-            with patch.object(frappe, "set_user", side_effect=AssertionError("set_user in a request")):
-                result = run_doc_method(method="get_data", docs=docs)
-            self.assertEqual(frappe.session.user, "Guest")
-
-        self.assertEqual(self.descriptions(result), sorted(PUBLISHER_TODOS))
-
-    # @feature shared.rows-are-the-publishers
-    def test_the_permission_user_does_not_outlive_the_execution(self):
-        self.publish()
-        self.run_as_guest()
-        self.assertEqual(get_permission_user(), frappe.session.user)
-
-    # @feature shared.publish-needs-share
-    def test_a_request_payload_cannot_name_its_own_permission_user(self):
-        """`run_doc_method` builds the document from the body, so the user is
-        read off the stored root instead."""
-        self.publish()
-
-        forged = frappe.get_doc(DT.CHART, self.chart).as_dict()
-        forged.update({"permission_user": "Administrator", "owner": "Administrator"})
-
-        result = self.run_as_guest(docs=frappe.as_json(forged))
-        self.assertEqual(self.descriptions(result), sorted(PUBLISHER_TODOS))
-
-    # @feature shared.publish-needs-share
-    def test_a_request_argument_cannot_name_a_permission_user(self):
-        self.publish()
-        result = self.run_as_guest(args={"permission_user": "Administrator"})
-        self.assertEqual(self.descriptions(result), sorted(PUBLISHER_TODOS))
-
-    # @feature shared.revoke
-    def test_a_link_that_names_nobody_is_refused(self):
-        """Content published before the field existed, and never re-published."""
-        self.publish()
-        frappe.db.set_value(DT.CHART, self.chart, "permission_user", None)
-
-        with self.assertRaises(frappe.PermissionError):
-            self.run_as_guest()
-
-    # @feature shared.chart-on-public-dashboard
-    def test_a_chart_on_a_public_dashboard_runs_as_the_dashboard_publisher(self):
-        from insights.api.shared import get_public_root
-
-        with as_user(PUBLISHER):
-            dashboard = frappe.get_doc(
-                {
-                    "doctype": DT.DASHBOARD,
-                    "title": f"{WORKBOOK_TITLE} Dashboard",
-                    "workbook": self.workbook,
-                    "items": [{"id": "chart-1", "type": "chart", "chart": self.chart}],
-                }
-            ).insert()
-            dashboard.update_access(
-                {"is_public": 1, "is_shared_with_organization": 0, "people_with_access": []}
-            )
-
-        # the chart itself was never published, so the dashboard is what names
-        # the user its rows are filtered by
-        self.assertFalse(frappe.db.get_value(DT.CHART, self.chart, "is_public"))
-        self.assertEqual(get_public_root(DT.CHART, self.chart), (DT.DASHBOARD, dashboard.name))
-        self.assertEqual(frappe.db.get_value(DT.DASHBOARD, dashboard.name, "permission_user"), PUBLISHER)
-
-        result = self.run_as_guest()
-        self.assertEqual(self.descriptions(result), sorted(PUBLISHER_TODOS))
-
-    # @feature shared.chart-on-public-dashboard
-    def test_a_chart_on_two_public_dashboards_picks_the_older_one(self):
-        """The identity decides the rows, so an unordered `LIMIT 1` would make
-        the same link answer differently on different days."""
-        from insights.api.shared import get_public_root
-
-        mine = [self.publish_dashboard(f"{WORKBOOK_TITLE} Holder {i}") for i in (1, 2)]
-
-        holders = frappe.get_all("Insights Dashboard Chart v3", filters={"chart": self.chart}, pluck="parent")
-        candidates = frappe.get_all(
-            DT.DASHBOARD,
-            filters={"name": ["in", holders], "is_public": 1},
-            fields=["name", "creation"],
-        )
-        self.assertLessEqual(set(mine), {d.name for d in candidates})
-
-        oldest = min(candidates, key=lambda d: d.creation).name
-        for _ in range(3):
-            self.assertEqual(get_public_root(DT.CHART, self.chart), (DT.DASHBOARD, oldest))
-
-    # @feature shared.rows-are-the-publishers
-    def test_the_identity_decides_the_rows(self):
-        """Two publishers, one chart, two different answers."""
-        self.publish()
-        as_publisher = self.descriptions(self.run_as_guest())
-
-        frappe.db.set_value(DT.CHART, self.chart, "permission_user", BYSTANDER)
-        as_bystander = self.descriptions(self.run_as_guest())
-
-        self.assertEqual(as_publisher, sorted(PUBLISHER_TODOS))
-        self.assertEqual(as_bystander, sorted(BYSTANDER_TODOS))
-
-    # @feature shared.rows-are-the-publishers
-    def test_a_public_link_response_does_not_name_the_publisher(self):
-        self.publish()
-        frappe.local.response = frappe._dict(docs=[])
-        self.run_as_guest()
-        self.assertNotIn(PUBLISHER, frappe.as_json(frappe.local.response))
-        # frappe-ui returns the whole response, which the page reads `.message` off,
-        # only while `docs` is set
-        self.assertEqual(frappe.local.response.docs, [{"doctype": DT.CHART, "name": self.chart}])
-
-    # @feature shared.chart-link
-    def test_a_public_document_read_does_not_name_the_publisher(self):
-        from insights.api import get_doc
-
-        self.publish()
-        with as_user("Guest"):
-            doc = get_doc(DT.CHART, self.chart)
-        self.assertEqual(doc["name"], self.chart)
-        self.assertNotIn(PUBLISHER, frappe.as_json(doc))
-
-    # preview
+        delete_users(PUBLISHER)
 
     # @feature dashboard.preview-image
     def test_a_preview_key_names_the_user_it_was_cut_for(self):
-        from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import (
-            generate_preview_key,
-        )
+        from insights.preview_key import cache_key, generate_preview_key
 
         with as_user(PUBLISHER), generate_preview_key("some-dashboard") as key:
-            stored = frappe.cache.get_value(f"insights_preview_key:{key}")
+            stored = frappe.cache.get_value(cache_key(key))
 
         self.assertEqual(stored, {"dashboard": "some-dashboard", "user": PUBLISHER})
+
+
+def error_log_operations():
+    """A query over `tabError Log`, which an Insights User may not read at all."""
+    return [
+        {
+            "type": "source",
+            "table": {"type": "table", "data_source": "Site DB", "table_name": "tabError Log"},
+        }
+    ]
 
 
 def user_operations():
@@ -369,6 +102,7 @@ class TestAlertRunsAsItsEnabler(InsightsIntegrationTestCase):
     def before_class(cls):
         cls.cleanup()
         create_user(PUBLISHER, first_name="Perm", last_name="Publisher", roles="Insights User")
+        create_user(EDITOR, first_name="Perm", last_name="Editor", roles="Insights User")
         cls.workbook = create_test_workbook(PUBLISHER, title=WORKBOOK_TITLE).name
         cls.query = create_test_query(
             PUBLISHER, cls.workbook, title="Alert Query", operations=todo_operations()
@@ -385,15 +119,15 @@ class TestAlertRunsAsItsEnabler(InsightsIntegrationTestCase):
         ):
             frappe.delete_doc("Insights Alert", alert, force=True, ignore_permissions=True)
         delete_workbooks(title_prefix=WORKBOOK_TITLE)
-        delete_users(PUBLISHER)
+        delete_users(PUBLISHER, EDITOR)
 
-    def create_alert(self):
-        with as_user(PUBLISHER), db_connections():
+    def create_alert(self, author=PUBLISHER, query=None):
+        with as_user(author), db_connections():
             alert = frappe.get_doc(
                 {
                     "doctype": "Insights Alert",
                     "title": f"{TODO_PREFIX} Alert",
-                    "query": self.query,
+                    "query": query or self.query,
                     "channel": "Email",
                     "recipients": PUBLISHER,
                     "frequency": "Daily",
@@ -408,6 +142,168 @@ class TestAlertRunsAsItsEnabler(InsightsIntegrationTestCase):
     def repoint_query(self, operations):
         frappe.db.set_value(DT.QUERY, self.query, "operations", frappe.as_json(operations))
         frappe.clear_document_cache(DT.QUERY, self.query)
+
+    # @feature alerts.failed-run-recorded alerts.enable
+    def test_an_alert_that_cannot_run_tells_its_owner(self):
+        """`send_alerts`, called as `scheduler_events.all` calls it, on an alert
+        whose enabler may not read the table its query now names. The refusal
+        used to reach an Error Log and nobody else."""
+        from unittest.mock import patch
+
+        from insights.insights.doctype.insights_alert.insights_alert import send_alerts
+
+        alert = self.create_alert()
+        self.repoint_query(error_log_operations())
+
+        # `send_alerts` rolls back what it catches, so the alert and its query
+        # have to be committed to be read after the failure
+        frappe.db.commit()  # nosemgrep
+
+        def restore():
+            frappe.delete_doc("Insights Alert", alert.name, force=True, ignore_permissions=True)
+            self.repoint_query(todo_operations())
+            frappe.db.commit()  # nosemgrep
+
+        self.addCleanup(restore)
+
+        with patch("frappe.sendmail") as sendmail:
+            send_alerts()
+
+        told = [
+            call.kwargs for call in sendmail.call_args_list if call.kwargs.get("recipients") == [PUBLISHER]
+        ]
+        self.assertEqual(len(told), 1)
+        self.assertIn(alert.title, told[0]["subject"])
+
+    # @feature alerts.enable permissions.member-write-follows-workbook
+    def test_an_alert_stops_sending_once_its_enabler_may_not_write_it(self):
+        """`send_alerts`, as `scheduler_events.all` calls it: Administrator,
+        under the enabler. An editor who made the query and the alert, then was
+        removed from the workbook, owns both and may write neither, so the
+        alert mails nothing more under their rows."""
+        from unittest.mock import patch
+
+        from insights.api.workbooks import update_share_permissions
+        from insights.insights.doctype.insights_alert.insights_alert import InsightsAlert
+
+        with as_user(PUBLISHER):
+            update_share_permissions(self.workbook, [{"user": EDITOR, "read": 1, "write": 1}])
+        query = create_test_query(EDITOR, self.workbook, title="Editor Query", operations=todo_operations())
+        alert = self.create_alert(author=EDITOR, query=query.name)
+        self.assertEqual(alert.permission_user, EDITOR)
+
+        def scheduled_send():
+            with (
+                as_user("Administrator"),
+                permission_user(alert.permission_user),
+                patch.object(InsightsAlert, "evaluate_condition", return_value=True),
+                patch.object(InsightsAlert, "get_message_context", return_value={"rows": [], "count": 0}),
+                patch("frappe.sendmail") as sendmail,
+            ):
+                frappe.get_doc("Insights Alert", alert.name).send_alert()
+            return sendmail.call_count
+
+        self.assertEqual(scheduled_send(), 1)
+
+        with as_user(PUBLISHER):
+            update_share_permissions(self.workbook, [])
+        with self.assertRaises(frappe.PermissionError):
+            scheduled_send()
+
+    def scheduled_run(self, alert):
+        """`send_alerts`, as `scheduler_events.all` calls it, with the alert due.
+        Answers the mails it sent, as recipients, subject and message."""
+        from unittest.mock import patch
+
+        from insights.insights.doctype.insights_alert.insights_alert import InsightsAlert, send_alerts
+
+        frappe.db.set_value("Insights Alert", alert.name, "last_execution", None)
+        frappe.db.commit()  # nosemgrep
+        with (
+            patch.object(InsightsAlert, "evaluate_condition", return_value=True),
+            patch.object(InsightsAlert, "get_message_context", return_value={"rows": [], "count": 0}),
+            patch("frappe.sendmail") as sendmail,
+        ):
+            send_alerts()
+        return [
+            (call.kwargs["recipients"], call.kwargs["subject"], call.kwargs["message"])
+            for call in sendmail.call_args_list
+        ]
+
+    def assert_stopped_and_told(self, alert, mails, cause):
+        """One mail, to the workbook's owner, naming the cause and promising no
+        retry - and the alert is disabled, so the next window sends nothing."""
+        self.assertEqual(len(mails), 1, mails)
+        recipients, subject, message = mails[0]
+        self.assertEqual(recipients, [PUBLISHER])
+        self.assertEqual(subject, f"Insights Alert stopped: {alert.title}")
+        self.assertIn(EDITOR, message)
+        self.assertIn(cause, message)
+        self.assertNotIn("try again", message)
+        self.assertEqual(frappe.db.get_value("Insights Alert", alert.name, "disabled"), 1)
+        self.assertEqual(self.scheduled_run(alert), [])
+
+    # @feature alerts.failed-run-recorded alerts.enable
+    def test_an_alert_whose_enabler_is_disabled_stops_and_tells_the_workbook_owner(self):
+        """`send_alerts`. An editor of the workbook enabled the publisher's
+        alert, so it runs as the editor; once the editor's account is disabled
+        it mails its recipients nothing, is disabled, and tells the workbook's
+        owner why. Under an enabled enabler the same alert sends."""
+        from insights.api.workbooks import update_share_permissions
+
+        with as_user(PUBLISHER):
+            update_share_permissions(self.workbook, [{"user": EDITOR, "read": 1, "write": 1}])
+        alert = self.create_alert()
+        with as_user(EDITOR), db_connections():
+            for disabled in (1, 0):
+                doc = frappe.get_doc("Insights Alert", alert.name)
+                doc.disabled = disabled
+                doc.save()
+        self.assertEqual(frappe.db.get_value("Insights Alert", alert.name, "permission_user"), EDITOR)
+        frappe.db.commit()  # nosemgrep
+
+        def restore():
+            frappe.db.set_value("User", EDITOR, "enabled", 1)
+            frappe.delete_doc("Insights Alert", alert.name, force=True, ignore_permissions=True)
+            with as_user(PUBLISHER):
+                update_share_permissions(self.workbook, [])
+            frappe.db.commit()  # nosemgrep
+
+        self.addCleanup(restore)
+
+        self.assertEqual(
+            [mail[:2] for mail in self.scheduled_run(alert)],
+            [([PUBLISHER], f"Insights Alert: {alert.title}")],
+        )
+
+        frappe.db.set_value("User", EDITOR, "enabled", 0)
+        frappe.clear_cache(user=EDITOR)
+        self.assert_stopped_and_told(alert, self.scheduled_run(alert), "is disabled")
+
+    # @feature alerts.failed-run-recorded alerts.enable
+    def test_an_alert_whose_enabler_left_the_workbook_stops_and_tells_the_workbook_owner(self):
+        """`send_alerts`. The editor made and enabled the alert, so they own it
+        as well as run it; removed from the workbook, they are not the one to
+        tell. The workbook's owner is."""
+        from insights.api.workbooks import update_share_permissions
+
+        with as_user(PUBLISHER):
+            update_share_permissions(self.workbook, [{"user": EDITOR, "read": 1, "write": 1}])
+        alert = self.create_alert(author=EDITOR)
+        frappe.db.commit()  # nosemgrep
+
+        def restore():
+            frappe.delete_doc("Insights Alert", alert.name, force=True, ignore_permissions=True)
+            with as_user(PUBLISHER):
+                update_share_permissions(self.workbook, [])
+            frappe.db.commit()  # nosemgrep
+
+        self.addCleanup(restore)
+
+        with as_user(PUBLISHER):
+            update_share_permissions(self.workbook, [])
+        frappe.db.commit()  # nosemgrep
+        self.assert_stopped_and_told(alert, self.scheduled_run(alert), WORKBOOK_TITLE)
 
     # @feature alerts.enable
     def test_enabling_an_alert_records_who_enabled_it(self):
