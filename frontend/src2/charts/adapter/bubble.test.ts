@@ -32,7 +32,7 @@ describe('a bubble chart', () => {
 		expect(props.label).toBe('category')
 		// Coloring the points by a Dimension is grouping them by it, which is
 		// what a series is.
-		expect(props.series).toBe('department')
+		expect(props.splitBy).toBe('department')
 		expect(props.data).toBe(input.result.rows)
 	})
 
@@ -41,7 +41,7 @@ describe('a bubble chart', () => {
 		const props = propsOf({ x: 'revenue', y: 'profit' })
 		expect(props.size).toBeUndefined()
 		expect(props.label).toBeUndefined()
-		expect(props.series).toBeUndefined()
+		expect(props.splitBy).toBeUndefined()
 	})
 
 	// @feature charts.bubble-data-labels

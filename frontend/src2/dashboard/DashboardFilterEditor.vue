@@ -269,8 +269,7 @@ function saveEdit() {
 													defaultValueSelectorType === 'date_range'
 												"
 												class="flex-1"
-												:range="true"
-												v-model="dateRangeVal as string[]"
+												v-model="dateRangeVal as [string, string]"
 											/>
 											<RelativeDatePicker
 												v-else-if="

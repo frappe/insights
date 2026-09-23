@@ -41,8 +41,8 @@ export function adaptBubbleChart(input: ChartAdapterInput): ChartFiller | undefi
 
 	// Coloring the points by a Dimension is grouping them by it, which is what a
 	// series is. The Insights name says what the groups were meant to read as.
-	const series = config.quadrant_column?.dimension_name
-	if (series) props.series = series
+	const splitBy = config.quadrant_column?.dimension_name
+	if (splitBy) props.splitBy = splitBy
 
 	const referenceLines = quadrantLines(config, props.xAxis!.format!, props.yAxis!.format!)
 	if (referenceLines.length) props.referenceLines = referenceLines

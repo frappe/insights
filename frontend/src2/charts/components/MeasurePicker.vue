@@ -289,7 +289,7 @@ function handleRemove() {
 					</div>
 				</template>
 
-				<template #default="{ toggle: togglePopover }">
+				<template #default="{ close }">
 					<div
 						class="relative mt-1 overflow-hidden rounded-6 bg-surface-base p-1.5 text-base shadow-2xl"
 					>
@@ -346,7 +346,7 @@ function handleRemove() {
 										@click.prevent.stop="
 											() => {
 												pickColumn(option)
-												togglePopover()
+												close()
 											}
 										"
 									>
@@ -374,7 +374,7 @@ function handleRemove() {
 										? __('Edit Expression')
 										: __('Custom Expression')
 								"
-								@click="openMeasureDialog(togglePopover)"
+								@click="openMeasureDialog(close)"
 							>
 								<template #prefix>
 									<component
