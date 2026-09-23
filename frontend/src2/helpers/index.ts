@@ -135,15 +135,13 @@ export function store<T>(key: string, value: () => T) {
 }
 
 export function getErrorMessage(err: any) {
-	const lastLine = err.exc
-		?.split('\n')
-		.filter(Boolean)
-		.at(-1)
-		?.trim()
-		.split(': ')
-		.slice(1)
-		.join(': ')
-	return lastLine || err.message || err.toString()
+	// the exception line is not always last: DuckDB appends the offending SQL and a caret
+	const lines: string[] = err.exc?.split('\n') ?? []
+	const excLine = lines.filter((line) => /^[\w.]+(Error|Exception): /.test(line)).at(-1)
+	if (!excLine) return err.message || err.toString()
+	const message = excLine.split(': ').slice(1).join(': ')
+	const details = lines.slice(lines.lastIndexOf(excLine) + 1)
+	return [message, ...details].join('\n').trim()
 }
 
 export function showErrorToast(err: Error, raise = true) {
