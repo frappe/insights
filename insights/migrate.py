@@ -30,6 +30,13 @@ def after_migrate():
     except Exception:
         frappe.log_error(title="Error creating Admin Team")
 
+    try:
+        from insights.desk import install_custom_fields
+
+        install_custom_fields()
+    except Exception:
+        frappe.log_error(title="Error installing desk custom fields")
+
     # A read that failed knows no copy to be pristine. Re-stamping that answer
     # would stamp none of them, and every copy the patches rewrote would read as
     # edited from then on, with no way back. So the whole update is skipped and

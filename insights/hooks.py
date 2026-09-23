@@ -46,6 +46,19 @@ insights_workbooks = "workbook_templates"
 # app_include_css = "/assets/insights/css/insights.css"
 app_include_js = "insights_nudge.bundle.js"
 
+# so a desk page hosting an island knows where the app it links to is mounted
+extend_bootinfo = "insights.desk.boot_app_path"
+
+# Island name -> the bundle `frontend/build-islands.mjs` writes into assets.json,
+# which is the same string. This is the registry `frappe.ui.mount_island` and
+# `get_island_assets` resolve a name against: without a row here a desk document
+# claimed in `insights/desk.py` mounts nothing and leaves an empty div. The pair
+# is hand-kept — see `DESK_ISLANDS` in `insights/desk.py`.
+ui_islands = {
+    "insights.chart": "insights.chart",
+    "insights.dashboard": "insights.dashboard",
+}
+
 # include js, css files in header of web template
 # web_include_css = "/assets/insights/css/insights.css"
 # web_include_js = "/assets/insights/js/insights.js"
@@ -162,7 +175,15 @@ has_permission = {
 doc_events = {
     "User": {
         "on_change": "insights.insights.doctype.insights_team.insights_team.update_admin_team",
-    }
+    },
+    # a desk document that links to Insights content is drawn by an Insights
+    # island — see insights/desk.py
+    "Dashboard": {
+        "onload": "insights.desk.claim",
+    },
+    "Dashboard Chart": {
+        "onload": "insights.desk.claim",
+    },
 }
 
 # Scheduled Tasks
