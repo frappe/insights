@@ -79,7 +79,7 @@ function colorOf(value: number) {
 	const bucket = props.buckets.findIndex(
 		(b, index) => (index === 0 ? value >= b.min : value > b.min) && value <= b.max,
 	)
-	return bucket === -1 ? tokens.value.splitLine : bucketColors.value[bucket]
+	return bucket === -1 ? tokens.value.gridline : bucketColors.value[bucket]
 }
 
 const option = computed(() => {
@@ -110,10 +110,10 @@ const option = computed(() => {
 					itemStyle: { areaColor: colorOf(region.value) },
 				})),
 				itemStyle: {
-					areaColor: tokens.value.splitLine,
+					areaColor: tokens.value.gridline,
 					// Regions are parted by the surface behind the plot, the way a
 					// heatmap parts its cells. A gray border reads as a second scale.
-					borderColor: tokens.value.cellGap,
+					borderColor: tokens.value.backdrop,
 					borderWidth: 0.5,
 				},
 				// The tooltip is the feedback. A highlight fill on top of the class
@@ -171,6 +171,7 @@ function showTooltip(name: string, value: number) {
 			color: colorOf(value),
 			value,
 			formattedValue: props.format(value),
+			kind: 'series',
 		},
 	]
 	tooltip.x = pointer.x
@@ -203,6 +204,7 @@ function showTooltip(name: string, value: number) {
 				:y="tooltip.y"
 				:label="tooltip.label"
 				:items="tooltip.items"
+				:rows="[]"
 			/>
 		</template>
 
