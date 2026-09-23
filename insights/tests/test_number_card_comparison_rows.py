@@ -125,7 +125,7 @@ class TestNumberCardComparisonRows(InsightsIntegrationTestCase):
         ).insert()
 
         with db_connections():
-            return frappe.get_doc(DT.CHART, chart.name).get_data(force=True)
+            return frappe.get_doc(DT.CHART, chart.name).fetch(force=True)
 
     # @feature charts.number-comparison
     def test_two_readings_asking_different_questions_read_different_rows(self):

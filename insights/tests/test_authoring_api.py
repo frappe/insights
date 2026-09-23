@@ -1,23 +1,35 @@
+import json
+from unittest.mock import patch
+
 import frappe
 
-from insights.api.authoring import download_chart_results as download_authoring_rows
+from insights.api import run_doc_method
+from insights.api.authoring import download_chart_rows as download_authoring_rows
+from insights.api.authoring import download_drill_rows as download_authoring_drill_rows
 from insights.api.authoring import get_chart_count as get_authoring_count
 from insights.api.authoring import get_chart_data as get_authoring_data
 from insights.api.authoring import get_drill_data as get_authoring_drill
 from insights.api.authoring import get_drill_dimensions
+from insights.api.authoring import get_drill_rows_values as get_authoring_drill_rows_values
+from insights.api.view import get_chart
+from insights.api.view import get_chart_data as get_view_data
+from insights.api.workbooks import update_share_permissions
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
+from insights.not_permitted import NotPermitted
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import DT, as_user, create_user, delete_users, delete_workbooks
+from insights.tests.test_run_as_owner import as_http_request
 
-AUTHOR = "authoring_api_author@test.com"
-# holds an Insights role, but none of the author's content
+OWNER = "authoring_api_owner@test.com"
+# holds an Insights role, but none of the owner's content
 OUTSIDER = "authoring_api_outsider@test.com"
-# holds no Insights role at all: a reader, not an author
+# admitted by the chart's visibility and holds no Insights role at all: a reader,
+# not an owner
 READER = "authoring_api_reader@test.com"
 
 WORKBOOK_TITLE = "Authoring API Test Workbook"
 TODO_PREFIX = "Authoring API Test"
-AUTHOR_TODOS = [f"{TODO_PREFIX} author 1", f"{TODO_PREFIX} author 2"]
+OWNER_TODOS = [f"{TODO_PREFIX} owner 1", f"{TODO_PREFIX} owner 2"]
 
 
 def todo_operations():
@@ -95,16 +107,16 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         frappe.db.set_single_value(DT.SETTINGS, "enable_permissions", 0)
         cls.cleanup()
 
-        create_user(AUTHOR, first_name="Authoring", last_name="Author", roles="Insights User")
+        create_user(OWNER, first_name="Authoring", last_name="Owner", roles="Insights User")
         create_user(OUTSIDER, first_name="Authoring", last_name="Outsider", roles="Insights User")
         create_user(READER, first_name="Authoring", last_name="Reader")
 
-        for description in AUTHOR_TODOS:
+        for description in OWNER_TODOS:
             frappe.get_doc(
                 {
                     "doctype": "ToDo",
                     "description": description,
-                    "allocated_to": AUTHOR,
+                    "allocated_to": OWNER,
                     "assigned_by": "Administrator",
                 }
             ).insert(ignore_permissions=True)
@@ -121,11 +133,11 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
             "ToDo", filters={"description": ["like", f"%{TODO_PREFIX}%"]}, pluck="name"
         ):
             frappe.delete_doc("ToDo", todo, force=True, ignore_permissions=True)
-        delete_users(AUTHOR, OUTSIDER, READER)
+        delete_users(OWNER, OUTSIDER, READER)
 
     def make_content(self):
-        """A saved chart the author owns, and the query behind it."""
-        with as_user(AUTHOR):
+        """A saved chart the owner owns, and the query behind it."""
+        with as_user(OWNER):
             workbook = frappe.get_doc({"doctype": DT.WORKBOOK, "title": WORKBOOK_TITLE}).insert()
             query = frappe.get_doc(
                 {
@@ -145,6 +157,9 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
                     "query": query.name,
                     "chart_type": "Table",
                     "config": table_config(),
+                    # the owner's own rows, so a reader sees the same numbers
+                    "run_as_owner": 1,
+                    "visibility": "Everyone",
                 }
             ).insert()
 
@@ -167,14 +182,14 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         query, _ = self.make_content()
 
         result = self.preview(
-            AUTHOR,
+            OWNER,
             chart_type="Table",
             query=query.name,
             config=table_config(),
             force=True,
         )
 
-        self.assertEqual(self.descriptions(result), sorted(AUTHOR_TODOS))
+        self.assertEqual(self.descriptions(result), sorted(OWNER_TODOS))
         self.assertEqual([column["name"] for column in result["columns"]], ["description", "count"])
         self.assertEqual(result["errors"], [])
 
@@ -182,9 +197,9 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
     def test_the_preview_says_what_it_ran(self):
         query, _ = self.make_content()
 
-        result = self.preview(AUTHOR, chart_type="Table", query=query.name, config=table_config())
+        result = self.preview(OWNER, chart_type="Table", query=query.name, config=table_config())
 
-        # the operations the drill-down forks, and the SQL the author debugs
+        # the operations the drill-down forks, and the SQL the owner debugs
         self.assertEqual(
             [operation["type"] for operation in result["operations"]],
             ["source", "summarize"],
@@ -196,9 +211,9 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
     def test_the_preview_runs_what_the_saved_chart_would(self):
         query, chart = self.make_content()
 
-        result = self.preview(AUTHOR, chart_type="Table", query=query.name, config=table_config())
+        result = self.preview(OWNER, chart_type="Table", query=query.name, config=table_config())
 
-        # one deriver behind both endpoints, so what the author is shaping is what
+        # one deriver behind both endpoints, so what the owner is shaping is what
         # every reader of the saved chart gets
         self.assertEqual(result["operations"], chart.get_operations())
 
@@ -208,12 +223,33 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         config = table_config()
         config["rows"] = []
 
-        result = self.preview(AUTHOR, chart_type="Table", query=query.name, config=config)
+        result = self.preview(OWNER, chart_type="Table", query=query.name, config=config)
 
         # the builder's normal state on the way to a chart: no rows, and no error
         # either — the card keeps the last picture and says what is still needed
         self.assertEqual(result["errors"], ["Rows are required"])
         self.assertNotIn("rows", result)
+
+    # @feature charts.missing-slot-message
+    def test_a_half_configured_chart_says_what_is_missing_to_a_reader_too(self):
+        """`chart_preview.ts` in a builder a read-only collaborator opened, over
+        a saved chart missing a slot. They are answered as the view answers its
+        reader, and a writer is told what is missing: so are they, whatever the
+        chart runs as."""
+        query, chart = self.make_content()
+        self.share_workbook(chart, write=0)
+        config = table_config()
+        config["rows"] = []
+        chart.db_set("config", frappe.as_json(config), update_modified=False)
+
+        for run_as_owner in (1, 0):
+            chart.db_set("run_as_owner", run_as_owner, update_modified=False)
+            result = self.preview(
+                OUTSIDER, chart_type="Table", query=query.name, config=config, chart_name=chart.name
+            )
+
+            self.assertEqual(result["errors"], ["Rows are required"], run_as_owner)
+            self.assertNotIn("rows", result, run_as_owner)
 
     # @feature charts.preview
     def test_the_grain_comes_back_with_the_rows(self):
@@ -228,13 +264,13 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
             }
         ]
 
-        result = self.preview(AUTHOR, chart_type="Table", query=query.name, config=config)
+        result = self.preview(OWNER, chart_type="Table", query=query.name, config=config)
 
         self.assertEqual(result["granularity"], {"creation": "month"})
 
     # @feature charts.preview
     def test_a_saved_chart_answers_with_the_grain_and_the_links_too(self):
-        """A share link reads the chart's own `get_data`, never this endpoint.
+        """A share link reads `view.get_chart_data`, never this endpoint.
         Without the grain a table grouped by month prints `2024-01-01` where the
         builder shows `Jan 2024`, and without the links its ids draw nothing."""
         _, chart = self.make_content()
@@ -248,53 +284,82 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
             },
             grouped_by("name"),
         ]
-        with as_user(AUTHOR):
+        with as_user(OWNER):
             chart.config = config
             chart.save()
 
-        with db_connections():
-            result = chart.get_data(force=True)
+        with as_user(OWNER), db_connections():
+            result = get_view_data(chart.name, force=True)
 
         self.assertEqual(result["granularity"], {"creation": "month"})
         self.assertEqual(result["record_links"], {"name": "ToDo"})
 
-    # @feature charts.table-pager
-    def test_the_count_covers_the_pages_the_rows_are_cut_into(self):
-        query, chart = self.make_content()
-        shape = {"chart_type": "Table", "query": query.name, "config": table_config()}
-
-        page = self.preview(AUTHOR, page_size=1, **shape)
-        with as_user(AUTHOR), db_connections():
-            preview_count = get_authoring_count(**shape)
-            saved_count = chart.get_count()
-
-        self.assertEqual(len(page["rows"]), 1)
-        self.assertEqual((preview_count, saved_count), (len(AUTHOR_TODOS), len(AUTHOR_TODOS)))
-
-    # @feature charts.export-rows
-    def test_a_download_is_the_charts_own_rows_up_to_the_export_limit(self):
-        query, chart = self.make_content()
-        shape = {"chart_type": "Table", "query": query.name, "config": table_config()}
+    def allow_download(self, max_export_rows=0):
         for field in ("allow_download", "max_export_rows"):
             original = frappe.db.get_single_value(DT.SETTINGS, field)
             self.addCleanup(frappe.db.set_single_value, DT.SETTINGS, field, original)
         frappe.db.set_single_value(DT.SETTINGS, "allow_download", 1)
-        frappe.db.set_single_value(DT.SETTINGS, "max_export_rows", 0)
+        frappe.db.set_single_value(DT.SETTINGS, "max_export_rows", max_export_rows)
+
+    # @feature charts.table-pager
+    def test_the_count_covers_the_pages_the_rows_are_cut_into(self):
+        """`authoring.get_chart_count`, which the builder's table card calls."""
+        query, chart = self.make_content()
+        shape = {"chart_type": "Table", "query": query.name, "config": table_config()}
+
+        page = self.preview(OWNER, page_size=1, **shape)
+        with as_user(OWNER), db_connections():
+            preview_count = get_authoring_count(**shape)
+            saved_count = get_authoring_count(chart_name=chart.name, **shape)
+
+        self.assertEqual(len(page["rows"]), 1)
+        self.assertEqual((preview_count, saved_count), (len(OWNER_TODOS), len(OWNER_TODOS)))
+
+    # @feature charts.export-rows
+    def test_a_download_is_the_charts_own_rows_up_to_the_export_limit(self):
+        """`authoring.download_chart_rows`, which the builder's table card calls."""
+        query, chart = self.make_content()
+        shape = {"chart_type": "Table", "query": query.name, "config": table_config()}
+        self.allow_download()
 
         def lines(csv):
             return csv.strip().splitlines()
 
-        with as_user(AUTHOR), db_connections():
+        with as_user(OWNER), db_connections():
             preview_csv = download_authoring_rows(**shape)
-            saved_csv = chart.download_results()
+            saved_csv = download_authoring_rows(chart_name=chart.name, **shape)
             frappe.db.set_single_value(DT.SETTINGS, "max_export_rows", 1)
-            limited_csv = chart.download_results()
+            limited_csv = download_authoring_rows(chart_name=chart.name, **shape)
 
         # the chart's summarized rows, not the todos its query reads
         self.assertEqual(lines(preview_csv), lines(saved_csv))
         self.assertEqual(lines(saved_csv)[0], "description,count")
-        self.assertEqual(len(lines(saved_csv)), 1 + len(AUTHOR_TODOS))
+        self.assertEqual(len(lines(saved_csv)), 1 + len(OWNER_TODOS))
         self.assertEqual(len(lines(limited_csv)), 2)
+
+    # @feature charts.table-pager charts.export-rows permissions.chart-run-as-owner
+    def test_a_caller_who_may_not_write_the_chart_keeps_its_one_page(self):
+        """The authoring doors hand a caller who is not the author to the view,
+        which answers a picture-only reader with the chart's one page."""
+        query, chart = self.make_content()
+        shape = {
+            "chart_type": "Table",
+            "query": query.name,
+            "config": table_config(),
+            "chart_name": chart.name,
+        }
+        self.allow_download()
+
+        first = self.preview(OUTSIDER, force=True, **shape)
+        second = self.preview(OUTSIDER, page=2, force=True, **shape)
+        with as_user(OUTSIDER), db_connections():
+            with self.assertRaises(NotPermitted):
+                get_authoring_count(**shape)
+            with self.assertRaises(frappe.PermissionError):
+                download_authoring_rows(**shape)
+
+        self.assertFalse(first["can_read_rows"])
+        self.assertEqual(second["rows"], first["rows"])
 
     def grid_items(self, chart: str, query: str, column: str = "description"):
         """A grid holding one chart card and one filter linked to it."""
@@ -314,19 +379,19 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         query, chart = self.make_content()
 
         result = self.preview(
-            AUTHOR,
+            OWNER,
             chart_type="Table",
             query=query.name,
             config=table_config(),
             chart_name=chart.name,
             dashboard_items=self.grid_items(chart.name, query.name),
-            filters={"Description": {"operator": "contains", "value": "author 1"}},
+            filters={"Description": {"operator": "contains", "value": "owner 1"}},
             force=True,
         )
 
         # the builder sends the grid it is editing and nothing else: which query
         # the filter lands on is read off the links here, as it is for a reader
-        self.assertEqual(self.descriptions(result), [AUTHOR_TODOS[0]])
+        self.assertEqual(self.descriptions(result), [OWNER_TODOS[0]])
 
     # @feature dashboard.filter-links
     def test_a_filter_linked_to_another_card_leaves_this_one_alone(self):
@@ -335,20 +400,20 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         items[1]["links"] = {"some-other-chart": f"`{query.name}`.`description`"}
 
         result = self.preview(
-            AUTHOR,
+            OWNER,
             chart_type="Table",
             query=query.name,
             config=table_config(),
             chart_name=chart.name,
             dashboard_items=items,
-            filters={"Description": {"operator": "contains", "value": "author 1"}},
+            filters={"Description": {"operator": "contains", "value": "owner 1"}},
             force=True,
         )
 
         # a link that names a card this preview is not drawing routes nowhere
-        self.assertEqual(self.descriptions(result), sorted(AUTHOR_TODOS))
+        self.assertEqual(self.descriptions(result), sorted(OWNER_TODOS))
 
-    # The walk itself is the viewer endpoint's walk and is tested there. What is
+    # The walk itself is `insights.api.view`'s walk and is tested there. What is
     # tested here is only what differs: naming the shape instead of a chart, and
     # the pipeline that comes back with the rows.
 
@@ -357,7 +422,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         query, _ = self.make_content()
 
         result = self.drill(
-            AUTHOR,
+            OWNER,
             query=query.name,
             chart_type="Table",
             config=table_config("status"),
@@ -377,7 +442,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         query, _ = self.make_content()
 
         result = self.drill(
-            AUTHOR,
+            OWNER,
             query=query.name,
             operations=summarized_operations(),
             drill_stack=[rows_level([equals("status", "Open")], measure="Todos")],
@@ -396,7 +461,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         query, _ = self.make_content()
 
         result = self.drill(
-            AUTHOR,
+            OWNER,
             query=query.name,
             operations=summarized_operations(),
             drill_stack=[breakdown_level("priority", [equals("status", "Open")], measure="Todos")],
@@ -410,20 +475,19 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         query, _ = self.make_content()
 
         ordered = self.drill(
-            AUTHOR,
+            OWNER,
             query=query.name,
             operations=summarized_operations(),
             drill_stack=[breakdown_level("creation", measure="Todos")],
         )
         ranked = self.drill(
-            AUTHOR,
+            OWNER,
             query=query.name,
             operations=summarized_operations(),
             drill_stack=[breakdown_level("priority", measure="Todos")],
         )
 
-        # the two fields the viewer endpoint reports, on the endpoint the builder
-        # uses:
+        # the two fields `insights.api.view` reports, on the endpoint the builder uses:
         # one dialog draws both, so it must not have to know which fed it
         self.assertEqual((ordered["ordered"], ordered["granularity"]), (True, "minute"))
         self.assertEqual((ranked["ordered"], ranked["granularity"]), (False, None))
@@ -433,7 +497,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         query, _ = self.make_content()
 
         result = self.drill(
-            AUTHOR,
+            OWNER,
             query=query.name,
             chart_type="Table",
             config=table_config("status"),
@@ -455,52 +519,49 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         query, _ = self.make_content()
 
         result = self.drill(
-            AUTHOR,
+            OWNER,
             query=query.name,
             operations=summarized_operations(),
             drill_stack=[breakdown_level("priority", [equals("status", "Open")], measure="Todos")],
         )
 
         # the grouping and the sort the level is a picture of, not just the rows
-        # underneath it: what opens is the query that drew what is on screen
+        # underneath it: what opens is the query that drew what is on screen,
+        # ties included
         self.assertEqual(
             [operation["type"] for operation in result["operations"]],
-            ["source", "filter", "filter_group", "summarize", "order_by"],
+            ["source", "filter", "filter_group", "summarize", "order_by", "order_by"],
         )
 
-    # @feature charts.drill-open-as-query
-    def test_a_rows_level_here_is_answered_with_its_pipeline_and_not_its_rows(self):
+    # @feature charts.drill-rows charts.drill-open-as-query
+    def test_a_rows_level_here_is_read_here_and_carries_the_pipeline_it_opens_as(self):
+        """`AuthoringDrillDown.vue` draws the rows the server read, and "open as
+        query" adds the pipeline beside them to the workbook. Run anywhere else,
+        the pipeline reads as its caller."""
         query, _ = self.make_content()
 
         behind = self.drill(
-            AUTHOR,
+            OWNER,
             query=query.name,
             operations=summarized_operations(),
             drill_stack=[rows_level([equals("status", "Open")], measure="Todos")],
         )
 
-        # the caller loads the pipeline and runs it, so fetching the rows here
-        # would be the same query run twice and drawn once
-        self.assertEqual(behind["rows"], [])
-        self.assertNotIn("total_row_count", behind)
+        self.assertEqual(self.descriptions(behind), sorted(OWNER_TODOS))
+        self.assertEqual(behind["total_row_count"], len(OWNER_TODOS))
+        self.assertEqual(behind["record_links"]["name"], "ToDo")
         self.assertEqual(
             [operation["type"] for operation in behind["operations"]],
             ["source", "filter", "filter_group"],
         )
-        # what the level answers in place of the rows: the shape they will have,
-        # and which of their columns name a desk document
-        self.assertIn("description", [column["name"] for column in behind["columns"]])
-        self.assertEqual(behind["record_links"]["name"], "ToDo")
 
         breakdown = self.drill(
-            AUTHOR,
+            OWNER,
             query=query.name,
             operations=summarized_operations(),
             drill_stack=[breakdown_level("priority", [equals("status", "Open")], measure="Todos")],
         )
 
-        # a breakdown is a picture the dialog draws itself, so it still comes
-        # back with its rows
         self.assertEqual([(row["priority"], row["Todos"]) for row in breakdown["rows"]], [("Medium", 2)])
         self.assertEqual(breakdown["total_row_count"], 1)
 
@@ -508,7 +569,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
     def test_the_candidates_can_be_asked_for_on_their_own(self):
         query, _ = self.make_content()
 
-        names = self.candidates(AUTHOR, query=query.name, operations=summarized_operations())
+        names = self.candidates(OWNER, query=query.name, operations=summarized_operations())
 
         # a chart's candidates come back with its rows. A query builder fetches its
         # rows through its own document, so it has no such response
@@ -524,7 +585,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
     def test_a_pipeline_that_aggregates_nothing_offers_no_candidates(self):
         query, _ = self.make_content()
 
-        names = self.candidates(AUTHOR, query=query.name, operations=todo_operations())
+        names = self.candidates(OWNER, query=query.name, operations=todo_operations())
 
         # asking what a raw result can be broken down by is a fair question even
         # when the answer is that it cannot
@@ -534,7 +595,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
     def test_the_candidates_ride_the_previews_rows(self):
         query, _ = self.make_content()
 
-        result = self.preview(AUTHOR, chart_type="Table", query=query.name, config=table_config())
+        result = self.preview(OWNER, chart_type="Table", query=query.name, config=table_config())
 
         # the same field the viewer response carries, so a card reads its menu
         # off whichever feed drew it
@@ -544,28 +605,34 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
     # the gate
 
-    # @feature permissions.authoring-needs-seat
-    def test_a_reader_without_an_authoring_seat_is_refused(self):
-        query, _ = self.make_content()
+    # @feature permissions.authoring-needs-role
+    def test_a_reader_without_an_insights_role_is_refused(self):
+        query, chart = self.make_content()
         self.assertNotIn("Insights User", frappe.get_roles(READER))
+
+        # the reader may see the chart — it is the derivation behind it they may not
+        with as_user(READER):
+            self.assertEqual(get_chart(chart=chart.name)["name"], chart.name)
 
         with self.assertRaises(frappe.PermissionError):
             self.preview(READER, chart_type="Table", query=query.name, config=table_config())
 
-    # @feature permissions.authoring-needs-seat
+    # @feature permissions.authoring-needs-role
     def test_a_query_the_caller_cannot_read_is_refused(self):
-        query, _ = self.make_content()
+        query, chart = self.make_content()
+        # naming a query is how this endpoint says what to run, so the role alone
+        # is not enough — the caller has to be able to read the query they name
+        chart.db_set("visibility", "Private", update_modified=False)
 
-        # naming a query is how this endpoint says what to run, so a seat alone is
-        # not enough — the caller has to be able to read the query they name
         with self.assertRaises(frappe.PermissionError):
             self.preview(OUTSIDER, chart_type="Table", query=query.name, config=table_config())
 
-    # @feature permissions.authoring-needs-seat
-    def test_a_reader_without_an_authoring_seat_cannot_drill(self):
+    # @feature permissions.authoring-needs-role
+    def test_a_reader_without_an_insights_role_cannot_drill(self):
         query, _ = self.make_content()
 
-        # what this endpoint adds is the pipeline, and the pipeline is the author's half
+        # the reader may drill the saved chart through `insights.api.view` all
+        # day. What these endpoints add is the pipeline, the owner's half
         with self.assertRaises(frappe.PermissionError):
             self.drill(
                 READER,
@@ -578,12 +645,13 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         with self.assertRaises(frappe.PermissionError):
             self.candidates(READER, query=query.name, operations=summarized_operations())
 
-    # @feature permissions.authoring-needs-seat
+    # @feature permissions.authoring-needs-role
     def test_a_query_the_caller_cannot_read_cannot_be_drilled(self):
-        query, _ = self.make_content()
+        query, chart = self.make_content()
+        chart.db_set("visibility", "Private", update_modified=False)
 
-        # naming a query is how this endpoint says what to run, here as much as on
-        # the preview — a seat is not a grant on someone else's content
+        # naming a query is how these endpoints say what to run, here as much as
+        # on the preview — a role is not a grant on someone else's content
         with self.assertRaises(frappe.PermissionError):
             self.drill(
                 OUTSIDER,
@@ -592,9 +660,10 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
                 drill_stack=[rows_level([equals("status", "Open")], measure="Todos")],
             )
 
-    # @feature permissions.authoring-needs-seat
+    # @feature permissions.authoring-needs-role
     def test_a_document_the_caller_cannot_read_cannot_name_the_preview(self):
         query, chart = self.make_content()
+        chart.db_set("visibility", "Private", update_modified=False)
 
         with as_user(OUTSIDER):
             workbook = frappe.get_doc(
@@ -613,9 +682,10 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
         # the name a preview runs under tells the engine which queries the
         # execution is already authorized for, so a name someone else's
-        # document holds is refused — whichever document holds it
-        for name in (chart.name, query.name):
-            with self.assertRaises(frappe.PermissionError):
+        # document holds is refused — whichever document holds it. A chart the
+        # caller may not write answers as the view does, with Not Found
+        for name, refusal in ((chart.name, frappe.DoesNotExistError), (query.name, frappe.PermissionError)):
+            with self.assertRaises(refusal):
                 self.preview(
                     OUTSIDER,
                     chart_type="Table",
@@ -623,3 +693,358 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
                     config=table_config(),
                     chart_name=name,
                 )
+
+    def make_filtered_content(self):
+        """The owner's chart, narrowed by its own config to one of the owner's todos."""
+        query, chart = self.make_content()
+        config = frappe.parse_json(chart.config)
+        config["filters"] = {
+            "filters": [
+                {
+                    "column": {"type": "column", "column_name": "description"},
+                    "operator": "=",
+                    "value": OWNER_TODOS[0],
+                }
+            ],
+            "logical_operator": "And",
+        }
+        chart.db_set("config", frappe.as_json(config), update_modified=False)
+        return query, frappe.get_doc(DT.CHART, chart.name)
+
+    def share_workbook(self, chart, write):
+        with as_user(OWNER):
+            update_share_permissions(chart.workbook, [{"user": OUTSIDER, "read": 1, "write": write}])
+
+    # @feature permissions.request-body-not-trusted permissions.chart-run-as-owner
+    def test_a_reader_who_cannot_edit_the_chart_draws_the_stored_chart(self):
+        """`chart_preview.ts` sends `chart_name` with the config it holds, and a
+        view response strips `filters` from that config (`present_config`), so a
+        reader who may open the chart but not edit it sends it without them. The
+        stored chart answers: a config the caller wrote is not the chart's, and
+        naming the chart must not run it with the owner's access."""
+        query, chart = self.make_filtered_content()
+        self.assertTrue(chart.run_as_owner)
+        self.share_workbook(chart, write=0)
+
+        with as_user(OUTSIDER):
+            self.assertTrue(frappe.has_permission(DT.CHART, ptype="read", doc=chart.name))
+            self.assertFalse(frappe.has_permission(DT.CHART, ptype="write", doc=chart.name))
+
+        with as_user(OUTSIDER), db_connections():
+            card = get_view_data(chart.name, force=True)
+
+        reshaped = self.preview(
+            OUTSIDER,
+            chart_type="Table",
+            query=query.name,
+            config=table_config(),
+            chart_name=chart.name,
+            force=True,
+        )
+
+        self.assertEqual(self.descriptions(card), [OWNER_TODOS[0]])
+        self.assertEqual(self.descriptions(reshaped), self.descriptions(card))
+
+    # @feature permissions.request-body-not-trusted permissions.chart-run-as-owner
+    def test_a_reader_who_cannot_edit_the_chart_gets_its_picture_and_nothing_behind_it(self):
+        """`chart_preview.ts` in a builder a read-only collaborator opened sends
+        the grid it holds, a page window and `chart_name`. They get what
+        `view.get_chart_data` gives its reader, whatever the chart runs as: the
+        stored chart at its own `limit`, routed by no link of theirs, no SQL or
+        pipeline, and the chart the rows answer."""
+        query, chart = self.make_content()
+        self.share_workbook(chart, write=0)
+
+        for run_as_owner, todos in ((1, sorted(OWNER_TODOS)), (0, [])):
+            chart.db_set("run_as_owner", run_as_owner, update_modified=False)
+            answer = self.preview(
+                OUTSIDER,
+                chart_type="Table",
+                query=query.name,
+                config=table_config(),
+                chart_name=chart.name,
+                dashboard_items=self.grid_items(chart.name, query.name),
+                filters={"Description": {"operator": "contains", "value": "owner 1"}},
+                page=2,
+                page_size=1,
+                force=True,
+            )
+
+            self.assertEqual(self.descriptions(answer), todos, run_as_owner)
+            for key in ("sql", "operations"):
+                self.assertNotIn(key, answer, run_as_owner)
+            self.assertEqual(answer["chart"]["name"], chart.name, run_as_owner)
+            self.assertNotIn("filters", answer["chart"]["config"], run_as_owner)
+
+    # @feature permissions.request-body-not-trusted charts.drill-open-as-query
+    def test_a_reader_who_cannot_edit_the_chart_gets_no_pipeline_from_its_drill(self):
+        """`AuthoringDrillDown.vue` offers "open as query" where a level carries
+        the pipeline it was cut as. A read-only collaborator of a chart run as
+        its reader drills it as `view.get_drill_data` would drill it for them;
+        a collaborator who may edit it gets the pipeline."""
+        query, chart = self.make_content()
+        chart.db_set("run_as_owner", 0, update_modified=False)
+        shape = {
+            "query": query.name,
+            "chart_type": "Table",
+            "config": table_config(),
+            "chart_name": chart.name,
+        }
+
+        for write in (0, 1):
+            self.share_workbook(chart, write=write)
+            for level in (rows_level(), breakdown_level("status")):
+                answer = self.drill(OUTSIDER, drill_stack=[level], **shape)
+                self.assertNotIn("not_permitted", answer, (write, level))
+                self.assertEqual("operations" in answer, bool(write), (write, level))
+
+    # @feature dashboard.filter-links permissions.chart-run-as-owner
+    def test_a_reader_who_cannot_edit_the_chart_is_routed_by_the_saved_dashboard(self):
+        """`chart_preview.ts` on the builder's dashboard grid sends the
+        `dashboard` the card sits on. A read-only collaborator's filter state is
+        routed by that dashboard's stored links, as `view.get_chart_data`
+        routes a reader's."""
+        query, chart = self.make_content()
+        self.share_workbook(chart, write=0)
+        with as_user(OWNER):
+            dashboard = frappe.get_doc(
+                {
+                    "doctype": DT.DASHBOARD,
+                    "title": "Authoring API Test Dashboard",
+                    "workbook": chart.workbook,
+                    "items": self.grid_items(chart.name, query.name),
+                }
+            ).insert()
+
+        answer = self.preview(
+            OUTSIDER,
+            chart_type="Table",
+            query=query.name,
+            config=table_config(),
+            chart_name=chart.name,
+            dashboard=dashboard.name,
+            filters={"Description": {"operator": "contains", "value": "owner 1"}},
+            force=True,
+        )
+
+        self.assertEqual(self.descriptions(answer), [OWNER_TODOS[0]])
+
+    # @feature dashboard.filter-links permissions.chart-run-as-owner permissions.request-body-not-trusted
+    def test_a_dashboard_routes_no_chart_it_does_not_carry(self):
+        """`chart_preview.ts` sends the `dashboard` a builder card sits on, and a
+        caller names any dashboard they can read. One of their own, with a
+        filter linked to someone else's chart and no cell for it, must not cut
+        that chart's rows by a column it never draws - through the builder or
+        the view."""
+        query, chart = self.make_content()
+        self.share_workbook(chart, write=0)
+        with as_user(OUTSIDER):
+            workbook = frappe.get_doc(
+                {"doctype": DT.WORKBOOK, "title": f"{WORKBOOK_TITLE} Outsider"}
+            ).insert()
+            dashboard = frappe.get_doc(
+                {
+                    "doctype": DT.DASHBOARD,
+                    "title": "Authoring API Test Foreign Dashboard",
+                    "workbook": workbook.name,
+                    "items": self.grid_items(chart.name, query.name)[1:],
+                }
+            ).insert()
+
+        filters = {"Description": {"operator": "contains", "value": "owner 1"}}
+        with self.assertRaises(frappe.DoesNotExistError):
+            self.preview(
+                OUTSIDER,
+                chart_type="Table",
+                query=query.name,
+                config=table_config(),
+                chart_name=chart.name,
+                dashboard=dashboard.name,
+                filters=filters,
+                force=True,
+            )
+        with as_user(OUTSIDER), db_connections(), self.assertRaises(frappe.DoesNotExistError):
+            get_view_data(chart.name, dashboard=dashboard.name, filters=filters, force=True)
+
+    # @feature dashboard.card-filter permissions.chart-run-as-owner
+    def test_a_builder_card_says_whether_its_author_may_filter_it(self):
+        """`chart_preview.ts` sends `chart_name` from the builder's dashboard
+        grid, and `useChartCell` reads the answer to offer a table card's
+        filter. Write on a chart run as its owner is trust to act as the owner,
+        so an editor may filter it; a collaborator who may only read it may not."""
+        query, chart = self.make_content()
+        self.assertTrue(chart.run_as_owner)
+
+        for write, may_filter in ((1, True), (0, False)):
+            self.share_workbook(chart, write=write)
+            card = self.preview(
+                OUTSIDER,
+                chart_type="Table",
+                query=query.name,
+                config=table_config(),
+                chart_name=chart.name,
+            )
+            self.assertIs(card["can_filter"], may_filter, write)
+
+    # @feature permissions.request-body-not-trusted charts.drill-breakdown permissions.chart-run-as-owner
+    def test_a_reader_who_cannot_edit_the_chart_breaks_down_none_of_the_owners_rows(self):
+        """`drill_api.ts` `fetchAuthoringDrillData` sends `chart_name` from a
+        builder a read-only collaborator opened. The chart runs as its owner and
+        they may not write it, so they get its picture and nothing behind it -
+        whatever shape they send, their own operations included."""
+        query, chart = self.make_filtered_content()
+        self.share_workbook(chart, write=0)
+
+        for shape in (
+            {"operations": summarized_operations()},
+            {"chart_type": "Table", "config": table_config()},
+        ):
+            result = self.drill(
+                OUTSIDER,
+                query=query.name,
+                chart_name=chart.name,
+                drill_stack=[breakdown_level("description")],
+                **shape,
+            )
+            self.assertEqual(result["rows"], [])
+            self.assertIn("not_permitted", result)
+
+    # @feature permissions.request-body-not-trusted permissions.chart-run-as-owner
+    def test_a_collaborator_who_may_edit_the_chart_previews_their_config_under_it(self):
+        """`chart_preview.ts` from `ChartBuilder.vue`: a collaborator with write on
+        the chart previews the config they are editing. Saving it would make it
+        the chart's content, so it runs the way the chart declares."""
+        query, chart = self.make_filtered_content()
+        self.share_workbook(chart, write=1)
+
+        with as_user(OUTSIDER):
+            self.assertTrue(frappe.has_permission(DT.CHART, ptype="write", doc=chart.name))
+
+        edited = self.preview(
+            OUTSIDER,
+            chart_type="Table",
+            query=query.name,
+            config=table_config(),
+            chart_name=chart.name,
+            force=True,
+        )
+
+        self.assertEqual(self.descriptions(edited), sorted(OWNER_TODOS))
+
+    # @feature standard.read-only permissions.request-body-not-trusted
+    def test_a_shipped_chart_gives_nobody_the_authors_answer(self):
+        """`chart_preview.ts` names the chart the builder opened, and the builder
+        draws a shipped chart's form read-only from its `as_dict`. Outside
+        developer mode the owner, who holds write, gets the view's answer beside
+        that form, as `view.get_chart` says they cannot write it."""
+        query, chart = self.make_content()
+        frappe.db.set_value(DT.WORKBOOK, chart.workbook, "is_standard", 1)
+
+        def answer():
+            return self.preview(
+                OWNER, chart_type="Table", query=query.name, config=table_config(), chart_name=chart.name
+            )
+
+        with patch.dict(frappe.conf, {"developer_mode": 0}), as_user(OWNER):
+            self.assertTrue(frappe.get_doc(DT.CHART, chart.name).as_dict().read_only)
+            self.assertFalse(get_chart(chart.name)["can_write"])
+            for key in ("sql", "operations"):
+                self.assertNotIn(key, answer())
+
+        with patch.dict(frappe.conf, {"developer_mode": 1}), as_user(OWNER):
+            self.assertFalse(frappe.get_doc(DT.CHART, chart.name).as_dict().read_only)
+            self.assertTrue(get_chart(chart.name)["can_write"])
+            self.assertIn("sql", answer())
+
+    # @feature charts.drill-rows charts.drill-rows-export permissions.chart-run-as-owner
+    def test_a_builder_rows_level_reads_as_the_chart_does(self):
+        """`chart_preview.ts` reads the builder's rows level through
+        `get_drill_data`, `download_drill_rows` and `get_drill_rows_values`.
+        Write on a chart run as its owner is trust to act as them, so a
+        collaborator who may edit it reads the owner's rows there, as the card
+        does. A chart run as its reader gives them their own."""
+        query, chart = self.make_content()
+        self.share_workbook(chart, write=1)
+        frappe.db.set_single_value(DT.SETTINGS, "allow_download", 1)
+        shape = {
+            "query": query.name,
+            "chart_type": "Table",
+            "config": table_config(),
+            "chart_name": chart.name,
+        }
+        level = [rows_level()]
+
+        for run_as_owner, todos in ((1, sorted(OWNER_TODOS)), (0, [])):
+            chart.db_set("run_as_owner", run_as_owner, update_modified=False)
+            with as_user(OUTSIDER), db_connections():
+                rows = get_authoring_drill(drill_stack=level, **shape)
+                csv = download_authoring_drill_rows(drill_stack=level, **shape)
+                values = get_authoring_drill_rows_values(drill_stack=level, column="description", **shape)
+
+            self.assertEqual(self.descriptions(rows), todos, run_as_owner)
+            self.assertEqual(sorted(value for value in values if value), todos, run_as_owner)
+            for todo in OWNER_TODOS:
+                self.assertEqual(todo in csv, bool(todos), run_as_owner)
+
+    # @feature permissions.request-body-not-trusted
+    def test_a_query_named_after_a_chart_gets_none_of_the_charts_references(self):
+        """`resource.ts` and `query.ts` send `docs.name` from the client to
+        `insights.api.run_doc_method`. A name no query holds passes as an unsaved
+        query, so a chart's docname there must not authorise the chart's query."""
+        query, chart = self.make_content()
+        chart.db_set("visibility", "Private", update_modified=False)
+
+        with as_user(OUTSIDER):
+            self.assertFalse(frappe.has_permission(DT.QUERY, ptype="read", doc=query.name))
+
+        docs = {
+            "doctype": DT.QUERY,
+            "name": chart.name,
+            "use_live_connection": 1,
+            "operations": [{"type": "source", "table": {"type": "query", "query_name": query.name}}],
+        }
+        with as_user(OUTSIDER), db_connections(), as_http_request():
+            with self.assertRaises(frappe.PermissionError):
+                run_doc_method("execute", frappe.as_json(docs), {"force": True})
+
+    # @feature charts.measure-unit
+    def test_both_feeds_carry_the_symbol_of_a_code_the_rows_hold(self):
+        """A measure priced in a column's currency prints from the symbol map the
+        session holds, and the response the rows came in is the only thing that
+        fills it — the site is seeded with its own code and nothing else."""
+        query, chart = self.make_content()
+        config = table_config()
+        config["values"] = [{**counted(), "format": "currency", "currency_column": "priority"}]
+        with as_user(OWNER):
+            chart.config = config
+            chart.save()
+
+        with as_user(OWNER), db_connections():
+            authored = get_authoring_data(
+                chart_type="Table", query=query.name, config=config, chart_name=chart.name, force=True
+            )
+        with as_user(READER), db_connections():
+            read = get_view_data(chart=chart.name, force=True)
+
+        # the todos carry the default priority, which is no ISO code, so the
+        # symbol is the code itself
+        for response in (authored, read):
+            self.assertEqual(response["currency_symbols"]["Medium"]["symbol"], "Medium")
+
+    # the view contract is unchanged
+
+    # @feature permissions.view-sends-no-query
+    def test_no_view_response_carries_the_derived_operations(self):
+        query, chart = self.make_content()
+
+        with as_user(READER), db_connections():
+            responses = [
+                get_chart(chart=chart.name),
+                get_view_data(chart=chart.name, force=True),
+            ]
+
+        for response in responses:
+            serialized = json.dumps(response, default=str)
+            for leak in ("operations", "summarize", "tabToDo", query.name):
+                self.assertNotIn(leak, serialized, f"{leak} must not reach a view")
+            self.assertNotIn("sql", response)

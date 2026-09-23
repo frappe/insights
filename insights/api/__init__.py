@@ -9,7 +9,6 @@ from frappe.handler import is_valid_http_method, is_whitelisted
 from frappe.monitor import add_data_to_monitor
 
 import insights
-from insights.api.shared import get_public_permission_user, is_public
 from insights.decorators import insights_whitelist
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     get_columns_from_schema,
@@ -17,11 +16,12 @@ from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
 )
+from insights.insights.doctype.insights_team import insights_team
 from insights.insights.doctype.insights_team.insights_team import (
     check_data_source_permission,
 )
 from insights.insights.query_builders.sql_functions import get_fiscal_year_start_date
-from insights.permission_user import permission_user
+from insights.permissions import can_download
 from insights.telemetry import get_entry
 from insights.utils import get_currency_symbols, get_owned_file
 
@@ -67,10 +67,16 @@ def get_site_info():
     dashboard needs them to print an amount the way the workbook does."""
     return {
         "country": frappe.db.get_single_value("System Settings", "country"),
-        # the two properties `docs/telemetry.md` puts on every event. The browser
-        # has no other way to read them, and only a signed-in one ever sends one
+        # the two properties `docs/telemetry.md` puts on every event, and the
+        # bench the site runs on, as frappe's own boot reports it — what says
+        # whether an author may ship a workbook as a file. A signed-in reader is
+        # the only one any of the three is about.
         **(
-            {"app_version": insights.__version__, "entry": get_entry()}
+            {
+                "app_version": insights.__version__,
+                "entry": get_entry(),
+                "developer_mode": bool(frappe.conf.developer_mode),
+            }
             if frappe.session.user != "Guest"
             else {}
         ),
@@ -124,7 +130,9 @@ def get_user_info():
         "last_name": user.get("last_name"),
         "is_admin": is_admin,
         "is_user": is_user or frappe.session.user == "Administrator",
-        "can_download": is_admin or bool(frappe.db.get_single_value("Insights Settings", "allow_download")),
+        "can_download": can_download(),
+        # who `check_trusted_code_author` admits, which the role does not decide
+        "can_write_trusted_code": insights_team.is_admin(frappe.session.user),
         "locale": locale,
         "has_desk_access": user.get("user_type") == "System User",
         "has_demo_data": has_demo_data,
@@ -237,47 +245,17 @@ def _read_uploaded_table(db, file_path: str, ext: str):
         frappe.throw("Failed to read CSV data from uploaded file. Please try again.")
 
 
-@frappe.whitelist(allow_guest=True)  # nosemgrep - falls back to is_public() only after the
-# framework has already refused the caller
+# The two generic doc endpoints the Builder is built on. Reading is
+# not their job: a reader names content to `insights.api.view`, which decides
+# access through `visibility`. So these grant nothing a caller's own
+# permissions do not already carry, and no guest reaches them.
+
+
+@frappe.whitelist()
 def get_doc(doctype: str, name: str | int):
-    try:
-        from frappe.client import get as _get_doc
+    from frappe.client import get as _get_doc
 
-        return _get_doc(doctype, name)
-    except frappe.PermissionError:
-        if not is_public(doctype, name):
-            raise
-        doc = frappe.get_doc(doctype, name)
-        # the framework's own read path drops permlevel fields, and this branch
-        # goes around it. `permission_user`, `owner` and `modified_by` name real
-        # people, so a public document must not carry them out to the internet.
-        doc.apply_fieldlevel_read_permissions()
-        return doc.as_dict().update(owner=None, modified_by=None)
-
-
-def _execute_doc_method(doc, method: str, args: dict | None = None, ignore_permissions=False):
-    args = frappe.parse_json(args)
-    method_obj = getattr(doc, method)
-    fn = getattr(method_obj, "__func__", method_obj)
-
-    if not ignore_permissions:
-        doc.check_permission("read")
-        is_whitelisted(fn)
-        is_valid_http_method(fn)
-
-    new_kwargs = frappe.get_newargs(fn, args or {})
-    response = doc.run_method(method, **new_kwargs)
-    if ignore_permissions:
-        # frappe-ui hands a caller the whole response only when `docs` is set, and
-        # the public page reads `.message` off it. A stub keeps that shape without
-        # the stored row, which names the publisher.
-        frappe.response.docs.append({"doctype": doc.doctype, "name": doc.name})
-    else:
-        doc.apply_fieldlevel_read_permissions()
-        frappe.response.docs.append(doc)
-    frappe.response["message"] = response
-    add_data_to_monitor(methodname=method)
-    return response
+    return _get_doc(doctype, name)
 
 
 def check_stored_document(doctype: str, name: str):
@@ -294,74 +272,32 @@ def check_stored_document(doctype: str, name: str):
         raise frappe.PermissionError("You don't have permission to access this document")
 
 
-@frappe.whitelist(allow_guest=True)  # nosemgrep - guests reach only public documents, and only
-# the methods and arguments PUBLIC_METHOD_ARGS names
+@frappe.whitelist()
 def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
-    doc = frappe.parse_json(docs)
-    doctype = doc.get("doctype")
-    name = doc.get("name")
+    docs = frappe.parse_json(docs)
+    doctype, name = docs.get("doctype"), docs.get("name")
 
     # a name is one document's identity. A dict is a filter set to `frappe.db`,
     # so it is not a name.
     if not doctype or not name or not isinstance(name, str):
         raise frappe.ValidationError("Invalid document")
 
-    try:
-        check_stored_document(doctype, name)
-        docs = frappe.parse_json(docs)
-        doc = frappe.get_doc(docs)
-        return _execute_doc_method(doc, method, args)
+    check_stored_document(doctype, name)
 
-    except frappe.PermissionError:
-        if not is_public(doctype, name):
-            raise frappe.PermissionError("You don't have permission to access this document")
-        if not is_public_method(doctype, method):
-            raise frappe.PermissionError("You don't have permission to access this method")
+    doc = frappe.get_doc(docs)
+    args = frappe.parse_json(args)
 
-        # the caller is a Guest with no permissions of its own, so the rows come
-        # back filtered by the user the publisher recorded - not unfiltered.
-        doc = frappe.get_doc(doctype, name)
-        with permission_user(get_public_permission_user(doctype, name)):
-            return _execute_doc_method(
-                doc, method, public_method_args(doctype, method, args), ignore_permissions=True
-            )
+    method_obj = getattr(doc, method)
+    fn = getattr(method_obj, "__func__", method_obj)
 
+    doc.check_permission("read")
+    is_whitelisted(fn)
+    is_valid_http_method(fn)
 
-# A public execution runs what the publisher published, so the public surface is
-# a set of parameter names, not a set of method names. The query builder passes
-# its own parameters to these methods - `active_operation_idx` drives the step
-# preview, and reshapes the query - and those are for the builder, not for the
-# published document.
-# `dashboard_items` is deliberately absent: a filter link names a query and a
-# column, so a routing table from the request is a reader naming columns nobody
-# published. A share link names the `dashboard` it opens instead, and the server
-# reads that dashboard's stored links. `card_filters` stays, because a card
-# filter names a column the card already draws and lands on that card's own
-# query.
-PUBLIC_METHOD_ARGS = {
-    ("Insights Chart v3", "get_data"): {"page", "page_size", "dashboard", "filters", "card_filters"},
-    ("Insights Chart v3", "get_count"): {"dashboard", "filters", "card_filters"},
-    ("Insights Dashboard v3", "get_distinct_column_values"): {
-        "filter_name",
-        "search_term",
-        "filter_context",
-    },
-    ("Insights Dashboard v3", "get_card_column_values"): {"chart", "column", "search_term"},
-    ("Insights Dashboard v3", "get_card_column_range"): {"chart", "column"},
-    ("Insights Dashboard v3", "get_filter_column_range"): {"filter_name", "filter_context"},
-    ("Insights Dashboard v3", "track_view"): {"surface"},
-}
-
-
-def is_public_method(doctype: str, method: str):
-    return (doctype, method) in PUBLIC_METHOD_ARGS
-
-
-def public_method_args(doctype: str, method: str, args: dict | str | None):
-    """The caller's args, less anything the public contract does not name.
-
-    Dropped rather than refused, so the published document still renders.
-    """
-    allowed = PUBLIC_METHOD_ARGS[(doctype, method)]
-    args = frappe.parse_json(args) or {}
-    return {name: value for name, value in args.items() if name in allowed}
+    new_kwargs = frappe.get_newargs(fn, args or {})
+    response = doc.run_method(method, **new_kwargs)
+    doc.apply_fieldlevel_read_permissions()
+    frappe.response.docs.append(doc)
+    frappe.response["message"] = response
+    add_data_to_monitor(methodname=method)
+    return response

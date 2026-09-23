@@ -11,6 +11,7 @@ column, so they offer no values rather than refusing a reader mid-action.
 
 import frappe
 
+from insights.api.view import get_card_range, get_card_values
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import DT, as_user, create_user, delete_users, delete_workbooks
@@ -202,11 +203,11 @@ class TestCardFilterValues(InsightsIntegrationTestCase):
 
     def values(self, chart, column):
         with as_user(AUTHOR), db_connections():
-            return frappe.get_doc(DT.DASHBOARD, self.dashboard).get_card_column_values(chart, column)
+            return get_card_values(chart, column, self.dashboard)
 
     def column_range(self, chart, column):
         with as_user(AUTHOR), db_connections():
-            return frappe.get_doc(DT.DASHBOARD, self.dashboard).get_card_column_range(chart, column)
+            return get_card_range(chart, column, self.dashboard)
 
     # @feature dashboard.card-filter
     def test_a_card_filter_offers_only_what_the_card_draws(self):
@@ -240,5 +241,5 @@ class TestCardFilterValues(InsightsIntegrationTestCase):
 
     # @feature dashboard.card-filter
     def test_a_column_the_card_does_not_draw_is_refused(self):
-        with self.assertRaises(frappe.PermissionError):
+        with self.assertRaises(frappe.DoesNotExistError):
             self.values(self.bar, "status")

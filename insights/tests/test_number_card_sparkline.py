@@ -118,27 +118,26 @@ class TestNumberCardSparkline(InsightsIntegrationTestCase):
 
         return query, frappe.get_doc(DT.CHART, chart.name)
 
-    def fetch(self, chart, query=None, description=None):
-        """The card's rows, narrowed by a dashboard filter when one is named.
+    def fetch(self, chart, adhoc_filters=None):
+        with db_connections():
+            return chart.fetch(force=True, adhoc_filters=adhoc_filters)
 
-        The filter state goes over unrouted, the way a surface sends it: the grid
-        it sits on and the link that says which column it lands on.
-        """
-        kwargs = {}
-        if description:
-            kwargs = {
-                "dashboard_items": [
-                    {"type": "chart", "chart": chart.name},
+    def narrowed_to(self, query, description):
+        """Dashboard filter state as the router hands it over: keyed by query."""
+        return {
+            query.name: {
+                "type": "filter_group",
+                "logical_operator": "And",
+                "filters": [
                     {
                         "type": "filter",
-                        "filter_name": "Description",
-                        "links": {chart.name: f"`{query.name}`.`description`"},
-                    },
+                        "column": {"type": "column", "column_name": "description"},
+                        "operator": "=",
+                        "value": description,
+                    }
                 ],
-                "filters": {"Description": {"operator": "=", "value": description}},
             }
-        with db_connections():
-            return chart.get_data(force=True, **kwargs)
+        }
 
     def days(self, result):
         return [(str(row["date"])[:10], row["count"]) for row in result["sparkline"]["rows"]]
@@ -159,7 +158,7 @@ class TestNumberCardSparkline(InsightsIntegrationTestCase):
         trend of a number nobody is reading."""
         query, chart = self.make_card()
 
-        result = self.fetch(chart, query, IN_WINDOW)
+        result = self.fetch(chart, adhoc_filters=self.narrowed_to(query, IN_WINDOW))
 
         self.assertEqual([row["count"] for row in result["rows"]], [1])
         self.assertEqual(self.days(result), [("2026-08-09", 1)])

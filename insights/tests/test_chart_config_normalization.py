@@ -249,7 +249,7 @@ class TestChartConfigNormalization(InsightsIntegrationTestCase):
         self.assertEqual(written["rows"][0]["timezone"], "IST")
 
     # A Number card is the one chart type whose own older shapes are a rewrite of
-    # their own, and a card that arrives from an import or a template has to be
+    # their own, and a card that arrives from an import has to be
     # stored through them too.
     # @feature charts.type-number upgrade.number-older-shapes upgrade.chart-config-older-shapes
     def test_a_number_card_is_stored_through_the_readings_own_rewrite(self):
@@ -348,7 +348,7 @@ class TestChartConfigNormalizationPatch(InsightsIntegrationTestCase):
             {"column_name": "region", "data_type": "String", "dimension_name": "region"},
         )
 
-    # An import and a template both insert the chart, which is the one place an
+    # An import inserts the chart, which is the one place an
     # older Number card stops being stored.
     # @feature charts.type-number upgrade.number-older-shapes
     def test_a_number_card_that_arrives_in_an_older_shape_is_stored_in_todays(self):

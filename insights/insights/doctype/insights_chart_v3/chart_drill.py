@@ -30,6 +30,7 @@ import frappe
 from frappe import _
 from frappe.utils import add_to_date, get_datetime, get_time
 
+from insights import user_permissions
 from insights.insights.doctype.insights_chart_v3.chart_query import (
     ORDERED_TYPES,
     count_of_rows,
@@ -39,10 +40,14 @@ from insights.insights.doctype.insights_chart_v3.chart_query import (
 from insights.insights.doctype.insights_chart_v3.record_link import record_links
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     ADDITIVE_AGGREGATIONS,
+    PIVOT_OTHERS,
+    folded_a_tail,
     get_columns_from_schema,
 )
-from insights.insights.doctype.insights_query_v3.insights_query_v3 import set_adhoc_filters
-from insights.insights.query_builders.sql_functions import resolve_timespan
+from insights.insights.query_builders.sql_functions import read_on, resolve_timespan
+from insights.not_permitted import refuse
+from insights.permission_user import runs_as
+from insights.permissions import can_read_rows
 
 ROWS = "rows"
 BREAKDOWN = "breakdown"
@@ -50,7 +55,7 @@ BREAKDOWN = "breakdown"
 # a bucket standing for the rows that carry no date at all
 NO_DATE = (None, None)
 
-# the dialog states this bound. Nothing pages past it yet
+# one page of a rows level, and the stride its paging moves in
 PAGE_SIZE = 100
 
 # a breakdown answers "which group explains this" or "how did this move", and
@@ -63,6 +68,13 @@ DIMENSION_TYPES = ("String", "Date", "Datetime", "Time")
 # else, a count of names or an expression that names no column at all, leaves
 # no row that is the biggest one
 RANKABLE_TYPES = ("Integer", "Decimal")
+
+# the column types a find term can be matched against. A find is a text match,
+# and the engine reads a number as text to make one. A date holds no substring a
+# reader types, and `like` on one is an error rather than a miss
+FINDABLE_TYPES = ("String", "Integer", "Decimal")
+
+SORT_DIRECTIONS = ("asc", "desc")
 
 SECOND = 1
 MINUTE = 60 * SECOND
@@ -169,7 +181,8 @@ def drill_dimensions(chart, operations: list[dict] | None = None) -> list[dict]:
     if index is None:
         return []
 
-    return _dimensions_on(_surface(chart, operations, index))
+    with runs_as(chart):
+        return _dimensions_on(_surface(chart, operations, index))
 
 
 def drill_data(
@@ -178,105 +191,389 @@ def drill_data(
     adhoc_filters: dict | None = None,
     operations: list[dict] | None = None,
     with_operations: bool = False,
+    sort: list | None = None,
+    find: str | None = None,
+    page: int = 1,
+    row_filters: list | None = None,
 ) -> dict:
     """The rows behind the segment the stack describes.
 
-    `with_operations` says the caller will run the level itself, through the
-    pipeline it gets back: a rows level then answers with that pipeline and
-    its columns rather than its rows, which is what an authoring surface asks
-    for when it lifts the level into the query builder. It is off by default
-    because the reading surfaces must never receive the pipeline.
+    `with_operations` adds the pipeline the level was cut as, which an
+    authoring surface opens as a query of its own (`_as_opened`). The rows are
+    still read here, under `runs_as`: a pipeline run anywhere else runs as its
+    caller. It is off by default because a view must never receive the
+    pipeline.
+
+    `row_filters`, `sort`, `find` and `page` are how a caller that never receives
+    the pipeline reads the rows anyway. They apply to a rows level only, inside
+    the same cut, so `total_row_count` counts what the filters and the find left
+    and the page is a page of that. A breakdown level is one page by
+    construction and takes none of them.
     """
+    check_rows(chart)
+    _checked_stack(drill_stack)
+    _check_drawn_from(chart, drill_stack)
+    adhoc_filters = _card_filters_out(adhoc_filters, chart)
+
+    operations, index = _pipeline(chart, drill_stack, operations)
+    step = operations[index]
+    sliced = operations[:index]
+
+    with runs_as(chart), read_on(_drawn_on(drill_stack)):
+        surface = _surface(chart, operations, index)
+
+        last = drill_stack[-1]
+        action = _action(last)
+        segment = [*sliced, _filter_group(_segment_filters(chart, sliced, drill_stack, step, surface))]
+        page_size = PAGE_SIZE
+        breakdown = None
+        if action["type"] == BREAKDOWN:
+            breakdown = _breakdown(chart, segment, action, step, surface, adhoc_filters)
+            page_size = BREAKDOWN_SIZE
+            drilled = [*segment, *breakdown["operations"]]
+            page = 1
+        else:
+            drilled = _rows_reading(segment, drill_stack, step, surface, sort, find, row_filters)
+            page = _page(page)
+
+        query = chart.get_query(operations=drilled)
+
+        # a breakdown level is fetched once and then kept by the dialog for as
+        # long as it is open, so back and crumb pops never come here. A rows
+        # level comes back whenever the reader sorts, finds or turns a page
+        result = query.execute(adhoc_filters=adhoc_filters, page=page, page_size=page_size, force=True)
+        # read before the count builds again, for the reader at the keyboard
+        # only, as `InsightsChartv3.fetch` reads the card's
+        scope = user_permissions.scope(frappe.session.user)
+        # the dialog shows one page and says so: "100 of 1,240" needs the 1,240
+        total_row_count = query.count_rows(adhoc_filters=adhoc_filters, force=True)
+
+        ordered = bool(breakdown and breakdown["ordered"])
+
+        response = {
+            "columns": result["columns"],
+            # the page of a series was taken from its recent end, and a series reads
+            # forwards
+            "rows": list(reversed(result["rows"])) if ordered else result["rows"],
+            "total_row_count": total_row_count,
+            # what the client draws this answer by, said outright rather than left
+            # to be inferred from a column type: which way the rows run, the grain
+            # they were grouped by, and whether they add up to the segment above
+            "ordered": ordered,
+            "granularity": breakdown["granularity"] if breakdown else None,
+            "additive": bool(breakdown and breakdown["additive"]),
+            "time_taken": result["time_taken"],
+            "executed_at": frappe.utils.now(),
+            # what of the reader's own narrowed the cells the level draws, in the
+            # keys a card carries it under
+            **scope,
+        }
+
+        links = record_links(sliced, result["columns"]) if action["type"] == ROWS else {}
+        if links:
+            response["record_links"] = links
+
+        if with_operations:
+            response["operations"] = _as_opened(chart, drilled, adhoc_filters)
+
+        return response
+
+
+def _as_opened(chart, drilled: list[dict], adhoc_filters: dict | None) -> list[dict]:
+    """The level as a query of its own, holding the rows the dialog showed.
+
+    That query runs on the day it is opened and under no dashboard, so both go
+    into its steps: every span it tests fixed to the dates it was read as, and
+    the dashboard's filters on the chart's query as a step after that query.
+    """
+    routed = (adhoc_filters or {}).get(chart.query)
+    steps = [drilled[0], routed, *drilled[1:]] if routed else drilled
+    return [_span_fixed(step) for step in steps]
+
+
+def _span_fixed(step: dict) -> dict:
+    if step.get("type") == "filter_group":
+        return {**step, "filters": [_span_fixed(rule) for rule in step.get("filters") or []]}
+    # a rule inside a group names no type of its own
+    if step.get("type") not in ("filter", None) or step.get("operator") != "within":
+        return step
+
+    start, end = resolve_timespan(step["value"])
+    return {**step, "operator": "between", "value": [str(start), str(end)]}
+
+
+def drill_rows_export(
+    chart,
+    drill_stack: list,
+    adhoc_filters: dict | None = None,
+    sort: list | None = None,
+    find: str | None = None,
+    format: str = "csv",
+    row_filters: list | None = None,
+    operations: list[dict] | None = None,
+) -> str:
+    """The rows behind the segment, as a file rather than as a page.
+
+    The same cut `drill_data` reads, at the same filters, the same sort and the
+    same find and without the page: one pipeline, two ways of taking it away, so
+    the file cannot hold rows the dialog would not draw. Whether this caller may
+    have a file at all is the endpoint's question, not this one's.
+    """
+    check_rows(chart)
+    _checked_stack(drill_stack)
+    _check_drawn_from(chart, drill_stack)
+    if _action(drill_stack[-1])["type"] != ROWS:
+        frappe.throw(_("Only the rows behind a segment can be exported"))
+
+    adhoc_filters = _card_filters_out(adhoc_filters, chart)
+    operations, index = _pipeline(chart, drill_stack, operations)
+    step = operations[index]
+    sliced = operations[:index]
+
+    with runs_as(chart), read_on(_drawn_on(drill_stack)):
+        surface = _surface(chart, operations, index)
+        segment = [*sliced, _filter_group(_segment_filters(chart, sliced, drill_stack, step, surface))]
+        drilled = _rows_reading(segment, drill_stack, step, surface, sort, find, row_filters)
+
+        return chart.get_query(operations=drilled).export_rows(format=format, adhoc_filters=adhoc_filters)
+
+
+def drill_rows_values(
+    chart,
+    drill_stack: list,
+    column: str,
+    search_term: str | None = None,
+    adhoc_filters: dict | None = None,
+    row_filters: list | None = None,
+    operations: list[dict] | None = None,
+) -> list:
+    """The values a reader's own filter on a rows level offers.
+
+    Read off the cut the filter narrows, so the list never offers a value that
+    would leave the page empty. `row_filters` is the reader's other rules: a
+    rule on this column would have narrowed the list to the value it already
+    holds, so the caller leaves it out.
+    """
+    adhoc_filters = _card_filters_out(adhoc_filters, chart)
+    with runs_as(chart), read_on(_drawn_on(drill_stack)):
+        surface, narrowed = _reader_cut(chart, drill_stack, row_filters, operations)
+        on_surface = _surface_column(column, surface)
+
+        return chart.get_query(operations=narrowed).distinct_column_values(
+            on_surface["name"], search_term=search_term, adhoc_filters=adhoc_filters
+        )
+
+
+def drill_rows_range(
+    chart,
+    drill_stack: list,
+    column: str,
+    adhoc_filters: dict | None = None,
+    row_filters: list | None = None,
+    operations: list[dict] | None = None,
+) -> list | None:
+    """The smallest and largest a column of the cut goes, narrowed as the values are."""
+    adhoc_filters = _card_filters_out(adhoc_filters, chart)
+    with runs_as(chart), read_on(_drawn_on(drill_stack)):
+        surface, narrowed = _reader_cut(chart, drill_stack, row_filters, operations)
+        on_surface = _surface_column(column, surface)
+
+        return chart.get_query(operations=narrowed).column_range(
+            on_surface["name"], adhoc_filters=adhoc_filters
+        )
+
+
+def _reader_cut(
+    chart, drill_stack: list, row_filters: list | None, operations: list[dict] | None = None
+) -> tuple[list[dict], list[dict]]:
+    """The rows a reader is looking at, and the surface they are bounded by.
+
+    What a filter's own offer is read against: the segment the stack pins and
+    the reader's other rules, without the ranking, the find or the page, none of
+    which change which values a column holds.
+    """
+    check_rows(chart)
+    _checked_stack(drill_stack)
+    _check_drawn_from(chart, drill_stack)
+    operations, index = _pipeline(chart, drill_stack, operations)
+    surface = _surface(chart, operations, index)
+    sliced = operations[:index]
+    segment = [
+        *sliced,
+        _filter_group(_segment_filters(chart, sliced, drill_stack, operations[index], surface)),
+    ]
+
+    return surface, _narrowed(segment, surface, row_filters)
+
+
+def check_rows(chart) -> None:
+    """Refuse a caller who may have only the chart's picture.
+
+    Here and not at an endpoint: the view and the builder both drill through
+    this module, and a gate on one door left the other open.
+    """
+    if not can_read_rows(chart):
+        refuse(message=_("You are not allowed to see what is behind this chart"))
+
+
+def asks_for_rows(drill_stack: list | None) -> bool:
+    """Whether the level this stack ends on asks for the rows behind its segment."""
+    last = drill_stack[-1] if drill_stack and isinstance(drill_stack[-1], dict) else {}
+    return bool((last.get("action") or {}).get(ROWS))
+
+
+def _checked_stack(drill_stack: list) -> None:
     if not drill_stack:
         frappe.throw(_("Nothing to drill into: the drill stack is empty"))
     if not all(isinstance(level, dict) for level in drill_stack):
         frappe.throw(_("A drill level must name its segment and its action"))
 
-    # A group keyed by the chart is a rule on the card's own columns: the drilled row already
-    # satisfied it and the segment is its dimension values, so it has nothing left to say here.
-    adhoc_filters = {k: v for k, v in (adhoc_filters or {}).items() if k != chart.name} or None
 
-    operations, index = _pipeline(chart, operations)
-    step = operations[index]
-    sliced = operations[:index]
+def _check_drawn_from(chart, drill_stack: list) -> None:
+    """Refuse a drill from a card drawn off an earlier version of the chart.
 
-    surface = _surface(chart, operations, index)
+    A card keeps its picture until Refresh, and the drill cuts the chart and
+    its queries as they are now. A level names the `last_modified` it was drawn
+    from; a chart nobody has saved has none to compare.
+    """
+    drawn = next((level.get("modified") for level in drill_stack if level.get("modified")), None)
+    current = chart.last_modified() if drawn else None
+    if current and get_datetime(drawn) != get_datetime(current):
+        frappe.throw(_("This chart changed. Refresh to drill."), title=_("Chart Changed"))
 
-    last = drill_stack[-1]
-    action = _action(last)
-    segment = [*sliced, _filter_group(_segment_filters(drill_stack, step, surface))]
-    page_size = PAGE_SIZE
-    breakdown = None
-    if action["type"] == BREAKDOWN:
-        breakdown = _breakdown(chart, segment, action, step, surface, adhoc_filters)
-        page_size = BREAKDOWN_SIZE
 
-    tail = breakdown["operations"] if breakdown else _rows_order(_clicked(last), step, surface)
-    drilled = [*segment, *tail]
-    query = chart.get_query(operations=drilled)
+def _card_filters_out(adhoc_filters: dict | None, chart) -> dict | None:
+    """The surface's routed groups, less the card's own.
 
-    if with_operations and action["type"] == ROWS:
-        # the caller runs this pipeline itself, so running it here would
-        # fetch the same rows twice and draw neither of them. The shape of a
-        # result is known before a row of it is
-        with set_adhoc_filters(adhoc_filters):
-            columns = get_columns_from_schema(query.build().schema())
+    A group keyed by the chart is a rule on the card's own columns: the drilled
+    row already satisfied it and the segment is its dimension values, so it has
+    nothing left to say here.
+    """
+    return {k: v for k, v in (adhoc_filters or {}).items() if k != chart.name} or None
 
-        return _handed_over(drilled, columns, sliced)
 
-    # a level is fetched once and then kept by the dialog for as long as it
-    # is open, so back and crumb pops never come here
-    result = query.execute(adhoc_filters=adhoc_filters, page_size=page_size, force=True)
-    # the dialog shows one page and says so: "100 of 1,240" needs the 1,240
-    total_row_count = query.count_rows(adhoc_filters=adhoc_filters, force=True)
+def _rows_reading(
+    segment: list[dict],
+    drill_stack: list,
+    step: dict,
+    surface: list[dict],
+    sort: list | None,
+    find: str | None,
+    row_filters: list | None = None,
+) -> list[dict]:
+    """A rows level as the reader asked to read it: narrowed, then ranked.
 
-    ordered = bool(breakdown and breakdown["ordered"])
+    The filters and the find narrow before anything is ranked, counted or paged,
+    so the total the dialog states is the total of what the reader is looking
+    at. A sort they named replaces the ranking the click implied: they have said
+    which rows they want on the page, which is the whole of what the ranking was
+    for.
+    """
+    narrowed = _narrowed(segment, surface, row_filters)
+    if find:
+        narrowed = [*narrowed, _find_group(find, surface)]
+    ranked = _named_sort(sort, surface) or _rows_order(_clicked(drill_stack[-1]), step, surface)
+    return [*narrowed, *ranked]
 
-    response = {
-        "columns": result["columns"],
-        # the page of a series was taken from its recent end, and a series reads
-        # forwards
-        "rows": list(reversed(result["rows"])) if ordered else result["rows"],
-        "total_row_count": total_row_count,
-        # what the client draws this answer by, said outright rather than left
-        # to be inferred from a column type: which way the rows run, the grain
-        # they were grouped by, and whether they add up to the segment above
-        "ordered": ordered,
-        "granularity": breakdown["granularity"] if breakdown else None,
-        "additive": bool(breakdown and breakdown["additive"]),
-        "time_taken": result["time_taken"],
-        "executed_at": frappe.utils.now(),
+
+def _narrowed(segment: list[dict], surface: list[dict], row_filters: list | None) -> list[dict]:
+    """The segment, less what the reader's own rules take out of it."""
+    rules = _named_filters(row_filters, surface)
+    return [*segment, _filter_group(rules)] if rules else list(segment)
+
+
+def _named_filters(row_filters: list | None, surface: list[dict]) -> list[dict]:
+    """The rules the reader wrote, every column of them checked against the surface.
+
+    A rule narrows what the chart already published and can do nothing else, so
+    the whole operator set is open — but the column it names is bounded exactly
+    as a sort's is: the wire cannot widen what a chart exposes.
+    """
+    rules = []
+    for rule in row_filters or []:
+        if not isinstance(rule, dict):
+            frappe.throw(_("A filter names a column of this chart, an operator and a value"))
+
+        column = _surface_column(rule.get("column"), surface)
+        operator = rule.get("operator")
+        if operator not in OPERATORS:
+            frappe.throw(_("Operator {0} is not supported").format(operator))
+
+        rules.append(_rule(column["name"], operator, rule.get("value")))
+
+    return rules
+
+
+def _named_sort(sort: list | None, surface: list[dict]) -> list[dict]:
+    """The sort the reader named, every column of it checked against the surface.
+
+    Written back to front: the engine merges chained sorts and the last one it
+    is given becomes the primary key, so the reader's first column goes last.
+    """
+    rules = []
+    for rule in sort or []:
+        if not isinstance(rule, dict):
+            frappe.throw(_("A sort names a column of this chart and a direction"))
+
+        column = _surface_column(rule.get("column"), surface)
+        direction = rule.get("direction") or "asc"
+        if direction not in SORT_DIRECTIONS:
+            frappe.throw(_("{0} is not a direction rows can be sorted in").format(direction))
+
+        rules.append(
+            {
+                "type": "order_by",
+                "column": {"type": "column", "column_name": column["name"]},
+                "direction": direction,
+            }
+        )
+
+    return list(reversed(rules))
+
+
+def _find_group(term: str, surface: list[dict]) -> dict:
+    """A find term, matched across every column of the surface that can hold it.
+
+    The exposure bound holds here without a name being checked: the term reaches
+    the surface's own columns and nothing else. A hidden column is not drawn, so
+    it is not searched either — a row kept by a match the reader cannot see
+    reads as a wrong answer.
+
+    A cut with nothing to match against keeps no rows. An empty group is a no-op
+    to the engine, so it would keep every one of them instead and the reader
+    would read the whole cut as the answer to their term.
+    """
+    searchable = [
+        column for column in surface if column["type"] in FINDABLE_TYPES and not column.get("hidden")
+    ]
+    if not searchable:
+        return _matches_nothing(surface)
+
+    return {
+        "type": "filter_group",
+        "logical_operator": "Or",
+        "filters": [_rule(column["name"], "contains", term) for column in searchable],
     }
 
-    links = record_links(sliced, result["columns"]) if action["type"] == ROWS else {}
-    if links:
-        response["record_links"] = links
 
-    if with_operations:
-        response["operations"] = drilled
+def _matches_nothing(surface: list[dict]) -> dict:
+    """A group no row satisfies, written as a contradiction on a column of the cut."""
+    if not surface:
+        return _filter_group([])
 
-    return response
-
-
-def _handed_over(drilled: list[dict], columns: list[dict], sliced: list[dict]) -> dict:
-    """A rows level the caller will run itself: the pipeline, not the rows."""
-    response = {
-        "columns": columns,
-        "rows": [],
-        "ordered": False,
-        "granularity": None,
-        "additive": False,
-        "operations": drilled,
-    }
-
-    links = record_links(sliced, columns)
-    if links:
-        response["record_links"] = links
-
-    return response
+    column = surface[0]["name"]
+    return _filter_group([_rule(column, "is_set", None), _rule(column, "is_not_set", None)])
 
 
-def _pipeline(chart, operations: list[dict] | None = None) -> tuple[list[dict], int]:
+def _page(page) -> int:
+    """Which page of the rows to draw. Anything that is not one is the first."""
+    try:
+        return max(1, int(page))
+    except (TypeError, ValueError):
+        return 1
+
+
+def _pipeline(chart, drill_stack: list, operations: list[dict] | None = None) -> tuple[list[dict], int]:
     """The operations to drill, and where the operation that aggregated them sits."""
     operations = chart.get_operations() if operations is None else operations
     index = _aggregating_step(operations)
@@ -284,6 +581,17 @@ def _pipeline(chart, operations: list[dict] | None = None) -> tuple[list[dict], 
         frappe.throw(_("Nothing here aggregates any rows, so there is nothing behind it"))
 
     return operations, index
+
+
+def _drawn_on(drill_stack: list) -> str | None:
+    """The day the card was read, which every level of the stack carries.
+
+    A span is stored unresolved, so read against the day of the click it cuts
+    the bucket the reader clicked down to its overlap with a stretch the card
+    never counted - in the chart's operations, in the dashboard's filters and in
+    the source query alike.
+    """
+    return next((level.get("drawn_on") for level in drill_stack if level.get("drawn_on")), None)
 
 
 def _aggregating_step(operations: list[dict]) -> int | None:
@@ -394,8 +702,16 @@ def _breakdown(chart, segment: list[dict], action: dict, step: dict, surface: li
         },
         "direction": "desc",
     }
+    # groups the measure ranks equal come back in whatever order the engine
+    # picks, so a query opened from this level could show them differently.
+    # The newest `order_by` is the primary sort, so this one only breaks ties
+    tiebreak = {
+        "type": "order_by",
+        "column": {"type": "column", "column_name": column["name"]},
+        "direction": "asc",
+    }
     return {
-        "operations": [summarize, order_by],
+        "operations": [summarize, order_by] if ordered else [summarize, tiebreak, order_by],
         "ordered": ordered,
         "granularity": granularity,
         "additive": _additive(measures),
@@ -506,7 +822,9 @@ def _moment(value) -> datetime:
     return get_datetime(str(value))
 
 
-def _segment_filters(drill_stack: list, step: dict, surface: list[dict]) -> list[dict]:
+def _segment_filters(
+    chart, sliced: list[dict], drill_stack: list, step: dict, surface: list[dict]
+) -> list[dict]:
     """Every level's segment, narrowing the rows one level at a time.
 
     A level is read against the levels above it as much as against the chart:
@@ -518,7 +836,7 @@ def _segment_filters(drill_stack: list, step: dict, surface: list[dict]) -> list
     grains = {}
     for level in drill_stack:
         for rule in level.get("segment_filters") or []:
-            filters += _rule_filters(rule, step, surface, grains)
+            filters += _rule_filters(chart, sliced, rule, step, surface, grains)
         filters += _measure_condition(_measure_named(_clicked(level), _measures(step)))
         grains.update(_level_grain(level))
 
@@ -537,7 +855,14 @@ def _level_grain(level: dict) -> dict:
     return {dimension: granularity} if dimension and granularity else {}
 
 
-def _rule_filters(rule: dict, step: dict, surface: list[dict], grains: dict) -> list[dict]:
+def _rule_filters(
+    chart,
+    sliced: list[dict],
+    rule: dict,
+    step: dict,
+    surface: list[dict],
+    grains: dict,
+) -> list[dict]:
     """One clicked dimension value, as the pipeline underneath it filters on it."""
     dimension = _dimension_named(rule.get("column"), step)
     column = (dimension or {}).get("column_name") or rule.get("column")
@@ -548,11 +873,84 @@ def _rule_filters(rule: dict, step: dict, surface: list[dict], grains: dict) -> 
         frappe.throw(_("Operator {0} is not supported").format(operator))
 
     if operator == "=":
+        _refuse_invented_value(chart, sliced, dimension, step, rule.get("value"))
         bucket = _bucket(on_surface, dimension, grains, rule.get("value"))
         if bucket:
             return _bucket_filters(column, bucket)
 
     return [_rule(column, operator, rule.get("value"))]
+
+
+def _refuse_invented_value(chart, sliced: list[dict], dimension: dict | None, step: dict, value) -> None:
+    """A segment the engine named rather than read has nothing to cut the rows by.
+
+    A split cuts its values to a cap and rewrites the tail to `Others`, inside
+    the step the drill cuts the pipeline before. So the surface holds no row
+    whose column equals `Others`, and filtering by it would draw an empty grid
+    with nothing on screen saying why.
+
+    Only that rewrite writes the label, and it is written for one split column
+    and only where there was a tail to cut: a chart split by two columns never
+    reaches it, and a split of fewer values than the cap leaves the column as
+    the rows hold it.
+
+    Two questions, because a column can really hold the string `Others` and be
+    cut as well. Whether the split cut a tail is the split's own answer; whether
+    the surface holds the label is the surface's. Only "no tail" leaves a cut
+    that means what the reader clicked: with a tail, either the label stands
+    for rows nothing can find, or it stands for both those and the real ones at
+    once, and `= Others` would answer with part of the bar and print its count
+    as the whole.
+    """
+    if value != PIVOT_OTHERS or step.get("type") != "pivot_wider":
+        return
+
+    columns = step.get("columns") or []
+    if not dimension or len(columns) != 1 or dimension != columns[0]:
+        return
+
+    if not _split_folded_a_tail(chart, sliced, step, dimension):
+        return
+
+    if _surface_holds(chart, sliced, dimension.get("column_name"), value):
+        frappe.throw(
+            _(
+                "This series holds the rows whose {0} is {1} together with the values the chart did not draw, and nothing cuts exactly those."
+            ).format(frappe.bold(dimension.get("column_name")), frappe.bold(PIVOT_OTHERS)),
+            title=_("Nothing to Drill Into"),
+        )
+
+    frappe.throw(
+        _("{0} stands for the values this chart did not draw, so there is nothing behind it.").format(
+            frappe.bold(PIVOT_OTHERS)
+        ),
+        title=_("Nothing to Drill Into"),
+    )
+
+
+def _split_folded_a_tail(chart, sliced: list[dict], step: dict, dimension: dict) -> bool:
+    """Whether the split wrote `Others` over a tail, as the engine ran it.
+
+    Asked by building the pipeline through the split rather than read off the
+    operation: which values it keeps depends on the rows it saw. Built, never
+    executed - the ranking the split does to pick them is what answers.
+    """
+    chart.get_query(operations=[*sliced, step]).build()
+    return folded_a_tail(dimension.get("dimension_name") or dimension.get("column_name"))
+
+
+def _surface_holds(chart, sliced: list[dict], column: str, value) -> bool:
+    """Whether the surface carries a row whose `column` is `value`.
+
+    One row is the whole answer, so the cut is read a page of one. Read without
+    the card's own filters: they can only take rows away, and a cut they emptied
+    is an honest empty grid rather than a label nobody wrote.
+    """
+    if not column:
+        return False
+
+    query = chart.get_query(operations=[*sliced, _filter_group([_rule(column, "=", value)])])
+    return bool(query.execute(page_size=1)["rows"])
 
 
 def _bucket(on_surface: dict, dimension: dict | None, grains: dict, value) -> tuple | None:
@@ -612,9 +1010,18 @@ def _clicked_window(dimension: dict | None, value) -> tuple | None:
 
     A number card grouped by spans labels each row with the date its span
     opens, so the label names the span and resolving the span gives the end.
-    The spans resolve here, the way they resolve while the card runs: they are
-    stored unresolved so that the same chart reads a different stretch
-    tomorrow.
+    The spans are stored unresolved so that the same chart reads a different
+    stretch tomorrow, so they resolve against the day the card was read —
+    `drawn_on`, which the card's own answer named and the level carries back.
+    A `<unit> to date` span opens on the first of its period and closes on that
+    day, so without it the click returns a stretch running to the day of the
+    click: rows behind a number that never counted them.
+
+    Both ends move, and only one of them is checked: a label that opens no span
+    is refused rather than left to the caller's categorical fallback, and that
+    refusal is also what holds a `drawn_on` to a day the card could have been
+    read on. The rows are bounded either way — the pipeline underneath carries
+    the card's own span filter, which resolves for the same day.
     """
     windows = (dimension or {}).get("windows") or []
     if not windows or not value:
@@ -627,7 +1034,10 @@ def _clicked_window(dimension: dict | None, value) -> tuple | None:
             # a span closes on the last day it covers, and a bound is exclusive
             return (get_datetime(opened), get_datetime(add_to_date(closed, days=1)))
 
-    return None
+    frappe.throw(
+        _("This card reads a different stretch of time now. Open it again to see what is behind it."),
+        title=_("The Span Has Moved"),
+    )
 
 
 def _measure_condition(measure: dict | None) -> list[dict]:

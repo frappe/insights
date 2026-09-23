@@ -53,7 +53,7 @@ class StoredDocumentDecides:
         """The baseline the refusals below are measured against."""
         with self.as_user(OWNER):
             exported = self.export_workbook(self.owner_workbook)
-        self.assertIn(self.owner_query, exported["dependencies"]["queries"])
+        self.assertIn(self.owner_query, exported["queries"])
 
     # @feature permissions.request-body-not-trusted
     def test_another_user_cannot_export_the_workbook(self):
@@ -118,8 +118,8 @@ class StoredDocumentDecides:
         """The unsaved path is not a way in.
 
         A guest holds no permission on the doctype and no Insights role, so the
-        method surface refuses before a document is built. What a guest reaches is
-        a public document, and an unsaved one is nobody's.
+        method surface refuses before a document is built. A guest reads through
+        `insights.api.view` and reaches no document method at all.
         """
         with self.as_user("Guest"), self.assertRaises(frappe.PermissionError):
             run_doc_method(
@@ -143,6 +143,22 @@ class StoredDocumentDecides:
                     ],
                 },
             )
+
+    # @feature permissions.request-body-not-trusted
+    def test_a_forged_document_does_not_pass_the_controller(self):
+        """Frappe mounts a second route onto `run_doc_method` - `/api/v2` -
+        which builds the document out of the request body, `owner` and
+        `__islocal` included, and hands that document to the controller. The
+        controller is what both routes share, so it reads the stored row."""
+        # exactly what that route builds: an in-hand document carrying the
+        # victim's name, the caller as `owner` and no stored state at all
+        forged = frappe.get_doc({"doctype": DT.QUERY})
+        forged.update({"name": self.owner_query, "owner": OTHER, "__islocal": 1})
+        self.assertTrue(forged.is_new())
+
+        with self.as_user(OTHER):
+            self.assertFalse(frappe.has_permission(DT.QUERY, ptype="read", doc=forged))
+            self.assertFalse(frappe.has_permission(DT.QUERY, ptype="write", doc=forged))
 
     # @feature permissions.request-body-not-trusted
     def test_a_filter_set_is_not_a_name(self):
