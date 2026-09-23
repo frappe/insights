@@ -16,9 +16,9 @@ import {
 import Toggle from './components/Toggle.vue'
 
 import { App } from 'vue'
-import dayjs from './helpers/dayjs.ts'
-import { getSocket } from './socket.ts'
 
+// Islands import this module too, so keep it free of anything the SPA alone
+// needs — the injections live in `controllers.ts`.
 export function registerGlobalComponents(app: App) {
 	app.component('Badge', Badge)
 	app.component('Button', Button)
@@ -34,9 +34,4 @@ export function registerGlobalComponents(app: App) {
 	app.component('Combobox', Combobox)
 	app.component('MultiSelect', MultiSelect)
 	app.component('ErrorMessage', ErrorMessage)
-}
-
-export function registerControllers(app: App) {
-	app.provide('$dayjs', dayjs)
-	app.provide('$socket', getSocket())
 }
