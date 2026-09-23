@@ -22,10 +22,12 @@ from insights.tests.permissions_utils import USER_1, USER_2, create_test_users
 OWNER = USER_1
 IMPORTER = USER_2
 
-SOURCE_ROWS = "results = [{'amount': 1}]"
+SOURCE_ROWS = "select 1 as amount"
 
 
 def create_source_query(owner, workbook, title):
+    """Native SQL rather than a script: a script in a file is refused to anyone
+    but an admin (Q17), and nothing here runs the query."""
     with as_user(owner):
         return frappe.get_doc(
             {
@@ -33,8 +35,8 @@ def create_source_query(owner, workbook, title):
                 "title": title,
                 "workbook": workbook,
                 "use_live_connection": 0,
-                "is_script_query": 1,
-                "operations": [{"type": "code", "code": SOURCE_ROWS}],
+                "is_native_query": 1,
+                "operations": [{"type": "sql", "data_source": "Site DB", "raw_sql": SOURCE_ROWS}],
             }
         ).insert()
 
@@ -351,3 +353,189 @@ class ImportingAcrossSitesIgnoresTheWorkbookNameInTheFile(InsightsIntegrationTes
         self.assertNotIn(self.source, deps, "a reference must not point back at the source site")
         for dep in deps:
             self.assertEqual(frappe.db.get_value(DT.QUERY, dep, "workbook"), self.target)
+
+
+class AWorkbookFileCarriesItsMembersAtTheTop(InsightsIntegrationTestCase):
+    """One format for the download, Duplicate, the delete backup and a shipped file.
+
+    The keys are the contract an app's shipped file is written against, and the
+    folder a member sits in travels as a title, because the folder's own name is a
+    hash the importing site mints for itself.
+    """
+
+    @classmethod
+    def before_class(cls):
+        create_test_users()
+
+        cls.workbook = create_test_workbook(OWNER, "format source").name
+        with as_user(OWNER):
+            cls.folder = (
+                frappe.get_doc(
+                    {
+                        "doctype": "Insights Folder",
+                        "title": "Revenue",
+                        "type": "chart",
+                        "workbook": cls.workbook,
+                    }
+                )
+                .insert()
+                .name
+            )
+        cls.query = create_source_query(OWNER, cls.workbook, "format query").name
+        with as_user(OWNER):
+            cls.chart = (
+                frappe.get_doc(
+                    {
+                        "doctype": DT.CHART,
+                        "title": "format chart",
+                        "workbook": cls.workbook,
+                        "query": cls.query,
+                        "chart_type": "Bar",
+                        "folder": cls.folder,
+                    }
+                )
+                .insert()
+                .name
+            )
+            cls.dashboard = (
+                frappe.get_doc(
+                    {
+                        "doctype": DT.DASHBOARD,
+                        "title": "format dashboard",
+                        "workbook": cls.workbook,
+                        "items": [
+                            {"id": "1", "type": "chart", "chart": cls.chart},
+                            {
+                                "id": "2",
+                                "type": "filter",
+                                "filter_name": "Description",
+                                "links": {cls.chart: f"`{cls.query}`.`description`"},
+                            },
+                        ],
+                    }
+                )
+                .insert()
+                .name
+            )
+            cls.file = frappe.get_doc(DT.WORKBOOK, cls.workbook).export()
+
+        cls.made_workbooks = [cls.workbook]
+
+    @classmethod
+    def after_class(cls):
+        for workbook in frappe.get_all(
+            DT.WORKBOOK, filters={"name": ("in", cls.made_workbooks)}, pluck="name"
+        ):
+            frappe.delete_doc(DT.WORKBOOK, workbook, force=True, delete_permanently=True)
+        delete_users(OWNER, IMPORTER)
+
+    # @feature standard.file-format
+    def test_a_file_carries_the_workbook_and_its_members_under_one_key_each(self):
+        self.assertEqual(
+            set(self.file),
+            {"doctype", "name", "title", "folders", "queries", "charts", "dashboards"},
+        )
+        self.assertEqual(self.file["name"], self.workbook)
+        self.assertEqual(list(self.file["queries"]), [self.query])
+        self.assertEqual(list(self.file["charts"]), [self.chart])
+        self.assertEqual(list(self.file["dashboards"]), [self.dashboard])
+
+    # @feature standard.file-format
+    def test_a_file_names_the_folder_a_member_sits_in_by_title(self):
+        self.assertEqual(self.file["folders"], [{"title": "Revenue", "type": "chart", "sort_order": 0}])
+        self.assertEqual(self.file["charts"][self.chart]["folder"], "Revenue")
+
+    # @feature standard.file-format
+    def test_an_imported_member_lands_in_a_folder_of_the_same_title(self):
+        with as_user(IMPORTER):
+            imported = import_workbook(self.file)
+        self.made_workbooks.append(imported["workbook"])
+
+        chart = frappe.get_doc(DT.CHART, imported["names"][self.chart])
+        self.assertEqual(frappe.db.get_value("Insights Folder", chart.folder, "title"), "Revenue")
+        self.assertEqual(
+            frappe.db.get_value("Insights Folder", chart.folder, "workbook"), imported["workbook"]
+        )
+
+    # @feature standard.file-format
+    def test_two_folders_of_one_title_keep_their_own_members(self):
+        """A folder travels as its title, and a title is unique only within a
+        type — `InsightsFolder.validate_title` permits exactly this shape."""
+        with as_user(OWNER):
+            frappe.get_doc(
+                {
+                    "doctype": "Insights Folder",
+                    "title": "Revenue",
+                    "type": "query",
+                    "workbook": self.workbook,
+                }
+            ).insert()
+            query = frappe.get_doc(DT.QUERY, self.query)
+            query.folder = frappe.db.get_value(
+                "Insights Folder",
+                {"workbook": self.workbook, "type": "query", "title": "Revenue"},
+            )
+            query.save()
+            file = frappe.get_doc(DT.WORKBOOK, self.workbook).export()
+
+        with as_user(IMPORTER):
+            imported = import_workbook(file)
+        self.made_workbooks.append(imported["workbook"])
+
+        landed = {
+            doctype: frappe.db.get_value(
+                "Insights Folder",
+                frappe.db.get_value(doctype, imported["names"][member], "folder"),
+                ["title", "type"],
+            )
+            for doctype, member in ((DT.QUERY, self.query), (DT.CHART, self.chart))
+        }
+        self.assertEqual(landed[DT.QUERY], ("Revenue", "query"))
+        self.assertEqual(landed[DT.CHART], ("Revenue", "chart"))
+
+    # @feature workbook.copy-paste standard.file-format
+    def test_a_pasted_file_is_a_workbook_in_either_shape(self):
+        """`workbook_file.ts` `pastedWorkbook` asks this of every JSON object a
+        user pastes on the workbook list, before it offers to import it. The
+        released version's Copy JSON writes the wrapped shape, as the sample file
+        this app ships does."""
+        from insights.api.workbooks import is_workbook_file
+
+        with open(frappe.get_app_path("insights", "setup", "sample_workbook.json")) as f:
+            shipped = f.read()
+
+        with as_user(OWNER):
+            chart = frappe.get_doc(DT.CHART, self.chart).export()
+
+        with as_user(IMPORTER):
+            self.assertTrue(is_workbook_file(self.file))
+            self.assertTrue(is_workbook_file(shipped))
+            self.assertFalse(is_workbook_file(chart))
+            self.assertFalse(is_workbook_file({"type": "Query", "name": self.query}))
+
+    # @feature standard.file-format
+    def test_a_file_in_the_wrapped_shape_still_imports(self):
+        """Every file a site exported until now, and every file an app ships."""
+        wrapped = {
+            "version": "1.0",
+            "type": "Workbook",
+            "name": self.file["name"],
+            "doc": {"name": self.file["name"], "title": "wrapped copy"},
+            "dependencies": {
+                "folders": [{"name": self.folder, "title": "Revenue", "type": "chart", "sort_order": 0}],
+                "queries": self.file["queries"],
+                "charts": {
+                    name: {**chart, "folder": self.folder} for name, chart in self.file["charts"].items()
+                },
+                "dashboards": self.file["dashboards"],
+            },
+        }
+
+        with as_user(IMPORTER):
+            imported = import_workbook(wrapped)
+        self.made_workbooks.append(imported["workbook"])
+
+        self.assertEqual(frappe.db.get_value(DT.WORKBOOK, imported["workbook"], "title"), "wrapped copy")
+        chart = frappe.get_doc(DT.CHART, imported["names"][self.chart])
+        self.assertEqual(frappe.db.get_value("Insights Folder", chart.folder, "title"), "Revenue")
+        self.assertEqual(chart.query, imported["names"][self.query])

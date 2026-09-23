@@ -131,9 +131,6 @@ def site_profile() -> dict:
         "apps": standard,
         "custom_apps": len(installed) - len(standard),
         "site_age_days": site_age(),
-        "first_workbook_from_template": bool(
-            frappe.db.exists(WORKBOOK_DOCTYPE, {"from_template": ["is", "set"]})
-        ),
     }
     props.update(timeline())
     props.update(footprint())

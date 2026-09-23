@@ -6,6 +6,7 @@ from insights.api.workbooks import (
     get_share_permissions,
     get_workbooks,
     import_workbook,
+    rename_folder,
     update_share_permissions,
     update_sort_orders,
 )
@@ -148,6 +149,65 @@ class TestWorkbook(InsightsIntegrationTestCase):
         self.assertEqual(workbook["folders"], [])
         self.assertTrue(all(not row["folder"] for row in workbook["queries"]))
         self.assertTrue(all(not row["folder"] for row in workbook["charts"]))
+
+    # @feature workbook.folders workbook.duplicate
+    def test_two_folders_of_one_type_never_share_a_title(self):
+        """The sidebar's New folder button calls `create_folder` with `Untitled`
+        on every click, and renaming calls `rename_folder`. A file names a folder
+        by its title, so two of one title would be one folder on every copy."""
+        bundle = create_workbook_bundle(USER_1, "Workbook Flow Test Folder Titles")
+        workbook = bundle["workbook"].name
+
+        with self.as_user(USER_1):
+            first = create_folder(workbook, "Untitled", "query")
+            second = create_folder(workbook, "Untitled", "query")
+            chart_folder = create_folder(workbook, "Untitled", "chart")
+
+            titles = {
+                name: frappe.db.get_value("Insights Folder", name, "title")
+                for name in (first, second, chart_folder)
+            }
+            self.assertEqual(titles, {first: "Untitled", second: "Untitled 2", chart_folder: "Untitled"})
+
+            with self.assertRaises(frappe.ValidationError):
+                rename_folder(second, "Untitled")
+
+    # @feature upgrade.duplicate-folder-titles
+    def test_folders_that_shared_a_title_before_the_rule_are_numbered_apart(self):
+        """`bench migrate` runs `number_duplicate_folder_titles` from
+        `patches.txt` over the folders a site already holds. Two clicks on New
+        folder wrote two `Untitled` folders before `validate_title` existed."""
+        from insights.patches.number_duplicate_folder_titles import execute
+
+        bundle = create_workbook_bundle(USER_1, "Workbook Flow Test Duplicate Folder Titles")
+        workbook = bundle["workbook"].name
+        with self.as_user(USER_1):
+            names = [create_folder(workbook, "Untitled", "query") for _ in range(4)]
+            chart_folder = create_folder(workbook, "Untitled", "chart")
+        # three written under one title before the rule; "Untitled 2" is taken
+        for name in (names[0], names[2], names[3]):
+            frappe.db.set_value("Insights Folder", name, "title", "Untitled", update_modified=False)
+
+        def titles():
+            return {
+                name: frappe.db.get_value("Insights Folder", name, "title") for name in (*names, chart_folder)
+            }
+
+        execute()
+        numbered = titles()
+        self.assertEqual(
+            numbered,
+            {
+                names[0]: "Untitled",
+                names[1]: "Untitled 2",
+                names[2]: "Untitled 3",
+                names[3]: "Untitled 4",
+                chart_folder: "Untitled",
+            },
+        )
+
+        execute()
+        self.assertEqual(titles(), numbered)
 
     # @feature workbook.duplicate
     def test_duplicate_workbook_preserves_a_usable_copy(self):

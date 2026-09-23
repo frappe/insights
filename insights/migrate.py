@@ -4,25 +4,6 @@
 
 import frappe
 
-# A shipped template's copy is compared against the fingerprint taken when it was
-# imported, and a migration that rewrites anything `export()` carries moves that
-# fingerprint, so every imported copy would read as edited and never take another
-# update. The copies are read once before any patch writes and re-stamped once
-# after they all have, so no patch has to remember.
-PRISTINE_COPIES = "insights_pristine_template_copies"
-
-
-def before_migrate():
-    try:
-        from insights.api.templates import pristine_template_copies
-
-        frappe.flags[PRISTINE_COPIES] = pristine_template_copies()
-    except Exception:
-        # no copy is known pristine, which is not the same answer as none being
-        # pristine — `after_migrate` reads the difference
-        frappe.flags[PRISTINE_COPIES] = None
-        frappe.log_error(title="Error reading pristine template copies")
-
 
 def after_migrate():
     try:
@@ -37,29 +18,38 @@ def after_migrate():
     except Exception:
         frappe.log_error(title="Error installing desk custom fields")
 
-    # A read that failed knows no copy to be pristine. Re-stamping that answer
-    # would stamp none of them, and every copy the patches rewrote would read as
-    # edited from then on, with no way back. So the whole update is skipped and
-    # the next migrate, which reads the copies before it writes, does it. An
-    # install runs this hook without the read, and has no copy to re-stamp.
-    pristine = frappe.flags.pop(PRISTINE_COPIES, [])
-    if pristine is None:
-        return
+    sync_standard_workbooks()
 
-    # before the sync below, which only updates a copy that still reads as pristine
+
+def after_app_install(app: str):
+    from insights import standard
+
+    standard.import_shipped([app])
+
+
+def sync_standard_workbooks():
+    """Import the workbooks the installed apps ship, delete the ones no app ships
+    any more and the members kept for a desk document that no longer draws them,
+    then name each desk document left linking what went.
+    """
+    from insights import standard
+    from insights.desk import report_dangling_claims
+    from insights.insights.doctype.insights_workbook.insights_workbook import (
+        delete_unclaimed_kept_members,
+    )
+
+    standard.import_shipped()
+    standard.delete_unshipped()
+
     try:
-        from insights.api.templates import restamp_template_copies
-
-        restamp_template_copies(pristine)
+        delete_unclaimed_kept_members()
     except Exception:
-        frappe.log_error(title="Error re-stamping template copies")
+        frappe.log_error(title="Error deleting Insights content kept for desk documents")
 
     try:
-        from insights.api.templates import sync_workbook_template_updates
-
-        sync_workbook_template_updates()
+        report_dangling_claims()
     except Exception:
-        frappe.log_error(title="Error syncing workbook template updates")
+        frappe.log_error(title="Error reporting desk documents that link missing Insights content")
 
 
 def create_admin_team():

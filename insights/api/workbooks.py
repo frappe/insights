@@ -2,6 +2,7 @@ import re
 
 import frappe
 from frappe import _
+from frappe.utils import cint
 
 from insights.api.list_filters import (
     get_content_filters,
@@ -12,30 +13,9 @@ from insights.api.list_filters import (
     match_records,
 )
 from insights.decorators import insights_whitelist
-from insights.permissions import get_insights_users
+from insights.permissions import validate_shareable_users
 from insights.telemetry import capture_share_granted
 from insights.utils import DocShare
-
-
-def validate_shareable_users(emails):
-    """A workbook is shareable with Insights users only.
-
-    The picker cannot always show the person being named - an address typed by
-    a user who may not look anyone up still has to land somewhere real.
-    """
-    if not emails:
-        return
-
-    # Administrator owns the workbooks a template import creates and so stays on
-    # the share list whenever one of them is re-shared
-    shareable = get_insights_users() | {"Administrator"}
-    unknown = sorted(set(emails) - shareable)
-    if unknown:
-        frappe.throw(
-            _("Cannot share with {0} - they are not an Insights user").format(", ".join(unknown)),
-            title=_("Not an Insights user"),
-        )
-
 
 # Filters the list's filter control declares beyond the workbook's own columns
 WORKBOOK_FILTERS = {
@@ -113,6 +93,22 @@ def import_workbook(workbook: dict | str):
 
 
 @insights_whitelist()
+def is_workbook_file(workbook: dict | str):
+    """Whether a pasted file is a workbook the importer reads."""
+    from insights.insights.doctype.insights_workbook.insights_workbook import is_workbook_file
+
+    return is_workbook_file(workbook)
+
+
+@insights_whitelist(role="Insights Admin")
+def get_export_modules():
+    """The modules the "Export to app…" dialog may ship a workbook in."""
+    from insights import standard
+
+    return standard.export_modules()
+
+
+@insights_whitelist()
 def get_share_permissions(workbook_name: str):
     if not frappe.has_permission("Insights Workbook", ptype="share", doc=workbook_name):
         frappe.throw(_("You do not have permission to share this workbook"), frappe.PermissionError)
@@ -182,11 +178,22 @@ def update_share_permissions(
             "share_doctype": "Insights Workbook",
             "share_name": workbook_name,
         },
-        fields=["name", "user", "everyone"],
+        fields=["name", "user", "everyone", "read", "write"],
     )
 
     allowed_users = {permission["user"] for permission in user_permissions}
-    validate_shareable_users(allowed_users)
+    # the dialog posts back every share it was shown, so only a new person or a
+    # widened grant names anyone; a kept share with someone who has since left
+    # Insights would otherwise refuse every later save. A removed person keeps
+    # a row with no access, and giving it back widens it.
+    held = {share.user: access_level(share) for share in existing_shares if share.user}
+    validate_shareable_users(
+        {
+            permission["user"]
+            for permission in user_permissions
+            if access_level(permission) > held.get(permission["user"], 0)
+        }
+    )
     for share in existing_shares:
         if share.user and share.user not in allowed_users:
             frappe.delete_doc("DocShare", share.name, ignore_permissions=True)
@@ -223,6 +230,14 @@ def update_share_permissions(
         capture_share_granted("workbook", "user", len(newly_shared))
     if organization_access and not shared_with_organization:
         capture_share_granted("workbook", "org", 1)
+
+
+def access_level(share) -> int:
+    """0 for none, 1 for view, 2 for edit. The dialog posts edit as write
+    without read, and a removed person as neither."""
+    if cint(share.get("write")):
+        return 2
+    return 1 if cint(share.get("read")) else 0
 
 
 # folder Management APIs

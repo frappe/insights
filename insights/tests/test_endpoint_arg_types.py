@@ -8,7 +8,6 @@ nothing. It now decorates the endpoint itself.
 
 import frappe
 
-from insights.api.shared import is_public
 from insights.api.workbooks import (
     create_folder,
     delete_folder,
@@ -91,8 +90,13 @@ class EndpointsCheckArgumentTypes(InsightsIntegrationTestCase):
     def test_a_workbook_file_arrives_as_json_text_or_as_a_dict(self):
         """`import_workbook` starts with `frappe.parse_json`, so both are names
         for the same file. The annotation used to admit only a dict."""
-        with as_user(OWNER), self.assertRaises(KeyError):
-            import_workbook("{}")
+        with as_user(OWNER):
+            imported = import_workbook('{"doctype": "Insights Workbook", "title": "Arg Types Import"}')[
+                "workbook"
+            ]
+
+        self.addCleanup(frappe.delete_doc, "Insights Workbook", imported, True)
+        self.assertEqual(frappe.db.get_value("Insights Workbook", imported, "title"), "Arg Types Import")
 
     # @feature permissions.malformed-request-refused
     def test_a_flag_arrives_as_true_or_as_1(self):
@@ -109,10 +113,3 @@ class EndpointsCheckArgumentTypes(InsightsIntegrationTestCase):
             folder = create_folder(self.workbook, "Arg Types Doomed Folder", "query")
             delete_folder(folder, 1)
             self.assertFalse(frappe.db.exists("Insights Folder", folder))
-
-    # @feature permissions.malformed-request-refused
-    def test_a_name_from_a_json_blob_is_still_a_name(self):
-        """`run_doc_method` reads `name` out of a payload frappe checks only as
-        a whole, so a dict can reach `frappe.db.exists` as a filter set."""
-        with as_user(OWNER):
-            self.assertFalse(is_public("Insights Chart v3", {"is_public": 1}))

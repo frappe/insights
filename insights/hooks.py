@@ -30,15 +30,6 @@ add_to_apps_screen = [
     }
 ]
 
-# Any app can ship workbooks to Insights by pointing this hook at a directory
-# (relative to the app) holding one folder per workbook — manifest.json +
-# workbook.json + optional preview.png. Insights is its own first consumer: the
-# bundled ERPNext workbooks are discovered through the same public contract.
-# Deliberately policy-free name: how the site consumes these (import a copy
-# today, versioned updates later) can evolve without breaking the hook.
-insights_workbooks = "workbook_templates"
-
-
 # Includes in <head>
 # ------------------
 
@@ -110,8 +101,8 @@ ui_islands = {
 
 # before_install = "insights.install.before_install"
 after_install = "insights.migrate.after_migrate"
-before_migrate = "insights.migrate.before_migrate"
 after_migrate = "insights.migrate.after_migrate"
+after_app_install = "insights.migrate.after_app_install"
 
 after_request = ["insights.insights.doctype.insights_data_source_v3.insights_data_source_v3.after_request"]
 

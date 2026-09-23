@@ -215,8 +215,8 @@ class TestDeskIsland(InsightsIntegrationTestCase):
 
     # @feature desk.dashboard-island desk.chart-island standard.resync
     def test_a_resync_keeps_a_dropped_member_a_desk_document_draws(self):
-        """`InsightsWorkbook.after_import`, which `standard.sync` reaches on
-        every migrate that ships a changed file. Dropping what a desk document
+        """`InsightsWorkbook.after_insert`, which a migrate reaches on every
+        file that changed. Dropping what a desk document
         draws would leave it linking nothing, and refusing would block the
         migrate, so the member stays with the queries it reads and its folder,
         and the keep is logged. The dashboard the desk document draws stays too;
@@ -266,7 +266,7 @@ class TestDeskIsland(InsightsIntegrationTestCase):
 
     # @feature desk.dashboard-island standard.resync
     def test_a_resync_keeps_what_a_kept_dashboard_draws(self):
-        """`InsightsWorkbook.after_import`, reached from `standard.sync`. A desk
+        """`InsightsWorkbook.after_insert`, reached from a migrate. A desk
         Dashboard claims the Insights dashboard only; the charts on it are
         claimed by nothing, and they stay with it so the desk page draws what
         it drew. A dropped chart on no kept dashboard still goes."""
@@ -294,7 +294,7 @@ class TestDeskIsland(InsightsIntegrationTestCase):
 
     # @feature desk.dangling-claim
     def test_a_migrate_names_each_desk_document_left_linking_missing_insights_content(self):
-        """`insights.migrate.sync_standard_workbooks`, after `standard.sync`
+        """`insights.migrate.sync_standard_workbooks`, after `standard.delete_unshipped`
         deletes a workbook its app stopped shipping with every member a desk
         document draws. A desk document that links content still there is not
         named."""
