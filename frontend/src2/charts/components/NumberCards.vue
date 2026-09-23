@@ -27,7 +27,7 @@ defineProps<{
 	failure?: ChartFailure | null
 	/** The query returned no rows. See `ChartBody`. */
 	empty?: boolean
-	/** Whether this surface's feed answers a drill. See `ChartBody`. */
+	/** Whether this surface's source answers a drill. See `ChartBody`. */
 	drillable?: boolean
 }>()
 
@@ -58,6 +58,12 @@ const emit = defineEmits<{
 				     they would paint over the Retry the failed card draws in the
 				     same corner. A dashboard cell names one reading, so the first
 				     card is the card. -->
+				<!-- On the first card, like the acts above: the scope is the
+				     chart's and not one reading's, and one mark states it. -->
+				<template v-if="$slots['title-suffix'] && index === 0" #title-suffix>
+					<slot name="title-suffix" />
+				</template>
+
 				<template v-if="$slots.actions && index === 0" #actions>
 					<slot name="actions" />
 				</template>

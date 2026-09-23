@@ -1,15 +1,24 @@
 <script setup lang="ts">
-import DOMPurify from 'dompurify'
 import { Button, LoadingIndicator } from 'frappe-ui'
 import { ChartContainer } from 'frappe-ui/charts'
-import { AlertTriangle, RefreshCcw } from 'lucide-vue-next'
+import { RefreshCcw } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
+import { refusalDetail, refusalHeadline } from '../../not_permitted'
 import { __ } from '../../translation'
 import { emptyResult } from '../../query/helpers'
-import { adaptChart, drawsOwnCards, type ChartStateProps, type DrillDownTarget } from '../adapter'
-import { ChartRead } from '../chart_read'
+import {
+	adaptChart,
+	drawsOwnCards,
+	type ChartFailure,
+	type ChartStateProps,
+	type DrillDownTarget,
+} from '../adapter'
+import type { ChartRead } from '../chart_view'
 import { segmentClickEvents, type ChartSegmentClick, type ClickPoint } from '../drill/segment_click'
+import { scopeText } from '../scoped_by'
 import ChartSectionEmptySvg from './ChartSectionEmptySvg.vue'
+import ScopeMark from './ScopeMark.vue'
+import ChartStateMessage from './ChartStateMessage.vue'
 
 // The chart itself: the type it is, the data it has, and every state in between.
 // One state machine — a surface that draws a chart draws this, and gets the
@@ -58,7 +67,7 @@ const emit = defineEmits<{
 	resetFilters: []
 }>()
 
-const readonly = computed(() => props.readonly || props.chart.doc.can_edit === false)
+const readonly = computed(() => props.readonly || props.chart.doc.can_write === false)
 
 const chart_type = computed(() => props.chart.doc.chart_type)
 const config = computed(() => props.chart.doc.config)
@@ -87,13 +96,16 @@ const filler = computed(() => {
 		readonly: readonly.value,
 		drillable: props.chart.drillable,
 		executing: props.chart.executing,
-		page: {
-			current: props.chart.currentPage,
-			size: props.chart.pageSize,
-			totalRowCount: result.value.totalRowCount || undefined,
-			goTo: props.chart.goToPage,
-			fetchCount: props.chart.fetchResultCount,
-		},
+		// only where the read offers another page: everyone else keeps the one
+		page: props.chart.goToPage
+			? {
+					current: props.chart.currentPage,
+					size: props.chart.pageSize,
+					totalRowCount: result.value.totalRowCount || undefined,
+					goTo: props.chart.goToPage,
+					fetchCount: props.chart.fetchResultCount,
+			  }
+			: undefined,
 		download:
 			props.chart.exportResults && props.chart.cancelDownload
 				? {
@@ -135,6 +147,8 @@ onBeforeUnmount(() => clearTimeout(veilTimer))
 const state = computed(() => {
 	if (props.chart.failed) return props.chart.serverBusy ? 'serverBusy' : 'failed'
 	if (props.chart.executing && !hasRows.value) return 'loading'
+	// nothing ran, so there is no config to blame and no zero to report
+	if (props.chart.notPermitted) return 'notPermitted'
 	if (props.chart.configErrors.length) return 'unconfigured'
 	if (props.chart.empty) return 'empty'
 	return filler.value ? 'chart' : 'unconfigured'
@@ -169,24 +183,40 @@ const unconfigured = computed(() => {
 const headline = computed(() => {
 	if (state.value === 'serverBusy') return __('The server is busy')
 	if (state.value === 'failed') return __('Could not load')
+	// Frappe's own word for it, and one of the card's states rather than a shape
+	// of its own: Not Permitted, No data and Could not load are one family, so a
+	// reader reads the card the same way whatever it says.
+	if (state.value === 'notPermitted') return refusalHeadline()
 	return null
 })
 
 // What the server said. An author can act on it. A reader owns neither the query
 // nor the config it names, so a reader gets the headline alone.
+//
+// A refusal is the exception: the doctypes it names are the same line for an
+// author and a reader, because neither owns the grant, and the doctype is the
+// word the site's own permission page uses.
 const detail = computed(() => {
+	if (state.value === 'notPermitted') {
+		return refusalDetail(
+			props.chart.notPermitted,
+			__('You do not have access to the data behind this chart'),
+		)
+	}
 	if (state.value !== 'failed' || readonly.value) return ''
 	return props.chart.failure
 })
 
-// A Frappe exception message carries markup — a link to the docs, a `<br>` — so
-// the detail is drawn as HTML and not as its own source. DOMPurify is what keeps
-// a message that reached the server from a user out of the DOM as script.
-const detailHtml = computed(() => (detail.value ? DOMPurify.sanitize(detail.value) : ''))
-// The tooltip holds the whole message, which an element attribute can only carry
-// as text. Stripping every tag is the same sanitize with nothing allowed through.
-const detailText = computed(() =>
-	detail.value ? DOMPurify.sanitize(detail.value, { ALLOWED_TAGS: [] }) : undefined,
+// What the card says in place of the picture, read the same way by the chrome
+// around a plot and by a filler that draws its own cards.
+const failure = computed<ChartFailure | null>(() =>
+	headline.value
+		? {
+				...(state.value === 'notPermitted' ? { kind: 'notPermitted' as const } : {}),
+				headline: headline.value,
+				detailText: detail.value || undefined,
+		  }
+		: null,
 )
 
 // What a filler that owns its states is told, bound as props beside the rest of
@@ -195,13 +225,7 @@ const stateProps = computed(() => {
 	if (!ownsStates.value) return {}
 	const owned: ChartStateProps = {
 		loading: state.value === 'loading',
-		failure: headline.value
-			? {
-					headline: headline.value,
-					detailHtml: detailHtml.value,
-					detailText: detailText.value,
-			  }
-			: null,
+		failure: failure.value,
 		empty: state.value === 'empty',
 		onRetry: () => props.chart.load(true),
 	}
@@ -212,15 +236,29 @@ const stateProps = computed(() => {
 // type emits which. The adapter names them and turns each payload into the point
 // behind it.
 //
-// A feed that answers no drill is not wired for one at all: the dialog would open
+// A source that answers no drill is not wired for one at all: the dialog would open
 // on a click the server refuses, and offer a retry that can never succeed. Gated
-// here rather than in each adapter, because a drill is the feed's answer to give
+// here rather than in each adapter, because a drill is the source's answer to give
 // and every chart type reports its clicks through this one map.
 const fillerEvents = computed(() =>
 	props.chart.drillable === false
 		? {}
 		: segmentClickEvents(filler.value, result.value.columns, reportSegment),
 )
+
+// What a card whose rows the reader's own permissions narrowed says, so a
+// scoped number is not read as the whole one. Only a real User Permission
+// record is named: a role's match condition narrows the rows too, but nobody
+// holds a document for it and there is nothing to name. A team's Table
+// Restriction names nothing either, and is said without names.
+//
+// It is a mark right after the title, not a line in the card: the card is as
+// tall as its author sized it, and a line under the plot is a line taken off
+// the reading. It belongs to the chart's name, not to the acts a host offers,
+// so it goes in `#title-suffix` and not in `#actions` at the far end of the
+// row. Optional information, so it waits for a hover or a tab stop. Nothing is
+// drawn without a scope, so a card that has none is the card it was.
+const scope = computed(() => scopeText(props.chart.scopedBy, props.chart.narrowedByPermissions))
 
 // echarts hands over the point, not the event, so the capture phase records
 // the click position before the chart's own handler runs.
@@ -244,6 +282,17 @@ function reportSegment(target: DrillDownTarget) {
 			v-bind="{ ...filler.props, ...stateProps }"
 			v-on="fillerEvents"
 		>
+			<!-- Sized in `em`, so the mark is the size of whichever title it sits
+			     on: smaller on a Number Chart's card than on a plot's. Under the
+			     title's own size, because it is a mark on the name and not a
+			     second word in it. -->
+			<template v-if="scope" #title-suffix>
+				<ScopeMark
+					:applied="props.chart.scopedBy"
+					:narrowed="props.chart.narrowedByPermissions"
+				/>
+			</template>
+
 			<template v-if="$slots.actions" #actions>
 				<slot name="actions" />
 			</template>
@@ -259,43 +308,37 @@ function reportSegment(target: DrillDownTarget) {
 			:error="headline"
 			:empty="true"
 		>
+			<template v-if="scope" #title-suffix>
+				<ScopeMark
+					:applied="props.chart.scopedBy"
+					:narrowed="props.chart.narrowedByPermissions"
+				/>
+			</template>
+
 			<!-- The acts stay put through every state: a chart that failed is a
 			     chart to run again. -->
 			<template v-if="$slots.actions" #actions>
 				<slot name="actions" />
 			</template>
 
-			<!-- the queue turns a card away rather than queueing it, so asking
-			     again is the whole remedy — and a chart that failed for any
-			     other reason is worth one more try too -->
+			<!-- Every state that is not a picture, drawn as one block: Not
+			     Permitted stands where "Could not load" stands, in the card it
+			     would have had. -->
 			<template #error>
-				<!-- One block, so the headline and the action hold their size and
-				     the detail is the only thing a short box takes back. `status`
-				     and not `alert`: a dashboard can fail eight cards at once, and
-				     eight interruptions say less than one line each. -->
-				<div class="flex min-h-0 w-full flex-col items-center gap-2" role="status">
-					<div class="flex shrink-0 items-center gap-1.5 text-p-sm text-ink-gray-8">
-						<!-- The size of the text it stands beside, here and in every
-						     other failure Insights draws: an icon larger than its
-						     sentence reads as a picture of an error, not as part of
-						     the line that states one. -->
-						<AlertTriangle
-							class="h-3.5 w-3.5 shrink-0 text-ink-red-5"
-							stroke-width="1.5"
-						/>
-						<span>{{ headline }}</span>
-					</div>
-
-					<!-- The whole message is in the tooltip, so the clamp costs
-					     the reader nothing but a hover. -->
-					<p
-						v-if="detailHtml"
-						class="line-clamp-2 px-4 text-p-xs text-ink-gray-5 [&_a]:underline"
-						:title="detailText"
-						v-html="detailHtml"
-					></p>
-
+				<!-- centred, because this block stands where the plot would -->
+				<ChartStateMessage
+					v-if="failure"
+					class="w-full items-center text-center"
+					:failure="failure"
+					detailed
+				>
+					<!-- the queue turns a card away rather than queueing it, so
+					     asking again is the whole remedy — and a chart that failed
+					     for any other reason is worth one more try too. A refusal
+					     has nothing to ask again: the reader owns no permission
+					     they could change. -->
 					<Button
+						v-if="state !== 'notPermitted'"
 						class="shrink-0"
 						variant="outline"
 						:label="state === 'serverBusy' ? __('Try again') : __('Retry')"
@@ -305,7 +348,7 @@ function reportSegment(target: DrillDownTarget) {
 							<RefreshCcw class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 						</template>
 					</Button>
-				</div>
+				</ChartStateMessage>
 			</template>
 
 			<template #empty>

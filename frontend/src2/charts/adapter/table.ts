@@ -84,7 +84,7 @@ export function adaptTableChart(input: ChartAdapterInput): ChartFiller | undefin
 
 	// The sort is a config edit the server re-derives the query from, so it is
 	// offered only where both halves are held. Drilling is not: a reader inspects
-	// a cell without changing anything, so every surface whose feed answers a
+	// a cell without changing anything, so every surface whose source answers a
 	// drill offers it.
 	if (!input.readonly) {
 		props.onSortChange = (column_name, direction) => sortBy(config, column_name, direction)

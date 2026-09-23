@@ -34,7 +34,7 @@ const result = computed<QueryResult>(() => {
 		...answered,
 		// A level that draws itself as a grid reads the formatted rows, and so
 		// does the click path behind it, so they are made here the way a card's
-		// feed makes them. The level's grain belongs to the Dimension it was cut
+		// source makes them. The level's grain belongs to the Dimension it was cut
 		// on, which is the only column that carries one.
 		formattedRows: formatResultRows(
 			answered,

@@ -91,13 +91,6 @@ const editTeam = ref<Team | null>(null)
 		</SettingItem>
 
 		<SettingItem
-			label="Apply User Permissions"
-			description="Apply restrictions based on roles and user permissions defined on this site. Only applicable for site data source."
-		>
-			<Toggle v-model="settings.doc.apply_user_permissions" />
-		</SettingItem>
-
-		<SettingItem
 			label="Allow Data Download"
 			description="Allow users to download query results as CSV or Excel. A user can download only if both this toggle is on and its export permission is granted on the query. When disabled, only admins can download data."
 		>

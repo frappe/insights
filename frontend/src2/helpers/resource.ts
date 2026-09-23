@@ -1,11 +1,9 @@
 import { useStorage, watchDebounced } from '@vueuse/core'
-import { __ } from '../translation'
 import { isEqual } from 'es-toolkit'
 import { call } from 'frappe-ui'
 import { computed, reactive, ref, UnwrapRef } from 'vue'
-import { confirmDialog } from '../helpers/confirm_dialog'
 import { copy, showErrorToast, waitUntil, watchToggle } from './index'
-import { mergeWriteAnswer } from './write_answer'
+import { mergeWriteAnswer, takeBackRefusal } from './write_answer'
 // import json_diff from 'https://cdn.jsdelivr.net/npm/json-diff@1.0.6/+esm'
 
 type Document = {
@@ -44,7 +42,6 @@ export default function useDocumentResource<T extends Document>(
 	const isLocal = ref(docname.value.startsWith('new-'))
 	const isLoading = ref(docname.value && !docname.value.startsWith('new-'))
 	const isLoaded = ref(false)
-	const isFailed = ref(false)
 	const isSaving = ref(false)
 	const isDeleting = ref(false)
 	const autoSave = ref(options.enableAutoSave ?? false)
@@ -69,8 +66,7 @@ export default function useDocumentResource<T extends Document>(
 	const isDirty = computed(() => !isEqual(copy(doc.value), originalDoc.value))
 
 	// A surface waits on this before it draws the document. A local document has
-	// nothing to load, so it is ready the moment it is made. A failed load stays
-	// pending: a surface that draws the failure reads `failed`.
+	// nothing to load, so it is ready the moment it is made.
 	const isPending = computed(() => !isLoaded.value && !isLocal.value)
 
 	async function insertDoc() {
@@ -124,16 +120,32 @@ export default function useDocumentResource<T extends Document>(
 	async function updateDoc() {
 		isSaving.value = true
 		const sentDoc = copy(removeMetaFields(doc.value))
-		const newDoc = await call(methods.update, {
-			doctype,
-			name: docname.value,
-			fieldname: sentDoc,
-		})
-			.catch(showErrorToast)
-			.finally(() => (isSaving.value = false))
-
-		if (newDoc) {
-			updateDocState(newDoc, sentDoc)
+		try {
+			const newDoc = await call(methods.update, {
+				doctype,
+				name: docname.value,
+				fieldname: sentDoc,
+			})
+			if (newDoc) {
+				updateDocState(newDoc, sentDoc)
+			}
+		} catch (error) {
+			// Under autosave a refused value is permanent: the document stays
+			// dirty, every later edit re-arms the watcher, and the same refused
+			// payload is sent and refused again — so nothing the author types
+			// after that point reaches the server. So the refused value comes off.
+			// A document saved by hand has no such loop, and a write that never
+			// reached the server was not refused: both keep every edit.
+			if (autoSave.value && isRefusal(error)) {
+				doc.value = takeBackRefusal(
+					{ ...doc.value },
+					originalDoc.value,
+					sentDoc,
+				) as typeof doc.value
+			}
+			showErrorToast(error as Error)
+		} finally {
+			isSaving.value = false
 		}
 	}
 
@@ -141,16 +153,12 @@ export default function useDocumentResource<T extends Document>(
 		if (isLocal.value) return
 
 		isLoading.value = true
-		isFailed.value = false
 
 		const _doc = await call(methods.get, {
 			doctype,
 			name: docname.value,
 		})
-			.catch((error) => {
-				isFailed.value = true
-				showErrorToast(error)
-			})
+			.catch(showErrorToast)
 			.finally(() => (isLoading.value = false))
 
 		if (!_doc) return
@@ -268,11 +276,7 @@ export default function useDocumentResource<T extends Document>(
 		// })
 	}
 
-	// a document that failed to load has nothing to keep or save, and the toast
-	// has already said why
-	loadDoc()
-		.then(setupLocalStorage)
-		.then(setupAutoSave, () => {})
+	loadDoc().then(setupLocalStorage).then(setupAutoSave)
 	// setupRealtimeUpdates()
 
 	return reactive({
@@ -285,7 +289,6 @@ export default function useDocumentResource<T extends Document>(
 		loading: isLoading,
 		isloaded: isLoaded,
 		pending: isPending,
-		failed: isFailed,
 		saving: isSaving,
 		deleting: isDeleting,
 		autoSave: autoSave,
@@ -301,14 +304,6 @@ export default function useDocumentResource<T extends Document>(
 		load: loadDoc,
 		call: callMethod,
 		delete: deleteDoc,
-
-		discard() {
-			confirmDialog({
-				title: __('Discard Changes'),
-				message: __('Are you sure you want to discard changes?'),
-				onSuccess: () => loadDoc(),
-			})
-		},
 	})
 }
 
@@ -326,6 +321,11 @@ const metaFields = [
 	'parentfield',
 	'parenttype',
 ]
+
+/** The server read the write and refused it: a permission or a validation it raised. */
+function isRefusal(error: any) {
+	return error?.status === 403 || error?.status === 417
+}
 
 function removeMetaFields(doc: any) {
 	const newDoc = { ...doc }

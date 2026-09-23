@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Braces, ScrollText, SquareMousePointer } from 'lucide-vue-next'
+import session from '../session'
 
 const emit = defineEmits({
 	select: (interfaceType: 'query-builder' | 'sql-editor' | 'script-editor') => true,
@@ -35,6 +36,7 @@ const emit = defineEmits({
 				</div>
 			</div>
 			<div
+				v-if="session.user.can_write_trusted_code"
 				class="flex w-full cursor-pointer items-center gap-4 rounded-4 bg-surface-base p-2 shadow-sm transition-shadow hover:shadow-md"
 				@click="emit('select', 'script-editor')"
 			>

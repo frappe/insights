@@ -7,6 +7,10 @@ export interface QueryVariable {
 	variable_value: string
 }
 
+// the visibility levels are strict: each one includes the previous
+export type Visibility = 'Private' | 'Roles' | 'Everyone' | 'Public'
+export type VisibleToRole = { role: string }
+
 export type WorkbookListItem = {
 	title: string
 	name: string
@@ -63,6 +67,9 @@ export type InsightsWorkbook = {
 	charts: WorkbookChart[]
 	dashboards: WorkbookDashboard[]
 	read_only: boolean
+	/** Set on a workbook an app ships, with the module it ships in. */
+	is_standard?: boolean
+	module?: string | null
 }
 
 export type InsightsQueryv3 = {
@@ -93,7 +100,13 @@ export type InsightsChartv3 = {
 	chart_type: ChartType
 	sort_order: number
 	folder?: string | null
-	is_public: boolean
+	visibility: Visibility
+	visible_to_roles: VisibleToRole[]
+	run_as_owner: boolean
+	/** Whether the caller may move `run_as_owner` from where it is saved: on for its owner or an admin, off for any writer. */
+	can_move_run_as_owner?: boolean
+	/** Whether the caller may widen who reads the chart: the server's `can_share`. */
+	can_share?: boolean
 	operations: Operation[]
 	use_live_connection?: boolean
 	config: ChartConfig & {
@@ -113,14 +126,16 @@ export type InsightsDashboardv3 = {
 	items: WorkbookDashboardItem[]
 	preview_image?: string
 	share_link?: string
-	is_public: boolean
-	is_shared_with_organization: boolean
+	visibility: Visibility
+	visible_to_roles: VisibleToRole[]
 	people_with_access: {
 		email: string
 		full_name: string
 		user_image: string
 	}[]
 	read_only: boolean
+	/** Whether the caller may widen who reads the dashboard or name a person on it. */
+	can_share?: boolean
 	vertical_compact_layout: boolean
 	has_workbook_access: boolean
 }
@@ -200,7 +215,7 @@ export type WorkbookDashboardText = WorkbookDashboardItemLayout & {
 // dashboard filter state, keyed by filter name. Which query a filter lands on is
 // the server's concern — every surface sends the state and the grid it sits
 // on, and the links are read there.
-export type ViewerFilters = Record<string, { operator: FilterOperator; value: FilterValue }>
+export type FilterValues = Record<string, { operator: FilterOperator; value: FilterValue }>
 
 export type ShareAccess = 'view' | 'edit' | undefined
 export type WorkbookSharePermission = {

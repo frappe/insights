@@ -186,6 +186,10 @@ function showTooltip(name: string, value: number) {
 		:error="failed ? __('Could not load the map') : null"
 		:empty="!props.regions.length"
 	>
+		<template v-if="$slots['title-suffix']" #title-suffix>
+			<slot name="title-suffix" />
+		</template>
+
 		<template v-if="$slots.actions" #actions>
 			<slot name="actions" />
 		</template>

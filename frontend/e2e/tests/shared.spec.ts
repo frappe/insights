@@ -1,6 +1,11 @@
 import { expect, test } from '../fixtures'
 import { INSIGHTS_PATH } from '../helpers/auth'
-import { publishChart, publishDashboard, unpublishDashboard } from '../helpers/insights'
+import {
+	publishChart,
+	publishDashboard,
+	runChartAsOwner,
+	unpublishDashboard,
+} from '../helpers/insights'
 
 test.describe('shared', () => {
 	// @feature shared.dashboard-link
@@ -11,6 +16,7 @@ test.describe('shared', () => {
 		workbookWithDashboard,
 	}) => {
 		const { chart, dashboard } = workbookWithDashboard
+		await runChartAsOwner(adminApi, chart.name)
 		await publishDashboard(adminApi, dashboard.name)
 
 		await guestPage.goto(`${INSIGHTS_PATH}/shared/dashboard/${dashboard.name}`)
@@ -58,6 +64,7 @@ test.describe('shared', () => {
 		const { chart, dashboard } = workbookWithDashboard
 		const link = `${INSIGHTS_PATH}/shared/dashboard/${dashboard.name}`
 
+		await runChartAsOwner(adminApi, chart.name)
 		await publishDashboard(adminApi, dashboard.name)
 		await guestPage.goto(link)
 		await expect(guestPage.getByText(chart.title)).toBeVisible()
@@ -65,8 +72,8 @@ test.describe('shared', () => {
 		await unpublishDashboard(adminApi, dashboard.name)
 		await guestPage.goto(link)
 
-		// The withdrawn dashboard answers a Guest with a 403, and the app sends
-		// the visitor to the site login page. There is no 403 screen.
+		// The withdrawn dashboard answers a Guest Not Found, as a missing one does,
+		// and `SharedDashboard` offers a sign-in for it: the site login page.
 		await expect(guestPage).toHaveURL(/\/login/)
 		// The login page draws its sign-in prompt twice, once per card, so this
 		// asserts the prompt is present rather than that one node is visible.

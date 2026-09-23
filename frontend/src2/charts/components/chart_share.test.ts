@@ -1,0 +1,51 @@
+import { describe, expect, it } from 'vitest'
+import { nextTick, ref } from 'vue'
+import { useChartShare } from './chart_share'
+
+// The share dialog's state over a loaded chart, as `ChartBuilder` mounts the
+// dialog behind `v-if` once `loadDoc` has filled `useChart().doc`.
+
+function shareOf(doc: Record<string, any>, onPublicDashboard = false) {
+	return useChartShare(
+		{ doc: { visibility: 'Private', can_move_run_as_owner: true, ...doc } as any },
+		ref(onPublicDashboard),
+	)
+}
+
+describe('the Run as owner box in the share dialog', () => {
+	// @feature permissions.chart-run-as-owner shared.rows-are-the-owners
+	it('shows a public chart the box the row holds and leaves Done off until something moves', () => {
+		// the state `run_public_charts_as_owner` leaves where the publisher is not the owner
+		const share = shareOf({ visibility: 'Public', run_as_owner: 0 })
+
+		expect(share.runAsOwner.value).toBe(false)
+		expect(share.canMoveRunAsOwner.value).toBe(true)
+		expect(share.hasChanged.value).toBe(false)
+	})
+
+	// @feature permissions.chart-run-as-owner shared.rows-are-the-owners
+	it('ticks the box when the level moves to Public, and then refuses the untick the server refuses', async () => {
+		const share = shareOf({ visibility: 'Everyone', run_as_owner: 0 })
+
+		share.visibility.value = 'Public'
+		await nextTick()
+
+		expect(share.runAsOwner.value).toBe(true)
+		expect(share.canMoveRunAsOwner.value).toBe(false)
+	})
+
+	// @feature permissions.chart-run-as-owner
+	it('leaves the box to whoever the server says may move it', () => {
+		const share = shareOf({ run_as_owner: 1, can_move_run_as_owner: false })
+
+		expect(share.runAsOwner.value).toBe(true)
+		expect(share.canMoveRunAsOwner.value).toBe(false)
+	})
+
+	// @feature permissions.chart-run-as-owner shared.chart-on-public-dashboard
+	it('keeps the box on for a chart a public dashboard carries, as the server does', () => {
+		const share = shareOf({ visibility: 'Private', run_as_owner: 1 }, true)
+
+		expect(share.canMoveRunAsOwner.value).toBe(false)
+	})
+})

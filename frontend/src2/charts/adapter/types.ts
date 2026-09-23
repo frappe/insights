@@ -48,7 +48,7 @@ export type ChartAdapterInput = {
 	readonly?: boolean
 	/**
 	 * The surface can answer a drill. Inspecting a cell changes nothing about the
-	 * Chart, so it is not `readonly` that decides this — it is whether the feed
+	 * Chart, so it is not `readonly` that decides this — it is whether the source
 	 * behind the card has a level to hand back.
 	 */
 	drillable?: boolean
@@ -106,16 +106,18 @@ export type DrillDownResolvers = Record<
 
 /**
  * What a surface says when the chart behind it did not load: one line that fits
- * any card, and the reason under it. The reason is HTML because a Frappe message
- * carries markup — a link to the docs, a `<br>` — and it is sanitized before it
- * gets here.
+ * any card, and the reason under it.
  */
 export type ChartFailure = {
+	/**
+	 * Which state this is. Not Permitted is an answer and not a fault: the card
+	 * draws a lock instead of the red mark, and offers no retry, because the
+	 * reader owns no permission they could change. Left out reads as `failed`.
+	 */
+	kind?: 'failed' | 'notPermitted'
 	/** What happened, in one line. It is the part that survives the smallest card. */
 	headline: string
-	/** Why, as sanitized HTML. Empty when the reader is not the one who can act on it. */
-	detailHtml: string
-	/** The same reason as plain text, for the tooltip that holds what a clamp cuts. */
+	/** Why, as text. Left out when the reader is not the one who can act on it. */
 	detailText?: string
 }
 

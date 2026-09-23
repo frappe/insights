@@ -13,7 +13,11 @@
 // surface only.
 
 import type { Query } from '../../query/query'
-import { fetchAuthoringDrillData, fetchAuthoringDrillDimensions } from './drill_api'
+import {
+	authoringDrillRows,
+	fetchAuthoringDrillData,
+	fetchAuthoringDrillDimensions,
+} from './drill_api'
 import { queryResultChart, type DrillSubject } from './drill_stack'
 
 /** Undefined when nothing in the pipeline aggregates, which has nothing behind it. */
@@ -28,5 +32,6 @@ export async function queryDrillSubject(query: Query): Promise<DrillSubject | un
 		title: query.doc.title,
 		dimensions: await fetchAuthoringDrillDimensions(subject),
 		fetch: (levels) => fetchAuthoringDrillData(subject, levels),
+		rows: (levels) => authoringDrillRows(subject, levels),
 	}
 }

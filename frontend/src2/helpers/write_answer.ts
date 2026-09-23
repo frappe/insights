@@ -45,3 +45,26 @@ export function mergeWriteAnswer<T extends Record<string, any>>(
 
 	return answer
 }
+
+/**
+ * What a write the server refused leaves on the document: the mirror of
+ * `mergeWriteAnswer`.
+ *
+ * A field goes back to what the server holds only where it still holds what the
+ * refused write carried. One the author changed while the write was in flight
+ * was never refused, so it stays.
+ *
+ * @param current what is on screen now, without the framework's own fields
+ * @param original the document the server last answered with
+ * @param sent the deep clone the refused write carried
+ */
+export function takeBackRefusal(
+	current: Record<string, any>,
+	original: Record<string, any>,
+	sent: Record<string, any>,
+) {
+	for (const field of Object.keys(sent)) {
+		if (isEqual(copy(current[field]), sent[field])) current[field] = copy(original[field])
+	}
+	return current
+}

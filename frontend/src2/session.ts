@@ -10,6 +10,8 @@ type SessionUser = {
 	is_admin: boolean
 	is_user: boolean
 	can_download: boolean
+	/** Whether the server lets this user write a script or an expression that runs SQL. */
+	can_write_trusted_code: boolean
 	locale: string
 	has_desk_access?: boolean
 	has_demo_data: boolean
@@ -32,6 +34,8 @@ type SiteInfo = {
 	/** The two properties `docs/telemetry.md` puts on every event. */
 	app_version: string
 	entry: string
+	/** Whether the bench runs in developer mode, so a workbook may be shipped as a file. */
+	developer_mode: boolean
 }
 
 const emptySite: SiteInfo = {
@@ -42,6 +46,7 @@ const emptySite: SiteInfo = {
 	currency_symbols: {},
 	app_version: '',
 	entry: '',
+	developer_mode: false,
 }
 
 const emptyUser: SessionUser = {
@@ -53,6 +58,7 @@ const emptyUser: SessionUser = {
 	is_admin: false,
 	is_user: false,
 	can_download: true,
+	can_write_trusted_code: false,
 	locale: 'en-US',
 	has_demo_data: false,
 }
@@ -95,6 +101,7 @@ async function fetchSessionInfo() {
 		has_desk_access: Boolean(userInfo.has_desk_access),
 		has_demo_data: Boolean(userInfo.has_demo_data),
 		can_download: Boolean(userInfo.can_download),
+		can_write_trusted_code: Boolean(userInfo.can_write_trusted_code),
 	})
 }
 

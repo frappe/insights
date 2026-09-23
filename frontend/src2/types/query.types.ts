@@ -254,6 +254,4 @@ export type QueryResult = {
 	columnOptions: ColumnOption[]
 	timeTaken: number
 	lastExecutedAt: Date
-	/** the doctype each column names, keyed by column name, for the columns that name one */
-	recordLinks?: Record<string, string>
 }

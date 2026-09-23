@@ -7,7 +7,6 @@ import { findRows } from '../../components/result_pane/find'
 import ResultFooter from '../../components/result_pane/ResultFooter.vue'
 import ResultStatus from '../../components/result_pane/ResultStatus.vue'
 import { usePagination } from '../../composables/usePagination'
-import session from '../../session'
 import type { QueryResultColumn, QueryResultRow } from '../../types/query.types'
 import { tableFindKey, type TableCellEvent, type TableChartProps } from '../adapter/table'
 
@@ -39,7 +38,6 @@ const pagination = usePagination({
 	enabled: true,
 })
 
-const canExport = computed(() => Boolean(props.download) && session.user.can_download)
 const showExportDialog = ref(false)
 watch(
 	() => props.download?.downloading,
@@ -55,6 +53,10 @@ function onDrilldown(column: QueryResultColumn, row: QueryResultRow) {
 
 <template>
 	<ChartContainer :title="props.title">
+		<template v-if="$slots['title-suffix']" #title-suffix>
+			<slot name="title-suffix" />
+		</template>
+
 		<template v-if="$slots.actions" #actions>
 			<slot name="actions" />
 		</template>
@@ -99,7 +101,7 @@ function onDrilldown(column: QueryResultColumn, row: QueryResultRow) {
 				<template v-if="props.page" #footer>
 					<ResultFooter
 						:pagination="pagination"
-						:on-export="canExport ? () => (showExportDialog = true) : undefined"
+						:on-export="props.download ? () => (showExportDialog = true) : undefined"
 					>
 						<template #left>
 							<ResultStatus

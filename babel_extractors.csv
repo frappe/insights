@@ -1,0 +1,2 @@
+**.ts,frappe.gettext.extractors.javascript.extract
+**.tsx,frappe.gettext.extractors.javascript.extract

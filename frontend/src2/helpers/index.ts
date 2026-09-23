@@ -134,7 +134,21 @@ export function store<T>(key: string, value: () => T) {
 	return stored ? JSON.parse(stored) : value()
 }
 
+// what frappe-ui puts in `messages` when the server sent no sentence
+const NO_SENTENCE = 'Internal Server Error'
+
+/**
+ * The sentence a failed request tells the user.
+ *
+ * The server's own sentence first: frappe sends it to every user, and the
+ * traceback in `exc` to a System User only. A traceback's exception line is for a
+ * failure the server said nothing about. frappe writes a sentence for desk,
+ * which renders its markup; this app draws it as text, so the markup goes.
+ */
 export function getErrorMessage(err: any) {
+	const sentence = err.messages?.filter((message: string) => message !== NO_SENTENCE).at(-1)
+	if (sentence) return asText(sentence)
+
 	// the exception line is not always last: DuckDB appends the offending SQL and a caret
 	const lines: string[] = err.exc?.split('\n') ?? []
 	const excLine = lines.filter((line) => /^[\w.]+(Error|Exception): /.test(line)).at(-1)
@@ -142,6 +156,16 @@ export function getErrorMessage(err: any) {
 	const message = excLine.split(': ').slice(1).join(': ')
 	const details = lines.slice(lines.lastIndexOf(excLine) + 1)
 	return [message, ...details].join('\n').trim()
+}
+
+function asText(html: string) {
+	return html
+		.replace(/<[^>]*>/g, '')
+		.replace(/&lt;/g, '<')
+		.replace(/&gt;/g, '>')
+		.replace(/&quot;/g, '"')
+		.replace(/&#39;/g, "'")
+		.replace(/&amp;/g, '&')
 }
 
 export function showErrorToast(err: Error, raise = true) {

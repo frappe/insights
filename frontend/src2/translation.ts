@@ -59,8 +59,21 @@ function fetchTranslations() {
 	})
 }
 
-export function translationPlugin(app: App<Element>) {
+/**
+ * Make `__` in a template this app's own.
+ *
+ * Every surface installs it, because a host can have one of its own: desk hands
+ * an island `frappe._` through `SetVueGlobals`, and that one replaces `{0}` only
+ * when it is passed an object of replacements. Insights writes its arguments
+ * positionally, so under desk's the placeholder stands in the page as it is
+ * written.
+ */
+export function installTranslate(app: App<Element>) {
 	app.config.globalProperties.__ = translate
+}
+
+export function translationPlugin(app: App<Element>) {
+	installTranslate(app)
 	const windowObj = window as any
 	windowObj.__ = translate
 	if (!windowObj.translatedMessages) {

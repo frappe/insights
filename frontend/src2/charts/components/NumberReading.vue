@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { Button } from 'frappe-ui'
 import { NumberCard } from 'frappe-ui/charts'
-import { AlertTriangle, RefreshCcw } from 'lucide-vue-next'
+import { RefreshCcw } from 'lucide-vue-next'
 import { computed } from 'vue'
 import { __ } from '../../translation'
 import type { NumberCardClickEvent, NumberCardEntry } from '../adapter/number'
 import type { ChartFailure } from '../adapter/types'
+import ChartStateMessage from './ChartStateMessage.vue'
 
 // One reading of a Number Chart. Nothing here decorates: it fills its space and
 // reports a click.
@@ -26,7 +27,7 @@ const props = defineProps<{
 	failure?: ChartFailure | null
 	/** The query returned no rows. See `ChartBody`. */
 	empty?: boolean
-	/** Whether this surface's feed answers a drill. See `ChartBody`. */
+	/** Whether this surface's source answers a drill. See `ChartBody`. */
 	drillable?: boolean
 }>()
 
@@ -49,13 +50,15 @@ const reading = computed(() => {
 // it again will not bring the Measure back. So the message stands without the
 // retry beside it, and it is the author who removes the cell.
 const failure = computed<ChartFailure | null>(() =>
-	props.card.missing
-		? { headline: __('Reading not found'), detailHtml: '' }
-		: props.failure || null,
+	props.card.missing ? { headline: __('Reading not found') } : props.failure || null,
 )
-const retryable = computed(() => Boolean(props.failure) && !props.card.missing)
+// A refusal is not a run that went wrong: the reader owns no permission they
+// could change, so the card states it and offers nothing.
+const retryable = computed(
+	() => Boolean(props.failure) && !props.card.missing && props.failure?.kind !== 'notPermitted',
+)
 // A reading a drill can be asked about: the card has a reading to name, and the
-// feed behind it answers drills at all. A public link's feed does not, so the
+// source behind it answers drills at all. A public link's source does not, so the
 // card there is not offered as something to click.
 const drillable = computed(() => props.drillable !== false && !props.card.missing)
 </script>
@@ -86,17 +89,16 @@ const drillable = computed(() => props.drillable !== false && !props.card.missin
 				<p class="text-p-base text-ink-gray-5">{{ __('No data') }}</p>
 			</template>
 
-			<!-- One line, because the cell's height is the card's own and any
-			     taller block is a block the card cuts in half. The whole of it
+			<!-- The block every other chart type draws where its plot would be.
+			     No reason under it: the cell's height is the card's own and any
+			     taller block is a block the card cuts in half, so the whole of it
 			     waits on hover. -->
 			<template v-if="failure" #error>
-				<div
-					class="flex items-center gap-1.5 text-p-sm text-ink-gray-8"
-					:title="failure.detailText"
-				>
-					<AlertTriangle class="h-3.5 w-3.5 shrink-0 text-ink-red-5" stroke-width="1.5" />
-					<span class="truncate">{{ failure.headline }}</span>
-				</div>
+				<ChartStateMessage :failure="failure" />
+			</template>
+
+			<template v-if="$slots['title-suffix']" #title-suffix>
+				<slot name="title-suffix" />
 			</template>
 
 			<!-- The retry sits in the title row, which has zero height, so the

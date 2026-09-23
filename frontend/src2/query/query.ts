@@ -243,7 +243,6 @@ export function makeQuery(name: string) {
 				// the row keeps a hidden column; only the listing drops it
 				result.value.columns = response.columns.filter((c: QueryResultColumn) => !c.hidden)
 				result.value.rows = response.rows
-				result.value.recordLinks = response.record_links
 				Object.assign(session.site.currency_symbols, response.currency_symbols || {})
 				result.value.formattedRows = getFormattedRows(result.value, query.doc.operations)
 
@@ -299,18 +298,26 @@ export function makeQuery(name: string) {
 		}
 
 		fetchingCount.value = true
-		return scheduleQueryExecution(() =>
-			query.call('get_count', {
-				active_operation_idx: activeOperationIdx.value,
-				adhoc_filters: adhocFilters.value,
-			}),
+		return (
+			scheduleQueryExecution(() =>
+				query.call('get_count', {
+					active_operation_idx: activeOperationIdx.value,
+					adhoc_filters: adhocFilters.value,
+				}),
+			)
+				.then((count: number) => {
+					result.value.totalRowCount = count || 0
+				})
+				// A count is the one answer whose empty value *is* a zero, so the
+				// endpoint refuses rather than answering one. Left unhandled the
+				// previous run's total stands under a result nobody counted.
+				.catch(() => {
+					result.value.totalRowCount = 0
+				})
+				.finally(() => {
+					fetchingCount.value = false
+				})
 		)
-			.then((count: number) => {
-				result.value.totalRowCount = count || 0
-			})
-			.finally(() => {
-				fetchingCount.value = false
-			})
 	}
 
 	async function formatSQL(args: SQLArgs): Promise<string> {

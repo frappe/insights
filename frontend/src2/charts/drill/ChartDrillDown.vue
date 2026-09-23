@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { getErrorMessage } from '../../helpers'
 import { __ } from '../../translation'
 import { breakdownChart } from './breakdown_chart'
 import DrillDialog from './DrillDialog.vue'
@@ -14,6 +15,7 @@ import {
 	type DrillAction,
 	type DrillChart,
 	type DrillDimension,
+	type DrillLevel,
 	type DrillLevelData,
 	type DrillSegment,
 	type DrillSubject,
@@ -29,11 +31,9 @@ import type { ChartSegmentClick } from './segment_click'
 // chart was ever saved.
 //
 // `#actions` is what a surface may add next to the close button, on any level;
-// `#level-actions` acts on the level being read and is drawn in the pins row
-// beside the find. `#rows` is how the surface draws the rows level. Slots rather
-// than props so that an authoring affordance and everything it imports — the
-// whole query editor, for the rows level — stay out of a surface that only
-// reads.
+// `#rows` is how the surface draws the rows level. Slots rather than props so
+// that a builder affordance and everything it imports stay out of a surface that
+// only reads.
 const props = defineProps<{
 	/** what is being drilled: the shape a click is read against, and the endpoint */
 	subject: DrillSubject
@@ -44,18 +44,26 @@ const emit = defineEmits<{ close: [] }>()
 
 defineSlots<{
 	// eslint-disable-next-line no-unused-vars
-	actions?: (props: { answer: DrillLevelData; rows: boolean }) => any
-	// eslint-disable-next-line no-unused-vars
-	'level-actions'?: (props: { answer: DrillLevelData }) => any
-	// eslint-disable-next-line no-unused-vars
-	rows?: (props: { answer: DrillLevelData; findTarget: HTMLElement | null }) => any
+	actions?: (props: { answer: DrillLevelData }) => any
+	rows?: (props: {
+		// eslint-disable-next-line no-unused-vars
+		answer: DrillLevelData
+		// eslint-disable-next-line no-unused-vars
+		levels: DrillLevel[]
+		// eslint-disable-next-line no-unused-vars
+		findTarget: HTMLElement | null
+	}) => any
 }>()
 
 const stack = makeDrillStack()
 const open = ref(false)
 const answer = ref<DrillLevelData>()
 const loading = ref(false)
-const failed = ref(false)
+const failed = ref<string>()
+// The level was refused: the reader may not read the data behind it, so nothing
+// ran. An answer and not a failure — there is nothing to retry — so it is held
+// apart from `failed` and drawn as its own state.
+const refused = ref<string[]>()
 
 const pending = ref<{ segment: DrillSegment; point: { x: number; y: number } }>()
 
@@ -76,11 +84,6 @@ const grains = computed(() => {
 	const action = stack.current?.level.action
 	if (!action || !('breakdown' in action)) return []
 	return grainsFor(props.subject.dimensions, action.breakdown)
-})
-
-const rowsLevel = computed(() => {
-	const action = stack.current?.level.action
-	return Boolean(action && 'rows' in action)
 })
 
 const candidates = computed<DrillDimension[]>(() =>
@@ -109,7 +112,15 @@ function descend(action: DrillAction) {
 	pending.value = undefined
 
 	stack.push({
-		level: { segment_filters: offered.segment.filters, action },
+		level: {
+			segment_filters: offered.segment.filters,
+			action,
+			// the rows this click landed on were read then, and a span the card
+			// read is the stretch it was read for
+			drawn_on: props.subject.drawnOn,
+			// the chart the card drew, so a drill of one since changed is refused
+			modified: props.subject.modified,
+		},
 		pins: offered.segment.pins,
 		actionLabel: 'rows' in action ? __('Rows') : __('by {0}', columnLabel(action.breakdown)),
 	})
@@ -157,21 +168,31 @@ async function load() {
 	if (cached) {
 		answer.value = cached
 		loading.value = false
-		failed.value = false
+		failed.value = undefined
+		refused.value = undefined
 		return
 	}
 
 	loading.value = true
-	failed.value = false
+	failed.value = undefined
+	refused.value = undefined
 	try {
 		const fetched = await props.subject.fetch(stack.levels)
 		if (token !== inFlight) return
+		// nothing ran, so there is no level to remember and no zero to report
+		if (fetched.not_permitted) {
+			refused.value = fetched.not_permitted.doctypes || []
+			answer.value = undefined
+			return
+		}
 		stack.remember(fetched)
 		answer.value = fetched
 	} catch (error) {
 		if (token !== inFlight) return
 		console.error('[insights] Could not drill down.', error)
-		failed.value = true
+		// the server's sentence, where it said one: a chart that changed since
+		// the card drew it is only fixed by a Refresh
+		failed.value = getErrorMessage(error)
 		answer.value = undefined
 	} finally {
 		if (token === inFlight) loading.value = false
@@ -184,6 +205,7 @@ async function load() {
 		v-if="pending"
 		:point="pending.point"
 		:dimensions="candidates"
+		:can-rows="props.subject.canRows !== false"
 		@rows="chooseRows"
 		@breakdown="chooseBreakdown"
 		@close="dismissMenu"
@@ -199,6 +221,7 @@ async function load() {
 		:grains="grains"
 		:loading="loading"
 		:failed="failed"
+		:refused="refused"
 		@segment-click="(click) => offerMenu(click, clickedChart)"
 		@regrain="regrain"
 		@retry="load"
@@ -206,15 +229,11 @@ async function load() {
 		@closed="emit('close')"
 	>
 		<template v-if="answer" #actions>
-			<slot name="actions" :answer="answer" :rows="rowsLevel" />
+			<slot name="actions" :answer="answer" />
 		</template>
 
-		<template v-if="answer" #level-actions>
-			<slot name="level-actions" :answer="answer" />
-		</template>
-
-		<template #rows="{ answer: level, findTarget }">
-			<slot name="rows" :answer="level" :find-target="findTarget" />
+		<template #rows="{ answer: level, levels, findTarget }">
+			<slot name="rows" :answer="level" :levels="levels" :find-target="findTarget" />
 		</template>
 	</DrillDialog>
 </template>

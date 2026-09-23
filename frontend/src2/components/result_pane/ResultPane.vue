@@ -38,9 +38,28 @@ const props = defineProps<{
 const columns = computed(() => props.query.result.columns || [])
 const loadedRows = computed(() => props.query.result.formattedRows || [])
 
-const term = ref('')
+// A source that narrows the rows itself owns the term and the answer: the pane
+// draws the one control either way, and hands the term over where there is
+// somewhere to hand it. Where there is not, the term stays here and narrows the
+// rows already loaded.
+const findsOnSource = computed(() => Boolean(props.query.setFind))
+const localTerm = ref('')
+const term = computed({
+	get: () => (findsOnSource.value ? props.query.findTerm || '' : localTerm.value),
+	set: (value: string) => {
+		if (findsOnSource.value) props.query.setFind?.(value)
+		else localTerm.value = value
+	},
+})
 const $find = ref<InstanceType<typeof ResultFind> | null>(null)
-const matchedRows = computed(() => findRows(loadedRows.value, term.value))
+const matchedRows = computed(() =>
+	findsOnSource.value ? loadedRows.value : findRows(loadedRows.value, term.value),
+)
+// what the term kept, counted by whichever side applied it: the whole result
+// where the source narrowed it, the loaded rows where the pane did
+const matchCount = computed(() =>
+	findsOnSource.value ? props.query.result.totalRowCount || 0 : matchedRows.value.length,
+)
 
 function clearFind() {
 	$find.value?.clear()
@@ -106,8 +125,12 @@ const pager = computed(() => (columns.value.length ? pagination : undefined))
 const timeAgo = useTimeAgo(() => props.query.result.lastExecutedAt)
 const lastRun = computed(() => (props.query.result.executedSQL ? timeAgo.value : ''))
 const timing = computed(() => fetchTiming(props.query.result))
+// Only the pane's own find has this to declare. A source that narrowed the
+// whole result left nothing out of the count the paging line already prints.
 const narrowed = computed(() =>
-	term.value ? { matched: matchedRows.value.length, loaded: loadedRows.value.length } : undefined,
+	term.value && !findsOnSource.value
+		? { matched: matchedRows.value.length, loaded: loadedRows.value.length }
+		: undefined,
 )
 
 const canExport = computed(
@@ -137,7 +160,7 @@ watch(
 				ref="$find"
 				v-model="term"
 				:columns="columns"
-				:match-count="matchedRows.length"
+				:match-count="matchCount"
 				@jump="jumpToColumn"
 			/>
 		</Teleport>
@@ -155,7 +178,7 @@ watch(
 					ref="$find"
 					v-model="term"
 					:columns="columns"
-					:match-count="matchedRows.length"
+					:match-count="matchCount"
 					@jump="jumpToColumn"
 				/>
 			</div>

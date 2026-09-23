@@ -10,7 +10,7 @@ import { workbookKey } from './workbook_key'
 import WorkbookNavbar from './WorkbookNavbar.vue'
 import WorkbookSidebar from './WorkbookSidebar.vue'
 import useChart from '../charts/chart'
-import { invalidateChart } from '../charts/chart_read'
+import { invalidateChart } from '../charts/chart_view'
 import useDashboard from '../dashboard/dashboard'
 
 defineOptions({ inheritAttrs: false })

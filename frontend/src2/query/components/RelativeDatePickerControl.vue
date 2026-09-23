@@ -21,7 +21,9 @@ const relativeDate = defineModel<string>({
 			/>
 		</template>
 		<template #default="{ close }">
-			<div class="flex flex-col p-2">
+			<!-- A popover has no box of its own, so the width the picker fills is
+			     set here. -->
+			<div class="flex w-60 flex-col p-2">
 				<RelativeDatePicker v-model="relativeDate" />
 				<div class="mt-2 flex justify-end">
 					<Button variant="solid" @click="close"> Done </Button>

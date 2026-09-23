@@ -19,6 +19,8 @@ export type DashboardListItem = {
 	preview_image: string
 	views: number
 	is_favourite: boolean
+	/** Whether the caller may change it, and so redraw its preview. */
+	can_write: boolean
 }
 
 const dashboards = ref<DashboardListItem[]>([])

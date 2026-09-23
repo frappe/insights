@@ -1,11 +1,10 @@
 import { toast } from 'frappe-ui'
 import { ref } from 'vue'
+import { saveExportedFile } from '../query/export_file'
 import { __ } from '../translation'
 
-const EXCEL_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-
 /**
- * Save the rows a download endpoint writes: CSV as text, Excel as base64.
+ * Save the rows a download endpoint writes.
  *
  * A cancelled download still runs on the server. Its answer is dropped when it
  * lands, so a later download is never saved under the earlier one's name.
@@ -31,25 +30,9 @@ export function useResultExport(
 					})
 					return
 				}
-				const excel = format === 'excel'
-				const blob = excel
-					? new Blob([Uint8Array.from(atob(data), (c) => c.charCodeAt(0))], {
-							type: EXCEL_MIME,
-					  })
-					: new Blob([data], { type: 'text/csv' })
-				const extension = excel ? 'xlsx' : 'csv'
-				const finalFileName = `${filename || defaultName() || 'data'}.${extension}`
-				const url = window.URL.createObjectURL(blob)
-				const a = document.createElement('a')
-				a.setAttribute('hidden', '')
-				a.setAttribute('href', url)
-				a.setAttribute('download', finalFileName)
-				document.body.appendChild(a)
-				a.click()
-				document.body.removeChild(a)
-				window.URL.revokeObjectURL(url)
+				const saved = saveExportedFile(data, format, filename || defaultName() || 'data')
 				toast.success(__('Export Successful'), {
-					description: __(`File "{0}" exported successfully`, finalFileName),
+					description: __(`File "{0}" exported successfully`, saved),
 				})
 			})
 			.catch((error: any) => {

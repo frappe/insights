@@ -3,6 +3,7 @@
 // A number card pins the period its reading stands on, and nothing when it reads
 // none. Nothing past `segmentOf` reads a chart type.
 
+import type { NotPermitted } from '../../not_permitted'
 import { __ } from '../../translation'
 import { computed, reactive, shallowRef } from 'vue'
 import { FIELDTYPES, getGranularityOptions } from '../../helpers/constants'
@@ -25,6 +26,7 @@ import type {
 	ColumnDataType,
 	Dimension,
 	FilterOperator,
+	FilterValue,
 	Measure,
 	Operation,
 	QueryResultColumn,
@@ -32,6 +34,7 @@ import type {
 } from '../../types/query.types'
 import type { DrillDownTarget } from '../adapter'
 import type { RecordLinks } from '../record_link'
+import type { AppliedUserPermission } from '../scoped_by'
 import { formatWindowLabel, periodOf } from '../window'
 
 /** One pinned dimension value. Literals only — no operations cross the wire. */
@@ -57,6 +60,15 @@ export type DrillAction =
 export type DrillLevel = {
 	segment_filters: DrillFilter[]
 	action: DrillAction
+	/**
+	 * The day the rows this level was clicked on were read. A span is stored
+	 * unresolved - in the card, in the dashboard's filters, in the query - so
+	 * without this the rows behind the number would be cut for the day of the
+	 * click.
+	 */
+	drawn_on?: string
+	/** The `modified` of the chart the card drew this level from. */
+	modified?: string
 }
 
 /** A candidate for "break down by", as `get_chart_data` reports it. */
@@ -465,6 +477,12 @@ export type DrillLevelData = {
 	columns: QueryResultColumn[]
 	rows: QueryResultRow[]
 	/**
+	 * The level reads a table or a permlevel column this reader may not read, so
+	 * nothing ran and the columns and rows above are empty. Named here because a
+	 * level that does not declare it draws the refusal as a level with no rows.
+	 */
+	not_permitted?: NotPermitted
+	/**
 	 * Whether the Dimension this level broke down has an order of its own. The
 	 * server answers it, because the cut and the reading have to agree.
 	 */
@@ -483,11 +501,63 @@ export type DrillLevelData = {
 	/** only on a rows level, and only for the columns that name a document */
 	record_links?: RecordLinks
 	/**
+	 * Whether this reader may take the rows away as a file. Only a rows level
+	 * carries it, and only the server can answer it: whether data may leave the
+	 * site as a file is the site's setting, not the reader's session.
+	 */
+	can_export?: boolean
+	/**
 	 * The pipeline the server cut for this level, and whether it ran on the
 	 * live data source. Only the authoring endpoint answers with them.
 	 */
 	operations?: Operation[]
 	use_live_connection?: boolean
+	/** The dashboard filters that narrowed this level and `operations` leaves out. */
+	uncarried_filters?: string[]
+	/** What of the reader's own narrowed the cells this level draws, as a card says it. */
+	user_permissions?: AppliedUserPermission[]
+	narrowed_by_permissions?: boolean
+}
+
+/**
+ * One rule the reader wrote over the rows they are reading. The shape a segment
+ * carries, with the picker's whole value vocabulary — a date span is a value
+ * like any other.
+ */
+export type DrillRowFilter = {
+	column: string
+	operator: FilterOperator
+	value: FilterValue
+}
+
+/**
+ * How a reader is reading the rows behind a segment.
+ *
+ * All four are the server's to apply: a View never receives the pipeline, so
+ * naming the columns, the rules and the term is the whole of what the client
+ * can say.
+ */
+export type DrillRowsReading = {
+	/** the reader's own rules, narrowing the cut before it is counted */
+	row_filters: DrillRowFilter[]
+	/** the columns the rows run by, the first one primary */
+	sort: { column: string; direction: 'asc' | 'desc' }[]
+	/** one term, matched across the surface's text and number columns */
+	find: string
+	page: number
+}
+
+/** Where a rows level's answers come from, and where its file comes from. */
+export type DrillRowsSource = {
+	read: (reading: DrillRowsReading) => Promise<DrillLevelData>
+	download: (reading: DrillRowsReading, format: string) => Promise<string>
+	/**
+	 * What a filter on one column of the cut offers to pick from. `rules` is the
+	 * reader's other rules: the one on this column would narrow the offer to the
+	 * value it already holds, so the caller leaves it out.
+	 */
+	values: (column: string, search: string, rules: DrillRowFilter[]) => Promise<string[]>
+	range: (column: string, rules: DrillRowFilter[]) => Promise<[number, number] | undefined>
 }
 
 /** What the dialog drills, as the surface that opened it hands it over. */
@@ -496,7 +566,19 @@ export type DrillSubject = {
 	/** the first crumb — what the reader clicked into */
 	title: string
 	dimensions: DrillDimension[]
+	/**
+	 * Whether this reader may have the rows behind a segment. The server
+	 * answers it beside the dimensions, so the menu offers "View rows" only
+	 * where it leads somewhere. Absent means yes.
+	 */
+	canRows?: boolean
+	/** The day the card's rows were read, as the server named it. */
+	drawnOn?: string
+	/** The `modified` of the chart the card drew. */
+	modified?: string
 	fetch: (levels: DrillLevel[]) => Promise<DrillLevelData>
+	/** How the rows level is re-read and taken away, where the surface offers it. */
+	rows?: (levels: DrillLevel[]) => DrillRowsSource
 }
 
 /**

@@ -2,6 +2,8 @@ import { call, toast } from 'frappe-ui'
 import { __ } from '../translation'
 import { reactive, ref } from 'vue'
 import { showErrorToast, toOptions } from '../helpers'
+import type { AppliedUserPermission } from '../charts/scoped_by'
+import type { Refusable } from '../not_permitted'
 import { QueryResultColumn, QueryResultRow } from '../types/query.types'
 
 export type DataSourceTable = {
@@ -30,23 +32,33 @@ export async function getTables(data_source?: string, search_term?: string, limi
 }
 
 const fetchingTable = ref(false)
-export type DataSourceTablePreview = {
+// A preview is a refusable endpoint: the caller may not read the table behind
+// it, and then nothing ran and the columns and rows are empty. The page says
+// so rather than drawing an empty grid.
+export type DataSourceTablePreview = Refusable<{
 	table_name: string
 	data_source: string
 	columns: QueryResultColumn[]
 	rows: QueryResultRow[]
-}
+	// what of the reader's own narrowed the cells, as a card says it
+	user_permissions?: AppliedUserPermission[]
+	narrowed_by_permissions?: boolean
+}>
+// A failure resolves rather than rejecting: the page draws four answers - a
+// preview, a refusal, a failure and the wait - and a rejected promise leaves it
+// on the wait forever with nothing to clear it.
 async function fetchTable(
 	data_source: string,
 	table_name: string,
-): Promise<DataSourceTablePreview> {
+): Promise<DataSourceTablePreview | undefined> {
 	fetchingTable.value = true
 	return call('insights.api.data_sources.get_data_source_table', {
 		data_source,
 		table_name,
 	})
 		.catch((e: Error) => {
-			showErrorToast(e)
+			showErrorToast(e, false)
+			return undefined
 		})
 		.finally(() => {
 			fetchingTable.value = false
@@ -65,10 +77,24 @@ async function getTableColumns(data_source: string, table_name: string) {
 	})
 }
 
-export async function getRowCount(data_source: string, table_name: string) {
+/**
+ * How many rows a table holds, or nothing where the caller may not be told.
+ *
+ * The count is the one answer whose empty value *is* a zero, so the endpoint
+ * refuses rather than answering (see `insights/not_permitted.py`). Resolving
+ * the refusal here is what lets a caller clear the number it was showing
+ * instead of leaving the last table's count under this table's name.
+ */
+export async function getRowCount(
+	data_source: string,
+	table_name: string,
+): Promise<number | undefined> {
 	return call('insights.api.data_sources.get_data_source_table_row_count', {
 		data_source,
 		table_name,
+	}).catch((e: Error) => {
+		showErrorToast(e, false)
+		return undefined
 	})
 }
 

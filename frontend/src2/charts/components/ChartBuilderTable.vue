@@ -7,10 +7,15 @@ import QueryDataTable from '../../query/components/QueryDataTable.vue'
 import { SortDirection } from '../../types/query.types'
 import { sortBy } from '../adapter/table'
 import { Chart } from '../chart'
-import { chartPreviewKey } from '../chart_read'
-import AuthoringDrillDown from '../drill/AuthoringDrillDown.vue'
+import { chartPreviewKey } from '../chart_preview'
+import BuilderDrillDown from '../drill/BuilderDrillDown.vue'
 import type { ChartSegmentClick } from '../drill/segment_click'
 import { getGranularity } from '../helpers'
+
+const props = defineProps<{
+	/** a caller who may not write the chart: its sort and grain are not theirs to change */
+	readOnly?: boolean
+}>()
 
 const chart = inject('chart') as Chart
 const preview = inject(chartPreviewKey)!
@@ -62,14 +67,14 @@ function getDateGranularityOptions(column_name: string, column_type: string) {
 					:rows="rows"
 					:current-page="currentPage"
 					:page-size="pageSize"
-					:enable-sort="true"
+					:enable-sort="!props.readOnly"
 					:enable-drill-down="true"
 					@segment-click="clicked = $event"
 					:on-sort-change="onSortChange"
 				>
 					<template #header-suffix="{ column }">
 						<Dropdown
-							v-if="FIELDTYPES.DATE.includes(column.type)"
+							v-if="!props.readOnly && FIELDTYPES.DATE.includes(column.type)"
 							:options="getDateGranularityOptions(column.name, column.type)"
 						>
 							<Button variant="ghost" class="rounded-none">
@@ -88,11 +93,10 @@ function getDateGranularityOptions(column_name: string, column_type: string) {
 	</div>
 
 	<!-- `v-if` unmounts it on close, so every drill starts from an empty stack -->
-	<AuthoringDrillDown
+	<BuilderDrillDown
 		v-if="clicked"
 		:subject="preview.drillSubject"
 		:clicked="clicked"
-		:adhoc-filters="preview.routedFilters"
 		@close="clicked = undefined"
 	/>
 </template>

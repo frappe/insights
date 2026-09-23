@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { GitFork, Share2 } from 'lucide-vue-next'
-import { inject, ref } from 'vue'
+import { GitFork, PackagePlus, Share2 } from 'lucide-vue-next'
+import { computed, inject, ref } from 'vue'
+import router from '../router'
 import session from '../session'
 import { __ } from '../translation'
+import { canExportToApp } from './export_to_app'
 import type { Workbook } from './workbook'
 import { workbookKey } from './workbook_key'
+import WorkbookExportToAppDialog from './WorkbookExportToAppDialog.vue'
 import WorkbookLineageDialog from './WorkbookLineageDialog.vue'
 import WorkbookShareDialog from './WorkbookShareDialog.vue'
 
@@ -12,6 +15,19 @@ const workbook = inject(workbookKey) as Workbook
 
 const showShareDialog = ref(false)
 const showLineageDialog = ref(false)
+const showExportDialog = ref(false)
+
+const canExport = computed(() => canExportToApp(workbook.doc))
+
+function afterMarked(name: string) {
+	// the workbook and every one of its members answer to another name now, so
+	// every resource this tab holds names a document that is gone — reload the
+	// workbook rather than patch the pieces, as Duplicate does for the same reason
+	window.location.href = router.resolve({
+		name: 'Workbook',
+		params: { workbook_name: name },
+	}).href
+}
 </script>
 
 <template>
@@ -47,6 +63,13 @@ const showLineageDialog = ref(false)
 					icon: 'lucide-copy',
 					onClick: () => workbook.copy(),
 				},
+				canExport && !workbook.islocal
+					? {
+							label: __('Export to app…'),
+							icon: PackagePlus,
+							onClick: () => (showExportDialog = true),
+					  }
+					: null,
 				!workbook.islocal
 					? {
 							label: __('Delete'),
@@ -67,4 +90,9 @@ const showLineageDialog = ref(false)
 
 	<WorkbookShareDialog v-if="workbook.canShare && showShareDialog" v-model="showShareDialog" />
 	<WorkbookLineageDialog v-if="showLineageDialog" v-model="showLineageDialog" />
+	<WorkbookExportToAppDialog
+		v-if="showExportDialog"
+		v-model="showExportDialog"
+		@marked="afterMarked"
+	/>
 </template>

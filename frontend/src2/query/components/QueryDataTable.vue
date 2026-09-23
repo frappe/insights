@@ -8,7 +8,7 @@ import { ResultTable } from '../result_table'
 import type { ChartSegmentClick } from '../../charts/drill/segment_click'
 
 // `query` is whatever produced the rows — a query store, or a chart read store
-// that holds a result and none of the authoring half.
+// that holds a result and none of the builder half.
 //
 // The chrome around the grid — the title, find, status, paging and export — is
 // `ResultPane`'s. This is the grid and the query's own affordances on it, so a

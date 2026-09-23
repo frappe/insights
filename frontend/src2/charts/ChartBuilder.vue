@@ -1,15 +1,14 @@
 <script setup lang="ts">
 import { useMagicKeys, watchDebounced, whenever } from '@vueuse/core'
 import { Badge } from 'frappe-ui'
-import { onBeforeUnmount, provide, ref } from 'vue'
+import { computed, onBeforeUnmount, provide, ref } from 'vue'
 import InlineFormControlLabel from '../components/InlineFormControlLabel.vue'
 import NumberInput from '../components/NumberInput.vue'
 import LazyTextInput from '../components/LazyTextInput.vue'
 import { downloadImage, waitUntil } from '../helpers'
 import { DropdownOption } from '../types/query.types'
 import useChart from './chart'
-import useChartPreview from './chart_preview'
-import { chartPreviewKey } from './chart_read'
+import useChartPreview, { chartPreviewKey } from './chart_preview'
 import ChartBuilderActions from './components/ChartBuilderActions.vue'
 import ChartBuilderTable from './components/ChartBuilderTable.vue'
 import ChartConfigForm from './components/ChartConfigForm.vue'
@@ -34,6 +33,9 @@ window.chart = chart
 // server derived — the same round trip the old client derivation already made
 const preview = useChartPreview(chart)
 provide(chartPreviewKey, preview)
+// a caller who may not write the chart is its reader: the preview runs the
+// stored chart, so an edit here would be drawn over rows it did not decide
+const readOnly = computed(() => preview.doc.can_write === false)
 
 // the first draw separately, so opening a chart does not wait out the debounce
 waitUntil(() => !chart.pending).then(() => preview.load())
@@ -49,8 +51,8 @@ watchDebounced(
 const keys = useMagicKeys()
 const cmdZ = keys['Meta+Z']
 const cmdShiftZ = keys['Meta+Shift+Z']
-const stopUndoWatcher = whenever(cmdZ, () => chart.history.undo())
-const stopRedoWatcher = whenever(cmdShiftZ, () => chart.history.redo())
+const stopUndoWatcher = whenever(cmdZ, () => readOnly.value || chart.history.undo())
+const stopRedoWatcher = whenever(cmdShiftZ, () => readOnly.value || chart.history.redo())
 
 onBeforeUnmount(() => {
 	stopUndoWatcher()
@@ -96,52 +98,64 @@ const showShareDialog = ref(false)
 					</template>
 				</ChartRenderer>
 			</div>
-			<ChartBuilderTable v-if="preview.result.executedSQL" />
+			<ChartBuilderTable v-if="preview.result.executedSQL" :read-only="readOnly" />
 		</div>
+		<!-- `inert` on the content and not the scroller, so a reader still scrolls it -->
 		<div
-			class="relative isolate mt-1.5 flex w-[19rem] flex-shrink-0 flex-col divide-y overflow-y-auto bg-surface-base px-3.5"
+			class="relative isolate mt-1.5 flex w-[19rem] flex-shrink-0 flex-col overflow-y-auto bg-surface-base px-3.5"
 		>
-			<CollapsibleSection title="Chart">
-				<div class="flex flex-col gap-3">
-					<ChartTypeSelector v-model="chart.doc.chart_type" />
-					<ChartQuerySelector v-model="chart.doc.query" :queries="props.queries" />
-					<InlineFormControlLabel label="Title">
-						<LazyTextInput type="text" placeholder="Title" v-model="chart.doc.title" />
-					</InlineFormControlLabel>
-				</div>
-			</CollapsibleSection>
+			<div class="flex flex-col divide-y" :inert="readOnly">
+				<CollapsibleSection title="Chart">
+					<div class="flex flex-col gap-3">
+						<ChartTypeSelector v-model="chart.doc.chart_type" />
+						<ChartQuerySelector v-model="chart.doc.query" :queries="props.queries" />
+						<InlineFormControlLabel label="Title">
+							<LazyTextInput
+								type="text"
+								placeholder="Title"
+								v-model="chart.doc.title"
+							/>
+						</InlineFormControlLabel>
+					</div>
+				</CollapsibleSection>
 
-			<ChartConfigForm v-if="chart.doc.query" :chart="chart" />
+				<ChartConfigForm v-if="chart.doc.query" :chart="chart" />
 
-			<CollapsibleSection title="Filters" collapsed>
-				<template #title-suffix v-if="chart.doc.config.filters?.filters.length">
-					<Badge size="sm" theme="orange" type="info" class="mt-0.5">
-						<span class="tnum"> {{ chart.doc.config.filters.filters.length }}</span>
-					</Badge>
-				</template>
-				<ChartFilterConfig v-model="chart.doc.config.filters" />
-			</CollapsibleSection>
+				<CollapsibleSection title="Filters" collapsed>
+					<template #title-suffix v-if="chart.doc.config.filters?.filters.length">
+						<Badge size="sm" theme="orange" type="info" class="mt-0.5">
+							<span class="tnum"> {{ chart.doc.config.filters.filters.length }}</span>
+						</Badge>
+					</template>
+					<ChartFilterConfig v-model="chart.doc.config.filters" />
+				</CollapsibleSection>
 
-			<CollapsibleSection title="Sort" collapsed>
-				<template #title-suffix v-if="chart.doc.config.order_by?.length">
-					<Badge size="sm" theme="orange" type="info" class="mt-0.5">
-						<span class="tnum"> {{ chart.doc.config.order_by?.length }}</span>
-					</Badge>
-				</template>
-				<ChartSortConfig
-					v-model="chart.doc.config.order_by"
-					:column-options="preview.result.columnOptions || []"
-				/>
-			</CollapsibleSection>
+				<CollapsibleSection title="Sort" collapsed>
+					<template #title-suffix v-if="chart.doc.config.order_by?.length">
+						<Badge size="sm" theme="orange" type="info" class="mt-0.5">
+							<span class="tnum"> {{ chart.doc.config.order_by?.length }}</span>
+						</Badge>
+					</template>
+					<ChartSortConfig
+						v-model="chart.doc.config.order_by"
+						:column-options="preview.result.columnOptions || []"
+					/>
+				</CollapsibleSection>
 
-			<CollapsibleSection
-				:title="chart.doc.chart_type === 'Table' ? 'Rows per page' : 'Limit'"
-				collapsed
-			>
-				<NumberInput v-model="chart.doc.config.limit" />
-			</CollapsibleSection>
+				<CollapsibleSection
+					:title="chart.doc.chart_type === 'Table' ? 'Rows per page' : 'Limit'"
+					collapsed
+				>
+					<NumberInput v-model="chart.doc.config.limit" />
+				</CollapsibleSection>
+			</div>
 		</div>
 	</div>
 
-	<ChartShareDialog v-model="showShareDialog" :chart="chart" />
+	<!-- `v-if`, so the dialog's draft is seeded from a loaded document. Mounted
+	     unconditionally it runs its `<script setup>` on the chart's first visit,
+	     while `loadDoc()` is still out, and snapshots `INITIAL_DOC` — Private,
+	     no roles, the box on. Done is then enabled the moment it opens and one
+	     press unpublishes the chart. -->
+	<ChartShareDialog v-if="showShareDialog" v-model="showShareDialog" :chart="chart" />
 </template>

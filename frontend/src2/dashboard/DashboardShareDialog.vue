@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { Badge, toast, Tooltip } from 'frappe-ui'
-import { computed, inject, ref, unref } from 'vue'
+import { computed, inject, ref } from 'vue'
 import UserSelector from '../components/UserSelector.vue'
+import VisibilitySelector from '../components/VisibilitySelector.vue'
 import { copy, copyToClipboard } from '../helpers'
 import session from '../session'
+import { Visibility } from '../types/workbook.types'
 import useUserStore from '../users/users'
 import { Dashboard } from './dashboard'
 import { __ } from '../translation'
@@ -12,9 +14,9 @@ const show = defineModel()
 
 const dashboard = inject('dashboard') as Dashboard
 
-const isPublic = ref(unref(dashboard.doc.is_public))
+const visibility = ref<Visibility>(dashboard.doc.visibility || 'Private')
+const visibleToRoles = ref((dashboard.doc.visible_to_roles || []).map((r) => r.role))
 const peopleWithAccess = ref(copy(dashboard.doc.people_with_access))
-const organizationAccess = ref(unref(dashboard.doc.is_shared_with_organization))
 
 const shareLink = computed(() => dashboard.getShareLink())
 const iFrameLink = computed(() => {
@@ -23,22 +25,23 @@ const iFrameLink = computed(() => {
 
 const hasChanged = computed(() => {
 	const prev = {
-		is_public: isPublic.value,
+		visibility: visibility.value,
+		visible_to_roles: visibleToRoles.value,
 		people_with_access: peopleWithAccess.value.map((u) => u.email),
-		is_shared_with_organization: organizationAccess.value,
 	}
 	const next = {
-		is_public: dashboard.doc.is_public,
+		visibility: dashboard.doc.visibility || 'Private',
+		visible_to_roles: (dashboard.doc.visible_to_roles || []).map((r) => r.role),
 		people_with_access: dashboard.doc.people_with_access.map((u) => u.email),
-		is_shared_with_organization: dashboard.doc.is_shared_with_organization,
 	}
 	return JSON.stringify(prev) !== JSON.stringify(next)
 })
 
-function saveChanges() {
-	dashboard.updateAccess({
-		is_public: isPublic.value,
-		is_shared_with_organization: organizationAccess.value,
+async function saveChanges() {
+	dashboard.doc.visibility = visibility.value
+	dashboard.doc.visible_to_roles = visibleToRoles.value.map((role) => ({ role }))
+	await dashboard.save()
+	await dashboard.updateAccess({
 		people_with_access: peopleWithAccess.value.map((u) => u.email),
 	})
 	toast.success(__('Dashboard Access Updated'))
@@ -57,18 +60,6 @@ function addSharedUser() {
 	})
 	selectedUserEmail.value = ''
 }
-
-const generalAccess = computed({
-	get: () => {
-		if (isPublic.value) return 'anyone'
-		if (organizationAccess.value) return 'organization'
-		return 'specific'
-	},
-	set: (value: string) => {
-		isPublic.value = value == 'anyone'
-		organizationAccess.value = value == 'organization'
-	},
-})
 </script>
 
 <template>
@@ -86,31 +77,8 @@ const generalAccess = computed({
 	>
 		<template #default>
 			<div class="flex flex-col gap-4">
-				<div class="flex flex-col gap-2">
-					<span class="text-sm text-ink-gray-5">General Access</span>
-					<div class="flex gap-2">
-						<div class="flex-1">
-							<Combobox
-								class="w-full"
-								placeholder="Select an option"
-								v-model="generalAccess"
-								:options="[
-									{
-										label: __('Anyone with the link can view'),
-										value: 'anyone',
-									},
-									{
-										label: __('Anyone in the organization can view'),
-										value: 'organization',
-									},
-									{
-										label: __('Specific people can view'),
-										value: 'specific',
-									},
-								]"
-							>
-							</Combobox>
-						</div>
+				<VisibilitySelector v-model:visibility="visibility" v-model:roles="visibleToRoles">
+					<template #actions>
 						<Tooltip text="Copy Link" :hoverDelay="0.1">
 							<Button icon="lucide-link-2" @click="copyToClipboard(shareLink)">
 							</Button>
@@ -119,8 +87,16 @@ const generalAccess = computed({
 							<Button icon="lucide-code" @click="copyToClipboard(iFrameLink)">
 							</Button>
 						</Tooltip>
-					</div>
-				</div>
+					</template>
+				</VisibilitySelector>
+
+				<p v-if="visibility === 'Public'" class="-mt-2 text-sm text-ink-gray-5">
+					{{
+						__(
+							"Guests have no permissions of their own, so every chart on a public dashboard runs as its owner and shows them the rows its owner can see. Each chart's owner turns on Run as owner in the chart's share dialog.",
+						)
+					}}
+				</p>
 
 				<hr class="my-1 border-t border-outline-gray-1" />
 

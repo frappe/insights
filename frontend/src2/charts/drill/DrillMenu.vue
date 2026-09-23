@@ -29,6 +29,12 @@ const props = defineProps<{
 	point: ClickPoint
 	/** the columns this segment can still be broken down by, already ordered */
 	dimensions: DrillDimension[]
+	/**
+	 * Whether the rows behind the segment are this reader's to have. A level
+	 * published by visibility alone is a picture, and the server refuses the
+	 * rows under it — so the menu does not offer an act that is refused.
+	 */
+	canRows?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -83,7 +89,12 @@ function openDimensions() {
 
 			<div class="w-56 p-1.5">
 				<div v-if="pane === 'actions'" class="flex flex-col gap-0.5">
-					<Button variant="ghost" :class="rowClass" @click="emit('rows')">
+					<Button
+						v-if="props.canRows !== false"
+						variant="ghost"
+						:class="rowClass"
+						@click="emit('rows')"
+					>
 						<template #prefix>
 							<Rows3 class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 						</template>
@@ -105,6 +116,14 @@ function openDimensions() {
 							<ChevronRight class="h-4 w-4 text-ink-gray-5" stroke-width="1.5" />
 						</template>
 					</Button>
+					<!-- Neither act is on offer: no dimension is left to split by and
+					     the rows are not this reader's to have. -->
+					<p
+						v-if="props.canRows === false && !props.dimensions.length"
+						class="px-2 py-1.5 text-base text-ink-gray-5"
+					>
+						{{ __('Nothing to drill into here') }}
+					</p>
 				</div>
 
 				<div v-else class="flex flex-col gap-1.5">

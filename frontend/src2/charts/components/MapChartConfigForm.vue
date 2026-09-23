@@ -13,7 +13,7 @@ import { FormControl, Button } from 'frappe-ui'
 import { FIELDTYPES } from '../../helpers/constants'
 import { call } from 'frappe-ui'
 import { InfoIcon } from 'lucide-vue-next'
-import { chartPreviewKey } from '../chart_read'
+import { chartPreviewKey } from '../chart_preview'
 import { watchDebounced } from '@vueuse/core'
 
 const props = defineProps<{
