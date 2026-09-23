@@ -76,6 +76,10 @@ An inline calculated column, measure, or filter written in the ibis-based expres
 syntax.
 _Avoid_: formula
 
+**Trusted code**:
+Code in a query that only an Insights Admin (`is_admin`) adds or changes, as a Server Script: a script (a `code` operation), an expression that calls `.sql`, and a SQL query that calls a stored procedure. Each reads past the reader's permissions. Trusted code someone else stored keeps running and saving; a change to it by anyone else is refused (`check_trusted_code_author`, `trusted_code_of`). See `docs/adr/code-in-a-query-follows-the-server-script-model.md`.
+_Avoid_: script (for the three together), admin code, unsafe code
+
 ### Drill-down
 
 **Drill**:
@@ -89,8 +93,8 @@ Three senses, one per layer.
    summarize or pivot operation (`chart_drill.py`). This surface is the exposure
    bound. A drill may name only its columns, so a drill never reaches past what
    the chart already published.
-2. A screen a user works on: the public page, an authoring surface. Read
-   surfaces and authoring surfaces get different answers from the server.
+2. A screen a user works on: the public page, the desk island, the builder. A
+   View and the Builder get different answers from the server.
 3. frappe-ui's `bg-surface-*` token, a background step in the design system.
 
 Each layer means one of them, so say which when a sentence could take two. None of the three is renamed.
@@ -149,11 +153,20 @@ _Avoid_: unknown table, stray table
 ### Framework integration
 
 **Island**:
-An app-provided, self-contained UI unit that the framework mounts into a host page
-(desk or a Vue-frontend app) — shadow-root isolated, linked to the framework-provided
-shared runtime. Declared via the `ui_islands` hook; Insights ships `insights.dashboard`
-and `insights.chart`.
+An app-provided, self-contained UI unit that the framework mounts into a host page — shadow-root isolated, linked to the framework-provided shared runtime. An island is registered by being built: its name is its entry in `frontend/build-islands.mjs`, which the build writes into `assets.json` as `<name>.island.js`. Insights ships `insights.dashboard` and `insights.chart`. Island, Host, Claim and Action are the framework's words, defined in `apps/frappe/ui/island/decisions`, which is their authority.
 _Avoid_: widget, block, embed (embed = the public iframe-sharing feature)
+
+**Host**:
+The page an island mounts into, and the owner of everything around it: the page header, the title, the menu. Two of them run the same mount contract — desk and a frappe-ui app — and an island never learns which one it is in.
+_Avoid_: container, parent app, shell
+
+**Claim**:
+What makes a desk document ours to draw. Insights adds one Custom Field per desk doctype (`Dashboard`, `Dashboard Chart`) and an `onload` handler names the island in `__onload.island`; with the key absent, desk draws the document itself (`insights/desk.py`). A claim decides who draws, never who may read.
+_Avoid_: renderer, override, takeover
+
+**Action**:
+What a page island reports for its host's header: `{ label, icon? }` plus either an `onClick` or an `href`. Reported as a plain event, beside the title. The host decides how it draws and what a link out of the app does.
+_Avoid_: button, menu item, command
 
 **Chrome**:
 Everything around a plot: the card, the title, the actions, the legend, the tooltip, and the loading, error and empty states. frappe-ui charts v2 owns it for every Insights chart. See `charts-render-through-frappe-ui`.
@@ -167,30 +180,58 @@ _Avoid_: graph, canvas, visual
 The one module that turns a stored Chart config and a query result into the props of a charts v2 component (`frontend/src2/charts/adapter/`). One pure function per chart type. Insights builds no ECharts option for a type v2 admits.
 _Avoid_: mapper, translator, transformer
 
+### Reading and building
+
+**View**:
+The read half of a dashboard or a chart — what a reader gets, on the public page, in the desk island and on the app's own dashboard page alike. A view names content and the server decides what runs: operations, SQL and the query behind a chart never cross the boundary. `insights.api.view.*` on the server, every reference through `resolve_for_read`; `dashboard/view.ts`, `useChartView` in `charts/chart_view.ts`, `ViewDrillDown.vue` and `DashboardItemView.vue` on the client. The card, `ChartView.vue`, and the store under it, `ChartRead`, are drawn by both halves.
+_Avoid_: viewer (neither the reader, nor the module, nor the endpoints), read surface, feed (a card is filled from a source), one door
+
+**Builder**:
+The write half — the workbook's stores, forms and grid editing. It draws content that has no name yet, so it sends the shape it is editing to `insights.api.authoring` and gets the derived operations and the SQL back, which is why those endpoints need an Insights role and a View's do not. `dashboard/builder.ts`, `charts/chart_preview.ts` and `BuilderDrillDown.vue` on the client. Editing is both questions at once, write on the document and a role, and `can_write` in `insights/permissions.py` is the one place they meet.
+_Avoid_: authoring (as the name of a surface, a store or a prop — `insights.api.authoring` keeps the word), seat (the gate is a role)
+
+**Route**:
+A dashboard's cosmetic, human-readable key. Derived from the title only while it is empty, so renaming a dashboard leaves a published link working. One of the three references `insights.resolver` accepts, after the docname and before the v2 `old_name`. Charts have none.
+_Avoid_: slug, permalink
+
+**Not Found**:
+The one answer a View gives for content that does not exist and for content the reader may not read. `resolve_for_read` throws `frappe.DoesNotExistError` with `Not Found` for both, and nothing above it re-checks the read or catches the error — either would give the answer away.
+_Avoid_: not available, unavailable, forbidden, a separate denied state
+
+**Not Permitted**:
+A chart the reader may view but whose data they may not read: it reads a site-DB table or permlevel column that neither their desk permissions nor a team grant covers. It does not run, and its card stays in place naming the doctypes it needs. Frappe's word, from the `PermissionError` a query raises on one unreadable table. The reader was admitted, so saying so reveals nothing — unlike **Not Found**, which covers the content itself. A dashboard every chart of which is Not Permitted reads as Not Found, except to a caller who may write it.
+_Avoid_: denied, no access, hidden, no data (no data is a true zero)
+
+**Held back**:
+A permlevel column the reader may not read, taken out of the table's projection by a build. The chart keeps running while nothing names it; an operation, an expression or SQL that names it makes the chart **Not Permitted**. A held-back column still counts for the shape of a result, so a join names its output as it would for the author (`not_permitted.hold_back`, `held_back_columns`, `held_back_key`). A column the author removed or renamed is dropped (`dropped_by_author`), not held back.
+_Avoid_: lost, dropped (for permlevel)
+
 ### Sharing & governance
 
+**Grant**:
+A source that admits a user to a document, one row of the table in `insights/permissions.py`: a DocShare, a workbook, a team or a Visibility level, among others. A grant not in that table does not exist.
+
 **Visibility**:
-A chart's or dashboard's declared audience — who may view it, on any surface.
-A strict ladder: `Private | Specific Roles | Everyone | Public`, declared as
-fields on the content. View-only; editing is governed separately.
-_Avoid_: sharing (person-level DocShare is the `Private` rung, not a separate axis)
+A chart's or dashboard's declared reach — who may view it, on any surface. Four levels on the content itself, narrowest first. `Private` adds nobody: the document is read through its other grants — its workbook, a named DocShare, a team and, for a chart, a dashboard it is placed on. Owning it grants nothing. `Roles` is the roles named in `visible_to_roles`. `Everyone` is every signed-in user, and takes its word from Frappe's DocShare `everyone`. `Public` is a guest, so the open internet. Read only: no level grants write or share, and widening one is checked as a share (`validate_visibility`).
+_Avoid_: rung, ladder, audience, `Specific Roles`, `is_public` (nothing reads it for a grant since `visibility` absorbed it)
+
+**Run as owner**:
+The Check on a chart that says whose permissions the rows are filtered by. Off, the default, the execution filters by whoever is asking. On, it names the chart's owner, so every reader sees the rows the owner sees. A reader who may not write the chart gets only what the owner saved: the chart and its dashboard filters, never a breakdown, the rows or a file (`can_read_rows`). Only the owner or an admin may tick it, and any writer may clear it (`may_move_run_as_owner`). An owner who is disabled or may no longer write the chart names nobody, and the chart runs as its reader. `Public` forces it on — a guest has no permissions of their own, so a public chart that ran as its reader would draw an empty page. A Public dashboard never moves it: its save refuses a chart that runs as its reader, naming it (`check_dashboard_publishes`). Field `run_as_owner`, settled in `validate_run_as_owner`.
+_Avoid_: Apply User Permissions (the field it replaced, with the opposite reading), data authority, authority, author (the answer is the `owner`), cascade, carry (a chart is linked to a dashboard)
 
 **Permission User**:
-Whose permissions filter the rows an execution returns, when the caller's own
-cannot. A public link runs as Guest, a preview as Guest with a key, an alert as
-Administrator — so each names a user, recorded on the content when it was
-published or enabled. Empty means the viewer decides the rows.
-_Avoid_: data authority, permission mode, run-as, impersonation
+Whose permissions filter the rows an execution returns, when the caller's own cannot. A public link arrives as Guest, a preview as Guest with a key that names the user it was minted for, and an alert as the scheduler's Administrator, so it runs as the user who enabled it, recorded on the alert. For content nothing is recorded: `permission_user_for` reads the stored **Run as owner** and `owner` and returns a user. Unticked, the execution keeps whoever it already runs as.
+_Avoid_: data authority, permission mode, impersonation, viewer
 
 **Team**:
-A named group of users that grants access to resources (data sources, tables).
+A named group of users that grants access to resources (data sources, tables). On site data a grant adds to what desk permissions allow and never narrows them; elsewhere it is the only access there is.
 
 **Resource Permission**:
 A grant tying a team to one specific resource.
 
-**Template**:
-A pre-built workbook shipped by any installed app via the `insights_workbook_templates`
-hook; imported as one shared, Administrator-owned copy per site.
+**Is Standard**:
+A workbook a site got from an app rather than from a person, with its queries, charts and dashboards. It ships as one file under the app's module. Identified by its `name`, the shape Frappe's Report and Print Format use, so a sync updates the document a site already holds instead of re-keying it. Read-only on a site outside developer mode: `can_write` says no even to the owner, and `can_copy` is the affordance that replaces it.
+_Avoid_: standard id, or any second identifier beside the name
 
 **Alert**:
 A scheduled check on a query's results that notifies recipients over a channel when its

@@ -54,7 +54,7 @@ Always first, exactly once.
 
 The only way to filter. `filters` mixes rules and expression filters. `logical_operator`
 (`And` | `Or`) joins them. To nest, use an expression filter. Several `filter_group` ops in a row
-are normal and readable. The shipped templates express "submitted AND under-delivered AND past due"
+are normal and readable. Shipped workbooks express "submitted AND under-delivered AND past due"
 that way.
 
 ```json
@@ -124,7 +124,7 @@ A Decimal expression declared `Integer` truncates.
 }
 ```
 
-(From the Sales template. It joins invoice items to their parent invoice to get `posting_date` and
+(From the Sales workbook. It joins invoice items to their parent invoice to get `posting_date` and
 `company` per item row. The dashboard filters need those columns.)
 
 - `join_type`: `inner | left | right | full`.
@@ -147,7 +147,7 @@ first. Use `ibis.literal('1. Total')`, never a bare string (see reference/expres
 ## summarize — grain change only
 
 Charts aggregate. Queries stay per-row. Use `summarize` mid-pipeline. Then usually `join` back to
-detail. The example below is AR ageing from the Accounting template. It rolls ledger rows up to one
+detail. The example below is AR ageing from the Accounting workbook. It rolls ledger rows up to one
 row per invoice. It then joins back to the invoice for its customer and due date.
 
 ```json
@@ -177,7 +177,7 @@ row per invoice. It then joins back to the invoice for its customer and due date
 ```
 
 After `summarize`, only the measure and dimension output columns exist, under their sanitized
-snake_case names. `dimensions: []` collapses everything to a single row. The funnel template does
+snake_case names. `dimensions: []` collapses everything to a single row. The funnel workbook does
 that before a `union`.
 
 ## pivot_wider

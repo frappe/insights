@@ -41,6 +41,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | query.expression-validation | An expression with a syntax error or an unknown column is refused with a message that names the problem. |
 | query.expression-cannot-run-code | An expression is checked without being executed and cannot escape into arbitrary code. |
 | query.expression-cannot-reach-files | An expression cannot read or write files or open connections. |
+| query.expression-sandbox | An expression reads Frappe data only as the user it runs for; it cannot write, call out, run SQL, enqueue a job, call a method, send mail or register a commit hook. |
 | query.expression-json | An expression reads a key out of a JSON column, typed, and blanks a placeholder value. |
 | query.expression-help | The expression editor autocompletes and lists the available functions. |
 | query.summarize | A user groups rows by a dimension and aggregates measures. |
@@ -62,6 +63,8 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | query.script-variables | A user passes variables into a script, and changing one re-runs it. |
 | query.script-force-run | A user re-runs a script ignoring the cached result. |
 | query.script-logs | A script's prints and errors, with the failing line number, show in a log panel. |
+| query.script-sandbox | A script reads Frappe data and may make outbound HTTP requests; it cannot enqueue a job, call a method, send mail, write to the database or register a commit hook. |
+| query.script-author | Only an Insights Admin adds or changes a script, an expression that runs SQL or a SQL query that calls a stored procedure; one someone else wrote keeps running, and an import or copy that brings one is refused naming the queries and charts. |
 | query.step-back | A user steps back to an earlier operation and the result rewinds to that point. |
 | query.remove-operation | A user removes an operation mid-pipeline. |
 | query.reopen-operation | A user reopens an operation's editor to change it. |
@@ -162,7 +165,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | charts.table-conditional-formatting | A user adds a formatting rule to a Table chart and it reaches the column, or every pivoted column, it names. |
 | charts.table-header-sort | A user sorts a Table chart by clicking a column header, and the sort is saved to the chart; a reader sorts nothing. |
 | charts.table-record-link | A Table cell that names a desk document opens its form; every other cell stays a value. |
-| charts.table-pager | A Table chart pages past its first page and says how many rows it has. |
+| charts.table-pager | A reader who may read a Table chart's rows pages past its first page and counts them; a reader shown only the picture keeps the chart's one page. |
 | charts.table-loading | A Table chart's card, not its grid, veils a run in flight. |
 | charts.table-renders-outside-dashboard | A Table chart draws its rows outside a dashboard. |
 | charts.map-type | A user picks the world or India map. |
@@ -177,7 +180,8 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | charts.heatmap-palette-range | A user picks a sequential or diverging palette and pins the ends of the color scale. |
 | charts.heatmap-show-values | A user prints the number inside each heatmap cell. |
 | charts.refresh | A user re-runs a chart's query. |
-| charts.export-rows | A user downloads a chart's own rows as CSV or Excel, up to the site's export limit. |
+| charts.one-snapshot | A card draws a chart's definition and its rows from one answer; only Refresh, a page reload or the author's own save in that tab replaces them. |
+| charts.export-rows | A reader who may read a chart's rows downloads them as CSV or Excel, up to the site's export limit. |
 | charts.export-png | A user downloads a chart as a PNG. |
 | charts.duplicate | A user duplicates a chart in the workbook. |
 | charts.reset-options | A user resets a chart's config to defaults. |
@@ -188,6 +192,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | charts.reset-filters | A user clears a card's own filters and the grid filters reaching it in one step. |
 | charts.rename-while-saving | A user renames a chart while it saves and the newer name wins. |
 | charts.drill-rows | A user clicks a segment and views the rows behind it, ranked by the clicked measure. |
+| charts.drill-changed-chart | A drill from a card whose chart has changed since it was drawn says so, rather than cutting the chart as it is now. |
 | charts.drill-segment | A click on a bar, wedge, cell, flow or reading pins the segment's dimension values, and a split or pivot segment pins both its axis and its series. |
 | charts.drill-date-segment | A click on a date segment covers the whole bucket the chart grouped by, and a time bucket filters by the clock. |
 | charts.drill-number-card | A card's drill reads the period it states, not the comparison periods it also fetched. |
@@ -202,6 +207,8 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | charts.drill-surface-bound | A drill reaches only the columns the chart already published and never leaks the query behind it. |
 | charts.drill-open-as-query | A user opens a drill level as a new query in the workbook and edits its pipeline. |
 | charts.drill-rows-filter | A user adds ad-hoc filters over the drilled rows. |
+| charts.drill-rows-reading | A reader sorts, finds and pages the rows behind a segment, and the server applies each inside the same cut. |
+| charts.drill-rows-export | A reader exports the rows behind a segment, at the sort and the find they are reading them with. |
 
 ## dashboard
 
@@ -238,6 +245,8 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | dashboard.favorite | A user marks a dashboard as a favorite. |
 | dashboard.preview-image | A dashboard card shows a preview image, generated by a browser that opens only that dashboard with a one-time key. |
 | dashboard.open-workbook | A reader with access opens the dashboard's workbook. |
+| dashboard.route | A dashboard gets a unique route from its title; a route a user sets survives a rename, and a cleared one is made again. |
+| dashboard.shipped-read-only | A dashboard an app ships is read-only outside developer mode, even to its owner. |
 
 ## workbook
 
@@ -262,23 +271,48 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | workbook.open-in-desk | An admin opens a workbook, chart or query in Desk. |
 | workbook.read-only-shield | A viewer sees the workbook marked read-only. |
 
+## standard
+
+| Slug | Feature |
+|---|---|
+| standard.file-format | A workbook file carries the workbook and its queries, charts, dashboards and folders under one key each, and a file in the older wrapped shape still imports. |
+| standard.ship | An app ships a workbook as one file, and importing it gives the site the workbook and its members under the names the file carries. |
+| standard.resync | Importing a changed file updates the members the site holds and deletes the ones the file has dropped, but keeps one a desk document draws and logs it. A kept member is left out of the file, and a migrate deletes it once no desk document draws it. |
+| standard.read-only | A standard workbook and its members refuse an edit, a delete, a rename and a member of the site's own outside developer mode. |
+| standard.export-on-save | In developer mode, saving a standard workbook or any of its members writes its file, and deleting, renaming or unmarking it moves or removes the file. |
+| standard.mark | In developer mode an author marks a workbook standard: it takes the name they give, its members take readable ones, and every reference follows. |
+| standard.export-to-app | On a developer-mode bench the workbook menu offers "Export to app…" for a workbook no app ships yet, and the dialog picks a module of an installed app, names the workbook and says which file the export writes. |
+| standard.runs-as-the-reader | A standard chart cannot be saved to run as its owner, so it always runs as whoever reads it. |
+| standard.read-rules | A standard chart reads its tables under the rule every chart does: on site data, desk or a team grant, whichever allows more. |
+
 ## shared
 
 | Slug | Feature |
 |---|---|
-| shared.dashboard-link | A user publishes a dashboard and a logged-out visitor opens the link and sees its charts. |
-| shared.chart-link | A user publishes a chart and a logged-out visitor opens the link. |
-| shared.revoke | A revoked public link stops working. |
+| shared.dashboard-link | A user makes a dashboard Public and a logged-out visitor opens its link and sees its charts. |
+| shared.chart-link | A user makes a chart Public and a logged-out visitor opens its link. |
+| shared.revoke | A dashboard or chart narrowed from Public stops opening for a visitor. |
 | shared.copy-link-embed | A user copies the public link or an iframe embed snippet. |
-| shared.rows-are-the-publishers | A visitor on a public link sees the rows the publisher can see, never more, and the session stays Guest. |
-| shared.publish-needs-share | Only a user with share access can publish, and a plain save cannot publish or name whose rows a link reads. |
-| shared.chart-on-public-dashboard | An unpublished chart on a public dashboard is readable through that dashboard and runs as its publisher; two dashboards pick the older. |
-| shared.public-methods-bounded | A public link can call only the read methods it needs, with builder-only arguments stripped, and never a download. |
-| shared.filters-on-public-dashboard | A visitor uses the dashboard's filters and card filters, routed by the published dashboard's own links. |
-| shared.old-name-resolves | A link to a renamed public dashboard or chart still opens it; a private one gives nothing away. |
+| shared.rows-are-the-owners | A visitor on a public chart sees the rows its owner can see, because a Public chart cannot run as its reader. |
+| shared.publish-needs-share | Only an editor of its workbook can widen who may read a chart or dashboard, Public included, and the builder offers Share to them alone; narrowing is a plain write. |
+| shared.chart-on-public-dashboard | A chart on a Public dashboard opens for a visitor through that dashboard and draws its owner's rows; a dashboard is not made Public while a chart on it runs as its reader. |
+| shared.public-methods-bounded | A visitor reads only through the View endpoints and runs no document method. |
+| shared.no-drill | A visitor sees a public chart's picture and nothing behind it: no drill, later page, count, card filter or file. |
+| shared.filters-on-public-dashboard | A visitor uses a public dashboard's filters and card filters, routed by that dashboard's own links. |
+| shared.reference | A dashboard opens by its docname or its route, a chart by its docname. |
+| shared.old-name-resolves | A link that names a dashboard or chart by its v2 name still opens it. |
 | shared.missing-link | A link to a chart that cannot be read says so instead of loading forever. |
 | shared.currency-for-guest | A visitor sees amounts in the site's currency symbol. |
 | shared.read-once | Several cards drawing one chart under the same filters ask the server once. |
+
+## desk
+
+| Slug | Feature |
+|---|---|
+| desk.dashboard-island | A desk Dashboard that links an Insights dashboard draws it in place of its own; an unlinked one is left to desk. |
+| desk.chart-island | A desk Dashboard Chart that links an Insights chart draws it in place of its own; an unlinked one is left to desk. |
+| desk.dangling-claim | A migrate names each desk Dashboard and Dashboard Chart left linking an Insights dashboard or chart that no longer exists, and never fails on it. |
+| desk.dashboard-page | `/app/insights-dashboard/<dashboard>` draws that dashboard for a desk user, named by the route or by a sidebar item's route options. |
 
 ## data-source
 
@@ -312,20 +346,33 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | permissions.share-workbook-user | A user shares a workbook with another user as viewer or editor, or removes them. |
 | permissions.share-workbook-org | A user opens a workbook to the whole organization as view or edit. |
 | permissions.share-user-lookup | The share dialog finds users by name or email and shows nothing but directory fields; an admin can turn lookup off. |
-| permissions.share-dashboard | A user grants a dashboard to specific people or the organization, and access grants read but not write. |
-| permissions.chart-access-follows | A chart is readable through its own share, its workbook, or a dashboard it sits on, and its query through the chart. |
+| permissions.member-stays-in-its-workbook | A dashboard, chart, query, folder or alert stays in the workbook it was made in; no save moves it to another. |
+| permissions.member-write-follows-workbook | Write and share on a dashboard, chart, query, folder or alert come only from write on its workbook; owning it grants nothing, and a share or a team grant on a dashboard or chart gives read and no more. |
+| permissions.member-row-saved-with-member | A row of a dashboard's, chart's or query's table is saved or deleted with that document, never on its own. |
+| permissions.member-share-names-a-reader | A share on a dashboard or chart names a person and gives read; any other share on a workbook member is refused, and the place to share is its workbook. |
+| permissions.share-dashboard | A user shares a dashboard with specific people, and a share grants read but not write. |
+| permissions.visibility | A user sets who may read a chart or dashboard: Private, Roles, Everyone or Public; no level grants more than read. |
+| permissions.chart-run-as-owner | A chart filters its rows by each reader's permissions, the default, and by its owner's while Run as owner is checked. |
+| permissions.run-as-owner-lapses | A chart set to run as its owner runs as each reader once its owner is disabled or may no longer edit its workbook, and any editor of the chart may turn the setting off. |
+| permissions.chart-access-follows | A chart is readable through its own share, its workbook, or a dashboard it sits on, which grants read and nothing more; its query is readable through the chart, never through the dashboard. |
 | permissions.team-grant | An admin creates a team, adds members and grants it data sources and tables; the grant reaches that team only. |
 | permissions.team-off-open | With team permissions off, every Insights user sees every data source and table, and grants are inert. |
 | permissions.no-source-access-no-query | A user without access to a data source cannot query it. |
-| permissions.table-row-restriction | An admin restricts which rows of a table a team sees with an expression. |
+| permissions.table-row-restriction | An admin restricts which rows of a table a team's grant gives with an expression; it never cuts the rows desk allows on site data, nor the rows another team grants. |
 | permissions.admin-bypass | An admin sees every data source and table whatever the grants say. |
-| permissions.non-insights-user | A user without an Insights role reads nothing and calls no endpoint. |
+| permissions.non-insights-user | A user without an Insights role reads only the charts and dashboards whose visibility admits them, and calls no other endpoint. |
 | permissions.download-gated | A download needs the role's export permission, access to the query, and the site-wide download toggle. |
 | permissions.chart-cannot-link-unreadable-query | A chart cannot name, or be repointed to, a query its author cannot read. |
-| permissions.dashboard-cannot-hold-unreadable-chart | A dashboard cannot hold a chart its author cannot read. |
+| permissions.dashboard-cannot-hold-unreadable-chart | A dashboard cannot hold a chart of another workbook, or one its author cannot read. |
 | permissions.query-reference-checked | A query cannot source a query its author cannot read, saved or sent inline. |
 | permissions.request-body-not-trusted | Access is decided against the stored document, never against claims in the request. |
-| permissions.authoring-needs-seat | Only a user with an authoring seat previews or drills an unsaved config, and only over queries they can read. |
+| permissions.authoring-needs-role | Only a user with an Insights role previews or drills an unsaved config, and only over queries they can read. |
+| permissions.denied-is-not-found | Content a reader may not read answers Not Found, the same as content that does not exist. |
+| permissions.not-permitted-chart | A chart whose reader may not read a table or a permlevel column it uses does not run, and its card names the doctypes it needs. |
+| permissions.not-found-when-nothing-is-permitted | A dashboard every chart of which is Not Permitted reads as Not Found to a reader, while a partly permitted one, or one the caller may write, opens whole. |
+| permissions.card-says-it-is-scoped | A card whose rows the reader's own User Permissions narrowed names them, and one a team's Table Restriction cut or that reads a blanked column says so, so a scoped number is not read as the whole one. A grant that only adds rows to desk's says nothing. |
+| permissions.view-sends-no-query | A reader of a chart or dashboard gets what draws it, never the operations, SQL or query behind it. |
+| permissions.error-is-text | An error message from the server is the sentence the server refused with, for every user, and shows as text, never as markup. |
 | permissions.site-user-permissions | A site-database source applies the user's desk row and column permissions to what a query returns. |
 | permissions.import-without-access | A user imports a workbook, query or chart file without access to the originals it was exported from. |
 | permissions.malformed-request-refused | A request with a wrongly typed argument is refused with a message, not a crash. |
@@ -339,6 +386,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | data-store.import-row-limit | An admin caps how many rows an import copies. |
 | data-store.list | An admin browses the stored tables and searches them by name. |
 | data-store.import-cursor | An incremental import's cursor describes what is in the store, not what a run intended. |
+| data-store.import-script-sandbox | An import job's script reads Frappe data, calls its client and inserts into its table; it cannot write to the site, enqueue a job, call a method, send mail or register a commit hook. |
 | data-store.failed-import-notice | A reader is told when a table's newest import failed, and nothing while one runs or a retry is queued. |
 | data-store.write-lock | A write waits for readers to finish and gives up at a timeout. |
 | data-store.division-by-zero | A division by zero returns null in the data store, as it does on the live connection. |
@@ -361,17 +409,6 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | alerts.enable | A user enables or disables an alert, and the alert runs with the rows of whoever enabled it. |
 | alerts.failed-run-recorded | A failed delivery records its run so it is not retried every tick. |
 
-## templates
-
-| Slug | Feature |
-|---|---|
-| templates.library | A user browses the library of templates the installed apps ship, hidden where a required app is missing. |
-| templates.import | An admin imports a template as one Administrator-owned copy shared read-only with the organization, once per site. |
-| templates.open | A user opens the imported workbook from the library, or through a template link. |
-| templates.update | An admin updates an imported copy to a newer shipped version, replacing their changes after a confirm. |
-| templates.auto-update-pristine | A copy nobody edited follows a newer version on migrate; an edited copy is left for a manual update. |
-| templates.shipped-are-valid | Every shipped template imports cleanly and its money measures name a currency column. |
-
 ## settings
 
 | Slug | Feature |
@@ -385,14 +422,13 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | settings.invite-users | An admin invites users by email; the link carries a key stored only hashed, and accepting signs in only a new account. |
 | settings.users-list | An admin searches the user list by name or email. |
 | settings.permissions-toggle | An admin turns team-based permissions on. |
-| settings.apply-user-permissions | An admin applies site role and user permissions to the site source. |
 | settings.allow-download | An admin allows or blocks downloads site-wide. |
 | settings.team-manage | An admin renames a team, adds and removes members, and deletes it; the Admin team cannot be renamed or deleted. |
 | settings.data-store-enable | An admin enables the data store and sets its row and memory limits. |
 | settings.color-scheme | A user switches between light and dark mode. |
 | settings.log-out | A user logs out after a confirm. |
 | settings.login | A user logs in with email and password and sees an error on failure. |
-| settings.translations | The UI shows in the user's language. |
+| settings.translations | The UI shows in the user's language, and every label the app ships reaches the translator. |
 
 ## upgrade
 
@@ -403,6 +439,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | upgrade.cached-queries-removed | The query documents charts once cached their query in are removed, unless something still reads them. |
 | upgrade.older-grid-read | A dashboard arranged before the grid row changed keeps the pixels it covered. |
 | upgrade.older-export-imports | A workbook exported before names became strings still imports. |
+| upgrade.duplicate-folder-titles | Folders of one type that shared a title in a workbook before titles were unique are numbered apart, the way a new folder is. |
 
 ## tooling
 

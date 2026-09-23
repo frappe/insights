@@ -222,8 +222,8 @@ function does. Read it before you use a function these files do not cover. Read 
 one they describe in a line. The parameter is `funcName`, in camelCase. `function` gives nothing
 back.
 
-For worked examples, read what the site already has (section 3). A workbook the site imported from a
-template is a good one: `doc list "Insights Workbook" --fields name,title,from_template --all`.
+For worked examples, read what the site already has (section 3). A workbook an app ships is a good
+one: `doc list "Insights Workbook" --fields name,title,is_standard --all`.
 
 ## 3. Reuse what the user already has
 
@@ -406,8 +406,8 @@ Create them in dependency order, and keep the name the site returns for each:
    `reference/rules.md`.
 2. **Charts.** Set `workbook`, `title`, `query` (the query's real document name),
    `chart_type` and `config`.
-3. **Dashboards.** Set `workbook`, `title` and `items`. Chart items name the chart's
-   real document name. Filter links name the real query name. Author `chart` and `filter`
+3. **Dashboards.** Set `workbook`, `title` and `items`. Chart items name the real document
+   name of a chart in the same workbook; a chart of another workbook is refused. Filter links name the real query name. Author `chart` and `filter`
    items only. Never a `text` item.
 
 **Write a whole `items` array exactly once, at creation.** After that the user owns the layout. They
@@ -490,14 +490,13 @@ frappectl -s $SITE method call execute \
 
 ### Check 2 — every chart runs
 
-Saving a chart does not validate its config. A broken config fails only when the chart runs, with "Chart … is not configured" or an unknown column. So run every chart:
+Saving a chart does not validate its config. A broken config shows only when the chart runs: a missing slot comes back as `{"errors": [...]}`, and an unknown column fails. So run every chart:
 
 ```sh
-frappectl -s $SITE method call get_data \
-  --doctype "Insights Chart v3" --name <chart_name> -F page_size=5
+frappectl -s $SITE method call insights.api.view.get_chart_data -F chart=<chart_name>
 ```
 
-The response carries `columns` and `rows`. To test a config before you create the chart, send it to `insights.api.authoring.get_chart_data` (`chart_type`, `query`, `-F 'config:=<json>'`). A config it cannot draw comes back as `{"errors": [...]}`, not as an exception.
+The response carries `columns` and `rows`, one page at the chart's own `limit`. To test a config before you create the chart, send it to `insights.api.authoring.get_chart_data` (`chart_type`, `query`, `-F 'config:=<json>'`). A config it cannot draw comes back as `{"errors": [...]}`, not as an exception.
 
 When a chart fails, compare its config with its base query:
 
@@ -602,8 +601,8 @@ Verify again after any edit.
 
 ## Appendix — importing a workbook JSON
 
-Use this only when the user hands you a workbook JSON to import: a template, or an
-export from another site. It is not the authoring path.
+Use this only when the user hands you a workbook JSON to import, such as an export
+from another site. It is not the authoring path.
 
 ```sh
 frappectl -s $SITE api method/insights.api.workbooks.import_workbook --input /tmp/wb.json
@@ -642,7 +641,7 @@ exists.
 | Every expression function | `method call insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_list` |
 | One function's signature and docstring | `method call insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_description` (`funcName`) |
 | Run a saved query | `method call execute --doctype "Insights Query v3" --name <n> -F page_size=5` |
-| Run a saved chart | `method call get_data --doctype "Insights Chart v3" --name <n> -F page_size=5` (`page`, `page_size`, `force`, `dashboard`, `filters`) |
+| Run a saved chart | `method call insights.api.view.get_chart_data -F chart=<n>` (`dashboard`, `filters`, `force`, `page`; a page past the first only for a reader who may read the chart's rows) |
 | Run an unsaved chart config | `method call insights.api.authoring.get_chart_data` (`chart_type`, `query`, `config`, `page_size`) — returns `{"errors": [...]}` for a config it cannot draw |
 | Create, read, patch, delete content | `doc create` / `doc get` / `doc list` / `doc update` / `doc delete` |
 | Import a workbook JSON | `api method/insights.api.workbooks.import_workbook --input <file>` |
