@@ -139,7 +139,7 @@ def has_permitted_chart(dashboard: str, user: str | None = None) -> bool:
     the query's own row, not the `Insights Query Reference` edge table, which a
     background job rebuilds after the save commits. Each chart is asked under
     the user it would run as, and `permission_user_for` is the one place that
-    answers that: the owner while the chart's Check is off, the key's user
+    answers that: the owner while the chart's Check is on, the key's user
     under a preview render, the reader otherwise.
 
     A table is read as `check_table_permission` answers it, the rule the
@@ -182,7 +182,7 @@ def has_permitted_chart(dashboard: str, user: str | None = None) -> bool:
             # options", to this reader as to the author who dragged it on
             return True
         # the user the chart would run as, from the one place that answers it:
-        # its owner while its Check is off, the key's user under a preview
+        # its owner while its Check is on, the key's user under a preview
         with permission_user(reader):
             as_user = permission_user_for(frappe._dict(doctype="Insights Chart v3", name=chart.name))
         queries = {chart.query, *transitive_closure(chart.query)}
