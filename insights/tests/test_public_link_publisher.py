@@ -27,6 +27,12 @@ from insights.tests.factories import (
     delete_users,
 )
 
+EXTERNAL_TABLE = [
+    {
+        "type": "source",
+        "table": {"type": "table", "data_source": "Public Rung Source", "table_name": "orders"},
+    }
+]
 OWNER = "Administrator"
 PREFIX = "Public Rung Test"
 PUBLISHER = "public_rung_publisher@test.com"
@@ -39,6 +45,7 @@ class TestPublicLinkPublisher(InsightsIntegrationTestCase):
     def before_class(cls):
         workbook = create_test_workbook(OWNER, title=PREFIX)
         query = create_test_query(OWNER, workbook.name, title=f"{PREFIX} Query")
+        cls.query = query.name
         cls.chart = create_test_chart(OWNER, workbook.name, query.name, title=f"{PREFIX} Chart").name
         cls.dashboard = create_test_dashboard(
             OWNER, workbook.name, cls.chart, title=f"{PREFIX} Dashboard"
@@ -79,5 +86,49 @@ class TestPublicLinkPublisher(InsightsIntegrationTestCase):
         frappe.db.set_value(DT.DASHBOARD, self.dashboard, "owner", PUBLISHER)
 
         self.run_patch_without_the_column()
+
+        self.assertFalse(frappe.db.get_value(DT.CHART, self.chart, "run_as_owner"))
+
+    def published_by_another_person_on(self, operations):
+        """The chart, published by a dashboard someone else owns, reading `operations`."""
+        frappe.db.set_value(DT.QUERY, self.query, "operations", frappe.as_json(operations))
+        self.published()
+        frappe.db.set_value(DT.DASHBOARD, self.dashboard, "owner", PUBLISHER)
+        frappe.db.set_single_value("Insights Settings", "enable_permissions", 0)
+
+        with (
+            patch(
+                "insights.insights.doctype.insights_table_v3.insights_table_v3.is_site_db", return_value=False
+            ),
+            patch("insights.insights.doctype.insights_team.insights_team.is_site_db", return_value=False),
+        ):
+            self.run_patch_without_the_column()
+
+    # @feature shared.chart-on-public-dashboard permissions.chart-run-as-owner
+    def test_a_link_another_person_published_on_rows_everyone_reads_runs_as_its_owner(self):
+        """External data no Table Restriction narrows: the owner's rows are the
+        publisher's, so checking the box serves the guest what the base did."""
+        self.published_by_another_person_on(EXTERNAL_TABLE)
+
+        self.assertTrue(frappe.db.get_value(DT.CHART, self.chart, "run_as_owner"))
+
+    # @feature shared.chart-on-public-dashboard permissions.chart-run-as-owner
+    def test_a_link_another_person_published_with_a_script_keeps_running_as_its_reader(self):
+        """A script reads whatever its running user may, so its rows are that user's."""
+        self.published_by_another_person_on(
+            [*EXTERNAL_TABLE, {"type": "code", "code": "results = frappe.get_list('ToDo')"}]
+        )
+
+        self.assertFalse(frappe.db.get_value(DT.CHART, self.chart, "run_as_owner"))
+
+    # @feature shared.chart-on-public-dashboard permissions.chart-run-as-owner
+    def test_a_link_whose_owner_cannot_read_its_table_keeps_running_as_its_reader(self):
+        """The owner's rows would be none of the publisher's, and a later grant to
+        the owner would start serving them to guests without anyone deciding to."""
+        with patch(
+            "insights.insights.doctype.insights_team.insights_team.check_table_permission",
+            side_effect=lambda data_source, table, user=None, raise_error=True: user == PUBLISHER,
+        ):
+            self.published_by_another_person_on(EXTERNAL_TABLE)
 
         self.assertFalse(frappe.db.get_value(DT.CHART, self.chart, "run_as_owner"))

@@ -19,19 +19,72 @@ def execute():
     dashboard it is linked to - and both are named here, because the update that
     names them from now on runs on the dashboard's save.
 
-    Checked only where the owner is who the base was already serving. The base
-    filtered a public read by the user the *publishing* document recorded, and
-    that is the chart's own owner for most content and somebody else for a chart
-    another person's dashboard published. Where they differ, neither answer is
-    writable any more: the column is going, and `validate_run_as_owner` lets
-    nobody but the owner hand out the owner's rows. So the box stays unchecked
-    there and the card refuses, rather than serving a third person's rows to the
-    open internet. Its owner can check it from the chart's share dialog, which
-    is the one place that decision belongs.
+    Checked only where the owner's rows are the rows the base was already
+    serving. The base filtered a public read by the user the *publishing*
+    document recorded, and that is the chart's own owner for most content and
+    somebody else for a chart another person's dashboard published. Where they
+    differ, neither answer is writable any more: the column is going, and
+    `validate_run_as_owner` lets nobody but the owner hand out the owner's rows.
+    So the box stays unchecked there, unless the two read the same rows, and the
+    card refuses rather than serving a third person's rows to the open internet.
+    Its owner can check it from the chart's share dialog, which is the one place
+    that decision belongs.
     """
     for chart, publisher in publicly_reachable_charts().items():
-        if publisher and publisher == frappe.db.get_value(CHART, chart, "owner"):
+        if not publisher:
+            continue
+        owner = frappe.db.get_value(CHART, chart, "owner")
+        if publisher == owner or reads_same_rows(chart, publisher, owner):
             frappe.db.set_value(CHART, chart, "run_as_owner", 1, update_modified=False)
+
+
+def reads_same_rows(chart: str, publisher: str, owner: str) -> bool:
+    """Whether `chart` draws the same rows for its publisher as for its owner.
+
+    Site data is filtered by desk's permissions and external data by a team's
+    Table Restrictions, both per user. A script, or an expression that calls
+    frappe, can read anything the running user can. A chart that uses none of
+    them, on tables both may read, draws the same rows for both.
+    """
+    from insights.insights.doctype.insights_table_v3.insights_table_v3 import is_site_db
+    from insights.insights.doctype.insights_team.insights_team import check_table_permission, team_grant
+    from insights.insights.query_utils import source_tables, transitive_closure
+
+    query, config = frappe.db.get_value(CHART, chart, ["query", "config"])
+    if not query:
+        return False
+
+    queries = {query, *transitive_closure(query)}
+    operations = frappe.get_all(
+        "Insights Query v3", filters={"name": ("in", list(queries))}, pluck="operations"
+    )
+    if any(runs_as_user(frappe.parse_json(content)) for content in [config, *operations]):
+        return False
+
+    return all(
+        not is_site_db(table["data_source"])
+        and check_table_permission(
+            table["data_source"], table["table_name"], user=publisher, raise_error=False
+        )
+        and check_table_permission(table["data_source"], table["table_name"], user=owner, raise_error=False)
+        and not team_grant(table["data_source"], table["table_name"], user=publisher)
+        and not team_grant(table["data_source"], table["table_name"], user=owner)
+        for table in source_tables(query)
+    )
+
+
+def runs_as_user(node) -> bool:
+    """Whether `node` holds a script, or an expression that calls frappe."""
+    if isinstance(node, list):
+        return any(runs_as_user(value) for value in node)
+    if not isinstance(node, dict):
+        return False
+    if node.get("type") == "code":
+        return True
+    expression = node.get("expression")
+    if isinstance(expression, str) and "frappe" in expression:
+        return True
+    return any(runs_as_user(value) for value in node.values())
 
 
 def publicly_reachable_charts() -> dict[str, str | None]:
