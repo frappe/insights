@@ -53,7 +53,9 @@ const actions = computed(() => {
 	const reading = !props.dashboard.builder?.editing
 	return [
 		reading ? { label: __('Refresh'), icon: 'refresh-cw', onClick: refresh } : null,
-		reading ? { label: __('Export as PNG'), icon: 'download', onClick: exportImage } : null,
+		reading && !props.dashboard.failed
+			? { label: __('Export as PNG'), icon: 'download', onClick: exportImage }
+			: null,
 		builderRoute
 			? { label: __('Edit'), icon: 'pencil', href: resolveHref(builderRoute) }
 			: null,
@@ -89,6 +91,13 @@ function exportImage() {
 			class="flex w-full flex-1 items-center justify-center p-4 text-p-base text-ink-gray-5"
 		>
 			{{ __('Dashboard not found') }}
+		</div>
+
+		<div
+			v-else-if="dashboard.failed"
+			class="flex w-full flex-1 items-center justify-center p-4 text-p-base text-ink-gray-5"
+		>
+			{{ __('Could not load the dashboard. Refresh to try again.') }}
 		</div>
 
 		<div v-else-if="dashboard.loading" class="flex-1 p-4">

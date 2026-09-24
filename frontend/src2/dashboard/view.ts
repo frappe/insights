@@ -247,6 +247,8 @@ export type DashboardView = {
 	loading: boolean
 	// a dashboard that is missing and one this reader may not have answer the same
 	notFound: boolean
+	// the request failed for another reason, so a retry may still open it
+	failed: boolean
 	name: string
 	title: string
 	// every cell, in the order the grid lays them out — a filter is one of them,
@@ -391,6 +393,7 @@ function makeDashboardPage(
 	const state = reactive({
 		loading: true,
 		notFound: false,
+		failed: false,
 		name: '',
 		title: '',
 		items: [] as DashboardViewItem[],
@@ -539,6 +542,7 @@ function makeDashboardPage(
 				if (token !== fetches) return
 				opened = true
 				state.notFound = false
+				state.failed = false
 				state.name = doc.name
 				state.title = doc.title
 				state.items = doc.items
@@ -552,10 +556,11 @@ function makeDashboardPage(
 				state.workbook = editable ? doc.workbook! : undefined
 				openReads(doc.charts, force)
 			})
-			.catch(() => {
+			.catch((error) => {
 				if (token !== fetches) return
 				opened = false
-				state.notFound = true
+				state.notFound = error?.exc_type === 'DoesNotExistError'
+				state.failed = !state.notFound
 			})
 			.finally(() => {
 				if (token !== fetches) return
@@ -567,6 +572,7 @@ function makeDashboardPage(
 	const view = reactive({
 		loading: computed(() => state.loading),
 		notFound: computed(() => state.notFound),
+		failed: computed(() => state.failed),
 		name: computed(() => state.name),
 		title: computed(() => state.title),
 		items: computed(() => state.items),

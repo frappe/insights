@@ -60,6 +60,7 @@ export function useDashboardBuilder(name: string, charts: WorkbookChart[]): Dash
 	return reactive({
 		loading: computed(() => !dashboard.isloaded),
 		notFound: false,
+		failed: false,
 		name: computed(() => dashboard.doc.name),
 		title: computed(() => dashboard.doc.title),
 		items,
