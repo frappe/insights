@@ -106,7 +106,7 @@ def get_currency_info():
     return {"currency": currency or None, "currency_symbols": get_currency_symbols([currency])}
 
 
-@insights_whitelist()
+@frappe.whitelist()
 def get_user_info():
     roles = frappe.get_roles()
     is_user = "Insights User" in roles
