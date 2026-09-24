@@ -152,7 +152,7 @@ function clear() {
 			class="absolute end-0.5 top-0.5"
 			@click.stop="clear"
 		>
-			<template #icon><X stroke-width="1.5" /></template>
+			<template #icon><X class="size-3.5" stroke-width="1.5" /></template>
 		</Button>
 	</div>
 
