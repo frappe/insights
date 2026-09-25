@@ -134,16 +134,16 @@ export function store<T>(key: string, value: () => T) {
 	return stored ? JSON.parse(stored) : value()
 }
 
-// what frappe-ui puts in `messages` when the server sent no sentence
+// what frappe-ui puts in `messages` when the server sent no message
 const NO_SENTENCE = 'Internal Server Error'
 
 /**
- * The sentence a failed request tells the user.
+ * The message to show the user for a failed request.
  *
- * The server's own sentence first: frappe sends it to every user, and the
- * traceback in `exc` to a System User only. A traceback's exception line is for a
- * failure the server said nothing about. frappe writes a sentence for desk,
- * which renders its markup; this app draws it as text, so the markup goes.
+ * The server's own message comes first. Frappe sends it to every user, but
+ * sends the traceback in `exc` only to a System User. The traceback's exception
+ * line is used only when the server sent no message. Frappe writes the message
+ * as HTML for desk. This app shows it as text, so the markup is removed.
  */
 export function getErrorMessage(err: any) {
 	const sentence = err.messages?.filter((message: string) => message !== NO_SENTENCE).at(-1)

@@ -8,8 +8,8 @@ import { __ } from '../translation'
 import { useChartCell, type ChartCellProps } from './chart_cell'
 import TableCardActions from './TableCardActions.vue'
 
-// A chart cell as a reader gets it: the read-only card, and the reader's own
-// filter and find on a table's rows.
+// A chart cell as a reader gets it: a read-only card. On a table, the reader can
+// also filter and find rows.
 const props = defineProps<ChartCellProps>()
 
 const {
@@ -27,13 +27,13 @@ const {
 	findOpen,
 } = useChartCell(props)
 
-// A popover this card opens is portaled out of the hover group, so the acts row
-// says it is still in use while one is up.
+// The card's popovers are teleported out of the hover group. While one is open,
+// this keeps the actions row visible.
 const actionsActive = ref(false)
 
-// A reader who may edit the chart jumps to it in its workbook. The chart is a
-// workbook object and the dashboard only names it, so this is a way out of the
-// page, drawn on hover like the builder card's.
+// A reader who may edit the chart opens it in its workbook. The chart belongs to
+// the workbook, not the dashboard, so this leaves the page. It shows on hover,
+// like on the builder card.
 const chartRoute = computed(() =>
 	props.item.chart ? props.dashboard.chartRoute?.(props.item.chart) : undefined,
 )
@@ -59,8 +59,8 @@ const chartRoute = computed(() =>
 				:range-provider="rangeProvider"
 			/>
 		</template>
-		<!-- hidden until the card is pointed at, like every other act on it: the
-		     card is what reveals them, and the expanded dialog is drawn outside it -->
+		<!-- hidden until hover, like the card's other actions. The card reveals
+		     them, and the expanded dialog renders outside the card -->
 		<template v-if="chartRoute" #hoverActions>
 			<Tooltip :text="__('Edit Chart')">
 				<Button variant="ghost" @click="navigate(chartRoute)">

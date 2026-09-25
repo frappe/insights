@@ -1,7 +1,6 @@
-// The injections only the SPA makes. Apart from `globals.ts` because one of
-// them opens a socket: an island that imported the component registrations
-// would bundle socket.io-client and open a second connection beside the one its
-// host page already holds.
+// Only the SPA provides these. They are kept out of `globals.ts` because
+// `$socket` opens a socket. Islands import `globals.ts`, so they would bundle
+// socket.io-client and open a second connection beside the host page's own.
 
 import { App } from 'vue'
 import dayjs from './helpers/dayjs.ts'

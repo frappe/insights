@@ -1,16 +1,13 @@
-// The one place the browser is made to save a file.
-//
-// Every export answers with the text of a file and nothing else — the builder's
-// query, a reader's drilled rows — so how that text becomes a download is one
-// implementation, not one per caller.
+// Every export endpoint returns only the file's text, for a Builder query or a
+// reader's drilled rows alike. So one function turns that text into a download.
 
 const EXCEL_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
 /**
- * Save exported text as a file, and answer with the name it was saved under.
+ * Save exported text as a file, and return the file name.
  *
- * Excel arrives base64-encoded because it is bytes and the response is text.
- * Everything else is the file already.
+ * Excel arrives base64-encoded, because it is binary and the response is text.
+ * CSV arrives as the file itself.
  */
 export function saveExportedFile(data: string, format: string, filename: string): string {
 	const excel = format === 'excel'

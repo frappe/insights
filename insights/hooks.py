@@ -37,14 +37,14 @@ add_to_apps_screen = [
 # app_include_css = "/assets/insights/css/insights.css"
 app_include_js = "insights_nudge.bundle.js"
 
-# so a desk page hosting an island knows where the app it links to is mounted
+# a desk page with an island needs the app's mount path to build links
 extend_bootinfo = "insights.desk.boot_app_path"
 
-# Island name -> the bundle `frontend/build-islands.mjs` writes into assets.json,
-# which is the same string. This is the registry `frappe.ui.mount_island` and
-# `get_island_assets` resolve a name against: without a row here a desk document
-# claimed in `insights/desk.py` mounts nothing and leaves an empty div. The pair
-# is hand-kept — see `DESK_ISLANDS` in `insights/desk.py`.
+# Island name -> the bundle name `frontend/build-islands.mjs` writes into
+# assets.json. The two are the same string. `frappe.ui.mount_island` and
+# `get_island_assets` look names up here. Without an entry, a desk document
+# claimed in `insights/desk.py` mounts nothing and shows an empty div. Keep it in
+# sync with `DESK_ISLANDS` in `insights/desk.py` by hand.
 ui_islands = {
     "insights.chart": "insights.chart",
     "insights.dashboard": "insights.dashboard",
@@ -169,8 +169,8 @@ doc_events = {
     "User": {
         "on_change": "insights.insights.doctype.insights_team.insights_team.update_admin_team",
     },
-    # a desk document that links to Insights content is drawn by an Insights
-    # island — see insights/desk.py
+    # a desk document that links to Insights content renders through an
+    # Insights island — see insights/desk.py
     "Dashboard": {
         "onload": "insights.desk.claim",
     },
@@ -180,7 +180,7 @@ doc_events = {
     "DocShare": {
         "validate": "insights.permissions.validate_member_share",
     },
-    # the tables of workbook members
+    # child tables of workbook members
     ("Insights Dashboard Chart v3", "Has Role", "Insights Query Variable"): {
         "validate": "insights.permissions.refuse_member_row_alone",
         "on_trash": "insights.permissions.refuse_member_row_alone",

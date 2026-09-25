@@ -7,7 +7,7 @@ export interface QueryVariable {
 	variable_value: string
 }
 
-// the visibility levels are strict: each one includes the previous
+// narrowest first: each level includes the readers of the one before it
 export type Visibility = 'Private' | 'Roles' | 'Everyone' | 'Public'
 export type VisibleToRole = { role: string }
 
@@ -69,7 +69,7 @@ export type InsightsWorkbook = {
 	read_only: boolean
 	/** A read-only workbook the reader may duplicate instead. */
 	can_copy?: boolean
-	/** Set on a workbook an app ships, with the module it ships in. */
+	/** Set when an app ships the workbook. `module` is the module it ships in. */
 	is_standard?: boolean
 	module?: string | null
 }
@@ -105,9 +105,9 @@ export type InsightsChartv3 = {
 	visibility: Visibility
 	visible_to_roles: VisibleToRole[]
 	run_as_owner: boolean
-	/** Whether the caller may move `run_as_owner` from where it is saved: on for its owner or an admin, off for any writer. */
+	/** Whether the caller may change the saved `run_as_owner`. The owner or an admin may tick it. Any writer may clear it. */
 	can_move_run_as_owner?: boolean
-	/** Whether the caller may widen who reads the chart: the server's `can_share`. */
+	/** Whether the caller may widen the chart's Visibility (the server's `can_share`). */
 	can_share?: boolean
 	operations: Operation[]
 	use_live_connection?: boolean
@@ -136,7 +136,7 @@ export type InsightsDashboardv3 = {
 		user_image: string
 	}[]
 	read_only: boolean
-	/** Whether the caller may widen who reads the dashboard or name a person on it. */
+	/** Whether the caller may widen the dashboard's Visibility or share it with a user. */
 	can_share?: boolean
 	vertical_compact_layout: boolean
 	has_workbook_access: boolean

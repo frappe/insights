@@ -1,10 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-// What a refused write leaves behind. The document is autosaved, so a value the
-// server will not take has to come off it: left on, the watcher re-sends the
-// same refused payload on every later edit and nothing the author types after
-// that point ever reaches the server.
+// The document autosaves, so a value the server refuses must be removed from it.
+// Otherwise the watcher resends the refused payload on every later edit, and no
+// later edit reaches the server.
 
 const answers: { update?: (args: any) => Promise<any> } = {}
 
@@ -34,20 +33,16 @@ async function settled() {
 	for (let i = 0; i < 12; i++) await nextTick()
 }
 
-/** A write the server read and refused, as `frappeRequest` rejects with it. */
+/** How `frappeRequest` rejects when the server refuses a write. */
 function refusal(exc_type = 'PermissionError', status = 403) {
 	return Object.assign(new Error('You do not have permission'), { exc_type, status })
 }
 
-/** A write that never reached the server: offline, aborted, a bench restarting. */
+/** A write that never reached the server: offline, aborted, or a bench restart. */
 function transportFailure() {
 	return new TypeError('Failed to fetch')
 }
 
-/**
- * A chart as `chart.ts` `getChartResource` opens it: autosaved, no local draft.
- * The share dialog writes `visibility` on it.
- */
 async function autosavedChart() {
 	const chart = useDocumentResource<any>('Insights Chart v3', 'chart-1', {
 		initialDoc: { doctype: 'Insights Chart v3', name: 'chart-1', owner: '' },
@@ -68,14 +63,13 @@ describe('a document the server refuses', () => {
 		chart.doc.visibility = 'Public'
 		const saving = chart.save()
 		await settled()
-		// typed while the write was in flight: the refused write never carried it
+		// typed while the write was in flight, so the refused write did not carry it
 		chart.doc.title = 'Sales — Q4 rework'
 		refuse(refusal())
 		await expect(saving).rejects.toThrow()
 		await settled()
 
-		// the refused level is off the document, so the next write is not the
-		// same refused payload again
+		// the refused Visibility is removed, so the next write does not resend it
 		expect(chart.doc.visibility).toBe('Private')
 		expect(chart.doc.title).toBe('Sales — Q4 rework')
 		expect(chart.isdirty).toBe(true)

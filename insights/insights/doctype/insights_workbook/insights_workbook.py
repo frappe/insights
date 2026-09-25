@@ -24,8 +24,8 @@ WORKBOOK_SERIES_KEY = "Insights Workbook"
 # Where an open came from, as `docs/telemetry.md` names them.
 OPEN_VIA = {"list", "recent", "desk", "link"}
 
-# The key a workbook file carries each kind of member under. The file names no
-# member doctype, so renaming one touches no file an app ships.
+# The file key for each member doctype. The file does not name the doctype, so
+# renaming a doctype changes no file an app ships.
 MEMBER_DOCTYPES = {
     "queries": "Insights Query v3",
     "charts": "Insights Chart v3",
@@ -34,11 +34,10 @@ MEMBER_DOCTYPES = {
 
 
 def standard_dashboard_visibility() -> dict:
-    """Who may read a dashboard an app ships.
+    """The visibility of a dashboard an app ships.
 
-    Desk User is frappe's automatic role for every System User, so the list
-    never needs maintaining and the portal users, whose roles read their own
-    orders and invoices, stay out of desk content.
+    Frappe gives Desk User to every System User automatically. So the list
+    needs no upkeep, and portal users do not see desk content.
     """
     return {"visibility": ROLES, "visible_to_roles": [{"role": "Desk User"}]}
 
@@ -76,16 +75,13 @@ class InsightsWorkbook(Document):
     def validate(self):
         standard.validate_standard(self)
 
-        # a module ties the workbook to the app that ships it; a site's own
-        # workbook belongs to no app
         if self.is_standard and not self.module:
             frappe.throw(frappe._("A standard workbook must name the module it ships in."))
 
-        # `module` is a Link to `Module Def`, which holds a site's own modules
-        # too, and the framework reads shipped files back from installed apps'
-        # `modules.txt` alone. Asked here rather than in `mark_as_standard`, so
-        # a plain save, a bench console and the workbook CLI are covered by the
-        # one condition.
+        # `module` links to `Module Def`, which also holds a site's own modules.
+        # The framework reads shipped files only from installed apps'
+        # `modules.txt`. The check is here, not in `mark_as_standard`, so a plain
+        # save, a bench console and the workbook CLI all get it.
         if self.is_standard and not standard.ships_module(self.module):
             frappe.throw(
                 frappe._(
@@ -106,10 +102,10 @@ class InsightsWorkbook(Document):
         standard.validate_standard(self)
 
         if self.is_standard:
-            # the claim belongs to every path that decides a standard workbook's
-            # name, not only to `mark_as_standard`: two names scrub to one
-            # filename, and `after_rename` below would write the loser's file
-            # away - leaving a workbook the next migrate deletes as an orphan
+            # Every rename of a standard workbook must claim its file, not only
+            # `mark_as_standard`. Two names can scrub to one filename. Then
+            # `after_rename` overwrites the other workbook's file, and the next
+            # migrate deletes that workbook as an orphan.
             standard.claim_file(self.doctype, new_name, self.module)
 
     def after_rename(self, old_name, new_name, merge=False):
@@ -128,8 +124,8 @@ class InsightsWorkbook(Document):
             frappe.log_error(f"Failed to backup workbook {self.name}: {e!s}")
 
         with standard.deleting(self.name):
-            # dashboards before charts, so a chart's delete finds no dashboard of
-            # this workbook to take its cells off
+            # Delete dashboards first. Then a chart's delete finds no dashboard
+            # in this workbook to remove its cells from.
             for d in frappe.get_all("Insights Dashboard v3", {"workbook": self.name}):
                 frappe.delete_doc("Insights Dashboard v3", d.name, force=True, ignore_permissions=True)
             for q in frappe.get_all("Insights Query v3", {"workbook": self.name}):
@@ -142,11 +138,12 @@ class InsightsWorkbook(Document):
         standard.delete_folder(self)
 
     def check_if_members_are_claimed(self):
-        """Refuse the delete while a desk document draws one of its members.
+        """Refuse the delete while a desk document shows one of its members.
 
-        The members go with `force=True`, which skips the link check each one's
-        own delete is refused by. A forced workbook delete skips it too, as
-        frappe's own check does, so a re-sync is never blocked.
+        The members are deleted with `force=True`, which skips the link check
+        that would refuse each delete. So the check runs here instead. A forced
+        workbook delete skips it too, like frappe's own link check, so a re-sync
+        is never blocked.
         """
         refuse_delete_while_claimed(
             self.title or self.name,
@@ -173,12 +170,12 @@ class InsightsWorkbook(Document):
         self.db_set("data_backup", None)
 
     def restore_imported_members(self):
-        """Restore the members the file carries, under the names it gives them.
+        """Restore the members in the file, under the names the file gives them.
 
-        The counterpart of `before_export`. `import_doc` builds the workbook from
-        the whole file, so the members ride on the document as attributes that
-        are not fields. A standard workbook is the same document on every site,
-        so nothing here is re-keyed.
+        This is the counterpart of `before_export`. `import_doc` builds the
+        workbook from the whole file, so the members arrive as attributes on the
+        document, not as fields. A standard workbook is the same document on
+        every site, so no name changes.
         """
         file = {key: self.get(key) for key in ("folders", *MEMBER_DOCTYPES) if self.get(key) is not None}
         self.restore_workbook_contents(file, self.name, ignore_permissions=True, keep_names=True)
@@ -195,11 +192,11 @@ class InsightsWorkbook(Document):
         The map is keyed on the name the file carries and valued on the name the
         copy got, so a caller can reach what it just imported.
 
-        `keep_names` restores the file as written: a member is inserted under the
-        name the file gives it, one the site already holds is updated in place, and
-        the members the file no longer carries are deleted. That is how a standard
-        workbook arrives. Every other restore mints fresh names and rewrites the
-        references that name them.
+        With `keep_names`, the file is restored as written. Each member keeps the
+        name the file gives it. A member the site already has is updated in
+        place. Members the file no longer carries are deleted. A standard
+        workbook arrives this way. Every other restore gives members new names
+        and rewrites the references to them.
         """
         contents = workbook_contents(workbook_data)
         queries = contents["queries"]
@@ -231,9 +228,8 @@ class InsightsWorkbook(Document):
         if keep_names:
             id_map.update({name: name for name in (*queries, *charts, *dashboards)})
 
-        # kept out of `id_map`: a folder is named by its title and a member by
-        # its docname, and one dict for both makes a folder titled like a query
-        # take that query's slot
+        # Not in `id_map`: a folder is keyed by title and a member by docname. In
+        # one dict, a folder titled like a query would replace that query's entry.
         folders = _restore_folders(
             contents["folders"],
             target_workbook_name,
@@ -265,8 +261,8 @@ class InsightsWorkbook(Document):
                 chart["sort_order"] = chart_sort_order
                 chart_sort_order += 1
             if keep_names:
-                # the file never carries this: a hand-edited one cannot hand a
-                # standard chart everyone's rows
+                # The file never sets this. So a hand-edited file cannot make a
+                # standard chart run as owner.
                 chart["run_as_owner"] = 0
 
             id_map[name] = _restore_member(
@@ -277,8 +273,8 @@ class InsightsWorkbook(Document):
             dashboard = deep_convert_dict_to_dict(dashboard)
             dashboard["items"] = frappe.as_json(_rewrite_dashboard_items(dashboard.get("items"), id_map))
             if keep_names:
-                # the file never carries these: a hand-edited one cannot shut a
-                # shipped board away from the desk users it ships for
+                # The file never sets these. So a hand-edited file cannot hide a
+                # shipped dashboard from desk users.
                 dashboard.update(standard_dashboard_visibility())
 
             id_map[name] = _restore_member(
@@ -371,10 +367,10 @@ class InsightsWorkbook(Document):
 
     @frappe.whitelist()
     def export(self):
-        """The workbook and its members, in the shape a file carries them.
+        """The workbook and its members, in file format.
 
-        One format for the download, Duplicate, the backup a delete leaves behind
-        and the file an app ships.
+        The download, Duplicate, the backup a delete keeps, and the file an app
+        ships all use this format.
         """
         return {
             "doctype": self.doctype,
@@ -386,20 +382,20 @@ class InsightsWorkbook(Document):
     def before_export(self, doc_export: dict) -> None:
         """Add the members to the file frappe is about to write.
 
-        `as_dict` puts a summary of each member list on the document for the
-        frontend's sidebar; the file carries the members themselves instead. A
-        member kept for desk is no longer the app's, so it is left out.
+        `as_dict` adds a summary of each member list for the frontend sidebar.
+        The file needs the full members instead. A member kept for desk no
+        longer belongs to the app, so it is left out.
         """
         doc_export.update(self.export_members(shipped=True))
         for field in ("read_only", "can_copy", "data_backup"):
             doc_export.pop(field, None)
 
     def export_members(self, shipped: bool = False) -> dict:
-        """The workbook's queries, charts, dashboards and folders; with `shipped`,
-        only those its app ships.
+        """The workbook's queries, charts, dashboards and folders. With `shipped`,
+        only the members its app ships.
 
-        A member names its folder by title. The folder's own name is a hash, which
-        the importing site mints for itself.
+        A member refers to its folder by title. The folder's name is a hash, and
+        the importing site makes its own.
         """
         filters = {"workbook": self.name}
         if shipped:
@@ -450,7 +446,6 @@ class InsightsWorkbook(Document):
             order_by="creation asc",
         )
 
-        # only the folders that hold a query or a chart
         active_folders = {member.folder for member in (*queries, *charts) if member.folder}
         folders = (
             frappe.get_all(
@@ -482,13 +477,12 @@ class InsightsWorkbook(Document):
 
     @frappe.whitelist()
     def mark_as_standard(self, name: str | None = None, module: str | None = None):
-        """Hand this workbook to the app that ships `module`, and answer with its name.
+        """Make this workbook standard in `module`, and return its new name.
 
-        The names become the workbook's identity on every site that takes the
-        file, so they are readable and they are settled here, once: the workbook
-        takes `name`, a member takes `<workbook>-<title slug>`, and every
-        reference inside `operations`, `items` and a filter's `links` is
-        rewritten to match.
+        The names identify the workbook on every site that installs the file.
+        So they are readable, and they are set once, here. The workbook takes
+        `name`. Each member takes `<workbook>-<title slug>`. Every reference in
+        `operations`, `items` and a filter's `links` is rewritten to match.
         """
         if not frappe.conf.developer_mode:
             frappe.throw(frappe._("A workbook is marked standard in developer mode."))
@@ -515,21 +509,20 @@ class InsightsWorkbook(Document):
         id_map = {old: new for _, old, new in renames}
         _rewrite_member_references(name, id_map)
 
-        # the workbook first: a member reads its own `is_standard` off this row
+        # Save the workbook first. Each member reads its `is_standard` from it.
         workbook = frappe.get_doc(self.doctype, name)
         workbook.is_standard = 1
         workbook.module = module
         workbook.save()
 
-        # the dashboards next: a chart on a Public one cannot run as its
-        # reader, and a shipped chart has to
+        # Then the dashboards. A chart on a Public dashboard must run as owner,
+        # and a shipped chart must not. So no dashboard stays Public.
         for dashboard in frappe.get_all("Insights Dashboard v3", {"workbook": name}, pluck="name"):
             doc = frappe.get_doc("Insights Dashboard v3", dashboard)
             doc.update(standard_dashboard_visibility())
             doc.save(ignore_permissions=True)
-        # through the document: `run_as_owner` decides whose rows every
-        # reader of the chart gets, and `validate_run_as_owner` is what
-        # says a shipped chart runs as its reader
+        # Save each chart as a document, so `validate_run_as_owner` runs. It
+        # makes sure a shipped chart does not run as owner.
         for chart in frappe.get_all("Insights Chart v3", {"workbook": name}, pluck="name"):
             doc = frappe.get_doc("Insights Chart v3", chart)
             doc.run_as_owner = 0
@@ -664,10 +657,10 @@ def _order_by_reference(queries: dict) -> list[str]:
 
 
 def _rename_members(workbook: str) -> list[tuple[str, str, str]]:
-    """The name each member takes, as `<workbook>-<title slug>`.
+    """The new name of each member, as `<workbook>-<title slug>`.
 
-    Two members can carry one title, and another document may already answer to
-    the name, so a taken one gets a number.
+    Two members can have the same title, and another document can already use
+    the name. So a taken name gets a number.
     """
     renames = []
     taken = set()
@@ -691,16 +684,17 @@ def _rename_members(workbook: str) -> list[tuple[str, str, str]]:
 
 
 def _answered_by_another(doctype: str, member: str, name: str) -> bool:
-    """Whether a document other than `member` already answers to `name`.
+    """Whether a document other than `member` already uses `name`.
 
-    A dashboard answers to its route as well as to its docname, and
-    `resolver.resolve` tries the docname first, so the two draw from one
-    keyspace. Minting a member's docname over a site dashboard's route takes
-    over every link that used that route, and the re-save that follows does not
-    free it - `set_route` only re-derives the shipped dashboard's own.
+    A dashboard opens by its route as well as by its docname.
+    `resolver.resolve` tries the docname first, so routes and docnames share
+    one keyspace. If a member takes a docname equal to a site dashboard's
+    route, every link to that route opens the member instead. Saving again
+    does not fix it, because `set_route` only resets the shipped dashboard's
+    own route.
 
-    `InsightsDashboardv3.answered_by_another` is that pair of lookups, asked
-    here rather than restated: this is the other writer into the one keyspace.
+    This calls `InsightsDashboardv3.answered_by_another` instead of repeating
+    its two lookups, because renaming here also writes into that keyspace.
     """
     if doctype == MEMBER_DOCTYPES["dashboards"]:
         return frappe.get_doc(doctype, member).answered_by_another(name)
@@ -709,14 +703,13 @@ def _answered_by_another(doctype: str, member: str, name: str) -> bool:
 
 
 def _rewrite_member_references(workbook: str, id_map: dict) -> None:
-    """Point every reference inside a member's JSON at the name it took.
+    """Update every reference inside a member's JSON to the member's new name.
 
-    `rename_doc` carries the Link fields; a name inside `operations` or a
-    dashboard's `items` is not one.
+    `rename_doc` updates Link fields only. A name inside `operations` or a
+    dashboard's `items` is not a Link field.
 
-    A member the rename left alone is still one of the workbook's own, and a
-    reference to it names the workbook as well, so it stands in the map under
-    its own name.
+    A reference also names the workbook, which may have been renamed. So a
+    member that kept its name still goes in the map, mapped to itself.
     """
     id_map = dict(id_map)
     for doctype in MEMBER_DOCTYPES.values():
@@ -747,10 +740,10 @@ def _rewrite_member_references(workbook: str, id_map: dict) -> None:
 
 
 def is_workbook_file(workbook_data) -> bool:
-    """Whether a file is one `workbook_contents` reads.
+    """Whether `workbook_contents` can read this file.
 
-    A file names itself by the doctype it was written from, or, in the wrapped
-    shape, as a `Workbook`.
+    A file has the `doctype` it was exported from. A file in the old wrapped
+    format has `type` set to `Workbook` instead.
     """
     try:
         data = frappe.parse_json(workbook_data)
@@ -762,11 +755,11 @@ def is_workbook_file(workbook_data) -> bool:
 
 
 def workbook_contents(workbook_data) -> "frappe._dict":
-    """A workbook file, with its members at the top.
+    """A workbook file, with its members at the top level.
 
-    The format wrapped the workbook in `doc` and its members in `dependencies`
-    before it was flattened. A file in that shape is lifted here, so one reader
-    serves both — the files an app ships and every file a site exported until now.
+    The old format put the workbook in `doc` and its members in
+    `dependencies`. This function flattens that format, so one reader works for
+    the files an app ships and for every file a site exported before.
     """
     data = deep_convert_dict_to_dict(frappe.parse_json(workbook_data) or {})
     if "doc" in data or "dependencies" in data:
@@ -783,15 +776,14 @@ def workbook_contents(workbook_data) -> "frappe._dict":
 
 
 def _restore_folders(folders, workbook: str, keep_names: bool, ignore_permissions: bool) -> dict:
-    """Give every folder in the file a folder on this site, keyed as the file names it.
+    """Create or update a folder on this site for every folder in the file.
 
-    A file names a folder by title; one written before that names it by the hash
-    the exporting site minted. The members use whichever the file wrote, so both
-    are keys here.
+    Returns a map from the file's folder key to the site's folder name. A file
+    refers to a folder by title. An older file refers to it by the hash the
+    exporting site made. So the map has both keys.
 
-    Keyed by `(type, title)`, because that is what a folder is unique by — a
-    query folder and a chart folder may share a title, and a member reads the map
-    with the type it is.
+    The key includes the folder `type`, because a folder is unique by type and
+    title. A query folder and a chart folder can have the same title.
     """
     on_site = {}
     if keep_names:
@@ -826,7 +818,7 @@ def _restore_folders(folders, workbook: str, keep_names: bool, ignore_permission
 def _restore_member(
     doctype: str, name: str, payload: dict, workbook: str, keep_names: bool, ignore_permissions: bool
 ) -> str:
-    """Restore one member and answer with the name it took."""
+    """Restore one member and return its name."""
     existing = keep_names and frappe.db.exists(doctype, name)
     if keep_names:
         _refuse_a_borrowed_row(doctype, name, workbook)
@@ -846,24 +838,23 @@ def _restore_member(
 
 
 def _refuse_a_borrowed_row(doctype: str, name: str, workbook: str) -> None:
-    """A row another workbook holds is not this file's to write into.
+    """Refuse to import a member whose name belongs to another workbook.
 
-    Under `keep_names` this is an import, and the name comes off a file. A
-    member is named `<workbook>-<title slug>`, deduped on the bench that wrote
-    the file and nowhere else, so a site that installs two apps can hold a
-    collision neither authoring bench could see. Reusing the row re-parents the
-    other app's chart into this workbook, and the dashboard that still names it
-    draws that chart with nothing on screen saying so.
+    With `keep_names`, the name comes from the file. A member is named
+    `<workbook>-<title slug>`, and the name is made unique only on the bench
+    that wrote the file. A site that installs two apps can therefore get a
+    name collision that neither app's bench could see. Reusing the row would
+    move the other app's chart into this workbook. The other app's dashboard
+    would then show that chart, and nothing on screen would say so.
 
-    A dashboard answers to its route as well as to its docname, so a name no row
-    holds can still be an address a site dashboard answers to - and
-    `resolver.resolve` tries the docname first, so inserting under it takes over
-    every link that used that route. `_rename_members` asks this on the bench
-    that mints the name; the receiving site is the only place a collision
-    between two apps is visible, so it asks it too.
+    A dashboard also opens by its route. So a name that no row has can still
+    be a site dashboard's route. `resolver.resolve` tries the docname first, so
+    a member inserted under that name takes over every link to the route.
+    `_rename_members` checks this on the bench that makes the name. Only the
+    installing site can see a collision between two apps, so it checks too.
 
-    The refusal frappe's `validate_overwrite` gives for the workbook itself.
-    Insights restores the members, so it owes the same one here.
+    Frappe's `validate_overwrite` gives this refusal for the workbook itself.
+    Insights restores the members, so it gives the same refusal for them.
     """
     holder = frappe.db.get_value(doctype, name, "workbook")
     if holder:
@@ -886,7 +877,7 @@ def _refuse_a_borrowed_row(doctype: str, name: str, workbook: str) -> None:
 
 
 def _answers_to_route(doctype: str, name: str) -> str | None:
-    """The dashboard that answers to `name` as its route, if one does."""
+    """The dashboard whose route is `name`, if one exists."""
     if doctype != MEMBER_DOCTYPES["dashboards"]:
         return None
 
@@ -896,11 +887,12 @@ def _answers_to_route(doctype: str, name: str) -> str | None:
 def _delete_dropped_members(workbook: str, contents: dict) -> None:
     """Delete the members of `workbook` the file no longer carries.
 
-    A member a desk document draws stays, with what it reads, and the keep is
-    logged: deleting it would leave the desk document linking nothing, and
-    refusing would block the migrate. A kept member is marked `kept_for_desk`,
-    so the file is written without it. Dashboards first, so a chart is gone from
-    every grid before it goes, and folders last, so nothing still sits in one.
+    A member that a desk document shows is kept, with the charts and queries
+    it reads, and the keep is logged. Deleting it would leave the desk
+    document linked to nothing. Refusing would block the migrate. A kept member
+    is marked `kept_for_desk`, so the next export leaves it out. Dashboards are
+    deleted first, so a chart is off every dashboard before it goes. Folders
+    are deleted last, so no member is still in one.
     """
     dropped = {
         key: [
@@ -941,8 +933,11 @@ def _delete_dropped_members(workbook: str, contents: dict) -> None:
 
 
 def _kept_for_desk(workbook: str, dropped: dict) -> set[str]:
-    """The dropped members a desk document draws, the charts a kept dashboard
-    draws, and the queries they read."""
+    """The dropped members to keep for desk.
+
+    These are the members a desk document shows, the charts on a kept
+    dashboard, and the queries those charts read.
+    """
     from insights.insights.query_utils import transitive_closure
 
     claims = [
@@ -968,7 +963,7 @@ def _kept_for_desk(workbook: str, dropped: dict) -> set[str]:
         if query:
             kept |= {query, *transitive_closure(query)} & set(dropped["queries"])
 
-    # every migrate re-checks a kept member, so only a new keep is logged
+    # Every migrate checks the kept members again, so log only new ones.
     already_kept = {
         name
         for doctype in MEMBER_DOCTYPES.values()
@@ -987,10 +982,10 @@ def _kept_for_desk(workbook: str, dropped: dict) -> set[str]:
 
 
 def delete_unclaimed_kept_members() -> None:
-    """Delete what a re-sync kept for desk once no desk document draws it.
+    """Delete a member kept for desk once no desk document shows it.
 
-    frappe re-imports a file only when it changes, so without this a kept member
-    would stay, read-only, until the app next changed that file.
+    Frappe imports a file again only when the file changes. Without this, a
+    kept member would stay, read-only, until the app changed that file.
     """
     from frappe.modules.import_file import read_doc_from_file
 
@@ -1012,7 +1007,7 @@ def delete_unclaimed_kept_members() -> None:
 
 
 def _rewrite_dashboard_items(items, id_map: dict) -> list:
-    """Point every chart and filter link in `items` at the copy that replaces it."""
+    """Update every chart and filter link in `items` to the new chart name."""
     items = deep_convert_dict_to_dict(frappe.parse_json(items) or [])
     for item in items:
         if item.get("type") == "chart" and item.get("chart") in id_map:
@@ -1040,11 +1035,12 @@ def _rewrite_dashboard_items(items, id_map: dict) -> list:
 def _rewrite_query_references(operations, id_map: dict, workbook: str | None = None) -> str:
     """Point every reference in `operations` at the copy that replaces it.
 
-    A reference names the query it reads and the workbook that query sits in, so
-    both move together: `workbook` is the one the copies belong to.
+    A reference names a query and the workbook of that query, so both change
+    together. `workbook` is the workbook of the copies.
 
-    A name the map does not carry belongs to a query already on this site, and
-    is left alone: the import references that one, and read access decides.
+    A name that is not in the map is a query already on this site. It stays
+    as it is: the import refers to that query, and read access decides whether
+    it runs.
     """
     operations = deep_convert_dict_to_dict(frappe.parse_json(operations) or [])
     for op in operations:

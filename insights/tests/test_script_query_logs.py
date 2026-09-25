@@ -88,11 +88,10 @@ class TestScriptQueryLogs(InsightsIntegrationTestCase):
 
     # @feature query.script-logs
     def test_a_run_for_someone_else_publishes_no_logs(self):
-        """`IbisQueryBuilder.apply_code` runs a script under `runs_as` for a
-        run-as-owner chart and under `permission_user` for an alert tick. What
-        it prints was read as that user, and the realtime room is the caller's,
-        so a reader of the chart gets nothing. The author running their own
-        query still gets their logs."""
+        """A chart run as its owner, or an alert, runs the script as another user.
+        Its output shows that user's data, but the realtime room is the caller's,
+        so no logs are published. The author running their own query still gets
+        their logs."""
         from insights.permission_user import permission_user
 
         create_user(SCRIPT_READER, roles="Insights User")
@@ -123,9 +122,8 @@ class TestScriptQueryLogs(InsightsIntegrationTestCase):
 
     # @feature query.script-variables
     def test_a_variable_with_no_value_names_itself(self):
-        """`IbisQueryBuilder.apply_code`, on every run of a script query and of a
-        chart over it. A copy made by `copy_cross_workbook_query_sources`
-        carries a variable's name and never its secret; a stored value still
+        """A copy made by `copy_cross_workbook_query_sources` has a variable's name
+        but not its secret, so the error names the variable. A stored value still
         reaches the script."""
         from insights.tests.factories import create_test_workbook
 
@@ -157,8 +155,7 @@ class TestScriptQueryLogs(InsightsIntegrationTestCase):
 
 
 class TestScriptSandbox(InsightsIntegrationTestCase):
-    """What `get_code_results` hands a script, on every run of a script query:
-    the builder, a chart over it, a run-as-owner chart and an alert tick."""
+    """What `get_code_results` gives a script. Every run of a script query uses it."""
 
     def before_test(self):
         from insights.tests.factories import create_test_workbook
@@ -180,8 +177,8 @@ class TestScriptSandbox(InsightsIntegrationTestCase):
 
     # @feature query.script-sandbox
     def test_a_script_reads_frappe_data_and_calls_out(self):
-        """The shapes the shipped scripts on insights.frappe.io use: a secret read
-        off a document, another query's rows, a site table and an outbound POST."""
+        """Scripts shipped on insights.frappe.io do these things: read a secret from
+        a document, read another query's rows, read a site table and send a POST."""
         inner = self.script_query("Sandbox Inner", "results = [{'a': 7}]")
         secret = self.script_query(
             "Sandbox Secret",
@@ -200,7 +197,7 @@ class TestScriptSandbox(InsightsIntegrationTestCase):
             ]
         )
 
-        # the network: frappe resolves the host before it sends
+        # Frappe resolves the host before it sends, so both steps are patched.
         with (
             patch("frappe.utils.safe_exec.validate_request_url"),
             patch("frappe.integrations.utils.make_request", return_value={"ok": 1}) as request,
@@ -215,9 +212,9 @@ class TestScriptSandbox(InsightsIntegrationTestCase):
 
     # @feature query.script-sandbox
     def test_a_script_run_for_someone_else_reads_their_user_and_nothing_of_the_callers_session(self):
-        """`script_session` swaps the user, not the session data, and a run-as-owner
-        chart caches the script's rows for every reader it serves. The caller's
-        own run reads the same one key."""
+        """`script_session` swaps the user but not the session data. A chart run as
+        its owner caches the script's rows for all its readers, so the script must
+        not see the caller's session. The caller's own run also sees only `user`."""
         from insights.permission_user import permission_user
 
         create_user(SCRIPT_READER, roles="Insights User")
@@ -236,9 +233,9 @@ class TestScriptSandbox(InsightsIntegrationTestCase):
 
     # @feature query.script-sandbox query.expression-cannot-reach-files
     def test_a_script_reaches_no_file(self):
-        """A frame's writers take a path, and one built from another frame, an
-        array or a table built by a query is as reachable as the one the script
-        made. The frame itself and its values still come back."""
+        """Every pandas writer takes a path. A frame built from another frame, an
+        array or a query's table has the same writers as one the script made. The
+        script can still return the frame and its values."""
         target = os.path.join(tempfile.gettempdir(), "insights_script_file_test")
         self.addCleanup(lambda: os.path.exists(target) and os.remove(target))
         private_file = frappe.get_site_path("private", "files", "insights-script-probe.pdf")
@@ -268,9 +265,10 @@ class TestScriptSandbox(InsightsIntegrationTestCase):
 
     # @feature query.script-sandbox
     def test_a_script_reaches_no_connection(self):
-        """A query a script reads builds a relation on the data source's connection,
-        where `raw_sql` runs any statement and commits it outside the script's
-        savepoint. Its rows and a select through `sql` stay a script's to read."""
+        """A query the script reads builds a relation on the data source's
+        connection. There `raw_sql` runs any statement and commits it outside the
+        script's savepoint. The script can still read the rows and run a select
+        through `sql`."""
         todo = frappe.get_doc({"doctype": "ToDo", "description": "connection"}).insert(
             ignore_permissions=True
         )
@@ -304,7 +302,7 @@ class TestScriptSandbox(InsightsIntegrationTestCase):
                     with self.assertRaises(frappe.PermissionError):
                         get_code_results(lines)
 
-        # the connection reads committed rows only, so these ask for the shape
+        # The connection sees only committed rows, so these check columns, not values.
         rows = get_code_results(
             f"rows = {table}.select('name').limit(1).execute()\n"
             f"counted = {table}.sql('select count(*) as n from tabToDo').execute()\n"
@@ -315,8 +313,8 @@ class TestScriptSandbox(InsightsIntegrationTestCase):
 
     # @feature query.script-sandbox
     def test_a_script_cannot_act_beyond_a_read(self):
-        """Run as the caller and as someone else, since a chart run as its
-        owner swaps the session."""
+        """Runs as the caller and as another user, because a chart run as its owner
+        changes the session user."""
         from insights.permission_user import permission_user
 
         todo = frappe.get_doc({"doctype": "ToDo", "description": "sandbox"}).insert(ignore_permissions=True)
@@ -351,7 +349,7 @@ class TestScriptSandbox(InsightsIntegrationTestCase):
             "map_trackers": "frappe.utils.map_trackers({'utm_source': 'insights-script-probe'}, create=True)",
         }
         not_in_sandbox = (AttributeError, "module has no attribute")
-        # a name `frappe.db` lacks reads as a no-op function
+        # The sandboxed `frappe.db` returns None for a name it lacks.
         no_hook = (TypeError, "'NoneType' object is not callable")
         refusal = {
             "enqueue": not_in_sandbox,
@@ -387,9 +385,8 @@ class TestScriptSandbox(InsightsIntegrationTestCase):
 
 
 class TestScriptAuthor(InsightsIntegrationTestCase):
-    """Who may put trusted code - a script, an expression that runs SQL or a
-    stored procedure call - on a query, a chart or an alert, whichever door
-    brings it."""
+    """Who may add trusted code (a script, an expression that runs SQL, or a
+    stored procedure call) to a query, a chart or an alert, through any API."""
 
     def before_test(self):
         from insights.tests.factories import create_test_workbook
@@ -416,10 +413,9 @@ class TestScriptAuthor(InsightsIntegrationTestCase):
 
     # @feature query.script-author
     def test_only_an_admin_adds_or_changes_a_script(self):
-        """`frappe.client.insert` and `frappe.client.set_value`, the builder's
-        save, and `insights.api.run_doc_method`, the builder's run of the query
-        on screen. An editor of the workbook keeps running and saving the script
-        an admin wrote."""
+        """Covers the builder's save (`frappe.client`) and its run of an unsaved
+        query (`run_doc_method`). An editor of the workbook can still run and save
+        a script an admin wrote."""
         from frappe.client import insert, set_value
 
         from insights.api import run_doc_method
@@ -450,12 +446,10 @@ class TestScriptAuthor(InsightsIntegrationTestCase):
 
     # @feature query.script-author
     def test_only_an_admin_adds_or_changes_a_sql_query_that_runs_a_stored_procedure(self):
-        """`IbisQueryBuilder.apply_sql` runs a statement that starts with `exec`
-        as written on a source with stored procedures on, so it binds no table
-        to the reader's permissions. Through `frappe.client.insert` and
-        `set_value`, the builder's run of the query on screen (`run_doc_method`)
-        and `InsightsQueryv3.duplicate`, in any case, after whitespace or a
-        comment. An editor keeps running the one an admin wrote, and writes a
+        """On a source with stored procedures enabled, `IbisQueryBuilder.apply_sql`
+        runs a statement starting with `exec` as written. No reader permission
+        applies to it. The check matches `exec` in any case, and after whitespace
+        or a comment. An editor can still run an admin's procedure and write a
         SELECT."""
         from frappe.client import insert, set_value
 
@@ -514,10 +508,9 @@ class TestScriptAuthor(InsightsIntegrationTestCase):
 
     # @feature query.script-variables
     def test_a_script_reads_the_variables_its_stored_query_carries(self):
-        """`insights.api.run_doc_method`, the builder's run of the query on
-        screen, and a query that sources the script. The body's variable rows
-        are the caller's: renamed to another query's row, or carrying a value
-        of their own, the script still reads its own query's stored secret."""
+        """The caller controls the variable rows in the request body. If they point
+        to another query's row or carry their own value, the script still reads
+        its stored query's secret."""
         from insights.api import run_doc_method
         from insights.tests.test_run_as_owner import as_http_request
 
@@ -547,13 +540,10 @@ class TestScriptAuthor(InsightsIntegrationTestCase):
 
     # @feature query.script-author
     def test_only_an_admin_adds_or_changes_an_expression_that_runs_sql(self):
-        """`q.sql` reads any table on the connection past the reader's permissions,
-        so an expression that calls it is trusted code wherever it sits: any
-        operation, a chart's config, an alert's condition, one statement or
-        several. Through `frappe.client.insert` and `set_value`, the builder's run
-        of the query on screen (`run_doc_method`), and a chart's and an alert's
-        save. An editor keeps running and saving what an admin wrote, and writes
-        an expression that runs no SQL."""
+        """`q.sql` reads any table on the connection and skips the reader's
+        permissions. So an expression that calls it is trusted code anywhere: in
+        an operation, a chart's config or an alert's condition. An editor can still
+        run and save an admin's expression, and write one that runs no SQL."""
         from frappe.client import insert, set_value
 
         from insights.api import run_doc_method
@@ -632,11 +622,10 @@ class TestScriptAuthor(InsightsIntegrationTestCase):
 
     # @feature query.script-author
     def test_the_script_editor_is_offered_to_whoever_may_save_a_script(self):
-        """`get_user_info` publishes `can_write_trusted_code`, which
-        `ScriptQueryEditor` and `WorkbookQueryEmptyState` offer the editor from.
-        It is the answer a save gives: a System Manager without the `Insights
-        Admin` role writes a script, and a holder of the role outside the Admin
-        team does not."""
+        """`ScriptQueryEditor` shows the script editor only when
+        `can_write_trusted_code` is set. The flag must match the save check: a
+        System Manager without the `Insights Admin` role may save a script, and a
+        holder of that role outside the Admin team may not."""
         import frappe.share
         from frappe.client import insert
 
@@ -691,10 +680,9 @@ class TestScriptAuthor(InsightsIntegrationTestCase):
 
     # @feature query.script-author alerts.test-send
     def test_an_alert_sends_only_the_trusted_code_its_stored_alert_carries(self):
-        """`AlertSetupDialog` and the desk form send an alert through
-        `run_doc_method` with the condition on screen, saved or not; the tick
-        sends the stored one. An editor sends an admin's stored condition, and
-        their own that runs no SQL."""
+        """The alert dialog sends the condition on screen, saved or not. The
+        scheduled run sends the stored one. An editor may send an admin's stored
+        condition, or their own condition that runs no SQL."""
         from insights.api import run_doc_method
         from insights.tests.test_run_as_owner import as_http_request
 
@@ -725,7 +713,7 @@ class TestScriptAuthor(InsightsIntegrationTestCase):
         for alert in (
             {**unsaved, "condition": editor_condition},
             {**stored.as_dict(), "condition": editor_condition},
-            # the admin's condition, carried to a document that does not store it
+            # The admin's condition, copied to an alert that does not store it
             {**unsaved, "condition": admin_condition},
         ):
             with self.subTest(name=alert["name"], condition=alert["condition"]):
@@ -737,10 +725,9 @@ class TestScriptAuthor(InsightsIntegrationTestCase):
 
     # @feature query.script-author charts.drill-breakdown-offers
     def test_a_builder_drill_runs_the_trusted_code_its_source_query_carries(self):
-        """The query builder drills its result through
-        `insights.api.authoring.get_drill_dimensions` with the operations on
-        screen, which run as a throwaway preview named after no stored document.
-        An editor drills an admin's stored `.sql`, and not one of their own."""
+        """The query builder sends its unsaved operations to `get_drill_dimensions`.
+        They run as a preview that belongs to no stored document. An editor may
+        drill an admin's stored `q.sql`, but not one of their own."""
         from insights.api.authoring import get_drill_dimensions
         from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
             db_connections,
@@ -779,10 +766,8 @@ class TestScriptAuthor(InsightsIntegrationTestCase):
 
     # @feature query.script-author query.duplicate query.copy-paste workbook.duplicate workbook.copy-paste
     def test_an_import_or_copy_that_brings_a_script_names_the_script_queries(self):
-        """`InsightsQueryv3.duplicate`, `InsightsWorkbook.import_query` (paste),
-        `InsightsWorkbook.duplicate` and `insights.api.workbooks.import_workbook`,
-        each as an editor who wrote none of the scripts. An admin's import of
-        the same file goes in."""
+        """An editor who wrote none of the scripts cannot duplicate, paste or import
+        them. An admin can import the same file."""
         from insights.api.workbooks import import_workbook
 
         source = self.script_query("Source Script").insert()
@@ -839,8 +824,6 @@ class TestScriptQueryCache(InsightsIntegrationTestCase):
 
     # @feature query.script-variables
     def test_a_variable_change_reruns_the_script(self):
-        """`IbisQueryBuilder.apply_code`, on the run after the query editor saves
-        a variable's new value."""
         from insights.tests.factories import create_test_workbook
 
         workbook = create_test_workbook("Administrator").name
@@ -863,7 +846,7 @@ class TestScriptQueryCache(InsightsIntegrationTestCase):
 
     # @feature query.script-force-run
     def test_force_skips_the_code_cache(self):
-        # a run of its own, so an earlier run's cached results do not answer it
+        # A unique value, so no earlier run's cache matches this code.
         run = frappe.generate_hash()
         code = f"import_count = frappe.db.count('DocType')\nresults = [{{'a': import_count, 'run': '{run}'}}]"
 
@@ -880,11 +863,9 @@ class TestScriptQueryCache(InsightsIntegrationTestCase):
 
     # @feature query.script
     def test_one_users_script_output_is_not_served_to_another(self):
-        """`IbisQueryBuilder.apply_code` runs a script for every chart and alert
-        on a script query. The script reads as the user it runs for, so its cached
-        output is theirs: two readers of a chart that runs as its reader each
-        run it for themselves. The query is stored, since only an admin runs a
-        script nobody saved (Q17)."""
+        """A script reads as the user it runs for, so its cached output belongs to
+        that user. Two readers of a chart each run the script for themselves. The
+        query is stored because only an admin may run an unsaved script (Q17)."""
         from insights.tests.factories import create_test_workbook
 
         create_user(SCRIPT_READER, roles="Insights User")
@@ -911,8 +892,8 @@ class TestScriptQueryCache(InsightsIntegrationTestCase):
 
 
 class AVariableSecretGoesWithItsVariable(InsightsIntegrationTestCase):
-    """frappe deletes the secrets of the document it deletes, never those of a
-    child row, so a script query's variables would leave theirs in `__Auth`."""
+    """Frappe deletes the secrets of a deleted document but not of its child rows.
+    So a script query's variables would leave their secrets in `__Auth`."""
 
     def before_test(self):
         from insights.tests.factories import create_test_workbook
@@ -937,9 +918,8 @@ class AVariableSecretGoesWithItsVariable(InsightsIntegrationTestCase):
 
     # @feature query.script-variables
     def test_deleting_a_script_query_clears_its_variables_secrets(self):
-        """`InsightsQueryv3.after_delete`, reached from the sidebar's delete and
-        from a workbook's, which is also how each test here cleans up. The
-        query beside it keeps its own."""
+        """A workbook delete removes its queries the same way, and each test here
+        cleans up through it."""
         query = self.script_query("Script Secret Deleted")
         other = self.script_query("Script Secret Kept")
 
@@ -950,8 +930,6 @@ class AVariableSecretGoesWithItsVariable(InsightsIntegrationTestCase):
 
     # @feature query.script-variables
     def test_removing_a_variable_clears_its_secret(self):
-        """`InsightsQueryv3.on_update`, reached from the query editor's save of
-        its variables. The variable left on the query keeps its own."""
         query = self.script_query("Script Secret Removed")
         query.append("variables", {"variable_name": "kept", "variable_value": "still"})
         query.save(ignore_permissions=True)
@@ -965,8 +943,6 @@ class AVariableSecretGoesWithItsVariable(InsightsIntegrationTestCase):
 
     # @feature query.script-variables
     def test_a_migrate_clears_the_secrets_a_deleted_variable_left(self):
-        """`insights.patches.delete_orphaned_variable_secrets`, run once by
-        `bench migrate`. The variable still on a query keeps its value."""
         from frappe.utils.password import set_encrypted_password
 
         from insights.patches.delete_orphaned_variable_secrets import execute

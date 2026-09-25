@@ -13,18 +13,15 @@ import DashboardItemActions from './DashboardItemActions.vue'
 import DashboardText from './DashboardText.vue'
 import type { DashboardCellProps } from './view'
 
-// One cell of a dashboard grid, as its author gets it: the same card a reader
-// sees, drawn from the config being edited, with the affordances to change it.
+// A grid cell in the builder: the card a reader sees, rendered from the config
+// being edited, with the controls to change it.
 //
-// It takes the page's own cell props, because the body passes the same ones to
-// whichever cell it was mounted with. What it edits it reaches through the store
-// the builder provides, which carries the whole document rather than what a
-// reader is given of it.
+// It edits through the store the builder provides. The store holds the whole
+// document, not only what a reader gets.
 const props = defineProps<DashboardCellProps>()
 
-// the live document item, which is what the editors below write to. The page
-// hands it over as a reader would read it, because that is the one shape both
-// sources answer with.
+// The editors below write to the document item itself. The page passes it in
+// the reader's shape, because both the view and the builder use that shape.
 const item = computed(() => props.item as unknown as WorkbookDashboardItem)
 
 const dashboard = inject('dashboard') as Dashboard

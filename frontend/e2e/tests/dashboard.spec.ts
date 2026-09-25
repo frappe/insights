@@ -455,8 +455,7 @@ test.describe('dashboard', () => {
 		await page.getByRole('button', { name: 'Edit', exact: true }).click()
 		await expect(items(page)).toHaveCount(0)
 
-		// An empty dashboard draws no grid, only its empty state, and that sits
-		// inside the box that takes the drop.
+		// An empty dashboard shows no grid. Its empty state is inside the drop target.
 		const grid = page.getByText('This dashboard is empty')
 		await page.getByRole('link', { name: chart.title }).dragTo(grid)
 
@@ -500,14 +499,14 @@ test.describe('dashboard', () => {
 		await page.goBack()
 		await expect(items(page).filter({ hasText: chart.title })).toHaveCount(1)
 
-		// locator: the page header has no landmark role, and its overflow menu is
-		// an icon-only Button with no accessible name. It sits beside Refresh.
+		// The page header has no landmark role, and its overflow menu is an
+		// icon-only Button with no accessible name. So find it beside Refresh.
 		await page
 			.getByRole('button', { name: 'Refresh', exact: true })
 			.locator('xpath=..')
 			.locator('button[aria-haspopup="menu"]')
 			.click()
-		// the builder is workbook-scoped, so editing is how a reader opens the workbook
+		// The builder belongs to the workbook, so Edit opens the workbook.
 		await page.getByRole('menuitem', { name: 'Edit' }).click()
 
 		await expect(page).toHaveURL(

@@ -15,9 +15,9 @@ import {
 import { filterIconClass } from './filter_icons'
 import { watchFilterDefault, type DashboardView, type DashboardViewItem } from './view'
 
-// One filter cell, on every surface that draws a dashboard. Where its state
-// lives and which column it lands on are the page's: the builder keeps both in
-// its store, a view surface asks the server by filter name.
+// A filter cell, on every dashboard page. The page owns the filter's state and
+// its column. The builder keeps both in its store. A view page asks the server
+// by filter name.
 const props = defineProps<{ item: DashboardViewItem; dashboard: DashboardView }>()
 
 // Derived, not copied: a key the editor removes has to leave the local view too,
@@ -72,7 +72,7 @@ function setFilter(operator?: FilterOperator, value?: FilterValue) {
 	props.dashboard.setFilter(filter.value.filter_name, operator ? { operator, value } : undefined)
 }
 
-// not on mount — the state the store restored is what stands
+// not on mount, so the restored state is kept
 watchFilterDefault(() => filter.value, setFilter)
 
 const filters = computed<Filter[]>({

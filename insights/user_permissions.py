@@ -3,27 +3,28 @@
 
 """The User Permissions that narrowed the rows an execution returned.
 
-A scoped number reads as the whole one — a Sales User restricted to Territory
-North sees "Revenue" and takes it for the company's. So the card says which
-access narrowed it. See `docs/adr/a-reader-never-sees-a-false-empty.md`.
+A narrowed number looks like the total. A Sales User limited to Territory North
+sees "Revenue" and takes it for the company's. So the card says which
+permissions narrowed it. See `docs/adr/a-reader-never-sees-a-false-empty.md`.
 
-Only a real User Permission record is named. A role's match condition narrows
-the rows too, but it is not a grant anybody holds a document for, and there is
-nothing to name. Insights' own narrowing names nothing either, so the card says
-only that the reader's permissions narrowed it: a team's Table Restriction that
-cuts the rows the reader reads, and a column the per-cell rule blanks on the rows
-only desk admits, when the execution reads that column. Desk's own row narrowing
-never marks, and neither does a grant that only adds rows to desk's.
+Only a real User Permission record is named. A role's match condition also
+narrows the rows, but it names no document, so there is nothing to show.
+Insights' own narrowing names nothing either, so the card says only that the
+reader's permissions narrowed it. That covers two cases: a team's Table
+Restriction that removes rows the reader reads, and a column that the per-cell
+rule blanks on rows only desk admits, when the execution reads that column.
+Desk's own row narrowing never sets this mark. Neither does a grant that only
+adds rows to what desk allows.
 
-Every entry carries the user it was applied to, because an execution does not
-always run as the reader: a Public chart runs as its owner, an alert as the user
-it was enabled by. Those grants name documents — a customer, a company, a
-territory — that the reader was never published, and they are not a restriction
-the reader holds. So the mark is read back for one user, and an execution that
-ran as somebody else has nothing to say to this one.
+Every entry records the user it applied to, because an execution does not
+always run as the reader. A Public chart runs as its owner, and an alert as the
+user who enabled it. Their User Permissions name documents (a customer, a
+company, a territory) that the reader was never shown, and they are not the
+reader's restriction. So the record is read back for one user, and an
+execution that ran as another user reports nothing to this one.
 
-Recorded where the row filter is built, because that is the only place that
-knows what frappe applied, and read back after the query has run.
+Recorded where the row filter is built, because only that code knows what
+frappe applied. Read back after the query runs.
 """
 
 import frappe
@@ -38,7 +39,7 @@ BLANKED = "insights_blanked_by_permissions"
 
 
 def forget() -> None:
-    """Drop what the last build applied, so one build never answers for another."""
+    """Clear the last build's records, so one build never reports for another."""
     setattr(frappe.local, APPLIED, {})
     setattr(frappe.local, NARROWED, set())
     setattr(frappe.local, BLANKED, [])
@@ -47,8 +48,9 @@ def forget() -> None:
 def record_blanked(user: str, relation: ops.Relation, columns: list[str]) -> None:
     """Record that `relation` blanks `columns` on some rows for `user`.
 
-    A table carries every column it is read with, so whether this narrowed
-    anything is known only once the execution is: `record_blanked_reads`.
+    The relation keeps these columns whether or not the query uses them. So
+    whether this narrowed anything is known only from the whole query; see
+    `record_blanked_reads`.
     """
     blanked = getattr(frappe.local, BLANKED, None)
     if blanked is None:
@@ -58,7 +60,7 @@ def record_blanked(user: str, relation: ops.Relation, columns: list[str]) -> Non
 
 
 def record_blanked_reads(query) -> None:
-    """Record the narrowing of each blanked column the execution of `query` reads."""
+    """Record a narrowing for each blanked column that `query` reads."""
     for user, relation, columns in getattr(frappe.local, BLANKED, None) or []:
         if reads_columns(query.op(), relation, columns):
             record_narrowed(user)
@@ -67,10 +69,10 @@ def record_blanked_reads(query) -> None:
 def reads_columns(root: ops.Relation, relation: ops.Relation, columns: set[str]) -> bool:
     """Whether the rows of `root` read one of `columns` of `relation`.
 
-    Walked down from `root`, carrying the columns each relation is read for: a
-    projection hands on only what the columns asked of it are made of, so a
-    column no later step reads is not read, though the relation still carries
-    it. A relation this does not know is read for every column it has.
+    Walks down from `root`, tracking which columns each relation is read for.
+    A projection passes on only the columns its outputs are computed from. So a
+    column no later step reads is not read, even though the relation still has
+    it. An unknown relation is read for all its columns.
     """
     needed: dict[ops.Relation, set[str]] = {}
     pending = [(root, set(root.schema.names))]
@@ -89,7 +91,7 @@ def reads_columns(root: ops.Relation, relation: ops.Relation, columns: set[str])
 
 def _read_from(node: ops.Relation, names: set[str], first: bool) -> list[tuple[ops.Relation, set[str]]]:
     """The relations `node` reads, and for which columns, when asked for `names`.
-    What decides which rows it has is asked on the `first` visit only."""
+    The parts that decide which rows it has are read on the `first` visit only."""
     values: list = []
     passed: list[tuple[ops.Relation, set[str]]] = []
 
@@ -110,8 +112,8 @@ def _read_from(node: ops.Relation, names: set[str], first: bool) -> list[tuple[o
     elif isinstance(node, ops.Set) and not node.distinct:
         passed = [(node.left, names), (node.right, names)]
     else:
-        # a distinct, a sampled or a raw SQL relation, and any other: it reads
-        # every column of what it is built on
+        # a distinct, sampled or raw SQL relation, or any other: it reads every
+        # column of its inputs
         passed = [
             (child, set(child.schema.names)) for child in node.__children__ if isinstance(child, ops.Relation)
         ]
@@ -139,7 +141,7 @@ def _fields_of(value: ops.Node) -> list[tuple[ops.Relation, set[str]]]:
 
 
 def record_narrowed(user: str) -> None:
-    """Record that a grant's restriction narrowed the rows or cells this build gave `user`."""
+    """Record that a restriction narrowed the rows or cells this build returned for `user`."""
     narrowed_for = getattr(frappe.local, NARROWED, None)
     if narrowed_for is None:
         narrowed_for = set()
@@ -148,8 +150,8 @@ def record_narrowed(user: str) -> None:
 
 
 def record(user: str, match_filters: dict[str, list[str]]) -> None:
-    """Take one of frappe's own `DatabaseQuery.match_filters` entries, for the
-    user the build applied it to."""
+    """Merge one of frappe's `DatabaseQuery.match_filters` entries, for the user
+    the build applied it to."""
     applied_for = getattr(frappe.local, APPLIED, None)
     if applied_for is None:
         applied_for = {}
@@ -161,18 +163,18 @@ def record(user: str, match_filters: dict[str, list[str]]) -> None:
 def narrowing(doctype: str, user: str, parent_doctype: str | None = None) -> dict[str, list[str]]:
     """The User Permissions frappe applies to a list of `doctype` for `user`.
 
-    Frappe records this itself, as `DatabaseQuery.match_filters`, but only the
-    legacy query implementation exposes it and `frappe.get_list` no longer runs
-    that one. Reading the same answer off the public `get_user_permissions`
-    keeps the row filter every chart stands on with `get_list`: the supported
-    path should report what it applied, and that is a change for frappe.
+    Frappe records this as `DatabaseQuery.match_filters`, but only its legacy
+    query implementation sets it, and `frappe.get_list` no longer uses that
+    one. This reads the same answer from the public `get_user_permissions`, so
+    every chart's row filter stays on `get_list`. The supported path should
+    report what it applied; that is a change for frappe.
 
-    Read about the doctype frappe decides on, and read the way it reads: every
-    Link field of that doctype, plus the doctype itself under `name`, minus the
-    fields that opt out. A child table is decided on by its parent - frappe sets
-    `permission_doctype = parent_doctype or doctype` and never looks at the
-    child's own links - so a grant on a field only the parent links narrows the
-    rows, and one on a field only the child links narrows nothing.
+    It reads the doctype frappe checks, the way frappe reads it: every Link
+    field of that doctype, plus the doctype itself as `name`, minus the fields
+    that opt out. Frappe checks a child table against its parent
+    (`permission_doctype = parent_doctype or doctype`) and ignores the child's
+    own links. So a User Permission on a field only the parent links narrows
+    the rows, and one on a field only the child links narrows nothing.
     """
     permission_doctype = parent_doctype or doctype
 
@@ -180,9 +182,9 @@ def narrowing(doctype: str, user: str, parent_doctype: str | None = None) -> dic
     if not held:
         return {}
 
-    # the two places frappe cuts the rows by something else and skips user
-    # permissions entirely. Naming them anyway tells the reader a restriction
-    # they hold narrowed a number that owner or sharing narrowed
+    # frappe skips User Permissions in these two cases and narrows by owner or
+    # by shares instead. Naming them would blame the reader's restriction for
+    # a narrowing it did not cause
     role_permissions = frappe.permissions.get_role_permissions(permission_doctype, user=user)
     if not (role_permissions.get("read") or role_permissions.get("select")):
         return {}
@@ -197,7 +199,8 @@ def narrowing(doctype: str, user: str, parent_doctype: str | None = None) -> dic
         if field.get("ignore_user_permissions"):
             continue
 
-        # a permission cut for one doctype narrows that doctype's own list
+        # a User Permission applies only to the doctype in its `applicable_for`,
+        # or to every doctype when that is empty
         documents = [
             permission["doc"]
             for permission in held.get(field.get("options")) or []
@@ -210,11 +213,11 @@ def narrowing(doctype: str, user: str, parent_doctype: str | None = None) -> dic
 
 
 def scope(user: str) -> dict:
-    """What narrowed this execution for `user`, as a card's answer carries it.
+    """What narrowed this execution for `user`, in the shape a card's answer carries.
 
-    `user_permissions`, one entry per doctype in a stable order, and
-    `narrowed_by_permissions` for a narrowing with nothing to name. Empty when
-    nothing narrowed it, so a card that has no scope is the card it was.
+    `user_permissions` has one entry per doctype, in a stable order.
+    `narrowed_by_permissions` marks a narrowing with nothing to name. Empty
+    when nothing narrowed it, so the card shows no scope.
     """
     recorded = (getattr(frappe.local, APPLIED, None) or {}).get(user) or {}
     answer = {}

@@ -36,10 +36,7 @@ frappe-ui in `frontend/src2/`, built with Vite.
 
 ### Issue tracker
 
-Markdown under `docs/projects/<effort>/` — a decision map plus one ticket per
-question. `docs/projects` is an untracked symlink to `~/frappe/workshop/efforts/insights/`,
-and the ADR is what survives in this repo. GitHub Issues on `frappe/insights` is the public
-queue, not this tracker. See `docs/agents/issue-tracker.md`.
+Markdown under `docs/projects/<effort>/` — a decision map plus one ticket per question. `docs/projects` is an untracked symlink to `~/frappe/workshop/efforts/insights/`. Of an effort, only its ADRs are committed to this repo. GitHub Issues on `frappe/insights` is the public queue, not this tracker. See `docs/agents/issue-tracker.md`.
 
 ### Tests
 

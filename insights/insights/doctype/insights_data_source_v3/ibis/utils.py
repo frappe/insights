@@ -26,12 +26,13 @@ IO_ATTRIBUTE_NAMES = frozenset(
     }
 )
 
-# `op()` leads to the backend a relation runs on, and through it to the
-# connection, where any statement runs. The node graph is the only way there.
+# `op()` leads to the backend a relation runs on, and from there to the
+# connection, which runs any statement. These names are the only path from an
+# expression to it.
 BACKEND_ATTRIBUTE_NAMES = frozenset(
     {"op", "source", "raw_sql", "con", "get_backend", "cache", "release", "visualize"}
 )
-# what runs or compiles the query in hand: a script may, an expression describes it
+# these run or compile the query. A script may call them; an expression only describes a query
 RUN_ATTRIBUTE_NAMES = frozenset({"execute", "compile", "preview"})
 
 

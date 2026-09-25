@@ -110,14 +110,14 @@ export type DrillDownResolvers = Record<
  */
 export type ChartFailure = {
 	/**
-	 * Which state this is. Not Permitted is an answer and not a fault: the card
-	 * draws a lock instead of the red mark, and offers no retry, because the
-	 * reader owns no permission they could change. Left out reads as `failed`.
+	 * Not Permitted is an answer, not an error. The card shows a lock instead of
+	 * the red mark and offers no retry, because the reader cannot change their
+	 * own permissions. Undefined means `failed`.
 	 */
 	kind?: 'failed' | 'notPermitted'
 	/** What happened, in one line. It is the part that survives the smallest card. */
 	headline: string
-	/** Why, as text. Left out when the reader is not the one who can act on it. */
+	/** Left out when the reader cannot act on it. */
 	detailText?: string
 }
 

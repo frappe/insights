@@ -6,7 +6,8 @@ import { chartPreviewKey } from '../chart_preview'
 const props = defineProps<{ title: string; collapsed?: boolean }>()
 
 const toggled = ref(props.collapsed ?? false)
-// a form its reader may not write cannot be clicked, so every section is open
+// a user who cannot write the chart cannot click the form, so every section
+// stays open
 const preview = inject(chartPreviewKey, undefined)
 const collapsed = computed(() => toggled.value && preview?.doc.can_write !== false)
 </script>

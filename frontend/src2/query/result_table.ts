@@ -27,10 +27,8 @@ export type ResultTable = {
 	// the operations behind the rows, which is where the sort arrows are read from
 	currentOperations?: Operation[]
 
-	// The find, where the source narrows the rows itself. Without `setFind` the
-	// find is the pane's own and reaches only the rows already loaded; with it,
-	// the term is a question for whoever produced them and the whole result is
-	// what gets narrowed.
+	// Find on the source. With `setFind`, the source searches the whole result.
+	// Without it, the pane searches only the rows already loaded.
 	findTerm?: string
 	setFind?: (term: string) => void
 

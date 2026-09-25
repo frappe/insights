@@ -3,10 +3,8 @@ import type { Filter } from '../../components/filter_picker/filter_picker'
 import type { DrillLevelData, DrillRowFilter, DrillRowsReading } from './drill_stack'
 import { makeDrillRows } from './rows_view'
 
-// The reader's rows level. A View never receives the pipeline, so the filters,
-// the sort, the find and the page are questions for the server — these pin that
-// each one asks the right question, and that the level a slower answer was for
-// cannot land under a newer one.
+// The rows level in a View. A View never receives the pipeline, so the server
+// applies the filters, sort, find and page.
 
 const columns = [
 	{ name: 'name', type: 'String' as const },
@@ -25,11 +23,11 @@ function answer(over: Partial<DrillLevelData> = {}): DrillLevelData {
 	}
 }
 
-// a reading arrives as Vue's own reactive array, which no structured clone will
-// take, so what is recorded is a flat copy of the question as it was asked
+// A reading arrives as a Vue reactive array, which structured clone rejects.
+// So the test records a plain copy.
 const copyOf = (reading: DrillRowsReading): DrillRowsReading => JSON.parse(JSON.stringify(reading))
 
-/** One rule as the picker holds it: a whole column, not a name. */
+/** The filter picker holds a whole column, not a column name. */
 function rule(column: string, operator: any, value: any): Filter {
 	return {
 		column: columns.find((c) => c.name === column)!,
@@ -38,7 +36,6 @@ function rule(column: string, operator: any, value: any): Filter {
 	}
 }
 
-/** A server that records what it was asked and answers whatever it is told to. */
 function server(...answers: DrillLevelData[]) {
 	const asked: DrillRowsReading[] = []
 	const downloads: { reading: DrillRowsReading; format: string }[] = []
@@ -59,8 +56,7 @@ function server(...answers: DrillLevelData[]) {
 		},
 		download: (reading: DrillRowsReading, format: string) => {
 			downloads.push({ reading: copyOf(reading), format })
-			// never settles: the call is what this pins, and what happens to the
-			// bytes afterwards is the browser's
+			// never resolves: the tests check only the call
 			return new Promise<string>(() => {})
 		},
 	}
@@ -103,7 +99,6 @@ describe('the rows behind a segment, as a reader reads them', () => {
 			{ column: 'customer', direction: 'asc' },
 			{ column: 'total', direction: 'desc' },
 		])
-		// the arrows the grid draws are read off these
 		expect(rows.currentOperations).toEqual([
 			{
 				type: 'order_by',
@@ -138,7 +133,6 @@ describe('the rows behind a segment, as a reader reads them', () => {
 
 		rows.setFind!('che')
 		rows.setFind!('chetak')
-		// the box is live while the question waits
 		expect(rows.findTerm).toBe('chetak')
 		expect(source.asked).toEqual([])
 
@@ -195,15 +189,14 @@ describe('the rows behind a segment, as a reader reads them', () => {
 		expect(source.asked.at(-1)!.row_filters).toEqual([
 			{ column: 'customer', operator: 'in', value: ['Chetak Traders'] },
 		])
-		// narrower rows are a different first page, and page four of them is an
-		// arbitrary stretch of a result the reader has not seen
+		// Filtered rows are a new result. Its page four means nothing to the reader.
 		expect(source.asked.at(-1)!.page).toBe(1)
 	})
 
 	// @feature charts.drill-rows-filter charts.drill-rows-reading
 	it('holds the answer the reader’s own reading last asked for', async () => {
-		// `BuilderDrillDown.vue` opens a level as a query with this answer's
-		// `operations`, so the query holds the rows on screen and not the first cut
+		// `BuilderDrillDown.vue` opens a level as a query from these `operations`.
+		// So they must match the filtered rows on screen, not the first response.
 		const filtered = answer({
 			operations: [{ type: 'source' } as any, { type: 'filter' } as any],
 		})
@@ -225,8 +218,8 @@ describe('the rows behind a segment, as a reader reads them', () => {
 		await flush()
 		await rows.valuesProvider(columns[1])('che')
 
-		// the rule on this column has narrowed the rows to the value it holds, so
-		// reading the offer through it would make a second value unpickable
+		// The rule on this column leaves only its own value in the rows. Applied to
+		// the value list, it would hide every other value from the picker.
 		expect(source.offers).toEqual([
 			{
 				column: 'customer',
@@ -276,7 +269,6 @@ describe('the rows behind a segment, as a reader reads them', () => {
 		rows.setFilters([rule('customer', 'in', ['Chetak Traders'])])
 		rows.exportResults!('csv', 'export_1_1_2026')
 
-		// the file is the cut on screen: the same rules, the same sort, the same find
 		expect(source.downloads).toEqual([
 			{
 				reading: {

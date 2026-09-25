@@ -69,10 +69,11 @@ class InsightsDashboardv3(Document):
         self.set_linked_charts()
 
     def drop_deleted_charts(self):
-        """A cell naming a chart that no longer exists is not saved.
+        """Remove cells whose chart no longer exists.
 
-        A chart's delete takes its cells off every dashboard, and a tab that
-        loaded the grid before it sends them back.
+        Deleting a chart removes its cells from every dashboard. A browser tab
+        that loaded the grid before the delete still has them, and sends them
+        back on save.
         """
         items = frappe.parse_json(self.items) or []
         named = {item.get("chart") for item in items if item.get("type") == "chart"}
@@ -115,8 +116,8 @@ class InsightsDashboardv3(Document):
         )
 
         standard.guard_member(self)
-        # a copy of the workbook's flag, so the workbook writes it and a request
-        # never does - it decides whether the site may change this dashboard
+        # copied from the workbook, never from the request. It decides whether
+        # the site may change this dashboard
         self.is_standard = standard.is_standard_member(self)
         check_dashboard_chart_access(self)
         validate_visibility(self)
@@ -195,12 +196,12 @@ class InsightsDashboardv3(Document):
         self.enqueue_update_dashboard_preview()
 
     def set_route(self):
-        """Give every dashboard a readable key for external links.
+        """Set a readable `route` for external links.
 
-        The route is derived from the title only when it is empty, so renaming a
-        dashboard leaves an already-published link working. Clearing the route
-        asks for a fresh one. It stays unique with a numbered suffix - nothing
-        internal points at a route, so a suffix costs a bookmark at worst.
+        The route comes from the title only when it is empty, so a rename keeps
+        published links working. Clear the route to get a new one. A numbered
+        suffix keeps it unique. Nothing in the app links by route, so at worst
+        a suffix breaks a bookmark.
         """
         route = cleanup_page_name(self.route or self.title)
         if not route:
@@ -209,13 +210,14 @@ class InsightsDashboardv3(Document):
         self.route = self.unique_route(route)
 
     def unique_route(self, route: str) -> str:
-        """`route`, suffixed until no other dashboard answers to it.
+        """`route` with a numbered suffix, until no other dashboard has it as
+        its route or its name.
 
-        Against docnames as well as routes. A standard workbook renames its
-        members to readable slugs, so the two draw from one keyspace now, and
-        `resolver.resolve` tries a docname first: a site dashboard titled like a
-        shipped one would otherwise mint a route that opens the shipped one, for
-        every workspace sidebar item that uses it.
+        A standard workbook names its members with readable slugs, so a route
+        can equal another dashboard's name. `resolver.resolve` tries the name
+        first. Without the name check, a site dashboard with the same title as
+        a shipped one gets a route that opens the shipped one, from every
+        workspace sidebar item that links to it.
         """
         candidate, suffix = route, 0
         while self.answered_by_another(candidate):
@@ -244,20 +246,19 @@ class InsightsDashboardv3(Document):
         self.set("linked_charts", [{"chart": chart} for chart in charts])
 
     def routing_table(self) -> str:
-        """The `items` a filter is routed by: the grid in hand, or the stored one.
+        """The `items` to route filters by: the request's, or the stored ones.
 
-        `run_doc_method` builds `self` out of the request body, so the grid in
-        hand is the caller's. That is the builder editing a grid it has not
-        saved, and it is the one thing a routing table may be - for a caller who
-        may save it. For anyone else it would be a forged link, narrowing a
-        published filter's list by a column nobody published, so they are routed
-        by the row.
+        `run_doc_method` builds `self` from the request body, so `self.items`
+        is the caller's. For the builder, that is its unsaved grid. A caller who
+        may save the dashboard is routed by it. Anyone else is routed by the
+        stored items. Otherwise they could send a forged link and narrow a
+        filter's values by a column the dashboard does not show.
 
-        Asked by name, because `self` is the very document in question:
-        `has_doc_permission` reads `owner` and `__islocal` off whatever it is
-        handed, and `BaseDocument.update` copies both off the payload, so
-        `self.has_permission` answers yes to anyone who says so. The rule is
-        `insights.api.check_stored_document`'s - decide against the stored row.
+        The permission check uses the name, not `self`. `has_doc_permission`
+        reads `owner` and `__islocal` from the document it gets, and
+        `BaseDocument.update` copies both from the request. So
+        `self.has_permission` would admit anyone who sends them. This follows
+        `insights.api.check_stored_document`: decide against the stored row.
         """
         if frappe.has_permission(self.doctype, ptype="write", doc=self.name):
             return self.items
@@ -265,8 +266,8 @@ class InsightsDashboardv3(Document):
         return frappe.db.get_value(self.doctype, self.name, "items")
 
     def lookup_filter(self, filter_name: str, lookup: Callable, missing: Callable):
-        """Answer `lookup(chart, query, column)` for a named filter on this
-        dashboard, from the first link that answers the caller.
+        """Call `lookup(chart, query, column)` for the first link of the named
+        filter that the caller is not refused.
 
         The stored items, deliberately. This is what decides which column a
         caller may ask for at all, so it is read from the row rather than from
@@ -274,27 +275,24 @@ class InsightsDashboardv3(Document):
         caller that names the filter never has to be handed the link that says
         where it lands.
 
-        The link must land where the card already draws from: `chart_reads`.
-        That holds whoever the caller is, which is what makes it the real rule —
-        a link naming a query the card never reads is asking about rows this
-        dashboard never published.
+        The link must name a query the chart reads (`chart_reads`). This holds
+        for every caller. A link to any other query would ask about rows this
+        dashboard does not show.
 
-        And the caller must be able to read the chart, which authorises every
-        query its pipeline reads - not the query's own grant, which a reader a
-        level alone admits does not hold. Asked of the caller: `can_read_chart`
-        reads the ambient user, so asking it inside `runs_as` would ask the
-        chart's owner. The lookup then runs as whoever the chart runs as, so
-        the values are the ones that card's rows came from.
+        The caller must also be able to read the chart. That covers every query
+        the chart reads. The query's own permission is not checked, because a
+        reader admitted only by a visibility level has none. `can_read_chart`
+        checks the session user, so it runs before `runs_as`. Inside `runs_as`
+        it would check the chart's owner. The lookup runs as the chart runs, so
+        the values come from the same rows as the card.
 
-        A link the caller is refused is skipped, the way a structurally bad one
-        is: a chart they may not read, and a card over a table they may not
-        read, whose refusal comes from the lookup itself. One refused link
-        does not refuse the links behind it.
+        A refused link is skipped like a malformed one, and the next link is
+        tried. A link is refused when the caller may not read its chart, or
+        when the lookup raises Not Permitted for a table they may not read.
 
-        A filter every link of which is refused is a refusal and not a missing
-        filter, so it goes out the way every other refusal behind an admitted
-        dashboard does: the picker answers an empty list. A filter with no link
-        at all answers `missing()`.
+        If every link is refused, that is a refusal, not a missing filter. It
+        answers like any other refusal on a dashboard the caller may read: an
+        empty list. A filter with no usable link calls `missing()`.
         """
         from insights.not_permitted import NotPermitted, forget_refusal, refuse
         from insights.permissions import can_read_chart
@@ -339,17 +337,15 @@ class InsightsDashboardv3(Document):
     ):
         """The values one of this dashboard's filters offers.
 
-        Who may read this dashboard was settled before this ran — the builder
-        reaches it through `run_doc_method` and a reader through
-        `insights.api.view.get_filter_values`. The read is the whole gate, so
-        this reaches the query's plain method: a reader who may see this
-        dashboard can hold no Insights role at all.
+        Read access to the dashboard is checked before this runs. The builder
+        calls it through `run_doc_method`, and a reader through
+        `insights.api.view.get_filter_values`. That check is the only gate, so
+        this calls the query's method directly. A reader of this dashboard may
+        have no Insights role.
 
-        Whitelisted, so this is a wire surface, and `answers_refusal` belongs on
-        a wire surface: a card behind a table the caller may not read answers an
-        empty list here exactly as it does through `insights.api.view`, whose
-        twin of this the reader's own picker calls. One refusal, one answer,
-        whichever surface asked.
+        `answers_refusal` is here because the method is whitelisted. A card
+        over a table the caller may not read then answers an empty list, the
+        same as through `insights.api.view`.
         """
         adhoc_filters = self._filter_context_filters(filter_name, filter_context)
         return self.lookup_filter(
@@ -361,18 +357,16 @@ class InsightsDashboardv3(Document):
         )
 
     def _filter_context_filters(self, filter_name: str, filter_context: dict | None = None):
-        """What the rest of the grid narrows one of this dashboard's own filters by.
+        """The rest of the grid's filters, routed, to narrow one of this
+        dashboard's filters.
 
-        `filter_context` is what the rest of the grid currently holds, unrouted:
-        the `chart` the links are followed under, and the `filters` state. This
-        filter is left out of its own list, or picking a second value would be
-        impossible.
+        `filter_context` holds the grid's current state, unrouted: the `chart`
+        whose links to follow, and the `filters` state. This filter is left
+        out, or a second value could never be picked.
 
-        The routing table is this document's own `items`, never the request's: a
-        link names a query and a column, and a forged one would narrow this list
-        by a column nobody published. The builder's unsaved grid still routes,
-        because `run_doc_method` builds `self` out of its request body - see
-        `routing_table`.
+        The links come from `routing_table`, not from `filter_context`. A link
+        names a query and a column, and a forged one would narrow this list by
+        a column the dashboard does not show.
         """
         if not filter_context:
             return None
@@ -465,14 +459,13 @@ class InsightsDashboardv3(Document):
 
     @frappe.whitelist()
     def update_access(self, data: dict | str):
-        """The people named on this dashboard, and nobody else.
+        """Share this dashboard with exactly the listed users.
 
-        A share names a person. Who else may read is `visibility`, an ordinary
-        field the dialog saves with the rest of the document, so this method
-        never widens reach beyond the list it is given - and `validate_shareable_
-        users` says who may be in that list, the same answer the workbook's own
-        share surface asks. Without it the only thing between a portal user and
-        the owner's rows as a file was the client picker's contents.
+        This only adds and removes shares. `visibility` is a separate field
+        that the dialog saves with the document. `validate_shareable_users`
+        decides who may be in the list, as it does for workbook shares. Without
+        it, only the client's user picker stopped a share to a portal user, who
+        could then download the owner's rows.
         """
         from insights.permissions import validate_shareable_users
 
@@ -491,9 +484,9 @@ class InsightsDashboardv3(Document):
             },
             fields=["name", "user"],
         )
-        # the dialog posts back every share it was shown, and keeping one names
-        # nobody: a share from before the rule, or to someone who has since
-        # left Insights, would otherwise refuse every later save
+        # the dialog sends back every existing share, so check only new users.
+        # Otherwise an old share, made before this check or to a user who has
+        # since left Insights, would block every later save
         validate_shareable_users(set(people_with_access) - {share.user for share in existing_shares})
 
         # remove all existing shares that are not in the new list
@@ -546,17 +539,18 @@ def _filter_is_set(state: dict) -> bool:
 
 
 def chart_reads(chart: str, query: str) -> bool:
-    """Whether a filter on `chart` may link `query`.
+    """Whether a filter on `chart` may link to `query`: the chart's query, or
+    one it reads.
 
-    A link is a routing instruction and nothing else: `route_filters` keys the
-    filter group by the query the link names, and the build applies that group
-    when it reaches that query. So a query the chart never reads routes nowhere,
-    and naming one is the only way a filter can ask a question about rows the
-    dashboard never published — read under whoever the card runs as.
+    `route_filters` keys each filter group by the query its link names, and
+    the build applies the group when it reaches that query. A link to a query
+    the chart does not read changes nothing on the chart. But a filter's value
+    lookup would still run that query, as the chart runs, over rows the
+    dashboard does not show.
 
-    Links are written by whoever may save the dashboard, and an `edit` share on
-    a workbook hands that to every member, so this is checked where the link is
-    followed rather than where it is written.
+    Anyone who may save the dashboard can write links, and an `edit` share on
+    the workbook gives that to every member. So this is checked where a link
+    is followed, not where it is saved.
     """
     source = frappe.db.get_value("Insights Chart v3", chart, "query")
     if not source:
@@ -570,11 +564,10 @@ def route_filters(
 ) -> dict | None:
     """Dashboard filter state, routed to the queries the filters are linked to.
 
-    One router for every surface. A reader names a saved dashboard and the read
-    path hands over its stored items. The builder is editing items it has not
-    saved yet, so it sends those instead. Routing is the same either way, and it
-    belongs on this side: a link names a query and a column, and that is exactly
-    what a reader is never given.
+    Every caller routes through here. For a reader, the saved dashboard's
+    items are passed. The builder passes its unsaved items. Routing runs on the
+    server because a link names a query and a column, and a reader is never
+    sent those.
 
     `exclude_filter` leaves one filter out. A filter offering its own values
     must not narrow them by what it currently holds, or picking a second value
@@ -599,8 +592,8 @@ def route_filters(
 
 
 def routed_filter_links(items, chart: str, filter_states: dict | None, exclude_filter: str | None = None):
-    """Each set dashboard filter linked to `chart`, as `(filter name, query,
-    column, state)`: where `route_filters` lands it."""
+    """Yield `(filter name, query, column, state)` for each set dashboard
+    filter linked to `chart`."""
     if not filter_states:
         return
 
@@ -676,11 +669,11 @@ def card_filter_source(chart: str, column: str) -> tuple[str | None, str | None,
 
 
 def can_filter_card(chart: str) -> bool:
-    """May this reader put a filter of their own on the card?
+    """Whether the reader may add their own filter to the card.
 
-    It slices the rows behind the chart another way, as a breakdown does, so
-    `can_read_rows` answers it. The dashboard's filters are its workbook's,
-    not the reader's, and are routed by `route_filters` instead.
+    A card filter cuts the chart's rows another way, as a drill breakdown
+    does, so `can_read_rows` decides. Dashboard filters are set by the author
+    and go through `route_filters` instead.
     """
     from insights.permissions import can_read_rows
 

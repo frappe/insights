@@ -88,8 +88,8 @@ class InsightsChartv3(Document):
         standard.guard_member(self)
         before = self.get_doc_before_save()
         check_trusted_code_author([(self.title, self.config, before and before.config)])
-        # a copy of the workbook's flag, so the workbook writes it and a request
-        # never does - it decides a read past the site's team grants
+        # copied from the workbook, never from the request. A standard chart
+        # reads its tables past the site's team grants
         self.is_standard = standard.is_standard_member(self)
         check_chart_query_access(self)
         validate_visibility(self)
@@ -132,10 +132,10 @@ class InsightsChartv3(Document):
             self.cleanup_empty_folder(self.folder)
 
     def remove_from_dashboards(self):
-        """Take this chart's cells, and the filter links to it, off every dashboard.
+        """Remove this chart's cells and filter links from every dashboard.
 
-        A dashboard's grid links the chart, so the framework refuses the delete
-        while any cell names it - and a chart in use would never be removable.
+        A dashboard's `linked_charts` table links to the chart. Without this,
+        Frappe refuses to delete a chart that any dashboard uses.
         """
         dashboards = frappe.get_all(
             "Insights Dashboard Chart v3",
@@ -183,12 +183,12 @@ class InsightsChartv3(Document):
     ):
         """Fetch this chart's rows under the permissions declared on this document.
 
-        The stored chart is re-read, so it alone decides whose permissions apply
-        and the query that runs under them. A page is as long as the `limit` its
-        author saved, and the first page is the picture: a later one is for a
-        caller `can_read_rows` admits, and anyone else is answered the first.
+        The chart is re-read from its row, so the request cannot change whose
+        permissions apply or which query runs. A page holds the `limit` the
+        author saved. Only a caller that `can_read_rows` admits gets a later
+        page. Anyone else gets the first page.
 
-        Filter state arrives routed, keyed by the queries the links name.
+        `adhoc_filters` arrives already routed, keyed by query name.
 
         `card_filters` is the reader's own filter on this one card. It names a
         column the card draws, and it lands on the card's own derived query, so
@@ -203,8 +203,8 @@ class InsightsChartv3(Document):
         if not can_read_rows(chart):
             page = 1
         page_size = frappe.parse_json(chart.config or "{}").get("limit") or 100
-        # the day every span in this read resolves against. A drill carries it
-        # back, so what is behind the number is cut for the day it was read
+        # every span in this fetch resolves against this day. A drill sends it
+        # back, so the drill cuts rows for the same day
         drawn_on = str(getdate(reading_day()))
         adhoc_filters = route_card_filters(self.name, card_filters, adhoc_filters)
 
@@ -216,15 +216,14 @@ class InsightsChartv3(Document):
                 page_size=page_size,
                 adhoc_filters=adhoc_filters,
             )
-            # read before the sparkline runs: a second build answers for itself.
-            # For the reader at the keyboard only - a chart that ran as its owner
-            # narrowed by the owner's grants, which name documents this reader
-            # was never published and a restriction they do not hold
+            # read before the sparkline runs, because each build clears what the
+            # last one recorded. Only the session user's scope is sent. A Run as
+            # owner chart is narrowed by the owner's user permissions, and those
+            # name documents this reader may not see
             scope = user_permissions.scope(frappe.session.user)
             sparkline = chart.get_sparkline_data(force=force, adhoc_filters=adhoc_filters)
-        # A reading surface answers with rows and nothing about how they were
-        # fetched. The SQL names tables, joins and columns the reader was never
-        # published, and `insights.api.view` opens this to a guest.
+        # The SQL names tables, joins and columns the reader may not see, and
+        # `insights.api.view` serves this to a Guest.
         result.pop("sql", None)
 
         result["rows"] = chart.periods_oldest_last(result["rows"])
@@ -236,8 +235,8 @@ class InsightsChartv3(Document):
         if links := record_links(operations, result["columns"]):
             result["record_links"] = links
 
-        # what of the reader's own narrowed these rows. A scoped number reads as
-        # the whole one, so the card has to be able to say
+        # the reader's user permissions that narrowed these rows. Without it, a
+        # narrowed number looks like the total
         result["scope"] = scope
 
         if sparkline:
@@ -253,11 +252,11 @@ class InsightsChartv3(Document):
         card_filters: list | None = None,
         force: bool = False,
     ) -> int:
-        """How many rows the pages of `fetch` are cut from, under the same filters.
+        """The total row count behind the pages of `fetch`, under the same filters.
 
-        More than the picture, so only for a caller `can_read_rows` admits. Asked
-        of this document, which a view reads from its row and the builder
-        builds from the shape it is editing.
+        Only for a caller that `can_read_rows` admits, because the count tells
+        more than the chart shows. It uses this document as given: a view loads
+        it from the stored row, and the builder sends its unsaved config.
         """
         check_rows(self)
         adhoc_filters = route_card_filters(self.name, card_filters, adhoc_filters)
@@ -270,11 +269,11 @@ class InsightsChartv3(Document):
         adhoc_filters: dict | None = None,
         card_filters: list | None = None,
     ) -> str:
-        """Every row the pages of `fetch` are cut from, as a file, under the same filters.
+        """Every row behind the pages of `fetch`, as a file, under the same filters.
 
-        The chart's own rows, summarized as it draws them, not the rows of the
-        query it reads. `can_export` decides, and a refusal raises: a file is an
-        act, not a picture.
+        The rows are the chart's summarized rows, as the chart shows them, not
+        the rows of its query. A refusal by `can_export` raises. It does not
+        answer with empty rows the way a read does.
         """
         if not can_export(self):
             frappe.throw(_("You are not allowed to download data"), exc=frappe.PermissionError)
@@ -356,14 +355,15 @@ class InsightsChartv3(Document):
         return {"columns": result["columns"], "rows": result["rows"]}
 
     def last_modified(self) -> str | None:
-        """The newest `modified` of the stored chart this names and every query it reads.
+        """The newest `modified` of the stored chart and of every query it reads.
 
-        A drill carries it back from the card and is refused once it moved: the
-        drill cuts the queries as they are now, and an edit to any of them puts
-        new rows under the old number. Read by name, so the builder's preview of
-        a saved chart answers with that chart's version, and the config on the
-        wire, the author's own, is not part of it. Nothing for a name no chart
-        holds.
+        A drill sends this back from the card and is refused if it changed. The
+        drill cuts the queries as they are now, so after an edit its rows would
+        not match the number on the card.
+
+        It is read from the stored rows by name. So the builder's preview of a
+        saved chart gets the saved version, and the unsaved config in the
+        request does not count. `None` when no chart has this name.
         """
         stored = frappe.db.get_value(self.doctype, self.name, ["modified", "query"], as_dict=True)
         if not stored:
@@ -414,8 +414,8 @@ class InsightsChartv3(Document):
 
         The source query, the chart's own filters, its summarize or pivot, and its
         sort, derived here from the config every time the chart runs. A config
-        that cannot be drawn is an error, not a row set: falling back to the source
-        query would draw its raw rows under the chart's title.
+        that cannot be rendered raises an error. A fallback to the source query
+        would show its raw rows under the chart's title.
         """
         config = frappe.parse_json(self.config or "{}")
         errors = config_errors(self.chart_type, self.query, config)
@@ -466,13 +466,12 @@ class InsightsChartv3(Document):
 
     @frappe.whitelist()
     def duplicate(self):
-        """A copy of this chart, published to nobody yet.
+        """Copy this chart, with visibility set to Private.
 
-        `copy_doc` carries every field that is not `no_copy`, and the declared
-        visibility is one of them. A copy is a new document, so nobody's reach
-        moved - but it would arrive at a level its own author may never have
-        been able to publish, and `validate_visibility` reads a new document at
-        any level as a widening. The copy starts where a new chart starts.
+        `copy_doc` copies every field that is not `no_copy`, including
+        `visibility`. The copier may not be allowed to publish at that level,
+        and `validate_visibility` treats a new document at any level as a
+        widening. So the copy starts at Private, like a new chart.
         """
         from insights.permissions import PRIVATE
 

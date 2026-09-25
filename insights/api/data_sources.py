@@ -79,10 +79,9 @@ def get_permitted_ibis_table(data_source: str, table_name: str):
     restrictions, doctype row and column permissions — is what the query builder applies,
     and the preview must not show more than a query over the same table would return.
 
-    A preview is the one execution nothing declares: no chart names it, so the
-    rows are the caller's own and never a third person's. Said here rather than
-    inherited — `get_permission_user` answers with whatever execution encloses
-    it, and a preview is never inside one.
+    A table preview belongs to no chart, so it always runs as the caller. It
+    sets that here instead of relying on `get_permission_user`, which returns
+    the user of any enclosing execution.
     """
     with permission_user(frappe.session.user):
         return InsightsTablev3.get_ibis_table(data_source, table_name, use_live_connection=True)
@@ -100,21 +99,20 @@ def get_data_source_table(data_source: str, table_name: str):
         "data_source": data_source,
         "columns": get_columns_from_schema(q.schema()),
         "rows": data.to_dict(orient="records"),
-        # the table is read as the caller, so what narrowed it is theirs, in
-        # the keys a card carries it under
+        # the table is read as the caller, so what narrowed it is theirs.
+        # Returned under the same keys as a card's
         **user_permissions.scope(frappe.session.user),
     }
 
 
 @insights_whitelist()
 def get_data_source_table_row_count(data_source: str, table_name: str):
-    """How many rows the table holds.
+    """How many rows the table has.
 
-    A refusal is raised rather than answered. The whole point of
-    `answers_refusal` is that a refused card must not read as zero, and a count
-    is the one answer whose empty value *is* zero: there is nothing here for a
-    marker to ride on, so "0 rows" would say the table is empty to a caller who
-    may not read it.
+    A refusal raises instead of returning a value. `answers_refusal` exists so
+    that a refused card does not read as zero. A count's empty value is zero,
+    and a number has no field to carry a refusal, so "0 rows" would tell a
+    caller who may not read the table that it is empty.
     """
     table = get_permitted_ibis_table(data_source, table_name)
     result = table.count().execute()

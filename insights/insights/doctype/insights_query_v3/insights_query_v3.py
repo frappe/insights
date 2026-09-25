@@ -207,8 +207,8 @@ class InsightsQueryv3(Document):
     def get_builder(
         self, active_operation_idx=None, use_live_connection=None, force=False
     ) -> IbisQueryBuilder:
-        """The builder after it built this query, for a caller that names a
-        column of it: `get_column` is where a held-back name is refused."""
+        """The builder after building this query. A caller that names a column
+        needs it, because `get_column` refuses a held-back name."""
         builder = IbisQueryBuilder(self, active_operation_idx)
         builder.use_live_connection = (
             use_live_connection if use_live_connection is not None else self.use_live_connection
@@ -384,8 +384,8 @@ class InsightsQueryv3(Document):
     def download_results(
         self, format: str = "csv", active_operation_idx: int | None = None, adhoc_filters: dict | None = None
     ):
-        """The builder's gate on taking this query's rows away as a file: `can_export`,
-        the gate the view's drill download asks too."""
+        """Download this query's rows as a file, if `can_export` allows it. A
+        View's drill download checks the same."""
         from insights.permissions import can_export
 
         if not can_export(self):
@@ -401,7 +401,7 @@ class InsightsQueryv3(Document):
     ):
         """This query's rows as the text of a file, capped at the site's `max_export_rows`.
 
-        Checks no permission; the caller asks `can_export`.
+        Checks no permission; the caller checks `can_export`.
         """
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
@@ -451,8 +451,8 @@ class InsightsQueryv3(Document):
         limit: int = 20,
         adhoc_filters: dict | None = None,
     ):
-        """The authoring client's endpoint for `distinct_column_values`, gated like
-        `get_count`; it answers a refusal as the reader's picker does."""
+        """The Builder's endpoint for `distinct_column_values`, checked like
+        `get_count`. It answers a refusal as a View's picker does."""
         return self.distinct_column_values(
             column_name, active_operation_idx, search_term, limit, adhoc_filters
         )
@@ -537,8 +537,8 @@ class InsightsQueryv3(Document):
         return [c for c in get_columns_from_schema(ibis_query.schema()) if not c.get("hidden")]
 
     def evaluate_alert_expression(self, expression):
-        # forced, as the message's rows and count are: `cache=False` below
-        # reaches the SQL and not a script's output under it
+        # force the build, as the alert message's rows and count do. `cache=False`
+        # below skips only the SQL cache, not a script's cached output
         builder = self.get_builder(force=True)
         filter_expression = builder.evaluate_expression(expression)
         ibis_query = builder.query.filter(filter_expression)
@@ -621,7 +621,7 @@ class InsightsQueryv3(Document):
 
 def delete_variable_secrets(variables) -> None:
     """Delete the stored values of `variables`. frappe deletes the secrets of a
-    document it deletes, never those of a child row, on a delete or a save."""
+    deleted document, but never those of a child row, on delete or on save."""
     for variable in variables:
         delete_all_passwords_for(variable.doctype, variable.name)
 

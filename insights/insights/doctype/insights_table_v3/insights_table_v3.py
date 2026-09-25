@@ -150,7 +150,7 @@ class InsightsTablev3(Document):
         user = get_permission_user()
         site_db = is_site_db(data_source)
 
-        # site data is refused by `apply_user_permissions`, which names the doctypes
+        # on the site database, `apply_user_permissions` refuses and names the doctypes
         if not site_db:
             check_table_permission(data_source, table_name, user=user)
 
@@ -300,7 +300,7 @@ def filter_permitted_columns(
 
     from insights.insights.doctype.insights_team.insights_team import team_grant
 
-    # a team grant carries the whole table
+    # a team grant includes every column
     if team_grant(data_source, table_name, user=user) is not None:
         return columns
 
@@ -443,13 +443,13 @@ def is_site_db(data_source: str) -> bool:
 
 
 def apply_user_permissions(t: Table, data_source, table_name, user=None, granted: list[str] | None = None):
-    """The rows and columns of a site table `user` may read.
+    """The rows and columns of a site table that `user` may read.
 
-    Desk's permissions or a team grant, whichever allows more, cell by cell: a
-    cell comes back if desk admits its row and its column, or a grant admits its
-    row. `granted` is the Table Restrictions a team grant reads the table under
-    (`team_grant`), or nothing where no grant reaches it. A column desk hides is
-    therefore kept, and empty on the rows only desk admits.
+    Desk permissions or a team grant, whichever allows more, cell by cell. A
+    cell comes back if desk admits its row and its column, or if a grant admits
+    its row. `granted` is the Table Restrictions of the team grant
+    (`team_grant`), or None when no grant covers the table. So a column that
+    desk hides is kept, and it is empty on the rows that only desk admits.
     """
     user = user or get_permission_user()
 
@@ -463,14 +463,13 @@ def apply_user_permissions(t: Table, data_source, table_name, user=None, granted
     table_name = strip_schema_prefix(table_name)
 
     if granted is None:
-        # 1. Column-level (permlevel) read permissions: drop columns the user can't read.
         if table_name != "tabSingles":
             t = apply_column_permissions(t, table_name, user)
         desk = desk_rows(t, data_source, table_name, user)
         if desk is None:
-            # No permission query at all means the reader may not read the table,
-            # and the chart is Not Permitted rather than empty — "No data" would
-            # read as zero. Every single doctype at once is not a list worth printing.
+            # No permission query means the reader may not read the table. The
+            # chart is Not Permitted rather than empty, because "No data" would
+            # read as zero. A list of every single doctype helps nobody.
             not_permitted.refuse(
                 [] if table_name == "tabSingles" else not_permitted.unreadable_doctypes(table_name, user)
             )
@@ -478,9 +477,9 @@ def apply_user_permissions(t: Table, data_source, table_name, user=None, granted
 
     from insights.insights.doctype.insights_team.insights_team import restriction_predicate
 
-    # the grant is restricted, so it gives less than the whole table: a row
-    # desk does not admit, or a cell of a column desk hides. Where desk admits
-    # rows of its own the grant only adds to them, and that narrows nothing
+    # The grant is restricted, so it gives less than the whole table: rows
+    # desk does not admit, and cells of columns desk hides. Where desk admits
+    # rows too, the grant only adds to them, so nothing is recorded as narrowed.
     by_desk = desk_predicate(t, data_source, table_name, user)
     if by_desk is None:
         user_permissions.record_narrowed(user)
@@ -504,7 +503,7 @@ def apply_user_permissions(t: Table, data_source, table_name, user=None, granted
 
 
 def desk_rows(t: Table, data_source, table_name, user) -> Table | None:
-    """The rows of `t` desk lets `user` read: `t` itself, a cut of it, or nothing."""
+    """The rows of `t` that desk lets `user` read: all of `t`, a filtered `t`, or None."""
     by_desk = desk_predicate(t, data_source, table_name, user)
     return t if by_desk is True else None if by_desk is None else t.filter(by_desk)
 
@@ -539,11 +538,11 @@ def readable_doctypes(user) -> set[str]:
 
 
 def desk_reads_table(table: str, user: str | None = None) -> bool:
-    """Whether desk lets `user` read any of this site table at all.
+    """Whether desk lets `user` read any rows of this site table.
 
-    The engine's own answer: `apply_user_permissions` reads a table's rows
-    through `frappe.get_list`, which a share admits as a role does. A table no
-    doctype explains admits nobody.
+    It matches the query engine: `apply_user_permissions` reads a table's rows
+    through `frappe.get_list`, which admits a share as it admits a role. A table
+    without a doctype admits nobody.
     """
     user = user or frappe.session.user
     table = strip_schema_prefix(table)
@@ -558,10 +557,10 @@ def desk_reads_table(table: str, user: str | None = None) -> bool:
 
 
 def desk_readable_tables(user: str) -> set[str]:
-    """Every site table desk lets `user` read any of.
+    """Every site table in which desk lets `user` read some rows.
 
     A readable doctype's table, a child table of one, and `tabSingles` when any
-    single doctype is readable - the tables `apply_user_permissions` admits.
+    single doctype is readable. These are the tables `apply_user_permissions` admits.
     """
     readable = readable_doctypes(user)
     children = {
@@ -591,13 +590,13 @@ def desk_readable_tables(user: str) -> set[str]:
 def held_back_key(table_name: str, column: str) -> str:
     """The key a held-back column is recorded under.
 
-    A held-back column belongs to a table. Two tables in one build can hold back the
-    same name and mean two different columns, and both sides that read the
-    record - the join deciding its output names, and the refusal naming the
-    doctype - ask about the tables on their own side.
+    A held-back column belongs to a table. Two tables in one build can hold back
+    the same column name, and they mean two different columns. Both readers of
+    the record ask about the tables on their own side: the join that decides its
+    output names, and the refusal that names the doctype.
 
     The table part is normalised the way the warehouse names its tables, so a
-    warehouse build and a live one write and read one key.
+    warehouse build and a live build write and read the same key.
     """
     return f"{frappe.scrub(strip_schema_prefix(table_name))}.{column}"
 
@@ -609,14 +608,14 @@ def apply_column_permissions(t: Table, table_name, user=None):
     explicit projection, so column-level security is enforced consistently whether `t`
     comes from the warehouse (DuckDB) or a live site-db connection.
 
-    Dropped and not refused here: a chart that never names the column is none of
-    this column's business. The query asking for it by name is where it becomes
-    Not Permitted, so what was dropped is held back for `get_column` to answer with.
+    Dropped here, not refused, so a chart that never names the column still
+    runs. A query that names the column is Not Permitted, so the dropped columns
+    are held back for `get_column` to refuse.
     """
     allowed = get_permitted_columns_for_table(table_name, user)
     cols = [c for c in t.columns if c in allowed]
-    # Nothing permitted means the reader may not read the table at all, which the
-    # row check below refuses; an empty column list is invalid in ibis anyway.
+    # No permitted column means the reader may not read the table. The row check
+    # below refuses that, and ibis rejects an empty column list anyway.
     if not cols:
         return t
 
@@ -713,11 +712,10 @@ def get_permission_query(doctype, parent_doctype=None, user=None):
     # permission WHERE/match conditions. Column-level (permlevel) restrictions are applied
     # separately via apply_column_permissions().
     #
-    # `frappe.get_list`, the supported path: the SQL behind every
-    # permission-filtered chart has to be the SQL frappe's own list runs. What
-    # narrowed the rows is read beside it rather than out of it - see
-    # `insights.user_permissions.narrowing` - because a card that does not say
-    # it is scoped reads as the whole number.
+    # `frappe.get_list` is the supported path: every permission-filtered chart
+    # must run the same SQL as frappe's own list. What narrowed the rows is read
+    # separately (`insights.user_permissions.narrowing`), because a card that
+    # does not say it is scoped reads as the whole number.
     user = user or frappe.session.user
     sql = str(
         frappe.get_list(
@@ -729,8 +727,8 @@ def get_permission_query(doctype, parent_doctype=None, user=None):
             run=False,
         )
     )
-    # named for the user the filter was built for: a Public chart runs as its
-    # owner, and the owner's grants are not the reader's to be shown
+    # Record it for the user the filter was built for. A Public chart runs as
+    # its owner, and the reader must not see the owner's grants.
     user_permissions.record(user, user_permissions.narrowing(doctype, user, parent_doctype))
     return sql
 

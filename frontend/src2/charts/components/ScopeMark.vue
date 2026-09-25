@@ -4,10 +4,10 @@ import { Lock } from 'lucide-vue-next'
 import { computed } from 'vue'
 import { scopeText, type AppliedUserPermission } from '../scoped_by'
 
-// What cells the reader's own permissions narrowed say, beside whatever names
-// them: a card's title, a table's, a drill level's. Sized in `em`, so the mark is
-// the size of the text it sits on. Optional information, so it waits for a hover
-// or a tab stop, and nothing is drawn without a scope.
+// Tells the reader that their own permissions narrowed these cells. It sits
+// beside the title of what it marks: a card, a table or a drill level. Sized in
+// `em`, so it matches that title. It is optional information, so it shows on
+// hover or focus.
 const props = defineProps<{ applied?: AppliedUserPermission[]; narrowed?: boolean }>()
 
 const scope = computed(() => scopeText(props.applied, props.narrowed))
@@ -15,8 +15,8 @@ const scope = computed(() => scopeText(props.applied, props.narrowed))
 
 <template>
 	<Tooltip v-if="scope">
-		<!-- A bubble grows to its content and never wraps, so a line per doctype
-		     is a width the body sets and lines it draws. -->
+		<!-- A tooltip grows to its content and never wraps, so this body sets the
+		     width and puts each doctype on its own line. -->
 		<template #content>
 			<div class="max-w-xs whitespace-normal">
 				<div>{{ scope.heading }}</div>

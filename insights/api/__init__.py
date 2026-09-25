@@ -67,10 +67,9 @@ def get_site_info():
     dashboard needs them to print an amount the way the workbook does."""
     return {
         "country": frappe.db.get_single_value("System Settings", "country"),
-        # the two properties `docs/telemetry.md` puts on every event, and the
-        # bench the site runs on, as frappe's own boot reports it — what says
-        # whether an author may ship a workbook as a file. A signed-in reader is
-        # the only one any of the three is about.
+        # `docs/telemetry.md` puts app_version and entry on every event.
+        # developer_mode decides whether an author may export a workbook to an
+        # app. Guests get none of them.
         **(
             {
                 "app_version": insights.__version__,
@@ -131,7 +130,7 @@ def get_user_info():
         "is_admin": is_admin,
         "is_user": is_user or frappe.session.user == "Administrator",
         "can_download": can_download(),
-        # who `check_trusted_code_author` admits, which the role does not decide
+        # matches `check_trusted_code_author`, which reads the Admin team, not the role
         "can_write_trusted_code": insights_team.is_admin(frappe.session.user),
         "locale": locale,
         "has_desk_access": user.get("user_type") == "System User",
@@ -245,10 +244,9 @@ def _read_uploaded_table(db, file_path: str, ext: str):
         frappe.throw("Failed to read CSV data from uploaded file. Please try again.")
 
 
-# The two generic doc endpoints the Builder is built on. Reading is
-# not their job: a reader names content to `insights.api.view`, which decides
-# access through `visibility`. So these grant nothing a caller's own
-# permissions do not already carry, and no guest reaches them.
+# The Builder uses these two generic endpoints. A View does not: it goes
+# through `insights.api.view`, which checks `visibility`. So these grant only
+# what the caller's own permissions allow, and guests cannot call them.
 
 
 @frappe.whitelist()

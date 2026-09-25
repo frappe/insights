@@ -308,9 +308,9 @@ export function makeQuery(name: string) {
 				.then((count: number) => {
 					result.value.totalRowCount = count || 0
 				})
-				// A count is the one answer whose empty value *is* a zero, so the
-				// endpoint refuses rather than answering one. Left unhandled the
-				// previous run's total stands under a result nobody counted.
+				// An empty count is a real zero, so the endpoint throws when the
+				// reader may not read the data. Without this, the previous run's
+				// total stays on screen.
 				.catch(() => {
 					result.value.totalRowCount = 0
 				})

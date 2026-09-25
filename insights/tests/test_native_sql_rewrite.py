@@ -40,11 +40,10 @@ class TestNativeSQL(InsightsIntegrationTestCase):
         return IbisQueryBuilder(self.make_query_doc(operations, use_live_connection)).build().execute()
 
     def rewrite(self, raw_sql, replace_map=None):
-        """The rewrite alone, over a binding for every table the SQL names.
+        """Runs only the rewrite, with an unfiltered binding for each table.
 
-        Built here rather than through `_get_sql_table_bindings` so that these
-        cases are about what the rewrite does to a bound table, whatever the
-        reader they run as is narrowed by.
+        It skips `_get_sql_table_bindings`, so the result does not depend on the
+        permissions of the user who runs the test.
         """
         if replace_map is None:
             tables = self.builder._get_sql_table_names(raw_sql, dialect=self.dialect)
@@ -139,9 +138,9 @@ class TestNativeSQL(InsightsIntegrationTestCase):
 
     # @feature query.native-sql
     def test_a_cte_hides_a_table_only_inside_its_own_block(self):
-        """A CTE's scope is the query block that declares it, so a name it hides
-        inside a derived table still means the real table outside it - and the
-        binding is the only thing that applies the reader's permissions."""
+        """A CTE applies only inside the query block that declares it. Outside
+        that block the name is the real table, and it must get a binding: only
+        the binding applies the reader's permissions."""
         raw_sql = (
             "select u.name from (with `tabUser` as (select 1 as n) select n from `tabUser`) s "
             "join `tabUser` u on 1 = 1"
@@ -149,31 +148,29 @@ class TestNativeSQL(InsightsIntegrationTestCase):
 
         self.assertEqual(self.builder._get_sql_table_names(raw_sql, dialect=self.dialect), {"tabUser"})
 
-        # a CTE that does reach the reference still hides it
+        # inside its own block, the CTE does hide the table
         hidden = "with `tabUser` as (select 1 as n) select n from `tabUser`"
         self.assertEqual(self.builder._get_sql_table_names(hidden, dialect=self.dialect), set())
 
     # @feature query.native-sql
     def test_a_derived_table_aliased_after_a_table_does_not_hide_it(self):
-        """An alias names a source, it does not declare one. A subquery aliased
-        with a real table's name leaves every reference to that table real, and
-        the binding is the only thing that applies the reader's permissions."""
+        """An alias does not declare a table. A subquery aliased with a real
+        table's name does not hide that table, and only the table's binding
+        applies the reader's permissions."""
         raw_sql = "select u.name from (select 1 as n) as `tabUser` join `tabUser` as u on 1 = 1"
 
         self.assertEqual(self.builder._get_sql_table_names(raw_sql, dialect=self.dialect), {"tabUser"})
 
         rewritten = self.rewrite(raw_sql, {"tabUser": "SELECT * FROM `tabUser`"})
 
-        # the real reference reads its binding; the subquery that borrowed the name is left alone
+        # the real table gets its binding; the aliased subquery is unchanged
         self.assertIn("AS u", rewritten)
         self.assertIn("(SELECT 1 AS n) AS `tabUser`", rewritten)
 
     # @feature query.native-sql
     def test_a_cte_reference_is_left_alone_where_the_same_name_is_bound(self):
-        """Extraction and the rewrite read one rule. A name that means a real
-        table in one block and a CTE in another is bound where it is real and
-        left alone where it is not - binding the CTE reference would point it at
-        rows that do not carry the CTE's columns."""
+        """Table extraction and the rewrite use the same scope rule. Binding the
+        CTE reference would point it at rows without the CTE's columns."""
         raw_sql = (
             "select u.name from (with `tabUser` as (select 1 as n) select n from `tabUser`) s "
             "join `tabUser` u on 1 = 1"
@@ -187,13 +184,13 @@ class TestNativeSQL(InsightsIntegrationTestCase):
 
     # @feature query.native-sql permissions.not-permitted-chart
     def test_a_reader_with_every_row_still_loses_a_column_they_may_not_read(self):
-        """A reader who may read every row of a doctype is narrowed by a
-        held-back column alone, with no `WHERE`."""
+        """A reader who may read every row gets no `WHERE`. A held-back column
+        must still be removed."""
         reader = "native_sql_permlevel@test.com"
         create_user(reader, first_name="Native", last_name="Reader", roles="System Manager")
         self.addCleanup(delete_users, reader)
-        # `ToDo` names System Manager in its own permissions, so this reader is
-        # restricted to no rows at all and the permission query carries no WHERE
+        # `ToDo` gives System Manager read on every row, so the permission query
+        # adds no WHERE
         setter = frappe.get_doc(
             {
                 "doctype": "Property Setter",
@@ -217,9 +214,8 @@ class TestNativeSQL(InsightsIntegrationTestCase):
 
     # @feature query.native-sql permissions.site-user-permissions
     def test_a_reader_narrowed_by_rows_runs_native_sql_on_the_data_store(self):
-        """`IbisQueryBuilder.apply_sql`, which `InsightsQueryv3.execute` runs for
-        a native query. On the data store the rows desk admits come off the live
-        site as an in-memory table, and the SQL handed to DuckDB names it."""
+        """On the data store, the rows desk permits are read from the live site
+        into an in-memory table. The SQL sent to DuckDB reads that table."""
         reader = "native_sql_rows@test.com"
         create_user(reader, first_name="Native", last_name="Rows", roles="Insights User")
         self.addCleanup(delete_users, reader)

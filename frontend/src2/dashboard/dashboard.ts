@@ -223,8 +223,8 @@ function makeDashboard(name: string) {
 	)
 
 	/**
-	 * What the grid is told about a cell beyond its layout. `cellRulesFor` says
-	 * what, and the builder answers it from the chart stores it already holds.
+	 * Grid rules for each cell beyond its layout, from `cellRulesFor`. The builder
+	 * derives them from the chart stores it already holds.
 	 */
 	const cellRules = computed(() =>
 		cellRulesFor(dashboard.doc.items, (chart) => chartsByName.value[chart]?.doc),
@@ -399,10 +399,10 @@ function makeDashboard(name: string) {
 		}
 	}
 
-	// The builder's grid reads its cards from the config being edited rather than
-	// from the saved chart, so an unsaved edit shows on the grid too. The rows
-	// are narrowed by the filters it holds, so its reads belong to it: another
-	// dashboard drawing the same chart reads its own.
+	// The builder's grid renders its cards from the config being edited, not the
+	// saved chart, so an unsaved edit shows on the grid too. The reads belong to
+	// this dashboard, because its filters narrow their rows. Another dashboard
+	// with the same chart has its own reads.
 	const viewSurface: ChartPreviewSurface = {
 		id: `dashboard:${name}`,
 		filterContext: filterContextFor,
@@ -522,7 +522,8 @@ function makeDashboard(name: string) {
 		})
 	}
 
-	// the reader's endpoints: both read the saved grid, so the builder has no question of its own here
+	// the view endpoints: card values and ranges come from the saved grid, so the
+	// builder needs none of its own
 	function getCardColumnValues(chart_name: string, column: string, search_term?: string) {
 		return call('insights.api.view.get_card_values', {
 			dashboard: dashboard.doc.name,
@@ -552,8 +553,8 @@ function makeDashboard(name: string) {
 		return dashboard.doc.share_link || `${window.location.origin}${href}`
 	}
 
-	// Who the document is shared with by name. Who else may read is the
-	// `visibility` level, a field on the document, saved with everything else.
+	// Updates who the document is shared with by name. Other readers come from
+	// the `visibility` field, which saves with the rest of the document.
 	function updateAccess(data: { people_with_access: string[] }) {
 		return dashboard
 			.call('update_access', { data })
@@ -561,17 +562,17 @@ function makeDashboard(name: string) {
 			.then(() => dashboard.load())
 	}
 
-	// Done. Edit mode ends once the save is answered: autosave arms the moment
-	// it ends, and a refusal answered under autosave takes back what was sent.
-	// A refused session stays open with every edit.
+	// Done. Edit mode ends only after the save returns. Autosave starts as soon
+	// as edit mode ends, and a save refused under autosave reverts what was sent.
+	// So a refused save keeps edit mode open with every edit.
 	async function finishEditing() {
 		await dashboard.save()
 		editing.value = false
 	}
 
-	// Reset Layout. Edit mode ends once the confirm is answered and the stored
-	// document is back: ending it first arms autosave, which saves the session
-	// the author is being asked to throw away. Cancel keeps the session open.
+	// Reset Layout. Edit mode ends only after the confirm and the reload of the
+	// stored document. Ending it first would start autosave, which would save the
+	// edits the author is about to discard. Cancel keeps edit mode open.
 	function discardEditing() {
 		confirmDialog({
 			title: __('Discard Changes'),
@@ -583,9 +584,9 @@ function makeDashboard(name: string) {
 		})
 	}
 
-	// The owner sees the defaults they set, not what they last picked: a default
-	// is a property of the document, and checking it is why they set one. A
-	// default seeds a filter nobody has answered.
+	// The owner sees the defaults they set, not their last choice. A default
+	// belongs to the document, and the owner is here to check it. A default fills
+	// only a filter that has no state yet.
 	waitUntil(() => dashboard.isloaded).then(() => {
 		const defaults = defaultFilterStates(dashboard.doc.items)
 		Object.entries(defaults).forEach(([filter_name, state]) => {

@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-// what each count asked for answers with, settled by the case
 const counts = vi.hoisted(() => new Map<string, (count: number) => void>())
 
 vi.mock('frappe-ui', async (importOriginal) => ({
@@ -23,9 +22,6 @@ const settled = async () => {
 }
 
 beforeEach(() => counts.clear())
-
-// `ImportTableDialog.vue`'s two comboboxes write the source and the table the
-// import copies, and the dialog prints the count under the table.
 
 describe('the table an import copies', () => {
 	// @feature data-store.import-table

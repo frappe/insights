@@ -6,16 +6,11 @@ import { makeChartRead } from '../chart_view'
 import { scopeText } from '../scoped_by'
 import ChartBody from './ChartBody.vue'
 
-// What the card says about the reader's own permissions, drawn. The state
-// itself is settled in `chart_view.test.ts`; these cases are about the room it
-// takes on a card, which only a render can answer.
-//
-// A Number Chart is the card the room is tightest on: a reading is one line
-// tall, so a line the chrome adds is a line taken off the number.
+// A Number chart has the least space. A reading is one line tall, so any line
+// the chrome adds is taken from the number.
 
 const spec = numberChart({ values: [{ name: 'Revenue', readings: [12300] }], reading: 'Revenue' })
 
-/** The card as a reader gets it, with the answer the server gave it. */
 function cardAnswering(answer: Record<string, any>) {
 	const read = makeChartRead({
 		doc: {
@@ -38,8 +33,8 @@ async function draw(answer: Record<string, any>) {
 	const app = createSSRApp({
 		render: () => h(ChartBody, { chart: read, title: 'Revenue', reading: 'Revenue' }),
 	})
-	// the app registers frappe-ui's components globally; this render is one
-	// component and does not need them resolved
+	// The app registers frappe-ui components globally. This test does not, so it
+	// silences the warnings for unresolved components.
 	app.config.warnHandler = () => {}
 	return renderToString(app)
 }
@@ -54,17 +49,15 @@ describe('a card whose rows the reader User Permissions narrowed', () => {
 			user_permissions: [{ doctype: 'Territory', documents: ['Karnataka'] }],
 		})
 
-		// the sentence is the mark's label and nothing else: a line under the
-		// plot cost the card a line of its height, and on a Number Chart that
-		// line is the reading
+		// The sentence is only the mark's label. A line under the plot would take
+		// a line of card height, and on a Number chart that line is the reading.
 		expect(html.match(/Filtered by your User Permissions/g)).toHaveLength(1)
 		expect(html).toContain('Filtered by your User Permissions: Territory: Karnataka')
 		expect(html).toContain('12,300')
 
-		// Beside the title itself, not in `#actions` at the far end of the row:
-		// between the title text and the mark the card closes no element, so the
-		// two are in the one box — the box that carries the title's font size,
-		// which is what makes an `em` the size of the title it sits on.
+		// The mark is in the title's element, not in `#actions` at the end of the
+		// row. That element sets the title's font size, so the mark's `em` size
+		// matches the title.
 		const between = html.slice(
 			html.indexOf('>Revenue<'),
 			html.indexOf('aria-label="Filtered by your User Permissions'),
@@ -89,8 +82,8 @@ describe('a card whose rows the reader User Permissions narrowed', () => {
 	})
 })
 
-// The bubble itself is a portal that opens on hover, so what it says is settled
-// here, where the card's own render cannot reach it.
+// The tooltip is a portal that opens on hover, so a card render cannot reach
+// it. Its text is tested here.
 describe('what the mark says', () => {
 	// @feature permissions.card-says-it-is-scoped
 	it('gives the bubble a line per doctype, by name', () => {
@@ -101,7 +94,7 @@ describe('what the mark says', () => {
 
 		expect(said?.heading).toBe('Filtered by your User Permissions')
 		expect(said?.lines).toEqual(['Company: Summit Supply', 'Territory: Karnataka, Kerala'])
-		// the label is the same fact in one go, which is how it is read out
+		// screen readers read the label, so it holds all the lines in one sentence
 		expect(said?.sentence).toBe(
 			'Filtered by your User Permissions: Company: Summit Supply; Territory: Karnataka, Kerala',
 		)
@@ -142,12 +135,10 @@ describe('a card the reader may not read the data behind', () => {
 
 		expect(html).toContain('Not Permitted')
 		expect(html).toContain('Needs read access to Sales Invoice')
-		// the card every other state gets: the reading's own surface, headed by
-		// the reading's own title, with the message where the number stood
 		expect(html).toContain('data-slot="chart-card"')
 		expect(html).toContain('Revenue')
 		expect(html).not.toContain('12,300')
-		// there is no permission the reader could change
+		// a retry cannot help, because the reader cannot change their permissions
 		expect(html).not.toContain('Retry')
 	})
 })

@@ -3,32 +3,32 @@ import frappe
 CHART = "Insights Chart v3"
 DASHBOARD = "Insights Dashboard v3"
 
-# The column the base wrote when content was published. It names the person a
-# public read filtered its rows by, and `retire_content_permission_user` drops
-# it, so this is the last patch that can read it.
+# The column the base wrote when content was published. It names the user whose
+# permissions filtered a public read. `retire_content_permission_user` drops it,
+# so this is the last patch that can read it.
 PUBLISHER = "permission_user"
 
 
 def execute():
     """
-    Public content runs with its owner's permissions, so content already
-    published running as its reader drew an empty page for the
-    guests it was published for.
+    Public content runs with its owner's permissions. Content published
+    earlier runs as its reader, so it showed an empty page to the guests it was
+    published for.
 
-    A chart reaches a guest two ways - on its own level, or through a Public
-    dashboard it is linked to - and both are named here, because the update that
-    names them from now on runs on the dashboard's save.
+    A guest reaches a chart two ways: at the chart's own visibility level, or
+    through a Public dashboard that shows it. This patch handles both. From now
+    on, the dashboard's save handles the second.
 
-    Checked only where the owner's rows are the rows the base was already
-    serving. The base filtered a public read by the user the *publishing*
-    document recorded, and that is the chart's own owner for most content and
-    somebody else for a chart another person's dashboard published. Where they
-    differ, neither answer is writable any more: the column is going, and
-    `validate_run_as_owner` lets nobody but the owner hand out the owner's rows.
-    So the box stays unchecked there, unless the two read the same rows, and the
-    card refuses rather than serving a third person's rows to the open internet.
-    Its owner can check it from the chart's share dialog, which is the one place
-    that decision belongs.
+    Run as owner is checked only where the owner's rows are the rows the base
+    already served. The base filtered a public read by the user the
+    *publishing* document recorded. For most content that is the chart's own
+    owner. For a chart that another person's dashboard published, it is someone
+    else. Where the two differ, neither answer can be kept: the column is
+    going, and `validate_run_as_owner` lets only the owner share the owner's
+    rows. So the box stays unchecked there, unless both users read the same
+    rows. The card then refuses, rather than serving a third person's rows to
+    the open internet. Its owner can check it in the chart's share dialog,
+    which is the one place that decision belongs.
     """
     left = []
     for chart, publisher in publicly_reachable_charts().items():
@@ -53,13 +53,13 @@ def execute():
 
 
 def why_rows_differ(chart: str, publisher: str, owner: str) -> str | None:
-    """Why `chart` may draw other rows for its owner than for its publisher, or
-    nothing where it draws the same rows for both.
+    """Why `chart` may show other rows to its owner than to its publisher, or
+    None when it shows both the same rows.
 
-    Site data is filtered by desk's permissions and external data by a team's
-    Table Restrictions, both per user. A script, or an expression that calls
-    frappe, can read anything the running user can. A chart that uses none of
-    them, on tables both may read, draws the same rows for both.
+    Desk permissions filter site data, and a team's Table Restrictions filter
+    external data, both per user. A script, or an expression that calls frappe,
+    can read anything the running user can. A chart that uses none of these, on
+    tables both users may read, shows both the same rows.
     """
     from insights.insights.doctype.insights_table_v3.insights_table_v3 import is_site_db
     from insights.insights.doctype.insights_team.insights_team import check_table_permission, team_grant
@@ -105,10 +105,10 @@ def runs_as_user(node) -> bool:
 def publicly_reachable_charts() -> dict[str, str | None]:
     """Every chart a public link reaches, and the user the base ran it as.
 
-    The base read that user off the document that published the chart: the chart
-    itself when it was published in its own right, else the oldest Public
-    dashboard holding it. Same precedence here, so the answer is the one the
-    link was serving.
+    The base read that user from the document that published the chart. That is
+    the chart itself when it was published on its own, and otherwise the oldest
+    Public dashboard that shows it. This uses the same order, so the answer
+    matches what the link served.
     """
     charts = {
         chart: publisher_of(CHART, chart)
@@ -130,11 +130,11 @@ def publicly_reachable_charts() -> dict[str, str | None]:
 
 
 def publisher_of(doctype: str, name: str) -> str | None:
-    """The user this document's publisher recorded.
+    """The user recorded by this document's publisher.
 
-    A site on a release before the column came never had it, and its published
-    content is served as the publishing document's owner - what the base's own
-    backfill writes into the column when it adds it.
+    A site on a release before the column existed never had it. Its published
+    content ran as the publishing document's owner, which is what the base's
+    own backfill writes when it adds the column.
     """
     if not frappe.db.has_column(doctype, PUBLISHER):
         return frappe.db.get_value(doctype, name, "owner")

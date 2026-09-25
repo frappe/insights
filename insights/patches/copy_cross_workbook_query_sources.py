@@ -9,24 +9,24 @@ DASHBOARD = "Insights Dashboard v3"
 
 
 def execute():
-    """Give every workbook its own copy of the queries it sources from another one.
+    """Give every workbook its own copy of each query it uses from another workbook.
 
-    A query's sources are queries of its own workbook, and a save or a run of
-    one that sources another workbook's is refused. So each such source is
-    copied into the reading workbook with every query it reads in turn, once
-    per reading workbook, and the reference points at the copy. The originals
-    are left as they are.
+    A query may only use queries of its own workbook as sources, and saving or
+    running one that uses another workbook's query is refused. So each such
+    source is copied into the workbook that uses it, with every query it reads
+    in turn, once per workbook, and the reference is changed to the copy. The
+    originals are not changed.
 
-    A variable is copied by name and not by value. It holds a script's
-    credential, and the copy is the reading workbook's to edit. Copying
-    without it keeps every reference inside its own workbook, where it runs;
-    refusing the copy would leave the reference refused at every run. So the
-    copies that need a value entered are named instead.
+    A variable is copied by name, not by value. Its value may be a script's
+    credential, and the copy belongs to another workbook. Copying without the
+    value keeps every reference inside its own workbook, where it can run.
+    Refusing the copy would leave the reference refused on every run. So the
+    patch prints the copies that need a value entered.
     """
     workbook_of = dict(frappe.get_all(QUERY, fields=["name", "workbook"], as_list=True))
-    # Copied and rewritten from as they were before the patch. A reader the
-    # loop has already rewritten names a copy, and copying from it again keys
-    # the next copy by that copy instead of by the original a filter links.
+    # Copy and rewrite from the operations as they were before the patch. A
+    # query the loop has already rewritten names a copy. Copying from it again
+    # would key the next copy by that copy, not by the original a filter links.
     stored = dict(
         frappe.get_all(
             QUERY,
@@ -62,10 +62,10 @@ def rewrite_query_references(operations, id_map: dict, workbook: str) -> str:
 
 
 def repoint_filter_links(copies: dict):
-    """Link each dashboard filter that names an original to the copy its card now reads.
+    """Point each dashboard filter link that names an original at the copy its chart now reads.
 
-    A link is followed only to a query the card reads, and the card's workbook
-    reads the copy.
+    A link is followed only to a query the chart reads, and the chart's workbook
+    now reads the copy.
     """
     if not copies:
         return
@@ -89,9 +89,9 @@ def repoint_filter_links(copies: dict):
 
 
 def foreign_sources(workbook_of: dict | None = None) -> list[tuple[str, str, str]]:
-    """Every (reading query, its workbook, source query) whose source sits in another workbook.
+    """Every (query, its workbook, source query) whose source is in another workbook.
 
-    A source no row holds is left out: there is nothing to copy.
+    A source with no row is left out, because there is nothing to copy.
     """
     if workbook_of is None:
         workbook_of = dict(frappe.get_all(QUERY, fields=["name", "workbook"], as_list=True))
@@ -111,8 +111,9 @@ def foreign_sources(workbook_of: dict | None = None) -> list[tuple[str, str, str
 def copy_into(original: str, workbook: str, copies: dict, workbook_of: dict, stored: dict) -> str:
     """The copy of `original` in `workbook`, made the first time it is asked for.
 
-    `stored` is every query's operations before the patch wrote any, so the
-    copy reads the originals `original` read, and each is keyed by itself.
+    `stored` holds every query's operations before the patch changed any, so
+    the copy reads the same originals `original` read, and each copy is keyed
+    by its original.
     """
     if (original, workbook) in copies:
         return copies[(original, workbook)]
@@ -139,7 +140,7 @@ def copy_into(original: str, workbook: str, copies: dict, workbook_of: dict, sto
     )
     for variable in source.variables:
         copy.append("variables", {"variable_name": variable.variable_name})
-    # the value is required, and it is the one thing the copy must not carry
+    # the value is mandatory, but the copy must not carry it
     copy.flags.ignore_mandatory = True
     copy.insert(ignore_permissions=True)
     if source.variables:

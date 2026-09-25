@@ -155,12 +155,12 @@ AGGREGATIONS = {
     "max": lambda column: column.max(),
 }
 
-# What a `pivot_wider` names the values it did not keep. The engine invents it
-# while the chart runs, so it stands for no value of the column underneath and
-# the drill cannot cut the surface by it - see `chart_drill._rule_filters`.
+# The label a `pivot_wider` gives the values it did not keep. The engine makes
+# it up at run time, so it matches no value of the column under it, and a drill
+# cannot filter the surface by it. See `chart_drill._rule_filters`.
 PIVOT_OTHERS = "Others"
 
-# where a build records the splits that wrote `Others` over a tail
+# where a build records the splits that replaced a tail of values with `Others`
 PIVOT_TAILS = "insights_pivot_tails"
 
 # `full` is the client's word for what ibis calls an outer join
@@ -204,8 +204,8 @@ class IbisQueryBuilder:
         self.use_live_connection = bool(doc.use_live_connection)
         self.force = False
         self.operations = doc.operations
-        # what this query's removes and renames took off `self.query` for the
-        # author too, as held-back keys - see `_carried_tables`
+        # held-back keys for the columns this query's removes and renames took
+        # off `self.query`. The author does not see them either; see `_carried_tables`
         self.dropped_by_author: set[str] = set()
         self.set_operations()
 
@@ -241,8 +241,8 @@ class IbisQueryBuilder:
         if not hasattr(frappe.local, "_insights_building_queries"):
             frappe.local._insights_building_queries = set()
 
-        # the outermost build: what an earlier one held back for permlevel, and
-        # what it was narrowed by, say nothing about this one
+        # in the outermost build, clear what earlier builds recorded. What they
+        # held back for permlevel or were narrowed by does not apply to this one
         if not frappe.local._insights_building_queries:
             not_permitted.forget_held_back()
             user_permissions.forget()
@@ -262,8 +262,8 @@ class IbisQueryBuilder:
                     operation = _dict(operation)
                     self.query = self.perform_operation(operation)
                 except (CircularQueryReferenceError, not_permitted.NotPermitted):
-                    # Not Permitted is an answer, not a broken operation: the card
-                    # names what it needs and a toast would say the author erred
+                    # Not Permitted is a normal answer, not a broken operation. The
+                    # card names what it needs; a toast would blame the author
                     raise
                 except BaseException as e:
                     operation_type_title = operation.type.title()
@@ -280,9 +280,9 @@ class IbisQueryBuilder:
     def check_trusted_code(self):
         from insights.permissions import check_trusted_code_author
 
-        # the builder runs what is on screen, which nobody has saved: compared
-        # with the chart it runs as, or else with its query - the source query
-        # for a throwaway preview, which no document stores
+        # the Builder runs unsaved content, so compare it with the saved chart it
+        # runs as. Otherwise compare it with its query: for a throwaway preview,
+        # the source query, because no document stores the preview
         stored = frappe.db.get_value("Insights Chart v3", self.doc.name, "config")
         if stored is None:
             stored = frappe.db.get_value("Insights Query v3", self.doc.execution_reference, "operations")
@@ -342,10 +342,10 @@ class IbisQueryBuilder:
         Read from the row, not from the document being built: that one may have
         come from a request body, which authorizes nothing.
 
-        Two rows answer. A saved query carries the dependencies `validate`
-        authorized. A chart's execution sources its stored `query` link, which
-        `check_chart_query_access` authorized when it was written. That chart is
-        the one `runs_as` entered, never one a name in the request picks.
+        Two rows are read. A saved query stores the dependencies `validate`
+        authorized. A chart's execution reads its stored `query` link, which
+        `check_chart_query_access` authorized when it was saved. That chart is
+        the one `runs_as` entered, never one named in the request.
         """
         from insights.permission_user import declaring_document
 
@@ -362,8 +362,8 @@ class IbisQueryBuilder:
     def stored_workbook(self):
         """The workbook of the saved query being built, read from its row.
 
-        Nothing for a document no row holds: a chart's own pipeline, or the
-        builder's unsaved one, whose references `check_query_reference` answers.
+        None for a document with no row: a chart's own pipeline, or the
+        Builder's unsaved one. `check_query_reference` checks their references.
         """
         name = self.doc.get("name")
         return frappe.db.get_value("Insights Query v3", name, "workbook") if name else None
@@ -405,10 +405,10 @@ class IbisQueryBuilder:
         """The column `column_name` names, on the query being built or on `table`,
         whose author removed `dropped_by_author`.
 
-        The one place that turns "this column is not here" into an answer, so
-        every operation that names a column comes through here - a join's own
-        selection included. A column this build held back is Not
-        Permitted, not a broken operation the author is asked to check.
+        This is the one place that turns "this column is not here" into an
+        answer, so every operation that names a column calls it, a join's own
+        selection included. A column this build held back makes the chart Not
+        Permitted, not a broken operation the author must fix.
         """
         query = table
         if table is None:
@@ -422,12 +422,12 @@ class IbisQueryBuilder:
         if sanitize_name(column_name) in query.columns:
             return query[sanitize_name(column_name)]
 
-        # A name this build held back is not missing, it is refused, and that
-        # stops every caller. The two recoveries below are for a column stored
-        # under an older naming, and a column the reader was just denied is not
-        # that - the one column ending in `_<name>` is the other side of a join,
-        # drawn silently. `throw` chooses the kind of stop, not whether to stop:
-        # a caller that carries on without a column is answered with none.
+        # A name this build held back is refused, not missing, and that stops
+        # every caller. The two fallbacks below handle columns stored under an
+        # older naming. A held-back column is not one of those: the one column
+        # ending in `_<name>` would be the other side of a join, used silently.
+        # `throw` decides how to stop, not whether: a caller that continues
+        # without the column gets None.
         if doctype := self.held_back(column_name, query, dropped_by_author):
             if throw:
                 not_permitted.refuse([doctype])
@@ -473,12 +473,12 @@ class IbisQueryBuilder:
             frappe.throw(f"Column {column_name} does not exist in the table", UnknownColumn)
 
     def held_back(self, column_name: str, relation: IbisQuery, dropped_by_author: set[str]) -> str | None:
-        """The doctype `column_name` was dropped from for permlevel, under `relation`.
+        """The doctype `column_name` was held back from for permlevel, under `relation`.
 
-        Asked of the relation the name was looked up on, because that is what
-        the name can mean: a column another table of the same build held back
-        says nothing about this one, and neither does one this relation dropped
-        for itself before the reader was anywhere near it.
+        Checked on the relation the name was looked up on, because that decides
+        what the name means. A column held back from another table of the same
+        build says nothing about this one. Neither does a column this relation
+        removed itself, before the reader's permissions applied.
         """
         held = not_permitted.held_back_columns()
         for table in _carried_tables(relation, held, dropped_by_author):
@@ -498,8 +498,8 @@ class IbisQueryBuilder:
         join_type = JOIN_TYPES.get(join_args.join_type)
         if join_type is None:
             frappe.throw(frappe._("Join type {0} is not supported").format(join_args.join_type), QueryRefused)
-        # the output keeps this side's record: a remove on the right took
-        # nothing off the left, over the same table or not
+        # each side keeps its own removals: a remove on the right took nothing
+        # off the left, even when both read the same table
         right_table = self.rename_duplicate_columns(right_table, right_dropped)
         return self.query.join(
             right_table,
@@ -532,7 +532,7 @@ class IbisQueryBuilder:
                 right=(right_table, dropped_by_author),
             )
             columns_from_exp = self.get_columns_from_expression(expression)
-            # an expression names columns of both tables, so only this one's count
+            # an expression names columns of both tables; keep only this table's
             for name in columns_from_exp or []:
                 if name in right_table.columns:
                     select_columns[name] = right_table[name]
@@ -580,7 +580,7 @@ class IbisQueryBuilder:
 
     def rename_duplicate_columns(self, right_table, right_dropped: set[str]):
         """Prefix the right table's columns that collide with the left's, as
-        they would for the author: each side's held-back columns count."""
+        they would for the author: held-back columns on either side count."""
         query: IbisQuery = self.query
         held = not_permitted.held_back_columns()
         left = _side(query, held, self.dropped_by_author)
@@ -612,8 +612,8 @@ class IbisQueryBuilder:
 
     def apply_union(self, union_args):
         other_table, other_dropped = self.get_table_or_query(union_args.table)
-        # a union keeps the columns both sides have, so either side's remove
-        # takes the column off for the author
+        # a union keeps only the columns both sides have, so a remove on either
+        # side takes the column off for the author
         self.dropped_by_author = self.dropped_by_author | other_dropped
 
         current_columns = set(self.query.columns)
@@ -728,14 +728,15 @@ class IbisQueryBuilder:
             if column is not None:
                 present.append(column.get_name())
             elif self.held_back(column_name, self.query, self.dropped_by_author):
-                # the author removes it too, so the relation still carries its table
+                # the author removes it too. Record it, because its table is still
+                # under the relation
                 held.append(column_name)
 
         self.drop_by_author(present + held)
         return self.query.drop(*present) if present else self.query
 
     def drop_by_author(self, names: list[str]) -> None:
-        """Record names a remove or a rename takes off `self.query`, for every table under it."""
+        """Record the names a remove or rename takes off `self.query`, for every table under it."""
         tables = [
             frappe.scrub(strip_schema_prefix(dt.name)) for dt in self.query.op().find_topmost(DatabaseTable)
         ]
@@ -803,8 +804,8 @@ class IbisQueryBuilder:
         alias = sg.to_identifier(new_name, quoted=True).sql(dialect=source_dialect)
         statement = f"SELECT *, {raw_sql} AS {alias} FROM {SQL_COLUMN_RELATION}"
         select = self._validate_sql_column_statement(statement, source_dialect)
-        # the SQL reads the columns the reader was left with, so a name held
-        # back is missing here the way it is from `get_column`
+        # the SQL reads only the columns left to the reader, so a held-back name
+        # is missing here, as it is from `get_column`
         self.refuse_held_back_in_sql(select, {SQL_COLUMN_RELATION: self.query}, self.dropped_by_author)
 
         if not self.use_live_connection:
@@ -968,8 +969,8 @@ class IbisQueryBuilder:
                 # use ibis.case() since ibis.where isn't available on the module
                 others_expr = ibis.cases((col_expr.isin(selected_names), col_expr), else_=PIVOT_OTHERS)
                 self.query = self.query.mutate(**{col_name: others_expr})
-                # said outright, because nothing else can say it: which values
-                # were kept depends on the rows this run saw
+                # recorded here, because only this run knows which values it kept:
+                # that depends on the rows it saw
                 _fold_tail_into_others(col_name)
 
                 # ensure the pivot names include the 'Others' bucket
@@ -1042,11 +1043,11 @@ class IbisQueryBuilder:
         # this query is written in
         target_dialect = source_dialect if self.use_live_connection else "duckdb"
 
-        # raw SQL names its tables itself, so every one of them goes back through
-        # the binding that applies the reader's permissions. Every SQL query
-        # but a stored procedure call, which names none and is trusted code
-        # (`trusted_code_of`) - `_validate_native_sql` refuses the other shapes a
-        # binding cannot be built for, rather than letting them through unbound
+        # raw SQL names its own tables, so each one is replaced with a binding
+        # that applies the reader's permissions. This covers every SQL query
+        # except a stored procedure call, which names no table and is trusted
+        # code (`trusted_code_of`). `_validate_native_sql` refuses the other
+        # shapes a binding cannot be built for, instead of running them unbound
         tables = self._get_sql_table_names(raw_sql, dialect=source_dialect)
         bindings = self._get_sql_table_bindings(
             db,
@@ -1057,8 +1058,8 @@ class IbisQueryBuilder:
         if raw_sql.lower().startswith(("select", "with")):
             parsed = sg.parse_one(raw_sql, dialect=source_dialect)
             self.refuse_held_back_in_sql(parsed, bindings)
-            # a binding goes to the database as SQL text, where the execution
-            # cannot follow which of its columns are read, so they are read here
+            # a binding reaches the database as SQL text, so the execution cannot
+            # tell which of its columns are read. Work that out here instead
             named = {column.name.lower() for column in parsed.find_all(sg.exp.Column)}
             reads_all = any(
                 isinstance(projection, sg.exp.Star) or isinstance(projection.this, sg.exp.Star)
@@ -1105,11 +1106,10 @@ class IbisQueryBuilder:
     def _validate_native_sql(
         self, raw_sql: str, use_live_connection: bool, dialect: sg.Dialect | None = None
     ) -> str:
-        """What a SQL query may be.
+        """Refuse a SQL query that the rest of `apply_sql` cannot run correctly.
 
-        Every shape this refuses is one the rest of `apply_sql` cannot honour.
-        They are stated here, together, because a refusal that arrives out of a
-        rewrite reads as a bug in the rewrite.
+        All the refusals are here together, because a refusal raised from
+        inside a rewrite looks like a bug in the rewrite.
         """
         raw_sql = raw_sql.strip()
 
@@ -1132,10 +1132,10 @@ class IbisQueryBuilder:
                     title=frappe._("Unsupported SQL Query"),
                 )
 
-        # every table a SQL query names is bound to a permission-filtered
-        # select, and a binding is looked up by the bare name — so a qualified
-        # reference would bind the same-named table in the default schema, a
-        # different table. Refused rather than bound wrongly.
+        # every table a SQL query names is replaced with a permission-filtered
+        # select, looked up by bare name. A qualified reference would then get
+        # the same-named table in the default schema, a different table. So it
+        # is refused.
         if any(ref.db or ref.catalog for ref in extract_sql_table_refs(raw_sql, dialect=dialect)):
             frappe.throw(
                 frappe._("Schema-qualified table names are not supported for native queries yet"),
@@ -1178,15 +1178,15 @@ class IbisQueryBuilder:
         tables: set[str],
         use_live_connection: bool,
     ) -> dict[str, IbisQuery]:
-        """The permission-filtered relation every table the SQL names is read through.
+        """The permission-filtered relation that replaces each table the SQL names.
 
-        Every table, even one with no `WHERE`: a held-back column narrows a
-        table too.
+        Every table gets one, even with no `WHERE`, because a held-back column
+        also narrows a table.
 
-        A binding is handed to `db` as SQL text, so ibis never executes it and
-        never registers the in-memory tables it names - on the data store, the
-        rows desk admits, read off the live site. They are registered here, as
-        ibis registers them before it executes an expression.
+        A binding is passed to `db` as SQL text, so ibis never executes it and
+        never registers the in-memory tables it names. On the Data Store these
+        hold the rows desk admits, read from the live site. They are registered
+        here, as ibis does before it executes an expression.
         """
         bindings = {}
 
@@ -1204,16 +1204,17 @@ class IbisQueryBuilder:
     def refuse_held_back_in_sql(
         self, parsed: sg.exp.Expression, relations: dict[str, IbisQuery], dropped_by_author=frozenset()
     ) -> None:
-        """Refuse a column `parsed` names that a relation it reads held back.
+        """Refuse a column in `parsed` that a relation it reads held back.
 
-        Raw SQL reads the relations bound for the reader, so a column held back
-        is missing there, and the database would answer a column error the card
-        offers to retry. The same refusal `get_column` gives an operation.
+        Raw SQL reads the relations bound for the reader, so a held-back column
+        is missing there. The database would raise a column error, and the card
+        would offer a retry. This gives the refusal `get_column` gives an
+        operation.
 
-        `relations` is keyed by the table name the SQL reads each one under. A
-        name is matched in any case, as the database reads it, and a qualified
-        one against the table its qualifier names. An unqualified name the SQL
-        defines itself, as an alias or a CTE's column, is not a table's.
+        `relations` is keyed by the table name the SQL reads each one as. A name
+        matches in any case, as the database reads it. A qualified name is
+        checked against the table its qualifier names. An unqualified name that
+        the SQL defines itself, as an alias or a CTE column, belongs to no table.
         """
         by_reference = {
             table.alias_or_name: relations[table.name]
@@ -1251,10 +1252,10 @@ class IbisQueryBuilder:
         that MariaDB reads as one, and it refuses the pair. Replacing the reference
         itself needs no name, so no spelling can collide.
 
-        Which references to swap is `real_table_refs`, the same rule the bindings
-        were built from. A reference it calls a CTE carries that block's columns
-        and not the table's, so binding it would ask the database for columns that
-        are not there.
+        `real_table_refs` decides which references to replace, the same rule the
+        bindings were built from. A reference it treats as a CTE has that block's
+        columns, not the table's, so binding it would ask the database for
+        columns that do not exist.
         """
         if not replace_map:
             return raw_sql
@@ -1309,7 +1310,7 @@ class IbisQueryBuilder:
         variables = resolve_variables(self.doc.execution_reference)
         # a variable value changes the output as surely as the code does, so it
         # belongs in the key that decides whether the script runs again. So does
-        # the user the script reads as
+        # the user the script runs as
         digest = make_digest(code, adhoc_filters, frappe.as_json(variables), get_permission_user())
 
         cached_results = None if self.force else get_cached_results(digest)
@@ -1434,8 +1435,8 @@ class IbisQueryBuilder:
         frappe.throw(f"Granularity {granularity} is not supported for Time columns", QueryRefused)
 
     def evaluate_expression(self, expression, right=None):
-        """`right` is a join's other table and its author's removals, named `t2`
-        beside the query being built as `t1`."""
+        """`right` is a join's other table and its author's removals. It is named
+        `t2`, beside the query being built as `t1`."""
         if not expression or not expression.strip():
             raise ExpressionSyntaxError(f"Invalid expression: {expression}")
 
@@ -1451,9 +1452,9 @@ class IbisQueryBuilder:
         try:
             ret = exec_with_return(expression, context)
         except (NameError, AttributeError) as e:
-            # the context is the columns the reader was left with, so a name
-            # held back is missing here, bare or off a table, the way it is
-            # from `get_column`
+            # the context holds only the columns left to the reader, so a
+            # held-back name is missing here, bare or on a table, as it is from
+            # `get_column`
             named_on = self.query if isinstance(e, NameError) else e.obj
             for table, dropped_by_author in tables:
                 if table is named_on and (doctype := self.held_back(e.name, table, dropped_by_author)):
@@ -1497,7 +1498,8 @@ def execute_ibis_query(
         # TODO: throw better error message
         raise
 
-    # what the rows read is known now, and a cached answer read it too
+    # the columns the query reads are known only now. Record them before
+    # returning a cached answer, which read the same columns
     user_permissions.record_blanked_reads(query)
 
     backend = query.get_backend()
@@ -1657,19 +1659,19 @@ def exec_with_return(
     _script = ast.unparse(tree)
     if _script.strip():
         safe_exec(_script, _globals, _locals)  # nosemgrep
-    # `safe_eval` starts from nothing, so a name frappe offers needs no stand-in,
-    # and a held-back column stays a NameError
+    # `safe_eval` starts with no globals, so frappe's other names need no
+    # `NotDefined` stand-in, and a held-back column name stays a NameError
     defined = {name: value for name, value in _globals.items() if not isinstance(value, NotDefined)}
     return safe_eval(output_expression, defined, _locals)  # nosemgrep
 
 
 def forget_folded_tails() -> None:
-    """Drop what the last build's splits folded, so one build never answers for another."""
+    """Clear the last build's folded tails, so one build never reports for another."""
     setattr(frappe.local, PIVOT_TAILS, set())
 
 
 def _fold_tail_into_others(column_name: str) -> None:
-    """Record that a split wrote `Others` over a tail of this column's values."""
+    """Record that a split replaced a tail of this column's values with `Others`."""
     folded = getattr(frappe.local, PIVOT_TAILS, None)
     if folded is None:
         folded = set()
@@ -1678,21 +1680,21 @@ def _fold_tail_into_others(column_name: str) -> None:
 
 
 def folded_a_tail(column_name: str) -> bool:
-    """Whether this build's split wrote `Others` over a tail of `column_name`.
+    """Whether this build's split replaced a tail of `column_name` with `Others`.
 
-    Only the split can say. Whether there was a tail depends on how many
-    distinct values the rows held when it ran, and `isin` keeps a value that is
-    really called `Others` under its own name - so one drawn series can hold
-    both, and a reader of the rows alone cannot tell which.
+    Only the split knows. Whether there was a tail depends on how many distinct
+    values the rows had at run time. Also, `isin` keeps a real value named
+    `Others` under its own name, so one series can hold both, and the rows
+    alone cannot tell which.
     """
     return column_name in (getattr(frappe.local, PIVOT_TAILS, None) or set())
 
 
 def _carried_tables(relation: IbisQuery, held: set[str], dropped_by_author: set[str]) -> set[str]:
-    """The tables under `relation` that it carries whole, less what this build
-    held back and what the author dropped. Only such a table can say which
-    held-back columns `relation` would have carried; a summarise or a select
-    above a table keeps only some of its columns."""
+    """The tables under `relation` whose columns it keeps in full, minus what
+    this build held back and what the author removed. Only such a table can
+    tell which held-back columns `relation` would have had. A summarize or a
+    select above a table keeps only some of its columns."""
     columns = set(relation.columns)
     dropped = held | dropped_by_author
     carried = set()
@@ -1706,8 +1708,8 @@ def _carried_tables(relation: IbisQuery, held: set[str], dropped_by_author: set[
 
 
 def _side(relation: IbisQuery, held: set[str], dropped_by_author: set[str]):
-    """Whether a name is a column of `relation` as its author would see it:
-    its own tables' held-back columns count, and a name the author dropped does
+    """A check of whether a name is a column of `relation` as its author sees
+    it: its tables' held-back columns count, and a name the author removed does
     not."""
     columns = set(relation.columns)
     tables = _carried_tables(relation, held, dropped_by_author)
@@ -1744,7 +1746,8 @@ def sanitize_name(name):
 
 
 def publish_script_logs():
-    # what a run for someone else printed was read as them, and the room is the caller's
+    # a run as another user printed data read with their permissions, and the
+    # realtime room belongs to the caller
     if get_permission_user() != frappe.session.user:
         return
 
@@ -1794,9 +1797,9 @@ def get_script_line_number(exc_value, tb) -> int | None:
 def resolve_variables(query: str) -> dict:
     """The values of the variables stored on `query`.
 
-    Never the rows of the document being run: `run_doc_method` builds it out of
-    the request body, so its row names are the caller's, and a row name is what
-    a secret is stored under.
+    Never from the rows of the document being run. `run_doc_method` builds that
+    document from the request body, so the caller picks its row names, and a
+    secret is stored under a row name.
     """
     from frappe.utils.password import get_decrypted_password
 
@@ -1810,7 +1813,7 @@ def resolve_variables(query: str) -> dict:
         value = get_decrypted_password(
             "Insights Query Variable", var.name, "variable_value", raise_exception=False
         )
-        # a copy carries the name and never the secret
+        # a copied query keeps the variable's name but not its secret value
         if value is None:
             frappe.throw(
                 frappe._("Fill in the value of the variable {0} on this query to run it.").format(
@@ -1831,7 +1834,7 @@ def get_code_results(code: str, variables: dict | None = None):
     start = time.monotonic()
     try:
         with ensure_rollback(), script_session():
-            # built inside the swap: `frappe.session.user` is read into the globals
+            # built inside `script_session`, because `script_globals` reads `frappe.session.user`
             _, _locals = safe_exec(code, _globals=script_globals(), _locals=_locals)  # nosemgrep
     except Exception:
         # the panel is the only place the script author sees anything, so the

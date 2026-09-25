@@ -16,18 +16,17 @@ the point. The builder shows the SQL it ran and opens a drill level as a query
 of its own, so this endpoint is closed to anyone without an Insights role.
 
 Two things are checked: the `Insights User` role `insights_whitelist` requires,
-which is the role, and read on the source query, because naming a query is how
-this endpoint says what to run. A caller who names a saved chart they may not
-write is not its author (`is_author`): `insights.api.view` answers them, as it
-answers every reader of the chart.
+and read on the source query, because naming a query is how this endpoint says
+what to run. A caller who names a saved chart they may not write is not its
+author (`is_author`). `insights.api.view` answers them, as it answers every
+reader of the chart.
 
 The caller already holds the role that lets them build any query, so a pipeline
 they send is one they could have run anyway.
 
-Whose permissions the engine applies is the named chart's answer, not the
-caller's: `permission_user.runs_as` is entered here exactly as the reader's
-path enters it, so the builder and the card a reader opens cannot disagree
-about one chart.
+The named chart, not the caller, decides whose permissions the engine applies.
+This module enters `permission_user.runs_as` exactly as `insights.api.view`
+does, so the Builder and a reader's card always agree about one chart.
 """
 
 import frappe
@@ -98,8 +97,8 @@ def get_chart_data(
     card draws and lands on the card's own derived query.
 
     A caller who may not write the saved chart they name is its reader, and
-    gets the reader's answer: routed by the saved `dashboard`, never by the grid
-    on the wire.
+    gets the reader's answer. It is routed by the saved `dashboard`, never by
+    the `dashboard_items` in the request.
     """
     if not is_author(chart_name):
         return view.get_chart_data(
@@ -123,7 +122,7 @@ def get_chart_data(
     operations = chart.get_operations()
     chart_query = chart.get_query()
     drawn_on = str(getdate(reading_day()))
-    # before the rows, as the view reads it
+    # read before the rows, as `view.chart_answer` does
     modified = chart.last_modified()
     with runs_as(chart):
         result = chart_query.execute(
@@ -132,7 +131,7 @@ def get_chart_data(
             page_size=page_size or (config or {}).get("limit") or 100,
             adhoc_filters=adhoc_filters,
         )
-        # read before the sparkline runs: a second build answers for itself
+        # read before the sparkline runs, because its build clears this record
         scope = user_permissions.scope(frappe.session.user)
         # a span card's series is fetched here too, under the same filters as the
         # rows, so the builder draws the card a reader will see
@@ -150,22 +149,22 @@ def get_chart_data(
         # so the card reads the span it asked for rather than counting back from
         # the end
         **({"comparison_rows": rows} if (rows := chart.comparison_rows(result["rows"])) else {}),
-        # what of the permissions this execution ran under narrowed these rows,
-        # said the same way the reader's card says it
+        # which permissions narrowed these rows, in the same shape as the
+        # reader's card
         **scope,
         "drill": {"dimensions": drill_dimensions(chart, operations)},
         "can_filter": can_filter_card(chart.name),
         "can_read_rows": can_read_rows(chart),
         "can_export": can_export(chart),
-        # the symbol of every currency code these rows carry, the same as a
-        # reader's card gets: a builder's grid card may be the first thing this
-        # session ran, so the query editor cannot be relied on to have filled it
+        # the symbol of every currency code in these rows, as a reader's card
+        # gets. A Builder grid card may be the first thing this session ran, so
+        # the query editor may not have filled the client's map yet
         "currency_symbols": result["currency_symbols"],
-        # the day this card's spans resolved against, so a drill is cut for the
-        # day the number was read
+        # the date this card's Spans resolved against, so a drill uses the same
+        # date as the number
         "drawn_on": drawn_on,
-        # the version of the saved chart this ran as, which a drill carries back
-        # and is refused once a teammate's save moved it
+        # the version of the saved chart this ran as. A drill sends it back and
+        # is refused once another user's save changed it
         "modified": modified,
         "time_taken": result["time_taken"],
         "executed_at": frappe.utils.now(),
@@ -189,9 +188,9 @@ def get_chart_count(
     card_filters: list | None = None,
     force: bool = False,
 ):
-    """How many rows the pages of `get_chart_data` are cut from, under the same filters.
+    """The total number of rows behind the pages of `get_chart_data`, under the same filters.
 
-    A caller who is not the author counts the saved chart, through `insights.api.view`.
+    A caller who is not the author counts the saved chart through `insights.api.view`.
     """
     if not is_author(chart_name):
         return view.get_chart_count(
@@ -218,9 +217,9 @@ def download_chart_rows(
     card_filters: list | None = None,
     format: str = "csv",
 ):
-    """Every row the pages of `get_chart_data` are cut from, as a file, under the same filters.
+    """Every row behind the pages of `get_chart_data` as a file, under the same filters.
 
-    A caller who is not the author downloads the saved chart, through `insights.api.view`.
+    A caller who is not the author downloads the saved chart through `insights.api.view`.
     """
     if not is_author(chart_name):
         return view.download_chart_rows(
@@ -259,17 +258,17 @@ def get_drill_data(
     table, the `operations` it is editing. Neither exists as a document yet,
     which is why this endpoint exists.
 
-    A rows level is read here, the way `insights.api.view` reads one: `sort`,
-    `find`, `page` and `row_filters` are the reader's reading of it. The
-    answer also carries the cut pipeline, because "open as query" adds the
-    level to the workbook as a query of its own. That field is what a view
-    must never receive (see the module docstring).
+    A rows level is read here as `insights.api.view` reads one, with the
+    reader's `sort`, `find`, `page` and `row_filters`. The answer also carries
+    the cut pipeline, because "open as query" adds the level to the workbook as
+    a new query. A View must never receive that field (see the module
+    docstring).
 
-    A refusal is an answer, for the reason `insights.api.view` states over its
-    own drill: the dialog draws a refused level, and the builder's dialog is
-    the same component the reader's is.
+    A refusal is a normal answer, for the reason `view.get_drill_data` gives:
+    the dialog renders a refused level, and the Builder uses the same dialog
+    component as a View.
 
-    A caller who is not the author of the chart they name drills it as its
+    A caller who is not the author of the chart they name drills it as a
     reader, through `insights.api.view`.
     """
     if not is_author(chart_name):
@@ -288,7 +287,7 @@ def get_drill_data(
         query, chart_type, config, chart_name, dashboard_items, filters, card_filters
     )
 
-    # `drill_data` enters the pair itself, for the chart it is handed
+    # `drill_data` enters `runs_as` and `read_on` itself, for the chart it is given
     response = drill_data(
         chart,
         drill_stack,
@@ -302,9 +301,9 @@ def get_drill_data(
     )
     if asks_for_rows(drill_stack):
         response["can_export"] = can_export(chart)
-    # the dashboard filters on a query the chart's query reads narrowed these
-    # rows, and the query the level opens as has no step to put them in
-    # (`_as_opened` carries the chart's own query's)
+    # dashboard filters linked to a query that the chart's query reads narrowed
+    # these rows. The query the level opens as has no step to hold them
+    # (`_as_opened` carries only the filters on the chart's own query)
     response["uncarried_filters"] = [
         name
         for name, linked, _column, _state in routed_filter_links(dashboard_items, chart_name, filters)
@@ -332,7 +331,7 @@ def download_drill_rows(
     format: str = "csv",
     row_filters: list | None = None,
 ):
-    """The rows behind a segment of a shape nobody saved, as a file, read as `get_drill_data` reads them."""
+    """The rows behind a segment of an unsaved shape as a file, read as `get_drill_data` reads them."""
     if not is_author(chart_name):
         return view.download_drill_rows(
             chart=chart_name,
@@ -380,7 +379,7 @@ def get_drill_rows_values(
     row_filters: list | None = None,
     search_term: str | None = None,
 ):
-    """The values a reader's own filter on a rows level of an unsaved shape offers."""
+    """The values listed by the reader's own filter on a rows level of an unsaved shape."""
     if not is_author(chart_name):
         return view.get_drill_rows_values(
             chart=chart_name,
@@ -422,7 +421,7 @@ def get_drill_rows_range(
     card_filters: list | None = None,
     row_filters: list | None = None,
 ):
-    """The range a number filter on a rows level of an unsaved shape offers."""
+    """The range shown by a number filter on a rows level of an unsaved shape."""
     if not is_author(chart_name):
         return view.get_drill_rows_range(
             chart=chart_name,
@@ -477,7 +476,7 @@ def get_drill_dimensions(
 
 
 def check_read_access(query: str, chart_name: str | None = None):
-    """Read on every document this request names. The role is the decorator's."""
+    """Read on every document this request names. `insights_whitelist` checks the role."""
     frappe.has_permission(QUERY, ptype="read", doc=query, throw=True)
 
     # the preview runs under the named chart, and that name tells the engine
@@ -494,13 +493,12 @@ def check_read_access(query: str, chart_name: str | None = None):
 def is_author(chart_name: str | None) -> bool:
     """Whether the caller is the author of what runs under `chart_name`.
 
-    Naming a chart hands what runs that chart's declaration: whose permissions
-    filter the rows (`permission_user_for`). A shape the caller wrote borrows
-    it only when the caller may change the chart - the answer its form's
-    `read_only` gives - because saving that shape would make it the chart's
-    content. Anyone else is the chart's reader,
-    whatever they sent. A name no chart holds is the builder's unsaved card,
-    which declares nothing.
+    Naming a saved chart runs the request under that chart's Run as owner
+    setting (`permission_user_for`). A shape the caller sent may use it only if
+    the caller may change the chart, the same answer as the form's
+    `read_only`, because saving that shape would make it the chart's content.
+    Anyone else is a reader of the chart, whatever they sent. A name no chart
+    has is the Builder's unsaved card, which has no such setting.
     """
     if not chart_name or not frappe.db.exists(CHART, chart_name):
         return True
@@ -509,7 +507,7 @@ def is_author(chart_name: str | None) -> bool:
 
 
 def chart_to_run(chart_type: str | None, query: str, config: dict | None, chart_name: str | None):
-    """The shape on the wire, run under the saved chart it names, if any."""
+    """The shape in the request, run under the saved chart it names, if any."""
     saved = chart_name and frappe.db.exists(CHART, chart_name)
     return preview_chart(chart_type, query, config, name=chart_name if saved else None)
 
@@ -523,9 +521,9 @@ def preview_chart(chart_type: str | None, query: str, config: dict | None, name:
 
     `name` is the saved chart this preview runs as, when `chart_to_run` found
     one. The throwaway query takes that name, so a filter linked to the chart
-    lands on it here as it does on the saved chart's own read path — and a
-    preview that borrows no declaration is named after its source query instead,
-    which is the name the card filters are routed to either way.
+    applies here as it does on the saved chart's own read path. A preview with
+    no saved chart is named after its source query instead. Card filters are
+    routed to `chart.name` in both cases.
     """
     chart = frappe.new_doc(CHART)
     # the throwaway query this becomes is named after the chart, and the builder

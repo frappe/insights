@@ -19,7 +19,7 @@ export type DashboardListItem = {
 	preview_image: string
 	views: number
 	is_favourite: boolean
-	/** Whether the caller may change it, and so redraw its preview. */
+	/** Whether the caller may write it, and so update its preview image. */
 	can_write: boolean
 }
 

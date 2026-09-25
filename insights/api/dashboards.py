@@ -29,17 +29,18 @@ def _match_charts(is_pattern: bool, values: list) -> list:
 
 
 def _match_data_sources(is_pattern: bool, values: list) -> list | None:
-    """Dashboards showing a chart the caller reads whose query reads a picked data source.
+    """Dashboards that show a chart built on one of the picked data sources.
 
-    Only a picked name: a chart's reader may learn which source it reads, and a
-    pattern would guess at the text of a pipeline they may not read. `is set`
-    arrives as the pattern `%`, which every name meets.
+    Only charts the caller may read count. Only exact names match, not patterns.
+    A chart's reader may learn which data source it reads, but a pattern would
+    probe the text of a query they may not read. `is set` arrives as the
+    pattern `%`, which matches every name.
     """
     if is_pattern and values != ["%"]:
         return None
 
-    # a chart only answers through a dashboard the caller lists, and a list of
-    # every chart they read is seconds long on a large site
+    # Start from the dashboards the caller can list. Only their charts can
+    # match, and listing every readable chart takes seconds on a large site.
     shown = frappe.get_all(
         DASHBOARD_CHART,
         filters={
@@ -149,7 +150,7 @@ def _enrich_dashboards(dashboards):
     for dashboard in dashboards:
         dashboard["views"] = view_counts.get(str(dashboard.name), 0)
         dashboard["is_favourite"] = bool(dashboard._liked_by) and user in frappe.as_json(dashboard._liked_by)
-        # whether the list offers to redraw the preview
+        # the list shows the preview refresh only to editors
         dashboard["can_write"] = can_write(frappe.get_doc(DASHBOARD, dashboard.name))
 
 
@@ -176,9 +177,10 @@ def dashboard_view_counts(names: list[str], since: str | None = None) -> dict[st
 
 @insights_whitelist()
 def update_dashboard_preview(dashboard_name: str):
-    """Redraw the preview every reader of the list sees, with the caller's rows.
+    """Regenerate the preview image from the caller's rows.
 
-    So only whoever may change the dashboard, as a save redraws it.
+    Every reader of the dashboard list sees this image, so only an editor may
+    regenerate it. A save regenerates it too.
     """
     frappe.has_permission(DASHBOARD, ptype="read", doc=dashboard_name, throw=True)
     dashboard = frappe.get_doc(DASHBOARD, dashboard_name)

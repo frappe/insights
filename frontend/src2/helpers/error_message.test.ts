@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { getErrorMessage } from './index'
 
-// What frappe-ui's `frappeRequest` rejects with. `messages` is the sentence the
-// server refused with, from `_server_messages`, which every user is sent; `exc`
-// is the traceback, sent to a System User only.
+// What frappe-ui's `frappeRequest` rejects with. `messages` is the server's error
+// text from `_server_messages`, which every user receives. `exc` is the
+// traceback, which only a System User receives.
 function refusal(fields: { messages?: string[]; exc?: string }) {
 	return Object.assign(new Error('/api/method/run_doc_method ValidationError'), fields)
 }
@@ -14,7 +14,7 @@ const SENTENCE =
 describe('getErrorMessage', () => {
 	// @feature permissions.error-is-text
 	it('reads the sentence to a user sent no traceback', () => {
-		// a plain Insights user: the Insights User role has no desk access
+		// an Insights User has no desk access, so gets no traceback
 		expect(getErrorMessage(refusal({ messages: [SENTENCE] }))).toBe(
 			'Fill in the value of the variable api_key on this query to run it.',
 		)

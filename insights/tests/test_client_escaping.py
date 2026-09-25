@@ -20,10 +20,10 @@ APP = Path(insights.__file__).parent.parent
 
 
 class TestErrorToastRendersText(UnitTestCase):
-    """The toast renders what the server sent, so it renders it as text.
+    """The toast shows the server's error as text.
 
-    frappe-ui owns the rendering, so what the app owns is the call: the error
-    line goes in as the message, and no path in the helper turns it into markup.
+    frappe-ui renders the toast, so the app owns only the call: the error goes
+    in as the message, and nothing in the helper turns it into markup.
     """
 
     # @feature permissions.error-is-text

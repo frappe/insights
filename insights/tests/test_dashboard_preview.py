@@ -61,7 +61,6 @@ class TestDashboardPreview(InsightsIntegrationTestCase):
         frappe.local.request = EnvironBuilder(headers={"Host": ATTACKER_HOST}).get_request()
 
     def reads_with_key(self, key, doctype, name):
-        """What a guest carrying this key may read, through the controller itself."""
         request_was = frappe.local.request
         frappe.local.request = EnvironBuilder(headers={"X-Insights-Preview-Key": key}).get_request()
         try:
@@ -100,8 +99,8 @@ class TestDashboardPreview(InsightsIntegrationTestCase):
                     (DT.QUERY, self.other_query),
                 )
             }
-            # the page the browser opens reads through the viewer, like every
-            # other reader, and the rows it draws are the key user's
+            # the preview page loads through the viewer like any other reader,
+            # and its charts run as the user the key was made for
             opened["viewer_title"] = self.as_render(
                 opened["key"], lambda: get_dashboard(self.dashboard)["title"]
             )
@@ -154,7 +153,7 @@ class TestDashboardPreview(InsightsIntegrationTestCase):
     def test_the_render_draws_as_the_user_the_key_was_cut_for(self):
         draws_as = self.render(self.dashboard)["draws_as"]
         self.assertEqual(draws_as[self.chart], "Administrator")
-        # a chart the key does not open is drawn by nobody but the caller
+        # a chart the key does not open runs as the caller
         self.assertEqual(draws_as[self.other_chart], "Guest")
 
     # @feature dashboard.preview-image

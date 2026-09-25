@@ -28,11 +28,11 @@ class InsightsFolder(Document):
         self.validate_title()
 
     def validate_title(self):
-        """A file names a folder by its title, so two of one type in a workbook never share one.
+        """Keep folder titles unique per type within a workbook.
 
-        A new folder takes the next free title, the way the New folder button and a
-        restore both expect. A rename to a taken title is the author's choice, so
-        it is refused.
+        A workbook file identifies a folder by its title. A new folder takes the
+        next free title, as the New folder button and a restore both expect. A
+        rename to a taken title is the author's choice, so it is refused.
         """
         taken = set(
             frappe.get_all(

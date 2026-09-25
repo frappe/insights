@@ -54,9 +54,7 @@ change with the code:
 - `docs/adr/` — the decisions
 - `docs/agents/` — these conventions
 
-**Effort** documents describe how one piece of work got done. They live under
-`docs/projects/<effort-slug>/`, a symlink out of the repo. See
-`issue-tracker.md` for the close-out.
+**Effort** documents describe how one piece of work got done. They live under `docs/projects/<effort-slug>/`, which is a symlink to a directory outside the repo. See `issue-tracker.md` for the close-out.
 
 Never move an effort document into `docs/adr/` to keep it alive. Distill the
 decision and let the rest go.
@@ -67,7 +65,7 @@ When your output names a domain concept (in an issue title, a refactor proposal,
 
 If the concept you need isn't in the glossary yet, that's a signal — either you're inventing language the project doesn't use (reconsider) or there's a real gap (note it for `/domain-modeling`).
 
-Naming a new one: what it is, in the words the host platform already uses — never a metaphor. See `name-things-in-the-hosts-words`.
+To name a new concept, say what it is in the words the host platform already uses. Never use a metaphor. See `docs/adr/name-things-in-the-hosts-words.md`.
 
 ## Flag ADR conflicts
 

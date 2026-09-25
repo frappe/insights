@@ -7,8 +7,8 @@ import sqlparse
 
 
 def runs_stored_procedure(raw_sql: str) -> bool:
-    """Whether a SQL query's statement calls a stored procedure, which runs as
-    written: no table it reads is bound to the reader's permissions."""
+    """Whether a SQL query calls a stored procedure. A procedure runs as written,
+    so the reader's permissions do not limit the tables it reads."""
     return sqlparse.format(raw_sql, strip_comments=True).strip().lower().startswith("exec")
 
 
@@ -43,13 +43,14 @@ def extract_sql_table_refs(raw_sql: str, dialect: sg.Dialect | None = None) -> l
 
 
 def real_table_refs(parsed: sg.Expression) -> list[sg.exp.Table]:
-    """Every table reference in a statement that means a real table, for both
-    the permission binding and the rewrite that swaps each reference for it.
+    """Every table reference in a statement that names a real table. The
+    permission check and the rewrite that replaces each reference both use it.
 
-    A CTE hides a name only inside its own query block, and a subquery aliased
-    with a table's name hides it for that one source; sqlglot's scope walk
-    answers both, keyed by the reference's alias. A statement it cannot scope
-    takes every reference as real, which binds more, never less.
+    A CTE hides a table name only inside its own query block. A subquery
+    aliased with a table's name hides it for that one source. sqlglot's scope
+    walk handles both, keyed by the reference's alias. If sqlglot cannot build
+    scopes for a statement, every reference counts as real, which restricts
+    more, never less.
     """
     from sqlglot.optimizer.scope import Scope, build_scope
 
@@ -82,10 +83,10 @@ def referenced_queries(operations) -> set[str]:
 
 
 def check_source_workbook(workbook: str | None, source: str) -> None:
-    """A query's sources are queries of its own workbook.
+    """A query may only use queries of its own workbook as sources.
 
-    Reuse across workbooks comes through datasets, not through a reference. A
-    source no row holds is not answered here: the build says it is not found.
+    Datasets share queries across workbooks, not references. A source with no
+    row is not checked here; the build reports it as not found.
     """
     from insights.exceptions import QueryRefused
 
@@ -93,7 +94,7 @@ def check_source_workbook(workbook: str | None, source: str) -> None:
     if not row or row.workbook == workbook:
         return
 
-    # names nothing: the caller may not be able to read the query it names
+    # the message names no query, because the caller may not be allowed to read it
     frappe.throw(frappe._("A query of another workbook cannot be a source here"), QueryRefused)
 
 

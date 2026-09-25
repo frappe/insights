@@ -33,8 +33,8 @@ window.chart = chart
 // server derived — the same round trip the old client derivation already made
 const preview = useChartPreview(chart)
 provide(chartPreviewKey, preview)
-// a caller who may not write the chart is its reader: the preview runs the
-// stored chart, so an edit here would be drawn over rows it did not decide
+// for a user who cannot write the chart, the preview runs the stored chart, so
+// an edit here would not change the rows it shows
 const readOnly = computed(() => preview.doc.can_write === false)
 
 // the first draw separately, so opening a chart does not wait out the debounce
@@ -152,10 +152,9 @@ const showShareDialog = ref(false)
 		</div>
 	</div>
 
-	<!-- `v-if`, so the dialog's draft is seeded from a loaded document. Mounted
-	     unconditionally it runs its `<script setup>` on the chart's first visit,
-	     while `loadDoc()` is still out, and snapshots `INITIAL_DOC` — Private,
-	     no roles, the box on. Done is then enabled the moment it opens and one
-	     press unpublishes the chart. -->
+	<!-- `v-if`, so the dialog's draft starts from the loaded document. Without
+	     it, `<script setup>` runs on the chart's first visit, before `loadDoc()`
+	     returns, and copies `INITIAL_DOC`: Private, no roles, Run as owner on.
+	     Done is then enabled at once, and one click unpublishes the chart. -->
 	<ChartShareDialog v-if="showShareDialog" v-model="showShareDialog" :chart="chart" />
 </template>

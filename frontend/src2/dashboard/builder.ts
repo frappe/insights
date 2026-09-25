@@ -1,10 +1,9 @@
-// The dashboard the builder is editing, rather than a saved one named to the
-// server. It loads the document resource, and everything above the fetch is the
-// same page.
+// The dashboard the builder edits. It loads the document resource instead of
+// asking the view endpoints by name. Above the fetch, the page is the same.
 //
-// It lives apart from `view.ts` for the same reason `chart_preview` lives apart
-// from `chart_view`. The editing layer pulls in the workbook's stores and forms,
-// which an island carries neither the weight nor the rights for.
+// It is separate from `view.ts` for the same reason `chart_preview` is separate
+// from `chart_view`. The builder imports the workbook's stores and forms. An
+// island must not carry their weight, and its reader lacks the rights for them.
 
 import { computed, provide, reactive, watch } from 'vue'
 import { safeJSONParse, waitUntil } from '../helpers'
@@ -19,7 +18,7 @@ import {
 	type FilterState,
 } from './view'
 
-/** The charts this dashboard may draw from — the workbook's, not the site's. */
+/** The charts this dashboard may use: the workbook's, not every chart on the site. */
 export const chartOptionsKey = 'dashboardChartOptions'
 
 export function useDashboardBuilder(name: string, charts: WorkbookChart[]): DashboardInBuilder {
@@ -39,18 +38,18 @@ export function useDashboardBuilder(name: string, charts: WorkbookChart[]): Dash
 		dashboard.addChart([chart], 'drag')
 	}
 
-	// A card collects its rows once the chart it draws has loaded: the preview is
-	// drawn from the chart's config. Every mount loads, and the read drops it
-	// when the rows on screen already answer the request: the chart or its query
-	// may have been saved while nothing drew it. `invalidateChart` marks rather
-	// than runs, so the card that has somewhere to put the rows collects the mark.
+	// A card loads its rows after its chart loads, because the preview is built
+	// from the chart's config. Every mount calls load, because the chart or its
+	// query may have been saved while no card showed it. The read skips the load
+	// if its request is unchanged. `invalidateChart` only marks the read stale, so
+	// the next mounted card runs the load.
 	const watched = new Set<string>()
 	function loadChart(chart_name: string) {
 		const chart = dashboard.chartsByName[chart_name]
 		waitUntil(() => Boolean(chart?.isloaded)).then(() => dashboard.refreshChart(chart_name))
 		if (watched.has(chart_name) || !chart) return
 		watched.add(chart_name)
-		// sorting a table card writes the chart's config, so the card asks again
+		// sorting a table card writes the chart's config, so the card reloads
 		watch(
 			() => JSON.stringify(chart.doc.config.order_by),
 			() => dashboard.refreshChart(chart_name),
@@ -67,14 +66,14 @@ export function useDashboardBuilder(name: string, charts: WorkbookChart[]): Dash
 		cellRules: computed(() => dashboard.cellRules),
 		verticalCompact: computed(() => Boolean(dashboard.doc.vertical_compact_layout)),
 
-		// An owner sees the default they set, not what they last picked: a default
-		// is a property of the document, and checking it is why they set one. So
-		// nothing is remembered here and nothing is saved.
+		// The owner sees the defaults they set, not their last choice. A default
+		// belongs to the document, and the owner is here to check it. So nothing is
+		// stored in the browser.
 		filters: computed(() => dashboard.filterStates),
 		setFilter: (filter_name: string, filter?: FilterState) =>
 			dashboard.updateFilterState(filter_name, filter?.operator, filter?.value),
-		// The one thing the builder can ask that a reader cannot: a filter whose
-		// link the document has not saved yet, previewed against the chart it names.
+		// Unlike a reader, the builder can get values for a filter whose link is not
+		// saved yet. The values come from the linked chart.
 		filterValues: (filter_name: string, search_term?: string) => {
 			const filter = dashboard.doc.items.find(
 				(item) => item.type === 'filter' && item.filter_name === filter_name,
@@ -100,11 +99,11 @@ export function useDashboardBuilder(name: string, charts: WorkbookChart[]): Dash
 		refresh: dashboard.refresh,
 
 		builder: reactive({
-			// the page only reads it — turning it on and off is the chrome's own
+			// read-only here. `DashboardEditActions` turns editing on
 			editing: computed(() => dashboard.editing),
-			// A width is only arranged while editing. Done leaves the owner on the
-			// grid their own screen asks for, rather than in the box they last
-			// arranged, and nothing has to be put back.
+			// A breakpoint is arranged only while editing. After Done, the owner sees
+			// the grid for their own screen, not the last breakpoint they arranged, and
+			// nothing needs resetting.
 			arranging: computed(() =>
 				dashboard.editing ? dashboard.arranging : BASE_BREAKPOINT.key,
 			),

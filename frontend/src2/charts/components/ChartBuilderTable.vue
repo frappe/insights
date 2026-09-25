@@ -13,7 +13,6 @@ import type { ChartSegmentClick } from '../drill/segment_click'
 import { getGranularity } from '../helpers'
 
 const props = defineProps<{
-	/** a caller who may not write the chart: its sort and grain are not theirs to change */
 	readOnly?: boolean
 }>()
 

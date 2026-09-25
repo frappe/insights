@@ -94,7 +94,7 @@ def import_workbook(workbook: dict | str):
 
 @insights_whitelist()
 def is_workbook_file(workbook: dict | str):
-    """Whether a pasted file is a workbook the importer reads."""
+    """Whether a pasted file is an importable workbook."""
     from insights.insights.doctype.insights_workbook.insights_workbook import is_workbook_file
 
     return is_workbook_file(workbook)
@@ -102,7 +102,7 @@ def is_workbook_file(workbook: dict | str):
 
 @insights_whitelist(role="Insights Admin")
 def get_export_modules():
-    """The modules the "Export to app…" dialog may ship a workbook in."""
+    """Modules the "Export to app…" dialog can export a workbook into."""
     from insights import standard
 
     return standard.export_modules()
@@ -182,10 +182,10 @@ def update_share_permissions(
     )
 
     allowed_users = {permission["user"] for permission in user_permissions}
-    # the dialog posts back every share it was shown, so only a new person or a
-    # widened grant names anyone; a kept share with someone who has since left
-    # Insights would otherwise refuse every later save. A removed person keeps
-    # a row with no access, and giving it back widens it.
+    # The dialog posts back every share it showed, so validate only a new
+    # person or a raised access level. Otherwise a kept share with someone who
+    # has left Insights would block every later save. A removed person keeps a
+    # row with no access, so giving access back counts as raising it.
     held = {share.user: access_level(share) for share in existing_shares if share.user}
     validate_shareable_users(
         {

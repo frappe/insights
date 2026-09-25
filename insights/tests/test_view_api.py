@@ -19,13 +19,12 @@ from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import DT, as_user, create_user, delete_users, delete_workbooks
 
 OWNER = "view_api_owner@test.com"
-# admitted by visibility, holds no Insights role at all - the desk reader this
-# ticket is for
+# has no Insights role and reads content through its visibility level
 DESK_USER = "view_api_desk_user@test.com"
-# holds an Insights role, but the owner's content never admits them
+# has an Insights role, but no access to the owner's content
 OUTSIDER = "view_api_outsider@test.com"
-# owns nothing: a shipped workbook belongs to whoever ran migrate, so this is
-# the admin who copies it on a site
+# owns nothing. A shipped workbook belongs to whoever ran migrate, so a site's
+# admin copies content they do not own
 ADMIN = "view_api_admin@test.com"
 GUEST = "Guest"
 
@@ -59,8 +58,8 @@ def todo_operations():
 
 
 def table_config():
-    """A configured chart: one row per description, counted. The rows a chart
-    draws follow from this alone — nothing else describes its query."""
+    """A configured chart: one row per description, counted. The chart's rows
+    depend on this config alone; nothing else describes its query."""
     return {
         "limit": 50,
         "rows": [{"dimension_name": "description", "column_name": "description", "data_type": "String"}],
@@ -139,8 +138,8 @@ class TestViewAPI(InsightsIntegrationTestCase):
                     "query": query.name,
                     "chart_type": "Table",
                     "config": table_config(),
-                    # a chart of its own stays private: the dashboard's
-                    # visibility is what has to reach it
+                    # the chart is Private, so only the dashboard's
+                    # visibility can give access to it
                     "visibility": "Private",
                     # a Public dashboard carries only charts that run as their owner
                     "run_as_owner": int(visibility == "Public"),
@@ -176,7 +175,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
         )
 
     def ship(self, doc):
-        """As an import leaves it: the workbook row says the content is shipped."""
+        """Mark the content shipped, as an import does."""
         frappe.db.set_value(DT.WORKBOOK, doc.workbook, "is_standard", 1, update_modified=False)
         doc.db_set("is_standard", 1, update_modified=False)
         return frappe.get_doc(doc.doctype, doc.name)
@@ -205,38 +204,37 @@ class TestViewAPI(InsightsIntegrationTestCase):
 
     # @feature permissions.denied-is-not-found
     def test_a_dashboard_hands_over_only_the_charts_this_reader_may_read(self):
-        """A dashboard's level reaches every chart on it, and a User Permission
-        still narrows the reader: one on the query the first chart reads refuses
-        the second, and a title and a rendering config are that chart being
-        read."""
+        """A dashboard's visibility level reaches every chart on it, but a User
+        Permission still limits the reader. One on the first chart's query
+        refuses the second chart. Sending its title or config would count as
+        reading it."""
         _, chart, dashboard = self.make_content(visibility="Everyone")
         elsewhere = self.make_second_chart(dashboard)
         self.narrow_to_query(DESK_USER, chart.query)
 
         with as_user(DESK_USER):
             response = get_dashboard(dashboard=dashboard.name)
-            # the card itself is refused, which is the answer this one agrees with
+            # `get_chart` refuses the same chart
             with self.assertRaises(frappe.DoesNotExistError):
                 get_chart(chart=elsewhere.name, dashboard=dashboard.name)
 
         self.assertEqual([drawn["name"] for drawn in response["charts"]], [chart.name])
-        # and the cell goes with the chart: a cell naming a chart that is not in
-        # `charts` draws "Chart not found", and the docname of refused content
-        # crossing the wire is the content being read - after a workbook is
-        # shipped the docname *is* the title in readable form
+        # the cell goes too. A cell that names a chart missing from `charts`
+        # shows "Chart not found". The docname of refused content also leaks it:
+        # after a workbook is shipped, the docname is the title in readable form
         named = [item.get("chart") for item in response["items"] if item["type"] == "chart"]
         self.assertEqual(named, [chart.name])
         self.assertNotIn(elsewhere.name, frappe.as_json(response))
 
     # @feature permissions.denied-is-not-found
     def test_a_dashboard_with_no_chart_this_reader_may_read_is_not_found(self):
-        """Not Found is the one answer for content a reader may not read. A wall
-        of "Chart not found" is not one of the card's states."""
+        """Not Found is the only answer for content a reader may not read. A grid
+        of "Chart not found" cards is not an answer."""
         _, chart, dashboard = self.make_content(visibility="Everyone")
         elsewhere = self.make_second_chart(dashboard)
 
-        # the grid names one chart, and it reads a query this reader is
-        # narrowed away from
+        # the grid keeps one chart, whose query the reader's User Permission
+        # excludes
         with as_user(OWNER):
             doc = frappe.get_doc(DT.DASHBOARD, dashboard.name)
             doc.items = [
@@ -256,9 +254,9 @@ class TestViewAPI(InsightsIntegrationTestCase):
 
     # @feature permissions.denied-is-not-found
     def test_a_dashboard_whose_charts_are_gone_opens_for_its_author(self):
-        """A chart that no longer exists is not a chart this reader was refused.
-        Before a chart's delete took its cells off, a delete left the cell
-        naming it."""
+        """A chart that no longer exists was not refused to the reader. Before a
+        chart's delete removed its cells, the delete left a cell that named
+        it."""
         _, chart, dashboard = self.make_content(visibility="Private")
         elsewhere = self.make_second_chart(dashboard)
 
@@ -270,7 +268,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
                 if item.get("chart") != chart.name and item.get("type") != "filter"
             ]
             doc.save()
-        # gone the way a delete left it before
+        # delete the chart but keep its cell, as older deletes did
         frappe.db.delete(DT.CHART, elsewhere.name)
 
         with as_user(OWNER):
@@ -342,7 +340,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
     # @feature permissions.non-insights-user permissions.chart-run-as-owner
     def test_a_reader_without_an_insights_role_fetches_chart_data(self):
         _, chart, dashboard = self.make_content(visibility="Everyone")
-        # the rows the desk user sees are the owner's, because the chart says so
+        # the desk user sees the owner's rows, because the chart runs as its owner
         chart.db_set("run_as_owner", 1, update_modified=False)
 
         result = self.fetch_data(DESK_USER, chart.name, dashboard.name, force=True)
@@ -357,21 +355,21 @@ class TestViewAPI(InsightsIntegrationTestCase):
 
         result = self.fetch_data(DESK_USER, chart.name, dashboard.name, force=True)
 
-        # an unchecked box is the engine's native permission application, so a
-        # roleless reader sees none of the owner's rows
+        # with Run as owner off, the engine applies the reader's own permissions,
+        # so a roleless reader sees none of the owner's rows
         self.assertEqual(self.descriptions(result), [])
 
     # @feature charts.missing-slot-message
     def test_an_unconfigured_chart_says_so_instead_of_drawing_its_source(self):
         _, chart, dashboard = self.make_content(visibility="Everyone")
         chart.db_set("run_as_owner", 1, update_modified=False)
-        # a table chart that names no rows. Falling back to the source query here
-        # drew the raw table and called it the chart
+        # a table chart with no rows configured. Falling back to the source query
+        # here used to show the raw table as the chart
         chart.db_set("config", frappe.as_json({"limit": 50}), update_modified=False)
 
         result = self.fetch_data(DESK_USER, chart.name, dashboard.name, force=True)
 
-        # what is missing, as the builder says it, and no rows
+        # the builder's message for what is missing, and no rows
         self.assertEqual(result["errors"], ["Rows are required"])
         self.assertNotIn("rows", result)
 
@@ -384,8 +382,8 @@ class TestViewAPI(InsightsIntegrationTestCase):
             self.descriptions(self.fetch_data(DESK_USER, chart.name, dashboard.name)), sorted(OWNER_TODOS)
         )
 
-        # the config is the whole description of the query, so editing it is all
-        # it takes — no builder session, no second document to keep in step
+        # the config fully describes the query, so editing it is enough. There is
+        # no builder session or second document to keep in sync
         config = table_config()
         config["rows"] = [{"column_name": "status", "dimension_name": "status", "data_type": "String"}]
         chart.db_set("config", frappe.as_json(config), update_modified=False)
@@ -422,8 +420,8 @@ class TestViewAPI(InsightsIntegrationTestCase):
 
         with as_user(DESK_USER):
             self.assertEqual(get_chart(chart=chart.name, dashboard=dashboard.name)["name"], chart.name)
-            # the grant sits on the document, not on the path taken to it, so
-            # the same chart answers a standalone reference too
+            # the grant is on the document, not on the path to it, so the chart
+            # also resolves without a dashboard
             self.assertEqual(get_chart(chart=chart.name)["name"], chart.name)
 
         # a private chart no readable dashboard links to stays not found
@@ -483,8 +481,9 @@ class TestViewAPI(InsightsIntegrationTestCase):
         with as_user(GUEST), self.assertRaises(frappe.DoesNotExistError):
             get_dashboard(dashboard=dashboard.name)
 
-        # saved and not written: the save is what refuses a chart that runs as
-        # its reader, and a guest applying their own would read an empty page
+        # saved, not db_set: the save refuses a Public dashboard with a chart that
+        # runs as its reader, because a guest has no permissions and would see an
+        # empty page
         with as_user(OWNER):
             chart.run_as_owner = 1
             chart.save()
@@ -497,10 +496,10 @@ class TestViewAPI(InsightsIntegrationTestCase):
 
     # @feature dashboard.list
     def test_opening_a_dashboard_counts_as_a_view_for_every_reader(self):
-        """What a reader saw last is the same question on every surface.
+        """A dashboard opened anywhere counts toward what the reader viewed last.
 
-        A guest is counted too: every guest is one user, so their rows are a
-        floor on public views, which is what `site_profile` reads them as.
+        A guest is counted too. All guests are one user, so their rows are a
+        lower bound on public views. `site_profile` reads them that way.
         """
         _, _, dashboard = self.make_content(visibility="Public")
 
@@ -556,8 +555,8 @@ class TestViewAPI(InsightsIntegrationTestCase):
         _, _, dashboard = self.make_content(visibility="Everyone")
         dashboard = self.ship(dashboard)
 
-        # a developer-mode bench is the one place shipped content is editable,
-        # and this is the answer for every other site
+        # shipped content is editable only on a developer-mode bench; this is
+        # the answer for every other site
         with patch.dict(frappe.conf, {"developer_mode": 0}):
             with as_user(OWNER):
                 response = get_dashboard(dashboard=dashboard.name)
@@ -565,7 +564,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
             self.assertFalse(response["can_write"])
             self.assertTrue(response["can_copy"])
 
-            # copying is an authoring action, so a roleless reader is not offered it
+            # copying is an authoring action, so a roleless reader cannot copy
             with as_user(DESK_USER):
                 response = get_dashboard(dashboard=dashboard.name)
             self.assertFalse(response["can_copy"])
@@ -621,10 +620,10 @@ class TestViewAPI(InsightsIntegrationTestCase):
 
     # @feature charts.one-snapshot
     def test_the_rows_arrive_with_the_chart_they_were_computed_from(self):
-        """`makeSavedChartView`'s load draws the `chart` this answer carries in the
-        same step as its rows, so a card never holds a definition its rows do not
-        answer. The chart is edited between two unforced reads, as an author in
-        another tab would."""
+        """The answer carries the `chart` with its rows, and `makeSavedChartView`
+        loads both in one step. So a card never holds a definition that its rows
+        do not match. The chart is edited between two unforced reads, as an
+        author in another tab would."""
         _, chart, dashboard = self.make_content(visibility="Everyone")
         chart.db_set("run_as_owner", 1, update_modified=False)
 
@@ -645,7 +644,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
         self.assertEqual(second["chart"]["title"], "Top Description")
         self.assertEqual(second["chart"]["config"]["limit"], 1)
         self.assertEqual(len(second["rows"]), 1)
-        # the version a drill from this card carries back
+        # a drill from this card sends this version back
         self.assertEqual(
             second["chart"]["modified"], str(frappe.db.get_value(DT.CHART, chart.name, "modified"))
         )
@@ -675,8 +674,8 @@ class TestViewAPI(InsightsIntegrationTestCase):
             response = get_dashboard(dashboard=dashboard.name)
 
         filter_item = next(item for item in response["items"] if item["type"] == "filter")
-        # enough to refetch just those cards and to let an empty card blame the
-        # filter, without saying which column it lands on
+        # enough to refetch only those cards and to let an empty card name the
+        # filter, without exposing the column it filters
         self.assertEqual(filter_item["charts"], [chart.name])
         self.assertEqual(filter_item["filter_type"], "String")
 
@@ -696,11 +695,11 @@ class TestViewAPI(InsightsIntegrationTestCase):
 
     # @feature permissions.non-insights-user dashboard.filter-values
     def test_a_roleless_reader_reaches_what_the_authoring_endpoints_gate(self):
-        """The `Insights User` check sits on the endpoint, not on the computation.
+        """The `Insights User` check is on the endpoint, not on the computation.
 
-        A view needs the same two answers an authoring client asks for — how many
-        rows are behind a number, and what values a column offers — and holds no
-        Insights role to ask with.
+        A view needs two answers that authoring clients also ask for: how many
+        rows are behind a number, and which values a column has. The view's
+        reader has no Insights role.
         """
         query, chart, dashboard = self.make_content(visibility="Everyone")
         chart.db_set("run_as_owner", 1, update_modified=False)
@@ -722,16 +721,16 @@ class TestViewAPI(InsightsIntegrationTestCase):
             values = get_filter_values(dashboard=dashboard.name, filter_name="Description")
 
         # empty, not refused: the chart applies each reader's permissions, so a
-        # reader is offered the values their own permissions reach
+        # reader gets only the values their own permissions allow
         self.assertEqual(values, [])
 
     # @feature permissions.request-body-not-trusted
     def test_a_reader_cannot_supply_the_routing_table(self):
         """`run_doc_method` builds the document from the request body, so the
-        grid in hand is the caller's. A forged link would narrow a published
-        filter's list by a column nobody published."""
+        caller controls its items. A forged link would filter a published
+        filter's values by a column the author never published."""
         query, chart, dashboard = self.make_content(visibility="Everyone")
-        # runs as its owner, so the reader sees a list to narrow in the first place
+        # the chart runs as its owner, so the reader has values to filter
         frappe.db.set_value(DT.CHART, chart.name, "run_as_owner", 1, update_modified=False)
 
         forged = frappe.get_doc(DT.DASHBOARD, dashboard.name)
@@ -751,15 +750,15 @@ class TestViewAPI(InsightsIntegrationTestCase):
         with as_user(DESK_USER), db_connections():
             values = forged.get_distinct_column_values("Description", filter_context=context)
 
-        # unnarrowed: the list is the published filter's whole offer, not the
-        # answer to "which of these are Closed"
+        # not filtered: the list holds all of the published filter's values, not
+        # only the Closed ones
         self.assertEqual(sorted(values), sorted(OWNER_TODOS))
 
     # @feature permissions.request-body-not-trusted
     def test_an_insights_user_cannot_claim_write_on_the_dashboard_in_hand(self):
-        """The write check is about this very document, so it is asked by name.
-        `has_doc_permission` reads `owner` and `__islocal` off the object it is
-        handed, and both are copied straight out of the request body."""
+        """The write check must be about the stored document, so it looks the
+        document up by name. `has_doc_permission` reads `owner` and `__islocal`
+        from the object it gets, and both come from the request body."""
         query, chart, dashboard = self.make_content(visibility="Everyone")
         frappe.db.set_value(DT.CHART, chart.name, "run_as_owner", 1, update_modified=False)
 
@@ -784,11 +783,10 @@ class TestViewAPI(InsightsIntegrationTestCase):
 
     # @feature permissions.chart-cannot-link-unreadable-query permissions.denied-is-not-found
     def test_a_filter_cannot_read_a_query_the_dashboard_does_not_reach(self):
-        """A filter link names a query, and whoever may save the dashboard wrote
-        that row. A link routes nowhere unless the card already reads the query
-        it names, so one that does not is no filter at all — and a filter that is
-        not on this dashboard answers like any other reference the caller may not
-        have."""
+        """A filter link names a query, and anyone who may save the dashboard can
+        write it. A link applies only if the card already reads the query it
+        names. Otherwise the filter is Not Found, like any other reference the
+        caller may not read."""
         _, chart, dashboard = self.make_content(visibility="Everyone")
 
         with as_user(OUTSIDER):
@@ -819,24 +817,23 @@ class TestViewAPI(InsightsIntegrationTestCase):
         with as_user(DESK_USER), db_connections(), self.assertRaises(frappe.DoesNotExistError):
             get_filter_values(dashboard=dashboard.name, filter_name="Elsewhere")
 
-        # and the owner of both, who may read the query the link names, is
-        # refused by the same rule: the card is what says where a filter lands
+        # the owner of both can read the linked query, and is refused by the
+        # same rule: the card decides where a filter applies
         with as_user(OWNER), db_connections(), self.assertRaises(frappe.DoesNotExistError):
             get_filter_values(dashboard=dashboard.name, filter_name="Elsewhere")
 
     # @feature permissions.chart-cannot-link-unreadable-query permissions.chart-run-as-owner
     def test_a_filter_reaches_a_query_one_step_under_the_card(self):
-        """A summarized card's own query names no dimension column, so a filter
-        on it links a query a hop further down — the move the editor offers, and
-        the only one that works. `view.get_filter_values` answers the card's
-        reader through the chart, because the number they are looking at was
-        computed through that query - not through a grant on the query, which a
-        level alone never gives."""
+        """A summarized card's own query has no dimension column, so a filter on
+        it links a query one step further down. The editor lists that query, and
+        it is the only link that works. `view.get_filter_values` answers through
+        the chart, because the reader's number was computed through that query.
+        A visibility level never grants read on the query itself."""
         _, chart, dashboard = self.make_content(visibility="Everyone")
         frappe.db.set_value(DT.CHART, chart.name, "run_as_owner", 1, update_modified=False)
 
-        # a source of the card's own query: in the graph the card reads, and
-        # granted to nobody the dashboard admits
+        # a source of the card's query: part of what the card reads, but granted
+        # to no reader of the dashboard
         with as_user(OWNER):
             source = frappe.get_doc(
                 {
@@ -866,7 +863,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
         )
         frappe.db.set_value(DT.DASHBOARD, dashboard.name, "items", json.dumps(items), update_modified=False)
 
-        # the level published the picture, not the pipeline behind it
+        # the visibility level shares the chart, not the queries behind it
         with as_user(DESK_USER):
             self.assertFalse(may_read(frappe.get_doc(DT.QUERY, source.name)))
 
@@ -877,9 +874,9 @@ class TestViewAPI(InsightsIntegrationTestCase):
 
     # @feature permissions.chart-cannot-link-unreadable-query
     def test_one_unreadable_link_does_not_refuse_the_filter_behind_it(self):
-        """`links` is a dict in the order the author toggled the cards, so a
-        link this caller may not read must be skipped and not thrown on — or the
-        same dashboard answers or refuses depending on which card was toggled
+        """`links` keeps the order in which the author toggled the cards. A link
+        the caller may not read must be skipped, not raised. Otherwise the same
+        dashboard answers or refuses depending on which card was toggled
         first."""
         _, chart, dashboard = self.make_content(visibility="Everyone")
         elsewhere = self.make_second_chart(dashboard)
@@ -891,7 +888,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
                 "type": "filter",
                 "filter_name": "Either",
                 "filter_type": "String",
-                # the refused card first, which is what makes this reachable
+                # the refused card first, so the skip is tested
                 "links": {
                     elsewhere.name: f"`{elsewhere.query}`.`description`",
                     chart.name: f"`{chart.query}`.`description`",
@@ -946,7 +943,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
         with as_user(DESK_USER):
             self.assertIsNone(get_dashboard(dashboard=dashboard.name)["workbook"])
 
-    # more than the picture: a page past the first, the count, the file
+    # beyond the chart: later pages, the row count, the download
 
     def paged_content(self, visibility="Everyone"):
         """A chart that runs as its owner, one row a page, over the owner's two todos."""
@@ -977,8 +974,8 @@ class TestViewAPI(InsightsIntegrationTestCase):
 
     # @feature charts.table-pager charts.export-rows
     def test_a_reader_who_may_read_rows_pages_counts_and_downloads(self):
-        """`view.get_chart_data`, `get_chart_count` and `download_chart_rows`,
-        which every view surface's table card calls."""
+        """Every view's table card calls `view.get_chart_data`, `get_chart_count`
+        and `download_chart_rows`."""
         chart, dashboard = self.paged_content()
 
         first = self.fetch_data(OWNER, chart.name, dashboard.name, force=True)
@@ -991,7 +988,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
         self.assertTrue(first["can_export"])
         self.assertEqual(sorted(self.descriptions(first) + self.descriptions(second)), sorted(OWNER_TODOS))
         self.assertEqual(count, len(OWNER_TODOS))
-        # the chart's own rows, summarized as it draws them
+        # the chart's own rows, summarized as it shows them
         lines = csv.strip().splitlines()
         self.assertEqual(lines[0], "description,count")
         self.assertEqual(len(lines), 1 + len(OWNER_TODOS))
@@ -1012,16 +1009,16 @@ class TestViewAPI(InsightsIntegrationTestCase):
 
     # @feature shared.no-drill charts.table-pager dashboard.card-filter permissions.run-as-owner-lapses
     def test_a_guest_gets_no_more_than_the_picture_of_a_public_chart_run_as_its_reader(self):
-        """`get_chart_count`, and the `can_read_rows` and `can_filter` answers
-        `view.get_chart_data` sends the card, on a Public chart that runs as its
-        reader: the box off, or its owner disabled. A signed-in reader of the
+        """A Public chart runs as its reader when Run as owner is off or its
+        owner is disabled. A guest then gets no row count, and no `can_read_rows`
+        or `can_filter` from `view.get_chart_data`. A signed-in reader of the
         same chart still reads their own rows."""
         from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import can_filter_card
         from insights.permissions import can_read_rows
 
         chart, _ = self.paged_content(visibility="Public")
-        # a guest whose own rows are Not Permitted finds no dashboard of them
-        # (`has_permitted_chart`); the chart's own link still reaches the chart
+        # the dashboard is Not Found for a guest with no permitted chart
+        # (`has_permitted_chart`), but the chart's own link still reaches it
         chart.db_set("visibility", "Public", update_modified=False)
 
         def as_its_reader(box_off):

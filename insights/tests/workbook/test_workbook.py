@@ -152,9 +152,8 @@ class TestWorkbook(InsightsIntegrationTestCase):
 
     # @feature workbook.folders workbook.duplicate
     def test_two_folders_of_one_type_never_share_a_title(self):
-        """The sidebar's New folder button calls `create_folder` with `Untitled`
-        on every click, and renaming calls `rename_folder`. A file names a folder
-        by its title, so two of one title would be one folder on every copy."""
+        """New folder always creates `Untitled`. An exported file refers to a
+        folder by its title, so two folders with one title become one in every copy."""
         bundle = create_workbook_bundle(USER_1, "Workbook Flow Test Folder Titles")
         workbook = bundle["workbook"].name
 
@@ -174,9 +173,7 @@ class TestWorkbook(InsightsIntegrationTestCase):
 
     # @feature upgrade.duplicate-folder-titles
     def test_folders_that_shared_a_title_before_the_rule_are_numbered_apart(self):
-        """`bench migrate` runs `number_duplicate_folder_titles` from
-        `patches.txt` over the folders a site already holds. Two clicks on New
-        folder wrote two `Untitled` folders before `validate_title` existed."""
+        """Before `validate_title`, two clicks on New folder created two `Untitled` folders."""
         from insights.patches.number_duplicate_folder_titles import execute
 
         bundle = create_workbook_bundle(USER_1, "Workbook Flow Test Duplicate Folder Titles")
@@ -184,7 +181,7 @@ class TestWorkbook(InsightsIntegrationTestCase):
         with self.as_user(USER_1):
             names = [create_folder(workbook, "Untitled", "query") for _ in range(4)]
             chart_folder = create_folder(workbook, "Untitled", "chart")
-        # three written under one title before the rule; "Untitled 2" is taken
+        # three old folders share one title, and "Untitled 2" is already used
         for name in (names[0], names[2], names[3]):
             frappe.db.set_value("Insights Folder", name, "title", "Untitled", update_modified=False)
 

@@ -32,21 +32,20 @@ export async function getTables(data_source?: string, search_term?: string, limi
 }
 
 const fetchingTable = ref(false)
-// A preview is a refusable endpoint: the caller may not read the table behind
-// it, and then nothing ran and the columns and rows are empty. The page says
-// so rather than drawing an empty grid.
+// When the caller may not read the table, nothing runs and the columns and
+// rows are empty. The page then shows Not Permitted, not an empty grid.
 export type DataSourceTablePreview = Refusable<{
 	table_name: string
 	data_source: string
 	columns: QueryResultColumn[]
 	rows: QueryResultRow[]
-	// what of the reader's own narrowed the cells, as a card says it
+	// the reader's User Permissions that filtered the rows, in a card's format
 	user_permissions?: AppliedUserPermission[]
 	narrowed_by_permissions?: boolean
 }>
-// A failure resolves rather than rejecting: the page draws four answers - a
-// preview, a refusal, a failure and the wait - and a rejected promise leaves it
-// on the wait forever with nothing to clear it.
+// A failure resolves to undefined instead of rejecting. The page has four
+// states: preview, Not Permitted, failure and loading. A rejected promise would
+// leave it loading forever.
 async function fetchTable(
 	data_source: string,
 	table_name: string,
@@ -78,12 +77,12 @@ async function getTableColumns(data_source: string, table_name: string) {
 }
 
 /**
- * How many rows a table holds, or nothing where the caller may not be told.
+ * The row count of a table, or undefined when the caller may not read it.
  *
- * The count is the one answer whose empty value *is* a zero, so the endpoint
- * refuses rather than answering (see `insights/not_permitted.py`). Resolving
- * the refusal here is what lets a caller clear the number it was showing
- * instead of leaving the last table's count under this table's name.
+ * An empty count is a real zero, so the endpoint throws instead of returning
+ * one (see `insights/not_permitted.py`). Resolving to undefined lets the caller
+ * clear the count it shows. Otherwise the previous table's count stays on
+ * screen under this table's name.
  */
 export async function getRowCount(
 	data_source: string,

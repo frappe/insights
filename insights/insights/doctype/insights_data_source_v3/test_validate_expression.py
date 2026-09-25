@@ -137,8 +137,8 @@ VALIDATOR = "expression-validator@test.com"
 class TestValidateExpressionSandbox(InsightsIntegrationTestCase):
     """`validate_expression` is whitelisted for any signed-in user, and the
     expression editor calls it on every keystroke. The caller sends the column
-    list, and a column with no type is a name the check passes but the
-    evaluation never binds, so `frappe` reaches the sandbox's own."""
+    list. A column with no type passes the check but is never bound during
+    evaluation, so the name `frappe` resolves to the sandbox's own `frappe`."""
 
     columns = json.dumps([{"value": "amount", "description": "Integer"}, {"value": "frappe"}])
 

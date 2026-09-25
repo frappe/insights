@@ -11,11 +11,9 @@ forms are accepted for a dashboard, two for a chart:
     v2 name      the primary key this document carried before the rename to v3,
                  kept in `old_name` so a link shared back then still opens
 
-The forms are discriminated by shape, not by trying every lookup and hoping: a
-docname is an existing primary key, a route is not. So the precedence is docname
-first, then route, then the v2 name. A route that happens to equal another
-dashboard's hash name resolves to that dashboard — internal identity wins, and
-nothing internal references a route anyway.
+The lookups run in order: docname first, then route, then the v2 name. A route
+that equals another dashboard's hash name resolves to that dashboard. The
+internal key wins, and nothing internal references a route.
 """
 
 import frappe
@@ -59,24 +57,20 @@ def resolve(doctype: str, reference: str) -> str | None:
 def resolve_for_read(doctype: str, reference: str) -> str:
     """Return the document name a reference points at, for a user who may read it.
 
-    Raises `frappe.DoesNotExistError` if the reference resolves to nothing or to
-    a document the current user cannot read. Both cases produce the identical
-    error, which is the whole point: a read endpoint built on this cannot be
-    used to probe what exists on the site.
+    Raises `frappe.DoesNotExistError` when the reference resolves to nothing or
+    to a document the current user cannot read. Both cases raise the same error
+    on purpose, so a read endpoint built on this cannot probe what exists on the
+    site.
 
-    A dashboard is also read as Not Found when every chart on it is Not
-    Permitted or unreadable — `has_permitted_chart` answers that without running
-    any of them.
-    It is the same read check and so it belongs here, not above. A caller who
-    may write the dashboard is not a reader of it and opens it whatever its
-    charts answer: they are the one who can fix it.
+    A dashboard is also Not Found when every chart on it is Not Permitted or
+    unreadable. `has_permitted_chart` checks that without running any chart. It
+    is part of the read check, so it belongs here. A user who may write the
+    dashboard opens it whatever its charts return, because they can fix it.
     """
     name = resolve(doctype, reference)
     if not name or not may_read(frappe.get_doc(doctype, name)):
         not_found()
 
-    # A dashboard every chart of which is Not Permitted holds nothing this reader
-    # may see, and Not Found is the one answer for that too.
     if (
         doctype == DASHBOARD
         and not frappe.has_permission(DASHBOARD, ptype="write", doc=name)
@@ -93,18 +87,18 @@ def not_found():
 
 
 def may_read(doc, user: str | None = None) -> bool:
-    """Whether this reader may read this content. The whole question, once.
+    """Whether this reader may read this content. The one place that decides it.
 
-    A Frappe site answers it in two stacks and they can differ. The grants are
-    the Insights controller's, asked here directly because frappe's role gate
-    would need every reader, Guest included, to hold read on the doctype - a
-    grant that would also open `/api/resource` to them.
+    Frappe checks access in two stacks, and they can differ. The grants come
+    from the Insights controller. They are checked here directly, because
+    frappe's role check would need every reader, Guest included, to have read
+    on the doctype. That would also open `/api/resource` to them.
 
-    What the role gate also runs, and the controller does not, is the User
-    Permission pass. A restriction on `Insights Dashboard v3`, or on the
-    workbook it links, narrows `get_doc`, the list query and `can_write`. One
-    document cannot read two ways in one response - rendered here and refused
-    there - so the pass runs here too.
+    The role check also applies User Permissions, and the controller does not.
+    A User Permission on `Insights Dashboard v3`, or on its workbook, narrows
+    `get_doc`, the list query and `can_write`. One response must not render a
+    document in one place and refuse it in another, so User Permissions are
+    applied here too.
     """
     user = user or frappe.session.user
     if not has_doc_permission(doc, "read", user):
@@ -127,6 +121,6 @@ def _by_route(doctype: str, reference: str) -> str | None:
 
 
 def _by_old_name(doctype: str, reference: str) -> str | None:
-    # last, because a v2 name is history: a document that still answers to its
-    # current name must never be reached through some other document's past
+    # last, because a v2 name is history: a document's current name must win
+    # over another document's old name
     return frappe.db.get_value(doctype, {"old_name": reference}, "name", order_by="creation asc")

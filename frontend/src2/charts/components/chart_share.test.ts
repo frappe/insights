@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { useChartShare } from './chart_share'
 
-// The share dialog's state over a loaded chart, as `ChartBuilder` mounts the
-// dialog behind `v-if` once `loadDoc` has filled `useChart().doc`.
+// `ChartBuilder` mounts the dialog with `v-if` after `loadDoc` fills
+// `useChart().doc`, so these tests start from a loaded chart.
 
 function shareOf(doc: Record<string, any>, onPublicDashboard = false) {
 	return useChartShare(
@@ -15,7 +15,7 @@ function shareOf(doc: Record<string, any>, onPublicDashboard = false) {
 describe('the Run as owner box in the share dialog', () => {
 	// @feature permissions.chart-run-as-owner shared.rows-are-the-owners
 	it('shows a public chart the box the row holds and leaves Done off until something moves', () => {
-		// the state `run_public_charts_as_owner` leaves where the publisher is not the owner
+		// the patch `run_public_charts_as_owner` leaves this when the publisher is not the owner
 		const share = shareOf({ visibility: 'Public', run_as_owner: 0 })
 
 		expect(share.runAsOwner.value).toBe(false)

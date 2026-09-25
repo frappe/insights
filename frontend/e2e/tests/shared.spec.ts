@@ -72,8 +72,8 @@ test.describe('shared', () => {
 		await unpublishDashboard(adminApi, dashboard.name)
 		await guestPage.goto(link)
 
-		// The withdrawn dashboard answers a Guest Not Found, as a missing one does,
-		// and `SharedDashboard` offers a sign-in for it: the site login page.
+		// A Guest gets Not Found for an unpublished dashboard, as for a missing one.
+		// `SharedDashboard` then sends the Guest to the site login page.
 		await expect(guestPage).toHaveURL(/\/login/)
 		// The login page draws its sign-in prompt twice, once per card, so this
 		// asserts the prompt is present rather than that one node is visible.

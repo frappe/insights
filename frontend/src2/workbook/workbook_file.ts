@@ -1,18 +1,17 @@
-// What a workbook file is, as the client reads one. `InsightsWorkbook.export`
-// writes it — for Copy JSON, for Duplicate, for the backup a delete leaves
-// behind and for the file an app ships — and the server's `is_workbook_file` is
-// what says a text is one.
+// Reads workbook files on the client. `InsightsWorkbook.export` writes them for
+// Copy JSON, Duplicate, the backup a delete leaves, and the file an app ships.
+// The server's `is_workbook_file` decides whether a text is one.
 //
-// It stands alone so that reading a file costs none of the workbook store: that
-// reaches the router and the whole builder aggregate.
+// This module stands alone so that reading a file does not load the workbook
+// store. That store pulls in the router and the whole Builder.
 
 import { call } from 'frappe-ui'
 
 /**
- * The workbook a pasted text holds, if it holds one.
+ * The workbook in a pasted text, if there is one.
  *
- * The server reads two shapes of file, and it is asked rather than restated
- * here. Only a JSON object is sent: whatever else is on the clipboard stays in
+ * The server accepts two file shapes, so the check is left to it and not
+ * repeated here. Only a JSON object is sent. Any other clipboard text stays in
  * the browser.
  */
 export async function pastedWorkbook(text: string) {

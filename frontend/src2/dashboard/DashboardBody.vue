@@ -7,31 +7,27 @@ import type { BreakpointKey, Layout } from '../types/workbook.types'
 import { BASE_BREAKPOINT, BREAKPOINTS } from './grid_placement'
 import type { DashboardAction, DashboardView } from './view'
 
-// A dashboard's content, on every surface that shows one: the grid of cards and
-// the filters a reader moves, which are cells of that grid, and every state the
-// page can be in before there is a grid to draw.
+// A dashboard's content on every page that shows one: the grid, with its filter
+// cells, and the loading, Not Found and error states.
 //
-// It draws no header. Every surface has one of its own already, and draws it
-// above this: the SPA page and the builder read the actions off a template ref,
-// and the island reports the same list to its host. Nothing here asks which
-// surface it is — a capability is either on the dashboard or it is not.
+// It renders no header. Each page renders its own header above this. The SPA
+// page and the builder read the actions through a template ref, and the island
+// reports the same list to its host. Nothing here checks which page it is on.
 //
-// The surface hands this a bounded box and it fills it. The grid then scrolls
-// without the page around it scrolling too.
+// The page gives this a box of fixed size, and this fills it. So the grid
+// scrolls and the page around it does not.
 const props = defineProps<{
-	// the dashboard to draw: `useDashboardView` on a view surface,
-	// `useDashboardBuilder` in the builder
+	// `useDashboardView` on a view page, `useDashboardBuilder` in the builder
 	dashboard: DashboardView
-	// what draws it. A reader is given a grid that only draws, so the
-	// drag-and-resize engine never reaches a surface that cannot use it
+	// A reader gets a read-only grid, so the drag-and-resize code never loads on
+	// a page that cannot use it
 	grid: Component
 	cell: Component
 }>()
 
-// An owner arranging a narrower breakpoint is given a box that width, rather
-// than a wide grid told to pretend. The grid then measures the breakpoint it is
-// arranging, the cards lay their contents out at the width they will really
-// have, and a drag lands where the reader will see it.
+// When an owner arranges a narrower breakpoint, the box gets that real width.
+// The grid then measures the breakpoint itself, the cards lay out at their real
+// width, and a drag lands where the reader will see it.
 const arrangedBox = computed(() => {
 	const key = props.dashboard.builder?.arranging
 	const breakpoint = BREAKPOINTS.find((item) => item.key === key)
@@ -39,17 +35,16 @@ const arrangedBox = computed(() => {
 	return { maxWidth: `${breakpoint.maxWidth}px` }
 })
 
-// Everything a reader may do with this dashboard, in one list. Every action is
-// offered on the strength of what the dashboard carries, never of which surface
-// this is, and the refresh is a member like any other — nothing outside adds to
-// the list. A surface renders it and decides nothing.
+// Every action a reader may take, in one list. An action shows only if the
+// dashboard has the capability for it, never because of which page this is.
+// Nothing outside adds to the list. A page only renders it.
 //
-// An action that leads somewhere carries the href its own surface resolves: the
-// SPA's router and the island's Insights base answer the same route differently.
+// An `href` is resolved for the current page, because the SPA's router and the
+// island's Insights base resolve the same route differently.
 const actions = computed(() => {
 	const builderRoute = props.dashboard.builderRoute
-	// A dashboard being rearranged has nothing to re-run, and its half-placed
-	// cards are not a picture anyone wants kept.
+	// While the owner rearranges the grid, there is nothing to re-run, and a PNG
+	// of half-placed cards is not useful.
 	const reading = !props.dashboard.builder?.editing
 	return [
 		reading ? { label: __('Refresh'), icon: 'refresh-cw', onClick: refresh } : null,
@@ -66,21 +61,19 @@ const actions = computed(() => {
 	].filter(Boolean) as DashboardAction[]
 })
 
-// the scrolling box the cards sit in, and the picture an export keeps
+// the scrolling box of cards, which is also what an export captures
 const scroller = ref<HTMLElement>()
 
-// Re-run every card on the page. Forced, because the rows on screen already
-// answer the question the cards would ask again.
+// Forced, because each card's request is unchanged and a normal load would skip.
 function refresh() {
 	props.dashboard.refresh(true)
 }
 
-// The one thing a surface reads off this component. A page reaches it through a
-// template ref, and the island through the same ref before reporting it on.
+// A page reads this through a template ref. The island reads the same ref and
+// reports the actions to its host.
 defineExpose({ actions })
 
-// the scrolling box of cards, which is what a reader means by the dashboard. The
-// surface's header sits above this component and was never in the picture
+// Only the cards are exported. The page's header is outside this component.
 function exportImage() {
 	if (!scroller.value) return
 	return downloadImage(scroller.value, `${props.dashboard.title}.png`)
@@ -107,8 +100,8 @@ function exportImage() {
 			<div class="h-8 w-64 animate-pulse rounded-4 bg-surface-gray-2" />
 		</div>
 
-		<!-- The one scroller on the page. An empty dashboard keeps it, because it
-		     is also where a chart is dropped onto the grid. -->
+		<!-- The only scroller on the page. An empty dashboard keeps it, because a
+		     chart is dropped onto the grid here. -->
 		<div
 			v-else
 			ref="scroller"

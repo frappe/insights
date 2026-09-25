@@ -1,9 +1,6 @@
-"""Every label the app ships reaches the translator.
-
-A label is translatable only if the message extractor reads the file it lives
-in, and which extractor reads which file is a per-app map. Frappe's own map has
-rows for `.py`, `.js`, `.html` and `.vue` and none for `.ts` or `.tsx`, so an
-app whose frontend puts labels in one has to bring rows of its own.
+"""Frappe's message extractor map has rows for `.py`, `.js`, `.html` and `.vue`,
+but none for `.ts` or `.tsx`. The app must add its own rows, or labels in those
+files are never extracted for translation.
 """
 
 import re
@@ -17,8 +14,8 @@ from insights.tests.base import InsightsIntegrationTestCase
 
 FRONTEND = Path(frappe.get_app_path("insights")).parent / "frontend" / "src2"
 
-# `__('...')` and `__("...")`, escapes included. A call whose first argument is
-# not a literal has nothing to extract and is none of this test's business.
+# `__('...')` and `__("...")`, escapes included. A call with a non-literal first
+# argument has nothing to extract, so the pattern skips it.
 LITERAL_CALL = re.compile(r"__\(\s*(['\"])((?:\\.|(?!\1).)*)\1")
 
 

@@ -226,9 +226,9 @@ export async function createDashboard(
 }
 
 /**
- * Run a Chart with its owner's permissions. A guest has none of their own, so
- * a Public dashboard carries only charts that do, and publishing one refuses
- * a chart that runs as its reader rather than ticking it.
+ * Tick Run as owner on a Chart. A guest has no permissions of its own, so a
+ * Public dashboard needs this on every chart. Publishing refuses a chart that
+ * runs as its reader. It does not tick the Check itself.
  */
 export async function runChartAsOwner(api: FrappeApi, name: string): Promise<void> {
 	await api.updateDoc(DOCTYPE.CHART, name, { run_as_owner: 1 })

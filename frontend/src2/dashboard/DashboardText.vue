@@ -5,9 +5,9 @@ import { WorkbookDashboardText } from '../types/workbook.types'
 import { Dashboard } from './dashboard'
 import { __ } from '../translation'
 
-// Every surface draws a text item through here, and only the builder provides a
-// store: a reader's page has no document to edit and nothing to say about an
-// empty cell, so the affordances below are absent rather than refused.
+// Every page renders a text item through here, but only the builder provides a
+// store. A reader's page has no document to edit, so the edit controls below do
+// not render there.
 const dashboard = inject<Dashboard | undefined>('dashboard', undefined)
 const props = defineProps<{ item: WorkbookDashboardText }>()
 
@@ -15,16 +15,17 @@ const editedText = ref(unref(props.item.text))
 
 const editing = computed(() => Boolean(dashboard?.isEditingItem(props.item)))
 
-// The rich text kit is the whole of the editor — its schema, its views and its
-// stylesheet — and weighs more than everything else a dashboard island draws.
-// A reader mounts this card for the text and never opens the dialog, so the kit
-// is loaded by the dialog rather than by the page.
+// `frappe-ui/editor` is the whole editor: its schema, its views and its
+// stylesheet. It is larger than the rest of the dashboard island. A reader only
+// sees the text and never opens the dialog, so the dialog loads the editor, not
+// the page.
 const editorModule = () => import('frappe-ui/editor')
 const Editor = defineAsyncComponent(() => editorModule().then((module) => module.Editor))
 const EditorContent = defineAsyncComponent(() =>
 	editorModule().then((module) => module.EditorContent),
 )
-// the kit is a value rather than a component, so it is fetched beside them
+// `RichTextKit` is a value, not a component, so `defineAsyncComponent` cannot
+// load it
 const extensions = shallowRef<unknown[]>()
 watch(
 	editing,
@@ -93,8 +94,8 @@ const textHtml = computed(() => (props.item.text ? DOMPurify.sanitize(props.item
 						/>
 					</template>
 				</Editor>
-				<!-- the box the editor lands in, so the dialog does not resize
-				     under the author while its chunk is in flight -->
+				<!-- a placeholder of the editor's size, so the dialog does not
+				     resize while the editor chunk loads -->
 				<div v-else class="h-auto min-h-[8rem] rounded-4 bg-surface-gray-2 p-2" />
 				<p class="text-xs text-ink-gray-5">{{ __('Markdown supported') }}</p>
 			</div>

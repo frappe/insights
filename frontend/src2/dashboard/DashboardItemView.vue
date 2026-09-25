@@ -5,17 +5,14 @@ import DashboardFilter from './DashboardFilter.vue'
 import DashboardText from './DashboardText.vue'
 import type { DashboardCellProps } from './view'
 
-// One cell of a dashboard grid, as a reader gets it. A chart card owns its own
-// states, so a cell that cannot load leaves the page alone.
+// A grid cell as a reader gets it. A chart card handles its own loading and
+// error states, so a card that fails does not break the page.
 //
-// A text item is drawn by the component that owns drawing one, the way a chart
-// and a filter are: it is stored as HTML, and the cleaning on the way out lives
-// where it is written to the DOM.
+// `DashboardText` renders a text item. It is stored as HTML, and that component
+// sanitizes it where it writes it to the DOM.
 //
-// A filter is a cell like any other, in the position its owner gave it. The one
-// thing it cannot do here is name its own column — the link that says so never
-// reaches a reader — so it asks the page for its values by filter name and lets
-// the server route what it lands on.
+// A reader never gets a filter's column. So the filter asks the page for its
+// values by filter name, and the server applies it to the right column.
 const props = defineProps<DashboardCellProps>()
 </script>
 

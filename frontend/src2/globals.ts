@@ -17,8 +17,7 @@ import Toggle from './components/Toggle.vue'
 
 import { App } from 'vue'
 
-// Islands import this module too, so keep it free of anything the SPA alone
-// needs — the injections live in `controllers.ts`.
+// Islands import this module too. Keep SPA-only code in `controllers.ts`.
 export function registerGlobalComponents(app: App) {
 	app.component('Badge', Badge)
 	app.component('Button', Button)

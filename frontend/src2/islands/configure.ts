@@ -1,5 +1,5 @@
-// The app an island mounts, made this app's. It runs after desk's
-// `SetVueGlobals`, so the `__` installed here is the one templates get.
+// Sets up the Vue app an island mounts. It runs after desk's `SetVueGlobals`,
+// so templates get the `__` installed here, not desk's.
 
 import type { App } from 'vue'
 import { registerGlobalComponents } from '../globals'

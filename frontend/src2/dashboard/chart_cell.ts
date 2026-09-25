@@ -1,10 +1,9 @@
-// One chart cell's state, whichever card draws it. The builder draws the card it
-// can change and every view surface draws the read-only one, but what a cell
-// reads and what its reader may narrow it by are the same, so both cards are
-// drawn from this.
+// The state of one chart cell, for both chart cards. The builder renders a card
+// the owner can change, and every view page renders a read-only one. Both read
+// the same rows and offer the same filters, so both use this.
 //
-// It lives apart from both cards because of what they import: the builder's
-// card carries the builder's drill, which an island may not.
+// It is separate from both cards because of their imports. The builder's card
+// imports the builder's drill, which an island must not load.
 
 import { computed, provide, ref, shallowRef, watch } from 'vue'
 import { numberReadings } from '../charts/adapter/number'
@@ -18,9 +17,9 @@ import type { DashboardView, DashboardViewItem } from './view'
 export type ChartCellProps = { item: DashboardViewItem; dashboard: DashboardView }
 
 export function useChartCell(props: ChartCellProps) {
-	// The read registers itself when it is made, so it cannot be resolved in a
-	// computed, which Vue is free to evaluate, discard or run again. It is
-	// resolved once per chart the cell names, and held.
+	// Getting a read registers it, so a computed cannot get it. Vue may evaluate,
+	// discard or rerun a computed. So the read is got once per chart name and
+	// kept.
 	const read = shallowRef<ChartRead | undefined>()
 	watch(
 		() => props.item.chart,
@@ -31,31 +30,30 @@ export function useChartCell(props: ChartCellProps) {
 		{ immediate: true },
 	)
 
-	// A cell always names the reading it draws. One written before a cell could
-	// name one draws the first, and says so here rather than leaving the chart to
-	// guess which surface it is on.
+	// A cell stores the reading it shows. A cell saved before cells stored one
+	// shows the first reading. That is decided here, so the chart does not have
+	// to guess which page it is on.
 	const reading = computed(
 		() => props.item.reading ?? numberReadings(read.value?.doc.config as NumberChartConfig)[0],
 	)
 
-	// A table card carries its own filter: the reader picks a column of the rows
-	// it drew and the page sends it with the card's request. Only a table,
-	// because only a table shows the rows a rule is read against.
+	// Only a table card has a card filter, because only a table shows the rows
+	// the filter applies to. The reader picks a column of those rows, and the page
+	// sends the filter with the card's request.
 	const isTable = computed(() => read.value?.doc.chart_type === 'Table')
 
-	// The rule is written against the columns the card drew, because that is
-	// where it lands: after the chart's summarize, on the columns the card draws.
-	// A dimension is offered under the label the chart prints, and a measure is a
-	// column there too — "count over 5" reads the total on screen.
+	// The filter uses the card's result columns, because the server applies it
+	// after the chart's summarize. A dimension shows under the chart's label for
+	// it. A measure is a column too, so "count over 5" filters on the total on
+	// screen.
 	const columns = computed<QueryResultColumn[]>(() => {
 		if (!isTable.value) return []
 		return read.value?.result.columns || []
 	})
 
-	// What "Reset filters" takes back: the grid's own filters that reach this
-	// card, and the one the reader put on the card itself. Offered only when
-	// there is something to take back, so an empty card that nobody filtered says
-	// only that it is empty.
+	// "Reset filters" clears the dashboard filters that apply to this card and the
+	// reader's card filter. It shows only when there is something to clear, so an
+	// empty card with no filters says only that it is empty.
 	const filtered = computed(() =>
 		Boolean(props.item.chart && props.dashboard.filtered(props.item.chart)),
 	)
@@ -71,10 +69,9 @@ export function useChartCell(props: ChartCellProps) {
 		},
 	})
 
-	// The page answers for a card filter's values, the same page that answers for
-	// a saved filter's. The chart's config says which drawn column is a dimension
-	// and what column it reads; a measure names none, and the number operators
-	// ask for no value.
+	// The page returns a card filter's values, as it does for a dashboard filter.
+	// The chart's config maps a dimension to its source column. A measure has no
+	// source column, but its number operators need no value list.
 	function valuesProvider(column: QueryResultColumn) {
 		return (search: string) => {
 			const chart_name = props.item.chart
@@ -89,11 +86,10 @@ export function useChartCell(props: ChartCellProps) {
 		return props.dashboard.cardRange(chart_name, column.name)
 	}
 
-	// Find is the other half of the table card's title row, and the half that
-	// never leaves the browser: a case-insensitive match over the rows the card
-	// already drew. It is not a filter, so it is held here and not on the page —
-	// nothing outside this card reads it, and a reload should not bring it back.
-	// `TableChart` takes it through the key and narrows the rows it hands the grid.
+	// Find runs only in the browser: a case-insensitive match over the rows the
+	// card already shows. It is not a filter, so it lives here and not on the page.
+	// Nothing outside this card reads it, and a reload should not restore it.
+	// `TableChart` reads it through the key and narrows the rows it renders.
 	const findText = ref('')
 	const findOpen = ref(false)
 	provide(tableFindKey, findText)

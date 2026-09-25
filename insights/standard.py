@@ -5,8 +5,8 @@
 Insights imports the file after a migrate or an install, through frappe's
 `import_file_by_path`. The workbook refuses a write outside developer mode,
 writes its file back when a developer saves it, and removes the file when it
-goes. A member calls these for the workbook it belongs to, so one document owns
-the answer for the whole set.
+goes. A member calls these for its workbook, so the workbook decides for all its
+members.
 """
 
 import os
@@ -22,8 +22,8 @@ SYSTEM_WRITE_FLAGS = ("in_import", "in_fixtures", "in_migrate", "in_install", "i
 
 WORKBOOK = "Insights Workbook"
 
-# A workbook on its way out takes its members with it, and a member's own export
-# would write the file back after the workbook removed it.
+# A deleted workbook deletes its members too. A member's own export would then
+# write the file back after the workbook removed it.
 BEING_DELETED = "insights_workbooks_being_deleted"
 
 
@@ -40,10 +40,11 @@ def deleting(workbook: str):
 def validate_standard(doc) -> None:
     """Refuse a write to a standard document outside developer mode.
 
-    `is_standard` is what `running` reads to let a chart past the site's team
-    grants and its Table Restrictions. A site's own write surface reaches the
-    field - `frappe.client.set_value` enforces no `read_only` - so without this
-    an author ships their own workbook to read every table the site denies them.
+    `running` reads `is_standard` to let a chart past the site's team grants
+    and Table Restrictions. A site user can write the field, because
+    `frappe.client.set_value` does not enforce `read_only`. Without this check,
+    an author could mark their own workbook standard and read every table the
+    site denies them.
     """
     if frappe.conf.developer_mode or any(frappe.flags.get(flag) for flag in SYSTEM_WRITE_FLAGS):
         return
@@ -64,8 +65,8 @@ def validate_overwrite(docdict: dict) -> None:
     """Refuse a file that would replace a workbook its app does not own.
 
     frappe deletes the row a file names before it inserts the file, and
-    `is_standard` lets a chart past the site's team grants, so a shipped file
-    must never replace a workbook the site made or one another app ships.
+    `is_standard` lets a chart past the site's team grants. So a shipped file
+    must never replace a workbook the site made, or one that another app ships.
     """
     row = frappe.db.get_value(WORKBOOK, docdict["name"], ["is_standard", "module"], as_dict=True)
     if not row:
@@ -115,12 +116,13 @@ def delete_folder(doc, name: str | None = None) -> None:
 
 
 def import_shipped(apps: list[str] | None = None) -> None:
-    """Import the workbook files `apps` ship, every installed app's by default.
+    """Import the workbook files that `apps` ship, or every installed app's by default.
 
-    Not frappe's `importable_doctypes` walk: it runs in each app's own sync, in
-    install order, so an app installed before Insights has its files imported
-    before this doctype's schema is synced, and never when Insights is installed
-    after it. After a migrate or an install, every schema is in place.
+    This does not use frappe's `importable_doctypes` walk. That walk runs in
+    each app's own sync, in install order. So an app installed before Insights
+    would have its files imported before this doctype's schema is synced, and
+    never imported when Insights is installed after it. After a migrate or an
+    install, every schema is in place.
     """
     for app, module in app_modules():
         if apps and app not in apps:
@@ -139,8 +141,8 @@ def import_shipped(apps: list[str] | None = None) -> None:
 def delete_unshipped() -> None:
     """Delete the standard workbooks whose file no installed app ships any more.
 
-    frappe's own `remove_orphan_entities` knows no filter for this doctype, and
-    without one every workbook a site made would look like an orphan.
+    frappe's own `remove_orphan_entities` has no filter for this doctype.
+    Without one, every workbook a site made would look like an orphan.
     """
     for row in frappe.get_all(WORKBOOK, filters={"is_standard": 1}, fields=["name", "module"]):
         # `get_module_path` throws for a module whose app is gone
@@ -151,8 +153,8 @@ def delete_unshipped() -> None:
 def guard_member(doc) -> None:
     """Refuse a write to a member of a standard workbook.
 
-    Both the workbook it belongs to and the one it is moving to, so a site
-    cannot add a member to a workbook its app owns.
+    Checks both the workbook it belongs to and the one it is moving to, so a
+    site cannot add a member to a workbook its app owns.
     """
     for workbook in workbooks_of(doc):
         validate_standard(frappe.get_doc(WORKBOOK, workbook))
@@ -165,8 +167,8 @@ def export_member(doc) -> None:
 
 
 def workbooks_of(doc) -> list[str]:
-    """The workbooks a write to `doc` reaches: the one it sits in, and the one it
-    is moving to. Only the standard ones — nothing else has an answer to give."""
+    """The workbooks a write to `doc` affects: the one it is in, and the one it
+    is moving to. Only the standard ones, because the others need no check."""
     names = []
     if not doc.is_new():
         names.append(frappe.db.get_value(doc.doctype, doc.name, "workbook"))
@@ -189,12 +191,12 @@ def file_path(doctype: str, name: str, module: str) -> str:
 def app_modules() -> list[tuple[str, str]]:
     """Every module an installed app ships, as `(app, module)`.
 
-    The source shipped files are read back from: `import_shipped` walks
-    installed apps x `modules.txt`, and `delete_unshipped` deletes every
-    standard workbook no file there carries. A `Module Def` a site made for itself is not one of those,
-    so a file written into it is an orphan the next `bench migrate` deletes -
-    taking the workbook and, through `on_trash`, every query, chart, dashboard
-    and folder in it.
+    Shipped files are read back from these modules. `import_shipped` walks the
+    installed apps and their `modules.txt`, and `delete_unshipped` deletes
+    every standard workbook without a file there. A `Module Def` that a site
+    made for itself is not in this list. So a file written into it is an orphan
+    that the next `bench migrate` deletes. That deletes the workbook and,
+    through `on_trash`, every query, chart, dashboard and folder in it.
     """
     return [
         (app, module) for app in frappe.get_installed_apps() for module in sorted(frappe.get_module_list(app))
@@ -207,15 +209,15 @@ def ships_module(module: str | None) -> bool:
 
 
 def export_modules() -> list[dict]:
-    """The modules an author may ship a workbook in, and the folder each one
-    writes into.
+    """The modules an author may export a workbook into, and the folder each
+    one writes to.
 
-    The offer is `app_modules` minus the ones this bench cannot write: a file is
-    a change to the app's source, so a module the bench only reads has no export
-    to offer and neither has a site outside developer mode.
+    It is `app_modules` minus the modules this bench cannot write. A file is a
+    change to the app's source. So a module the bench can only read cannot take
+    an export, and neither can a site outside developer mode.
 
-    Presentation only. `InsightsWorkbook.validate` is what refuses a module no
-    app ships, so a save that never opens this dialog is refused too.
+    Presentation only. `InsightsWorkbook.validate` refuses a module that no app
+    ships, so a save that skips this dialog is refused too.
     """
     if not frappe.conf.developer_mode:
         return []
@@ -228,17 +230,17 @@ def export_modules() -> list[dict]:
         if not os.access(writable, os.W_OK):
             continue
 
-        # the whole path, the way `claim_file` names the file it refuses
+        # the full path, as `claim_file` shows it in its error
         modules.append({"module": module, "app": app, "folder": root})
 
     return modules
 
 
 def claim_file(doctype: str, name: str, module: str) -> None:
-    """Refuse a name whose file another document in `module` already holds.
+    """Refuse a name whose file another document in `module` already has.
 
-    The file is named after `scrub(name)`, and two names scrub to one folder, so
-    the second document would write over the first one's file.
+    The file is named after `scrub(name)`, and two names can scrub to one
+    folder. The second document would then overwrite the first one's file.
     """
     path = file_path(doctype, name, module)
     if not os.path.exists(os.path.dirname(path)):
@@ -257,11 +259,11 @@ def is_standard_member(doc) -> bool:
     """Whether `doc` belongs to a workbook its app ships.
 
     Read from the workbook's row, never from the member in hand. A member's own
-    `is_standard` is a copy of the workbook's flag that the site's own write
-    surface reaches - `frappe.client.set_value` does not enforce a field's
-    `read_only` - and this answer decides whether an execution reads its tables
-    past the site's team grants. The file on disk owns "is this standard
-    content", and the workbook row is where frappe resolved that file to.
+    `is_standard` copies the workbook's flag, and a site user can write it,
+    because `frappe.client.set_value` does not enforce `read_only`. This answer
+    decides whether an execution reads its tables past the site's team grants.
+    The file on disk decides what is standard content, and the workbook row is
+    what frappe imported from that file.
     """
     stored = doc.name and frappe.db.get_value(doc.doctype, doc.name, "workbook")
     workbook = stored or doc.get("workbook")
@@ -271,8 +273,8 @@ def is_standard_member(doc) -> bool:
 def is_read_only(workbook: str | None) -> bool:
     """Whether the site may change `workbook` and what is in it.
 
-    The half of `insights.permissions.can_write` that is about the site and
-    not the caller.
+    The part of `insights.permissions.can_write` that depends on the site, not
+    the caller.
     """
     if not workbook or frappe.conf.developer_mode:
         return False

@@ -5,22 +5,21 @@ import session from '../session'
 import DashboardPage from './DashboardPage.vue'
 import { useDashboardView } from './view'
 
-// A dashboard reached by its public link. The view endpoints are the same ones
-// the app's own page uses, and they decide access from the visibility level — a
-// guest reaches the Public level through that one path, so this page adds no
-// access rule of its own.
+// A dashboard opened by its public link. It uses the same view endpoints as the
+// app's own page. They check access, and a guest gets in only through the Public
+// visibility level. So this page adds no access rule of its own.
 //
-// There is no trail: whoever follows a link here has no place in the app to go
-// back to.
+// There are no breadcrumbs, because a visitor from a link has no page in the app
+// to go back to.
 const props = defineProps<{ dashboard_name: string }>()
 
-// The route's reference goes over as it arrived: the resolver answers every form
-// a link can carry — a route, a docname, or the name it had in v2.
+// The reference is sent unchanged. The resolver accepts every form a link can
+// carry: a route, a docname, or the v2 name.
 const dashboard = useDashboardView(() => props.dashboard_name, 'shared')
 
-// A visitor whose link opens nothing is offered a sign-in: the dashboard may be
-// one a signed-in user can read. A missing and a withdrawn dashboard answer the
-// same, so sending both there says nothing about which it was.
+// On Not Found, a guest is sent to sign in, because a signed-in user may be
+// able to read the dashboard. A missing dashboard and one that is no longer
+// public both answer Not Found, so the redirect does not say which it was.
 watch(
 	() => dashboard.notFound,
 	(notFound) => {

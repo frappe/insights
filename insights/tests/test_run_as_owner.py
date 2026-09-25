@@ -43,10 +43,8 @@ def as_http_request():
 
 
 def todo_operations():
-    """A query over `tabToDo`, narrowed to this module's fixtures.
-
-    ToDo's permission query restricts non-System-Manager users to their own
-    assignments, which is the row-level difference these tests turn on.
+    """ToDo's permission query limits a user without System Manager to their own
+    assignments. These tests rely on that row-level difference.
     """
     return [
         {
@@ -135,7 +133,6 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
                     "workbook": workbook.name,
                     "query": query.name,
                     "chart_type": "Table",
-                    # one row per description, which is the column these tests read
                     "config": {
                         "rows": [
                             {
@@ -175,7 +172,7 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
 
     # @feature permissions.card-says-it-is-scoped
     def test_a_card_names_the_user_permissions_that_narrowed_its_rows(self):
-        """A scoped number reads as the whole one unless the card says otherwise."""
+        """A reader takes a narrowed number as the total unless the card says it was narrowed."""
         self.assertNotIn("user_permissions", self.fetch_chart_data(READER))
 
         extra = frappe.get_doc(
@@ -203,9 +200,8 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
 
     # @feature permissions.card-says-it-is-scoped
     def test_a_card_never_names_the_documents_somebody_elses_grant_named(self):
-        """A chart running as its owner narrowed by the owner's grants. Those
-        name customers, companies or territories the reader was never published,
-        and they are not a restriction the reader holds."""
+        """The owner's User Permissions narrow a chart run as its owner. They can
+        name documents the reader may not see, and the reader does not hold them."""
         self.restrict(OWNER, OWNER_TODOS[0])
         self.set_run_as_owner(1)
 
@@ -215,7 +211,7 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
         self.assertNotIn("user_permissions", result)
 
     def restrict(self, user, description):
-        """Narrow `user` to the one ToDo `description` names."""
+        """Limit `user` to the ToDo with this `description`."""
         allowed = frappe.get_all("ToDo", filters={"description": description}, pluck="name")[0]
         permission = frappe.get_doc(
             {"doctype": "User Permission", "user": user, "allow": "ToDo", "for_value": allowed}
@@ -242,8 +238,8 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
 
         with as_user(READER), db_connections():
             chart = frappe.get_doc(DT.CHART, self.chart.name)
-            # the escalation must come from the declaration alone, never from
-            # impersonating the owner for the rest of the request
+            # Only `run_as_owner` gives the owner's rows. Switching the session user
+            # would give the owner's access to the rest of the request.
             with patch.object(frappe, "set_user", side_effect=AssertionError("set_user in a request")):
                 result = chart.fetch(force=True)
 
@@ -254,10 +250,10 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
 
     # @feature permissions.chart-run-as-owner query.script
     def test_a_script_reads_as_the_user_its_chart_runs_as(self):
-        """`view.get_chart_data` on a chart over a script query. The script read
-        as the session user, so a chart run as its owner ran it as the reader.
-        Read without `force`, so a script's cached output is never the other one's.
-        An admin writes the script (Q17); the owner makes the chart."""
+        """A script ran as the session user, so a chart run as its owner ran the
+        script as the reader. The test reads without `force`, so one user's cached
+        result must not reach the other. An admin writes the script (Q17) and the
+        owner makes the chart."""
         query = frappe.get_doc(
             {
                 "doctype": DT.QUERY,
@@ -289,8 +285,8 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
 
     # @feature permissions.chart-run-as-owner
     def test_the_builder_draws_the_rows_the_card_draws(self):
-        """One chart, two surfaces. The builder read as the caller while the
-        card read as the owner, so an author saw a number no reader ever does."""
+        """The builder read as the caller while the card read as the owner. The
+        author then saw a number that no reader sees."""
         from insights.api.authoring import get_chart_data as authoring_chart_data
 
         self.set_run_as_owner(1)
@@ -308,11 +304,9 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
 
     # @feature permissions.run-as-owner-lapses
     def test_a_chart_whose_owner_may_no_longer_edit_it_runs_as_its_reader(self):
-        """`view.get_chart_data` runs the card under `permission_user_for`, as the
-        dashboard card, the drill and the builder do. The owner decides whose
-        rows the chart serves only while they may edit it: disabled, or removed
-        from the workbook, the chart runs as whoever reads it, as an alert
-        whose enabler is stops."""
+        """The chart shows the owner's rows only while the owner may edit it. If
+        the owner is disabled or removed from the workbook, the chart runs as its
+        reader."""
         with as_user(READER):
             workbook = frappe.get_doc({"doctype": DT.WORKBOOK, "title": WORKBOOK_TITLE}).insert()
             update_share_permissions(workbook.name, [{"user": OWNER, "read": 1, "write": 1}])
@@ -347,8 +341,8 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
         self.assertEqual(rows(), sorted(READER_TODOS))
         self.assertTrue(frappe.db.get_value(DT.CHART, chart.name, "run_as_owner"))
 
-        # kept as a viewer, the owner reads the chart as everyone does: their
-        # own rows, and all of them (`can_read_rows`, the drill's door)
+        # With read-only access the owner is a reader: they see their own rows, and
+        # `can_read_rows` lets them drill into all of them.
         with as_user(READER):
             update_share_permissions(workbook.name, [{"user": OWNER, "read": 1, "write": 0}])
         self.assertEqual(rows(), sorted(READER_TODOS))
@@ -356,7 +350,7 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
 
     # @feature shared.rows-are-the-owners
     def test_a_guest_reads_a_public_chart_as_its_owner(self):
-        """Guests have no permissions, so the widest level draws the owner's rows."""
+        """Guests hold no permissions, so a Public chart shows the owner's rows."""
         self.addCleanup(
             frappe.db.set_value,
             DT.CHART,
@@ -373,9 +367,8 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
 
     # @feature permissions.chart-run-as-owner permissions.request-body-not-trusted
     def test_request_payload_cannot_flip_the_declaration(self):
-        """`permission_user.runs_as`, entered by `InsightsChartv3.fetch` and the
-        drill. It reads the declaration off the stored document, so it holds
-        even when handed a document built out of a request payload."""
+        """`run_as_owner` is read from the stored document, so a document built
+        from a request payload cannot change it."""
         self.set_run_as_owner(0)
 
         forged = frappe.get_doc(DT.CHART, self.chart.name).as_dict()
@@ -386,10 +379,9 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
 
     # @feature permissions.chart-run-as-owner permissions.request-body-not-trusted
     def test_a_chart_answers_its_rows_through_no_method_of_its_own(self):
-        """`insights.api.run_doc_method`, which `resource.ts` calls for any
-        whitelisted document method. The chart's own `get_data` took a page
-        window off the wire, so a reader of a chart run as its owner paged past
-        the `limit` the owner saved. `insights.api.view` is the reader's door."""
+        """The chart's own `get_data` took the page from the request. A reader of
+        a chart run as its owner could then page past the owner's saved `limit`.
+        Readers use `insights.api.view` instead."""
         self.set_run_as_owner(1)
         docs = frappe.as_json({"doctype": DT.CHART, "name": self.chart.name})
 
@@ -409,28 +401,26 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
 
     # @feature permissions.team-grant permissions.table-row-restriction permissions.site-user-permissions permissions.card-says-it-is-scoped
     def test_a_reader_reads_the_site_rows_desk_or_a_team_grant_allows(self):
-        """`view.get_chart_data` for the reader, on a chart that runs as them.
-        On site data a team grant widens what desk allows and never narrows it,
-        so the grant comes from an `Insights Team` as the Teams page writes it."""
+        """On site data a team grant adds rows to what desk allows. It never
+        removes rows."""
         from insights.insights.doctype.insights_team.insights_team import clear_cache
 
         self.set_team_permissions(1)
 
-        # no team grant at all: desk's own answer, the reader's assignments. A
-        # role's match condition names nothing, so the card says nothing
+        # No team grant: desk gives the reader their own assignments. A role's
+        # match condition names no document, so the card does not say it was narrowed.
         result = self.fetch_chart_data(READER)
         self.assertEqual(self.descriptions(result), sorted(READER_TODOS))
         self.assertNotIn("narrowed_by_permissions", result)
 
         team = self.grant_todos(READER, f"description == '{OWNER_TODOS[0]}'")
 
-        # a restricted grant beside desk's own rows only adds to them, and a
-        # grant that adds rows narrows nothing
+        # A restricted grant adds rows to the desk rows. Adding rows is not narrowing.
         result = self.fetch_chart_data(READER)
         self.assertEqual(self.descriptions(result), sorted([*READER_TODOS, OWNER_TODOS[0]]))
         self.assertNotIn("narrowed_by_permissions", result)
 
-        # where desk admits no row, the Table Restriction is what cuts the rows
+        # When desk allows no row, only the Table Restriction filters the rows.
         with patch(
             "insights.insights.doctype.insights_table_v3.insights_table_v3.desk_predicate",
             return_value=None,
@@ -443,7 +433,7 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
         team.save(ignore_permissions=True)
         clear_cache()
 
-        # an unrestricted grant is the whole table, and nothing narrowed it
+        # An unrestricted grant gives the whole table, so nothing is narrowed.
         result = self.fetch_chart_data(READER)
         self.assertEqual(self.descriptions(result), sorted([*READER_TODOS, *OWNER_TODOS]))
         self.assertNotIn("user_permissions", result)
@@ -451,15 +441,14 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
 
     # @feature permissions.table-row-restriction permissions.card-says-it-is-scoped permissions.chart-run-as-owner
     def test_a_restriction_is_said_to_the_user_it_narrowed_and_no_one_else(self):
-        """`authoring.get_chart_data` for the chart's writer, and
-        `view.get_chart_data` for its reader once it runs as the owner. The
-        owner's Table Restriction narrowed rows the reader is shown as the
-        owner's, and is not a restriction the reader holds."""
+        """The owner's Table Restriction narrows the rows. The card tells the
+        owner, but not the reader of a chart run as its owner: the reader does
+        not hold that restriction."""
         from insights.api.authoring import get_chart_data as get_authoring_data
 
         self.set_team_permissions(1)
         self.grant_todos(OWNER, f"description == '{READER_TODOS[0]}'")
-        # desk admits no row, so the restriction cuts the rows (Q15)
+        # Desk allows no row, so only the restriction filters the rows (Q15).
         desk_admits_none = patch(
             "insights.insights.doctype.insights_table_v3.insights_table_v3.desk_predicate",
             return_value=None,
@@ -484,9 +473,8 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
 
     # @feature permissions.team-grant permissions.table-row-restriction permissions.site-user-permissions
     def test_an_admin_reads_the_site_rows_desk_allows_whatever_their_team_grants(self):
-        """`view.get_chart_data` for an Insights Admin, on a chart that runs as
-        them. An admin passes the team gate everywhere, and that pass is no
-        grant: on site data they read what desk gives them."""
+        """An Insights Admin passes every team check, but that is not a grant. On
+        site data an admin reads only what desk allows."""
         from insights.insights.doctype.insights_team.insights_team import clear_cache, is_admin
 
         self.set_team_permissions(1)
@@ -510,11 +498,10 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
 
     # @feature permissions.team-grant permissions.table-row-restriction permissions.site-user-permissions permissions.card-says-it-is-scoped
     def test_a_team_grant_hands_out_a_column_desk_hides_on_its_own_rows_only(self):
-        """`view.get_chart_data` for the reader, on a chart drawing a column
-        desk hides from them. A cell comes back if desk admits its row and its
-        column, or a team grant admits its row: the column reads on the row the
-        grant adds and is empty on the rows only desk admits, and the card says
-        its permissions narrowed it."""
+        """Desk hides `status` from the reader. A cell has a value when desk allows
+        its row and its column, or when a team grant allows its row. So `status`
+        has a value on the row the grant adds and is empty on rows only desk
+        allows. The card says permissions narrowed it."""
         self.set_team_permissions(1)
         self.grant_todos(READER, f"description == '{OWNER_TODOS[0]}'")
         self.make_status_permlevel()
@@ -549,8 +536,8 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
         )
         self.assertTrue(result["narrowed_by_permissions"])
 
-        # a table desk opens whole to the reader: the grant narrows no row, and
-        # the column it blanks is still said
+        # Desk allows every row, so the grant narrows no row. The card still says
+        # the blanked column narrowed it.
         desk_admits_every_row = patch(
             "insights.insights.doctype.insights_table_v3.insights_table_v3.desk_predicate",
             return_value=True,
@@ -565,10 +552,10 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
 
     # @feature permissions.card-says-it-is-scoped permissions.team-grant
     def test_a_blanked_column_marks_only_a_card_that_reads_it(self):
-        """`view.get_chart_data`. The per-cell rule blanks `status` on the rows
-        only desk admits. A card that never reads it draws a whole number and
-        says nothing; one whose query filters by it says it was narrowed. A
-        native SQL query is read by the columns it names."""
+        """The per-cell rule blanks `status` on rows only desk allows. A card that
+        does not read `status` shows the full number and says nothing. A card
+        whose query filters by `status` says it was narrowed. A native SQL query
+        reads the columns it names."""
         self.blank_status()
 
         def native_chart(title, columns):
@@ -631,10 +618,8 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
 
     # @feature permissions.card-says-it-is-scoped permissions.team-grant
     def test_the_table_browser_and_a_rows_level_mark_the_cells_they_draw_blanked(self):
-        """`data_sources.get_data_source_table` for the table browser and
-        `view.get_drill_data` for a drill's rows level. Both draw every column,
-        so both draw `status` empty on the rows only desk admits, and say so
-        as the card does."""
+        """The table browser and a drill's rows level show every column. Both show
+        `status` empty on rows only desk allows, and say so as the card does."""
         from insights.api.data_sources import get_data_source_table
         from insights.api.view import get_drill_data
 
@@ -662,14 +647,14 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
         self.assertTrue(rows["narrowed_by_permissions"])
 
     def blank_status(self):
-        """A restricted grant for the reader and `status` hidden from them by
-        desk: the per-cell rule blanks it on the rows only desk admits."""
+        """Give the reader a restricted grant and hide `status` from them in desk.
+        The per-cell rule then blanks `status` on rows only desk allows."""
         self.set_team_permissions(1)
         self.grant_todos(READER, f"description == '{OWNER_TODOS[0]}'")
         self.make_status_permlevel()
 
     def grant_todos(self, user, restriction=None):
-        """A team of `user` granting `tabToDo`, as the Teams page writes it."""
+        """A team that grants `user` the `tabToDo` table, saved as the Teams page saves it."""
         from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
         from insights.insights.doctype.insights_team.insights_team import clear_cache
 
@@ -695,9 +680,9 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
 
     # @feature permissions.team-grant permissions.site-user-permissions
     def test_the_builder_lists_the_site_tables_desk_or_a_team_grant_allows(self):
-        """`get_data_source_tables` fills the builder's table picker, so it lists
-        what the read path reads: on site data desk admits a reader as a team
-        grant does, and this reader is in no team."""
+        """The builder's table list must match the tables the reader can query. On
+        site data desk allows a table as a team grant does. This reader is in no
+        team."""
         from insights.api.data_sources import get_data_source_tables
         from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 
@@ -714,15 +699,15 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
             return [table.table_name for table in tables]
 
         self.assertIn("tabToDo", listed("tabToDo"))
-        # desk refuses this one, and no team grants it
+        # Desk denies this table and no team grants it.
         self.assertNotIn("tabError Log", listed("tabError Log"))
 
     # @feature permissions.card-says-it-is-scoped
     def test_a_child_table_names_the_grants_frappe_cut_its_parent_by(self):
-        """Frappe builds a child table's row filter from the parent's meta —
-        `permission_doctype = parent_doctype or doctype`, and it never reads the
-        child's own links. So a grant on a field only the parent links narrows
-        the rows, and one on a field only the child links narrows nothing."""
+        """Frappe builds a child table's row filter from the parent's meta
+        (`permission_doctype = parent_doctype or doctype`). It never reads the
+        child's own links. So a grant on a field only the parent links narrows the
+        rows, and a grant on a field only the child links narrows nothing."""
         on_parent = self.grant(ADMIN, "Gender", "Male")
         self.grant(ADMIN, "Role", "System Manager")
 
@@ -733,15 +718,14 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
 
     # @feature permissions.card-says-it-is-scoped
     def test_no_grant_is_named_where_frappe_cut_the_rows_by_sharing(self):
-        """With no role that reads the doctype, frappe applies share conditions
-        and no user permission at all. A card naming the grant would tell the
-        reader a restriction they hold narrowed a number that sharing narrowed."""
+        """Without a role that reads the doctype, Frappe filters rows by shares and
+        applies no User Permission. If the card named the grant, it would blame
+        the reader's restriction for rows that sharing removed."""
         self.grant(READER, "Gender", "Male")
 
         self.assertEqual(user_permissions.narrowing("User", READER), {})
 
     def grant(self, user, doctype, document):
-        """One User Permission, and the document it names."""
         permission = frappe.get_doc(
             {"doctype": "User Permission", "user": user, "allow": doctype, "for_value": document}
         ).insert(ignore_permissions=True)

@@ -15,9 +15,9 @@ const props = defineProps<{ data_source: string; table_name: string }>()
 
 const tableStore = useTableStore()
 const table = ref<DataSourceTablePreview>()
-// The preview would not load. Held apart from the refusal: a connection that is
-// down, a table dropped at the source and a table that is not a doctype all land
-// here, and every one of them is worth asking again.
+// The preview did not load. This is separate from Not Permitted. A connection
+// that is down, a table dropped at the source, or a table that is not a doctype
+// lands here, and each one is worth a retry.
 const failed = ref(false)
 
 function load() {
@@ -29,7 +29,7 @@ function load() {
 }
 load()
 
-// A preview arrives whole, in one response, with none of the builder half,
+// A preview arrives whole in one response and has no query behind it,
 // so it is a `ResultTable` with only the rows filled in.
 const result = computed<ResultTable>(() => {
 	const rows = table.value?.rows || []
@@ -46,9 +46,8 @@ const result = computed<ResultTable>(() => {
 	}
 })
 
-// The caller may not read this table, so nothing ran. An answer and not a
-// failure: there is nothing to retry, and a grid of no rows would read as a
-// table that is empty.
+// Not Permitted: the caller may not read this table, so nothing ran. It is not
+// a failure, so there is no retry. An empty grid would look like an empty table.
 const refused = computed(() => table.value?.not_permitted?.doctypes)
 
 watchEffect(() => {

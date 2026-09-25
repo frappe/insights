@@ -37,12 +37,8 @@ const props = defineProps<{
 	/** the grains this level could be asked for. Empty unless it is a date. */
 	grains?: readonly { label: string; value: string }[]
 	loading?: boolean
-	/** why the level would not load, as the server said it */
 	failed?: string
-	/**
-	 * The doctypes a refused level would need read on. An answer and not a
-	 * failure: nothing ran, so there is no level and nothing to retry.
-	 */
+	/** The doctypes a refused level needs read permission on. */
 	refused?: string[]
 }>()
 
@@ -58,10 +54,10 @@ const emit = defineEmits<{
 	closed: []
 }>()
 
-// The rows level is drawn by whoever mounted the drill: what the rows come out
-// of is the surface's to know, and a surface that offers no rows level passes
-// no slot and imports none of it. The slot carries the stack as well as the
-// answer, because re-reading the level is re-asking that walk.
+// The component that mounts the drill renders the rows level, because it knows
+// where the rows come from. A caller without a rows level passes no slot and
+// imports none of that code. The slot passes the stack as well as the answer,
+// because reloading the level sends the whole stack again.
 //
 // `actions` is what a surface may do with the drill wherever it stands, and sits
 // in the title row.
@@ -87,10 +83,10 @@ const $find = ref<HTMLElement | null>(null)
 /** Whether there is a level to draw. Anything else is one of the three states. */
 const ready = computed(() => !props.loading && !props.failed && Boolean(props.answer))
 
-// What the drill says where the level would be. A drill that will not load says
-// so in one line — `ChartContainer`'s own wording is about a chart failing to
-// render, which is not what happened here. A refused level is the other line,
-// and the one the reader cannot act on.
+// What the drill shows in place of the level. A level that did not load gets a
+// line of its own, because `ChartContainer`'s wording is about a chart failing
+// to render. A refused level gets a different line, which the reader cannot act
+// on.
 const failure = computed<ChartFailure | null>(() => {
 	if (props.loading) return null
 	if (props.refused) {
@@ -247,7 +243,7 @@ const bound = computed(() =>
 						</span>
 						<span class="ml-1 max-w-48 truncate text-ink-gray-7">{{ pin.value }}</span>
 					</Badge>
-					<!-- something true of the level's cells, so it sits with the pins -->
+					<!-- it describes the level's cells, so it sits with the pins -->
 					<ScopeMark
 						v-if="ready"
 						:applied="props.answer?.user_permissions"
@@ -278,8 +274,6 @@ const bound = computed(() =>
 						/>
 					</template>
 
-					<!-- Every state but the answer, from the same component a card
-					     draws them with. -->
 					<DrillPlaceholder
 						v-else
 						:loading="props.loading"

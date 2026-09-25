@@ -6,13 +6,12 @@ import StaticGridLayout from '../dashboard/StaticGridLayout.vue'
 import { useDashboardView, type DashboardAction } from '../dashboard/view'
 import { placedDashboard, type DashboardPlacement } from './placement'
 
-// A dashboard inside another app. The island is the dashboard body and nothing
-// else: it draws no header, and reports what a header would say — the title, and
-// the actions that belong to the dashboard on screen. Every host has a header of
-// its own already, and draws it from what arrives here.
+// A dashboard inside a host page. The island renders the dashboard body only,
+// with no header. It emits what a header needs instead: the title and the
+// dashboard's actions. The host renders its own header from them.
 //
-// Both are plain events, not `update:` models. A host never sets either one, so
-// there is no prop here to write back to.
+// Both are plain events, not `update:` models. The host never sets either one,
+// so there is no prop to write back to.
 const props = defineProps<DashboardPlacement>()
 
 const emit = defineEmits<{
@@ -20,22 +19,18 @@ const emit = defineEmits<{
 	actions: [actions: DashboardAction[]]
 }>()
 
-// The dashboard on screen. Not the placement, which is the host's reference to it.
 const shown = useDashboardView(() => placedDashboard(props), 'desk')
 
-// The actions are the body's own, read off it the way every surface reads them.
 const body = ref<InstanceType<typeof DashboardBody>>()
 
-// A dashboard that is loading and one the reader may not see are both nameless,
-// so the host keeps calling the page whatever it called it until there is a
-// title to give.
+// There is no title while the dashboard loads or when it is Not Found. The host
+// then keeps its current page title.
 watchEffect(() => emit('title', shown.title || null))
 
-// Nothing to refresh and nothing to act on until the dashboard is there, and one
-// that is not found offers neither. A fresh array every time, because the host
-// runs its own copy of Vue and can track nothing of ours — and the list goes
-// over as it was built, an action that leads somewhere already carrying the
-// absolute Insights URL this island's router resolves.
+// No actions while the dashboard loads or when it is Not Found. Emit a new array
+// each time: the host runs its own copy of Vue and cannot track our reactive
+// objects. An action with an `href` already holds the absolute Insights URL
+// that the island's router resolved.
 watchEffect(() => {
 	const instance = body.value
 	if (!instance || shown.loading || shown.notFound) return emit('actions', [])

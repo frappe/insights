@@ -1,30 +1,30 @@
 # Copyright (c) 2026, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-"""How Insights draws a desk `Dashboard` and a desk `Dashboard Chart`.
+"""How Insights renders a desk `Dashboard` and a desk `Dashboard Chart`.
 
-Framework offers the seam: a desk document whose `__onload.island` names an
-island is drawn by that island, and desk draws the document itself while the key
-is absent. An app sets the key from its own `onload` handler, so what makes a
-desk document ours is this module's choice, and it is one Custom Field per
-doctype holding a link to the Insights content.
+The framework renders a desk document with an island when its `__onload.island`
+names one. Without the key, desk renders the document itself. Insights sets the
+key from its `onload` handler. The claim is one Custom Field per doctype, a link
+to the Insights content.
 
-The field is a real `Link`, not a name in a `Data` field, because standard
-content sync updates a shipped document in place and never re-keys it, so a
-docname a site stores stays the right one, and `rename_doc` carries a Link when
-a workbook is made standard. A Link also refuses the delete of what it names:
-taking the claim off instead would hand the desk document back to the
-placeholder definition its author filled in to save the form. A re-sync that
-drops a claimed member keeps it until nothing claims it
-(`_delete_dropped_members`, `delete_unclaimed_kept_members`). A workbook its app
-stopped shipping goes whole, as any unshipped standard document does, so a claim
-never blocks a migrate, and the migrate names each claim it leaves dangling
-(`report_dangling_claims`).
+The field is a `Link`, not a `Data` field that holds a name. Standard content
+sync updates a shipped document in place and never renames it, so a stored
+docname stays valid. `rename_doc` updates a Link when a workbook is made
+standard.
 
-A claim decides who draws, never who may read. The desk document's own
-permission already gated the load, and the island draws its own not-permitted
-state for the Insights content behind it. So there is no permission check here:
-one route must not behave like two different routes for two readers.
+A Link also blocks the delete of the content it names. Clearing the claim
+instead would make desk render the placeholder definition the author filled in
+to save the form. A re-sync that drops a claimed member keeps it until nothing
+claims it (`_delete_dropped_members`, `delete_unclaimed_kept_members`). A
+workbook that its app no longer ships is deleted whole, like any unshipped
+standard document, so a claim never blocks a migrate. The migrate lists each
+claim it leaves dangling (`report_dangling_claims`).
+
+A claim decides who renders, never who may read. The desk document's own
+permission already checked the load. The island shows its own Not Permitted
+state for the Insights content. A permission check here would make one desk
+page render differently for two readers.
 """
 
 import click
@@ -33,9 +33,9 @@ from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
 from insights.hooks import insights_path
 
-# desk doctype -> the Custom Field that points it at Insights content, and the
-# island that then draws it. One entry is the whole of a desk doctype's
-# involvement, so a third one is a row here and a line in `hooks.py`.
+# desk doctype -> the Custom Field that links it to Insights content, and the
+# island that renders it. Another desk doctype needs one entry here and one
+# line in `hooks.py`.
 DESK_ISLANDS = {
     "Dashboard": {
         "fieldname": "insights_dashboard",
@@ -59,23 +59,20 @@ DESK_ISLANDS = {
 def boot_app_path(bootinfo) -> None:
     """Tell a desk page where this site mounts the Insights app.
 
-    Every link an island offers is built out of it - the dashboard island's
-    Edit action, a chart's own page, the workbook behind a card - and the host
-    page is desk's, not the SPA's. The app's own www page carries the value in
-    its page boot; a desk page has nothing but this.
+    Islands build their links from it: the dashboard island's Edit action, a
+    chart's own page, the workbook behind a card. The app's www page gets the
+    value in its own boot. A desk page has only this.
 
-    `insights.hooks.insights_path` is where the path is decided, once, from
-    site config.
+    `insights.hooks.insights_path` reads the path from site config.
     """
     bootinfo.insights_path = f"/{insights_path}"
 
 
 def claim(doc, method=None) -> None:
-    """Name the island that draws `doc`, when Insights draws it.
+    """Set the island that renders `doc`, if Insights renders it.
 
-    Both `doc_events` handlers name this one method. The doctype it was called
-    for is on the document, so a per-doctype entry point would only be a second
-    name for the same lookup.
+    Both `doc_events` handlers call this one method. The document carries its
+    doctype, so a per-doctype entry point would only add a second name.
     """
     island = island_for(doc)
     if island:
@@ -124,8 +121,8 @@ def dangling_claims() -> list[tuple[str, str, str]]:
 
 
 def report_dangling_claims() -> None:
-    """Name, to whoever runs the migrate, each desk document left claiming
-    Insights content that no longer exists, so they can clear its field."""
+    """Print each desk document that claims deleted Insights content, so
+    whoever runs the migrate can clear its field."""
     for desk_doctype, desk_name, claimed in dangling_claims():
         click.secho(
             f"{desk_doctype} {desk_name} links {claimed}, which no longer exists. "
@@ -135,10 +132,10 @@ def report_dangling_claims() -> None:
 
 
 def refuse_delete_while_claimed(title: str, claims: list[tuple[str, str, str]]) -> None:
-    """Refuse a delete while a desk document draws what it would take, naming
-    that document. Asked before the delete changes anything: frappe's own link
-    check comes after `on_trash`, and a refusal there leaves every change the
-    hook made to whoever commits next."""
+    """Refuse a delete while a desk document renders the content, and name that
+    document. Call it before the delete changes anything. Frappe's own link
+    check runs after `on_trash`, and a refusal there leaves the hook's changes
+    for whoever commits next."""
     if not claims:
         return
 
@@ -155,7 +152,7 @@ def refuse_delete_while_claimed(title: str, claims: list[tuple[str, str, str]]) 
 
 
 def island_for(doc) -> dict | None:
-    """The `__onload.island` value for `doc`, or None if Insights does not draw it."""
+    """The `__onload.island` value for `doc`, or None if Insights does not render it."""
     field = DESK_ISLANDS.get(doc.doctype)
     if not field:
         return None
@@ -168,10 +165,10 @@ def island_for(doc) -> dict | None:
 
 
 def install_custom_fields() -> None:
-    """Add the fields a desk document claims Insights content with.
+    """Add the Custom Fields that link desk documents to Insights content.
 
-    Idempotent, and run on every migrate: the fields are ours on doctypes that
-    are not, so nothing else puts them back if a site loses them.
+    Idempotent, and run on every migrate. The fields are ours but the doctypes
+    are not, so nothing else restores them if a site loses them.
     """
     create_custom_fields(
         {

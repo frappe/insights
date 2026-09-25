@@ -43,8 +43,8 @@ wheneverChanges(
 )
 
 const userStore = useUserStore()
-// Saving a new or disabled alert enables it, and whoever enables an alert is
-// who it runs as.
+// Saving a new or disabled alert enables it. An alert runs as the user who
+// enabled it.
 const runsAs = computed(() => {
 	const enabler = alert.islocal || alert.doc.disabled ? '' : alert.doc.permission_user
 	if (!enabler || enabler === session.user.email) {

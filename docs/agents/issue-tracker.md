@@ -2,11 +2,7 @@
 
 Issues and specs for this repo live as markdown files in `docs/projects/`.
 
-`docs/projects` is not tracked. It is a symlink to
-`~/frappe/workshop/efforts/insights/`, so every worktree edits one copy and the
-workshop repo keeps the history. Effort docs record how the work happened, not
-what the project is. Only durable documents are committed here — `CONTEXT.md`,
-`docs/adr/` and `docs/agents/`.
+`docs/projects` is not tracked. It is a symlink to `~/frappe/workshop/efforts/insights/`, so every worktree edits the same copy, and the workshop repo keeps the history. Effort docs record how the work happened, not what the project is. Only durable documents are committed here: `CONTEXT.md`, `docs/adr/` and `docs/agents/`.
 
 A few paths stay local-only and are ignored in `.gitignore`. Check it before you
 assume a path is committed.
@@ -31,14 +27,12 @@ Don't create or triage GitHub issues unless explicitly asked.
 
 ## Closing out an effort
 
-Most of what an effort holds is meant to stay behind — how the work went, what
-was measured this week, what was still unknown on Tuesday. Close-out is not a
-distillation of the whole effort.
+Most of an effort is not meant to reach this repo: how the work went, what was measured this week, what was still unknown on Tuesday. Close-out does not distill the whole effort.
 
 1. Write an ADR for each decision that passes the test in `domain.md`. **Most
    tickets produce none**, and that is the normal outcome, not an omission. Add
    any new term to the glossary in `CONTEXT.md`.
-2. Commit the effort's final state in workshop. It stays there.
+2. Commit the effort's final state in the workshop repo. It stays there.
 
 Close-out is a bad moment to notice a decision for the first time. Write the ADR
 when the decision is made. What is left at close-out should be nearly nothing.

@@ -49,8 +49,8 @@ describe('a drill level', () => {
 
 	// @feature dashboard.drill permissions.chart-run-as-owner
 	it('names the saved dashboard its card sits on', async () => {
-		// a caller who may not write the chart drills it as its reader, and the
-		// server routes a reader by the saved dashboard, never by the grid sent
+		// A caller who may not write the chart drills it as a reader. The server
+		// checks a reader against the saved dashboard, never the grid sent.
 		await fetchAuthoringDrillData(
 			{ query: 'query-1', chart_type: 'Bar', config: {} as any },
 			[],
@@ -69,9 +69,9 @@ describe('a drill level', () => {
 
 	// @feature permissions.chart-run-as-owner
 	it('names the chart it is of where the surface is not a grid', async () => {
-		// the chart's own builder page holds no filter context, and the name is
-		// what declares whose permissions the rows are filtered by. Left out,
-		// the level reads as the caller while the card reads as the owner.
+		// The chart's builder page has no filter context. The chart name tells the
+		// server whose permissions filter the rows. Without it, the level runs as
+		// the caller while the card runs as the owner.
 		await fetchAuthoringDrillData(
 			{ query: 'query-1', chart_type: 'Bar', config: {} as any },
 			[],
@@ -85,8 +85,8 @@ describe('a drill level', () => {
 
 	// @feature charts.drill-rows-reading charts.drill-rows-export permissions.chart-run-as-owner
 	it('reads a builder rows level on the server, under the chart it is of', async () => {
-		// the rows run as the chart declares only where the cut is made, so every
-		// reading of the level names the chart and goes back to the server
+		// Run as owner applies only on the server, where the pipeline is cut. So
+		// every read of the level names the chart and goes to the server.
 		const rows = authoringDrillRows(
 			{ query: 'query-1', chart_type: 'Bar', config: {} as any },
 			[{ segment_filters: [], action: { rows: true } }],

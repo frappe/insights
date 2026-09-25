@@ -10,20 +10,19 @@ import DashboardChartSelectorDialog from './DashboardChartSelectorDialog.vue'
 import DashboardShareDialog from './DashboardShareDialog.vue'
 import { BREAKPOINTS } from './grid_placement'
 
-// What the page offers to whoever may write it. The builder draws this next to
-// the actions everyone gets, and no other surface draws it at all.
+// Actions for a user who may write the dashboard. Only the builder renders
+// them, next to the actions every reader gets.
 const dashboard = inject('dashboard') as Dashboard
 const charts = inject(chartOptionsKey, [] as WorkbookChart[])
 
 const showChartSelectorDialog = ref(false)
 const showShareDialog = ref(false)
 
-// One entry per breakpoint, widest first — the layout an owner arranges first
-// reads first. A new width is a row in `BREAKPOINTS` and turns up here on its
-// own, so this switch cannot fall behind the layouts the grid can draw.
+// Widest first, because the owner arranges the widest layout first. Built from
+// `BREAKPOINTS`, so a new breakpoint shows up here without a change.
 //
-// The label is the tooltip: the switcher renders `title` from the label of any
-// option that carries an icon, so a `tooltip` of its own never reaches the DOM.
+// The label is the tooltip. The switcher renders `title` from the label of an
+// option with an icon, and ignores a `tooltip` key.
 const widths = computed(() =>
 	[...BREAKPOINTS].reverse().map((breakpoint) => ({
 		value: breakpoint.key,

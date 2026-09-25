@@ -1,11 +1,10 @@
-// What a host told an island to draw.
+// The props a host passes to tell an island what to render.
 //
-// A placement is any host that names an island and passes it props, and each
-// kind of host names the content its own way. A desk document's claim passes the
-// docname outright. A Frappe UI page passes what is below its own route instead:
-// `/app/insights-dashboard/<dashboard>` arrives as `route`, and a sidebar item
-// naming that dashboard in its own `route` field lands on the same URL. Every
-// one of them is a prop, so the island still never reads a desk route of its own.
+// Each kind of host names the dashboard its own way. A desk document's Claim
+// passes the docname as `dashboard`. A Frappe UI page passes the path below its
+// own route: `/app/insights-dashboard/<dashboard>` arrives as `route`. A sidebar
+// item that names the dashboard in its `route` field opens the same URL. Both
+// are props, so the island never reads a desk route itself.
 
 export type DashboardPlacement = {
 	dashboard?: string
@@ -13,11 +12,10 @@ export type DashboardPlacement = {
 }
 
 /**
- * The dashboard a placement asked for.
+ * The dashboard a placement names, or empty when it names none.
  *
- * Empty when it named none. That is a reference resolving to nothing, which the
- * view already answers as Not Found, so a misconfigured placement reads the same
- * as a dashboard that is gone.
+ * The View answers an empty name with Not Found. So a misconfigured placement
+ * looks the same as a deleted dashboard.
  */
 export function placedDashboard(placement: DashboardPlacement): string {
 	return placement.dashboard || placement.route?.[0] || ''

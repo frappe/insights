@@ -5,9 +5,7 @@ import { usePagination } from '../composables/usePagination'
 import DataTableFooter from '../components/DataTableFooter.vue'
 import { configureIsland } from './configure'
 
-// What `__` means inside an island.
-
-/** `SetVueGlobals`, as desk defines it: `frappe._` on every app it is given. */
+/** Desk's `SetVueGlobals`: sets `__` to `frappe._` on every app. */
 function deskGlobals(app: any) {
 	app.config.globalProperties.__ = (text: string, replace: any) =>
 		replace && typeof replace === 'object'
@@ -15,7 +13,6 @@ function deskGlobals(app: any) {
 			: text
 }
 
-/** The footer of a paged result, drawn the way an island draws it. */
 function footerOnPage(page: number) {
 	const pagination = usePagination({
 		rowCount: 100,

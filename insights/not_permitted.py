@@ -3,13 +3,14 @@
 
 """A chart the reader may view but whose data they may not read.
 
-It reads a site-DB table or a permlevel column their Frappe permissions do not
-cover. It does not run, and its card stays in place naming the doctypes it
-needs. This is frappe's own query rule — one unreadable table fails the whole
-`get_list` — and the alternative is the card reading "No data", which a reader
-takes for zero. See `docs/adr/a-reader-never-sees-a-false-empty.md`.
+The chart reads a site-DB table or a permlevel column that the reader's Frappe
+permissions do not cover. It does not run. Its card stays in place and names
+the doctypes it needs. This follows frappe's own query rule: one unreadable
+table fails the whole `get_list`. The alternative is a card that says "No
+data", which a reader takes for zero. See
+`docs/adr/a-reader-never-sees-a-false-empty.md`.
 
-The reader was already admitted to the chart, so saying which doctypes it needs
+The reader was already admitted to the chart, so naming the doctypes it needs
 reveals nothing. **Not Found** is the answer for the content itself.
 """
 
@@ -19,9 +20,9 @@ import frappe
 
 from insights.permission_user import permission_user, permission_user_for
 
-# the columns this request's builds held back, and the doctype each one
-# belongs to. Holding back is what keeps a chart that never reads the column
-# running, so the refusal waits until the query asks for it by name.
+# The columns this request's builds held back, each with its doctype. A chart
+# that never reads such a column keeps running. The refusal comes only when a
+# query names the column.
 HELD_BACK = "insights_columns_held_back"
 
 
@@ -34,11 +35,11 @@ class NotPermitted(frappe.PermissionError):
 
 
 def refuse(doctypes: list[str] | None = None, message: str | None = None) -> None:
-    """Refuse a read, naming the doctypes it needs. The one way the app raises `NotPermitted`.
+    """Refuse a read and name the doctypes it needs. The only place the app raises `NotPermitted`.
 
-    Thrown the way `frappe.throw` throws, so the sentence reaches the message
-    log: a response carries the exception's own text only where tracebacks are
-    allowed, and without it the reader is told an endpoint's URL.
+    It throws through `frappe.throw`, so the message reaches the message log. A
+    response carries the exception's own text only where tracebacks are
+    allowed. Without the message log, the reader would see only an endpoint's URL.
     """
     doctypes = doctypes or []
     if not message:
@@ -52,7 +53,7 @@ def refuse(doctypes: list[str] | None = None, message: str | None = None) -> Non
 
 
 def forget_refusal(refusal: NotPermitted) -> None:
-    """Take a refusal's sentence back out of the message log, once a surface draws it."""
+    """Remove a refusal's message from the message log once the caller shows the refusal itself."""
     exc_id = getattr(refusal, "__frappe_exc_id", None)
     frappe.local.message_log = [
         message for message in frappe.local.message_log if message.get("__frappe_exc_id") != exc_id
@@ -60,33 +61,33 @@ def forget_refusal(refusal: NotPermitted) -> None:
 
 
 def answers_refusal(empty):
-    """Turn a refusal into the answer the surface draws. One statement, at the boundary.
+    """Turn a refusal into the answer the UI renders. Apply it once, on the endpoint.
 
-    A reader is admitted to a dashboard as soon as one card on it is readable,
-    so every endpoint behind that dashboard can meet a table this reader may not
-    read - a filter's value picker, a card's range, a table preview. A refusal
-    there is an answer and not a failure: the reader was admitted, they own
-    nothing they could fix, and a retry cannot succeed. Left to each endpoint it
-    was remembered once in eleven.
+    A reader is admitted to a dashboard as soon as one card on it is readable.
+    So every endpoint behind that dashboard can meet a table the reader may not
+    read: a filter's value picker, a card's range, a table preview. There a
+    refusal is an answer, not a failure. The reader was admitted, they cannot
+    fix anything, and a retry cannot succeed. When each endpoint handled this
+    itself, only one in eleven did.
 
-    `empty` builds what the endpoint answers with when it has nothing - a list
-    for a picker, `None` for a range, the rendering keys for a card. A mapping
-    also carries `not_permitted`, naming the doctypes the reader would need, so a
+    `empty` builds the endpoint's answer when it has nothing: a list for a
+    picker, `None` for a range, the rendering keys for a card. A dict answer
+    also carries `not_permitted` with the doctypes the reader would need. So a
     card can say why it is blank instead of reading as zero.
 
-    An endpoint belongs here once something draws what it answers with. Where
-    the surface reads that answer as success it draws a false empty, which is
-    the defect this exists to remove - so a count, whose empty answer *is* a
-    zero and carries nothing for the marker to ride on, keeps raising, and so
-    does a run whose editor already draws the failure it comes back with.
+    Use it on an endpoint only when the UI renders its answer. If the UI reads
+    that answer as success, it shows a false empty, which is the defect this
+    removes. So a count keeps raising, because its empty answer is a zero and
+    has no place for the marker. A query run keeps raising too, because its
+    editor already shows the failure.
 
-    A download is not one of these either. It is an act rather than a picture, so
-    it keeps the refusal, whose message already names what is missing.
+    A download also keeps the refusal. It is an action, not a display, and its
+    message already names what is missing.
 
-    Every refusal it catches is a `NotPermitted`, which is why nothing in the
-    app refuses a read with a bare `frappe.PermissionError`: `NotPermitted`
-    subclasses that, so widening the catch would swallow the refusals that must
-    stay hard - a forged declaration, a query reference nobody may read.
+    It catches only `NotPermitted`, so every read refusal in the app raises
+    `NotPermitted`, never a bare `frappe.PermissionError`. Catching
+    `frappe.PermissionError`, its parent, would also swallow the refusals that
+    must stay hard: a forged declaration, a query reference nobody may read.
     """
 
     def decorate(fn):
@@ -109,8 +110,8 @@ def answers_refusal(empty):
 def unreadable_doctypes(table_name: str, user: str | None = None) -> list[str]:
     """The doctypes `user` would need read on to read `table_name`. Empty if none.
 
-    A child table has no permissions of its own, so what it needs is read on one
-    of its parents, and every parent is named: holding any one of them is enough.
+    A child table has no permissions of its own. It needs read on one of its
+    parents, so every parent is named, and any one of them is enough.
     """
     from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_parents
 
@@ -127,28 +128,29 @@ def unreadable_doctypes(table_name: str, user: str | None = None) -> list[str]:
 def has_permitted_chart(dashboard: str, user: str | None = None) -> bool:
     """Whether any chart on `dashboard` would run for `user`.
 
-    A dashboard every chart of which is Not Permitted, or that `user` may not
-    read at all, reads as Not Found: there is nothing on it for this reader,
-    and Not Found is the one answer for content a reader may not read. A partly
-    permitted one opens with its Not Permitted cards in place, so the layout
-    never shifts. A chart is read as `may_read` answers it, the question
-    `view.charts_on` asks of the same cells.
+    A dashboard is Not Found when every chart on it is Not Permitted, or when
+    `user` may not read any of them. Nothing on it is for this reader, and Not
+    Found is the one answer for content a reader may not read. A partly
+    permitted dashboard opens with its Not Permitted cards in place, so the
+    layout never shifts. A chart is readable when `may_read` says so, the same
+    check `view.charts_on` makes on the same cells.
 
-    Answered without running anything. A chart's tables are read off the
-    operations of the query behind it and of every query that one sources —
-    the query's own row, not the `Insights Query Reference` edge table, which a
-    background job rebuilds after the save commits. Each chart is asked under
-    the user it would run as, and `permission_user_for` is the one place that
-    answers that: the owner while the chart's Check is on, the key's user
-    under a preview render, the reader otherwise.
+    Nothing runs. A chart's tables come from the operations of its query and of
+    every query that query sources. They come from the query's own row, not
+    from the `Insights Query Reference` table, because a background job
+    rebuilds that table after the save commits. Each chart is checked as the
+    user it would run as, and `permission_user_for` decides that user: the
+    owner while Run as owner is on, the key's user during a preview render, the
+    reader otherwise.
 
-    A table is read as `check_table_permission` answers it, the rule the
-    engine reads rows by: on site data desk or a team grant, elsewhere a team
-    grant.
+    A table is readable when `check_table_permission` says so, the same rule
+    the engine reads rows by: desk or a team grant on the site database, a team
+    grant elsewhere.
 
-    A dashboard with no charts is permitted: nothing on it was refused. So is
-    one whose charts have all been deleted, and a chart that names no query - a
-    normal saved state, whose card asks its own author to configure it.
+    A dashboard with no charts is permitted, because nothing on it was refused.
+    So is one whose charts were all deleted, and one with a chart that names no
+    query. That is a normal saved state, and the card asks its author to
+    configure it.
     """
     from insights.insights.doctype.insights_team.insights_team import check_table_permission
     from insights.insights.query_utils import table_references, transitive_closure
@@ -178,11 +180,9 @@ def has_permitted_chart(dashboard: str, user: str | None = None) -> bool:
         if not may_read(frappe.get_cached_doc("Insights Chart v3", chart.name), reader):
             continue
         if not chart.query:
-            # nothing to refuse: the card says "pick a chart type and configure
-            # options", to this reader as to the author who dragged it on
+            # nothing to refuse: the card asks this reader, as it asks the
+            # author, to pick a chart type and configure it
             return True
-        # the user the chart would run as, from the one place that answers it:
-        # its owner while its Check is on, the key's user under a preview
         with permission_user(reader):
             as_user = permission_user_for(frappe._dict(doctype="Insights Chart v3", name=chart.name))
         queries = {chart.query, *transitive_closure(chart.query)}
@@ -211,33 +211,32 @@ def hold_back(columns: dict[str, str]) -> None:
 
 
 def forget_held_back() -> None:
-    """Drop what the last build held back, so one build never answers for another."""
+    """Clear what the last build held back, so one build never reports another's columns."""
     setattr(frappe.local, HELD_BACK, {})
 
 
 def held_back_columns() -> set[str]:
-    """The names this request's builds held back.
+    """The column names this request's builds held back.
 
-    What a reader may not read must not change the shape of a result, only its
-    contents. A join names its output by comparing the two sides' column sets,
-    and those sets are already narrowed by the time it looks - so it puts these
-    back first. See `IbisQueryBuilder.rename_duplicate_columns`.
+    A column the reader may not read must change a result's contents, not its
+    shape. A join names its output columns by comparing the column sets of its
+    two sides. Those sets are already narrowed when it compares them, so it
+    adds these back first. See `IbisQueryBuilder.rename_duplicate_columns`.
     """
     return set(getattr(frappe.local, HELD_BACK, None) or {})
 
 
 def held_back_doctype(column_name: str) -> str | None:
-    """The doctype a column this build held back was read on.
+    """The doctype of a column this build held back.
 
-    A column the reader may not read is held back from the table rather than
-    refused there, because a chart that never names it is none of its business.
-    So the query asking for it by name is where the answer is given - and every
-    caller that names it is answered, whether the answer is a refusal or a
-    column that is not there.
+    A column the reader may not read is held back from the table, not refused
+    there, so a chart that never names it still runs. The query that names it
+    gets the answer, and so does every other caller that names it. The answer
+    is a refusal or a missing column.
     """
     held = getattr(frappe.local, HELD_BACK, None) or {}
     if column_name in held:
         return held[column_name]
-    # SQL names a column in any case, and the database reads it so
+    # SQL column names are case-insensitive
     folded = column_name.lower()
     return next((doctype for key, doctype in held.items() if key.lower() == folded), None)

@@ -1,14 +1,13 @@
-"""Whose rows a link published before `visibility` keeps serving.
+"""Which user's rows a link published before `visibility` keeps serving.
 
-See `insights/patches/run_public_charts_as_owner.py`. The base recorded the
-publisher on the document that published the content and filtered a public read
-by that person; the Check this branch reads instead can only name the owner.
+See `insights/patches/run_public_charts_as_owner.py`. Before, the publishing
+document stored its publisher in `permission_user`, and a public read filtered
+rows by that user. The `run_as_owner` Check can only name the chart's owner.
 
-What a test on a migrated bench can reach: a site that never had the base's
-`permission_user` column, the one a v3 release before v3.13 upgrades from.
-Adding or dropping the column is a DDL, which commits, so the arm that reads a
-recorded publisher cannot be exercised here without breaking every savepoint
-this suite runs inside, and the column's absence is stated rather than made.
+These tests cover a site without the `permission_user` column, as on an upgrade
+from a v3 release before v3.13. Adding or dropping a column is DDL, and DDL
+commits, which breaks the savepoints this suite runs inside. So the tests cannot
+cover a stored publisher, and they patch `has_column` instead of dropping it.
 """
 
 from contextlib import redirect_stdout
@@ -60,7 +59,7 @@ class TestPublicLinkPublisher(InsightsIntegrationTestCase):
         frappe.delete_doc(DT.WORKBOOK, cls.workbook, force=True, ignore_permissions=True)
         delete_users(PUBLISHER)
 
-    # the migrated shape, written the way the earlier patches write it
+    # the state earlier patches leave a published dashboard in
     def published(self):
         frappe.db.set_value(DT.DASHBOARD, self.dashboard, "visibility", "Public")
         frappe.db.set_value(DT.CHART, self.chart, "run_as_owner", 0)
@@ -71,8 +70,8 @@ class TestPublicLinkPublisher(InsightsIntegrationTestCase):
 
     # @feature shared.chart-on-public-dashboard permissions.chart-run-as-owner
     def test_a_link_published_before_the_publisher_was_recorded_runs_as_its_owner(self):
-        """The base's own backfill wrote the publishing document's owner into the
-        column it added, and the link served that person's rows."""
+        """The backfill that added `permission_user` filled it with the publishing
+        document's owner, so the link served that user's rows."""
         self.published()
 
         self.run_patch_without_the_column()
@@ -81,9 +80,9 @@ class TestPublicLinkPublisher(InsightsIntegrationTestCase):
 
     # @feature shared.chart-on-public-dashboard permissions.chart-run-as-owner
     def test_a_link_another_person_published_keeps_running_as_its_reader(self):
-        """Checking the box would hand the guest the chart owner's rows, and the
-        base was serving the dashboard owner's. The card refuses instead, and the
-        owner decides from the chart's own share dialog."""
+        """Checking Run as owner would show guests the chart owner's rows, but the
+        link served the dashboard owner's rows. So the card refuses to load, and
+        the chart's owner decides in the chart's share dialog."""
         self.published()
         frappe.db.set_value(DT.DASHBOARD, self.dashboard, "owner", PUBLISHER)
 
@@ -97,7 +96,7 @@ class TestPublicLinkPublisher(InsightsIntegrationTestCase):
         )
 
     def published_by_another_person_on(self, operations):
-        """The chart, published by a dashboard someone else owns, reading `operations`."""
+        """Publishes the chart on a dashboard another user owns, with `operations` as its query."""
         frappe.db.set_value(DT.QUERY, self.query, "operations", frappe.as_json(operations))
         self.published()
         frappe.db.set_value(DT.DASHBOARD, self.dashboard, "owner", PUBLISHER)
@@ -113,15 +112,16 @@ class TestPublicLinkPublisher(InsightsIntegrationTestCase):
 
     # @feature shared.chart-on-public-dashboard permissions.chart-run-as-owner
     def test_a_link_another_person_published_on_rows_everyone_reads_runs_as_its_owner(self):
-        """External data no Table Restriction narrows: the owner's rows are the
-        publisher's, so checking the box serves the guest what the base did."""
+        """No Table Restriction applies to this external table, so the owner and
+        the publisher read the same rows. Run as owner serves guests the same
+        rows as before."""
         self.published_by_another_person_on(EXTERNAL_TABLE)
 
         self.assertTrue(frappe.db.get_value(DT.CHART, self.chart, "run_as_owner"))
 
     # @feature shared.chart-on-public-dashboard permissions.chart-run-as-owner
     def test_a_link_another_person_published_with_a_script_keeps_running_as_its_reader(self):
-        """A script reads whatever its running user may, so its rows are that user's."""
+        """A script reads anything its running user can, so the rows depend on the user."""
         self.published_by_another_person_on(
             [*EXTERNAL_TABLE, {"type": "code", "code": "results = frappe.get_list('ToDo')"}]
         )
@@ -130,8 +130,8 @@ class TestPublicLinkPublisher(InsightsIntegrationTestCase):
 
     # @feature shared.chart-on-public-dashboard permissions.chart-run-as-owner
     def test_a_link_whose_owner_cannot_read_its_table_keeps_running_as_its_reader(self):
-        """The owner's rows would be none of the publisher's, and a later grant to
-        the owner would start serving them to guests without anyone deciding to."""
+        """The owner would get no rows. A later grant to the owner would then show
+        the table to guests, and nobody would have decided that."""
         with patch(
             "insights.insights.doctype.insights_team.insights_team.check_table_permission",
             side_effect=lambda data_source, table, user=None, raise_error=True: user == PUBLISHER,

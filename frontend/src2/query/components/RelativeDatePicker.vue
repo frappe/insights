@@ -16,22 +16,22 @@ const parts = reactive<RelativeDateParts>({
 	includeCurrent: false,
 })
 
-// A count of nothing is not a window: a number box the reader cleared writes one
-// interval rather than a string the server cannot read.
+// A cleared or zero count writes 1. The server cannot read a span without a
+// count.
 function toCount(token?: string) {
 	const count = parseInt(token || '')
 	return count > 0 ? String(count) : '1'
 }
 
-// The three controls are one span, in the words the options are written in. The
-// grammar itself is `span_grammar`, which the server reads the same way, so a
-// span stored in any of its forms opens on the window it names — including the
-// countless "Last Month", which covers one period.
+// Maps the span shapes of `span_grammar` to the words in `SPAN_OPTIONS`. The
+// server parses spans with the same grammar, so a stored span in any of its
+// forms opens on the right controls. That includes "Last Month" with no count,
+// which means one period.
 //
-// Three of the grammar's four shapes. `<unit> to date` — the period so far — has
-// no option in `SPAN_OPTIONS` to draw it with, and a span this picker cannot
-// read is one it must not write over: Copy JSON, an import and a hand-authored
-// workbook all put spans in this field that the picker never offered.
+// Only three of the four shapes are here. `<unit> to date` has no option in
+// `SPAN_OPTIONS`. The picker must not overwrite a span it cannot read: Copy
+// JSON, an import or a hand-written workbook can store spans the picker never
+// offered.
 const SPAN_WORD: Partial<Record<SpanShape, string>> = {
 	last: 'Last',
 	current: 'Current',
@@ -47,7 +47,7 @@ if (stored && storedSpan) {
 	parts.includeCurrent = stored.includeCurrent
 }
 
-/** The span the three controls say, as the server reads it. */
+/** The span string the three controls describe, in the server's format. */
 function written() {
 	if (parts.intervalType === 'Fiscal Year') parts.includeCurrent = false
 	const base =
@@ -57,10 +57,9 @@ function written() {
 	return parts.includeCurrent && parts.span !== 'Current' ? `${base} (include current)` : base
 }
 
-// Opening the picker on a span it could read is already a round trip: "Last
-// Month" is stored back as "Last 1 Month", the form the controls stand for.
-// Opening it on anything else is not editing it, so nothing is written until a
-// control moves.
+// A span the picker can read is written back at once in the controls' form:
+// "Last Month" becomes "Last 1 Month". Any other span stays as stored until the
+// user changes a control.
 if (storedSpan) relativeDate.value = written()
 watch(parts, () => (relativeDate.value = written()))
 
@@ -69,8 +68,8 @@ const toggleLabel = (span: string, intervalType: string) =>
 </script>
 
 <template>
-	<!-- The picker fills whatever box it is given: the filter editor's row and the
-	     filter popover both hand it one, and a width of its own overflowed them. -->
+	<!-- The picker fills the width it is given. The filter editor's row and the
+	     filter popover both set that width, and a fixed width overflowed them. -->
 	<div class="flex w-full min-w-0 select-none flex-col gap-2 text-base">
 		<div class="flex w-full min-w-0 flex-wrap gap-2">
 			<FormControl
@@ -94,7 +93,7 @@ const toggleLabel = (span: string, intervalType: string) =>
 				:options="INTERVAL_TYPE_OPTIONS"
 			/>
 		</div>
-		<!-- The switch leads its row, so it starts where the row above it does. -->
+		<!-- The switch comes first, so it lines up with the fields above. -->
 		<Toggle
 			v-if="parts.span !== 'Current' && parts.intervalType !== 'Fiscal Year'"
 			v-model="parts.includeCurrent"
@@ -105,7 +104,7 @@ const toggleLabel = (span: string, intervalType: string) =>
 </template>
 
 <style scoped>
-/* A spinner crowds a field this narrow, and the count steps by the keyboard. */
+/* The spin buttons crowd a field this narrow. The arrow keys still step the count. */
 :deep(input[type='number']::-webkit-outer-spin-button),
 :deep(input[type='number']::-webkit-inner-spin-button) {
 	appearance: none;

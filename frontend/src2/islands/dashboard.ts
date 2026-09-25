@@ -1,4 +1,4 @@
-// The `insights.dashboard` island: a saved dashboard, wherever a host mounts it.
+// The `insights.dashboard` island: one saved dashboard.
 
 import DashboardIsland from './DashboardIsland.vue'
 import { mountIsland } from './entry'

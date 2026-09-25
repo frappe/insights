@@ -10,7 +10,7 @@ type SessionUser = {
 	is_admin: boolean
 	is_user: boolean
 	can_download: boolean
-	/** Whether the server lets this user write a script or an expression that runs SQL. */
+	/** Whether this user may add or change Trusted code. */
 	can_write_trusted_code: boolean
 	locale: string
 	has_desk_access?: boolean
@@ -34,7 +34,7 @@ type SiteInfo = {
 	/** The two properties `docs/telemetry.md` puts on every event. */
 	app_version: string
 	entry: string
-	/** Whether the bench runs in developer mode, so a workbook may be shipped as a file. */
+	/** Whether the site is in developer mode. Exporting a workbook to an app needs it. */
 	developer_mode: boolean
 }
 

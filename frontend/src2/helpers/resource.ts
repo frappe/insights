@@ -130,12 +130,11 @@ export default function useDocumentResource<T extends Document>(
 				updateDocState(newDoc, sentDoc)
 			}
 		} catch (error) {
-			// Under autosave a refused value is permanent: the document stays
-			// dirty, every later edit re-arms the watcher, and the same refused
-			// payload is sent and refused again — so nothing the author types
-			// after that point reaches the server. So the refused value comes off.
-			// A document saved by hand has no such loop, and a write that never
-			// reached the server was not refused: both keep every edit.
+			// Under autosave, a rejected value would block every later save. The
+			// document stays dirty, each edit triggers another save, and the
+			// server rejects the same payload again. So the rejected value is
+			// reverted. A manual save has no such loop, so it keeps every edit.
+			// So does a request that never reached the server.
 			if (autoSave.value && isRefusal(error)) {
 				doc.value = takeBackRefusal(
 					{ ...doc.value },
@@ -322,7 +321,7 @@ const metaFields = [
 	'parenttype',
 ]
 
-/** The server read the write and refused it: a permission or a validation it raised. */
+/** The server rejected the write with a permission or validation error. */
 function isRefusal(error: any) {
 	return error?.status === 403 || error?.status === 417
 }

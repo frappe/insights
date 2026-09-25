@@ -1,9 +1,9 @@
-"""A workbook an app ships, from the file it ships to the site that holds it.
+"""Standard workbooks: the file an app ships, and the site that imports it.
 
-The file is the truth: a site never owns the row. It arrives through frappe's
-import, which knows only the workbook's own fields, so the controller puts the
-members in the file on the way out and takes them back out of it on the way in,
-under the names the file gives them.
+The file is the source of truth, and a site never owns the row. Frappe's import
+knows only the workbook's own fields. So the controller writes the members into
+the file on export. On import it creates them from the file, under the names the
+file gives them.
 """
 
 import os
@@ -33,7 +33,7 @@ SHIPPED = "2026-01-01 00:00:00.000000"
 
 
 def standard_file(**changes) -> dict:
-    """The file an app ships, as a hand-authored one looks."""
+    """A standard workbook file, as a person writes it by hand."""
     file = {
         "doctype": DT.WORKBOOK,
         "name": WORKBOOK,
@@ -104,7 +104,7 @@ def module_folder() -> str:
 
 
 def delete_standard_workbooks():
-    """Leave neither a row nor a file behind: a developer-mode save writes one."""
+    """Delete the rows and the files. A developer-mode save writes a file."""
     standard_workbooks = frappe.get_all(DT.WORKBOOK, filters={"is_standard": 1}, pluck="name")
     for name in {*standard_workbooks, *frappe.get_all(DT.WORKBOOK, {"name": WORKBOOK}, pluck="name")}:
         with developer_mode():
@@ -114,7 +114,7 @@ def delete_standard_workbooks():
 
 
 def migrate():
-    """What `bench migrate` does with the files an app ships."""
+    """The step of `bench migrate` that syncs standard workbook files."""
     sync_standard_workbooks()
 
 
@@ -123,11 +123,11 @@ def is_imported() -> bool:
 
 
 class AShippedFileRestoresItsMembersUnderTheirOwnNames(InsightsIntegrationTestCase):
-    """What `after_insert` does with the file frappe just inserted the workbook from.
+    """How `after_insert` creates the members from the imported file.
 
-    A member is the same document on every site, so the import inserts it under
-    the name the file gives it, updates the one a site already holds, and deletes
-    the ones the file has dropped.
+    A member is the same document on every site. So the import inserts a member
+    under the name in the file, updates a member the site already has, and
+    deletes the members the file no longer has.
     """
 
     def before_test(self):
@@ -150,8 +150,8 @@ class AShippedFileRestoresItsMembersUnderTheirOwnNames(InsightsIntegrationTestCa
 
     # @feature standard.ship
     def test_an_imported_chart_is_standard_and_runs_as_its_reader(self):
-        """The file cannot say otherwise: a hand-edited one would hand every
-        reader the rows the shipping site's author could see."""
+        """The file cannot change this. Otherwise a hand-edited file could show
+        every reader the rows the author could see on the shipping site."""
         self.import_file()
 
         chart = frappe.db.get_value(DT.CHART, CHART, ["is_standard", "run_as_owner"], as_dict=True)
@@ -161,8 +161,8 @@ class AShippedFileRestoresItsMembersUnderTheirOwnNames(InsightsIntegrationTestCa
 
     # @feature standard.runs-as-the-reader
     def test_a_standard_chart_cannot_be_saved_running_as_its_owner(self):
-        """Its owner is Administrator on every site, so the box checked would
-        show every row to every reader."""
+        """Its owner is Administrator on every site, so Run as owner would show
+        every row to every reader."""
         self.import_file()
 
         with developer_mode():
@@ -174,8 +174,8 @@ class AShippedFileRestoresItsMembersUnderTheirOwnNames(InsightsIntegrationTestCa
 
     # @feature standard.ship
     def test_an_imported_dashboard_is_read_by_every_desk_user(self):
-        """The file says `Private`, and a board no desk user may read is a board
-        the app shipped for nobody."""
+        """The file says `Private`, but a dashboard that no desk user may read is
+        of no use to anyone."""
         self.import_file()
 
         dashboard = frappe.get_doc(DT.DASHBOARD, DASHBOARD)
@@ -226,8 +226,9 @@ class AShippedFileRestoresItsMembersUnderTheirOwnNames(InsightsIntegrationTestCa
 
     # @feature standard.ship
     def test_an_import_is_not_a_workbook_a_person_created(self):
-        """`after_insert` reports an authoring act and restores a delete's backup.
-        An import is neither, and the file carries the members already."""
+        """For a new workbook, `after_insert` sends a telemetry event and restores
+        the backup of a deleted workbook. An import needs neither, and the file
+        already has the members."""
         with patch("insights.insights.doctype.insights_workbook.insights_workbook.capture") as reported:
             self.import_file()
 
@@ -235,7 +236,7 @@ class AShippedFileRestoresItsMembersUnderTheirOwnNames(InsightsIntegrationTestCa
 
 
 class AFileLeavesOutWhatTheSiteOwns(InsightsIntegrationTestCase):
-    """`before_export` writes the members over the summaries `as_dict` adds."""
+    """`before_export` replaces the member summaries from `as_dict` with the members."""
 
     def before_test(self):
         delete_standard_workbooks()
@@ -259,7 +260,7 @@ class AFileLeavesOutWhatTheSiteOwns(InsightsIntegrationTestCase):
 
     # @feature standard.file-format
     def test_a_file_carries_nothing_a_site_owns(self):
-        """A key that moves on its own would rewrite the file on every save."""
+        """A key that changes by itself would change the file on every save."""
         file = self.exported()
 
         for field in (
@@ -276,11 +277,11 @@ class AFileLeavesOutWhatTheSiteOwns(InsightsIntegrationTestCase):
 
 
 class AStandardWorkbookIsReadOnlyOnTheSiteThatHoldsIt(InsightsIntegrationTestCase):
-    """The file is the truth, so a site changes nothing the app ships.
+    """The file is the source of truth, so a site cannot change what the app ships.
 
-    One rule covers the workbook and all four kinds of member, because a member
-    is guarded through the workbook it belongs to: an edit, a delete, a rename,
-    and a member a site adds of its own.
+    A member is guarded through its workbook, so one rule covers the workbook
+    and all four kinds of member. It refuses an edit, a delete, a rename, and a
+    new member that the site adds.
     """
 
     def before_test(self):
@@ -350,7 +351,7 @@ class AStandardWorkbookIsReadOnlyOnTheSiteThatHoldsIt(InsightsIntegrationTestCas
 
     # @feature standard.read-only
     def test_the_workbook_says_it_is_read_only(self):
-        """What the builder reads to draw the shield."""
+        """The builder reads this to show the read-only icon."""
         self.assertTrue(frappe.get_doc(DT.WORKBOOK, WORKBOOK).as_dict().read_only)
         self.assertTrue(frappe.get_doc(DT.CHART, CHART).as_dict().read_only)
 
@@ -368,8 +369,8 @@ class AStandardWorkbookIsReadOnlyOnTheSiteThatHoldsIt(InsightsIntegrationTestCas
 
     # @feature standard.read-only
     def test_a_migrate_may_change_it(self):
-        """The sync deletes the workbooks whose file an app has dropped, and it
-        runs on a site that is not in developer mode."""
+        """The sync deletes a workbook when an app drops its file, and the sync
+        runs outside developer mode."""
         frappe.flags.in_migrate = True
         self.addCleanup(lambda: frappe.flags.pop("in_migrate", None))
 
@@ -380,10 +381,10 @@ class AStandardWorkbookIsReadOnlyOnTheSiteThatHoldsIt(InsightsIntegrationTestCas
 
 
 class DeveloperModeWritesTheFileBack(InsightsIntegrationTestCase):
-    """Authoring a standard workbook is editing its file.
+    """Editing a standard workbook edits its file.
 
-    The member a developer saves is in the workbook's file, so the workbook is
-    what gets written, wherever the save came from.
+    A member is stored in its workbook's file. So a save of the workbook or of
+    any member writes the workbook's file.
     """
 
     def before_test(self):
@@ -428,7 +429,7 @@ class DeveloperModeWritesTheFileBack(InsightsIntegrationTestCase):
 
     # @feature standard.export-on-save
     def test_deleting_the_workbook_removes_its_file(self):
-        """Its members go with it, and each of those saves the file."""
+        """Its members are deleted with it, and each member's delete writes the file."""
         with developer_mode():
             frappe.get_doc(DT.WORKBOOK, WORKBOOK).save()
             frappe.delete_doc(DT.WORKBOOK, WORKBOOK, force=True)
@@ -457,10 +458,10 @@ class DeveloperModeWritesTheFileBack(InsightsIntegrationTestCase):
 
 
 class MarkingAWorkbookStandardSettlesItsNames(InsightsIntegrationTestCase):
-    """The names become the workbook's identity on every site that takes the file.
+    """The names identify the workbook and its members on every site that imports the file.
 
-    A desk sidebar item names a dashboard by its docname, so the names are
-    settled once, here, and nothing rewrites them again.
+    A desk sidebar item links to a dashboard by its docname. So the names are
+    set once, here, and nothing changes them later.
     """
 
     def before_test(self):
@@ -475,8 +476,8 @@ class MarkingAWorkbookStandardSettlesItsNames(InsightsIntegrationTestCase):
                 frappe.delete_doc(DT.WORKBOOK, name, force=True, delete_permanently=True)
 
     def build(self, title="Selling Board") -> frappe._dict:
-        """A workbook as a person builds one: hashes for names, a chart on a
-        query, and a dashboard naming both."""
+        """A workbook as a person builds it: hash names, a chart on a query, and
+        a dashboard that uses both."""
         workbook = frappe.get_doc({"doctype": DT.WORKBOOK, "title": title}).insert()
         source = frappe.get_doc(
             {
@@ -596,8 +597,8 @@ class MarkingAWorkbookStandardSettlesItsNames(InsightsIntegrationTestCase):
 
     # @feature standard.mark
     def test_a_marked_dashboard_is_read_by_every_desk_user(self):
-        """The authoring site settles the same visibility the import forces, so
-        the board reads the same wherever it lands."""
+        """The authoring site sets the same visibility as the import does, so the
+        dashboard has the same readers on every site."""
         self.mark()
 
         dashboard = frappe.get_doc(DT.DASHBOARD, "selling-overview")
@@ -606,9 +607,9 @@ class MarkingAWorkbookStandardSettlesItsNames(InsightsIntegrationTestCase):
 
     # @feature standard.mark
     def test_two_folders_of_one_type_never_share_a_title(self):
-        """A file names a folder by title, so the second one would take the first
-        one's members. A new folder takes the next free title; a rename onto a
-        taken one is refused."""
+        """A file refers to a folder by title, so a second folder with the same
+        title would get the first folder's members. A new folder gets the next
+        free title, and a rename to a used title is refused."""
         first, second = (
             frappe.get_doc(
                 {
@@ -635,7 +636,7 @@ class MarkingAWorkbookStandardSettlesItsNames(InsightsIntegrationTestCase):
 
     # @feature standard.mark
     def test_a_name_whose_file_another_workbook_already_holds_is_refused(self):
-        """The file is named after `scrub(name)`, and two names scrub to one."""
+        """The file name is `scrub(name)`, and two names can scrub to the same value."""
         self.mark(name="selling_report")
 
         other = self.build("Selling Board, other")
@@ -644,8 +645,9 @@ class MarkingAWorkbookStandardSettlesItsNames(InsightsIntegrationTestCase):
 
     # @feature standard.mark
     def test_a_rename_onto_a_name_another_workbook_files_under_is_refused(self):
-        """A rename decides a standard workbook's name too, and `after_rename`
-        writes the file - over the other workbook's, if nothing claims it."""
+        """A rename also sets a standard workbook's name, and `after_rename`
+        writes the file. Without this check, it would overwrite the other
+        workbook's file."""
         self.mark(name="selling_report")
 
         other = self.build("Selling Board, other")
@@ -670,9 +672,9 @@ class MarkingAWorkbookStandardSettlesItsNames(InsightsIntegrationTestCase):
 class TheWalkTakesEveryFileAnAppShips(InsightsIntegrationTestCase):
     """What a migrate does, end to end.
 
-    A file is taken when its `modified` is newer than the row, and a workbook
-    whose file an app has dropped is deleted. The walk runs on a site that is
-    not in developer mode, under the flag a migrate sets.
+    A migrate imports a file when its `modified` is newer than the row. It
+    deletes a workbook when an app drops its file. It runs outside developer
+    mode, with `frappe.flags.in_migrate` set.
     """
 
     def before_test(self):
@@ -682,7 +684,7 @@ class TheWalkTakesEveryFileAnAppShips(InsightsIntegrationTestCase):
         self.addCleanup(lambda: frappe.flags.pop("in_migrate", None))
 
     def ship(self, file=None):
-        """Write the file an app would ship, where the walk looks for it."""
+        """Write a standard workbook file where the sync looks for it."""
         stem = frappe.scrub(WORKBOOK)
         folder = os.path.join(module_folder(), stem)
         os.makedirs(folder, exist_ok=True)
@@ -702,8 +704,8 @@ class TheWalkTakesEveryFileAnAppShips(InsightsIntegrationTestCase):
 
     # @feature standard.ship
     def test_frappe_s_own_sync_leaves_the_file_alone(self):
-        """frappe syncs each app in install order, so it would import an earlier
-        app's file before this doctype's schema is synced."""
+        """Frappe syncs apps in install order. It would import an earlier app's
+        file before the Insights Workbook schema is synced."""
         self.ship()
 
         walked = get_doc_files([], get_module_path(MODULE))
@@ -744,8 +746,8 @@ class TheWalkTakesEveryFileAnAppShips(InsightsIntegrationTestCase):
 
     # @feature standard.resync
     def test_a_member_edit_reaches_a_site_that_took_the_earlier_file(self):
-        """A member's edit leaves the workbook's own `modified` as it was, and
-        frappe skips a file that is not newer than the row."""
+        """A member's edit does not change the workbook's `modified`, and frappe
+        skips a file that is not newer than the row."""
         self.ship()
         migrate()
 
@@ -754,7 +756,7 @@ class TheWalkTakesEveryFileAnAppShips(InsightsIntegrationTestCase):
             chart.title = "Revenue, restated"
             chart.save()
 
-        # the other site: the rows as the earlier file left them
+        # act as another site that still has the rows from the earlier file
         frappe.db.set_value(DT.CHART, CHART, "title", "Revenue", update_modified=False)
         frappe.db.set_value(DT.WORKBOOK, WORKBOOK, "modified", SHIPPED, update_modified=False)
         migrate()
@@ -783,12 +785,14 @@ class TheWalkTakesEveryFileAnAppShips(InsightsIntegrationTestCase):
 
     # @feature standard.resync
     def test_a_file_never_replaces_a_workbook_the_site_made(self):
-        """frappe deletes the row a file names before it inserts the file, and
-        `is_standard` lets a chart past the site's team grants."""
+        """Frappe deletes the row with the file's name before it inserts the file.
+        The site would lose its workbook, and `is_standard` would let its charts
+        past the site's team grants."""
         frappe.get_doc({"doctype": DT.WORKBOOK, "title": "The site's own"}).insert(set_name=WORKBOOK)
         frappe.db.set_value(DT.WORKBOOK, WORKBOOK, "modified", "2025-01-01", update_modified=False)
         self.addCleanup(frappe.delete_doc, DT.WORKBOOK, WORKBOOK, force=True)
-        # a refused import leaves the flag set, and a real migrate stops there
+        # a refused import leaves `in_import` set. A real migrate stops at the
+        # error, but this test continues
         self.addCleanup(lambda: frappe.flags.pop("in_import", None))
         self.ship()
 
@@ -798,9 +802,10 @@ class TheWalkTakesEveryFileAnAppShips(InsightsIntegrationTestCase):
 
 
 class AMemberKeptForDeskLeavesWithItsClaim(InsightsIntegrationTestCase):
-    """A release drops the chart a desk Dashboard Chart draws. The re-sync keeps
-    it for the desk document, but the app no longer ships it: the file is
-    written without it, and a migrate deletes it once nothing draws it."""
+    """A release drops a chart that a desk Dashboard Chart shows. The sync keeps
+    the chart for the desk document, but the app no longer ships it. So the file
+    is written without it, and a migrate deletes it once no desk document shows
+    it."""
 
     def before_test(self):
         from insights.desk import install_custom_fields
@@ -844,10 +849,10 @@ class AMemberKeptForDeskLeavesWithItsClaim(InsightsIntegrationTestCase):
 
     # @feature standard.resync standard.export-on-save
     def test_a_developer_mode_save_writes_the_file_without_it(self):
-        """`InsightsWorkbook.before_export`, which `standard.export` reaches on a
-        developer-mode save of the workbook or any member of it. The member the
-        file still carries is written; a download still carries the kept chart,
-        which is on the site."""
+        """A developer-mode save writes the file through `standard.export` and
+        `InsightsWorkbook.before_export`. The file has only the members the app
+        still ships. A download still has the kept chart, because the chart is
+        on the site."""
         self.assertTrue(frappe.db.exists(DT.CHART, CHART))
 
         with developer_mode():
@@ -859,8 +864,8 @@ class AMemberKeptForDeskLeavesWithItsClaim(InsightsIntegrationTestCase):
 
     # @feature standard.resync
     def test_a_migrate_deletes_it_once_no_desk_document_draws_it(self):
-        """`insights.migrate.sync_standard_workbooks`, on a migrate whose file did
-        not change. While the desk document draws the chart it stays."""
+        """The file did not change on this migrate. The chart stays while the
+        desk document shows it."""
         migrate()
         self.assertTrue(frappe.db.exists(DT.CHART, CHART))
 
@@ -872,8 +877,8 @@ class AMemberKeptForDeskLeavesWithItsClaim(InsightsIntegrationTestCase):
 
 
 class WhatTheExportToAppDialogIsOffered(InsightsIntegrationTestCase):
-    """What the browser reads before an author ships a workbook: whether the
-    bench writes app files at all, and which modules it may write."""
+    """What the Export to app dialog reads: whether the bench can write app
+    files, and which modules it may write to."""
 
     # @feature standard.export-to-app
     def test_a_module_names_its_app_and_the_folder_its_file_goes_in(self):
@@ -890,9 +895,9 @@ class WhatTheExportToAppDialogIsOffered(InsightsIntegrationTestCase):
             "a module of an app this site does not have cannot take a file",
         )
 
-        # the offer is the framework's own source for shipped files: a module an
-        # app's `modules.txt` does not name is one the framework never reads
-        # back, so a file written there is an orphan the next migrate deletes
+        # the list must match the framework's module list. Frappe never reads a
+        # module that no app's `modules.txt` lists, so the next migrate deletes a
+        # file written there as an orphan
         from frappe.modules.utils import get_module_list
 
         shipped = {(app, module) for app in installed for module in get_module_list(app)}

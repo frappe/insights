@@ -96,7 +96,6 @@ const filler = computed(() => {
 		readonly: readonly.value,
 		drillable: props.chart.drillable,
 		executing: props.chart.executing,
-		// only where the read offers another page: everyone else keeps the one
 		page: props.chart.goToPage
 			? {
 					current: props.chart.currentPage,
@@ -147,7 +146,7 @@ onBeforeUnmount(() => clearTimeout(veilTimer))
 const state = computed(() => {
 	if (props.chart.failed) return props.chart.serverBusy ? 'serverBusy' : 'failed'
 	if (props.chart.executing && !hasRows.value) return 'loading'
-	// nothing ran, so there is no config to blame and no zero to report
+	// nothing ran, so config errors and an empty result do not apply
 	if (props.chart.notPermitted) return 'notPermitted'
 	if (props.chart.configErrors.length) return 'unconfigured'
 	if (props.chart.empty) return 'empty'
@@ -183,9 +182,8 @@ const unconfigured = computed(() => {
 const headline = computed(() => {
 	if (state.value === 'serverBusy') return __('The server is busy')
 	if (state.value === 'failed') return __('Could not load')
-	// Frappe's own word for it, and one of the card's states rather than a shape
-	// of its own: Not Permitted, No data and Could not load are one family, so a
-	// reader reads the card the same way whatever it says.
+	// Frappe's term. It is a card state like No data and Could not load, not a
+	// layout of its own, so every state reads the same way.
 	if (state.value === 'notPermitted') return refusalHeadline()
 	return null
 })
@@ -193,9 +191,9 @@ const headline = computed(() => {
 // What the server said. An author can act on it. A reader owns neither the query
 // nor the config it names, so a reader gets the headline alone.
 //
-// A refusal is the exception: the doctypes it names are the same line for an
-// author and a reader, because neither owns the grant, and the doctype is the
-// word the site's own permission page uses.
+// A refusal is the exception. Authors and readers both get the doctypes it
+// names: neither of them owns the permission, and the doctype is the name the
+// site's permission settings use.
 const detail = computed(() => {
 	if (state.value === 'notPermitted') {
 		return refusalDetail(
@@ -207,8 +205,6 @@ const detail = computed(() => {
 	return props.chart.failure
 })
 
-// What the card says in place of the picture, read the same way by the chrome
-// around a plot and by a filler that draws its own cards.
 const failure = computed<ChartFailure | null>(() =>
 	headline.value
 		? {
@@ -236,28 +232,24 @@ const stateProps = computed(() => {
 // type emits which. The adapter names them and turns each payload into the point
 // behind it.
 //
-// A source that answers no drill is not wired for one at all: the dialog would open
+// A source without drill support gets no click handlers: the dialog would open
 // on a click the server refuses, and offer a retry that can never succeed. Gated
-// here rather than in each adapter, because a drill is the source's answer to give
-// and every chart type reports its clicks through this one map.
+// here rather than in each adapter, because the source decides whether a drill is
+// possible, and every chart type reports its clicks through this one map.
 const fillerEvents = computed(() =>
 	props.chart.drillable === false
 		? {}
 		: segmentClickEvents(filler.value, result.value.columns, reportSegment),
 )
 
-// What a card whose rows the reader's own permissions narrowed says, so a
-// scoped number is not read as the whole one. Only a real User Permission
-// record is named: a role's match condition narrows the rows too, but nobody
-// holds a document for it and there is nothing to name. A team's Table
-// Restriction names nothing either, and is said without names.
+// Tells the reader that their own permissions narrowed the rows, so a partial
+// number is not read as the total. Only User Permission records are named. A
+// role's match condition also narrows the rows, but there is no document to
+// name. A team's Table Restriction is also shown without names.
 //
-// It is a mark right after the title, not a line in the card: the card is as
-// tall as its author sized it, and a line under the plot is a line taken off
-// the reading. It belongs to the chart's name, not to the acts a host offers,
-// so it goes in `#title-suffix` and not in `#actions` at the far end of the
-// row. Optional information, so it waits for a hover or a tab stop. Nothing is
-// drawn without a scope, so a card that has none is the card it was.
+// It is a mark after the title, not a line in the card. The author sized the
+// card, and a line under the plot would take space from it. It belongs to the
+// title, so it goes in `#title-suffix`, not in `#actions` at the end of the row.
 const scope = computed(() => scopeText(props.chart.scopedBy, props.chart.narrowedByPermissions))
 
 // echarts hands over the point, not the event, so the capture phase records
@@ -282,10 +274,6 @@ function reportSegment(target: DrillDownTarget) {
 			v-bind="{ ...filler.props, ...stateProps }"
 			v-on="fillerEvents"
 		>
-			<!-- Sized in `em`, so the mark is the size of whichever title it sits
-			     on: smaller on a Number Chart's card than on a plot's. Under the
-			     title's own size, because it is a mark on the name and not a
-			     second word in it. -->
 			<template v-if="scope" #title-suffix>
 				<ScopeMark
 					:applied="props.chart.scopedBy"
@@ -321,11 +309,8 @@ function reportSegment(target: DrillDownTarget) {
 				<slot name="actions" />
 			</template>
 
-			<!-- Every state that is not a picture, drawn as one block: Not
-			     Permitted stands where "Could not load" stands, in the card it
-			     would have had. -->
 			<template #error>
-				<!-- centred, because this block stands where the plot would -->
+				<!-- centred, because this block takes the plot's place -->
 				<ChartStateMessage
 					v-if="failure"
 					class="w-full items-center text-center"
@@ -335,8 +320,8 @@ function reportSegment(target: DrillDownTarget) {
 					<!-- the queue turns a card away rather than queueing it, so
 					     asking again is the whole remedy — and a chart that failed
 					     for any other reason is worth one more try too. A refusal
-					     has nothing to ask again: the reader owns no permission
-					     they could change. -->
+					     gets no retry: the reader cannot change their own
+					     permissions. -->
 					<Button
 						v-if="state !== 'notPermitted'"
 						class="shrink-0"

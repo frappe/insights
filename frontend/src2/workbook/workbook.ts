@@ -143,8 +143,9 @@ function makeWorkbook(name: string) {
 		})
 	}
 
-	// The row stays until the server deletes the document: a refused delete
-	// (a desk document draws it) leaves the author where they were.
+	// Remove the row only after the server deletes the document. The server can
+	// refuse, for example when a desk document shows it. The author then stays
+	// where they were.
 	async function removeItem(
 		type: 'query' | 'chart' | 'dashboard',
 		item: { name: string; isloaded: boolean; delete: () => Promise<void> },

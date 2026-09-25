@@ -252,8 +252,7 @@ describe('drilling into a cell', () => {
 		expect(props.onSortChange).toBeUndefined()
 	})
 
-	// A public link's source has no drill endpoint behind it, so the affordance
-	// would lead nowhere.
+	// A public link has no drill endpoint, so a drill control would do nothing.
 	// @feature charts.drill-segment
 	it('is not offered where the source answers no drill', () => {
 		const props = adapt({ ...tableChart({ values: ['revenue'] }), drillable: false }).props

@@ -348,8 +348,8 @@ class TestChartConfigNormalizationPatch(InsightsIntegrationTestCase):
             {"column_name": "region", "data_type": "String", "dimension_name": "region"},
         )
 
-    # An import inserts the chart, which is the one place an
-    # older Number card stops being stored.
+    # An import is the one path that can still bring in an older Number card, so
+    # the insert converts it.
     # @feature charts.type-number upgrade.number-older-shapes
     def test_a_number_card_that_arrives_in_an_older_shape_is_stored_in_todays(self):
         chart = frappe.get_doc(

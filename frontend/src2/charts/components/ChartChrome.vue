@@ -6,8 +6,8 @@ import type { ChartRead } from '../chart_view'
 import type { ChartSegmentClick } from '../drill/segment_click'
 import ChartBody from './ChartBody.vue'
 
-// The chrome an Insights surface puts a chart in: the surface, the title and
-// whatever the surface puts beside the title through `#actions`. Inside it is
+// The chrome around an Insights chart: the card, the title and whatever the
+// host puts beside the title through `#actions`. Inside it is
 // ChartBody, which draws the chart and nothing else, so a host with chrome of
 // its own — a desk island — mounts the body instead and gets no second border
 // and no second title.

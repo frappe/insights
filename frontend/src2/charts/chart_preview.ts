@@ -4,7 +4,7 @@
 // It lives apart from the store because of what it imports. The authoring
 // endpoints answer with the operations the server derived, and the query editor
 // a drill level opens in is the builder — neither of which an island may carry.
-// A view surface imports `chart_view` and gets none of it.
+// A View imports `chart_view` and loads none of it.
 
 import { call } from 'frappe-ui'
 import { computed, type InjectionKey } from 'vue'
@@ -23,13 +23,12 @@ import {
 } from './chart_view'
 import { authoringDrillRows, fetchAuthoringDrillData } from './drill/drill_api'
 
-/** The read the chart builder draws, as the forms under it reach it. */
 export const chartPreviewKey: InjectionKey<ChartRead> = Symbol('chartPreview')
 
 export type ChartPreviewSurface = ChartReadSurface & {
-	// whether this surface authors the chart it draws. Asked at the moment of the
-	// read, like the filters: a dashboard learns what its reader may do when its
-	// document lands. A surface that leaves it out authors.
+	// whether the user can write the chart here. Asked at read time, like the
+	// filters, because a dashboard learns the user's permissions only when its
+	// document loads. Left out means the user can write.
 	// eslint-disable-next-line no-unused-vars
 	canWrite?: () => boolean
 }
@@ -46,11 +45,11 @@ export default function useChartPreview(chart: Chart, surface?: ChartPreviewSurf
 }
 
 function makeChartPreview(chart: Chart, surface?: ChartPreviewSurface) {
-	// The chart this preview is of. Every surface names it, the chart's own
-	// builder page included: it is what declares whose permissions the rows are
-	// filtered by, so a surface that leaves it out draws a different person's
-	// rows from the card beside it. A chart nobody has saved holds a local name,
-	// which no stored row answers for.
+	// The saved chart this preview belongs to. Every caller sends it, including
+	// the chart's own builder page. The chart decides whose permissions filter
+	// the rows, so a caller that leaves it out can show different rows from the
+	// card beside it. An unsaved chart has a local name, which matches no
+	// stored chart.
 	const declaringChart = () => chart.doc.name
 
 	const request = (filterContext?: DashboardFilterContext) => ({
@@ -60,7 +59,7 @@ function makeChartPreview(chart: Chart, surface?: ChartPreviewSurface) {
 		// unrouted: the server reads the links and decides which query
 		// each filter lands on, the same way it does for a reader
 		chart_name: filterContext?.chart ?? declaringChart(),
-		// the saved grid, which routes a caller who may not write the chart
+		// the saved dashboard: a user who cannot write the chart gets filters routed by it
 		dashboard: filterContext?.dashboard,
 		dashboard_items: filterContext?.items,
 		filters: filterContext?.filters,
@@ -68,8 +67,8 @@ function makeChartPreview(chart: Chart, surface?: ChartPreviewSurface) {
 		page_size: chart.doc.config.limit || 100,
 	})
 
-	// the chart the picture was drawn from, so a drill answers for what is on
-	// screen rather than for an edit still waiting for its rows
+	// the chart as rendered, so a drill matches what is on screen and not an
+	// edit still waiting for its rows
 	const drilled = (drawn: ChartViewDoc) => ({
 		query: drawn.query!,
 		chart_type: drawn.chart_type,

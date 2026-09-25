@@ -1,6 +1,6 @@
-// Where a reader's filter choices live between visits. Nothing on the server
-// holds per-user view state, so the browser keeps it — scoped by user, because a
-// shared workstation must not hand one person's view to the next.
+// Keeps a reader's filter choices between visits. The server stores no per-user
+// view state, so the browser keeps them. The key includes the user, so a shared
+// computer does not show one person's filters to the next.
 
 import session from '../session'
 import type { FilterValues } from '../types/workbook.types'
@@ -13,7 +13,7 @@ export function readFilters(dashboard: string): FilterValues {
 	try {
 		return JSON.parse(localStorage.getItem(key(dashboard)) || '{}')
 	} catch {
-		// a hand-edited or half-written entry is not worth a broken page
+		// a hand-edited or half-written entry must not break the page
 		return {}
 	}
 }

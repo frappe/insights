@@ -8,26 +8,26 @@ Accepted.
 
 ## Context
 
-Frappe has words for nearly everything Insights names, in the places a reader already looks: field labels, roles, exceptions, `view` / `form` / `route`. A metaphor reads well in the file that coined it and nowhere else, so a reader has to learn a private vocabulary before they can follow a permission check.
+Frappe already has a word for nearly everything Insights names. The words are where a reader already looks: field labels, roles, exceptions, `view` / `form` / `route`. A metaphor is clear in the file that introduced it and unclear everywhere else. A reader must then learn a private vocabulary before they can follow a permission check.
 
 ## Decision
 
-**Name things by what they are, in the words the host platform already uses — its fields, roles, exceptions, view/form/route. Never by metaphor. When a concept has no host word, pick the plainest noun and use it for one concept only.**
+**Name a thing by what it is, in the words the host platform already uses: its fields, roles, exceptions, and view/form/route. Never use a metaphor. When a concept has no host word, use the plainest noun, and use it for that one concept only.**
 
-Three corollaries:
+This has three consequences for naming:
 
-- A Frappe idiom outranks a better-sounding coinage: a Check, `frappe.DoesNotExistError` and `Not Found`, `route`, and `is_standard` + `name` as the shape shipped content is identified by, because that is Report's and Print Format's shape.
-- One word, one concept, in every layer it appears — field, identifier, type, test file, UI string. A word that means two things means neither.
-- A word the framework owns is borrowed, not re-coined. Island, Host, Claim and Action are defined in `apps/frappe/ui/island/decisions`, and that is their authority.
+- A Frappe idiom wins over a better-sounding new word. Examples: a Check; `frappe.DoesNotExistError` and `Not Found`; `route`; and `is_standard` + `name` to identify shipped content, because Report and Print Format identify it that way.
+- One word means one concept in every layer: field, identifier, type, test file and UI string. A word with two meanings is clear in neither.
+- A word the framework owns is used as the framework defines it, not redefined. Island, Host, Claim and Action are defined in `apps/frappe/ui/island/decisions`, which is their authority.
 
-Rejected: keep a metaphor and define it in the glossary. A definition does not travel with the identifier. `data_authority` was documented and still read as a person with a title; the reader who met it in `permission_user.py` had to go and look, every time.
+Rejected: keep a metaphor and define it in the glossary. The definition does not go with the identifier. `data_authority` was documented, but it still read as a person with a title. A reader who found it in `permission_user.py` had to look it up every time.
 
 ## Consequences
 
-The glossary carries the rule's vocabulary — Visibility and its four levels, Run as owner, View, Builder, Route, Is Standard, Not Found, and Island, Host, Claim and Action as the framework's — with the retired words on the `_Avoid_` lines, so the next agent that reaches for `rung` is told what to say instead.
+The glossary holds the words this rule produced: Visibility and its four levels, Run as owner, View, Builder, Route, Is Standard, Not Found, and the framework's Island, Host, Claim and Action. The retired words are on the `_Avoid_` lines, so an agent that reaches for `rung` learns which word to use instead.
 
-## Stays unrenamed on purpose
+## Kept on purpose
 
-- **The granularity ladder in `chart_drill.py`.** Grains are ordered by the span they cover and a derived grain climbs them, so the ladder is the thing itself, not a picture laid over a permission model.
-- **The e2e `viewer` persona** (`frontend/e2e/.auth/viewer.json`, `permissions.spec.ts`). A persona is a person with read access and no Insights role. "View user" names nobody.
-- **`insights.api.authoring`.** The module is the endpoints the Builder writes through, and it is the counterpart of `api/view.py`. Naming it `builder` would name the client instead of the surface it serves.
+- **The granularity ladder in `chart_drill.py`.** Grains are ordered by the time span they cover, and a derived grain moves up them. So "ladder" describes the thing itself. It is not a metaphor for a permission model.
+- **The e2e `viewer` persona** (`frontend/e2e/.auth/viewer.json`, `permissions.spec.ts`). A persona is a person, here one with read access and no Insights role. "View user" does not name a person.
+- **`insights.api.authoring`.** The module holds the endpoints the Builder writes through, and it is the counterpart of `api/view.py`. The name `builder` would name the client that calls the endpoints, not what they do.

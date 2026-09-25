@@ -1,9 +1,9 @@
 import type { RouteLocationRaw } from 'vue-router'
 
-// The router is injected so the chart and dashboard graph never imports the SPA
-// router: importing it drags every routed page into the bundle, and an island
-// mounts without a router instance at all. The SPA registers its router in
-// main.ts; a host that registers nothing resolves a string route as itself.
+// The router is injected so chart and dashboard modules never import the SPA
+// router. Importing it pulls every routed page into the bundle, and an island
+// has no router instance. The SPA registers its router in main.ts. With no
+// router registered, a string route is used as the href unchanged.
 
 export type Router = {
 	resolveHref: (to: RouteLocationRaw) => string

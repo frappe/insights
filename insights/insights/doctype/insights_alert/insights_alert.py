@@ -31,7 +31,7 @@ ALERT_MAX_ROWS = 100
 
 
 class SendRefused(frappe.PermissionError):
-    """The user an alert runs as may not send it. A scheduled run stops the alert on it."""
+    """The user an alert runs as may not send it. A scheduled run then disables the alert."""
 
 
 class InsightsAlert(Document):
@@ -113,10 +113,10 @@ class InsightsAlert(Document):
         validate_public_url(self.webhook_url)
 
     def has_query_permission(self):
-        """Whether the user this runs as may read the alert's query.
+        """Whether the user this alert runs as may read its query.
 
-        Asked at save of whoever saves, and at every send of whoever enabled it:
-        a share revoked or a level lowered since the save must stop the next mail.
+        Checked on save for whoever saves, and on every send for whoever enabled
+        it. A share revoked or access lowered since the save must stop the next mail.
         """
         from insights.permissions import can_read_referenced_query
 
@@ -125,11 +125,11 @@ class InsightsAlert(Document):
 
     @frappe.whitelist()
     def send_alert(self, force: bool = False):
-        # Sending is an act on the author's recipients, not a read of the alert:
-        # `run_doc_method` and the desk form check read only. Asked of whoever
-        # the alert runs as, because the scheduler's session is Administrator,
-        # and of the document, not its name: an unsaved alert has no row to
-        # load, and is judged on its query's workbook.
+        # Sending mails the author's recipients, so read access is not enough,
+        # and `run_doc_method` and the desk form check only read. Check the user
+        # the alert runs as, because the scheduler's session is Administrator.
+        # Check the document, not its name: an unsaved alert has no row to load,
+        # so its query's workbook decides.
         runs_as = get_permission_user()
         if not may_run_as(self.doctype, self, runs_as):
             if not frappe.db.get_value("User", runs_as, "enabled"):
@@ -210,7 +210,7 @@ class InsightsAlert(Document):
             )
 
     def get_author_email(self):
-        """The address a reply reaches, or none: a mail without a reply-to beats one unsent."""
+        """The reply-to address, or None. A mail without a reply-to is better than no mail."""
         return email_of(self.owner)
 
     def send_email_alert(self, message):
@@ -229,8 +229,8 @@ class InsightsAlert(Document):
         )
 
     def check_trusted_code(self):
-        """The condition is compared with the stored alert's, not with the one a
-        save saw: a send runs the condition in the request body, saved or not."""
+        """Compare the condition with the stored alert's, not with the one the last
+        save saw. A send runs the condition from the request body, saved or not."""
         from insights.permissions import check_trusted_code_author
 
         stored = frappe.db.get_value(self.doctype, self.name, "condition") if self.name else None
@@ -265,8 +265,8 @@ class InsightsAlert(Document):
         )
 
     def get_message_context(self):
-        # read now, as the condition that fired was: a cached page and a cached
-        # count carry two lifetimes and need not match it or each other
+        # Read fresh, like the condition that fired. A cached page and a cached
+        # count expire at different times, so they may not match it or each other.
         doc = frappe.get_doc("Insights Query v3", self.query)
         with db_connections():
             rows = doc.execute(page_size=ALERT_MAX_ROWS, force=True)["rows"]
@@ -339,8 +339,8 @@ class InsightsAlert(Document):
 def send_alerts():
     alerts = frappe.get_all("Insights Alert", filters={"disabled": 0}, fields=["name", "permission_user"])
     for alert in alerts:
-        # what a failed run does next writes and commits too, and a failure
-        # there must not cost the alerts after it their window
+        # Handling a failed run also writes and commits. If that fails, the
+        # alerts after it must still run in this window.
         try:
             run_alert(alert)
         except Exception:
@@ -385,12 +385,12 @@ def record_execution(name: str):
 
 
 def stop(name: str, cause: str):
-    """Disable an alert whose enabler may no longer send it, and tell the workbook's owner why.
+    """Disable an alert that its enabler may no longer send, and tell the workbook's owner why.
 
-    Every later window would be refused the same way, so it does not run again
-    until somebody enables it, which makes them the user it runs as. The
-    alert's own owner is often the enabler, disabled or removed, so the
-    workbook's owner is the one told.
+    Every later window would fail the same way. So it stays disabled until
+    someone enables it, and that person becomes the user it runs as. The
+    alert's owner is often the enabler, who may be disabled or removed, so the
+    workbook's owner gets the mail.
     """
     frappe.db.set_value("Insights Alert", name, "disabled", 1)
     # the caller rolled back, so this write needs a commit of its own
@@ -416,10 +416,9 @@ def stop(name: str, cause: str):
 def email_of(user: str | None) -> str | None:
     """The address a mail to `user` reaches.
 
-    A User name is an address for an account created from an invite and the
-    literal "Administrator" for the admin. `sendmail` refuses an address it
-    cannot parse, so a user it cannot resolve gets nothing rather than failing
-    the mail.
+    A User name is an email address for an account created from an invite, and
+    the literal "Administrator" for the admin. `sendmail` refuses an address it
+    cannot parse, so an unresolved user gets None and the mail still sends.
     """
     email = user and frappe.db.get_value("User", user, "email")
     return email if email and validate_email_address(email) else None
@@ -428,13 +427,14 @@ def email_of(user: str | None) -> str | None:
 def tell_owner_it_failed(name: str):
     """Mail the alert's owner that a scheduled run failed.
 
-    Nobody watches a scheduled run, and an alert that stops sending reads the
-    same as one whose condition was never met. The next attempt is the next
-    scheduled window, so this is at most one mail per window.
+    Nobody watches a scheduled run. An alert that stops sending looks the same
+    as one whose condition was never met. The next attempt is the next
+    scheduled window, so this sends at most one mail per window.
 
-    The fact and not the error: the scheduler's session is Administrator, so an
-    error was composed for someone who may configure the data source, and a
-    driver's names the host and the account. That stays in the Error Log.
+    The mail says that the run failed, not why. The scheduler's session is
+    Administrator, so the error was written for someone who may configure the
+    data source. A driver error names the host and the account. The error
+    stays in the Error Log.
     """
     try:
         alert = frappe.get_doc("Insights Alert", name)

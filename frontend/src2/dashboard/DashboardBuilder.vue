@@ -11,14 +11,12 @@ import DashboardEditActions from './DashboardEditActions.vue'
 import DashboardItem from './DashboardItem.vue'
 import EditableGridLayout from './EditableGridLayout.vue'
 
-// A dashboard inside the workbook that owns it. It shows what every other
-// surface shows, so all it adds is the one thing only the workbook knows: which
-// charts this dashboard may draw from.
+// A dashboard in its workbook. It adds one thing to what other pages show: the
+// workbook's charts, which the owner can place on the dashboard.
 //
-// It draws its own header instead of mounting `DashboardPage`. The workbook's
-// navbar is already above it, so a second band with a rule under it reads as two
-// navbars stacked, and the rule has no left edge to meet. What belongs here is
-// the dashboard's own title, sitting in the dashboard rather than over it.
+// It renders its own header instead of mounting `DashboardPage`. The workbook's
+// navbar is already above it. A second header with a border under it would look
+// like two stacked navbars, so only the title sits here.
 const props = defineProps<{
 	dashboard_name: string
 	charts: WorkbookChart[]
@@ -31,9 +29,8 @@ function rename(title: string) {
 	store.doc.title = title
 }
 
-// the dashboard's own actions, read where it is drawn. `DashboardEditActions` is
-// beside them and not among them: the edit chrome is this surface's, and only
-// this surface has one.
+// `DashboardEditActions` sits beside the dashboard's actions, not among them,
+// because only the builder has edit actions.
 const body = ref<InstanceType<typeof DashboardBody>>()
 </script>
 

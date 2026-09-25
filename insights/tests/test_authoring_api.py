@@ -23,8 +23,7 @@ from insights.tests.test_run_as_owner import as_http_request
 OWNER = "authoring_api_owner@test.com"
 # holds an Insights role, but none of the owner's content
 OUTSIDER = "authoring_api_outsider@test.com"
-# admitted by the chart's visibility and holds no Insights role at all: a reader,
-# not an owner
+# the chart's visibility admits them, but they hold no Insights role
 READER = "authoring_api_reader@test.com"
 
 WORKBOOK_TITLE = "Authoring API Test Workbook"
@@ -232,10 +231,8 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
     # @feature charts.missing-slot-message
     def test_a_half_configured_chart_says_what_is_missing_to_a_reader_too(self):
-        """`chart_preview.ts` in a builder a read-only collaborator opened, over
-        a saved chart missing a slot. They are answered as the view answers its
-        reader, and a writer is told what is missing: so are they, whatever the
-        chart runs as."""
+        """A read-only collaborator gets the view's answer. A writer is told what
+        is missing, so they are told too, whatever the chart runs as."""
         query, chart = self.make_content()
         self.share_workbook(chart, write=0)
         config = table_config()
@@ -272,7 +269,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
     def test_a_saved_chart_answers_with_the_grain_and_the_links_too(self):
         """A share link reads `view.get_chart_data`, never this endpoint.
         Without the grain a table grouped by month prints `2024-01-01` where the
-        builder shows `Jan 2024`, and without the links its ids draw nothing."""
+        builder shows `Jan 2024`, and without the links its ids link nowhere."""
         _, chart = self.make_content()
         config = table_config()
         config["rows"] = [
@@ -303,7 +300,6 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
     # @feature charts.table-pager
     def test_the_count_covers_the_pages_the_rows_are_cut_into(self):
-        """`authoring.get_chart_count`, which the builder's table card calls."""
         query, chart = self.make_content()
         shape = {"chart_type": "Table", "query": query.name, "config": table_config()}
 
@@ -317,7 +313,6 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
     # @feature charts.export-rows
     def test_a_download_is_the_charts_own_rows_up_to_the_export_limit(self):
-        """`authoring.download_chart_rows`, which the builder's table card calls."""
         query, chart = self.make_content()
         shape = {"chart_type": "Table", "query": query.name, "config": table_config()}
         self.allow_download()
@@ -339,8 +334,8 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
     # @feature charts.table-pager charts.export-rows permissions.chart-run-as-owner
     def test_a_caller_who_may_not_write_the_chart_keeps_its_one_page(self):
-        """The authoring doors hand a caller who is not the author to the view,
-        which answers a picture-only reader with the chart's one page."""
+        """The authoring endpoints pass a caller who may not write the chart to
+        the view. A reader who may not read rows gets only the chart's one page."""
         query, chart = self.make_content()
         shape = {
             "chart_type": "Table",
@@ -526,8 +521,8 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         )
 
         # the grouping and the sort the level is a picture of, not just the rows
-        # underneath it: what opens is the query that drew what is on screen,
-        # ties included
+        # underneath it: the opened query produces what is on screen, ties
+        # included
         self.assertEqual(
             [operation["type"] for operation in result["operations"]],
             ["source", "filter", "filter_group", "summarize", "order_by", "order_by"],
@@ -535,9 +530,9 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
     # @feature charts.drill-rows charts.drill-open-as-query
     def test_a_rows_level_here_is_read_here_and_carries_the_pipeline_it_opens_as(self):
-        """`AuthoringDrillDown.vue` draws the rows the server read, and "open as
-        query" adds the pipeline beside them to the workbook. Run anywhere else,
-        the pipeline reads as its caller."""
+        """`AuthoringDrillDown.vue` shows the rows the server read, and "open as
+        query" adds the pipeline to the workbook. Run anywhere else, the pipeline
+        runs as its caller."""
         query, _ = self.make_content()
 
         behind = self.drill(
@@ -610,7 +605,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         query, chart = self.make_content()
         self.assertNotIn("Insights User", frappe.get_roles(READER))
 
-        # the reader may see the chart — it is the derivation behind it they may not
+        # the reader may see the chart, but not the pipeline behind it
         with as_user(READER):
             self.assertEqual(get_chart(chart=chart.name)["name"], chart.name)
 
@@ -631,8 +626,8 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
     def test_a_reader_without_an_insights_role_cannot_drill(self):
         query, _ = self.make_content()
 
-        # the reader may drill the saved chart through `insights.api.view` all
-        # day. What these endpoints add is the pipeline, the owner's half
+        # the reader may drill the saved chart through `insights.api.view`. These
+        # endpoints also return the pipeline, which needs an Insights role
         with self.assertRaises(frappe.PermissionError):
             self.drill(
                 READER,
@@ -682,8 +677,8 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
         # the name a preview runs under tells the engine which queries the
         # execution is already authorized for, so a name someone else's
-        # document holds is refused — whichever document holds it. A chart the
-        # caller may not write answers as the view does, with Not Found
+        # document holds is refused, whatever that document is. A chart the
+        # caller may not write gets Not Found, as in the view
         for name, refusal in ((chart.name, frappe.DoesNotExistError), (query.name, frappe.PermissionError)):
             with self.assertRaises(refusal):
                 self.preview(
@@ -717,10 +712,10 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
     # @feature permissions.request-body-not-trusted permissions.chart-run-as-owner
     def test_a_reader_who_cannot_edit_the_chart_draws_the_stored_chart(self):
-        """`chart_preview.ts` sends `chart_name` with the config it holds, and a
-        view response strips `filters` from that config (`present_config`), so a
-        reader who may open the chart but not edit it sends it without them. The
-        stored chart answers: a config the caller wrote is not the chart's, and
+        """`chart_preview.ts` sends `chart_name` with the config it holds. A view
+        response removes `filters` from that config (`present_config`), so a
+        reader who may not edit the chart sends it without them. The server uses
+        the stored chart: a config the caller wrote is not the chart's, and
         naming the chart must not run it with the owner's access."""
         query, chart = self.make_filtered_content()
         self.assertTrue(chart.run_as_owner)
@@ -747,11 +742,10 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
     # @feature permissions.request-body-not-trusted permissions.chart-run-as-owner
     def test_a_reader_who_cannot_edit_the_chart_gets_its_picture_and_nothing_behind_it(self):
-        """`chart_preview.ts` in a builder a read-only collaborator opened sends
-        the grid it holds, a page window and `chart_name`. They get what
-        `view.get_chart_data` gives its reader, whatever the chart runs as: the
-        stored chart at its own `limit`, routed by no link of theirs, no SQL or
-        pipeline, and the chart the rows answer."""
+        """A read-only collaborator's builder sends its grid, a page window and
+        `chart_name`. They get what `view.get_chart_data` gives a reader, whatever
+        the chart runs as: the stored chart at its own `limit`, no routing by
+        their links, no SQL or pipeline, and the chart the rows belong to."""
         query, chart = self.make_content()
         self.share_workbook(chart, write=0)
 
@@ -778,10 +772,10 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
     # @feature permissions.request-body-not-trusted charts.drill-open-as-query
     def test_a_reader_who_cannot_edit_the_chart_gets_no_pipeline_from_its_drill(self):
-        """`AuthoringDrillDown.vue` offers "open as query" where a level carries
-        the pipeline it was cut as. A read-only collaborator of a chart run as
-        its reader drills it as `view.get_drill_data` would drill it for them;
-        a collaborator who may edit it gets the pipeline."""
+        """`AuthoringDrillDown.vue` shows "open as query" when a level carries its
+        pipeline. A read-only collaborator on a chart run as its reader gets the
+        drill `view.get_drill_data` would give them. A collaborator who may edit
+        it gets the pipeline."""
         query, chart = self.make_content()
         chart.db_set("run_as_owner", 0, update_modified=False)
         shape = {
@@ -800,10 +794,9 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
     # @feature dashboard.filter-links permissions.chart-run-as-owner
     def test_a_reader_who_cannot_edit_the_chart_is_routed_by_the_saved_dashboard(self):
-        """`chart_preview.ts` on the builder's dashboard grid sends the
-        `dashboard` the card sits on. A read-only collaborator's filter state is
-        routed by that dashboard's stored links, as `view.get_chart_data`
-        routes a reader's."""
+        """On the builder's dashboard grid, `chart_preview.ts` sends the card's
+        `dashboard`. A read-only collaborator's filters are routed by that
+        dashboard's stored links, as `view.get_chart_data` routes a reader's."""
         query, chart = self.make_content()
         self.share_workbook(chart, write=0)
         with as_user(OWNER):
@@ -831,11 +824,11 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
     # @feature dashboard.filter-links permissions.chart-run-as-owner permissions.request-body-not-trusted
     def test_a_dashboard_routes_no_chart_it_does_not_carry(self):
-        """`chart_preview.ts` sends the `dashboard` a builder card sits on, and a
-        caller names any dashboard they can read. One of their own, with a
-        filter linked to someone else's chart and no cell for it, must not cut
-        that chart's rows by a column it never draws - through the builder or
-        the view."""
+        """`chart_preview.ts` sends the card's `dashboard`, and a caller can name
+        any dashboard they can read. Their own dashboard may link a filter to
+        someone else's chart without holding that chart. That filter must not
+        cut the chart's rows by a column it never shows, in the builder or the
+        view."""
         query, chart = self.make_content()
         self.share_workbook(chart, write=0)
         with as_user(OUTSIDER):
@@ -868,10 +861,9 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
     # @feature dashboard.card-filter permissions.chart-run-as-owner
     def test_a_builder_card_says_whether_its_author_may_filter_it(self):
-        """`chart_preview.ts` sends `chart_name` from the builder's dashboard
-        grid, and `useChartCell` reads the answer to offer a table card's
-        filter. Write on a chart run as its owner is trust to act as the owner,
-        so an editor may filter it; a collaborator who may only read it may not."""
+        """`useChartCell` reads `can_filter` to show a table card's filter. Write
+        on a chart run as its owner means trust to act as the owner, so an editor
+        may filter it. A collaborator who may only read it may not."""
         query, chart = self.make_content()
         self.assertTrue(chart.run_as_owner)
 
@@ -888,10 +880,10 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
     # @feature permissions.request-body-not-trusted charts.drill-breakdown permissions.chart-run-as-owner
     def test_a_reader_who_cannot_edit_the_chart_breaks_down_none_of_the_owners_rows(self):
-        """`drill_api.ts` `fetchAuthoringDrillData` sends `chart_name` from a
-        builder a read-only collaborator opened. The chart runs as its owner and
-        they may not write it, so they get its picture and nothing behind it -
-        whatever shape they send, their own operations included."""
+        """A read-only collaborator's builder sends `chart_name`. The chart runs
+        as its owner and they may not write it, so they get its result and
+        nothing behind it, whatever shape they send, their own operations
+        included."""
         query, chart = self.make_filtered_content()
         self.share_workbook(chart, write=0)
 
@@ -911,9 +903,9 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
     # @feature permissions.request-body-not-trusted permissions.chart-run-as-owner
     def test_a_collaborator_who_may_edit_the_chart_previews_their_config_under_it(self):
-        """`chart_preview.ts` from `ChartBuilder.vue`: a collaborator with write on
-        the chart previews the config they are editing. Saving it would make it
-        the chart's content, so it runs the way the chart declares."""
+        """A collaborator with write previews the config they are editing. Saving
+        it would make it the chart's content, so it runs the way the chart
+        declares."""
         query, chart = self.make_filtered_content()
         self.share_workbook(chart, write=1)
 
@@ -933,10 +925,9 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
     # @feature standard.read-only permissions.request-body-not-trusted
     def test_a_shipped_chart_gives_nobody_the_authors_answer(self):
-        """`chart_preview.ts` names the chart the builder opened, and the builder
-        draws a shipped chart's form read-only from its `as_dict`. Outside
-        developer mode the owner, who holds write, gets the view's answer beside
-        that form, as `view.get_chart` says they cannot write it."""
+        """The builder shows a shipped chart's form read-only from its `as_dict`.
+        Outside developer mode the owner holds write but gets the view's answer
+        beside that form, because `view.get_chart` says they cannot write it."""
         query, chart = self.make_content()
         frappe.db.set_value(DT.WORKBOOK, chart.workbook, "is_standard", 1)
 
@@ -958,11 +949,9 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
     # @feature charts.drill-rows charts.drill-rows-export permissions.chart-run-as-owner
     def test_a_builder_rows_level_reads_as_the_chart_does(self):
-        """`chart_preview.ts` reads the builder's rows level through
-        `get_drill_data`, `download_drill_rows` and `get_drill_rows_values`.
-        Write on a chart run as its owner is trust to act as them, so a
-        collaborator who may edit it reads the owner's rows there, as the card
-        does. A chart run as its reader gives them their own."""
+        """Write on a chart run as its owner means trust to act as the owner, so
+        an editor reads the owner's rows in the builder's rows level, as the card
+        does. On a chart run as its reader, they read their own."""
         query, chart = self.make_content()
         self.share_workbook(chart, write=1)
         frappe.db.set_single_value(DT.SETTINGS, "allow_download", 1)
@@ -1009,9 +998,9 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
     # @feature charts.measure-unit
     def test_both_feeds_carry_the_symbol_of_a_code_the_rows_hold(self):
-        """A measure priced in a column's currency prints from the symbol map the
-        session holds, and the response the rows came in is the only thing that
-        fills it — the site is seeded with its own code and nothing else."""
+        """A currency measure gets its symbol from the session's symbol map. Only
+        the response that carries the rows adds to that map. The site seeds it
+        with its own currency alone."""
         query, chart = self.make_content()
         config = table_config()
         config["values"] = [{**counted(), "format": "currency", "currency_column": "priority"}]

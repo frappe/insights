@@ -2,12 +2,12 @@ import { computed, Ref, ref, watch } from 'vue'
 import { InsightsChartv3, Visibility } from '../../types/workbook.types'
 
 /**
- * The share dialog's own copy of a chart's level, roles and Run as owner box.
+ * The share dialog's own copy of a chart's visibility, roles and Run as owner.
  *
- * Seeded from the stored row. The Public level ticks the box on the move to it,
- * never on a row that already holds another state: `run_public_charts_as_owner`
- * leaves a public chart unticked where it cannot know whose rows the base served,
- * and this dialog is where its owner decides.
+ * It starts from the saved document. Switching to Public checks Run as owner. A
+ * chart saved as Public keeps its saved value: `run_public_charts_as_owner`
+ * leaves a public chart unchecked when it cannot tell whose rows the chart
+ * showed, and the owner decides here.
  */
 export function useChartShare(
 	chart: {
@@ -33,8 +33,8 @@ export function useChartShare(
 		if (published) runAsOwner.value = true
 	})
 
-	// Only what the server admits: whoever it says may move the box from where
-	// it is saved (`may_move_run_as_owner`), and never off at Public or on a
+	// Mirrors the server. Only a user it allows can change the saved value
+	// (`may_move_run_as_owner`), and nobody can uncheck it at Public or on a
 	// Public dashboard (`validate_run_as_owner`).
 	const canMoveRunAsOwner = computed(
 		() =>

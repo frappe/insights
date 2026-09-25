@@ -161,9 +161,9 @@ function getChartResource(name: string) {
 	chart.onBeforeInsert(() => {
 		chart.doc.config = normalizeChartConfig(chart.doc.config, chart.doc.chart_type)
 	})
-	// Every card in this tab keeps the chart and rows it drew until Refresh. The
-	// author's own save is the exception: they are the one reader who knows the
-	// chart moved, and the next card that draws it asks again.
+	// Every card in this tab keeps its chart and rows until Refresh. The author's
+	// own save is the exception: the author knows the chart changed, so the next
+	// card that shows it fetches again.
 	chart.onAfterSave(() => invalidateChart(String(chart.doc.name)))
 	wheneverChanges(
 		() => chart.doc.read_only,

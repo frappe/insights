@@ -20,9 +20,9 @@ const showExportDialog = ref(false)
 const canExport = computed(() => canExportToApp(workbook.doc))
 
 function afterMarked(name: string) {
-	// the workbook and every one of its members answer to another name now, so
-	// every resource this tab holds names a document that is gone — reload the
-	// workbook rather than patch the pieces, as Duplicate does for the same reason
+	// The workbook and its queries, charts and dashboards now have new names, so
+	// every resource in this tab points at a document that is gone. Reload the
+	// workbook instead of patching each resource. Duplicate does the same.
 	window.location.href = router.resolve({
 		name: 'Workbook',
 		params: { workbook_name: name },

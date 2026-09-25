@@ -97,9 +97,9 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
 
     # @feature permissions.non-insights-user
     def test_permissions_for_non_insights_user(self):
-        # charts and dashboards carry doctype-level read for everyone: the
-        # declared visibility narrows access per document, so viewing needs no
-        # Insights role (see test_visibility)
+        # Charts and dashboards give doctype-level read to everyone. Visibility
+        # limits access per document, so viewing needs no Insights role (see
+        # test_visibility).
         visibility_gated = ["Insights Chart v3", "Insights Dashboard v3"]
         with self.as_user(NON_INSIGHTS_USER):
             for doctype in PERMISSION_DOCTYPES:
@@ -171,10 +171,10 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
 
     # @feature permissions.team-off-open permissions.non-insights-user
     def test_team_permissions_off_open_every_source_to_insights_users_only(self):
-        """`InsightsTablev3.get_ibis_table`, which every build reads a table
-        through, as the user a chart runs as: a guest on a Public chart, or a
-        signed-in reader with no Insights role on an `Everyone` one. The
-        not-permitted preflight asks the same `check_table_permission`."""
+        """A chart can run as a guest on a Public chart, or as a user with no
+        Insights role on an `Everyone` chart. With team permissions off, neither
+        may read a table. The Not Permitted check uses the same
+        `check_table_permission`."""
         from insights.insights.doctype.insights_table_v3.insights_table_v3 import InsightsTablev3
         from insights.insights.doctype.insights_team.insights_team import check_table_permission
         from insights.not_permitted import NotPermitted
@@ -343,11 +343,9 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
 
     # @feature permissions.share-workbook-user
     def test_a_share_the_workbook_already_holds_is_kept_not_named_again(self):
-        """`WorkbookShareDialog` seeds its list from `get_share_permissions` and
-        posts it back whole through `update_share_permissions` on every save, so
-        a share written before the rule - or to someone who has since left
-        Insights - comes back each time. Keeping or narrowing it names nobody;
-        widening it to edit does."""
+        """`WorkbookShareDialog` sends the whole share list back on every save.
+        So an old share, or a share to someone who left Insights, comes back each
+        time. Keeping or narrowing it is allowed. Widening it to edit is checked."""
         workbook = create_test_workbook(USER_1)
         frappe.share.add(DT.WORKBOOK, workbook.name, user=NON_INSIGHTS_USER, read=1, notify=0)
 
@@ -379,9 +377,9 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
 
     # @feature permissions.share-workbook-user
     def test_a_removed_share_given_back_is_named_again(self):
-        """`WorkbookShareDialog` removes a person by posting them with no access,
-        which leaves their share row at read 0 and write 0. Giving it back
-        widens their access, so `update_share_permissions` asks about them."""
+        """`WorkbookShareDialog` removes a person by sending them with no access.
+        Their share row stays at read 0 and write 0. Giving access back widens
+        it, so `update_share_permissions` checks the user again."""
         workbook = create_test_workbook(USER_1)
         frappe.share.add(DT.WORKBOOK, workbook.name, user=NON_INSIGHTS_USER, read=1, notify=0)
 
@@ -392,8 +390,8 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
 
     # @feature permissions.viewer-cannot-edit
     def test_a_folder_is_read_and_changed_on_its_workbook_grant(self):
-        """`frappe.client.set_value`, `frappe.client.delete` and `frappe.get_list`
-        reach a folder past the five folder endpoints, which ask the workbook."""
+        """`frappe.client` and `frappe.get_list` reach a folder without the
+        folder endpoints, so the folder's own permission must follow its workbook."""
         workbook = create_test_workbook(USER_1)
         folder = frappe.get_doc(
             {"doctype": "Insights Folder", "workbook": workbook.name, "title": "Payroll", "type": "query"}
@@ -426,10 +424,9 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
 
     # @feature permissions.member-stays-in-its-workbook
     def test_a_member_never_moves_to_another_workbook(self):
-        """`frappe.client.set_value`, the desk form's save and `/api/resource`
-        reach every member past the workbook endpoints. A member's workbook is
-        the root of every grant on it, so a move would hand it to the target's
-        editors: refused for an editor of both workbooks, and for an admin."""
+        """Every grant on a member comes from its workbook. A move would give
+        the member to the target workbook's editors, so it is refused, even for
+        an editor of both workbooks and for an admin."""
         source = create_test_workbook(USER_1)
         target = create_test_workbook(USER_1, title="Permissions Test Target Workbook")
         query = create_test_query(USER_1, source.name)
@@ -471,13 +468,10 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
 
     # @feature permissions.member-write-follows-workbook
     def test_write_on_a_member_comes_only_from_write_on_its_workbook(self):
-        """`can_write` - behind `view`, `authoring.is_author` and each member's
-        `as_dict` read_only flag - `frappe.client.save`, `frappe.client.delete`,
-        `update_access` and the workbook sidebar's list all ask this seam.
-        Owning a member grants nothing, and a team grant on a chart or a
-        dashboard reads it and no more - so a person removed from the workbook loses what they made
-        there. An edit share on the workbook changes every member, share
-        included: `validate_visibility`, `update_access` and `can_share` ask it."""
+        """Owning a member grants nothing, and a team grant on a chart or a
+        dashboard gives read only. So a person removed from the workbook loses
+        what they made there. An edit share on the workbook gives write and
+        share on every member."""
         self.set_team_permissions(True)
         workbook = create_test_workbook(USER_1)
         query = create_test_query(USER_1, workbook.name)
@@ -563,7 +557,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
             self.assertEqual(grants(USER_2, doctype, name), nothing, ("removed", doctype))
             self.assert_not_visible_to(USER_2, doctype, name)
 
-        # the workbook's own share flag, which desk can write, reaches no member
+        # Desk can set share on the workbook's DocShare. It gives share on no member.
         with self.as_user(USER_1):
             frappe.share.add(DT.WORKBOOK, workbook.name, user=USER_2, read=1, share=1, notify=0)
         for doctype, name in members:
@@ -571,10 +565,10 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
 
     # @feature permissions.member-row-saved-with-member
     def test_a_row_of_a_member_is_saved_with_it_and_never_on_its_own(self):
-        """`frappe.client.save` and `/api/resource` (save, and `frappe.delete_doc`
-        for a delete) reach a child row on its own, and the member's save never runs a row's own
-        hooks. So the dashboard's `set_linked_charts` and chart checks, the
-        visibility checks and the standard guard run only through the member."""
+        """`frappe.client.save` and `/api/resource` can save or delete a child
+        row on its own. The member's checks (linked charts, visibility, the
+        standard guard) run only when the member saves, so a row saved on its own
+        skips them."""
         workbook = create_test_workbook(USER_1)
         query = create_test_query(USER_1, workbook.name)
         chart = create_test_chart(USER_1, workbook.name, query.name)
@@ -608,7 +602,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
                 [chart.name],
             )
 
-            # through the member, the same rows save
+            # the same rows save through the member
             writable = frappe.get_doc(chart.doctype, chart.name)
             writable.visibility = "Roles"
             writable.append("visible_to_roles", {"role": "Insights User"})
@@ -632,7 +626,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
                         }
                     ).insert(ignore_permissions=True, ignore_mandatory=True)
 
-        # a row of anything else is frappe's business
+        # frappe handles a row of any other doctype
         role = frappe.get_doc({"doctype": "Role", "role_name": "Member Row Test"}).insert()
         frappe.get_doc(
             {
@@ -647,10 +641,9 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
 
     # @feature permissions.member-row-saved-with-member
     def test_a_row_of_a_member_is_refused_on_its_own_under_any_spelling_of_its_parent(self):
-        """`frappe.client.save` resolves a row's `parenttype` to its doctype by a
-        case-insensitive lookup and judges that parent, then stores the string
-        sent, which every reader of the row matches in SQL. So each spelling
-        frappe resolves to a member is the member."""
+        """`frappe.client.save` finds the parent doctype case-insensitively, but
+        stores the `parenttype` string as sent, and SQL matches that string. So
+        every spelling that frappe resolves to a member must be refused."""
         workbook = create_test_workbook(USER_1)
         query = create_test_query(USER_1, workbook.name)
         chart = create_test_chart(USER_1, workbook.name, query.name)
@@ -674,7 +667,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
                         )
             self.assertFalse(frappe.has_permission(DT.CHART, ptype="read", doc=private_chart.name))
 
-            # a stored row, respelled
+            # a stored row with another spelling
             linked = frappe.get_doc(dashboard.doctype, dashboard.name).linked_charts[0]
             with self.assertRaisesRegex(frappe.ValidationError, "not on its own"):
                 frappe.client.save(
@@ -686,7 +679,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
             )
         )
 
-        # a row of anything else under another spelling is frappe's business
+        # frappe handles a row of any other doctype, under any spelling
         role = frappe.get_doc({"doctype": "Role", "role_name": "Member Row Spelling Test"}).insert()
         frappe.get_doc(
             {
@@ -701,13 +694,11 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
 
     # @feature permissions.member-share-names-a-reader
     def test_a_share_on_a_member_is_a_named_read_share_on_a_dashboard_or_chart(self):
-        """The desk Share sidebar and `frappe.share.add` write a DocShare,
-        `InsightsDashboardv3.update_access` writes a named read one, and
-        `frappe.has_permission` asks any of them after the controller refuses.
-        Any other shape on a member is refused where it is written, and `bench
-        migrate` reshapes or clears one written before. The workbook's own
-        shares, from `update_share_permissions`, are not members' and keep
-        every flag."""
+        """`frappe.has_permission` reads any DocShare after the controller
+        refuses, so a DocShare on a member must be a read share to one user.
+        Other shares are refused when written, and `bench migrate` fixes or
+        removes old ones. Workbook shares are not member shares and keep every
+        flag."""
         from insights.patches.reshape_member_shares import execute as reshape_member_shares
 
         workbook = create_test_workbook(USER_1)
@@ -772,8 +763,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
             update_dashboard_access(dashboard.name, [USER_2, USER_3])
         self.assertEqual(grants(USER_3, DT.DASHBOARD, dashboard.name), read_only)
 
-        # rows from before the rule: USER_3 holds every flag on every member,
-        # and the organisation reads the chart
+        # old rows: USER_3 has every flag on every member, and everyone reads the chart
         frappe.db.delete("DocShare", {"share_doctype": ("in", [d for d, _ in members])})
         for doctype, name in members:
             frappe.get_doc(
@@ -811,7 +801,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
                 for doctype in sorted(shareable)
             ],
         )
-        # the query is read through the chart, and an alert on it only through the workbook
+        # USER_3 reads the query through the chart. Only the workbook gives read on an alert.
         for doctype, name in members:
             expected = nothing if doctype in ("Insights Folder", "Insights Alert") else read_only
             self.assertEqual(grants(USER_3, doctype, name), expected, doctype)
@@ -974,7 +964,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         with self.as_user(USER_1):
             update_dashboard_access(dashboard.name, [USER_2])
 
-        # a dashboard hands out the chart's picture, not the query behind it
+        # a dashboard shares the chart's result, not the query behind it
         self.assert_not_visible_to(USER_2, DT.QUERY, query.name)
 
         with self.as_user(NON_INSIGHTS_USER):
@@ -1035,8 +1025,8 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
 
     # @feature permissions.download-gated permissions.request-body-not-trusted
     def test_download_results_decides_against_the_stored_query(self):
-        """`run_doc_method` builds the document out of the request body, so the
-        `owner` the gate's last check reads is whatever the caller sent."""
+        """`run_doc_method` builds the document from the request body. So the
+        caller can send any `owner`, and the check must read the stored query."""
         workbook = create_test_workbook(USER_1)
         query = create_test_query(USER_1, workbook.name)
         frappe.db.set_single_value(DT.SETTINGS, "allow_download", 1)
@@ -1092,7 +1082,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
 
 
 class TestTableRowRestriction(InsightsIntegrationTestCase):
-    """A team's grant can carry an expression, and it cuts the rows the grant gives.
+    """A team's grant can have an expression that limits the rows the grant gives.
 
     The restriction rides `Insights Resource Permission.table_restrictions` and is
     applied where every table read funnels through, so it reaches a query, a
@@ -1130,8 +1120,8 @@ class TestTableRowRestriction(InsightsIntegrationTestCase):
                     "doctype": "ToDo",
                     "description": f"{cls.PREFIX} {status} {i}",
                     "status": status,
-                    # the row filter under test is the team's, so each reader gets
-                    # a set of their own that frappe's own permissions admit whole
+                    # Each reader gets their own todos, which desk permissions
+                    # admit in full. So only the team's row filter limits the rest.
                     "allocated_to": user,
                     "assigned_by": "Administrator",
                 }
@@ -1204,19 +1194,18 @@ class TestTableRowRestriction(InsightsIntegrationTestCase):
 
     # @feature permissions.table-row-restriction
     def test_a_teams_row_restriction_cuts_only_the_rows_its_grant_adds(self):
-        """A query each reader runs, as `execute_test_query` runs it. On site
-        data desk admits the reader's own todos, closed one included, and the
-        grant adds the other reader's open ones - never their closed one."""
+        """Desk permissions admit the reader's own todos, closed ones included.
+        The grant adds the other reader's open todos, never their closed one."""
         self.assertEqual(self.statuses_read_by(USER_1), ["Closed", "Open", "Open", "Open", "Open"])
         self.assertEqual(self.statuses_read_by(ADMIN), ["Closed", "Open", "Open"])
 
     # @feature permissions.table-row-restriction
     def test_one_teams_grant_never_narrows_anothers(self):
-        """A query `execute_test_query` runs, as a reader in two teams that both
-        grant the table. Each grant admits the rows its own restriction allows,
-        and a grant with none admits the whole table."""
+        """The reader is in two teams that both grant the table. Each grant
+        admits the rows its own restriction allows. A grant with no restriction
+        admits the whole table."""
         team = self.second_team("status == 'Closed'")
-        # the other reader's closed todo, which only the second team admits
+        # only the second team admits the other reader's closed todo
         self.assertEqual(self.statuses_read_by(USER_1), ["Closed", "Closed", "Open", "Open", "Open", "Open"])
 
         team.team_permissions[-1].table_restrictions = "status == 'Nothing'"

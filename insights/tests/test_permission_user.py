@@ -1,12 +1,11 @@
-"""A preview and an alert each run as somebody.
+"""A preview and an alert each run as a stored user.
 
-Neither has a caller whose permissions can decide the rows, so each names a user
-at the moment the privileged act happened — minting a preview key, enabling an
-alert. The engine filters by that user, and the session user is left alone, so
-nothing here may call `frappe.set_user`.
+Neither has a caller to take permissions from. So each stores a user: a preview
+key when it is generated, an alert when it is enabled. The engine filters rows
+by that user. The session user does not change, so nothing here may call
+`frappe.set_user`.
 
-A public link names its user another way. Content declares its own
-`run_as_owner`, and `test_run_as_owner` is where that is held.
+A public link uses Run as owner instead. `test_run_as_owner` covers it.
 
 The fixtures below sit on `tabToDo`, whose permission query restricts a
 non-System-Manager to their own assignments. That is the row-level difference
@@ -53,7 +52,7 @@ def todo_operations():
 
 
 class TestPreviewKeyNamesItsUser(InsightsIntegrationTestCase):
-    """A preview has no caller, so the key carries the user it was cut for."""
+    """A preview has no caller, so the key stores the user it was generated for."""
 
     @classmethod
     def before_class(cls):
@@ -145,9 +144,8 @@ class TestAlertRunsAsItsEnabler(InsightsIntegrationTestCase):
 
     # @feature alerts.failed-run-recorded alerts.enable
     def test_an_alert_that_cannot_run_tells_its_owner(self):
-        """`send_alerts`, called as `scheduler_events.all` calls it, on an alert
-        whose enabler may not read the table its query now names. The refusal
-        used to reach an Error Log and nobody else."""
+        """The enabler may not read the table the query now uses. The error used
+        to reach only the Error Log."""
         from unittest.mock import patch
 
         from insights.insights.doctype.insights_alert.insights_alert import send_alerts
@@ -155,8 +153,8 @@ class TestAlertRunsAsItsEnabler(InsightsIntegrationTestCase):
         alert = self.create_alert()
         self.repoint_query(error_log_operations())
 
-        # `send_alerts` rolls back what it catches, so the alert and its query
-        # have to be committed to be read after the failure
+        # `send_alerts` rolls back on error. Commit the alert and its query so
+        # they still exist after the failure.
         frappe.db.commit()  # nosemgrep
 
         def restore():
@@ -177,10 +175,9 @@ class TestAlertRunsAsItsEnabler(InsightsIntegrationTestCase):
 
     # @feature alerts.enable permissions.member-write-follows-workbook
     def test_an_alert_stops_sending_once_its_enabler_may_not_write_it(self):
-        """`send_alerts`, as `scheduler_events.all` calls it: Administrator,
-        under the enabler. An editor who made the query and the alert, then was
-        removed from the workbook, owns both and may write neither, so the
-        alert mails nothing more under their rows."""
+        """The scheduler runs as Administrator, with the enabler as permission
+        user. An editor who made the query and the alert, and then left the
+        workbook, owns both but may write neither. So the alert stops sending."""
         from unittest.mock import patch
 
         from insights.api.workbooks import update_share_permissions
@@ -211,8 +208,7 @@ class TestAlertRunsAsItsEnabler(InsightsIntegrationTestCase):
             scheduled_send()
 
     def scheduled_run(self, alert):
-        """`send_alerts`, as `scheduler_events.all` calls it, with the alert due.
-        Answers the mails it sent, as recipients, subject and message."""
+        """Runs `send_alerts` as the scheduler does, with the alert due."""
         from unittest.mock import patch
 
         from insights.insights.doctype.insights_alert.insights_alert import InsightsAlert, send_alerts
@@ -231,8 +227,6 @@ class TestAlertRunsAsItsEnabler(InsightsIntegrationTestCase):
         ]
 
     def assert_stopped_and_told(self, alert, mails, cause):
-        """One mail, to the workbook's owner, naming the cause and promising no
-        retry - and the alert is disabled, so the next window sends nothing."""
         self.assertEqual(len(mails), 1, mails)
         recipients, subject, message = mails[0]
         self.assertEqual(recipients, [PUBLISHER])
@@ -245,10 +239,8 @@ class TestAlertRunsAsItsEnabler(InsightsIntegrationTestCase):
 
     # @feature alerts.failed-run-recorded alerts.enable
     def test_an_alert_whose_enabler_is_disabled_stops_and_tells_the_workbook_owner(self):
-        """`send_alerts`. An editor of the workbook enabled the publisher's
-        alert, so it runs as the editor; once the editor's account is disabled
-        it mails its recipients nothing, is disabled, and tells the workbook's
-        owner why. Under an enabled enabler the same alert sends."""
+        """The alert runs as the editor who enabled it, not the publisher who
+        made it."""
         from insights.api.workbooks import update_share_permissions
 
         with as_user(PUBLISHER):
@@ -282,9 +274,8 @@ class TestAlertRunsAsItsEnabler(InsightsIntegrationTestCase):
 
     # @feature alerts.failed-run-recorded alerts.enable
     def test_an_alert_whose_enabler_left_the_workbook_stops_and_tells_the_workbook_owner(self):
-        """`send_alerts`. The editor made and enabled the alert, so they own it
-        as well as run it; removed from the workbook, they are not the one to
-        tell. The workbook's owner is."""
+        """The editor made the alert, so they are its owner. After they leave the
+        workbook, the notice goes to the workbook's owner instead."""
         from insights.api.workbooks import update_share_permissions
 
         with as_user(PUBLISHER):

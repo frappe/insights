@@ -27,7 +27,6 @@ const props = defineProps<{
 	failure?: ChartFailure | null
 	/** The query returned no rows. See `ChartBody`. */
 	empty?: boolean
-	/** Whether this surface's source answers a drill. See `ChartBody`. */
 	drillable?: boolean
 }>()
 
@@ -52,13 +51,13 @@ const reading = computed(() => {
 const failure = computed<ChartFailure | null>(() =>
 	props.card.missing ? { headline: __('Reading not found') } : props.failure || null,
 )
-// A refusal is not a run that went wrong: the reader owns no permission they
-// could change, so the card states it and offers nothing.
+// A refusal is not a failed run: the reader cannot change their own
+// permissions, so the card shows it with no retry.
 const retryable = computed(
 	() => Boolean(props.failure) && !props.card.missing && props.failure?.kind !== 'notPermitted',
 )
 // A reading a drill can be asked about: the card has a reading to name, and the
-// source behind it answers drills at all. A public link's source does not, so the
+// source behind it supports drills. A public link's source does not, so the
 // card there is not offered as something to click.
 const drillable = computed(() => props.drillable !== false && !props.card.missing)
 </script>
@@ -89,8 +88,7 @@ const drillable = computed(() => props.drillable !== false && !props.card.missin
 				<p class="text-p-base text-ink-gray-5">{{ __('No data') }}</p>
 			</template>
 
-			<!-- The block every other chart type draws where its plot would be.
-			     No reason under it: the cell's height is the card's own and any
+			<!-- No reason under it: the cell's height is the card's own and any
 			     taller block is a block the card cuts in half, so the whole of it
 			     waits on hover. -->
 			<template v-if="failure" #error>

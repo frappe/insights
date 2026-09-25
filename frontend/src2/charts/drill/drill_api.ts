@@ -5,14 +5,15 @@
 // knows an endpoint's name, its argument names, or the shape of its answer
 // beyond `DrillLevelData`.
 //
-// Two sources, `insights.api.view` and `insights.api.authoring`. A reader names the saved chart and the grid it sits on, and gets rows back —
-// sorted, found and paged as they asked, because the pipeline that would let
-// them do it themselves is exactly what never crosses.
-// The builder names what it is drilling — the config the chart builder is
-// editing, or the operations the query builder is — and gets its rows read the
-// same way, with the sliced pipeline beside them for "open as query", which is
-// why that endpoint is closed to anyone without an Insights role. `drill_stack`
-// is the same descriptor either way: literals and an action per level.
+// Two sources: `insights.api.view` and `insights.api.authoring`. A reader sends
+// the saved chart and its dashboard, and gets rows back. The server sorts,
+// searches and pages them, because the pipeline that would let the client do it
+// never leaves the server.
+// The builder sends what it is drilling: the config the chart builder is
+// editing, or the operations the query builder is editing. Its rows are read
+// the same way, plus the cut pipeline for "open as query". That is why the
+// authoring endpoint needs an Insights role. `drill_stack` is the same
+// descriptor for both: literals and an action per level.
 
 import { call } from 'frappe-ui'
 import type { ChartConfig } from '../../types/chart.types'
@@ -28,7 +29,6 @@ import type {
 	DrillRowsSource,
 } from './drill_stack'
 
-/** What a reader is drilling: the saved chart, and the grid it was clicked on. */
 export type ViewDrillSubject = {
 	chart: string
 	dashboard?: string
@@ -38,17 +38,14 @@ export type ViewDrillSubject = {
 export function fetchViewDrillData(
 	subject: ViewDrillSubject,
 	drill_stack: DrillLevel[],
-	// how the reader is reading a rows level. Left out for a level nobody has
-	// touched yet, and for a breakdown, which takes none of it
+	// Left out for a level nobody has changed yet, and for a breakdown, which
+	// uses none of it
 	reading?: DrillRowsReading,
 ): Promise<DrillLevelData> {
 	return call('insights.api.view.get_drill_data', { ...subject, drill_stack, ...reading })
 }
 
-/**
- * The same cut as a file rather than as a page. A file has no use for the page,
- * so the reading crosses without it.
- */
+/** A file needs no page, so the reading is sent without it. */
 export function downloadViewDrillRows(
 	subject: ViewDrillSubject,
 	drill_stack: DrillLevel[],
@@ -65,7 +62,6 @@ export function downloadViewDrillRows(
 	})
 }
 
-/** What a filter on one column of the cut offers to pick from. */
 export function fetchViewDrillRowsValues(
 	subject: ViewDrillSubject,
 	drill_stack: DrillLevel[],
@@ -111,11 +107,10 @@ export function fetchAuthoringDrillData(
 	// the grid's filter state, unrouted: which query each filter lands on is read
 	// on the server, the same way it is for the preview itself
 	filterContext?: DashboardFilterContext,
-	// the saved chart this level is of, for a surface that is not a grid. It
-	// declares whose permissions the rows are filtered by, so a level that
-	// leaves it out reads as somebody else than the card it was opened from
+	// the saved chart this level belongs to, when the caller is not a dashboard.
+	// The chart decides whose permissions filter the rows, so a level that leaves
+	// it out can read different rows from the card it was opened from
 	declaringChart?: string,
-	// how the reader is reading a rows level, as a View's reader does
 	reading?: DrillRowsReading,
 ): Promise<DrillLevelData> {
 	return call('insights.api.authoring.get_drill_data', {
@@ -125,10 +120,6 @@ export function fetchAuthoringDrillData(
 	})
 }
 
-/**
- * The rows level of the builder's drill, read the way a View reads one: every
- * reading is the server's, run as the chart and on the day its card was read.
- */
 export function authoringDrillRows(
 	subject: AuthoringDrillSubject,
 	drill_stack: DrillLevel[],
@@ -167,7 +158,8 @@ function authoringArgs(
 	return {
 		...subject,
 		chart_name: filterContext?.chart ?? declaringChart,
-		// the saved grid, which routes a caller who may not write the chart
+		// the saved dashboard: a user who cannot write the chart gets filters
+		// routed by it
 		dashboard: filterContext?.dashboard,
 		dashboard_items: filterContext?.items,
 		filters: filterContext?.filters,

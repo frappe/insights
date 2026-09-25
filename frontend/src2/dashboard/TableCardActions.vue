@@ -21,9 +21,9 @@ const props = defineProps<{
 	valuesProvider: (column: QueryResultColumn) => (search: string) => Promise<string[]>
 	rangeProvider: (column: QueryResultColumn) => Promise<[number, number] | undefined>
 	/** Whether the acts wait for the card to be pointed at. A public link has no
-	 *  hover affordances to keep company with, so there they stand. The group
-	 *  that reveals them is the card, which names itself `card`: the grid cell
-	 *  around it is a group too. */
+	 *  hover affordances to keep company with, so there they stand. They reveal
+	 *  on hover over the card's own `card` group, because the grid cell around
+	 *  it is a group too. */
 	reveal?: boolean
 }>()
 

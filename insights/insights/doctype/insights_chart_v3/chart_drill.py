@@ -55,7 +55,6 @@ BREAKDOWN = "breakdown"
 # a bucket standing for the rows that carry no date at all
 NO_DATE = (None, None)
 
-# one page of a rows level, and the stride its paging moves in
 PAGE_SIZE = 100
 
 # a breakdown answers "which group explains this" or "how did this move", and
@@ -69,9 +68,8 @@ DIMENSION_TYPES = ("String", "Date", "Datetime", "Time")
 # no row that is the biggest one
 RANKABLE_TYPES = ("Integer", "Decimal")
 
-# the column types a find term can be matched against. A find is a text match,
-# and the engine reads a number as text to make one. A date holds no substring a
-# reader types, and `like` on one is an error rather than a miss
+# the column types a find term can match. A find is a text match, and the
+# engine reads a number as text. `like` on a date is an error, not a miss
 FINDABLE_TYPES = ("String", "Integer", "Decimal")
 
 SORT_DIRECTIONS = ("asc", "desc")
@@ -198,17 +196,15 @@ def drill_data(
 ) -> dict:
     """The rows behind the segment the stack describes.
 
-    `with_operations` adds the pipeline the level was cut as, which an
-    authoring surface opens as a query of its own (`_as_opened`). The rows are
-    still read here, under `runs_as`: a pipeline run anywhere else runs as its
-    caller. It is off by default because a view must never receive the
-    pipeline.
+    `with_operations` adds the level's pipeline, so the builder can open it as a
+    query (`_as_opened`). The rows are still read here, under `runs_as`, because
+    a pipeline run anywhere else runs as its caller. It is off by default
+    because a view must never receive the pipeline.
 
-    `row_filters`, `sort`, `find` and `page` are how a caller that never receives
-    the pipeline reads the rows anyway. They apply to a rows level only, inside
-    the same cut, so `total_row_count` counts what the filters and the find left
-    and the page is a page of that. A breakdown level is one page by
-    construction and takes none of them.
+    `row_filters`, `sort`, `find` and `page` let a view read the rows without the
+    pipeline. They apply to a rows level only, inside the same cut, so
+    `total_row_count` counts the rows they leave. A breakdown level is always
+    one page and ignores them.
     """
     check_rows(chart)
     _checked_stack(drill_stack)
@@ -238,34 +234,34 @@ def drill_data(
 
         query = chart.get_query(operations=drilled)
 
-        # a breakdown level is fetched once and then kept by the dialog for as
-        # long as it is open, so back and crumb pops never come here. A rows
-        # level comes back whenever the reader sorts, finds or turns a page
+        # the dialog keeps a breakdown level while it is open, so back and
+        # breadcrumb clicks do not fetch it again. A rows level is fetched again
+        # on every sort, find and page
         result = query.execute(adhoc_filters=adhoc_filters, page=page, page_size=page_size, force=True)
-        # read before the count builds again, for the reader at the keyboard
-        # only, as `InsightsChartv3.fetch` reads the card's
+        # read the scope before `count_rows` builds the query again. It is the
+        # session user's scope, as in `InsightsChartv3.fetch`
         scope = user_permissions.scope(frappe.session.user)
-        # the dialog shows one page and says so: "100 of 1,240" needs the 1,240
+        # the dialog shows "100 of 1,240", so it needs the total
         total_row_count = query.count_rows(adhoc_filters=adhoc_filters, force=True)
 
         ordered = bool(breakdown and breakdown["ordered"])
 
         response = {
             "columns": result["columns"],
-            # the page of a series was taken from its recent end, and a series reads
-            # forwards
+            # a series page is taken from its recent end, but a series reads
+            # oldest first
             "rows": list(reversed(result["rows"])) if ordered else result["rows"],
             "total_row_count": total_row_count,
-            # what the client draws this answer by, said outright rather than left
-            # to be inferred from a column type: which way the rows run, the grain
-            # they were grouped by, and whether they add up to the segment above
+            # the client renders the answer from these, because column types do
+            # not say them: the row order, the grain, and whether the rows add up
+            # to the segment above
             "ordered": ordered,
             "granularity": breakdown["granularity"] if breakdown else None,
             "additive": bool(breakdown and breakdown["additive"]),
             "time_taken": result["time_taken"],
             "executed_at": frappe.utils.now(),
-            # what of the reader's own narrowed the cells the level draws, in the
-            # keys a card carries it under
+            # the reader's User Permissions that narrowed these rows, under the
+            # keys a card uses
             **scope,
         }
 
@@ -280,11 +276,11 @@ def drill_data(
 
 
 def _as_opened(chart, drilled: list[dict], adhoc_filters: dict | None) -> list[dict]:
-    """The level as a query of its own, holding the rows the dialog showed.
+    """The level as a query of its own, returning the rows the dialog showed.
 
-    That query runs on the day it is opened and under no dashboard, so both go
-    into its steps: every span it tests fixed to the dates it was read as, and
-    the dashboard's filters on the chart's query as a step after that query.
+    The opened query runs on a later day and outside the dashboard. So every
+    `within` span is fixed to the dates it resolved to, and the dashboard's
+    filters on the chart's query become a step after the first one.
     """
     routed = (adhoc_filters or {}).get(chart.query)
     steps = [drilled[0], routed, *drilled[1:]] if routed else drilled
@@ -312,12 +308,11 @@ def drill_rows_export(
     row_filters: list | None = None,
     operations: list[dict] | None = None,
 ) -> str:
-    """The rows behind the segment, as a file rather than as a page.
+    """The rows behind the segment, as a file.
 
-    The same cut `drill_data` reads, at the same filters, the same sort and the
-    same find and without the page: one pipeline, two ways of taking it away, so
-    the file cannot hold rows the dialog would not draw. Whether this caller may
-    have a file at all is the endpoint's question, not this one's.
+    It reads the same cut as `drill_data`, with the same filters, sort and find,
+    and no page. So the file cannot hold rows the dialog would not show. The
+    endpoint decides whether this caller may export.
     """
     check_rows(chart)
     _checked_stack(drill_stack)
@@ -347,12 +342,12 @@ def drill_rows_values(
     row_filters: list | None = None,
     operations: list[dict] | None = None,
 ) -> list:
-    """The values a reader's own filter on a rows level offers.
+    """The values a reader's filter on a rows level suggests.
 
-    Read off the cut the filter narrows, so the list never offers a value that
-    would leave the page empty. `row_filters` is the reader's other rules: a
-    rule on this column would have narrowed the list to the value it already
-    holds, so the caller leaves it out.
+    They are read from the cut the filter narrows, so no suggested value leaves
+    the page empty. `row_filters` holds the reader's other rules. The caller
+    leaves out the rule on this column, because it would narrow the list to the
+    value it already holds.
     """
     adhoc_filters = _card_filters_out(adhoc_filters, chart)
     with runs_as(chart), read_on(_drawn_on(drill_stack)):
@@ -372,7 +367,7 @@ def drill_rows_range(
     row_filters: list | None = None,
     operations: list[dict] | None = None,
 ) -> list | None:
-    """The smallest and largest a column of the cut goes, narrowed as the values are."""
+    """The minimum and maximum of a column of the cut, narrowed as `drill_rows_values` is."""
     adhoc_filters = _card_filters_out(adhoc_filters, chart)
     with runs_as(chart), read_on(_drawn_on(drill_stack)):
         surface, narrowed = _reader_cut(chart, drill_stack, row_filters, operations)
@@ -386,11 +381,11 @@ def drill_rows_range(
 def _reader_cut(
     chart, drill_stack: list, row_filters: list | None, operations: list[dict] | None = None
 ) -> tuple[list[dict], list[dict]]:
-    """The rows a reader is looking at, and the surface they are bounded by.
+    """The surface, and the rows a reader is looking at.
 
-    What a filter's own offer is read against: the segment the stack pins and
-    the reader's other rules, without the ranking, the find or the page, none of
-    which change which values a column holds.
+    A filter reads its suggestions from these rows: the segment the stack pins,
+    narrowed by the reader's other rules. The sort, the find and the page are
+    left out.
     """
     check_rows(chart)
     _checked_stack(drill_stack)
@@ -407,10 +402,10 @@ def _reader_cut(
 
 
 def check_rows(chart) -> None:
-    """Refuse a caller who may have only the chart's picture.
+    """Refuse a caller who may see the chart but not its rows.
 
-    Here and not at an endpoint: the view and the builder both drill through
-    this module, and a gate on one door left the other open.
+    The check is here and not at an endpoint, because the view and the builder
+    both drill through this module. A check on one endpoint left the other open.
     """
     if not can_read_rows(chart):
         refuse(message=_("You are not allowed to see what is behind this chart"))
@@ -430,11 +425,11 @@ def _checked_stack(drill_stack: list) -> None:
 
 
 def _check_drawn_from(chart, drill_stack: list) -> None:
-    """Refuse a drill from a card drawn off an earlier version of the chart.
+    """Refuse a drill from a card rendered from an earlier version of the chart.
 
-    A card keeps its picture until Refresh, and the drill cuts the chart and
-    its queries as they are now. A level names the `last_modified` it was drawn
-    from; a chart nobody has saved has none to compare.
+    A card keeps its result until Refresh, but the drill reads the chart and its
+    queries as they are now. Each level carries the `last_modified` its card was
+    rendered from. A chart that was never saved has no value to compare.
     """
     drawn = next((level.get("modified") for level in drill_stack if level.get("modified")), None)
     current = chart.last_modified() if drawn else None
@@ -443,11 +438,10 @@ def _check_drawn_from(chart, drill_stack: list) -> None:
 
 
 def _card_filters_out(adhoc_filters: dict | None, chart) -> dict | None:
-    """The surface's routed groups, less the card's own.
+    """The routed filter groups, without the card's own.
 
-    A group keyed by the chart is a rule on the card's own columns: the drilled
-    row already satisfied it and the segment is its dimension values, so it has
-    nothing left to say here.
+    A group keyed by the chart filters the card's own columns. The drilled row
+    already matches it, and the segment already pins those dimension values.
     """
     return {k: v for k, v in (adhoc_filters or {}).items() if k != chart.name} or None
 
@@ -461,13 +455,11 @@ def _rows_reading(
     find: str | None,
     row_filters: list | None = None,
 ) -> list[dict]:
-    """A rows level as the reader asked to read it: narrowed, then ranked.
+    """A rows level as the reader asked for it: filtered, then sorted.
 
-    The filters and the find narrow before anything is ranked, counted or paged,
-    so the total the dialog states is the total of what the reader is looking
-    at. A sort they named replaces the ranking the click implied: they have said
-    which rows they want on the page, which is the whole of what the ranking was
-    for.
+    The filters and the find apply before the sort, the count and the page, so
+    the dialog's total counts what the reader sees. A sort the reader chose
+    replaces the order the click implied.
     """
     narrowed = _narrowed(segment, surface, row_filters)
     if find:
@@ -477,17 +469,17 @@ def _rows_reading(
 
 
 def _narrowed(segment: list[dict], surface: list[dict], row_filters: list | None) -> list[dict]:
-    """The segment, less what the reader's own rules take out of it."""
+    """The segment, filtered by the reader's own rules."""
     rules = _named_filters(row_filters, surface)
     return [*segment, _filter_group(rules)] if rules else list(segment)
 
 
 def _named_filters(row_filters: list | None, surface: list[dict]) -> list[dict]:
-    """The rules the reader wrote, every column of them checked against the surface.
+    """The reader's filter rules, each column checked against the surface.
 
-    A rule narrows what the chart already published and can do nothing else, so
-    the whole operator set is open — but the column it names is bounded exactly
-    as a sort's is: the wire cannot widen what a chart exposes.
+    A rule can only narrow what the chart exposes, so every operator is allowed.
+    The column is checked as a sort's is: a request cannot widen what a chart
+    exposes.
     """
     rules = []
     for rule in row_filters or []:
@@ -505,10 +497,10 @@ def _named_filters(row_filters: list | None, surface: list[dict]) -> list[dict]:
 
 
 def _named_sort(sort: list | None, surface: list[dict]) -> list[dict]:
-    """The sort the reader named, every column of it checked against the surface.
+    """The reader's sort, each column checked against the surface.
 
-    Written back to front: the engine merges chained sorts and the last one it
-    is given becomes the primary key, so the reader's first column goes last.
+    Written in reverse: the engine merges chained sorts and makes the last one
+    the primary key, so the reader's first column goes last.
     """
     rules = []
     for rule in sort or []:
@@ -532,16 +524,14 @@ def _named_sort(sort: list | None, surface: list[dict]) -> list[dict]:
 
 
 def _find_group(term: str, surface: list[dict]) -> dict:
-    """A find term, matched across every column of the surface that can hold it.
+    """A find term, matched across every findable column of the surface.
 
-    The exposure bound holds here without a name being checked: the term reaches
-    the surface's own columns and nothing else. A hidden column is not drawn, so
-    it is not searched either — a row kept by a match the reader cannot see
-    reads as a wrong answer.
+    No column name needs a check, because the term only reaches the surface's
+    own columns. A hidden column is not shown, so it is not searched. A row kept
+    by a match the reader cannot see looks like a wrong answer.
 
-    A cut with nothing to match against keeps no rows. An empty group is a no-op
-    to the engine, so it would keep every one of them instead and the reader
-    would read the whole cut as the answer to their term.
+    With no column to match, the group keeps no rows. The engine treats an empty
+    group as no filter, so the reader would take the whole cut as the result.
     """
     searchable = [
         column for column in surface if column["type"] in FINDABLE_TYPES and not column.get("hidden")
@@ -557,7 +547,7 @@ def _find_group(term: str, surface: list[dict]) -> dict:
 
 
 def _matches_nothing(surface: list[dict]) -> dict:
-    """A group no row satisfies, written as a contradiction on a column of the cut."""
+    """A group no row matches: a contradiction on one column of the cut."""
     if not surface:
         return _filter_group([])
 
@@ -566,7 +556,7 @@ def _matches_nothing(surface: list[dict]) -> dict:
 
 
 def _page(page) -> int:
-    """Which page of the rows to draw. Anything that is not one is the first."""
+    """The page of rows to show. An invalid value means the first page."""
     try:
         return max(1, int(page))
     except (TypeError, ValueError):
@@ -584,12 +574,11 @@ def _pipeline(chart, drill_stack: list, operations: list[dict] | None = None) ->
 
 
 def _drawn_on(drill_stack: list) -> str | None:
-    """The day the card was read, which every level of the stack carries.
+    """The day the card was read. Every level of the stack carries it.
 
-    A span is stored unresolved, so read against the day of the click it cuts
-    the bucket the reader clicked down to its overlap with a stretch the card
-    never counted - in the chart's operations, in the dashboard's filters and in
-    the source query alike.
+    Spans are stored unresolved. Resolved on the day of the click, a span would
+    narrow the clicked bucket to a stretch the card never counted. This applies
+    to the chart's operations, the dashboard's filters and the source query.
     """
     return next((level.get("drawn_on") for level in drill_stack if level.get("drawn_on")), None)
 
@@ -702,9 +691,9 @@ def _breakdown(chart, segment: list[dict], action: dict, step: dict, surface: li
         },
         "direction": "desc",
     }
-    # groups the measure ranks equal come back in whatever order the engine
-    # picks, so a query opened from this level could show them differently.
-    # The newest `order_by` is the primary sort, so this one only breaks ties
+    # the engine returns groups with equal measures in any order, so a query
+    # opened from this level could show them in another order. The newest
+    # `order_by` is the primary sort, so this one only breaks ties
     tiebreak = {
         "type": "order_by",
         "column": {"type": "column", "column_name": column["name"]},
@@ -882,25 +871,23 @@ def _rule_filters(
 
 
 def _refuse_invented_value(chart, sliced: list[dict], dimension: dict | None, step: dict, value) -> None:
-    """A segment the engine named rather than read has nothing to cut the rows by.
+    """Refuse a segment value that the engine wrote and the rows do not hold.
 
-    A split cuts its values to a cap and rewrites the tail to `Others`, inside
-    the step the drill cuts the pipeline before. So the surface holds no row
-    whose column equals `Others`, and filtering by it would draw an empty grid
-    with nothing on screen saying why.
+    A split keeps its top values and rewrites the tail to `Others`. This happens
+    inside the step the drill cuts before. So the surface has no row whose
+    column equals `Others`, and a filter on it would show an empty grid with no
+    reason given.
 
-    Only that rewrite writes the label, and it is written for one split column
-    and only where there was a tail to cut: a chart split by two columns never
-    reaches it, and a split of fewer values than the cap leaves the column as
-    the rows hold it.
+    Only that rewrite writes the label. It applies to a single split column,
+    and only when there was a tail. A chart split by two columns never rewrites,
+    and a split with fewer values than the cap keeps the column as it is.
 
-    Two questions, because a column can really hold the string `Others` and be
-    cut as well. Whether the split cut a tail is the split's own answer; whether
-    the surface holds the label is the surface's. Only "no tail" leaves a cut
-    that means what the reader clicked: with a tail, either the label stands
-    for rows nothing can find, or it stands for both those and the real ones at
-    once, and `= Others` would answer with part of the bar and print its count
-    as the whole.
+    A column can hold a real `Others` and also have a tail, so there are two
+    checks. The split says whether it had a tail. The surface says whether it
+    holds the label. Only a split with no tail means what the reader clicked.
+    With a tail, the label stands for rows no filter can find, or for those and
+    the real `Others` rows together. `= Others` would then return part of the
+    bar and show its count as the whole.
     """
     if value != PIVOT_OTHERS or step.get("type") != "pivot_wider":
         return
@@ -929,22 +916,22 @@ def _refuse_invented_value(chart, sliced: list[dict], dimension: dict | None, st
 
 
 def _split_folded_a_tail(chart, sliced: list[dict], step: dict, dimension: dict) -> bool:
-    """Whether the split wrote `Others` over a tail, as the engine ran it.
+    """Whether the split rewrote a tail to `Others` when the engine ran it.
 
-    Asked by building the pipeline through the split rather than read off the
-    operation: which values it keeps depends on the rows it saw. Built, never
-    executed - the ranking the split does to pick them is what answers.
+    The operation cannot say, because the values the split keeps depend on the
+    rows. So the pipeline is built through the split, and building it records
+    the answer. It is never executed.
     """
     chart.get_query(operations=[*sliced, step]).build()
     return folded_a_tail(dimension.get("dimension_name") or dimension.get("column_name"))
 
 
 def _surface_holds(chart, sliced: list[dict], column: str, value) -> bool:
-    """Whether the surface carries a row whose `column` is `value`.
+    """Whether the surface has a row whose `column` is `value`.
 
-    One row is the whole answer, so the cut is read a page of one. Read without
-    the card's own filters: they can only take rows away, and a cut they emptied
-    is an honest empty grid rather than a label nobody wrote.
+    One row answers it, so the query reads a page of one. The card's own filters
+    are left out. They can only remove rows, and a cut they empty is a true empty
+    grid, not a label the engine wrote.
     """
     if not column:
         return False
@@ -1010,18 +997,17 @@ def _clicked_window(dimension: dict | None, value) -> tuple | None:
 
     A number card grouped by spans labels each row with the date its span
     opens, so the label names the span and resolving the span gives the end.
-    The spans are stored unresolved so that the same chart reads a different
-    stretch tomorrow, so they resolve against the day the card was read —
-    `drawn_on`, which the card's own answer named and the level carries back.
-    A `<unit> to date` span opens on the first of its period and closes on that
-    day, so without it the click returns a stretch running to the day of the
-    click: rows behind a number that never counted them.
+    Spans are stored unresolved, so the same chart reads a different stretch
+    tomorrow. They resolve against the day the card was read: `drawn_on`, which
+    the card's answer sets and each level sends back. A `<unit> to date` span
+    opens on the first of its period and closes on that day. Resolved on the
+    day of the click, it would return rows the number never counted.
 
-    Both ends move, and only one of them is checked: a label that opens no span
-    is refused rather than left to the caller's categorical fallback, and that
-    refusal is also what holds a `drawn_on` to a day the card could have been
-    read on. The rows are bounded either way — the pipeline underneath carries
-    the card's own span filter, which resolves for the same day.
+    Both ends move, but only the start is checked. A label that opens no span
+    is refused, not passed to the caller's categorical fallback. That refusal
+    also keeps `drawn_on` to a day the card could have been read on. The rows
+    are bounded either way: the pipeline underneath carries the card's own span
+    filter, which resolves for the same day.
     """
     windows = (dimension or {}).get("windows") or []
     if not windows or not value:

@@ -3,23 +3,21 @@ import { AlertTriangle, Lock } from 'lucide-vue-next'
 import { computed } from 'vue'
 import type { ChartFailure } from '../adapter/types'
 
-// What a card says where its picture would be, when there is no picture: the
-// failure, and the refusal a reader cannot act on. One block for both, so "Could
-// not load" and "Not Permitted" read as one family whichever chart type draws
-// them — the chrome around a plot, and a Number Chart's reading, which is its
-// own chrome.
+// What a card shows in place of the plot: an error, or a refusal the reader
+// cannot act on. Both use this one block, so "Could not load" and "Not
+// Permitted" look alike in every chart type: in the chrome around a plot, and in
+// a Number Chart's reading, which has its own chrome.
 //
 // `status` and not `alert`: a dashboard can fail eight cards at once, and eight
 // interruptions say less than one line each.
 //
-// It aligns nothing itself. The chrome centres what it draws over the plot, and
-// a reading's card runs its blocks down the start edge, so the host's own class
-// says which.
+// It sets no alignment. The chrome centres it over the plot, and a reading's
+// card aligns it to the start edge, so the host's class decides.
 const props = defineProps<{
 	failure: ChartFailure
 	/**
-	 * Draw the reason under the headline. A card one line tall — a reading —
-	 * leaves it off, and the whole of it still waits in the tooltip.
+	 * Show the reason under the headline. A one-line card, such as a reading,
+	 * leaves it out, and the full reason stays in the tooltip.
 	 */
 	detailed?: boolean
 }>()
@@ -37,9 +35,9 @@ const refused = computed(() => props.failure.kind === 'notPermitted')
 			class="flex min-w-0 shrink-0 items-center gap-1.5 text-p-sm"
 			:class="refused ? 'text-ink-gray-7' : 'text-ink-gray-8'"
 		>
-			<!-- The size of the text it stands beside, here and in every other
-			     state Insights draws: an icon larger than its sentence reads as a
-			     picture of an error, not as part of the line that states one. -->
+			<!-- The icon matches the text size, here and in every other state
+			     Insights shows. A larger icon reads as a picture of an error, not
+			     as part of the sentence. -->
 			<component
 				:is="refused ? Lock : AlertTriangle"
 				class="h-3.5 w-3.5 shrink-0"
@@ -50,7 +48,7 @@ const refused = computed(() => props.failure.kind === 'notPermitted')
 		</div>
 
 		<!-- The whole message is in the tooltip, so the clamp costs the reader
-		     nothing but a hover. -->
+		     only a hover. -->
 		<p
 			v-if="props.detailed && props.failure.detailText"
 			class="line-clamp-2 px-4 text-p-xs text-ink-gray-5"
@@ -58,8 +56,6 @@ const refused = computed(() => props.failure.kind === 'notPermitted')
 			{{ props.failure.detailText }}
 		</p>
 
-		<!-- The act, for a card with room under the message. A reading puts its
-		     own in the title row instead. -->
 		<slot />
 	</div>
 </template>

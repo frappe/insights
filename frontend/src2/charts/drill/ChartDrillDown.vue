@@ -31,9 +31,8 @@ import type { ChartSegmentClick } from './segment_click'
 // chart was ever saved.
 //
 // `#actions` is what a surface may add next to the close button, on any level;
-// `#rows` is how the surface draws the rows level. Slots rather than props so
-// that a builder affordance and everything it imports stay out of a surface that
-// only reads.
+// `#rows` renders the rows level. They are slots, not props, so that builder
+// actions and their imports stay out of a View.
 const props = defineProps<{
 	/** what is being drilled: the shape a click is read against, and the endpoint */
 	subject: DrillSubject
@@ -60,9 +59,9 @@ const open = ref(false)
 const answer = ref<DrillLevelData>()
 const loading = ref(false)
 const failed = ref<string>()
-// The level was refused: the reader may not read the data behind it, so nothing
-// ran. An answer and not a failure — there is nothing to retry — so it is held
-// apart from `failed` and drawn as its own state.
+// The server refused the level: the reader cannot read the data behind it, so
+// nothing ran. It is an answer, not a failure, and there is nothing to retry. So
+// it is kept apart from `failed` and shown as its own state.
 const refused = ref<string[]>()
 
 const pending = ref<{ segment: DrillSegment; point: { x: number; y: number } }>()
@@ -115,10 +114,9 @@ function descend(action: DrillAction) {
 		level: {
 			segment_filters: offered.segment.filters,
 			action,
-			// the rows this click landed on were read then, and a span the card
-			// read is the stretch it was read for
 			drawn_on: props.subject.drawnOn,
-			// the chart the card drew, so a drill of one since changed is refused
+			// the chart as the card showed it, so the server refuses a drill if it
+			// changed since
 			modified: props.subject.modified,
 		},
 		pins: offered.segment.pins,
@@ -179,7 +177,7 @@ async function load() {
 	try {
 		const fetched = await props.subject.fetch(stack.levels)
 		if (token !== inFlight) return
-		// nothing ran, so there is no level to remember and no zero to report
+		// nothing ran, so there is no level to cache and no empty result to show
 		if (fetched.not_permitted) {
 			refused.value = fetched.not_permitted.doctypes || []
 			answer.value = undefined
@@ -190,8 +188,8 @@ async function load() {
 	} catch (error) {
 		if (token !== inFlight) return
 		console.error('[insights] Could not drill down.', error)
-		// the server's sentence, where it said one: a chart that changed since
-		// the card drew it is only fixed by a Refresh
+		// the server's message, if it sent one: when the chart changed after the
+		// card loaded, only a Refresh fixes it
 		failed.value = getErrorMessage(error)
 		answer.value = undefined
 	} finally {

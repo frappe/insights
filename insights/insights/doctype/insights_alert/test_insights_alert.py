@@ -161,8 +161,9 @@ class TestFailedAlertIsNotRetriedEveryTick(InsightsIntegrationTestCase):
     # @feature alerts.failed-run-recorded
     def test_the_owner_is_told_a_run_failed_and_not_why(self):
         """`send_alerts` mails the owner. The scheduler's session is
-        Administrator, so a connection error was composed for someone who may
-        configure the source, naming its host; that stays in the Error Log."""
+        Administrator, so a connection error was written for someone who may
+        configure the data source, and it names the host. The error stays in
+        the Error Log."""
         frappe.db.set_value("Insights Alert", self.alert.name, "last_execution", None)
         # `send_alerts` rolls back what it catches
         frappe.db.commit()  # nosemgrep
@@ -181,9 +182,9 @@ class TestFailedAlertIsNotRetriedEveryTick(InsightsIntegrationTestCase):
 
 
 class ATickRunsEveryAlert(InsightsIntegrationTestCase):
-    """`send_alerts`, the scheduler's four-minute tick. What it does after one
-    alert fails writes and commits too, and a failure there must not cost the
-    alerts after it their window."""
+    """`send_alerts` runs every four minutes. Handling a failed alert also
+    writes and commits. If that fails, the alerts after it must still run in
+    this window."""
 
     @classmethod
     def before_class(cls):
@@ -214,8 +215,8 @@ class ATickRunsEveryAlert(InsightsIntegrationTestCase):
         frappe.delete_doc("Insights Workbook", cls.workbook.name, force=True)
 
     def tried(self, refusal, aftermath: str) -> list[str]:
-        """The alerts of this class the tick tried, when every send is refused
-        with `refusal` and `aftermath` raises."""
+        """The alerts of this class that the tick tried, when every send raises
+        `refusal` and `aftermath` raises too."""
         tried = []
 
         def send(alert):
@@ -502,8 +503,8 @@ class TestCondition(AlertOverSeededTodos):
 class TestRowsAnAlertCarries(AlertOverSeededTodos):
     # @feature alerts.message alerts.webhook
     def test_the_rows_stop_at_the_cap_and_the_count_is_the_whole_result(self):
-        """`send_alert` builds one context for every channel, so the count it
-        reports is the query's and not the page's, and a mail says what it left out."""
+        """`send_alert` builds one context for every channel. So its count is the
+        whole result's, not the page's, and a mail says how many rows it left out."""
         alert = self.make_alert(message="{{ count }} open\n\n{{ rows }}")
 
         with patch(f"{InsightsAlert.__module__}.ALERT_MAX_ROWS", 2):
@@ -519,7 +520,8 @@ class TestRowsAnAlertCarries(AlertOverSeededTodos):
     def test_the_rows_and_the_count_are_read_when_the_condition_fires(self):
         """`send_alert` builds its message from `get_message_context` after the
         condition, which reads the table fresh. An author's earlier run caches
-        rows and count under two lifetimes, so the mail read either one stale."""
+        the rows and the count, which expire at different times. So the mail
+        could show either one stale."""
         query = frappe.get_doc("Insights Query v3", self.query)
         query.execute(page_size=ALERT_MAX_ROWS)
         query.count_rows()
@@ -540,9 +542,9 @@ class TestRowsAnAlertCarries(AlertOverSeededTodos):
     # @feature alerts.condition alerts.message
     def test_a_script_query_is_read_fresh_for_the_condition_and_the_count(self):
         """`send_alert` decides on `evaluate_condition` and mails
-        `get_message_context`. A script's output is cached apart from the SQL
-        over it, so an earlier run fired the condition and printed the count
-        off rows the script no longer returns."""
+        `get_message_context`. A script's output is cached separately from the
+        SQL over it. So an earlier run could fire the condition and print the
+        count from rows the script no longer returns."""
         script = self.make_script_query(
             "results = frappe.get_all('ToDo', "
             f"filters={{'description': ['like', '{ALERT_TODO_PREFIX} Script%']}}, "
@@ -553,7 +555,7 @@ class TestRowsAnAlertCarries(AlertOverSeededTodos):
         ).insert(ignore_permissions=True)
         self.addCleanup(frappe.delete_doc, "ToDo", closed.name, force=True, ignore_permissions=True)
         alert = self.make_alert(query=script, condition="status == 'Open'")
-        # an author's run of the query, and an earlier tick
+        # stands for an author's run of the query, or an earlier tick
         frappe.get_doc("Insights Query v3", script).execute()
         self.assertFalse(alert.evaluate_condition())
 
@@ -575,8 +577,8 @@ class TestRowsAnAlertCarries(AlertOverSeededTodos):
 
 
 class TestWhoMaySend(AlertOverSeededTodos):
-    """Sending mails the author's recipients, so it asks for more than reading
-    the alert, and the user it runs as is asked again at every send."""
+    """Sending mails the author's recipients, so it needs more than read access
+    on the alert. The user it runs as is checked again at every send."""
 
     READER = "alert_reader@test.com"
 
@@ -593,7 +595,7 @@ class TestWhoMaySend(AlertOverSeededTodos):
     # @feature alerts.test-send
     def test_a_collaborator_who_may_only_read_the_alert_cannot_send_it(self):
         """`AlertSetupDialog` calls `test_alert` through `run_doc_method`, which
-        checks read only; the desk form calls `send_alert` the same way."""
+        checks only read. The desk form calls `send_alert` the same way."""
         from insights.api.workbooks import update_share_permissions
 
         alert = self.make_alert(condition="status == 'Open'")
@@ -613,7 +615,7 @@ class TestWhoMaySend(AlertOverSeededTodos):
     def test_an_unsaved_alert_is_sent_by_a_writer_of_its_workbook_only(self):
         """`QueryAlertsDialog` calls `test_alert` through `run_doc_method` on an
         alert it has not saved yet, named `new-alert-…`. A reader of the
-        workbook may send the same payload with recipients of their choosing."""
+        workbook could send the same payload to recipients they choose."""
         from insights.api.workbooks import update_share_permissions
 
         def send_unsaved(name):
@@ -647,8 +649,8 @@ class TestWhoMaySend(AlertOverSeededTodos):
     # @feature alerts.enable
     def test_an_edit_by_another_writer_keeps_the_enabler_and_the_form_names_them(self):
         """`AlertSetupDialog` reads `permission_user` through `insights.api.get_doc`
-        to say who the alert runs as. Ruling Q11: writers are trusted, so an edit
-        does not move it."""
+        to show who the alert runs as. Ruling Q11: writers are trusted, so an edit
+        does not change it."""
         from insights.api import get_doc
         from insights.api.workbooks import update_share_permissions
 
@@ -666,7 +668,7 @@ class TestWhoMaySend(AlertOverSeededTodos):
     # @feature alerts.enable
     def test_an_alert_whose_user_lost_the_query_sends_nothing(self):
         """`send_alerts` runs each alert as the user who enabled it. A share
-        revoked since then reaches the next send, not only the next save."""
+        revoked since then stops the next send, not only the next save."""
         from insights.api.workbooks import update_share_permissions
 
         alert = self.make_alert(condition="status == 'Open'")
@@ -684,7 +686,7 @@ class TestWhoMaySend(AlertOverSeededTodos):
     def test_an_alerts_script_reads_as_the_user_who_enabled_it(self):
         """`send_alerts` enters `permission_user` for the enabler and reads the
         rows it mails through `get_message_context`. The scheduler's session is
-        Administrator, and the script read as the session."""
+        Administrator, and the script used to read as the session."""
         query = create_test_query(
             "Administrator",
             self.workbook,

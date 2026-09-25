@@ -74,9 +74,6 @@ class TestJobState(InsightsIntegrationTestCase):
 
 
 class TestImportJobScript(InsightsIntegrationTestCase):
-    """What `TableImportJobRun._run_script` hands a job's script, on every run
-    `execute_table_import_job` starts."""
-
     def before_test(self):
         self.job = create_job("script_sandbox_table")
         self.addCleanup(frappe.delete_doc, "Insights Table Import Job", self.job.name, force=True)
@@ -141,7 +138,7 @@ class TestImportJobScript(InsightsIntegrationTestCase):
             "call": not_in_sandbox,
             "sendmail": not_in_sandbox,
             "write sql": (frappe.PermissionError, "Read-Only queries are allowed"),
-            # a name `frappe.db` lacks reads as a no-op function
+            # the sandbox `frappe.db` has no `after_commit`
             "after_commit": (TypeError, "'NoneType' object is not callable"),
             "commit": not_in_sandbox,
             "rollback": not_in_sandbox,

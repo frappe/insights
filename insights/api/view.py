@@ -1,20 +1,19 @@
 # Copyright (c) 2025, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-"""What a view of Insights content is allowed to ask for.
+"""The endpoints of a View of Insights content.
 
-The islands mount on a desk page for a user who may hold no Insights role at
-all, so these endpoints are plain `frappe.whitelist(allow_guest=True)`: who may
-see what is decided by the permission controller through `visibility`, never by
-a role check here. A guest reaches only the `Public` level, and reaches it
-through the same code path as everyone else.
+Islands render on desk pages for users who may hold no Insights role, so these
+endpoints are `frappe.whitelist(allow_guest=True)`. The permission controller
+decides who reads what through `visibility`; there is no role check here. A
+guest reads only `Public` content, through the same code path as everyone else.
 
-Every reference goes through `resolve_for_read`, which answers a missing
-reference and a denied one identically. Nothing below re-checks the read after
-it, and nothing catches its error — either would give the answer away.
+Every reference goes through `resolve_for_read`, which answers Not Found for a
+missing reference and a refused one alike. Nothing below checks the read again
+or catches its error, because either would reveal which case it was.
 
-Rendering is all these responses carry. Operations, SQL and the query documents
-behind a chart never cross this boundary: the client says which chart, the
+Responses carry only what rendering needs. Operations, SQL and the queries
+behind a chart never leave the server: the client names the chart, and the
 server decides what runs.
 """
 
@@ -45,9 +44,9 @@ QUERY = "Insights Query v3"
 
 @frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read admits a guest to Public content only
 def get_dashboard(dashboard: str, surface: str | None = None):
-    """A dashboard as a view of it needs: what to lay out, and what it may offer.
+    """A dashboard with what a View needs: its layout, and what the reader may do with it.
 
-    `surface` says which page the view is on, for the `dashboard_viewed` event.
+    `surface` names the page the View is on, for the `dashboard_viewed` event.
     """
     doc = frappe.get_doc(DASHBOARD, resolve_for_read(DASHBOARD, dashboard))
     doc.track_view(surface)
@@ -55,13 +54,12 @@ def get_dashboard(dashboard: str, surface: str | None = None):
     copyable = can_copy(doc)
     items = frappe.parse_json(doc.items) or []
 
-    # One pass decides which cells reach this reader, and everything below is
-    # drawn from it: a cell whose chart is not in `charts` draws "Chart not
-    # found", which is not one of the card's states, and the docname it names
-    # is the refused content itself - after a workbook is shipped a member's
-    # docname is its title in readable form.
-    # Whether a grid none of whose charts this reader may read is Not Found is
-    # `resolve_for_read`'s to say, once, with its writer exemption.
+    # Decide once which charts this reader may read, and build everything below
+    # from that. A cell whose chart is missing from `charts` renders "Chart not
+    # found", which is not a card state. Its docname would also reveal the
+    # refused chart: in a standard workbook, a docname is a readable title.
+    # `resolve_for_read` alone decides whether a dashboard with no readable
+    # chart is Not Found. It exempts writers.
     charts = charts_on(items)
     readable = {chart.name for chart in charts}
 
@@ -72,25 +70,25 @@ def get_dashboard(dashboard: str, surface: str | None = None):
         "route": doc.route,
         "title": doc.title,
         "items": [present_item(item, readable) for item in items],
-        # Every chart the grid names, presented as `get_chart` presents one. A
-        # cell's height is derived from the config of the chart it draws — a
-        # Number card is as tall as its readings make it — so a surface cannot
-        # lay the grid out before it holds them, and fetching them per card
-        # would reflow the page as each one landed.
+        # Every chart the dashboard names, presented as `get_chart` presents
+        # one. A cell's height comes from its chart's config (a Number card
+        # grows with its readings). So the client cannot lay out the grid
+        # before it has them, and fetching them per card would reflow the page
+        # as each one arrived.
         "charts": [present_chart(chart) for chart in charts],
         "vertical_compact_layout": bool(doc.vertical_compact_layout),
         "can_write": writable,
         "can_copy": copyable,
-        # where "Edit" lands, and what "Duplicate" copies: the builder is
-        # workbook-scoped. It is the one piece of the Builder's structure here, so
-        # only a reader who may act on it is told it
+        # "Edit" opens the Builder on this workbook, and "Duplicate" copies it.
+        # It is the only Builder detail here, so only a reader who may use one
+        # of them gets it
         "workbook": doc.workbook if writable or copyable else None,
     }
 
 
 @frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read admits a guest to Public content only
 def get_chart(chart: str, dashboard: str | None = None):
-    """A chart's rendering config. The query it draws from stays server-side."""
+    """A chart's rendering config. The query behind it stays on the server."""
     doc = frappe.get_doc(CHART, resolve_chart(chart, dashboard))
 
     return {**present_chart(doc), "can_write": can_write(doc)}
@@ -106,17 +104,17 @@ def get_chart_data(
     force: bool = False,
     page: int = 1,
 ):
-    """A chart's rows, fetched under the permissions the chart declares.
+    """A chart's rows, fetched under the permissions its Run as owner setting selects.
 
-    `filters` is dashboard filter state, keyed by filter name. `card_filters` is
-    the reader's own filter on this card: it names a column the card draws, so
-    it reaches no further than the picture already does. `page` past the first
-    is for a reader `can_read_rows` admits; everyone else gets the chart's one
-    page.
+    `filters` is the dashboard filter state, keyed by filter name.
+    `card_filters` is the reader's own filter on this card. It names a column
+    the card shows, so it exposes nothing the card does not. Pages past the
+    first are for readers `can_read_rows` admits. Everyone else gets the
+    chart's one page.
 
     A chart that reads a table or a permlevel column the reader may not read is
-    **Not Permitted**: it does not run, and the answer says so and names the
-    doctypes it needs.
+    **Not Permitted**: it does not run, and the answer names the doctypes it
+    needs.
     """
     name = resolve_chart(chart, dashboard)
     doc = frappe.get_doc(CHART, name)
@@ -132,10 +130,10 @@ def get_chart_count(
     card_filters: list | None = None,
     force: bool = False,
 ):
-    """How many rows the pages of `get_chart_data` are cut from, under the same filters.
+    """The total number of rows behind the pages of `get_chart_data`, under the same filters.
 
-    For a reader `can_read_rows` admits. A refusal raises: the card only offers
-    the count where the answer it drew said the reader may have it.
+    For readers `can_read_rows` admits. A refusal raises, because the card asks
+    for the count only when its data answer allowed it.
     """
     name = resolve_chart(chart, dashboard)
     doc = frappe.get_doc(CHART, name)
@@ -151,7 +149,7 @@ def download_chart_rows(
     card_filters: list | None = None,
     format: str = "csv",
 ):
-    """Every row the pages of `get_chart_data` are cut from, as a file, under the same filters."""
+    """Every row behind the pages of `get_chart_data` as a file, under the same filters."""
     name = resolve_chart(chart, dashboard)
     doc = frappe.get_doc(CHART, name)
 
@@ -161,59 +159,58 @@ def download_chart_rows(
 def chart_answer(
     doc, adhoc_filters: dict | None, card_filters: list | None, force: bool = False, page: int = 1
 ) -> dict:
-    """A stored chart's picture, as its reader receives it.
+    """A saved chart's data, as its reader gets it.
 
-    A chart missing a slot says which, as it says it to its author in the
-    builder, and runs nothing.
+    A chart with a missing required setting returns which one, as the Builder
+    shows its author, and runs nothing.
     """
     if errors := config_errors(doc.chart_type, doc.query, frappe.parse_json(doc.config or "{}")):
         return {"errors": errors}
 
-    # before the rows: a query saved while they are read leaves the card an
-    # older version than the chart, and the drill refuses instead of cutting it
+    # present the chart before fetching rows. If a query is saved during the
+    # fetch, the card keeps the older `modified`, so a drill is refused instead
+    # of running on the changed pipeline
     chart = present_chart(doc)
     result = doc.fetch(force=force, adhoc_filters=adhoc_filters, card_filters=card_filters, page=page)
     reads_rows = can_read_rows(doc)
 
     return {
-        # the chart these rows were computed from. A card draws the two together,
-        # so it never holds a definition its rows do not answer
+        # the chart these rows came from. The card renders both together, so
+        # its config always matches its rows
         "chart": chart,
         "columns": result["columns"],
         "rows": result["rows"],
         "granularity": result["granularity"],
-        # a grid draws values, and a value cannot say it names a document. Every
-        # chart is asked, and a chart that groups its rows is answered with nothing
+        # a cell holds only a value, which cannot say it names a document. Every
+        # chart is checked, and a chart that groups its rows gets none
         **({"record_links": result["record_links"]} if result.get("record_links") else {}),
-        # the series a windowed card's sparkline is drawn from. No other chart
-        # carries the key at all
+        # the series for the sparkline of a Number card with a Period. Other
+        # charts omit the key
         **({"sparkline": result["sparkline"]} if result.get("sparkline") else {}),
         **({"comparison_rows": result["comparison_rows"]} if result.get("comparison_rows") else {}),
-        # what of the reader's own narrowed these rows, so the card can say the
-        # number is theirs and not the whole one
+        # which of the reader's permissions narrowed these rows, so the card
+        # can say the number is not the total
         **result["scope"],
-        # the drill menu opens on a click, so what it can offer travels with the
-        # card instead of costing a round trip at the moment latency is felt
-        # `can_rows` rides beside them for the same reason: the menu offers
-        # "View rows" and the server decides who may have them, so the answer
-        # the menu draws from has to carry both halves
+        # the drill menu opens on a click, so its options come with the card
+        # instead of a request while the reader waits. `can_rows` comes with
+        # them for the same reason: the menu shows "View rows", and the server
+        # decides who may have them
         "drill": {
             "dimensions": drill_dimensions(doc) if reads_rows else [],
             "can_rows": reads_rows,
         },
-        # whether the reader may filter the card
         "can_filter": can_filter_card(doc.name),
-        # whether the reader may page past the picture and count its rows, and
-        # take them away as a file. The card offers each only where it leads
-        # somewhere; the endpoints decide
+        # whether the reader may page past the saved chart, count its rows and
+        # download them. The card shows each control only when it will work;
+        # the endpoints still decide
         "can_read_rows": reads_rows,
         "can_export": can_export(doc),
-        # the symbol of every currency code these rows carry. A code arrives with
-        # the rows it prices, so this is the only thing that fills the client's
-        # map - the site is seeded with its own code and nothing else
+        # the symbol of every currency code in these rows. Codes arrive with
+        # the rows, so this is the only source for the client's symbol map,
+        # which starts with only the site's own currency
         "currency_symbols": result["currency_symbols"],
-        # the day this card's spans resolved against, so a drill is cut for the
-        # day the number was read
+        # the date this card's Spans resolved against, so a drill uses the same
+        # date as the number
         "drawn_on": result["drawn_on"],
         "time_taken": result["time_taken"],
         "executed_at": frappe.utils.now(),
@@ -232,48 +229,45 @@ def get_drill_data(
     page: int = 1,
     row_filters: list | None = None,
 ):
-    """What is behind a segment of a chart, one level of the drill at a time.
+    """The data behind a segment of a chart, one drill level at a time.
 
-    `drill_stack` is the path the reader walked: one level per step, each naming
-    the segment it clicked as `segment_filters` — dimension values as plain
-    (column, operator, literal) triples — and an `action`, either
-    `{"rows": true}` or `{"breakdown": column}`, which may also name the
-    `measure` the click landed on and, on a breakdown, the `granularity` it is
-    read at. The segments accumulate down the stack and the last level's action
-    shapes the answer.
+    `drill_stack` is the reader's path, one level per click. Each level names
+    the segment clicked as `segment_filters` (dimension values as (column,
+    operator, literal) triples) and an `action`: `{"rows": true}` or
+    `{"breakdown": column}`. An action may also name the `measure` clicked and,
+    on a breakdown, the `granularity` to group by. Segments accumulate down the
+    stack, and the last level's action decides the answer.
 
-    A grain is worth saying even when the reader did not choose it: a click on a
-    bucket a breakdown made pins the bucket's first moment, and the level that
-    made it is the only place the span it stands for is written down. So a client
-    echoes the `granularity` the answer reports back onto the level it answered.
+    The grain matters even when the reader did not choose it. A click on a
+    date group of a breakdown sends only the group's start time. Only the level
+    that made the group records its grain, so the client copies the
+    `granularity` of each answer back onto its level.
 
-    Which chart is all the request says about the query. The server re-derives
-    the chart's operations, cuts them before the step that aggregated the rows,
-    and refuses any column that is not on the surface underneath it: the wire
-    cannot widen what a chart exposes.
+    The request names only the chart. The server derives the chart's
+    operations again, cuts them before the aggregation step, and refuses any
+    column that is not on the surface under it. So the request cannot widen
+    what a chart exposes.
 
-    The answer says how it should be drawn — `ordered`, whether the rows run in
-    an order of their own rather than a ranking, and `granularity`, the grain
-    they were bucketed by — so a client never has to work either out from a
-    column type.
+    The answer says how to render it: `ordered`, whether the rows have an order
+    of their own rather than a ranking, and `granularity`, the grain they were
+    grouped by. So the client never infers either from a column type.
 
-    A rows level is read the way the reader asked for it, and the reading is the
-    server's because the pipeline never leaves it. `row_filters` are the reader's
-    own rules over the rows, named the way a segment is — (column, operator,
-    value) triples against the surface. `sort` names columns of the surface and
-    the direction each runs in, the first one primary. `find` is one term,
-    matched across the surface's text and number columns. `page` is which page of
-    the cut to draw, at the page size the answer's `total_row_count` is counted
-    against. All four apply inside the same cut, so a filter narrows the total as
-    well as the page. A breakdown level takes none of them.
+    The server reads a rows level as the reader asked, because the pipeline
+    never leaves the server. `row_filters` are the reader's own filters on the
+    rows, as (column, operator, value) triples on the surface. `sort` names
+    surface columns and their directions, the first one primary. `find` is one
+    term, matched across the surface's text and number columns. `page` is the
+    page to return, at the page size `total_row_count` is counted for. All four
+    apply to the same cut, so a filter narrows the total as well as the page. A
+    breakdown level ignores them.
 
-    A rows level also says whether this reader may take the cut away as a file,
-    so the dialog offers the control only where it leads somewhere.
+    A rows level also says whether this reader may download the cut, so the
+    dialog shows the control only when it will work.
 
-    A refusal is an answer here. `DrillLevelData` carries `not_permitted` and
-    `DrillDialog` draws it the way a card draws a refused chart, so the level
-    says the reader may not read what is behind it instead of offering a Retry
-    that cannot succeed.
+    A refusal is a normal answer here. `DrillLevelData` carries
+    `not_permitted`, and `DrillDialog` renders it as a card renders a Not
+    Permitted chart. So the level says the reader may not read the rows,
+    instead of offering a Retry that cannot succeed.
     """
     check_can_drill()
 
@@ -306,11 +300,11 @@ def download_drill_rows(
     format: str = "csv",
     row_filters: list | None = None,
 ):
-    """The rows behind a segment as a file, at the reader's own filters, sort and find.
+    """The rows behind a segment as a file, with the reader's own filters, sort and find.
 
-    The same cut `get_drill_data` draws a page of, taken whole up to the row cap
-    a download carries. The request says no more than that one does: which
-    chart, which segments, how to read them.
+    The same cut that `get_drill_data` returns a page of, in full up to the
+    download row limit. The request carries no more than that one does: the
+    chart, the segments, and how to read them.
     """
     name = resolve_chart(chart, dashboard)
     doc = frappe.get_doc(CHART, name)
@@ -339,11 +333,11 @@ def get_drill_rows_values(
     row_filters: list | None = None,
     search_term: str | None = None,
 ):
-    """The values a reader's own filter on a rows level offers.
+    """The values listed by the reader's own filter on a rows level.
 
-    Gated like the level itself, and bounded like it: only a column of the
-    surface the chart published answers, and the values come off the cut the
-    reader is reading rather than off the table underneath it.
+    Checked and limited like the level itself. Only a column of the chart's
+    surface is allowed, and the values come from the cut the reader is reading,
+    not from the table under it.
     """
     check_can_drill()
 
@@ -370,7 +364,7 @@ def get_drill_rows_range(
     filters: dict | None = None,
     row_filters: list | None = None,
 ):
-    """The range a number filter on a rows level offers, bounded as its values are."""
+    """The range shown by a number filter on a rows level, limited like its values."""
     check_can_drill()
 
     name = resolve_chart(chart, dashboard)
@@ -386,11 +380,11 @@ def get_drill_rows_range(
 
 
 def check_can_drill():
-    """Refuse a guest a look behind a chart it can see.
+    """Refuse a guest the drill behind a chart they can see.
 
-    A public chart stays a picture, and letting anonymous readers walk the rows
-    behind it is a decision to make loudly, not one to inherit from the level
-    the dashboard sits at.
+    A public chart shows only its saved data. Letting anonymous readers read
+    the rows behind it must be a deliberate decision, not a side effect of the
+    dashboard's visibility.
     """
     if frappe.session.user == "Guest":
         frappe.throw(_("Sign in to see what is behind this chart"), exc=frappe.PermissionError)
@@ -399,13 +393,13 @@ def check_can_drill():
 def routed_filters(chart: str, dashboard: str | None, filters: dict | None) -> dict | None:
     """Dashboard filter state, routed to the queries behind one card.
 
-    The links that do the routing name queries and columns, which is exactly
-    what a view never receives — so a view sends filter state by name and this
-    side turns it into something a query can run.
+    The filter links name queries and columns, which a View never receives. So
+    a View sends filter state by filter name, and this side turns it into
+    filters a query can run.
 
-    A dashboard routes only the charts it carries: a filter's links are not
-    checked at save, so one on a dashboard of the caller's own can name any
-    chart and any column of its query.
+    A dashboard routes only the charts on it. A filter's links are not checked
+    on save, so a filter on the caller's own dashboard could name any chart and
+    any column of its query.
     """
     if not dashboard:
         return None
@@ -423,18 +417,17 @@ def get_filter_values(
     search_term: str | None = None,
     filters: dict | None = None,
 ):
-    """The values a filter on this dashboard offers.
+    """The values a filter on this dashboard lists.
 
-    A view names the filter; the column behind it is looked up here, because the
-    link that names it is exactly what never crosses the boundary. The lookup runs
-    under the permissions of the chart the filter is linked to, so the values on
-    offer are the ones that user is allowed to see.
+    The View names the filter. The column behind it is looked up here, because
+    the link that names it never leaves the server. The lookup runs under the
+    permissions of the chart the filter is linked to, so it lists only values
+    that user may see.
 
-    `filters` is the other filters' current state, keyed by filter name — the
-    same shape `routed_filters` above turns into a chart's adhoc filters. It goes
-    through the same `route_filters`, with this filter left out of its own list:
-    narrowing its own offer by what it currently holds would make picking a
-    second value impossible.
+    `filters` is the current state of the other filters, keyed by filter name,
+    the same shape `routed_filters` takes. It goes through `route_filters` too,
+    without this filter itself. Narrowing a filter's values by its own current
+    value would make picking a second value impossible.
     """
     doc = frappe.get_doc(DASHBOARD, resolve_for_read(DASHBOARD, dashboard))
 
@@ -448,11 +441,10 @@ def get_filter_values(
 @frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read admits a guest to Public content only
 @answers_refusal(lambda: None)
 def get_filter_range(dashboard: str, filter_name: str, filters: dict | None = None):
-    """The range a filter on this dashboard offers.
+    """The range a filter on this dashboard shows.
 
-    Looked up and routed the way `get_filter_values` is: the preset ranges a
-    picker offers and the values it lists answer the same question about the
-    same rows.
+    Looked up and routed like `get_filter_values`, because a picker's preset
+    ranges and its list of values describe the same rows.
     """
     doc = frappe.get_doc(DASHBOARD, resolve_for_read(DASHBOARD, dashboard))
 
@@ -466,11 +458,11 @@ def get_filter_range(dashboard: str, filter_name: str, filters: dict | None = No
 @frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read admits a guest to Public content only
 @answers_refusal(list)
 def get_card_values(chart: str, column: str, dashboard: str | None = None, search_term: str | None = None):
-    """The values a reader's own filter on one card offers.
+    """The values listed by the reader's own filter on one card.
 
-    Only a column the card draws may be asked about, and a column no source
-    column holds (a measure, a column a pivot made) offers nothing. The card's
-    own filters narrow the list, so it never offers what the card does not show.
+    Only a column the card shows is allowed. A column with no source column (a
+    measure, or a column a pivot made) lists nothing. The card's own filters
+    narrow the list, so it lists only what the card shows.
     """
     source = card_source(chart, dashboard, column)
     if not source:
@@ -486,7 +478,7 @@ def get_card_values(chart: str, column: str, dashboard: str | None = None, searc
 @frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read admits a guest to Public content only
 @answers_refusal(lambda: None)
 def get_card_range(chart: str, column: str, dashboard: str | None = None):
-    """The range a reader's own filter on one card offers, narrowed as `get_card_values` is."""
+    """The range shown by the reader's own filter on one card, narrowed like `get_card_values`."""
     source = card_source(chart, dashboard, column)
     if not source:
         return None
@@ -497,10 +489,10 @@ def get_card_range(chart: str, column: str, dashboard: str | None = None):
 
 
 def card_source(chart: str, dashboard: str | None, column: str):
-    """The chart a card filter sits on, and where the filter lands on it.
+    """The chart of a card filter, and the query and column the filter applies to.
 
-    Nothing when the column holds no values to offer. A column the card does
-    not draw is refused like any other reference the caller may not have.
+    None when the column has no values to list. A column the card does not
+    show is Not Found, like any other reference the caller may not read.
     """
     doc = frappe.get_doc(CHART, resolve_chart(chart, dashboard))
     query, column_name, card_filters = card_filter_source(doc.name, column)
@@ -512,13 +504,13 @@ def card_source(chart: str, dashboard: str | None, column: str):
 
 
 def resolve_chart(chart: str, dashboard: str | None) -> str:
-    """The chart a reference names, for a user who may read it.
+    """The chart a reference names, if the user may read it.
 
-    A chart reached through a dashboard is reached by the dashboard's visibility:
-    the controller already grants a dashboard's level to the charts linked to it,
-    so the read check below is the whole check. The dashboard must resolve first
-    and the chart must really be on it, or the reference answers like any other
-    reference the caller may not have.
+    A chart on a dashboard is read through the dashboard's visibility: the
+    controller grants the dashboard's level to its charts, so the read check
+    below is enough. The dashboard must resolve first, and the chart must be on
+    it. Otherwise the answer is Not Found, as for any other reference the
+    caller may not read.
     """
     if not dashboard:
         return resolve_for_read(CHART, chart)
@@ -537,34 +529,33 @@ def is_on_dashboard(chart: str, dashboard: str) -> bool:
 
 
 def present_item(item: dict, readable: set[str]) -> dict:
-    """One dashboard item, reduced to what a view renders it from.
+    """One dashboard item, reduced to what a View renders.
 
-    `readable` is the charts this reader may read, decided once in
-    `get_dashboard`. A name outside it is content this reader was refused, and
-    a docname is the content being read as much as a title is.
+    `readable` holds the charts this reader may read, decided in
+    `get_dashboard`. A name outside it is refused content, and a docname
+    reveals content as much as a title does.
     """
     presented = {
         "type": item.get("type"),
         "layout": item.get("layout"),
-        # what an author arranged for a narrower grid. Absent for most items:
-        # a breakpoint nobody arranged is derived from the widest one, client
-        # side, where the width that decides it is known
+        # the author's layouts for narrower grids. Most items have none: the
+        # client derives a missing breakpoint from the widest layout, because
+        # only the client knows the width
         "layouts": item.get("layouts") or {},
     }
 
     if item.get("type") == "chart":
         presented["chart"] = item.get("chart")
-        # which reading of a Number chart this cell draws, by id. A chart
-        # states several and a cell draws one, so the cell is the only place
-        # the answer is written down
+        # the `id` of the Number chart reading this cell shows. A chart has
+        # several readings and a cell shows one, so only the cell records which
         presented["reading"] = item.get("reading")
     elif item.get("type") == "text":
         presented["text"] = item.get("text")
     elif item.get("type") == "filter":
-        # `links` stays behind: it names the query and the column a filter
-        # applies to, and routing a filter is the server's job. Which cards a
-        # filter changes is presentation — it decides what refetches and which
-        # empty card can blame a filter — so the chart names alone come out.
+        # `links` stays on the server: it names the query and column a filter
+        # applies to, and the server routes filters. Which cards a filter
+        # changes is presentation: it decides what refetches and which empty
+        # card can blame a filter. So only the chart names are sent.
         presented.update(
             {
                 "filter_name": item.get("filter_name"),
@@ -582,18 +573,16 @@ def present_item(item: dict, readable: set[str]) -> dict:
 
 
 def charts_on(items: list[dict]) -> list:
-    """Every chart the grid names that this reader may read, once each, in order.
+    """Every chart on the dashboard that this reader may read, once each, in order.
 
-    The dashboard's own level reaches them - the controller grants it to the
-    charts linked to the dashboard - but the level is not the whole question: a
-    User Permission narrowing the reader to one query refuses a chart over
-    another. `may_read` is the one answer to
-    "may this reader read this content", and it is what `resolve_chart` asks a
-    moment later for the same chart: a title and a rendering config handed over
-    here is content the card would then be refused.
+    The controller grants the dashboard's level to its charts, but the level
+    does not decide alone. A User Permission that limits the reader to one
+    query refuses a chart on another. `resolve_chart` asks `may_read` for the
+    same chart moments later. Asking it here too keeps a chart's title and
+    config from reaching a reader whose card would then be refused.
 
-    A cell naming a chart that has since been deleted is left out too — the
-    layout is wrong, not the read.
+    A cell whose chart was deleted is left out too. That is a stale layout, not
+    a refused read.
     """
     named = dict.fromkeys(item.get("chart") for item in items if item.get("type") == "chart")
     return [
@@ -606,20 +595,20 @@ def charts_on(items: list[dict]) -> list:
 
 
 def present_chart(doc) -> dict:
-    """A chart, reduced to what draws its card. The query behind it stays here."""
+    """A chart, reduced to what its card needs. The query behind it stays here."""
     return {
         "name": doc.name,
         "title": doc.title,
         "chart_type": doc.chart_type,
         "config": present_config(doc.config),
-        # a drill carries it back, and is refused once the chart or a query it
-        # reads has moved on
+        # a drill sends it back, and is refused once the chart or a query it
+        # reads has changed
         "modified": doc.last_modified(),
     }
 
 
 def present_config(config) -> dict:
-    """The chart config, minus the parts that describe the data instead of the picture."""
+    """The chart config without its filters, which describe the data and not the rendering."""
     config = frappe.parse_json(config or "{}")
     config.pop("filters", None)
     return config

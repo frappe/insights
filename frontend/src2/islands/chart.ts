@@ -1,4 +1,4 @@
-// The `insights.chart` island: one saved chart, wherever a host mounts it.
+// The `insights.chart` island: one saved chart.
 
 import ChartIsland from './ChartIsland.vue'
 import { mountIsland } from './entry'

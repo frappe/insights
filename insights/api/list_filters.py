@@ -11,7 +11,7 @@ DEFAULT_SOURCES = ("created", "shared")
 NEGATED_OPERATORS = {"!=": "=", "not like": "like", "not in": "in"}
 
 # (is_pattern, values) -> names of the listed documents that match, or None when
-# the match answers no pattern
+# the match does not support patterns
 Match = Callable[[bool, list], list | None]
 
 
@@ -60,7 +60,7 @@ def get_content_filters(filters: list, matches: dict[str, Match]) -> list:
         values = value if operator == "in" else [value]
         names = match(operator == "like", values) if values else []
         if names is None:
-            # no document meets a condition the match does not answer, negated or not
+            # an unsupported pattern matches nothing, even when negated
             list_filters.append(["name", "in", []])
             continue
         list_filters.append(["name", "not in" if negated else "in", names])
@@ -121,10 +121,10 @@ def _operations_filters(key: str, value: str, is_pattern: bool) -> list:
 
 
 def _readable(doctype: str, column: str, alternatives: list[list]) -> list:
-    """`column` of the documents of `doctype` the caller may read that meet any of `alternatives`.
+    """`column` of the readable `doctype` documents that meet any of `alternatives`.
 
-    Only what `frappe.get_list` returns: a match over documents the caller may
-    not read tells them what those documents hold, one guess at a time.
+    It goes through `frappe.get_list`. A match over documents the caller may
+    not read would leak their contents, one guess at a time.
     """
     matched = set()
     for filters in alternatives:

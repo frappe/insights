@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-// A delete the server refuses — a desk document draws the item — leaves the
-// row in the sidebar and the author where they were, with the refusal's toast.
+// The server refuses to delete an item a desk document links to. The row stays
+// in the sidebar, the author stays on the same page, and a toast shows the error.
 
 const deletes: { answer: () => Promise<any> } = { answer: () => Promise.resolve({}) }
 const errors: string[] = []
@@ -31,7 +31,7 @@ vi.mock('frappe-ui', async () => ({
 	toast: { error: (message: string) => errors.push(message), success: () => {} },
 }))
 
-// Confirmed at once, and a returned promise's rejection caught, as `ConfirmDialog` does.
+// Confirms at once and catches a rejected promise, as `ConfirmDialog` does.
 vi.mock('../helpers/confirm_dialog', () => ({
 	confirmDialog: ({ onSuccess }: { onSuccess: () => any }) => onSuccess()?.catch?.(() => {}),
 }))
@@ -73,7 +73,6 @@ describe('removing an item from the sidebar', () => {
 		deletes.answer = () => Promise.resolve({})
 	})
 
-	/** `WorkbookSidebar` calls `removeQuery`, `removeChart` and `removeDashboard`. */
 	const removals = [
 		['query', 'queries', 'removeQuery', 'q-1'],
 		['chart', 'charts', 'removeChart', 'c-1'],
@@ -108,7 +107,6 @@ describe('removing an item from the sidebar', () => {
 })
 
 describe('deleting the workbook', () => {
-	/** `WorkbookNavbarActions` calls `workbook.delete`. */
 	// @feature workbook.delete
 	it('stays on a workbook the server refuses to delete', async () => {
 		const workbook = await openWorkbook()

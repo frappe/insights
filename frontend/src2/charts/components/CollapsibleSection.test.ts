@@ -6,7 +6,7 @@ import type { ChartRead } from '../chart_view'
 import CollapsibleSection from './CollapsibleSection.vue'
 
 // `ChartBuilder.vue` makes its form inert for a caller who may not write the
-// chart, so no section can be opened by a click.
+// chart. A click cannot open a section, so each one starts open.
 
 function section(can_write: boolean) {
 	const app = createSSRApp({

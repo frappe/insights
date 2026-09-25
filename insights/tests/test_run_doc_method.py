@@ -118,8 +118,8 @@ class StoredDocumentDecides:
         """The unsaved path is not a way in.
 
         A guest holds no permission on the doctype and no Insights role, so the
-        method surface refuses before a document is built. A guest reads through
-        `insights.api.view` and reaches no document method at all.
+        call fails before a document is built. A guest reads only through
+        `insights.api.view`.
         """
         with self.as_user("Guest"), self.assertRaises(frappe.PermissionError):
             run_doc_method(
@@ -146,12 +146,9 @@ class StoredDocumentDecides:
 
     # @feature permissions.request-body-not-trusted
     def test_a_forged_document_does_not_pass_the_controller(self):
-        """Frappe mounts a second route onto `run_doc_method` - `/api/v2` -
-        which builds the document out of the request body, `owner` and
-        `__islocal` included, and hands that document to the controller. The
-        controller is what both routes share, so it reads the stored row."""
-        # exactly what that route builds: an in-hand document carrying the
-        # victim's name, the caller as `owner` and no stored state at all
+        """Frappe's `/api/v2` route builds the document from the request body,
+        `owner` and `__islocal` included. Both routes share the controller, so
+        the controller must check the stored row."""
         forged = frappe.get_doc({"doctype": DT.QUERY})
         forged.update({"name": self.owner_query, "owner": OTHER, "__islocal": 1})
         self.assertTrue(forged.is_new())

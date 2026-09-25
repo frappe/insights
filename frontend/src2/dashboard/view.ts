@@ -1,13 +1,11 @@
-// A dashboard as a reader gets it: `insights.api.view`, and nothing else.
+// A dashboard as a reader gets it, through `insights.api.view` only.
 //
-// Every view surface asks the server by name and lets it decide what runs — the
-// desk island, the public page and the SPA's dashboard page alike. The query
-// behind a chart never comes back.
+// The client names the dashboard and the server decides what runs. This holds
+// for the desk island, the public page and the SPA's dashboard page. The query
+// behind a chart never reaches the client.
 //
-// The `DashboardView` a page draws itself from lives here too, because reading
-// is the shape and writing is an addition to it. `builder.ts` builds the same
-// shape from the document the builder is editing. Above the fetch the page is
-// the same either way.
+// `DashboardView` lives here too, because writing only adds to the read shape.
+// `builder.ts` builds the same shape from the document the builder edits.
 
 import { call } from 'frappe-ui'
 import {
@@ -50,18 +48,18 @@ import { layoutRank, ROW_HEIGHT, type CellRules } from './grid_placement'
 export type DashboardViewItem = WorkbookDashboardItemLayout & {
 	type: 'chart' | 'text' | 'filter'
 	chart?: string
-	// which reading of a Number chart this cell draws, by id
+	// the id of the Number chart reading this cell shows
 	reading?: string
 	text?: string
 	filter_name?: string
 	filter_type?: FilterType
-	// the icon its owner picked for it, by lucide name
+	// a lucide icon name
 	icon?: string
 	default_operator?: FilterOperator
 	default_value?: FilterValue
-	// the cards this filter changes. Which column it lands on stays server-side;
-	// the names are what narrows a request to the cards a filter reaches and what
-	// lets an empty card say a filter caused it
+	// the charts this filter applies to. Only the server knows which column it
+	// filters. The client uses the names to send the filter only to these charts,
+	// and to let an empty card say that a filter emptied it
 	charts?: string[]
 }
 
@@ -69,22 +67,20 @@ export type DashboardViewDoc = {
 	name: string
 	title: string
 	items: DashboardViewItem[]
-	// every chart the grid names, as the card frames read them
 	charts: ChartViewDoc[]
 	vertical_compact_layout: boolean
-	// what this reader may do with it. The surface offers an action only where the
-	// server granted it, so nothing dangles an affordance the server would refuse
+	// the page shows an action only when the server allows it, so no action fails
+	// when clicked
 	can_write: boolean
-	// a read-only dashboard whose workbook the reader may duplicate instead
+	// the reader may not edit the dashboard, but may duplicate its workbook
 	can_copy: boolean
-	// where editing happens, and what a duplicate copies — the builder is
-	// workbook-scoped. Null for anyone who can do neither
+	// the workbook to edit in or to duplicate. Null when the reader may do neither
 	workbook: string | null
 }
 
 export type FilterState = FilterValues[string]
 
-/** What a filter's own defaults are read off: the cell as either source holds it. */
+/** A filter cell's defaults, as both the view and the builder store them. */
 type FilterDefaults = {
 	type: string
 	filter_name?: string
@@ -94,11 +90,10 @@ type FilterDefaults = {
 }
 
 /**
- * What every filter on a dashboard opens on, as its owner set it.
+ * The state each filter opens with, from the defaults its owner set.
  *
- * Whether a default says enough to run is the operator's answer, not the
- * value's — `is_set` asks about the column itself and carries no value, which is
- * the same rule the server states in `_filter_is_set`.
+ * The operator decides whether a default needs a value. `is_set` needs none.
+ * The server applies the same rule in `_filter_is_set`.
  */
 export function defaultFilterStates(items: FilterDefaults[]): FilterValues {
 	const states: FilterValues = {}
@@ -117,11 +112,11 @@ export function defaultFilterStates(items: FilterDefaults[]): FilterValues {
 }
 
 /**
- * Call `apply` when a filter's default moves.
+ * Call `apply` when a filter's default changes.
  *
- * Not when the item carrying it is replaced by one that says the same: Refresh
- * hands every filter cell a new item, and applying the default then would
- * overwrite the reader's own choice and store the default as that choice.
+ * Do not call it when Refresh replaces the item with an equal one. Applying the
+ * default then would overwrite the reader's choice and store the default as
+ * that choice.
  */
 export function watchFilterDefault(
 	item: () => FilterDefaults,
@@ -138,32 +133,30 @@ export function watchFilterDefault(
 }
 
 /**
- * The filter cell, measured from the CSS that draws it the way `numberCardRows`
- * measures a card: the trigger plus the cell's own padding.
+ * The filter cell's size, measured from its CSS, as `numberCardRows` does for a
+ * card.
  */
 const FILTER = {
-	/** The trigger is frappe-ui's `sm` Button, `h-7`. */
+	/** frappe-ui's `sm` Button, `h-7`. */
 	trigger: 28,
-	/** A dashboard cell's `p-2`, top and bottom. */
+	/** The cell's `p-2`, top and bottom. */
 	cellPadding: 2 * 8,
 }
 
-/** Rows a filter cell takes. */
 export const FILTER_ROWS = Math.ceil((FILTER.trigger + FILTER.cellPadding) / ROW_HEIGHT)
 
 /**
- * What the grid is told about a cell beyond its stored layout.
+ * Grid rules for each cell, beyond its stored layout.
  *
- * A Number cell's height is what the card of the reading it names holds, so the
- * owner sets the width and the height follows the config — including after the
- * config changes. And two of them fit one narrow row, where every other cell
- * takes the row to itself. A filter cell is its trigger, which is one height and
- * never anything else. It keeps its row, so no card fills the space beside the
+ * A Number cell's height follows the card of its reading. The owner sets only
+ * the width, and the height follows later config changes. Two Number cells fit
+ * in one narrow row; every other cell takes a full row. A filter cell has one
+ * fixed height and takes its row alone, so no card fills the space beside the
  * filters.
  *
- * Nothing is written back. Both sources derive it on every read from whichever
- * chart frames they hold, so a chart edited elsewhere needs no layout save to be
- * drawn at its new height.
+ * The rules are not saved. The view and the builder derive them on each read
+ * from the charts they hold. So a chart edited elsewhere shows at its new height
+ * without a layout save.
  */
 export function cellRulesFor(
 	items: DashboardViewItem[],
@@ -187,29 +180,26 @@ export function cellRulesFor(
 }
 
 /**
- * One grid cell, as the body hands it over.
+ * The props of one grid cell.
  *
- * A surface picks the cell it mounts `DashboardBody` with, and every one of them
- * takes this shape. The body passes the same props to any of them and lets each
- * use what it can.
+ * Each page passes its own cell component to `DashboardBody`. The body passes
+ * these same props to every cell component, and each one uses what it needs.
  */
 export type DashboardCellProps = {
-	// the page this cell sits on. Everything a cell reads or changes — the card's
-	// rows, the filter state, the values a filter offers — it asks the page for
 	dashboard: DashboardView
 	item: DashboardViewItem
 	index: number
 }
 
 /**
- * One thing a reader may do with the dashboard in front of them.
+ * One action a reader may take on the dashboard.
  *
- * An action either runs here or leads somewhere, never both — a surface that
- * can draw a link draws one, and the rest click it. `icon` is the bare lucide
- * name; each surface spells it the way its own icons are named.
+ * An action has either `onClick` or `href`, never both. A page that can render
+ * a link renders `href` as one; other pages navigate on click. `icon` is the
+ * bare lucide name, and each page formats it for its own icon set.
  *
- * This is the shape the desk island reports too, so a host outside Insights
- * draws its own chrome from the same list.
+ * The desk island reports the same shape, so a host outside Insights renders
+ * its own header from this list.
  */
 export type DashboardAction = { label: string; icon?: string } & (
 	| { onClick: () => void }
@@ -217,20 +207,18 @@ export type DashboardAction = { label: string; icon?: string } & (
 )
 
 /**
- * Writing, for whoever holds it. Absent on every view surface.
+ * Edit actions. Only the builder has them.
  *
- * The edit chrome is not here. The builder draws its own header and reaches
- * `DashboardEditActions` by import.
+ * The edit header is not here. The builder renders its own header and imports
+ * `DashboardEditActions`.
  */
 export type DashboardBuilderActions = {
-	// true while the reader is moving things about
 	editing: boolean
-	// what this capability adds to the dashboard's actions
 	menuOptions: DashboardAction[]
-	/** The breakpoint being arranged. What the grid is drawn and dragged at. */
+	/** The breakpoint the grid is rendered and dragged at. */
 	arranging: BreakpointKey
-	// `before` is the grid the gesture started from, which is what a moved cell
-	// is measured against
+	// `before` is the layout when the drag started. A moved cell is measured
+	// against it
 	moveItems: (key: BreakpointKey, layouts: Layout[], before: Layout[]) => void
 	// a chart dragged in from the workbook's sidebar
 	dragOver: (event: DragEvent) => void
@@ -238,88 +226,82 @@ export type DashboardBuilderActions = {
 }
 
 /**
- * A dashboard as a page holds it: what the document is, what this reader may do
- * with it, and the reads behind its cards.
+ * A dashboard as a page holds it: the document, what the reader may do with
+ * it, and the reads behind its cards.
  *
- * Each capability is present only where the server granted it. A surface draws
- * what is there and never asks which surface it is.
+ * Each capability is present only when the server allows it. A page renders
+ * what is there and never checks which page it is.
  *
- * How it is drawn is not here. `DashboardBody` takes the grid and the cell as
- * props of its own, from whichever surface mounts it.
+ * Rendering is not here. `DashboardBody` gets the grid and the cell component
+ * as props from the page that mounts it.
  */
 export type DashboardView = {
 	loading: boolean
-	// a dashboard that is missing and one this reader may not have answer the same
+	// the dashboard is missing, or the reader may not read it. Both are Not Found
 	notFound: boolean
-	// the request failed for another reason, so a retry may still open it
+	// the request failed for another reason, so a retry may succeed
 	failed: boolean
 	name: string
 	title: string
-	// every cell, in the order the grid lays them out — a filter is one of them,
-	// in the position its owner gave it
+	// every cell in grid order, filters included
 	items: DashboardViewItem[]
 	cellRules: CellRules
 	verticalCompact: boolean
-	// where the filters stand, keyed by filter name
+	// filter state, keyed by filter name
 	filters: FilterValues
 	setFilter: (filter_name: string, state?: FilterState) => void
-	// the values a filter offers, narrowed by what the rest of the grid holds
+	// a filter's values, narrowed by the other filters
 	filterValues: (filter_name: string, search_term?: string) => Promise<string[]>
-	// the bounds a number filter's presets are cut from, narrowed the same way
+	// the min and max for a number filter's presets, narrowed the same way
 	filterRange: (filter_name: string) => Promise<[number, number] | undefined>
-	// what the reader narrowed each card to, on the columns the card draws
+	// the filters the reader put on each card
 	cardFilters: Record<string, Filter[]>
 	setCardFilters: (chart: string, filters: Filter[]) => void
-	// the values and the bounds a card filter offers, read off what the card draws
 	cardValues: (chart: string, column: string, search_term?: string) => Promise<string[]>
 	cardRange: (chart: string, column: string) => Promise<[number, number] | undefined>
-	// whether something the reader can undo narrows this card — a grid filter
-	// that reaches it, or the filter they put on the card — so an empty one can
-	// say why
+	// whether a dashboard filter or a card filter narrows this card, so an empty
+	// card can say why
 	filtered: (chart: string) => boolean
-	// take off everything `filtered` counts
+	// clear every filter that `filtered` counts
 	resetCardFilters: (chart: string) => void
-	// The card's rows, by chart and not by cell: several cells can draw one chart
-	// — a Number chart is one cell per reading — and the read behind them is one.
+	// Keyed by chart, not by cell. Several cells can show one chart (a Number
+	// chart has one cell per reading), and they share one read.
 	chartView: (chart: string) => ChartRead | undefined
-	// A cell that draws a chart asks for its rows when it mounts. A read whose
-	// question has not changed drops the load, and one that went stale runs it.
+	// A chart cell calls this when it mounts. The read skips the load if its
+	// request is unchanged, and runs it if the read is stale.
 	loadChart: (chart: string) => void
-	// read the dashboard again, and every card on it with it
+	// reload the dashboard and all its cards
 	refresh: (force?: boolean) => void
-	// where the builder for this dashboard is, as an SPA route. Absent for a
-	// reader who cannot edit — and for the builder, which is already there.
-	// Nothing navigates here; a surface resolves it the way its own links resolve
+	// the SPA route of this dashboard's builder. Absent when the reader may not
+	// edit, and in the builder itself. Each page resolves it the way its own
+	// links resolve
 	builderRoute?: string
-	// where a chart on this dashboard is edited, as an SPA route. Absent for a
-	// reader who cannot edit it
+	// the SPA route where a chart is edited. Absent when the reader may not edit it
 	chartRoute?: (chart: string) => string | undefined
-	// copy the dashboard's workbook and open the copy. Absent for a reader who
-	// may not copy it
+	// copy the dashboard's workbook and open the copy. Absent when the reader may
+	// not copy it
 	duplicate?: () => void
 	builder?: DashboardBuilderActions
 }
 
-/** The same dashboard, from the one surface that always holds the writing half. */
+/** A `DashboardView` in the builder, where `builder` is always present. */
 export type DashboardInBuilder = DashboardView & { builder: DashboardBuilderActions }
 
-/** One dashboard's page, and the way a mount opens it. */
 type DashboardPage = {
 	view: DashboardView
 	open: () => void
-	// the next mount reads the dashboard and its cards again, not the snapshot
-	// this page holds
+	// the next mount reloads the dashboard and its cards instead of using this
+	// snapshot
 	forget: () => void
 }
 
 /**
- * Every page this tab has opened, by the surface and the reference naming it.
+ * Every dashboard page this tab has opened, keyed by `surface` and reference.
  *
- * A page outlives the component that first asked for it. The reads its cards
- * draw from are cached under the page's own surface id, and they close over the
- * filters this page holds — so a second page under that id would leave every
- * card reading a state nobody is looking at. One page per id is what keeps the
- * two the same thing.
+ * A page outlives the component that first asked for it. Its card reads are
+ * cached under the page's id, and they use this page's filters. A second page
+ * under the same id would leave the cards reading filters that nobody sees. So
+ * there is one page per id.
  */
 const pages = new Map<string, DashboardPage>()
 
@@ -328,9 +310,9 @@ function pageFor(reference: string, surface: DashboardSurface): DashboardPage {
 	const existing = pages.get(key)
 	if (existing) return existing
 
-	// A page is always first asked for inside a component's `setup` and outlives
-	// it. Its computeds would stop with that component, leaving a page that reads
-	// whatever it last held. Detached, they live as long as the page does.
+	// A page is first created inside a component's `setup`, but outlives it. Its
+	// computeds would stop with that component, and the page would keep stale
+	// values. A detached scope keeps them alive as long as the page.
 	const scope = effectScope(true)
 	const page = scope.run(() => makeDashboardPage(key, reference, surface)) as DashboardPage
 	pages.set(key, page)
@@ -340,9 +322,9 @@ function pageFor(reference: string, surface: DashboardSurface): DashboardPage {
 /**
  * Drop a dashboard's snapshot from every page that holds it.
  *
- * A page is drawn as the reader left it until Refresh. The author's own save is
- * the exception: they are the one reader who knows the dashboard moved, so the
- * next mount of it in this tab reads it again.
+ * A page keeps what the reader last saw until Refresh. The author's own save is
+ * the exception. The author knows the dashboard changed, so the next mount in
+ * this tab reloads it.
  */
 export function invalidateDashboard(name: string) {
 	pages.forEach((page) => {
@@ -351,17 +333,17 @@ export function invalidateDashboard(name: string) {
 }
 
 /**
- * A saved dashboard, named to the server.
+ * A saved dashboard, fetched by reference.
  *
- * The reference is read reactively, because a surface can outlive the dashboard
- * it was mounted for. The desk island keeps one Vue app across a route change
- * and hands down the next reference as a prop, and the SPA's dashboard route
- * reuses its component when only the parameter moves. Both would otherwise sit
- * on the first dashboard they fetched.
+ * The reference is reactive because a page can outlive the dashboard it was
+ * mounted for. The desk island keeps one Vue app across a route change and
+ * passes the next reference as a prop. The SPA's dashboard route reuses its
+ * component when only the parameter changes. Without this, both would keep
+ * showing the first dashboard they fetched.
  *
- * What a mount gets is a view of the page, never a page of its own: opening one
- * dashboard twice — a visit, the list, the same visit again — is two mounts of
- * one page, and the filters the second one moves are the filters the cards read.
+ * Each mount gets a proxy to the shared page, not a page of its own. Opening one
+ * dashboard twice is two mounts of one page. So the filters that the second
+ * mount changes are the filters that the cards read.
  */
 export function useDashboardView(
 	reference: MaybeRefOrGetter<string>,
@@ -370,18 +352,17 @@ export function useDashboardView(
 ): DashboardView {
 	const page = () => pageFor(toValue(reference), surface)
 
-	// A page the tab already opened is drawn as the reader left it: the
-	// dashboard and every card on it are one snapshot, and only Refresh or a
-	// reload replaces it.
+	// A page already opened in this tab shows what the reader left. Only Refresh
+	// or a reload replaces it.
 	watch(
 		() => toValue(reference),
 		() => page().open(),
 		{ immediate: true },
 	)
 
-	// Read off the page rather than listed again here, which would be a second
-	// statement of `DashboardView` — and one that would go stale as the type
-	// grows. A member is answered by whichever page the reference names now.
+	// Copy the page's members instead of listing them again here, so this cannot
+	// drift from `DashboardView`. Each getter reads the page that the reference
+	// names now.
 	const view = {}
 	for (const member of Object.keys(page().view)) {
 		Object.defineProperty(view, member, {
@@ -407,34 +388,33 @@ function makeDashboardPage(
 		verticalCompact: true,
 		filters: {} as FilterValues,
 		cardFilters: {} as Record<string, Filter[]>,
-		// where the builder for this dashboard is, for a reader who may edit it
 		builderRoute: undefined as string | undefined,
-		// the workbook a reader who may edit is sent to, for a chart on the grid
+		// set only when the reader may edit. Chart routes use it
 		workbook: undefined as string | undefined,
-		// the workbook a reader who may not edit it may duplicate
+		// the workbook to duplicate, when the reader may
 		copyable: undefined as string | undefined,
 	})
 
-	// one read per chart, so the cells that draw one chart ask once. Reactive,
-	// because a cell's height is read off the chart its card draws
+	// One read per chart, shared by its cells. Reactive, because a cell's height
+	// depends on its chart.
 	const reads = shallowReactive(new Map<string, ChartRead>())
 
-	// The one surface object this page reads through, which is what the read
-	// cache files its reads under. It carries the page's own filters, so every
-	// mount of this page draws the rows the filters in front of the reader name.
+	// The read cache keys this page's reads by this id. It carries the page's own
+	// filters, so every mount shows the rows for the filters the reader sees.
 	const viewSurface: ChartReadSurface = {
 		id: `view:${key}`,
 		filterContext: filterContextFor,
 	}
 
-	// Which fetch the page is waiting for. Two can land out of order, and the
-	// older one would draw a dashboard the newer one replaced.
+	// Counts fetches. Two can land out of order, and the older one would replace
+	// the newer dashboard.
 	let fetches = 0
-	// whether a dashboard answer has landed, so a mount has something to draw
+	// whether a fetch has succeeded, so a mount has something to show
 	let opened = false
 	let pending = false
 
-	/** Only the filters that reach this card. The rest leave its request alone. */
+	// Only the dashboard filters that apply to this chart, so the other filters
+	// leave its request unchanged.
 	function filtersFor(chart: string): FilterValues {
 		const reaching: FilterValues = {}
 		state.items.forEach((item) => {
@@ -445,8 +425,8 @@ function makeDashboardPage(
 		return reaching
 	}
 
-	// The chart runs once for every cell that draws it, so it is the cell that
-	// reads first that says when — the topmost, leftmost one.
+	// A chart runs once for all its cells, so its priority is its first cell's:
+	// the topmost, leftmost one.
 	function priorityFor(chart: string) {
 		const ranks = state.items
 			.filter((item) => item.type === 'chart' && item.chart === chart)
@@ -454,8 +434,8 @@ function makeDashboardPage(
 		return ranks.length ? Math.min(...ranks) : undefined
 	}
 
-	// A card filter is the reader's own, on a column the card draws, so it
-	// travels as itself and lands on the card's own query server-side.
+	// Card filters are sent as they are. The server applies them to the card's own
+	// query.
 	function filterContextFor(chart: string): DashboardFilterContext {
 		return {
 			chart,
@@ -470,19 +450,19 @@ function makeDashboardPage(
 	}
 
 	/**
-	 * Open a read for every chart the grid names, and run them.
+	 * Open and run a read for every chart the grid names.
 	 *
-	 * Once the layout has landed, rather than when a cell first asks: the cells
-	 * are drawn from these, and a read opened mid-render would put a card through
-	 * its loading state during the render that mounted it.
+	 * This runs when the layout lands, not when a cell first asks. Cells render
+	 * from these reads. A read opened during a render would put a card through its
+	 * loading state in the same render that mounted it.
 	 */
 	function openReads(charts: ChartViewDoc[], force: boolean) {
 		const named = new Set(charts.map((doc) => doc.name))
 		;[...reads.keys()].forEach((chart) => named.has(chart) || reads.delete(chart))
-		// the rows a view draws are narrowed by the filters it holds, so its reads
-		// belong to it: the same chart on another dashboard reads its own. The
-		// frame is a placeholder for a read that drew nothing yet; a read that did
-		// takes the new one with its rows.
+		// The reads belong to this page, because its filters narrow their rows. The
+		// same chart on another dashboard has its own read. `doc` is only a
+		// placeholder for a read with no rows yet. A read that has rows gets the new
+		// definition with its next rows.
 		charts.forEach((doc) => {
 			const read = useChartView(doc.name, viewSurface, doc)
 			read.executionPriority = priorityFor(doc.name)
@@ -491,9 +471,8 @@ function makeDashboardPage(
 		})
 	}
 
-	// Every card asks again, and each one drops its own load where the question
-	// has not changed — so moving one filter re-runs the cards it reaches and
-	// leaves the rest of the page alone without anything here routing it.
+	// Every read reloads, and each one skips the load if its request is
+	// unchanged. So a filter change reruns only the cards it applies to.
 	function rerun() {
 		reads.forEach((read) => read.load())
 	}
@@ -503,8 +482,8 @@ function makeDashboardPage(
 		if (filter) moved[filter_name] = filter
 		else delete moved[filter_name]
 		state.filters = moved
-		// a reader comes back to the filters they left; nothing on the server
-		// holds per-user view state
+		// the reader gets back the filters they left. The server stores no
+		// per-user view state
 		writeFilters(state.name, moved)
 		rerun()
 	}
@@ -526,8 +505,8 @@ function makeDashboardPage(
 		state.filters = kept
 		state.cardFilters = cardFilters
 		writeFilters(state.name, kept)
-		// a grid filter reaches other cards too, and each drops its own load where
-		// its question has not changed
+		// a dashboard filter applies to other cards too. Each one skips its load if
+		// its request is unchanged
 		rerun()
 	}
 
@@ -540,8 +519,6 @@ function makeDashboardPage(
 		fetch(force)
 	}
 
-	// A dashboard that is missing and one the reader may not read answer the
-	// same, so there is one page state for both.
 	function fetch(force: boolean) {
 		const token = ++fetches
 		pending = true
@@ -556,7 +533,7 @@ function makeDashboardPage(
 				state.title = doc.title
 				state.items = doc.items
 				state.verticalCompact = doc.vertical_compact_layout
-				// what the reader last chose wins over the defaults the owner set
+				// the reader's last choice overrides the owner's defaults
 				state.filters = { ...defaultFilterStates(doc.items), ...readFilters(doc.name) }
 				const editable = doc.can_write && doc.workbook
 				state.builderRoute = editable
@@ -586,7 +563,6 @@ function makeDashboardPage(
 		name: computed(() => state.name),
 		title: computed(() => state.title),
 		items: computed(() => state.items),
-		// read off the chart each card draws, so a cell is as tall as its picture
 		cellRules: computed<CellRules>(() =>
 			cellRulesFor(state.items, (chart) => reads.get(chart)?.doc),
 		),
@@ -632,8 +608,9 @@ function makeDashboardPage(
 		open,
 		forget: () => {
 			opened = false
-			// the cards are the snapshot too, and a re-pointed filter link leaves
-			// their request as it was
+			// The cards are part of the snapshot. Mark them stale, because a filter
+			// linked to other charts can leave a card's request unchanged, and the
+			// card would skip its reload.
 			reads.forEach((read) => (read.stale = true))
 		},
 	}
@@ -647,11 +624,11 @@ function fetchDashboard(dashboard: string, surface: DashboardSurface): Promise<D
 }
 
 /**
- * The values a filter offers. The column behind it is the server's to know.
+ * The values a filter offers. Only the server knows the column behind it.
  *
- * `filters` is the other filters' current state. The server routes it and leaves
- * this filter out of its own list, so the offer narrows to what the rest of the
- * grid currently holds.
+ * `filters` is the current state of the other filters. The server applies them
+ * and leaves this filter out, so the list narrows to what the other filters
+ * allow.
  */
 function fetchFilterValues(
 	dashboard: string,

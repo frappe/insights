@@ -5,8 +5,8 @@ import { makeChartRead } from '../charts/chart_view'
 import DashboardChartView from './DashboardChartView.vue'
 import type { DashboardView } from './view'
 
-// What a table card offers its reader. The server refuses a reader's own filter
-// on a chart run as its owner, so the card offers one only where it is answered.
+// The server refuses a reader's card filter on a chart that runs as its owner.
+// So the card shows the filter only when the server allows it.
 
 async function tableCard(answer: Record<string, unknown>) {
 	const read = makeChartRead({
@@ -35,7 +35,7 @@ describe('a table card a reader is given', () => {
 	it('offers a filter of their own only where `view.get_chart_data` says they may', async () => {
 		expect(await tableCard({ can_filter: true })).toContain('lucide-list-filter')
 		expect(await tableCard({ can_filter: false })).not.toContain('lucide-list-filter')
-		// find never leaves the browser, so it stays either way
+		// find runs in the browser, so it stays either way
 		expect(await tableCard({ can_filter: false })).toContain('lucide-search')
 	})
 })

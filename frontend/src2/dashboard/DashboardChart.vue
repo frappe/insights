@@ -8,8 +8,8 @@ import { __ } from '../translation'
 import { useChartCell, type ChartCellProps } from './chart_cell'
 import TableCardActions from './TableCardActions.vue'
 
-// A chart cell in the builder: the card its owner can change. Sorting writes the
-// chart's config, and the drill opens into the query builder.
+// A chart cell in the builder. Sorting writes the chart's config, and a drill
+// opens in the query builder.
 const props = defineProps<ChartCellProps>()
 
 const {

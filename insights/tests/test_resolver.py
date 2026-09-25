@@ -58,7 +58,6 @@ class TestInsightsResolver(InsightsIntegrationTestCase):
         chart = self.make_chart()
 
         self.assertEqual(resolve(CHART, chart.name), chart.name)
-        # charts carry no route, so a route-shaped reference resolves to nothing
         self.assertIsNone(resolve(CHART, "resolver-test-chart"))
 
     # @feature shared.old-name-resolves
@@ -89,7 +88,7 @@ class TestInsightsResolver(InsightsIntegrationTestCase):
             for reference in (
                 dashboard.name,  # exists, not readable by USER_2
                 "resolver-test-denied-dashboard",  # same document, by its route
-                "no-such-route",  # no such route
+                "no-such-route",
                 frappe.generate_hash(length=10),  # no such docname
             ):
                 with self.assertRaises(frappe.DoesNotExistError) as raised:
@@ -99,8 +98,8 @@ class TestInsightsResolver(InsightsIntegrationTestCase):
             self.assertEqual({type(error) for error in errors}, {frappe.DoesNotExistError})
             self.assertEqual(len({str(error) for error in errors}), 1)
 
-        # the collapse is the read helper's job — a plain resolve still answers,
-        # so server-side callers that already hold access are not blinded
+        # Only resolve_for_read hides a denied document. Plain resolve still
+        # returns the name, for server code that has already checked access.
         with self.as_user(USER_2):
             self.assertEqual(resolve(DASHBOARD, dashboard.name), dashboard.name)
 
@@ -113,8 +112,9 @@ class TestInsightsResolver(InsightsIntegrationTestCase):
 
     # @feature permissions.denied-is-not-found
     def test_a_user_permission_narrows_the_view_too(self):
-        """`get_doc`, `can_write` and the list query all honour it, so one
-        response cannot render what the rest of the site refuses."""
+        """`get_doc`, `can_write` and the list query all apply User Permissions.
+        The view must apply them too, or it shows what the rest of the site
+        refuses."""
         dashboard = self.make_dashboard(title="Resolver Test User Permission")
         other = self.make_dashboard(title="Resolver Test User Permission Allowed")
         for doc in (dashboard, other):
@@ -188,8 +188,8 @@ class TestInsightsResolver(InsightsIntegrationTestCase):
     # @feature dashboard.route
     def test_a_route_is_unique_against_docnames_too(self):
         """A standard workbook renames its members to readable slugs, so routes
-        and docnames draw from one keyspace - and a reference resolves by
-        docname first, so a minted route equal to one opens the wrong board."""
+        and docnames share one namespace. A reference resolves by docname first,
+        so a new route equal to a docname opens the wrong dashboard."""
         shipped = self.make_dashboard(title="Resolver Test Shipped Board")
         frappe.rename_doc(DT.DASHBOARD, shipped.name, "resolver-test-site-board", force=True)
 

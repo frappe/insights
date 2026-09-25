@@ -2,8 +2,6 @@
 import { useChartView } from './chart_view'
 import ChartView from './ChartView.vue'
 
-// A chart on its own page, for whoever the link reaches. It is a view surface
-// like any other, so it carries nothing but the reference the URL names.
 const props = defineProps<{ chart_name: string }>()
 
 const chart = useChartView(props.chart_name)

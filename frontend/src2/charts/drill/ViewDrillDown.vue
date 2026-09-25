@@ -7,22 +7,17 @@ import DrillPlaceholder from './DrillPlaceholder.vue'
 import type { DrillSubject } from './drill_stack'
 import type { ChartSegmentClick } from './segment_click'
 
-// The same drill an author gets, minus everything only an author can do — the
-// counterpart of `BuilderDrillDown`, for a surface that only reads.
+// It loads on the click that opens it. The dialog, its breakdown chart and the
+// stack sit behind a click a reader may never make. The rows pane (a result
+// pane, a grid, a filter picker and an export dialog) is the heaviest code a
+// dashboard can reach. The app ships one island stylesheet built from every
+// chunk, so the shadow root already has the styles these chunks need.
 //
-// It is loaded on the click that opens it and not before. The dialog, its
-// breakdown chart and the stack behind them are reached by a click a reader may
-// never make, and the rows pane — a result pane, a grid, a filter picker and an
-// export dialog — is the heaviest thing a dashboard can reach and the one
-// furthest from what it draws. The app ships one island stylesheet, built from
-// every chunk of the bundle, so the rules these chunks need are already in the
-// sheet the shadow root adopted.
-//
-// The three states the chunk can be in are held here rather than handed to
-// `defineAsyncComponent`: Vue builds an `errorComponent` with the error and
-// nothing else — no parent props and no listeners — so a Dismiss drawn inside
-// one reaches nothing, and the banner outlives every later click. The dismiss
-// belongs where the click it takes back is held, which is the surface above.
+// The chunk's three states are kept here, not in `defineAsyncComponent`. Vue
+// gives an `errorComponent` only the error, with no parent props and no
+// listeners. A Dismiss inside it could not close anything, and the banner would
+// stay after every later click. So the banner lives here, where it can emit
+// `close` to the parent that holds the click.
 const props = defineProps<{ subject: DrillSubject; clicked: ChartSegmentClick }>()
 
 const emit = defineEmits<{ close: [] }>()
@@ -39,11 +34,11 @@ import('./ChartDrillDown.vue')
 
 const DrillRowsView = defineAsyncComponent({
 	loader: () => import('./DrillRowsView.vue'),
-	// The dialog is already open and already answered for by the time this
-	// renders, so a chunk still in flight would leave the reader an empty box
-	// where the rows are. It waits behind the placeholder the level itself loads
-	// behind, from the first frame — a drill opened cold fetches this chunk after
-	// the dialog's, and there is no delay short enough to be worth a blank.
+	// The dialog is already open with its answer when this renders, so a chunk
+	// still loading would leave an empty box where the rows go. It shows the
+	// level's own placeholder from the first frame. A drill opened cold fetches
+	// this chunk after the dialog's, and no delay is short enough to be worth a
+	// blank box.
 	loadingComponent: DrillPlaceholder,
 	delay: 0,
 })
@@ -57,10 +52,10 @@ const DrillRowsView = defineAsyncComponent({
 		:clicked="props.clicked"
 		@close="emit('close')"
 	>
-		<!-- A reader is offered the rows behind a segment, so this is where they
-		     are drawn. Sorting, finding and paging them is the server's: the
-		     pipeline that produced them is not on the answer, is not asked for, and
-		     none of the editor that would run it is imported here. -->
+		<!-- A reader can see the rows behind a segment, so they render here. The
+		     server sorts, searches and pages them. The answer does not carry the
+		     pipeline, the client does not ask for it, and this file imports no
+		     editor that could run it. -->
 		<template #rows="{ answer, levels, findTarget }">
 			<DrillRowsView
 				:answer="answer"
@@ -71,8 +66,8 @@ const DrillRowsView = defineAsyncComponent({
 		</template>
 	</component>
 
-	<!-- This is what mounts the menu, so until it lands the click has drawn
-	     nothing at all — no menu, no cursor change and nothing to wait on. -->
+	<!-- This chunk mounts the menu. Until it loads, the click would show nothing
+	     at all: no menu, no cursor change and no sign of loading. -->
 	<div
 		v-else-if="!failed"
 		class="pointer-events-none absolute inset-0 flex items-center justify-center"
@@ -80,9 +75,8 @@ const DrillRowsView = defineAsyncComponent({
 		<LoadingIndicator class="w-6 text-ink-gray-5" />
 	</div>
 
-	<!-- The chunk did not land — offline, or an asset index a deploy left behind.
-	     The drill has nothing to draw, so it says so and ends: the reader takes
-	     the click back and the card is theirs again. -->
+	<!-- The chunk did not load: the user is offline, or a deploy replaced the
+	     asset index. -->
 	<div
 		v-else
 		class="absolute inset-x-2 bottom-2 flex items-center gap-2 rounded-4 border border-outline-gray-2 bg-surface-white px-2 py-1.5"

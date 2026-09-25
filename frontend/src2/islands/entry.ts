@@ -1,6 +1,5 @@
-// What every Insights island entry does before it hands a component to the
-// mount shell. One module, because an entry that set this up itself would be a
-// second copy of it, and the two would drift.
+// Setup shared by every Insights island entry. It lives in one module so the
+// entries cannot drift apart.
 
 import { mountVueIsland } from '@framework/ui/island'
 import { frappeRequest, setConfig } from 'frappe-ui'
@@ -18,26 +17,25 @@ declare global {
 
 setConfig('resourceFetcher', frappeRequest)
 
-// frappe-ui reads the CSRF token off `window`, desk publishes it on `frappe`.
-// Without this every write the island makes is rejected.
+// frappe-ui reads the CSRF token from `window`, but desk sets it on `frappe`.
+// Without this, the server rejects every write the island makes.
 if (!window.csrf_token && window.frappe?.csrf_token) {
 	window.csrf_token = window.frappe.csrf_token
 }
 
-// The page already carries the site's translations, so the island reads the
-// host's table instead of fetching a second one.
+// The host page already holds the site's translations, so reuse them instead
+// of fetching them again.
 if (!window.translatedMessages && window.frappe?._messages) {
 	window.translatedMessages = window.frappe._messages
 }
 
 setRouter({
-	// A route named inside the island is a page of Insights, and the host's page
-	// is not the SPA's base, so the href is absolute. Only a string route
-	// resolves — a named SPA route yields nothing, and the island offers no
-	// affordance for it.
+	// A route in the island is an Insights page, but the host page is not under
+	// the SPA's base, so the href is absolute. Only a string route resolves. A
+	// named SPA route gives an empty href, and the island shows no link for it.
 	resolveHref: (to) =>
 		typeof to === 'string' ? `${window.location.origin}${APP_PATH}${to}` : '',
-	// the page around the island is the host's, so leaving it is a page load
+	// the host owns the page, so leaving the island is a full page load
 	navigate: (to) => {
 		if (typeof to === 'string')
 			window.location.assign(`${window.location.origin}${APP_PATH}${to}`)
@@ -45,13 +43,12 @@ setRouter({
 })
 
 /**
- * Mount `component` through the shell, forwarding the context the host gave us.
+ * Mount `component` with the context the host passed in.
  *
- * The session is settled first, the way the SPA settles it in its router guard,
- * because an island draws numbers and dates the moment it has rows and the
- * reader's locale and the site's currency are not something a chart re-reads
- * later. A session we could not fetch is not worth an empty page, so a failure
- * draws on the defaults.
+ * Load the session first, as the SPA does in its router guard. An island
+ * formats numbers and dates as soon as it has rows, and a chart does not
+ * re-read the reader's locale or the site's currency later. If the session
+ * fails to load, the island still mounts and uses the defaults.
  */
 export async function mountIsland(component: any, el: HTMLElement, context: Record<string, any>) {
 	await session.initialize().catch(() => {})

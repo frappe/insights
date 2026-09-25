@@ -286,16 +286,15 @@ def check_data_source_permission(source_name, user=None, raise_error=True):
 
 
 def check_table_permission(data_source, table, user=None, raise_error=True):
-    """Whether this user may read this table, refused the one way the app refuses.
+    """Whether this user may read this table.
 
-    On site data desk's own permissions admit a reader as well as a team
-    grant does - the most permissive of the two - and an admin's pass through
-    the team gate is no grant there. Elsewhere only a team grant can, and an
-    admin passes.
+    On the site database, desk's own permissions or a team grant admit a
+    reader, and either one is enough. Being an admin is not a grant there. On
+    other data sources only a team grant admits a reader, and an admin always
+    passes.
 
-    `NotPermitted` is the type the refusal contract catches (`answers_refusal`),
-    and a team grant refuses the same idea every other check here refuses: this
-    reader may not read this data.
+    A refusal raises `NotPermitted`, which `answers_refusal` catches, as every
+    other check here does: this reader may not read this data.
     """
     # permissions imports this module
     from insights.permissions import check_app_permission
@@ -306,7 +305,7 @@ def check_table_permission(data_source, table, user=None, raise_error=True):
     elif is_admin(user):
         permitted = True
     elif not frappe.db.get_single_value("Insights Settings", "enable_permissions"):
-        # every Insights user, and not a guest or a session holding no Insights role
+        # every Insights user, but not a guest or a user without an Insights role
         permitted = check_app_permission(user)
     else:
         permitted = get_table_name(data_source, table) in get_allowed_resources_for_user(
@@ -322,14 +321,14 @@ def check_table_permission(data_source, table, user=None, raise_error=True):
 
 
 def team_grant(data_source, table, user=None) -> list[str] | None:
-    """The Table Restrictions a team grant reads this table under, any one of them enough.
+    """The Table Restrictions of the team grants on this table. A row that meets any one is readable.
 
-    Empty is the whole table, and nothing is no grant at all. Only a team that
-    names the table or its source grants it - an admin's pass through the team
-    gate is not a grant, so on site data an admin reads what desk gives them.
-    Each team grants the rows its own restrictions allow, and one team's grant
-    never narrows another's: a team that grants without a restriction grants
-    the whole table.
+    An empty list means the whole table. None means no grant. Only a team that
+    names the table or its data source grants it. An admin's pass through the
+    team check is not a grant, so on the site database an admin reads what
+    desk permissions allow. Each team grants the rows its own restrictions
+    allow, and one team's grant never narrows another's. So a team that grants
+    without a restriction grants the whole table.
     """
     if not frappe.db.get_single_value("Insights Settings", "enable_permissions"):
         return None
@@ -366,7 +365,7 @@ def apply_table_restrictions(table, data_source, table_name, user=None):
 
 
 def restriction_predicate(table, restrictions: list[str]):
-    """The Table Restrictions as one condition over `table`'s own columns, any one of them enough."""
+    """The Table Restrictions as one condition over `table`'s columns. A row that meets any one passes."""
     columns = {column: table[column] for column in table.schema().names}
     predicates = [exec_with_return(expression.strip(), columns) for expression in restrictions]
     return functools.reduce(operator.or_, predicates)

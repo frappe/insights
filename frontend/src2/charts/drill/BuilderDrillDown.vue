@@ -10,13 +10,9 @@ import type { DrillLevelData, DrillSubject } from './drill_stack'
 import DrillRowsView from './DrillRowsView.vue'
 import type { ChartSegmentClick } from './segment_click'
 
-// The same drill, plus the one thing an author gets: a level added to the
-// workbook as a query of its own.
-//
-// It is a component of its own rather than a flag on the drill because of what
-// it imports. Adding a query is the workbook's, and the desk island draws
-// charts without one — the same split `chart_preview` makes against
-// `chart_view`. A view surface mounts `ViewDrillDown` and gets none of this.
+// It is a separate component, not a flag, because adding a query needs the
+// workbook, and the desk island renders charts without one. A View mounts
+// `ViewDrillDown` and loads none of this.
 const props = defineProps<{
 	subject: DrillSubject
 	clicked: ChartSegmentClick
@@ -24,21 +20,20 @@ const props = defineProps<{
 
 const emit = defineEmits<{ close: [] }>()
 
-// Two checks, one per owner. Only the authoring endpoint returns the cut
-// pipeline, and only to a caller who may write what it was cut from. The
-// client owns the other half: a workbook this user only reads is not one to
-// add a query to.
+// Two checks, one on each side. Only the authoring endpoint returns the cut
+// pipeline, and only to a user who can write the chart. The client checks the
+// workbook: a user who can only read it cannot add a query to it.
 const workbook = inject(workbookKey, null)
 function openable(answer: DrillLevelData) {
 	return Boolean(answer.operations?.length) && Boolean(workbook) && !workbook?.doc.read_only
 }
 
-// The rows level on screen, for as long as it is. Its answer is the one the
-// reader's own filter, sort and find last asked for.
+// The rows level on screen, if any. Its answer reflects the reader's latest
+// filter, sort and find.
 const $rows = ref<InstanceType<typeof DrillRowsView> | null>(null)
 
-// A new query, which runs as its own author: it carries the level's cut, not the
-// chart's declaration of whose rows it reads.
+// The new query runs as its own author. It carries the level's cut, but not the
+// chart's Run as owner setting.
 function addToWorkbook(first: DrillLevelData) {
 	const answer = $rows.value?.rows.level ?? first
 	const title = __('{0} — Drill Down', props.subject.title)
@@ -52,8 +47,8 @@ function addToWorkbook(first: DrillLevelData) {
 				operations: answer.operations || [],
 				use_live_connection: answer.use_live_connection,
 			})
-			// a filter on a query deeper than the chart's has no step in the new
-			// query, so it holds more rows than the dialog showed
+			// a dashboard filter on a query that the chart's query reads has no
+			// operation in the new query, so it has more rows than the dialog showed
 			if (answer.uncarried_filters?.length) {
 				toast.warning(
 					__(
@@ -83,8 +78,6 @@ function addToWorkbook(first: DrillLevelData) {
 			</Button>
 		</template>
 
-		<!-- the rows are the server's, read as the chart and on the day its card
-		     was, the same way a reader's are -->
 		<template #rows="{ answer, levels, findTarget }">
 			<DrillRowsView
 				ref="$rows"

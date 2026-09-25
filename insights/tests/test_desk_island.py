@@ -143,10 +143,9 @@ class TestDeskIsland(InsightsIntegrationTestCase):
 
     # @feature desk.dashboard-island desk.chart-island
     def test_a_desk_page_is_told_where_the_app_is_mounted(self):
-        """An island builds every link it offers out of it, and a desk page is
-        not the app's own page - a site that mounts Insights elsewhere would
-        otherwise send every reader of an island to a path the app cannot
-        route."""
+        """An island builds its links from this path. A desk page is not the
+        app's page, so a site that mounts Insights elsewhere would get links to
+        a path the app cannot route."""
         from insights.hooks import insights_path
 
         bootinfo = frappe._dict()
@@ -157,17 +156,16 @@ class TestDeskIsland(InsightsIntegrationTestCase):
     # @feature desk.dashboard-island
     def test_a_dashboard_we_do_not_draw_carries_no_key(self):
         name = self.desk_dashboard().name
-        # absence is the answer desk falls back on, so an empty claim would read
-        # as "an island draws this" and leave the page blank
+        # Desk uses its own rendering only when the key is absent. An empty value
+        # tells desk an island renders the page, and the page stays blank.
         self.assertNotIn("island", self.onload_of("Dashboard", name))
 
     # @feature desk.dashboard-island desk.chart-island workbook.remove-item
     def test_deleting_what_a_desk_document_draws_is_refused_naming_that_document(self):
-        """The sidebar's remove calls `frappe.client.delete`. Taking the claim off
-        instead would hand the desk document back to the placeholder definition
-        its author filled in to save the form. The refusal comes before the
-        delete changes anything: a script that catches it and commits keeps the
-        chart on every dashboard that shows it."""
+        """The sidebar's remove calls `frappe.client.delete`. Removing the link
+        instead would return the desk document to the placeholder definition its
+        author entered to save the form. The refusal comes before any change, so
+        a script that catches it and commits keeps the chart on its dashboards."""
         workbook = self.dashboard.workbook
         chart = create_test_chart(OWNER, workbook, title="Desk Island Deleted Chart")
         dashboard = create_test_dashboard(OWNER, workbook, title="Desk Island Deleted Dashboard")
@@ -195,9 +193,8 @@ class TestDeskIsland(InsightsIntegrationTestCase):
 
     # @feature desk.dashboard-island desk.chart-island workbook.delete
     def test_deleting_a_workbook_a_desk_document_draws_from_is_refused_naming_that_document(self):
-        """The sidebar's workbook delete calls `frappe.client.delete`. The
-        workbook deletes its members with `force`, which skips the link check a
-        member's own delete is refused by."""
+        """The workbook deletes its members with `force`, and `force` skips the
+        link check that refuses a member's own delete."""
         workbook = create_test_workbook(OWNER, title="Desk Island Deleted Workbook")
         chart = create_test_chart(OWNER, workbook.name, title="Desk Island Deleted Chart")
         dashboard = create_test_dashboard(OWNER, workbook.name, title="Desk Island Deleted Dashboard")
@@ -215,12 +212,10 @@ class TestDeskIsland(InsightsIntegrationTestCase):
 
     # @feature desk.dashboard-island desk.chart-island standard.resync
     def test_a_resync_keeps_a_dropped_member_a_desk_document_draws(self):
-        """`InsightsWorkbook.after_insert`, which a migrate reaches on every
-        file that changed. Dropping what a desk document
-        draws would leave it linking nothing, and refusing would block the
-        migrate, so the member stays with the queries it reads and its folder,
-        and the keep is logged. The dashboard the desk document draws stays too;
-        what nothing draws goes."""
+        """A migrate resyncs every changed workbook file. Deleting a member that a
+        desk document links would break the link, and refusing would block the
+        migrate. So the member stays with its queries and folder, and an Error
+        Log records it."""
         workbook = create_test_workbook(OWNER, title="Desk Island Resync Workbook")
         source = create_test_query(OWNER, workbook.name, title="Desk Island Resync Source")
         query = create_test_query(
@@ -266,10 +261,8 @@ class TestDeskIsland(InsightsIntegrationTestCase):
 
     # @feature desk.dashboard-island standard.resync
     def test_a_resync_keeps_what_a_kept_dashboard_draws(self):
-        """`InsightsWorkbook.after_insert`, reached from a migrate. A desk
-        Dashboard claims the Insights dashboard only; the charts on it are
-        claimed by nothing, and they stay with it so the desk page draws what
-        it drew. A dropped chart on no kept dashboard still goes."""
+        """A desk Dashboard links only the Insights dashboard. Its charts stay
+        with it, so the desk page still shows them."""
         workbook = create_test_workbook(OWNER, title="Desk Island Board Workbook")
         query = create_test_query(OWNER, workbook.name, title="Desk Island Board Query")
         chart = create_test_chart(OWNER, workbook.name, query.name, title="Desk Island Board Chart")
@@ -294,10 +287,8 @@ class TestDeskIsland(InsightsIntegrationTestCase):
 
     # @feature desk.dangling-claim
     def test_a_migrate_names_each_desk_document_left_linking_missing_insights_content(self):
-        """`insights.migrate.sync_standard_workbooks`, after `standard.delete_unshipped`
-        deletes a workbook its app stopped shipping with every member a desk
-        document draws. A desk document that links content still there is not
-        named."""
+        """`standard.delete_unshipped` deletes a workbook its app no longer
+        ships, even when desk documents link its members."""
         workbook = self.dashboard.workbook
         chart = create_test_chart(OWNER, workbook, title="Desk Island Gone Chart")
         dashboard = create_test_dashboard(OWNER, workbook, title="Desk Island Gone Dashboard")

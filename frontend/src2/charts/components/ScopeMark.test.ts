@@ -3,9 +3,6 @@ import { createSSRApp, h } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import ScopeMark from './ScopeMark.vue'
 
-// The mark a card's title, the table browser (`DataSourceTable.vue`) and a
-// drill level (`DrillDialog.vue`) draw from the scope keys their answer carries.
-
 function mark(props: Record<string, unknown>) {
 	const app = createSSRApp({ render: () => h(ScopeMark, props) })
 	app.config.warnHandler = () => {}

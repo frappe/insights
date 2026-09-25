@@ -47,16 +47,16 @@ export function mergeWriteAnswer<T extends Record<string, any>>(
 }
 
 /**
- * What a write the server refused leaves on the document: the mirror of
+ * The document to hold after the server rejected a write. The reverse of
  * `mergeWriteAnswer`.
  *
- * A field goes back to what the server holds only where it still holds what the
- * refused write carried. One the author changed while the write was in flight
- * was never refused, so it stays.
+ * A field goes back to the server's value only if it still holds the value the
+ * rejected write sent. If the author changed it while the write was in flight,
+ * the new value was not rejected, so it stays.
  *
  * @param current what is on screen now, without the framework's own fields
- * @param original the document the server last answered with
- * @param sent the deep clone the refused write carried
+ * @param original the document the server last sent back
+ * @param sent the deep clone the rejected write sent
  */
 export function takeBackRefusal(
 	current: Record<string, any>,

@@ -816,9 +816,9 @@ class TestQuerying(InsightsIntegrationTestCase):
 
     # @feature query.custom-operation query.expression-sandbox
     def test_a_custom_operation_crosses_the_queries_it_reads(self):
-        """The shape of a custom operation on insights.frappe.io: it reads two
-        other queries of its workbook by name and crosses them with its own table.
-        Run by the workbook's writer, as a builder run and a chart's are."""
+        """This is how custom operations are used on insights.frappe.io. It reads
+        two other queries of its workbook by name and cross-joins them with its own
+        table. It runs as the workbook's writer, like a builder or chart run."""
         self.seed_todos()
         workbook = create_test_workbook(USER_1)
         closed = create_test_query(
@@ -879,8 +879,8 @@ class TestQuerying(InsightsIntegrationTestCase):
     # @feature query.expression-sandbox
     def test_an_expression_reads_only_what_its_reader_may_and_writes_nothing(self):
         """Any writer of a query writes its expressions, and a chart runs them for
-        every reader. One statement takes `safe_eval`, several take `safe_exec`."""
-        # rows USER_1 reads, for the expression to run over
+        every reader. `safe_eval` runs one statement and `safe_exec` runs several."""
+        # rows USER_1 can read, for the expression to use
         self.seed_todos()
         todo = frappe.get_doc({"doctype": "ToDo", "description": f"{TODO_PREFIX} Admin's"}).insert(
             ignore_permissions=True
@@ -915,7 +915,7 @@ class TestQuerying(InsightsIntegrationTestCase):
             "a field through a currency": "frappe.format_value(1, _dict(fieldtype='Currency', options='User:x:email'), _dict(doctype='P', x='Administrator'))",
         }
         not_in_sandbox = (AttributeError, "module has no attribute")
-        # frappe's read check refuses with its message in the message log
+        # frappe's read check puts its message in the message log, so the error text is empty
         not_readable = (frappe.PermissionError, "^$")
         refusal = {
             "set_value": not_in_sandbox,
@@ -928,7 +928,7 @@ class TestQuerying(InsightsIntegrationTestCase):
             "sql": (frappe.PermissionError, "Only an Insights Admin"),
             "get_all": not_in_sandbox,
             "http": not_in_sandbox,
-            # a name `frappe.db` lacks reads as a no-op function
+            # `frappe.db` returns a no-op for a name it does not have
             "after_commit": (
                 (AttributeError, TypeError),
                 "has no attribute 'add'|'NoneType' object is not callable",
@@ -942,7 +942,7 @@ class TestQuerying(InsightsIntegrationTestCase):
             "another user's email": not_in_sandbox,
             "a field through a currency": not_in_sandbox,
         }
-        # a list and a value answer as the reader's own list would: without the row
+        # a value or list read returns what the reader's own read returns: no row
         empty = {
             "another user's value": f"frappe.db.get_value('ToDo', '{todo.name}', 'description') or 'none'",
             "another user's list": f"frappe.get_list('ToDo', filters={{'name': '{todo.name}'}}) or 'none'",
@@ -986,10 +986,9 @@ class TestQuerying(InsightsIntegrationTestCase):
 
     # @feature query.expression-cannot-reach-files query.expression-sandbox
     def test_an_expression_reaches_no_connection_and_runs_nothing(self):
-        """A query writer's expression holds the relation it builds on, and a query
-        it reads builds one too; both lead to the data source's connection. For
-        this reader the relation is the narrowing filter over the permlevel
-        projection over the table."""
+        """An expression holds the relation it builds on, and a query it reads
+        builds one too. Both lead to the data source's connection. For this reader
+        the relation is the table, without permlevel columns and with rows filtered."""
         self.seed_todos()
         workbook = create_test_workbook(USER_1)
         other = create_test_query(USER_1, workbook.name, title="Workbook Flow Test Query Other")
@@ -1026,10 +1025,10 @@ class TestQuerying(InsightsIntegrationTestCase):
 
     # @feature query.expression-sandbox
     def test_an_expression_reads_no_table_its_query_does_not_source(self):
-        """A relation ibis builds from a name or a statement runs on the query's
-        connection past the source's table, row and column permissions; a literal
-        one is written to it as a temporary table. `validate_expression` runs the
-        same namespace."""
+        """ibis runs a relation built from a name or a statement on the query's
+        connection, which skips the source's table, row and column permissions.
+        It writes a literal relation to the connection as a temporary table.
+        `validate_expression` uses the same namespace."""
         from insights.insights.doctype.insights_data_source_v3.ibis.utils import validate_expression
 
         self.seed_todos()

@@ -22,11 +22,11 @@ from insights.tests.factories import (
 VISIBILITY_ROLE = "Insights Visibility Test Role"
 
 OWNER = "visibility_owner@test.com"
-# holds an Insights role, but the owner's content never names them
+# has an Insights role, but no grant on the owner's content
 INSIGHTS_PEER = "visibility_peer@test.com"
-# holds VISIBILITY_ROLE and nothing else - the desk-report persona
+# has only VISIBILITY_ROLE, like a desk user who reads reports
 ROLE_HOLDER = "visibility_role_holder@test.com"
-# holds no role at all - proves the viewing path never asks for `Insights User`
+# has no role, to prove that reading never needs `Insights User`
 DESK_USER = "visibility_desk_user@test.com"
 GUEST = "Guest"
 
@@ -65,8 +65,6 @@ class TestVisibility(InsightsIntegrationTestCase):
         frappe.db.set_single_value(DT.SETTINGS, "enable_permissions", cls.original_enable_permissions)
         cleanup_visibility_fixtures()
 
-    # fixtures
-
     def make_content(self, link_chart_to_dashboard=False):
         workbook = create_test_workbook(OWNER, title=WORKBOOK_TITLE)
         query = create_test_query(OWNER, workbook.name, title="Visibility Test Query")
@@ -85,12 +83,10 @@ class TestVisibility(InsightsIntegrationTestCase):
         doc.save(ignore_permissions=True)
         return frappe.get_doc(doc.doctype, doc.name)
 
-    # assertions
-    #
-    # The visibility levels are read through the controller, the same entry point
-    # `frappe.has_permission` calls. A user with no Insights role does not clear
-    # the doctype level role check, so the doctype must also grant `read` to
-    # `All` and `Guest` for visibility to answer on the desk surface.
+    # These call the controller's `has_doc_permission`, as `frappe.has_permission`
+    # does. A user with no Insights role fails the doctype's role check, so the
+    # doctype also grants `read` to `All` and `Guest`. Without it, visibility has
+    # no effect on desk.
 
     def assert_can_read(self, user, doc):
         self.assertTrue(
@@ -113,11 +109,11 @@ class TestVisibility(InsightsIntegrationTestCase):
         )
 
     def is_listed(self, user, doctype, name):
-        """Whether the list conditions alone admit this document for this user.
+        """Whether the list query conditions alone include this document.
 
-        `is_visible` in `factories` goes through `get_list`, which also applies
-        the doctype role check. A desk user here holds no Insights role, so the
-        conditions have to be read on their own.
+        `factories.is_visible` uses `get_list`, which also applies the doctype
+        role check. A desk user here has no Insights role, so this reads the
+        conditions directly.
         """
         condition = get_permission_query_conditions(user, doctype)
         self.assertTrue(condition, f"{doctype} list access should stay narrowed for {user}")
@@ -150,9 +146,9 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature permissions.visibility
     def test_an_org_wide_share_admits_nobody(self):
-        """`Everyone` is the one mechanism, so a DocShare has to name a person:
-        `frappe.share.add` refuses an org-wide one, and one written before the
-        rule is not read."""
+        """`Everyone` is the only way to admit every user, so a DocShare must
+        name a person. `frappe.share.add` refuses an org-wide share, and the
+        permission check ignores an older one."""
         for doc in self.make_content():
             doc = self.declare(doc, "Private")
             with self.assertRaises(frappe.ValidationError):
@@ -171,7 +167,7 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature permissions.share-workbook-org
     def test_a_workbook_open_to_the_organization_admits_no_guest(self):
-        """An org-wide share reaches every signed-in user, and a guest is not one."""
+        """An org-wide share admits every signed-in user, and a guest is not signed in."""
         chart, dashboard = self.make_content(link_chart_to_dashboard=True)
         self.declare(chart, "Private")
         self.declare(dashboard, "Private")
@@ -200,9 +196,9 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature permissions.share-dashboard
     def test_a_dashboard_is_shared_with_insights_users_only(self):
-        """One definition serves both sides of sharing. A DocShare carries down
-        to every chart on the grid and to the rows and the file behind them, so
-        the dashboard surface asks the same question the workbook's does."""
+        """A dashboard's DocShare also admits the user to its charts, their rows
+        and their files. So a dashboard share checks for an Insights user, as a
+        workbook share does."""
         _, dashboard = self.make_content()
 
         with self.as_user(OWNER), self.assertRaises(frappe.ValidationError):
@@ -210,10 +206,10 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature permissions.share-dashboard
     def test_a_share_the_dashboard_already_holds_is_kept_not_named_again(self):
-        """`DashboardShareDialog` seeds its list from `get_people_with_access` and
-        posts it back whole on every Done, so a share written before the rule -
-        or to someone who has since left Insights - comes back each time. Keeping
-        it names nobody new."""
+        """`DashboardShareDialog` loads its list from `get_people_with_access` and
+        sends the whole list back on Done. So an older share, or one with a user
+        who has since left Insights, comes back each time. Keeping it gives
+        nobody new access."""
         _, dashboard = self.make_content()
         frappe.share.add(DT.DASHBOARD, dashboard.name, user=DESK_USER, read=1, notify=0)
 
@@ -254,13 +250,11 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature permissions.visibility permissions.non-insights-user
     def test_no_level_consults_the_insights_user_role(self):
-        # DESK_USER holds no role, so an `Everyone` read proves the viewing
-        # path never asks for `Insights User`
         self.assertNotIn("Insights User", frappe.get_roles(DESK_USER))
         for doc in self.make_content():
             self.assert_can_read(DESK_USER, self.declare(doc, "Everyone"))
 
-    # visibility is view only
+    # visibility grants read only
 
     # @feature permissions.visibility
     def test_visibility_grants_read_and_nothing_else(self):
@@ -277,13 +271,12 @@ class TestVisibility(InsightsIntegrationTestCase):
     # widening the visibility
 
     def reads_through_workbook(self, doc):
-        """The peer reads `doc` through its workbook and may not edit it."""
         doc = self.declare(doc, "Private")
         frappe.share.add(DT.WORKBOOK, doc.workbook, user=INSIGHTS_PEER, read=1, notify=0)
         return doc
 
     def edits_through_workbook(self, doc):
-        """The peer edits `doc` as an editor of its workbook: a member's only write and share."""
+        """A member gets write and share only from its workbook."""
         frappe.share.add(DT.WORKBOOK, doc.workbook, user=INSIGHTS_PEER, read=1, write=1, notify=0)
 
     def set_visibility(self, user, doc, visibility):
@@ -294,9 +287,9 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature shared.publish-needs-share
     def test_an_editor_of_the_workbook_widens_who_may_read(self):
-        """`ChartShareDialog` and `DashboardShareDialog` save the level, and
-        `validate_visibility` asks share, which on a member is its workbook's
-        write. The workbook's owner is not the only editor who publishes."""
+        """`validate_visibility` checks share, and a member gets share from write
+        on its workbook. So any editor of the workbook can publish, not only its
+        owner."""
         for doc in self.make_content():
             doc = self.declare(doc, "Private")
             self.edits_through_workbook(doc)
@@ -307,8 +300,8 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature shared.publish-needs-share
     def test_every_widening_step_needs_write_on_the_workbook(self):
-        """The rule is the move up, not the widest level. `Roles` naming no role
-        admits nobody, so the step onto it names one."""
+        """The check applies to every widening, not only to the widest level.
+        `Roles` with no role admits nobody, so the test names a role."""
         for doc in self.make_content():
             doc = self.reads_through_workbook(doc)
             self.assertFalse(has_doc_permission(doc, "share", INSIGHTS_PEER))
@@ -323,7 +316,7 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature shared.publish-needs-share
     def test_naming_another_role_needs_write_on_the_workbook(self):
-        """A role carries the same reach a level does, so both are the pair."""
+        """Adding a role widens reach as a level does, so it needs the same check."""
         for doc in self.make_content():
             doc = self.reads_through_workbook(doc)
             doc = self.declare(doc, "Roles", roles=[VISIBILITY_ROLE])
@@ -339,19 +332,19 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature permissions.visibility
     def test_a_role_every_user_holds_cannot_be_named(self):
-        """`All` and `Guest` are the Everyone and Public levels said a second
-        way, under a guard that is not theirs."""
+        """The roles `All` and `Guest` would repeat the Everyone and Public
+        levels without the checks on those levels."""
         for doc in self.make_content():
             with self.assertRaises(frappe.ValidationError):
                 self.declare(doc, "Roles", roles=["All"])
 
     # @feature permissions.visibility
     def test_a_collaborator_duplicates_a_chart_that_is_not_private(self):
-        """A copy widens nobody's reach, so it cannot ask for the share access
-        publishing would - it starts where a new chart starts."""
+        """A copy widens nobody's reach, so it must not need share access. It
+        starts at `Private`, as a new chart does."""
         chart, _ = self.make_content()
         chart = self.declare(chart, "Everyone")
-        # a workbook collaborator: write on everything in it, share on nothing
+        # a workbook collaborator: write on the workbook, no share flag
         frappe.share.add(DT.WORKBOOK, chart.workbook, user=INSIGHTS_PEER, read=1, write=1, notify=0)
 
         with self.as_user(INSIGHTS_PEER):
@@ -361,7 +354,7 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature shared.publish-needs-share
     def test_narrowing_visibility_is_a_plain_write(self):
-        """Coming back down takes nothing away from anybody."""
+        """Narrowing admits nobody new, so it needs only write."""
         for doc in self.make_content():
             doc = self.declare(doc, "Public")
             self.edits_through_workbook(doc)
@@ -371,13 +364,13 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature shared.publish-needs-share
     def test_an_owner_publishes_their_own(self):
-        """The workbook's owner writes every member, so is not stopped."""
+        """The workbook's owner can write every member, so the check passes."""
         for doc in self.make_content():
             doc = self.declare(doc, "Private")
             self.set_visibility(OWNER, doc, "Public")
             self.assertEqual(frappe.db.get_value(doc.doctype, doc.name, "visibility"), "Public")
 
-    # a linked chart
+    # a chart on a dashboard
 
     # @feature permissions.chart-access-follows
     def test_chart_inherits_the_dashboard_visibility_downward_only(self):
@@ -388,7 +381,7 @@ class TestVisibility(InsightsIntegrationTestCase):
         self.assert_can_read(DESK_USER, dashboard)
         self.assert_can_read(DESK_USER, chart)
 
-        # a chart's own visibility never reaches up to the dashboard
+        # a chart's visibility never admits a user to its dashboard
         dashboard = self.declare(dashboard, "Private")
         chart = self.declare(chart, "Everyone")
 
@@ -397,10 +390,10 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature permissions.chart-access-follows
     def test_a_dashboard_hands_its_charts_read_and_nothing_more(self):
-        """`frappe.client.delete`, `authoring.chart_to_run`'s write gate and a
-        query's own read all ask this seam. A dashboard's sharer reads the
-        charts on it, and never changes, deletes or shares them, or reads the
-        queries behind them."""
+        """`frappe.client.delete`, the write check in `authoring.chart_to_run` and
+        a query's read check all call `has_doc_permission`. A user the dashboard
+        is shared with can read its charts. They cannot change, delete or share
+        them, or read their queries."""
         chart, dashboard = self.make_content(link_chart_to_dashboard=True)
         query = frappe.get_doc(DT.QUERY, chart.query)
 
@@ -414,10 +407,9 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature workbook.remove-item
     def test_a_charts_delete_leaves_the_rest_of_the_dashboards_grid(self):
-        """`frappe.client.delete` from the workbook sidebar, by an editor of the
-        workbook. The chart's delete saves every dashboard that shows it, and
-        that save links nothing new, so nothing on the rest of the grid is asked
-        of the deleter."""
+        """Deleting a chart saves every dashboard that shows it. That save adds no
+        chart, so the deleter needs no access to the other charts on the
+        dashboard."""
         theirs, dashboard = self.make_content(link_chart_to_dashboard=True)
         frappe.share.add(DT.WORKBOOK, theirs.workbook, user=INSIGHTS_PEER, read=1, write=1, notify=0)
         mine = create_test_chart(OWNER, theirs.workbook, theirs.query, title="Visibility Test Chart, kept")
@@ -438,8 +430,8 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature workbook.remove-item
     def test_a_dashboard_saved_from_a_stale_tab_drops_a_deleted_charts_cell(self):
-        """`frappe.client.save` from a tab whose dashboard store was loaded
-        before the chart's delete, so it still sends the chart's cell."""
+        """A browser tab loaded the dashboard before the chart was deleted, so its
+        save still sends the chart's cell."""
         chart, dashboard = self.make_content(link_chart_to_dashboard=True)
         stale_items = frappe.parse_json(dashboard.items)
         frappe.delete_doc(chart.doctype, chart.name, ignore_permissions=True)
@@ -467,7 +459,7 @@ class TestVisibility(InsightsIntegrationTestCase):
         self.assert_cannot_read(GUEST, dashboard)
         self.assert_cannot_read(GUEST, frappe.get_doc(chart.doctype, chart.name))
 
-    # the Public level means the owner's permissions
+    # Public runs a chart as its owner
 
     # @feature shared.rows-are-the-owners
     def test_publishing_a_chart_runs_it_as_its_owner(self):
@@ -477,7 +469,7 @@ class TestVisibility(InsightsIntegrationTestCase):
         chart = self.declare(chart, "Public")
         self.assertTrue(chart.run_as_owner)
 
-        # narrowing leaves the box where publishing put it
+        # narrowing leaves Run as owner on
         chart = self.declare(chart, "Private")
         self.assertTrue(chart.run_as_owner)
 
@@ -492,9 +484,9 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature shared.chart-on-public-dashboard
     def test_a_dashboard_is_not_public_while_a_chart_on_it_runs_as_its_reader(self):
-        """`DashboardShareDialog` saves through `frappe.client.save`. The box is
-        the chart's own declaration, so publishing never moves it: the publish
-        is refused, naming the chart, until its owner ticks it."""
+        """Run as owner belongs to the chart, so publishing the dashboard never
+        sets it. The save is refused, naming the chart, until its owner ticks
+        Run as owner."""
         chart, dashboard = self.make_content(link_chart_to_dashboard=True)
 
         with self.assertRaisesRegex(frappe.ValidationError, chart.title):
@@ -508,8 +500,8 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature shared.chart-on-public-dashboard
     def test_a_chart_is_not_added_to_a_public_dashboard_while_it_runs_as_its_reader(self):
-        """Adding a card saves the dashboard and nothing else, so the dashboard
-        has to ask the chart question on every save."""
+        """Adding a chart saves only the dashboard, so the dashboard must check
+        its charts on every save."""
         chart, dashboard = self.make_content()
         self.declare(dashboard, "Public")
 
@@ -522,9 +514,9 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature shared.chart-on-public-dashboard standard.runs-as-the-reader
     def test_publishing_a_dashboard_leaves_a_shipped_charts_box_alone(self):
-        """A standard chart runs as whoever reads it, and must - its owner is
-        Administrator on every site. So publishing one hands out nobody's rows,
-        and there is nothing here to check or to ask an owner about."""
+        """A standard chart must run as its reader, because its owner is
+        Administrator on every site. Publishing it shares nobody's rows, so
+        there is nothing to check."""
         chart, dashboard = self.make_content(link_chart_to_dashboard=True)
         frappe.db.set_value(chart.doctype, chart.name, "is_standard", 1)
         self.addCleanup(frappe.db.set_value, chart.doctype, chart.name, "is_standard", 0)
@@ -536,7 +528,7 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature permissions.chart-run-as-owner
     def test_only_the_owner_can_make_a_chart_run_with_the_owners_permissions(self):
-        """Write on a chart is not ownership of the rows it would then serve."""
+        """Write on a chart does not let a user share the owner's rows."""
         chart, _ = self.make_content()
         self.edits_through_workbook(chart)
 
@@ -549,10 +541,10 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature shared.publish-needs-share
     def test_a_member_says_whether_its_caller_may_share_it(self):
-        """`ChartBuilderActions` and `DashboardEditActions` offer Share by
-        `can_share`, read off the document `frappe.client.get` returns, and
-        the dashboard's share dialog lists the people named on it from the same
-        answer. Shipped content is shared by nobody outside developer mode."""
+        """`ChartBuilderActions` and `DashboardEditActions` show Share by
+        `can_share`. A dashboard returns `people_with_access` only when
+        `can_share` is set. Outside developer mode, nobody can share standard
+        content."""
         chart, dashboard = self.make_content()
         frappe.share.add(DT.WORKBOOK, chart.workbook, user=INSIGHTS_PEER, read=1, notify=0)
 
@@ -578,10 +570,10 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature permissions.chart-run-as-owner permissions.run-as-owner-lapses
     def test_a_chart_says_who_may_move_its_box(self):
-        """`ChartShareDialog` enables the toggle by this, read off the chart
-        `frappe.client.get` returns. A System Manager is an admin to
-        `validate_run_as_owner` without holding `Insights Admin`. Ticking it is
-        the owner's; unticking only narrows, so every editor may."""
+        """`ChartShareDialog` enables its Run as owner toggle by this.
+        `validate_run_as_owner` treats a System Manager as an admin without
+        `Insights Admin`. Only the owner may tick it. Unticking only narrows, so
+        any editor may."""
         chart, _ = self.make_content()
         self.edits_through_workbook(chart)
         system_manager = create_user("visibility_system_manager@test.com", roles="System Manager")
@@ -599,10 +591,8 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature permissions.run-as-owner-lapses
     def test_any_editor_makes_a_chart_run_as_its_reader_again(self):
-        """The share dialog's toggle, saved through `frappe.client.set_value` by
-        an editor of the workbook. Unticking hands nobody anybody's rows, and
-        it is how an editor stops a chart serving an owner the workbook no
-        longer names."""
+        """Unticking shares nobody's rows. It is how an editor stops a chart from
+        running as an owner who has lost access to the workbook."""
         chart, _ = self.make_content()
         self.runs_as_its_owner(chart)
         self.edits_through_workbook(chart)
@@ -614,7 +604,7 @@ class TestVisibility(InsightsIntegrationTestCase):
 
         self.assertFalse(frappe.db.get_value(chart.doctype, chart.name, "run_as_owner"))
 
-        # and a reader of the chart still may not
+        # a user who can only read the chart may not untick it
         self.runs_as_its_owner(chart)
         frappe.share.remove(DT.WORKBOOK, chart.workbook, INSIGHTS_PEER)
         frappe.share.add(DT.WORKBOOK, chart.workbook, user=INSIGHTS_PEER, read=1, notify=0)
@@ -625,7 +615,7 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature shared.chart-on-public-dashboard
     def test_publishing_a_dashboard_never_checks_somebody_elses_chart(self):
-        """The dashboard's publisher would otherwise hand out a third person's rows."""
+        """Otherwise the publisher would share the chart owner's rows."""
         chart, dashboard = self.make_content(link_chart_to_dashboard=True)
         self.edits_through_workbook(dashboard)
         frappe.share.add(chart.doctype, chart.name, user=INSIGHTS_PEER, read=1, notify=0)
@@ -652,12 +642,12 @@ class TestVisibility(InsightsIntegrationTestCase):
     # a chart that already runs as its owner
 
     def runs_as_its_owner(self, chart):
-        """The state a publish leaves a chart in, and the one `run_public_charts_as_owner` writes."""
+        """The state a publish leaves a chart in. The `run_public_charts_as_owner` patch writes it too."""
         frappe.db.set_value(chart.doctype, chart.name, "run_as_owner", 1)
 
     # @feature permissions.chart-run-as-owner
     def test_a_sharer_cannot_publish_a_chart_that_runs_as_its_owner(self):
-        """`share` hands out the sharer's own access, never the owner's rows."""
+        """Share permission passes on the user's own access, never the owner's rows."""
         chart, _ = self.make_content()
         self.runs_as_its_owner(chart)
         self.edits_through_workbook(chart)
@@ -671,17 +661,16 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature shared.chart-on-public-dashboard
     def test_publishing_a_dashboard_cannot_carry_a_chart_that_runs_as_somebody_else(self):
-        """The box being on already is why this is not the same case as
-        `test_publishing_a_dashboard_cannot_check_somebody_elses_chart`: there
-        is nothing left to check, and the guest still reads the owner's rows."""
+        """Unlike `test_publishing_a_dashboard_never_checks_somebody_elses_chart`,
+        Run as owner is already on here. Nothing is left to tick, but a guest
+        would still read the owner's rows."""
         chart, dashboard = self.make_content(link_chart_to_dashboard=True)
         self.runs_as_its_owner(chart)
         self.edits_through_workbook(dashboard)
         frappe.share.add(chart.doctype, chart.name, user=INSIGHTS_PEER, read=1, notify=0)
 
-        # `Roles` too: a role names a population, not a person, so it reaches
-        # readers nobody named one at a time - the whole of what `share` cannot
-        # carry on somebody else's behalf
+        # `Roles` too: a role admits users that nobody named one by one, and
+        # share permission cannot grant that for another user's rows
         for level in ("Public", "Everyone", "Roles"):
             with self.as_user(INSIGHTS_PEER), self.assertRaises(frappe.PermissionError):
                 writable = frappe.get_doc(dashboard.doctype, dashboard.name)
@@ -694,8 +683,8 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature permissions.chart-run-as-owner
     def test_a_sharer_cannot_publish_somebody_elses_chart_to_a_role(self):
-        """A role names a population. The owner's rows go out to everyone in it
-        exactly as they go out at the two open levels."""
+        """A role admits a group of users. They get the owner's rows, as they do
+        at `Everyone` and `Public`."""
         chart, _ = self.make_content()
         self.runs_as_its_owner(chart)
         self.edits_through_workbook(chart)
@@ -710,8 +699,8 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature permissions.chart-run-as-owner
     def test_a_sharer_cannot_name_another_role_on_an_already_published_chart(self):
-        """The level did not move, and the reach did: `Roles` stores the roles,
-        so adding one hands the owner's rows to a population nobody asked."""
+        """The level stays `Roles`, but adding a role still widens reach. Its
+        users would get the owner's rows without the owner's consent."""
         chart, _ = self.make_content()
         chart = self.declare(chart, "Roles", roles=[VISIBILITY_ROLE])
         self.runs_as_its_owner(chart)
@@ -724,10 +713,9 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature shared.publish-needs-share
     def test_narrowing_a_published_dashboard_to_a_role_is_not_a_publish(self):
-        """`DashboardShareDialog` saves through `frappe.client.save`, which hands
-        the controller the stored row as `get_doc_before_save`. A role inside
-        the readers the dashboard already reached takes readers away, so it
-        publishes nobody's chart, whoever owns the charts on it."""
+        """`frappe.client.save` gives the controller the stored row as
+        `get_doc_before_save`. A move from `Everyone` to a role removes readers,
+        so it publishes no chart, whoever owns it."""
         chart, dashboard = self.make_content(link_chart_to_dashboard=True)
         self.runs_as_its_owner(chart)
         dashboard = self.declare(dashboard, "Everyone")
@@ -743,9 +731,9 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature shared.publish-needs-share permissions.chart-run-as-owner
     def test_narrowing_a_chart_to_a_role_is_a_plain_write(self):
-        """`ChartShareDialog` saves through `frappe.client.save`. A collaborator
-        who may write the chart and not share it narrows it from `Everyone` to a
-        role: nobody new reads it, so neither `share` nor its owner is asked."""
+        """A collaborator who may write the chart but not share it moves it from
+        `Everyone` to a role. Nobody new can read it, so the save needs neither
+        share permission nor the owner."""
         chart, _ = self.make_content()
         chart = self.declare(chart, "Everyone")
         self.runs_as_its_owner(chart)
@@ -761,9 +749,8 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature permissions.visibility permissions.chart-run-as-owner
     def test_roles_with_no_role_admits_nobody(self):
-        """`ChartShareDialog` saves through `frappe.client.save` and asks
-        `published_reach` on open. `Roles` naming no role reaches nobody, the
-        same as `Private`: the move is no publish, and the dialog says so."""
+        """`Roles` with no role admits nobody, as `Private` does. So the move is
+        not a publish, and `published_reach` tells `ChartShareDialog` so."""
         chart, _ = self.make_content()
         self.runs_as_its_owner(chart)
         self.edits_through_workbook(chart)
@@ -780,11 +767,11 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature shared.chart-on-public-dashboard
     def test_a_chart_left_unchecked_under_a_public_dashboard_stays_saveable(self):
-        """`run_public_charts_as_owner` deliberately leaves the box off where the
-        base's publisher was not the chart's owner, so the card refuses rather
-        than serving a third person's rows. Only the move is judged, or every
-        later save of that chart throws - a retitle, a folder move, its owner's
-        own edit."""
+        """The `run_public_charts_as_owner` patch leaves Run as owner off when the
+        dashboard's publisher did not own the chart. The chart then refuses to
+        run instead of showing another user's rows. The save checks only what
+        changed. Otherwise every later save of the chart would fail: a retitle,
+        a folder move, or an edit by its owner."""
         chart, dashboard = self.make_content(link_chart_to_dashboard=True)
         self.runs_as_its_owner(chart)
         self.declare(dashboard, "Public")
@@ -798,10 +785,10 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature shared.chart-on-public-dashboard
     def test_a_chart_reports_the_reach_a_dashboard_gives_it(self):
-        """The share dialog's red confirm, and whether its toggle may come off,
-        key on this. A chart's own level is half the answer: the dashboards it
-        sits on publish it too, and that is the state the one recovery from a
-        migrated public link starts in."""
+        """The share dialog's confirm and its Run as owner toggle depend on this.
+        A chart's own level is only half the answer, because a public dashboard
+        also publishes its charts. A chart that the patch left on a public
+        dashboard starts in this state."""
         chart, dashboard = self.make_content(link_chart_to_dashboard=True)
         self.declare(chart, "Private")
 
@@ -820,8 +807,9 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature shared.chart-on-public-dashboard
     def test_a_chart_reports_only_the_dashboards_its_caller_may_read(self):
-        """`ChartShareDialog` asks `published_reach` on open, as anyone who may
-        read the chart. A dashboard's title is the dashboard being read."""
+        """Any reader of a chart can open `ChartShareDialog`, and it calls
+        `published_reach`. A dashboard's title reveals the dashboard, so only
+        its readers get it."""
         chart, dashboard = self.make_content(link_chart_to_dashboard=True)
         self.declare(dashboard, "Roles", roles=[VISIBILITY_ROLE])
         frappe.share.add(chart.doctype, chart.name, user=INSIGHTS_PEER, read=1, notify=0)
@@ -838,11 +826,11 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature shared.chart-on-public-dashboard
     def test_saving_a_published_dashboard_publishes_nothing_new(self):
-        """A save that moves neither the level nor the grid is not a publish.
+        """A save that changes neither the level nor the grid is not a publish.
 
-        The box left unchecked on a chart a public dashboard carries is what
-        `run_public_charts_as_owner` writes where it cannot know whose rows the
-        base was serving, so an unrelated save must not check it."""
+        The `run_public_charts_as_owner` patch leaves Run as owner off on a chart
+        of a public dashboard when it cannot tell whose rows the chart showed.
+        An unrelated save must not tick it."""
         chart, dashboard = self.make_content(link_chart_to_dashboard=True)
         self.runs_as_its_owner(chart)
         dashboard = self.declare(dashboard, "Public")
@@ -853,7 +841,7 @@ class TestVisibility(InsightsIntegrationTestCase):
 
         self.assertFalse(frappe.db.get_value(chart.doctype, chart.name, "run_as_owner"))
 
-    # the seam
+    # through frappe.has_permission
 
     # @feature permissions.visibility
     def test_visibility_answers_through_frappe_has_permission(self):
@@ -875,11 +863,11 @@ class TestVisibility(InsightsIntegrationTestCase):
 
 
 class TestOrgShareMigration(InsightsIntegrationTestCase):
-    """The migration that turns an org-wide DocShare into the `Everyone` level.
+    """The patch that turns an org-wide DocShare into the `Everyone` level.
 
     See `insights/patches/set_visibility_from_org_shares.py`. The permission
-    query reads no org-wide row on content any more, so a row the patch leaves
-    behind grants nothing at all.
+    query ignores org-wide rows on content, so a row the patch leaves behind
+    grants nothing.
     """
 
     SAVEPOINT = "test_org_share_migration"
@@ -899,8 +887,8 @@ class TestOrgShareMigration(InsightsIntegrationTestCase):
         chart = create_test_chart(OWNER, workbook.name, query.name, title="Org Share Test Chart")
         dashboard = create_test_dashboard(OWNER, workbook.name, title="Org Share Test Dashboard")
 
-        # written as a site from before the patch holds it: a share on a member
-        # can no longer be saved with write
+        # inserted raw, as an old site holds them: a share with write on a
+        # member can no longer be saved
         for doc in (chart, dashboard):
             frappe.get_doc(
                 {
@@ -929,7 +917,7 @@ class TestOrgShareMigration(InsightsIntegrationTestCase):
 
     # @feature permissions.visibility
     def test_an_org_share_that_carried_write_still_becomes_the_everyone_level(self):
-        """It granted read too, and a row left behind would grant nothing."""
+        """A share with write also granted read, and a row left behind would grant nothing."""
         for doc in self.shared_with_the_org(read=1, write=1):
             self.migrate()
             self.assertEqual(frappe.db.get_value(doc.doctype, doc.name, "visibility"), "Everyone")

@@ -1,6 +1,5 @@
-// The table an import copies, as `ImportTableDialog` picks it: a table of a data
-// source. The two are one selection, so the count printed under it is always
-// the count of both.
+// The data source and table that `ImportTableDialog` picks for an import. They
+// are one selection, so the row count shown always belongs to the picked table.
 
 import { reactive, watch } from 'vue'
 import { getRowCount } from '../data_source/tables'
@@ -9,10 +8,9 @@ export function useTableSelection() {
 	const selection = reactive({
 		data_source: '',
 		table_name: '',
-		// undefined and not zero: the count is not known yet, and "0 rows" under a
-		// table nobody counted reads as an empty table
+		// undefined, not zero: "0 rows" before the count arrives looks like an
+		// empty table
 		table_row_count: undefined as number | undefined,
-		// a table belongs to its source, so another source leaves none picked
 		pickSource(data_source: string) {
 			selection.data_source = data_source
 			selection.table_name = ''
@@ -25,8 +23,7 @@ export function useTableSelection() {
 		},
 	})
 
-	// The count that lands last need not be the one asked last, so only the
-	// latest ask may write.
+	// Responses can arrive out of order, so only the latest request may write.
 	let asked = 0
 	watch(
 		() => [selection.data_source, selection.table_name] as const,

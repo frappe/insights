@@ -22,12 +22,12 @@ const iFrameLink = computed(() => {
 	return `<iframe src="${shareLink.value}" width="100%" height="300" frameborder="0"></iframe>`
 })
 
-// A chart's own level is half of how far it reaches. The other half is the
-// dashboards it sits on: their readers get read on every chart on the grid, so
-// a Private chart under a published dashboard is published by it — which is
-// exactly the state `run_public_charts_as_owner` leaves behind, and the state
-// this dialog is the only way out of. The server computes it; the dialog asks
-// once, when it opens against a loaded document.
+// The chart's visibility is only half of who can read it. The other half is the
+// dashboards it is on: a dashboard's readers can read every chart on it, so a
+// Private chart on a published dashboard is published too. The patch
+// `run_public_charts_as_owner` leaves charts in this state, and this dialog is
+// the only way out of it. The server computes it, and the dialog asks once,
+// when it opens on a loaded document.
 const publishedByDashboard = ref<string | null>(null)
 chart.doc.name &&
 	chart
@@ -38,9 +38,9 @@ chart.doc.name &&
 		})
 		.catch(() => {})
 
-// Every level above Private reaches a population nobody named one at a time —
-// the same boundary the server publishes by. `Roles` with no role named reaches
-// nobody yet.
+// Every level above Private reaches users who were not named one by one. The
+// server uses the same rule for what counts as published. `Roles` with no role
+// selected reaches nobody yet.
 const wideVisibility = computed(
 	() =>
 		visibility.value === 'Public' ||

@@ -20,8 +20,7 @@ const workbook = inject(workbookKey) as Workbook
 
 const modules = ref<ExportModule[]>([])
 
-// no default module: a workbook written into the wrong app lands in someone
-// else's repo
+// no default module: a wrong guess writes the workbook into another app's repo
 const selected = ref('')
 const module = computed(() => modules.value.find((m) => m.module === selected.value))
 const moduleOptions = computed(() =>
@@ -67,8 +66,8 @@ function done() {
 	emit('marked', marked.value)
 }
 
-// mid-export there is nothing to go back to, and once the file is written this
-// workbook answers to another name — so Done, which reloads, is the only way out
+// During the export there is nothing to go back to. After it, the workbook has
+// a new name. So Done, which reloads, is the only way out.
 const locked = computed(() => marking.value || Boolean(marked.value))
 
 const actions = computed(() => {

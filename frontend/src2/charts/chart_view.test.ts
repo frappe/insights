@@ -6,7 +6,6 @@ import { makeChartRead, useChartView, type CardFilter } from './chart_view'
 import type { DrillLevel } from './drill/drill_stack'
 
 const calls = vi.hoisted(() => [] as any[])
-// what the next call to a method answers, when a case needs more than an empty one
 const answers = vi.hoisted(() => new Map<string, (args: any) => Promise<any>>())
 
 vi.mock('frappe-ui', async (importOriginal) => ({
@@ -24,9 +23,9 @@ beforeEach(() => {
 	answers.clear()
 })
 
-// A number card is drawn as one cell per reading, and every cell loads the
-// chart it draws. On a public link the saved source named no request, so nothing
-// dropped the repeats and one card ran its query once per reading.
+// A Number chart renders one cell per reading, and each cell loads the chart.
+// On a public link the request had no key. So repeats were not dropped, and one
+// chart ran its query once per reading.
 
 describe('the request a public read would send', () => {
 	// @feature shared.read-once
@@ -66,10 +65,8 @@ describe('the request a public read would send', () => {
 	})
 })
 
-// The rows on a card answer one question, and a load that would ask it again is
-// dropped. A reader asking for fresh rows is not asking the same question — and
-// a run that failed left nothing on screen, so asking again has to take back
-// what the card said went wrong.
+// A card drops a load that repeats its last request. A Refresh is not a repeat.
+// A failed run shows no rows, so the next load runs again and clears the error.
 
 function readAnswering(answer: (attempt: number) => Promise<any>) {
 	const forces: boolean[] = []
@@ -100,7 +97,6 @@ describe('a card asked for its rows again', () => {
 		await read.load()
 		expect(read.result.rows).toEqual([{ region: 'North' }])
 
-		// the same question, so nothing is asked
 		await read.load()
 		expect(forces).toEqual([false])
 		expect(read.result.rows).toEqual([{ region: 'North' }])
@@ -144,9 +140,8 @@ describe('a link to a chart the reader cannot open', () => {
 	})
 })
 
-// A chart the reader may see but whose data they may not read comes back as an
-// answer, not a failure: there is nothing to retry and nothing to fix, so the
-// card must not offer either.
+// Not Permitted is a result, not a failure. The reader cannot retry or fix it,
+// so the card must not offer either.
 
 describe('a card the reader may not read the data behind', () => {
 	// @feature permissions.not-permitted-chart
@@ -162,7 +157,6 @@ describe('a card the reader may not read the data behind', () => {
 		expect(read.failed).toBe(false)
 		expect(read.result.rows).toEqual([])
 
-		// a grant the reader was given since is a different answer to the same question
 		await read.load(true)
 		expect(read.notPermitted).toBeUndefined()
 		expect(read.result.rows).toEqual([{ region: 'South' }])
@@ -209,12 +203,10 @@ describe('a card the reader sees a narrowed set of rows on', () => {
 	})
 })
 
-// A card draws a chart's definition and its rows from one answer. A definition
-// that reaches the browser before the rows it decides would draw over rows it
-// did not produce — a renamed measure draws no series, a retyped chart reads
-// columns it does not have.
+// A card takes the chart definition and its rows from one response. A newer
+// definition must not render over older rows. A renamed measure would show no
+// series, and a changed chart type would read columns that are not there.
 
-/** A promise the case settles by hand, so it can look at the card mid-flight. */
 function deferred<T>() {
 	let resolve!: (value: T) => void
 	const promise = new Promise<T>((settle) => (resolve = settle))
@@ -234,8 +226,8 @@ function rowsOf(frame: ReturnType<typeof frameOf>, region: string) {
 describe('a card and the chart it draws', () => {
 	// @feature charts.one-snapshot
 	it('keeps the frame it drew its rows with when a revisit hands it a newer one', async () => {
-		// `view.ts` `openReads` hands every read the frame its dashboard answer
-		// carried, on every visit. The rows on screen answer the first frame
+		// `view.ts` `openReads` passes each read the frame from the dashboard
+		// response, on every visit. The rows on screen belong to the first frame.
 		const first = frameOf('chart-20', 'Sales')
 		answers.set('insights.api.view.get_chart_data', () =>
 			Promise.resolve(rowsOf(first, 'North')),
@@ -250,8 +242,8 @@ describe('a card and the chart it draws', () => {
 
 	// @feature charts.one-snapshot charts.refresh
 	it('draws a refreshed frame only once the rows it decides have landed', async () => {
-		// `SharedChart` and `ChartIsland` open a chart with no frame in hand, and
-		// the card's Refresh reloads it forced
+		// `SharedChart` and `ChartIsland` open a chart without a frame. The card's
+		// Refresh reloads it with force.
 		answers.set('insights.api.view.get_chart', () =>
 			Promise.resolve(frameOf('chart-21', 'Sales')),
 		)
@@ -280,8 +272,8 @@ describe('a card and the chart it draws', () => {
 
 	// @feature charts.drill-changed-chart
 	it('drills the version of the chart it drew, not the one a revisit handed it', async () => {
-		// `ChartDrillDown.vue` puts the subject's `modified` on every level, and
-		// `view.get_drill_data` refuses one the chart has moved on from
+		// `ChartDrillDown.vue` sends the subject's `modified` with each level.
+		// `view.get_drill_data` refuses a stale `modified`.
 		const first = { ...frameOf('chart-23', 'Sales'), modified: '2026-09-22 10:00:00' }
 		answers.set('insights.api.view.get_chart_data', () =>
 			Promise.resolve(rowsOf(first, 'North')),
@@ -298,8 +290,8 @@ describe('a card and the chart it draws', () => {
 
 	// @feature charts.one-snapshot shared.read-once
 	it('is not asked again when the island that draws it is mounted again', async () => {
-		// desk's `chart_widget.js` unmounts and remounts `ChartIsland` on every
-		// render, and each mount opens the chart by name and loads it
+		// Desk's `chart_widget.js` remounts `ChartIsland` on every render. Each
+		// mount opens the chart by name and loads it.
 		answers.set('insights.api.view.get_chart', () =>
 			Promise.resolve(frameOf('chart-22', 'Sales')),
 		)
@@ -321,9 +313,9 @@ describe('a card and the chart it draws', () => {
 describe('the builder grid drawing a chart its author edited', () => {
 	// @feature charts.one-snapshot charts.preview
 	it('draws the config its rows answer until the edited config has its own rows', async () => {
-		// `dashboard.ts` `chartView` hands the grid's reads the workbook's chart
-		// store, which the chart builder edits in place, and `builder.ts`
-		// `loadChart` loads each card when the grid mounts
+		// `dashboard.ts` `chartView` gives the grid the workbook's chart store,
+		// which the chart builder edits in place. `builder.ts` `loadChart` loads
+		// each card when the grid mounts.
 		const chart = reactive({
 			doc: {
 				name: 'chart-30',
@@ -366,8 +358,8 @@ describe('the builder grid drawing a chart its author edited', () => {
 describe('the builder drilling a chart its author is editing', () => {
 	// @feature charts.drill-changed-chart charts.preview
 	it('drills the version its rows ran as, not the one the document being edited holds', async () => {
-		// `ChartDrillDown.vue` puts the subject's `modified` on every level, and
-		// `authoring.get_drill_data` refuses one a teammate's save moved on from
+		// `ChartDrillDown.vue` sends the subject's `modified` with each level.
+		// `authoring.get_drill_data` refuses it after a teammate saves the chart.
 		const chart = reactive({
 			doc: {
 				name: 'chart-34',
@@ -393,8 +385,8 @@ describe('the builder drilling a chart its author is editing', () => {
 
 	// @feature charts.drill-segment charts.one-snapshot charts.preview
 	it('drills the config on screen while an edit waits for its rows', async () => {
-		// `ChartDrillDown.vue` reads the clicked segment off `subject.chart`, and
-		// `ChartBuilder.vue` loads an edit only after its debounce
+		// `ChartDrillDown.vue` reads the clicked segment from `subject.chart`.
+		// `ChartBuilder.vue` loads an edit only after a debounce.
 		const chart = reactive({
 			doc: {
 				name: 'chart-35',
@@ -429,8 +421,8 @@ describe('the builder drilling a chart its author is editing', () => {
 describe('the builder drawing a chart its reader may not write', () => {
 	// @feature charts.one-snapshot charts.preview
 	it('draws the chart the server ran when that is not the one it sent', async () => {
-		// `ChartBuilder.vue` for a collaborator who may not write the chart:
-		// `authoring.get_chart_data` runs the stored chart and says so
+		// For a collaborator who may not write the chart,
+		// `authoring.get_chart_data` runs the stored chart and returns it.
 		const chart = reactive({
 			doc: {
 				name: 'chart-31',
@@ -461,7 +453,7 @@ describe('the builder drawing a chart its reader may not write', () => {
 
 	// @feature charts.one-snapshot charts.preview
 	it('fills the slots of the chart the server ran, as a saved card does', async () => {
-		// a view's frame carries only what its owner set, and never `filters`
+		// A View's frame holds only what the owner set, and never `filters`.
 		const chart = reactive({
 			doc: {
 				name: 'chart-33',
@@ -488,7 +480,6 @@ describe('the builder drawing a chart its reader may not write', () => {
 
 	// @feature charts.preview permissions.chart-run-as-owner
 	it('says its reader may not write it', () => {
-		// `ChartBuilder.vue` makes its form read-only by the preview's `can_write`
 		const chart = reactive({
 			doc: {
 				name: 'chart-32',
@@ -504,8 +495,8 @@ describe('the builder drawing a chart its reader may not write', () => {
 	})
 })
 
-// A table pages past its first page for a reader the server says may have more
-// than the picture. Everyone else keeps the chart's one page.
+// A Table chart pages only when the server says the reader may read its rows
+// (`can_read_rows`). Other readers get the chart's first page only.
 
 function pagedRead(chart_type: string, answer: (page: number) => Promise<any>) {
 	const pages: number[] = []

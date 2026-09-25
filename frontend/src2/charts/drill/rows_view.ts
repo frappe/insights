@@ -1,14 +1,12 @@
-// The rows level, as every drill reads it.
+// A reader and an author both get the query builder's result pane: its grid,
+// sort, find, cursor and export. The server does every read. It runs the rows
+// as the chart runs them and as of the card's read, and that only holds inside
+// the cut. So each control sends its request by name, and the server answers
+// inside the same cut.
 //
-// A reader and an author get the query builder's result pane — its grid, its
-// sort, its find, its cursor and its export — and get it from the server. The
-// rows run as the chart declares and on the day its card was read, which only
-// holds where the cut is made, so every one of those controls is a question
-// asked by name and answered inside the same cut.
-//
-// What that makes this module is one `ResultTable`: the pane asks a source for
-// rows, a page, a term and a file, and this is the source that answers with the
-// server instead of with a query document.
+// This module is therefore one `ResultTable`. The pane asks it for rows, a page,
+// a search and a file, and it answers from the server instead of from a query
+// document.
 
 import { useDebounceFn } from '@vueuse/core'
 import { toast } from 'frappe-ui'
@@ -35,8 +33,8 @@ import type {
 
 /**
  * What the pane's own controls do not cover: which columns name a document, and
- * the reader's own filter over the rows — the one control the builder's rows
- * pane has that a `ResultTable` knows nothing about.
+ * the reader's own filters on the rows. The builder's rows pane has these
+ * filters, but `ResultTable` does not know about them.
  */
 type DrillRowsControls = {
 	// the answer on screen, after the reader's own filter, sort and find
@@ -51,19 +49,16 @@ type DrillRowsControls = {
 	rangeProvider: (column: QueryResultColumn) => Promise<[number, number] | undefined>
 }
 
-// The page the server cuts, which is `chart_drill.PAGE_SIZE`. The cursor counts
-// with it, so the two have to agree: a client that guessed wrong would report
-// the wrong row numbers for every page but the first.
+// The server's page size, `chart_drill.PAGE_SIZE`. The cursor counts rows with
+// it, so the two must match, or every page after the first shows wrong row
+// numbers.
 export const ROWS_PAGE_SIZE = 100
 
-// A find is a round trip, so it waits for the reader to stop typing. The term
-// itself is not delayed — the box stays live and only the question waits.
+// A find is a round trip, so it waits until the reader stops typing. The input
+// updates at once; only the request waits.
 const FIND_DELAY = 300
 
 /**
- * The reader's rows level: the answer they are looking at, and the three ways
- * they can ask for another one.
- *
  * `first` is the answer the dialog already holds, so mounting fetches nothing.
  */
 export function makeDrillRows(first: DrillLevelData, source: DrillRowsSource) {
@@ -73,7 +68,6 @@ export function makeDrillRows(first: DrillLevelData, source: DrillRowsSource) {
 	const find = ref('')
 	const page = ref(1)
 
-	/** The picker's rules as the wire carries them: a column by name, and a literal. */
 	const rules = (own: Filter[]): DrillRowFilter[] =>
 		own.map((filter) => ({
 			column: filter.column.name,
@@ -81,9 +75,9 @@ export function makeDrillRows(first: DrillLevelData, source: DrillRowsSource) {
 			value: filter.value,
 		}))
 
-	// A rule is left out of its own value list, or picking a second value would
-	// be impossible: the list is read off the rows the reader's other rules
-	// narrowed, and the rule on this column has narrowed them to what it holds.
+	// A column's own filter is left out of its value list. The list comes from
+	// the rows the filters leave, and this column's filter already narrowed them
+	// to its own values, so a second value could not be picked.
 	const others = (column: string) =>
 		rules(filters.value.filter((filter) => filter.column.name !== column))
 
@@ -98,8 +92,8 @@ export function makeDrillRows(first: DrillLevelData, source: DrillRowsSource) {
 		page: page.value,
 	})
 
-	// Every read claims the level: a term typed over a slower one still out has
-	// to disown it, or the older answer lands under the newer question.
+	// Each read takes a new token. A search typed while a slower one still runs
+	// must discard the older answer, or it would show under the newer search.
 	let inFlight = 0
 	async function read() {
 		const token = ++inFlight
@@ -108,8 +102,8 @@ export function makeDrillRows(first: DrillLevelData, source: DrillRowsSource) {
 		try {
 			const answer = await source.read(reading())
 			if (token !== inFlight) return
-			// nothing ran, so there is no page of rows and no count to report. A
-			// grant taken away between two readings of the same level lands here.
+			// nothing ran, so there is no page of rows and no count to show. This
+			// happens when a permission is removed between two reads of the level.
 			if (answer.not_permitted) {
 				executionError.value = refusalDetail(
 					answer.not_permitted.doctypes,
@@ -127,8 +121,8 @@ export function makeDrillRows(first: DrillLevelData, source: DrillRowsSource) {
 		}
 	}
 
-	// A narrower or differently ordered result is a different first page, and
-	// staying on page four of it would show the reader an arbitrary stretch.
+	// A new filter or sort changes the first page, so staying on page four would
+	// show an arbitrary set of rows.
 	function reread() {
 		page.value = 1
 		read()
@@ -141,15 +135,15 @@ export function makeDrillRows(first: DrillLevelData, source: DrillRowsSource) {
 			rows: level.value.rows,
 			totalRowCount: level.value.total_row_count || 0,
 		}
-		// the grid draws the formatted rows, and a cell's link crosses back to the
-		// raw one through them. These are the cut's source rows, so no column of
-		// them was grouped at a grain
+		// the grid renders the formatted rows, and a cell's link maps back to the
+		// raw row through them. These are the cut's source rows, so no column is
+		// grouped by a grain
 		return { ...answered, formattedRows: formatResultRows(answered, {}) }
 	})
 
-	// The sort, as the grid reads it back: the arrows come off the operations a
-	// result was produced by, and these are the operations this reading stands
-	// for. Nothing runs them here — the server built its own from the same list.
+	// The grid takes its sort arrows from the operations behind a result, so
+	// these are the operations for the current sort. Nothing runs them here: the
+	// server builds its own from the same sort list.
 	const currentOperations = computed<Operation[]>(() =>
 		sort.value.map((rule) =>
 			order_by({ column: column(rule.column), direction: rule.direction }),
@@ -159,8 +153,6 @@ export function makeDrillRows(first: DrillLevelData, source: DrillRowsSource) {
 	function addOrderBy(args: OrderByArgs) {
 		const named = args.column.column_name
 		const direction = args.direction === 'desc' ? 'desc' : 'asc'
-		// the column just clicked is the one the reader wants the rows run by, and
-		// the ones they sorted before it stay on as tiebreaks
 		sort.value = [{ column: named, direction }, ...sort.value.filter((r) => r.column !== named)]
 		reread()
 	}
@@ -171,9 +163,9 @@ export function makeDrillRows(first: DrillLevelData, source: DrillRowsSource) {
 		reread()
 	}
 
-	// The reader's own rules over these rows. They last exactly as long as the
-	// level does — a new rows level makes a new source — and nothing is carried
-	// back to the card that was clicked.
+	// The reader's own filters on these rows. They last as long as the level (a
+	// new rows level creates a new source), and the clicked card does not get
+	// them.
 	function setFilters(own: Filter[]) {
 		filters.value = own
 		reread()
@@ -237,7 +229,7 @@ export function makeDrillRows(first: DrillLevelData, source: DrillRowsSource) {
 		currentPage: page,
 		pageSize: ROWS_PAGE_SIZE,
 		goToPage,
-		// the total arrives with every answer, so there is nothing left to ask for
+		// the total comes with every answer, so there is nothing more to request
 		fetchResultCount: undefined,
 
 		currentOperations,
@@ -249,22 +241,18 @@ export function makeDrillRows(first: DrillLevelData, source: DrillRowsSource) {
 
 		filters,
 		setFilters,
-		// what a rule on one column may pick from, read off the cut the other
-		// rules left — the same question the builder asks its own query
 		valuesProvider: (column: QueryResultColumn) => (search: string) =>
 			source.values(column.name, search, others(column.name)),
 		rangeProvider: (column: QueryResultColumn) =>
 			source.range(column.name, others(column.name)),
 
 		downloading,
-		// the site decides whether data may leave it as a file, so the control is
-		// drawn only where the server said it leads somewhere
 		exportResults: computed(() => (level.value.can_export ? exportRows : undefined)),
 		cancelDownload,
 
-		// which columns name a desk document, as the server answered it. It is
-		// read off the current answer so it survives a sort, a find and a page —
-		// the cut is the same cut, and so are its links
+		// which columns name a desk document, as the server answered. It is read
+		// from the current answer, so it survives a sort, a find and a page change:
+		// the cut and its links stay the same
 		recordLinks: computed(() => level.value.record_links),
 	})
 

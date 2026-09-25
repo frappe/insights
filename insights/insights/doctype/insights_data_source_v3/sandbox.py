@@ -1,9 +1,10 @@
-"""What the code a query runs may reach.
+"""What code in a query may use.
 
-A script is written by an Insights Admin, as a Server Script is: it reads past
-permissions and may call out over HTTP. An expression is written by anyone who
-may change a query, so it reads only what the user it runs for may read.
-Neither writes, queues a job, calls a method, sends mail or registers a commit hook.
+A script is trusted code, written by an Insights Admin like a Server Script. It
+ignores permissions and may make HTTP requests. Anyone who may change a query
+may write an expression, so an expression reads only what its Permission User
+may read. Neither may write, queue a job, call a method, send mail or register
+a commit hook.
 """
 
 import copy
@@ -52,8 +53,8 @@ SCRIPT_DB = (
     "sql",
 )
 
-# frappe's safe data utils, without those that read a file, fetch a URL, write,
-# or read past permission; named, so a frappe release adds none
+# frappe's safe data utils, minus those that read a file, fetch a URL, write or
+# ignore permissions. Listed by name, so a new frappe release adds none
 UTILS = (
     "DATE_FORMAT",
     "TIME_FORMAT",
@@ -174,8 +175,8 @@ EXPRESSION_FRAPPE = (
 )
 DOCUMENT_READS = frozenset({"get", "as_dict", "as_json", "get_formatted", "get_title", "is_new"})
 SCRIPT_DOCUMENT_READS = DOCUMENT_READS | {"get_password"}
-# what a data frame, a table or an array hands back as a value; every other
-# `read_`, `to_` and `from_` on them, and an array's own writers, take a path
+# the `read_`, `to_` and `from_` methods of a data frame, table or array that
+# return a value. Every other one takes a file path, as an array's writers do
 IN_MEMORY = frozenset(
     {
         "from_dict",
@@ -207,8 +208,8 @@ def script_globals() -> dict:
             "get_doc": script_read(frappe.get_doc),
             "get_cached_doc": script_read(frappe.get_cached_doc),
             "get_last_doc": script_read(frappe.get_last_doc),
-            # the user only: the rest of `session` is the caller's, csrf token included,
-            # and a run for someone else is cached for every caller it serves
+            # only the user. The rest of `session` belongs to the caller, CSRF token
+            # included, and a run as another user is cached for every caller it serves
             "session": frappe._dict(user=frappe.session.user),
         },
         db_names={name: db_names[name] for name in SCRIPT_DB if name in db_names},
@@ -232,9 +233,9 @@ def expression_globals() -> dict:
 def sandbox_globals(offered: dict, names: dict, frappe_names: dict, db_names: dict) -> dict:
     """The globals code runs with: `names`, and `frappe` holding `frappe_names`, `db_names` and `UTILS`.
 
-    `safe_exec` lays these over frappe's Server Script globals, so every other
-    name frappe offers is put back as one that is not defined. The RestrictedPython
-    guards and the builtins come with them.
+    `safe_exec` merges these into frappe's Server Script globals, so every other
+    frappe global is replaced with `NotDefined`. The RestrictedPython guards and
+    the builtins are kept.
     """
     allowed = {name: value for name, value in offered.items() if name.startswith("_")}
     allowed.update(get_python_builtins())
@@ -258,7 +259,7 @@ def sandbox_globals(offered: dict, names: dict, frappe_names: dict, db_names: di
 
 
 def no_io(guard):
-    """`_getattr_` that refuses a file, and the connection a relation runs on."""
+    """`_getattr_` that refuses file access and the connection a relation runs on."""
 
     def getattr_(obj, name, default=None):
         owner = obj if isinstance(obj, type) else type(obj)
@@ -291,7 +292,7 @@ def script_read(get):
 
 
 def read_doc(doctype: str, name=None):
-    """`frappe.client.get`'s read, as the user the code runs for."""
+    """Read a document as `frappe.client.get` does, as the Permission User."""
     if not isinstance(doctype, str):
         raise frappe.PermissionError("Code in a query reads a stored document only")
 
@@ -314,10 +315,10 @@ def read_value(doctype: str, filters=None, fieldname="name", as_dict=False):
 
 
 class DocumentRead:
-    """A document as code in a query holds it: its fields, and the methods that only read it.
+    """A document as code in a query sees it: its fields, and only the methods that read it.
 
-    A query's `build` and `execute` read the query, so they ask for it as the
-    user the code runs for.
+    A query's `build` and `execute` read that query, so they check read on it
+    for the Permission User.
     """
 
     __slots__ = ("_doc", "_methods")
@@ -348,7 +349,7 @@ def document_read(value, methods: frozenset[str]):
         return DocumentRead(value, methods)
     if isinstance(value, list | tuple):
         return [document_read(item, methods) for item in value]
-    # a dict or a set off the document is still the document's own
+    # copied, so code cannot change the document through a dict or set it returns
     if isinstance(value, dict | set):
         return copy.deepcopy(value)
     return value

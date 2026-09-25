@@ -70,7 +70,7 @@ const moreActions = computed(() =>
 				label: __('View SQL'),
 				icon: h(Scroll, { class: 'h-3 w-3 text-ink-gray-6', strokeWidth: 1.5 }),
 				onClick: () => (showViewSQLDialog.value = true),
-				// only the author's answer carries it
+				// only the authoring endpoint returns the SQL
 				condition: () => Boolean(props.preview.result.executedSQL),
 			},
 			{

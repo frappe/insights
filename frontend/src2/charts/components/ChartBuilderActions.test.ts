@@ -3,9 +3,8 @@ import { createSSRApp, h, reactive } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import ChartBuilderActions from './ChartBuilderActions.vue'
 
-// duplicating reaches the router, which reads the page it was mounted on
+// Duplicate uses the router, which needs a mounted page
 vi.mock('../../workbook/workbook_items', () => ({ duplicateWorkbookItem: () => {} }))
-// the menu, drawn as the labels it offers
 vi.mock('frappe-ui', async (original) => ({
 	...(await original<typeof import('frappe-ui')>()),
 	Dropdown: {
@@ -16,8 +15,8 @@ vi.mock('frappe-ui', async (original) => ({
 	},
 }))
 
-// The builder card's menu. A caller who may not write the chart is answered
-// with the view's picture, which carries no SQL.
+// For a caller who may not write the chart, the server returns the View's
+// result, which has no SQL.
 
 async function menu(executedSQL: string, doc: Record<string, any> = {}) {
 	const app = createSSRApp({
@@ -30,8 +29,8 @@ async function menu(executedSQL: string, doc: Record<string, any> = {}) {
 				onShare: () => {},
 			}),
 	})
-	// the app registers frappe-ui's components globally; this render does not
-	// need them resolved
+	// The app registers frappe-ui components globally. This test does not, so it
+	// silences the warnings for unresolved components.
 	app.config.warnHandler = () => {}
 	return renderToString(app)
 }
@@ -46,7 +45,6 @@ describe('the builder card menu', () => {
 	// @feature shared.publish-needs-share
 	it('offers Share where the server says the caller may share, and nowhere else', async () => {
 		expect(await menu('select 1', { can_share: true })).toContain('Share Chart')
-		// a writer the server does not let share
 		expect(await menu('select 1', { can_share: false })).not.toContain('Share Chart')
 	})
 })

@@ -1,11 +1,10 @@
-"""The guards on a workbook that claims to be shipped.
+"""Guards on a standard workbook.
 
-Two ordinary columns decide a lot. `is_standard` is what `insights/standard.py`
-reads to let a chart past the site's team grants and its Table Restrictions, and
-`module` decides whether the next migrate finds the workbook's file at all - or
-deletes it as an orphan, taking every query, chart, dashboard and folder in it.
-`frappe.client.set_value` reaches both and enforces no `read_only`, so both are
-refused on the document.
+`insights/standard.py` reads `is_standard` to let a chart past the site's team
+grants and Table Restrictions. `module` decides whether the next migrate finds
+the workbook's file. If it does not, migrate deletes the workbook as an orphan,
+with every query, chart, dashboard and folder in it. `frappe.client.set_value`
+can write both fields and ignores `read_only`, so the document refuses both.
 """
 
 import frappe
@@ -27,8 +26,8 @@ class TestStandardWorkbookGuards(InsightsIntegrationTestCase):
         cls.developer_mode_was = frappe.conf.developer_mode
         cls.workbook = create_test_workbook(OWNER, title=PREFIX).name
 
-        # a module the site made for itself: a `Module Def` row, and in no app's
-        # `modules.txt`
+        # a module the site made: a `Module Def` row that no app's `modules.txt`
+        # lists
         if not frappe.db.exists("Module Def", SITE_MODULE):
             frappe.get_doc(
                 {
@@ -48,8 +47,8 @@ class TestStandardWorkbookGuards(InsightsIntegrationTestCase):
 
     # @feature standard.read-only
     def test_a_request_cannot_mark_a_workbook_shipped(self):
-        """Marking it is what lets every chart in it read the tables the site
-        denies its author."""
+        """A standard workbook lets its charts read tables the site denies their
+        author."""
         frappe.conf.developer_mode = 0
 
         with self.assertRaises(frappe.ValidationError):
@@ -59,8 +58,8 @@ class TestStandardWorkbookGuards(InsightsIntegrationTestCase):
 
     # @feature standard.mark
     def test_a_workbook_cannot_ship_in_a_module_no_app_ships(self):
-        """The file would land where a migrate never looks, and
-        the next migrate deletes the workbook it belongs to."""
+        """Migrate never reads a file in such a module, so the next migrate
+        deletes the workbook."""
         frappe.conf.developer_mode = 1
 
         workbook = frappe.get_doc(DT.WORKBOOK, self.workbook)
@@ -74,9 +73,9 @@ class TestStandardWorkbookGuards(InsightsIntegrationTestCase):
 
     # @feature standard.mark
     def test_a_member_never_takes_a_name_a_dashboard_route_answers_to(self):
-        """`resolver.resolve` tries a docname before a route, so a shipped
-        dashboard named onto a site dashboard's route takes over every link that
-        used it - a workspace sidebar item is the whole reason routes exist."""
+        """`resolver.resolve` tries a docname before a route. If a shipped
+        dashboard's name equals a site dashboard's route, it takes over every
+        link to that route, such as a workspace sidebar item."""
         other = create_test_workbook(OWNER, title=f"{PREFIX} Other")
         mine = create_test_workbook(OWNER, title=f"{PREFIX} Mine")
         self.addCleanup(frappe.delete_doc, DT.WORKBOOK, other.name, force=True)
@@ -95,10 +94,10 @@ class TestStandardWorkbookGuards(InsightsIntegrationTestCase):
 
     # @feature standard.resync
     def test_a_file_cannot_take_over_a_member_another_workbook_holds(self):
-        """A member is named `<workbook>-<title slug>`, deduped on the bench
-        that wrote the file and nowhere else, so a site that installs two apps
-        can hold a collision neither authoring bench could see. Reusing the row
-        re-parents the other app's chart and its dashboard silently draws it."""
+        """A member is named `<workbook>-<title slug>`. Only the bench that
+        wrote the file checks the name is unique, so a site with two apps can
+        hold a collision that neither bench saw. Reusing the row would move the
+        other app's chart into this workbook without warning."""
         holder = create_test_workbook(OWNER, title=f"{PREFIX} Holder")
         taker = create_test_workbook(OWNER, title=f"{PREFIX} Taker")
         self.addCleanup(frappe.delete_doc, DT.WORKBOOK, holder.name, force=True)
@@ -136,10 +135,9 @@ class TestStandardWorkbookGuards(InsightsIntegrationTestCase):
 
     # @feature standard.resync
     def test_a_file_cannot_take_the_address_a_site_dashboard_answers_to(self):
-        """A dashboard answers to its route as well as to its docname, and
-        `resolver.resolve` tries the docname first. The receiving site is the
-        only place a collision between the two is visible, so it is the site
-        that has to look."""
+        """A dashboard is found by its docname or its route, and
+        `resolver.resolve` tries the docname first. Only the receiving site can
+        see a collision between the two, so the site must check for it."""
         holder = create_test_workbook(OWNER, title=f"{PREFIX} Route Holder")
         taker = create_test_workbook(OWNER, title=f"{PREFIX} Route Taker")
         self.addCleanup(frappe.delete_doc, DT.WORKBOOK, holder.name, force=True)

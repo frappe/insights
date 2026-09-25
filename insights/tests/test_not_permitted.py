@@ -1,8 +1,8 @@
-"""A chart the reader may view but whose data they may not read.
+"""Not Permitted: the reader may view a chart but may not read its data.
 
-It does not run, and its card stays in place naming the doctypes it needs.
-Never an empty result that stands for a missing permission — "No data" reads as
-zero. See `docs/adr/a-reader-never-sees-a-false-empty.md`.
+The chart does not run. Its card stays in place and names the doctypes it
+needs. It never shows an empty result, because "No data" reads as zero. See
+`docs/adr/a-reader-never-sees-a-false-empty.md`.
 """
 
 import frappe
@@ -20,12 +20,12 @@ PREFIX = "Not Permitted Test"
 WORKBOOK_TITLE = f"{PREFIX} Workbook"
 READER = "not-permitted-reader@test.com"
 
-# what an Insights User cannot read on a stock site: the doctype itself, and a
-# child table whose only parent they cannot read either
+# an Insights User cannot read these on a stock site: a doctype, and a child
+# table whose only parent is also unreadable
 UNREADABLE_TABLE = "tabError Log"
 UNREADABLE_CHILD_TABLE = "tabWorkflow Document State"
 
-# a dashboard filter that lands on the card nobody here may read
+# a dashboard filter linked to the chart the reader cannot read
 REFUSED_FILTER = "Refused"
 
 
@@ -52,9 +52,6 @@ def join(table_name, columns, on="name"):
 
 
 class ContentOverATableTheReaderCannotRead(InsightsIntegrationTestCase):
-    """One workbook: a chart over a table this reader cannot read, two over one
-    they can, and a dashboard of each shape."""
-
     @classmethod
     def before_class(cls):
         cls.cleanup()
@@ -84,7 +81,6 @@ class ContentOverATableTheReaderCannotRead(InsightsIntegrationTestCase):
         cls.partly_board = cls.create_dashboard(
             "Partly",
             [cls.unreadable_chart, cls.plain_chart],
-            # a filter landing on the card nobody here may read
             links={cls.unreadable_chart: f"`{cls.unreadable_query}`.`name`"},
         )
         update_share_permissions(workbook.name, [{"user": READER, "read": 1, "write": 0}])
@@ -163,8 +159,8 @@ class ContentOverATableTheReaderCannotRead(InsightsIntegrationTestCase):
             return InsightsTablev3.get_ibis_table(SITE_DB, table_name, use_live_connection=True)
 
     def fetch(self, chart):
-        """The engine's own answer, which is a refusal. The wire surface above it
-        turns that into something a card draws — see the boundary tests."""
+        """Calls the engine directly, so a refusal raises `NotPermitted`.
+        `insights.api.view` turns it into an answer the card renders."""
         with as_user(READER), db_connections():
             return frappe.get_doc(DT.CHART, chart).fetch(force=True)
 
@@ -192,16 +188,16 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
             self.fetch(self.permlevel_chart)
         self.assertEqual(refusal.exception.doctypes, ["ToDo"])
 
-        # the same table, read by a chart that never names the column
+        # the same table, in a chart that does not use the column
         rows = self.fetch(self.plain_chart)["rows"]
         self.assertEqual([row["name"] for row in rows], [self.todo])
 
     # @feature permissions.not-permitted-chart
     def test_a_join_that_names_a_permlevel_column_is_not_permitted(self):
-        """Every other operation that names a column goes through `get_column`,
-        which turns a held-back column into a refusal. A join's own selection
-        used to go straight at ibis and come back as "check the Join
-        operation" - an author error the reader can only retry."""
+        """Other operations resolve a column through `get_column`, which refuses
+        a held-back column. A join's selected columns used to go to ibis
+        directly, and the reader got "check the Join operation": an author
+        error they cannot fix."""
         self.make_status_permlevel()
         joined = self.create_chart("Joined Status", [*source("tabToDo"), join("tabToDo", ["status"])], "name")
 
@@ -212,13 +208,14 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
 
     # @feature permissions.not-permitted-chart
     def test_a_joins_column_names_do_not_move_with_the_reader(self):
-        """The permlevel projection runs before the join names its output, so a
-        column held back from one reader would stop being a duplicate and the
-        right-hand column would take the bare name the chart's operations mean
-        for the left-hand one - a different column, with no refusal.
+        """The permlevel projection runs before the join names its output. If the
+        left-hand `status` is held back, it is no longer a duplicate. The
+        right-hand column then takes the bare name `status`, which the chart's
+        operations use for the left-hand column. The chart reads a different
+        column and nothing refuses it.
 
-        The right side carries `status` past the projection because a mutate
-        makes it, so only the left side loses it.
+        A mutate makes the right-hand `status`, so it stays past the projection.
+        Only the left side loses it.
         """
         joined = frappe.get_doc(
             {
@@ -237,24 +234,23 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
             return [column["name"] for column in result["columns"]]
 
         as_author = column_names()
-        # the right-hand `status` took the prefix, because the left had one too
+        # the right-hand `status` got a prefix because the left side has one too
         joined_column = next(name for name in as_author if name.endswith("_status"))
 
         self.make_status_permlevel()
         as_reader = column_names()
 
         self.assertIn(joined_column, as_reader)
-        # and never the bare name, which the chart's operations mean for the left
+        # the bare name belongs to the held-back left-hand column
         self.assertNotIn("status", as_reader)
 
     # @feature permissions.not-permitted-chart
     def test_the_held_back_column_is_refused_and_not_read_off_the_other_side(self):
-        """The join renames the right-hand column so its name does not move with
-        the reader, and then the only column ending in `_status` is that one. An
-        operation naming the bare `status` means the left-hand column held back
-        from this reader, so it is Not Permitted - the suffix and prefix
-        recoveries are for a column stored under an older naming, which this is
-        not."""
+        """The join renames the right-hand column, so its name does not change
+        with the reader. It is then the only column that ends in `_status`. An
+        operation that names the bare `status` means the held-back left-hand
+        column, so it is Not Permitted. The suffix and prefix fallbacks are for
+        a column stored under an older naming, and do not apply here."""
         joined = self.mutated_status_join()
         chart = self.create_chart("Joined Status Rows", joined, "status")
 
@@ -269,11 +265,11 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
 
     # @feature permissions.not-permitted-chart
     def test_an_operation_that_can_do_without_a_column_does_not_take_the_other_sides(self):
-        """`throw` chooses what happens when a name resolves to nothing, not
-        whether a held-back name may resolve to something else. A remove,
-        a sort and a carried currency all name a column and carry on without
-        it, and all three used to walk into the suffix recovery — which, after
-        the join renamed the right-hand column, matches exactly it."""
+        """`throw` decides what happens when a name resolves to no column. It
+        does not let a held-back name resolve to a different column. A remove,
+        a sort and a carried currency each name a column and continue without
+        it. All three used to fall into the suffix fallback, which matches the
+        right-hand column after the join renames it."""
         removed = [
             *self.mutated_status_join(),
             {"type": "remove", "column_names": ["status"]},
@@ -295,22 +291,22 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
             return [column["name"] for column in result["columns"]]
 
         as_author = column_names()
-        # the author's remove took the left-hand column, so the renamed
-        # right-hand one is what is left
+        # the remove drops the left-hand column, so only the renamed
+        # right-hand one is left
         joined_column = next(name for name in as_author if name.endswith("_status"))
 
         self.make_status_permlevel()
 
-        # the left-hand column was held back before the remove named it, so
-        # the remove has nothing to do - and the right-hand column is not it
+        # the projection already dropped the left-hand column, so the remove
+        # has nothing to drop. It must not drop the right-hand column instead.
         self.assertIn(joined_column, column_names())
 
     # @feature permissions.not-permitted-chart
     def test_a_column_dropped_before_the_join_is_not_put_back_at_it(self):
-        """A held-back name is put back so the join names its output the way the
-        author's does. Which is a question about the relation, not about every
-        table under it: a summarise above the table drops the column for the
-        author too, so the name means the other side's for both of them."""
+        """A held-back name is put back so the join names its output as it does
+        for the author. That depends on the relation the join reads, not on the
+        tables under it. A summarise above the table drops `status` for the
+        author too, so the name means the right-hand column for both of them."""
         summarized = [
             *source("tabToDo"),
             {
@@ -343,8 +339,8 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
 
         self.make_status_permlevel()
 
-        # the same column, drawn the same way: the summarise left no `status` on
-        # this side for either of them
+        # the reader gets the author's columns: the summarise leaves no
+        # left-hand `status` for either of them
         as_reader = self.fetch(chart)
         self.assertEqual(
             [column["name"] for column in as_reader["columns"]],
@@ -354,10 +350,9 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
 
     # @feature permissions.not-permitted-chart
     def test_a_column_the_author_removed_or_renamed_does_not_hide_a_held_back_one(self):
-        """A remove or a rename drops a name for the author as well, but only its
-        own - the table's other columns still stand, so the held-back one
-        is still the left-hand `status` and the join still has to prefix the
-        right-hand one. `InsightsChartv3.fetch` builds the stored operations."""
+        """A remove or a rename drops only the column it names. The held-back
+        column is still the left-hand `status`, so the join must still prefix
+        the right-hand one."""
         dropped_by_author = {
             "remove": {"type": "remove", "column_names": ["description"]},
             "rename": {
@@ -372,7 +367,7 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
             charts[kind] = self.create_chart(
                 f"{kind} Then Joined", [source_operation, operation, joined], "status"
             )
-            # without a join the held-back column is refused, not an author's unknown column
+            # without a join, the held-back column is refused, not reported as unknown
             charts[f"{kind} alone"] = self.create_chart(kind, [source_operation, operation], "status")
             self.assertEqual(self.fetch(charts[kind])["rows"][0]["status"], "Open")
 
@@ -386,10 +381,9 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
 
     # @feature permissions.not-permitted-chart
     def test_a_column_the_author_removed_and_the_build_held_back_is_not_refused(self):
-        """`InsightsChartv3.fetch` builds the stored operations. The author took
-        `status` off the left side, so the join's `status` is the right-hand
-        one for both of them - holding back the left-hand one first does not
-        make it theirs to be refused."""
+        """The author removed `status` from the left side, so the join's
+        `status` is the right-hand column for both of them. The reader's
+        held-back left-hand column is no reason to refuse the chart."""
         [source_operation, joined] = self.mutated_status_join()
         chart = self.create_chart(
             "Removed Then Joined",
@@ -409,11 +403,10 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
 
     # @feature permissions.not-permitted-chart
     def test_a_remove_on_the_other_side_of_a_join_does_not_hand_it_the_held_back_name(self):
-        """`InsightsChartv3.fetch` builds the stored operations. The right-hand
-        query took its own `status` off and made a new one, so the left-hand
-        `status` is still the chart's for the author - a reader it is held back
-        from is refused, not drawn the right-hand column under its name. The right side
-        is one hop away or two."""
+        """The right-hand query removes its own `status` and makes a new one. The
+        left-hand `status` is still the chart's column. A reader it is held back
+        from is refused, and does not get the right-hand column under its name.
+        The right-hand query is one or two hops away."""
         removed_then_made = [
             {"type": "remove", "column_names": ["status"]},
             {
@@ -449,10 +442,9 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
 
     # @feature permissions.not-permitted-chart
     def test_a_remove_the_left_side_did_not_make_does_not_hand_it_the_held_back_name(self):
-        """`InsightsChartv3.fetch` builds the stored operations. A remove under
-        an earlier join's right side, or one on the right that builds the same
-        relation as the left's own for this reader, took nothing off the left:
-        its `status` is still the chart's."""
+        """A remove under an earlier join's right side does not drop the left
+        side's `status`. Neither does a remove on the right that builds the same
+        relation as the left side for this reader."""
         self.read_every_row()
 
         charts = {
@@ -472,10 +464,9 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
 
     # @feature permissions.not-permitted-chart
     def test_a_table_narrowed_by_rows_and_read_twice_draws_the_readers_rows(self):
-        """`InsightsChartv3.fetch` builds the stored operations. For a reader
-        narrowed by rows, a chart that reads `tabToDo` again through a second
-        join, or through a union and a join, draws the reader's rows whether or
-        not `status` is held back."""
+        """A reader who sees only some ToDo rows still sees only those rows when
+        a chart reads `tabToDo` again, through a second join or through a union
+        and a join. This holds whether or not `status` is held back."""
         removed = self.create_query(
             "Removed", [*source("tabToDo"), {"type": "remove", "column_names": ["status"]}]
         )
@@ -499,10 +490,9 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
 
     # @feature permissions.not-permitted-chart
     def test_an_expression_that_names_a_held_back_column_is_not_permitted(self):
-        """`InsightsChartv3.fetch` builds a mutate, an expression filter and an
-        expression measure, and `InsightsAlert` evaluates its condition through
-        `evaluate_alert_expression`. A held-back name is refused as a
-        column operation's is, not a Python error the card offers to retry."""
+        """This covers a mutate, an expression filter, an expression measure and
+        an alert condition. A held-back name is refused as it is in a column
+        operation, not raised as a Python error the card shows with a retry."""
         count_open = {
             "type": "summarize",
             "measures": [
@@ -523,7 +513,7 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
             "measure": [*source("tabToDo"), count_open],
         }
         charts = {kind: self.create_chart(kind, operations, "name") for kind, operations in charts.items()}
-        # a column the reader still has, and a name no table held back
+        # a column the reader can still read, and a column that does not exist
         kept = self.create_chart("kept", [*source("tabToDo"), self.mutate("state", "priority")], "name")
         unknown = self.create_chart(
             "unknown", [*source("tabToDo"), self.mutate("state", "no_such_column")], "name"
@@ -554,13 +544,13 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
         }
 
     def read_every_row(self):
-        """Let the reader past ToDo's row filter, so a wrong column has rows to
-        draw and the chart reads the table without a row filter."""
+        """Remove ToDo's row filter for the reader, so a wrong column would show
+        rows."""
         frappe.get_doc("User", READER).add_roles("System Manager")
         self.addCleanup(lambda: frappe.get_doc("User", READER).remove_roles("System Manager"))
 
     def shapes_with_a_remove_off_the_left(self):
-        """Two charts whose left-hand `status` no remove of theirs took off."""
+        """Two charts with a remove that does not drop the left-hand `status`."""
         removed = self.create_query(
             "Removed", [*source("tabToDo"), {"type": "remove", "column_names": ["status"]}]
         )
@@ -596,9 +586,9 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
 
     # @feature permissions.not-permitted-chart
     def test_a_held_back_column_named_off_a_table_in_an_expression_is_not_permitted(self):
-        """`InsightsChartv3.fetch` builds a join expression and a custom
-        operation. `t1.status`, `t2.status` and `q.status` name the held-back
-        column as a bare `status` does, and are refused as it is."""
+        """In a join expression or a custom operation, `t1.status`, `t2.status`
+        and `q.status` name the held-back column, and are refused like a bare
+        `status`."""
         plain = self.create_query("Plain", source("tabToDo"))
 
         def joined(expression, columns=("priority",)):
@@ -627,7 +617,7 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
             "q": custom("q.filter(q.status == 'Open')"),
         }
         charts = {kind: self.create_chart(kind, operations, "name") for kind, operations in shapes.items()}
-        # a column the reader still has, and a name no table held back
+        # a column the reader can still read, and a column that does not exist
         kept = self.create_chart(
             "kept", joined(on.format("t2.priority").replace("'Open'", "t1.priority")), "name"
         )
@@ -647,9 +637,9 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
 
     # @feature permissions.not-permitted-chart
     def test_a_sql_column_that_names_a_held_back_column_is_not_permitted(self):
-        """`InsightsChartv3.fetch` builds a migrated `sql_column`. Raw SQL
-        naming a held-back column is refused as an expression naming it
-        is, not a database error the card offers to retry."""
+        """Raw SQL in a migrated `sql_column` that names a held-back column is
+        refused like an expression, not raised as a database error the card
+        shows with a retry."""
 
         def sql_column(raw_sql):
             return [
@@ -664,7 +654,7 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
             ]
 
         held_back = self.create_chart("held back", sql_column("concat(status, '!')"), "name")
-        # a column the reader still has, and a name no table held back
+        # a column the reader can still read, and a column that does not exist
         kept = self.create_chart("kept", sql_column("concat(priority, '!')"), "name")
         unknown = self.create_chart("unknown", sql_column("no_such_column"), "name")
 
@@ -680,8 +670,8 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
 
     # @feature permissions.not-permitted-chart
     def test_a_sql_column_names_a_held_back_column_in_any_case(self):
-        """`InsightsChartv3.fetch` builds a migrated `sql_column`. The database
-        reads a column name in any case, so the refusal does too."""
+        """The database matches a column name in any case, so the refusal must
+        too."""
         held_back = self.create_chart(
             "held back upper",
             [
@@ -705,12 +695,11 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
 
     # @feature permissions.not-permitted-chart
     def test_a_sql_query_that_names_a_held_back_column_is_not_permitted(self):
-        """`InsightsChartv3.fetch` builds a SQL query. Each table it names is
-        bound to the reader's permitted select, so a held-back column is
-        missing there, and is refused as a column an operation names is -
-        in any case, and named off the table's alias. A column the reader still
-        has, a name the SQL itself defines, and a name no table held back read
-        as before."""
+        """Each table a SQL query names is bound to the reader's permitted
+        select, so a held-back column is missing there. It is refused like a
+        column in an operation, in any case and through the table's alias. A
+        column the reader can read, a name the SQL defines, and an unknown name
+        behave as before."""
 
         def native(raw_sql):
             return [{"type": "sql", "data_source": SITE_DB, "raw_sql": raw_sql}]
@@ -747,10 +736,9 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
 
     # @feature permissions.not-permitted-chart
     def test_a_union_carries_a_remove_from_either_side(self):
-        """`InsightsChartv3.fetch` builds the stored operations. A union keeps
-        the columns both sides have, so the other side's remove takes `status`
-        off for the author too, and the join's `status` is the right-hand one
-        for both of them."""
+        """A union keeps only the columns both sides have. The other side's
+        remove drops `status` for the author too, so the join's `status` is the
+        right-hand column for both of them."""
         self.read_every_row()
         removed = self.create_query(
             "Removed", [*source("tabToDo"), {"type": "remove", "column_names": ["status"]}]
@@ -782,10 +770,10 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
         )
 
     def mutated_status_join(self):
-        """`tabToDo` joined to a query that carries `status` past the projection.
+        """`tabToDo` joined to a query that keeps `status` past the projection.
 
-        A mutate makes the right-hand `status`, so holding back takes it off
-        the left side only.
+        A mutate makes the right-hand `status`, so holding back `status` drops
+        only the left-hand column.
         """
         return [
             *source("tabToDo"),
@@ -835,8 +823,8 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
 
     # @feature permissions.not-permitted-chart
     def test_the_pickers_behind_a_card_answer_a_refusal_too(self):
-        """A partly permitted dashboard opens, so its value pickers and ranges
-        meet the same refusal. A raw 403 is not something a card can draw."""
+        """A partly permitted dashboard opens, so its value and range pickers get
+        the same refusal. A card cannot render a raw 403."""
         from insights.api.view import get_card_range, get_card_values
 
         with as_user(READER), db_connections():
@@ -845,9 +833,9 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
 
     # @feature permissions.not-permitted-chart
     def test_the_builders_own_pickers_answer_what_the_readers_do(self):
-        """The builder reaches its filter pickers through `run_doc_method` and a
-        reader reaches their twins through `insights.api.view`. One refusal cannot
-        have two answers split by which surface asked."""
+        """The builder calls its filter pickers through `run_doc_method`. A reader
+        calls the matching methods in `insights.api.view`. Both must answer a
+        refusal the same way."""
         board = frappe.get_doc(DT.DASHBOARD, self.partly_board)
 
         with as_user(READER), db_connections():
@@ -856,9 +844,8 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
 
     # @feature permissions.not-permitted-chart dashboard.filter-values
     def test_a_filter_offers_the_values_of_a_card_behind_a_refused_one(self):
-        """A reader's picker calls `view.get_filter_values` and the builder's
-        calls the dashboard's twin. The stored links are sorted by chart name,
-        so the card the reader is refused may come first - here it does."""
+        """The stored links are sorted by chart name, so the chart the reader
+        cannot read may come first. Here it does."""
         from insights.api.view import get_filter_range, get_filter_values
 
         refused = frappe.copy_doc(frappe.get_doc(DT.CHART, self.unreadable_chart))
@@ -887,10 +874,9 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
 
     # @feature permissions.not-permitted-chart dashboard.filter-values
     def test_a_filter_offers_the_values_of_a_card_behind_a_held_back_column(self):
-        """`view.get_filter_values` and `view.get_filter_range` look the column
-        up for a reader's picker. A held-back column is refused like a
-        table they cannot read, so the next link answers. The card's own picker
-        and the builder's query door answer the same refusal."""
+        """A held-back column is refused like a table the reader cannot read, so
+        the filter uses the next link. The card's own picker and the query's
+        methods in the builder return the same refusal."""
         from insights.api.view import get_card_range, get_card_values, get_filter_range, get_filter_values
 
         permlevel_query = frappe.db.get_value(DT.CHART, self.permlevel_chart, "query")
@@ -929,9 +915,9 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
 
     # @feature permissions.not-permitted-chart
     def test_a_refused_drill_is_an_answer_the_dialog_draws(self):
-        """The drill dialog draws a refused level, so the refusal comes back as
-        an answer like every other endpoint behind an admitted dashboard. Both
-        doors answer it: a reader's and the builder's."""
+        """The drill dialog renders a refused level, so the refusal comes back as
+        an answer, as from every other endpoint of a dashboard the reader may
+        open. The reader's endpoint and the builder's both answer it."""
         from insights.api.authoring import get_drill_data as authoring_drill
         from insights.api.view import get_drill_data as view_drill
 
@@ -954,9 +940,9 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
 
     # @feature permissions.not-permitted-chart
     def test_the_query_doors_answer_what_their_dashboard_twins_answer(self):
-        """The builder's filter dialog calls the query document straight, where
-        a reader's picker calls the dashboard's twin. One refusal, one answer,
-        whichever surface asked."""
+        """The builder's filter dialog calls the query document directly. A
+        reader's picker calls the dashboard's method. Both must answer a
+        refusal the same way."""
         query = frappe.get_doc(DT.QUERY, self.unreadable_query)
 
         with as_user(READER), db_connections():
@@ -966,9 +952,8 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
 
     # @feature permissions.not-permitted-chart
     def test_a_row_count_the_reader_may_not_have_is_not_a_zero(self):
-        """A count is the one answer whose empty value is a zero, so there is
-        nothing for a marker to ride on and "0 rows" would read as an empty
-        table."""
+        """A count has no empty value other than zero, so it cannot carry a Not
+        Permitted marker. "0 rows" would read as an empty table, so it raises."""
         from insights.api.data_sources import get_data_source_table_row_count
 
         with as_user(READER), db_connections(), self.assertRaises(NotPermitted):
@@ -976,10 +961,10 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
 
     # @feature permissions.not-permitted-chart
     def test_a_refusal_that_reaches_the_reader_says_why(self):
-        """The table explorer calls `get_data_source_table_row_count` and draws
-        the error's message. A refusal leaves the request as a 403, so its
-        sentence has to be in the message log frappe answers with - the
-        exception's own text is sent only where tracebacks are allowed."""
+        """The table explorer shows the error message of
+        `get_data_source_table_row_count`. The refusal ends the request as a
+        403, so the message must be in frappe's message log. Frappe sends the
+        exception's own text only where tracebacks are allowed."""
         from insights.api.data_sources import get_data_source_table_row_count
 
         frappe.clear_messages()
@@ -991,8 +976,8 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
 
     # @feature permissions.not-permitted-chart
     def test_a_refusal_the_card_draws_leaves_no_message_beside_it(self):
-        """`get_data_source_table` answers the refusal for the explorer's
-        preview to draw, so a toast beside it would say the same thing twice."""
+        """`get_data_source_table` returns the refusal for the explorer's
+        preview to render. A toast would repeat it."""
         from insights.api.data_sources import get_data_source_table
 
         frappe.clear_messages()
@@ -1003,8 +988,8 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
 
     # @feature permissions.not-permitted-chart
     def test_a_data_source_table_preview_answers_a_refusal(self):
-        """The explorer lists a table by the team grant, not by frappe read, so
-        clicking one lands here."""
+        """The explorer lists a table by team grant, not by frappe read
+        permission, so a reader can open a table they cannot read."""
         from insights.api.data_sources import get_data_source_table
 
         with as_user(READER), db_connections():
@@ -1015,9 +1000,9 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
 
 
 class ADashboardWithNothingPermittedReadsAsNotFound(ContentOverATableTheReaderCannotRead):
-    """The same answer as content that does not exist, because there is nothing
-    on it this reader may see. A partly permitted one opens, with its Not
-    Permitted cards in place, so the layout never shifts."""
+    """A dashboard with nothing the reader may see gets the same answer as
+    content that does not exist. A partly permitted dashboard opens with its
+    Not Permitted cards in place, so the layout never shifts."""
 
     # @feature permissions.not-found-when-nothing-is-permitted
     def test_a_dashboard_every_chart_of_which_is_not_permitted_is_not_found(self):
@@ -1027,8 +1012,8 @@ class ADashboardWithNothingPermittedReadsAsNotFound(ContentOverATableTheReaderCa
 
     # @feature permissions.not-found-when-nothing-is-permitted
     def test_a_dashboard_every_chart_of_which_is_not_permitted_opens_for_its_writer(self):
-        """`view.get_dashboard` through `resolve_for_read`. Not Found is a
-        reader's answer; a writer opens the dashboard to fix it."""
+        """Not Found is only for readers. A writer opens the dashboard to fix
+        it."""
         frappe.share.add(DT.WORKBOOK, self.workbook, user=READER, read=1, write=1, notify=0)
         self.addCleanup(frappe.share.add, DT.WORKBOOK, self.workbook, user=READER, read=1, write=0, notify=0)
 
@@ -1039,10 +1024,10 @@ class ADashboardWithNothingPermittedReadsAsNotFound(ContentOverATableTheReaderCa
 
     # @feature permissions.not-found-when-nothing-is-permitted
     def test_a_dashboard_whose_every_chart_a_user_permission_refuses_opens_for_its_writer(self):
-        """`view.get_dashboard`. A User Permission on `Insights Query v3` refuses
-        every chart on the board - a chart links its query - and not the
-        dashboard, which links only its workbook. The reader gets Not Found; a
-        writer opens it, whichever refusal emptied it."""
+        """A User Permission on `Insights Query v3` refuses every chart, because a
+        chart links its query. It does not refuse the dashboard, which links
+        only its workbook. The reader gets Not Found. A writer opens the
+        dashboard, whatever refused its charts."""
         other_query = frappe.db.get_value(DT.CHART, self.permlevel_chart, "query")
         permission = frappe.get_doc(
             {"doctype": "User Permission", "user": READER, "allow": DT.QUERY, "for_value": other_query}
@@ -1064,9 +1049,9 @@ class ADashboardWithNothingPermittedReadsAsNotFound(ContentOverATableTheReaderCa
 
     # @feature permissions.not-found-when-nothing-is-permitted permissions.team-grant
     def test_a_dashboard_whose_table_a_team_grants_opens(self):
-        """`view.get_dashboard`. On site data a team grant admits a reader as
-        desk does, and the card draws for them - so the dashboard is not Not
-        Found either."""
+        """On site data, a team grant lets a reader read a table as desk
+        permission does. The card renders for them, so the dashboard is not
+        Not Found."""
         from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
         from insights.insights.doctype.insights_team.insights_team import clear_cache
 
@@ -1096,9 +1081,9 @@ class ADashboardWithNothingPermittedReadsAsNotFound(ContentOverATableTheReaderCa
 
     # @feature permissions.not-found-when-nothing-is-permitted
     def test_a_dashboard_whose_table_desk_shares_one_document_of_opens(self):
-        """`view.get_dashboard`. A share is desk's read too - the engine reads
-        the shared rows through `frappe.get_list` - so a reader with no role on
-        the doctype but one shared document draws a card."""
+        """A share also counts as desk read permission, because the engine reads
+        shared rows through `frappe.get_list`. A reader with no role on the
+        doctype but one shared document gets a card."""
         log = frappe.get_doc({"doctype": "Error Log", "method": f"{PREFIX} shared"}).insert(
             ignore_permissions=True
         )
@@ -1124,8 +1109,8 @@ class ADashboardWithNothingPermittedReadsAsNotFound(ContentOverATableTheReaderCa
 
     # @feature permissions.not-found-when-nothing-is-permitted
     def test_a_dashboard_whose_charts_are_not_configured_yet_opens(self):
-        """A chart that names no query refuses nobody, so it cannot read the
-        dashboard as Not Found - for its own owner either."""
+        """A chart with no query refuses nobody, so it cannot make the dashboard
+        Not Found, for its owner or for a reader."""
         unconfigured = frappe.get_doc(
             {
                 "doctype": DT.CHART,
