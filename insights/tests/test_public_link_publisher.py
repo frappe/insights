@@ -11,6 +11,8 @@ recorded publisher cannot be exercised here without breaking every savepoint
 this suite runs inside, and the column's absence is stated rather than made.
 """
 
+from contextlib import redirect_stdout
+from io import StringIO
 from unittest.mock import patch
 
 import frappe
@@ -85,9 +87,14 @@ class TestPublicLinkPublisher(InsightsIntegrationTestCase):
         self.published()
         frappe.db.set_value(DT.DASHBOARD, self.dashboard, "owner", PUBLISHER)
 
-        self.run_patch_without_the_column()
+        with redirect_stdout(StringIO()) as output:
+            self.run_patch_without_the_column()
 
         self.assertFalse(frappe.db.get_value(DT.CHART, self.chart, "run_as_owner"))
+        self.assertIn(
+            f'{self.chart} "{PREFIX} Chart": owner {OWNER}, published by {PUBLISHER}: reads the site table',
+            output.getvalue(),
+        )
 
     def published_by_another_person_on(self, operations):
         """The chart, published by a dashboard someone else owns, reading `operations`."""

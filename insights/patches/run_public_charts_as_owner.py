@@ -30,16 +30,31 @@ def execute():
     Its owner can check it from the chart's share dialog, which is the one place
     that decision belongs.
     """
+    left = []
     for chart, publisher in publicly_reachable_charts().items():
         if not publisher:
             continue
         owner = frappe.db.get_value(CHART, chart, "owner")
-        if publisher == owner or reads_same_rows(chart, publisher, owner):
+        reason = None if publisher == owner else why_rows_differ(chart, publisher, owner)
+        if reason:
+            left.append((chart, owner, publisher, reason))
+        else:
             frappe.db.set_value(CHART, chart, "run_as_owner", 1, update_modified=False)
 
+    if not left:
+        return
+    print(
+        f"Insights: {len(left)} public chart(s) left running as their reader; "
+        "their owner can turn on Run as owner in the chart's share dialog"
+    )
+    for chart, owner, publisher, reason in left:
+        title = frappe.db.get_value(CHART, chart, "title")
+        print(f'  {chart} "{title}": owner {owner}, published by {publisher}: {reason}')
 
-def reads_same_rows(chart: str, publisher: str, owner: str) -> bool:
-    """Whether `chart` draws the same rows for its publisher as for its owner.
+
+def why_rows_differ(chart: str, publisher: str, owner: str) -> str | None:
+    """Why `chart` may draw other rows for its owner than for its publisher, or
+    nothing where it draws the same rows for both.
 
     Site data is filtered by desk's permissions and external data by a team's
     Table Restrictions, both per user. A script, or an expression that calls
@@ -52,25 +67,25 @@ def reads_same_rows(chart: str, publisher: str, owner: str) -> bool:
 
     query, config = frappe.db.get_value(CHART, chart, ["query", "config"])
     if not query:
-        return False
+        return "has no query"
 
     queries = {query, *transitive_closure(query)}
     operations = frappe.get_all(
         "Insights Query v3", filters={"name": ("in", list(queries))}, pluck="operations"
     )
     if any(runs_as_user(frappe.parse_json(content)) for content in [config, *operations]):
-        return False
+        return "runs a script or an expression that calls frappe"
 
-    return all(
-        not is_site_db(table["data_source"])
-        and check_table_permission(
-            table["data_source"], table["table_name"], user=publisher, raise_error=False
-        )
-        and check_table_permission(table["data_source"], table["table_name"], user=owner, raise_error=False)
-        and not team_grant(table["data_source"], table["table_name"], user=publisher)
-        and not team_grant(table["data_source"], table["table_name"], user=owner)
-        for table in source_tables(query)
-    )
+    for table in source_tables(query):
+        data_source, table_name = table["data_source"], table["table_name"]
+        if is_site_db(data_source):
+            return f"reads the site table {table_name}"
+        for user in (publisher, owner):
+            if not check_table_permission(data_source, table_name, user=user, raise_error=False):
+                return f"{user} cannot read {data_source}.{table_name}"
+            if team_grant(data_source, table_name, user=user):
+                return f"a Table Restriction narrows {data_source}.{table_name} for {user}"
+    return None
 
 
 def runs_as_user(node) -> bool:
