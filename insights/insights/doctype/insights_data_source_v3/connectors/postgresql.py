@@ -4,11 +4,30 @@
 from urllib.parse import quote_plus
 
 import ibis
+from ibis.backends.sql.compilers.postgres import PostgresCompiler
 
 from .ssl import ca_certificate_file
 
 
+class InsightsPostgresCompiler(PostgresCompiler):
+    # PostgreSQL aborts on a zero divisor; MariaDB returns NULL
+    def visit_Divide(self, op, *, left, right):
+        return super().visit_Divide(op, left=left, right=self.f.nullif(right, 0))
+
+    def visit_FloorDivide(self, op, *, left, right):
+        return super().visit_FloorDivide(op, left=left, right=self.f.nullif(right, 0))
+
+    def visit_Modulus(self, op, *, left, right):
+        return super().visit_Modulus(op, left=left, right=self.f.nullif(right, 0))
+
+
 def get_postgres_connection(data_source):
+    db = _connect(data_source)
+    db.compiler = InsightsPostgresCompiler()
+    return db
+
+
+def _connect(data_source):
     if data_source.connection_string:
         conn_string = quote_plus(data_source.connection_string)
         return ibis.connect(conn_string)
