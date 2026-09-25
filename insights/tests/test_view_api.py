@@ -568,6 +568,17 @@ class TestViewAPI(InsightsIntegrationTestCase):
             self.assertIsNone(response["workbook"])
 
     # @feature standard.duplicate
+    def test_shipped_content_is_not_offered_for_copying_without_workbook_read(self):
+        _, _, dashboard = self.make_content(visibility="Everyone")
+        dashboard = self.ship(dashboard)
+
+        with patch.dict(frappe.conf, {"developer_mode": 0}), as_user(OUTSIDER):
+            self.assertFalse(frappe.has_permission(DT.WORKBOOK, "read", dashboard.workbook))
+            response = get_dashboard(dashboard=dashboard.name)
+            self.assertFalse(response["can_copy"])
+            self.assertIsNone(response["workbook"])
+
+    # @feature standard.duplicate
     def test_a_shipped_workbook_is_offered_for_copying_and_the_copy_is_the_sites(self):
         _, _, dashboard = self.make_content(visibility="Everyone")
         dashboard = self.ship(dashboard)

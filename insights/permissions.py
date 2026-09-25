@@ -1409,7 +1409,11 @@ def can_copy(doc) -> bool:
     from insights import standard
 
     workbook = doc.name if doc.doctype == "Insights Workbook" else workbook_of(doc)
-    return standard.is_read_only(workbook) and check_app_permission()
+    return (
+        standard.is_read_only(workbook)
+        and check_app_permission()
+        and bool(frappe.has_permission("Insights Workbook", ptype="read", doc=workbook))
+    )
 
 
 def can_share(doc) -> bool:
