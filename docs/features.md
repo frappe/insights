@@ -37,6 +37,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | query.union | A user appends the rows of another table or query. |
 | query.union-distinct | A user drops duplicate rows after appending. |
 | query.mutate | A user adds a calculated column from an expression and sees it in the result. |
+| query.division-by-zero | A division by zero returns null on PostgreSQL, as it does on MariaDB. |
 | query.mutate-inline | A user adds a calculated column from the empty column at the end of the grid. |
 | query.expression-validation | An expression with a syntax error or an unknown column is refused with a message that names the problem. |
 | query.expression-cannot-run-code | An expression is checked without being executed and cannot escape into arbitrary code. |

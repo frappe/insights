@@ -1,11 +1,16 @@
+from unittest.mock import patch
+
 import frappe
+from ibis.backends.postgres import Backend as PostgresBackend
 
 from insights.insights.doctype.insights_chart_v3.chart_query import (
     derive_operations,
     sparkline_operations,
 )
+from insights.insights.doctype.insights_data_source_v3.connectors.postgresql import get_postgres_connection
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import IbisQueryBuilder
 from insights.tests.base import InsightsIntegrationTestCase
+from insights.tests.test_data_source_ssl import FakeDataSource
 
 
 class IbisQueryBuilderTestCase(InsightsIntegrationTestCase):
@@ -402,3 +407,31 @@ class TestIbisDateFilterOnDatetime(IbisQueryBuilderTestCase):
     def test_a_time_on_a_datetime_column_compares_by_that_instant(self):
         _, midnight, evening, next_day = self.STAMPS
         self.assertEqual(self.filtered(">", "2026-08-05 00:00:00"), [evening, next_day])
+
+
+class TestIbisDivision(IbisQueryBuilderTestCase):
+    # @feature query.division-by-zero
+    def test_a_division_compiles_to_null_on_a_zero_divisor_on_postgres(self):
+        mutations = {
+            "ratio": "net_profit / income",
+            "whole": "net_profit // income",
+            "rest": "net_profit % income",
+        }
+        query = self.build_query(
+            [
+                {"type": "code", "code": 'results = [{"income": 0, "net_profit": 5}]'},
+                *(
+                    {
+                        "type": "mutate",
+                        "new_name": name,
+                        "data_type": "Decimal",
+                        "expression": {"type": "expression", "expression": expression},
+                    }
+                    for name, expression in mutations.items()
+                ),
+            ]
+        )
+        with patch("ibis.postgres.connect", return_value=PostgresBackend()):
+            connection = get_postgres_connection(FakeDataSource())
+        sql = connection.compiler.to_sqlglot(query.unbind()).sql(dialect="postgres")
+        self.assertEqual(sql.count('NULLIF("t0"."income", 0)'), len(mutations))

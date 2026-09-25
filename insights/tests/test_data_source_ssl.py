@@ -17,7 +17,7 @@ fall back to the system trust store. The test pins both keywords together.
 """
 
 from typing import ClassVar
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from frappe.tests import UnitTestCase
 
@@ -72,6 +72,7 @@ def connect_kwargs(connector, backend, **fields):
         if anchor:
             with open(anchor) as certificate:
                 captured["anchor"] = certificate.read()
+        return Mock()
 
     with patch(backend, side_effect=record):
         connector(FakeDataSource(**fields))
