@@ -335,6 +335,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | data-source.update-tables | A user re-syncs the table list; a re-spelled table is renamed, not duplicated, and every referrer follows. |
 | data-source.table-links | A Frappe site source infers table links between its tables to suggest joins. |
 | data-source.postgres-schema | A Postgres table name carries its schema only while the source reads several schemas. |
+| data-source.division-by-zero | A division by zero returns null on PostgreSQL, as it does on MariaDB. |
 | data-source.table-label-is-text | A table label renders as text in Desk, never as markup. |
 | data-source.table-stats | A table's stats name only the queries the caller may read and the newest completed import. |
 

@@ -621,11 +621,27 @@ function onKeydown(event: KeyboardEvent) {
  */
 const keyHints = computed(() => {
 	if (!history.value.length) return []
-	const hints: { combo: string; label: string }[] = []
-	if (rows.value.length) hints.push({ combo: 'Enter', label: __('Select') })
-	else if (draft.value) hints.push({ combo: 'Enter', label: __('Apply') })
-	if (multi.value && draft.value) hints.push({ combo: 'Mod+Enter', label: __('Apply') })
-	if (!search.value) hints.push({ combo: 'Backspace', label: __('Back') })
+	const hints: { combo: string; label: string; run: () => void }[] = []
+	if (!search.value)
+		hints.push({
+			combo: 'Backspace',
+			label: __('Back'),
+			run: back,
+		})
+	if (rows.value.length)
+		hints.push({
+			combo: 'Enter',
+			label: __('Select'),
+			// the click reka answers Enter with, so a multi stage ticks the row
+			run: () => comboRef.value?.highlightedElement?.click(),
+		})
+	const apply = multi.value ? 'Mod+Enter' : rows.value.length ? undefined : 'Enter'
+	if (apply && draft.value)
+		hints.push({
+			combo: apply,
+			label: __('Apply'),
+			run: () => commit(),
+		})
 	return hints
 })
 
@@ -763,18 +779,23 @@ function focusInput() {
 			<div v-if="keyHints.length" class="grid">
 				<div class="overflow-hidden">
 					<div
-						class="flex items-center justify-between border-t border-outline-gray-1 px-3 py-1.5"
+						class="flex items-center justify-between border-t border-outline-gray-1 p-1"
 					>
-						<span
+						<Button
 							v-for="hint in keyHints"
 							:key="hint.combo"
-							class="flex items-center gap-1.5"
+							variant="ghost"
+							size="xs"
+							@mousedown.prevent
+							@click="hint.run()"
 						>
-							<!-- the component sets its own `text-sm`, so the smaller size
-							     has to outrank it -->
-							<KeyboardShortcut :combo="hint.combo" class="!text-xs" />
-							<span class="text-xs text-ink-gray-5">{{ hint.label }}</span>
-						</span>
+							<span class="flex items-center gap-1.5">
+								<!-- the component sets its own `text-sm`, so the smaller size
+								     has to outrank it -->
+								<KeyboardShortcut :combo="hint.combo" class="!text-xs" />
+								{{ hint.label }}
+							</span>
+						</Button>
 					</div>
 				</div>
 			</div>

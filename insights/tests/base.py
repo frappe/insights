@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 import frappe
 from frappe.tests import IntegrationTestCase
 
@@ -133,3 +135,30 @@ class InsightsIntegrationTestCase(IntegrationTestCase):
                 is_visible(doctype, name),
                 message or f"{doctype} {name} should not be visible to {user}",
             )
+
+
+class FakeDataSource(dict):
+    """Enough of a data source for a connector to read."""
+
+    DEFAULTS: ClassVar[dict] = {
+        "host": "db.internal",
+        "port": 5432,
+        "username": "svc",
+        "database_name": "analytics",
+        "schema": "",
+        "connection_string": None,
+        "use_ssl": 1,
+        "ssl_ca": None,
+    }
+
+    def __init__(self, **fields):
+        super().__init__(self.DEFAULTS | fields)
+
+    def __getattr__(self, name):
+        return self.get(name)
+
+    def __setattr__(self, name, value):
+        self[name] = value
+
+    def get_password(self, raise_exception=False):
+        return "secret"
