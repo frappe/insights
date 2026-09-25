@@ -493,11 +493,16 @@ def apply_row_permissions(t: Table, data_source, table_name, permission_query):
         db = InsightsDataSourcev3.get_doc(data_source)._get_ibis_backend()
         names_expr = ibis.memtable(db.sql(permission_query).select("name"))
     else:
-        # Same backend: keep it lazy so it compiles to a single SQL statement (semi-join
+        # Same backend: keep it lazy so it compiles to a single SQL statement (an `IN`
         # subquery) — no extra DB round trip.
         names_expr = t.sql(permission_query).select("name")
 
-    return t.semi_join(names_expr, "name")
+    # `semi_join` used to sit here. Ibis's MySQL/MariaDB compiler does not always rewrite
+    # it into valid SQL — it can emit a literal `SEMI JOIN` clause, which MariaDB rejects
+    # with a syntax error. `isin` against the same subquery has identical semantics (keep
+    # rows whose `name` appears in `names_expr`, no duplication) and compiles to a plain
+    # `IN (...)` on every backend this app targets.
+    return t.filter(t["name"].isin(names_expr["name"]))
 
 
 def get_permitted_columns_for_table(table_name, user=None) -> set[str]:

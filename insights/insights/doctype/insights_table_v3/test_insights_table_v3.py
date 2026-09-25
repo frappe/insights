@@ -8,6 +8,7 @@ from frappe.tests.utils import FrappeTestCase
 from insights.insights.doctype.insights_table_v3 import insights_table_v3 as table_module
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     apply_column_permissions,
+    apply_row_permissions,
     get_permitted_columns_for_table,
 )
 
@@ -80,3 +81,29 @@ class TestUserPermissionColumns(FrappeTestCase):
             table_module.get_permitted_columns_for_table = original
 
         self.assertEqual(list(result.columns), ["name", "secret"])
+
+
+class TestApplyRowPermissions(FrappeTestCase):
+    """Covers the row-level filtering in apply_row_permissions, against a real
+    MariaDB connection — the bug this guards against only shows up once the
+    filtered expression is actually compiled and executed against MariaDB."""
+
+    # @feature permissions.site-user-permissions
+    def test_a_site_db_row_filter_executes_without_a_sql_syntax_error(self):
+        # Regression: this used `t.semi_join(names_expr, "name")`. Against a live
+        # MariaDB connection, ibis's compiler can emit a literal `SEMI JOIN` clause
+        # instead of rewriting it to valid SQL, and MariaDB refuses it with error
+        # 1064 ("You have an error in your SQL syntax ... near 'SEMI JOIN'"). A
+        # DuckDB-backed ibis.memtable in this test would not reproduce that —
+        # DuckDB accepts `SEMI JOIN` natively — so this connects to the real site
+        # database, the same connection `apply_row_permissions`'s non-warehouse
+        # branch runs against in production.
+        from insights.utils import InsightsDataSourcev3
+
+        t = InsightsDataSourcev3.get_doc("Site DB").get_ibis_table("tabUser")
+        permission_query = "SELECT `name` FROM `tabUser` WHERE `name` = 'Administrator'"
+
+        filtered = apply_row_permissions(t, "Site DB", "tabUser", permission_query)
+        rows = filtered.execute()
+
+        self.assertEqual(list(rows["name"]), ["Administrator"])
