@@ -24,6 +24,9 @@ OWNER = "view_api_owner@test.com"
 DESK_USER = "view_api_desk_user@test.com"
 # holds an Insights role, but the owner's content never admits them
 OUTSIDER = "view_api_outsider@test.com"
+# owns nothing: a shipped workbook belongs to whoever ran migrate, so this is
+# the admin who copies it on a site
+ADMIN = "view_api_admin@test.com"
 GUEST = "Guest"
 
 WORKBOOK_TITLE = "View API Test Workbook"
@@ -86,6 +89,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
         create_user(OWNER, first_name="View", last_name="Owner", roles="Insights User")
         create_user(OUTSIDER, first_name="View", last_name="Outsider", roles="Insights User")
         create_user(DESK_USER, first_name="View", last_name="Desk User")
+        create_user(ADMIN, first_name="View", last_name="Admin", roles=["Insights User", "System Manager"])
 
         for description in OWNER_TODOS:
             frappe.get_doc(
@@ -109,7 +113,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
             "ToDo", filters={"description": ["like", f"%{TODO_PREFIX}%"]}, pluck="name"
         ):
             frappe.delete_doc("ToDo", todo, force=True, ignore_permissions=True)
-        delete_users(OWNER, OUTSIDER, DESK_USER)
+        delete_users(OWNER, OUTSIDER, DESK_USER, ADMIN)
 
     # fixtures
 
@@ -583,7 +587,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
         _, _, dashboard = self.make_content(visibility="Everyone")
         dashboard = self.ship(dashboard)
 
-        with patch.dict(frappe.conf, {"developer_mode": 0}), as_user(OWNER):
+        with patch.dict(frappe.conf, {"developer_mode": 0}), as_user(ADMIN):
             response = get_dashboard(dashboard=dashboard.name)
             self.assertEqual(response["workbook"], dashboard.workbook)
 
