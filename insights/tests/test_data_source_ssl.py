@@ -16,7 +16,6 @@ So `VERIFY_CA` with no CA file was a label, not a check, and the driver does not
 fall back to the system trust store. The test pins both keywords together.
 """
 
-from typing import ClassVar
 from unittest.mock import Mock, patch
 
 from frappe.tests import UnitTestCase
@@ -27,35 +26,9 @@ from insights.insights.doctype.insights_data_source_v3.connectors.mariadb import
 from insights.insights.doctype.insights_data_source_v3.connectors.postgresql import (
     get_postgres_connection,
 )
+from insights.tests.base import FakeDataSource
 
 CA_CERTIFICATE = "-----BEGIN CERTIFICATE-----\nQ09SUE9SQVRFIENB\n-----END CERTIFICATE-----"
-
-
-class FakeDataSource(dict):
-    """Enough of a data source for a connector to read."""
-
-    DEFAULTS: ClassVar[dict] = {
-        "host": "db.internal",
-        "port": 5432,
-        "username": "svc",
-        "database_name": "analytics",
-        "schema": "",
-        "connection_string": None,
-        "use_ssl": 1,
-        "ssl_ca": None,
-    }
-
-    def __init__(self, **fields):
-        super().__init__(self.DEFAULTS | fields)
-
-    def __getattr__(self, name):
-        return self.get(name)
-
-    def __setattr__(self, name, value):
-        self[name] = value
-
-    def get_password(self, raise_exception=False):
-        return "secret"
 
 
 def connect_kwargs(connector, backend, **fields):

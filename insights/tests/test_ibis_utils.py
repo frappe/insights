@@ -9,8 +9,7 @@ from insights.insights.doctype.insights_chart_v3.chart_query import (
 )
 from insights.insights.doctype.insights_data_source_v3.connectors.postgresql import get_postgres_connection
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import IbisQueryBuilder
-from insights.tests.base import InsightsIntegrationTestCase
-from insights.tests.test_data_source_ssl import FakeDataSource
+from insights.tests.base import FakeDataSource, InsightsIntegrationTestCase
 
 
 class IbisQueryBuilderTestCase(InsightsIntegrationTestCase):
@@ -410,7 +409,7 @@ class TestIbisDateFilterOnDatetime(IbisQueryBuilderTestCase):
 
 
 class TestIbisDivision(IbisQueryBuilderTestCase):
-    # @feature query.division-by-zero
+    # @feature data-source.division-by-zero
     def test_a_division_compiles_to_null_on_a_zero_divisor_on_postgres(self):
         mutations = {
             "ratio": "net_profit / income",
@@ -433,5 +432,5 @@ class TestIbisDivision(IbisQueryBuilderTestCase):
         )
         with patch("ibis.postgres.connect", return_value=PostgresBackend()):
             connection = get_postgres_connection(FakeDataSource())
-        sql = connection.compiler.to_sqlglot(query.unbind()).sql(dialect="postgres")
+        sql = connection.compile(query.unbind())
         self.assertEqual(sql.count('NULLIF("t0"."income", 0)'), len(mutations))

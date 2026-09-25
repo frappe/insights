@@ -22,12 +22,12 @@ class InsightsPostgresCompiler(PostgresCompiler):
 
 
 def get_postgres_connection(data_source):
-    db = connect(data_source)
+    db = _connect(data_source)
     db.compiler = InsightsPostgresCompiler()
     return db
 
 
-def connect(data_source):
+def _connect(data_source):
     if data_source.connection_string:
         conn_string = quote_plus(data_source.connection_string)
         return ibis.connect(conn_string)
