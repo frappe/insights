@@ -9,8 +9,7 @@ def execute():
     charts and dashboards move to `visibility = "Public"`.
 
     This is the whole migration off `is_public`: nothing reads the field any
-    more. It keeps its value only because dropping a column is a separate act
-    from ending its use, and this patch is what the drop will depend on.
+    more, and its column is left for `bench trim-tables`.
     """
     for doctype in DOCTYPES:
         content = frappe.qb.DocType(doctype)

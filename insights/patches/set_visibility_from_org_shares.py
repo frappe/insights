@@ -19,7 +19,7 @@ def execute():
         shares = frappe.get_all(
             "DocShare",
             filters={"share_doctype": doctype, "everyone": 1},
-            fields=["name", "share_name", "read"],
+            fields=["share_name", "read"],
         )
         if not shares:
             continue
@@ -29,5 +29,4 @@ def execute():
             if visibility_level(visibility) < visibility_level(EVERYONE):
                 frappe.db.set_value(doctype, name, "visibility", EVERYONE, update_modified=False)
 
-        for share in shares:
-            frappe.delete_doc("DocShare", share.name, ignore_permissions=True, force=True)
+        frappe.db.delete("DocShare", {"share_doctype": doctype, "everyone": 1})

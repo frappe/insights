@@ -1,8 +1,8 @@
 import frappe
 
 from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import LINK_COLUMN
-from insights.insights.doctype.insights_workbook.insights_workbook import _rewrite_query_references
-from insights.insights.query_utils import referenced_queries
+from insights.insights.query_utils import referenced_queries, sync_query_references
+from insights.utils import deep_convert_dict_to_dict
 
 QUERY = "Insights Query v3"
 DASHBOARD = "Insights Dashboard v3"
@@ -43,11 +43,22 @@ def execute():
     copies = {}
     for (reader, workbook), sources in by_reader.items():
         id_map = {source: copy_into(source, workbook, copies, workbook_of, stored) for source in sources}
-        doc = frappe.get_doc(QUERY, reader)
-        doc.operations = _rewrite_query_references(stored[reader], id_map, workbook)
-        doc.save(ignore_permissions=True)
+        operations = rewrite_query_references(stored[reader], id_map, workbook)
+        frappe.db.set_value(QUERY, reader, "operations", operations, update_modified=False)
+        sync_query_references(reader, operations)
 
     repoint_filter_links(copies)
+
+
+def rewrite_query_references(operations, id_map: dict, workbook: str) -> str:
+    """Point every source in `operations` that `id_map` names at its copy in `workbook`."""
+    operations = deep_convert_dict_to_dict(frappe.parse_json(operations) or [])
+    for op in operations:
+        table = op.get("table") or {}
+        if table.get("type") == "query" and table.get("query_name") in id_map:
+            table["query_name"] = id_map[table["query_name"]]
+            table["workbook"] = workbook
+    return frappe.as_json(operations)
 
 
 def repoint_filter_links(copies: dict):
@@ -119,7 +130,7 @@ def copy_into(original: str, workbook: str, copies: dict, workbook_of: dict, sto
         {
             "title": source.title,
             "workbook": workbook,
-            "operations": _rewrite_query_references(operations, id_map, workbook),
+            "operations": rewrite_query_references(operations, id_map, workbook),
             "use_live_connection": source.use_live_connection,
             "is_script_query": source.is_script_query,
             "is_builder_query": source.is_builder_query,
