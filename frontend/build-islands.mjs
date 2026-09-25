@@ -1,8 +1,6 @@
-// Builds Insights' islands: a second target beside the SPA's `yarn build`, same
-// source tree, different output contract. An entry name is the island's name:
-// the preset writes it into assets.json as `<name>.island.js`, which is the
-// registry every placement resolves against, so renaming one here breaks every
-// host that names it.
+// An entry name is the island's name. The preset writes it into assets.json as
+// `<name>.island.js`, and every host finds the island by that name. Renaming an
+// entry breaks every host that uses it.
 
 import { buildIslands } from '@framework/ui/vite/island'
 
@@ -14,18 +12,18 @@ await buildIslands({
 		'insights.dashboard': 'src2/islands/dashboard.ts',
 	},
 	// No content list: the preset scans the modules each island is built from, so
-	// a helper holding class literals cannot be left out of the scan by accident.
+	// a helper with class literals cannot be left out of the scan.
 
 	// The SPA's plugin. Without it the Number grid's `@xl:` columns compile to nothing.
 	tailwindPlugins: ['@tailwindcss/container-queries'],
-	// Pinned just over the current clean build: an island that draws the real
-	// dashboard carries its own Vue, frappe-ui, the charting engine and the app's
-	// stylesheet, and that is 1.72 MB of it.
+	// Set just above the current build. An island that renders the full dashboard
+	// bundles its own Vue, frappe-ui, the chart library and the app's stylesheet,
+	// about 1.72 MB.
 	budget: 1800 * 1024,
-	// The budget catches a recoupled entry late and by weight; these name the
-	// recouplings. Each drags something a reader cannot do: routed pages, the
-	// builder aggregate, or a role-gated resource load. Checked after vite erases
-	// types, so `import type` from any of them still passes.
+	// The budget catches these imports late and only by size. Each one pulls in
+	// something a reader cannot use: routed pages, the builder's stores, or a
+	// resource load that needs a role. They are checked after vite removes types,
+	// so `import type` from them still passes.
 	forbiddenImports: [
 		/\/router(\.ts)?$/,
 		/\/workbook\/workbook(\.ts)?$/,

@@ -50,16 +50,15 @@ function parseErrors(lines) {
 	return errors
 }
 
-// Dependency errors report paths relative to this checkout's location on disk, so they
-// only match a baseline on the machine that generated it. Only frontend's own source is stable.
+// Dependency errors report paths relative to this checkout on disk, so they match a
+// baseline only on the machine that wrote it.
 function isFrontendSource(error) {
 	const resolved = path.resolve(frontendDir, error.file)
 	const relative = path.relative(frontendDir, resolved)
 	return !relative.startsWith('..') && !relative.split(path.sep).includes('node_modules')
 }
 
-// path + TS code + message identify an error across edits that move line numbers;
-// a count per key lets a second copy of the same error in one file still count as new.
+// A count per key makes a second copy of the same error in one file count as new.
 function toKey(error) {
 	return `${error.file}: ${error.code}: ${error.message}`
 }
